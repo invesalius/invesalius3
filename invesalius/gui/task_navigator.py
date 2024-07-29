@@ -1844,7 +1844,19 @@ class ControlPanel(wx.Panel):
     # TMS Motor Mapping related
     # 'Show Motor Map' button
     def OnShowMotorMapButton(self, evt, ctrl):
-        self.UpdateToggleButton(ctrl)
+
+        # TODO: check if there are any motor mapping data available
+        # if not, show a message box saying that there is no motor mapping data available
+
+        # TODO: show motor mapping data on the brain
+        if not ctrl.GetValue():
+            ctrl.SetBackgroundColour(self.RED_COLOR)
+            Publisher.sendMessage('Show motor map', show=True)
+
+        else:
+            ctrl.SetBackgroundColour(self.GREEN_COLOR)
+            Publisher.sendMessage('Show motor map', show=False)
+        # self.UpdateToggleButton(ctrl)
 
 
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
@@ -2070,6 +2082,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UnsetPointOfInterest,
                             'Unset point of interest')
         Publisher.subscribe(self._UpdateMarkerLabel, 'Update marker label')
+        Publisher.subscribe(self._UpdateMEP, 'Update marker mep')
 
     def __get_selected_items(self):
         """    
@@ -2190,6 +2203,21 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             if current_uuid == uuid:
                 self.itemDataMap[key][const.LABEL_COLUMN] = marker.label
 
+    def _UpdateMEP(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
+        self.marker_list_ctrl.SetItem(
+            idx, const.MEP_COLUMN, str(marker.mep_value))
+
+        # Update the marker label in self.itemDataMap so that sorting works
+        uuid = marker.marker_uuid
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.MEP_COLUMN] = marker.mep_value
+
+        # Trigger redraw MEP mapping
+        Publisher.sendMessage('Redraw MEP mapping')
+
     @staticmethod
     def __list_fiducial_labels():
         """Return the list of marker labels denoting fiducials."""
@@ -2253,8 +2281,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             menu_id.Bind(wx.EVT_MENU, self.OnMenuDuplicateMarker,
                          duplicate_menu_item)
 
-        menu_id.AppendSeparator()
+        # show MEP menu item
+        if is_active_target:
+            mep_menu_item = menu_id.Append(
+                unique_menu_id + 4, _('Change MEP value'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP,
+                         mep_menu_item)
 
+        menu_id.AppendSeparator()
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
 
@@ -2273,12 +2307,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     unique_menu_id + 3, _('Set as target'))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget,
                              target_menu_item)
-
-            # show MEP menu item
-            mep_menu_item = menu_id.Append(
-                unique_menu_id + 3, _('Change MEP value'))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP,
-                         mep_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
         if is_coil_pose:
@@ -3111,6 +3139,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker.z_offset) if marker.z_offset != 0.0 else ""
         list_entry[const.TARGET_COLUMN] = "Yes" if marker.is_target else ""
         list_entry[const.POINT_OF_INTEREST_TARGET_COLUMN] = "Yes" if marker.is_point_of_interest else ""
+        list_entry[const.MEP_COLUMN] = str(
+            marker.mep_value) if marker.marker_type == MarkerType.COIL_TARGET else ""
 
         if self.session.GetConfig('debug'):
             list_entry.append(round(marker.x, 1))

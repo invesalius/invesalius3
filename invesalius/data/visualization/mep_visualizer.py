@@ -1,3 +1,6 @@
+
+from invesalius.pubsub import pub as Publisher
+from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 import vtk
 import numpy as np
 
@@ -7,7 +10,15 @@ from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
 )
-
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkPointPicker,
+    vtkPolyDataMapper,
+    vtkProperty,
+    vtkPropPicker,
+    vtkRenderer,
+    vtkWindowToImageFilter,
+)
 from invesalius.data.markers.marker import Marker
 
 import random
@@ -29,18 +40,71 @@ class MEPVisualizerConfig:
             "max": 1000
         }
 
+    def __dict__(self):
+        return {
+            "threshold_down": self.threshold_down,
+            "range_up": self.range_up,
+            "dims_size": self.dims_size,
+            "gaussain_sharpness": self.gaussain_sharpness,
+            "gaussian_radius": self.gaussian_radius,
+            "bounds": self.bounds,
+            "test_data_filename": self.test_data_filename,
+            "colormap_range_uv": self.colormap_range_uv
+        }
+
 
 class MEPVisualizer:
-
-    def __init__(self, renderer, interactor):
+    # TODO: find a way to not duplicate the brain actor
+    # TODO: enable/disable colormapping based on toggle button
+    # TODO: update config from prefrences
+    def __init__(self, renderer: vtkRenderer, interactor):
+        self._bind_events()
         self.points = vtk.vtkPolyData()
         self.surface = self.read_surface_data(actor_out=True)
+
+        self.enabled = False
 
         # configuration variables
         self.conf = MEPVisualizerConfig()
 
         self.renderer = renderer
+        # self.mep_renderer = vtk.vtkRenderer() # Renderer for the MEP points, separated to not affect other actors
+        self.mep_renderer = renderer
         self.interactor = interactor
+
+    def _bind_events(self):
+        # Publisher.subscribe(self.update_mep_points, 'Update MEP Points')
+        Publisher.subscribe(self.display_motor_map, 'Show motor map')
+
+    def display_motor_map(self, show: bool):
+        """Controls the display of the motor map and enables/disables the MEP mapping."""
+        if show:
+            self.enabled = True
+            # self.render_visualization(self.surface)
+            self.mep_renderer.AddActor(self.colorBarActor)
+            self.mep_renderer.AddActor(self.surface)
+            # TODO: hide the surface actor by triggering a hide event
+        else:
+            self.enabled = False
+            if hasattr(self, 'colorBarActor'):  # Ensure it exists before removal
+                self.mep_renderer.RemoveActor(self.colorBarActor)
+                self.mep_renderer.RemoveActor(self.surface)
+                print("Current actors: ", self.mep_renderer.GetActors())
+            # FIXME: The colorbar actor wont get removed for some reason..
+
+                # Remove all actors from the target guide renderer.
+                # actors = self.mep_renderer.GetActors()
+                # actors.InitTraversal()
+                # actor = actors.GetNextItem()
+                # while actor:
+                #     if actor == self.surface:  # Skip the surface actor
+                #         actor = actors.GetNextItem()
+                #     self.mep_renderer.RemoveActor(actor)
+                #     actor = actors.GetNextItem()
+
+            # self.mep_renderer.RemoveActor(self.surface)
+
+        self.interactor.Render()
 
     def read_surface_data(self, filename='data/T1.stl', actor_out=False):
         """Reads the surface data from an STL file."""
@@ -113,8 +177,18 @@ class MEPVisualizer:
 
     def lut_setup(self):
         lut = vtk.vtkLookupTable()
-        lut.SetTableRange(self.conf.threshold_down, self.conf.range_up)
+        # lut.SetTableRange(self.conf.threshold_down, self.conf.range_up)
+        lut.SetTableRange(
+            self.conf.colormap_range_uv["min"], self.conf.colormap_range_uv["max"])
+        lut.SetNumberOfTableValues(4)
         colorSeries = vtk.vtkColorSeries()
+
+        # FIXME: Add your custom colors
+        # from vtkmodules.vtkCommonDataModel import vtkColor3ub
+        # colorSeries.AddColor(vtkColor3ub(0, 0, 255))   # Blue
+        # colorSeries.AddColor(vtkColor3ub(0, 255, 0))   # Green
+        # colorSeries.AddColor(vtkColor3ub(255, 255, 0))   # Yellow
+        # colorSeries.AddColor(vtkColor3ub(255, 0, 0))   # Red
         seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
         colorSeries.SetColorScheme(seriesEnum)
 
@@ -167,14 +241,14 @@ class MEPVisualizer:
                 marker.position[0], -marker.position[1], marker.position[2])
 
             # 4. Generate a random MEP value (Or get it from marker object)
-            # if hasattr(marker, "mep_value"):
-            #     mep_value = marker.mep_value
-            #     if mep_value is None:
-            #         mep_value = 0
-
-            # else:
-            mep_value = random.uniform(0, 10)/10  # Adjust range as needed
-
+            if hasattr(marker, "mep_value"):
+                mep_value = marker.mep_value
+                if mep_value is None:
+                    # mep_value = 0
+                    # Adjust range as needed
+                    mep_value = random.uniform(
+                        0, self.conf.colormap_range_uv["max"])/self.conf.colormap_range_uv["max"]
+                    self.mep_value = mep_value  # Save the value for later
             # 5. Add the MEP value to the 'MEP' array
             mep_array.InsertNextValue(mep_value)
 
@@ -188,6 +262,8 @@ class MEPVisualizer:
 
     def update_surface_map(self):
         ''' Update the surface map based on the markers array '''
+        if self.enabled is False:  # Skips processing if MEP mapping is disabled
+            return
         # interpolate the data
         interpolated_data = self.interpolate_data()
 
@@ -196,22 +272,27 @@ class MEPVisualizer:
         # point_actor = self.create_point_actor(self.points_data, self.data_range)
 
         # update the brain surface actor with the new mapping
-        self.renderer.RemoveActor(self.surface)
-        self.surface = actor
-        self.renderer.AddActor(self.surface)
+        self.mep_renderer.RemoveActor(self.surface)
+        self.surface = self.set_surface_actor(actor)
+        self.mep_renderer.AddActor(self.surface)
 
     def create_colorbar_actor(self, lut=None) -> vtk.vtkActor:
         if lut is None:
             lut = self.lut_setup()
         colorBarActor = vtk.vtkScalarBarActor()
         colorBarActor.SetLookupTable(lut)
-        colorBarActor.SetNumberOfLabels(3)
-        colorBarActor.SetLabelFormat("%4.2f")
-        colorBarActor.SetTitle("MEP amplitude µV\n")
+        colorBarActor.SetNumberOfLabels(4)
+        colorBarActor.SetLabelFormat("%4.0f")
+        colorBarActor.SetTitle("µV       ")
+        # FIXME: Set the title to be a little bit smaller
+        colorBarActor.SetTitleRatio(0.1)
+        colorBarActor.SetMaximumWidthInPixels(70)
+        # move title to below
+        colorBarActor.GetTitleTextProperty().SetFontSize(1)
 
         # FIXME: Set the label text size to be a little bit smaller
         label_text_property = colorBarActor.GetLabelTextProperty()
-        label_text_property.SetFontSize(5)
+        label_text_property.SetFontSize(9)
         # label_text_property.SetColor(0, 0, 0)
 
         colorBarActor.SetLabelTextProperty(label_text_property)
@@ -221,6 +302,10 @@ class MEPVisualizer:
         colorBarActor.SetHeight(0.3)
 
         colorBarActor.SetVisibility(1)
+
+        # set position of the colorbar to the bottom left corner
+        colorBarActor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
+        colorBarActor.GetPositionCoordinate().SetValue(0.06, 0.06)
         return colorBarActor
 
     def create_colored_surface(self, poly_data) -> vtk.vtkActor:
@@ -249,7 +334,9 @@ class MEPVisualizer:
 
     def set_surface_actor(self, surface_actor):
         # select the surface actor to overlay the mapping on
-        self.surface = surface_actor
+        # deep copy
+        from copy import deepcopy
+        self.surface = deepcopy(surface_actor)
         # re render or do the mapping?
         # TODO: not sure yet
         pass
@@ -303,12 +390,12 @@ class MEPVisualizer:
         point_actor = self.create_point_actor(points, data_range)
 
         # Colorbar setup
-        colorBarActor = self.create_colorbar_actor()
+        self.colorBarActor = self.create_colorbar_actor()
 
         # Renderer setup
-        self.renderer.AddActor(actor)
-        self.renderer.AddActor(point_actor)
-        self.renderer.AddActor(colorBarActor)
+        self.mep_renderer.AddActor(actor)
+        self.mep_renderer.AddActor(point_actor)
+        self.mep_renderer.AddActor(self.colorBarActor)
 
         # Picker for mouse interaction
         picker = vtk.vtkCellPicker()
