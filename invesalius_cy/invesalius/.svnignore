@@ -1,0 +1,11 @@
+*.pyc
+*.log
+
+*.hg
+
+*.swp
+*.swo
+*.swn
+
+*.project
+*.classpath
