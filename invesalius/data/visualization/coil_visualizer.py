@@ -225,7 +225,9 @@ class CoilVisualizer:
         self.RemoveTargetCoil()
 
         vtk_colors = vtk.vtkNamedColors()
-
+        
+        if self.coil_path is None:
+            return
         decoded_path = self.coil_path.decode('utf-8')
 
         coil_filename = os.path.basename(decoded_path)

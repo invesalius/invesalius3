@@ -1,4 +1,3 @@
-from invesalius.data.visualization.mep_visualizer import MEPVisualizerConfig
 import invesalius.gui.widgets.gradient as grad
 import sys
 import os
@@ -121,6 +120,8 @@ class VisualizationTab(wx.Panel):
 
         wx.Panel.__init__(self, parent)
 
+        self.session = ses.Session()
+
         self.colormaps = ["autumn", "hot", "plasma", "cividis",  # sequential
                           "bwr", "RdBu",  # diverging
                           "Set3", "tab10",  # categorical
@@ -128,7 +129,8 @@ class VisualizationTab(wx.Panel):
         self.current_colormap = "autumn"
         self.number_colors = 4
         self.cluster_volume = None
-        self.conf = MEPVisualizerConfig()  # Get default values
+
+        self.conf = self.session.GetConfig('mep_conf')
 
         bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
         lbl_inter = wx.StaticText(
@@ -211,7 +213,7 @@ class VisualizationTab(wx.Panel):
         # -- Mid Value -> SpinCtrlDouble
         # -- Max Value -> SpinCtrlDouble
         # TODO: Add a button to apply the colormap to the current volume
-        # TODO: Store MEP visualization settings in a 
+        # TODO: Store MEP visualization settings in a
 
         bsizer_mep = wx.StaticBoxSizer(
             wx.VERTICAL, self, _("TMS Motor Mapping"))
@@ -223,7 +225,12 @@ class VisualizationTab(wx.Panel):
             bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23), inc=0.5)
         spin_gaussian_radius.Enable(1)
         spin_gaussian_radius.SetRange(1, 99)
-        spin_gaussian_radius.SetValue(self.conf.gaussian_radius)
+        spin_gaussian_radius.SetValue(self.conf.get("gaussian_radius"))
+
+        spin_gaussian_radius.Bind(wx.EVT_TEXT, partial(
+            self.OnSelectGaussianRadius, ctrl=spin_gaussian_radius))
+        spin_gaussian_radius.Bind(wx.EVT_SPINCTRL, partial(
+            self.OnSelectGaussianRadius, ctrl=spin_gaussian_radius))
 
         line_gaussian_radius = wx.BoxSizer(
             wx.HORIZONTAL)
@@ -240,7 +247,12 @@ class VisualizationTab(wx.Panel):
             bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23), inc=0.01)
         spin_std_dev.Enable(1)
         spin_std_dev.SetRange(0.01, 5.0)
-        spin_std_dev.SetValue(self.conf.gaussain_sharpness)
+        spin_std_dev.SetValue(self.conf.get("gaussain_sharpness"))
+
+        spin_std_dev.Bind(wx.EVT_TEXT, partial(
+            self.OnSelectStdDev, ctrl=spin_std_dev))
+        spin_std_dev.Bind(wx.EVT_SPINCTRL, partial(
+            self.OnSelectStdDev, ctrl=spin_std_dev))
 
         line_std_dev = wx.BoxSizer(wx.HORIZONTAL)
         line_std_dev.AddMany([
@@ -292,7 +304,7 @@ class VisualizationTab(wx.Panel):
             bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10)
         spin_min.Enable(1)
         spin_min.SetRange(0, 10000)
-        spin_min.SetValue(self.conf.colormap_range_uv.get('min'))
+        spin_min.SetValue(self.conf.get('colormap_range_uv').get('min'))
         line_cm_min = wx.BoxSizer(wx.HORIZONTAL)
         line_cm_min.AddMany([
             (lbl_min, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
@@ -305,7 +317,7 @@ class VisualizationTab(wx.Panel):
             bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10)
         spin_low.Enable(1)
         spin_low.SetRange(0, 10000)
-        spin_low.SetValue(self.conf.colormap_range_uv.get('low'))
+        spin_low.SetValue(self.conf.get('colormap_range_uv').get('low'))
         line_cm_low = wx.BoxSizer(wx.HORIZONTAL)
         line_cm_low.AddMany([
             (lbl_low, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
@@ -318,7 +330,7 @@ class VisualizationTab(wx.Panel):
             bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10)
         spin_mid.Enable(1)
         spin_mid.SetRange(0, 10000)
-        spin_mid.SetValue(self.conf.colormap_range_uv.get('mid'))
+        spin_mid.SetValue(self.conf.get('colormap_range_uv').get('mid'))
         line_cm_mid = wx.BoxSizer(wx.HORIZONTAL)
         line_cm_mid.AddMany([
             (lbl_mid, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
@@ -331,12 +343,19 @@ class VisualizationTab(wx.Panel):
             bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10)
         spin_max.Enable(1)
         spin_max.SetRange(0, 10000)
-        spin_max.SetValue(self.conf.colormap_range_uv.get('max'))
+        spin_max.SetValue(self.conf.get('colormap_range_uv').get('max'))
         line_cm_max = wx.BoxSizer(wx.HORIZONTAL)
         line_cm_max.AddMany([
             (lbl_max, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
             (spin_max, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
         ])
+
+        # Binding events for the colormap ranges
+        for ctrl in zip([spin_min, spin_low, spin_mid, spin_max], ['min', 'low', 'mid', 'max']):
+            ctrl[0].Bind(wx.EVT_TEXT, partial(
+                self.OnSelectColormapRange, ctrl=ctrl[0], key=ctrl[1]))
+            ctrl[0].Bind(wx.EVT_SPINCTRL, partial(
+                self.OnSelectColormapRange, ctrl=ctrl[0], key=ctrl[1]))
 
         colormap_custom.AddMany([
             (lbl_colormap_ranges, 0, wx.TOP | wx.LEFT, 10),
@@ -359,6 +378,18 @@ class VisualizationTab(wx.Panel):
 
         return bsizer_mep
 
+    def OnSelectStdDev(self, evt, ctrl):
+        self.conf['gaussian_sharpness'] = ctrl.GetValue()
+        self.session.SetConfig('mep_conf', self.conf)  # Save the configuration
+
+    def OnSelectGaussianRadius(self, evt, ctrl):
+        self.conf['gaussian_radius'] = ctrl.GetValue()
+        self.session.SetConfig('mep_conf', self.conf)  # Save the configuration
+
+    def OnSelectColormapRange(self, evt, ctrl, key):
+        self.conf['colormap_range_uv'][key] = ctrl.GetValue()
+        self.session.SetConfig('mep_conf', self.conf)
+        
     def HideMEPSettings(self, event=None):
         for child in self.bsizer_mep.GetChildren():
             widget = child.GetWindow()

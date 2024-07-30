@@ -265,6 +265,7 @@ class Session(metaclass=Singleton):
         success = False
         if os.path.exists(STATE_PATH):
             print("Restoring a previous state...")
+            print("State file found.", STATE_PATH)
 
             state_file = open(STATE_PATH, 'r')
             try:

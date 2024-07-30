@@ -1,4 +1,5 @@
 
+import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 import vtk
@@ -24,35 +25,6 @@ from invesalius.data.markers.marker import Marker
 import random
 
 
-class MEPVisualizerConfig:
-    def __init__(self):
-        self.threshold_down = 0
-        self.range_up = 1
-        self.dims_size = 100
-        self.gaussain_sharpness = .4
-        self.gaussian_radius = 20
-        self.bounds = None
-        self.test_data_filename = 'data/MEP_data.txt'
-        self.colormap_range_uv = {
-            "min": 50,
-            "low": 200,
-            "mid": 600,
-            "max": 1000
-        }
-
-    def __dict__(self):
-        return {
-            "threshold_down": self.threshold_down,
-            "range_up": self.range_up,
-            "dims_size": self.dims_size,
-            "gaussain_sharpness": self.gaussain_sharpness,
-            "gaussian_radius": self.gaussian_radius,
-            "bounds": self.bounds,
-            "test_data_filename": self.test_data_filename,
-            "colormap_range_uv": self.colormap_range_uv
-        }
-
-
 class MEPVisualizer:
     # TODO: find a way to not duplicate the brain actor
     # TODO: enable/disable colormapping based on toggle button
@@ -65,12 +37,36 @@ class MEPVisualizer:
         self.enabled = False
 
         # configuration variables
-        self.conf = MEPVisualizerConfig()
+        self._config_params = {
+            "threshold_down": 0,
+            "range_up": 1,
+            "dims_size": 100,
+            "cmap": "viridis",
+            "gaussain_sharpness": .4,
+            "gaussian_radius": 20,
+            "bounds": None,
+            "colormap_range_uv": {
+                "min": 50,
+                "low": 200,
+                "mid": 600,
+                "max": 1000
+            }
+        }
+        self._load_user_parameters()
 
         self.renderer = renderer
         # self.mep_renderer = vtk.vtkRenderer() # Renderer for the MEP points, separated to not affect other actors
         self.mep_renderer = renderer
         self.interactor = interactor
+
+    def _load_user_parameters(self):
+        session = ses.Session()
+
+        config = session.GetConfig('mep_conf')
+        if config is not None:
+            self._config_params.update(config)
+        else:
+            session.SetConfig('mep_conf', self._config_params)
 
     def _bind_events(self):
         # Publisher.subscribe(self.update_mep_points, 'Update MEP Points')
@@ -147,10 +143,10 @@ class MEPVisualizer:
         surface = self.surface
         points = self.points
 
-        bounds = np.array(self.conf.bounds)
-        gaussian_sharpness = self.conf.gaussain_sharpness
-        gaussian_radius = self.conf.gaussian_radius
-        dims_size = self.conf.dims_size
+        bounds = np.array(self._config_params['bounds'])
+        gaussian_sharpness = self._config_params['gaussain_sharpness']
+        gaussian_radius = self._config_params['gaussian_radius']
+        dims_size = self._config_params['dims_size']
         dims = np.array([dims_size, dims_size, dims_size])
 
         box = vtk.vtkImageData()
@@ -177,9 +173,9 @@ class MEPVisualizer:
 
     def lut_setup(self):
         lut = vtk.vtkLookupTable()
-        # lut.SetTableRange(self.conf.threshold_down, self.conf.range_up)
+        # lut.SetTableRange(self._config_params.threshold_down, self._config_params.range_up)
         lut.SetTableRange(
-            self.conf.colormap_range_uv["min"], self.conf.colormap_range_uv["max"])
+            self._config_params['colormap_range_uv']["min"],  self._config_params['colormap_range_uv']["max"])
         lut.SetNumberOfTableValues(4)
         colorSeries = vtk.vtkColorSeries()
 
@@ -247,7 +243,7 @@ class MEPVisualizer:
                     # mep_value = 0
                     # Adjust range as needed
                     mep_value = random.uniform(
-                        0, self.conf.colormap_range_uv["max"])/self.conf.colormap_range_uv["max"]
+                        0,  self._config_params['colormap_range_uv']["max"]) / self._config_params['colormap_range_uv']["max"]
                     self.mep_value = mep_value  # Save the value for later
             # 5. Add the MEP value to the 'MEP' array
             mep_array.InsertNextValue(mep_value)
@@ -316,12 +312,14 @@ class MEPVisualizer:
         normals.ComputeCellNormalsOff()
         normals.Update()
 
-        data_range = (self.conf.threshold_down, self.conf.range_up)
+        data_range = (
+            self._config_params['threshold_down'],  self._config_params['range_up'])
 
         mapper = vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
         if data_range is None:
-            data_range = (self.conf.threshold_down, self.conf.range_up)
+            data_range = (
+                self._config_params['threshold_down'],  self._config_params['range_up'])
         mapper.SetScalarRange(data_range)
 
         lut = self.lut_setup()
@@ -374,15 +372,17 @@ class MEPVisualizer:
             print('No surface data found')
             return
         self.surface = surface
-        self.conf.bounds = np.array(surface.GetBounds())
+        self._config_params['bounds'] = np.array(surface.GetBounds())
         # points = self.read_point_data()
         points = self.points
 
         # Calculate data range and dims
         range_up = points.GetPointData().GetScalars().GetRange()[1]
-        data_range = (self.conf.threshold_down, self.conf.range_up)
+        data_range = (
+            self._config_params['threshold_down'], self._config_params['range_up'])
+        dim_size = self._config_params['dims_size']
         dims = np.array(
-            [self.conf.dims_size, self.conf.dims_size, self.conf.dims_size])
+            [dim_size, dim_size, dim_size])  # Number of points in each dimension
 
         # Interpolate and create actors (initially)
         interpolated_data = self.interpolate_data()

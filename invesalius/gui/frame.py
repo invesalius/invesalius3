@@ -682,6 +682,7 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
+            
 
             session.SetConfig('rendering', rendering)
             session.SetConfig('surface_interpolation', surface_interpolation)
