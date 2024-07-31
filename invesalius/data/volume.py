@@ -22,7 +22,7 @@ import weakref
 
 import numpy
 import wx
-from setuptools.extern.packaging.version import Version
+from packaging.version import Version
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonCore import vtkVersion
 from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction, vtkPlane

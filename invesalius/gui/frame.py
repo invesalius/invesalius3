@@ -793,13 +793,12 @@ class Frame(wx.Frame):
         session = ses.Session()
         if session.GetConfig("language") == "pt_BR":
             user_guide = "user_guide_pt_BR.pdf"
+            path = os.path.join(inv_paths.DOC_DIR, user_guide)
+            if sys.platform == "darwin":
+                path = r"file://" + path
+            webbrowser.open(path)
         else:
-            user_guide = "user_guide_en.pdf"
-
-        path = os.path.join(inv_paths.DOC_DIR, user_guide)
-        if sys.platform == "darwin":
-            path = r"file://" + path
-        webbrowser.open(path)
+            user_guide = webbrowser.open("https://invesalius.github.io/docs/user_guide/user_guide.html")
 
     def ShowImportDicomPanel(self):
         """
