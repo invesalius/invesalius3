@@ -22,7 +22,7 @@ jobs:
           $COMMIT=$(git rev-parse HEAD)
           echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
           
-      - name: Setup VC++ 2022 (17.0)
+     - name: Setup VC++ 2022 (17.0)
         uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
           vsversion: '17.0'
