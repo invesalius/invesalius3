@@ -798,7 +798,9 @@ class Frame(wx.Frame):
                 path = r"file://" + path
             webbrowser.open(path)
         else:
-            user_guide = webbrowser.open("https://invesalius.github.io/docs/user_guide/user_guide.html")
+            user_guide = webbrowser.open(
+                "https://invesalius.github.io/docs/user_guide/user_guide.html"
+            )
 
     def ShowImportDicomPanel(self):
         """
