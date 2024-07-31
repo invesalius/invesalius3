@@ -723,36 +723,6 @@ class GradientCtrl(wx.Panel):
         self.maximun = evt.maximun
         self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
 
-    def _FireSpinMinChange(self, evt: wx.Event) -> None:
-        evt.Skip()
-        value = int(self.spin_min.GetValue())
-        if value < self.min_range or value > self.max_range:
-            self.spin_min.SetValue(self.minimun)
-            return
-
-        if value != self.GetMinValue() or self.changed:
-            self.SetMinValue(value)
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
-
-    def _FireSpinMinChanged(self, evt: wx.Event) -> None:
-        if self.changed:
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
-
-    def _FireSpinMaxChange(self, evt: wx.Event) -> None:
-        evt.Skip()
-        value = int(self.spin_max.GetValue())
-        if value < self.min_range or value > self.max_range:
-            self.spin_max.SetValue(self.maximun)
-            return
-
-        if value != self.GetMaxValue() or self.changed:
-            self.SetMaxValue(value)
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
-
-    def _FireSpinMaxChanged(self, evt: wx.Event) -> None:
-        if self.changed:
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
-
     def OnMinMouseWheel(self, e: wx.SpinEvent) -> None:
         """
         When the user wheel the mouse over min texbox
