@@ -180,15 +180,14 @@ class VisualizationTab(wx.Panel):
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
         # Creating MEP Mapping BoxSizer
-        self.bsizer_mep = self.InitMEPMapping(None)
-
-        border.Add(self.bsizer_mep, 0, wx.EXPAND |
-                   wx.ALL | wx.FIXED_MINSIZE, 10)
+        if self.conf.get('display_enabled') is True:
+            self.bsizer_mep = self.InitMEPMapping(None)
+            border.Add(self.bsizer_mep, 0, wx.EXPAND |
+                       wx.ALL | wx.FIXED_MINSIZE, 10)
 
         self.SetSizerAndFit(border)
         self.Layout()
 
-        self.HideMEPSettings(None)
 
     def GetSelection(self):
 
@@ -266,11 +265,12 @@ class VisualizationTab(wx.Panel):
             bsizer_mep.GetStaticBox(), -1, _("Select Colormap:"))
 
         self.combo_thresh = wx.ComboBox(bsizer_mep.GetStaticBox(), -1, "",  # size=(15,-1),
-                                   choices=self.colormaps,
-                                   style=wx.CB_DROPDOWN | wx.CB_READONLY)
+                                        choices=self.colormaps,
+                                        style=wx.CB_DROPDOWN | wx.CB_READONLY)
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnSelectColormap)
         # by default use the initial value set in the configuration
-        self.combo_thresh.SetSelection(self.colormaps.index(self.conf.get('cmap')))
+        self.combo_thresh.SetSelection(
+            self.colormaps.index(self.conf.get('cmap')))
 
         cmap = plt.get_cmap(self.conf.get('cmap'))
         colors_gradient = self.GenerateColormapColors(cmap)
@@ -368,7 +368,7 @@ class VisualizationTab(wx.Panel):
         btn_reset = wx.Button(
             bsizer_mep.GetStaticBox(), -1, _("Reset to defaults"))
         btn_reset.Bind(wx.EVT_BUTTON, self.ResetMEPSettings)
-        
+
         # centered button reset
         colormap_custom.Add(btn_reset, 0, wx.ALIGN_CENTER | wx.TOP, 10)
 
@@ -420,20 +420,6 @@ class VisualizationTab(wx.Panel):
     def OnSelectColormapRange(self, evt, ctrl, key):
         self.conf['colormap_range_uv'][key] = ctrl.GetValue()
         self.session.SetConfig('mep_conf', self.conf)
-
-    def HideMEPSettings(self, event=None):
-        for child in self.bsizer_mep.GetChildren():
-            widget = child.GetWindow()
-            if widget:
-                widget.Hide()
-        self.Layout()
-
-    def ShowMEPSettings(self, event=None):
-        for child in self.bsizer_mep.GetChildren():
-            widget = child.GetWindow()
-            if widget:
-                widget.Show()
-        self.Layout()
 
     def LoadSelection(self, values):
         rendering = values[const.RENDERING]

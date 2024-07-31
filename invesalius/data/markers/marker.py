@@ -238,6 +238,8 @@ class Marker:
         z_rotation = d.get('z_rotation', 0.0)
         is_point_of_interest = d.get('is_point_of_interest', False)
 
+        mep_value = d.get('mep_value', None)
+
         self.size = d['size']
         self.label = d['label']
         self.is_target = d['is_target']
@@ -252,6 +254,7 @@ class Marker:
         self.cortex_position_orientation = cortex_position_orientation
         self.z_offset = z_offset
         self.z_rotation = z_rotation
+        self.mep_value = mep_value
 
         return self
 

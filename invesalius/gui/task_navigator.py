@@ -1844,18 +1844,15 @@ class ControlPanel(wx.Panel):
     # TMS Motor Mapping related
     # 'Show Motor Map' button
     def OnShowMotorMapButton(self, evt, ctrl):
-
         # TODO: check if there are any motor mapping data available
         # if not, show a message box saying that there is no motor mapping data available
 
-        # TODO: show motor mapping data on the brain
         if not ctrl.GetValue():
             ctrl.SetBackgroundColour(self.RED_COLOR)
-            Publisher.sendMessage('Show motor map', show=True)
-
+            Publisher.sendMessage('Show motor map', show=False)
         else:
             ctrl.SetBackgroundColour(self.GREEN_COLOR)
-            Publisher.sendMessage('Show motor map', show=False)
+            Publisher.sendMessage('Show motor map', show=True)
         # self.UpdateToggleButton(ctrl)
 
 
@@ -2881,7 +2878,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         return self.markers.GetNextMarkerLabel()
 
     def OnCreateMarker(self, evt=None, position=None, orientation=None, colour=None, size=None, label=None,
-                       is_target=False, seed=None, session_id=None, marker_type=None, cortex_position_orientation=None):
+                       is_target=False, seed=None, session_id=None, marker_type=None, cortex_position_orientation=None, mep_value=None):
 
         if label is None:
             label = self.GetNextMarkerLabel()
@@ -2911,6 +2908,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             session_id=session_id,
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
+            mep_value=mep_value
         )
         self.markers.AddMarker(marker, render=True, focus=True)
 
@@ -3086,7 +3084,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def CreateMarker(self, position=None, orientation=None, colour=None, size=None, label=None, is_target=False, seed=None,
                      session_id=None, marker_type=MarkerType.LANDMARK, cortex_position_orientation=None,
-                     z_offset=0.0, z_rotation=0.0):
+                     z_offset=0.0, z_rotation=0.0, mep_value=None):
         """
         Create a new marker object.
         """
@@ -3108,6 +3106,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker.cortex_position_orientation = cortex_position_orientation or self.cortex_position_orientation
         marker.z_offset = z_offset
         marker.z_rotation = z_rotation
+        marker.mep_value = mep_value
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers.list)

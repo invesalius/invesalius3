@@ -62,6 +62,10 @@ class MEPVisualizer:
         session.SetConfig('mep_conf', deepcopy(
             const.DEFAULT_MEP_CONFIG_PARAMS))
 
+    def _save_user_parameters(self):
+        session = ses.Session()
+        session.SetConfig('mep_conf', self._config_params)
+
     def _bind_events(self):
         # Publisher.subscribe(self.update_mep_points, 'Update MEP Points')
         Publisher.subscribe(self.display_motor_map, 'Show motor map')
@@ -70,13 +74,13 @@ class MEPVisualizer:
     def display_motor_map(self, show: bool):
         """Controls the display of the motor map and enables/disables the MEP mapping."""
         if show:
-            self.enabled = True
+            self._config_params["display_enabled"] = True
             # self.render_visualization(self.surface)
             self.mep_renderer.AddActor(self.colorBarActor)
             self.mep_renderer.AddActor(self.surface)
             # TODO: hide the surface actor by triggering a hide event
         else:
-            self.enabled = False
+            self._config_params["display_enabled"] = False
             if hasattr(self, 'colorBarActor'):  # Ensure it exists before removal
                 self.mep_renderer.RemoveActor(self.colorBarActor)
                 self.mep_renderer.RemoveActor(self.surface)
@@ -94,7 +98,8 @@ class MEPVisualizer:
                 #     actor = actors.GetNextItem()
 
             # self.mep_renderer.RemoveActor(self.surface)
-
+    
+        self._save_user_parameters()
         self.interactor.Render()
 
     def read_surface_data(self, filename='data/T1.stl', actor_out=False):
@@ -367,7 +372,7 @@ class MEPVisualizer:
             print('No surface data found')
             return
         self.surface = surface
-        self._config_params['bounds'] = np.array(surface.GetBounds())
+        self._config_params['bounds'] = list(np.array(surface.GetBounds()))
         # points = self.read_point_data()
         points = self.points
 

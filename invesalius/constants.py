@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,7 +15,7 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import os.path
 import platform
@@ -28,19 +28,19 @@ from invesalius.i18n import tr as _
 from invesalius import utils
 from invesalius import inv_paths
 
-#from invesalius.project import Project
+# from invesalius.project import Project
 INVESALIUS_VERSION = "3.1.99998"
 
 INVESALIUS_ACTUAL_FORMAT_VERSION = 1.1
 
-#---------------
+# ---------------
 
 # Measurements
 MEASURE_NAME_PATTERN = _("M %d")
 MEASURE_LINEAR = 101
 MEASURE_ANGULAR = 102
 
-DEFAULT_MEASURE_COLOUR = (1,0,0)
+DEFAULT_MEASURE_COLOUR = (1, 0, 0)
 DEFAULT_MEASURE_BG_COLOUR = (250/255.0, 247/255.0, 218/255.0)
 DEFAULT_MEASURE_RADIUS = 1
 DEFAULT_MEASURE_TYPE = MEASURE_LINEAR
@@ -65,34 +65,34 @@ TEXT_SIZE = 12
 TEXT_SIZE_LARGE = 16
 TEXT_SIZE_EXTRA_LARGE = 20
 TEXT_SIZE_DISTANCE_DURING_NAVIGATION = 32
-TEXT_COLOUR = (1,1,1)
+TEXT_COLOUR = (1, 1, 1)
 
-(X,Y) = (0.03, 0.97)
+(X, Y) = (0.03, 0.97)
 (XZ, YZ) = (0.05, 0.93)
 TEXT_POS_LEFT_UP = (X, Y)
-#------------------------------------------------------------------
-TEXT_POS_LEFT_DOWN = (X, 1-Y) # SetVerticalJustificationToBottom
+# ------------------------------------------------------------------
+TEXT_POS_LEFT_DOWN = (X, 1-Y)  # SetVerticalJustificationToBottom
 
 TEXT_POS_LEFT_DOWN_ZERO = (X, 1-YZ)
-#------------------------------------------------------------------
-TEXT_POS_RIGHT_UP = (1-X, Y) # SetJustificationToRight
-#------------------------------------------------------------------
-TEXT_POS_RIGHT_DOWN = (1-X, 1-Y) # SetVerticalJustificationToBottom &
-                                 # SetJustificationToRight
-#------------------------------------------------------------------
-TEXT_POS_HCENTRE_DOWN = (0.5, 1-Y) # SetJustificationToCentered
-                                   # ChildrticalJustificationToBottom
+# ------------------------------------------------------------------
+TEXT_POS_RIGHT_UP = (1-X, Y)  # SetJustificationToRight
+# ------------------------------------------------------------------
+TEXT_POS_RIGHT_DOWN = (1-X, 1-Y)  # SetVerticalJustificationToBottom &
+# SetJustificationToRight
+# ------------------------------------------------------------------
+TEXT_POS_HCENTRE_DOWN = (0.5, 1-Y)  # SetJustificationToCentered
+# ChildrticalJustificationToBottom
 
 TEXT_POS_HCENTRE_DOWN_ZERO = (0.5, 1-YZ)
-#------------------------------------------------------------------
+# ------------------------------------------------------------------
 TEXT_POS_HCENTRE_UP = (0.5, Y)  # SetJustificationToCentered
-#------------------------------------------------------------------
-TEXT_POS_VCENTRE_RIGHT = (1-X, 0.5) # SetVerticalJustificationToCentered
-                                    # SetJustificationToRight
+# ------------------------------------------------------------------
+TEXT_POS_VCENTRE_RIGHT = (1-X, 0.5)  # SetVerticalJustificationToCentered
+# SetJustificationToRight
 TEXT_POS_VCENTRE_RIGHT_ZERO = (1-XZ, 0.5)
-#------------------------------------------------------------------
-TEXT_POS_VCENTRE_LEFT = (X, 0.5) # SetVerticalJustificationToCentered
-#------------------------------------------------------------------
+# ------------------------------------------------------------------
+TEXT_POS_VCENTRE_LEFT = (X, 0.5)  # SetVerticalJustificationToCentered
+# ------------------------------------------------------------------
 
 
 # Slice orientation
@@ -102,9 +102,9 @@ SAGITAL = 3
 VOLUME = 4
 SURFACE = 5
 
-AXIAL_STR="AXIAL"
-CORONAL_STR="CORONAL"
-SAGITAL_STR="SAGITAL"
+AXIAL_STR = "AXIAL"
+CORONAL_STR = "CORONAL"
+SAGITAL_STR = "SAGITAL"
 
 # Measure type
 LINEAR = 6
@@ -113,29 +113,36 @@ DENSITY_ELLIPSE = 8
 DENSITY_POLYGON = 9
 
 # Colour representing each orientation
-ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
-                      'CORONAL': (0,1,0), # Green
-                      'SAGITAL': (0,0,1)} # Blue
+ORIENTATION_COLOUR = {'AXIAL': (1, 0, 0),  # Red
+                      'CORONAL': (0, 1, 0),  # Green
+                      'SAGITAL': (0, 0, 1)}  # Blue
 
 IMPORT_INTERVAL = [_("Keep all slices"), _("Skip 1 for each 2 slices"),
-                   _("Skip 2 for each 3 slices"), _("Skip 3 for each 4 slices"),
-                   _("Skip 4 for each 5 slices"),_("Skip 5 for each 6 slices")]
+                   _("Skip 2 for each 3 slices"), _(
+                       "Skip 3 for each 4 slices"),
+                   _("Skip 4 for each 5 slices"), _("Skip 5 for each 6 slices")]
 
 # Camera according to slice's orientation
-#CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
-#CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
-AXIAL_SLICE_CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
-AXIAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
+# CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
+# CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
+AXIAL_SLICE_CAM_POSITION = {
+    "AXIAL": (0, 0, 1), "CORONAL": (0, -1, 0), "SAGITAL": (1, 0, 0)}
+AXIAL_SLICE_CAM_VIEW_UP = {
+    "AXIAL": (0, 1, 0), "CORONAL": (0, 0, 1), "SAGITAL": (0, 0, 1)}
 
-SAGITAL_SLICE_CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, 1, 0), "SAGITAL":(-1, 0, 0)}
-SAGITAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, -1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
+SAGITAL_SLICE_CAM_POSITION = {
+    "AXIAL": (0, 0, 1), "CORONAL": (0, 1, 0), "SAGITAL": (-1, 0, 0)}
+SAGITAL_SLICE_CAM_VIEW_UP = {
+    "AXIAL": (0, -1, 0), "CORONAL": (0, 0, 1), "SAGITAL": (0, 0, 1)}
 
-CORONAL_SLICE_CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, 1, 0), "SAGITAL":(-1, 0, 0)}
-CORONAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, -1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
+CORONAL_SLICE_CAM_POSITION = {
+    "AXIAL": (0, 0, 1), "CORONAL": (0, 1, 0), "SAGITAL": (-1, 0, 0)}
+CORONAL_SLICE_CAM_VIEW_UP = {
+    "AXIAL": (0, -1, 0), "CORONAL": (0, 0, 1), "SAGITAL": (0, 0, 1)}
 
-SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
-                  SAGITAL:[SAGITAL_SLICE_CAM_VIEW_UP, SAGITAL_SLICE_CAM_POSITION],
-                  CORONAL:[CORONAL_SLICE_CAM_VIEW_UP, CORONAL_SLICE_CAM_POSITION]}
+SLICE_POSITION = {AXIAL: [AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
+                  SAGITAL: [SAGITAL_SLICE_CAM_VIEW_UP, SAGITAL_SLICE_CAM_POSITION],
+                  CORONAL: [CORONAL_SLICE_CAM_VIEW_UP, CORONAL_SLICE_CAM_POSITION]}
 
 # Project Status
 
@@ -153,7 +160,7 @@ MODE_NAVIGATOR = 1
 MODE_RADIOLOGY = 2
 MODE_ODONTOLOGY = 3
 
-#Crop box sides code
+# Crop box sides code
 
 AXIAL_RIGHT = 1
 AXIAL_LEFT = 2
@@ -172,18 +179,18 @@ CORONAL_BOTTOM = 12
 
 CROP_PAN = 13
 
-#Color Table from Slice
-#NumberOfColors, SaturationRange, HueRange, ValueRange
-SLICE_COLOR_TABLE = {_("Default "):(None,(0,0),(0,0),(0,1)),
-                     _("Hue"):(None,(1,1),(0,1),(1,1)),
-                     _("Saturation"):(None,(0,1),(0.6,0.6),(1,1)),
-                     _("Desert"):(256, (1,1), (0, 0.1), (1,1)),
-                     _("Rainbow"):(256,(1,1),(0,0.8),(1,1)),
-                     _("Ocean"):(256,(1,1),(0.667, 0.5),(1,1)),
-                     _("Inverse Gray"):(256, (0, 0), (0, 0), (1,0)),
+# Color Table from Slice
+# NumberOfColors, SaturationRange, HueRange, ValueRange
+SLICE_COLOR_TABLE = {_("Default "): (None, (0, 0), (0, 0), (0, 1)),
+                     _("Hue"): (None, (1, 1), (0, 1), (1, 1)),
+                     _("Saturation"): (None, (0, 1), (0.6, 0.6), (1, 1)),
+                     _("Desert"): (256, (1, 1), (0, 0.1), (1, 1)),
+                     _("Rainbow"): (256, (1, 1), (0, 0.8), (1, 1)),
+                     _("Ocean"): (256, (1, 1), (0.667, 0.5), (1, 1)),
+                     _("Inverse Gray"): (256, (0, 0), (0, 0), (1, 0)),
                      }
 
-#Colors for errors and positives
+# Colors for errors and positives
 RED_COLOR_FLOAT = (0.99, 0.55, 0.38)
 GREEN_COLOR_FLOAT = (0.40, 0.76, 0.65)
 RED_COLOR_RGB = (252, 141, 98)
@@ -199,37 +206,37 @@ VOL_BOTTOM = wx.NewIdRef()
 VOL_ISO = wx.NewIdRef()
 
 # Camera according to volume's orientation
-AXIAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT:(0,0,1), VOL_BACK:(0,0,1), VOL_RIGHT:(0,0,1),\
-                            VOL_LEFT:(0,0,1), VOL_TOP:(0,1,0), VOL_BOTTOM:(0,-1,0),\
-                            VOL_ISO:(0,0,1)}
-AXIAL_VOLUME_CAM_POSITION = {VOL_FRONT:(0,-1,0), VOL_BACK:(0,1,0), VOL_RIGHT:(-1,0,0),\
-                             VOL_LEFT:(1,0,0), VOL_TOP:(0,0,1), VOL_BOTTOM:(0,0,-1),\
-                             VOL_ISO:(0.5,-1,0.5)}
+AXIAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT: (0, 0, 1), VOL_BACK: (0, 0, 1), VOL_RIGHT: (0, 0, 1),
+                            VOL_LEFT: (0, 0, 1), VOL_TOP: (0, 1, 0), VOL_BOTTOM: (0, -1, 0),
+                            VOL_ISO: (0, 0, 1)}
+AXIAL_VOLUME_CAM_POSITION = {VOL_FRONT: (0, -1, 0), VOL_BACK: (0, 1, 0), VOL_RIGHT: (-1, 0, 0),
+                             VOL_LEFT: (1, 0, 0), VOL_TOP: (0, 0, 1), VOL_BOTTOM: (0, 0, -1),
+                             VOL_ISO: (0.5, -1, 0.5)}
 
-SAGITAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT:(0,-1,0), VOL_BACK:(0,-1,0), VOL_RIGHT:(0,-1,1),\
-                              VOL_LEFT:(0,-1,1), VOL_TOP:(1,-1,0), VOL_BOTTOM:(-1,1,0),\
-                              VOL_ISO:(0,-1,0)}
-SAGITAL_VOLUME_CAM_POSITION = {VOL_FRONT:(-1,0,0), VOL_BACK:(1,0,0), VOL_RIGHT:(0,0,1),\
-                               VOL_LEFT:(0,0,-1), VOL_TOP:(0,-1,0), VOL_BOTTOM:(0,1,0),\
-                               VOL_ISO:(-1,-0.5,-0.5)}
+SAGITAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT: (0, -1, 0), VOL_BACK: (0, -1, 0), VOL_RIGHT: (0, -1, 1),
+                              VOL_LEFT: (0, -1, 1), VOL_TOP: (1, -1, 0), VOL_BOTTOM: (-1, 1, 0),
+                              VOL_ISO: (0, -1, 0)}
+SAGITAL_VOLUME_CAM_POSITION = {VOL_FRONT: (-1, 0, 0), VOL_BACK: (1, 0, 0), VOL_RIGHT: (0, 0, 1),
+                               VOL_LEFT: (0, 0, -1), VOL_TOP: (0, -1, 0), VOL_BOTTOM: (0, 1, 0),
+                               VOL_ISO: (-1, -0.5, -0.5)}
 
-CORONAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT:(0,-1,0), VOL_BACK:(0,-1,0), VOL_RIGHT:(0,-1,0),\
-                              VOL_LEFT:(0,-1,0), VOL_TOP:(0,1,0), VOL_BOTTOM:(0,-1,0),\
-                              VOL_ISO:(0,-1,0)}
-CORONAL_VOLUME_CAM_POSITION = {VOL_FRONT:(0,0,-1), VOL_BACK:(0,0,1), VOL_RIGHT:(-1,0,0),\
-                               VOL_LEFT:(1,0,0), VOL_TOP:(0,-1,0), VOL_BOTTOM:(0,1,0),\
-                               VOL_ISO:(0.5,-0.5,-1)}
+CORONAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT: (0, -1, 0), VOL_BACK: (0, -1, 0), VOL_RIGHT: (0, -1, 0),
+                              VOL_LEFT: (0, -1, 0), VOL_TOP: (0, 1, 0), VOL_BOTTOM: (0, -1, 0),
+                              VOL_ISO: (0, -1, 0)}
+CORONAL_VOLUME_CAM_POSITION = {VOL_FRONT: (0, 0, -1), VOL_BACK: (0, 0, 1), VOL_RIGHT: (-1, 0, 0),
+                               VOL_LEFT: (1, 0, 0), VOL_TOP: (0, -1, 0), VOL_BOTTOM: (0, 1, 0),
+                               VOL_ISO: (0.5, -0.5, -1)}
 
 VOLUME_POSITION = {AXIAL: [AXIAL_VOLUME_CAM_VIEW_UP, AXIAL_VOLUME_CAM_POSITION],
-                 SAGITAL: [SAGITAL_VOLUME_CAM_VIEW_UP, SAGITAL_VOLUME_CAM_POSITION],
-                 CORONAL: [CORONAL_VOLUME_CAM_VIEW_UP, CORONAL_VOLUME_CAM_POSITION]}
+                   SAGITAL: [SAGITAL_VOLUME_CAM_VIEW_UP, SAGITAL_VOLUME_CAM_POSITION],
+                   CORONAL: [CORONAL_VOLUME_CAM_VIEW_UP, CORONAL_VOLUME_CAM_POSITION]}
 
 
 # Mask threshold options
 
-#proj = Project()
-#THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
-THRESHOLD_RANGE = [0,3033]
+# proj = Project()
+# THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
+THRESHOLD_RANGE = [0, 3033]
 THRESHOLD_PRESETS_INDEX = _("Bone")
 THRESHOLD_HUE_RANGE = (0, 0.6667)
 THRESHOLD_INVALUE = 5000
@@ -238,50 +245,50 @@ THRESHOLD_OUTVALUE = 0
 # Mask properties
 MASK_NAME_PATTERN = _("Mask %d")
 MASK_OPACITY = 0.40
-#MASK_OPACITY = 0.35
-MASK_COLOUR =  [[0.33, 1, 0.33],
-                [1, 1, 0.33],
-                [0.33, 0.91, 1],
-                [1, 0.33, 1],
-                [1, 0.68, 0.33],
-                [1, 0.33, 0.33],
-                [0.33333333333333331, 0.33333333333333331, 1.0],
-                #(1.0, 0.33333333333333331, 0.66666666666666663),
-                [0.74901960784313726, 1.0, 0.0],
-                [0.83529411764705885, 0.33333333333333331, 1.0]]#,
-                #(0.792156862745098, 0.66666666666666663, 1.0),
-                #(1.0, 0.66666666666666663, 0.792156862745098), # too "light"
-                #(0.33333333333333331, 1.0, 0.83529411764705885),#],
-                #(1.0, 0.792156862745098, 0.66666666666666663),
-                #(0.792156862745098, 1.0, 0.66666666666666663), # too "light"
-                #(0.66666666666666663, 0.792156862745098, 1.0)]
+# MASK_OPACITY = 0.35
+MASK_COLOUR = [[0.33, 1, 0.33],
+               [1, 1, 0.33],
+               [0.33, 0.91, 1],
+               [1, 0.33, 1],
+               [1, 0.68, 0.33],
+               [1, 0.33, 0.33],
+               [0.33333333333333331, 0.33333333333333331, 1.0],
+               # (1.0, 0.33333333333333331, 0.66666666666666663),
+               [0.74901960784313726, 1.0, 0.0],
+               [0.83529411764705885, 0.33333333333333331, 1.0]]  # ,
+# (0.792156862745098, 0.66666666666666663, 1.0),
+# (1.0, 0.66666666666666663, 0.792156862745098), # too "light"
+# (0.33333333333333331, 1.0, 0.83529411764705885),#],
+# (1.0, 0.792156862745098, 0.66666666666666663),
+# (0.792156862745098, 1.0, 0.66666666666666663), # too "light"
+# (0.66666666666666663, 0.792156862745098, 1.0)]
 
 
-MEASURE_COLOUR =  itertools.cycle([[1, 0, 0],
-                                   [1, 0.4, 0],
-                                   [0, 0, 1],
-                                   [1, 0, 1],
-                                   [0, 0.6, 0]])
+MEASURE_COLOUR = itertools.cycle([[1, 0, 0],
+                                  [1, 0.4, 0],
+                                  [0, 0, 1],
+                                  [1, 0, 1],
+                                  [0, 0.6, 0]])
 
-SURFACE_COLOUR =  [(0.33, 1, 0.33),
-                (1, 1, 0.33),
-                (0.33, 0.91, 1),
-                (1, 0.33, 1),
-                (1, 0.68, 0.33),
-                (1, 0.33, 0.33),
-                (0.33333333333333331, 0.33333333333333331, 1.0),
-                (1.0, 0.33333333333333331, 0.66666666666666663),
-                (0.74901960784313726, 1.0, 0.0),
-                (0.83529411764705885, 0.33333333333333331, 1.0),
-                (0.792156862745098, 0.66666666666666663, 1.0),
-                (1.0, 0.66666666666666663, 0.792156862745098),
-                (0.33333333333333331, 1.0, 0.83529411764705885),
-                (1.0, 0.792156862745098, 0.66666666666666663),
-                (0.792156862745098, 1.0, 0.66666666666666663),
-                (0.66666666666666663, 0.792156862745098, 1.0)]
+SURFACE_COLOUR = [(0.33, 1, 0.33),
+                  (1, 1, 0.33),
+                  (0.33, 0.91, 1),
+                  (1, 0.33, 1),
+                  (1, 0.68, 0.33),
+                  (1, 0.33, 0.33),
+                  (0.33333333333333331, 0.33333333333333331, 1.0),
+                  (1.0, 0.33333333333333331, 0.66666666666666663),
+                  (0.74901960784313726, 1.0, 0.0),
+                  (0.83529411764705885, 0.33333333333333331, 1.0),
+                  (0.792156862745098, 0.66666666666666663, 1.0),
+                  (1.0, 0.66666666666666663, 0.792156862745098),
+                  (0.33333333333333331, 1.0, 0.83529411764705885),
+                  (1.0, 0.792156862745098, 0.66666666666666663),
+                  (0.792156862745098, 1.0, 0.66666666666666663),
+                  (0.66666666666666663, 0.792156862745098, 1.0)]
 
 # Related to slice editor brush
-BRUSH_CIRCLE = 0 #
+BRUSH_CIRCLE = 0
 BRUSH_SQUARE = 1
 DEFAULT_BRUSH_FORMAT = BRUSH_CIRCLE
 
@@ -294,7 +301,7 @@ BRUSH_THRESH_ERASE_ONLY = 5
 DEFAULT_BRUSH_OP = BRUSH_THRESH
 BRUSH_OP_NAME = [_("Draw"), _("Erase"), _("Threshold")]
 
-BRUSH_COLOUR = (0,0,1.0)
+BRUSH_COLOUR = (0, 0, 1.0)
 BRUSH_SIZE = 30
 BRUSH_MAX_SIZE = 100
 
@@ -309,7 +316,7 @@ SURFACE_QUALITY = {
     _("High"): (0, 1, 0.3000, 0.1),
     _("Optimal *"): (0, 2, 0.3000, 0.4)}
 DEFAULT_SURFACE_QUALITY = _("Optimal *")
-SURFACE_QUALITY_LIST = [_("Low"),_("Medium"),_("High"),_("Optimal *")]
+SURFACE_QUALITY_LIST = [_("Low"), _("Medium"), _("High"), _("Optimal *")]
 
 
 # Surface properties
@@ -322,24 +329,26 @@ SURFACE_SPACE_INV = 1
 SURFACE_SPACE_CHOICES = [_("world/scanner space"), _("InVesalius space")]
 
 # Imagedata - window and level presets
-WINDOW_LEVEL = {_("Abdomen"):(350,50),
-                _("Bone"):(2000, 300),
-                _("Brain posterior fossa"):(120,40),
-                _("Brain"):(80,40),
-                _("Default"):(None, None), #Control class set window and level from DICOM
-                _("Emphysema"):(500,-850),
-                _("Ischemia - Hard, non contrast"):(15,32),
-                _("Ischemia - Soft, non contrast"):(80,20),
-                _("Larynx"):(180, 80),
-                _("Liver"):(2000, -500),
-                _("Lung - Soft"):(1600,-600),
-                _("Lung - Hard"):(1000,-600),
-                _("Mediastinum"):(350,25),
-                _("Manual"):(None, None), #Case the user change window and level
-                _("Pelvis"): (450,50),
-                _("Sinus"):(4000, 400),
-                _("Vasculature - Hard"):(240,80),
-                _("Vasculature - Soft"):(650,160),
+WINDOW_LEVEL = {_("Abdomen"): (350, 50),
+                _("Bone"): (2000, 300),
+                _("Brain posterior fossa"): (120, 40),
+                _("Brain"): (80, 40),
+                # Control class set window and level from DICOM
+                _("Default"): (None, None),
+                _("Emphysema"): (500, -850),
+                _("Ischemia - Hard, non contrast"): (15, 32),
+                _("Ischemia - Soft, non contrast"): (80, 20),
+                _("Larynx"): (180, 80),
+                _("Liver"): (2000, -500),
+                _("Lung - Soft"): (1600, -600),
+                _("Lung - Hard"): (1000, -600),
+                _("Mediastinum"): (350, 25),
+                # Case the user change window and level
+                _("Manual"): (None, None),
+                _("Pelvis"): (450, 50),
+                _("Sinus"): (4000, 400),
+                _("Vasculature - Hard"): (240, 80),
+                _("Vasculature - Soft"): (650, 160),
                 _("Contour"): (255, 127)}
 
 REDUCE_IMAGEDATA_QUALITY = 0
@@ -354,7 +363,8 @@ ID_TO_BMP = {VOL_FRONT: [_("Front"), str(inv_paths.ICON_DIR.joinpath("view_front
              VOL_BOTTOM: [_("Bottom"), str(inv_paths.ICON_DIR.joinpath("view_bottom.png"))],
              VOL_RIGHT: [_("Right"), str(inv_paths.ICON_DIR.joinpath("view_right.png"))],
              VOL_LEFT: [_("Left"), str(inv_paths.ICON_DIR.joinpath("view_left.png"))],
-             VOL_ISO:[_("Isometric"), str(inv_paths.ICON_DIR.joinpath("view_isometric.png"))]
+             VOL_ISO: [_("Isometric"), str(
+                 inv_paths.ICON_DIR.joinpath("view_isometric.png"))]
              }
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
@@ -362,40 +372,39 @@ TYPE_RAYCASTING_MAPPER = 0
 
 
 RAYCASTING_FILES = {_("Airways"): "Airways.plist",
-                   _("Airways II"): "Airways II.plist",
-                   _("Black & White"): "Black & White.plist",
-                   _("Bone + Skin"): "Bone + Skin.plist",
-                   _("Bone + Skin II"): "Bone + Skin II.plist",
-                   _("Dark bone"): "Dark Bone.plist",
-                   _("Glossy"): "Glossy.plist",
-                   _("Glossy II"): "Glossy II.plist",
-                   _("Gold bone"): "Gold Bone.plist",
-                   _("High contrast"): "High Contrast.plist",
-                   _("Low contrast"): "Low Contrast.plist",
-                   _("Soft on white"): "Soft on White.plist",
-                   _("Mid contrast"): "Mid Contrast.plist",
-                   _("MIP"): "MIP.plist",
-                   _("No shading"): "No Shading.plist",
-                   _("Pencil"): "Pencil.plist",
-                   _("Red on white"): "Red on White.plist",
-                   _("Skin on blue"): "Skin On Blue.plist",
-                   _("Skin on blue II"): "Skin On Blue II.plist",
-                   _("Soft on white"): "Soft on White.plist",
-                   _("Soft + Skin"): "Soft + Skin.plist",
-                   _("Soft + Skin II"): "Soft + Skin II.plist",
-                   _("Soft + Skin III"): "Soft + Skin III.plist",
-                   _("Soft on blue"): "Soft On Blue.plist",
-                   _("Soft"): "Soft.plist",
-                   _("Standard"): "Standard.plist",
-                   _("Vascular"): "Vascular.plist",
-                   _("Vascular II"): "Vascular II.plist",
-                   _("Vascular III"): "Vascular III.plist",
-                   _("Vascular IV"): "Vascular IV.plist",
-                   _("Yellow bone"): "Yellow Bone.plist"}
+                    _("Airways II"): "Airways II.plist",
+                    _("Black & White"): "Black & White.plist",
+                    _("Bone + Skin"): "Bone + Skin.plist",
+                    _("Bone + Skin II"): "Bone + Skin II.plist",
+                    _("Dark bone"): "Dark Bone.plist",
+                    _("Glossy"): "Glossy.plist",
+                    _("Glossy II"): "Glossy II.plist",
+                    _("Gold bone"): "Gold Bone.plist",
+                    _("High contrast"): "High Contrast.plist",
+                    _("Low contrast"): "Low Contrast.plist",
+                    _("Soft on white"): "Soft on White.plist",
+                    _("Mid contrast"): "Mid Contrast.plist",
+                    _("MIP"): "MIP.plist",
+                    _("No shading"): "No Shading.plist",
+                    _("Pencil"): "Pencil.plist",
+                    _("Red on white"): "Red on White.plist",
+                    _("Skin on blue"): "Skin On Blue.plist",
+                    _("Skin on blue II"): "Skin On Blue II.plist",
+                    _("Soft on white"): "Soft on White.plist",
+                    _("Soft + Skin"): "Soft + Skin.plist",
+                    _("Soft + Skin II"): "Soft + Skin II.plist",
+                    _("Soft + Skin III"): "Soft + Skin III.plist",
+                    _("Soft on blue"): "Soft On Blue.plist",
+                    _("Soft"): "Soft.plist",
+                    _("Standard"): "Standard.plist",
+                    _("Vascular"): "Vascular.plist",
+                    _("Vascular II"): "Vascular II.plist",
+                    _("Vascular III"): "Vascular III.plist",
+                    _("Vascular IV"): "Vascular IV.plist",
+                    _("Yellow bone"): "Yellow Bone.plist"}
 
 
-
-#RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
+# RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
 #                    os.listdir(folder) if
 #                    os.path.isfile(os.path.join(folder,filename))]
 
@@ -417,12 +426,12 @@ RAYCASTING_PRESETS_FOLDERS = (inv_paths.RAYCASTING_PRESETS_DIRECTORY,
 
 
 ####
-#MODE_ZOOM = 0 #"Set Zoom Mode",
-#MODE_ZOOM_SELECTION = 1 #:"Set Zoom Select Mode",
-#MODE_ROTATE = 2#:"Set Spin Mode",
-#MODE_MOVE = 3#:"Set Pan Mode",
-#MODE_WW_WL = 4#:"Bright and contrast adjustment"}
-#MODE_LINEAR_MEASURE = 5
+# MODE_ZOOM = 0 #"Set Zoom Mode",
+# MODE_ZOOM_SELECTION = 1 #:"Set Zoom Select Mode",
+# MODE_ROTATE = 2#:"Set Spin Mode",
+# MODE_MOVE = 3#:"Set Pan Mode",
+# MODE_WW_WL = 4#:"Bright and contrast adjustment"}
+# MODE_LINEAR_MEASURE = 5
 
 
 #        self.states = {0:"Set Zoom Mode", 1:"Set Zoom Select Mode",
@@ -430,11 +439,11 @@ RAYCASTING_PRESETS_FOLDERS = (inv_paths.RAYCASTING_PRESETS_DIRECTORY,
 #                       4:"Bright and contrast adjustment"}
 
 
-#ps.Publisher().sendMessage('Set interaction mode %d'%
+# ps.Publisher().sendMessage('Set interaction mode %d'%
 #                                        (MODE_BY_ID[id]))
 
-#('Set Editor Mode')
-#{0:"Set Change Slice Mode"}
+# ('Set Editor Mode')
+# {0:"Set Change Slice Mode"}
 
 ####
 MODE_SLICE_SCROLL = -1
@@ -463,19 +472,19 @@ FILETYPE_PS = wx.NewIdRef()
 FILETYPE_POV = wx.NewIdRef()
 FILETYPE_TIF = wx.NewIdRef()
 
-IMAGE_TILING = {"1 x 1":(1,1), "1 x 2":(1,2),
-                "1 x 3":(1,3), "1 x 4":(1,4),
-                "2 x 1":(2,1), "2 x 2":(2,2),
-                "2 x 3":(2,3), "2 x 4":(2,4),
-                "3 x 1":(3,1), "3 x 2":(3,2),
-                "3 x 3":(3,3), "3 x 4":(3,4),
-                "4 x 1":(4,1), "4 x 2":(4,2),
-                "4 x 3":(4,3), "4 x 4":(4,4),
-                "4 x 5":(4,5), "5 x 4":(5,4)}
+IMAGE_TILING = {"1 x 1": (1, 1), "1 x 2": (1, 2),
+                "1 x 3": (1, 3), "1 x 4": (1, 4),
+                "2 x 1": (2, 1), "2 x 2": (2, 2),
+                "2 x 3": (2, 3), "2 x 4": (2, 4),
+                "3 x 1": (3, 1), "3 x 2": (3, 2),
+                "3 x 3": (3, 3), "3 x 4": (3, 4),
+                "4 x 1": (4, 1), "4 x 2": (4, 2),
+                "4 x 3": (4, 3), "4 x 4": (4, 4),
+                "4 x 5": (4, 5), "5 x 4": (5, 4)}
 
 VTK_WARNING = 0
 
-#----------------------------------------------------------
+# ----------------------------------------------------------
 
 ID_FRAME = wx.NewIdRef()
 
@@ -545,7 +554,7 @@ ID_TREKKER_IMG = wx.NewIdRef()
 ID_TREKKER_FOD = wx.NewIdRef()
 ID_TREKKER_ACT = wx.NewIdRef()
 
-#---------------------------------------------------------
+# ---------------------------------------------------------
 STATE_DEFAULT = 1000
 STATE_WL = 1001
 STATE_SPIN = 1002
@@ -641,44 +650,44 @@ STYLE_LEVEL = {
     STATE_NAVIGATION: 4,
 }
 
-#------------ Prefereces options key ------------
+# ------------ Prefereces options key ------------
 RENDERING = 0
 SURFACE_INTERPOLATION = 1
 LANGUAGE = 2
 SLICE_INTERPOLATION = 3
 
-#Correlaction extracted from pyDicom
+# Correlaction extracted from pyDicom
 DICOM_ENCODING_TO_PYTHON = {
-                            'None':'iso8859',
-                            None:'iso8859',
-                            '': 'iso8859',
-                            'ISO_IR 6': 'iso8859',
-                            'ISO_IR 100': 'latin_1',
-                            'ISO 2022 IR 87': 'iso2022_jp',
-                            'ISO 2022 IR 13': 'iso2022_jp',
-                            'ISO 2022 IR 149': 'euc_kr',
-                            'ISO_IR 192': 'UTF8',
-                            'GB18030': 'GB18030',
-                            'ISO_IR 126': 'iso_ir_126',
-                            'ISO_IR 127': 'iso_ir_127',
-                            'ISO_IR 138': 'iso_ir_138',
-                            'ISO_IR 144': 'iso_ir_144',
-                            }
+    'None': 'iso8859',
+    None: 'iso8859',
+    '': 'iso8859',
+    'ISO_IR 6': 'iso8859',
+    'ISO_IR 100': 'latin_1',
+    'ISO 2022 IR 87': 'iso2022_jp',
+    'ISO 2022 IR 13': 'iso2022_jp',
+    'ISO 2022 IR 149': 'euc_kr',
+    'ISO_IR 192': 'UTF8',
+    'GB18030': 'GB18030',
+    'ISO_IR 126': 'iso_ir_126',
+    'ISO_IR 127': 'iso_ir_127',
+    'ISO_IR 138': 'iso_ir_138',
+    'ISO_IR 144': 'iso_ir_144',
+}
 
-#-------------------- Projections type ----------------
-PROJECTION_NORMAL=0
-PROJECTION_MaxIP=1
-PROJECTION_MinIP=2
-PROJECTION_MeanIP=3
-PROJECTION_LMIP=4
-PROJECTION_MIDA=5
-PROJECTION_CONTOUR_MIP=6
-PROJECTION_CONTOUR_LMIP=7
-PROJECTION_CONTOUR_MIDA=8
+# -------------------- Projections type ----------------
+PROJECTION_NORMAL = 0
+PROJECTION_MaxIP = 1
+PROJECTION_MinIP = 2
+PROJECTION_MeanIP = 3
+PROJECTION_LMIP = 4
+PROJECTION_MIDA = 5
+PROJECTION_CONTOUR_MIP = 6
+PROJECTION_CONTOUR_LMIP = 7
+PROJECTION_CONTOUR_MIDA = 8
 
-#------------ Projections defaults ------------------
-PROJECTION_BORDER_SIZE=1.0
-PROJECTION_MIP_SIZE=2
+# ------------ Projections defaults ------------------
+PROJECTION_BORDER_SIZE = 1.0
+PROJECTION_MIP_SIZE = 2
 
 # ------------- Boolean operations ------------------
 BOOLEAN_UNION = 1
@@ -697,12 +706,12 @@ LABEL_COLUMN = 3
 TARGET_COLUMN = 4
 Z_OFFSET_COLUMN = 5
 POINT_OF_INTEREST_TARGET_COLUMN = 6
-MEP_COLUMN  = 7
+MEP_COLUMN = 7
 X_COLUMN = 8
 Y_COLUMN = 9
 Z_COLUMN = 10
 
-#------------ Navigation defaults -------------------
+# ------------ Navigation defaults -------------------
 
 MARKER_COLOUR = (1.0, 1.0, 0.)
 MARKER_SIZE = 2
@@ -727,11 +736,11 @@ NDICOMPORT = b'COM1'
 NDI_IP = ['P9-13715.local', 'P9-13719.local']
 
 TRACKERS = [_("Claron MicronTracker"),
-           _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
-           _("Polhemus PATRIOT"), _("Camera tracker"),
-           _("NDI Polaris"), _("NDI Polaris P4"),
-           _("Optitrack"),
-           _("Debug tracker (random)"), _("Debug tracker (approach)")]
+            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
+            _("Polhemus PATRIOT"), _("Camera tracker"),
+            _("NDI Polaris"), _("NDI Polaris P4"),
+            _("Optitrack"),
+            _("Debug tracker (random)"), _("Debug tracker (approach)")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
@@ -741,7 +750,7 @@ FT_SENSOR_MODE = [_("Sensor 3"), _("Sensor 4")]
 
 DEFAULT_COIL = SELECT
 COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
-           _("Magstim 70 mm"), _("Nexstim")]
+        _("Magstim 70 mm"), _("Nexstim")]
 
 IR1 = wx.NewIdRef()
 IR2 = wx.NewIdRef()
@@ -858,7 +867,7 @@ MAX_PEEL_DEPTH = 40
 SEED_OFFSET = 30
 SEED_RADIUS = 1.5
 
-#Efield Visualization
+# Efield Visualization
 EFIELD_MAX_RANGE_SCALE = 0.90
 CORTEX_COLOR = 190
 EFIELD_ROI_SIZE = 20
@@ -898,19 +907,20 @@ WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 # Motor mapping visualization
 
 DEFAULT_MEP_CONFIG_PARAMS = {
-        "threshold_down": 0,
-        "range_up": 1,
-        "dims_size": 100,
-        "cmap": "autumn",
-        "gaussian_sharpness": .4,
-        "gaussian_radius": 20,
-        "bounds": None,
-        "colormap_range_uv": {
+    "display_enabled": False,
+    "threshold_down": 0,
+    "range_up": 1,
+    "dims_size": 100,
+    "cmap": "autumn",
+    "gaussian_sharpness": .4,
+    "gaussian_radius": 20,
+    "bounds": None,
+    "colormap_range_uv": {
             "min": 50,
             "low": 200,
             "mid": 600,
             "max": 1000
-        }
+    }
 }
 
 
@@ -954,12 +964,13 @@ BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 
-#Robot
-ROBOT_ElFIN_IP = ['192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']
+# Robot
+ROBOT_ElFIN_IP = ['192.168.200.251',
+                  '143.107.220.251', '169.254.153.251', '127.0.0.1']
 ROBOT_DOBOT_IP = ['192.168.1.6']
 
 MTMS_RADIUS = 15
 
-#Pedal
+# Pedal
 KEYSTROKE_PEDAL_ENABLED = True
 KEYSTROKE_PEDAL_KEY = wx.WXK_F21
