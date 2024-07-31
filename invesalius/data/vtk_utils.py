@@ -66,7 +66,7 @@ class ProgressDialog:
     def Cancel(self, evt: wx.Event) -> None:
         Publisher.sendMessage("Cancel DICOM load")
 
-    def Update(self, value: SupportsInt, message: str) -> tuple[bool, bool] | bool:
+    def Update(self, value: SupportsInt, message: str) -> Union[Tuple[bool, bool], bool]:
         if int(value) != self.maximum:
             try:
                 return self.dlg.Update(int(value), message)

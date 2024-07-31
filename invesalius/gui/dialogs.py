@@ -1826,7 +1826,7 @@ class SurfaceCreationDialog(wx.Dialog):
 
     def GetValue(
         self,
-    ) -> "dict[str, dict[str, str | dict[str, float]] | dict[str, str | int | bool]]":
+    ) -> "Dict[str, Dict[str, str | Dict[str, float]] | Dict[str, str | int | bool]]":
         return {"method": self.ca.GetValue(), "options": self.nsd.GetValue()}
 
 
@@ -5812,7 +5812,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
     def GetEulerAnglesFromVectors(
         self, init_arrow_vector: np.ndarray, target_arrow_vector
-    ) -> np.ndarray[Any, np.dtype[Any]]:
+    ) -> np.ndarray:
         import invesalius.data.transformations as tr
 
         init_up_vector = self.GetPerpendicularVector(init_arrow_vector)
@@ -5837,7 +5837,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return barycenter
 
-    def Normalize(self, v: np.ndarray) -> np.ndarray[Any, np.dtype[np.float64]]:
+    def Normalize(self, v: np.ndarray) -> np.ndarray:
         return v / np.linalg.norm(v)
 
     def Versor(
@@ -5852,7 +5852,7 @@ class CreateBrainTargetDialog(wx.Dialog):
 
         return versor_factor
 
-    def GetPerpendicularVector(self, vector: np.ndarray) -> np.ndarray[Any, np.dtype[np.float64]]:
+    def GetPerpendicularVector(self, vector: np.ndarray) -> np.ndarray:
         ez = np.array([0, 0, 1])
         look_at_vector = self.Normalize(vector)
         up_vector = self.Normalize(ez - np.dot(look_at_vector, ez) * look_at_vector)

@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 import os
 import tempfile
-from typing import Any, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkLookupTable
@@ -46,6 +46,9 @@ from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 from invesalius_cy import mips, transforms
 
+if TYPE_CHECKING:
+    from vtkmodules.vtkCommonDataModel import vtkImageData
+
 OTHER = 0
 PLIST = 1
 WIDGET = 2
@@ -58,11 +61,11 @@ class SliceBuffer:
     """
 
     def __init__(self):
-        self.index = -1
+        self.index: int = -1
         self.image = None
         self.mask = None
-        self.vtk_image = None
-        self.vtk_mask = None
+        self.vtk_image: Optional[vtkImageData] = None
+        self.vtk_mask: Optional[vtkImageData] = None
 
     def discard_vtk_mask(self) -> None:
         self.vtk_mask = None
@@ -89,12 +92,12 @@ class SliceBuffer:
 # Therefore, we use Singleton design pattern for implementing it.
 class Slice(metaclass=utils.Singleton):
     def __init__(self):
-        self.current_mask = None
+        self.current_mask: Optional[Mask] = None
         self.blend_filter = None
         self.histogram: Optional[np.ndarray] = None
         self._matrix: Optional[np.ndarray] = None
         self._affine: np.ndarray = np.identity(4)
-        self._n_tracts = 0
+        self._n_tracts: int = 0
         self._tracker = None
         self.aux_matrices = {}
         self.aux_matrices_colours = {}

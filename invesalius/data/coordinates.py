@@ -563,8 +563,8 @@ def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, r
 def coordinates_to_transformation_matrix(
     position: Union[Sequence[float], np.ndarray],
     orientation: Union[Sequence[float], np.ndarray],
-    axes="sxyz",
-) -> np.ndarray[Any, np.dtype[np.float64]]:
+    axes: str = "sxyz",
+) -> np.ndarray:
     """
     Transform vectors consisting of position and orientation (in Euler angles) in 3d-space into a 4x4
     transformation matrix that combines the rotation and translation.
@@ -740,7 +740,7 @@ def offset_coordinate(p_old: np.ndarray, norm_vec: np.ndarray, offset: float) ->
 class ReceiveCoordinates(threading.Thread):
     def __init__(
         self,
-        tracker_connection,
+        tracker_connection: "TrackerConnection",
         tracker_id: int,
         TrackerCoordinates: TrackerCoordinates,
         event: threading.Event,
