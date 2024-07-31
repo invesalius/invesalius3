@@ -46856,12 +46856,12 @@ class MessageDialog(Dialog):
 # end of class MessageDialog
 
 def MessageBox(
-    message,
-    caption=MessageBoxCaptionStr,
-    style=OK | CENTRE,
-    parent=None,
-    x=DefaultCoord,
-    y=DefaultCoord,
+    message: str,
+    caption: str = MessageBoxCaptionStr,
+    style: int = OK | CENTRE,
+    parent: Window | None = None,
+    x: int = DefaultCoord,
+    y: int = DefaultCoord,
 ):
     """
     MessageBox(message, caption=MessageBoxCaptionStr, style=OK|CENTRE, parent=None, x=DefaultCoord, y=DefaultCoord) -> int

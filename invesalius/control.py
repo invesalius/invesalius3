@@ -484,14 +484,18 @@ class Controller:
             Publisher.sendMessage("Show import panel in frame")
             self.img_type = 1
 
-    def OnLoadImportBitmapPanel(self, data) -> None:
+    def OnLoadImportBitmapPanel(
+        self, data: List[Tuple[bytes, str, str, int, int, str, str, wx.WindowIDRef]]
+    ) -> None:
         ok = self.LoadImportBitmapPanel(data)
         if ok:
             Publisher.sendMessage("Show import bitmap panel in frame")
             self.img_type = 2
             # Publisher.sendMessage("Show import panel in invesalius.gui.frame") as frame
 
-    def LoadImportBitmapPanel(self, data) -> bool:
+    def LoadImportBitmapPanel(
+        self, data: List[Tuple[bytes, str, str, int, int, str, str, wx.WindowIDRef]]
+    ) -> bool:
         # if patient_series and isinstance(patient_series, list):
         # Publisher.sendMessage("Load import panel", patient_series)
         # first_patient = patient_series[0]
@@ -551,10 +555,10 @@ class Controller:
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnImportGroup(self, group, use_gui):
+    def OnImportGroup(self, group: "DicomGroup", use_gui: bool):
         self.ImportGroup(group, use_gui)
 
-    def ImportGroup(self, group, gui: bool = True):
+    def ImportGroup(self, group: "DicomGroup", gui: bool = True):
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
         if matrix is None:
             return
@@ -851,7 +855,7 @@ class Controller:
             self.LoadProject()
             Publisher.sendMessage("Enable state project", state=True)
 
-    def OnOpenBitmapFiles(self, rec_data):
+    def OnOpenBitmapFiles(self, rec_data: Tuple[str, str, float, float, float, float]) -> None:
         bmp_data = bmp.BitmapData()
 
         if bmp_data.IsAllBitmapSameSize():
@@ -864,7 +868,9 @@ class Controller:
         else:
             dialogs.BitmapNotSameSize()
 
-    def OpenBitmapFiles(self, bmp_data, rec_data):
+    def OpenBitmapFiles(
+        self, bmp_data: "bmp.BitmapData", rec_data: Tuple[str, str, float, float, float, float]
+    ):
         # name = rec_data[0]
         orientation = rec_data[1]
         sp_x = float(rec_data[2])
@@ -944,7 +950,7 @@ class Controller:
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnOpenOtherFiles(self, filepath):
+    def OnOpenOtherFiles(self, filepath: bytes) -> None:
         filepath = utils.decode(filepath, const.FS_ENCODE)
         if (filepath) is not None:
             name = os.path.basename(filepath).split(".")[0]

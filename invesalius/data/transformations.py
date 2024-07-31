@@ -1889,7 +1889,7 @@ def inverse_matrix(matrix):
 
 def concatenate_matrices(
     *matrices: numpy.ndarray,
-) -> numpy.ndarray[Any, numpy.dtype[numpy.float64]]:
+) -> numpy.ndarray:
     """Return concatenation of series of transformation matrices.
 
     >>> M = numpy.random.rand(16).reshape((4, 4)) - 0.5
