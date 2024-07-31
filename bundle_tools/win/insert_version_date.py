@@ -37,10 +37,10 @@ def edit_file(path, date, commit_hash, nightly):
 
     if nightly:
         new_content = to_replace + " + '(Nightly)' + '\\n' + 'Release date: '+ '"\
-                                 + date + "'+'\\n Commit hash: " + commit_hash + "'"
+                                 + date + "'+'\\n Commit hash: " + commit_hash[0:9] + "...'"
     else:
         new_content = to_replace + "+ '\\n' + 'Release date: '+ '"\
-                                 + date + "'+'\\n Commit hash: " + commit_hash + "'"
+                                 + date + "'+'\\n Commit hash: " + commit_hash[0:9] + "...'"
  
     
     content = content.replace(to_replace, new_content)
