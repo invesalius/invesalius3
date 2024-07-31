@@ -895,6 +895,25 @@ CURRENT_MARKER_FILE_VERSION = 3
 SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3]
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 
+# Motor mapping visualization
+
+DEFAULT_MEP_CONFIG_PARAMS = {
+        "threshold_down": 0,
+        "range_up": 1,
+        "dims_size": 100,
+        "cmap": "autumn",
+        "gaussian_sharpness": .4,
+        "gaussian_radius": 20,
+        "bounds": None,
+        "colormap_range_uv": {
+            "min": 50,
+            "low": 200,
+            "mid": 600,
+            "max": 1000
+        }
+}
+
+
 # Keycodes for moving markers using the keyboard
 MOVE_MARKER_LEFT_KEYCODE = 65  # A
 MOVE_MARKER_RIGHT_KEYCODE = 68  # D
@@ -933,6 +952,7 @@ MOVEMENT_KEYCODES = [
 BAUD_RATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]
 BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
+
 
 #Robot
 ROBOT_ElFIN_IP = ['192.168.200.251', '143.107.220.251', '169.254.153.251', '127.0.0.1']

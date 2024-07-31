@@ -23,12 +23,16 @@ from vtkmodules.vtkRenderingCore import (
 from invesalius.data.markers.marker import Marker
 
 import random
+import invesalius.constants as const
+
+from copy import deepcopy
 
 
 class MEPVisualizer:
     # TODO: find a way to not duplicate the brain actor
     # TODO: enable/disable colormapping based on toggle button
     # TODO: update config from prefrences
+
     def __init__(self, renderer: vtkRenderer, interactor):
         self._bind_events()
         self.points = vtk.vtkPolyData()
@@ -36,22 +40,7 @@ class MEPVisualizer:
 
         self.enabled = False
 
-        # configuration variables
-        self._config_params = {
-            "threshold_down": 0,
-            "range_up": 1,
-            "dims_size": 100,
-            "cmap": "viridis",
-            "gaussain_sharpness": .4,
-            "gaussian_radius": 20,
-            "bounds": None,
-            "colormap_range_uv": {
-                "min": 50,
-                "low": 200,
-                "mid": 600,
-                "max": 1000
-            }
-        }
+        self._config_params = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         self._load_user_parameters()
 
         self.renderer = renderer
@@ -68,9 +57,15 @@ class MEPVisualizer:
         else:
             session.SetConfig('mep_conf', self._config_params)
 
+    def _reset_config_params(self):
+        session = ses.Session()
+        session.SetConfig('mep_conf', deepcopy(
+            const.DEFAULT_MEP_CONFIG_PARAMS))
+
     def _bind_events(self):
         # Publisher.subscribe(self.update_mep_points, 'Update MEP Points')
         Publisher.subscribe(self.display_motor_map, 'Show motor map')
+        Publisher.subscribe(self._reset_config_params, 'Reset MEP Config')
 
     def display_motor_map(self, show: bool):
         """Controls the display of the motor map and enables/disables the MEP mapping."""
@@ -144,7 +139,7 @@ class MEPVisualizer:
         points = self.points
 
         bounds = np.array(self._config_params['bounds'])
-        gaussian_sharpness = self._config_params['gaussain_sharpness']
+        gaussian_sharpness = self._config_params['gaussian_sharpness']
         gaussian_radius = self._config_params['gaussian_radius']
         dims_size = self._config_params['dims_size']
         dims = np.array([dims_size, dims_size, dims_size])

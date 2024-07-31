@@ -2282,7 +2282,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                          duplicate_menu_item)
 
         # show MEP menu item
-        if is_active_target:
+        if is_coil_target:
             mep_menu_item = menu_id.Append(
                 unique_menu_id + 4, _('Change MEP value'))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP,
