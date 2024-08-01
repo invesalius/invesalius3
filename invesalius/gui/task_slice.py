@@ -761,9 +761,9 @@ class EditionTools(wx.Panel):
         # txt_mesh_edit_3d = wx.StaticText(self, -1, "Edit Mesh in 3D")
         cbox_mask_edit_3d = wx.CheckBox(self, -1, "Edit Mask in 3D?")
         btn_make_mesh_slice = wx.Button(self, -1, _("Apply Edit"))
-        combo_mask_edit_3d_op = wx.ComboBox(self, -1, "",
-                                     choices = const.MASK_3D_EDIT_OP_NAME,
-                                     style = wx.CB_DROPDOWN|wx.CB_READONLY)
+        combo_mask_edit_3d_op = wx.ComboBox(
+            self, -1, "", choices=const.MASK_3D_EDIT_OP_NAME, style=wx.CB_DROPDOWN | wx.CB_READONLY
+        )
         combo_mask_edit_3d_op.SetSelection(const.MASK_3D_EDIT_INCLUDE)
 
         line5 = wx.BoxSizer(wx.HORIZONTAL)
@@ -912,17 +912,17 @@ class EditionTools(wx.Panel):
         style_id = const.STATE_MASK_3D_EDIT
 
         if self.cbox_mask_edit_3d.GetValue():
-            Publisher.sendMessage('Enable style', style=style_id)
-            Publisher.sendMessage('Enable mask 3D preview')
+            Publisher.sendMessage("Enable style", style=style_id)
+            Publisher.sendMessage("Enable mask 3D preview")
         else:
-            Publisher.sendMessage('Disable style', style=style_id)
+            Publisher.sendMessage("Disable style", style=style_id)
 
     def OnDoMaskEdit3D(self, evt):
-        Publisher.sendMessage('M3E apply edit')
+        Publisher.sendMessage("M3E apply edit")
 
     def OnComboMaskEdit3DMode(self, evt):
         op_id = evt.GetSelection()
-        Publisher.sendMessage('M3E set edit mode', mode=op_id)
+        Publisher.sendMessage("M3E set edit mode", mode=op_id)
 
 
 class WatershedTool(EditionTools):
