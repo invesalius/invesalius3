@@ -27,9 +27,23 @@ from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPi
 
 import invesalius.constants as const
 import invesalius.project as prj
+import invesalius.segmentation.mask_3d_edit as m3e
+from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 
 PROP_MEASURE = 0.8
+
+import numpy as np
+
+
+# TODO: find a better place
+def vtkarray_to_numpy(m):
+    nm = np.zeros((4, 4))
+    for i in range(4):
+        for j in range(4):
+            nm[i, j] = m.GetElement(i, j)
+
+    return nm
 
 
 class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
@@ -619,6 +633,81 @@ class NavigationInteractorStyle(DefaultInteractorStyle):
         super().OnScrollBackward(evt, obj)
 
 
+class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style for selecting a polygon of interest and performing a mesh edit based on that.
+    """
+
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.viewer = viewer
+
+        # Performs the cutting
+        self.mask3deditor = m3e.Mask3DEditor()
+
+        self.picker = vtkCellPicker()
+        self.picker.PickFromListOn()
+
+        self.has_poly = False
+        self.poly = None
+
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertPolygonPoint)
+        self.AddObserver("RightButtonPressEvent", self.OnInsertPolygon)
+
+    def CleanUp(self):
+        self.RemoveObservers("LeftButtonPressEvent")
+        # self.viewer.canvas.unsubscribe_event('LeftButtonPressEvent')
+        self.RemoveObservers("RightButtonPressEvent")
+
+    def OnInsertPolygonPoint(self, obj, evt):
+        # TODO: Check if camera should be resized
+        renderer = self.viewer.ren
+        interactor = self.viewer.interactor
+
+        renderer.ResetCamera()
+        renderer.ResetCameraClippingRange()
+        interactor.Render()
+
+        mouse_x, mouse_y = self.viewer.interactor.GetEventPosition()
+
+        if not self.has_poly:
+            self.poly = PolygonSelectCanvas()
+            self.has_poly = True
+            self.viewer.canvas.draw_list.append(self.poly)
+
+        self.poly.insert_point((mouse_x, mouse_y))
+        self.viewer.UpdateCanvas()
+
+    def __get_model_to_screen_volume(self):
+        w, h = self.viewer.GetSize()
+        self.viewer.ren.Render()
+        cam = self.viewer.ren.GetActiveCamera()
+        near, far = cam.GetClippingRange()
+
+        # Composite transform world to viewport (projection * view)
+        M = cam.GetCompositeProjectionTransformMatrix(w / float(h), near, far)
+        M = vtkarray_to_numpy(M)
+
+        MV = cam.GetViewTransformMatrix()
+        MV = vtkarray_to_numpy(MV)
+
+        return M
+
+    def OnInsertPolygon(self, obj, evt):
+        self.poly.complete_polygon()
+        self.viewer.UpdateCanvas()
+
+        Publisher.sendMessage(
+            "M3E add polygon",
+            points=self.poly.polygon.points,
+            screen=self.viewer.ren.GetRenderWindow().GetSize(),
+        )
+        Publisher.sendMessage(
+            "M3E set model_to_screen", model_to_screen=self.__get_model_to_screen_volume()
+        )
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -633,6 +722,7 @@ class Styles:
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_REGISTRATION: RegistrationInteractorStyle,
+        const.STATE_MASK_3D_EDIT: Mask3DEditorInteractorStyle,
     }
 
     @classmethod
