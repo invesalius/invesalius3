@@ -730,7 +730,7 @@ STYLE_LEVEL = {
     # Override all other states when in navigation mode.
     STATE_NAVIGATION: 4,
     # TODO(Henrique): check whether we need to override the previous states
-    STATE_MASK_3D_EDIT: 3
+    STATE_MASK_3D_EDIT: 3,
 }
 
 # ------------ Prefereces options key ------------
