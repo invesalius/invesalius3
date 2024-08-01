@@ -758,6 +758,25 @@ class EditionTools(wx.Panel):
         self.gradient_thresh = gradient_thresh
         self.bind_evt_gradient = True
 
+        ## LINE 5
+        # txt_mesh_edit_3d = wx.StaticText(self, -1, "Edit Mesh in 3D")
+        cbox_mask_edit_3d = wx.CheckBox(self, -1, "Edit Mask in 3D?")
+        btn_make_mesh_slice = wx.Button(self, -1, _("Apply Edit"))
+        combo_mask_edit_3d_op = wx.ComboBox(self, -1, "",
+                                     choices = const.MASK_3D_EDIT_OP_NAME,
+                                     style = wx.CB_DROPDOWN|wx.CB_READONLY)
+        combo_mask_edit_3d_op.SetSelection(const.MASK_3D_EDIT_INCLUDE)
+
+        line5 = wx.BoxSizer(wx.HORIZONTAL)
+        # line5.Add(txt_mesh_edit_3d)
+        line5.Add(cbox_mask_edit_3d)
+        line5.Add(btn_make_mesh_slice)
+        line5.Add(combo_mask_edit_3d_op)
+
+        self.cbox_mask_edit_3d = cbox_mask_edit_3d
+        self.btn_make_mesh_slice = btn_make_mesh_slice
+        self.combo_mask_edit_3d_op = combo_mask_edit_3d_op
+
         # Add lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.AddSpacer(7)
@@ -768,6 +787,8 @@ class EditionTools(wx.Panel):
         sizer.Add(text_thresh, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         sizer.AddSpacer(5)
         sizer.Add(gradient_thresh, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        sizer.AddSpacer(5)
+        sizer.Add(line5, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         sizer.AddSpacer(7)
         sizer.Fit(self)
 
@@ -782,6 +803,9 @@ class EditionTools(wx.Panel):
         self.btn_brush_format.Bind(wx.EVT_MENU, self.OnMenu)
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnGradientChanged, self.gradient_thresh)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
+        self.cbox_mask_edit_3d.Bind(wx.EVT_CHECKBOX, self.OnCheckMaskEdit3D)
+        self.btn_make_mesh_slice.Bind(wx.EVT_BUTTON, self.OnDoMaskEdit3D)
+        self.combo_mask_edit_3d_op.Bind(wx.EVT_COMBOBOX, self.OnComboMaskEdit3DMode)
 
     def __bind_events(self):
         Publisher.subscribe(self.SetThresholdBounds, "Update threshold limits")
@@ -884,6 +908,22 @@ class EditionTools(wx.Panel):
             self.txt_unit.SetLabel("px")
         self.unit = self.txt_unit.GetLabel()
         Publisher.sendMessage("Set edition brush unit", unit=self.unit)
+
+    def OnCheckMaskEdit3D(self, evt):
+        style_id = const.STATE_MASK_3D_EDIT
+
+        if self.cbox_mask_edit_3d.GetValue():
+            Publisher.sendMessage('Enable style', style=style_id)
+            Publisher.sendMessage('Enable mask 3D preview')
+        else:
+            Publisher.sendMessage('Disable style', style=style_id)
+
+    def OnDoMaskEdit3D(self, evt):
+        Publisher.sendMessage('M3E apply edit')
+
+    def OnComboMaskEdit3DMode(self, evt):
+        op_id = evt.GetSelection()
+        Publisher.sendMessage('M3E set edit mode', mode=op_id)
 
 
 class WatershedTool(EditionTools):
