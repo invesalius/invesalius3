@@ -198,13 +198,15 @@ class InvesaliusLogger:  # metaclass=Singleton):
 
         if (self._frame == None) & (console_logging != 0):
             print("Initiating console logging ...")
-            # self._frame = ConsoleLogFrame(self.getLogger())
+            self._frame = ConsoleLogFrame(self.getLogger())
 
+            '''
             formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
             ch = logging.StreamHandler(sys.stderr)
             ch.setLevel(logging.DEBUG)
             ch.setFormatter(formatter)
             self._logger.addHandler(ch)
+            '''
 
             print("Initiated console logging ...")
             self._logger.info("Initiated console logging ...")
