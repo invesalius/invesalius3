@@ -236,7 +236,7 @@ class Marker:
         if "marker_type" in d:
             marker_type = d["marker_type"]
         else:
-            if d["label"] in ["LEI", "REI", "NAI"]:
+            if d["label"] in ["REI", "LEI", "NAI"]:
                 marker_type = MarkerType.FIDUCIAL.value
 
             elif orientation == [None, None, None]:
