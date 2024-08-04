@@ -28,7 +28,7 @@ from functools import wraps
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
-from setuptools.extern.packaging.version import Version
+from packaging.version import Version
 
 
 def format_time(value: str) -> str:
