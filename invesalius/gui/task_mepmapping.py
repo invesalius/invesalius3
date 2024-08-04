@@ -77,15 +77,15 @@ class InnerTaskPanel(wx.Panel):
         self.zero_value = 0
 
         line0 = wx.StaticText(self, -1,
-                              _("Select Brain Surface"))
+                              _("Motor Mapping Configuration"))
 
         # Button for import config coil file
-        tooltip = _("Select the brain surface to be mapped on.")
-        btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
-        btn_load.SetToolTip(tooltip)
-        btn_load.Enable(1)
-        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadFmri)
-        self.btn_load = btn_load
+        # tooltip = _("Select the brain surface to be mapped on.")
+        # btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
+        # btn_load.SetToolTip(tooltip)
+        # btn_load.Enable(1)
+        # btn_load.Bind(wx.EVT_BUTTON, self.OnLoadFmri)
+        # self.btn_load = btn_load
 
         # Create a horizontal sizer to represent button save
         line1 = wx.BoxSizer(wx.VERTICAL)
@@ -95,29 +95,9 @@ class InnerTaskPanel(wx.Panel):
         line1.Add(self.surface_panel, 5, wx.LEFT |
                   wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT, 2)
         line1.AddSpacer(5)
-        line1.Add(btn_load, 5, wx.LEFT | wx.TOP | wx.RIGHT, 1)
+        # line1.Add(btn_load, 5, wx.LEFT | wx.TOP | wx.RIGHT, 1)
 
-        # LINE 2
-        text_thresh = wx.StaticText(self, -1,
-                                    _("Select Colormap"))
-
-        # LINE 3
-        combo_thresh = wx.ComboBox(self, -1, "",  # size=(15,-1),
-                                   choices=self.colormaps,
-                                   style=wx.CB_DROPDOWN | wx.CB_READONLY)
-        combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnSelectColormap)
-        # by default use the initial value set in self.current_colormap
-        combo_thresh.SetSelection(self.colormaps.index(self.current_colormap))
-
-        self.combo_thresh = combo_thresh
-
-        # LINE 4
-        cmap = plt.get_cmap(self.current_colormap)
-        colors_gradient = self.GenerateColormapColors(cmap)
-
-        self.gradient = grad.GradientDisp(self, -1, -5000, 5000, -5000, 5000,
-                                          colors_gradient)
-
+        line3 = wx.StaticText(self, -1, _("Markers Import/Export:"))
 
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -126,22 +106,15 @@ class InnerTaskPanel(wx.Panel):
         sizer.AddSpacer(5)
         # sizer.Add(line1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         sizer.Add(line1, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 3)
-
         sizer.AddSpacer(5)
-        sizer.Add(text_thresh, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
-        sizer.AddSpacer(2)
-        sizer.Add(combo_thresh, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 5)
-
+        sizer.Add(line3, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         sizer.AddSpacer(5)
-        sizer.Add(self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
-        sizer.AddSpacer(7)
 
         sizer.Fit(self)
 
         self.SetSizerAndFit(sizer)
         self.Update()
         self.SetAutoLayout(1)
-        self.UpdateGradient(self.gradient, colors_gradient)
 
     def __bind_events(self):
         pass
@@ -266,33 +239,29 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         line1.Add(button_colour, 0, wx.TOP | wx.RIGHT, 7)
 
         # LINE 2
-
-        text_transparency = wx.StaticText(self, -1, _("Surfaces:"))
+        text_transparency = wx.StaticText(self, -1, _("Brain Surface:"))
 
         # MIX LINE 2 AND 3
         # flag_link = wx.EXPAND | wx.GROW | wx.RIGHT
-        # flag_slider = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
-        # flag_combo = wx.EXPAND | wx.GROW | wx.LEFT
+        fixed_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        # fixed_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        # fixed_sizer.AddMany([(text_transparency, 0, flag_link, 0),
-        #                      (slider_transparency, 1, flag_slider, 4)])
+        fixed_sizer.Add(text_transparency, 0, wx.GROW |
+                        wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        # fixed_sizer.AddSpacer(7)
+        fixed_sizer.Add(line1, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 5)
 
         # LINE 4
-        # cb = wx.CheckBox(self, -1, "Fill largest surface holes")
-        # cb.SetValue(True)
-
-        # Add all lines into main sizer
+        # # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(line1, 1, wx.GROW | wx.EXPAND | wx.TOP, 10)
-        # sizer.Add(fixed_sizer, 0,
-        #           wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 10)
-        # sizer.Add(cb, 0, wx.GROW|wx.EXPAND|wx.RIGHT|wx.LEFT|wx.TOP|wx.BOTTOM, 5)
+        sizer.Add(fixed_sizer, 0,
+                  wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 10)
+        # sizer.Add(line1, 1, wx.GROW | wx.EXPAND | wx.TOP, 10)
+
         sizer.Fit(self)
 
         self.SetSizerAndFit(sizer)
         self.Update()
-        # self.SetAutoLayout(1)
+        self.SetAutoLayout(1)
 
         self.SetupScrolling()
 

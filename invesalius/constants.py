@@ -907,19 +907,19 @@ WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 # Motor mapping visualization
 
 DEFAULT_MEP_CONFIG_PARAMS = {
-    "display_enabled": False,
+    "mep_enabled": False,
+    "enabled_once": False,
     "threshold_down": 0,
     "range_up": 1,
-    "dims_size": 100,
-    "cmap": "autumn",
+    "mep_colormap": "autumn",
     "gaussian_sharpness": .4,
     "gaussian_radius": 20,
     "bounds": None,
     "colormap_range_uv": {
-            "min": 50,
-            "low": 200,
-            "mid": 600,
-            "max": 1000
+        "min": 50,
+        "low": 200,
+        "mid": 600,
+        "max": 1000
     }
 }
 

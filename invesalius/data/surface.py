@@ -716,9 +716,6 @@ class SurfaceManager():
             if not surface.is_shown:
                 self.ShowActor(key, False)
 
-    ####
-    #(mask_index, surface_name, quality, fill_holes, keep_largest)
-
     def _on_complete_surface_creation(self, args, overwrite, surface_name, colour, dialog):
         surface_filename, surface_measures = args
         wx.CallAfter(self._show_surface, surface_filename, surface_measures, overwrite, surface_name, colour, dialog)

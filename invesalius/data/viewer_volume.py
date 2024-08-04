@@ -582,7 +582,7 @@ class Viewer(wx.Panel):
             self.EnableSaveAutomaticallyEfieldData, 'Save automatically efield data')
 
         # The event trigger is in the Add Marker logic
-        Publisher.subscribe(self.UpdateTMSMapping, 'Add marker')
+        Publisher.subscribe(self.UpdateTMSMapping, 'Update marker list')
 
     def get_vtk_mouse_position(self):
         """
@@ -2366,10 +2366,10 @@ class Viewer(wx.Panel):
             self.actor_tracts = None
             self.Refresh()
 
-    def UpdateTMSMapping(self, marker, render, focus):
+    def UpdateTMSMapping(self, markers):
         #TODO: select brain surface only using a checkbox
         #TODO: special MEP markers and stop randomization, "Brain Target"
-        self.mep_visualizer.update_mep_points([marker])
+        self.mep_visualizer.update_mep_points(markers)
         self.mep_visualizer.render_visualization(surface=self.surface)
         # TODO: figure a way to obtain all markers so we can delete all point data and add the current
         # this will be helpful in case of position change or deletion of markers in the future

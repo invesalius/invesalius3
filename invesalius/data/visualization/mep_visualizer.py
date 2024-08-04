@@ -39,6 +39,7 @@ class MEPVisualizer:
         self.surface = self.read_surface_data(actor_out=True)
 
         self.enabled = False
+        self.dims_size = 100
 
         self._config_params = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         self._load_user_parameters()
@@ -51,36 +52,44 @@ class MEPVisualizer:
     def _load_user_parameters(self):
         session = ses.Session()
 
-        config = session.GetConfig('mep_conf')
+        config = session.GetConfig('mep_configuration')
         if config is not None:
             self._config_params.update(config)
         else:
-            session.SetConfig('mep_conf', self._config_params)
+            session.SetConfig('mep_configuration', self._config_params)
 
     def _reset_config_params(self):
         session = ses.Session()
-        session.SetConfig('mep_conf', deepcopy(
+        session.SetConfig('mep_configuration', deepcopy(
             const.DEFAULT_MEP_CONFIG_PARAMS))
 
     def _save_user_parameters(self):
         session = ses.Session()
-        session.SetConfig('mep_conf', self._config_params)
+        session.SetConfig('mep_configuration', self._config_params)
 
     def _bind_events(self):
         # Publisher.subscribe(self.update_mep_points, 'Update MEP Points')
         Publisher.subscribe(self.display_motor_map, 'Show motor map')
         Publisher.subscribe(self._reset_config_params, 'Reset MEP Config')
+        Publisher.subscribe(self.update_config, 'Save Preferences')
+
+    def update_config(self):
+        session = ses.Session()
+        self._config_params = deepcopy(session.GetConfig('mep_configuration'))
+        self.update_mep_points([], clear_old=False) # Just redraw without clearing old markers
+        # self.render_visualization(self.surface)
 
     def display_motor_map(self, show: bool):
         """Controls the display of the motor map and enables/disables the MEP mapping."""
         if show:
-            self._config_params["display_enabled"] = True
+            self._config_params["mep_enabled"] = True
+            self._config_params["enabled_once"] = True
             # self.render_visualization(self.surface)
             self.mep_renderer.AddActor(self.colorBarActor)
             self.mep_renderer.AddActor(self.surface)
             # TODO: hide the surface actor by triggering a hide event
         else:
-            self._config_params["display_enabled"] = False
+            self._config_params["mep_enabled"] = False
             if hasattr(self, 'colorBarActor'):  # Ensure it exists before removal
                 self.mep_renderer.RemoveActor(self.colorBarActor)
                 self.mep_renderer.RemoveActor(self.surface)
@@ -98,7 +107,7 @@ class MEPVisualizer:
                 #     actor = actors.GetNextItem()
 
             # self.mep_renderer.RemoveActor(self.surface)
-    
+
         self._save_user_parameters()
         self.interactor.Render()
 
@@ -146,7 +155,7 @@ class MEPVisualizer:
         bounds = np.array(self._config_params['bounds'])
         gaussian_sharpness = self._config_params['gaussian_sharpness']
         gaussian_radius = self._config_params['gaussian_radius']
-        dims_size = self._config_params['dims_size']
+        dims_size = self.dims_size
         dims = np.array([dims_size, dims_size, dims_size])
 
         box = vtk.vtkImageData()
@@ -195,7 +204,7 @@ class MEPVisualizer:
         lut_map.Build()
         return lut_map
 
-    def update_mep_points(self, markers: list[Marker], clear_old=False):
+    def update_mep_points(self, markers: list[Marker], clear_old=True):
         """Updates or creates the point data with MEP values from a list of markers.
 
         Args:
@@ -208,12 +217,15 @@ class MEPVisualizer:
         if clear_old:
             self.points.SetPoints(vtk.vtkPoints())
             points = self.points.GetPoints()
+            # remove old actors
+            self._cleanup_visualization()
+
         # 1. Get or create the points data structure
         if points is None:
             points = vtk.vtkPoints()
             print('Added new points object')
         elif points.GetNumberOfPoints() == 0 or clear_old:
-            print('No points found or clear_old is True')
+            # print('No points found or clear_old is True')
             self.points.SetPoints(vtk.vtkPoints())
             points = self.points.GetPoints()
         else:
@@ -365,6 +377,17 @@ class MEPVisualizer:
         point_actor.SetMapper(point_mapper)
         return point_actor
 
+    def _cleanup_visualization(self):
+        """Removes all actors from the renderer except the initial surface."""
+        actors = self.mep_renderer.GetActors()
+        actors.InitTraversal()
+        actor = actors.GetNextItem()
+        while actor:
+            if actor == self.surface:
+                actor = actors.GetNextItem()
+            self.mep_renderer.RemoveActor(actor)
+            actor = actors.GetNextItem()
+
     def render_visualization(self, surface):
 
         # Read data
@@ -380,27 +403,27 @@ class MEPVisualizer:
         range_up = points.GetPointData().GetScalars().GetRange()[1]
         data_range = (
             self._config_params['threshold_down'], self._config_params['range_up'])
-        dim_size = self._config_params['dims_size']
+        dim_size = self.dims_size
         dims = np.array(
             [dim_size, dim_size, dim_size])  # Number of points in each dimension
 
         # Interpolate and create actors (initially)
         interpolated_data = self.interpolate_data()
-        actor = self.create_colored_surface(interpolated_data)
+        self.colored_surface = self.create_colored_surface(interpolated_data)
         point_actor = self.create_point_actor(points, data_range)
 
         # Colorbar setup
         self.colorBarActor = self.create_colorbar_actor()
 
         # Renderer setup
-        self.mep_renderer.AddActor(actor)
+        self.mep_renderer.AddActor(self.colored_surface)
         self.mep_renderer.AddActor(point_actor)
         self.mep_renderer.AddActor(self.colorBarActor)
 
         # Picker for mouse interaction
         picker = vtk.vtkCellPicker()
         picker.SetTolerance(0.005)
-        picker.AddPickList(actor)  # Pick only on the surface actor
+        # picker.AddPickList(actor)  # Pick only on the surface actor
         picker.PickFromListOn()
 
         # Start the interactor

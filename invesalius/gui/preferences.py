@@ -1,3 +1,4 @@
+import wx.lib.colourselect as csel
 import invesalius.gui.widgets.gradient as grad
 import sys
 import os
@@ -73,6 +74,9 @@ class Preferences(wx.Dialog):
             self.book.SetMinClientSize((min_width * 2, min_height * 2))
         self.book.SetSelection(page)
 
+        # Bind OK
+        self.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
+
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.book, 1, wx.EXPAND | wx.ALL)
         sizer.Add(btnsizer, 0, wx.GROW | wx.RIGHT | wx.TOP | wx.BOTTOM, 5)
@@ -82,6 +86,11 @@ class Preferences(wx.Dialog):
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadPreferences, "Load Preferences")
+
+    def OnOK(self, event):
+        Publisher.sendMessage("Save Preferences")
+        self.EndModal(wx.ID_OK)
+        
 
     def GetPreferences(self):
         values = {}
@@ -119,6 +128,7 @@ class VisualizationTab(wx.Panel):
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
+        self.__bind_events()
 
         self.session = ses.Session()
 
@@ -129,8 +139,8 @@ class VisualizationTab(wx.Panel):
         self.number_colors = 4
         self.cluster_volume = None
 
-        self.conf = dict(self.session.GetConfig('mep_conf'))
-        self.conf['cmap'] = "autumn"
+        self.conf = dict(self.session.GetConfig('mep_configuration'))
+        self.conf['mep_colormap'] = "autumn"
 
         bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
         lbl_inter = wx.StaticText(
@@ -180,7 +190,7 @@ class VisualizationTab(wx.Panel):
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
         # Creating MEP Mapping BoxSizer
-        if self.conf.get('display_enabled') is True:
+        if self.conf.get('enabled_once') is True:
             self.bsizer_mep = self.InitMEPMapping(None)
             border.Add(self.bsizer_mep, 0, wx.EXPAND |
                        wx.ALL | wx.FIXED_MINSIZE, 10)
@@ -188,6 +198,13 @@ class VisualizationTab(wx.Panel):
         self.SetSizerAndFit(border)
         self.Layout()
 
+    def __bind_events(self):
+        Publisher.subscribe(self.InsertNewSurface,
+                            'Update surface info in GUI')
+        Publisher.subscribe(self.ChangeSurfaceName,
+                            'Change surface name')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnRemoveSurfaces, 'Remove surfaces')
 
     def GetSelection(self):
 
@@ -203,6 +220,7 @@ class VisualizationTab(wx.Panel):
         # Adding a new sized for MEP Mapping options
         # Structured as follows:
         # MEP Mapping
+        # - Surface Selection -> ComboBox
         # - Gaussian Radius -> SpinCtrlDouble
         # - Gaussian Standard Deviation -> SpinCtrlDouble
         # - Select Colormap -> ComboBox + Image frame
@@ -216,6 +234,44 @@ class VisualizationTab(wx.Panel):
 
         bsizer_mep = wx.StaticBoxSizer(
             wx.VERTICAL, self, _("TMS Motor Mapping"))
+
+        # Surface Selection
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
+
+        self.surface_list = []
+        # Combo related to mask name
+        combo_surface_name = wx.ComboBox(bsizer_mep.GetStaticBox(), -1,
+                                         style=wx.CB_DROPDOWN | wx.CB_READONLY | wx.ALL | wx.EXPAND | wx.GROW)
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        self.combo_surface_name = combo_surface_name
+
+        # Mask colour
+        button_colour = csel.ColourSelect(
+            bsizer_mep.GetStaticBox(), -1, colour=(0, 0, 255), size=(22, -1))
+        button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
+        self.button_colour = button_colour
+
+        # Sizer which represents the first line
+        line1 = wx.BoxSizer(wx.HORIZONTAL)
+        line1.Add(combo_surface_name, 1,  wx.ALL | wx.EXPAND | wx.GROW, 7)
+        line1.Add(button_colour, 0,  wx.ALL | wx.EXPAND | wx.GROW, 7)
+
+        surface_sel_lbl = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Brain Surface:"))
+        surface_sel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        surface_sel_sizer.Add(surface_sel_lbl, 0, wx.GROW |
+                              wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        # fixed_sizer.AddSpacer(7)
+        surface_sel_sizer.Add(line1, 0, wx.EXPAND |
+                              wx.GROW | wx.LEFT | wx.RIGHT, 5)
 
         # Gaussian Radius Line
         lbl_gaussian_radius = wx.StaticText(
@@ -270,23 +326,32 @@ class VisualizationTab(wx.Panel):
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnSelectColormap)
         # by default use the initial value set in the configuration
         self.combo_thresh.SetSelection(
-            self.colormaps.index(self.conf.get('cmap')))
+            self.colormaps.index(self.conf.get('mep_colormap')))
 
-        cmap = plt.get_cmap(self.conf.get('cmap'))
+        cmap = plt.get_cmap(self.conf.get('mep_colormap'))
         colors_gradient = self.GenerateColormapColors(cmap)
 
         self.gradient = grad.GradientDisp(bsizer_mep.GetStaticBox(), -1, -5000, 5000, -5000, 5000,
                                           colors_gradient)
 
+        colormap_gradient_sizer = wx.BoxSizer(
+            wx.HORIZONTAL)
+        colormap_gradient_sizer.AddMany(
+            [
+                (self.combo_thresh, 0, wx.EXPAND |
+                    wx.GROW | wx.LEFT | wx.RIGHT, 5),
+                (self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)]
+        )
+
         colormap_sizer = wx.BoxSizer(
             wx.VERTICAL)
+        spacer = wx.StaticText(bsizer_mep.GetStaticBox(), -1, "")
 
         colormap_sizer.AddMany(
             [
                 (lbl_colormap, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
-                (self.combo_thresh, 0, wx.EXPAND |
-                 wx.GROW | wx.LEFT | wx.RIGHT, 5),
-                (self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)]
+                (spacer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
+                (colormap_gradient_sizer, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 5)]
         )
 
         colormap_custom = wx.BoxSizer(
@@ -375,6 +440,8 @@ class VisualizationTab(wx.Panel):
         colormap_sizer.Add(colormap_custom, 0, wx.GROW |
                            wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         bsizer_mep.AddMany([
+            (surface_sel_sizer, 0, wx.GROW | wx.EXPAND |
+             wx.LEFT | wx.RIGHT | wx.TOP, 5),
             (line_gaussian_radius, 0, wx.GROW | wx.EXPAND |
              wx.LEFT | wx.RIGHT | wx.TOP, 5),
             (line_std_dev, 0, wx.GROW | wx.EXPAND |
@@ -388,16 +455,16 @@ class VisualizationTab(wx.Panel):
     def ResetMEPSettings(self, event):
         # fire an event that will reset the MEP settings to the default values in MEP Visualizer
         Publisher.sendMessage('Reset MEP Config')
-        # self.session.SetConfig('mep_conf', self.conf)
+        # self.session.SetConfig('mep_configuration', self.conf)
         self.UpdateMEPFromSession()
 
     def UpdateMEPFromSession(self):
-        self.conf = dict(self.session.GetConfig('mep_conf'))
+        self.conf = dict(self.session.GetConfig('mep_configuration'))
         self.spin_gaussian_radius.SetValue(self.conf.get('gaussian_radius'))
         self.spin_std_dev.SetValue(self.conf.get('gaussian_sharpness'))
 
         self.combo_thresh.SetSelection(
-            self.colormaps.index(self.conf.get('cmap')))
+            self.colormaps.index(self.conf.get('mep_colormap')))
         partial(self.OnSelectColormap, event=None, ctrl=self.combo_thresh)
         partial(self.OnSelectColormapRange, event=None,
                 ctrl=self.spin_min, key='min')
@@ -411,15 +478,17 @@ class VisualizationTab(wx.Panel):
 
     def OnSelectStdDev(self, evt, ctrl):
         self.conf['gaussian_sharpness'] = ctrl.GetValue()
-        self.session.SetConfig('mep_conf', self.conf)  # Save the configuration
+        # Save the configuration
+        self.session.SetConfig('mep_configuration', self.conf)
 
     def OnSelectGaussianRadius(self, evt, ctrl):
         self.conf['gaussian_radius'] = ctrl.GetValue()
-        self.session.SetConfig('mep_conf', self.conf)  # Save the configuration
+        # Save the configuration
+        self.session.SetConfig('mep_configuration', self.conf)
 
     def OnSelectColormapRange(self, evt, ctrl, key):
         self.conf['colormap_range_uv'][key] = ctrl.GetValue()
-        self.session.SetConfig('mep_conf', self.conf)
+        self.session.SetConfig('mep_configuration', self.conf)
 
     def LoadSelection(self, values):
         rendering = values[const.RENDERING]
@@ -431,17 +500,18 @@ class VisualizationTab(wx.Panel):
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
     def OnSelectColormap(self, event=None):
-        self.conf['cmap'] = self.colormaps[self.combo_thresh.GetSelection(
+        self.conf['mep_colormap'] = self.colormaps[self.combo_thresh.GetSelection(
         )]
         colors = self.GenerateColormapColors(
-            self.conf.get('cmap'), self.number_colors)
+            self.conf.get('mep_colormap'), self.number_colors)
 
-        self.session.SetConfig('mep_conf', self.conf)  # Save the configuration
+        # Save the configuration
+        self.session.SetConfig('mep_configuration', self.conf)
 
         self.UpdateGradient(self.gradient, colors)
 
         if isinstance(self.cluster_volume, np.ndarray):
-            self.apply_colormap(self.conf.get('cmap'),
+            self.apply_colormap(self.conf.get('mep_colormap'),
                                 self.cluster_volume, self.zero_value)
 
     def GenerateColormapColors(self, colormap_name, number_colors=4):
@@ -484,6 +554,76 @@ class VisualizationTab(wx.Panel):
             print("Zero value not found in color_overlay. No data is set as transparent.")
 
         Publisher.sendMessage('Reload actual slice')
+
+    def OnRemoveSurfaces(self, surface_indexes):
+        s = self.combo_surface_name.GetSelection()
+        ns = 0
+
+        old_dict = self.surface_list
+        new_dict = []
+        i = 0
+        for n, (name, index) in enumerate(old_dict):
+            if n not in surface_indexes:
+                new_dict.append([name, i])
+                if s == n:
+                    ns = i
+                i += 1
+        self.surface_list = new_dict
+
+        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
+
+        if self.surface_list:
+            self.combo_surface_name.SetSelection(ns)
+
+    def OnCloseProject(self):
+        self.CloseProject()
+
+    def CloseProject(self):
+        n = self.combo_surface_name.GetCount()
+        for i in range(n-1, -1, -1):
+            self.combo_surface_name.Delete(i)
+        self.surface_list = []
+
+    def ChangeSurfaceName(self, index, name):
+        self.surface_list[index][0] = name
+        self.combo_surface_name.SetString(index, name)
+
+    def InsertNewSurface(self, surface):
+        index = surface.index
+        name = surface.name
+        colour = [int(value*255) for value in surface.colour]
+        i = 0
+        try:
+            i = self.surface_list.index([name, index])
+            overwrite = True
+        except ValueError:
+            overwrite = False
+
+        if overwrite:
+            self.surface_list[i] = [name, index]
+        else:
+            self.surface_list.append([name, index])
+            i = len(self.surface_list) - 1
+
+        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
+        self.combo_surface_name.SetSelection(i)
+        # transparency = 100*surface.transparency
+        # print("Button color: ", colour)
+        self.button_colour.SetColour(colour)
+        # self.slider_transparency.SetValue(int(transparency))
+        #  Publisher.sendMessage('Update surface data', (index))
+
+    def OnComboName(self, evt):
+        surface_name = evt.GetString()
+        surface_index = evt.GetSelection()
+        Publisher.sendMessage('Change surface selected',
+                              surface_index=self.surface_list[surface_index][1])
+
+    def OnSelectColour(self, evt):
+        colour = [value/255.0 for value in evt.GetValue()]
+        Publisher.sendMessage('Set surface colour',
+                              surface_index=self.combo_surface_name.GetSelection(),
+                              colour=colour)
 
 
 class NavigationTab(wx.Panel):

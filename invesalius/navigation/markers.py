@@ -38,6 +38,7 @@ class MarkersControl(metaclass=Singleton):
 
         session = ses.Session()
         session.SetState('markers', state)
+        self.BroadcastMarkerList()
 
     def LoadState(self):
         session = ses.Session()
@@ -292,3 +293,6 @@ class MarkersControl(metaclass=Singleton):
         new_marker.marker_type = MarkerType.COIL_TARGET
 
         self.AddMarker(new_marker)
+
+    def BroadcastMarkerList(self):
+        Publisher.sendMessage('Update marker list', markers=self.list)
