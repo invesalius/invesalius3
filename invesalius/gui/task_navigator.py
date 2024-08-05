@@ -429,10 +429,14 @@ class ImagePage(wx.Panel):
         next_button.Disable()
         self.next_button = next_button
 
+        load_from_file_button = wx.Button(self, label="Load From File")
+        load_from_file_button.Bind(wx.EVT_BUTTON, self.OnLoadFromFile)
+
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        top_sizer.AddMany([(start_button), (reset_button)])
+        top_sizer.AddMany([start_button, reset_button])
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.Add(load_from_file_button)
         bottom_sizer.Add(next_button)
 
         sizer = wx.GridBagSizer(5, 5)
@@ -461,7 +465,7 @@ class ImagePage(wx.Panel):
             [
                 (top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10),
                 (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5),
-                (bottom_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 30),
+                (bottom_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT | wx.BOTTOM, 30),
             ]
         )
         self.sizer = main_sizer
@@ -564,6 +568,9 @@ class ImagePage(wx.Panel):
             ctrl.SetValue(False)
         self.start_button.SetValue(False)
         self.OnStartRegistration(self.start_button, self.start_button)
+
+    def OnLoadFromFile(self, evt):
+        dlg.ImportImageFiducials()
 
     def StartRegistration(self):
         Publisher.sendMessage("Enable style", style=const.STATE_REGISTRATION)
