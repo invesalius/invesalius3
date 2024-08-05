@@ -22,6 +22,7 @@ import os
 import tempfile
 import time
 from concurrent import futures
+from typing import Optional
 
 import numpy as np
 import wx
@@ -2718,8 +2719,8 @@ class FFillSegmentationConfig(metaclass=utils.Singleton):
         self.con_2d = 4
         self.con_3d = 6
 
-        self.t0: "int | None" = None
-        self.t1: "int | None" = None
+        self.t0: Optional[int] = None
+        self.t1: Optional[int] = None
 
         self.fill_value = 254
 

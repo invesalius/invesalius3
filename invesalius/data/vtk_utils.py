@@ -163,7 +163,7 @@ def ShowProgress(
 
 class Text:
     def __init__(self):
-        self.layer = 99
+        self.layer: int = 99
         self.children = []
         property = vtkTextProperty()
         property.SetFontSize(const.TEXT_SIZE)

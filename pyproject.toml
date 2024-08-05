@@ -36,9 +36,6 @@ explicit_package_bases = true
 disable_error_code =  ["attr-defined", "no-redef"]
 
 [[tool.mypy.overrides]]
-module = 'invesalius.gui.widgets.listctrl'
-ignore_errors = true
-[[tool.mypy.overrides]]
 module = 'wx.*'
 disable_error_code = ["no-redef"] # because some classes are redefined in the stubs
 [[tool.mypy.overrides]]
@@ -91,13 +88,11 @@ ignore_missing_imports = true
 
 [tool.ruff]
 include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py']
-extend-exclude = ["./invesalius/gui/widgets/listctrl.py"]
 line-length = 100
 # extend-exclude = ["plugins"]
 
 [tool.ruff.lint]
-extend-select = ["UP","I"] # Introduces linting rules for pyupgrade
-# We can extend the list with 'I' and 'PL' in the future
+extend-select = ["UP","I"] # Introduces linting rules for pyupgrade and isort
 
 [tool.ruff.format]
 line-ending = "lf"

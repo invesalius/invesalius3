@@ -24,7 +24,7 @@ import shutil
 import sys
 import tarfile
 import tempfile
-from typing import List, Union
+from typing import TYPE_CHECKING, Dict, List, Union
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
@@ -35,6 +35,9 @@ from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, TwoWaysDictionary, debug, decode
+
+if TYPE_CHECKING:
+    from invesalius.data.mask import Mask
 
 if sys.platform == "win32":
     try:
@@ -101,7 +104,7 @@ class Project(metaclass=Singleton):
 
         self.__init__()
 
-    def AddMask(self, mask) -> int:
+    def AddMask(self, mask: "Mask") -> int:
         """
         Insert new mask (Mask) into project data.
 
@@ -184,7 +187,7 @@ class Project(metaclass=Singleton):
             debug("Different Acquisition Modality!!!")
         self.modality = type_
 
-    def SetRaycastPreset(self, label):
+    def SetRaycastPreset(self, label: str) -> None:
         path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY, label + ".plist")
         with open(path, "r+b") as f:
             preset = plistlib.load(f, fmt=plistlib.FMT_XML)
@@ -320,7 +323,7 @@ class Project(metaclass=Singleton):
         self.compress = project.get("compress", True)
 
         # Opening the matrix containing the slices
-        filepath = os.path.join(dirpath, project["matrix"]["filename"])
+        filepath: str = os.path.join(dirpath, project["matrix"]["filename"])
         self.matrix_filename = filepath
         self.matrix_shape = project["matrix"]["shape"]
         self.matrix_dtype = project["matrix"]["dtype"]
@@ -477,7 +480,12 @@ class Project(metaclass=Singleton):
                 nib.save(mask_nifti, f"{basename}_mask_{mask.index}_{mask.name}{ext}")
 
 
-def Compress(folder, filename, filelist, compress=False):
+def Compress(
+    folder: Union[str, os.PathLike],
+    filename: Union[str, os.PathLike],
+    filelist: Dict[Union[str, os.PathLike], Union[str, os.PathLike]],
+    compress: bool = False,
+) -> None:
     tmpdir, tmpdir_ = os.path.split(folder)
     # current_dir = os.path.abspath(".")
     fd_inv3, temp_inv3 = tempfile.mkstemp()
