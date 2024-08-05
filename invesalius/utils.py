@@ -430,3 +430,24 @@ def deep_merge_dict(d, u):
         else:
             d[k] = v
     return d
+
+
+def parse_value(value):
+    """
+    Given a string, try to parse it as an integer, float, or string.
+    """
+    value = value.strip()
+
+    # Check for integer, float, string encapsulated by quotes, and None.
+    if value == "None":
+        return None
+    try:
+        if "." in value:
+            return float(value)
+        return int(value)
+
+    except ValueError:
+        # Check for strings marked by quotes.
+        if value.startswith('"') and value.endswith('"'):
+            return value[1:-1]
+        return value

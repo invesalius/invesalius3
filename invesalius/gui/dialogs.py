@@ -102,6 +102,7 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
+import invesalius.gui.utils as gui_utils
 from invesalius import inv_paths
 from invesalius.gui.widgets.clut_imagedata import EVT_CLUT_NODE_CHANGED, CLUTImageDataWidget
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
@@ -7476,6 +7477,111 @@ class FileSelectionDialog(wx.Dialog):
 
     def GetPath(self) -> str:
         return self.path
+
+
+def LoadMarkersFile(filename, load_image_fiducials=False, fiducials_only=False):
+    """
+    :param filename: Path to file
+    :param load_image_fiducials: If True, loads image fiducials from the markers file.
+    :param fiducials_only: If True, only loads fiducials, ignoring all other markers in the file.
+    """
+    from invesalius.navigation.navigation import NavigationHub
+    from invesalius.data.markers.marker import Marker
+    markers = NavigationHub().markers
+
+    try:
+        with open(filename, "r") as file:
+            magick_line = file.readline()
+            assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
+            version = int(magick_line.split("_")[-1])
+            if version not in const.SUPPORTED_MARKER_FILE_VERSIONS:
+                wx.MessageBox(_("Unknown version of the markers file."), _("InVesalius 3"))
+                return
+
+            # Use the first line after the magick_line as the names for dictionary keys.
+            column_names = file.readline().strip().split("\t")
+            column_names_parsed = [utils.parse_value(name) for name in column_names]
+
+            markers_data = []
+            for line in file:
+                values = line.strip().split("\t")
+                values_parsed = [utils.parse_value(value) for value in values]
+                marker_data = dict(zip(column_names_parsed, values_parsed))
+
+                markers_data.append(marker_data)
+
+        # Create markers from the dictionary.
+        markers_list = []
+        for data in markers_data:
+            marker = Marker(version=version)
+            marker.from_dict(data)
+
+            # When loading markers from file, do not set target based on is_target
+            marker.is_target = False
+
+            markers_list.append(marker)
+            if load_image_fiducials and marker.label in gui_utils.list_fiducial_labels():
+                Publisher.sendMessage(
+                    "Load image fiducials", label=marker.label, position=marker.position
+                )
+        if not fiducials_only:
+            markers.AddMultiple(markers_list)
+
+    except Exception as e:
+        wx.MessageBox(_("Could not import markers"), _("InVesalius 3"))
+        utils.debug(str(e))
+
+
+def ImportMarkers():
+    """
+    Show dialog to load markers from file.
+    Markers are appended to the end of the current marker list.
+    """
+    from invesalius.navigation.navigation import NavigationHub
+    markers = NavigationHub().markers
+
+    last_directory = ses.Session().GetConfig("last_directory_3d_surface", "")
+    dialog = FileSelectionDialog(
+        _("Load markers"), last_directory, const.WILDCARD_MARKER_FILES
+    )
+    overwrite_image_checkbox = wx.CheckBox(dialog, -1, _("Overwrite current image fiducials"))
+    clear_checkbox = wx.CheckBox(dialog, -1, _("Clear all previous markers"))
+    dialog.sizer.Add(overwrite_image_checkbox, 0, wx.CENTER)
+    dialog.sizer.Add(clear_checkbox, 0, wx.CENTER)
+    dialog.FitSizers()
+    if dialog.ShowModal() == wx.ID_OK:
+        filename = dialog.GetPath()
+
+        if clear_checkbox.GetValue():
+            markers.Clear()
+
+        LoadMarkersFile(filename, load_image_fiducials=overwrite_image_checkbox.GetValue())
+
+
+def ImportImageFiducials():
+    """
+    Show dialog to load image fiducials from markers file
+    """
+    from invesalius.navigation.navigation import NavigationHub
+    markers = NavigationHub().markers
+
+    last_directory = ses.Session().GetConfig("last_directory_3d_surface", "")
+    dialog = FileSelectionDialog(
+        _("Load image fiducials from markers file"), last_directory, const.WILDCARD_MARKER_FILES
+    )
+    load_markers_checkbox = wx.CheckBox(dialog, -1, _("Load other markers from file"))
+    clear_checkbox = wx.CheckBox(dialog, -1, _("Clear all previous markers"))
+    dialog.sizer.Add(load_markers_checkbox, 0, wx.CENTER)
+    dialog.sizer.Add(clear_checkbox, 0, wx.CENTER)
+    dialog.FitSizers()
+    if dialog.ShowModal() == wx.ID_OK:
+        filename = dialog.GetPath()
+
+        if clear_checkbox.GetValue():
+            markers.Clear()
+
+        load_fiducials_only = not load_markers_checkbox.GetValue()
+        LoadMarkersFile(filename, load_image_fiducials=True, fiducials_only=load_fiducials_only)
 
 
 class ProgressBarHandler(wx.ProgressDialog):
