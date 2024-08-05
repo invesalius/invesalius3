@@ -114,6 +114,7 @@ if TYPE_CHECKING:
     from invesalius.data.mask import Mask
     from invesalius.data.styles import (
         CropMaskConfig,
+        FFillConfig,
         FFillSegmentationConfig,
         SelectPartConfig,
         WatershedConfig,
@@ -2331,9 +2332,9 @@ class MaskBooleanDialog(wx.Dialog):
     def __init__(
         self,
         masks: Dict[int, "Mask"],
-        ID=-1,
-        title=_("Boolean operations"),
-        style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
+        ID: int = -1,
+        title: str = _("Boolean operations"),
+        style: int = wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
     ):
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
@@ -3064,7 +3065,7 @@ class PanelFFillProgress(wx.Panel):
 
 
 class FFillOptionsDialog(wx.Dialog):
-    def __init__(self, title: str, config: "FFillSegmentationConfig"):
+    def __init__(self, title: str, config: "FFillConfig"):
         wx.Dialog.__init__(
             self,
             wx.GetApp().GetTopWindow(),

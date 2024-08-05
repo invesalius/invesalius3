@@ -24,12 +24,16 @@ import pathlib
 import sys
 from itertools import chain
 from types import ModuleType
+from typing import TYPE_CHECKING
 
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 
+if TYPE_CHECKING:
+    import os
 
-def import_source(module_name, module_file_path) -> ModuleType:
+
+def import_source(module_name: str, module_file_path: "str | bytes | os.PathLike") -> ModuleType:
     module_spec = importlib.util.spec_from_file_location(module_name, module_file_path)
     if module_spec is None:
         raise ImportError(f"No module named {module_name}")

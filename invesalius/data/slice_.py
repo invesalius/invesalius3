@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 import os
 import tempfile
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkLookupTable
@@ -62,8 +62,8 @@ class SliceBuffer:
 
     def __init__(self):
         self.index: int = -1
-        self.image = None
-        self.mask = None
+        self.image: Optional[np.ndarray] = None
+        self.mask: Optional[np.ndarray] = None
         self.vtk_image: Optional[vtkImageData] = None
         self.vtk_mask: Optional[vtkImageData] = None
 
@@ -99,8 +99,10 @@ class Slice(metaclass=utils.Singleton):
         self._affine: np.ndarray = np.identity(4)
         self._n_tracts: int = 0
         self._tracker = None
-        self.aux_matrices = {}
-        self.aux_matrices_colours = {}
+        self.aux_matrices: dict[str, np.ndarray] = {}
+        self.aux_matrices_colours: dict[
+            str, dict[Union[int, float], Tuple[float, float, float]]
+        ] = {}
         self.state = const.STATE_DEFAULT
 
         self.to_show_aux = ""
@@ -134,7 +136,7 @@ class Slice(metaclass=utils.Singleton):
 
         self.from_ = OTHER
         self.__bind_events()
-        self.opacity = 0.8
+        self.opacity: float = 0.8
 
     @property
     def matrix(self) -> Optional[np.ndarray]:
