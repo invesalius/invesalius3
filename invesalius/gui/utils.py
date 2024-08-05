@@ -17,9 +17,20 @@
 #    detalhes.
 # --------------------------------------------------------------------
 
+import itertools
+
 import wx
+
+import invesalius.constants as const
 
 
 def calc_width_needed(widget, num_chars):
     width, height = widget.GetTextExtent("M" * num_chars)
     return width
+
+
+def list_fiducial_labels():
+    """Return the list of marker labels denoting fiducials."""
+    return list(
+        itertools.chain(*(const.BTNS_IMG_MARKERS[i].values() for i in const.BTNS_IMG_MARKERS))
+    )
