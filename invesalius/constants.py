@@ -854,22 +854,22 @@ TR2 = wx.NewIdRef()
 TR3 = wx.NewIdRef()
 SET = wx.NewIdRef()
 
-FIDUCIAL_LABELS = ["Left Ear: ", "Right Ear: ", "Nose: "]
+FIDUCIAL_LABELS = ["Right Ear: ", "Left Ear: ", "Nose: "]
 FIDUCIAL_REGISTRATION_ORDER = [0, 2, 1]
 IMAGE_FIDUCIALS = [
     {
         "button_id": IR1,
-        "label": "Left Ear",
-        "fiducial_name": "LE",
+        "label": "Right Ear",
+        "fiducial_name": "RE",
         "fiducial_index": 0,
-        "tip": _("Select left ear in image"),
+        "tip": _("Select right ear in image"),
     },
     {
         "button_id": IR2,
-        "label": "Right Ear",
-        "fiducial_name": "RE",
+        "label": "Left Ear",
+        "fiducial_name": "LE",
         "fiducial_index": 1,
-        "tip": _("Select right ear in image"),
+        "tip": _("Select left ear in image"),
     },
     {
         "button_id": IR3,
@@ -883,17 +883,17 @@ IMAGE_FIDUCIALS = [
 TRACKER_FIDUCIALS = [
     {
         "button_id": TR1,
-        "label": "Left Ear",
-        "fiducial_name": "LE",
+        "label": "Right Ear",
+        "fiducial_name": "RE",
         "fiducial_index": 0,
-        "tip": _("Select left ear with spatial tracker"),
+        "tip": _("Select right ear with spatial tracker"),
     },
     {
         "button_id": TR2,
-        "label": "Right Ear",
-        "fiducial_name": "RE",
+        "label": "Left Ear",
+        "fiducial_name": "LE",
         "fiducial_index": 1,
-        "tip": _("Select right ear with spatial tracker"),
+        "tip": _("Select left ear with spatial tracker"),
     },
     {
         "button_id": TR3,
@@ -904,7 +904,7 @@ TRACKER_FIDUCIALS = [
     },
 ]
 
-BTNS_IMG_MARKERS = {IR1: {0: "LEI"}, IR2: {1: "REI"}, IR3: {2: "NAI"}}
+BTNS_IMG_MARKERS = {IR1: {0: "REI"}, IR2: {1: "LEI"}, IR3: {2: "NAI"}}
 
 OBJL = wx.NewIdRef()
 OBJR = wx.NewIdRef()
@@ -917,15 +917,15 @@ OBJECT_FIDUCIAL_FIXED = 3
 OBJECT_FIDUCIALS = [
     {
         "fiducial_index": 0,
-        "button_id": OBJL,
-        "label": _("Left"),
-        "tip": _("Select left object fiducial"),
-    },
-    {
-        "fiducial_index": 1,
         "button_id": OBJR,
         "label": _("Right"),
         "tip": _("Select right object fiducial"),
+    },
+    {
+        "fiducial_index": 1,
+        "button_id": OBJL,
+        "label": _("Left"),
+        "tip": _("Select left object fiducial"),
     },
     {
         "fiducial_index": OBJECT_FIDUCIAL_ANTERIOR,
