@@ -2250,6 +2250,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UnsetTarget, "Unset target")
         Publisher.subscribe(self._UnsetPointOfInterest, "Unset point of interest")
         Publisher.subscribe(self._UpdateMarkerLabel, "Update marker label")
+        Publisher.subscribe(self._SetMarkersListRendering, "Set markers list rendering")
         Publisher.subscribe(self._UpdateMEP, "Update marker mep")
 
         Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
@@ -3714,3 +3715,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Focus on the added marker.
         if focus:
             self.FocusOnMarker(num_items)
+
+    def _SetMarkersListRendering(self, render):
+        if render:
+            self.marker_list_ctrl.Show()
+        else:
+            self.marker_list_ctrl.Hide()

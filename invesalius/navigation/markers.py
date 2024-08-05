@@ -122,6 +122,16 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
+    def AddMultiple(self, markers_list):
+        Publisher.sendMessage("Set markers list rendering", render=False)
+        for marker in markers_list:
+            self.AddMarker(marker, render=False)
+
+        Publisher.sendMessage("Set markers list rendering", render=True)
+        Publisher.sendMessage("Render volume viewer")
+        Publisher.sendMessage("Update UI for refine tab")
+        self.SaveState()
+
     def SetTarget(self, marker_id, check_for_previous=True):
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
