@@ -1,3 +1,4 @@
+
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -44,6 +45,7 @@ import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
 from invesalius.pubsub import pub as Publisher
+import invesalius.gui.log as log
 
 if sys.platform == "win32":
     try:
@@ -113,6 +115,7 @@ class LoadDicom:
         self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.run()
 
+    @log.call_tracking_decorator
     def run(self):
         grouper = self.grouper
         reader = gdcm.ImageReader()
