@@ -947,10 +947,7 @@ class TrackerTab(wx.Panel):
             self.ShowParent()
 
     def OnChooseReferenceMode(self, evt, ctrl):
-        # Probably need to refactor object registration as a whole to use the
-        # OnChooseReferenceMode function which was used earlier. It can be found in
-        # the deprecated code in ObjectRegistrationPanel in task_navigator.py.
-        pass
+        Navigation().SetReferenceMode(evt.GetSelection())
 
     def HideParent(self):  # hide preferences dialog box
         self.GetGrandParent().Hide()

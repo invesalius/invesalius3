@@ -35,7 +35,6 @@ import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 import invesalius.session as ses
-import invesalius.utils as utils
 from invesalius.data.markers.marker import MarkerType
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
@@ -133,15 +132,28 @@ class UpdateNavigationScene(threading.Thread):
         self.sle = sle
         self.event = event
         self.neuronavigation_api = neuronavigation_api
+        self.navigation = Navigation()
 
     def run(self):
         while not self.event.is_set():
             got_coords = False
-            object_visible_flag = False
             try:
-                coord, marker_visibilities, m_img, view_obj = self.coord_queue.get_nowait()
+                coords, marker_visibilities, m_imgs = self.coord_queue.get_nowait()
                 got_coords = True
-                object_visible_flag = marker_visibilities[2]
+
+                probe_visible = marker_visibilities[0]
+                coil_visible = marker_visibilities[2]
+
+                # automatically track either coil or stylus if only one of them is visible, otherise use navigation.track_obj
+                track_coil = (
+                    (coil_visible or not probe_visible)
+                    if (coil_visible ^ probe_visible)
+                    else self.navigation.track_obj
+                )
+
+                # choose which object to track in slices and viewer_volume pointer
+                coord = coords[track_coil]  # main-coil if track_coil else stylus
+                m_img = m_imgs[track_coil]
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -178,15 +190,32 @@ class UpdateNavigationScene(threading.Thread):
                 # new marker is created, it is created in the current position of the object.
                 wx.CallAfter(Publisher.sendMessage, "Set cross focal point", position=coord)
 
-                if self.e_field_loaded and object_visible_flag:
+                wx.CallAfter(
+                    Publisher.sendMessage,
+                    "Update volume viewer pointer",
+                    position=[coord[0], -coord[1], coord[2]],
+                )
+
+                if coil_visible:
+                    wx.CallAfter(
+                        Publisher.sendMessage, "Update coil pose", m_img=m_imgs[1], coord=coords[1]
+                    )
                     wx.CallAfter(
                         Publisher.sendMessage,
-                        "Update point location for e-field calculation",
-                        m_img=m_img,
-                        coord=coord,
-                        queue_IDs=self.e_field_IDs_queue,
+                        "Update object arrow matrix",
+                        m_img=m_imgs[1],
+                        coord=coords[1],
+                        flag=self.peel_loaded,
                     )
-                    if not self.e_field_norms_queue.empty():
+
+                    if self.e_field_loaded:
+                        wx.CallAfter(
+                            Publisher.sendMessage,
+                            "Update point location for e-field calculation",
+                            m_img=m_imgs[1],
+                            coord=coords[1],
+                            queue_IDs=self.e_field_IDs_queue,
+                        )
                         try:
                             enorm_data = self.e_field_norms_queue.get_nowait()
                             wx.CallAfter(
@@ -195,26 +224,16 @@ class UpdateNavigationScene(threading.Thread):
                                 enorm_data=enorm_data,
                                 plot_vector=self.plot_efield_vectors,
                             )
-                        finally:
+                        except queue.Empty:
+                            pass
+                        else:
                             self.e_field_norms_queue.task_done()
 
-                if view_obj:
+                if probe_visible:
                     wx.CallAfter(
-                        Publisher.sendMessage, "Update coil pose", m_img=m_img, coord=coord
+                        Publisher.sendMessage, "Update probe pose", m_img=m_imgs[0], coord=coords[0]
                     )
-                    wx.CallAfter(
-                        Publisher.sendMessage,
-                        "Update object arrow matrix",
-                        m_img=m_img,
-                        coord=coord,
-                        flag=self.peel_loaded,
-                    )
-                else:
-                    wx.CallAfter(
-                        Publisher.sendMessage,
-                        "Update volume viewer pointer",
-                        position=[coord[0], -coord[1], coord[2]],
-                    )
+
                 # Render the volume viewer and the slice viewers.
                 wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
                 wx.CallAfter(Publisher.sendMessage, "Update slice viewer")
@@ -235,9 +254,12 @@ class Navigation(metaclass=Singleton):
 
         self.correg = None
         self.target = None
+        self.n_coils = 1
+        self.obj_registrations = []
         self.object_registration = None
         self.track_obj = False
         self.m_change = None
+        self.r_stylus = None
         self.obj_data = None
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
@@ -322,19 +344,21 @@ class Navigation(metaclass=Singleton):
         session = ses.Session()
         state = session.GetConfig("navigation")
 
-        if state is None:
-            return
+        if state is not None:
+            object_fiducials = np.array(state["object_fiducials"])
+            object_orientations = np.array(state["object_orientations"])
+            object_reference_mode = state["object_reference_mode"]
+            object_name = state["object_name"].encode(const.FS_ENCODE)
+            self.object_registration = (
+                object_fiducials,
+                object_orientations,
+                object_reference_mode,
+                object_name,
+            )
 
-        object_fiducials = np.array(state["object_fiducials"])
-        object_orientations = np.array(state["object_orientations"])
-        object_reference_mode = state["object_reference_mode"]
-        object_name = state["object_name"].encode(const.FS_ENCODE)
-        self.object_registration = (
-            object_fiducials,
-            object_orientations,
-            object_reference_mode,
-            object_name,
-        )
+            # Try to load stylus orientation data
+            if "r_stylus" in state:
+                self.r_stylus = np.array(state["r_stylus"])
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -403,6 +427,35 @@ class Navigation(metaclass=Singleton):
             self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T, shear=False, scale=False
         )
 
+    def SetStylusOrientation(self, coord_raw):
+        if self.m_change is not None:
+            m_probe = dcr.compute_marker_transformation(coord_raw, 0)
+
+            # transform probe to reference system if dynamic ref_mode
+            if self.ref_mode_id:
+                up_trk = dcr.object_to_reference(coord_raw, m_probe)[:3, :3]
+            else:
+                up_trk = m_probe[:3, :3]
+
+            # up_trk: orientation 'stylus pointing up along head' in tracker space
+            # up_vtk: orientation 'stylus pointing up along head' in vtk space
+            up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes="rxyz")[:3, :3]
+
+            # Rotate 90 degrees around z-axis from trk system where stylus points in x-axis
+            # to vtk-system where stylus points in y-axis
+            R = tr.euler_matrix(*np.radians([0, 0, -90]), axes="rxyz")[:3, :3]
+
+            # Rotation from tracker to VTK coordinate system
+            self.r_stylus = up_vtk @ np.linalg.inv(R @ up_trk @ np.linalg.inv(R))
+            # Save r_stylus to config file
+            session = ses.Session()
+            if (nav_config := session.GetConfig("navigation")) is not None:
+                nav_config["r_stylus"] = self.r_stylus.tolist()
+                session.SetConfig("navigation", nav_config)
+            return True
+        else:
+            return False
+
     def StartNavigation(self, tracker, icp):
         # initialize jobs list
         jobs_list = []
@@ -427,71 +480,53 @@ class Navigation(metaclass=Singleton):
         ]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-        errors = False
 
-        if self.track_obj:
-            # if object tracking is selected
-            if self.object_registration is None:
-                # check if object registration was performed
-                wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
-                errors = True
-            else:
-                # if object registration was correctly performed continue with navigation
-                # object_registration[0] is object 3x3 fiducial matrix and object_registration[1] is 3x3 orientation matrix
-                obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.object_registration
-
-                coreg_data = [self.m_change, obj_ref_mode]
-
-                if self.ref_mode_id:
-                    coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
-                else:
-                    coord_raw = np.array([None])
-
-                self.obj_data = db.object_registration(
-                    obj_fiducials, obj_orients, coord_raw, self.m_change
-                )
-                coreg_data.extend(self.obj_data)
-
-                queues = [
-                    self.coord_queue,
-                    self.coord_tracts_queue,
-                    self.icp_queue,
-                    self.object_at_target_queue,
-                    self.efield_queue,
-                ]
-                jobs_list.append(
-                    dcr.CoordinateCorregistrate(
-                        self.ref_mode_id,
-                        tracker,
-                        coreg_data,
-                        self.view_tracts,
-                        queues,
-                        self.event,
-                        self.sleep_nav,
-                        tracker.tracker_id,
-                        self.target,
-                        icp,
-                        self.e_field_loaded,
-                    )
-                )
+        # LUKATODO: object_registration --> coil_registrations
+        if self.object_registration is None:
+            # check if object registration was performed
+            wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
         else:
-            coreg_data = (self.m_change, 0)
-            queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.efield_queue]
+            # if object registration was correctly performed continue with navigation
+            # object_registration[0] is object 3x3 fiducial matrix and object_registration[1] is 3x3 orientation matrix
+            obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.object_registration
+
+            coreg_data = [self.r_stylus, self.m_change, obj_ref_mode]
+
+            if self.ref_mode_id:
+                coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
+            else:
+                coord_raw = np.array([None])
+
+            # LUKATODO: NOTE: coil does not need to be visible here, we only need the head coord for obj_data:
+            self.obj_data = db.object_registration(
+                obj_fiducials, obj_orients, coord_raw, self.m_change
+            )
+            coreg_data.extend(self.obj_data)
+
+            queues = [
+                self.coord_queue,
+                self.coord_tracts_queue,
+                self.icp_queue,
+                self.object_at_target_queue,
+                self.efield_queue,
+            ]
             jobs_list.append(
-                dcr.CoordinateCorregistrateNoObject(
+                dcr.CoordinateCorregistrate(
                     self.ref_mode_id,
                     tracker,
+                    self.n_coils,
                     coreg_data,
                     self.view_tracts,
                     queues,
                     self.event,
                     self.sleep_nav,
+                    tracker.tracker_id,
+                    self.target,
                     icp,
                     self.e_field_loaded,
                 )
             )
 
-        if not errors:
             # TODO: Test the serial port thread
             if self.serial_port_in_use:
                 self.serial_port_connection = spc.SerialPortConnection(

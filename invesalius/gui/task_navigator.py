@@ -327,6 +327,7 @@ class CoregistrationPanel(wx.Panel):
         book.AddPage(ImagePage(book, nav_hub), _("Image"))
         book.AddPage(TrackerPage(book, nav_hub), _("Patient"))
         book.AddPage(RefinePage(book, nav_hub), _("Refine"))
+        book.AddPage(StylusPage(book, nav_hub), _("Stylus"))
         book.AddPage(StimulatorPage(book, nav_hub), _("TMS Coil"))
 
         book.SetSelection(0)
@@ -342,6 +343,7 @@ class CoregistrationPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self._FoldTracker, "Move to tracker page")
         Publisher.subscribe(self._FoldRefine, "Move to refine page")
+        Publisher.subscribe(self._FoldStylus, "Move to stylus page")
         Publisher.subscribe(self._FoldStimulator, "Move to stimulator page")
         Publisher.subscribe(self._FoldImage, "Move to image page")
 
@@ -363,7 +365,7 @@ class CoregistrationPanel(wx.Panel):
             Publisher.sendMessage("Update UI for refine tab")
 
         # new page validations
-        if (old_page == 1) and (new_page == 2 or new_page == 3):
+        if (old_page == 1) and (new_page > 1):
             # Do not allow user to move to other (forward) tabs if tracker fiducials not done.
             if self.image.AreImageFiducialsSet() and not self.tracker.AreTrackerFiducialsSet():
                 self.book.SetSelection(1)
@@ -380,8 +382,11 @@ class CoregistrationPanel(wx.Panel):
     def _FoldRefine(self):
         self.book.SetSelection(2)
 
-    def _FoldStimulator(self):
+    def _FoldStylus(self):
         self.book.SetSelection(3)
+
+    def _FoldStimulator(self):
+        self.book.SetSelection(4)
 
 
 class ImagePage(wx.Panel):
@@ -508,9 +513,7 @@ class ImagePage(wx.Panel):
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
 
-        assert len(found) != 0, "No fiducial found for which {} = {}".format(
-            attribute_name, attribute_value
-        )
+        assert len(found) != 0, f"No fiducial found for which {attribute_name} = {attribute_value}"
         return found[0]
 
     def SetImageFiducial(self, fiducial_name, position):
@@ -764,9 +767,7 @@ class TrackerPage(wx.Panel):
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
 
-        assert len(found) != 0, "No fiducial found for which {} = {}".format(
-            attribute_name, attribute_value
-        )
+        assert len(found) != 0, f"No fiducial found for which {attribute_name} = {attribute_value}"
         return found[0]
 
     def OnSetTrackerFiducial(self, fiducial_name):
@@ -997,12 +998,108 @@ class RefinePage(wx.Panel):
         Publisher.sendMessage("Move to tracker page")
 
     def OnNext(self, evt):
-        Publisher.sendMessage("Move to stimulator page")
+        Publisher.sendMessage("Move to stylus page")
 
     def OnRefine(self, evt):
         self.icp.RegisterICP(self.navigation, self.tracker)
         if self.icp.use_icp:
             self.OnUpdateUI()
+
+
+class StylusPage(wx.Panel):
+    def __init__(self, parent, nav_hub):
+        wx.Panel.__init__(self, parent)
+        self.navigation = nav_hub.navigation
+        self.tracker = nav_hub.tracker
+
+        border = wx.FlexGridSizer(1, 3, 5)
+        self.border = border
+
+        self.done = False
+
+        lbl = wx.StaticText(self, -1, _("Calibrate stylus with head"))
+        lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        self.lbl = lbl
+        self.help_img = wx.Image(os.path.join(inv_paths.ICON_DIR, "align.png"), wx.BITMAP_TYPE_ANY)
+
+        # first show help in grayscale. when record successful: make it green to show success
+        self.help = wx.GenericStaticBitmap(
+            self,
+            -1,
+            self.help_img.ConvertToGreyscale(),
+            (10, 5),
+            (self.help_img.GetWidth(), self.help_img.GetHeight()),
+        )
+
+        lbl_rec = wx.StaticText(self, -1, _("Point stylus up relative to head, like so:"))
+        btn_rec = wx.Button(self, -1, _("Record"))
+        btn_rec.SetToolTip("Record stylus orientation relative to head")
+        btn_rec.Bind(wx.EVT_BUTTON, self.onRecord)
+
+        self.btn_rec = btn_rec
+
+        self.border.AddMany(
+            [
+                (lbl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2),
+                (lbl_rec, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2),
+                (self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1),
+                (btn_rec, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 1),
+            ]
+        )
+
+        back_button = wx.Button(self, label="Back")
+        back_button.Bind(wx.EVT_BUTTON, partial(self.OnBack))
+        next_button = wx.Button(self, label="Next")
+        next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
+
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.Add(back_button)
+        bottom_sizer.Add(next_button)
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.AddMany(
+            [
+                (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 1),
+                (bottom_sizer, 0, wx.ALIGN_CENTER | wx.CENTER | wx.TOP, 1),
+            ]
+        )
+
+        self.SetSizerAndFit(main_sizer)
+        self.Layout()
+        self.__bind_events()
+
+    def __bind_events(self):
+        pass  # Publisher.subscribe(self.OnCloseProject, 'Remove object data')
+
+    def onRecord(self, evt):
+        marker_visibilities, __, coord_raw = self.tracker.GetTrackerCoordinates(
+            ref_mode_id=0, n_samples=1
+        )
+
+        if marker_visibilities[0] and marker_visibilities[1]:  # if probe and head are visible
+            if self.navigation.SetStylusOrientation(coord_raw) and not self.done:
+                # if successfully created r_stylus in navigation for the first time: make the illustration green to show success
+                self.done = True
+                self.help.Destroy()  # show a colored (green) bitmap as opposed to grayscale
+                self.help = wx.GenericStaticBitmap(
+                    self,
+                    -1,
+                    self.help_img.ConvertToBitmap(),
+                    (10, 5),
+                    (self.help_img.GetWidth(), self.help_img.GetHeight()),
+                )
+                self.border.Insert(
+                    2, self.help, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1
+                )
+                self.Layout()
+        else:
+            wx.MessageBox(_("Probe or head not visible to tracker!"), _("InVesalius 3"))
+
+    def OnBack(self, evt):
+        Publisher.sendMessage("Move to refine page")
+
+    def OnNext(self, evt):
+        Publisher.sendMessage("Move to stimulator page")
 
 
 class StimulatorPage(wx.Panel):
@@ -1207,8 +1304,6 @@ class ControlPanel(wx.Panel):
         track_object_button.SetBackgroundColour(GREY_COLOR)
         track_object_button.SetBitmap(BMP_TRACK)
         track_object_button.SetValue(False)
-        if not self.track_obj:
-            track_object_button.Enable(False)
         track_object_button.SetToolTip(tooltip)
         track_object_button.Bind(
             wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectButton, ctrl=track_object_button)
@@ -1243,9 +1338,25 @@ class ControlPanel(wx.Panel):
         show_coil_button.SetBitmap(BMP_SHOW_COIL)
         show_coil_button.SetToolTip(tooltip)
         show_coil_button.SetValue(False)
-        show_coil_button.Enable(False)
+        show_coil_button.Enable(True)
         show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
         self.show_coil_button = show_coil_button
+
+        # Toggle button for showing probe during navigation
+        tooltip = _("Show probe")
+        BMP_SHOW_PROBE = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("stylus.png")), wx.BITMAP_TYPE_PNG
+        )
+        show_probe_button = wx.ToggleButton(
+            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        show_probe_button.SetBackgroundColour(GREY_COLOR)
+        show_probe_button.SetBitmap(BMP_SHOW_PROBE)
+        show_probe_button.SetToolTip(tooltip)
+        show_probe_button.Enable(True)
+        self.UpdateToggleButton(show_probe_button, False)  # the probe is hidden at start
+        show_probe_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowProbe)
+        self.show_probe_button = show_probe_button
 
         # Toggle Button to use serial port to trigger pulse signal and create markers
         tooltip = _("Enable serial port communication to trigger pulse and create markers")
@@ -1347,6 +1458,7 @@ class ControlPanel(wx.Panel):
                 (efield_checkbox),
                 (lock_to_target_button),
                 (show_coil_button),
+                (show_probe_button),
             ]
         )
 
@@ -1388,6 +1500,8 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTractsVisualization, "Update tracts visualization")
 
         # Externally press/unpress and enable/disable buttons.
+        Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
+
         Publisher.subscribe(self.PressShowCoilButton, "Press show-coil button")
         Publisher.subscribe(self.EnableShowCoilButton, "Enable show-coil button")
 
@@ -1551,12 +1665,11 @@ class ControlPanel(wx.Panel):
             self.EnableToggleButton(self.checkbox_serial_port, 1)
             self.UpdateToggleButton(self.checkbox_serial_port)
 
-        # Enable/Disable track-object checkbox if navigation is off/on and object registration is valid.
+        # Enable/Disable track-object checkbox if object registration is valid.
         obj_registration = self.navigation.GetObjectRegistration()
-        enable_track_object = (
-            obj_registration is not None and obj_registration[0] is not None and not nav_status
-        )
+        enable_track_object = obj_registration is not None and obj_registration[0] is not None
         self.EnableTrackObjectButton(enable_track_object)
+        self.EnableShowCoilButton(enable_track_object)
 
     # Robot
     def OnRobotStatus(self, data):
@@ -1653,11 +1766,9 @@ class ControlPanel(wx.Panel):
         if not pressed:
             Publisher.sendMessage("Press target mode button", pressed=pressed)
 
-        # Disable or enable 'Show coil' button, based on if 'Track object' button is pressed.
-        Publisher.sendMessage("Enable show-coil button", enabled=pressed)
-
-        # Also, automatically press or unpress 'Show coil' button.
+        # Automatically press or unpress 'Show coil' and 'Show probe' button.
         Publisher.sendMessage("Press show-coil button", pressed=pressed)
+        Publisher.sendMessage("Press show-probe button", pressed=(not pressed))
 
         self.SaveConfig()
 
@@ -1680,6 +1791,16 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.show_coil_button)
         pressed = self.show_coil_button.GetValue()
         Publisher.sendMessage("Show coil in viewer volume", state=pressed)
+
+    # 'Show probe' button
+    def PressShowProbeButton(self, pressed=False):
+        self.UpdateToggleButton(self.show_probe_button, pressed)
+        self.OnShowProbe()
+
+    def OnShowProbe(self, evt=None):
+        self.UpdateToggleButton(self.show_probe_button)
+        pressed = self.show_probe_button.GetValue()
+        Publisher.sendMessage("Show probe in viewer volume", state=pressed)
 
     # 'Serial Port Com'
     def OnEnableSerialPort(self, evt, ctrl):
@@ -2852,7 +2973,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def GetMarkersFromFile(self, filename, overwrite_image_fiducials):
         try:
-            with open(filename, "r") as file:
+            with open(filename) as file:
                 magick_line = file.readline()
                 assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
                 version = int(magick_line.split("_")[-1])
@@ -2926,12 +3047,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()
         timestamp = time.localtime(time.time())
-        stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-        )
-        stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-        )
+        stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+        stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
         sep = "-"
         parts = [stamp_date, stamp_time, prj_data.name, "markers"]
         default_filename = sep.join(parts) + ".mkss"
