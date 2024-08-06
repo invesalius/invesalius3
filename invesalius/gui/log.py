@@ -287,6 +287,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
         if self._frame != None:
             self._frame = None
 
+
     def closeLogging(self):
         self.closeFileLogging()
         self.closeConsoleLogging()
@@ -299,7 +300,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
 def call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
         msg = "Function {} called".format(function.__name__)
-        invLogger._logger.info(msg)
+        invLogger._logger.debug(msg)
         function(*args)
 
     return wrapper_accepting_arguments
