@@ -442,7 +442,7 @@ class Parser:
         except KeyError:
             return ""
         if data:
-            return [eval(value) for value in data.split("\\")]
+            return [float(value) for value in data.split("\\")]
         return ""
 
     def GetImageLocation(self):
@@ -455,7 +455,7 @@ class Parser:
         """
         data = self.data_image[str(0x020)][str(0x1041)]
         if data:
-            return eval(data)
+            return float(data)
         return ""
 
     def GetImageOffset(self):
