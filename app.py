@@ -167,7 +167,7 @@ class Inv3SplashScreen(SplashScreen):
             # except on win64, due to wxWidgets bug
             try:
                 ok = dialog.ShowModal() == wx.ID_OK
-            except wx._core.PyAssertionError:
+            except wx.PyAssertionError:
                 ok = True
             finally:
                 if ok:

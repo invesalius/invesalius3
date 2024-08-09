@@ -17,10 +17,10 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-from typing import Callable
+from typing import Callable, Optional, Tuple
 
 from pubsub import pub as Publisher
-from pubsub.core.listener import UserListener
+from pubsub.core.listener import Listener, UserListener
 
 __all__ = [
     # subscribing
@@ -35,10 +35,10 @@ __all__ = [
 
 Hook = Callable[[str, dict], None]
 
-sendMessage_hook: Hook = None
+sendMessage_hook: Optional[Hook] = None
 
 
-def add_sendMessage_hook(hook: Hook):
+def add_sendMessage_hook(hook: Hook) -> None:
     """Add a hook for sending messages. The hook is a function that takes the topic
     name as the first parameter and the message dict as the second parameter, and
     returns None.
@@ -49,23 +49,23 @@ def add_sendMessage_hook(hook: Hook):
     sendMessage_hook = hook
 
 
-def subscribe(listener: UserListener, topicName: str, **curriedArgs):
+def subscribe(listener: UserListener, topicName: str, **curriedArgs) -> Tuple[Listener, bool]:
     """Subscribe to a topic.
 
     :param listener:
     :param topicName:
     :param curriedArgs:
     """
-    subscribedListener, success = Publisher.subscribe(listener, topicName, **curriedArgs)
+    subscribedListener, success = Publisher.subscribe(listener, topicName, **curriedArgs)  # type: ignore This is a bug in PyPubSub
     return subscribedListener, success
 
 
-def unsubscribe(*args, **kwargs):
+def unsubscribe(*args, **kwargs) -> None:
     """Unsubscribe from a topic."""
     Publisher.unsubscribe(*args, **kwargs)
 
 
-def sendMessage(topicName: str, **msgdata):
+def sendMessage(topicName: str, **msgdata) -> None:
     """Send a message in a given topic.
 
     :param topicName:
@@ -76,7 +76,7 @@ def sendMessage(topicName: str, **msgdata):
         sendMessage_hook(topicName, msgdata)
 
 
-def sendMessage_no_hook(topicName: str, **msgdata):
+def sendMessage_no_hook(topicName: str, **msgdata) -> None:
     """Send a message in a given topic, but do not call the hook.
 
     :param topicName:
