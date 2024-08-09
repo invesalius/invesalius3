@@ -63,7 +63,7 @@ class ProgressDialog:
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
         self.dlg.SetSize(wx.Size(250, 150))
 
-    def Cancel(self, evt: wx.Event) -> None:
+    def Cancel(self, evt: wx.CommandEvent) -> None:
         Publisher.sendMessage("Cancel DICOM load")
 
     def Update(self, value: SupportsInt, message: str) -> Union[Tuple[bool, bool], bool]:

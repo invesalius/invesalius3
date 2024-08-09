@@ -153,10 +153,10 @@ class CLUTRaycastingWidget(wx.Panel):
         self.to_render = False
         self.dragged = False
         self.middle_drag = False
-        self.to_draw_points = 0
+        self.to_draw_points = False
         self.point_dragged: Optional[Tuple[int, int]] = None
         self.curve_dragged: Optional[int] = None
-        self.histogram_array = [100, 100]
+        self.histogram_array: Union[np.ndarray, List[int]] = [100, 100]
         self.CalculatePixelPoints()
         self.__bind_events_wx()
         self._build_buttons()
@@ -734,14 +734,14 @@ class CLUTRaycastingWidget(wx.Panel):
 
     def SetRaycastPreset(self, preset: Dict[str, List[List[Dict[str, float]]]]) -> None:
         if not preset:
-            self.to_draw_points = 0
+            self.to_draw_points = False
         elif preset["advancedCLUT"]:
-            self.to_draw_points = 1
+            self.to_draw_points = True
             self.points = preset["16bitClutCurves"]
             self.colours = preset["16bitClutColors"]
             self.CalculatePixelPoints()
         else:
-            self.to_draw_points = 0
+            self.to_draw_points = False
         self.Refresh()
 
     def SetHistogramArray(self, h_array: "np.ndarray", range: Tuple[float, float]) -> None:
