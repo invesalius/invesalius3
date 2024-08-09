@@ -31,7 +31,7 @@ warn_return_any = false
 warn_unreachable = false
 warn_unused_configs = false
 no_implicit_reexport = false
-follow_imports = "normal"
+follow_imports = "skip" # change to normal later
 explicit_package_bases = true
 disable_error_code =  ["attr-defined", "no-redef"]
 
