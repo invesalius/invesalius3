@@ -1,4 +1,3 @@
-import setuptools
 import logging
 import os
 import pathlib
@@ -6,7 +5,8 @@ import subprocess
 import sys
 
 import numpy
-from Cython.Build import cythonize, build_ext
+import setuptools
+from Cython.Build import build_ext, cythonize
 
 if sys.platform == "darwin":
     unix_copt = ["-Xpreprocessor", "-fopenmp", "-lomp"]
@@ -62,9 +62,7 @@ class BuildPluginsCommand(setuptools.Command):
             plugin_folder = plugins_folder.joinpath(p)
             self.announce("Compiling plugin: {}".format(p))
             os.chdir(plugin_folder)
-            subprocess.check_call(
-                [sys.executable, "setup.py", "build_ext", "--inplace"]
-            )
+            subprocess.check_call([sys.executable, "setup.py", "build_ext", "--inplace"])
             os.chdir(inv_folder)
 
 
@@ -95,6 +93,11 @@ setuptools.setup(
             setuptools.Extension(
                 "invesalius_cy.cy_mesh",
                 ["invesalius_cy/cy_mesh.pyx"],
+                language="c++",
+            ),
+            setuptools.Extension(
+                "invesalius_cy.mask_cut",
+                ["invesalius_cy/mask_cut.pyx"],
                 language="c++",
             ),
         ]
