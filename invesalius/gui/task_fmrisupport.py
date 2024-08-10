@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,125 +15,77 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
-import os
+# --------------------------------------------------------------------------
 
-import dataclasses
-from functools import partial
-import itertools
-import time
-
+import matplotlib.pyplot as plt
 import nibabel as nb
 import numpy as np
-import matplotlib.pyplot as plt
-try:
-    import Trekker
-    has_trekker = True
-except ImportError:
-    has_trekker = False
-
-try:
-    #TODO: the try-except could be done inside the mTMS() method call
-    from invesalius.navigation.mtms import mTMS
-    mTMS()
-    has_mTMS = True
-except:
-    has_mTMS = False
-
 import wx
-
-try:
-    import wx.lib.agw.foldpanelbar as fpb
-except ImportError:
-    import wx.lib.foldpanelbar as fpb
-
-import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
-from invesalius.pubsub import pub as Publisher
 
 import invesalius.constants as const
-import invesalius.data.brainmesh_handler as brain
-
-import invesalius.data.imagedata_utils as imagedata_utils
-import invesalius.data.slice_ as sl
-import invesalius.data.tractography as dti
-import invesalius.data.record_coords as rec
-import invesalius.data.vtk_utils as vtk_utils
-import invesalius.data.bases as db
-import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
-import invesalius.project as prj
-import invesalius.session as ses
 import invesalius.gui.widgets.gradient as grad
+import invesalius.session as ses
+import invesalius.utils as utils
+from invesalius.data.slice_ import Slice
+from invesalius.i18n import tr as _
+from invesalius.pubsub import pub as Publisher
 
-
-from invesalius import utils
-from invesalius.gui import utils as gui_utils
-from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
-from invesalius.navigation.navigation import Navigation
-from invesalius.navigation.image import Image
-from invesalius.navigation.tracker import Tracker
-
-from invesalius.navigation.robot import Robot
-from invesalius.data.converters import to_vtk, convert_custom_bin_to_vtk
-
-from invesalius.net.neuronavigation_api import NeuronavigationApi
-
-HAS_PEDAL_CONNECTION = True
-try:
-    from invesalius.net.pedal_connection import PedalConnection
-except ImportError:
-    HAS_PEDAL_CONNECTION = False
-
-from invesalius import inv_paths
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
-
-        pedal_connection = PedalConnection() if HAS_PEDAL_CONNECTION else None
-        neuronavigation_api = NeuronavigationApi()
-        navigation = Navigation(
-            pedal_connection=pedal_connection,
-            neuronavigation_api=neuronavigation_api,
-        )
-
         wx.Panel.__init__(self, parent)
 
-        inner_panel = InnerTaskPanel(self, navigation)
+        inner_panel = InnerTaskPanel(self)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
-                  wx.LEFT, 7)
+        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT | wx.LEFT, 7)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
 
+
 class InnerTaskPanel(wx.Panel):
-    def __init__(self, parent, navigation):
+    def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         try:
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+
         self.__bind_events()
 
         self.SetBackgroundColour(default_colour)
         self.session = ses.Session()
-        self.colormaps = ["twilight","hsv","Set1","Set2","winter","hot","autumn"]
-        self.cur_colormap = "twilight"
-        self.filename = None
+        self.slc = Slice()
+        self.colormaps = [
+            "autumn",
+            "hot",
+            "plasma",
+            "cividis",  # sequential
+            "bwr",
+            "RdBu",  # diverging
+            "Set3",
+            "tab10",  # categorical
+            "twilight",
+            "hsv",
+        ]  # cyclic
+        self.current_colormap = "autumn"
+        self.number_colors = 10
+        self.cluster_volume = None
+        self.zero_value = 0
 
-        line0 = wx.StaticText(self, -1,
-                                    _("Select Modalities / File"))
-        
+        line0 = wx.StaticText(self, -1, _("Select Modalities / File"))
+
         # Button for import config coil file
-        tooltip = wx.ToolTip(_("Load Modalities"))
+        tooltip = _("Load Nifti image")
         btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
-        btn_load.Bind(wx.EVT_BUTTON, self.OnLinkLoad)
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadFmri)
         self.btn_load = btn_load
 
         # Create a horizontal sizer to represent button save
@@ -141,44 +93,43 @@ class InnerTaskPanel(wx.Panel):
         line1.Add(btn_load, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
 
         ### LINE 2
-        text_thresh = wx.StaticText(self, -1,
-                                    _("Select Colormap"))
+        text_thresh = wx.StaticText(self, -1, _("Select Colormap"))
 
         ### LINE 3
-        combo_thresh = wx.ComboBox(self, -1, "", #size=(15,-1),
-                                   choices=self.colormaps,
-                                   style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_thresh.Bind(wx.EVT_COMBOBOX, self.SelectColormap)
-        combo_thresh.SetSelection(0) # By Default use Twilight
+        combo_thresh = wx.ComboBox(
+            self,
+            -1,
+            "",  # size=(15,-1),
+            choices=self.colormaps,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnSelectColormap)
+        # by default use the initial value set in self.current_colormap
+        combo_thresh.SetSelection(self.colormaps.index(self.current_colormap))
 
         self.combo_thresh = combo_thresh
 
         ## LINE 4
-        cmap = plt.get_cmap(self.cur_colormap)
-        colororder = [(int(255*cmap(i)[0]),
-                       int(255*cmap(i)[1]),
-                       int(255*cmap(i)[2]),
-                       int(100*cmap(i)[3])) for i in np.linspace(0, 1, 100)]
-        
-        gradient = grad.GradientDisp(self, -1, -5000, 5000, -5000, 5000,
-                                           colororder, colortype=self.cur_colormap in ['Set1', 'Set2'])
-        self.gradient = gradient
+        cmap = plt.get_cmap(self.current_colormap)
+        colors_gradient = self.GenerateColormapColors(cmap)
+
+        self.gradient = grad.GradientDisp(self, -1, -5000, 5000, -5000, 5000, colors_gradient)
 
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.AddSpacer(7)
-        sizer.Add(line0, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.Add(line0, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         sizer.AddSpacer(5)
         # sizer.Add(line1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         sizer.Add(line1, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 3)
- 
-        sizer.AddSpacer(5)
-        sizer.Add(text_thresh, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
-        sizer.AddSpacer(2)
-        sizer.Add(combo_thresh, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.RIGHT, 5)
 
         sizer.AddSpacer(5)
-        sizer.Add(gradient, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.Add(text_thresh, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        sizer.AddSpacer(2)
+        sizer.Add(combo_thresh, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 5)
+
+        sizer.AddSpacer(5)
+        sizer.Add(self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         sizer.AddSpacer(7)
 
         sizer.Fit(self)
@@ -186,89 +137,94 @@ class InnerTaskPanel(wx.Panel):
         self.SetSizerAndFit(sizer)
         self.Update()
         self.SetAutoLayout(1)
+        self.UpdateGradient(self.gradient, colors_gradient)
 
     def __bind_events(self):
-        Publisher.subscribe(self.OnLinkLoad, 'Loading status')
-        Publisher.subscribe(self.SelectColormap, 'Changing colormap')
+        pass
 
+    def OnSelectColormap(self, event=None):
+        self.current_colormap = self.colormaps[self.combo_thresh.GetSelection()]
+        colors = self.GenerateColormapColors(self.current_colormap, self.number_colors)
 
-    def SelectColormap(self, event=None):
-        self.cur_colormap = self.colormaps[self.combo_thresh.GetSelection()]
-        self.ReloadSlice()
-        cmap = plt.get_cmap(self.cur_colormap)
-        colororder = [(int(255*cmap(i)[0]),
-                       int(255*cmap(i)[1]),
-                       int(255*cmap(i)[2]),
-                       int(100*cmap(i)[3])) for i in np.linspace(0, 1, 20)]
-        
-        self.gradient.SetGradientColours(colororder)
-        self.gradient.colortype = self.cur_colormap in ['Set1', 'Set2']
-        self.gradient.gradient_slider.colortype = self.cur_colormap in ['Set1', 'Set2']
-        
-        self.gradient.gradient_slider.Refresh()
-        self.gradient.gradient_slider.Update()
-        self.gradient.Refresh()
-        self.gradient.Update()
-        
+        self.UpdateGradient(self.gradient, colors)
+
+        if isinstance(self.cluster_volume, np.ndarray):
+            self.apply_colormap(self.current_colormap, self.cluster_volume, self.zero_value)
+
+    def GenerateColormapColors(self, colormap_name, number_colors=10):
+        cmap = plt.get_cmap(colormap_name)
+        colors_gradient = [
+            (
+                int(255 * cmap(i)[0]),
+                int(255 * cmap(i)[1]),
+                int(255 * cmap(i)[2]),
+                int(255 * cmap(i)[3]),
+            )
+            for i in np.linspace(0, 1, number_colors)
+        ]
+
+        return colors_gradient
+
+    def UpdateGradient(self, gradient, colors):
+        gradient.SetGradientColours(colors)
+        gradient.Refresh()
+        gradient.Update()
+
         self.Refresh()
         self.Update()
-        self.Show(False)
         self.Show(True)
 
-    def ReloadSlice(self):
-        if self.filename is None: return
+    def OnLoadFmri(self, event=None):
+        filename = dlg.ShowImportOtherFilesDialog(id_type=const.ID_NIFTI_IMPORT)
+        filename = utils.decode(filename, const.FS_ENCODE)
 
-        # Update Slice
-        import nibabel as nib
-        clust_vol = nib.load(self.filename).get_fdata().T[:,::-1]
-        
-        from invesalius.data.slice_ import Slice
-        # 1. Create layer of shape first
-        slc = Slice()
-        slc.aux_matrices['color_overlay'] = clust_vol
-        slc.aux_matrices['color_overlay'] = slc.aux_matrices['color_overlay'].astype(int)
+        fmri_data = nb.squeeze_image(nb.load(filename))
+        fmri_data = nb.as_closest_canonical(fmri_data)
+        fmri_data.update_header()
 
+        cluster_volume_original = fmri_data.get_fdata().T[:, ::-1].copy()
+        # Normalize the data to 0-1 range
+        cluster_volume_normalized = (cluster_volume_original - np.min(cluster_volume_original)) / (
+            np.max(cluster_volume_original) - np.min(cluster_volume_original)
+        )
+        # Convert data to 8-bit integer
+        self.cluster_volume = (cluster_volume_normalized * 255).astype(np.uint8)
+
+        self.zero_value = int(
+            (0.0 - np.min(cluster_volume_original))
+            / (np.max(cluster_volume_original) - np.min(cluster_volume_original))
+            * 255
+        )
+
+        if self.slc.matrix.shape != self.cluster_volume.shape:
+            wx.MessageBox(
+                ("The overlay volume does not match the underlying structural volume"),
+                ("InVesalius 3"),
+            )
+
+        else:
+            self.slc.aux_matrices["color_overlay"] = self.cluster_volume
+            # 3. Show colors
+            self.slc.to_show_aux = "color_overlay"
+            self.apply_colormap(self.current_colormap, self.cluster_volume, self.zero_value)
+
+    def apply_colormap(self, colormap, cluster_volume, zero_value):
         # 2. Attribute different hue accordingly
-        cluster_smoothness = int(np.max(list(set(clust_vol.flatten()))))
-        cmap = plt.get_cmap(self.cur_colormap)
-        colororder = [cmap(i) for i in np.linspace(0, 1, cluster_smoothness)]
+        cmap = plt.get_cmap(colormap)
 
-        slc.aux_matrices_colours['color_overlay'] = {k+1: colororder[k] for k in range(cluster_smoothness)}
-        slc.aux_matrices_colours['color_overlay'][0] = (0.0, 0.0, 0.0, 0.0) # add transparent color for nans and non GM voxels
+        # new way
+        # Flatten the data to 1D
+        cluster_volume_unique = np.unique(cluster_volume)
+        # Map the scaled data to colors
+        colors = cmap(cluster_volume_unique / 255)
+        # Create a dictionary where keys are scaled data and values are colors
+        color_dict = {val: color for val, color in zip(cluster_volume_unique, map(tuple, colors))}
 
-        # 3. Show colors
-        slc.to_show_aux = 'color_overlay'
+        self.slc.aux_matrices_colours["color_overlay"] = color_dict
+        # add transparent color for nans and non GM voxels
+        if zero_value in self.slc.aux_matrices_colours["color_overlay"]:
+            self.slc.aux_matrices_colours["color_overlay"][zero_value] = (0.0, 0.0, 0.0, 0.0)
+        else:
+            print("Zero value not found in color_overlay. No data is set as transparent.")
 
-        Publisher.sendMessage('Reload actual slice')        
-
-    def OnLinkLoad(self, event=None):
-        filename = dlg.ShowLoadSaveDialog(message=_(u"Load volume to overlay"),
-                                          wildcard=_("Registration files (*.nii.gz)|*.nii.gz"))
-        self.filename = filename
-        # Update Slice
-        import nibabel as nib
-        clust_vol = nib.load(filename).get_fdata().T[:,::-1]
-        
-
-        from invesalius.data.slice_ import Slice
-        # 1. Create layer of shape first
-        slc = Slice()
-        if slc.matrix.shape != clust_vol.shape:
-            wx.MessageBox(("The overlay volume does not match the underlying structural volume"), ("InVesalius 3"))
-            return
-
-        slc.aux_matrices['color_overlay'] = clust_vol
-        slc.aux_matrices['color_overlay'] = slc.aux_matrices['color_overlay'].astype(int)
-
-        # 2. Attribute different hue accordingly
-        cluster_smoothness = int(np.max(list(set(clust_vol.flatten()))))
-        cmap = plt.get_cmap(self.cur_colormap)
-        colororder = [cmap(i) for i in np.linspace(0, 1, cluster_smoothness)]
-
-        slc.aux_matrices_colours['color_overlay'] = {k+1: colororder[k] for k in range(cluster_smoothness)}
-        slc.aux_matrices_colours['color_overlay'][0] = (0.0, 0.0, 0.0, 0.0) # add transparent color for nans and non GM voxels
-
-        # 3. Show colors
-        slc.to_show_aux = 'color_overlay'
-
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")

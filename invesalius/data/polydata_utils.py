@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,12 +15,11 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import sys
 
 import wx
-
 from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkFiltersCore import (
     vtkAppendPolyData,
@@ -38,13 +37,13 @@ from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vu
-from invesalius.utils import touch
 from invesalius.i18n import tr as _
+from invesalius.utils import touch
 
-
-if sys.platform == 'win32':
+if sys.platform == "win32":
     try:
         import win32api
+
         _has_win32api = True
     except ImportError:
         _has_win32api = False
@@ -53,6 +52,7 @@ else:
 
 # Update progress value in GUI
 UpdateProgress = vu.ShowProgress()
+
 
 def ApplyDecimationFilter(polydata, reduction_factor):
     """
@@ -65,9 +65,12 @@ def ApplyDecimationFilter(polydata, reduction_factor):
     decimation.SetInputData(polydata)
     decimation.SetTargetReduction(reduction_factor)
     decimation.GetOutput().ReleaseDataFlagOn()
-    decimation.AddObserver("ProgressEvent", lambda obj, evt:
-                  UpdateProgress(decimation, "Reducing number of triangles..."))
+    decimation.AddObserver(
+        "ProgressEvent",
+        lambda obj, evt: UpdateProgress(decimation, "Reducing number of triangles..."),
+    )
     return decimation.GetOutput()
+
 
 def ApplySmoothFilter(polydata, iterations, relaxation_factor):
     """
@@ -81,11 +84,11 @@ def ApplySmoothFilter(polydata, iterations, relaxation_factor):
     smoother.FeatureEdgeSmoothingOn()
     smoother.BoundarySmoothingOn()
     smoother.GetOutput().ReleaseDataFlagOn()
-    smoother.AddObserver("ProgressEvent", lambda obj, evt:
-                         UpdateProgress(smoother, "Smoothing surface..."))
+    smoother.AddObserver(
+        "ProgressEvent", lambda obj, evt: UpdateProgress(smoother, "Smoothing surface...")
+    )
 
     return smoother.GetOutput()
-
 
 
 def FillSurfaceHole(polydata):
@@ -99,6 +102,7 @@ def FillSurfaceHole(polydata):
     filled_polydata.SetHoleSize(500)
     return filled_polydata.GetOutput()
 
+
 def CalculateSurfaceVolume(polydata):
     """
     Calculate the volume from the given polydata
@@ -108,6 +112,7 @@ def CalculateSurfaceVolume(polydata):
     measured_polydata.SetInputData(polydata)
     return measured_polydata.GetVolume()
 
+
 def CalculateSurfaceArea(polydata):
     """
     Calculate the volume from the given polydata
@@ -116,6 +121,7 @@ def CalculateSurfaceArea(polydata):
     measured_polydata = vtkMassProperties()
     measured_polydata.SetInputData(polydata)
     return measured_polydata.GetSurfaceArea()
+
 
 def Merge(polydata_list):
     append = vtkAppendPolyData()
@@ -133,6 +139,7 @@ def Merge(polydata_list):
 
     return append.GetOutput()
 
+
 def Export(polydata, filename, bin=False):
     writer = vtkXMLPolyDataWriter()
     if _has_win32api:
@@ -146,6 +153,7 @@ def Export(polydata, filename, bin=False):
     writer.SetInputData(polydata)
     writer.Write()
 
+
 def Import(filename):
     reader = vtkXMLPolyDataReader()
     try:
@@ -155,17 +163,18 @@ def Import(filename):
     reader.Update()
     return reader.GetOutput()
 
+
 def LoadPolydata(path):
-    if path.lower().endswith('.stl'):
+    if path.lower().endswith(".stl"):
         reader = vtkSTLReader()
 
-    elif path.lower().endswith('.ply'):
+    elif path.lower().endswith(".ply"):
         reader = vtkPLYReader()
 
-    elif path.lower().endswith('.obj'):
+    elif path.lower().endswith(".obj"):
         reader = vtkOBJReader()
 
-    elif path.lower().endswith('.vtp'):
+    elif path.lower().endswith(".vtp"):
         reader = vtkXMLPolyDataReader()
 
     else:
@@ -176,6 +185,7 @@ def LoadPolydata(path):
     polydata = reader.GetOutput()
 
     return polydata
+
 
 def JoinSeedsParts(polydata, point_id_list):
     """
@@ -192,32 +202,34 @@ def JoinSeedsParts(polydata, point_id_list):
         UpdateProgress(pos, _("Analysing selected regions..."))
         pos += 1
 
-    conn.AddObserver("ProgressEvent", lambda obj, evt:
-                  UpdateProgress(conn, "Getting selected parts"))
+    conn.AddObserver(
+        "ProgressEvent", lambda obj, evt: UpdateProgress(conn, "Getting selected parts")
+    )
     conn.Update()
 
     result = vtkPolyData()
     result.DeepCopy(conn.GetOutput())
     return result
 
+
 def SelectLargestPart(polydata):
-    """
-    """
+    """ """
     UpdateProgress = vu.ShowProgress(1)
     conn = vtkPolyDataConnectivityFilter()
     conn.SetInputData(polydata)
     conn.SetExtractionModeToLargestRegion()
-    conn.AddObserver("ProgressEvent", lambda obj, evt:
-                  UpdateProgress(conn, "Getting largest part..."))
+    conn.AddObserver(
+        "ProgressEvent", lambda obj, evt: UpdateProgress(conn, "Getting largest part...")
+    )
     conn.Update()
 
     result = vtkPolyData()
     result.DeepCopy(conn.GetOutput())
     return result
 
+
 def SplitDisconectedParts(polydata):
-    """
-    """
+    """ """
     conn = vtkPolyDataConnectivityFilter()
     conn.SetInputData(polydata)
     conn.SetExtractionModeToAllRegions()
@@ -231,7 +243,7 @@ def SplitDisconectedParts(polydata):
     polydata_collection = []
 
     # Update progress value in GUI
-    progress = nregions -1
+    progress = nregions - 1
     if progress:
         UpdateProgress = vu.ShowProgress(progress)
 

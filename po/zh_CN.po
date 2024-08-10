@@ -11,32 +11,32 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-02-22 08:53-0300\n"
-"PO-Revision-Date: 2019-02-22 14:35+0000\n"
+"PO-Revision-Date: 2024-02-29 14:57+0800\n"
 "Last-Translator: tfmoraes <totonixsame@gmail.com>\n"
-"Language-Team: Chinese (China) (http://www.transifex.com/invesalius/invesalius3/language/zh_CN/)\n"
+"Language-Team: Chinese (China) (http://www.transifex.com/invesalius/"
+"invesalius3/language/zh_CN/)\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: zh_CN\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Poedit-Country: GENERIC\n"
-"X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
+"X-Generator: Poedit 3.0.1\n"
 
 #: bitmap_preview_panel.py:25 dicom_preview_panel.py:57
 #, python-format
 msgid "Image size: %d x %d"
-msgstr ""
+msgstr "图像大小：%d x%d"
 
 #: bitmap_preview_panel.py:26 dicom_preview_panel.py:58
 #, python-format
 msgid "Spacing: %.2f"
-msgstr ""
+msgstr "间距：%.2f"
 
 #: bitmap_preview_panel.py:27 dicom_preview_panel.py:59
 #, python-format
 msgid "Location: %.2f"
-msgstr ""
+msgstr "位置：%.2f"
 
 #: bitmap_preview_panel.py:29 dicom_preview_panel.py:61
 #, python-format
@@ -44,813 +44,818 @@ msgid ""
 "%s %s\n"
 "Made in InVesalius"
 msgstr ""
+"%s%s\n"
+"InVesalius制造"
 
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
 #: dicom_preview_panel.py:200 dicom_preview_panel.py:201 frame.py:935
 msgid "Image"
-msgstr ""
+msgstr "图像"
 
 #: bitmap_preview_panel.py:447 bitmap_preview_panel.py:448 constants.py:225
 #: constants.py:313 control.py:496 dialogs.py:1096 dialogs.py:1109
 #: dicom_preview_panel.py:715 dicom_preview_panel.py:716 presets.py:32
 #: presets.py:50 presets.py:106 presets.py:137
 msgid "Bone"
-msgstr ""
+msgstr "骨头"
 
 #: bitmap_preview_panel.py:515 dicom_preview_panel.py:783
 msgid "Auto-play"
-msgstr ""
+msgstr "自动播放"
 
 #: clut_raycasting.py:535
 #, python-format
 msgid "Value: %-6d"
-msgstr ""
+msgstr "数值：%-6d"
 
 #: clut_raycasting.py:536
 #, python-format
 msgid "Alpha: %-.3f"
-msgstr ""
+msgstr "透明度：%-.3f"
 
 #: constants.py:36
 #, python-format
 msgid "M %d"
-msgstr ""
+msgstr "M%d"
 
 #: constants.py:48 constants.py:441 constants.py:443
 msgid " Off"
-msgstr ""
+msgstr "关"
 
 #: constants.py:49
 msgid "Red-blue"
-msgstr ""
+msgstr "红蓝"
 
 #: constants.py:50
 msgid "CristalEyes"
-msgstr ""
+msgstr "水晶眼"
 
 #: constants.py:51
 msgid "Interlaced"
-msgstr ""
+msgstr "交错的"
 
 #: constants.py:52 constants.py:389 constants.py:752
 msgid "Left"
-msgstr ""
+msgstr "左边"
 
 #: constants.py:53 constants.py:388 constants.py:753
 msgid "Right"
-msgstr ""
+msgstr "右边"
 
 #: constants.py:54
 msgid "Dresden"
-msgstr ""
+msgstr "德累斯顿"
 
 #: constants.py:55
 msgid "Checkboard"
-msgstr ""
+msgstr "棋盘"
 
 #: constants.py:56
 msgid "Anaglyph"
-msgstr ""
+msgstr "字形"
 
 #: constants.py:116
 msgid "Keep all slices"
-msgstr ""
+msgstr "保留所有切片"
 
 #: constants.py:116
 msgid "Skip 1 for each 2 slices"
-msgstr ""
+msgstr "每2个切片跳过1个"
 
 #: constants.py:117
 msgid "Skip 2 for each 3 slices"
-msgstr ""
+msgstr "每3个切片跳过2个"
 
 #: constants.py:117
 msgid "Skip 3 for each 4 slices"
-msgstr ""
+msgstr "每4个切片跳过3个"
 
 #: constants.py:118
 msgid "Skip 4 for each 5 slices"
-msgstr ""
+msgstr "每5个切片跳过4个"
 
 #: constants.py:118
 msgid "Skip 5 for each 6 slices"
-msgstr ""
+msgstr "每6个切片跳过5个"
 
 #: constants.py:175 slice_menu.py:102 slice_menu.py:109
 msgid "Default "
-msgstr ""
+msgstr "默认"
 
 #: constants.py:176
 msgid "Hue"
-msgstr ""
+msgstr "色调"
 
 #: constants.py:177
 msgid "Saturation"
-msgstr ""
+msgstr "饱和度"
 
 #: constants.py:178
 msgid "Desert"
-msgstr ""
+msgstr "沙漠"
 
 #: constants.py:179
 msgid "Rainbow"
-msgstr ""
+msgstr "彩虹"
 
 #: constants.py:180
 msgid "Ocean"
-msgstr ""
+msgstr "海洋"
 
 #: constants.py:181
 msgid "Inverse Gray"
-msgstr ""
+msgstr "反向灰度"
 
 #: constants.py:231
 #, python-format
 msgid "Mask %d"
-msgstr ""
+msgstr "遮罩 %d"
 
 #: constants.py:287 task_surface.py:50
 msgid "Draw"
-msgstr ""
+msgstr "绘制"
 
 #: constants.py:287 styles.py:67 task_slice.py:890 task_surface.py:50
 msgid "Erase"
-msgstr ""
+msgstr "擦除"
 
 #: constants.py:287 data_notebook.py:467 dialogs.py:2948 task_surface.py:50
 msgid "Threshold"
-msgstr ""
+msgstr "阈值"
 
 #: constants.py:299 constants.py:304
 msgid "Low"
-msgstr ""
+msgstr "低的"
 
 #: constants.py:300 constants.py:304
 msgid "Medium"
-msgstr ""
+msgstr "中等的"
 
 #: constants.py:301 constants.py:304
 msgid "High"
-msgstr ""
+msgstr "高的"
 
 #: constants.py:302 constants.py:303 constants.py:304 task_slice.py:187
 msgid "Optimal *"
-msgstr ""
+msgstr "最优的"
 
 #: constants.py:309
 #, python-format
 msgid "Surface %d"
-msgstr ""
+msgstr "表面%d"
 
 #: constants.py:312
 msgid "Abdomen"
-msgstr ""
+msgstr "腹部"
 
 #: constants.py:314
 msgid "Brain posterior fossa"
-msgstr ""
+msgstr "大脑后窝"
 
 #: constants.py:315
 msgid "Brain"
-msgstr ""
+msgstr "脑"
 
 #: constants.py:316 control.py:498 dialogs.py:1797 dialogs.py:1800
 #: dialogs.py:1808 dialogs.py:1883 slice_menu.py:59 slice_menu.py:71
 msgid "Default"
-msgstr ""
+msgstr "默认"
 
 #: constants.py:317
 msgid "Emphysema"
-msgstr ""
+msgstr "肺气肿"
 
 #: constants.py:318
 msgid "Ischemia - Hard, non contrast"
-msgstr ""
+msgstr "缺血-坚硬，无对比"
 
 #: constants.py:319
 msgid "Ischemia - Soft, non contrast"
-msgstr ""
+msgstr "缺血-柔软，无对比"
 
 #: constants.py:320
 msgid "Larynx"
-msgstr ""
+msgstr "喉"
 
 #: constants.py:321
 msgid "Liver"
-msgstr ""
+msgstr "肝脏"
 
 #: constants.py:322
 msgid "Lung - Soft"
-msgstr ""
+msgstr "肺-柔软"
 
 #: constants.py:323
 msgid "Lung - Hard"
-msgstr ""
+msgstr "肺-硬"
 
 #: constants.py:324
 msgid "Mediastinum"
-msgstr ""
+msgstr "纵隔"
 
 #: constants.py:325 control.py:499 slice_menu.py:66 slice_menu.py:71
 msgid "Manual"
-msgstr ""
+msgstr "手动"
 
 #: constants.py:326
 msgid "Pelvis"
-msgstr ""
+msgstr "骨盆"
 
 #: constants.py:327
 msgid "Sinus"
-msgstr ""
+msgstr "窦"
 
 #: constants.py:328
 msgid "Vasculature - Hard"
-msgstr ""
+msgstr "血管-硬"
 
 #: constants.py:329
 msgid "Vasculature - Soft"
-msgstr ""
+msgstr "血管-柔软"
 
 #: constants.py:330
 msgid "Contour"
-msgstr ""
+msgstr "外形"
 
 #: constants.py:384
 msgid "Front"
-msgstr ""
+msgstr "正面"
 
 #: constants.py:385
 msgid "Back"
-msgstr ""
+msgstr "< 返回"
 
 #: constants.py:386
 msgid "Top"
-msgstr ""
+msgstr "顶部"
 
 #: constants.py:387
 msgid "Bottom"
-msgstr ""
+msgstr "底部"
 
 #: constants.py:390
 msgid "Isometric"
-msgstr ""
+msgstr "等轴测"
 
 #: constants.py:397
 msgid "Airways"
-msgstr ""
+msgstr "气道"
 
 #: constants.py:398
 msgid "Airways II"
-msgstr ""
+msgstr "气道 II"
 
 #: constants.py:399
 msgid "Black & White"
-msgstr ""
+msgstr "黑白"
 
 #: constants.py:400
 msgid "Bone + Skin"
-msgstr ""
+msgstr "骨骼+皮肤"
 
 #: constants.py:401
 msgid "Bone + Skin II"
-msgstr ""
+msgstr "骨骼+皮肤II"
 
 #: constants.py:402
 msgid "Dark bone"
-msgstr ""
+msgstr "深色骨骼"
 
 #: constants.py:403
 msgid "Glossy"
-msgstr ""
+msgstr "有光泽的"
 
 #: constants.py:404
 msgid "Glossy II"
-msgstr ""
+msgstr "光泽II"
 
 #: constants.py:405
 msgid "Gold bone"
-msgstr ""
+msgstr "金骨头"
 
 #: constants.py:406
 msgid "High contrast"
-msgstr ""
+msgstr "高对比度"
 
 #: constants.py:407
 msgid "Low contrast"
-msgstr ""
+msgstr "低对比度"
 
 #: constants.py:408 constants.py:416
 msgid "Soft on white"
-msgstr ""
+msgstr "白色上柔软"
 
 #: constants.py:409
 msgid "Mid contrast"
-msgstr ""
+msgstr "中等对比度"
 
 #: constants.py:410
 msgid "MIP"
-msgstr ""
+msgstr "MIP"
 
 #: constants.py:411
 msgid "No shading"
-msgstr ""
+msgstr "无阴影"
 
 #: constants.py:412
 msgid "Pencil"
-msgstr ""
+msgstr "铅笔"
 
 #: constants.py:413
 msgid "Red on white"
-msgstr ""
+msgstr "白底红"
 
 #: constants.py:414
 msgid "Skin on blue"
-msgstr ""
+msgstr "蓝色皮肤"
 
 #: constants.py:415
 msgid "Skin on blue II"
-msgstr ""
+msgstr "蓝色皮肤II"
 
 #: constants.py:417
 msgid "Soft + Skin"
-msgstr ""
+msgstr "柔软+皮肤"
 
 #: constants.py:418
 msgid "Soft + Skin II"
-msgstr ""
+msgstr "柔软+皮肤II"
 
 #: constants.py:419
 msgid "Soft + Skin III"
-msgstr ""
+msgstr "柔软+皮肤III"
 
 #: constants.py:420
 msgid "Soft on blue"
-msgstr ""
+msgstr "柔和的蓝色"
 
 #: constants.py:421
 msgid "Soft"
-msgstr ""
+msgstr "软的"
 
 #: constants.py:422
 msgid "Standard"
-msgstr ""
+msgstr "标准"
 
 #: constants.py:423
 msgid "Vascular"
-msgstr ""
+msgstr "血管的"
 
 #: constants.py:424
 msgid "Vascular II"
-msgstr ""
+msgstr "血管II"
 
 #: constants.py:425
 msgid "Vascular III"
-msgstr ""
+msgstr "血管III"
 
 #: constants.py:426
 msgid "Vascular IV"
-msgstr ""
+msgstr "血管IV"
 
 #: constants.py:427
 msgid "Yellow bone"
-msgstr ""
+msgstr "黄骨"
 
 #: constants.py:444 volume.py:670
 msgid "Cut plane"
-msgstr ""
+msgstr "剖切面"
 
 #: constants.py:702
 msgid "Select tracker:"
-msgstr ""
+msgstr "选择跟踪器："
 
 #: constants.py:702
 msgid "Claron MicronTracker"
-msgstr ""
+msgstr "Claron MicronTracker"
 
 #: constants.py:703
 msgid "Polhemus FASTRAK"
-msgstr ""
+msgstr "Polhemus FASTRAK"
 
 #: constants.py:703
 msgid "Polhemus ISOTRAK II"
-msgstr ""
+msgstr "Polhemus ISOTRAK II"
 
 #: constants.py:704
 msgid "Polhemus PATRIOT"
-msgstr ""
+msgstr "Polhemus爱国者"
 
 #: constants.py:704
 msgid "Debug tracker"
-msgstr ""
+msgstr "调试跟踪器"
 
 #: constants.py:705
 msgid "Disconnect tracker"
-msgstr ""
+msgstr "断开跟踪器"
 
 #: constants.py:710
 msgid "Static ref."
-msgstr ""
+msgstr "静态参考。"
 
 #: constants.py:710
 msgid "Dynamic ref."
-msgstr ""
+msgstr "动态参考。"
 
 #: constants.py:713
 msgid "Select coil:"
-msgstr ""
+msgstr "选择线圈："
 
 #: constants.py:713
 msgid "Neurosoft Figure-8"
-msgstr ""
+msgstr "Neurosoft图-8"
 
 #: constants.py:714
 msgid "Magstim 70 mm"
-msgstr ""
+msgstr "Magstim 70毫米"
 
 #: constants.py:714
 msgid "Nexstim"
-msgstr ""
+msgstr "Nexstim"
 
 #: constants.py:724
 msgid "LEI"
-msgstr ""
+msgstr "LEI"
 
 #: constants.py:725
 msgid "REI"
-msgstr ""
+msgstr "REI"
 
 #: constants.py:726
 msgid "NAI"
-msgstr ""
+msgstr "LEI"
 
 #: constants.py:732
 msgid "Select left ear in image"
-msgstr ""
+msgstr "在图像中选择左耳"
 
 #: constants.py:733
 msgid "Select right ear in image"
-msgstr ""
+msgstr "在图像中选择右耳"
 
 #: constants.py:734
 msgid "Select nasion in image"
-msgstr ""
+msgstr "选择图像中的鼻"
 
 #: constants.py:736
 msgid "LET"
-msgstr ""
+msgstr "LET"
 
 #: constants.py:737
 msgid "RET"
-msgstr ""
+msgstr "RET"
 
 #: constants.py:738
 msgid "NAT"
-msgstr ""
+msgstr "NAT"
 
 #: constants.py:739
 msgid "SET"
-msgstr ""
+msgstr "LEI"
 
 #: constants.py:741
 msgid "Select left ear with spatial tracker"
-msgstr ""
+msgstr "使用空间跟踪器选择左耳"
 
 #: constants.py:742
 msgid "Select right ear with spatial tracker"
-msgstr ""
+msgstr "使用空间跟踪器选择右耳"
 
 #: constants.py:743
 msgid "Select nasion with spatial tracker"
-msgstr ""
+msgstr "使用空间跟踪器选择鼻离子"
 
 #: constants.py:744
 msgid "Show set coordinates in image"
-msgstr ""
+msgstr "在图像中显示设置的坐标"
 
 #: constants.py:754
 msgid "Anterior"
-msgstr ""
+msgstr "先前的"
 
 #: constants.py:755
 msgid "Center"
-msgstr ""
+msgstr "居中"
 
 #: constants.py:756
 msgid "Fixed"
-msgstr ""
+msgstr "固定的"
 
 #: constants.py:758
 msgid "Select left object fiducial"
-msgstr ""
+msgstr "选择左侧对象基准"
 
 #: constants.py:759
 msgid "Select right object fiducial"
-msgstr ""
+msgstr "选择右侧对象基准"
 
 #: constants.py:760
 msgid "Select anterior object fiducial"
-msgstr ""
+msgstr "选择前方对象基准"
 
 #: constants.py:761
 msgid "Select object center"
-msgstr ""
+msgstr "选择对象中心"
 
 #: constants.py:762
 msgid "Attach sensor to object"
-msgstr ""
+msgstr "将传感器连接到物体"
 
 #: control.py:390
 #, python-format
 msgid "Loading file %d of %d ..."
-msgstr ""
+msgstr "正在加载文件%d（共%d个）..."
 
 #: control.py:840
 msgid "Fix gantry tilt applying the degrees below"
-msgstr ""
+msgstr "应用以下角度固定龙门倾斜"
 
 #: data_notebook.py:49 measures.py:23
 msgid "Linear"
-msgstr ""
+msgstr "线性的"
 
 #: data_notebook.py:50 measures.py:24
 msgid "Angular"
-msgstr ""
+msgstr "有棱角的"
 
 #: data_notebook.py:51 measures.py:25 measures.py:1133
 msgid "Density Ellipse"
-msgstr ""
+msgstr "密度椭圆"
 
 #: data_notebook.py:52 measures.py:26 measures.py:1572
 msgid "Density Polygon"
-msgstr ""
+msgstr "密度多边形"
 
 #: data_notebook.py:55 measures.py:29
 msgid "3D"
-msgstr ""
+msgstr "3D"
 
 #: data_notebook.py:56 dialogs.py:2285 dialogs.py:2461 dialogs.py:2483
 #: dialogs.py:3712 measures.py:30
 msgid "Axial"
-msgstr ""
+msgstr "轴向"
 
 #: data_notebook.py:57 dialogs.py:2285 dialogs.py:2461 dialogs.py:2484
 #: dialogs.py:3713 measures.py:31
 msgid "Coronal"
-msgstr ""
+msgstr "冠状"
 
 #: data_notebook.py:58 measures.py:32
 msgid "Sagittal"
-msgstr ""
+msgstr "矢状"
 
 #: data_notebook.py:73
 msgid "Masks"
-msgstr ""
+msgstr "遮罩"
 
 #: data_notebook.py:74
 msgid "3D surfaces"
-msgstr ""
+msgstr "三维表面"
 
 #: data_notebook.py:75
 msgid "Measures"
-msgstr ""
+msgstr "测量"
 
 #: data_notebook.py:171
 msgid "Create a new measure"
-msgstr ""
+msgstr "创建新度量值"
 
 #: data_notebook.py:178
 msgid "Remove measure"
-msgstr ""
+msgstr "删除测量"
 
 #: data_notebook.py:184
 msgid "Duplicate measure"
-msgstr ""
+msgstr "重复测量"
 
 #: data_notebook.py:197 frame.py:1512
 msgid "Measure distance"
-msgstr ""
+msgstr "测量距离"
 
 #: data_notebook.py:200 frame.py:1518
 msgid "Measure angle"
-msgstr ""
+msgstr "测量角度"
 
 #: data_notebook.py:289
 msgid "Create a new mask"
-msgstr ""
+msgstr "创建新遮罩"
 
 #: data_notebook.py:295
 msgid "Remove mask"
-msgstr ""
+msgstr "移除遮罩"
 
 #: data_notebook.py:301
 msgid "Duplicate mask"
-msgstr ""
+msgstr "重复遮罩"
 
 #: data_notebook.py:466 data_notebook.py:818 data_notebook.py:1093
 #: data_notebook.py:1290
 msgid "Name"
-msgstr ""
+msgstr "名称"
 
 #: data_notebook.py:537 frame.py:936
 msgid "Mask"
-msgstr ""
+msgstr "遮罩"
 
 #: data_notebook.py:629
 msgid "Create a new surface"
-msgstr ""
+msgstr "创建新表面"
 
 #: data_notebook.py:635
 msgid "Remove surface"
-msgstr ""
+msgstr "移除表面"
 
 #: data_notebook.py:641
 msgid "Duplicate surface"
-msgstr ""
+msgstr "重复表面"
 
 #: data_notebook.py:647
 msgid "Import a surface file into InVesalius"
-msgstr ""
+msgstr "将表面文件导入InVesalius"
 
 #: data_notebook.py:675 task_surface.py:162
 msgid "New surface"
-msgstr ""
+msgstr "新表面"
 
 #: data_notebook.py:819
 msgid "Volume (mm³)"
-msgstr ""
+msgstr "体积（mm³）"
 
 #: data_notebook.py:820
 msgid "Area (mm²)"
-msgstr ""
+msgstr "面积（mm²）"
 
 #: data_notebook.py:821
 msgid "Transparency"
-msgstr ""
+msgstr "透明度"
 
 #: data_notebook.py:1094
 msgid "Location"
-msgstr ""
+msgstr "位置"
 
 #: data_notebook.py:1095 data_notebook.py:1291 import_bitmap_panel.py:202
 msgid "Type"
-msgstr ""
+msgstr "类型"
 
 #: data_notebook.py:1096 data_notebook.py:1292
 msgid "Value"
-msgstr ""
+msgstr "值"
 
 #: default_tasks.py:154
 msgid "Data"
-msgstr ""
+msgstr "数据"
 
 #: default_tasks.py:246 default_tasks.py:252
 msgid "Load data"
-msgstr ""
+msgstr "加载数据"
 
 #: default_tasks.py:247 default_tasks.py:253 default_tasks.py:282
 msgid "Select region of interest"
-msgstr ""
+msgstr "选择感兴趣的区域"
 
 #: default_tasks.py:248 default_tasks.py:254 default_tasks.py:284
 msgid "Configure 3D surface"
-msgstr ""
+msgstr "配置三维表面"
 
 #: default_tasks.py:249 default_tasks.py:255
 msgid "Export data"
-msgstr ""
+msgstr "导出数据"
 
 #: default_tasks.py:256 default_tasks.py:325
 msgid "Navigation system"
-msgstr ""
+msgstr "导航系统"
 
 #: default_viewers.py:85 default_viewers.py:182 task_exporter.py:253
 msgid "Axial slice"
-msgstr ""
+msgstr "轴向切片"
 
 #: default_viewers.py:90 default_viewers.py:188 task_exporter.py:254
 msgid "Coronal slice"
-msgstr ""
+msgstr "冠状切片"
 
 #: default_viewers.py:95 default_viewers.py:194 task_exporter.py:255
 msgid "Sagittal slice"
-msgstr ""
+msgstr "矢状切面"
 
 #: default_viewers.py:101 default_viewers.py:200 task_exporter.py:256
 msgid "Volume"
-msgstr ""
+msgstr "体积"
 
 #: default_viewers.py:495
 msgid "Preset name"
-msgstr ""
+msgstr "预设名称"
 
 #: default_viewers.py:530 frame.py:1011
 msgid "Tools"
-msgstr ""
+msgstr "工具"
 
 #: dialogs.py:104
 msgid "Value will be applied."
-msgstr ""
+msgstr "将应用值。"
 
 #: dialogs.py:108
 msgid "Value will not be applied."
-msgstr ""
+msgstr "将不应用值。"
 
 #: dialogs.py:147
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient "
+"memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
+"InVesalius在32位操作系统上运行或内存不足。如果要使用三维表面或体积渲染，建议"
+"降低医学图像的分辨率。"
 
 #: dialogs.py:161
 msgid "Percentage of original resolution"
-msgstr ""
+msgstr "原始分辨率的百分比"
 
 #: dialogs.py:209
 msgid "Loading DICOM files"
-msgstr ""
+msgstr "加载DICOM文件"
 
 #: dialogs.py:248
 msgid "InVesalius project (*.inv3)|*.inv3"
-msgstr ""
+msgstr "InVesalius项目（*.inv3）|*.inv3"
 
 #: dialogs.py:249
 msgid "InVesalius project compressed (*.inv3)|*.inv3"
-msgstr ""
+msgstr "InVesalius项目压缩（*.inv3）|*.inv3"
 
 #: dialogs.py:277
 msgid "Open InVesalius 3 project..."
-msgstr ""
+msgstr "打开InVesalius 3项目..."
 
 #: dialogs.py:319
 msgid "Choose a DICOM folder:"
-msgstr ""
+msgstr "选择DICOM文件夹："
 
 #: dialogs.py:362
 msgid "Choose a folder with TIFF, BMP, JPG or PNG:"
-msgstr ""
+msgstr "选择一个包含TIFF、BMP、JPG或PNG的文件夹："
 
 #: dialogs.py:396
 msgid "Import Analyze 7.5 file"
-msgstr ""
+msgstr "导入Analyze 7.5文件"
 
 #: dialogs.py:402
 msgid "Import NIFTi 1 file"
-msgstr ""
+msgstr "导入NIFTi 1文件"
 
 #: dialogs.py:405
 msgid "Import PAR/REC file"
-msgstr ""
+msgstr "导入PAR/REC文件"
 
 #: dialogs.py:441
 msgid "Import surface file"
-msgstr ""
+msgstr "导入表面文件"
 
 #: dialogs.py:476
 msgid "Save project as..."
-msgstr ""
+msgstr "将项目另存为..."
 
 #: dialogs.py:513
 msgid "Save markers as..."
-msgstr ""
+msgstr "将标记另存为..."
 
 #: dialogs.py:516 dialogs.py:577
 msgid "Markers files (*.mks)|*.mks"
-msgstr ""
+msgstr "标记文件（*.mks）|*.mks"
 
 #: dialogs.py:543
 msgid "Save coords as..."
-msgstr ""
+msgstr "将坐标另存为..."
 
 #: dialogs.py:546
 msgid "Coordinates files (*.csv)|*.csv"
-msgstr ""
+msgstr "坐标文件（*.csv）|*.csv"
 
 #: dialogs.py:574
 msgid "Load markers"
-msgstr ""
+msgstr "加载标记"
 
 #: dialogs.py:603
 msgid "Save object registration as..."
-msgstr ""
+msgstr "将对象注册另存为..."
 
 #: dialogs.py:606 dialogs.py:637
 msgid "Registration files (*.obr)|*.obr"
-msgstr ""
+msgstr "注册文件（*.obr）|*.obr"
 
 #: dialogs.py:634
 msgid "Load object registration"
-msgstr ""
+msgstr "加载对象注册"
 
 #: dialogs.py:704 utils.py:388
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr ""
+msgstr "InVesalius的新版本可用。你想现在打开下载网站吗？"
 
 #: dialogs.py:705 utils.py:389
 msgid "Invesalius Update"
-msgstr ""
+msgstr "Invesalius更新"
 
 #: dialogs.py:767 dialogs.py:1215 dialogs.py:1240
 #, python-format
@@ -858,998 +863,1015 @@ msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
 msgstr ""
+"项目%s已被修改。\n"
+"是否保存更改？"
 
 #: dialogs.py:781
 #, python-format
 msgid "%s is an empty folder."
-msgstr ""
+msgstr "%s是一个空文件夹。"
 
 #: dialogs.py:795
 msgid ""
-"File was created in a newer InVesalius version. Some functionalities may not"
-" work correctly."
-msgstr ""
+"File was created in a newer InVesalius version. Some functionalities may "
+"not work correctly."
+msgstr "文件是在更新的InVesalius版本中创建的。某些功能可能无法正常工作。"
 
 #: dialogs.py:805
 msgid "There are no Bitmap, JPEG, PNG or TIFF files in the selected folder."
-msgstr ""
+msgstr "所选文件夹中没有位图、JPEG、PNG或TIFF文件。"
 
 #: dialogs.py:807
 msgid "There are no DICOM files in the selected folder."
-msgstr ""
+msgstr "所选文件夹中没有DICOM文件。"
 
 #: dialogs.py:809
 msgid "Invalid file."
-msgstr ""
+msgstr "无效文件。"
 
 #: dialogs.py:822
 msgid "Warning! InVesalius has limited support to Analyze format.\n"
-msgstr ""
+msgstr "警告InVesalius对Analyze格式的支持有限。\n"
 
 #: dialogs.py:823
 msgid "Slices may be wrongly oriented and functions may not work properly."
-msgstr ""
+msgstr "切片的方向可能错误，函数可能无法正常工作。"
 
 #: dialogs.py:835
 msgid "A mask is needed to create a surface."
-msgstr ""
+msgstr "创建表面需要遮罩。"
 
 #: dialogs.py:846
 msgid "No mask was selected for removal."
-msgstr ""
+msgstr "没有选择要删除的掩码。"
 
 #: dialogs.py:857
 msgid "No surface was selected for removal."
-msgstr ""
+msgstr "没有选择要删除的表面。"
 
 #: dialogs.py:869
 msgid "No measure was selected for removal."
-msgstr ""
+msgstr "未选择要删除的度量值。"
 
 #: dialogs.py:880
 msgid "No mask was selected for duplication."
-msgstr ""
+msgstr "没有选择要复制的掩码。"
 
 #: dialogs.py:893
 msgid "No surface was selected for duplication."
-msgstr ""
+msgstr "没有选择要复制的表面。"
 
 #: dialogs.py:906
 msgid "Fiducials are invalid. Select all coordinates."
-msgstr ""
+msgstr "信托无效。选择所有坐标。"
 
 #: dialogs.py:918
 msgid "Perform coil registration before navigation."
-msgstr ""
+msgstr "导航前执行线圈注册。"
 
 #: dialogs.py:940
 msgid "No tracking device selected"
-msgstr ""
+msgstr "未选择跟踪设备"
 
 #: dialogs.py:942
 msgid " is not installed."
-msgstr ""
+msgstr "未安装。"
 
 #: dialogs.py:944
 msgid " disconnected."
-msgstr ""
+msgstr "断开的。"
 
 #: dialogs.py:946
 msgid " is not connected."
-msgstr ""
+msgstr "未连接。"
 
 #: dialogs.py:960
 msgid "The TXT file is invalid."
-msgstr ""
+msgstr "TXT文件无效。"
 
 #: dialogs.py:972
 msgid "No data selected"
-msgstr ""
+msgstr "未选择任何数据"
 
 #: dialogs.py:984
 msgid "Do you really want to delete all markers?"
-msgstr ""
+msgstr "是否确实要删除所有标记？"
 
 #: dialogs.py:996
 msgid "Target deleted"
-msgstr ""
+msgstr "目标已删除"
 
 #: dialogs.py:1007
 msgid "New target selected"
-msgstr ""
+msgstr "已选择新目标"
 
 #: dialogs.py:1018
 msgid "Sorry, you cannot use 'TARGET' ID"
-msgstr ""
+msgstr "抱歉，您不能使用“TARGET\"ID"
 
 #: dialogs.py:1029
-msgid "Edit marker ID"
-msgstr ""
+msgid "Change label"
+msgstr "编辑标记ID"
 
 #: dialogs.py:1080
 msgid "New mask name:"
-msgstr ""
+msgstr "新掩码名称："
 
 #: dialogs.py:1084
 msgid "Name the mask to be created"
-msgstr ""
+msgstr "命名要创建的遮罩"
 
 #: dialogs.py:1091
 msgid "Threshold preset:"
-msgstr ""
+msgstr "阈值预设："
 
 #: dialogs.py:1177 presets.py:46 presets.py:64 presets.py:120 presets.py:151
 #: slice_menu.py:127 slice_menu.py:261 task_slice.py:568 task_slice.py:570
 #: task_slice.py:582 task_slice.py:584 task_slice.py:625 task_slice.py:628
 msgid "Custom"
-msgstr ""
+msgstr "自定义"
 
 #: dialogs.py:1192
 #, python-format
 msgid "%s does not exist."
-msgstr ""
+msgstr "%s不存在。"
 
 #: dialogs.py:1203
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
-msgstr ""
+msgstr "请提供多个DICOM文件用于3D重建"
 
 #: dialogs.py:1264
 msgid "(c) 2007-2019 Center for Information Technology Renato Archer - CTI"
-msgstr ""
+msgstr "（c） 2007-2019信息技术中心Renato Archer-CTI"
 
 #: dialogs.py:1265
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
+"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
+"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
+"creating physical models of a patient's anatomy using additive "
+"manufacturing (3D printing) technologies. The software is developed by "
+"Center for Information Technology Renato Archer (CTI), National Council for "
+"Scientific and Technological Development (CNPq) and the Brazilian Ministry "
+"of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
+" InVesalius must be used only for research. The Center for Information "
+"Technology Renato Archer is not responsible for damages caused by the use "
+"of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
+"InVesalius是一个用于3D重建的医学成像程序。它使用CT或MRI扫描仪采集的一系列2D "
+"DICOM图像文件。InVesalius允许将3D体积或表面导出为网格文件，用于使用增材制造"
+"（3D打印）技术创建患者解剖结构的物理模型。该软件由信息技术中心Renato "
+"Archer（CTI）、国家科学技术发展委员会（CNPq）和巴西卫生部开发。InVesalius只"
+"能用于研究。信息技术中心Renato Archer不对使用本软件造成的损害负责。联系"
+"invesalius@cti.gov.br"
 
 #: dialogs.py:1273
 msgid "GNU GPL (General Public License) version 2"
-msgstr ""
+msgstr "GNU GPL（通用公共许可证）第2版"
 
 #: dialogs.py:1328
 msgid "Save raycasting preset as:"
-msgstr ""
+msgstr "将光线投射预设另存为："
 
 #: dialogs.py:1375 dialogs.py:1644
 msgid "New surface name:"
-msgstr ""
+msgstr "新表面名称："
 
 #: dialogs.py:1379 dialogs.py:1648
 msgid "Name the surface to be created"
-msgstr ""
+msgstr "命名要创建的表面"
 
 #: dialogs.py:1386 dialogs.py:1655
 msgid "Mask of reference:"
-msgstr ""
+msgstr "参考掩码："
 
 #: dialogs.py:1403 dialogs.py:1675
 msgid "Surface quality:"
-msgstr ""
+msgstr "表面质量："
 
 #: dialogs.py:1432 dialogs.py:1706 styles.py:1956
 msgid "Fill holes"
-msgstr ""
+msgstr "填充孔"
 
 #: dialogs.py:1435 dialogs.py:1709
 msgid "Keep largest region"
-msgstr ""
+msgstr "保留最大区域"
 
 #: dialogs.py:1475
 msgid "BMP image"
-msgstr ""
+msgstr "BMP图像"
 
 #: dialogs.py:1476
 msgid "JPG image"
-msgstr ""
+msgstr "JPG image"
 
 #: dialogs.py:1477
 msgid "PNG image"
-msgstr ""
+msgstr "PNG图像"
 
 #: dialogs.py:1478
 msgid "PostScript document"
-msgstr ""
+msgstr "PostScript文档"
 
 #: dialogs.py:1479
 msgid "POV-Ray file"
-msgstr ""
+msgstr "POV射线文件"
 
 #: dialogs.py:1480
 msgid "TIFF image"
-msgstr ""
+msgstr "TIFF图像"
 
 #: dialogs.py:1530
 msgid "Surface generation options"
-msgstr ""
+msgstr "表面生成选项"
 
 #: dialogs.py:1560
 msgid "Surface creation"
-msgstr ""
+msgstr "表面创建"
 
 #: dialogs.py:1593
 msgid "Surface creation options"
-msgstr ""
+msgstr "表面创建选项"
 
 #: dialogs.py:1599
 msgid "Surface creation method"
-msgstr ""
+msgstr "表面创建方法"
 
 #: dialogs.py:1703 preferences.py:225
 msgid "Fill border holes"
-msgstr ""
+msgstr "填充边框孔"
 
 #: dialogs.py:1757 frame.py:1013
 msgid "Options"
-msgstr ""
+msgstr "选项"
 
 #: dialogs.py:1773
 msgid "Angle:"
-msgstr ""
+msgstr "角:"
 
 #: dialogs.py:1775
 msgid "Max. distance:"
-msgstr ""
+msgstr "最大距离："
 
 #: dialogs.py:1777
 msgid "Min. weight:"
-msgstr ""
+msgstr "最小重量："
 
 #: dialogs.py:1779
 msgid "N. steps:"
-msgstr ""
+msgstr "N.步骤："
 
 #: dialogs.py:1798 dialogs.py:1834 dialogs.py:1879
 msgid "Context aware smoothing"
-msgstr ""
+msgstr "上下文感知平滑"
 
 #: dialogs.py:1799
 msgid "Binary"
-msgstr ""
+msgstr "二进制的"
 
 #: dialogs.py:1817
 msgid ""
 "It is not possible to use the Default method because the mask was edited."
-msgstr ""
+msgstr "无法使用默认方法，因为遮罩已编辑。"
 
 #: dialogs.py:1820
 msgid "Method:"
-msgstr ""
+msgstr "方法:"
 
 #: dialogs.py:1952 dialogs.py:2999
 msgid "Method"
-msgstr ""
+msgstr "方法"
 
 #: dialogs.py:1975
 msgid "Gaussian sigma"
-msgstr ""
+msgstr "高斯西格玛"
 
 #: dialogs.py:1995 task_slice.py:308
 msgid "Watershed"
-msgstr ""
+msgstr "转折点"
 
 #: dialogs.py:2039
 msgid "Boolean operations"
-msgstr ""
+msgstr "布尔运算"
 
 #: dialogs.py:2067 slice_.py:1347
 msgid "Union"
-msgstr ""
+msgstr "愈合"
 
 #: dialogs.py:2068
 msgid "Difference"
-msgstr ""
+msgstr "差别"
 
 #: dialogs.py:2069 slice_.py:1349
 msgid "Intersection"
-msgstr ""
+msgstr "交叉"
 
 #: dialogs.py:2070
 msgid "Exclusive disjunction"
-msgstr ""
+msgstr "互斥析取"
 
 #: dialogs.py:2091
 msgid "Mask 1"
-msgstr ""
+msgstr "遮罩1"
 
 #: dialogs.py:2093
 msgid "Operation"
-msgstr ""
+msgstr "活动"
 
 #: dialogs.py:2095
 msgid "Mask 2"
-msgstr ""
+msgstr "遮罩2"
 
 #: dialogs.py:2123
 msgid "Image reorientation"
-msgstr ""
+msgstr "图像重新定向"
 
 #: dialogs.py:2142
 msgid "Nearest Neighbour"
-msgstr ""
+msgstr "最近邻"
 
 #: dialogs.py:2143
 msgid "Trilinear"
-msgstr ""
+msgstr "三线性"
 
 #: dialogs.py:2144
 msgid "Tricubic"
-msgstr ""
+msgstr "三元三次"
 
 #: dialogs.py:2145
 msgid "Lanczos (experimental)"
-msgstr ""
+msgstr "兰索斯（实验）"
 
 #: dialogs.py:2155
 msgid "Apply"
-msgstr ""
+msgstr "应用"
 
 #: dialogs.py:2161
 msgid "Angle X"
-msgstr ""
+msgstr "角度X"
 
 #: dialogs.py:2164
 msgid "Angle Y"
-msgstr ""
+msgstr "角度Y"
 
 #: dialogs.py:2167
 msgid "Angle Z"
-msgstr ""
+msgstr "角度Z"
 
 #: dialogs.py:2171
 msgid "Interpolation method:"
-msgstr ""
+msgstr "插值方法："
 
 #: dialogs.py:2251 dialogs.py:2256
 msgid "Create project from bitmap"
-msgstr ""
+msgstr "从位图创建项目"
 
 #: dialogs.py:2281
 msgid "Project name:"
-msgstr ""
+msgstr "项目名称："
 
 #: dialogs.py:2284
 msgid "Slices orientation:"
-msgstr ""
+msgstr "切片方向："
 
 #: dialogs.py:2285 dialogs.py:2461 dialogs.py:2485 dialogs.py:3714
 msgid "Sagital"
-msgstr ""
+msgstr "矢状面"
 
 #: dialogs.py:2289
 msgid "Spacing (mm):"
-msgstr ""
+msgstr "间距（mm）："
 
 #: dialogs.py:2310
 msgid "X:"
-msgstr ""
+msgstr "X:"
 
 #: dialogs.py:2315
 msgid "Y:"
-msgstr ""
+msgstr "Y:"
 
 #: dialogs.py:2319
 msgid "Z:"
-msgstr ""
+msgstr "Z:"
 
 #: dialogs.py:2404
 msgid ""
 "All bitmaps files must be the same \n"
 " width and height size."
-msgstr ""
+msgstr "所有位图文件必须相同宽度和高度大小。"
 
 #: dialogs.py:2417
 msgid "2D - Actual slice"
-msgstr ""
+msgstr "2D-实际切片"
 
 #: dialogs.py:2418
 msgid "3D - All slices"
-msgstr ""
+msgstr "3D-所有切片"
 
 #: dialogs.py:2452
 msgid "2D Connectivity"
-msgstr ""
+msgstr "2D连接"
 
 #: dialogs.py:2464
 msgid "Orientation"
-msgstr ""
+msgstr "方向"
 
 #: dialogs.py:2507
 msgid "3D Connectivity"
-msgstr ""
+msgstr "3D连接"
 
 #: dialogs.py:2577 dialogs.py:2639 task_slice.py:909
 msgid "Use WW&WL"
-msgstr ""
+msgstr "使用WW和WL"
 
 #: dialogs.py:2601
 msgid "Deviation"
-msgstr ""
+msgstr "偏离"
 
 #: dialogs.py:2603
 msgid "Min:"
-msgstr ""
+msgstr "最小值："
 
 #: dialogs.py:2606
 msgid "Max:"
-msgstr ""
+msgstr "最大值："
 
 #: dialogs.py:2668
 msgid "Multiplier"
-msgstr ""
+msgstr "乘数"
 
 #: dialogs.py:2671
 msgid "Iterations"
-msgstr ""
+msgstr "迭代次数"
 
 #: dialogs.py:2755 dialogs.py:2978 dialogs.py:3256
 msgid "Parameters"
-msgstr ""
+msgstr "参数"
 
 #: dialogs.py:2814 dialogs.py:2817
 msgid "Select mask parts"
-msgstr ""
+msgstr "选择遮罩部分"
 
 #: dialogs.py:2844
 msgid "Target mask name"
-msgstr ""
+msgstr "目标遮罩名称"
 
 #: dialogs.py:2896 styles.py:2305
 msgid "Region growing"
-msgstr ""
+msgstr "区域增长"
 
 #: dialogs.py:2948
 msgid "Dynamic"
-msgstr ""
+msgstr "动态"
 
 #: dialogs.py:2948
 msgid "Confidence"
-msgstr ""
+msgstr "自信"
 
 #: dialogs.py:3101
 msgid "Crop mask"
-msgstr ""
+msgstr "裁剪遮罩"
 
 #: dialogs.py:3139
 msgid "Axial:"
-msgstr ""
+msgstr "轴向："
 
 #: dialogs.py:3141 dialogs.py:3151 dialogs.py:3161
 msgid " - "
-msgstr ""
+msgstr " - "
 
 #: dialogs.py:3149
 msgid "Sagital:"
-msgstr ""
+msgstr "矢状面："
 
 #: dialogs.py:3159
 msgid "Coronal:"
-msgstr ""
+msgstr "冠状面："
 
 #: dialogs.py:3267
 msgid "Max hole size"
-msgstr ""
+msgstr "最大孔尺寸"
 
 #: dialogs.py:3269
 msgid "voxels"
-msgstr ""
+msgstr "三维图像"
 
 #: dialogs.py:3328 dialogs.py:3331
 msgid "Mask density"
-msgstr ""
+msgstr "遮罩密度"
 
 #: dialogs.py:3347
 msgid "Calculate"
-msgstr ""
+msgstr "计算"
 
 #: dialogs.py:3357
 msgid "Mask:"
-msgstr ""
+msgstr "遮罩:"
 
 #: dialogs.py:3364
 msgid "Mean:"
-msgstr ""
+msgstr "意思是:"
 
 #: dialogs.py:3367
 msgid "Minimun:"
-msgstr ""
+msgstr "最低限度:"
 
 #: dialogs.py:3370
 msgid "Maximun:"
-msgstr ""
+msgstr "最大限度:"
 
 #: dialogs.py:3373
 msgid "Standard deviation:"
-msgstr ""
+msgstr "标准偏差："
 
 #: dialogs.py:3409
 msgid "Calculating "
-msgstr ""
+msgstr "精明的"
 
 #: dialogs.py:3444 dialogs.py:3448
 msgid "Object calibration"
-msgstr ""
+msgstr "对象校准"
 
 #: dialogs.py:3467
 msgid "Choose the object reference mode"
-msgstr ""
+msgstr "选择对象引用模式"
 
 #: dialogs.py:3477
 msgid "Registration done"
-msgstr ""
+msgstr "注册完成"
 
 #: dialogs.py:3479
 msgid "Done"
-msgstr ""
+msgstr "完成"
 
 #: dialogs.py:3522
 msgid "Would like to use InVesalius default object?"
-msgstr ""
+msgstr "是否要使用InVesalius默认对象？"
 
 #: dialogs.py:3553 surface.py:315 viewer_volume.py:1147
 msgid "File format not reconized by InVesalius"
-msgstr ""
+msgstr "InVesalius未重新配置文件格式"
 
 #: dialogs.py:3553 dialogs.py:3572 surface.py:315 surface.py:327
 #: viewer_volume.py:1147 viewer_volume.py:1163
 msgid "Import surface error"
-msgstr ""
+msgstr "导入表面错误"
 
 #: dialogs.py:3572 surface.py:327 viewer_volume.py:1163
 msgid "InVesalius was not able to import this surface"
-msgstr ""
+msgstr "InVesalius无法导入此表面"
 
 #: dialogs.py:3681
 msgid "Creating 3D surface ..."
-msgstr ""
+msgstr "正在创建三维表面..."
 
 #: dialogs.py:3706
 msgid "Go to slice ..."
-msgstr ""
+msgstr "转到切片..."
 
 #: dialogs.py:3740
 msgid "Slice number"
-msgstr ""
+msgstr "切片编号"
 
 #: dicom.py:1560 dicom.py:1564 dicom.py:1566
 msgid "unnamed"
-msgstr ""
+msgstr "未命名的"
 
 #: dicom_preview_panel.py:426
 #, python-format
 msgid "%d images"
-msgstr ""
+msgstr "%d个图像"
 
 #: dicom_preview_panel.py:555 dicom_preview_panel.py:562
 #: dicom_preview_panel.py:587 dicom_preview_panel.py:594
 #, python-format
 msgid "Image %d"
-msgstr ""
+msgstr "图像%d"
 
 #: frame.py:190
 msgid "Data panel"
-msgstr ""
+msgstr "数据面板"
 
 #: frame.py:196
 msgid "Preview medical data to be reconstructed"
-msgstr ""
+msgstr "预览要重建的医疗数据"
 
 #: frame.py:202
 msgid "Preview bitmap to be reconstructed"
-msgstr ""
+msgstr "预览要重建的位图"
 
 #: frame.py:552
 msgid "Currently the Navigation mode is only working on Windows"
-msgstr ""
+msgstr "当前导航模式仅适用于Windows"
 
 #: frame.py:719
 msgid "Fill holes automatically"
-msgstr ""
+msgstr "自动填充孔"
 
 #: frame.py:813
 msgid "Analyze 7.5"
-msgstr ""
+msgstr "分析7.5"
 
 #: frame.py:814
 msgid "NIfTI 1"
-msgstr ""
+msgstr "NIfTI 1"
 
 #: frame.py:815
 msgid "PAR/REC"
-msgstr ""
+msgstr "PAR/REC"
 
 #: frame.py:821
 msgid "Import DICOM...\tCtrl+I"
-msgstr ""
+msgstr "导入DICOM...\tCtrl+I"
 
 #: frame.py:823
 msgid "Import other files..."
-msgstr ""
+msgstr "导入其他文件..."
 
 #: frame.py:824
 msgid "Open project...\tCtrl+O"
-msgstr ""
+msgstr "打开项目...\tCtrl+O"
 
 #: frame.py:825
 msgid "Save project\tCtrl+S"
-msgstr ""
+msgstr "保存项目\tCtrl+S"
 
 #: frame.py:826
 msgid "Save project as...\tCtrl+Shift+S"
-msgstr ""
+msgstr "将项目另存为…\tCtrl+Shift+S"
 
 #: frame.py:827
 msgid "Export project"
-msgstr ""
+msgstr "导出项目"
 
 #: frame.py:828
 msgid "Close project"
-msgstr ""
+msgstr "关闭项目"
 
 #: frame.py:837
 msgid "Exit\tCtrl+Q"
-msgstr ""
+msgstr "退出\tCtrl+Q"
 
 #: frame.py:849 frame.py:859
 msgid "Undo\tCtrl+Z"
-msgstr ""
+msgstr "撤消\tCtrl+Z"
 
 #: frame.py:854 frame.py:860
 msgid "Redo\tCtrl+Y"
-msgstr ""
+msgstr "恢复\tCtrl+Y"
 
 #: frame.py:861
 msgid "Go to slice ...\tCtrl+G"
-msgstr ""
+msgstr "转到切片...\tCtrl+G"
 
 #: frame.py:871
 msgid "New\tCtrl+Shift+M"
-msgstr ""
+msgstr "新建\tCtrl+Shift+M"
 
 #: frame.py:874
 msgid "Boolean operations\tCtrl+Shift+B"
-msgstr ""
+msgstr "布尔运算\tCtrl+Shift+B"
 
 #: frame.py:877
 msgid "Clean Mask\tCtrl+Shift+A"
-msgstr ""
+msgstr "清除遮罩\tCtrl+Shift+A"
 
 #: frame.py:882
 msgid "Fill holes manually\tCtrl+Shift+H"
-msgstr ""
+msgstr "手动填充孔\tCtrl+Shift+H"
 
 #: frame.py:885
 msgid "Fill holes automatically\tCtrl+Shift+J"
-msgstr ""
+msgstr "自动填充孔\tCtrl+Shift+J"
 
 #: frame.py:890
 msgid "Remove parts\tCtrl+Shift+K"
-msgstr ""
+msgstr "删除零件\tCtrl+Shift+K"
 
 #: frame.py:893
 msgid "Select parts\tCtrl+Shift+L"
-msgstr ""
+msgstr "选择零件\tCtrl+Shift+L"
 
 #: frame.py:898
 msgid "Crop"
-msgstr ""
+msgstr "裁切"
 
 #: frame.py:903
 msgid "Threshold\tCtrl+Shift+T"
-msgstr ""
+msgstr "阈值\tCtrl+Shift+T"
 
 #: frame.py:904
 msgid "Manual segmentation\tCtrl+Shift+E"
-msgstr ""
+msgstr "手动分段\tCtrl+Shift+E"
 
 #: frame.py:905
 msgid "Watershed\tCtrl+Shift+W"
-msgstr ""
+msgstr "分水岭\tCtrl+Shift+W"
 
 #: frame.py:906
 msgid "Region growing\tCtrl+Shift+G"
-msgstr ""
+msgstr "区域增长\tCtrl+Shift+G"
 
 #: frame.py:919
 msgid "Right - Left"
-msgstr ""
+msgstr "右侧-左侧"
 
 #: frame.py:920
 msgid "Anterior - Posterior"
-msgstr ""
+msgstr "前部-后部"
 
 #: frame.py:921
 msgid "Top - Bottom"
-msgstr ""
+msgstr "顶部-底部"
 
 #: frame.py:924
 msgid "From Right-Left to Anterior-Posterior"
-msgstr ""
+msgstr "从右向左到前后"
 
 #: frame.py:925
 msgid "From Right-Left to Top-Bottom"
-msgstr ""
+msgstr "从右向左到上下"
 
 #: frame.py:926
 msgid "From Anterior-Posterior to Top-Bottom"
-msgstr ""
+msgstr "从前后到上下"
 
 #: frame.py:928
 msgid "Flip"
-msgstr ""
+msgstr "轻弹"
 
 #: frame.py:929
 msgid "Swap axes"
-msgstr ""
+msgstr "交换轴"
 
 #: frame.py:931
 msgid "Mask Density measure"
-msgstr ""
+msgstr "遮罩密度测量"
 
 #: frame.py:932
 msgid "Reorient image\tCtrl+Shift+R"
-msgstr ""
+msgstr "重定向图像\tCtrl+Shift+R"
 
 #: frame.py:937
 msgid "Segmentation"
-msgstr ""
+msgstr "细分"
 
 #: frame.py:938 preferences.py:108
 msgid "Surface"
-msgstr ""
+msgstr "表面"
 
 #: frame.py:942
 msgid "Interpolated slices"
-msgstr ""
+msgstr "插值切片"
 
 #: frame.py:979
 msgid "Preferences..."
-msgstr ""
+msgstr "首选项..."
 
 #: frame.py:984
 msgid "Transcranial Magnetic Stimulation Mode\tCtrl+T"
-msgstr ""
+msgstr "经颅磁刺激模式\tCtrl+T"
 
 #: frame.py:986
 msgid "Deep Brain Stimulation Mode\tCtrl+B"
-msgstr ""
+msgstr "脑深部刺激模式\tCtrl+B"
 
 #: frame.py:988
 msgid "Navigation Mode"
-msgstr ""
+msgstr "导航模式"
 
 #: frame.py:997
 msgid "Getting started..."
-msgstr ""
+msgstr "开始..."
 
 #: frame.py:1000
 msgid "About..."
-msgstr ""
+msgstr "关于..."
 
 #: frame.py:1008
 msgid "File"
-msgstr ""
+msgstr "文件"
 
 #: frame.py:1009
 msgid "Edit"
-msgstr ""
+msgstr "编辑"
 
 #: frame.py:1010
 msgid "View"
-msgstr ""
+msgstr "视图"
 
 #: frame.py:1014
 msgid "Mode"
-msgstr ""
+msgstr "模式"
 
 #: frame.py:1015
 msgid "Help"
-msgstr ""
+msgstr "帮助"
 
 #: frame.py:1160 surface.py:468 task_navigator.py:495 task_navigator.py:531
 #: task_navigator.py:925 task_navigator.py:951
 msgid "Ready"
-msgstr ""
+msgstr "准备好的"
 
 #: frame.py:1310
 msgid "Import DICOM files...\tCtrl+I"
-msgstr ""
+msgstr "导入DICOM文件...\tCtrl+I"
 
 #: frame.py:1319
 msgid "Open InVesalius project..."
-msgstr ""
+msgstr "打开InVesalius项目..."
 
 #: frame.py:1325
 msgid "Save InVesalius project"
-msgstr ""
+msgstr "保存 InVesalius项目"
 
 #: frame.py:1482
 msgid "Zoom"
-msgstr ""
+msgstr "快速移动"
 
 #: frame.py:1488
 msgid "Zoom based on selection"
-msgstr ""
+msgstr "根据选择缩放"
 
 #: frame.py:1494
 msgid "Rotate"
-msgstr ""
+msgstr "旋转"
 
 #: frame.py:1500
 msgid "Move"
-msgstr ""
+msgstr "移动"
 
 #: frame.py:1506
-msgid "Constrast"
-msgstr ""
+msgid "Contrast"
+msgstr "对比度"
 
 #: frame.py:1525
 msgid "Measure density ellipse"
-msgstr ""
+msgstr "测量密度椭圆"
 
 #: frame.py:1532
 msgid "Measure density polygon"
-msgstr ""
+msgstr "测量密度多边形"
 
 #: frame.py:1682
 msgid "Scroll slices"
-msgstr ""
+msgstr "滚动切片"
 
 #: frame.py:1688
 msgid "Slices' cross intersection"
-msgstr ""
+msgstr "切片的交叉点"
 
 #: frame.py:1867 frame.py:1938 frame.py:2116
 msgid "Hide task panel"
-msgstr ""
+msgstr "隐藏任务面板"
 
 #: frame.py:1873 frame.py:1960 frame.py:2138
 msgid "Hide text"
-msgstr ""
+msgstr "隐藏文本"
 
 #: frame.py:1944 frame.py:2122
 msgid "Show task panel"
-msgstr ""
+msgstr "显示任务面板"
 
 #: frame.py:1954 frame.py:2132
 msgid "Show text"
-msgstr ""
+msgstr "显示文本"
 
 #: frame.py:2035
 msgid "Undo"
-msgstr ""
+msgstr "打开"
 
 #: frame.py:2042
 msgid "Redo"
-msgstr ""
+msgstr "重做"
 
 #: imagedata_utils.py:104 imagedata_utils.py:335 imagedata_utils.py:440
 #: imagedata_utils.py:533 imagedata_utils.py:633
 msgid "Generating multiplanar visualization..."
-msgstr ""
+msgstr "正在生成多平面可视化..."
 
 #: import_bitmap_panel.py:92 import_network_panel.py:101 import_panel.py:94
 msgid "Import"
-msgstr ""
+msgstr "导入"
 
 #: import_bitmap_panel.py:201
 msgid "Path"
-msgstr ""
+msgstr "路径"
 
 #: import_bitmap_panel.py:203
 msgid "Width x Height"
-msgstr ""
+msgstr "宽度x高度"
 
 #: import_bitmap_panel.py:210 import_network_panel.py:266 import_panel.py:251
 msgid "InVesalius Database"
-msgstr ""
+msgstr "InVesalius数据库"
 
 #: import_network_panel.py:239 import_panel.py:224
 msgid "Patient name"
-msgstr ""
+msgstr "患者姓名"
 
 #: import_network_panel.py:240 import_panel.py:225
 msgid "Patient ID"
-msgstr ""
+msgstr "患者ID"
 
 #: import_network_panel.py:241 import_panel.py:226
 msgid "Age"
-msgstr ""
+msgstr "年龄"
 
 #: import_network_panel.py:242 import_panel.py:227
 msgid "Gender"
-msgstr ""
+msgstr "性别"
 
 #: import_network_panel.py:243 import_panel.py:228
 msgid "Study description"
-msgstr ""
+msgstr "研究说明"
 
 #: import_network_panel.py:244 import_panel.py:229
 msgid "Modality"
-msgstr ""
+msgstr "模式"
 
 #: import_network_panel.py:245 import_panel.py:230
 msgid "Date acquired"
-msgstr ""
+msgstr "获取日期"
 
 #: import_network_panel.py:246 import_panel.py:231
 msgid "# Images"
-msgstr ""
+msgstr "#图像"
 
 #: import_network_panel.py:247 import_panel.py:232
 msgid "Institution"
-msgstr ""
+msgstr "机构"
 
 #: import_network_panel.py:248 import_panel.py:233
 msgid "Date of birth"
-msgstr ""
+msgstr "出生日期"
 
 #: import_network_panel.py:249 import_panel.py:234
 msgid "Accession Number"
-msgstr ""
+msgstr "登录号"
 
 #: import_network_panel.py:250 import_panel.py:235
 msgid "Referring physician"
-msgstr ""
+msgstr "转诊医生"
 
 #: import_network_panel.py:497
 msgid "Word"
-msgstr ""
+msgstr "单词"
 
 #: import_network_panel.py:504
 msgid "Search"
-msgstr ""
+msgstr "搜索"
 
 #: import_network_panel.py:664
 msgid "Active"
-msgstr ""
+msgstr "活跃"
 
 #: import_network_panel.py:665
 msgid "Host"
-msgstr ""
+msgstr "宿主"
 
 #: import_network_panel.py:666
 msgid "Port"
-msgstr ""
+msgstr "端口"
 
 #: import_network_panel.py:667
 msgid "AETitle"
-msgstr ""
+msgstr "AE标题"
 
 #: import_network_panel.py:668
 msgid "Status"
-msgstr ""
+msgstr "状态"
 
 #: import_network_panel.py:698
 msgid "Add"
-msgstr ""
+msgstr "添加"
 
 #: import_network_panel.py:699 task_navigator.py:1037
 msgid "Remove"
-msgstr ""
+msgstr "去除"
 
 #: import_network_panel.py:700
 msgid "Check status"
-msgstr ""
+msgstr "检查状态"
 
 #: import_network_panel.py:773
 msgid "ok"
-msgstr ""
+msgstr "好的"
 
 #: import_network_panel.py:775
 msgid "error"
-msgstr ""
+msgstr "错误"
 
 #: language_dialog.py:97
 msgid "Language selection"
-msgstr ""
+msgstr "语言选择"
 
 #: language_dialog.py:141
 msgid "Choose user interface language"
-msgstr ""
+msgstr "选择用户界面语言"
 
 #: measures.py:1108 measures.py:1543
 #, python-format
@@ -1860,781 +1882,782 @@ msgid ""
 "Mean: %.3f\n"
 "Std: %.3f"
 msgstr ""
+"面积: %.3f\n"
+"最小值: %.3f\n"
+"最大值: %.3f\n"
+"平均值: %.3f\n"
+"标准: %.3f"
 
 #: polydata_utils.py:155
 msgid "Analysing selected regions..."
-msgstr ""
+msgstr "正在分析选定的区域..."
 
 #: polydata_utils.py:211
 msgid "Splitting disconnected regions..."
-msgstr ""
+msgstr "正在拆分断开连接的区域..."
 
 #: preferences.py:17
 msgid "Preferences"
-msgstr ""
+msgstr "偏好"
 
 #: preferences.py:46
 msgid "2D Visualization"
-msgstr ""
+msgstr "2D可视化"
 
 #: preferences.py:47
 msgid "3D Visualization"
-msgstr ""
+msgstr "三维可视化"
 
 #: preferences.py:49 preferences.py:196
 msgid "Language"
-msgstr ""
+msgstr "语言"
 
 #: preferences.py:111
 msgid "Interpolation "
-msgstr ""
+msgstr "插值"
 
 #: preferences.py:119
 msgid "Volume rendering"
-msgstr ""
+msgstr "体积渲染"
 
 #: preferences.py:122
 msgid "Rendering"
-msgstr ""
+msgstr "翻译"
 
 #: preferences.py:126
 msgid "GPU (NVidia video cards only)"
-msgstr ""
+msgstr "GPU（仅限NVidia视频卡）"
 
 #: preferences.py:158
 msgid "Slices"
-msgstr ""
+msgstr "切片"
 
 #: preferences.py:161
 msgid "Interpolated "
-msgstr ""
+msgstr "插值的"
 
 #: preferences.py:165 preferences.py:225
 msgid "Yes"
-msgstr ""
+msgstr "对"
 
 #: preferences.py:165 preferences.py:225
 msgid "No"
-msgstr ""
+msgstr "不"
 
 #: preferences.py:199
 msgid ""
 "Language settings will be applied \n"
 " the next time InVesalius starts."
-msgstr ""
+msgstr "将应用语言设置下一次启动InVesalius生效。"
 
 #: presets.py:33 presets.py:51 presets.py:107 presets.py:138
 msgid "Soft Tissue"
-msgstr ""
+msgstr "软组织"
 
 #: presets.py:34 presets.py:52 presets.py:108 presets.py:139
 msgid "Enamel (Adult)"
-msgstr ""
+msgstr "牙釉质（成人）"
 
 #: presets.py:35 presets.py:53 presets.py:109 presets.py:140
 msgid "Enamel (Child)"
-msgstr ""
+msgstr "牙釉质（儿童）"
 
 #: presets.py:36 presets.py:54 presets.py:110 presets.py:141
 msgid "Compact Bone (Adult)"
-msgstr ""
+msgstr "致密骨（成人）"
 
 #: presets.py:37 presets.py:55 presets.py:111 presets.py:142
 msgid "Compact Bone (Child)"
-msgstr ""
+msgstr "致密骨（儿童）"
 
 #: presets.py:38 presets.py:56 presets.py:112 presets.py:143
 msgid "Spongial Bone (Adult)"
-msgstr ""
+msgstr "脊椎骨（成人）"
 
 #: presets.py:39 presets.py:57 presets.py:113 presets.py:144
 msgid "Spongial Bone (Child)"
-msgstr ""
+msgstr "脊椎骨（儿童）"
 
 #: presets.py:40 presets.py:58 presets.py:114 presets.py:145
 msgid "Muscle Tissue (Adult)"
-msgstr ""
+msgstr "肌肉组织（成人）"
 
 #: presets.py:41 presets.py:59 presets.py:115 presets.py:146
 msgid "Muscle Tissue (Child)"
-msgstr ""
+msgstr "肌肉组织（儿童）"
 
 #: presets.py:42 presets.py:60 presets.py:116 presets.py:147
 msgid "Fat Tissue (Adult)"
-msgstr ""
+msgstr "脂肪组织（成人）"
 
 #: presets.py:43 presets.py:61 presets.py:117 presets.py:148
 msgid "Fat Tissue (Child)"
-msgstr ""
+msgstr "脂肪组织（儿童）"
 
 #: presets.py:44 presets.py:62 presets.py:118 presets.py:149
 msgid "Skin Tissue (Adult)"
-msgstr ""
+msgstr "皮肤组织（成人）"
 
 #: presets.py:45 presets.py:63 presets.py:119 presets.py:150
 msgid "Skin Tissue (Child)"
-msgstr ""
+msgstr "皮肤组织（儿童）"
 
 #: slice_.py:1348
 msgid "Diff"
-msgstr ""
+msgstr "差异"
 
 #: slice_.py:1350
 msgid "XOR"
-msgstr ""
+msgstr "XOR"
 
 #: slice_menu.py:36
 msgid "Normal"
-msgstr ""
+msgstr "普通"
 
 #: slice_menu.py:37
 msgid "MaxIP"
-msgstr ""
+msgstr "最大密度投影"
 
 #: slice_menu.py:38
 msgid "MinIP"
-msgstr ""
+msgstr "最小密度投影"
 
 #: slice_menu.py:39
 msgid "MeanIP"
-msgstr ""
+msgstr "平均密度投影"
 
 #: slice_menu.py:40
 msgid "MIDA"
-msgstr ""
+msgstr "MIDA"
 
 #: slice_menu.py:41
 msgid "Contour MaxIP"
-msgstr ""
+msgstr "最大密度投影轮廓"
 
 #: slice_menu.py:42
 msgid "Contour MIDA"
-msgstr ""
+msgstr "MIDA区域"
 
 #: slice_menu.py:160
 msgid "Window width and level"
-msgstr ""
+msgstr "窗口宽度和水平"
 
 #: slice_menu.py:161
 msgid "Pseudo color"
-msgstr ""
+msgstr "伪彩色"
 
 #: slice_menu.py:162
 msgid "Projection type"
-msgstr ""
+msgstr "投影类型"
 
 #: styles.py:68 task_slice.py:888
 msgid "Foreground"
-msgstr ""
+msgstr "前景"
 
 #: styles.py:69 task_slice.py:889
 msgid "Background"
-msgstr ""
+msgstr "背景"
 
 #: styles.py:1122
 msgid "Applying watershed ..."
-msgstr ""
+msgstr "正在应用分水岭..."
 
 #: styles.py:1957
 msgid "Fill hole"
-msgstr ""
+msgstr "填充孔"
 
 #: styles.py:1958
 msgid "Filling hole ..."
-msgstr ""
+msgstr "正在填充孔..."
 
 #: styles.py:2055
 msgid "Remove parts"
-msgstr ""
+msgstr "拆下零件"
 
 #: styles.py:2056
 msgid "Remove part"
-msgstr ""
+msgstr "移除零件"
 
 #: styles.py:2057
 msgid "Removing part ..."
-msgstr ""
+msgstr "正在删除部件..."
 
 #: styles.py:2306
 msgid "Segmenting ..."
-msgstr ""
+msgstr "分段..."
 
 #: surface.py:645
 msgid "InVesalius was not able to create the surface"
-msgstr ""
+msgstr "InVesalius无法创建表面"
 
 #: surface.py:709
 msgid "Creating 3D surface..."
-msgstr ""
+msgstr "正在创建三维表面..."
 
 #: task_exporter.py:115
 msgid "Export InVesalius screen to an image file"
-msgstr ""
+msgstr "将InVesalius屏幕导出到图像文件"
 
 #: task_exporter.py:117
 msgid "Export picture..."
-msgstr ""
+msgstr "导出图片..."
 
 #: task_exporter.py:128
 msgid "Export 3D surface"
-msgstr ""
+msgstr "导出三维表面"
 
 #: task_exporter.py:129
 msgid "Export 3D surface..."
-msgstr ""
+msgstr "导出三维表面..."
 
 #: task_exporter.py:326
 msgid "Save 3D surface as..."
-msgstr ""
+msgstr "将三维表面另存为..."
 
 #: task_exporter.py:350
 msgid "It was not possible to save the surface."
-msgstr ""
+msgstr "无法保存表面。"
 
 #: task_exporter.py:351
 msgid "Error saving surface"
-msgstr ""
+msgstr "保存表面时出错"
 
 #: task_exporter.py:357
 msgid "You need to create a surface and make it "
-msgstr ""
+msgstr "您需要创建一个表面并使其"
 
 #: task_exporter.py:358
 msgid "visible before exporting it."
-msgstr ""
+msgstr "在导出之前可见。"
 
 #: task_generic.py:65
 msgid "Testing..."
-msgstr ""
+msgstr "正在测试..."
 
 #: task_importer.py:71
 msgid "Select DICOM, Analyze, NIfTI or REC/PAR files to be reconstructed"
-msgstr ""
+msgstr "选择要重建的DICOM、Analyze、NIfTI或REC/PAR文件"
 
 #: task_importer.py:72
 msgid "Import medical images..."
-msgstr ""
+msgstr "导入医学图像..."
 
 #: task_importer.py:91
 msgid "Open an existing InVesalius project..."
-msgstr ""
+msgstr "打开现有的InVesalius项目..."
 
 #: task_importer.py:92
 msgid "Open an existing project..."
-msgstr ""
+msgstr "打开现有项目..."
 
 #: task_navigator.py:80
 msgid "Select fiducials and navigate"
-msgstr ""
+msgstr "选择基准点并导航"
 
 #: task_navigator.py:151
 msgid "Neuronavigation"
-msgstr ""
+msgstr "神经导航"
 
 #: task_navigator.py:160
 msgid "Object registration"
-msgstr ""
+msgstr "对象注册"
 
 #: task_navigator.py:168
 msgid "Extra tools"
-msgstr ""
+msgstr "额外的工具"
 
 #: task_navigator.py:177
 msgid "Deep Brain Stimulation"
-msgstr ""
-
-#: task_navigator.py:186
-msgid "Update camera in volume"
-msgstr ""
+msgstr "脑深部刺激"
 
 #: task_navigator.py:187
 msgid "Vol. camera"
-msgstr ""
+msgstr "体积照相机"
 
 #: task_navigator.py:194
 msgid "Enable external trigger for creating markers"
-msgstr ""
+msgstr "启用用于创建标记的外部触发器"
 
 #: task_navigator.py:195
 msgid "Ext. trigger"
-msgstr ""
+msgstr "外部触发器"
 
 #: task_navigator.py:202
 msgid "Show and track TMS coil"
-msgstr ""
+msgstr "显示和跟踪TMS线圈"
 
 #: task_navigator.py:203
 msgid "Show coil"
-msgstr ""
+msgstr "显示线圈"
 
 #: task_navigator.py:312
 msgid "Choose the tracking device"
-msgstr ""
+msgstr "选择跟踪设备"
 
 #: task_navigator.py:321
 msgid "Choose the navigation reference mode"
-msgstr ""
+msgstr "选择导航参考模式"
 
 #: task_navigator.py:355
 msgid "FRE:"
-msgstr ""
+msgstr "FRE："
 
 #: task_navigator.py:358
 msgid "Fiducial registration error"
-msgstr ""
+msgstr "信托登记错误"
 
 #: task_navigator.py:367
 msgid "Start navigation"
-msgstr ""
+msgstr "开始导航"
 
 #: task_navigator.py:368
 msgid "Navigate"
-msgstr ""
+msgstr "导航"
 
 #: task_navigator.py:465
 msgid "Configuring tracker ..."
-msgstr ""
+msgstr "正在配置跟踪器..."
 
 #: task_navigator.py:481
 msgid "Disconnecting tracker..."
-msgstr ""
+msgstr "正在断开跟踪器连接..."
 
 #: task_navigator.py:487
 msgid "Tracker disconnected successfully"
-msgstr ""
+msgstr "跟踪器已成功断开连接"
 
 #: task_navigator.py:502
 msgid "Disconnecting tracker ..."
-msgstr ""
+msgstr "正在断开跟踪器连接..."
 
 #: task_navigator.py:511
 msgid "Tracker disconnected"
-msgstr ""
+msgstr "跟踪器已断开连接"
 
 #: task_navigator.py:515
 msgid "Tracker still connected"
-msgstr ""
+msgstr "跟踪器仍处于连接状态"
 
 #: task_navigator.py:614
 msgid "Stop neuronavigation"
-msgstr ""
+msgstr "停止神经导航"
 
 #: task_navigator.py:694
 msgid "Start neuronavigation"
-msgstr ""
+msgstr "启动神经导航"
 
 #: task_navigator.py:762
 msgid "Create new coil"
-msgstr ""
+msgstr "创建新线圈"
 
 #: task_navigator.py:763
 msgid "New"
-msgstr ""
+msgstr "新"
 
 #: task_navigator.py:770
 msgid "Load coil configuration file"
-msgstr ""
+msgstr "加载线圈配置文件"
 
 #: task_navigator.py:771 task_navigator.py:952 task_navigator.py:1025
 msgid "Load"
-msgstr ""
+msgstr "负载"
 
 #: task_navigator.py:778
 msgid "Save object registration file"
-msgstr ""
+msgstr "保存对象注册文件"
 
 #: task_navigator.py:779 task_navigator.py:963 task_navigator.py:1022
 msgid "Save"
-msgstr ""
+msgstr "保存"
 
 #: task_navigator.py:792
 msgid "Angle threshold [degrees]:"
-msgstr ""
+msgstr "角度阈值[度]："
 
 #: task_navigator.py:800
 msgid "Distance threshold [mm]:"
-msgstr ""
+msgstr "距离阈值[mm]："
 
 #: task_navigator.py:808
 msgid "Timestamp interval [s]:"
-msgstr ""
+msgstr "时间戳间隔[s]："
 
 #: task_navigator.py:830
 msgid "Record coordinates"
-msgstr ""
+msgstr "记录坐标"
 
 #: task_navigator.py:837
 msgid "Track object"
-msgstr ""
+msgstr "Track对象"
 
 #: task_navigator.py:952
 msgid "Object file successfully loaded"
-msgstr ""
+msgstr "已成功加载对象文件"
 
 #: task_navigator.py:956
 msgid "Digitize all object fiducials before saving"
-msgstr ""
+msgstr "保存前数字化所有对象基准"
 
 #: task_navigator.py:956
 msgid "Save error"
-msgstr ""
+msgstr "保存错误"
 
 #: task_navigator.py:963
 msgid "Object file successfully saved"
-msgstr ""
+msgstr "对象文件已成功保存"
 
 #: task_navigator.py:1013
 msgid "Create marker"
-msgstr ""
+msgstr "创建标记"
 
 #: task_navigator.py:1028
 msgid "Hide"
-msgstr ""
+msgstr "隐藏"
 
 #: task_navigator.py:1040
 msgid "Delete all"
-msgstr ""
+msgstr "全部删除"
 
 #: task_navigator.py:1098
 msgid "Edit ID"
-msgstr ""
+msgstr "编辑ID"
 
 #: task_navigator.py:1100
 msgid "Edit color"
-msgstr ""
+msgstr "编辑颜色"
 
 #: task_navigator.py:1103
 msgid "Set as target"
-msgstr ""
+msgstr "设置为目标"
 
 #: task_slice.py:92
 msgid "Create mask for slice segmentation and editing"
-msgstr ""
+msgstr "创建用于切片分割和编辑的遮罩"
 
 #: task_slice.py:93
 msgid "Create new mask"
-msgstr ""
+msgstr "创建新遮罩"
 
 #: task_slice.py:128
 msgid "Create surface"
-msgstr ""
+msgstr "创建表面"
 
 #: task_slice.py:129
 msgid "Overwrite last surface"
-msgstr ""
+msgstr "覆盖最后一个表面"
 
 #: task_slice.py:290
 msgid "Mask properties"
-msgstr ""
+msgstr "遮罩属性"
 
 #: task_slice.py:298
 msgid "Manual edition"
-msgstr ""
+msgstr "手动版本"
 
 #: task_slice.py:455
 msgid "Set predefined or manual threshold:"
-msgstr ""
+msgstr "设置预定义或手动阈值："
 
 #: task_slice.py:683 task_slice.py:851
 msgid "Choose brush type, size or operation:"
-msgstr ""
+msgstr "选择笔刷类型、大小或操作："
 
 #: task_slice.py:689 task_slice.py:857
 msgid "Circle"
-msgstr ""
+msgstr "圆形"
 
 #: task_slice.py:693 task_slice.py:861
 msgid "Square"
-msgstr ""
+msgstr "正方形"
 
 #: task_slice.py:734
 msgid "Brush threshold range:"
-msgstr ""
+msgstr "笔刷阈值范围："
 
 #: task_slice.py:908
 msgid "Overwrite mask"
-msgstr ""
+msgstr "覆盖掩码"
 
 #: task_slice.py:918
 msgid "Expand watershed to 3D"
-msgstr ""
+msgstr "将分水岭扩展到三维"
 
 #: task_surface.py:94
 msgid "Create 3D surface based on a mask"
-msgstr ""
+msgstr "基于遮罩创建三维表面"
 
 #: task_surface.py:95
 msgid "Create new 3D surface"
-msgstr ""
+msgstr "创建新的三维表面"
 
 #: task_surface.py:116
 msgid "Next step"
-msgstr ""
+msgstr "下一步"
 
 #: task_surface.py:242
 msgid "Surface properties"
-msgstr ""
+msgstr "表面特性"
 
 #: task_surface.py:248
 msgid "Advanced options"
-msgstr ""
+msgstr "高级选项"
 
 #: task_surface.py:303
 msgid ""
 "Automatically select largest disconnected region and create new surface"
-msgstr ""
+msgstr "自动选择最大的断开连接区域并创建新表面"
 
 #: task_surface.py:304
 msgid "Select largest surface"
-msgstr ""
+msgstr "选择最大的表面"
 
 #: task_surface.py:312
 msgid ""
 "Automatically select disconnected regions and create a new surface per "
 "region"
-msgstr ""
+msgstr "自动选择断开连接的面域并按面域创建新表面"
 
 #: task_surface.py:313
 msgid "Split all disconnected surfaces"
-msgstr ""
+msgstr "拆分所有断开连接的表面"
 
 #: task_surface.py:321
 msgid "Manually insert seeds of regions of interest and create a new surface"
-msgstr ""
+msgstr "手动插入感兴趣区域的种子并创建新表面"
 
 #: task_surface.py:322
 msgid "Select regions of interest..."
-msgstr ""
+msgstr "选择感兴趣的区域..."
 
 #: task_surface.py:472
 msgid "Transparency:"
-msgstr ""
+msgstr "透明度:"
 
 #: task_surface.py:621
 msgid "Decimate resolution:"
-msgstr ""
+msgstr "决定性决议："
 
 #: task_surface.py:631
 msgid "Smooth iterations:"
-msgstr ""
+msgstr "平滑迭代："
 
 #: task_tools.py:67
 msgid "Measure distances"
-msgstr ""
+msgstr "测量距离"
 
 #: task_tools.py:68
 msgid "Measure"
-msgstr ""
+msgstr "测量"
 
 #: task_tools.py:71 task_tools.py:72
 msgid "Add text annotations"
-msgstr ""
+msgstr "添加文本批注"
 
 #: trigger.py:46
 msgid "Connection with port COM1 failed"
-msgstr ""
+msgstr "与端口COM1的连接失败"
 
 #: trigger.py:46
 msgid "Communication error"
-msgstr ""
+msgstr "通信错误"
 
 #: viewer_slice.py:79
 msgid "Number of slices used to compound the visualization."
-msgstr ""
+msgstr "用于复合可视化的切片数。"
 
 #: viewer_slice.py:88
 msgid ""
 "Controls the sharpness of the contour. The greater the value, the sharper "
 "the contour."
-msgstr ""
+msgstr "控制轮廓的清晰度。值越大，轮廓越清晰。"
 
 #: viewer_slice.py:96
 msgid "Inverted order"
-msgstr ""
+msgstr "反转顺序"
 
 #: viewer_slice.py:97
 msgid ""
 "If checked, the slices are traversed in descending order to compound the "
 "visualization instead of ascending order."
-msgstr ""
+msgstr "如果选中，将按降序而不是升序遍历切片，以复合可视化效果。"
 
 #: viewer_slice.py:103
 msgid "Number of slices"
-msgstr ""
+msgstr "切片数量"
 
 #: viewer_slice.py:104
 msgid "Sharpness"
-msgstr ""
+msgstr "清晰度"
 
 #: viewer_slice.py:363 viewer_slice.py:367 viewer_slice.py:417
 #: viewer_slice.py:419 viewer_slice.py:431 viewer_slice.py:440
 #: viewer_slice.py:449 viewer_slice.py:458 viewer_slice.py:469
 #: viewer_slice.py:478 viewer_slice.py:487 viewer_slice.py:496
 msgid "R"
-msgstr ""
+msgstr "R"
 
 #: viewer_slice.py:363 viewer_slice.py:367 viewer_slice.py:417
 #: viewer_slice.py:419 viewer_slice.py:431 viewer_slice.py:440
 #: viewer_slice.py:449 viewer_slice.py:458 viewer_slice.py:469
 #: viewer_slice.py:478 viewer_slice.py:487 viewer_slice.py:496
 msgid "L"
-msgstr ""
+msgstr "L"
 
 #: viewer_slice.py:363 viewer_slice.py:365 viewer_slice.py:417
 #: viewer_slice.py:421 viewer_slice.py:431 viewer_slice.py:440
 #: viewer_slice.py:449 viewer_slice.py:458 viewer_slice.py:507
 #: viewer_slice.py:516 viewer_slice.py:525 viewer_slice.py:534
 msgid "A"
-msgstr ""
+msgstr "A"
 
 #: viewer_slice.py:363 viewer_slice.py:365 viewer_slice.py:417
 #: viewer_slice.py:421 viewer_slice.py:431 viewer_slice.py:440
 #: viewer_slice.py:449 viewer_slice.py:458 viewer_slice.py:507
 #: viewer_slice.py:516 viewer_slice.py:525 viewer_slice.py:534
 msgid "P"
-msgstr ""
+msgstr "P"
 
 #: viewer_slice.py:365 viewer_slice.py:367 viewer_slice.py:419
 #: viewer_slice.py:421 viewer_slice.py:469 viewer_slice.py:478
 #: viewer_slice.py:487 viewer_slice.py:496 viewer_slice.py:507
 #: viewer_slice.py:516 viewer_slice.py:525 viewer_slice.py:534
 msgid "T"
-msgstr ""
+msgstr "T"
 
 #: viewer_slice.py:365 viewer_slice.py:367 viewer_slice.py:419
 #: viewer_slice.py:421 viewer_slice.py:469 viewer_slice.py:478
 #: viewer_slice.py:487 viewer_slice.py:496 viewer_slice.py:507
 #: viewer_slice.py:516 viewer_slice.py:525 viewer_slice.py:534
 msgid "B"
-msgstr ""
+msgstr "B"
 
 #: viewer_slice.py:434 viewer_slice.py:443 viewer_slice.py:452
 #: viewer_slice.py:461
 msgid "AL"
-msgstr ""
+msgstr "AL"
 
 #: viewer_slice.py:434 viewer_slice.py:443 viewer_slice.py:452
 #: viewer_slice.py:461
 msgid "RA"
-msgstr ""
+msgstr "RA"
 
 #: viewer_slice.py:434 viewer_slice.py:443 viewer_slice.py:452
 #: viewer_slice.py:461
 msgid "PR"
-msgstr ""
+msgstr "PR"
 
 #: viewer_slice.py:434 viewer_slice.py:443 viewer_slice.py:452
 #: viewer_slice.py:461
 msgid "LP"
-msgstr ""
+msgstr "LP"
 
 #: viewer_slice.py:437 viewer_slice.py:446 viewer_slice.py:455
 #: viewer_slice.py:464
 msgid "LA"
-msgstr ""
+msgstr "PR"
 
 #: viewer_slice.py:437 viewer_slice.py:446 viewer_slice.py:455
 #: viewer_slice.py:464
 msgid "AR"
-msgstr ""
+msgstr "PR"
 
 #: viewer_slice.py:437 viewer_slice.py:446 viewer_slice.py:455
 #: viewer_slice.py:464
 msgid "RP"
-msgstr ""
+msgstr "RP"
 
 #: viewer_slice.py:437 viewer_slice.py:446 viewer_slice.py:455
 #: viewer_slice.py:464
 msgid "PL"
-msgstr ""
+msgstr "PL"
 
 #: viewer_slice.py:472 viewer_slice.py:481 viewer_slice.py:490
 #: viewer_slice.py:499
 msgid "TL"
-msgstr ""
+msgstr "TL"
 
 #: viewer_slice.py:472 viewer_slice.py:481 viewer_slice.py:490
 #: viewer_slice.py:499
 msgid "RT"
-msgstr ""
+msgstr "RT"
 
 #: viewer_slice.py:472 viewer_slice.py:481 viewer_slice.py:490
 #: viewer_slice.py:499
 msgid "BR"
-msgstr ""
+msgstr "BR"
 
 #: viewer_slice.py:472 viewer_slice.py:481 viewer_slice.py:490
 #: viewer_slice.py:499
 msgid "LB"
-msgstr ""
+msgstr "PR"
 
 #: viewer_slice.py:475 viewer_slice.py:484 viewer_slice.py:493
 #: viewer_slice.py:502
 msgid "LT"
-msgstr ""
+msgstr "PR"
 
 #: viewer_slice.py:475 viewer_slice.py:484 viewer_slice.py:493
 #: viewer_slice.py:502
 msgid "TR"
-msgstr ""
+msgstr "TR"
 
 #: viewer_slice.py:475 viewer_slice.py:484 viewer_slice.py:493
 #: viewer_slice.py:502
 msgid "RB"
-msgstr ""
+msgstr "RB"
 
 #: viewer_slice.py:475 viewer_slice.py:484 viewer_slice.py:493
 #: viewer_slice.py:502
 msgid "BL"
-msgstr ""
+msgstr "BL"
 
 #: viewer_slice.py:510 viewer_slice.py:519 viewer_slice.py:528
 #: viewer_slice.py:537
 msgid "TA"
-msgstr ""
+msgstr "PR"
 
 #: viewer_slice.py:510 viewer_slice.py:519 viewer_slice.py:528
 #: viewer_slice.py:537
 msgid "PT"
-msgstr ""
+msgstr "PT"
 
 #: viewer_slice.py:510 viewer_slice.py:519 viewer_slice.py:528
 #: viewer_slice.py:537
 msgid "BP"
-msgstr ""
+msgstr "BP"
 
 #: viewer_slice.py:510 viewer_slice.py:519 viewer_slice.py:528
 #: viewer_slice.py:537
 msgid "AB"
-msgstr ""
+msgstr "AB"
 
 #: viewer_slice.py:513 viewer_slice.py:522 viewer_slice.py:531
 #: viewer_slice.py:540
 msgid "AT"
-msgstr ""
+msgstr "AT"
 
 #: viewer_slice.py:513 viewer_slice.py:522 viewer_slice.py:531
 #: viewer_slice.py:540
 msgid "TP"
-msgstr ""
+msgstr "TP"
 
 #: viewer_slice.py:513 viewer_slice.py:522 viewer_slice.py:531
 #: viewer_slice.py:540
 msgid "PB"
-msgstr ""
+msgstr "PB"
 
 #: viewer_slice.py:513 viewer_slice.py:522 viewer_slice.py:531
 #: viewer_slice.py:540
 msgid "BA"
-msgstr ""
+msgstr "PR"
 
 #: viewer_slice.py:963 viewer_volume.py:429
 msgid "InVesalius was not able to export this picture"
-msgstr ""
+msgstr "InVesalius无法导出此图片"
 
 #: viewer_slice.py:963 viewer_volume.py:429
 msgid "Export picture error"
-msgstr ""
+msgstr "导出图片错误"
 
 #~ msgid "Save raycasting preset"
 #~ msgstr "Save raycasting preset"
@@ -2662,3 +2685,24 @@ msgstr ""
 
 #~ msgid "Image Tiling"
 #~ msgstr "Image Tiling"
+
+#~ msgid "Plugins"
+#~ msgstr "插件"
+
+#~ msgid "Open Plugins folder"
+#~ msgstr "打开插件文件夹"
+
+#~ msgid "Change image spacing"
+#~ msgstr "变像间距"
+
+#~ msgid "Porous volume creation"
+#~ msgstr "多孔体积产生"
+
+#~ msgid "Remove non-visible faces"
+#~ msgstr "移除不可见的面"
+
+#~ msgid "Remove tiny objects"
+#~ msgstr "移除微小物体"
+
+#~ msgid "T2 color"
+#~ msgstr "T2色"

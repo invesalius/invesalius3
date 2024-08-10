@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,19 +15,17 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper
 
+AXIAL, SAGITAL, CORONAL = 0, 1, 2
+PLANE_DATA = {AXIAL: ["z", (0, 0, 1)], SAGITAL: ["x", (1, 0, 0)], CORONAL: ["y", (0, 1, 0)]}
 
-AXIAL, SAGITAL, CORONAL =  0, 1, 2
-PLANE_DATA = {AXIAL: ["z",(0,0,1)],
-              SAGITAL: ["x", (1,0,0)],
-              CORONAL: ["y", (0,1,0)]}
 
-class Plane():
+class Plane:
     """
     How to use:
 
@@ -41,6 +39,7 @@ class Plane():
     axial_plane.Show()
     axial_plane.Update()
     """
+
     def __init__(self):
         self.orientation = AXIAL
         self.render = None
@@ -69,13 +68,12 @@ class Plane():
             self.Update()
             if self.widget.GetEnabled():
                 print("send signal - update slice info in panel and in 2d")
-                
 
     def SetInput(self, imagedata):
-        axes = PLANE_DATA[self.orientation][0] # "x", "y" or "z"
+        axes = PLANE_DATA[self.orientation][0]  # "x", "y" or "z"
         colour = PLANE_DATA[self.orientation][1]
-        
-        #if self.orientation == SAGITAL:
+
+        # if self.orientation == SAGITAL:
         #    spacing = min(imagedata.GetSpacing())
         #    permute = vtk.vtkImagePermute()
         #    permute.SetInput(imagedata)
@@ -100,10 +98,10 @@ class Plane():
         widget.TextureVisibilityOff()
         widget.DisplayTextOff()
         widget.RestrictPlaneToVolumeOff()
-        exec("widget.SetPlaneOrientationTo"+axes.upper()+"Axes()")
-        widget.AddObserver("InteractionEvent",self.Update)
+        exec("widget.SetPlaneOrientationTo" + axes.upper() + "Axes()")
+        widget.AddObserver("InteractionEvent", self.Update)
         self.widget = widget
-        
+
         prop = widget.GetPlaneProperty()
         prop.SetColor(colour)
 
@@ -114,7 +112,7 @@ class Plane():
         source.SetPoint2(widget.GetPoint2())
         source.SetNormal(widget.GetNormal())
         self.source = source
-        
+
         mapper = vtkPolyDataMapper()
         mapper.SetInput(source.GetOutput())
 
@@ -138,7 +136,7 @@ class Plane():
     def Show(self, show=1):
         actor = self.actor
         widget = self.widget
-        
+
         if show:
             actor.VisibilityOn()
             widget.On()

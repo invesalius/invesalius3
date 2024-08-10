@@ -1,4 +1,4 @@
-#---------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Software: InVesalius Software de Reconstrucao 3D de Imagens Medicas
 
 # Copyright: (c) 2001  Centro de Pesquisas Renato Archer
@@ -17,14 +17,14 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#---------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 
 # ---------------------------------------------------------
 # PROBLEM 1
 # There are times when there are lots of groups on dict, but
 # each group contains only one slice (DICOM file).
-# 
+#
 # Equipments / manufacturer:
 # TODO
 #
@@ -55,25 +55,25 @@ import sys
 
 import gdcm
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     try:
         import win32api
+
         _has_win32api = True
     except ImportError:
         _has_win32api = False
 else:
     _has_win32api = False
 
-import invesalius.utils as utils
 import invesalius.constants as const
+import invesalius.utils as utils
 
-
-ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2, "OBLIQUE":2}
+ORIENT_MAP = {"SAGITTAL": 0, "CORONAL": 1, "AXIAL": 2, "OBLIQUE": 2}
 
 
 class DicomGroup:
-
     general_index = -1
+
     def __init__(self):
         DicomGroup.general_index += 1
         self.index = DicomGroup.general_index
@@ -83,24 +83,24 @@ class DicomGroup:
         #  dicom.image.orientation_label, index)
         self.key = ()
         self.title = ""
-        self.slices_dict = {} # slice_position: Dicom.dicom
+        self.slices_dict = {}  # slice_position: Dicom.dicom
         # IDEA (13/10): Represent internally as dictionary,
         # externally as list
         self.nslices = 0
         self.zspacing = 1
         self.dicom = None
-        
+
     def AddSlice(self, dicom):
         if not self.dicom:
             self.dicom = dicom
 
         pos = tuple(dicom.image.position)
 
-        #Case to test: \other\higroma
-        #condition created, if any dicom with the same
-        #position, but 3D, leaving the same series.
+        # Case to test: \other\higroma
+        # condition created, if any dicom with the same
+        # position, but 3D, leaving the same series.
         if not "DERIVED" in dicom.image.type:
-            #if any dicom with the same position
+            # if any dicom with the same position
             if pos not in self.slices_dict.keys():
                 self.slices_dict[pos] = dicom
                 self.nslices += dicom.image.number_of_frames
@@ -124,16 +124,15 @@ class DicomGroup:
         # (interpolated)
 
         if _has_win32api:
-            filelist = [win32api.GetShortPathName(dicom.image.file)
-                        for dicom in
-                        self.slices_dict.values()]
+            filelist = [
+                win32api.GetShortPathName(dicom.image.file) for dicom in self.slices_dict.values()
+            ]
         else:
-            filelist = [dicom.image.file for dicom in
-                        self.slices_dict.values()]
+            filelist = [dicom.image.file for dicom in self.slices_dict.values()]
 
         # Sort slices using GDCM
-        #if (self.dicom.image.orientation_label != "CORONAL"):
-        #Organize reversed image
+        # if (self.dicom.image.orientation_label != "CORONAL"):
+        # Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
         sorter.SetZSpacingTolerance(1e-10)
@@ -155,36 +154,37 @@ class DicomGroup:
         list_ = list(self.slices_dict.values())
         dicom = list_[0]
         axis = ORIENT_MAP[dicom.image.orientation_label]
-        #list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
-        list_ = sorted(list_, key = lambda dicom:dicom.image.number)
+        # list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
+        list_ = sorted(list_, key=lambda dicom: dicom.image.number)
         return list_
 
     def UpdateZSpacing(self):
         list_ = self.GetHandSortedList()
-        
-        if (len(list_) > 1):
+
+        if len(list_) > 1:
             dicom = list_[0]
             axis = ORIENT_MAP[dicom.image.orientation_label]
             p1 = dicom.image.position[axis]
-            
+
             dicom = list_[1]
             p2 = dicom.image.position[axis]
-            
+
             self.zspacing = abs(p1 - p2)
         else:
             self.zspacing = 1
 
     def GetDicomSample(self):
         size = len(self.slices_dict)
-        dicom = self.GetHandSortedList()[size//2]
+        dicom = self.GetHandSortedList()[size // 2]
         return dicom
-            
+
+
 class PatientGroup:
     def __init__(self):
         # key:
         # (dicom.patient.name, dicom.patient.id)
         self.key = ()
-        self.groups_dict = {} # group_key: DicomGroup
+        self.groups_dict = {}  # group_key: DicomGroup
         self.nslices = 0
         self.ngroups = 0
         self.dicom = None
@@ -198,11 +198,13 @@ class PatientGroup:
 
         # Problem 2 is being fixed by the way this method is
         # implemented, dinamically during new dicom's addition
-        group_key = (dicom.patient.name,
-                     dicom.acquisition.id_study,
-                     dicom.acquisition.serie_number,
-                     dicom.image.orientation_label,
-                     index) # This will be used to deal with Problem 2
+        group_key = (
+            dicom.patient.name,
+            dicom.acquisition.id_study,
+            dicom.acquisition.serie_number,
+            dicom.image.orientation_label,
+            index,
+        )  # This will be used to deal with Problem 2
         if not self.dicom:
             self.dicom = dicom
 
@@ -218,15 +220,15 @@ class PatientGroup:
         # Group exists... Lets try to add slice
         else:
             group = self.groups_dict[group_key]
-            slice_added =  group.AddSlice(dicom)
+            slice_added = group.AddSlice(dicom)
             if not slice_added:
                 # If we're here, then Problem 2 occured
-                # TODO: Optimize recursion 
-                self.AddFile(dicom, index+1)
-                
-            #Getting the spacing in the Z axis
+                # TODO: Optimize recursion
+                self.AddFile(dicom, index + 1)
+
+            # Getting the spacing in the Z axis
             group.UpdateZSpacing()
-                    
+
     def Update(self):
         # Ideally, AddFile would be sufficient for splitting DICOM
         # files into groups (series). However, this does not work for
@@ -239,19 +241,17 @@ class PatientGroup:
         is_there_problem_1 = False
         utils.debug("n slice %d" % self.nslices)
         utils.debug("len %d" % len(self.groups_dict))
-        if (self.nslices == len(self.groups_dict)) and\
-                (self.nslices > 1):
+        if (self.nslices == len(self.groups_dict)) and (self.nslices > 1):
             is_there_problem_1 = True
 
         # Fix Problem 1
         if is_there_problem_1:
             utils.debug("Problem1")
             self.groups_dict = self.FixProblem1(self.groups_dict)
-        
+
     def GetGroups(self):
         glist = self.groups_dict.values()
-        glist = sorted(glist, key = lambda group:group.title,
-                reverse=True)
+        glist = sorted(glist, key=lambda group: group.title, reverse=True)
         return glist
 
     def GetDicomSample(self):
@@ -261,18 +261,18 @@ class PatientGroup:
         """
         Merge multiple DICOM groups in case Problem 1 (description
         above) occurs.
-        
+
         WARN: We've implemented an heuristic to try to solve
         the problem. There is no scientific background and this aims
         to be a workaround to exams which are not in conformance with
         the DICOM protocol.
         """
         # Divide existing groups into 2 groups:
-        dict_final = {} # 1
+        dict_final = {}  # 1
         # those containing "3D photos" and undefined
         # orientation - these won't be changed (groups_lost).
-        
-        dict_to_change = {} # 2
+
+        dict_to_change = {}  # 2
         # which can be re-grouped according to our heuristic
 
         # split existing groups in these two types of group, based on
@@ -284,7 +284,7 @@ class PatientGroup:
             dicom = dict[group_key].GetList()[0]
             orientation = dicom.image.orientation_label
             study_id = dicom.acquisition.id_study
-            # if axial, coronal or sagittal 
+            # if axial, coronal or sagittal
             if orientation in ORIENT_MAP:
                 group_key_s = (orientation, study_id)
                 # If this method was called, there is only one slice
@@ -308,10 +308,10 @@ class PatientGroup:
             sorted_list = dict_to_change[group_key].GetHandSortedList()
 
             # 3rd STEP: CHECK DIFFERENCES
-            axis = ORIENT_MAP[group_key[0]] # based on orientation
-            for index in range(len(sorted_list)-1):
+            axis = ORIENT_MAP[group_key[0]]  # based on orientation
+            for index in range(len(sorted_list) - 1):
                 current = sorted_list[index]
-                next = sorted_list[index+1]
+                next = sorted_list[index + 1]
 
                 pos_current = current.image.position[axis]
                 pos_next = current.image.position[axis]
@@ -324,16 +324,15 @@ class PatientGroup:
                         group = DicomGroup()
                         group.AddSlice(current)
                         dict_final[group_counter] = group
-                        #Getting the spacing in the Z axis
+                        # Getting the spacing in the Z axis
                         group.UpdateZSpacing()
                 else:
-                    group_counter +=1
+                    group_counter += 1
                     group = DicomGroup()
                     group.AddSlice(current)
                     dict_final[group_counter] = group
-                    #Getting the spacing in the Z axis
+                    # Getting the spacing in the Z axis
                     group.UpdateZSpacing()
-                
 
         return dict_final
 
@@ -346,14 +345,13 @@ class DicomPatientGrouper:
     # ... (repeat to all files on folder)
     # grouper.Update()
     # groups = GetPatientGroups()
-    
+
     def __init__(self):
         self.patients_dict = {}
-    
+
     def AddFile(self, dicom):
-        patient_key = (dicom.patient.name,
-                       dicom.patient.id)
-    
+        patient_key = (dicom.patient.name, dicom.patient.id)
+
         # Does this patient exist?
         if patient_key not in self.patients_dict.keys():
             patient = PatientGroup()
@@ -364,11 +362,11 @@ class DicomPatientGrouper:
         else:
             patient = self.patients_dict[patient_key]
             patient.AddFile(dicom)
-       
+
     def Update(self):
         for patient in self.patients_dict.values():
             patient.Update()
-    
+
     def GetPatientsGroups(self):
         """
         How to use:
@@ -381,6 +379,5 @@ class DicomPatientGrouper:
                 # of the same series
         """
         plist = self.patients_dict.values()
-        plist = sorted(plist, key = lambda patient:patient.key[0])
+        plist = sorted(plist, key=lambda patient: patient.key[0])
         return plist
-

@@ -1,0 +1,20 @@
+name: pre-commit
+on:
+  pull_request
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - id: file_changes
+      uses: trilom/file-changes-action@v1.2.4
+      with:
+        prNumber: ${{ github.event.number }}
+        output: ' '
+    - uses: pre-commit/action@v2.0.3
+      name: ruff-pre-commit-run
+      with: 
+        extra_args: --files ${{ steps.file_changes.outputs.files }}

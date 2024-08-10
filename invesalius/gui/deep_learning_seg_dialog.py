@@ -15,9 +15,9 @@ import wx
 
 import invesalius.data.slice_ as slc
 from invesalius.gui import dialogs
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.segmentation.deep_learning import segment, utils
-from invesalius.i18n import tr as _
 
 HAS_THEANO = bool(importlib.util.find_spec("theano"))
 HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
@@ -53,13 +53,7 @@ if HAS_PLAIDML:
 
 class DeepLearningSegmenterDialog(wx.Dialog):
     def __init__(
-        self,
-        parent,
-        title,
-        has_torch=True,
-        has_plaidml=True,
-        has_theano=True,
-        segmenter=None
+        self, parent, title, has_torch=True, has_plaidml=True, has_theano=True, segmenter=None
     ):
         wx.Dialog.__init__(
             self,
@@ -316,9 +310,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             self.HideProgress()
             dlg = dialogs.ErrorMessageBox(
                 None,
-                "It was not possible to start brain segmentation because:"
-                + "\n"
-                + str(err),
+                "It was not possible to start brain segmentation because:" + "\n" + str(err),
                 "Brain segmentation error",
                 #  wx.ICON_ERROR | wx.OK,
             )
@@ -413,7 +405,7 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
             has_torch=True,
             has_plaidml=True,
             has_theano=True,
-            segmenter = segment.BrainSegmentProcess,
+            segmenter=segment.BrainSegmentProcess,
         )
 
 
@@ -425,7 +417,7 @@ class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
             has_torch=True,
             has_plaidml=False,
             has_theano=False,
-            segmenter = segment.TracheaSegmentProcess,
+            segmenter=segment.TracheaSegmentProcess,
         )
 
 
@@ -437,7 +429,7 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
             has_torch=True,
             has_plaidml=False,
             has_theano=False,
-            segmenter = segment.MandibleCTSegmentProcess,
+            segmenter=segment.MandibleCTSegmentProcess,
         )
 
     def _init_gui(self):
@@ -446,16 +438,28 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
         self.chk_apply_resize_by_spacing = wx.CheckBox(self, wx.ID_ANY, _("Resize by spacing"))
         self.chk_apply_resize_by_spacing.SetValue(True)
 
-        self.patch_txt = wx.StaticText(self,label="Patch size:")
+        self.patch_txt = wx.StaticText(self, label="Patch size:")
 
-        patch_size = ["48", "96", "160", "192", "240", "288",\
-                      "320", "336", "384", "432", "480", "528"] 
-        
-        self.patch_cmb = wx.ComboBox(self, choices=patch_size,value="192") 
+        patch_size = [
+            "48",
+            "96",
+            "160",
+            "192",
+            "240",
+            "288",
+            "320",
+            "336",
+            "384",
+            "432",
+            "480",
+            "528",
+        ]
+
+        self.patch_cmb = wx.ComboBox(self, choices=patch_size, value="192")
 
         self.path_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5) 
-        self.path_sizer.Add(self.patch_cmb, 2, wx.EXPAND | wx.ALL, 5) 
+        self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5)
+        self.path_sizer.Add(self.patch_cmb, 2, wx.EXPAND | wx.ALL, 5)
 
         self.Layout()
         self.Centre()
@@ -498,7 +502,7 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
 
         overlap = self.overlap_options[self.overlap.GetSelection()]
         patch_size = int(self.patch_cmb.GetValue())
-        
+
         try:
             self.ps = self.segmenter(
                 image,
@@ -512,7 +516,7 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
                 window_level,
                 patch_size=patch_size,
                 resize_by_spacing=resize_by_spacing,
-                image_spacing=slc.Slice().spacing
+                image_spacing=slc.Slice().spacing,
             )
             self.ps.start()
         except (multiprocessing.ProcessError, OSError, ValueError) as err:
@@ -520,9 +524,7 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
             self.HideProgress()
             dlg = dialogs.ErrorMessageBox(
                 None,
-                "It was not possible to start brain segmentation because:"
-                + "\n"
-                + str(err),
+                "It was not possible to start brain segmentation because:" + "\n" + str(err),
                 "Brain segmentation error",
                 #  wx.ICON_ERROR | wx.OK,
             )

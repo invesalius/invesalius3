@@ -1,15 +1,21 @@
+import numpy as np
 import pyacvd
+
 # import os
 import pyvista
-import numpy as np
+from vtkmodules.vtkCommonColor import vtkColorSeries, vtkNamedColors
+
 # import Trekker
-from vtkmodules.vtkCommonCore import vtkFloatArray
+from vtkmodules.vtkCommonCore import (
+    vtkFloatArray,
+    vtkLookupTable,
+)
 from vtkmodules.vtkCommonDataModel import (
     vtkCellLocator,
     vtkDataObject,
     vtkDataSetAttributes,
-    vtkPolyData,
     vtkPointLocator,
+    vtkPolyData,
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
@@ -26,23 +32,19 @@ from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter, vtkWarpVect
 from vtkmodules.vtkFiltersModeling import vtkLinearSubdivisionFilter
 from vtkmodules.vtkImagingCore import vtkImageFlip
 from vtkmodules.vtkIOImage import vtkNIFTIImageReader
+from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
+    vtkTextProperty,
     vtkWindowLevelLookupTable,
-    vtkTextProperty
 )
-from vtkmodules.vtkCommonCore import (
-    vtkLookupTable,
-)
-from vtkmodules.vtkCommonColor import (
-    vtkColorSeries,
-    vtkNamedColors
-)
+
 import invesalius.data.slice_ as sl
-from invesalius.data.converters import to_vtk
 import invesalius.data.vtk_utils as vtk_utils
-from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
+import invesalius.project as prj
+from invesalius.data.converters import to_vtk
+
 
 class Brain:
     def __init__(self, n_peels, window_width, window_level, affine, inv_proj):
@@ -56,7 +58,7 @@ class Brain:
         self.inv_proj = inv_proj
 
     def from_mask(self, mask):
-        mask= np.array(mask.matrix[1:, 1:, 1:])
+        mask = np.array(mask.matrix[1:, 1:, 1:])
         slic = sl.Slice()
         image = slic.matrix
 
@@ -84,7 +86,6 @@ class Brain:
 
         self._do_surface_creation(mask)
 
-
     def from_mask_file(self, mask_path):
         slic = sl.Slice()
         image = slic.matrix
@@ -104,7 +105,6 @@ class Brain:
         self.refImage = image
 
         self._do_surface_creation(mask, mask_sFormMatrix)
-
 
     def _do_surface_creation(self, mask, mask_sFormMatrix=None):
         if mask_sFormMatrix is None:
@@ -149,7 +149,9 @@ class Brain:
         tmpPeel = cleanMesh(tmpPeel)
 
         refImageSpace2_xyz_transform = vtkTransform()
-        refImageSpace2_xyz_transform.SetMatrix(vtk_utils.numpy_to_vtkMatrix4x4(np.linalg.inv(self.affine)))
+        refImageSpace2_xyz_transform.SetMatrix(
+            vtk_utils.numpy_to_vtkMatrix4x4(np.linalg.inv(self.affine))
+        )
 
         self.refImageSpace2_xyz = vtkTransformPolyDataFilter()
         self.refImageSpace2_xyz.SetTransform(refImageSpace2_xyz_transform)
@@ -162,7 +164,7 @@ class Brain:
 
         currentPeel = tmpPeel
         self.currentPeelNo = 0
-        currentPeel= self.MapImageOnCurrentPeel(currentPeel)
+        currentPeel = self.MapImageOnCurrentPeel(currentPeel)
 
         newPeel = vtkPolyData()
         newPeel.DeepCopy(currentPeel)
@@ -181,11 +183,16 @@ class Brain:
         self.PeelDown(currentPeel)
 
     def CreateTransformedVTKAffine(self):
-        affine_transformed = self.affine.copy()
-        matrix_shape = tuple(self.inv_proj.matrix_shape)
-        affine_transformed[1, -1] -= matrix_shape[1]
+        # Consistent with transformation applied in navigation.py under StartNavigation
+        # accounts for non-unitary pixel spacing and transforms to invesalius 3D viewer
+        # coordinate space
+        prj_data = prj.Project()
+        matrix_shape = tuple(prj_data.matrix_shape)
+        spacing = tuple(prj_data.spacing)
+        affine_inv_space = self.affine.copy()
+        affine_inv_space[1, -1] -= spacing[1] * (matrix_shape[1] - 1)
 
-        return vtk_utils.numpy_to_vtkMatrix4x4(affine_transformed)
+        return vtk_utils.numpy_to_vtkMatrix4x4(affine_inv_space)
 
     def get_actor(self, n):
         return self.GetPeelActor(n)
@@ -193,9 +200,12 @@ class Brain:
     def SliceDown(self, currentPeel):
         # Warp using the normals
         warp = vtkWarpVector()
-        warp.SetInputData(fixMesh(downsample(currentPeel)))  # fixMesh here updates normals needed for warping
-        warp.SetInputArrayToProcess(0, 0, 0, vtkDataObject().FIELD_ASSOCIATION_POINTS,
-                                    vtkDataSetAttributes().NORMALS)
+        warp.SetInputData(
+            fixMesh(downsample(currentPeel))
+        )  # fixMesh here updates normals needed for warping
+        warp.SetInputArrayToProcess(
+            0, 0, 0, vtkDataObject().FIELD_ASSOCIATION_POINTS, vtkDataSetAttributes().NORMALS
+        )
         warp.SetScaleFactor(-1)
         warp.Update()
 
@@ -207,6 +217,7 @@ class Brain:
 
         currentPeel = out
         return currentPeel
+
     # def sliceUp(self):
     #     # Warp using the normals
     #     warp = vtkWarpVector()
@@ -319,6 +330,7 @@ class Brain:
 
         return self.currentPeelActor
 
+
 class E_field_brain:
     def __init__(self, mesh):
         self.GetEfieldActor(mesh)
@@ -347,10 +359,11 @@ class E_field_brain:
 
         self.efield_scalar_bar = vtkScalarBarActor()
         self.efield_scalar_bar.SetOrientationToVertical()
-        self.efield_scalar_bar.SetTitle('E (V/m)')
+        self.efield_scalar_bar.SetTitle("E (V/m)")
         self.efield_scalar_bar.SetNumberOfLabels(2)
         self.efield_scalar_bar.SetTitleTextProperty(text_property)
-        #self.lut = CreateLUTTableForEfield(0, 0.005)
+        # self.lut = CreateLUTTableForEfield(0, 0.005)
+
 
 class Scalp:
     def __init__(self, mesh):
@@ -368,34 +381,39 @@ class Scalp:
         self.mesh_normals = GetNormals(mesh)
         self.mesh_centers = GetCenters(mesh)
 
-def GetCenters(mesh):
-        # Compute centers of triangles
-        centerComputer = vtkCellCenters()  # This computes centers of the triangles on the peel
-        centerComputer.SetInputData(mesh)
-        centerComputer.Update()
 
-        # This stores the centers for easy access
-        centers = centerComputer.GetOutput()
-        return centers
+def GetCenters(mesh):
+    # Compute centers of triangles
+    centerComputer = vtkCellCenters()  # This computes centers of the triangles on the peel
+    centerComputer.SetInputData(mesh)
+    centerComputer.Update()
+
+    # This stores the centers for easy access
+    centers = centerComputer.GetOutput()
+    return centers
+
 
 def GetNormals(mesh):
-        # Compute normals of triangles
-        normalComputer = vtkPolyDataNormals()  # This computes normals of the triangles on the peel
-        normalComputer.SetInputData(mesh)
-        normalComputer.ComputePointNormalsOff()
-        normalComputer.ComputeCellNormalsOn()
-        normalComputer.Update()
-        # This converts to the normals to an array for easy access
-        normals = normalComputer.GetOutput().GetCellData().GetNormals()
-        return normals
+    # Compute normals of triangles
+    normalComputer = vtkPolyDataNormals()  # This computes normals of the triangles on the peel
+    normalComputer.SetInputData(mesh)
+    normalComputer.ComputePointNormalsOff()
+    normalComputer.ComputeCellNormalsOn()
+    normalComputer.Update()
+    # This converts to the normals to an array for easy access
+    normals = normalComputer.GetOutput().GetCellData().GetNormals()
+    return normals
+
+
 def CreateLUTTableForEfield(min, max):
-        lut = vtkLookupTable()
-        lut.SetTableRange(min, max)
-        colorSeries = vtkColorSeries()
-        seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
-        colorSeries.SetColorScheme(seriesEnum)
-        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
-        return lut
+    lut = vtkLookupTable()
+    lut.SetTableRange(min, max)
+    colorSeries = vtkColorSeries()
+    seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+    colorSeries.SetColorScheme(seriesEnum)
+    colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+    return lut
+
 
 def cleanMesh(inp):
     cleaned = vtkCleanPolyData()
@@ -483,5 +501,3 @@ def downsample(inp):
     # out.SetPolys(Remesh.GetOutput().GetPolys())
 
     return Remesh
-
-
