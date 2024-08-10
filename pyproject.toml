@@ -87,7 +87,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.ruff]
-include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py']
+include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py',"typings/**/*.pyi"]
 line-length = 100
 # extend-exclude = ["plugins"]
 
