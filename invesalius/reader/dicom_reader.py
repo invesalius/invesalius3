@@ -115,7 +115,7 @@ class LoadDicom:
         self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.run()
 
-    @log.call_tracking_decorator
+    @log.call_tracking_decorator01("DICOM_Reader","DICOM_Writer")
     def run(self):
         grouper = self.grouper
         reader = gdcm.ImageReader()
