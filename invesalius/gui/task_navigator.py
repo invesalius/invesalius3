@@ -1381,6 +1381,7 @@ class ControlPanel(wx.Panel):
                 (efield_checkbox),
                 (lock_to_target_button),
                 (show_coil_button),
+                (show_motor_map_button)
             ]
         )
 
@@ -1965,6 +1966,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.InsertColumn(const.POINT_OF_INTEREST_TARGET_COLUMN, "Efield Target")
         marker_list_ctrl.SetColumnWidth(const.POINT_OF_INTEREST_TARGET_COLUMN, 45)
 
+        marker_list_ctrl.InsertColumn(const.MEP_COLUMN, "MEP (uV)")
+        marker_list_ctrl.SetColumnWidth(const.MEP_COLUMN, 45)
+                                      
         if self.session.GetConfig("debug"):
             marker_list_ctrl.InsertColumn(const.X_COLUMN, "X")
             marker_list_ctrl.SetColumnWidth(const.X_COLUMN, 45)
@@ -1974,6 +1978,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
             marker_list_ctrl.InsertColumn(const.Z_COLUMN, "Z")
             marker_list_ctrl.SetColumnWidth(const.Z_COLUMN, 45)
+        
 
         marker_list_ctrl.Bind(
             wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
@@ -2043,6 +2048,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UnsetTarget, "Unset target")
         Publisher.subscribe(self._UnsetPointOfInterest, "Unset point of interest")
         Publisher.subscribe(self._UpdateMarkerLabel, "Update marker label")
+        Publisher.subscribe(self._UpdateMEP, "Update marker mep")
 
     def __get_selected_items(self):
         """
@@ -2244,19 +2250,16 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             duplicate_menu_item = menu_id.Append(unique_menu_id + 3, _("Duplicate"))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuDuplicateMarker, duplicate_menu_item)
 
-        # show MEP menu item
-        if is_coil_target:
-            mep_menu_item = menu_id.Append(
-                unique_menu_id + 4, _('Change MEP value'))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP,
-                         mep_menu_item)
 
         menu_id.AppendSeparator()
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
 
+            mep_menu_item = menu_id.Append(unique_menu_id + 4, _('Change MEP value'))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP,mep_menu_item)
             if is_active_target:
-                target_menu_item = menu_id.Append(unique_menu_id + 4, _("Unset target"))
+
+                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Unset target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
                 if has_mTMS:
                     brain_target_menu_item = menu_id.Append(
@@ -2264,7 +2267,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     )
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
-                target_menu_item = menu_id.Append(unique_menu_id + 4, _("Set as target"))
+                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Set as target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
@@ -2888,6 +2891,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         session_id=None,
         marker_type=None,
         cortex_position_orientation=None,
+        mep_value=None,
     ):
         if label is None:
             label = self.GetNextMarkerLabel()
@@ -3113,6 +3117,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         cortex_position_orientation=None,
         z_offset=0.0,
         z_rotation=0.0,
+        mep_value=None,
     ):
         """
         Create a new marker object.
@@ -3170,6 +3175,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         list_entry[const.POINT_OF_INTEREST_TARGET_COLUMN] = (
             "Yes" if marker.is_point_of_interest else ""
         )
+        list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
 
         if self.session.GetConfig("debug"):
             list_entry.append(round(marker.x, 1))

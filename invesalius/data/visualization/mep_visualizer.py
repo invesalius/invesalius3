@@ -1,16 +1,11 @@
 
-import invesalius.session as ses
-from invesalius.pubsub import pub as Publisher
-from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
-import vtk
+import random
+from copy import deepcopy
+
 import numpy as np
-
-
+import vtk
+from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkIOGeometry import vtkSTLReader
-from vtkmodules.vtkRenderingCore import (
-    vtkActor,
-    vtkPolyDataMapper,
-)
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPointPicker,
@@ -20,12 +15,11 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderer,
     vtkWindowToImageFilter,
 )
-from invesalius.data.markers.marker import Marker
 
-import random
 import invesalius.constants as const
-
-from copy import deepcopy
+import invesalius.session as ses
+from invesalius.data.markers.marker import Marker
+from invesalius.pubsub import pub as Publisher
 
 
 class MEPVisualizer:
@@ -37,6 +31,7 @@ class MEPVisualizer:
         self._bind_events()
         self.points = vtk.vtkPolyData()
         self.surface = self.read_surface_data(actor_out=True)
+        self.colorBarActor = None
 
         self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
 
@@ -74,6 +69,7 @@ class MEPVisualizer:
         Publisher.subscribe(self.display_motor_map, 'Show motor map')
         Publisher.subscribe(self._reset_config_params, 'Reset MEP Config')
         Publisher.subscribe(self.update_config, 'Save Preferences')
+        Publisher.subscribe(self.update_mep_points, "Update marker list")
 
     def update_config(self):
         session = ses.Session()
@@ -84,6 +80,11 @@ class MEPVisualizer:
     def display_motor_map(self, show: bool):
         """Controls the display of the motor map and enables/disables the MEP mapping."""
         if show:
+            if self.colorBarActor is None:
+                self.colorBarActor = self.create_colorbar_actor()
+            if self.surface is None:
+                self.update_surface_map()
+
             self._config_params["mep_enabled"] = True
             self._config_params["enabled_once"] = True
             # self.render_visualization(self.surface)
@@ -95,7 +96,7 @@ class MEPVisualizer:
             if hasattr(self, 'colorBarActor'):  # Ensure it exists before removal
                 self.mep_renderer.RemoveActor(self.colorBarActor)
                 self.mep_renderer.RemoveActor(self.surface)
-                print("Current actors: ", self.mep_renderer.GetActors())
+                # print("Current actors: ", self.mep_renderer.GetActors())
             # FIXME: The colorbar actor wont get removed for some reason..
 
                 # Remove all actors from the target guide renderer.
@@ -381,15 +382,15 @@ class MEPVisualizer:
 
     def _cleanup_visualization(self):
         """Removes all actors from the renderer except the initial surface."""
-        actors = self.mep_renderer.GetActors()
-        actors.InitTraversal()
-        actor = actors.GetNextItem()
-        while actor:
-            if actor == self.surface:
-                actor = actors.GetNextItem()
-            self.mep_renderer.RemoveActor(actor)
-            actor = actors.GetNextItem()
-
+        # actors = self.mep_renderer.GetActors()
+        # actors.InitTraversal()
+        # actor = actors.GetNextItem()
+        # while actor:
+        #     if actor == self.surface:
+        #         actor = actors.GetNextItem()
+        #     self.mep_renderer.RemoveActor(actor)
+        #     actor = actors.GetNextItem()
+        pass
     def render_visualization(self, surface):
 
         # Read data

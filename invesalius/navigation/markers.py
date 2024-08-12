@@ -293,4 +293,4 @@ class MarkersControl(metaclass=Singleton):
         self.AddMarker(new_marker)
 
     def BroadcastMarkerList(self):
-        Publisher.sendMessage('Update marker list', markers=self.list)
+        Publisher.sendMessage("Update marker list", markers=self.list)

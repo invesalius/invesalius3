@@ -1108,6 +1108,33 @@ def Efield_debug_Enorm_warning():
     dlg.ShowModal()
     dlg.Destroy()
 
+def ShowEnterMEPValue(default):
+    msg = _("Enter the MEP value (uV)")
+    if sys.platform == 'darwin':
+        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
+    else:
+        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
+    dlg.ShowModal()
+    result = dlg.GetValue()
+    # check if the value is a number
+    try:
+        result = float(result)
+    except ValueError:
+        result = None
+    # if the value is not a number, raise error message
+    if result is None:
+        msg = _("The value entered is not a number.")
+        if sys.platform == 'darwin':
+            dlg = wx.MessageDialog(None, "", msg,
+                                   wx.OK)
+        else:
+            dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                   wx.OK)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    dlg.Destroy()
+    return result
 
 def ICPcorregistration(fre):
     msg = (
@@ -1181,23 +1208,6 @@ def ShowEnterMarkerID(default):
     dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
     dlg.ShowModal()
     result = dlg.GetValue()
-    # check if the value is a number
-    try:
-        result = float(result)
-    except ValueError:
-        result = None
-    # if the value is not a number, raise error message
-    if result is None:
-        msg = _("The value entered is not a number.")
-        if sys.platform == 'darwin':
-            dlg = wx.MessageDialog(None, "", msg,
-                                   wx.OK)
-        else:
-            dlg = wx.MessageDialog(None, msg, "InVesalius 3",
-                                   wx.OK)
-        dlg.ShowModal()
-        dlg.Destroy()
-
     dlg.Destroy()
 
     return result
