@@ -17,25 +17,24 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 import wx
+
 try:
     import wx.lib.agw.foldpanelbar as fpb
 except ModuleNotFoundError:
     import wx.lib.foldpanelbar as fpb
-from invesalius.pubsub import pub as Publisher
-
+import invesalius.gui.task_efield as efield
 import invesalius.gui.task_exporter as exporter
-import invesalius.gui.task_slice as slice_
+import invesalius.gui.task_fmrisupport as fmrisupport
 import invesalius.gui.task_importer as importer
+import invesalius.gui.task_mepmapping as mepmapping
+import invesalius.gui.task_slice as slice_
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tractography as tractography
-import invesalius.gui.task_efield as efield
-import invesalius.gui.task_fmrisupport as fmrisupport
-import invesalius.gui.task_mepmapping as mepmapping
+from invesalius.pubsub import pub as Publisher
 
 
 def GetCollapsedIconData():
-    return \
-        b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
+    return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
 \x00\x00\x00\x1f\xf3\xffa\x00\x00\x00\x04sBIT\x08\x08\x08\x08|\x08d\x88\x00\
 \x00\x01\x8eIDAT8\x8d\xa5\x93-n\xe4@\x10\x85?g\x03\n6lh)\xc4\xd2\x12\xc3\x81\
 \xd6\xa2I\x90\x154\xb9\x81\x8f1G\xc8\x11\x16\x86\xcd\xa0\x99F\xb3A\x91\xa1\
@@ -61,13 +60,13 @@ def GetCollapsedIconBitmap():
 
 def GetCollapsedIconImage():
     from io import BytesIO
+
     stream = BytesIO(GetCollapsedIconData())
     return wx.Image(stream)
 
 
 def GetExpandedIconData():
-    return \
-        b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
+    return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
 \x00\x00\x00\x1f\xf3\xffa\x00\x00\x00\x04sBIT\x08\x08\x08\x08|\x08d\x88\x00\
 \x00\x01\x9fIDAT8\x8d\x95\x93\xa1\x8e\xdc0\x14EO\xb2\xc4\xd0\xd2\x12\xb7(mI\
 \xa4%V\xd1lQT4[4-\x9a\xfe\xc1\xc2|\xc6\xc2~BY\x83:A3E\xd3\xa0*\xa4\xd2\x90H!\
@@ -95,6 +94,7 @@ def GetExpandedIconBitmap():
 
 def GetExpandedIconImage():
     from io import BytesIO
+
     stream = BytesIO(GetExpandedIconData())
     return wx.Image(stream)
 
@@ -106,8 +106,7 @@ class TaskPanel(wx.Panel):
         inner_panel = InnerTaskPanel(self)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
-                  wx.LEFT, 0)
+        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT | wx.LEFT, 0)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
@@ -132,10 +131,8 @@ class InnerTaskPanel(wx.Panel):
 
         # Add line sizer into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(txt_sizer, 0, wx.GROW |
-                       wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
-        main_sizer.Add(fold_panel, 1, wx.GROW |
-                       wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        main_sizer.Add(txt_sizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        main_sizer.Add(fold_panel, 1, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         main_sizer.AddSpacer(5)
         main_sizer.Fit(self)
 
@@ -168,8 +165,9 @@ class InnerFoldPanel(wx.Panel):
             default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         except AttributeError:
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
-        fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      wx.DefaultSize, 0, fpb.FPB_SINGLE_FOLD)
+        fold_panel = fpb.FoldPanelBar(
+            self, -1, wx.DefaultPosition, wx.DefaultSize, 0, fpb.FPB_SINGLE_FOLD
+        )
 
         image_list = wx.ImageList(16, 16)
         image_list.Add(GetExpandedIconBitmap())
@@ -183,15 +181,16 @@ class InnerFoldPanel(wx.Panel):
         style.SetFirstColour(default_colour)
         style.SetSecondColour(default_colour)
 
-        tasks = [(_("Load data"), importer.TaskPanel),
-                 (_("Select region of interest"), slice_.TaskPanel),
-                 (_("Configure 3D surface"), surface.TaskPanel),
-                 (_("Export data"), exporter.TaskPanel),
-                 (_("Tractography"), tractography.TaskPanel),
-                 (_("E-Field"), efield.TaskPanel),
-                 (_("fMRI support"), fmrisupport.TaskPanel),
-                 (_("MEP Mapping"), mepmapping.TaskPanel)
-                 ]
+        tasks = [
+            (_("Load data"), importer.TaskPanel),
+            (_("Select region of interest"), slice_.TaskPanel),
+            (_("Configure 3D surface"), surface.TaskPanel),
+            (_("Export data"), exporter.TaskPanel),
+            (_("Tractography"), tractography.TaskPanel),
+            (_("E-Field"), efield.TaskPanel),
+            (_("fMRI support"), fmrisupport.TaskPanel),
+            (_("MEP mapping"), mepmapping.TaskPanel),
+        ]
 
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -202,18 +201,20 @@ class InnerFoldPanel(wx.Panel):
             (name, panel) = tasks[i]
 
             # Create panel
-            item = fold_panel.AddFoldPanel("%d. %s" % (i+1, name),
-                                           collapsed=True,
-                                           foldIcons=image_list)
+            item = fold_panel.AddFoldPanel(
+                "%d. %s" % (i + 1, name), collapsed=True, foldIcons=image_list
+            )
             fold_panel.ApplyCaptionStyle(item, style)
             col = style.GetFirstColour()
 
             # Add panel to FoldPanel
-            fold_panel.AddFoldPanelWindow(item,
-                                          panel(item),
-                                          # Spacing= 0,
-                                          leftSpacing=0,
-                                          rightSpacing=0)
+            fold_panel.AddFoldPanelWindow(
+                item,
+                panel(item),
+                # Spacing= 0,
+                leftSpacing=0,
+                rightSpacing=0,
+            )
 
             # All items, except the first one, should be disabled if
             # no data has been imported initially.
@@ -243,9 +244,9 @@ class InnerFoldPanel(wx.Panel):
     def __bind_events(self):
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
         Publisher.subscribe(self.OnEnableState, "Enable state project")
-        Publisher.subscribe(self.OnOverwrite, 'Create surface from index')
-        Publisher.subscribe(self.OnFoldSurface, 'Fold surface task')
-        Publisher.subscribe(self.OnFoldExport, 'Fold export task')
+        Publisher.subscribe(self.OnOverwrite, "Create surface from index")
+        Publisher.subscribe(self.OnFoldSurface, "Fold surface task")
+        Publisher.subscribe(self.OnFoldExport, "Fold export task")
 
     def SetStateProjectClose(self):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
@@ -262,12 +263,12 @@ class InnerFoldPanel(wx.Panel):
         closed = evt.GetFoldStatus()
 
         if id == self.__id_slice:
-            Publisher.sendMessage('Retrieve task slice style')
-            Publisher.sendMessage('Fold mask page')
+            Publisher.sendMessage("Retrieve task slice style")
+            Publisher.sendMessage("Fold mask page")
         elif id == self.__id_surface:
-            Publisher.sendMessage('Fold surface page')
+            Publisher.sendMessage("Fold surface page")
         else:
-            Publisher.sendMessage('Disable task slice style')
+            Publisher.sendMessage("Disable task slice style")
 
         evt.Skip()
         wx.CallAfter(self.ResizeFPB)
@@ -276,8 +277,9 @@ class InnerFoldPanel(wx.Panel):
         sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
         offset_constant = 1.8
         offset = 0
-        panels = [self.fold_panel.GetFoldPanel(
-            panel) for panel in range(self.fold_panel.GetCount())]
+        panels = [
+            self.fold_panel.GetFoldPanel(panel) for panel in range(self.fold_panel.GetCount())
+        ]
         for panel in panels:
             if not panel.IsExpanded():
                 offset += panel.GetSize()[1]
@@ -286,7 +288,7 @@ class InnerFoldPanel(wx.Panel):
         self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
 
     def OnOverwrite(self, surface_parameters):
-        self.overwrite = surface_parameters['options']['overwrite']
+        self.overwrite = surface_parameters["options"]["overwrite"]
 
     def OnFoldSurface(self):
         if not self.overwrite:

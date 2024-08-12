@@ -1,13 +1,13 @@
 import os
 import random
 
-import vtk
 import numpy as np
+import vtk
 
-from invesalius import inv_paths
-import invesalius.data.coordinates as dco
 import invesalius.constants as const
+import invesalius.data.coordinates as dco
 import invesalius.project as prj
+from invesalius import inv_paths
 
 
 class ActorFactory(object):
@@ -15,13 +15,13 @@ class ActorFactory(object):
         pass
 
     # Utilities
-    
+
     # TODO: This is copied from viewer_volume.py, should be de-duplicated and moved to a single place.
     def CreateVTKObjectMatrix(self, position, orientation):
         m_img = dco.coordinates_to_transformation_matrix(
             position=position,
             orientation=orientation,
-            axes='sxyz',
+            axes="sxyz",
         )
         m_img = np.asmatrix(m_img)
 
@@ -137,7 +137,7 @@ class ActorFactory(object):
         image spacing values.
         """
         vtk_colors = vtk.vtkNamedColors()
-        color = vtk_colors.GetColor3d('DarkRed')
+        color = vtk_colors.GetColor3d("DarkRed")
 
         scale = 2.0
         proj = prj.Project()
@@ -154,13 +154,15 @@ class ActorFactory(object):
         pointer_actor.SetMapper(mapper)
         pointer_actor.GetProperty().SetColor(color)
         pointer_actor.PickableOff()
-        
+
         return pointer_actor
 
-    def CreateArrowUsingDirection(self, position, orientation, colour=[0.0, 0.0, 1.0], length_multiplier=1.0):
+    def CreateArrowUsingDirection(
+        self, position, orientation, colour=[0.0, 0.0, 1.0], length_multiplier=1.0
+    ):
         """
         Return an actor representing an arrow with the given position and orientation.
-        
+
         The zero angle of the arrow is in the positive x-direction (right in RAS+ coordinate system,
         which the volume viewer uses). Note that it corresponds to the anterior of the coil, as the
         coil has a coordinate system where x-axis is the anterior-posterior axis.
@@ -206,7 +208,9 @@ class ActorFactory(object):
 
         return actor
 
-    def CreateAim(self, position, orientation, colour=[1.0, 1.0, 0.0], scale=1.0, highlight_zero_angle=True):
+    def CreateAim(
+        self, position, orientation, colour=[1.0, 1.0, 0.0], scale=1.0, highlight_zero_angle=True
+    ):
         """
         Create the aim (crosshair) actor.
 
@@ -247,7 +251,7 @@ class ActorFactory(object):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetDiffuseColor(colour)
-        actor.GetProperty().SetSpecular(.2)
+        actor.GetProperty().SetSpecular(0.2)
         actor.GetProperty().SetSpecularPower(100)
         actor.GetProperty().SetOpacity(const.AIM_ACTOR_SHOWN_OPACITY)
         actor.SetUserTransform(transform)

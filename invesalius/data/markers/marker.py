@@ -1,6 +1,6 @@
 import copy
-import uuid
 import dataclasses
+import uuid
 from enum import Enum
 
 import invesalius.data.imagedata_utils as imagedata_utils
@@ -18,6 +18,7 @@ class MarkerType(Enum):
         but created to store the coil pose after a stimulation pulse is delivered. Visualized
         differently from COIL_TARGET.
     """
+
     FIDUCIAL = 0
     LANDMARK = 1
     BRAIN_TARGET = 2
@@ -43,6 +44,7 @@ class MarkerType(Enum):
 class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
+
     version: int = 3
     marker_id: int = 0
     x: float = 0
@@ -55,7 +57,7 @@ class Marker:
     g: float = 1
     b: float = 0
     size: float = 2
-    label: str = ''
+    label: str = ""
     x_seed: float = 0
     y_seed: float = 0
     z_seed: float = 0
@@ -72,7 +74,7 @@ class Marker:
     z_rotation: float = 0.0
     z_offset: float = 0.0
     visualization: dict = dataclasses.field(default_factory=dict)
-    marker_uuid: str = ''
+    marker_uuid: str = ""
 
     # #TODO: add a reference to original coil marker to relate it to MEP
     # in micro Volts (but scale in milli Volts for display)
@@ -104,7 +106,9 @@ class Marker:
     # r, g, b can be jointly accessed as colour
     @property
     def colour(self):
-        return list((self.r, self.g, self.b),)
+        return list(
+            (self.r, self.g, self.b),
+        )
 
     @colour.setter
     def colour(self, new_colour):
@@ -122,7 +126,9 @@ class Marker:
     # x_seed, y_seed, z_seed can be jointly accessed as seed
     @property
     def seed(self):
-        return list((self.x_seed, self.y_seed, self.z_seed),)
+        return list(
+            (self.x_seed, self.y_seed, self.z_seed),
+        )
 
     @seed.setter
     def seed(self, new_seed):
@@ -130,35 +136,57 @@ class Marker:
 
     @property
     def cortex_position_orientation(self):
-        return list((self.x_cortex, self.y_cortex, self.z_cortex, self.alpha_cortex, self.beta_cortex, self.gamma_cortex),)
+        return list(
+            (
+                self.x_cortex,
+                self.y_cortex,
+                self.z_cortex,
+                self.alpha_cortex,
+                self.beta_cortex,
+                self.gamma_cortex,
+            ),
+        )
 
     @cortex_position_orientation.setter
     def cortex_position_orientation(self, new_cortex):
-        self.x_cortex, self.y_cortex, self.z_cortex, self.alpha_cortex, self.beta_cortex, self.gamma_cortex = new_cortex
+        (
+            self.x_cortex,
+            self.y_cortex,
+            self.z_cortex,
+            self.alpha_cortex,
+            self.beta_cortex,
+            self.gamma_cortex,
+        ) = new_cortex
 
     @classmethod
     def to_csv_header(cls):
         """Return the string containing tab-separated list of field names (header)."""
-        res = [field.name for field in dataclasses.fields(cls) if (
-            field.name != 'version' and field.name != 'marker_uuid')]
-        res.extend(['x_world', 'y_world', 'z_world',
-                   'alpha_world', 'beta_world', 'gamma_world'])
-        return '\t'.join(map(lambda x: '\"%s\"' % x, res))
+        res = [
+            field.name
+            for field in dataclasses.fields(cls)
+            if (field.name != "version" and field.name != "marker_uuid")
+        ]
+        res.extend(["x_world", "y_world", "z_world", "alpha_world", "beta_world", "gamma_world"])
+        return "\t".join(map(lambda x: '"%s"' % x, res))
 
     def to_csv_row(self):
         """Serialize to excel-friendly tab-separated string"""
-        res = ''
+        res = ""
         for field in dataclasses.fields(self.__class__):
             # Skip version, uuid, and visualization fields, as they won't be stored in the file.
-            if field.name == 'version' or field.name == 'marker_uuid' or field.name == 'visualization':
+            if (
+                field.name == "version"
+                or field.name == "marker_uuid"
+                or field.name == "visualization"
+            ):
                 continue
 
             if field.type is str:
-                res += '\"%s\"\t' % getattr(self, field.name)
+                res += '"%s"\t' % getattr(self, field.name)
             elif field.type is MarkerType:
-                res += '%s\t' % getattr(self, field.name).value
+                res += "%s\t" % getattr(self, field.name).value
             else:
-                res += '%s\t' % str(getattr(self, field.name))
+                res += "%s\t" % str(getattr(self, field.name))
 
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
             # Add world coordinates (in addition to the internal ones).
@@ -173,26 +201,27 @@ class Marker:
                 orientation=[0, 0, 0],
             )
 
-        res += '\t'.join(map(lambda x: 'N/A' if x is None else str(x),
-                         (*position_world, *orientation_world)))
+        res += "\t".join(
+            map(lambda x: "N/A" if x is None else str(x), (*position_world, *orientation_world))
+        )
         return res
 
     def to_dict(self):
         return {
-            'position': self.position,
-            'orientation': self.orientation,
-            'colour': self.colour,
-            'size': self.size,
-            'label': self.label,
-            'is_target': self.is_target,
-            'is_point_of_interest': self.is_point_of_interest,
-            'marker_type': self.marker_type.value,
-            'seed': self.seed,
-            'session_id': self.session_id,
-            'cortex_position_orientation': self.cortex_position_orientation,
-            'z_rotation': self.z_rotation,
-            'z_offset': self.z_offset,
-            'mep_value': self.mep_value,
+            "position": self.position,
+            "orientation": self.orientation,
+            "colour": self.colour,
+            "size": self.size,
+            "label": self.label,
+            "is_target": self.is_target,
+            "is_point_of_interest": self.is_point_of_interest,
+            "marker_type": self.marker_type.value,
+            "seed": self.seed,
+            "session_id": self.session_id,
+            "cortex_position_orientation": self.cortex_position_orientation,
+            "z_rotation": self.z_rotation,
+            "z_offset": self.z_offset,
+            "mep_value": self.mep_value,
         }
 
     def from_dict(self, d):
@@ -200,20 +229,19 @@ class Marker:
         #
         # For instance, when stored as a state in state.json, the marker dictionary has the fields 'position' and
         # 'orientation', whereas when stored in a marker file, the fields are 'x', 'y', 'z', 'alpha', 'beta', 'gamma'.
-        position = d['position'] if 'position' in d else [
-            d['x'], d['y'], d['z']]
-        orientation = d['orientation'] if 'orientation' in d else [
-            d['alpha'], d['beta'], d['gamma']]
-        colour = d['colour'] if 'colour' in d else [d['r'], d['g'], d['b']]
-        seed = d['seed'] if 'seed' in d else [
-            d['x_seed'], d['y_seed'], d['z_seed']]
+        position = d["position"] if "position" in d else [d["x"], d["y"], d["z"]]
+        orientation = (
+            d["orientation"] if "orientation" in d else [d["alpha"], d["beta"], d["gamma"]]
+        )
+        colour = d["colour"] if "colour" in d else [d["r"], d["g"], d["b"]]
+        seed = d["seed"] if "seed" in d else [d["x_seed"], d["y_seed"], d["z_seed"]]
 
         # The old versions of the markers dictionary do not have the 'marker_type' field; in that case, infer the
         # marker type from the label and orientation.
-        if 'marker_type' in d:
-            marker_type = d['marker_type']
+        if "marker_type" in d:
+            marker_type = d["marker_type"]
         else:
-            if d['label'] in ['LEI', 'REI', 'NAI']:
+            if d["label"] in ["LEI", "REI", "NAI"]:
                 marker_type = MarkerType.FIDUCIAL.value
 
             elif orientation == [None, None, None]:
@@ -222,28 +250,40 @@ class Marker:
             else:
                 marker_type = MarkerType.COIL_TARGET.value
 
-        if all([k in d for k in ['x_cortex', 'y_cortex', 'z_cortex', 'alpha_cortex', 'beta_cortex', 'gamma_cortex']]):
+        if all(
+            [
+                k in d
+                for k in [
+                    "x_cortex",
+                    "y_cortex",
+                    "z_cortex",
+                    "alpha_cortex",
+                    "beta_cortex",
+                    "gamma_cortex",
+                ]
+            ]
+        ):
             cortex_position_orientation = [
-                d['x_cortex'],
-                d['y_cortex'],
-                d['z_cortex'],
-                d['alpha_cortex'],
-                d['beta_cortex'],
-                d['gamma_cortex']
+                d["x_cortex"],
+                d["y_cortex"],
+                d["z_cortex"],
+                d["alpha_cortex"],
+                d["beta_cortex"],
+                d["gamma_cortex"],
             ]
         else:
             cortex_position_orientation = [None, None, None, None, None, None]
 
-        z_offset = d.get('z_offset', 0.0)
-        z_rotation = d.get('z_rotation', 0.0)
-        is_point_of_interest = d.get('is_point_of_interest', False)
+        z_offset = d.get("z_offset", 0.0)
+        z_rotation = d.get("z_rotation", 0.0)
+        is_point_of_interest = d.get("is_point_of_interest", False)
 
-        mep_value = d.get('mep_value', None)
+        mep_value = d.get("mep_value", None)
 
-        self.size = d['size']
-        self.label = d['label']
-        self.is_target = d['is_target']
-        self.session_id = d['session_id']
+        self.size = d["size"]
+        self.label = d["label"]
+        self.is_target = d["is_target"]
+        self.session_id = d["session_id"]
 
         self.position = position
         self.orientation = orientation
@@ -265,9 +305,8 @@ class Marker:
 
         # Manually copy all attributes except the visualization and the marker_uuid.
         for field in dataclasses.fields(self):
-            if field.name != 'visualization' and field.name != 'marker_uuid':
-                setattr(new_marker, field.name, copy.deepcopy(
-                    getattr(self, field.name)))
+            if field.name != "visualization" and field.name != "marker_uuid":
+                setattr(new_marker, field.name, copy.deepcopy(getattr(self, field.name)))
 
         # Give the duplicate marker unique uuid
         new_marker.marker_uuid = str(uuid.uuid4())

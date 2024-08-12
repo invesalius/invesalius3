@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,7 +15,7 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 import multiprocessing
 import os
@@ -27,6 +27,7 @@ import numpy as np
 import wx
 from scipy import ndimage
 from scipy.ndimage import generate_binary_structure, watershed_ift
+
 try:
     # Skimage >= 0.19
     from skimage.segmentation import watershed
@@ -46,43 +47,43 @@ from vtkmodules.vtkRenderingCore import (
     vtkWorldPointPicker,
 )
 
-from invesalius.pubsub import pub as Publisher
-
 import invesalius.constants as const
 import invesalius.data.cursor_actors as ca
 import invesalius.data.geometry as geom
+
+# For tracts
+import invesalius.data.tractography as dtr
 import invesalius.data.transformations as transformations
 import invesalius.data.watershed_process as watershed_process
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 import invesalius.utils as utils
-from invesalius.data.measures import (CircleDensityMeasure, MeasureData,
-                                      PolygonDensityMeasure)
-
 from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
-from invesalius_cy import floodfill
+from invesalius.data.measures import CircleDensityMeasure, MeasureData, PolygonDensityMeasure
 from invesalius.i18n import tr as _
+from invesalius.pubsub import pub as Publisher
+from invesalius_cy import floodfill
 
-# For tracts
-import invesalius.data.tractography as dtr
 # import invesalius.project as prj
 
 # from time import sleep
 # ---
 
 ORIENTATIONS = {
-        "AXIAL": const.AXIAL,
-        "CORONAL": const.CORONAL,
-        "SAGITAL": const.SAGITAL,
-        }
+    "AXIAL": const.AXIAL,
+    "CORONAL": const.CORONAL,
+    "SAGITAL": const.SAGITAL,
+}
 
-BRUSH_FOREGROUND=1
-BRUSH_BACKGROUND=2
-BRUSH_ERASE=0
+BRUSH_FOREGROUND = 1
+BRUSH_BACKGROUND = 2
+BRUSH_ERASE = 0
 
-WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
-                        _("Foreground"): BRUSH_FOREGROUND,
-                        _("Background"): BRUSH_BACKGROUND,}
+WATERSHED_OPERATIONS = {
+    _("Erase"): BRUSH_ERASE,
+    _("Foreground"): BRUSH_FOREGROUND,
+    _("Background"): BRUSH_BACKGROUND,
+}
 
 
 class BaseImageInteractorStyle(vtkInteractorStyleImage):
@@ -96,7 +97,7 @@ class BaseImageInteractorStyle(vtkInteractorStyleImage):
         self.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
 
-        self.AddObserver("RightButtonPressEvent",self.OnPressRightButton)
+        self.AddObserver("RightButtonPressEvent", self.OnPressRightButton)
         self.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)
 
         self.AddObserver("MiddleButtonPressEvent", self.OnMiddleButtonPressEvent)
@@ -110,8 +111,7 @@ class BaseImageInteractorStyle(vtkInteractorStyleImage):
 
     def OnPressRightButton(self, evt, obj):
         self.right_pressed = True
-        self.viewer.last_position_mouse_move = \
-            self.viewer.interactor.GetLastEventPosition()
+        self.viewer.last_position_mouse_move = self.viewer.interactor.GetLastEventPosition()
 
     def OnReleaseRightButton(self, evt, obj):
         self.right_pressed = False
@@ -138,13 +138,13 @@ class BaseImageInteractorStyle(vtkInteractorStyleImage):
         return (x, y, z)
 
 
-
 class DefaultInteractorStyle(BaseImageInteractorStyle):
     """
     Interactor style responsible for Default functionalities:
     * Zoom moving mouse with right button pressed;
     * Change the slices with the scroll.
     """
+
     def __init__(self, viewer):
         BaseImageInteractorStyle.__init__(self, viewer)
 
@@ -153,15 +153,15 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
         self.viewer = viewer
 
         # Zoom using right button
-        self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
-        self.AddObserver("RightButtonReleaseEvent",self.OnZoomRightRelease)
+        self.AddObserver("RightButtonPressEvent", self.OnZoomRightClick)
+        self.AddObserver("RightButtonReleaseEvent", self.OnZoomRightRelease)
         self.AddObserver("MouseMoveEvent", self.OnZoomRightMove)
 
-        self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
+        self.AddObserver("MouseWheelForwardEvent", self.OnScrollForward)
         self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
 
     def OnZoomRightMove(self, evt, obj):
-        if (self.right_pressed):
+        if self.right_pressed:
             evt.Dolly()
             evt.OnRightButtonDown()
 
@@ -179,14 +179,14 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
     def OnScrollForward(self, evt, obj):
         iren = self.viewer.interactor
         viewer = self.viewer
-        if  iren.GetShiftKey():
+        if iren.GetShiftKey():
             opacity = viewer.slice_.opacity + 0.1
             if opacity <= 1:
                 viewer.slice_.opacity = opacity
-                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
-                Publisher.sendMessage('Reload actual slice')
+                self.viewer.slice_.buffer_slices["AXIAL"].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices["CORONAL"].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices["SAGITAL"].discard_vtk_mask()
+                Publisher.sendMessage("Reload actual slice")
         else:
             self.viewer.OnScrollForward()
 
@@ -198,10 +198,10 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
             opacity = viewer.slice_.opacity - 0.1
             if opacity >= 0.1:
                 viewer.slice_.opacity = opacity
-                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
-                Publisher.sendMessage('Reload actual slice')
+                self.viewer.slice_.buffer_slices["AXIAL"].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices["CORONAL"].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices["SAGITAL"].discard_vtk_mask()
+                Publisher.sendMessage("Reload actual slice")
         else:
             self.viewer.OnScrollBackward()
 
@@ -244,9 +244,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         self.cursor.SetOrientation(self.orientation)
         n = self.viewer.slice_data.number
-        coordinates = {"SAGITAL": [n, 0, 0],
-                       "CORONAL": [0, n, 0],
-                       "AXIAL": [0, 0, n]}
+        coordinates = {"SAGITAL": [n, 0, 0], "CORONAL": [0, n, 0], "AXIAL": [0, 0, n]}
         self.cursor.SetPosition(coordinates[self.orientation])
         spacing = self.viewer.slice_.spacing
         self.cursor.SetSpacing(spacing)
@@ -273,7 +271,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         self.matrix = matrix
 
     def OnBIEnterInteractor(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
         self.viewer.slice_data.cursor.Show()
         self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
@@ -290,7 +288,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         except AttributeError:
             pass
 
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         viewer = self.viewer
@@ -314,8 +312,9 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         slice_data.cursor.SetPosition((wx, wy, wz))
 
-        self.edit_mask_pixel(self.fill_value, index, cursor.GetPixels(),
-                             position, radius, viewer.orientation)
+        self.edit_mask_pixel(
+            self.fill_value, index, cursor.GetPixels(), position, radius, viewer.orientation
+        )
 
         try:
             self.after_brush_click()
@@ -330,7 +329,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         except AttributeError:
             pass
 
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         viewer = self.viewer
@@ -346,7 +345,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         wx, wy, wz = viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         slice_data.cursor.SetPosition((wx, wy, wz))
 
-        if (self.left_pressed):
+        if self.left_pressed:
             cursor = slice_data.cursor
             radius = cursor.radius
 
@@ -354,8 +353,9 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
             index = slice_data.number
 
             slice_data.cursor.SetPosition((wx, wy, wz))
-            self.edit_mask_pixel(self.fill_value, index, cursor.GetPixels(),
-                                 position, radius, viewer.orientation)
+            self.edit_mask_pixel(
+                self.fill_value, index, cursor.GetPixels(), position, radius, viewer.orientation
+            )
             try:
                 self.after_brush_move()
             except AttributeError:
@@ -370,46 +370,46 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         except AttributeError:
             pass
 
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         self.after_brush_release()
         self.viewer.discard_mask_cache(all_orientations=True, vtk_cache=True)
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def edit_mask_pixel(self, fill_value, n, index, position, radius, orientation):
-        if orientation == 'AXIAL':
+        if orientation == "AXIAL":
             matrix = self.matrix[n, :, :]
-        elif orientation == 'CORONAL':
+        elif orientation == "CORONAL":
             matrix = self.matrix[:, n, :]
-        elif orientation == 'SAGITAL':
+        elif orientation == "SAGITAL":
             matrix = self.matrix[:, :, n]
 
         spacing = self.viewer.slice_.spacing
-        if hasattr(position, '__iter__'):
+        if hasattr(position, "__iter__"):
             px, py = position
-            if orientation == 'AXIAL':
+            if orientation == "AXIAL":
                 sx = spacing[0]
                 sy = spacing[1]
-            elif orientation == 'CORONAL':
+            elif orientation == "CORONAL":
                 sx = spacing[0]
                 sy = spacing[2]
-            elif orientation == 'SAGITAL':
+            elif orientation == "SAGITAL":
                 sx = spacing[2]
                 sy = spacing[1]
 
         else:
-            if orientation == 'AXIAL':
+            if orientation == "AXIAL":
                 sx = spacing[0]
                 sy = spacing[1]
                 py = position / matrix.shape[1]
                 px = position % matrix.shape[1]
-            elif orientation == 'CORONAL':
+            elif orientation == "CORONAL":
                 sx = spacing[0]
                 sy = spacing[2]
                 py = position / matrix.shape[1]
                 px = position % matrix.shape[1]
-            elif orientation == 'SAGITAL':
+            elif orientation == "SAGITAL":
                 sx = spacing[2]
                 sy = spacing[1]
                 py = position / matrix.shape[1]
@@ -423,25 +423,26 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         yf = int(yi + index.shape[0])
 
         if yi < 0:
-            index = index[abs(yi):,:]
+            index = index[abs(yi) :, :]
             yi = 0
         if yf > matrix.shape[0]:
-            index = index[:index.shape[0]-(yf-matrix.shape[0]), :]
+            index = index[: index.shape[0] - (yf - matrix.shape[0]), :]
             yf = matrix.shape[0]
 
         if xi < 0:
-            index = index[:,abs(xi):]
+            index = index[:, abs(xi) :]
             xi = 0
         if xf > matrix.shape[1]:
-            index = index[:,:index.shape[1]-(xf-matrix.shape[1])]
+            index = index[:, : index.shape[1] - (xf - matrix.shape[1])]
             xf = matrix.shape[1]
 
         # Verifying if the points is over the image array.
-        if (not 0 <= xi <= matrix.shape[1] and not 0 <= xf <= matrix.shape[1]) or \
-           (not 0 <= yi <= matrix.shape[0] and not 0 <= yf <= matrix.shape[0]):
+        if (not 0 <= xi <= matrix.shape[1] and not 0 <= xf <= matrix.shape[1]) or (
+            not 0 <= yi <= matrix.shape[0] and not 0 <= yf <= matrix.shape[0]
+        ):
             return
 
-        roi_m = matrix[yi:yf,xi:xf]
+        roi_m = matrix[yi:yf, xi:xf]
 
         # Checking if roi_i has at least one element.
         if roi_m.size:
@@ -473,19 +474,18 @@ class NavigationInteractorStyle(DefaultInteractorStyle):
     Displays the cross that shows the selected point, but does not allow the user to move it manually
     by clicking and dragging the mouse.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
         self.viewer = viewer
 
     def SetUp(self):
         self.viewer.set_cross_visibility(1)
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.set_cross_visibility(0)
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
 
 class CrossInteractorStyle(DefaultInteractorStyle):
@@ -494,6 +494,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
     The style displays the cross in each slice and allows the user to move the cross in the slices by clicking and dragging the mouse.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -512,13 +513,11 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         self.viewer.set_cross_visibility(1)
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.set_cross_visibility(0)
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnCrossMouseClick(self, obj, evt):
         iren = obj.GetInteractor()
@@ -536,13 +535,13 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.viewer.UpdateSlicesPosition([x, y, z])
 
         # Update the position of the cross in other slices.
-        Publisher.sendMessage('Set cross focal point', position=[x, y, z, None, None, None])
+        Publisher.sendMessage("Set cross focal point", position=[x, y, z, None, None, None])
 
         # Update the pointer in the volume viewer.
         #
         # We are moving from slice coordinates to volume coordinates, so we need to invert the y coordinate.
-        Publisher.sendMessage('Update volume viewer pointer', position=[x, -y, z])
-        Publisher.sendMessage('Update slice viewer')
+        Publisher.sendMessage("Update volume viewer pointer", position=[x, -y, z])
+        Publisher.sendMessage("Update slice viewer")
 
     def OnScrollBar(self, *args, **kwargs):
         # Update other slice's cross according to the new focal point from
@@ -550,14 +549,15 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         x, y, z = self.viewer.cross.GetFocalPoint()
         self.viewer.UpdateSlicesPosition([x, y, z])
         # This "Set cross" message is needed to update the cross in the other slices
-        Publisher.sendMessage('Set cross focal point', position=[x, y, z, None, None, None])
-        Publisher.sendMessage('Update slice viewer')
+        Publisher.sendMessage("Set cross focal point", position=[x, y, z, None, None, None])
+        Publisher.sendMessage("Update slice viewer")
 
 
 class TractsInteractorStyle(CrossInteractorStyle):
     """
     Interactor style responsible for tracts visualization.
     """
+
     def __init__(self, viewer):
         CrossInteractorStyle.__init__(self, viewer)
 
@@ -610,7 +610,9 @@ class TractsInteractorStyle(CrossInteractorStyle):
 
     def ChangeTracts(self, pressed):
         # print("Trying to compute tracts")
-        self.tracts = dtr.compute_and_visualize_tracts(self.tracker, self.seed, self.affine_vtk, pressed)
+        self.tracts = dtr.compute_and_visualize_tracts(
+            self.tracker, self.seed, self.affine_vtk, pressed
+        )
         # mouse_x, mouse_y = iren.GetEventPosition()
         # wx, wy, wz = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         # px, py = self.viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
@@ -644,12 +646,13 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for Window Level & Width functionality.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
         self.state_code = const.STATE_WL
 
-        self.viewer =  viewer
+        self.viewer = viewer
 
         self.last_x = 0
         self.last_y = 0
@@ -662,43 +665,44 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         self.viewer.on_wl = True
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
         self.viewer.canvas.draw_list.append(self.viewer.wl_text)
         self.viewer.UpdateCanvas()
 
     def CleanUp(self):
         self.viewer.on_wl = False
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         if self.viewer.wl_text is not None:
             self.viewer.canvas.draw_list.remove(self.viewer.wl_text)
             self.viewer.UpdateCanvas()
 
     def OnWindowLevelMove(self, obj, evt):
-        if (self.left_pressed):
+        if self.left_pressed:
             iren = obj.GetInteractor()
             mouse_x, mouse_y = self.GetMousePosition()
             self.acum_achange_window += mouse_x - self.last_x
             self.acum_achange_level += mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
 
-            Publisher.sendMessage('Bright and contrast adjustment image',
-                                  window=self.acum_achange_window,
-                                  level=self.acum_achange_level)
+            Publisher.sendMessage(
+                "Bright and contrast adjustment image",
+                window=self.acum_achange_window,
+                level=self.acum_achange_level,
+            )
 
-            #self.SetWLText(self.acum_achange_level,
+            # self.SetWLText(self.acum_achange_level,
             #              self.acum_achange_window)
 
-            const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
-                                           self.acum_achange_level)
-            Publisher.sendMessage('Check window and level other')
-            Publisher.sendMessage('Update window level value',
-                                  window=self.acum_achange_window,
-                                  level= self.acum_achange_level)
-            #Necessary update the slice plane in the volume case exists
-            Publisher.sendMessage('Update slice viewer')
-            Publisher.sendMessage('Render volume viewer')
+            const.WINDOW_LEVEL["Manual"] = (self.acum_achange_window, self.acum_achange_level)
+            Publisher.sendMessage("Check window and level other")
+            Publisher.sendMessage(
+                "Update window level value",
+                window=self.acum_achange_window,
+                level=self.acum_achange_level,
+            )
+            # Necessary update the slice plane in the volume case exists
+            Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage("Render volume viewer")
 
     def OnWindowLevelClick(self, obj, evt):
         iren = obj.GetInteractor()
@@ -712,6 +716,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for insert linear measurements.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -733,11 +738,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.radius = min(spacing[1], spacing[2]) * 0.8
             self._ori = const.AXIAL
 
-        elif self.orientation == 'CORONAL':
+        elif self.orientation == "CORONAL":
             self.radius = min(spacing[0], spacing[1]) * 0.8
             self._ori = const.CORONAL
 
-        elif self.orientation == 'SAGITAL':
+        elif self.orientation == "SAGITAL":
             self.radius = min(spacing[1], spacing[2]) * 0.8
             self._ori = const.SAGITAL
 
@@ -753,12 +758,10 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         self.picker.PickFromListOff()
         Publisher.sendMessage("Remove incomplete measurements")
 
@@ -778,35 +781,45 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 self.creating = None
                 self.viewer.scroll_enabled = True
             else:
-                Publisher.sendMessage("Add measurement point",
-                                      position=(x, y, z), type=self._type,
-                                      location=ORIENTATIONS[self.orientation],
-                                      slice_number=slice_number, radius=self.radius)
-                n = len(m.points)-1
+                Publisher.sendMessage(
+                    "Add measurement point",
+                    position=(x, y, z),
+                    type=self._type,
+                    location=ORIENTATIONS[self.orientation],
+                    slice_number=slice_number,
+                    radius=self.radius,
+                )
+                n = len(m.points) - 1
                 self.creating = n, m, mr
                 self.viewer.UpdateCanvas()
                 self.viewer.scroll_enabled = False
             return
 
-        selected =  self._verify_clicked_display(mx, my)
+        selected = self._verify_clicked_display(mx, my)
         if selected:
             self.selected = selected
             self.viewer.scroll_enabled = False
         else:
             if self.picker.GetViewProp():
                 renderer = self.viewer.slice_data.renderer
-                Publisher.sendMessage("Add measurement point",
-                                      position=(x, y, z), type=self._type,
-                                      location=ORIENTATIONS[self.orientation],
-                                      slice_number=slice_number,
-                                      radius=self.radius)
-                Publisher.sendMessage("Add measurement point",
-                                      position=(x, y, z), type=self._type,
-                                      location=ORIENTATIONS[self.orientation],
-                                      slice_number=slice_number,
-                                      radius=self.radius)
+                Publisher.sendMessage(
+                    "Add measurement point",
+                    position=(x, y, z),
+                    type=self._type,
+                    location=ORIENTATIONS[self.orientation],
+                    slice_number=slice_number,
+                    radius=self.radius,
+                )
+                Publisher.sendMessage(
+                    "Add measurement point",
+                    position=(x, y, z),
+                    type=self._type,
+                    location=ORIENTATIONS[self.orientation],
+                    slice_number=slice_number,
+                    radius=self.radius,
+                )
 
-                n, (m, mr) =  1, self.measures.measures[self._ori][slice_number][-1]
+                n, (m, mr) = 1, self.measures.measures[self._ori][slice_number][-1]
                 self.creating = n, m, mr
                 self.viewer.UpdateCanvas()
                 self.viewer.scroll_enabled = False
@@ -816,7 +829,9 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             n, m, mr = self.selected
             x, y, z = self._get_pos_clicked()
             idx = self.measures._list_measures.index((m, mr))
-            Publisher.sendMessage('Change measurement point position', index=idx, npoint=n, pos=(x, y, z))
+            Publisher.sendMessage(
+                "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
+            )
             self.viewer.UpdateCanvas()
             self.selected = None
             self.viewer.scroll_enabled = True
@@ -826,13 +841,17 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         if self.selected:
             n, m, mr = self.selected
             idx = self.measures._list_measures.index((m, mr))
-            Publisher.sendMessage('Change measurement point position', index=idx, npoint=n, pos=(x, y, z))
+            Publisher.sendMessage(
+                "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
+            )
             self.viewer.UpdateCanvas()
 
         elif self.creating:
             n, m, mr = self.creating
             idx = self.measures._list_measures.index((m, mr))
-            Publisher.sendMessage('Change measurement point position', index=idx, npoint=n, pos=(x, y, z))
+            Publisher.sendMessage(
+                "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
+            )
             self.viewer.UpdateCanvas()
 
         else:
@@ -873,7 +892,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 if mr.IsComplete():
                     for n, p in enumerate(m.points):
                         px, py, pz = p
-                        dist = ((px-x)**2 + (py-y)**2 + (pz-z)**2)**0.5
+                        dist = ((px - x) ** 2 + (py - y) ** 2 + (pz - z) ** 2) ** 0.5
                         if dist < max_dist:
                             return (n, m, mr)
         return None
@@ -888,10 +907,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     for n, p in enumerate(m.points):
                         coord.SetValue(p)
                         cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
-                        dist = ((cx-x)**2 + (cy-y)**2)
+                        dist = (cx - x) ** 2 + (cy - y) ** 2
                         if dist <= max_dist:
                             return (n, m, mr)
         return None
+
 
 class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
     def __init__(self, viewer):
@@ -905,12 +925,13 @@ class DensityMeasureStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for density measurements.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
         self.state_code = const.STATE_MEASURE_DENSITY
 
-        self.format = 'polygon'
+        self.format = "polygon"
 
         self._last_measure = None
 
@@ -930,8 +951,8 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         #  self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
         #  self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
         #  self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
-        self.viewer.canvas.subscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
-        self.viewer.canvas.subscribe_event('LeftButtonDoubleClickEvent', self.OnInsertPolygon)
+        self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnInsertPoint)
+        self.viewer.canvas.subscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
 
     def SetUp(self):
         for n in self.viewer.draw_by_slice_number:
@@ -941,8 +962,8 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.viewer.canvas.Refresh()
 
     def CleanUp(self):
-        self.viewer.canvas.unsubscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
-        self.viewer.canvas.unsubscribe_event('LeftButtonDoubleClickEvent', self.OnInsertPolygon)
+        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPoint)
+        self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
         old_list = self.viewer.draw_by_slice_number
         self.viewer.draw_by_slice_number.clear()
         for n in old_list:
@@ -977,13 +998,13 @@ class DensityMeasureStyle(DefaultInteractorStyle):
 
     def OnInsertPoint(self, evt):
         mouse_x, mouse_y = evt.position
-        print('OnInsertPoint', evt.position)
+        print("OnInsertPoint", evt.position)
         n = self.viewer.slice_data.number
         pos = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
 
-        if self.format == 'ellipse':
-            pp1 = self.viewer.get_coordinate_cursor(mouse_x+50, mouse_y, self.picker)
-            pp2 = self.viewer.get_coordinate_cursor(mouse_x, mouse_y+50, self.picker)
+        if self.format == "ellipse":
+            pp1 = self.viewer.get_coordinate_cursor(mouse_x + 50, mouse_y, self.picker)
+            pp2 = self.viewer.get_coordinate_cursor(mouse_x, mouse_y + 50, self.picker)
 
             m = CircleDensityMeasure(self.orientation, n)
             m.set_center(pos)
@@ -992,7 +1013,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
             m.calc_density()
             _new_measure = True
             Publisher.sendMessage("Add density measurement", density_measure=m)
-        elif self.format == 'polygon':
+        elif self.format == "polygon":
             if self._last_measure is None:
                 m = PolygonDensityMeasure(self.orientation, n)
                 _new_measure = True
@@ -1019,7 +1040,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygon(self, evt):
-        if self.format == 'polygon' and self._last_measure:
+        if self.format == "polygon" and self._last_measure:
             m = self._last_measure
             if len(m.points) >= 3:
                 n = self.viewer.slice_data.number
@@ -1035,20 +1056,21 @@ class DensityMeasureEllipseStyle(DensityMeasureStyle):
     def __init__(self, viewer):
         DensityMeasureStyle.__init__(self, viewer)
         self.state_code = const.STATE_MEASURE_DENSITY_ELLIPSE
-        self.format = 'ellipse'
+        self.format = "ellipse"
 
 
 class DensityMeasurePolygonStyle(DensityMeasureStyle):
     def __init__(self, viewer):
         DensityMeasureStyle.__init__(self, viewer)
         self.state_code = const.STATE_MEASURE_DENSITY_POLYGON
-        self.format = 'polygon'
+        self.format = "polygon"
 
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for translate the camera.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -1060,13 +1082,11 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspan)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnPanMove(self, obj, evt):
         if self.left_pressed:
@@ -1085,6 +1105,7 @@ class SpinInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for spin the camera.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -1096,20 +1117,18 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspin)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnSpinMove(self, obj, evt):
         iren = obj.GetInteractor()
         mouse_x, mouse_y = iren.GetLastEventPosition()
         ren = iren.FindPokedRenderer(mouse_x, mouse_y)
         cam = ren.GetActiveCamera()
-        if (self.left_pressed):
+        if self.left_pressed:
             self.viewer.UpdateTextDirection(cam)
             obj.Spin()
             obj.OnRightButtonDown()
@@ -1130,6 +1149,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     Interactor style responsible for zoom with movement of the mouse and the
     left mouse button clicked.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -1141,13 +1161,11 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnZoomMoveLeft(self, obj, evt):
         if self.left_pressed:
@@ -1157,10 +1175,10 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     def OnUnZoom(self, evt):
         mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
         ren = self.viewer.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        #slice_data = self.get_slice_data(ren)
+        # slice_data = self.get_slice_data(ren)
         ren.ResetCamera()
         ren.ResetCameraClippingRange()
-        #self.Reposition(slice_data)
+        # self.Reposition(slice_data)
         self.viewer.interactor.Render()
 
 
@@ -1168,6 +1186,7 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
     """
     Interactor style responsible for zoom by selecting a region.
     """
+
     def __init__(self, viewer):
         self.viewer = viewer
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
@@ -1175,21 +1194,19 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
         self.state_code = const.STATE_ZOOM_SL
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
-        Publisher.sendMessage('Toggle toolbar item',
-                              _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnUnZoom(self, evt):
         mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
         ren = self.viewer.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        #slice_data = self.get_slice_data(ren)
+        # slice_data = self.get_slice_data(ren)
         ren.ResetCamera()
         ren.ResetCameraClippingRange()
-        #self.Reposition(slice_data)
+        # self.Reposition(slice_data)
         self.viewer.interactor.Render()
 
 
@@ -1197,6 +1214,7 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for change slice moving the mouse.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -1208,12 +1226,10 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnChangeSliceClick)
 
     def SetUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=True)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        Publisher.sendMessage('Toggle toolbar item',
-                             _id=self.state_code, value=False)
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnChangeSliceMove(self, evt, obj):
         if self.left_pressed:
@@ -1223,12 +1239,10 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
             position = self.viewer.interactor.GetLastEventPosition()
             scroll_position = self.viewer.scroll.GetThumbPosition()
 
-            if (position[1] > self.last_position) and\
-                            (self.acum_achange_slice > min):
+            if (position[1] > self.last_position) and (self.acum_achange_slice > min):
                 self.acum_achange_slice -= 1
-            elif(position[1] < self.last_position) and\
-                            (self.acum_achange_slice < max):
-                 self.acum_achange_slice += 1
+            elif (position[1] < self.last_position) and (self.acum_achange_slice < max):
+                self.acum_achange_slice += 1
             self.last_position = position[1]
 
             self.viewer.scroll.SetThumbPosition(self.acum_achange_slice)
@@ -1245,7 +1259,7 @@ class EditorConfig(metaclass=utils.Singleton):
         self.operation = const.BRUSH_THRESH
         self.cursor_type = const.BRUSH_CIRCLE
         self.cursor_size = const.BRUSH_SIZE
-        self.cursor_unit = 'mm'
+        self.cursor_unit = "mm"
 
 
 class EditorInteractorStyle(DefaultInteractorStyle):
@@ -1270,13 +1284,13 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         self.RemoveObservers("MouseWheelForwardEvent")
         self.RemoveObservers("MouseWheelBackwardEvent")
-        self.AddObserver("MouseWheelForwardEvent",self.EOnScrollForward)
+        self.AddObserver("MouseWheelForwardEvent", self.EOnScrollForward)
         self.AddObserver("MouseWheelBackwardEvent", self.EOnScrollBackward)
 
-        Publisher.subscribe(self.set_bsize, 'Set edition brush size')
-        Publisher.subscribe(self.set_bunit, 'Set edition brush unit')
-        Publisher.subscribe(self.set_bformat, 'Set brush format')
-        Publisher.subscribe(self.set_boperation, 'Set edition operation')
+        Publisher.subscribe(self.set_bsize, "Set edition brush size")
+        Publisher.subscribe(self.set_bunit, "Set edition brush unit")
+        Publisher.subscribe(self.set_bformat, "Set brush format")
+        Publisher.subscribe(self.set_boperation, "Set edition operation")
 
         self._set_cursor()
         self.viewer.slice_data.cursor.Show(0)
@@ -1294,10 +1308,10 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             self.viewer.interactor.Render()
 
     def CleanUp(self):
-        Publisher.unsubscribe(self.set_bsize, 'Set edition brush size')
-        Publisher.unsubscribe(self.set_bunit, 'Set edition brush unit')
-        Publisher.unsubscribe(self.set_bformat, 'Set brush format')
-        Publisher.unsubscribe(self.set_boperation, 'Set edition operation')
+        Publisher.unsubscribe(self.set_bsize, "Set edition brush size")
+        Publisher.unsubscribe(self.set_bunit, "Set edition brush unit")
+        Publisher.unsubscribe(self.set_bformat, "Set brush format")
+        Publisher.unsubscribe(self.set_boperation, "Set edition operation")
 
         self.viewer.slice_data.cursor.Show(0)
         self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
@@ -1326,9 +1340,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         cursor.SetOrientation(self.orientation)
         n = self.viewer.slice_data.number
-        coordinates = {"SAGITAL": [n, 0, 0],
-                       "CORONAL": [0, n, 0],
-                       "AXIAL": [0, 0, n]}
+        coordinates = {"SAGITAL": [n, 0, 0], "CORONAL": [0, n, 0], "AXIAL": [0, 0, n]}
         cursor.SetPosition(coordinates[self.orientation])
         spacing = self.viewer.slice_.spacing
         cursor.SetSpacing(spacing)
@@ -1338,7 +1350,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_data.SetCursor(cursor)
 
     def OnEnterInteractor(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
         self.viewer.slice_data.cursor.Show()
         self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
@@ -1350,7 +1362,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Render()
 
     def OnBrushClick(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         viewer = self.viewer
@@ -1379,8 +1391,8 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         slice_data = viewer.get_slice_data(render)
 
         # TODO: Improve!
-        #for i in self.slice_data_list:
-            #i.cursor.Show(0)
+        # for i in self.slice_data_list:
+        # i.cursor.Show(0)
         slice_data.cursor.Show()
 
         wx, wy, wz = viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
@@ -1390,15 +1402,16 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         radius = cursor.radius
 
         slice_data.cursor.SetPosition((wx, wy, wz))
-        viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
-                                    position, radius, viewer.orientation)
-        #viewer._flush_buffer = True
+        viewer.slice_.edit_mask_pixel(
+            operation, cursor.GetPixels(), position, radius, viewer.orientation
+        )
+        # viewer._flush_buffer = True
 
         # TODO: To create a new function to reload images to viewer.
         viewer.OnScrollBar()
 
     def OnBrushMove(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         viewer = self.viewer
@@ -1429,15 +1442,16 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         wx, wy, wz = viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         slice_data.cursor.SetPosition((wx, wy, wz))
 
-        if (self.left_pressed):
+        if self.left_pressed:
             cursor = slice_data.cursor
             radius = cursor.radius
 
             position = viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
 
             slice_data.cursor.SetPosition((wx, wy, wz))
-            viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
-                                          position, radius, viewer.orientation)
+            viewer.slice_.edit_mask_pixel(
+                operation, cursor.GetPixels(), position, radius, viewer.orientation
+            )
 
             viewer.OnScrollBar(update3D=False)
 
@@ -1445,7 +1459,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             viewer.interactor.Render()
 
     def OnBrushRelease(self, evt, obj):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         self.viewer._flush_buffer = True
@@ -1465,7 +1479,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             size += 1
 
             if size <= 100:
-                Publisher.sendMessage('Set edition brush size', size=size)
+                Publisher.sendMessage("Set edition brush size", size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -1483,7 +1497,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             size -= 1
 
             if size > 0:
-                Publisher.sendMessage('Set edition brush size', size=size)
+                Publisher.sendMessage("Set edition brush size", size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -1497,10 +1511,9 @@ class WatershedProgressWindow(object):
         self.msg = _("Applying watershed ...")
         self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
 
-        self.dlg = wx.ProgressDialog(self.title,
-                                     self.msg,
-                                     parent = wx.GetApp().GetTopWindow(),
-                                     style  = self.style)
+        self.dlg = wx.ProgressDialog(
+            self.title, self.msg, parent=wx.GetApp().GetTopWindow(), style=self.style
+        )
 
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
         self.dlg.Show()
@@ -1525,10 +1538,10 @@ class WatershedConfig(metaclass=utils.Singleton):
         self.operation = BRUSH_FOREGROUND
         self.cursor_type = const.BRUSH_CIRCLE
         self.cursor_size = const.BRUSH_SIZE
-        self.cursor_unit = 'mm'
+        self.cursor_unit = "mm"
 
-        Publisher.subscribe(self.set_operation, 'Set watershed operation')
-        Publisher.subscribe(self.set_use_ww_wl, 'Set use ww wl')
+        Publisher.subscribe(self.set_operation, "Set watershed operation")
+        Publisher.subscribe(self.set_use_ww_wl, "Set use ww wl")
 
         Publisher.subscribe(self.set_algorithm, "Set watershed algorithm")
         Publisher.subscribe(self.set_2dcon, "Set watershed 2d con")
@@ -1553,10 +1566,11 @@ class WatershedConfig(metaclass=utils.Singleton):
     def set_gaussian_size(self, size):
         self.mg_size = size
 
-WALGORITHM = {"Watershed": watershed,
-             "Watershed IFT": watershed_ift}
+
+WALGORITHM = {"Watershed": watershed, "Watershed IFT": watershed_ift}
 CON2D = {4: 1, 8: 2}
 CON3D = {6: 1, 18: 2, 26: 3}
+
 
 class WaterShedInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
@@ -1577,17 +1591,17 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         self.RemoveObservers("MouseWheelForwardEvent")
         self.RemoveObservers("MouseWheelBackwardEvent")
-        self.AddObserver("MouseWheelForwardEvent",self.WOnScrollForward)
+        self.AddObserver("MouseWheelForwardEvent", self.WOnScrollForward)
         self.AddObserver("MouseWheelBackwardEvent", self.WOnScrollBackward)
 
         self.AddObserver("LeftButtonPressEvent", self.OnBrushClick)
         self.AddObserver("LeftButtonReleaseEvent", self.OnBrushRelease)
         self.AddObserver("MouseMoveEvent", self.OnBrushMove)
 
-        Publisher.subscribe(self.expand_watershed, 'Expand watershed to 3D ' + self.orientation)
-        Publisher.subscribe(self.set_bsize, 'Set watershed brush size')
-        Publisher.subscribe(self.set_bunit, 'Set watershed brush unit')
-        Publisher.subscribe(self.set_bformat, 'Set watershed brush format')
+        Publisher.subscribe(self.expand_watershed, "Expand watershed to 3D " + self.orientation)
+        Publisher.subscribe(self.set_bsize, "Set watershed brush size")
+        Publisher.subscribe(self.set_bunit, "Set watershed brush unit")
+        Publisher.subscribe(self.set_bformat, "Set watershed brush format")
 
         self._set_cursor()
         self.viewer.slice_data.cursor.Show(0)
@@ -1595,7 +1609,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
     def SetUp(self):
         mask = self.viewer.slice_.current_mask.matrix
         self._create_mask()
-        self.viewer.slice_.to_show_aux = 'watershed'
+        self.viewer.slice_.to_show_aux = "watershed"
         self.viewer.OnScrollBar()
 
         x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
@@ -1610,12 +1624,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             self.viewer.interactor.Render()
 
     def CleanUp(self):
-        #self._remove_mask()
-        Publisher.unsubscribe(self.expand_watershed, 'Expand watershed to 3D ' + self.orientation)
-        Publisher.unsubscribe(self.set_bformat, 'Set watershed brush format')
-        Publisher.unsubscribe(self.set_bsize, 'Set watershed brush size')
+        # self._remove_mask()
+        Publisher.unsubscribe(self.expand_watershed, "Expand watershed to 3D " + self.orientation)
+        Publisher.unsubscribe(self.set_bformat, "Set watershed brush format")
+        Publisher.unsubscribe(self.set_bsize, "Set watershed brush size")
         self.RemoveAllObservers()
-        self.viewer.slice_.to_show_aux = ''
+        self.viewer.slice_.to_show_aux = ""
         self.viewer.OnScrollBar()
 
         self.viewer.slice_data.cursor.Show(0)
@@ -1625,10 +1639,10 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
     def _create_mask(self):
         if self.matrix is None:
             try:
-                self.matrix = self.viewer.slice_.aux_matrices['watershed']
+                self.matrix = self.viewer.slice_.aux_matrices["watershed"]
             except KeyError:
                 self.temp_file, self.matrix = self.viewer.slice_.create_temp_mask()
-                self.viewer.slice_.aux_matrices['watershed'] = self.matrix
+                self.viewer.slice_.aux_matrices["watershed"] = self.matrix
 
     def _remove_mask(self):
         if self.matrix is not None:
@@ -1644,9 +1658,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         cursor.SetOrientation(self.orientation)
         n = self.viewer.slice_data.number
-        coordinates = {"SAGITAL": [n, 0, 0],
-                       "CORONAL": [0, n, 0],
-                       "AXIAL": [0, 0, n]}
+        coordinates = {"SAGITAL": [n, 0, 0], "CORONAL": [0, n, 0], "AXIAL": [0, 0, n]}
         cursor.SetPosition(coordinates[self.orientation])
         spacing = self.viewer.slice_.spacing
         cursor.SetSpacing(spacing)
@@ -1668,7 +1680,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self._set_cursor()
 
     def OnEnterInteractor(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
         self.viewer.slice_data.cursor.Show()
         self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_BLANK))
@@ -1691,7 +1703,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             size -= 1
 
             if size > 0:
-                Publisher.sendMessage('Set watershed brush size', size=size)
+                Publisher.sendMessage("Set watershed brush size", size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -1709,14 +1721,14 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             size += 1
 
             if size <= 100:
-                Publisher.sendMessage('Set watershed brush size', size=size)
+                Publisher.sendMessage("Set watershed brush size", size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
             self.OnScrollForward(obj, evt)
 
     def OnBrushClick(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         viewer = self.viewer
@@ -1751,19 +1763,18 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                 operation = BRUSH_ERASE
 
         n = self.viewer.slice_data.number
-        self.edit_mask_pixel(operation, n, cursor.GetPixels(),
-                                    position, radius, self.orientation)
-        if self.orientation == 'AXIAL':
+        self.edit_mask_pixel(operation, n, cursor.GetPixels(), position, radius, self.orientation)
+        if self.orientation == "AXIAL":
             mask = self.matrix[n, :, :]
-        elif self.orientation == 'CORONAL':
+        elif self.orientation == "CORONAL":
             mask = self.matrix[:, n, :]
-        elif self.orientation == 'SAGITAL':
+        elif self.orientation == "SAGITAL":
             mask = self.matrix[:, :, n]
         # TODO: To create a new function to reload images to viewer.
         viewer.OnScrollBar()
 
     def OnBrushMove(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         viewer = self.viewer
@@ -1778,7 +1789,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         coord = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         slice_data.cursor.SetPosition(coord)
 
-        if (self.left_pressed):
+        if self.left_pressed:
             cursor = slice_data.cursor
             position = self.viewer.get_slice_pixel_coord_by_world_pos(*coord)
             radius = cursor.radius
@@ -1800,13 +1811,14 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                     operation = BRUSH_ERASE
 
             n = self.viewer.slice_data.number
-            self.edit_mask_pixel(operation, n, cursor.GetPixels(),
-                                        position, radius, self.orientation)
-            if self.orientation == 'AXIAL':
+            self.edit_mask_pixel(
+                operation, n, cursor.GetPixels(), position, radius, self.orientation
+            )
+            if self.orientation == "AXIAL":
                 mask = self.matrix[n, :, :]
-            elif self.orientation == 'CORONAL':
+            elif self.orientation == "CORONAL":
                 mask = self.matrix[:, n, :]
-            elif self.orientation == 'SAGITAL':
+            elif self.orientation == "SAGITAL":
                 mask = self.matrix[:, :, n]
             # TODO: To create a new function to reload images to viewer.
             viewer.OnScrollBar(update3D=False)
@@ -1817,65 +1829,66 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
     def OnBrushRelease(self, evt, obj):
         n = self.viewer.slice_data.number
         self.viewer.slice_.discard_all_buffers()
-        if self.orientation == 'AXIAL':
+        if self.orientation == "AXIAL":
             image = self.viewer.slice_.matrix[n]
-            mask = self.viewer.slice_.current_mask.matrix[n+1, 1:, 1:]
-            self.viewer.slice_.current_mask.matrix[n+1, 0, 0] = 1
+            mask = self.viewer.slice_.current_mask.matrix[n + 1, 1:, 1:]
+            self.viewer.slice_.current_mask.matrix[n + 1, 0, 0] = 1
             markers = self.matrix[n]
 
-        elif self.orientation == 'CORONAL':
+        elif self.orientation == "CORONAL":
             image = self.viewer.slice_.matrix[:, n, :]
-            mask = self.viewer.slice_.current_mask.matrix[1:, n+1, 1:]
-            self.viewer.slice_.current_mask.matrix[0, n+1, 0]
+            mask = self.viewer.slice_.current_mask.matrix[1:, n + 1, 1:]
+            self.viewer.slice_.current_mask.matrix[0, n + 1, 0]
             markers = self.matrix[:, n, :]
 
-        elif self.orientation == 'SAGITAL':
+        elif self.orientation == "SAGITAL":
             image = self.viewer.slice_.matrix[:, :, n]
-            mask = self.viewer.slice_.current_mask.matrix[1: , 1:, n+1]
-            self.viewer.slice_.current_mask.matrix[0 , 0, n+1]
+            mask = self.viewer.slice_.current_mask.matrix[1:, 1:, n + 1]
+            self.viewer.slice_.current_mask.matrix[0, 0, n + 1]
             markers = self.matrix[:, :, n]
 
         ww = self.viewer.slice_.window_width
         wl = self.viewer.slice_.window_level
 
         if BRUSH_BACKGROUND in markers and BRUSH_FOREGROUND in markers:
-            #w_algorithm = WALGORITHM[self.config.algorithm]
+            # w_algorithm = WALGORITHM[self.config.algorithm]
             bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
             if self.config.use_ww_wl:
-                if self.config.algorithm == 'Watershed':
+                if self.config.algorithm == "Watershed":
                     tmp_image = ndimage.morphological_gradient(
-                                   get_LUT_value(image, ww, wl).astype('uint16'),
-                                   self.config.mg_size)
-                    tmp_mask = watershed(tmp_image, markers.astype('int16'), bstruct)
+                        get_LUT_value(image, ww, wl).astype("uint16"), self.config.mg_size
+                    )
+                    tmp_mask = watershed(tmp_image, markers.astype("int16"), bstruct)
                 else:
-                    #tmp_image = ndimage.gaussian_filter(get_LUT_value(image, ww, wl).astype('uint16'), self.config.mg_size)
-                    #tmp_image = ndimage.morphological_gradient(
-                                   #get_LUT_value(image, ww, wl).astype('uint16'),
-                                   #self.config.mg_size)
-                    tmp_image = get_LUT_value(image, ww, wl).astype('uint16')
-                    #markers[markers == 2] = -1
-                    tmp_mask = watershed_ift(tmp_image, markers.astype('int16'), bstruct)
-                    #markers[markers == -1] = 2
-                    #tmp_mask[tmp_mask == -1]  = 2
+                    # tmp_image = ndimage.gaussian_filter(get_LUT_value(image, ww, wl).astype('uint16'), self.config.mg_size)
+                    # tmp_image = ndimage.morphological_gradient(
+                    # get_LUT_value(image, ww, wl).astype('uint16'),
+                    # self.config.mg_size)
+                    tmp_image = get_LUT_value(image, ww, wl).astype("uint16")
+                    # markers[markers == 2] = -1
+                    tmp_mask = watershed_ift(tmp_image, markers.astype("int16"), bstruct)
+                    # markers[markers == -1] = 2
+                    # tmp_mask[tmp_mask == -1]  = 2
 
             else:
-                if self.config.algorithm == 'Watershed':
-                    tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
-                    tmp_mask = watershed(tmp_image, markers.astype('int16'), bstruct)
+                if self.config.algorithm == "Watershed":
+                    tmp_image = ndimage.morphological_gradient(
+                        (image - image.min()).astype("uint16"), self.config.mg_size
+                    )
+                    tmp_mask = watershed(tmp_image, markers.astype("int16"), bstruct)
                 else:
-                    #tmp_image = (image - image.min()).astype('uint16')
-                    #tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
-                    #tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
-                    tmp_image = image - image.min().astype('uint16')
-                    tmp_mask = watershed_ift(tmp_image, markers.astype('int16'), bstruct)
+                    # tmp_image = (image - image.min()).astype('uint16')
+                    # tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
+                    # tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
+                    tmp_image = image - image.min().astype("uint16")
+                    tmp_mask = watershed_ift(tmp_image, markers.astype("int16"), bstruct)
 
             if self.viewer.overwrite_mask:
                 mask[:] = 0
                 mask[tmp_mask == 1] = 253
             else:
-                mask[(tmp_mask==2) & ((mask == 0) | (mask == 2) | (mask == 253))] = 2
-                mask[(tmp_mask==1) & ((mask == 0) | (mask == 2) | (mask == 253))] = 253
-
+                mask[(tmp_mask == 2) & ((mask == 0) | (mask == 2) | (mask == 253))] = 2
+                mask[(tmp_mask == 1) & ((mask == 0) | (mask == 2) | (mask == 253))] = 253
 
             self.viewer.slice_.current_mask.was_edited = True
             self.viewer.slice_.current_mask.modified()
@@ -1885,41 +1898,41 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             session = ses.Session()
             session.ChangeProject()
 
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def edit_mask_pixel(self, operation, n, index, position, radius, orientation):
-        if orientation == 'AXIAL':
+        if orientation == "AXIAL":
             mask = self.matrix[n, :, :]
-        elif orientation == 'CORONAL':
+        elif orientation == "CORONAL":
             mask = self.matrix[:, n, :]
-        elif orientation == 'SAGITAL':
+        elif orientation == "SAGITAL":
             mask = self.matrix[:, :, n]
 
         spacing = self.viewer.slice_.spacing
-        if hasattr(position, '__iter__'):
+        if hasattr(position, "__iter__"):
             px, py = position
-            if orientation == 'AXIAL':
+            if orientation == "AXIAL":
                 sx = spacing[0]
                 sy = spacing[1]
-            elif orientation == 'CORONAL':
+            elif orientation == "CORONAL":
                 sx = spacing[0]
                 sy = spacing[2]
-            elif orientation == 'SAGITAL':
+            elif orientation == "SAGITAL":
                 sx = spacing[2]
                 sy = spacing[1]
 
         else:
-            if orientation == 'AXIAL':
+            if orientation == "AXIAL":
                 sx = spacing[0]
                 sy = spacing[1]
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
-            elif orientation == 'CORONAL':
+            elif orientation == "CORONAL":
                 sx = spacing[0]
                 sy = spacing[2]
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
-            elif orientation == 'SAGITAL':
+            elif orientation == "SAGITAL":
                 sx = spacing[2]
                 sy = spacing[1]
                 py = position / mask.shape[1]
@@ -1933,25 +1946,26 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         yf = int(yi + index.shape[0])
 
         if yi < 0:
-            index = index[abs(yi):,:]
+            index = index[abs(yi) :, :]
             yi = 0
         if yf > mask.shape[0]:
-            index = index[:index.shape[0]-(yf-mask.shape[0]), :]
+            index = index[: index.shape[0] - (yf - mask.shape[0]), :]
             yf = mask.shape[0]
 
         if xi < 0:
-            index = index[:,abs(xi):]
+            index = index[:, abs(xi) :]
             xi = 0
         if xf > mask.shape[1]:
-            index = index[:,:index.shape[1]-(xf-mask.shape[1])]
+            index = index[:, : index.shape[1] - (xf - mask.shape[1])]
             xf = mask.shape[1]
 
         # Verifying if the points is over the image array.
-        if (not 0 <= xi <= mask.shape[1] and not 0 <= xf <= mask.shape[1]) or \
-           (not 0 <= yi <= mask.shape[0] and not 0 <= yf <= mask.shape[0]):
+        if (not 0 <= xi <= mask.shape[1] and not 0 <= xf <= mask.shape[1]) or (
+            not 0 <= yi <= mask.shape[0] and not 0 <= yf <= mask.shape[0]
+        ):
             return
 
-        roi_m = mask[yi:yf,xi:xf]
+        roi_m = mask[yi:yf, xi:xf]
 
         # Checking if roi_i has at least one element.
         if roi_m.size:
@@ -1965,17 +1979,27 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         ww = self.viewer.slice_.window_width
         wl = self.viewer.slice_.window_level
         if BRUSH_BACKGROUND in markers and BRUSH_FOREGROUND in markers:
-            #w_algorithm = WALGORITHM[self.config.algorithm]
+            # w_algorithm = WALGORITHM[self.config.algorithm]
             bstruct = generate_binary_structure(3, CON3D[self.config.con_3d])
             fd, tfile = tempfile.mkstemp()
-            tmp_mask = np.memmap(tfile, shape=mask.shape, dtype=mask.dtype,
-                                 mode='w+')
+            tmp_mask = np.memmap(tfile, shape=mask.shape, dtype=mask.dtype, mode="w+")
             q = multiprocessing.Queue()
-            p = multiprocessing.Process(target=watershed_process.do_watershed, args=(image,
-                                        markers, tfile, tmp_mask.shape, bstruct,
-                                        self.config.algorithm,
-                                        self.config.mg_size,
-                                        self.config.use_ww_wl, wl, ww, q))
+            p = multiprocessing.Process(
+                target=watershed_process.do_watershed,
+                args=(
+                    image,
+                    markers,
+                    tfile,
+                    tmp_mask.shape,
+                    bstruct,
+                    self.config.algorithm,
+                    self.config.mg_size,
+                    self.config.use_ww_wl,
+                    wl,
+                    ww,
+                    q,
+                ),
+            )
 
             os.close(fd)
             wp = WatershedProgressWindow(p)
@@ -1996,46 +2020,45 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             if flag == wx.HT_WINDOW_INSIDE:
                 self.OnEnterInteractor(None, None)
 
-
             if q.empty():
                 return
-            #do_watershed(image, markers, tmp_mask, bstruct, self.config.algorithm,
-                         #self.config.mg_size, self.config.use_ww_wl, wl, ww)
-            #if self.config.use_ww_wl:
-                #if self.config.algorithm == 'Watershed':
-                    #tmp_image = ndimage.morphological_gradient(
-                                   #get_LUT_value(image, ww, wl).astype('uint16'),
-                                   #self.config.mg_size)
-                    #tmp_mask = watershed(tmp_image, markers.astype('int16'), bstruct)
-                #else:
-                    #tmp_image = get_LUT_value(image, ww, wl).astype('uint16')
-                    ##tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
-                    ##tmp_image = ndimage.morphological_gradient(
-                                   ##get_LUT_value(image, ww, wl).astype('uint16'),
-                                   ##self.config.mg_size)
-                    #tmp_mask = watershed_ift(tmp_image, markers.astype('int16'), bstruct)
-            #else:
-                #if self.config.algorithm == 'Watershed':
-                    #tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
-                    #tmp_mask = watershed(tmp_image, markers.astype('int16'), bstruct)
-                #else:
-                    #tmp_image = (image - image.min()).astype('uint16')
-                    ##tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
-                    ##tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
-                    #tmp_mask = watershed_ift(tmp_image, markers.astype('int8'), bstruct)
+            # do_watershed(image, markers, tmp_mask, bstruct, self.config.algorithm,
+            # self.config.mg_size, self.config.use_ww_wl, wl, ww)
+            # if self.config.use_ww_wl:
+            # if self.config.algorithm == 'Watershed':
+            # tmp_image = ndimage.morphological_gradient(
+            # get_LUT_value(image, ww, wl).astype('uint16'),
+            # self.config.mg_size)
+            # tmp_mask = watershed(tmp_image, markers.astype('int16'), bstruct)
+            # else:
+            # tmp_image = get_LUT_value(image, ww, wl).astype('uint16')
+            ##tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
+            ##tmp_image = ndimage.morphological_gradient(
+            ##get_LUT_value(image, ww, wl).astype('uint16'),
+            ##self.config.mg_size)
+            # tmp_mask = watershed_ift(tmp_image, markers.astype('int16'), bstruct)
+            # else:
+            # if self.config.algorithm == 'Watershed':
+            # tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
+            # tmp_mask = watershed(tmp_image, markers.astype('int16'), bstruct)
+            # else:
+            # tmp_image = (image - image.min()).astype('uint16')
+            ##tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
+            ##tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
+            # tmp_mask = watershed_ift(tmp_image, markers.astype('int8'), bstruct)
 
             if self.viewer.overwrite_mask:
                 mask[:] = 0
                 mask[tmp_mask == 1] = 253
             else:
-                mask[(tmp_mask==2) & ((mask == 0) | (mask == 2) | (mask == 253))] = 2
-                mask[(tmp_mask==1) & ((mask == 0) | (mask == 2) | (mask == 253))] = 253
+                mask[(tmp_mask == 2) & ((mask == 0) | (mask == 2) | (mask == 253))] = 2
+                mask[(tmp_mask == 1) & ((mask == 0) | (mask == 2) | (mask == 253))] = 253
 
             self.viewer.slice_.current_mask.modified(True)
 
             self.viewer.slice_.discard_all_buffers()
             self.viewer.slice_.current_mask.clear_history()
-            Publisher.sendMessage('Reload actual slice')
+            Publisher.sendMessage("Reload actual slice")
 
             # Marking the project as changed
             session = ses.Session()
@@ -2046,6 +2069,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for image reorientation
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -2064,20 +2088,20 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self.picker = vtkWorldPointPicker()
 
-        self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
+        self.AddObserver("LeftButtonPressEvent", self.OnLeftClick)
         self.AddObserver("LeftButtonReleaseEvent", self.OnLeftRelease)
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
         self.viewer.slice_data.renderer.AddObserver("StartEvent", self.OnUpdate)
 
-        if self.viewer.orientation == 'AXIAL':
-            Publisher.subscribe(self._set_reorientation_angles, 'Set reorientation angles')
+        if self.viewer.orientation == "AXIAL":
+            Publisher.subscribe(self._set_reorientation_angles, "Set reorientation angles")
 
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClick)
 
     def SetUp(self):
         self.draw_lines()
-        Publisher.sendMessage('Hide current mask')
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Hide current mask")
+        Publisher.sendMessage("Reload actual slice")
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
@@ -2088,8 +2112,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.rotations = [0, 0, 0]
         self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
         self._discard_buffers()
-        Publisher.sendMessage('Close reorient dialog')
-        Publisher.sendMessage('Show current mask')
+        Publisher.sendMessage("Close reorient dialog")
+        Publisher.sendMessage("Show current mask")
 
     def OnLeftClick(self, obj, evt):
         if self._over_center:
@@ -2098,7 +2122,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             x, y = self.GetMousePosition()
             w, h = self.viewer.interactor.GetSize()
 
-            self.picker.Pick(h/2.0, w/2.0, 0, self.viewer.slice_data.renderer)
+            self.picker.Pick(h / 2.0, w / 2.0, 0, self.viewer.slice_data.renderer)
             cx, cy, cz = self.viewer.slice_.center
 
             self.picker.Pick(x, y, 0, self.viewer.slice_data.renderer)
@@ -2111,7 +2135,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.dragging = False
 
         if self.to_rot:
-            Publisher.sendMessage('Reload actual slice')
+            Publisher.sendMessage("Reload actual slice")
             self.to_rot = False
 
     def OnMouseMove(self, obj, evt):
@@ -2133,7 +2157,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             coord.SetValue(center)
             cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
 
-            dist_center = ((mx - cx)**2 + (my - cy)**2)**0.5
+            dist_center = ((mx - cx) ** 2 + (my - cy) ** 2) ** 0.5
             if dist_center <= 15:
                 self._over_center = True
                 cursor = wx.Cursor(wx.CURSOR_SIZENESW)
@@ -2163,11 +2187,11 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.rotations = [0, 0, 0]
         self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
 
-        Publisher.sendMessage('Update reorient angles', angles=(0, 0, 0))
+        Publisher.sendMessage("Update reorient angles", angles=(0, 0, 0))
 
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def _move_center_rot(self):
         iren = self.viewer.interactor
@@ -2178,17 +2202,16 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.picker.Pick(mx, my, 0, self.viewer.slice_data.renderer)
         x, y, z = self.picker.GetPickPosition()
 
-        if self.viewer.orientation == 'AXIAL':
+        if self.viewer.orientation == "AXIAL":
             self.viewer.slice_.center = (x, y, icz)
-        elif self.viewer.orientation == 'CORONAL':
+        elif self.viewer.orientation == "CORONAL":
             self.viewer.slice_.center = (x, icy, z)
-        elif self.viewer.orientation == 'SAGITAL':
+        elif self.viewer.orientation == "SAGITAL":
             self.viewer.slice_.center = (icx, y, z)
-
 
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def _rotate(self):
         # Getting mouse position
@@ -2200,12 +2223,12 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.picker.Pick(mx, my, 0, self.viewer.slice_data.renderer)
         x, y, z = self.picker.GetPickPosition()
 
-        if self.viewer.orientation == 'AXIAL':
-            p1 = np.array((y-cy, x-cx))
-        elif self.viewer.orientation == 'CORONAL':
-            p1 = np.array((z-cz, x-cx))
-        elif self.viewer.orientation == 'SAGITAL':
-            p1 = np.array((z-cz, y-cy))
+        if self.viewer.orientation == "AXIAL":
+            p1 = np.array((y - cy, x - cx))
+        elif self.viewer.orientation == "CORONAL":
+            p1 = np.array((z - cz, x - cx))
+        elif self.viewer.orientation == "SAGITAL":
+            p1 = np.array((z - cz, y - cy))
         p0 = self.p0
         p1 = self.get_image_point_coord(x, y, z)
 
@@ -2214,33 +2237,35 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         if norm == 0:
             return
         axis = axis / norm
-        angle = np.arccos(np.dot(p0, p1)/(np.linalg.norm(p0)*np.linalg.norm(p1)))
+        angle = np.arccos(np.dot(p0, p1) / (np.linalg.norm(p0) * np.linalg.norm(p1)))
 
-        self.viewer.slice_.q_orientation = transformations.quaternion_multiply(self.viewer.slice_.q_orientation, transformations.quaternion_about_axis(angle, axis))
+        self.viewer.slice_.q_orientation = transformations.quaternion_multiply(
+            self.viewer.slice_.q_orientation, transformations.quaternion_about_axis(angle, axis)
+        )
 
         az, ay, ax = transformations.euler_from_quaternion(self.viewer.slice_.q_orientation)
-        Publisher.sendMessage('Update reorient angles', angles=(ax, ay, az))
+        Publisher.sendMessage("Update reorient angles", angles=(ax, ay, az))
 
         self._discard_buffers()
         if self.viewer.slice_.current_mask:
             self.viewer.slice_.current_mask.clear_history()
-        Publisher.sendMessage('Reload actual slice %s' % self.viewer.orientation)
+        Publisher.sendMessage("Reload actual slice %s" % self.viewer.orientation)
         self.p0 = self.get_image_point_coord(x, y, z)
 
     def get_image_point_coord(self, x, y, z):
         cx, cy, cz = self.viewer.slice_.center
-        if self.viewer.orientation == 'AXIAL':
+        if self.viewer.orientation == "AXIAL":
             z = cz
-        elif self.viewer.orientation == 'CORONAL':
+        elif self.viewer.orientation == "CORONAL":
             y = cy
-        elif self.viewer.orientation == 'SAGITAL':
+        elif self.viewer.orientation == "SAGITAL":
             x = cx
 
-        x, y, z = x-cx, y-cy, z-cz
+        x, y, z = x - cx, y - cy, z - cz
 
         M = transformations.quaternion_matrix(self.viewer.slice_.q_orientation)
         tcoord = np.array((z, y, x, 1)).dot(M)
-        tcoord = tcoord[:3]/tcoord[3]
+        tcoord = tcoord[:3] / tcoord[3]
 
         #  print (z, y, x), tcoord
         return tcoord
@@ -2252,7 +2277,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def _create_line(self, x0, y0, x1, y1, color):
         line = vtkLineSource()
@@ -2280,13 +2305,13 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         return line
 
     def draw_lines(self):
-        if self.viewer.orientation == 'AXIAL':
+        if self.viewer.orientation == "AXIAL":
             color1 = (0, 1, 0)
             color2 = (0, 0, 1)
-        elif self.viewer.orientation == 'CORONAL':
+        elif self.viewer.orientation == "CORONAL":
             color1 = (1, 0, 0)
             color2 = (0, 0, 1)
-        elif self.viewer.orientation == 'SAGITAL':
+        elif self.viewer.orientation == "SAGITAL":
             color1 = (1, 0, 0)
             color2 = (0, 1, 0)
 
@@ -2332,9 +2357,9 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.t1 = 2
         self.fill_value = 254
 
-        self._dlg_title = _(u"Fill holes")
-        self._progr_title = _(u"Fill hole")
-        self._progr_msg = _(u"Filling hole ...")
+        self._dlg_title = _("Fill holes")
+        self._progr_title = _("Fill hole")
+        self._progr_msg = _("Filling hole ...")
 
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
 
@@ -2351,7 +2376,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             self.dlg_ffill = None
 
     def OnFFClick(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         viewer = self.viewer
@@ -2364,58 +2389,78 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             return
 
         if self.config.target == "3D":
-            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
+            bstruct = np.array(
+                generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
+            )
             self.viewer.slice_.do_threshold_to_all_slices()
             cp_mask = self.viewer.slice_.current_mask.matrix.copy()
         else:
             _bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
-            if self.orientation == 'AXIAL':
-                bstruct = np.zeros((1, 3, 3), dtype='uint8')
+            if self.orientation == "AXIAL":
+                bstruct = np.zeros((1, 3, 3), dtype="uint8")
                 bstruct[0] = _bstruct
-            elif self.orientation == 'CORONAL':
-                bstruct = np.zeros((3, 1, 3), dtype='uint8')
+            elif self.orientation == "CORONAL":
+                bstruct = np.zeros((3, 1, 3), dtype="uint8")
                 bstruct[:, 0, :] = _bstruct
-            elif self.orientation == 'SAGITAL':
-                bstruct = np.zeros((3, 3, 1), dtype='uint8')
+            elif self.orientation == "SAGITAL":
+                bstruct = np.zeros((3, 3, 1), dtype="uint8")
                 bstruct[:, :, 0] = _bstruct
 
-        if self.config.target == '2D':
-            floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
+        if self.config.target == "2D":
+            floodfill.floodfill_threshold(
+                mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask
+            )
             b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
             index = self.viewer.slice_.buffer_slices[self.orientation].index
 
-            if self.orientation == 'AXIAL':
-                p_mask = mask[index,:,:].copy()
-            elif self.orientation == 'CORONAL':
+            if self.orientation == "AXIAL":
+                p_mask = mask[index, :, :].copy()
+            elif self.orientation == "CORONAL":
                 p_mask = mask[:, index, :].copy()
-            elif self.orientation == 'SAGITAL':
+            elif self.orientation == "SAGITAL":
                 p_mask = mask[:, :, index].copy()
 
             self.viewer.slice_.current_mask.save_history(index, self.orientation, p_mask, b_mask)
         else:
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(floodfill.floodfill_threshold, mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
+                future = executor.submit(
+                    floodfill.floodfill_threshold,
+                    mask,
+                    [[x, y, z]],
+                    self.t0,
+                    self.t1,
+                    self.fill_value,
+                    bstruct,
+                    mask,
+                )
 
-                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=wx.GetApp().GetTopWindow(), style=wx.PD_APP_MODAL)
+                dlg = wx.ProgressDialog(
+                    self._progr_title,
+                    self._progr_msg,
+                    parent=wx.GetApp().GetTopWindow(),
+                    style=wx.PD_APP_MODAL,
+                )
                 while not future.done():
                     dlg.Pulse()
                     time.sleep(0.1)
 
                 dlg.Destroy()
 
-            self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
+            self.viewer.slice_.current_mask.save_history(
+                0, "VOLUME", self.viewer.slice_.current_mask.matrix.copy(), cp_mask
+            )
 
-        self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
-        self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
-        self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+        self.viewer.slice_.buffer_slices["AXIAL"].discard_mask()
+        self.viewer.slice_.buffer_slices["CORONAL"].discard_mask()
+        self.viewer.slice_.buffer_slices["SAGITAL"].discard_mask()
 
-        self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-        self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-        self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["AXIAL"].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["CORONAL"].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["SAGITAL"].discard_vtk_mask()
 
         self.viewer.slice_.current_mask.was_edited = True
         self.viewer.slice_.current_mask.modified(True)
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
 
 class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
@@ -2432,13 +2477,15 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
         self.t1 = 255
         self.fill_value = 1
 
-        self._dlg_title = _(u"Remove parts")
-        self._progr_title = _(u"Remove part")
-        self._progr_msg = _(u"Removing part ...")
+        self._dlg_title = _("Remove parts")
+        self._progr_title = _("Remove part")
+        self._progr_msg = _("Removing part ...")
+
 
 class CropMaskConfig(metaclass=utils.Singleton):
     def __init__(self):
         self.dlg_visible = False
+
 
 class CropMaskInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
@@ -2464,12 +2511,12 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
     def OnMove(self, obj, evt):
         x, y = self.GetMousePosition()
-        self.draw_retangle.MouseMove(x,y)
+        self.draw_retangle.MouseMove(x, y)
 
     def OnLeftPressed(self, obj, evt):
         self.draw_retangle.mouse_pressed = True
         x, y = self.GetMousePosition()
-        self.draw_retangle.LeftPressed(x,y)
+        self.draw_retangle.LeftPressed(x, y)
 
     def OnReleaseLeftButton(self, obj, evt):
         self.draw_retangle.mouse_pressed = False
@@ -2482,7 +2529,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.viewer.canvas.draw_list.append(self.draw_retangle)
         self.viewer.UpdateCanvas()
 
-        if not(self.config.dlg_visible):
+        if not (self.config.dlg_visible):
             self.config.dlg_visible = True
 
             dlg = dialogs.CropOptionsDialog(self.config)
@@ -2490,13 +2537,13 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             dlg.Show()
 
         self.__evts__()
-        #self.draw_lines()
-        #Publisher.sendMessage('Hide current mask')
-        #Publisher.sendMessage('Reload actual slice')
+        # self.draw_lines()
+        # Publisher.sendMessage('Hide current mask')
+        # Publisher.sendMessage('Reload actual slice')
 
     def CleanUp(self):
         self.viewer.canvas.draw_list.remove(self.draw_retangle)
-        Publisher.sendMessage('Redraw canvas')
+        Publisher.sendMessage("Redraw canvas")
 
     def CropMask(self):
         if self.viewer.orientation == "AXIAL":
@@ -2514,25 +2561,31 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.do_threshold_to_all_slices()
             cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
-            tmp_mask = self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1].copy()
+            tmp_mask = self.viewer.slice_.current_mask.matrix[
+                zi - 1 : zf + 1, yi - 1 : yf + 1, xi - 1 : xf + 1
+            ].copy()
 
             self.viewer.slice_.current_mask.matrix[:] = 1
 
-            self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1] = tmp_mask
+            self.viewer.slice_.current_mask.matrix[
+                zi - 1 : zf + 1, yi - 1 : yf + 1, xi - 1 : xf + 1
+            ] = tmp_mask
 
-            self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
+            self.viewer.slice_.current_mask.save_history(
+                0, "VOLUME", self.viewer.slice_.current_mask.matrix.copy(), cp_mask
+            )
 
-            self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
-            self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
-            self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+            self.viewer.slice_.buffer_slices["AXIAL"].discard_mask()
+            self.viewer.slice_.buffer_slices["CORONAL"].discard_mask()
+            self.viewer.slice_.buffer_slices["SAGITAL"].discard_mask()
 
-            self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-            self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-            self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+            self.viewer.slice_.buffer_slices["AXIAL"].discard_vtk_mask()
+            self.viewer.slice_.buffer_slices["CORONAL"].discard_vtk_mask()
+            self.viewer.slice_.buffer_slices["SAGITAL"].discard_vtk_mask()
 
             self.viewer.slice_.current_mask.was_edited = True
             self.viewer.slice_.current_mask.modified(True)
-            Publisher.sendMessage('Reload actual slice')
+            Publisher.sendMessage("Reload actual slice")
 
 
 class SelectPartConfig(metaclass=utils.Singleton):
@@ -2540,7 +2593,7 @@ class SelectPartConfig(metaclass=utils.Singleton):
         self.mask = None
         self.con_3d = 6
         self.dlg_visible = False
-        self.mask_name = ''
+        self.mask_name = ""
 
 
 class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
@@ -2573,11 +2626,12 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
     def SetUp(self):
         if not self.config.dlg_visible:
             import invesalius.data.mask as mask
-            default_name =  const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
+
+            default_name = const.MASK_NAME_PATTERN % (mask.Mask.general_index + 2)
 
             self.config.mask_name = default_name
             self.config.dlg_visible = True
-            self.dlg= dialogs.SelectPartsOptionsDialog(self.config)
+            self.dlg = dialogs.SelectPartsOptionsDialog(self.config)
             self.dlg.Show()
 
     def CleanUp(self):
@@ -2596,16 +2650,15 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 self.config.mask.name = self.config.mask_name
                 self.viewer.slice_._add_mask_into_proj(self.config.mask)
                 self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
-                Publisher.sendMessage('Change mask selected', index=self.config.mask.index)
+                Publisher.sendMessage("Change mask selected", index=self.config.mask.index)
 
-            del self.viewer.slice_.aux_matrices['SELECT']
-            self.viewer.slice_.to_show_aux = ''
-            Publisher.sendMessage('Reload actual slice')
+            del self.viewer.slice_.aux_matrices["SELECT"]
+            self.viewer.slice_.to_show_aux = ""
+            Publisher.sendMessage("Reload actual slice")
             self.config.mask = None
 
-
     def OnSelect(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         iren = self.viewer.interactor
@@ -2614,22 +2667,38 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
-        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
+        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
         self.viewer.slice_.do_threshold_to_all_slices()
 
         if self.config.mask is None:
             self._create_new_mask()
 
         if iren.GetControlKey():
-            floodfill.floodfill_threshold(self.config.mask.matrix[1:, 1:, 1:], [[x, y, z]], 254, 255, 0, bstruct, self.config.mask.matrix[1:, 1:, 1:])
+            floodfill.floodfill_threshold(
+                self.config.mask.matrix[1:, 1:, 1:],
+                [[x, y, z]],
+                254,
+                255,
+                0,
+                bstruct,
+                self.config.mask.matrix[1:, 1:, 1:],
+            )
         else:
-            floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, self.config.mask.matrix[1:, 1:, 1:])
+            floodfill.floodfill_threshold(
+                mask,
+                [[x, y, z]],
+                self.t0,
+                self.t1,
+                self.fill_value,
+                bstruct,
+                self.config.mask.matrix[1:, 1:, 1:],
+            )
 
-        self.viewer.slice_.aux_matrices['SELECT'] = self.config.mask.matrix[1:, 1:, 1:]
-        self.viewer.slice_.to_show_aux = 'SELECT'
+        self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
+        self.viewer.slice_.to_show_aux = "SELECT"
 
         self.config.mask.was_edited = True
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
     def _create_new_mask(self):
         mask = self.viewer.slice_.create_new_mask(show=False, add_to_project=False)
@@ -2654,7 +2723,7 @@ class FFillSegmentationConfig(metaclass=utils.Singleton):
 
         self.fill_value = 254
 
-        self.method = 'dynamic'
+        self.method = "dynamic"
 
         self.dev_min = 25
         self.dev_max = 25
@@ -2680,19 +2749,18 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
         self.config = FFillSegmentationConfig()
 
-        self._progr_title = _(u"Region growing")
-        self._progr_msg = _(u"Segmenting ...")
+        self._progr_title = _("Region growing")
+        self._progr_msg = _("Segmenting ...")
 
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
 
     def SetUp(self):
         if not self.config.dlg_visible:
-
             if self.config.t0 is None:
                 image = self.viewer.slice_.matrix
                 _min, _max = image.min(), image.max()
 
-                self.config.t0 = int(_min + (3.0/4.0) * (_max - _min))
+                self.config.t0 = int(_min + (3.0 / 4.0) * (_max - _min))
                 self.config.t1 = int(_max)
 
             self.config.dlg_visible = True
@@ -2706,7 +2774,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             self.config.dlg = None
 
     def OnFFClick(self, obj, evt):
-        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
         if self.config.target == "3D":
@@ -2714,17 +2782,17 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         else:
             self.do_2d_seg()
 
-        self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
-        self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
-        self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+        self.viewer.slice_.buffer_slices["AXIAL"].discard_mask()
+        self.viewer.slice_.buffer_slices["CORONAL"].discard_mask()
+        self.viewer.slice_.buffer_slices["SAGITAL"].discard_mask()
 
-        self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-        self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-        self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["AXIAL"].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["CORONAL"].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["SAGITAL"].discard_vtk_mask()
 
         self.viewer.slice_.current_mask.was_edited = True
-        self.viewer.slice_.current_mask.modified(self.config.target == '3D')
-        Publisher.sendMessage('Reload actual slice')
+        self.viewer.slice_.current_mask.modified(self.config.target == "3D")
+        Publisher.sendMessage("Reload actual slice")
 
     def do_2d_seg(self):
         viewer = self.viewer
@@ -2735,22 +2803,24 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.buffer_slices[self.orientation].mask.copy()
         image = self.viewer.slice_.buffer_slices[self.orientation].image
 
-        if self.config.method == 'confidence':
+        if self.config.method == "confidence":
             dy, dx = image.shape
             image = image.reshape((1, dy, dx))
             mask = mask.reshape((1, dy, dx))
 
-            bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
+            bstruct = np.array(
+                generate_binary_structure(2, CON2D[self.config.con_2d]), dtype="uint8"
+            )
             bstruct = bstruct.reshape((1, 3, 3))
 
             out_mask = self.do_rg_confidence(image, mask, (x, y, 0), bstruct)
         else:
-            if self.config.method == 'threshold':
+            if self.config.method == "threshold":
                 v = image[y, x]
                 t0 = self.config.t0
                 t1 = self.config.t1
 
-            elif self.config.method == 'dynamic':
+            elif self.config.method == "dynamic":
                 if self.config.use_ww_wl:
                     print("Using WW&WL")
                     ww = self.viewer.slice_.window_width
@@ -2762,7 +2832,6 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
                 t0 = v - self.config.dev_min
                 t1 = v + self.config.dev_max
 
-
             if image[y, x] < t0 or image[y, x] > t1:
                 return
 
@@ -2772,22 +2841,24 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
             out_mask = np.zeros_like(mask)
 
-            bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
+            bstruct = np.array(
+                generate_binary_structure(2, CON2D[self.config.con_2d]), dtype="uint8"
+            )
             bstruct = bstruct.reshape((1, 3, 3))
 
             floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask)
 
-        mask[out_mask.astype('bool')] = self.config.fill_value
+        mask[out_mask.astype("bool")] = self.config.fill_value
 
         index = self.viewer.slice_.buffer_slices[self.orientation].index
         b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
         vol_mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
-        if self.orientation == 'AXIAL':
+        if self.orientation == "AXIAL":
             vol_mask[index, :, :] = mask
-        elif self.orientation == 'CORONAL':
+        elif self.orientation == "CORONAL":
             vol_mask[:, index, :] = mask
-        elif self.orientation == 'SAGITAL':
+        elif self.orientation == "SAGITAL":
             vol_mask[:, :, index] = mask
 
         self.viewer.slice_.current_mask.save_history(index, self.orientation, mask, b_mask)
@@ -2801,13 +2872,13 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         image = self.viewer.slice_.matrix
 
-        if self.config.method != 'confidence':
-            if self.config.method == 'threshold':
+        if self.config.method != "confidence":
+            if self.config.method == "threshold":
                 v = image[z, y, x]
                 t0 = self.config.t0
                 t1 = self.config.t1
 
-            elif self.config.method == 'dynamic':
+            elif self.config.method == "dynamic":
                 if self.config.use_ww_wl:
                     print("Using WW&WL")
                     ww = self.viewer.slice_.window_width
@@ -2822,12 +2893,11 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             if image[z, y, x] < t0 or image[z, y, x] > t1:
                 return
 
-
-        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
+        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
         self.viewer.slice_.do_threshold_to_all_slices()
         cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
-        if self.config.method == 'confidence':
+        if self.config.method == "confidence":
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(self.do_rg_confidence, image, mask, (x, y, z), bstruct)
 
@@ -2843,7 +2913,9 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         else:
             out_mask = np.zeros_like(mask)
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+                future = executor.submit(
+                    floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask
+                )
 
                 self.config.dlg.panel_ffill_progress.Enable()
                 self.config.dlg.panel_ffill_progress.StartTimer()
@@ -2854,9 +2926,11 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
                 self.config.dlg.panel_ffill_progress.StopTimer()
                 self.config.dlg.panel_ffill_progress.Disable()
 
-        mask[out_mask.astype('bool')] = self.config.fill_value
+        mask[out_mask.astype("bool")] = self.config.fill_value
 
-        self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
+        self.viewer.slice_.current_mask.save_history(
+            0, "VOLUME", self.viewer.slice_.current_mask.matrix.copy(), cp_mask
+        )
 
     def do_rg_confidence(self, image, mask, p, bstruct):
         x, y, z = p
@@ -2864,16 +2938,16 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             ww = self.viewer.slice_.window_width
             wl = self.viewer.slice_.window_level
             image = get_LUT_value_255(image, ww, wl)
-        bool_mask = np.zeros_like(mask, dtype='bool')
+        bool_mask = np.zeros_like(mask, dtype="bool")
         out_mask = np.zeros_like(mask)
 
-        for k in range(int(z-1), int(z+2)):
+        for k in range(int(z - 1), int(z + 2)):
             if k < 0 or k >= bool_mask.shape[0]:
                 continue
-            for j in range(int(y-1), int(y+2)):
+            for j in range(int(y - 1), int(y + 2)):
                 if j < 0 or j >= bool_mask.shape[1]:
                     continue
-                for i in range(int(x-1), int(x+2)):
+                for i in range(int(x - 1), int(x + 2)):
                     if i < 0 or i >= bool_mask.shape[2]:
                         continue
                     bool_mask[k, j, i] = True
@@ -2890,7 +2964,6 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             bool_mask[out_mask == 1] = True
 
         return out_mask
-
 
 
 class Styles:

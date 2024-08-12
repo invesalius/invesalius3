@@ -1,25 +1,25 @@
 # Scientific
-numpy==1.24.3
-scipy==1.10.1
-matplotlib==3.7.5
+numpy==1.26.4
+scipy==1.14.0
+matplotlib==3.9.0
 
 # Image Processing
-Pillow==10.0.1
-imageio==2.31.1
-nibabel==5.1.0
-scikit-image==0.21.0
-python-gdcm==3.0.22
-vtk==9.2.6
+Pillow==10.3.0
+imageio==2.34.2
+nibabel==5.2.1
+scikit-image==0.24.0
+python-gdcm==3.0.24
+vtk==9.3.0
 
 # Machine Learning
-torch==2.0.1
+torch==2.3.1
 plaidml-keras==0.7.0; python_version <= '3.8'
 
 # Utilities
 Cython==3.0.10
 Pypubsub==4.0.3
-h5py==3.8.0
-psutil==5.9.4
+h5py==3.11.0
+psutil==6.0.0
 pyserial==3.5
 wxPython==4.2.1
-pyacvd==0.2.9
+pyacvd==0.2.11

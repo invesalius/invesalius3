@@ -1,11 +1,11 @@
-import vtk
 import numpy as np
+import vtk
 import wx
 
+import invesalius.data.coordinates as dco
 from invesalius.gui import dialogs
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
-import invesalius.data.coordinates as dco
 
 
 class SurfaceGeometry(metaclass=Singleton):
@@ -15,17 +15,17 @@ class SurfaceGeometry(metaclass=Singleton):
         self.surfaces = []
 
     def __bind_events(self):
-        Publisher.subscribe(self.LoadActor, 'Load surface actor into viewer')
+        Publisher.subscribe(self.LoadActor, "Load surface actor into viewer")
 
     def PrecalculateSurfaceData(self, actor):
         normals = self.GetSurfaceNormals(actor)
         highest_z = self.CalculateHighestZ(actor)
         polydata = actor.GetMapper().GetInput()
         return {
-            'actor': actor,
-            'polydata': polydata,
-            'normals': normals,
-            'highest_z': highest_z,
+            "actor": actor,
+            "polydata": polydata,
+            "normals": normals,
+            "highest_z": highest_z,
         }
 
     def LoadActor(self, actor):
@@ -34,10 +34,12 @@ class SurfaceGeometry(metaclass=Singleton):
         #
         # The original versions are used for visualization, while the smoothed
         # versions are used for calculations.
-        self.surfaces.append({
-            'original': self.PrecalculateSurfaceData(actor),
-            'smoothed': None,
-        })
+        self.surfaces.append(
+            {
+                "original": self.PrecalculateSurfaceData(actor),
+                "smoothed": None,
+            }
+        )
 
     def SmoothSurface(self, actor):
         mapper = actor.GetMapper()
@@ -81,8 +83,8 @@ class SurfaceGeometry(metaclass=Singleton):
         """
         for surface in self.surfaces:
             # Only the original actor is used for visualization, so we only need to hide that one.
-            actor = surface['original']['actor']
-            surface['visible'] = actor.GetVisibility() 
+            actor = surface["original"]["actor"]
+            surface["visible"] = actor.GetVisibility()
             actor.VisibilityOff()
 
     def ShowAllSurfaces(self):
@@ -92,8 +94,8 @@ class SurfaceGeometry(metaclass=Singleton):
         """
         for surface in self.surfaces:
             # Only the original actor is used for visualization, so we only need to show that one.
-            actor = surface['original']['actor']
-            visible = surface['visible'] if 'visible' in surface else True
+            actor = surface["original"]["actor"]
+            visible = surface["visible"] if "visible" in surface else True
             actor.SetVisibility(visible)
 
     def GetSurfaceCenter(self, actor):
@@ -146,28 +148,28 @@ class SurfaceGeometry(metaclass=Singleton):
             return None
 
         # Find the (non-smoothed) surface with the highest z-coordinate, corresponding to the scalp.
-        highest_surface = max(self.surfaces, key=lambda surface: surface['original']['highest_z'])
+        highest_surface = max(self.surfaces, key=lambda surface: surface["original"]["highest_z"])
 
         # Compute smoothed surface if it has not been computed yet.
-        if highest_surface['smoothed'] is None:
+        if highest_surface["smoothed"] is None:
             progress_window = dialogs.SurfaceSmoothingProgressWindow()
 
-            actor = highest_surface['original']['actor']
+            actor = highest_surface["original"]["actor"]
 
             # Create a smoothed version of the actor.
             smoothed_actor = self.SmoothSurface(actor)
 
-            highest_surface['smoothed'] = self.PrecalculateSurfaceData(smoothed_actor)
+            highest_surface["smoothed"] = self.PrecalculateSurfaceData(smoothed_actor)
 
             progress_window.Close()
-        
-        return highest_surface['smoothed']
+
+        return highest_surface["smoothed"]
 
     def GetClosestPointOnSurface(self, surface_name, point):
         surface = self.GetSmoothedScalpSurface()
 
-        polydata = surface['polydata']
-        normals = surface['normals']
+        polydata = surface["polydata"]
+        normals = surface["normals"]
 
         # Create a cell locator using VTK. This will allow us to find the closest point on the surface to the given point.
         point_locator = vtk.vtkPointLocator()

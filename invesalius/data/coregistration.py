@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,20 +15,21 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
-import numpy as np
 import queue
 import threading
 from time import sleep
 
+import numpy as np
+
 import invesalius.constants as const
-import invesalius.data.transformations as tr
 import invesalius.data.bases as bases
 import invesalius.data.coordinates as dco
-
+import invesalius.data.transformations as tr
 
 # TODO: Replace the use of degrees by radians in every part of the navigation pipeline
+
 
 def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw):
     """Translate and rotate the raw coordinate given by the tracking device to the reference system created during
@@ -49,7 +50,7 @@ def object_marker_to_center(coord_raw, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw
     """
 
     as1, bs1, gs1 = np.radians(coord_raw[obj_ref_mode, 3:])
-    r_probe = tr.euler_matrix(as1, bs1, gs1, 'rzyx')
+    r_probe = tr.euler_matrix(as1, bs1, gs1, "rzyx")
     t_probe_raw = tr.translation_matrix(coord_raw[obj_ref_mode, :3])
     t_offset_aux = np.linalg.inv(r_s0_raw) @ r_probe @ t_obj_raw
     t_offset = np.identity(4)
@@ -77,7 +78,7 @@ def object_to_reference(coord_raw, m_probe):
     m_ref = dco.coordinates_to_transformation_matrix(
         position=coord_raw[1, :3],
         orientation=coord_raw[1, 3:],
-        axes='rzyx',
+        axes="rzyx",
     )
     m_dyn = np.linalg.inv(m_ref) @ m_probe
     return m_dyn
@@ -129,7 +130,7 @@ def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
     m_target_in_image = dco.coordinates_to_transformation_matrix(
         position=target[:3],
         orientation=target[3:],
-        axes='sxyz',
+        axes="sxyz",
     )
     if icp.use_icp:
         m_target_in_image = bases.inverse_transform_icp(m_target_in_image, icp.m_icp)
@@ -141,13 +142,15 @@ def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
     m_trk_flip = m_trk.copy()
     m_trk_flip[2, -1] = -m_trk_flip[2, -1]
     # finds the inverse rotation matrix from invesalius coordinate system to head base in tracker coordinate system
-    m_probe_ref = s0_dyn @ m_obj_raw @ np.linalg.inv(r_obj_img) @ m_target_in_image @ np.linalg.inv(m_obj_raw)
+    m_probe_ref = (
+        s0_dyn @ m_obj_raw @ np.linalg.inv(r_obj_img) @ m_target_in_image @ np.linalg.inv(m_obj_raw)
+    )
     m_trk_flip[:3, :3] = m_probe_ref[:3, :3]
 
     m_ref = dco.coordinates_to_transformation_matrix(
         position=coord_raw[1, :3],
         orientation=coord_raw[1, 3:],
-        axes='rzyx',
+        axes="rzyx",
     )
     # transform from head base to raw tracker coordinate system
     m_probe = m_ref @ m_trk_flip
@@ -169,7 +172,6 @@ def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
 
 
 def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
-
     m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = inp
 
     # transform raw marker coordinate to object center
@@ -189,11 +191,17 @@ def corregistrate_object_dynamic(inp, coord_raw, ref_mode_id, icp):
     m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+    angles = tr.euler_from_matrix(m_img, axes="sxyz")
 
     # create output coordinate list
-    coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
-            np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
+    coord = (
+        m_img[0, -1],
+        m_img[1, -1],
+        m_img[2, -1],
+        np.degrees(angles[0]),
+        np.degrees(angles[1]),
+        np.degrees(angles[2]),
+    )
 
     return coord, m_img
 
@@ -202,13 +210,12 @@ def compute_marker_transformation(coord_raw, obj_ref_mode):
     m_probe = dco.coordinates_to_transformation_matrix(
         position=coord_raw[obj_ref_mode, :3],
         orientation=coord_raw[obj_ref_mode, 3:],
-        axes='rzyx',
+        axes="rzyx",
     )
     return m_probe
 
 
 def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
-
     m_change, obj_ref_mode = inp
 
     # transform raw marker coordinate to object center
@@ -229,11 +236,17 @@ def corregistrate_dynamic(inp, coord_raw, ref_mode_id, icp):
     m_img = apply_icp(m_img, icp)
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_img, axes='sxyz')
+    angles = tr.euler_from_matrix(m_img, axes="sxyz")
 
     # create output coordinate list
-    coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
-            np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])
+    coord = (
+        m_img[0, -1],
+        m_img[1, -1],
+        m_img[2, -1],
+        np.degrees(angles[0]),
+        np.degrees(angles[1]),
+        np.degrees(angles[2]),
+    )
 
     return coord, m_img
 
@@ -245,34 +258,54 @@ def apply_icp(m_img, icp):
 
     return m_img
 
+
 def ComputeRelativeDistanceToTarget(target_coord=None, img_coord=None, m_target=None, m_img=None):
     if m_target is None:
         m_target = dco.coordinates_to_transformation_matrix(
             position=target_coord[:3],
             orientation=target_coord[3:],
-            axes='sxyz',
+            axes="sxyz",
         )
     if m_img is None:
         m_img = dco.coordinates_to_transformation_matrix(
             position=img_coord[:3],
             orientation=img_coord[3:],
-            axes='sxyz',
+            axes="sxyz",
         )
     m_relative_target = np.linalg.inv(m_target) @ m_img
 
     # compute rotation angles
-    angles = tr.euler_from_matrix(m_relative_target, axes='sxyz')
+    angles = tr.euler_from_matrix(m_relative_target, axes="sxyz")
 
     # create output coordinate list
-    distance = [m_relative_target[0, -1], m_relative_target[1, -1], m_relative_target[2, -1], \
-            np.degrees(angles[0]), np.degrees(angles[1]), np.degrees(angles[2])]
+    distance = [
+        m_relative_target[0, -1],
+        m_relative_target[1, -1],
+        m_relative_target[2, -1],
+        np.degrees(angles[0]),
+        np.degrees(angles[1]),
+        np.degrees(angles[2]),
+    ]
 
     return distance
 
 
 class CoordinateCorregistrate(threading.Thread):
-    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, tracker_id, target, icp,e_field_loaded):
-        threading.Thread.__init__(self, name='CoordCoregObject')
+    def __init__(
+        self,
+        ref_mode_id,
+        tracker,
+        coreg_data,
+        view_tracts,
+        queues,
+        event,
+        sle,
+        tracker_id,
+        target,
+        icp,
+        e_field_loaded,
+    ):
+        threading.Thread.__init__(self, name="CoordCoregObject")
         self.ref_mode_id = ref_mode_id
         self.tracker = tracker
         self.coreg_data = coreg_data
@@ -316,7 +349,9 @@ class CoordinateCorregistrate(threading.Thread):
 
                 # print(f"Set the coordinate")
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
-                coord, m_img = corregistrate_object_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
+                coord, m_img = corregistrate_object_dynamic(
+                    coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp]
+                )
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
                 #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
@@ -327,7 +362,6 @@ class CoordinateCorregistrate(threading.Thread):
                 #      those abstractions do not currently exist and doing them would need a larger refactoring.
                 #
                 if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
-
                     if self.last_coord is None:
                         self.last_coord = np.array(coord)
                     else:
@@ -359,8 +393,10 @@ class CoordinateCorregistrate(threading.Thread):
 
 
 class CoordinateCorregistrateNoObject(threading.Thread):
-    def __init__(self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, icp, e_field_loaded):
-        threading.Thread.__init__(self, name='CoordCoregNoObject')
+    def __init__(
+        self, ref_mode_id, tracker, coreg_data, view_tracts, queues, event, sle, icp, e_field_loaded
+    ):
+        threading.Thread.__init__(self, name="CoordCoregNoObject")
         self.ref_mode_id = ref_mode_id
         self.tracker = tracker
         self.coreg_data = coreg_data
@@ -387,9 +423,11 @@ class CoordinateCorregistrateNoObject(threading.Thread):
                 else:
                     self.use_icp, self.m_icp = self.icp_queue.get_nowait()
                 # print(f"Set the coordinate")
-                #print(self.icp, self.m_icp)
+                # print(self.icp, self.m_icp)
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
-                coord, m_img = corregistrate_dynamic(coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp])
+                coord, m_img = corregistrate_dynamic(
+                    coreg_data, coord_raw, self.ref_mode_id, [self.use_icp, self.m_icp]
+                )
                 # print("Coord: ", coord)
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]

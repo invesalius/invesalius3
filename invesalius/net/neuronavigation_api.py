@@ -17,14 +17,13 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import numpy as np
+import wx
+from vtkmodules.numpy_interface import dataset_adapter
+
+from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug
-from invesalius.data.markers.marker import MarkerType
-
-import wx
-
-import numpy as np
-from vtkmodules.numpy_interface import dataset_adapter
 
 
 class NeuronavigationApi(metaclass=Singleton):
@@ -45,6 +44,7 @@ class NeuronavigationApi(metaclass=Singleton):
 
     If connection object is not given or it is None, do not do the updates.
     """
+
     N_VERTICES_IN_POLYGON = 3
 
     def __init__(self, connection=None):
@@ -60,21 +60,48 @@ class NeuronavigationApi(metaclass=Singleton):
         return hasattr(obj, name) and callable(getattr(obj, name))
 
     def assert_valid(self, connection):
-        assert self._hasmethod(connection, 'update_neuronavigation_started')
-        assert self._hasmethod(connection, 'update_target_mode')
-        assert self._hasmethod(connection, 'update_coil_at_target')
-        assert self._hasmethod(connection, 'update_coil_pose')
-        assert self._hasmethod(connection, 'update_focus')
-        assert self._hasmethod(connection, 'set_callback__stimulation_pulse_received')
-        assert self._hasmethod(connection, 'set_callback__set_vector_field')
+        assert self._hasmethod(connection, "update_neuronavigation_started")
+        assert self._hasmethod(connection, "update_target_mode")
+        assert self._hasmethod(connection, "update_coil_at_target")
+        assert self._hasmethod(connection, "update_coil_pose")
+        assert self._hasmethod(connection, "update_focus")
+        assert self._hasmethod(connection, "set_callback__stimulation_pulse_received")
+        assert self._hasmethod(connection, "set_callback__set_vector_field")
 
     def __bind_events(self):
-        Publisher.subscribe(self.start_navigation, 'Start navigation')
-        Publisher.subscribe(self.stop_navigation, 'Stop navigation')
-        Publisher.subscribe(self.update_target_mode, 'Set target mode')
-        Publisher.subscribe(self.update_coil_at_target, 'Coil at target')
-        #Publisher.subscribe(self.update_focus, 'Set cross focal point')
-        Publisher.subscribe(self.update_target_orientation, 'Update target orientation')
+        Publisher.subscribe(self.start_navigation, "Start navigation")
+        Publisher.subscribe(self.stop_navigation, "Stop navigation")
+        Publisher.subscribe(self.update_target_mode, "Set target mode")
+        Publisher.subscribe(self.update_coil_at_target, "Coil at target")
+        Publisher.subscribe(self.update_tracker_poses, "From Neuronavigation: Update tracker poses")
+        Publisher.subscribe(self.update_target_orientation, "Update target orientation")
+        Publisher.subscribe(self.connect_to_robot, "Neuronavigation to Robot: Connect to robot")
+        Publisher.subscribe(self.set_target, "Neuronavigation to Robot: Set target")
+        Publisher.subscribe(self.unset_target, "Neuronavigation to Robot: Unset target")
+        Publisher.subscribe(
+            self.set_tracker_fiducials, "Neuronavigation to Robot: Set tracker fiducials"
+        )
+        Publisher.subscribe(
+            self.collect_robot_pose,
+            "Neuronavigation to Robot: Collect coordinates for the robot transformation matrix",
+        )
+        Publisher.subscribe(
+            self.reset_robot_transformation_matrix,
+            "Neuronavigation to Robot: Reset coordinates collection for the robot transformation matrix",
+        )
+        Publisher.subscribe(
+            self.estimate_robot_transformation_matrix,
+            "Neuronavigation to Robot: Estimate robot transformation matrix",
+        )
+        Publisher.subscribe(
+            self.set_robot_transformation_matrix,
+            "Neuronavigation to Robot: Set robot transformation matrix",
+        )
+        Publisher.subscribe(
+            self.update_displacement_to_target,
+            "Neuronavigation to Robot: Update displacement to target",
+        )
+        Publisher.subscribe(self.set_objective, "Neuronavigation to Robot: Set objective")
 
     # Functions for InVesalius to send updates.
 
@@ -98,10 +125,7 @@ class NeuronavigationApi(metaclass=Singleton):
 
     def update_target_orientation(self, target_id, orientation):
         if self.connection is not None:
-            self.connection.update_target_orientation(
-                target_id=target_id,
-                orientation=orientation
-            )
+            self.connection.update_target_orientation(target_id=target_id, orientation=orientation)
 
     # Functions for InVesalius to send updates.
 
@@ -110,6 +134,61 @@ class NeuronavigationApi(metaclass=Singleton):
     #   would require changing 'Set cross focal point' publishers and subscribers
     #   throughout the code.
     #
+    def update_tracker_poses(self, poses, visibilities):
+        if self.connection is not None:
+            self.connection.update_tracker_poses(
+                poses=poses,
+                visibilities=visibilities,
+            )
+
+    def connect_to_robot(self, robot_IP):
+        if self.connection is not None:
+            self.connection.connect_to_robot(
+                robot_ip=robot_IP,
+            )
+
+    def set_target(self, target):
+        if self.connection is not None:
+            self.connection.set_target(
+                target=target,
+            )
+
+    def unset_target(self):
+        if self.connection is not None:
+            self.connection.unset_target()
+
+    def set_tracker_fiducials(self, tracker_fiducials):
+        if self.connection is not None:
+            self.connection.update_set_tracker_fiducials(tracker_fiducials=tracker_fiducials)
+
+    def collect_robot_pose(self, data):
+        if self.connection is not None:
+            self.connection.collect_robot_pose()
+
+    def reset_robot_transformation_matrix(self, data):
+        if self.connection is not None:
+            self.connection.reset_robot_transformation_matrix()
+
+    def estimate_robot_transformation_matrix(self, data):
+        if self.connection is not None:
+            self.connection.estimate_robot_transformation_matrix()
+
+    def set_robot_transformation_matrix(self, data):
+        if self.connection is not None:
+            self.connection.set_robot_transformation_matrix(matrix_tracker_to_robot=data)
+
+    def update_displacement_to_target(self, displacement):
+        if self.connection is not None:
+            self.connection.update_displacement_to_target(
+                displacement=displacement,
+            )
+
+    def set_objective(self, objective):
+        if self.connection is not None:
+            self.connection.set_objective(
+                objective=objective,
+            )
+
     def update_focus(self, position):
         if self.connection is not None:
             self.connection.update_focus(
@@ -141,7 +220,9 @@ class NeuronavigationApi(metaclass=Singleton):
             #
             # Assert that all polygons have an equal number of vertices, reshape the array, and drop n_i's.
             #
-            assert np.all(polygons_raw[0::self.N_VERTICES_IN_POLYGON + 1] == self.N_VERTICES_IN_POLYGON)
+            assert np.all(
+                polygons_raw[0 :: self.N_VERTICES_IN_POLYGON + 1] == self.N_VERTICES_IN_POLYGON
+            )
 
             polygons = polygons_raw.reshape(-1, self.N_VERTICES_IN_POLYGON + 1)[:, 1:]
 
@@ -152,36 +233,38 @@ class NeuronavigationApi(metaclass=Singleton):
 
     def update_coil_at_target(self, state):
         if self.connection is not None:
-            self.connection.update_coil_at_target(
-                state=state
-            )
+            self.connection.update_coil_at_target(state=state)
 
-    def initialize_efield(self, cortex_model_path, mesh_models_paths, coil_model_path, coil_set, conductivities_inside, conductivities_outside, dI_per_dt):
+    def initialize_efield(
+        self,
+        cortex_model_path,
+        mesh_models_paths,
+        coil_model_path,
+        coil_set,
+        conductivities_inside,
+        conductivities_outside,
+        dI_per_dt,
+    ):
         if self.connection is not None:
             return self.connection.initialize_efield(
                 cortex_model_path=cortex_model_path,
-                mesh_models_paths= mesh_models_paths,
-                coil_model_path =coil_model_path,
-                coil_set = coil_set,
-                conductivities_inside= conductivities_inside,
-                conductivities_outside = conductivities_outside,
-                dI_per_dt= dI_per_dt,
+                mesh_models_paths=mesh_models_paths,
+                coil_model_path=coil_model_path,
+                coil_set=coil_set,
+                conductivities_inside=conductivities_inside,
+                conductivities_outside=conductivities_outside,
+                dI_per_dt=dI_per_dt,
             )
         return None
 
     def init_efield_config_file(self, config_file):
         if self.connection is not None:
-            return self.connection.init_efield_json(
-                config_file=config_file
-            )
+            return self.connection.init_efield_json(config_file=config_file)
         return None
 
     def efield_coil(self, coil_model_path, coil_set):
         if self.connection is not None:
-            return self.connection.set_coil(
-                coil_model_path=coil_model_path,
-                coil_set=coil_set
-            )
+            return self.connection.set_coil(coil_model_path=coil_model_path, coil_set=coil_set)
 
     def set_dIperdt(self, dIperdt):
         if self.connection is not None:
@@ -210,27 +293,30 @@ class NeuronavigationApi(metaclass=Singleton):
     def update_efield_vectorROI(self, position, orientation, T_rot, id_list):
         if self.connection is not None:
             return self.connection.update_efield_vectorROI(
-                position=position,
-                orientation=orientation,
-                T_rot=T_rot,
-                id_list=id_list
+                position=position, orientation=orientation, T_rot=T_rot, id_list=id_list
             )
         return None
 
     def update_efield_vectorROIMax(self, position, orientation, T_rot, id_list):
         if self.connection is not None:
             return self.connection.update_efield_vectorROIMax(
-                position=position,
-                orientation=orientation,
-                T_rot=T_rot,
-                id_list=id_list
+                position=position, orientation=orientation, T_rot=T_rot, id_list=id_list
             )
         return None
+
     # Functions for InVesalius to receive updates via callbacks.
 
     def __set_callbacks(self, connection):
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
         connection.set_callback__stimulation_pulse_received(self.stimulation_pulse_received)
+        connection.set_callback__update_robot_status(self.update_robot_status)
+        connection.set_callback__robot_connection_status(self.robot_connection_status)
+        connection.set_callback__robot_pose_collected(self.robot_pose_collected)
+        connection.set_callback__set_objective(self.set_objective_to_neuronavigation)
+        connection.set_callback__close_robot_dialog(self.close_robot_dialog)
+        connection.set_callback__update_robot_transformation_matrix(
+            self.update_robot_transformation_matrix
+        )
         connection.set_callback__set_vector_field(self.set_vector_field)
 
     def add_pedal_callback(self, name, callback, remove_when_released=False):
@@ -246,11 +332,44 @@ class NeuronavigationApi(metaclass=Singleton):
             self.connection.remove_pedal_callback(name=name)
 
     def open_orientation_dialog(self, target_id):
-        wx.CallAfter(Publisher.sendMessage, 'Open marker orientation dialog', marker_id=target_id)
+        wx.CallAfter(Publisher.sendMessage, "Open marker orientation dialog", marker_id=target_id)
 
     def stimulation_pulse_received(self):
         # TODO: If marker should not be created always when receiving a stimulation pulse, add the logic here.
-        wx.CallAfter(Publisher.sendMessage, 'Create marker', marker_type=MarkerType.COIL_POSE)
+        wx.CallAfter(Publisher.sendMessage, "Create marker", marker_type=MarkerType.COIL_POSE)
 
     def set_vector_field(self, vector_field):
-        wx.CallAfter(Publisher.sendMessage, 'Set vector field', vector_field=vector_field)
+        wx.CallAfter(Publisher.sendMessage, "Set vector field", vector_field=vector_field)
+
+    def update_robot_status(self, status):
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "Robot to Neuronavigation: Update robot status",
+            robot_status=status,
+        )
+
+    def robot_connection_status(self, status):
+        wx.CallAfter(
+            Publisher.sendMessage, "Robot to Neuronavigation: Robot connection status", data=status
+        )
+
+    def robot_pose_collected(self, status):
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "Robot to Neuronavigation: Coordinates for the robot transformation matrix collected",
+        )
+
+    def set_objective_to_neuronavigation(self, objective):
+        wx.CallAfter(
+            Publisher.sendMessage, "Robot to Neuronavigation: Set objective", objective=objective
+        )
+
+    def close_robot_dialog(self, status):
+        wx.CallAfter(Publisher.sendMessage, "Robot to Neuronavigation: Close robot dialog")
+
+    def update_robot_transformation_matrix(self, matrix):
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "Robot to Neuronavigation: Update robot transformation matrix",
+            data=matrix,
+        )
