@@ -38,6 +38,8 @@ class MEPVisualizer:
         self.points = vtk.vtkPolyData()
         self.surface = self.read_surface_data(actor_out=True)
 
+        self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
+
         self.enabled = False
         self.dims_size = 100
 
