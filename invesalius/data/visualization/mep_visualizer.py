@@ -35,7 +35,6 @@ class MEPVisualizer:
 
         self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
 
-        self.enabled = False
         self.dims_size = 100
 
         self._config_params = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
@@ -43,7 +42,7 @@ class MEPVisualizer:
 
         self.renderer = renderer
         # self.mep_renderer = vtk.vtkRenderer() # Renderer for the MEP points, separated to not affect other actors
-        self.mep_renderer = renderer
+        # self.mep_renderer = renderer
         self.interactor = interactor
 
     def _load_user_parameters(self):
@@ -87,15 +86,15 @@ class MEPVisualizer:
 
             self._config_params["mep_enabled"] = True
             self._config_params["enabled_once"] = True
-            # self.render_visualization(self.surface)
-            self.mep_renderer.AddActor(self.colorBarActor)
-            self.mep_renderer.AddActor(self.surface)
+            self.render_visualization(self.surface)
+            self.renderer.AddActor(self.colorBarActor)
+            self.renderer.AddActor(self.surface)
             # TODO: hide the surface actor by triggering a hide event
         else:
             self._config_params["mep_enabled"] = False
             if hasattr(self, 'colorBarActor'):  # Ensure it exists before removal
-                self.mep_renderer.RemoveActor(self.colorBarActor)
-                self.mep_renderer.RemoveActor(self.surface)
+                self.renderer.RemoveActor(self.colorBarActor)
+                self.renderer.RemoveActor(self.surface)
                 # print("Current actors: ", self.mep_renderer.GetActors())
             # FIXME: The colorbar actor wont get removed for some reason..
 
@@ -126,27 +125,6 @@ class MEPVisualizer:
             mapper.SetInputData(output)
             actor.SetMapper(mapper)
             return actor
-        return output
-
-    def read_point_data(self, filename='D:/tms_mep_visualization/data/MEP_data.txt'):
-        """Reads point data (coordinates and MEP amplitudes) from a text file."""
-        reader = vtk.vtkDelimitedTextReader()
-        reader.SetFileName(filename)
-        reader.DetectNumericColumnsOn()
-        reader.SetFieldDelimiterCharacters('\t')
-        reader.SetHaveHeaders(True)
-
-        table_points = vtk.vtkTableToPolyData()
-        table_points.SetInputConnection(reader.GetOutputPort())
-        table_points.SetXColumnIndex(0)
-        table_points.SetYColumnIndex(1)
-        table_points.SetZColumnIndex(2)
-        table_points.Update()
-
-        output = table_points.GetOutput()
-        # Table points are now converted to polydata and MEP is the active scalar
-        output.GetPointData().SetActiveScalars('MEP')
-
         return output
 
     def interpolate_data(self):
@@ -214,6 +192,10 @@ class MEPVisualizer:
             markers (List[Marker]): The list of marker objects to add/update points for.
             clear_old (bool, default=False): If True, clears all existing points before updating.
         """
+        if self._config_params["mep_enabled"] is False:  # Skips processing if MEP mapping is disabled
+            return
+        print('Updating MEP points')
+        print(f'Current marker count: {len(markers)}')
 
         points = self.points.GetPoints()
 
@@ -273,7 +255,7 @@ class MEPVisualizer:
 
     def update_surface_map(self):
         ''' Update the surface map based on the markers array '''
-        if self.enabled is False:  # Skips processing if MEP mapping is disabled
+        if self._config_params["mep_enabled"] is False:  # Skips processing if MEP mapping is disabled
             return
         # interpolate the data
         interpolated_data = self.interpolate_data()
@@ -283,9 +265,9 @@ class MEPVisualizer:
         # point_actor = self.create_point_actor(self.points_data, self.data_range)
 
         # update the brain surface actor with the new mapping
-        self.mep_renderer.RemoveActor(self.surface)
+        self.renderer.RemoveActor(self.surface)
         self.surface = self.set_surface_actor(actor)
-        self.mep_renderer.AddActor(self.surface)
+        self.renderer.AddActor(self.surface)
 
     def create_colorbar_actor(self, lut=None) -> vtk.vtkActor:
         if lut is None:
@@ -349,7 +331,8 @@ class MEPVisualizer:
         # select the surface actor to overlay the mapping on
         # deep copy
         from copy import deepcopy
-        self.surface = deepcopy(surface_actor)
+        # self.surface = deepcopy(surface_actor) # Error cannot pickle
+        self.surface = surface_actor
         # re render or do the mapping?
         # TODO: not sure yet
         pass
@@ -391,13 +374,14 @@ class MEPVisualizer:
         #     self.mep_renderer.RemoveActor(actor)
         #     actor = actors.GetNextItem()
         pass
+    
     def render_visualization(self, surface):
 
         # Read data
         if surface is None:
             print('No surface data found')
             return
-        self.surface = surface
+        self.set_surface_actor(surface)
         self._config_params['bounds'] = list(np.array(surface.GetBounds()))
         # points = self.read_point_data()
         points = self.points
@@ -419,9 +403,9 @@ class MEPVisualizer:
         self.colorBarActor = self.create_colorbar_actor()
 
         # Renderer setup
-        self.mep_renderer.AddActor(self.colored_surface)
-        self.mep_renderer.AddActor(point_actor)
-        self.mep_renderer.AddActor(self.colorBarActor)
+        self.renderer.AddActor(self.colored_surface)
+        self.renderer.AddActor(point_actor)
+        self.renderer.AddActor(self.colorBarActor)
 
         # Picker for mouse interaction
         picker = vtk.vtkCellPicker()
@@ -433,11 +417,34 @@ class MEPVisualizer:
         # iren.Start()
 
 
-def add_points_to_file(filename, new_coords, points_range):
-    """Appends new points and MEP values to the text file."""
-    new_mep_values = np.random.uniform(
-        points_range[0], points_range[1], len(new_coords))
-    # Combine coordinates and MEPs
-    new_data = np.hstack((new_coords, new_mep_values[:, np.newaxis]))
-    with open(filename, 'a') as f:
-        np.savetxt(f, new_data, delimiter='\t', fmt='%f')  # Append to file
+# def add_points_to_file(filename, new_coords, points_range):
+#     """Appends new points and MEP values to the text file."""
+#     new_mep_values = np.random.uniform(
+#         points_range[0], points_range[1], len(new_coords))
+#     # Combine coordinates and MEPs
+#     new_data = np.hstack((new_coords, new_mep_values[:, np.newaxis]))
+#     with open(filename, 'a') as f:
+#         np.savetxt(f, new_data, delimiter='\t', fmt='%f')  # Append to file
+
+    # def read_point_data(self, filename='D:/tms_mep_visualization/data/MEP_data.txt'):
+    #     """Reads point data (coordinates and MEP amplitudes) from a text file."""
+    #     reader = vtk.vtkDelimitedTextReader()
+    #     reader.SetFileName(filename)
+    #     reader.DetectNumericColumnsOn()
+    #     reader.SetFieldDelimiterCharacters('\t')
+    #     reader.SetHaveHeaders(True)
+
+    #     table_points = vtk.vtkTableToPolyData()
+    #     table_points.SetInputConnection(reader.GetOutputPort())
+    #     table_points.SetXColumnIndex(0)
+    #     table_points.SetYColumnIndex(1)
+    #     table_points.SetZColumnIndex(2)
+    #     table_points.Update()
+
+    #     output = table_points.GetOutput()
+    #     # Table points are now converted to polydata and MEP is the active scalar
+    #     output.GetPointData().SetActiveScalars('MEP')
+
+    #     return output
+
+
