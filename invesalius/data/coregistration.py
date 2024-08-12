@@ -333,7 +333,6 @@ class CoordinateCorregistrate(threading.Thread):
         self,
         ref_mode_id,
         tracker,
-        n_coils,
         coreg_data,
         obj_datas,
         view_tracts,
@@ -348,9 +347,6 @@ class CoordinateCorregistrate(threading.Thread):
         threading.Thread.__init__(self, name="CoordCoregObject")
         self.ref_mode_id = ref_mode_id
         self.tracker = tracker
-        self.n_coils = (
-            n_coils  # LUKATODO: remove n_coils since this is just equal to len(obj_datas)
-        )
         self.coreg_data = coreg_data
         self.obj_datas = obj_datas
         self.coord_queue = queues[0]
@@ -413,12 +409,13 @@ class CoordinateCorregistrate(threading.Thread):
                 self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
                 
                 # LUKATODO: Refactor so that all coils are processed
-                # we need tracts, efield, etc. for all coils. what about stylus?
-               
-                # LUKATODO: coords is unordered so this randomly gives probe/somecoil...
-                #coord = coords.values()[1]
-                coord = coords["coil1"]
-                m_img = m_imgs["coil1"]
+                # we need tracts, efield, etc. for all coils. 
+                # what about icp for stylus?
+
+                # LUKATODO: this is an arbitrary coil... 
+                main_coil = next(iter(obj_datas)) 
+                coord = coords[main_coil]
+                m_img = m_imgs[main_coil]
 
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]

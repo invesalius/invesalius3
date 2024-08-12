@@ -538,6 +538,9 @@ def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, r
     coord4 = np.array(
         [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
     )
+    coord5 = np.array(
+        [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
+    )
 
     sleep(0.15)
 
@@ -557,7 +560,7 @@ def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, r
     # is not possible to registering without markers.
     marker_visibilities = [True, True, True]
 
-    return np.vstack([coord1, coord2, coord3, coord4]), marker_visibilities
+    return np.vstack([coord1, coord2, coord3, coord4, coord5]), marker_visibilities
 
 
 def coordinates_to_transformation_matrix(

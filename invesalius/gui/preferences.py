@@ -877,11 +877,8 @@ class ObjectTab(wx.Panel):
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
         self.navigation = navigation
-        self.coil_registrations = self.session.GetConfig("coil_registrations") or {}
+        self.coil_registrations = {} 
         self.__bind_events()
-        self.timestamp = const.TIMESTAMP
-
-        self.LoadConfig()
 
         # Sizer for displaying instructions
         top_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, ("Instructions"))
@@ -890,7 +887,7 @@ class ObjectTab(wx.Panel):
             self,
             -1,
             _(
-                f"Choose {navigation.n_coils} coils to use below. If there are not enough options, create coil configurations below. Here you can also edit configurations by using the same name. Unused coils can be deleted by right-clicking the button."
+                f"Choose {navigation.n_coils} coils to use. If there are not enough options, create coil configurations below. Here you can also edit configurations by using the same name. Unused coils can be deleted by right-clicking its button."
             ),
         )
         # instruction_lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
@@ -906,7 +903,9 @@ class ObjectTab(wx.Panel):
             ),
         )
         self.inner_sel_sizer = inner_sel_sizer = wx.FlexGridSizer(10, 1, 1)
-
+        
+        # Coils are selected by toggling coil-buttons
+        self.coil_btns = {}
         self.no_coils_lbl = None
         if len(self.coil_registrations) == 0:
             self.no_coils_lbl = wx.StaticText(
@@ -915,19 +914,20 @@ class ObjectTab(wx.Panel):
             inner_sel_sizer.Add(self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
         sel_sizer.Add(inner_sel_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
-        # Add a button for each coil in coil_registrations
-        self.coil_btns = {}
-        for coil_name in self.coil_registrations:
-            self.AddCoilButton(coil_name)
-
         # Sizer for TMS coil configuration
         tooltip = _("New TMS coil configuration")
         btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
         btn_new.Enable(1)
         btn_new.Bind(wx.EVT_BUTTON, self.OnCreateNewCoil)
-
         lbl_new = wx.StaticText(self, -1, _("Create or edit a coil configuration: "))
+
+        tooltip = _("Load TMS coil configuration from an OBR file")
+        btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
+        btn_load.SetToolTip(tooltip)
+        btn_load.Enable(1)
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadCoilFromOBR)
+        lbl_load = wx.StaticText(self, -1, _("Load configuration from file: "))
 
         coil_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("TMS coil registration"))
         inner_coil_sizer = wx.FlexGridSizer(2, 4, 5)
@@ -935,28 +935,21 @@ class ObjectTab(wx.Panel):
             [
                 (lbl_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
                 (btn_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (lbl_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (btn_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
             ]
         )
         coil_sizer.Add(inner_coil_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.AddMany(
-            [
-                (top_sizer, 0, wx.ALL | wx.EXPAND, 10),
-                (sel_sizer, 0, wx.ALL | wx.EXPAND, 10),
-                (coil_sizer, 0, wx.ALL | wx.EXPAND, 10),
-            ]
+        # Angle/Dist thresholds, timestamp interval
+        self.angle_threshold = (
+            self.session.GetConfig("angle_threshold", const.DEFAULT_ANGLE_THRESHOLD)
         )
-        self.SetSizerAndFit(main_sizer)
+        self.distance_threshold = (
+            self.session.GetConfig("distance_threshold", const.DEFAULT_DISTANCE_THRESHOLD)
+        )
 
-        # Press the buttons for coils that were selected in config file
-        state = self.session.GetConfig("navigation", {})
-        for coil_name in state.get("selected_coils", []):
-            self.coil_btns[coil_name][0].SetValue(True)
-        self.Layout()
 
-        # LUKATODO: move the following into ObjectCalibrationDialog (along with the relevant funcs)
-        """
         # Change angles threshold
         text_angles = wx.StaticText(self, -1, _("Angle threshold (degrees):"))
         spin_size_angles = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23))
@@ -981,19 +974,6 @@ class ObjectTab(wx.Panel):
             wx.EVT_SPINCTRL, partial(self.OnSelectDistanceThreshold, ctrl=spin_size_dist)
         )
 
-        # Change timestamp interval
-        text_timestamp = wx.StaticText(self, -1, _("Timestamp interval (s):"))
-        spin_timestamp_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.1)
-        spin_timestamp_dist.SetRange(0.5, 60.0)
-        spin_timestamp_dist.SetValue(self.timestamp)
-        spin_timestamp_dist.Bind(
-            wx.EVT_TEXT, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist)
-        )
-        spin_timestamp_dist.Bind(
-            wx.EVT_SPINCTRL, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist)
-        )
-        self.spin_timestamp_dist = spin_timestamp_dist
-
         # Create a horizontal sizer to threshold configs
         line_angle_threshold = wx.BoxSizer(wx.HORIZONTAL)
         line_angle_threshold.AddMany(
@@ -1011,24 +991,30 @@ class ObjectTab(wx.Panel):
             ]
         )
 
-        line_timestamp = wx.BoxSizer(wx.HORIZONTAL)
-        line_timestamp.AddMany(
-            [
-                (text_timestamp, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
-                (spin_timestamp_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5),
-            ]
-        )
-
         # Add line sizers into main sizer
         conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Settings"))
         conf_sizer.AddMany(
             [
                 (line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
                 (line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
-                (line_timestamp, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 20),
             ]
         )
-        """
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.AddMany(
+            [
+                (top_sizer, 0, wx.ALL | wx.EXPAND, 10),
+                (sel_sizer, 0, wx.ALL | wx.EXPAND, 10),
+                (coil_sizer, 0, wx.ALL | wx.EXPAND, 10),
+                (conf_sizer, 0, wx.ALL | wx.EXPAND, 10),
+            ]
+        )
+        self.SetSizerAndFit(main_sizer)
+        
+        self.LoadConfig()
+        self.Layout()       
+
+
 
     def AddCoilButton(self, coil_name):
         if self.no_coils_lbl is not None:
@@ -1063,13 +1049,30 @@ class ObjectTab(wx.Panel):
             btn.SetValue(False)
 
     def LoadConfig(self):
-        # LUKATODO: ???
-        self.angle_threshold = (
-            self.session.GetConfig("angle_threshold") or const.DEFAULT_ANGLE_THRESHOLD
+        state = self.session.GetConfig("navigation", {})
+        self.coil_registrations = self.session.GetConfig("coil_registrations", {})  
+        # Add a button for each coil 
+        for coil_name in self.coil_registrations:
+            self.AddCoilButton(coil_name)
+        
+        # Press the buttons for coils that were selected in config file
+        selected_coils = state.get("selected_coils", []) 
+        for coil_name in selected_coils:
+            self.coil_btns[coil_name][0].SetValue(True)
+
+        n_coils_selected = len(selected_coils)
+        n_coils = state.get("n_coils", 1)
+
+        # Update label
+        self.sel_sizer.GetStaticBox().SetLabel(
+            f"TMS coil selection ({n_coils_selected} out of {n_coils})"
         )
-        self.distance_threshold = (
-            self.session.GetConfig("distance_threshold") or const.DEFAULT_DISTANCE_THRESHOLD
-        )
+        
+        if n_coils_selected == n_coils:
+            # Allow only n_coils buttons to be pressed, so disable unpressed buttons
+            for btn, *junk in self.coil_btns.values():
+                btn.Enable(btn.GetValue())
+
 
     def OnSelectCoil(self, event, name):
         coil_registration = None
@@ -1112,7 +1115,7 @@ class ObjectTab(wx.Panel):
 
         # Select/Unselect coil
         Publisher.sendMessage("Select coil", coil_name=name, coil_registration=coil_registration)
-        # LUKATODO: Is there a delay here? Is "Select coil" performed first everywhere and then only this?
+        
         n_coils_selected = len(navigation.coil_registrations)
         n_coils = navigation.n_coils
         # Update label telling how many coils to select
@@ -1184,12 +1187,17 @@ class ObjectTab(wx.Panel):
         menu = wx.Menu()
         delete_coil = menu.Append(wx.ID_ANY, "Delete coil")
         set_obj_id = menu.Append(wx.ID_ANY, "Set coil index")
+        save_coil = menu.Append(wx.ID_ANY, "Save coil to OBR file")
+        
         self.Bind(wx.EVT_MENU, (lambda event, name=name: DeleteCoil(event, name)), delete_coil)
         self.Bind(wx.EVT_MENU, (lambda event, name=name: SetObjID(event, name)), set_obj_id)
+        self.Bind(wx.EVT_MENU, (lambda event, name=name: self.OnSaveCoilToOBR(event, name)), save_coil)
         self.PopupMenu(menu, event.GetPosition())
         menu.Destroy()
 
     def OnCreateNewCoil(self, event=None):
+        # Create a coil registration and save it by the given name 
+        # Also used to edit coil registrations by overwriting to the same name
         if self.tracker.IsTrackerInitialized():
             dialog = dlg.ObjectCalibrationDialog(
                 self.tracker, self.pedal_connector, self.neuronavigation_api
@@ -1204,7 +1212,7 @@ class ObjectTab(wx.Panel):
                     # self.neuronavigation_api.update_coil_mesh(polydata)
 
                     if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
-                        coil_registration = {  # LUKATODO: angle_threshold, dist_threshold, time_interval
+                        coil_registration = {
                             "fiducials": obj_fiducials.tolist(),
                             "orientations": obj_orients.tolist(),
                             "obj_id": obj_id,
@@ -1216,11 +1224,10 @@ class ObjectTab(wx.Panel):
                         self.AddCoilButton(coil_name)  # Add a button for this coil to GUI
                         self.Layout()
 
-                        # Update the coil registration in Navigation if coil_name was selected
+                        # Update the coil registration in Navigation if we just edited an existing coil_name
                         if self.coil_btns[coil_name][0].GetValue():
                             self.navigation.coil_registrations[coil_name] = coil_registration
 
-                        # Automatically enable and check 'Track object' checkbox and uncheck 'Disable Volume Camera' checkbox.
                         # LUKATODO: delete the below with dependencies
                         Publisher.sendMessage("Press target mode button", pressed=False)
 
@@ -1229,6 +1236,91 @@ class ObjectTab(wx.Panel):
             dialog.Destroy()
         else:
             dlg.ShowNavigationTrackerWarning(0, "choose")
+
+    def OnLoadCoilFromOBR(self, event=None):
+        filename = dlg.ShowLoadSaveDialog(
+            message=_("Load object registration"), wildcard=_("Registration files (*.obr)|*.obr")
+        )
+        # data_dir = os.environ.get('OneDrive') + r'\data\dti_navigation\baran\anat_reg_improve_20200609'
+        # coil_path = 'magstim_coil_dell_laptop.obr'
+        # filename = os.path.join(data_dir, coil_path)
+
+        try:
+            if filename:
+                with open(filename, "r") as text_file:
+                    data = [s.split("\t") for s in text_file.readlines()]
+
+                registration_coordinates = np.array(data[1:]).astype(np.float32)
+                obj_fiducials = registration_coordinates[:, :3]
+                obj_orients = registration_coordinates[:, 3:]
+
+                coil_name = data[0][0][2:]
+                coil_path = data[0][1].encode(const.FS_ENCODE)
+                tracker_id = int(data[0][3])
+                obj_id = int(data[0][-1])
+
+                if not os.path.exists(coil_path):
+                    coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+                polydata = vtk_utils.CreateObjectPolyData(coil_path)
+                if not polydata:
+                    coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+
+                # LUKATODO: what is neuronavigation_api.update_coil_mesh ?
+                #if polydata:
+                #    self.neuronavigation_api.update_coil_mesh(polydata)
+
+                if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
+                    coil_registration = {
+                        "fiducials": obj_fiducials.tolist(),
+                        "orientations": obj_orients.tolist(),
+                        "obj_id": obj_id,
+                        "tracker_id": tracker_id,
+                        "path": coil_path.decode(const.FS_ENCODE),
+                    }
+                    self.coil_registrations[coil_name] = coil_registration
+                    self.session.SetConfig("coil_registrations", self.coil_registrations)
+                    self.AddCoilButton(coil_name)  # Add a button for this coil to GUI
+                    self.Layout()
+
+                Publisher.sendMessage(
+                    "Update status text in GUI", label=_("Object file successfully loaded")
+                )
+
+                msg = _("Object file successfully loaded")
+                wx.MessageBox(msg, _("InVesalius 3"))
+        except:
+            wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
+            Publisher.sendMessage("Update status text in GUI", label="")
+
+    def OnSaveCoilToOBR(self, evt, coil_name):
+        coil_registration = self.coil_registrations[coil_name]
+        
+        filename = dlg.ShowLoadSaveDialog(
+            message=_("Save object registration as..."),
+            wildcard=_("Registration files (*.obr)|*.obr"),
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+            default_filename="object_registration.obr",
+            save_ext="obr",
+        )
+        if filename:
+            hdr = (
+                coil_name 
+                + "\t"
+                + utils.decode(coil_registration["path"], const.FS_ENCODE)
+                + "\t"
+                + "Tracker"
+                + "\t"
+                + str("%d" % coil_registration["tracker_id"])
+                + "\t"
+                + "Index"
+                + "\t"
+                + str("%d" % coil_registration["obj_id"])
+            )
+            data = np.hstack([coil_registration["fiducials"], coil_registration["orientations"]])
+            np.savetxt(filename, data, fmt="%.4f", delimiter="\t", newline="\n", header=hdr)
+            wx.MessageBox(_("Object file successfully saved"), _("Save"))
+
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         self.angle_threshold = ctrl.GetValue()
@@ -1410,9 +1502,9 @@ class TrackerTab(wx.Panel):
 
     def LoadConfig(self):
         session = ses.Session()
-        state = session.GetConfig("robot")
+        self.n_coils = session.GetConfig("navigation", {}).get("n_coils", 1)
 
-        self.n_coils = max(1, len((session.GetConfig("navigation") or {}).get("selected_coils", [])))
+        state = session.GetConfig("robot")
 
         if state is None:
             return False
@@ -1425,7 +1517,6 @@ class TrackerTab(wx.Panel):
     def OnChooseNoOfCoils(self, evt, ctrl):
         if hasattr(evt, "GetSelection"):
             choice = evt.GetSelection()
-            print(f"choice: {choice}")
             self.n_coils = choice + 1
         else:
             self.n_coils = 1

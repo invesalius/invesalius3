@@ -62,7 +62,7 @@ class CoilVisualizer:
         Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.ShowCoil, "Show coil in viewer volume")
-        Publisher.subscribe(lambda n_coils: self.RemoveCoil(), "Reset coil selection")
+        Publisher.subscribe(self.ResetCoilVisualizer, "Reset coil selection")
         Publisher.subscribe(self.SelectCoil, "Select coil")
         Publisher.subscribe(self.UpdateCoilPoses, "Update coil poses")
         Publisher.subscribe(self.UpdateVectorField, "Update vector field")
@@ -71,9 +71,9 @@ class CoilVisualizer:
         session = ses.Session()
 
         # Get the list of coil names of coils selected for navigation
-        selected_coils = (session.GetConfig("navigation") or {}).get("selected_coils", [])
+        selected_coils = (session.GetConfig("navigation", {})).get("selected_coils", [])
         
-        saved_registrations = session.GetConfig("coil_registrations") or {}
+        saved_registrations = session.GetConfig("coil_registrations", {})
         for coil_name in selected_coils:
             if (coil := saved_registrations.get(coil_name, None)) is not None:
                 self.AddCoil(coil_name, coil["path"])
@@ -115,7 +115,7 @@ class CoilVisualizer:
         self.is_navigating = nav_status
 
     # Called when 'show coil' button is pressed in the user interface or in code.
-    # LUKATODO: Right-click 'show coil' button to open combobox to choose specific coil to show/hide
+    # LUKATODO: Right-click 'show coil' button to open combobox to choose specific coil to show/hide?
     def ShowCoil(self, state, coil_name=None):
         if coil_name is None:  # Show/hide all coils
             for coil in self.coils.values():
@@ -229,7 +229,7 @@ class CoilVisualizer:
         coil_actor.GetProperty().SetSpecular(30)
         coil_actor.GetProperty().SetSpecularPower(80)
         coil_actor.GetProperty().SetOpacity(0.4)
-        coil_actor.SetVisibility(0)
+        coil_actor.SetVisibility(1)
 
         # Create an actor for the coil center.
         coil_center_actor = self.actor_factory.CreateTorus(
@@ -262,7 +262,11 @@ class CoilVisualizer:
             # LUKATODO: what about target_actors and other things?
             self.coils = {}
 
+        self.interactor.Render()
         # self.vector_field_assembly.SetVisibility(0)
+
+    def ResetCoilVisualizer(self, n_coils):
+        self.RemoveCoil() # Remove all coils
 
     def UpdateCoilPoses(self, m_imgs, coords):
         """

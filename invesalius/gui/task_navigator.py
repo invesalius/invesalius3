@@ -179,7 +179,6 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-        self.track_obj = False
         gbs.Add(fold_panel, (0, 0), flag=wx.EXPAND)
         gbs.Layout()
         sizer.Fit(self)
@@ -1109,7 +1108,7 @@ class StimulatorPage(wx.Panel):
         border = wx.FlexGridSizer(1, 2, 1)
         self.coil_registrations = []
 
-        lbl = wx.StaticText(self, -1, _("Coil selection done, ready for navigation!"))
+        lbl = wx.StaticText(self, -1, _(f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!"))
         # lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.lbl = lbl
 
@@ -1159,7 +1158,7 @@ class StimulatorPage(wx.Panel):
 
     def CoilSelectionDone(self, done):
         if done:
-            self.lbl.SetLabel("Coil selection done, ready for navigation!")
+            self.lbl.SetLabel(f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!")
         else:
             self.lbl.SetLabel("Please select which coil(s) to track")
 
@@ -1240,7 +1239,6 @@ class ControlPanel(wx.Panel):
 
         self.nav_status = False
         self.target_mode = False
-        self.track_obj = False
 
         self.navigation_status = False
 
@@ -1565,25 +1563,11 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.EnableACT, "Enable ACT")
         Publisher.subscribe(self.UpdateACTData, "Update ACT data")
 
-    # Config
-    def SaveConfig(self):
-        track_object = self.track_object_button
-        state = {
-            "track_object": {
-                "checked": track_object.GetValue(),
-            }
-        }
-
-        session = ses.Session()
-        session.SetConfig("object_registration_panel", state)
-
     def LoadConfig(self):
         session = ses.Session()
-        state = session.GetConfig("object_registration_panel")
-
-        if state is not None:
-            track_object = state["track_object"]
-            self.PressTrackObjectButton(track_object["checked"])
+        state = session.GetConfig("navigation", {})
+        track_coil = state.get("track_coil", False)
+        self.PressTrackObjectButton(track_coil)
 
     # Toggle Button Helpers
     def UpdateToggleButton(self, ctrl, state=None):
@@ -1775,12 +1759,10 @@ class ControlPanel(wx.Panel):
     def EnableTrackObjectButton(self, enabled):
         self.EnableToggleButton(self.track_object_button, enabled)
         self.UpdateToggleButton(self.track_object_button)
-        self.SaveConfig()
 
     def PressTrackObjectButton(self, pressed):
         self.UpdateToggleButton(self.track_object_button, pressed)
         self.OnTrackObjectButton()
-        self.SaveConfig()
 
     def OnTrackObjectButton(self, evt=None, ctrl=None):
         if ctrl is not None:
@@ -1788,13 +1770,12 @@ class ControlPanel(wx.Panel):
         pressed = self.track_object_button.GetValue()
         Publisher.sendMessage("Track object", enabled=pressed)
         if not pressed:
-            Publisher.sendMessage("Press target mode button", pressed=pressed)
+            Publisher.sendMessage("Press target mode button", pressed=False)
 
         # Automatically press or unpress 'Show coil' and 'Show probe' button.
         Publisher.sendMessage("Press show-coil button", pressed=pressed)
         Publisher.sendMessage("Press show-probe button", pressed=(not pressed))
 
-        self.SaveConfig()
 
     # 'Lock to Target' button
     def OnLockToTargetButton(self, evt, ctrl):
@@ -1856,7 +1837,6 @@ class ControlPanel(wx.Panel):
 
     # 'Target mode' button
     def TrackObject(self, enabled):
-        self.track_obj = enabled
         self.UpdateTargetButton()
 
     def ShowTargetButton(self):
@@ -1867,7 +1847,7 @@ class ControlPanel(wx.Panel):
 
     def UpdateTargetButton(self):
         # Enable or disable 'Target mode' button based on if target is selected and if 'Track object' button is pressed.
-        enabled = self.target_selected and self.track_obj
+        enabled = self.target_selected and self.navigation.track_coil
         self.EnableToggleButton(self.target_mode_button, enabled)
 
     def PressTargetModeButton(self, pressed):
@@ -2054,8 +2034,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         sizer_delete = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         sizer_delete.AddMany([(btn_delete_single, 1, wx.RIGHT), (btn_delete_all, 0, wx.LEFT)])
 
-        # Combobox to choose the main coil (ie. the coil which to track with pointer and to use for marker creation)
-        #LUKATODO: how to ensure the choices are updated when coil selection changes
+        # Combobox for choosing the main coil (ie. the coil which to track with pointer and to use for marker creation)
         self.select_main_coil = select_main_coil = wx.ComboBox(
             self,
             -1,
@@ -2070,10 +2049,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             wx.EVT_COMBOBOX, partial(self.OnChooseMainCoil, ctrl=select_main_coil)
         )
 
-        # If main coil is defined, set this in the combobox        
-        if (main_coil := self.navigation.main_coil) is not None:
+        # If main coil is defined, select this in the combobox        
+        nav_state = self.session.GetConfig("navigation", {})
+        if (main_coil := nav_state.get("main_coil", None)) is not None:
             main_coil_index = select_main_coil.FindString(main_coil)
             select_main_coil.SetSelection(main_coil_index)
+
         sizer_main_coil = wx.FlexGridSizer(rows=1, cols=1, hgap=5, vgap=5)
         sizer_main_coil.Add(select_main_coil)
 
@@ -2331,7 +2312,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def UpdateCurrentCoord(self, position):
         self.current_position = list(position[:3])
         self.current_orientation = list(position[3:])
-        if not self.navigation.track_obj:
+        if not self.navigation.track_coil:
             self.current_orientation = None, None, None
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -3057,7 +3038,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if marker_type is None:
             marker_type = (
                 MarkerType.COIL_TARGET
-                if self.nav_status and self.navigation.track_obj
+                if self.nav_status and self.navigation.track_coil
                 else MarkerType.LANDMARK
             )
 

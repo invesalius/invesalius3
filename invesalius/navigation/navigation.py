@@ -145,21 +145,21 @@ class UpdateNavigationScene(threading.Thread):
                 got_coords = True
 
                 probe_visible = marker_visibilities[0]
-
-                #LUKATODO: this goes all the way to the wrappers, but should have coils_visible dict...
                 coil_visible = marker_visibilities[2] # LUKATODO: will static mode work with this?
+                #LUKATODO: this goes all the way to the wrappers, but should have coils_visible dict...
 
-                # automatically track either coil or stylus if only one of them is visible, otherise use navigation.track_obj
+                # automatically track either coil or stylus if only one of them is visible, otherise use navigation.track_coil
                 track_coil = (
                     (coil_visible or not probe_visible)
                     if (coil_visible ^ probe_visible)
-                    else self.navigation.track_obj
+                    else self.navigation.track_coil
                 )
                 main_coil = self.navigation.main_coil
                 track_this = main_coil if track_coil else "probe"
                 # choose which object to track in slices and viewer_volume pointer
-                coord = coords[track_this]  # main-coil if track_coil else stylus
+                coord = coords[track_this]
                 m_img = m_imgs[track_this]
+                
                 #LUKATODO: do Debug approach here
 
                 # Remove probe, so that coords/m_imgs only contain coils
@@ -270,8 +270,8 @@ class Navigation(metaclass=Singleton):
         self.target = None
         self.n_coils = 1
         self.coil_registrations = {}
+        self.track_coil = False
         self.main_coil = None  # Which coil to track with pointer
-        self.track_obj = False
         self.m_change = None
         self.r_stylus = None
 
@@ -341,13 +341,15 @@ class Navigation(metaclass=Singleton):
         """
         session = ses.Session()
         if key is None:  # Save the whole state
-            state = {"selected_coils": list(self.coil_registrations)}
+            state = {"selected_coils": list(self.coil_registrations), "n_coils": self.n_coils, "track_coil": self.track_coil}
+            if self.main_coil is not None:
+                state["main_coil"] = self.main_coil
             if self.r_stylus is not None:
                 state["r_stylus"] = self.r_stylus.tolist()
             session.SetConfig("navigation", state)
 
-        elif value is not None:
-            state = session.GetConfig("navigation") or {}
+        elif value is not None: # Save a specific state attribute
+            state = session.GetConfig("navigation", {})
             state[key] = value
             session.SetConfig("navigation", state)
 
@@ -359,7 +361,11 @@ class Navigation(metaclass=Singleton):
         saved_coil_registrations = session.GetConfig("coil_registrations")
 
         if state is not None:
-            # Try to load selected_coils, the list of names of coils to use for navigation
+            self.main_coil = state.get("main_coil", None)
+            self.n_coils = state.get("n_coils", 1)
+            self.track_coil = state.get("track_coil", False)
+
+            # Try to load selected_coils (the list of names of coils to use for navigation)
             if ("selected_coils" in state) and (saved_coil_registrations is not None):
                 selected_coils = state["selected_coils"]
                 self.coil_registrations = {
@@ -369,8 +375,7 @@ class Navigation(metaclass=Singleton):
                 }
                 if self.coil_registrations:
                     self.main_coil = state.get("main_coil", None) or next(iter(self.coil_registrations))
-                    self.n_coils = len(self.coil_registrations)
-
+            
             # Try to load stylus orientation data
             if "r_stylus" in state:
                 self.r_stylus = np.array(state["r_stylus"])
@@ -387,8 +392,9 @@ class Navigation(metaclass=Singleton):
             self.coil_registrations.pop(coil_name, None)
             if self.main_coil == coil_name:
                 self.main_coil = None
-
-        self.SaveConfig("selected_coils", list(self.coil_registrations.keys()))
+                self.SaveConfig()
+        
+        self.SaveConfig()
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -403,18 +409,20 @@ class Navigation(metaclass=Singleton):
         self.baud_rate = baud_rate
 
     def TrackObject(self, enabled=False):
-        self.track_obj = enabled
+        self.track_coil = enabled
+        self.SaveConfig()
 
     def SetLockToTarget(self, value):
         self.lock_to_target = value
 
     def SetNoOfCoils(self, n_coils):
         self.n_coils = n_coils
+        self.SaveConfig("n_coils", n_coils)
 
         # Reset coil selection
         self.coil_registrations = {}
         self.main_coil = None
-        self.SaveConfig("selected_coils", [])
+        self.SaveConfig()
 
     def SetMainCoil(self, main_coil):
         self.main_coil = main_coil
@@ -565,7 +573,6 @@ class Navigation(metaclass=Singleton):
                 dcr.CoordinateCorregistrate(
                     self.ref_mode_id,
                     tracker,
-                    self.n_coils,
                     coreg_data,
                     obj_datas,
                     self.view_tracts,
