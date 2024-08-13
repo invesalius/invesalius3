@@ -39,7 +39,7 @@ class MarkersControl(metaclass=Singleton):
 
         session = ses.Session()
         session.SetState("markers", state)
-        self.BroadcastMarkerList()
+        # self.BroadcastMarkerList()
 
     def LoadState(self):
         session = ses.Session()
@@ -77,6 +77,9 @@ class MarkersControl(metaclass=Singleton):
                 orientation=marker.orientation,
             )
 
+        if marker.mep_value:
+            Publisher.sendMessage("Update marker mep", marker=marker)
+
         if render:  # this behavior could be misleading
             self.SaveState()
 
@@ -104,6 +107,9 @@ class MarkersControl(metaclass=Singleton):
                 m.marker_id = idx
 
             self.SaveState()
+
+        if marker.mep_value:
+            Publisher.sendMessage("Redraw MEP mapping")
 
     def DeleteMultiple(self, marker_ids):
         markers = []
@@ -292,5 +298,5 @@ class MarkersControl(metaclass=Singleton):
 
         self.AddMarker(new_marker)
 
-    def BroadcastMarkerList(self):
-        Publisher.sendMessage("Update marker list", markers=self.list)
+    # def BroadcastMarkerList(self):
+    #    Publisher.sendMessage("Update marker list", markers=self.list)

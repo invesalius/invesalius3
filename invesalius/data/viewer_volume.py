@@ -112,7 +112,6 @@ from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.ruler_volume import GenericLeftRulerVolume
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
-from invesalius.data.visualization.mep_visualizer import MEPVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.i18n import tr as _
@@ -327,11 +326,6 @@ class Viewer(wx.Panel):
             vector_field_visualizer=self.vector_field_visualizer,
         )
 
-        self.mep_visualizer = MEPVisualizer(
-            renderer=self.ren,
-            interactor=self.interactor,
-        )
-
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
         self.colors_init = vtkUnsignedCharArray()
@@ -378,8 +372,7 @@ class Viewer(wx.Panel):
     def ShowRuler(self):
         if self.ruler and (self.ruler not in self.canvas.draw_list):
             self.canvas.draw_list.append(self.ruler)
-            self.prev_view_port_height = round(
-                self.ren.GetActiveCamera().GetParallelScale(), 4)
+            self.prev_view_port_height = round(self.ren.GetActiveCamera().GetParallelScale(), 4)
         self.UpdateCanvas()
 
     def HideRuler(self):
@@ -400,8 +393,7 @@ class Viewer(wx.Panel):
 
     def OnInteractorEvent(self, sender, event):
         if self.canvas and self.ruler and self.ruler in self.canvas.draw_list:
-            view_port_height = round(
-                self.ren.GetActiveCamera().GetParallelScale(), 4)
+            view_port_height = round(self.ren.GetActiveCamera().GetParallelScale(), 4)
             if view_port_height != self.prev_view_port_height:
                 self.prev_view_port_height = view_port_height
                 self.UpdateCanvas()
@@ -695,8 +687,7 @@ class Viewer(wx.Panel):
 
         self.interactor.GetRenderWindow().AddRenderer(self.ren_obj)
         self.ren_obj.SetViewport(0.01, 0.40, 0.15, 0.57)
-        filename = os.path.join(
-            inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
+        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
 
         reader = vtkSTLReader()
         reader.SetFileName(filename)
@@ -927,36 +918,30 @@ class Viewer(wx.Panel):
         obj_pitch.RotateY(90)
         obj_pitch.RotateZ(180)
 
-        arrow_roll_z1 = self.actor_factory.CreateArrow(
-            [-50, -35, 12], [-50, -35, 50])
+        arrow_roll_z1 = self.actor_factory.CreateArrow([-50, -35, 12], [-50, -35, 50])
         arrow_roll_z1.GetProperty().SetColor(1, 1, 0)
         arrow_roll_z1.RotateX(-60)
         arrow_roll_z1.RotateZ(180)
-        arrow_roll_z2 = self.actor_factory.CreateArrow(
-            [50, -35, 0], [50, -35, -50])
+        arrow_roll_z2 = self.actor_factory.CreateArrow([50, -35, 0], [50, -35, -50])
         arrow_roll_z2.GetProperty().SetColor(1, 1, 0)
         arrow_roll_z2.RotateX(-60)
         arrow_roll_z2.RotateZ(180)
 
-        arrow_yaw_y1 = self.actor_factory.CreateArrow(
-            [-50, -35, 0], [-50, 5, 0])
+        arrow_yaw_y1 = self.actor_factory.CreateArrow([-50, -35, 0], [-50, 5, 0])
         arrow_yaw_y1.GetProperty().SetColor(0, 1, 0)
         arrow_yaw_y1.SetPosition(0, -150, 0)
         arrow_yaw_y1.RotateZ(180)
-        arrow_yaw_y2 = self.actor_factory.CreateArrow(
-            [50, -35, 0], [50, -75, 0])
+        arrow_yaw_y2 = self.actor_factory.CreateArrow([50, -35, 0], [50, -75, 0])
         arrow_yaw_y2.GetProperty().SetColor(0, 1, 0)
         arrow_yaw_y2.SetPosition(0, -150, 0)
         arrow_yaw_y2.RotateZ(180)
 
-        arrow_pitch_x1 = self.actor_factory.CreateArrow(
-            [0, 65, 38], [0, 65, 68])
+        arrow_pitch_x1 = self.actor_factory.CreateArrow([0, 65, 38], [0, 65, 68])
         arrow_pitch_x1.GetProperty().SetColor(1, 0, 0)
         arrow_pitch_x1.SetPosition(0, -300, 0)
         arrow_pitch_x1.RotateY(90)
         arrow_pitch_x1.RotateZ(180)
-        arrow_pitch_x2 = self.actor_factory.CreateArrow(
-            [0, -55, 5], [0, -55, -30])
+        arrow_pitch_x2 = self.actor_factory.CreateArrow([0, -55, 5], [0, -55, -30])
         arrow_pitch_x2.GetProperty().SetColor(1, 0, 0)
         arrow_pitch_x2.SetPosition(0, -300, 0)
         arrow_pitch_x2.RotateY(90)
@@ -983,8 +968,7 @@ class Viewer(wx.Panel):
         self.stored_camera_settings = self.GetCameraSettings()
 
         # Set the transformation matrix for the target.
-        self.m_target = self.CreateVTKObjectMatrix(
-            self.target_coord[:3], self.target_coord[3:])
+        self.m_target = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
 
         if self.actor_peel:
             self.object_orientation_torus_actor.SetVisibility(0)
@@ -1071,8 +1055,7 @@ class Viewer(wx.Panel):
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
 
-            formatted_distance = "Distance: {: >5.1f} mm".format(
-                distance_to_target)
+            formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
 
             if self.distance_text is not None:
                 self.distance_text.SetValue(formatted_distance)
@@ -1429,8 +1412,7 @@ class Viewer(wx.Panel):
         vectors = vtkDoubleArray()
         vectors.SetNumberOfComponents(3)
         points.InsertNextPoint(position)
-        vectors.InsertNextTuple3(
-            orientation[0], orientation[1], orientation[2])
+        vectors.InsertNextTuple3(orientation[0], orientation[1], orientation[2])
         dataset = vtkPolyData()
         dataset.SetPoints(points)
         dataset.GetPointData().SetVectors(vectors)
@@ -1638,8 +1620,7 @@ class Viewer(wx.Panel):
                         self.efield_coords[5],
                     ],
                 )
-                efield_coords_position = [
-                    list(position_world), list(orientation_world)]
+                efield_coords_position = [list(position_world), list(orientation_world)]
             enorms_list = list(self.e_field_norms)
             if plot_efield_vectors:
                 e_field_vectors = list(self.max_efield_array)
@@ -1701,8 +1682,7 @@ class Viewer(wx.Panel):
         y_diff = round(target1_origin[1] - target2[1])
         csv_filename = self.targeting_file
         target_numbers = [-x_diff, y_diff, 0]
-        self.matching_row = self.find_and_extract_data(
-            csv_filename, target_numbers)
+        self.matching_row = self.find_and_extract_data(csv_filename, target_numbers)
         dIs = self.mTMS_multiplyFactor(1000)
         Publisher.sendMessage("Get dI for mtms", dIs=dIs)
         self.mTMSCoordTextActor.SetValue("mTMS coords: " + str(target_numbers))
@@ -1712,8 +1692,7 @@ class Viewer(wx.Panel):
         if self.mTMSCoordTextActor is None:
             self.CreateEfieldmTMSCoorlegend()
         self.mtms_coord = None
-        self.matching_row = self.find_and_extract_data(
-            self.targeting_file, mtms_coord)
+        self.matching_row = self.find_and_extract_data(self.targeting_file, mtms_coord)
         dIs = self.mTMS_multiplyFactor(1000)
         Publisher.sendMessage("Get dI for mtms", dIs=dIs)
         self.mTMSCoordTextActor.SetValue("mTMS coords: " + str(mtms_coord))
@@ -1799,8 +1778,7 @@ class Viewer(wx.Panel):
         if self.edge_actor is not None:
             self.ren.RemoveViewProp(self.edge_actor)
         named_colors = vtkNamedColors()
-        second_lut = self.CreateLUTTableForEfield(
-            self.efield_min, self.efield_max)
+        second_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
         second_lut.SetNumberOfTableValues(5)
 
         bcf = vtkBandedPolyDataContourFilter()
@@ -1987,8 +1965,7 @@ class Viewer(wx.Panel):
         position_flip = position
         position_flip[1] = -position_flip[1]
         self.target_at_cortex = position_flip
-        point_scalp = self.FindClosestPointToMesh(
-            position_flip, self.scalp_mesh)
+        point_scalp = self.FindClosestPointToMesh(position_flip, self.scalp_mesh)
         self.CreateEfieldAtTargetLegend()
         Publisher.sendMessage(
             "Create Marker from tangential", point=point_scalp, orientation=orientation
@@ -2052,8 +2029,7 @@ class Viewer(wx.Panel):
         self.efield_mesh_normals_viewer.SetFeatureAngle(80)
         self.efield_mesh_normals_viewer.AutoOrientNormalsOn()
         self.efield_mesh_normals_viewer.Update()
-        self.efield_mapper.SetInputConnection(
-            self.efield_mesh_normals_viewer.GetOutputPort())
+        self.efield_mapper.SetInputConnection(self.efield_mesh_normals_viewer.GetOutputPort())
         self.efield_mapper.ScalarVisibilityOn()
         self.efield_actor.SetMapper(self.efield_mapper)
         self.efield_actor.GetProperty().SetBackfaceCulling(1)
@@ -2107,10 +2083,8 @@ class Viewer(wx.Panel):
                 if distance < closestDist:
                     closestDist = distance
                     closestPoint = point
-                    pointnormal = np.array(
-                        self.e_field_mesh_normals.GetTuple(cellId))
-                    angle = np.rad2deg(
-                        np.arccos(np.dot(pointnormal, coil_norm)))
+                    pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
+                    angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     self.FindPointsAroundRadiusEfield(cellId)
                     self.radius_list.Sort()
         else:
@@ -2175,12 +2149,9 @@ class Viewer(wx.Panel):
             pass
 
     def UpdateEfieldPointLocationOffline(self, m_img, coord, list_index):
-        [coil_dir, norm, coil_norm,
-            p1] = self.ObjectArrowLocation(m_img, coord)
-        intersectingCellIds = self.GetCellIntersection(
-            p1, norm, self.locator_efield_cell)
-        self.ShowEfieldintheintersection(
-            intersectingCellIds, p1, coil_norm, coil_dir)
+        [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
+        intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator_efield_cell)
+        self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
         id_list = []
         for h in range(self.radius_list.GetNumberOfIds()):
             id_list.append(self.radius_list.GetId(h))
@@ -2414,10 +2385,8 @@ class Viewer(wx.Panel):
                     self.obj_projection_arrow_actor.SetPosition(closestPoint)
                     self.obj_projection_arrow_actor.SetOrientation(coil_dir)
 
-                    self.object_orientation_torus_actor.SetPosition(
-                        closestPoint)
-                    self.object_orientation_torus_actor.SetOrientation(
-                        coil_dir)
+                    self.object_orientation_torus_actor.SetPosition(closestPoint)
+                    self.object_orientation_torus_actor.SetOrientation(coil_dir)
 
                     # change color of arrow and disk according to angle
                     if angle < self.angle_arrow_projection_threshold:
@@ -2474,10 +2443,8 @@ class Viewer(wx.Panel):
         if flag:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
-            intersectingCellIds = self.GetCellIntersection(
-                p1, norm, self.locator)
-            self.ShowCoilProjection(
-                intersectingCellIds, p1, coil_norm, coil_dir)
+            intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
+            self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
 
     def TrackObject(self, enabled):
         if enabled:
@@ -2520,7 +2487,6 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.actor_tracts)
             self.actor_tracts = None
             self.Refresh()
-
 
     def OnUpdateRobotStatus(self, robot_status):
         if self.dummy_robot_actor:

@@ -1,4 +1,3 @@
-
 import random
 from copy import deepcopy
 
@@ -15,6 +14,7 @@ from vtkmodules.vtkRenderingCore import (
 import invesalius.constants as const
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
+from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 
 
@@ -22,32 +22,36 @@ class MEPVisualizer:
     # TODO: find a way to not duplicate the brain actor
     # TODO: enable/disable colormapping based on toggle button
     # TODO: update config from prefrences
-    def __init__(self, renderer: vtkRenderer, interactor):
+    def __init__(self):
         self.__bind_events()
         self.points = vtk.vtkPolyData()
         self.surface = None
+        self.colored_surface_actor = None
+        self.point_actore = None
+
         self.colorBarActor = None
         self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
 
         self.surface_index = None
         self.marker_storage = None
 
+        self.is_navigating = False
+
         self.dims_size = 10
 
         self._config_params = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         self._LoadUserParameters()
 
-        self.renderer = renderer
-        self.interactor = interactor
-
     # --- Event Handling ---
 
     def __bind_events(self):
-        Publisher.subscribe(self.DisplayMotorMap, 'Show motor map')
-        Publisher.subscribe(self._ResetConfigParams, 'Reset MEP Config')
-        Publisher.subscribe(self.UpdateConfig, 'Save Preferences')
-        Publisher.subscribe(self.UpdateMEPPoints, "Update marker list")
+        Publisher.subscribe(self.DisplayMotorMap, "Show motor map")
+        Publisher.subscribe(self._ResetConfigParams, "Reset MEP Config")
+        Publisher.subscribe(self.UpdateConfig, "Save Preferences")
+        # Publisher.subscribe(self.UpdateMEPPoints, "Update marker list")
         # Publisher.subscribe(self.SetBrainSurface, "Set MEP brain surface")
+        Publisher.subscribe(self.UpdateMEPPoints, "Redraw MEP mapping")
+        Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.SetBrainSurface, "Load visible surface actor")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
 
@@ -55,22 +59,20 @@ class MEPVisualizer:
 
     def _LoadUserParameters(self):
         session = ses.Session()
-        config = session.GetConfig('mep_configuration')
+        config = session.GetConfig("mep_configuration")
         if config:
             self._config_params.update(config)
         else:
-            session.SetConfig('mep_configuration', self._config_params)
+            session.SetConfig("mep_configuration", self._config_params)
 
     def _ResetConfigParams(self):
-        ses.Session().SetConfig('mep_configuration',
-                                deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS))
+        ses.Session().SetConfig("mep_configuration", deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS))
 
     def _SaveUserParameters(self):
-        ses.Session().SetConfig('mep_configuration', self._config_params)
+        ses.Session().SetConfig("mep_configuration", self._config_params)
 
     def UpdateConfig(self):
-        self._config_params = deepcopy(
-            ses.Session().GetConfig('mep_configuration'))
+        self._config_params = deepcopy(ses.Session().GetConfig("mep_configuration"))
         # self.UpdateMEPPoints([])
         self.UpdateVisualization()
 
@@ -80,22 +82,19 @@ class MEPVisualizer:
         if show:
             self._config_params["mep_enabled"] = True
             self._config_params["enabled_once"] = True
+            if self.colorBarActor:
+                Publisher.sendMessage("Remove surface actor from viewer", actor=self.colorBarActor)
+                Publisher.sendMessage("Remove surface actor from viewer", actor=self.surface)
             self.colorBarActor = self.CreateColorbarActor()
             self.UpdateVisualization()
             if self.surface_index is not None:  # Hides the original surface
-                Publisher.sendMessage(
-                    "Show surface", index=self.surface_index, visibility=False)
+                Publisher.sendMessage("Show surface", index=self.surface_index, visibility=False)
         else:
             self._config_params["mep_enabled"] = False
             self._CleanupVisualization()
-            if self.colorBarActor:
-                self.renderer.RemoveActor(self.colorBarActor)
-                self.renderer.RemoveActor(self.surface)
             if self.surface_index is not None:  # Shows the original surface
-                Publisher.sendMessage(
-                    "Show surface", index=self.surface_index, visibility=True)
+                Publisher.sendMessage("Show surface", index=self.surface_index, visibility=True)
         self._SaveUserParameters()
-        self.interactor.Render()
 
     # --- Data Interpolation and Visualization ---
 
@@ -103,15 +102,15 @@ class MEPVisualizer:
         surface = self.surface
         points = self.points
         if not surface:
-            print('MEP Visualizer: No surface data found')
+            print("MEP Visualizer: No surface data found")
             # TODO: Show modal dialog to select a surface from project
             return
         if not points:
-            raise ValueError('MEP Visualizer: No point data found')
+            raise ValueError("MEP Visualizer: No point data found")
 
-        bounds = np.array(self._config_params['bounds'])
-        gaussian_sharpness = self._config_params['gaussian_sharpness']
-        gaussian_radius = self._config_params['gaussian_radius']
+        bounds = np.array(self._config_params["bounds"])
+        gaussian_sharpness = self._config_params["gaussian_sharpness"]
+        gaussian_radius = self._config_params["gaussian_radius"]
         dims_size = self.dims_size
         dims = np.array([dims_size, dims_size, dims_size])
 
@@ -142,7 +141,9 @@ class MEPVisualizer:
         lut = vtk.vtkLookupTable()
         # lut.SetTableRange(self._config_params.threshold_down, self._config_params.range_up)
         lut.SetTableRange(
-            self._config_params['colormap_range_uv']["min"],  self._config_params['colormap_range_uv']["max"])
+            self._config_params["colormap_range_uv"]["min"],
+            self._config_params["colormap_range_uv"]["max"],
+        )
         lut.SetNumberOfTableValues(4)
         colorSeries = vtk.vtkColorSeries()
 
@@ -177,17 +178,18 @@ class MEPVisualizer:
             vtkColorTransferFunction: The created color transfer function.
         """
         from vtk import vtkColorTransferFunction
+
         color_function = vtkColorTransferFunction()
 
         color_maps = const.MEP_COLORMAP_DEFINITIONS
 
         if choice in color_maps:
             for value, color in color_maps[choice].items():
-                color_function.AddRGBPoint(
-                    self._config_params['colormap_range_uv'][value], *color)
+                color_function.AddRGBPoint(self._config_params["colormap_range_uv"][value], *color)
         else:
             raise ValueError(
-                f"Invalid choice '{choice}'. Choose from: {', '.join(color_maps.keys())}")
+                f"Invalid choice '{choice}'. Choose from: {', '.join(color_maps.keys())}"
+            )
 
         return color_function
 
@@ -197,13 +199,12 @@ class MEPVisualizer:
     def SetBrainSurface(self, actor: vtk.vtkActor, index: int):
         self.surface = actor
         self.actors_dict[id(actor)] = actor
-        self._config_params['bounds'] = list(np.array(actor.GetBounds()))
+        self._config_params["bounds"] = list(np.array(actor.GetBounds()))
         self.surface_index = index
         self.UpdateVisualization()
         # hide the original surface if MEP is enabled
         if self._config_params["mep_enabled"]:
-            Publisher.sendMessage(
-                "Show surface", index=index, visibility=False)
+            Publisher.sendMessage("Show surface", index=index, visibility=False)
 
     def _FilterMarkers(self, markers: list[Marker]):
         """
@@ -226,7 +227,7 @@ class MEPVisualizer:
 
         return coil_markers, skip
 
-    def UpdateMEPPoints(self, markers: list[Marker]):
+    def UpdateMEPPoints(self):
         """
         Updates or creates the point data with MEP values from a list of markers.
 
@@ -237,7 +238,7 @@ class MEPVisualizer:
         # if not self._config_params["mep_enabled"]:
         #     return
 
-        markers, skip = self._FilterMarkers(markers)
+        markers, skip = self._FilterMarkers(MarkersControl().list)
 
         if skip or not markers:  # Saves computation if the markers are not updated or irrelevant
             return
@@ -246,18 +247,22 @@ class MEPVisualizer:
 
         point_data = self.points.GetPointData()
         mep_array = vtk.vtkDoubleArray()
-        mep_array.SetName('MEP')
+        mep_array.SetName("MEP")
         point_data.AddArray(mep_array)
 
         for marker in markers:
             new_point_id = points.InsertNextPoint(
-                marker.position[0], -marker.position[1], marker.position[2])
-            mep_value = marker.mep_value or random.uniform(
-                0, self._config_params['colormap_range_uv']["max"]) / self._config_params['colormap_range_uv']["max"]
+                marker.position[0], -marker.position[1], marker.position[2]
+            )
+            mep_value = (
+                marker.mep_value
+                or random.uniform(0, self._config_params["colormap_range_uv"]["max"])
+                / self._config_params["colormap_range_uv"]["max"]
+            )
             mep_array.InsertNextValue(mep_value)
 
         self.points.SetPoints(points)
-        self.points.GetPointData().SetActiveScalars('MEP')
+        self.points.GetPointData().SetActiveScalars("MEP")
         self.points.Modified()
 
         self.UpdateVisualization()
@@ -265,24 +270,28 @@ class MEPVisualizer:
     def UpdateVisualization(self):
         if not self._config_params["mep_enabled"]:
             return
+        if self.is_navigating:
+            return
 
         self._CleanupVisualization()
 
         interpolated_data = self.InterpolateData()
-        actor = self.CreateColoredSurface(interpolated_data)
-        point_actor = self.CreatePointActor(self.points,
-                                            (self._config_params['threshold_down'], self._config_params['range_up']))
+        self.colored_surface_actor = self.CreateColoredSurface(interpolated_data)
+        self.point_actor = self.CreatePointActor(
+            self.points, (self._config_params["threshold_down"], self._config_params["range_up"])
+        )
         self.colorBarActor = self.colorBarActor or self.CreateColorbarActor()
 
-        self.renderer.AddActor(actor)
-        self.renderer.AddActor(self.surface)
-        self.renderer.AddActor(point_actor)
-        self.renderer.AddActor(self.colorBarActor)
+        Publisher.sendMessage("AppendActor", actor=self.colored_surface_actor)
+        Publisher.sendMessage("AppendActor", actor=self.surface)
+        Publisher.sendMessage("AppendActor", actor=self.point_actor)
+        Publisher.sendMessage("AppendActor", actor=self.colorBarActor)
+
         Publisher.sendMessage("Render volume viewer")
 
     def CreateColorbarActor(self, lut=None) -> vtk.vtkActor:
         if lut is None:
-            lut = self._CustomColormap(self._config_params['mep_colormap'])
+            lut = self._CustomColormap(self._config_params["mep_colormap"])
         colorBarActor = vtk.vtkScalarBarActor()
         colorBarActor.SetLookupTable(lut)
         colorBarActor.SetNumberOfLabels(4)
@@ -322,14 +331,12 @@ class MEPVisualizer:
         normals.ComputeCellNormalsOff()
         normals.Update()
 
-        data_range = (
-            self._config_params['threshold_down'],  self._config_params['range_up'])
+        data_range = (self._config_params["threshold_down"], self._config_params["range_up"])
 
         mapper = vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
         if data_range is None:
-            data_range = (
-                self._config_params['threshold_down'],  self._config_params['range_up'])
+            data_range = (self._config_params["threshold_down"], self._config_params["range_up"])
         mapper.SetScalarRange(data_range)
 
         lut = self._CustomColormap()
@@ -370,21 +377,16 @@ class MEPVisualizer:
         return point_actor
 
     def _CleanupVisualization(self):
-        actors = self.renderer.GetActors()
-        actors.InitTraversal()
-        actor = actors.GetNextItem()
-        while actor:
-            # Check if actor is tracked
-            if actor == self.surface or id(actor) in self.actors_dict or actor == self.colorBarActor:
-                self.renderer.RemoveActor(actor)
-                if id(actor) in self.actors_dict:
-                    # Remove from tracking after deletion
-                    del self.actors_dict[id(actor)]
-            actor = actors.GetNextItem()
+        for actor in self.actors_dict.values():
+            Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
 
-        self.renderer.RemoveActor(self.colorBarActor)
+        self.actors_dict.clear()
 
-        Publisher.sendMessage("Render volume viewer")
+        if not self.is_navigating:
+            Publisher.sendMessage("Render volume viewer")
+
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        self.is_navigating = nav_status
 
     def OnCloseProject(self):
         """Cleanup the visualization when the project is closed."""

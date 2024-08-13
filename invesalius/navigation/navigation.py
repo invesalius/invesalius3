@@ -37,6 +37,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius.data.markers.marker import MarkerType
+from invesalius.data.visualization.mep_visualizer import MEPVisualizer
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.markers import MarkersControl
@@ -68,6 +69,7 @@ class NavigationHub(metaclass=Singleton):
             icp=self.icp,
         )
         self.markers = MarkersControl(robot=self.robot)
+        self.mep_visualizer = MEPVisualizer()
 
 
 class QueueCustom(queue.Queue):
