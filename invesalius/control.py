@@ -21,13 +21,13 @@ import plistlib
 import subprocess
 import sys
 import tempfile
+from typing import TYPE_CHECKING, List, Literal, Optional, Sequence, Tuple
 
 import numpy as np
 import wx
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as image_utils
-import invesalius.data.mask as msk
 import invesalius.data.measures as measures
 import invesalius.data.slice_ as sl
 import invesalius.data.surface as srf
@@ -45,6 +45,12 @@ import invesalius.utils as utils
 from invesalius import inv_paths, plugins
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from invesalius.reader.dicom_grouper import DicomGroup
+
 
 DEFAULT_THRESH_MODE = 0
 
@@ -73,7 +79,7 @@ class Controller:
 
         self.plugin_manager.find_plugins()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.OnImportMedicalImages, "Import directory")
         Publisher.subscribe(self.OnImportGroup, "Import group")
         Publisher.subscribe(self.OnImportFolder, "Import folder")
@@ -118,42 +124,42 @@ class Controller:
 
         Publisher.subscribe(self.LoadProject, "Load project data")
 
-    def SetBitmapSpacing(self, spacing):
+    def SetBitmapSpacing(self, spacing: Tuple[float, float, float]) -> None:
         proj = prj.Project()
         proj.spacing = spacing
 
-    def OnCancelImport(self):
+    def OnCancelImport(self) -> None:
         # self.cancel_import = True
         Publisher.sendMessage("Hide import panel")
 
-    def OnCancelImportBitmap(self):
+    def OnCancelImportBitmap(self) -> None:
         # self.cancel_import = True
         Publisher.sendMessage("Hide import bitmap panel")
 
     ###########################
     ###########################
 
-    def OnShowDialogImportDirectory(self):
+    def OnShowDialogImportDirectory(self) -> None:
         self.ShowDialogImportDirectory()
 
-    def OnShowDialogImportOtherFiles(self, id_type):
+    def OnShowDialogImportOtherFiles(self, id_type: wx.WindowIDRef) -> None:
         self.ShowDialogImportOtherFiles(id_type)
 
-    def OnShowDialogOpenProject(self):
+    def OnShowDialogOpenProject(self) -> None:
         self.ShowDialogOpenProject()
 
-    def OnShowDialogSaveProject(self, save_as):
+    def OnShowDialogSaveProject(self, save_as: bool) -> None:
         self.ShowDialogSaveProject(save_as)
 
-    def OnShowDialogCloseProject(self):
+    def OnShowDialogCloseProject(self) -> None:
         self.ShowDialogCloseProject()
 
-    def OnShowBitmapFile(self):
+    def OnShowBitmapFile(self) -> None:
         self.ShowDialogImportBitmapFile()
 
     ###########################
 
-    def ShowDialogImportBitmapFile(self):
+    def ShowDialogImportBitmapFile(self) -> None:
         # Offer to save current project if necessary
         session = ses.Session()
         project_status = session.GetConfig("project_status")
@@ -182,7 +188,7 @@ class Controller:
             self.StartImportBitmapPanel(dirpath)
         #    Publisher.sendMessage("Load data to import panel", dirpath)
 
-    def ShowDialogImportDirectory(self):
+    def ShowDialogImportDirectory(self) -> None:
         # Offer to save current project if necessary
         session = ses.Session()
         project_status = session.GetConfig("project_status")
@@ -208,7 +214,7 @@ class Controller:
         elif dirpath:
             self.StartImportPanel(dirpath)
 
-    def ShowDialogImportOtherFiles(self, id_type):
+    def ShowDialogImportOtherFiles(self, id_type: wx.WindowIDRef) -> None:
         # Offer to save current project if necessary
         session = ses.Session()
         project_status = session.GetConfig("project_status")
@@ -228,14 +234,10 @@ class Controller:
             Publisher.sendMessage("Stop Config Recording")
             Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
-        # Warning for limited support to Analyze format
-        if id_type == const.ID_ANALYZE_IMPORT:
-            dialog.ImportAnalyzeWarning()
-
         filepath = dialog.ShowImportOtherFilesDialog(id_type)
         Publisher.sendMessage("Open other files", filepath=filepath)
 
-    def ShowDialogOpenProject(self):
+    def ShowDialogOpenProject(self) -> None:
         # Offer to save current project if necessary
         session = ses.Session()
         project_status = session.GetConfig("project_status")
@@ -257,7 +259,7 @@ class Controller:
                 self.CloseProject()
             self.OpenProject(filepath)
 
-    def ShowDialogSaveProject(self, saveas=False):
+    def ShowDialogSaveProject(self, saveas: bool = False) -> None:
         session = ses.Session()
         if saveas or session.temp_item:
             proj = prj.Project()
@@ -272,7 +274,7 @@ class Controller:
 
         self.SaveProject(filepath, compress)
 
-    def ShowDialogCloseProject(self):
+    def ShowDialogCloseProject(self) -> Optional[Literal[-1]]:
         session = ses.Session()
         project_status = session.GetConfig("project_status")
         if project_status == const.PROJECT_STATUS_CLOSED:
@@ -315,10 +317,10 @@ class Controller:
             Publisher.sendMessage("Stop Config Recording")
 
     ###########################
-    def OnOpenProject(self, filepath):
+    def OnOpenProject(self, filepath: "str | Path") -> None:
         self.OpenProject(filepath)
 
-    def OnOpenRecentProject(self, filepath):
+    def OnOpenRecentProject(self, filepath: "str | Path") -> None:
         if os.path.exists(filepath):
             session = ses.Session()
             project_status = session.GetConfig("project_status")
@@ -338,7 +340,7 @@ class Controller:
         else:
             dialog.InexistentPath(filepath)
 
-    def OpenProject(self, filepath):
+    def OpenProject(self, filepath: "str | Path") -> None:
         Publisher.sendMessage("Begin busy cursor")
         path = os.path.abspath(filepath)
 
@@ -365,10 +367,10 @@ class Controller:
         session.OpenProject(filepath)
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnSaveProject(self, filepath):
+    def OnSaveProject(self, filepath: Optional["str | Path"]) -> None:
         self.SaveProject(filepath)
 
-    def SaveProject(self, path=None, compress=False):
+    def SaveProject(self, path: Optional["str | Path"] = None, compress: bool = False) -> None:
         dialog.ProgressBarHandler(self.frame, "Saving Project", "Initializing...", max_value=100)
 
         try:
@@ -394,17 +396,13 @@ class Controller:
             except PermissionError as err:
                 if wx.GetApp() is None:
                     print(
-                        "Error: Permission denied, you don't have permission to write at {}".format(
-                            dirpath
-                        )
+                        f"Error: Permission denied, you don't have permission to write at {dirpath}"
                     )
                 else:
                     dlg = dialogs.ErrorMessageBox(
                         None,
                         "Save project error",
-                        "It was not possible to save because you don't have permission to write at {}\n{}".format(
-                            dirpath, err
-                        ),
+                        f"It was not possible to save because you don't have permission to write at {dirpath}\n{err}",
                     )
                     dlg.ShowModal()
                     dlg.Destroy()
@@ -425,7 +423,7 @@ class Controller:
         finally:
             Publisher.sendMessage("Close Progress bar")
 
-    def CloseProject(self):
+    def CloseProject(self) -> None:
         Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
         Publisher.sendMessage("Stop navigation")
         Publisher.sendMessage("Hide content panel")
@@ -447,26 +445,26 @@ class Controller:
 
     ###########################
 
-    def StartImportBitmapPanel(self, path):
+    def StartImportBitmapPanel(self, path: "str | Path") -> None:
         # retrieve DICOM files splited into groups
         reader = bmp.ProgressBitmapReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
         Publisher.sendMessage("End busy cursor")
 
-    def StartImportPanel(self, path):
+    def StartImportPanel(self, path: "str | Path") -> None:
         # retrieve DICOM files split into groups
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
         Publisher.sendMessage("End busy cursor")
 
-    def Progress(self, data):
+    def Progress(self, data: Optional[Sequence[int]]) -> None:
         if data:
             message = _("Loading file %d of %d ...") % (data[0], data[1])
             if not (self.progress_dialog):
                 self.progress_dialog = vtk_utils.ProgressDialog(
-                    parent=self.frame, maximum=data[1], abort=1
+                    parent=self.frame, maximum=data[1], abort=True
                 )
             else:
                 if not (self.progress_dialog.Update(data[0], message)):
@@ -479,21 +477,25 @@ class Controller:
                 self.progress_dialog.Close()
                 self.progress_dialog = None
 
-    def OnLoadImportPanel(self, patient_series):
+    def OnLoadImportPanel(self, patient_series: Optional[List]) -> None:
         ok = self.LoadImportPanel(patient_series)
         if ok:
             Publisher.sendMessage("Show import panel")
             Publisher.sendMessage("Show import panel in frame")
             self.img_type = 1
 
-    def OnLoadImportBitmapPanel(self, data):
+    def OnLoadImportBitmapPanel(
+        self, data: List[Tuple[bytes, str, str, int, int, str, str, wx.WindowIDRef]]
+    ) -> None:
         ok = self.LoadImportBitmapPanel(data)
         if ok:
             Publisher.sendMessage("Show import bitmap panel in frame")
             self.img_type = 2
             # Publisher.sendMessage("Show import panel in invesalius.gui.frame") as frame
 
-    def LoadImportBitmapPanel(self, data):
+    def LoadImportBitmapPanel(
+        self, data: List[Tuple[bytes, str, str, int, int, str, str, wx.WindowIDRef]]
+    ) -> bool:
         # if patient_series and isinstance(patient_series, list):
         # Publisher.sendMessage("Load import panel", patient_series)
         # first_patient = patient_series[0]
@@ -505,7 +507,7 @@ class Controller:
             dialog.ImportInvalidFiles("Bitmap")
         return False
 
-    def LoadImportPanel(self, patient_series):
+    def LoadImportPanel(self, patient_series: Optional[List]) -> bool:
         if patient_series and isinstance(patient_series, list):
             Publisher.sendMessage("Load import panel", dicom_groups=patient_series)
             first_patient = patient_series[0]
@@ -517,10 +519,10 @@ class Controller:
 
     # ----------- to import by command line ---------------------------------------------------
 
-    def OnImportMedicalImages(self, directory, use_gui):
+    def OnImportMedicalImages(self, directory: str, use_gui: bool) -> None:
         self.ImportMedicalImages(directory, use_gui)
 
-    def ImportMedicalImages(self, directory, gui=True):
+    def ImportMedicalImages(self, directory: str, gui: bool = True) -> None:
         patients_groups = dcm.GetDicomGroups(directory)
         name = directory.rpartition("\\")[-1].split(".")
 
@@ -553,10 +555,10 @@ class Controller:
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnImportGroup(self, group, use_gui):
+    def OnImportGroup(self, group: "DicomGroup", use_gui: bool):
         self.ImportGroup(group, use_gui)
 
-    def ImportGroup(self, group, gui=True):
+    def ImportGroup(self, group: "DicomGroup", gui: bool = True):
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
         if matrix is None:
             return
@@ -627,7 +629,7 @@ class Controller:
 
         if len(proj.mask_dict):
             self.Slice.current_mask = None
-            mask_index = len(proj.mask_dict) - 1
+            # mask_index = len(proj.mask_dict) - 1
             for key, m in proj.mask_dict.items():
                 Publisher.sendMessage("Add mask", mask=m)
                 if m.is_shown:
@@ -853,7 +855,7 @@ class Controller:
             self.LoadProject()
             Publisher.sendMessage("Enable state project", state=True)
 
-    def OnOpenBitmapFiles(self, rec_data):
+    def OnOpenBitmapFiles(self, rec_data: Tuple[str, str, float, float, float, float]) -> None:
         bmp_data = bmp.BitmapData()
 
         if bmp_data.IsAllBitmapSameSize():
@@ -866,8 +868,10 @@ class Controller:
         else:
             dialogs.BitmapNotSameSize()
 
-    def OpenBitmapFiles(self, bmp_data, rec_data):
-        name = rec_data[0]
+    def OpenBitmapFiles(
+        self, bmp_data: "bmp.BitmapData", rec_data: Tuple[str, str, float, float, float, float]
+    ):
+        # name = rec_data[0]
         orientation = rec_data[1]
         sp_x = float(rec_data[2])
         sp_y = float(rec_data[3])
@@ -946,9 +950,9 @@ class Controller:
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnOpenOtherFiles(self, filepath):
+    def OnOpenOtherFiles(self, filepath: bytes) -> None:
         filepath = utils.decode(filepath, const.FS_ENCODE)
-        if not (filepath) == None:
+        if (filepath) is not None:
             name = os.path.basename(filepath).split(".")[0]
             group = oth.ReadOthers(filepath)
             if group:
@@ -960,7 +964,13 @@ class Controller:
             else:
                 dialog.ImportInvalidFiles(ftype="Others")
 
-    def OpenDicomGroup(self, dicom_group, interval, file_range, gui=True):
+    def OpenDicomGroup(
+        self,
+        dicom_group: "DicomGroup",
+        interval: int,
+        file_range: Optional[Sequence[int]],
+        gui: bool = True,
+    ):
         # Retrieve general DICOM headers
         dicom = dicom_group.GetDicomSample()
 
@@ -1082,7 +1092,7 @@ class Controller:
         # this solves the visualization issue only for MRIs imported with NIfTI, but not
         # with DICOM
         wl = float((percentile_2 + percentile_98) * 0.5)
-        ww = float((percentile_98 - percentile_2))
+        ww = float(percentile_98 - percentile_2)
 
         # Set wl and ww based on full scalar range. This causes some mri to be visualized
         # very dark due to presence of high pixel intensities
@@ -1240,7 +1250,7 @@ class Controller:
             Publisher.sendMessage("Remove mask preview", mask_3d_actor=mask.volume._actor)
             Publisher.sendMessage("Render volume viewer")
 
-    def update_mask_preview(self):
+    def update_mask_preview(self) -> None:
         mask = self.Slice.current_mask
         if mask is not None:
             mask._update_imagedata()

@@ -562,7 +562,7 @@ def get_LUT_value_255(data, window, level):
     return data
 
 
-def get_LUT_value(data, window, level):
+def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
     shape = data.shape
     data_ = data.ravel()
     data = np.piecewise(
