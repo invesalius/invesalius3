@@ -137,37 +137,7 @@ class MEPVisualizer:
         resample.Update()
         return resample.GetOutput()
 
-    def OldLUT(self):
-        lut = vtk.vtkLookupTable()
-        # lut.SetTableRange(self._config_params.threshold_down, self._config_params.range_up)
-        lut.SetTableRange(
-            self._config_params["colormap_range_uv"]["min"],
-            self._config_params["colormap_range_uv"]["max"],
-        )
-        lut.SetNumberOfTableValues(4)
-        colorSeries = vtk.vtkColorSeries()
-
-        # FIXME: Add your custom colors
-        # from vtkmodules.vtkCommonDataModel import vtkColor3ub
-        # colorSeries.AddColor(vtkColor3ub(0, 0, 1))   # Blue
-        # colorSeries.AddColor(vtkColor3ub(0, 1, 0))   # Green
-        # colorSeries.AddColor(vtkColor3ub(1, 1, 0))   # Yellow
-        # colorSeries.AddColor(vtkColor3ub(1, 0, 0))   # Red
-        # seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
-        seriesEnum = colorSeries.BREWER_DIVERGING_PURPLE_ORANGE_4
-        colorSeries.SetColorScheme(seriesEnum)
-
-        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
-        lut_map = vtk.vtkLookupTable()
-        lut_map.DeepCopy(lut)
-        # lut_map.SetTableValue(0, 1., 1., 1., 0.)
-        lut_map.Build()
-
-        # FIXME: for testing purposes, remove later
-        # lut = self._CustomColormap("Viridis")
-        return lut
-
-    def _CustomColormap(self, choice="Viridis"):
+    def _CustomColormap(self, choice=None):
         """
         Creates a color transfer function with a 4-color heatmap.
 
@@ -180,6 +150,7 @@ class MEPVisualizer:
         from vtk import vtkColorTransferFunction
 
         color_function = vtkColorTransferFunction()
+        choice = choice or self._config_params["mep_colormap"]
 
         color_maps = const.MEP_COLORMAP_DEFINITIONS
 
@@ -198,6 +169,7 @@ class MEPVisualizer:
 
     def SetBrainSurface(self, actor: vtk.vtkActor, index: int):
         self.surface = actor
+        self._config_params["brain_surface_index"] = index
         self.actors_dict[id(actor)] = actor
         self._config_params["bounds"] = list(np.array(actor.GetBounds()))
         self.surface_index = index
@@ -205,6 +177,7 @@ class MEPVisualizer:
         # hide the original surface if MEP is enabled
         if self._config_params["mep_enabled"]:
             Publisher.sendMessage("Show surface", index=index, visibility=False)
+        self._SaveUserParameters()
 
     def _FilterMarkers(self, markers: list[Marker]):
         """
@@ -280,7 +253,7 @@ class MEPVisualizer:
         self.point_actor = self.CreatePointActor(
             self.points, (self._config_params["threshold_down"], self._config_params["range_up"])
         )
-        self.colorBarActor = self.colorBarActor or self.CreateColorbarActor()
+        self.colorBarActor = self.CreateColorbarActor()
 
         Publisher.sendMessage("AppendActor", actor=self.colored_surface_actor)
         Publisher.sendMessage("AppendActor", actor=self.surface)
@@ -395,6 +368,32 @@ class MEPVisualizer:
 
     # --- Unused Methods ---
 
+    # def OldLUT(self):
+    #     lut = vtk.vtkLookupTable()
+    #     # lut.SetTableRange(self._config_params.threshold_down, self._config_params.range_up)
+    #     lut.SetTableRange(
+    #         self._config_params["colormap_range_uv"]["min"],
+    #         self._config_params["colormap_range_uv"]["max"],
+    #     )
+    #     lut.SetNumberOfTableValues(4)
+    #     colorSeries = vtk.vtkColorSeries()
+
+    #     # from vtkmodules.vtkCommonDataModel import vtkColor3ub
+    #     # colorSeries.AddColor(vtkColor3ub(0, 0, 1))   # Blue
+    #     # colorSeries.AddColor(vtkColor3ub(0, 1, 0))   # Green
+    #     # colorSeries.AddColor(vtkColor3ub(1, 1, 0))   # Yellow
+    #     # colorSeries.AddColor(vtkColor3ub(1, 0, 0))   # Red
+    #     # seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
+    #     seriesEnum = colorSeries.BREWER_DIVERGING_PURPLE_ORANGE_4
+    #     colorSeries.SetColorScheme(seriesEnum)
+
+    #     colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+    #     lut_map = vtk.vtkLookupTable()
+    #     lut_map.DeepCopy(lut)
+    #     # lut_map.SetTableValue(0, 1., 1., 1., 0.)
+    #     lut_map.Build()
+
+    #     return lut
     # def render_visualization(self, surface):
     #     if not surface:
     #         print('No surface data found')
