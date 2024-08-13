@@ -112,6 +112,7 @@ class Preferences(wx.Dialog):
         slice_interpolation = session.GetConfig("slice_interpolation")
         # What exactly is happening here is unclear to me
         excessive_force_adjust = session.GetConfig("excessive_force_adjust")
+        excessive_force_distance = session.GetConfig("excessive_force_distance")
 
         # logger = log.MyLogger()
         file_logging = log.invLogger.GetConfig("file_logging")
@@ -138,6 +139,7 @@ class Preferences(wx.Dialog):
             const.CONSOLE_LOGGING: console_logging,
             const.CONSOLE_LOGGING_LEVEL: console_logging_level,
             const.EXCESSIVE_FORCE_ADJUST: excessive_force_adjust,
+            const.EXCESSIVE_FORCE_DISTANCE: excessive_force_distance,
         }
 
         self.visualization_tab.LoadSelection(values)
@@ -382,6 +384,7 @@ class NavigationTab(wx.Panel):
         self.navigation = navigation
         self.sleep_nav = self.navigation.sleep_nav
         self.sleep_coord = const.SLEEP_COORDINATES
+        self.force_adjust_distance = const.FORCE_ADJUST_DISTANCE
 
         self.LoadConfig()
 
@@ -434,23 +437,36 @@ class NavigationTab(wx.Panel):
             ]
         )
 
-        bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, _("Force sensor adjustement"))
-        lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Excessive force adjustment"))
-        ft_inter_sl = self.ft_inter_sl = wx.RadioBox(
-            bsizer_slices.GetStaticBox(),
+        bsizer_force = wx.StaticBoxSizer(wx.VERTICAL, self, _("Force sensor adjustement"))
+
+        bsizer_force_options = wx.BoxSizer(wx.HORIZONTAL)
+
+        rb_force_adjust = self.rb_force_adjust = wx.RadioBox(
+            self,
             -1,
-            choices=[_("Yes"), _("No")],
-            majorDimension=3,
-            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+            label="Excessive force adjustment",
+            choices=["No", "Yes"],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
         )
+        bsizer_force_options.Add(rb_force_adjust, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
 
-        bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
-        bsizer_slices.Add(ft_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+        move_dist = wx.StaticText(self, -1, _("Move Distance (mm):"))
+        force_adjust_distance_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        force_adjust_distance_spin.Enable(1)
+        force_adjust_distance_spin.SetRange(2.0, 10.0)
+        force_adjust_distance_spin.SetValue(self.force_adjust_distance)
+        # spin_nav_move.Bind(wx.EVT_TEXT, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
+        # spin_nav_move.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
 
+        bsizer_force_options.Add(move_dist, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+        bsizer_force_options.Add(force_adjust_distance_spin, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+
+        bsizer_force.Add(bsizer_force_options, 0, wx.TOP | wx.LEFT | wx.EXPAND, 0)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(conf_sizer, 0, wx.ALL | wx.EXPAND, 10)
-        main_sizer.Add(bsizer_slices, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+        main_sizer.Add(bsizer_force, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         
         self.SetSizerAndFit(main_sizer)
         self.Layout()
@@ -465,11 +481,12 @@ class NavigationTab(wx.Panel):
         self.sleep_coord = ctrl.GetValue()
         Publisher.sendMessage("Update coord sleep", data=self.sleep_coord)
 
-        self.session.SetConfig("sleep_coord", self.sleep_nav)
+        self.session.SetConfig("sleep_coord", self.sleep_nav) # I presume this is wrong and should be self.sleep_coord, come back to it. 
 
     def LoadConfig(self):
         sleep_nav = self.session.GetConfig("sleep_nav")
         sleep_coord = self.session.GetConfig("sleep_coord")
+        force_adjust_distance = self.session.GetConfig("force_adjust_distance")
 
         if sleep_nav is not None:
             self.sleep_nav = sleep_nav
@@ -477,17 +494,24 @@ class NavigationTab(wx.Panel):
         if sleep_coord is not None:
             self.sleep_coord = sleep_coord
 
+        if force_adjust_distance is not None:
+            self.force_adjust_distance = force_adjust_distance
+
 
     def GetSelection(self):
         options = {
-            const.EXCESSIVE_FORCE_ADJUST: self.ft_inter_sl.GetSelection(),
+            const.EXCESSIVE_FORCE_ADJUST: self.rb_force_adjust.GetSelection(),
+            const.EXCESSIVE_FORCE_DISTANCE: self.force_adjust_distance_spin.GetValue(),
         }
         return options
 
     def LoadSelection(self, values):
         ft_usage = values[const.EXCESSIVE_FORCE_ADJUST]
+        force_adjust_distance = values[const.EXCESSIVE_FORCE_DISTANCE]
 
-        self.ft_inter_sl.SetSelection(int(ft_usage))
+        self.rb_force_adjust.SetSelection(int(ft_usage))
+        self.force_adjust_distance_spin.SetValue(force_adjust_distance)
+
 
 
 class ObjectTab(wx.Panel):

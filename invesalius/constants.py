@@ -747,6 +747,10 @@ LOGGING_LEVEL_TYPES = ["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"]
 
 # ------------ Navigation options key ------------
 EXCESSIVE_FORCE_ADJUST = 10
+EXCESSIVE_FORCE_DISTANCE = 11
+
+# Default value for excessive force adjust
+FORCE_ADJUST_DISTANCE = 4
 
 # Correlaction extracted from pyDicom
 DICOM_ENCODING_TO_PYTHON = {

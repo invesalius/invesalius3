@@ -339,7 +339,7 @@ class Navigation(metaclass=Singleton):
 
     def UpdateExcessiveForceAdjust(self):
         session = ses.Session()
-        excessive_force_adjust = session.GetConfig("excessive_force_adjust")
+        excessive_force_adjust = [session.GetConfig("excessive_force_adjust"), session.GetConfig("excessive_force_adjust_value")]
         Publisher.sendMessage('Neuronavigation to Robot: Update excessive force adjustment', data=excessive_force_adjust)
 
     def CoilAtTarget(self, state):
