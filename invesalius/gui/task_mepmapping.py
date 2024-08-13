@@ -67,11 +67,9 @@ class InnerTaskPanel(wx.Panel):
 
         self.session = ses.Session()
         self.slc = Slice()
-        self.colormaps = ["autumn", "hot", "plasma", "cividis",  # sequential
-                          "bwr", "RdBu",  # diverging
-                          "Set3", "tab10",  # categorical
-                          "twilight", "hsv"]   # cyclic
-        self.current_colormap = "autumn"
+        self.colormaps = [str(cmap) for cmap in const.MEP_COLORMAP_DEFINITIONS]
+
+        self.current_colormap = self.colormaps[0]
         self.number_colors = 10
         self.cluster_volume = None
         self.zero_value = 0

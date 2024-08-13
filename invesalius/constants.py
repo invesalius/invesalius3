@@ -130,14 +130,20 @@ IMPORT_INTERVAL = [
 # Camera according to slice's orientation
 # CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
 # CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
-AXIAL_SLICE_CAM_POSITION = {"AXIAL": (0, 0, 1), "CORONAL": (0, -1, 0), "SAGITAL": (1, 0, 0)}
-AXIAL_SLICE_CAM_VIEW_UP = {"AXIAL": (0, 1, 0), "CORONAL": (0, 0, 1), "SAGITAL": (0, 0, 1)}
+AXIAL_SLICE_CAM_POSITION = {
+    "AXIAL": (0, 0, 1), "CORONAL": (0, -1, 0), "SAGITAL": (1, 0, 0)}
+AXIAL_SLICE_CAM_VIEW_UP = {
+    "AXIAL": (0, 1, 0), "CORONAL": (0, 0, 1), "SAGITAL": (0, 0, 1)}
 
-SAGITAL_SLICE_CAM_POSITION = {"AXIAL": (0, 0, 1), "CORONAL": (0, 1, 0), "SAGITAL": (-1, 0, 0)}
-SAGITAL_SLICE_CAM_VIEW_UP = {"AXIAL": (0, -1, 0), "CORONAL": (0, 0, 1), "SAGITAL": (0, 0, 1)}
+SAGITAL_SLICE_CAM_POSITION = {
+    "AXIAL": (0, 0, 1), "CORONAL": (0, 1, 0), "SAGITAL": (-1, 0, 0)}
+SAGITAL_SLICE_CAM_VIEW_UP = {
+    "AXIAL": (0, -1, 0), "CORONAL": (0, 0, 1), "SAGITAL": (0, 0, 1)}
 
-CORONAL_SLICE_CAM_POSITION = {"AXIAL": (0, 0, 1), "CORONAL": (0, 1, 0), "SAGITAL": (-1, 0, 0)}
-CORONAL_SLICE_CAM_VIEW_UP = {"AXIAL": (0, -1, 0), "CORONAL": (0, 0, 1), "SAGITAL": (0, 0, 1)}
+CORONAL_SLICE_CAM_POSITION = {
+    "AXIAL": (0, 0, 1), "CORONAL": (0, 1, 0), "SAGITAL": (-1, 0, 0)}
+CORONAL_SLICE_CAM_VIEW_UP = {
+    "AXIAL": (0, -1, 0), "CORONAL": (0, 0, 1), "SAGITAL": (0, 0, 1)}
 
 SLICE_POSITION = {
     AXIAL: [AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
@@ -183,7 +189,8 @@ CROP_PAN = 13
 # Color Table from Slice
 # NumberOfColors, SaturationRange, HueRange, ValueRange
 SLICE_COLOR_TABLE: Dict[
-    str, Tuple[Optional[int], Tuple[int, int], Tuple[float, float], Tuple[int, int]]
+    str, Tuple[Optional[int], Tuple[int, int],
+               Tuple[float, float], Tuple[int, int]]
 ] = {
     _("Default "): (None, (0, 0), (0, 0), (0, 1)),
     _("Hue"): (None, (1, 1), (0, 1), (1, 1)),
@@ -310,7 +317,8 @@ MASK_COLOUR = [
 # (0.66666666666666663, 0.792156862745098, 1.0)]
 
 
-MEASURE_COLOUR = itertools.cycle([[1, 0, 0], [1, 0.4, 0], [0, 0, 1], [1, 0, 1], [0, 0.6, 0]])
+MEASURE_COLOUR = itertools.cycle(
+    [[1, 0, 0], [1, 0.4, 0], [0, 0, 1], [1, 0, 1], [0, 0.6, 0]])
 
 SURFACE_COLOUR = [
     (0.33, 1, 0.33),
@@ -579,12 +587,14 @@ ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
 
 
-[ID_EDIT_UNDO, ID_EDIT_REDO, ID_EDIT_LIST] = [wx.NewIdRef() for number in range(3)]
+[ID_EDIT_UNDO, ID_EDIT_REDO, ID_EDIT_LIST] = [wx.NewIdRef()
+                                              for number in range(3)]
 [ID_TOOL_PROJECT, ID_TOOL_LAYOUT, ID_TOOL_OBJECT, ID_TOOL_SLICE] = [
     wx.NewIdRef() for number in range(4)
 ]
 [ID_TASK_BAR, ID_VIEW_FOUR] = [wx.NewIdRef() for number in range(2)]
-[ID_VIEW_FULL, ID_VIEW_TEXT, ID_VIEW_3D_BACKGROUND] = [wx.NewIdRef() for number in range(3)]
+[ID_VIEW_FULL, ID_VIEW_TEXT, ID_VIEW_3D_BACKGROUND] = [wx.NewIdRef()
+                                                       for number in range(3)]
 
 ID_START = wx.NewIdRef()
 ID_PLUGINS_SHOW_PATH = wx.NewIdRef()
@@ -842,10 +852,12 @@ DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
 FT_SENSOR_MODE = [_("Sensor 3"), _("Sensor 4")]
-TRACKERS_WITH_SENSOR_OPTIONS = [FASTRAK, ISOTRAKII, PATRIOT, DEBUGTRACKRANDOM, DEBUGTRACKAPPROACH]
+TRACKERS_WITH_SENSOR_OPTIONS = [FASTRAK, ISOTRAKII,
+                                PATRIOT, DEBUGTRACKRANDOM, DEBUGTRACKAPPROACH]
 
 DEFAULT_COIL = SELECT
-COIL = [_("Select coil:"), _("Neurosoft Figure-8"), _("Magstim 70 mm"), _("Nexstim")]
+COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
+        _("Magstim 70 mm"), _("Nexstim")]
 
 IR1 = wx.NewIdRef()
 IR2 = wx.NewIdRef()
@@ -1010,7 +1022,7 @@ DEFAULT_MEP_CONFIG_PARAMS = {
     "enabled_once": False,
     "threshold_down": 0,
     "range_up": 1,
-    "mep_colormap": "autumn",
+    "mep_colormap": "Viridis",
     "gaussian_sharpness": .4,
     "gaussian_radius": 20,
     "bounds": None,
@@ -1022,6 +1034,69 @@ DEFAULT_MEP_CONFIG_PARAMS = {
     }
 }
 
+
+MEP_COLORMAP_DEFINITIONS = {
+    "BlueCyanYellowRed": {  # Blue, Cyan, Yellow, Red
+        "min": (0.0, 0.0, 1.0),
+        "low": (0.0, 1.0, 1.0),
+        "mid": (1.0, 1.0, 0.0),
+        "max": (1.0, 0.0, 0.0)
+    },
+    "GreenYellowOrangeRed": {  # Green, Yellow, Orange, Red
+        "min": (0.0, 1.0, 0.0),
+        "low": (1.0, 1.0, 0.0),
+        "mid": (1.0, 0.647, 0.0),
+        "max": (1.0, 0.0, 0.0)
+    },
+    "PurpleBlueGreenYellow": {  # Purple, Blue, Green, Yellow
+        "min": (0.5, 0.0, 0.5),
+        "low": (0.0, 0.0, 1.0),
+        "mid": (0.0, 1.0, 0.0),
+        "max": (1.0, 1.0, 0.0)
+    },
+    "BlackGrayWhiteRed": {  # Black, Gray, White, Red (grayscale with highlight)
+        "min": (0.0, 0.0, 0.0),
+        "low": (0.5, 0.5, 0.5),
+        "mid": (1.0, 1.0, 1.0),
+        "max": (1.0, 0.0, 0.0)
+    },
+    "Viridis": {  # Viridis (perceptually uniform)
+        "min": (0.267004, 0.004874, 0.329415),
+        "low": (0.226337, 0.31071, 0.577055),
+        "mid": (0.993248, 0.906157, 0.143936),
+        "max": (0.968627, 0.813008, 0.0)
+    },
+    "Grayscale": {  # Grayscale (often used for CT/MRI)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.25, 0.25, 0.25),  # Dark Gray
+        "mid": (0.75, 0.75, 0.75),  # Light Gray
+        "max": (1.0, 1.0, 1.0)   # White 
+    },
+    "HotMetal": {  # Hot Metal (useful for highlighting hot spots)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.5, 0.0, 0.0),  # Dark Red
+        "mid": (1.0, 0.5, 0.0),  # Orange
+        "max": (1.0, 1.0, 1.0)   # White 
+    },
+    "Rainbow": {  # Rainbow (although not perceptually uniform, still common)
+        "min": (0.0, 0.0, 1.0),  # Blue
+        "low": (0.0, 1.0, 0.0),  # Green
+        "mid": (1.0, 1.0, 0.0),  # Yellow
+        "max": (1.0, 0.0, 0.0)   # Red
+    },
+    "Bone": {  # Bone (specifically designed for CT bone visualization)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.388, 0.224, 0.0),  # Brown
+        "mid": (0.902, 0.827, 0.631),  # Beige
+        "max": (1.0, 1.0, 1.0)   # White 
+    },
+    "InvertedGrayscale": { # Inverted Grayscale (sometimes used for PET)
+        "min": (1.0, 1.0, 1.0),   # White
+        "low": (0.75, 0.75, 0.75),  # Light Gray
+        "mid": (0.25, 0.25, 0.25),  # Dark Gray
+        "max": (0.0, 0.0, 0.0)  # Black
+    }
+}
 
 # Keycodes for moving markers using the keyboard
 MOVE_MARKER_LEFT_KEYCODE = 65  # A
@@ -1063,7 +1138,8 @@ BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 # Robot
-ROBOT_ElFIN_IP = ["192.168.200.251", "143.107.220.251", "169.254.153.251", "127.0.0.1"]
+ROBOT_ElFIN_IP = ["192.168.200.251",
+                  "143.107.220.251", "169.254.153.251", "127.0.0.1"]
 ROBOT_DOBOT_IP = ["192.168.1.6"]
 
 MTMS_RADIUS = 15
