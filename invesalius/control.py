@@ -620,6 +620,7 @@ class Controller:
         Publisher.sendMessage("Set project name", proj_name=proj.name)
         Publisher.sendMessage("Load surface dict", surface_dict=proj.surface_dict)
         Publisher.sendMessage("Hide surface items", surface_dict=proj.surface_dict)
+    
         self.LoadImagedataInfo()  # TODO: where do we insert this <<<?
 
         Publisher.sendMessage("Show content panel")

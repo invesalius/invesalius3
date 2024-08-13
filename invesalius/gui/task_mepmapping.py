@@ -341,8 +341,10 @@ class SurfaceProperties(scrolled.ScrolledPanel):
     def OnComboName(self, evt):
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
+        self.button_colour.SetColour(
+            [int(value*255) for value in self.surface_list[surface_index][2]])
         Publisher.sendMessage('Change surface selected',
-                              surface_index=self.surface_list[surface_index][1])
+                                surface_index=self.surface_list[surface_index][1])
 
     def OnSelectColour(self, evt):
         colour = [value/255.0 for value in evt.GetValue()]

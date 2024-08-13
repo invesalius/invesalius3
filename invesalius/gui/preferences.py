@@ -227,12 +227,7 @@ class VisualizationTab(wx.Panel):
         self.Layout()
 
     def __bind_events(self):
-        Publisher.subscribe(self.InsertNewSurface,
-                            'Update surface info in GUI')
-        Publisher.subscribe(self.ChangeSurfaceName,
-                            'Change surface name')
-        Publisher.subscribe(self.OnCloseProject, 'Close project data')
-        Publisher.subscribe(self.OnRemoveSurfaces, 'Remove surfaces')
+        pass
 
     def GetSelection(self):
         options = {
@@ -268,15 +263,26 @@ class VisualizationTab(wx.Panel):
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
-        self.surface_list = []
-        # Combo related to mask name
-        combo_surface_name = wx.ComboBox(bsizer_mep.GetStaticBox(), -1,
-                                         style=wx.CB_DROPDOWN | wx.CB_READONLY | wx.ALL | wx.EXPAND | wx.GROW)
+        # Initializing the project singleton
+        from invesalius import project as prj
+        self.proj = prj.Project()
+
+        combo_brain_surface_name = wx.ComboBox(
+            bsizer_mep.GetStaticBox(), -1, size=(210, 23), style=wx.CB_DROPDOWN | wx.CB_READONLY
+        )
         # combo_surface_name.SetSelection(0)
-        if sys.platform != 'win32':
-            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-        self.combo_surface_name = combo_surface_name
+        if sys.platform != "win32":
+            combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        #TODO: Sending the event to the MEP Visualizer to update the surface
+        # combo_brain_surface_name.Bind(
+        #     wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
+        combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+
+        for n in range(len(self.proj.surface_dict)):
+            combo_brain_surface_name.Insert(
+                str(self.proj.surface_dict[n].name), n)
+            
+        self.combo_brain_surface_name = combo_brain_surface_name
 
         # Mask colour
         button_colour = csel.ColourSelect(
@@ -286,15 +292,14 @@ class VisualizationTab(wx.Panel):
 
         # Sizer which represents the first line
         line1 = wx.BoxSizer(wx.HORIZONTAL)
-        line1.Add(combo_surface_name, 1,  wx.ALL | wx.EXPAND | wx.GROW, 7)
+        line1.Add(combo_brain_surface_name, 1,  wx.ALL | wx.EXPAND | wx.GROW, 7)
         line1.Add(button_colour, 0,  wx.ALL | wx.EXPAND | wx.GROW, 7)
 
         surface_sel_lbl = wx.StaticText(
             bsizer_mep.GetStaticBox(), -1, _("Brain Surface:"))
         surface_sel_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        surface_sel_sizer.Add(surface_sel_lbl, 0, wx.GROW |
-                              wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        surface_sel_sizer.Add(surface_sel_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
         # fixed_sizer.AddSpacer(7)
         surface_sel_sizer.Add(line1, 0, wx.EXPAND |
                               wx.GROW | wx.LEFT | wx.RIGHT, 5)
@@ -581,75 +586,25 @@ class VisualizationTab(wx.Panel):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def OnRemoveSurfaces(self, surface_indexes):
-        s = self.combo_surface_name.GetSelection()
-        ns = 0
-
-        old_dict = self.surface_list
-        new_dict = []
-        i = 0
-        for n, (name, index) in enumerate(old_dict):
-            if n not in surface_indexes:
-                new_dict.append([name, i])
-                if s == n:
-                    ns = i
-                i += 1
-        self.surface_list = new_dict
-
-        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
-
-        if self.surface_list:
-            self.combo_surface_name.SetSelection(ns)
-
-    def OnCloseProject(self):
-        self.CloseProject()
-
-    def CloseProject(self):
-        n = self.combo_surface_name.GetCount()
-        for i in range(n-1, -1, -1):
-            self.combo_surface_name.Delete(i)
-        self.surface_list = []
-
-    def ChangeSurfaceName(self, index, name):
-        self.surface_list[index][0] = name
-        self.combo_surface_name.SetString(index, name)
-
-    def InsertNewSurface(self, surface):
-        index = surface.index
-        name = surface.name
-        colour = [int(value*255) for value in surface.colour]
-        i = 0
-        try:
-            i = self.surface_list.index([name, index])
-            overwrite = True
-        except ValueError:
-            overwrite = False
-
-        if overwrite:
-            self.surface_list[i] = [name, index]
-        else:
-            self.surface_list.append([name, index])
-            i = len(self.surface_list) - 1
-
-        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
-        self.combo_surface_name.SetSelection(i)
-        # transparency = 100*surface.transparency
-        # print("Button color: ", colour)
-        self.button_colour.SetColour(colour)
-        # self.slider_transparency.SetValue(int(transparency))
-        #  Publisher.sendMessage('Update surface data', (index))
-
     def OnComboName(self, evt):
-        evt.GetString()
-        surface_index = evt.GetSelection()
-        Publisher.sendMessage('Change surface selected',
-                              surface_index=self.surface_list[surface_index][1])
+        from invesalius import project as prj
+        self.proj = prj.Project()
+        surface_index = self.combo_brain_surface_name.GetSelection()
+        Publisher.sendMessage("Show only surface",
+                              surface_index=surface_index)
+        Publisher.sendMessage("Set MEP brain surface", surface = self.proj.surface_dict[surface_index], surface_index=surface_index)
+        Publisher.sendMessage("Get visible surface actor")
+        
+        self.button_colour.SetColour(
+            [int(value*255) for value in self.proj.surface_dict[surface_index].colour])
 
     def OnSelectColour(self, evt):
-        colour = [value/255.0 for value in evt.GetValue()]
+        colour = [value/255.0 for value in self.button_colour.GetColour()]
         Publisher.sendMessage('Set surface colour',
-                              surface_index=self.combo_surface_name.GetSelection(),
+                              surface_index=self.combo_brain_surface_name.GetSelection(),
                               colour=colour)
+    
+
 
 
 class LoggingTab(wx.Panel):

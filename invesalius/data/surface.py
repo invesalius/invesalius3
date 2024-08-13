@@ -220,10 +220,12 @@ class SurfaceManager:
         Publisher.subscribe(self.OnLoadSurfaceDict, "Load surface dict")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnSelectSurface, "Change surface selected")
+        Publisher.subscribe(self.OnShowOnlySurface, "Show only surface")
         # ----
         Publisher.subscribe(self.OnSplitSurface, "Split surface")
         Publisher.subscribe(self.OnLargestSurface, "Create surface from largest region")
         Publisher.subscribe(self.OnSeedSurface, "Create surface from seeds")
+        Publisher.subscribe(self.GetVisibleSurfaceActor, "Get visible surface actor")
 
         Publisher.subscribe(self.OnDuplicate, "Duplicate surfaces")
         Publisher.subscribe(self.OnRemove, "Remove surfaces")
@@ -696,13 +698,15 @@ class SurfaceManager:
 
     def OnSelectSurface(self, surface_index):
         # self.last_surface_index = surface_index
-        # self.actors_dict.
         proj = prj.Project()
         surface = proj.surface_dict[surface_index]
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
         self.last_surface_index = surface_index
         #  if surface.is_shown:
         self.ShowActor(surface_index, True)
+
+    def OnShowOnlySurface(self, surface_index):
+        Publisher.sendMessage("Show single surface", index=surface_index, visibility=True)
 
     def OnLoadSurfaceDict(self, surface_dict):
         for key in surface_dict:
@@ -1135,6 +1139,20 @@ class SurfaceManager:
 
     def OnShowSurface(self, index, visibility):
         self.ShowActor(index, visibility)
+    
+    def GetVisibleSurfaceActor(self):
+        """
+        Gets the first visible surface actor.
+        """
+        index = 0
+        for key in self.actors_dict:
+            if self.actors_dict[key].GetVisibility():
+                index = key
+                break
+        
+        Publisher.sendMessage("Load visible surface actor", actor=self.actors_dict[index], index=index)
+
+
 
     def ShowActor(self, index, value):
         """

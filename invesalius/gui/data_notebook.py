@@ -910,6 +910,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         for key in surface_dict:
             if not surface_dict[key].is_shown:
                 self.SetItemImage(key, False)
+    
 
     def RemoveSurfaces(self):
         """
