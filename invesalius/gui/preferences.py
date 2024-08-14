@@ -384,7 +384,7 @@ class NavigationTab(wx.Panel):
         self.navigation = navigation
         self.sleep_nav = self.navigation.sleep_nav
         self.sleep_coord = const.SLEEP_COORDINATES
-        self.force_adjust_distance = const.FORCE_ADJUST_DISTANCE
+        self.min_force_threshold = const.FORCE_ADJUST_DISTANCE
 
         self.LoadConfig()
 
@@ -439,7 +439,7 @@ class NavigationTab(wx.Panel):
 
         bsizer_force = wx.StaticBoxSizer(wx.VERTICAL, self, _("Force sensor adjustement"))
 
-        bsizer_force_options = wx.BoxSizer(wx.HORIZONTAL)
+        bsizer_excessive_force = wx.BoxSizer(wx.HORIZONTAL)
 
         rb_force_adjust = self.rb_force_adjust = wx.RadioBox(
             self,
@@ -449,20 +449,58 @@ class NavigationTab(wx.Panel):
             majorDimension=2,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
         )
-        bsizer_force_options.Add(rb_force_adjust, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
 
-        move_dist = wx.StaticText(self, -1, _("Move Distance (mm):"))
-        force_adjust_distance_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
-        force_adjust_distance_spin.Enable(1)
-        force_adjust_distance_spin.SetRange(2.0, 10.0)
-        force_adjust_distance_spin.SetValue(self.force_adjust_distance)
+        bsizer_excessive_force.Add(rb_force_adjust, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+
+        min_force_threshold = wx.StaticText(self, -1, _("Min force (N):"))
+        min_force_threshold_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        min_force_threshold_spin.Enable(1)
+        min_force_threshold_spin.SetRange(2.0, 10.0)
+        min_force_threshold_spin.SetValue(self.min_force_threshold)
         # spin_nav_move.Bind(wx.EVT_TEXT, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
         # spin_nav_move.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
 
-        bsizer_force_options.Add(move_dist, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
-        bsizer_force_options.Add(force_adjust_distance_spin, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
 
-        bsizer_force.Add(bsizer_force_options, 0, wx.TOP | wx.LEFT | wx.EXPAND, 0)
+        # Add this variable into a legit variable lol
+        self.max_force_threshold = 10.0
+        max_force_threshold = wx.StaticText(self, -1, _("Max force (N):"))
+        max_force_threshold_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        max_force_threshold_spin.Enable(1)
+        max_force_threshold_spin.SetRange(2.0, 20.0)
+        max_force_threshold_spin.SetValue(self.max_force_threshold)
+
+        bsizer_excessive_force.Add(min_force_threshold, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+        bsizer_excessive_force.Add(min_force_threshold_spin, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+        bsizer_excessive_force.Add(max_force_threshold, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+        bsizer_excessive_force.Add(max_force_threshold_spin, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+
+        bsizer_force.Add(bsizer_excessive_force, 0, wx.TOP | wx.LEFT | wx.EXPAND, 0)
+
+        bsizer_force_centering = wx.BoxSizer(wx.HORIZONTAL)
+        
+        ##### ADD ANOTHER rb_force_adjust
+        rb_force_centering = self.rb_force_adjust = wx.RadioBox(
+            self,
+            -1,
+            label="Force sensor-based centering",
+            choices=["No", "Yes"],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
+        )
+        bsizer_force_centering.Add(rb_force_centering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+
+        distance_threshold = wx.StaticText(self, -1, _("Distance threshold (mm):"))
+        distance_threshold_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        distance_threshold_spin.Enable(1)
+        distance_threshold_spin.SetRange(1.0, 10.0)
+        distance_threshold_spin.SetValue(self.min_force_threshold)
+        # spin_nav_move.Bind(wx.EVT_TEXT, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
+        # spin_nav_move.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
+
+        bsizer_force_centering.Add(distance_threshold, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+        bsizer_force_centering.Add(distance_threshold_spin, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
+        
+        bsizer_force.Add(bsizer_force_centering, 0, wx.TOP | wx.LEFT | wx.EXPAND, 0) # Last was fixed minisize from logging
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(conf_sizer, 0, wx.ALL | wx.EXPAND, 10)
@@ -495,7 +533,7 @@ class NavigationTab(wx.Panel):
             self.sleep_coord = sleep_coord
 
         if force_adjust_distance is not None:
-            self.force_adjust_distance = force_adjust_distance
+            self.min_force_threshold = force_adjust_distance
 
 
     def GetSelection(self):
