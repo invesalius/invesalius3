@@ -75,7 +75,6 @@ class Marker:
     z_offset: float = 0.0
     visualization: dict = dataclasses.field(default_factory=dict)
     marker_uuid: str = ""
-
     # #TODO: add a reference to original coil marker to relate it to MEP
     # in micro Volts (but scale in milli Volts for display)
     mep_value: float = dataclasses.field(default=None)
@@ -277,7 +276,6 @@ class Marker:
         z_offset = d.get("z_offset", 0.0)
         z_rotation = d.get("z_rotation", 0.0)
         is_point_of_interest = d.get("is_point_of_interest", False)
-
         mep_value = d.get("mep_value", None)
 
         self.size = d["size"]

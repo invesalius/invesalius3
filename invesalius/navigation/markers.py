@@ -212,7 +212,6 @@ class MarkersControl(metaclass=Singleton):
     def ChangeLabel(self, marker, new_label):
         marker.label = str(new_label)
         Publisher.sendMessage("Update marker label", marker=marker)
-
         self.SaveState()
 
     def ChangeMEP(self, marker, new_mep):

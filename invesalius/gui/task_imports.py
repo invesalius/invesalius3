@@ -30,7 +30,6 @@ import invesalius.gui.task_slice as slice_
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tractography as tractography
 from invesalius.pubsub import pub as Publisher
-
 # import invesalius.gui.task_mepmapping as mepmapping
 
 

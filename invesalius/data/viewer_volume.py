@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+import math
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -19,6 +21,7 @@
 # from math import cos, sin
 import os
 import queue
+import random
 import sys
 
 import numpy as np
@@ -34,15 +37,18 @@ from vtkmodules.vtkCommonCore import (
     vtkDoubleArray,
     vtkIdList,
     vtkLookupTable,
+    vtkMath,
     vtkPoints,
     vtkUnsignedCharArray,
 )
 from vtkmodules.vtkCommonDataModel import (
+    vtkCellLocator,
     vtkPolyData,
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import vtkCenterOfMass, vtkGlyph3D, vtkPolyDataNormals
+from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
 from vtkmodules.vtkFiltersModeling import vtkBandedPolyDataContourFilter
 from vtkmodules.vtkFiltersSources import (
@@ -86,6 +92,7 @@ from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteracto
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
+import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
@@ -95,6 +102,7 @@ import invesalius.style as st
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data.actor_factory import ActorFactory
+from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.ruler_volume import GenericLeftRulerVolume
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
@@ -1339,16 +1347,16 @@ class Viewer(wx.Panel):
 
     def UpdatePointer(self, position):
         """
-        When not navigating, update the position of the pointer sphere. It is done
-        when the slice planes are moved or a new point is selected from the volume viewer.
+        Update the position of the pointer sphere. It is done when the navigation without object is on,
+        slice planes are moved or a new point is selected from the volume viewer.
         """
-        # Update the pointer sphere when not navigating.
-        if self.pointer_actor is not None and not self.nav_status:
-            self.pointer_actor.SetPosition(position)
-
-            # Update the render window manually, as it is not updated automatically when not navigating.
-            if not self.nav_status:
-                self.UpdateRender()
+        # Update the pointer sphere.
+        if self.pointer_actor is None:
+            self.CreatePointer()
+        self.pointer_actor.SetPosition(position)
+        # Update the render window manually, as it is not updated automatically when not navigating.
+        if not self.nav_status:
+            self.UpdateRender()
 
     def ObjectArrowLocation(self, m_img, coord):
         # m_img[:3, 0] is from posterior to anterior direction of the coil
@@ -1362,8 +1370,9 @@ class Viewer(wx.Panel):
         coil_face = m_img_flip[:-1, 1]
 
         coil_norm = np.cross(coil_dir, coil_face)
-        # point normal to the coil away from the center by vec_length
-        p2_norm = p1 - vec_length * coil_norm
+        p2_norm = (
+            p1 - vec_length * coil_norm
+        )  # point normal to the coil away from the center by vec_length
         coil_dir = np.array([coord[3], coord[4], coord[5]])
 
         return coil_dir, p2_norm, coil_norm, p1
@@ -1493,8 +1502,12 @@ class Viewer(wx.Panel):
 
             proj = prj.Project()
             timestamp = time.localtime(time.time())
-            stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
-            stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
+            stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
+                timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
+            )
+            stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
+                timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
+            )
             sep = "-"
 
             if self.path_meshes is None:
@@ -1552,7 +1565,7 @@ class Viewer(wx.Panel):
     def CalculateDistanceMaxEfieldCoGE(self):
         self.distance_efield = distance.euclidean(self.center_gravity_position, self.position_max)
         self.SpreadEfieldFactorTextActor.SetValue(
-            "Spread distance: " + str(f"{self.distance_efield:04.2f}")
+            "Spread distance: " + str("{:04.2f}".format(self.distance_efield))
         )
 
     def EfieldVectors(self):
@@ -1692,15 +1705,12 @@ class Viewer(wx.Panel):
 
     def find_and_extract_data(self, csv_filename, target_numbers):
         import csv
-
         matching_rows = []
-
-        with open(csv_filename) as csvfile:
+        with open(csv_filename, "r") as csvfile:
             csv_reader = csv.reader(csvfile)
             for row in csv_reader:
                 # Extract the first three numbers from the current row
                 first_three_numbers = list(map(float, row[:3]))
-
                 # Check if the first three numbers match the target numbers
                 if first_three_numbers == target_numbers:
                     # If there's a match, append the row (excluding the first three numbers)
@@ -1969,14 +1979,15 @@ class Viewer(wx.Panel):
 
     def ShowEfieldAtCortexTarget(self):
         if self.target_at_cortex is not None:
+            import vtk
             index = self.efield_mesh.FindPoint(self.target_at_cortex)
             if index in self.Id_list:
                 cell_number = self.Id_list.index(index)
                 self.EfieldAtTargetLegend.SetValue(
-                    "Efield at Target: " + str(f"{self.e_field_norms[cell_number]:04.2f}")
+                    "Efield at Target: " + str("{:04.2f}".format(self.e_field_norms[cell_number]))
                 )
             else:
-                self.EfieldAtTargetLegend.SetValue("Efield at Target: " + str(f"{0:04.2f}"))
+                self.EfieldAtTargetLegend.SetValue("Efield at Target: " + str("{:04.2f}".format(0)))
 
     def CreateEfieldAtTargetLegend(self):
         if self.EfieldAtTargetLegend is not None:
@@ -2199,11 +2210,11 @@ class Viewer(wx.Panel):
 
                     proj = prj.Project()
                     timestamp = time.localtime(time.time())
-                    stamp_date = (
-                        f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+                    stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
+                        timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
                     )
-                    stamp_time = (
-                        f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
+                    stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
+                        timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
                     )
                     sep = "-"
 
@@ -2314,7 +2325,7 @@ class Viewer(wx.Panel):
 
     def SavedAllEfieldData(self, filename):
         import csv
-
+        import invesalius.data.imagedata_utils as imagedata_utils
         header = [
             "Marker ID",
             "Enorm cell indexes",

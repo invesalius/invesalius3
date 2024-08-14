@@ -1225,6 +1225,7 @@ def ShowEnterMEPValue(default):
         dlg.Destroy()
 
     dlg.Destroy()
+
     return result
 
 
