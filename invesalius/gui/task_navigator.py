@@ -2234,9 +2234,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     brain_target_menu_item = menu_id.Append(
                         unique_menu_id + 4, _("Set brain target")
                     )
-                    brain_target_menu_item = menu_id.Append(
-                        unique_menu_id + 4, _("Set brain target")
-                    )
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
                 target_menu_item = menu_id.Append(unique_menu_id + 5, _("Set as target"))

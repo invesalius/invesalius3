@@ -9,7 +9,6 @@ import numpy as np
 import wx
 import wx.lib.colourselect as csel
 
-
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
@@ -156,7 +155,6 @@ class Preferences(wx.Dialog):
 class VisualizationTab(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.__bind_events()
 
         self.session = ses.Session()
 
@@ -215,9 +213,6 @@ class VisualizationTab(wx.Panel):
 
         self.SetSizerAndFit(border)
         self.Layout()
-
-    def __bind_events(self):
-        pass
 
     def GetSelection(self):
         options = {
