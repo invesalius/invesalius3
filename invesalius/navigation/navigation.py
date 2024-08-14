@@ -145,10 +145,10 @@ class UpdateNavigationScene(threading.Thread):
                 got_coords = True
 
                 probe_visible = marker_visibilities[0]
-                coil_visible = marker_visibilities[2] # LUKATODO: will static mode work with this?
+                coil_visible = marker_visibilities[2]
                 #LUKATODO: this goes all the way to the wrappers, but should have coils_visible dict...
 
-                # automatically track either coil or stylus if only one of them is visible, otherise use navigation.track_coil
+                # automatically track either coil or stylus if only one of them is visible, otherwise use navigation.track_coil
                 track_coil = (
                     (coil_visible or not probe_visible)
                     if (coil_visible ^ probe_visible)
@@ -158,10 +158,7 @@ class UpdateNavigationScene(threading.Thread):
                 track_this = main_coil if track_coil else "probe"
                 # choose which object to track in slices and viewer_volume pointer
                 coord = coords[track_this]
-                m_img = m_imgs[track_this]
                 
-                #LUKATODO: do Debug approach here
-
                 # Remove probe, so that coords/m_imgs only contain coils
                 probe_coord = coords.pop("probe")
                 probe_m_img = m_imgs.pop("probe")
@@ -212,11 +209,11 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(
                         Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
                     )
-                    wx.CallAfter( # LUKATODO: this is just for viewer_volume...
+                    wx.CallAfter( # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
                         Publisher.sendMessage, "Update coil pose", m_img=m_imgs[main_coil], coord=coords[main_coil]
                     )
                     wx.CallAfter(
-                        Publisher.sendMessage, #LUKATODO: what is this?
+                        Publisher.sendMessage,
                         "Update object arrow matrix",
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
@@ -561,7 +558,6 @@ class Navigation(metaclass=Singleton):
 
             coreg_data = [self.m_change, self.r_stylus]
 
-            # LUKATODO: coord_queue is accounted for but what about others for multicoil?
             queues = [
                 self.coord_queue,
                 self.coord_tracts_queue,

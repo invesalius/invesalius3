@@ -252,14 +252,14 @@ class CoilVisualizer:
 
     def RemoveCoil(self, coil_name=None):
         if coil_name is not None:
-            coil = self.coils.pop(coil_name)
-            self.renderer.RemoveActor(coil["actor"])
-            self.renderer.RemoveActor(coil["center_actor"])
+            coil = self.coils.pop(coil_name, None)
+            if coil is not None:
+                self.renderer.RemoveActor(coil["actor"])
+                self.renderer.RemoveActor(coil["center_actor"])
         else:  # Remove all coils
             for coil in self.coils.values():
                 self.renderer.RemoveActor(coil["actor"])
                 self.renderer.RemoveActor(coil["center_actor"])
-            # LUKATODO: what about target_actors and other things?
             self.coils = {}
 
         self.interactor.Render()
@@ -285,5 +285,5 @@ class CoilVisualizer:
             self.coils[name]["actor"].SetUserMatrix(m_img_vtk)
             self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
 
-            # LUKATODO: what to do with this??? Is mtms field needed? If not, just delete vector_field_assembly...?
-            # self.vector_field_assembly[name].SetUserMatrix(m_img_vtk)
+            # LUKATODO
+            self.vector_field_assembly[name].SetUserMatrix(m_img_vtk)

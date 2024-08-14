@@ -1152,9 +1152,6 @@ class StimulatorPage(wx.Panel):
 
     def OnCloseProject(self):
         Publisher.sendMessage("Enable start navigation button", enabled=False)
-        # LUKATODO: delete the below?
-        Publisher.sendMessage("Press track object button", pressed=False)
-        Publisher.sendMessage("Enable track object button", enabled=False)
 
     def CoilSelectionDone(self, done):
         if done:

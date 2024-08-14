@@ -393,7 +393,7 @@ class CoordinateCorregistrate(threading.Thread):
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
 
                 coord_probe, m_img_probe = corregistrate_probe(
-                    m_change, r_stylus, coord_raw, self.ref_mode_id
+                    m_change, r_stylus, coord_raw, self.ref_mode_id, icp=[self.use_icp, self.m_icp]
                 )
 
                 coords = {"probe": coord_probe}
@@ -405,18 +405,34 @@ class CoordinateCorregistrate(threading.Thread):
                     )
                     coords[coil_name] = coord_coil
                     m_imgs[coil_name] = m_img_coil
-                
-                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
-                
-                # LUKATODO: Refactor so that all coils are processed
-                # we need tracts, efield, etc. for all coils. 
-                # what about icp for stylus?
 
-                # LUKATODO: this is an arbitrary coil... 
-                main_coil = next(iter(obj_datas)) 
+
+                # LUKATODO: this is an arbitrary coil, so efields/tracts work correctly with 1 coil but may bug out when using multiple
+                main_coil = next(iter(obj_datas))
                 coord = coords[main_coil]
                 m_img = m_imgs[main_coil]
 
+                # XXX: This is not the best place to do the logic related to approaching the target when the
+                #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
+                #      the tracker space where it is hard to make the tracker approach the target in the image space.
+                #      Ideally, the transformation from the tracker space to the image space (the function
+                #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
+                #      tracker, and then the whole class would be mocked when using the debug tracker.
+                if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
+                    if self.last_coord is None:
+                        self.last_coord = np.array(coord)
+                    else:
+                        coord = self.last_coord + (self.target - self.last_coord) * 0.05
+                        coords[main_coil] = coord
+                        self.last_coord = coord
+                    
+                    angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
+                    translate = coord[0:3]
+                    m_imgs[main_coil] = tr.compose_matrix(angles=angles, translate=translate)
+                
+                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
+
+                # Compute data for efield/tracts 
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
 
@@ -431,27 +447,3 @@ class CoordinateCorregistrate(threading.Thread):
 
             # The sleep has to be in both threads
             sleep(self.sle)
-                
-                
-            # LUKATODO: move below Debug approach to UpdateNavigationScene
-            # Better way to do debug approach...? Just change the main_coil coord in UpdateNavigationScene...
-            """
-            # XXX: This is not the best place to do the logic related to approaching the target when the
-            #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
-            #      the tracker space where it is hard to make the tracker approach the target in the image space.
-            #      Ideally, the transformation from the tracker space to the image space (the function
-            #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
-            #      tracker, and then the whole class would be mocked when using the debug tracker. However,
-            #      those abstractions do not currently exist and doing them would need a larger refactoring.
-                if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
-                if self.last_coord is None:
-                    self.last_coord = np.array(coord_coil)
-                else:
-                    coord = self.last_coord + (self.target - self.last_coord) * 0.05
-                    coords[1] = coord
-                    self.last_coord = coord
-
-                angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
-                translate = coord[0:3]
-                m_imgs[1] = tr.compose_matrix(angles=angles, translate=translate)
-            """

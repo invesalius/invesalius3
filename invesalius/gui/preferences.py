@@ -887,7 +887,7 @@ class ObjectTab(wx.Panel):
             self,
             -1,
             _(
-                f"Choose {navigation.n_coils} coils to use. If there are not enough options, create coil configurations below. Here you can also edit configurations by using the same name. Unused coils can be deleted by right-clicking its button."
+                f"Choose {navigation.n_coils} coils to use. If there are not enough options, create coil configurations below. You can edit configurations by overwriting them. Unused coils can be deleted by right-clicking its button."
             ),
         )
         # instruction_lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
@@ -1074,11 +1074,11 @@ class ObjectTab(wx.Panel):
                 btn.Enable(btn.GetValue())
 
 
-    def OnSelectCoil(self, event, name):
+    def OnSelectCoil(self, event=None, name=None, select=False):
         coil_registration = None
         navigation = self.navigation
 
-        if event.GetSelection():  # If coil is selected
+        if select or (event is not None and event.GetSelection()):  # If coil is selected
             coil_registration = self.coil_registrations[name]
 
             # Check that the index of the chosen coil does not conflict with other selected coils
@@ -1145,11 +1145,9 @@ class ObjectTab(wx.Panel):
         self.session.SetConfig("coil_registrations", self.coil_registrations)
 
         # Unselect the coil, because the new id may cause conflicts
-        Publisher.sendMessage("Select coil", coil_name=name, coil_registration=None)
-
         self.coil_btns[name][0].SetValue(False)
-        for btn, *junk in self.coil_btns.values():  # Enable all coil-buttons
-            btn.Enable(True)
+        self.OnSelectCoil(name=name, select=False)
+
         event.GetEventObject().Destroy()  # Delete the obj_id combobox
 
     def OnRightClickCoil(self, event, name):
@@ -1208,6 +1206,21 @@ class ObjectTab(wx.Panel):
                         dialog.GetValue()
                     )
 
+                    if coil_name in self.coil_registrations:
+                        # Warn that we are overwriting an old registration
+                        dialog = wx.TextEntryDialog(
+                            None,
+                            _("A registration with this name already exists. Enter a new name or overwrite an old coil registration"),
+                            _("Warning: Coil Name Conflict"),
+                            value=coil_name,
+                        )
+                        if dialog.ShowModal() == wx.ID_OK:
+                            coil_name = dialog.GetValue().strip()  # Update coil_name with user input
+                        else:
+                            return  # Cancel the operation if the user closes the dialog or cancels
+                        dialog.Destroy()
+
+
                     # LUKATODO: update coil mesh elsewhere
                     # self.neuronavigation_api.update_coil_mesh(polydata)
 
@@ -1222,11 +1235,14 @@ class ObjectTab(wx.Panel):
                         self.coil_registrations[coil_name] = coil_registration
                         self.session.SetConfig("coil_registrations", self.coil_registrations)
                         self.AddCoilButton(coil_name)  # Add a button for this coil to GUI
-                        self.Layout()
 
-                        # Update the coil registration in Navigation if we just edited an existing coil_name
-                        if self.coil_btns[coil_name][0].GetValue():
-                            self.navigation.coil_registrations[coil_name] = coil_registration
+                        # if we just edited a currently selected coil_name, unselect it (to avoid possible conflicts caused by new registration)
+                        coil_btn = self.coil_btns[coil_name][0]
+                        if coil_btn.GetValue():
+                            coil_btn.SetValue(False)
+                            self.OnSelectCoil(name=coil_name, select=False)
+                        
+                        self.Layout()
 
                         # LUKATODO: delete the below with dependencies
                         Publisher.sendMessage("Press target mode button", pressed=False)
@@ -1259,6 +1275,20 @@ class ObjectTab(wx.Panel):
                 tracker_id = int(data[0][3])
                 obj_id = int(data[0][-1])
 
+                if coil_name in self.coil_registrations:
+                    # Warn that we are overwriting an old registration
+                    dialog = wx.TextEntryDialog(
+                        None,
+                        _("A registration with this name already exists. Enter a new name or overwrite an old coil registration"),
+                        _("Warning: Coil Name Conflict"),
+                        value=coil_name,
+                    )
+                    if dialog.ShowModal() == wx.ID_OK:
+                        coil_name = dialog.GetValue().strip()  # Update coil_name with user input
+                    else:
+                        return  # Cancel the operation if the user closes the dialog or cancels
+                    dialog.Destroy()
+
                 if not os.path.exists(coil_path):
                     coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
@@ -1281,6 +1311,15 @@ class ObjectTab(wx.Panel):
                     self.coil_registrations[coil_name] = coil_registration
                     self.session.SetConfig("coil_registrations", self.coil_registrations)
                     self.AddCoilButton(coil_name)  # Add a button for this coil to GUI
+
+                    # if we just overwrote a currently selected coil_name, unselect it (to avoid possible conflicts caused by this loaded registration)
+                    coil_btn = self.coil_btns[coil_name][0]
+                    if coil_btn.GetValue():
+                        coil_btn.SetValue(False)
+                        self.OnSelectCoil(name=coil_name, select=False)
+                    elif self.navigation.CoilSelectionDone():
+                        coil_btn.Enable(False)
+
                     self.Layout()
 
                 Publisher.sendMessage(

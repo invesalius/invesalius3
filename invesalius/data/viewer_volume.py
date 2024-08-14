@@ -2173,7 +2173,7 @@ class Viewer(wx.Panel):
             if session.GetConfig("debug_efield"):
                 self.e_field_norms = enorm_data[3][self.Id_list, 0]
                 self.e_field_col1 = enorm_data[3][self.Id_list, 1]
-                self.e_field_col2 = enorm_data[3][self.Id_list, 1]
+                self.e_field_col2 = enorm_data[3][self.Id_list, 1] #LUKATODO: is this a typo?
                 self.e_field_col3 = enorm_data[3][self.Id_list, 3]
                 self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
                 max = np.array(self.e_field_norms).argmax()
