@@ -21,6 +21,7 @@ from copy import deepcopy
 
 import numpy as np
 import vtk
+from vtk import vtkColorTransferFunction
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
@@ -165,7 +166,6 @@ class MEPVisualizer:
         Returns:
             vtkColorTransferFunction: The created color transfer function.
         """
-        from vtk import vtkColorTransferFunction
 
         color_function = vtkColorTransferFunction()
         choice = choice or self._config_params["mep_colormap"]
