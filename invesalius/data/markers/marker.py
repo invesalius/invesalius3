@@ -277,16 +277,13 @@ class Marker:
         z_offset = d.get("z_offset", 0.0)
         z_rotation = d.get("z_rotation", 0.0)
         is_point_of_interest = d.get("is_point_of_interest", False)
-        z_offset = d.get("z_offset", 0.0)
-        z_rotation = d.get("z_rotation", 0.0)
-        is_point_of_interest = d.get("is_point_of_interest", False)
 
         mep_value = d.get("mep_value", None)
 
-        self.size = d['size']
-        self.label = d['label']
-        self.is_target = d['is_target']
-        self.session_id = d['session_id']
+        self.size = d["size"]
+        self.label = d["label"]
+        self.is_target = d["is_target"]
+        self.session_id = d["session_id"]
 
         self.position = position
         self.orientation = orientation

@@ -17,6 +17,8 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple
+
 import gdcm
 import numpy as np
 from vtkmodules.util import numpy_support
@@ -25,15 +27,18 @@ from vtkmodules.vtkCommonCore import (
 )
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkImageData, vtkPolyData, vtkTriangle
 
+if TYPE_CHECKING:
+    import os
+
 
 def to_vtk(
-    n_array,
-    spacing=(1.0, 1.0, 1.0),
-    slice_number=0,
-    orientation="AXIAL",
-    origin=(0, 0, 0),
-    padding=(0, 0, 0),
-):
+    n_array: np.ndarray,
+    spacing: Sequence[float] = (1.0, 1.0, 1.0),
+    slice_number: int = 0,
+    orientation: str = "AXIAL",
+    origin: Sequence[float] = (0, 0, 0),
+    padding: Tuple[int, int, int] = (0, 0, 0),
+) -> vtkImageData:
     if orientation == "SAGITTAL":
         orientation = "SAGITAL"
 
@@ -96,7 +101,11 @@ def to_vtk(
     return image_copy
 
 
-def to_vtk_mask(n_array, spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0)):
+def to_vtk_mask(
+    n_array: np.ndarray,
+    spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0),
+    origin: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> vtkImageData:
     dz, dy, dx = n_array.shape
     ox, oy, oz = origin
     sx, sy, sz = spacing
@@ -127,7 +136,7 @@ def to_vtk_mask(n_array, spacing=(1.0, 1.0, 1.0), origin=(0.0, 0.0, 0.0)):
     return image
 
 
-def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)):
+def np_rgba_to_vtk(n_array: np.ndarray, spacing: Sequence[float] = (1.0, 1.0, 1.0)) -> vtkImageData:
     dy, dx, dc = n_array.shape
     v_image = numpy_support.numpy_to_vtk(n_array.reshape(dy * dx, dc))
 
@@ -150,7 +159,7 @@ def np_rgba_to_vtk(n_array, spacing=(1.0, 1.0, 1.0)):
 
 
 # Based on http://gdcm.sourceforge.net/html/ConvertNumpy_8py-example.html
-def gdcm_to_numpy(image, apply_intercep_scale=True):
+def gdcm_to_numpy(image: gdcm.Image, apply_intercep_scale: bool = True):
     map_gdcm_np = {
         gdcm.PixelFormat.SINGLEBIT: np.uint8,
         gdcm.PixelFormat.UINT8: np.uint8,
@@ -194,7 +203,7 @@ def gdcm_to_numpy(image, apply_intercep_scale=True):
         return np_array
 
 
-def convert_custom_bin_to_vtk(filename):
+def convert_custom_bin_to_vtk(filename: "str | bytes | os.PathLike[str]") -> Optional[vtkPolyData]:
     import os
 
     if os.path.exists(filename):
@@ -228,4 +237,4 @@ def convert_custom_bin_to_vtk(filename):
         return polydata
     else:
         print("File does not exists")
-        return
+        return None

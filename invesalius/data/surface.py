@@ -698,6 +698,7 @@ class SurfaceManager:
 
     def OnSelectSurface(self, surface_index):
         # self.last_surface_index = surface_index
+        # self.actors_dict.
         proj = prj.Project()
         surface = proj.surface_dict[surface_index]
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
@@ -1139,7 +1140,7 @@ class SurfaceManager:
 
     def OnShowSurface(self, index, visibility):
         self.ShowActor(index, visibility)
-    
+
     def GetVisibleSurfaceActor(self):
         """
         Gets the first visible surface actor.
@@ -1149,10 +1150,10 @@ class SurfaceManager:
             if self.actors_dict[key].GetVisibility():
                 index = key
                 break
-        
-        Publisher.sendMessage("Load visible surface actor", actor=self.actors_dict[index], index=index)
 
-
+        Publisher.sendMessage(
+            "Load visible surface actor", actor=self.actors_dict[index], index=index
+        )
 
     def ShowActor(self, index, value):
         """

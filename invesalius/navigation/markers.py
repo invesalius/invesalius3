@@ -39,7 +39,6 @@ class MarkersControl(metaclass=Singleton):
 
         session = ses.Session()
         session.SetState("markers", state)
-        # self.BroadcastMarkerList()
 
     def LoadState(self):
         session = ses.Session()

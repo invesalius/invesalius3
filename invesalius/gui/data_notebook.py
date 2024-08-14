@@ -310,7 +310,7 @@ class ButtonControlPanel(wx.Panel):
                 ok = 1
             else:
                 ok = 0
-        except wx._core.PyAssertionError:  # TODO FIX: win64
+        except wx.PyAssertionError:  # TODO FIX: win64
             ok = 1
 
         if ok:
@@ -546,7 +546,7 @@ class MasksListCtrlPanel(InvListCtrl):
         try:
             self.SetItemImage(index, 1)
             self.current_index = index
-        except wx._core.PyAssertionError:
+        except wx.PyAssertionError:
             # in SetItem(): invalid item index in SetItem
             pass
         for key in self.mask_list_index.keys():
@@ -750,7 +750,7 @@ class SurfaceButtonControlPanel(wx.Panel):
                 ok = 1
             else:
                 ok = 0
-        except wx._core.PyAssertionError:  # TODO FIX: win64
+        except wx.PyAssertionError:  # TODO FIX: win64
             ok = 1
 
         if ok:
@@ -910,7 +910,6 @@ class SurfacesListCtrlPanel(InvListCtrl):
         for key in surface_dict:
             if not surface_dict[key].is_shown:
                 self.SetItemImage(key, False)
-    
 
     def RemoveSurfaces(self):
         """
