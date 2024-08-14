@@ -80,6 +80,9 @@ class Preferences(wx.Dialog):
             self.book.SetMinClientSize((min_width * 2, min_height * 2))
         self.book.SetSelection(page)
 
+        self.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnCharHook)
+
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.book, 1, wx.EXPAND | wx.ALL)
         sizer.Add(btnsizer, 0, wx.GROW | wx.RIGHT | wx.TOP | wx.BOTTOM, 5)
@@ -89,6 +92,17 @@ class Preferences(wx.Dialog):
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadPreferences, "Load Preferences")
+
+    def OnOK(self, event):
+        Publisher.sendMessage("Save Preferences")
+        self.EndModal(wx.ID_OK)
+
+    def OnCharHook(self, event):
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
+        if event.GetKeyCode() == wx.WXK_RETURN:
+            self.OnOK(event)
+        event.Skip()
 
     def GetPreferences(self):
         values = {}

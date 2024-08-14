@@ -121,7 +121,6 @@ class MEPVisualizer:
         surface = self.surface
         points = self.points
         if not surface:
-            print("MEP Visualizer: No surface data found")
             # TODO: Show modal dialog to select a surface from project
             return
         if not points:
