@@ -18,14 +18,13 @@
 # --------------------------------------------------------------------------
 
 import itertools
-import os.path
-import platform
 import sys
+from typing import Dict, List, Optional, Tuple, Union
 
 import psutil
 import wx
 
-from invesalius import inv_paths, utils
+from invesalius import inv_paths
 from invesalius.i18n import tr as _
 
 # from invesalius.project import Project
@@ -183,7 +182,9 @@ CROP_PAN = 13
 
 # Color Table from Slice
 # NumberOfColors, SaturationRange, HueRange, ValueRange
-SLICE_COLOR_TABLE = {
+SLICE_COLOR_TABLE: Dict[
+    str, Tuple[Optional[int], Tuple[int, int], Tuple[float, float], Tuple[int, int]]
+] = {
     _("Default "): (None, (0, 0), (0, 0), (0, 1)),
     _("Hue"): (None, (1, 1), (0, 1), (1, 1)),
     _("Saturation"): (None, (0, 1), (0.6, 0.6), (1, 1)),
@@ -289,7 +290,7 @@ THRESHOLD_OUTVALUE = 0
 MASK_NAME_PATTERN = _("Mask %d")
 MASK_OPACITY = 0.40
 # MASK_OPACITY = 0.35
-MASK_COLOUR = [
+MASK_COLOUR: List[List[float]] = [
     [0.33, 1, 0.33],
     [1, 1, 0.33],
     [0.33, 0.91, 1],
@@ -311,7 +312,7 @@ MASK_COLOUR = [
 
 MEASURE_COLOUR = itertools.cycle([[1, 0, 0], [1, 0.4, 0], [0, 0, 1], [1, 0, 1], [0, 0.6, 0]])
 
-SURFACE_COLOUR = [
+SURFACE_COLOUR: List[Tuple[float, float, float]] = [
     (0.33, 1, 0.33),
     (1, 1, 0.33),
     (0.33, 0.91, 1),
@@ -373,7 +374,7 @@ SURFACE_SPACE_INV = 1
 SURFACE_SPACE_CHOICES = [_("world/scanner space"), _("InVesalius space")]
 
 # Imagedata - window and level presets
-WINDOW_LEVEL = {
+WINDOW_LEVEL: Dict[str, Union[Tuple[int, int], Tuple[None, None]]] = {
     _("Abdomen"): (350, 50),
     _("Bone"): (2000, 300),
     _("Brain posterior fossa"): (120, 40),

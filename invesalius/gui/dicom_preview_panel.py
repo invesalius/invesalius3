@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,14 +15,14 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 # -*- coding: UTF-8 -*-
 
-#TODO: To create a beautiful API
+# TODO: To create a beautiful API
 import sys
-import time
 import tempfile
+import time
 
 import wx
 from vtkmodules.vtkImagingColor import vtkImageMapToWindowLevelColors
@@ -32,18 +32,18 @@ from vtkmodules.vtkIOImage import vtkPNGReader
 from vtkmodules.vtkRenderingCore import vtkImageActor, vtkRenderer
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
-from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
-import invesalius.reader.dicom_reader as dicom_reader
 import invesalius.data.vtk_utils as vtku
+import invesalius.reader.dicom_reader as dicom_reader
 import invesalius.utils as utils
-from invesalius.data import imagedata_utils
-from invesalius.data import converters
+from invesalius.data import converters, imagedata_utils
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
+from invesalius.pubsub import pub as Publisher
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     try:
         import win32api
+
         _has_win32api = True
     except ImportError:
         _has_win32api = False
@@ -52,11 +52,11 @@ else:
 
 NROWS = 3
 NCOLS = 6
-NUM_PREVIEWS = NCOLS*NROWS
+NUM_PREVIEWS = NCOLS * NROWS
 PREVIEW_WIDTH = 70
 PREVIEW_HEIGTH = 70
 
-PREVIEW_BACKGROUND = (255, 255, 255) # White
+PREVIEW_BACKGROUND = (255, 255, 255)  # White
 
 STR_SIZE = _("Image size: %d x %d")
 STR_SPC = _("Spacing: %.2f")
@@ -87,7 +87,7 @@ class SelectionEvent(wx.PyCommandEvent):
 
 
 class PreviewEvent(wx.PyCommandEvent):
-    def __init__(self , evtType, id):
+    def __init__(self, evtType, id):
         super(PreviewEvent, self).__init__(evtType, id)
 
     def GetSelectID(self):
@@ -101,16 +101,16 @@ class PreviewEvent(wx.PyCommandEvent):
 
     def GetPressedShift(self):
         return self.pressed_shift
-    
+
     def SetItemData(self, data):
         self.data = data
 
     def SetShiftStatus(self, status):
         self.pressed_shift = status
-    
+
 
 class SerieEvent(PreviewEvent):
-    def __init__(self , evtType, id):
+    def __init__(self, evtType, id):
         super(SerieEvent, self).__init__(evtType, id)
 
 
@@ -118,6 +118,7 @@ class DicomInfo(object):
     """
     Keep the informations and the image used by preview.
     """
+
     def __init__(self, id, dicom, title, subtitle, n=0):
         self.id = id
         self.dicom = dicom
@@ -137,16 +138,17 @@ class DicomInfo(object):
                 bmp = wx.Bitmap(self.dicom.image.thumbnail_path, wx.BITMAP_TYPE_PNG)
             self._preview = bmp.ConvertToImage()
         return self._preview
-        
+
     def release_thumbnail(self):
         self._preview = None
+
 
 class DicomPaintPanel(wx.Panel):
     def __init__(self, parent):
         super(DicomPaintPanel, self).__init__(parent)
         self._bind_events()
         self.image = None
-        self.last_size = (10,10)
+        self.last_size = (10, 10)
 
     def _bind_events(self):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
@@ -161,7 +163,7 @@ class DicomPaintPanel(wx.Panel):
         self.Layout()
         new_size = self.GetSize()
         # This is necessary due to darwin problem #
-        if new_size != (0,0):
+        if new_size != (0, 0):
             self.last_size = new_size
             return image.Scale(*new_size)
         else:
@@ -190,6 +192,7 @@ class Preview(wx.Panel):
     """
     The little previews.
     """
+
     def __init__(self, parent):
         super(Preview, self).__init__(parent)
         # Will it be white?
@@ -206,12 +209,9 @@ class Preview(wx.Panel):
         self.image_viewer = DicomPaintPanel(self)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.title, 0,
-                        wx.ALIGN_CENTER_HORIZONTAL)
-        self.sizer.Add(self.subtitle, 0,
-                        wx.ALIGN_CENTER_HORIZONTAL)
-        self.sizer.Add(self.image_viewer, 1, wx.ALIGN_CENTRE_HORIZONTAL \
-                       | wx.SHAPED | wx.ALL, 5)
+        self.sizer.Add(self.title, 0, wx.ALIGN_CENTER_HORIZONTAL)
+        self.sizer.Add(self.subtitle, 0, wx.ALIGN_CENTER_HORIZONTAL)
+        self.sizer.Add(self.image_viewer, 1, wx.ALIGN_CENTRE_HORIZONTAL | wx.SHAPED | wx.ALL, 5)
         self.sizer.Fit(self)
 
         self.SetSizer(self.sizer)
@@ -222,30 +222,30 @@ class Preview(wx.Panel):
         self.SetAutoLayout(1)
 
     def _bind_events(self):
-        self.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        #self.interactor.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        #self.panel.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        #self.title.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        #self.subtitle.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDClick)
+        # self.interactor.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        # self.panel.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        # self.title.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        # self.subtitle.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
 
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        #self.interactor.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        #self.panel.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        #self.title.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        #self.subtitle.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        # self.interactor.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        # self.panel.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        # self.title.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        # self.subtitle.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
 
         self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        #self.interactor.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        #self.panel.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        #self.title.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        #self.subtitle.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        # self.interactor.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        # self.panel.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        # self.title.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        # self.subtitle.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
 
         self.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         self.image_viewer.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
 
-        #self.Bind(wx.EVT_SIZE, self.OnSize)
+        # self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def SetDicomToPreview(self, dicom_info):
         """
@@ -274,7 +274,7 @@ class Preview(wx.Panel):
 
     def OnEnter(self, evt):
         if not self.select_on:
-            #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
+            # c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
             try:
                 c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
             except AttributeError:
@@ -283,11 +283,10 @@ class Preview(wx.Panel):
 
     def OnLeave(self, evt):
         if not self.select_on:
-            c = (PREVIEW_BACKGROUND)
+            c = PREVIEW_BACKGROUND
             self.SetBackgroundColour(c)
 
     def OnSelect(self, evt):
-
         shift_pressed = False
         if evt.shiftDown:
             shift_pressed = True
@@ -297,16 +296,16 @@ class Preview(wx.Panel):
         self.dicom_info.selected = True
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HOTLIGHT)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+        # c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_GRADIENTACTIVECAPTION)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNSHADOW)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_ACTIVEBORDER)
-        #*c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DLIGHT)
-        #*c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHIGHLIGHT)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DDKSHADOW)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW)
-        #self.SetBackgroundColour(c)
+        # c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNSHADOW)
+        # c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_ACTIVEBORDER)
+        # *c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DLIGHT)
+        # *c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
+        # c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHIGHLIGHT)
+        # c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DDKSHADOW)
+        # c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW)
+        # self.SetBackgroundColour(c)
         self.Select()
 
         # Generating a EVT_PREVIEW_CLICK event
@@ -317,7 +316,6 @@ class Preview(wx.Panel):
         my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
         evt.Skip()
-        
 
     def OnSize(self, evt):
         if self.dicom_info:
@@ -331,7 +329,7 @@ class Preview(wx.Panel):
             except AttributeError:
                 c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
         else:
-            c = (PREVIEW_BACKGROUND)
+            c = PREVIEW_BACKGROUND
         self.SetBackgroundColour(c)
         self.Refresh()
 
@@ -345,12 +343,13 @@ class Preview(wx.Panel):
 
 class DicomPreviewSeries(wx.Panel):
     """A dicom series preview panel"""
+
     def __init__(self, parent):
         super(DicomPreviewSeries, self).__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
-        #self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        #self.SetSizer(self.sizer)
+        # self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # self.SetSizer(self.sizer)
         self.displayed_position = 0
         self.nhidden_last_display = 0
         self.selected_dicom = None
@@ -364,11 +363,11 @@ class DicomPreviewSeries(wx.Panel):
         self.grid = wx.GridSizer(rows=NROWS, cols=NCOLS, vgap=3, hgap=3)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        sizer.Add(self.grid, 1, wx.EXPAND | wx.GROW | wx.ALL, 2)
 
         background_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        background_sizer.Add(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
+        background_sizer.Add(sizer, 1, wx.EXPAND | wx.GROW | wx.ALL, 2)
+        background_sizer.Add(scroll, 0, wx.EXPAND | wx.GROW)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
 
@@ -387,13 +386,13 @@ class DicomPreviewSeries(wx.Panel):
             for j in range(NCOLS):
                 p = Preview(self)
                 p.Bind(EVT_PREVIEW_CLICK, self.OnSelect)
-                #if (i == j == 0):
-                    #self._show_shadow(p)
-                #p.Hide()
+                # if (i == j == 0):
+                # self._show_shadow(p)
+                # p.Hide()
                 self.previews.append(p)
                 self.grid.Add(p, 1, flag=wx.EXPAND)
 
-    #def _show_shadow(self, preview):
+    # def _show_shadow(self, preview):
     #    preview.ShowShadow()
 
     def _bind_events(self):
@@ -407,8 +406,7 @@ class DicomPreviewSeries(wx.Panel):
         my_evt.SetItemData(evt.GetItemData())
 
         if self.selected_dicom:
-            self.selected_dicom.selected = self.selected_dicom is \
-                    evt.GetEventObject().dicom_info
+            self.selected_dicom.selected = self.selected_dicom is evt.GetEventObject().dicom_info
             self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
             self.selected_panel.Select()
         self.selected_panel = evt.GetEventObject()
@@ -423,17 +421,18 @@ class DicomPreviewSeries(wx.Panel):
         self.group_list = group_list
         n = 0
         for group in group_list:
-            info = DicomInfo((group.dicom.patient.id,
-                              group.dicom.acquisition.serie_number),
-                             group.dicom,
-                             group.title,
-                             _("%d images") %(group.nslices))
+            info = DicomInfo(
+                (group.dicom.patient.id, group.dicom.acquisition.serie_number),
+                group.dicom,
+                group.title,
+                _("%d images") % (group.nslices),
+            )
             self.files.append(info)
-            n+=1
+            n += 1
 
-        scroll_range = len(self.files)//NCOLS
+        scroll_range = len(self.files) // NCOLS
         if scroll_range * NCOLS < len(self.files):
-            scroll_range +=1
+            scroll_range += 1
         self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
         self._display_previews()
 
@@ -441,18 +440,18 @@ class DicomPreviewSeries(wx.Panel):
         initial = self.displayed_position * NCOLS
         final = initial + NUM_PREVIEWS
         if len(self.files) < final:
-            for i in range(final-len(self.files)):
+            for i in range(final - len(self.files)):
                 try:
-                    self.previews[-i-1].Hide()
+                    self.previews[-i - 1].Hide()
                 except IndexError:
                     utils.debug("doesn't exist!")
                     pass
-            self.nhidden_last_display = final-len(self.files)
+            self.nhidden_last_display = final - len(self.files)
         else:
             if self.nhidden_last_display:
                 for i in range(self.nhidden_last_display):
                     try:
-                        self.previews[-i-1].Show()
+                        self.previews[-i - 1].Show()
                     except IndexError:
                         utils.debug("doesn't exist!")
                         pass
@@ -480,8 +479,10 @@ class DicomPreviewSeries(wx.Panel):
         self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
         self.OnScroll()
 
+
 class DicomPreviewSlice(wx.Panel):
     """A dicom preview panel"""
+
     def __init__(self, parent):
         super(DicomPreviewSlice, self).__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
@@ -501,11 +502,11 @@ class DicomPreviewSlice(wx.Panel):
         self.grid = wx.GridSizer(rows=NROWS, cols=NCOLS, vgap=3, hgap=3)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        sizer.Add(self.grid, 1, wx.EXPAND | wx.GROW | wx.ALL, 2)
 
         background_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        background_sizer.Add(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
+        background_sizer.Add(sizer, 1, wx.EXPAND | wx.GROW | wx.ALL, 2)
+        background_sizer.Add(scroll, 0, wx.EXPAND | wx.GROW)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
 
@@ -524,7 +525,7 @@ class DicomPreviewSlice(wx.Panel):
             for j in range(NCOLS):
                 p = Preview(self)
                 p.Bind(EVT_PREVIEW_CLICK, self.OnPreviewClick)
-                #p.Hide()
+                # p.Hide()
                 self.previews.append(p)
                 self.grid.Add(p, 1, flag=wx.EXPAND)
 
@@ -547,7 +548,7 @@ class DicomPreviewSlice(wx.Panel):
         self.nhidden_last_display = 0
         group = self.group_list[pos]
         self.group = group
-        #dicom_files = group.GetList()
+        # dicom_files = group.GetList()
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
@@ -555,22 +556,25 @@ class DicomPreviewSlice(wx.Panel):
                 _slice = 0
                 for thumbnail in dicom.image.thumbnail_path:
                     print(thumbnail)
-                    info = DicomInfo(n, dicom,
-                                     _("Image %d") % (n),
-                                     "%.2f" % (dicom.image.position[2]), _slice)
+                    info = DicomInfo(
+                        n, dicom, _("Image %d") % (n), "%.2f" % (dicom.image.position[2]), _slice
+                    )
                     self.files.append(info)
-                    n+=1
+                    n += 1
                     _slice += 1
             else:
-                info = DicomInfo(n, dicom,
-                                 _("Image %d") % (dicom.image.number),
-                                 "%.2f" % (dicom.image.position[2]))
+                info = DicomInfo(
+                    n,
+                    dicom,
+                    _("Image %d") % (dicom.image.number),
+                    "%.2f" % (dicom.image.position[2]),
+                )
                 self.files.append(info)
-                n+=1
+                n += 1
 
-        scroll_range = len(self.files)/NCOLS
+        scroll_range = len(self.files) / NCOLS
         if scroll_range * NCOLS < len(self.files):
-            scroll_range +=1
+            scroll_range += 1
         self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
 
         self._display_previews()
@@ -579,7 +583,7 @@ class DicomPreviewSlice(wx.Panel):
         self.files = []
         self.displayed_position = 0
         self.nhidden_last_display = 0
-        #dicom_files = group.GetList()
+        # dicom_files = group.GetList()
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
@@ -587,23 +591,25 @@ class DicomPreviewSlice(wx.Panel):
                 _slice = 0
                 for thumbnail in dicom.image.thumbnail_path:
                     print(thumbnail)
-                    info = DicomInfo(n, dicom,
-                                     _("Image %d") % int(n),
-                                     "%.2f" % (dicom.image.position[2]), _slice)
+                    info = DicomInfo(
+                        n, dicom, _("Image %d") % int(n), "%.2f" % (dicom.image.position[2]), _slice
+                    )
                     self.files.append(info)
-                    n+=1
+                    n += 1
                     _slice += 1
             else:
-                info = DicomInfo(n, dicom,
-                                 _("Image %d") % int(dicom.image.number),
-                                 "%.2f" % (dicom.image.position[2]),
-                                )
+                info = DicomInfo(
+                    n,
+                    dicom,
+                    _("Image %d") % int(dicom.image.number),
+                    "%.2f" % (dicom.image.position[2]),
+                )
                 self.files.append(info)
-                n+=1
+                n += 1
 
-        scroll_range = len(self.files)//NCOLS
+        scroll_range = len(self.files) // NCOLS
         if scroll_range * NCOLS < len(self.files):
-            scroll_range +=1
+            scroll_range += 1
         self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
 
         self._display_previews()
@@ -612,17 +618,17 @@ class DicomPreviewSlice(wx.Panel):
         initial = self.displayed_position * NCOLS
         final = initial + NUM_PREVIEWS
         if len(self.files) < final:
-            for i in range(final-len(self.files)):
+            for i in range(final - len(self.files)):
                 try:
-                    self.previews[-i-1].Hide()
+                    self.previews[-i - 1].Hide()
                 except IndexError:
                     utils.debug("doesn't exist!")
-            self.nhidden_last_display = final-len(self.files)
+            self.nhidden_last_display = final - len(self.files)
         else:
             if self.nhidden_last_display:
                 for i in range(self.nhidden_last_display):
                     try:
-                        self.previews[-i-1].Show()
+                        self.previews[-i - 1].Show()
                     except IndexError:
                         utils.debug("doesn't exist!")
                 self.nhidden_last_display = 0
@@ -631,24 +637,21 @@ class DicomPreviewSlice(wx.Panel):
             p.SetDicomToPreview(f)
             if f.selected:
                 self.selected_panel = p
-            #p.interactor.Render()
+            # p.interactor.Render()
 
         for f, p in zip(self.files[initial:final], self.previews):
             p.Show()
 
     def OnPreviewClick(self, evt):
-
         dicom_id = evt.GetSelectID()
-        
+
         if self.first_selection is None:
             self.first_selection = dicom_id
 
         if self.last_selection is None:
-            self.last_selection = dicom_id  
+            self.last_selection = dicom_id
 
-        
         if evt.GetPressedShift():
- 
             if dicom_id < self.first_selection and dicom_id < self.last_selection:
                 self.first_selection = dicom_id
             else:
@@ -658,22 +661,19 @@ class DicomPreviewSlice(wx.Panel):
             self.last_selection = dicom_id
 
             for i in range(len(self.files)):
-            
                 if i == dicom_id:
                     self.files[i].selected = True
                 else:
                     self.files[i].selected = False
-
 
         my_evt = SerieEvent(myEVT_CLICK_SLICE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())
 
         if self.selected_dicom:
-            self.selected_dicom.selected = self.selected_dicom is \
-                    evt.GetEventObject().dicom_info
+            self.selected_dicom.selected = self.selected_dicom is evt.GetEventObject().dicom_info
             self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
-            
+
             if self.first_selection != self.last_selection:
                 for i in range(len(self.files)):
                     if i >= self.first_selection and i <= self.last_selection:
@@ -689,8 +689,9 @@ class DicomPreviewSlice(wx.Panel):
         self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
-        Publisher.sendMessage("Selected Import Images",
-                              selection=(self.first_selection, self.last_selection))
+        Publisher.sendMessage(
+            "Selected Import Images", selection=(self.first_selection, self.last_selection)
+        )
 
     def OnScroll(self, evt=None):
         if evt:
@@ -705,6 +706,7 @@ class DicomPreviewSlice(wx.Panel):
         d = evt.GetWheelDelta() // evt.GetWheelRotation()
         self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
         self.OnScroll()
+
 
 class SingleImagePreview(wx.Panel):
     def __init__(self, parent):
@@ -777,12 +779,9 @@ class SingleImagePreview(wx.Panel):
         self.canvas.draw_list.append(self.text_acquisition)
 
     def __init_gui(self):
-        slider = wx.Slider(self,
-                            id=-1,
-                            value=0,
-                            minValue=0,
-                            maxValue=99,
-                            style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS)
+        slider = wx.Slider(
+            self, id=-1, value=0, minValue=0, maxValue=99, style=wx.SL_HORIZONTAL | wx.SL_AUTOTICKS
+        )
         slider.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         slider.SetTickFreq(1)
         self.slider = slider
@@ -794,12 +793,12 @@ class SingleImagePreview(wx.Panel):
         self.interactor.SetRenderWhenDisabled(True)
 
         in_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        in_sizer.Add(slider, 1, wx.GROW|wx.EXPAND)
+        in_sizer.Add(slider, 1, wx.GROW | wx.EXPAND)
         in_sizer.Add(checkbox, 0)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.interactor, 1, wx.GROW|wx.EXPAND)
-        sizer.Add(in_sizer, 0, wx.GROW|wx.EXPAND)
+        sizer.Add(self.interactor, 1, wx.GROW | wx.EXPAND)
+        sizer.Add(in_sizer, 0, wx.GROW | wx.EXPAND)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
@@ -825,7 +824,7 @@ class SingleImagePreview(wx.Panel):
     def OnRun(self):
         pos = self.slider.GetValue()
         pos += 1
-        if not (self.nimages- pos):
+        if not (self.nimages - pos):
             pos = 0
         self.slider.SetValue(pos)
         self.ShowSlice(pos)
@@ -833,9 +832,9 @@ class SingleImagePreview(wx.Panel):
         if self.ischecked:
             try:
                 wx.Yield()
-            #TODO: temporary fix necessary in the Windows XP 64 Bits
-            #BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
-            except(wx._core.PyAssertionError):
+            # TODO: temporary fix necessary in the Windows XP 64 Bits
+            # BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
+            except wx.PyAssertionError:
                 utils.debug("wx._core.PyAssertionError")
             finally:
                 wx.CallAfter(self.OnRun)
@@ -848,12 +847,12 @@ class SingleImagePreview(wx.Panel):
         else:
             self.nimages = self.dicom_list[0].image.number_of_frames
         # GUI
-        self.slider.SetMax(self.nimages-1)
+        self.slider.SetMax(self.nimages - 1)
         self.slider.SetValue(0)
         self.slider.SetTickFreq(1)
         self.ShowSlice()
 
-    def ShowSlice(self, index = 0):
+    def ShowSlice(self, index=0):
         try:
             dicom = self.dicom_list[index]
         except IndexError:
@@ -864,41 +863,43 @@ class SingleImagePreview(wx.Panel):
 
         # UPDATE GUI
         ## Text related to size
-        value = STR_SIZE %(dicom.image.size[0], dicom.image.size[1])
+        value = STR_SIZE % (dicom.image.size[0], dicom.image.size[1])
         self.text_image_size.SetValue(value)
 
         ## Text related to slice position
-        if not(dicom.image.spacing):
-            value1 = '' 
-        else: 
-            value1 = STR_SPC %(dicom.image.spacing[2])
-
-        if dicom.image.orientation_label == 'AXIAL':
-            value2 = STR_LOCAL %(dicom.image.position[2])
-        elif dicom.image.orientation_label == 'CORONAL':
-            value2 = STR_LOCAL %(dicom.image.position[1])
-        elif dicom.image.orientation_label == 'SAGITTAL':
-            value2 = STR_LOCAL %(dicom.image.position[0])
+        if not (dicom.image.spacing):
+            value1 = ""
         else:
-            value2 = ''
+            value1 = STR_SPC % (dicom.image.spacing[2])
 
-        value = "%s\n%s" %(value1, value2)
+        if dicom.image.orientation_label == "AXIAL":
+            value2 = STR_LOCAL % (dicom.image.position[2])
+        elif dicom.image.orientation_label == "CORONAL":
+            value2 = STR_LOCAL % (dicom.image.position[1])
+        elif dicom.image.orientation_label == "SAGITTAL":
+            value2 = STR_LOCAL % (dicom.image.position[0])
+        else:
+            value2 = ""
+
+        value = "%s\n%s" % (value1, value2)
         self.text_image_location.SetValue(value)
 
         ## Text related to patient/ acquisiiton data
-        value = STR_PATIENT %(dicom.patient.id,\
-                              dicom.acquisition.protocol_name)
+        value = STR_PATIENT % (dicom.patient.id, dicom.acquisition.protocol_name)
         self.text_patient.SetValue(value)
 
         ## Text related to acquisition date and time
-        value = STR_ACQ % (dicom.acquisition.date,
-                            dicom.acquisition.time)
+        value = STR_ACQ % (dicom.acquisition.date, dicom.acquisition.time)
         self.text_acquisition.SetValue(value)
 
         if isinstance(dicom.image.thumbnail_path, list):
             reader = vtkPNGReader()
             if _has_win32api:
-                reader.SetFileName(win32api.GetShortPathName(dicom.image.thumbnail_path[index]).encode(const.FS_ENCODE))
+                reader.SetFileName(
+                    win32api.GetShortPathName(dicom.image.thumbnail_path[index]).encode(
+                        const.FS_ENCODE
+                    )
+                )
             else:
                 reader.SetFileName(dicom.image.thumbnail_path[index])
             reader.Update()
@@ -910,7 +911,7 @@ class SingleImagePreview(wx.Panel):
                 filename = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
 
             np_image = imagedata_utils.read_dcm_slice_as_np2(filename)
-            vtk_image = converters.to_vtk(np_image, dicom.image.spacing, 0, 'AXIAL')
+            vtk_image = converters.to_vtk(np_image, dicom.image.spacing, 0, "AXIAL")
 
             # ADJUST CONTRAST
             window_level = dicom.image.level

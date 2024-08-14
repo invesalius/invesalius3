@@ -39,6 +39,8 @@ import invesalius.gui.import_network_panel as imp_net
 import invesalius.gui.import_panel as imp
 import invesalius.gui.log as log
 import invesalius.gui.preferences as preferences
+
+#  import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -375,7 +377,7 @@ class Frame(wx.Frame):
         """
         try:
             wx.EndBusyCursor()
-        except wx._core.PyAssertionError:
+        except wx.PyAssertionError:
             # no matching wxBeginBusyCursor() for wxEndBusyCursor()
             pass
 
@@ -770,15 +772,6 @@ class Frame(wx.Frame):
             server_port = values[const.SERVER_PORT]
             store_path = values[const.STORE_PATH]
             server_ip = values[const.SERVER_IP]
-
-            session.SetConfig("rendering", rendering)
-            session.SetConfig("surface_interpolation", surface_interpolation)
-            session.SetConfig("language", language)
-            session.SetConfig("slice_interpolation", slice_interpolation)
-            session.SetConfig("server_aetitle", server_aetitle)
-            session.SetConfig("server_port", server_port)
-            session.SetConfig("store_path", store_path)
-            session.SetConfig("server_ip", server_ip)
             file_logging = values[const.FILE_LOGGING]
             file_logging_level = values[const.FILE_LOGGING_LEVEL]
             append_log_file = values[const.APPEND_LOG_FILE]
@@ -790,6 +783,10 @@ class Frame(wx.Frame):
             session.SetConfig("surface_interpolation", surface_interpolation)
             session.SetConfig("language", language)
             session.SetConfig("slice_interpolation", slice_interpolation)
+            session.SetConfig("server_aetitle", server_aetitle)
+            session.SetConfig("server_port", server_port)
+            session.SetConfig("store_path", store_path)
+            session.SetConfig("server_ip", server_ip)
             session.SetConfig("file_logging", file_logging)
             session.SetConfig("file_logging_level", file_logging_level)
             session.SetConfig("append_log_file", append_log_file)
@@ -820,16 +817,7 @@ class Frame(wx.Frame):
         """
         Show getting started window.
         """
-        session = ses.Session()
-        if session.GetConfig("language") == "pt_BR":
-            user_guide = "user_guide_pt_BR.pdf"
-        else:
-            user_guide = "user_guide_en.pdf"
-
-        path = os.path.join(inv_paths.DOC_DIR, user_guide)
-        if sys.platform == "darwin":
-            path = r"file://" + path
-        webbrowser.open(path)
+        webbrowser.open("https://invesalius.github.io/docs/user_guide/user_guide.html")
 
     def ShowImportDicomPanel(self):
         """
@@ -1626,7 +1614,7 @@ class StatusBar(wx.StatusBar):
             try:
                 # wx.SafeYield()
                 wx.Yield()
-            except wx._core.PyAssertionError:
+            except wx.PyAssertionError:
                 utils.debug("wx._core.PyAssertionError")
 
     def _SetProgressLabel(self, label):

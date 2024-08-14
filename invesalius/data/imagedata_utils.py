@@ -17,16 +17,16 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-import os
 import math
+import os
 import sys
 import tempfile
 
 import gdcm
 import imageio
 import numpy as np
-
 from scipy.ndimage import shift, zoom
+from skimage.color import rgb2gray
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkFiltersCore import vtkImageAppend
 from vtkmodules.vtkImagingCore import vtkExtractVOI, vtkImageClip, vtkImageResample
@@ -39,13 +39,13 @@ import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
 import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bitmap_reader
-from invesalius.i18n import tr as _
 from invesalius.data import vtk_utils as vtk_utils
-from skimage.color import rgb2gray
+from invesalius.i18n import tr as _
 
 if sys.platform == "win32":
     try:
         import win32api
+
         _has_win32api = True
     except ImportError:
         _has_win32api = False
@@ -77,9 +77,7 @@ def ResampleImage3D(imagedata, value):
     return resample.GetOutput()
 
 
-def ResampleImage2D(
-    imagedata, px=None, py=None, resolution_percentage=None, update_progress=None
-):
+def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, update_progress=None):
     """
     Resample vtkImageData matrix.
     """
@@ -111,9 +109,7 @@ def ResampleImage2D(
     #  resample.SetOutputSpacing(spacing[0] * factor_x, spacing[1] * factor_y, spacing[2])
     if update_progress:
         message = _("Generating multiplanar visualization...")
-        resample.AddObserver(
-            "ProgressEvent", lambda obj, evt: update_progress(resample, message)
-        )
+        resample.AddObserver("ProgressEvent", lambda obj, evt: update_progress(resample, message))
     resample.Update()
 
     return resample.GetOutput()
@@ -282,9 +278,7 @@ def create_dicom_thumbnails(image, window=None, level=None):
         thumbnail_paths = []
         for i in range(np_image.shape[0]):
             thumb_image = zoom(np_image[i], 0.25)
-            thumb_image = np.array(
-                get_LUT_value_255(thumb_image, window, level), dtype=np.uint8
-            )
+            thumb_image = np.array(get_LUT_value_255(thumb_image, window, level), dtype=np.uint8)
             fd, thumbnail_path = tempfile.mkstemp(prefix="thumb_", suffix=".png")
             imageio.imsave(thumbnail_path, thumb_image)
             thumbnail_paths.append(thumbnail_path)
@@ -294,9 +288,7 @@ def create_dicom_thumbnails(image, window=None, level=None):
         fd, thumbnail_path = tempfile.mkstemp(prefix="thumb_", suffix=".png")
         if pf.GetSamplesPerPixel() == 1:
             thumb_image = zoom(np_image, 0.25)
-            thumb_image = np.array(
-                get_LUT_value_255(thumb_image, window, level), dtype=np.uint8
-            )
+            thumb_image = np.array(get_LUT_value_255(thumb_image, window, level), dtype=np.uint8)
         else:
             thumb_image = zoom(np_image, (0.25, 0.25, 1))
         imageio.imsave(thumbnail_path, thumb_image)
@@ -323,9 +315,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     """
     message = _("Generating multiplanar visualization...")
     if len(files) > 1:
-        update_progress = vtk_utils.ShowProgress(
-            len(files) - 1, dialog_type="ProgressDialog"
-        )
+        update_progress = vtk_utils.ShowProgress(len(files) - 1, dialog_type="ProgressDialog")
 
     temp_fd, temp_file = tempfile.mkstemp()
 
@@ -378,7 +368,6 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
         )
 
         if resolution_percentage != 1.0:
-
             image_resized = ResampleImage2D(
                 image,
                 px=None,
@@ -444,9 +433,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     """
     if len(files) > 1:
         message = _("Generating multiplanar visualization...")
-        update_progress = vtk_utils.ShowProgress(
-            len(files) - 1, dialog_type="ProgressDialog"
-        )
+        update_progress = vtk_utils.ShowProgress(len(files) - 1, dialog_type="ProgressDialog")
 
     first_slice = read_dcm_slice_as_np2(files[0], resolution_percentage)
     slice_size = first_slice.shape[::-1]
@@ -532,7 +519,7 @@ def img2memmap(group):
     # to be rescalaed so that no negative values are created when converting to int16
     # maximum of 10000 was selected arbitrarily by testing with one MRI example
     # alternatively could test if "data.dtype == 'float64'" but maybe it is too specific
-    if np.ptp(data) > (2**16/2-1):
+    if np.ptp(data) > (2**16 / 2 - 1):
         data = image_normalize(data, min_=0, max_=10000, output_dtype=np.int16)
         dlg.WarningRescalePixelValues()
 
@@ -575,13 +562,14 @@ def get_LUT_value_255(data, window, level):
     return data
 
 
-def get_LUT_value(data, window, level):
+def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
     shape = data.shape
     data_ = data.ravel()
-    data = np.piecewise(data_,
-                        [data_ <= (level - 0.5 - (window-1)/2),
-                         data_ > (level - 0.5 + (window-1)/2)],
-                        [0, window, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(window)])
+    data = np.piecewise(
+        data_,
+        [data_ <= (level - 0.5 - (window - 1) / 2), data_ > (level - 0.5 + (window - 1) / 2)],
+        [0, window, lambda data_: ((data_ - (level - 0.5)) / (window - 1) + 0.5) * (window)],
+    )
     data.shape = shape
     return data
 
@@ -632,7 +620,9 @@ def convert_invesalius_to_voxel(position):
     :return: a vector of 3 coordinates in the voxel space
     """
     slice = sl.Slice()
-    return np.array((position[0], slice.spacing[1]*(slice.matrix.shape[1] - 1) - position[1], position[2]))
+    return np.array(
+        (position[0], slice.spacing[1] * (slice.matrix.shape[1] - 1) - position[1], position[2])
+    )
 
 
 def convert_invesalius_to_world(position, orientation):
@@ -665,13 +655,13 @@ def convert_invesalius_to_world(position, orientation):
     M_invesalius = dco.coordinates_to_transformation_matrix(
         position=position_voxel,
         orientation=orientation,
-        axes='sxyz',
+        axes="sxyz",
     )
     M_world = np.linalg.inv(slice.affine) @ M_invesalius
 
     position_world, orientation_world = dco.transformation_matrix_to_coordinates(
         M_world,
-        axes='sxyz',
+        axes="sxyz",
     )
 
     return position_world, orientation_world

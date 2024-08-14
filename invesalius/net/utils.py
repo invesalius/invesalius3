@@ -1,18 +1,21 @@
-from urllib.request import urlopen, Request
-import pathlib
-import tempfile
-import typing
 import hashlib
 import os
+import pathlib
 import shutil
+import tempfile
+import typing
+from urllib.request import Request, urlopen
 
-def download_url_to_file(url: str, dst: pathlib.Path, hash: str = None, callback: typing.Callable[[float], None] = None):
+
+def download_url_to_file(
+    url: str, dst: pathlib.Path, hash: str = None, callback: typing.Callable[[float], None] = None
+):
     file_size = None
     total_downloaded = 0
     if hash is not None:
         calc_hash = hashlib.sha256()
     req = Request(url)
-    response =  urlopen(req)
+    response = urlopen(req)
     meta = response.info()
     if hasattr(meta, "getheaders"):
         content_length = meta.getheaders("Content-Length")
@@ -33,7 +36,7 @@ def download_url_to_file(url: str, dst: pathlib.Path, hash: str = None, callback
             if hash:
                 calc_hash.update(buffer)
             if callback is not None:
-                callback(100 * total_downloaded/file_size)
+                callback(100 * total_downloaded / file_size)
         f.close()
         if hash is not None:
             digest = calc_hash.hexdigest()

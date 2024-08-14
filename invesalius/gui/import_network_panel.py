@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,26 +15,22 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+
 import wx
-import sys
-import wx.gizmos as gizmos
-from invesalius.pubsub import pub as Publisher
+
+# from dicionario import musicdata
+# from dicionario import musicdata
 import wx.lib.splitter as spl
 
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
-#import invesalius.gui.dicom_preview_panel as dpp
+
+# import invesalius.gui.dicom_preview_panel as dpp
 import invesalius.reader.dicom_grouper as dcm
-import invesalius.net.dicom as dcm_net
-from invesalius.i18n import tr as _
-
-
-from wx.lib.mixins.listctrl import CheckListCtrlMixin
-#from dicionario import musicdata
-import wx.lib.mixins.listctrl as listmix
 from invesalius.gui.network.host_find_panel import HostFindPanel
 from invesalius.gui.network.text_panel import TextPanel
+from invesalius.i18n import tr as _
 
 myEVT_SELECT_SERIE = wx.NewEventType()
 EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
@@ -48,13 +44,14 @@ EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
 myEVT_SELECT_SERIE_TEXT = wx.NewEventType()
 EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
 
+
 class Panel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))#,
-                          #size=wx.Size(280, 656))
+        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))  # ,
+        # size=wx.Size(280, 656))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(InnerPanel(self), 1, wx.EXPAND|wx.GROW|wx.ALL, 5)
+        sizer.Add(InnerPanel(self), 1, wx.EXPAND | wx.GROW | wx.ALL, 5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -63,11 +60,12 @@ class Panel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
+
 # Inner fold panel
 class InnerPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))#,
-                          #size=wx.Size(680, 656))
+        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))  # ,
+        # size=wx.Size(680, 656))
 
         self.patients = []
         self.first_image_selection = None
@@ -90,19 +88,20 @@ class InnerPanel(wx.Panel):
         btnsizer.AddButton(self.btn_cancel)
         btnsizer.Realize()
 
-        self.combo_interval = wx.ComboBox(panel, -1, "", choices=const.IMPORT_INTERVAL,
-                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.combo_interval = wx.ComboBox(
+            panel, -1, "", choices=const.IMPORT_INTERVAL, style=wx.CB_DROPDOWN | wx.CB_READONLY
+        )
         self.combo_interval.SetSelection(0)
 
         inner_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        inner_sizer.Add(btnsizer, 0, wx.LEFT|wx.TOP, 5)
-        inner_sizer.Add(self.combo_interval, 0, wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        inner_sizer.Add(btnsizer, 0, wx.LEFT | wx.TOP, 5)
+        inner_sizer.Add(self.combo_interval, 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
         panel.SetSizer(inner_sizer)
         inner_sizer.Fit(panel)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(splitter, 20, wx.EXPAND)
-        sizer.Add(panel, 1, wx.EXPAND|wx.LEFT, 90)
+        sizer.Add(panel, 1, wx.EXPAND | wx.LEFT, 90)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -113,20 +112,19 @@ class InnerPanel(wx.Panel):
         self.text_panel = TextPanel(splitter)
         splitter.AppendWindow(self.text_panel, 250)
 
-
         self.Layout()
         self.Update()
         self.SetAutoLayout(1)
 
     def _bind_pubsubevt(self):
-        #Publisher.subscribe(self.ShowDicomPreview, "Load import panel")
-        #Publisher.subscribe(self.GetSelectedImages ,"Selected Import Images")     
+        # Publisher.subscribe(self.ShowDicomPreview, "Load import panel")
+        # Publisher.subscribe(self.GetSelectedImages ,"Selected Import Images")
         pass
-    
+
     def GetSelectedImages(self, pubsub_evt):
         self.first_image_selection = pubsub_evt.data[0]
         self.last_image_selection = pubsub_evt.data[1]
-        
+
     def _bind_events(self):
         self.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
@@ -166,7 +164,7 @@ class InnerPanel(wx.Panel):
             self.LoadDicom(group)
 
     def OnClickCancel(self, evt):
-        #Publisher.sendMessage("Cancel DICOM load")
+        # Publisher.sendMessage("Cancel DICOM load")
         pass
 
     def LoadDicom(self, group):
@@ -174,17 +172,19 @@ class InnerPanel(wx.Panel):
 
         if not isinstance(group, dcm.DicomGroup):
             group = max(group.GetGroups(), key=lambda g: g.nslices)
-        
+
         slice_amont = group.nslices
-        if (self.first_image_selection != None) and (self.first_image_selection != self.last_image_selection):
+        if (self.first_image_selection != None) and (
+            self.first_image_selection != self.last_image_selection
+        ):
             slice_amont = (self.last_image_selection) - self.first_image_selection
             slice_amont += 1
             if slice_amont == 0:
                 slice_amont = group.nslices
 
         nslices_result = slice_amont / (interval + 1)
-        if (nslices_result > 1):
-            #Publisher.sendMessage('Open DICOM group', (group, interval, 
+        if nslices_result > 1:
+            # Publisher.sendMessage('Open DICOM group', (group, interval,
             #                        [self.first_image_selection, self.last_image_selection]))
             pass
         else:

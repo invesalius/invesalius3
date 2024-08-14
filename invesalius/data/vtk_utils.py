@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,12 +15,16 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 import os
 import sys
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, SupportsInt, Tuple, Union
 
 import wx
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
+from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
+from vtkmodules.vtkIOPLY import vtkPLYReader
+from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor2D,
     vtkCoordinate,
@@ -28,20 +32,22 @@ from vtkmodules.vtkRenderingCore import (
     vtkTextMapper,
     vtkTextProperty,
 )
-from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
-from vtkmodules.vtkIOPLY import vtkPLYReader
-from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
 
-from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 import invesalius.utils as utils
-
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
+from invesalius.pubsub import pub as Publisher
+
+if TYPE_CHECKING:
+    import numpy as np
+    from vtkmodules.vtkCommonExecutionModel import vtkAlgorithm
+
+    from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 
 
-class ProgressDialog(object):
-    def __init__(self, parent, maximum, abort=False):
+class ProgressDialog:
+    def __init__(self, parent: Optional[wx.Window], maximum: int, abort: bool = False):
         self.title = "InVesalius 3"
         self.msg = _("Loading DICOM files")
         self.maximum = maximum
@@ -50,36 +56,35 @@ class ProgressDialog(object):
         if abort:
             self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
 
-        self.dlg = wx.ProgressDialog(self.title,
-                                     self.msg,
-                                     maximum = self.maximum,
-                                     parent = parent,
-                                     style  = self.style)
+        self.dlg = wx.ProgressDialog(
+            self.title, self.msg, maximum=self.maximum, parent=parent, style=self.style
+        )
 
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
-        self.dlg.SetSize(wx.Size(250,150))
+        self.dlg.SetSize(wx.Size(250, 150))
 
-    def Cancel(self, evt):
+    def Cancel(self, evt: wx.CommandEvent) -> None:
         Publisher.sendMessage("Cancel DICOM load")
 
-    def Update(self, value, message):
-        if(int(value) != self.maximum):
+    def Update(self, value: SupportsInt, message: str) -> Union[Tuple[bool, bool], bool]:
+        if int(value) != self.maximum:
             try:
-                return self.dlg.Update(int(value),message)
-            #TODO:
-            #Exception in the Windows XP 64 Bits with wxPython 2.8.10
-            except(wx._core.PyAssertionError):
+                return self.dlg.Update(int(value), message)
+            # TODO:
+            # Exception in the Wtindows XP 64 Bits with wxPython 2.8.10
+            except wx.PyAssertionError:
                 return True
         else:
             return False
 
-    def Close(self):
+    def Close(self) -> None:
         self.dlg.Destroy()
 
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     try:
         import win32api
+
         _has_win32api = True
     except ImportError:
         _has_win32api = False
@@ -96,34 +101,35 @@ else:
 # http://www.ibm.com/developerworks/library/l-prog2.html
 # http://jjinux.blogspot.com/2006/10/python-modifying-counter-in-closure.html
 
-def ShowProgress(number_of_filters = 1,
-                 dialog_type="GaugeProgress"):
+
+def ShowProgress(
+    number_of_filters: int = 1, dialog_type: str = "GaugeProgress"
+) -> Callable[[Union[float, int, "vtkAlgorithm"], str], float]:
     """
     To use this closure, do something like this:
         UpdateProgress = ShowProgress(NUM_FILTERS)
         UpdateProgress(vtkObject)
     """
-    progress = [0]
-    last_obj_progress = [0]
-    if (dialog_type == "ProgressDialog"):
+    progress: List[float] = [0]
+    last_obj_progress: List[float] = [0]
+    if dialog_type == "ProgressDialog":
         try:
             dlg = ProgressDialog(wx.GetApp().GetTopWindow(), 100)
-        except (wx._core.PyNoAppError, AttributeError):
+        except (wx.PyNoAppError, AttributeError):
             return lambda obj, label: 0
-
 
     # when the pipeline is larger than 1, we have to consider this object
     # percentage
     number_of_filters = max(number_of_filters, 1)
-    ratio = (100.0 / number_of_filters)
+    ratio = 100.0 / number_of_filters
 
-    def UpdateProgress(obj, label=""):
+    def UpdateProgress(obj: Union[float, int, "vtkAlgorithm"], label: str = "") -> float:
         """
         Show progress on GUI according to pipeline execution.
         """
         # object progress is cummulative and is between 0.0 - 1.0
         # is necessary verify in case is sending the progress
-        #represented by number in case multiprocess, not vtk object
+        # represented by number in case multiprocess, not vtk object
         if isinstance(obj, float) or isinstance(obj, int):
             obj_progress = obj
         else:
@@ -131,32 +137,33 @@ def ShowProgress(number_of_filters = 1,
 
         # as it is cummulative, we need to compute the diference, to be
         # appended on the interface
-        if obj_progress < last_obj_progress[0]: # current obj != previous obj
-            difference = obj_progress # 0
-        else: # current obj == previous obj
+        if obj_progress < last_obj_progress[0]:  # current obj != previous obj
+            difference = obj_progress  # 0
+        else:  # current obj == previous obj
             difference = obj_progress - last_obj_progress[0]
 
         last_obj_progress[0] = obj_progress
 
         # final progress status value
-        progress[0] = progress[0] + ratio*difference
+        progress[0] = progress[0] + ratio * difference
         # Tell GUI to update progress status value
-        if (dialog_type == "GaugeProgress"):
-            Publisher.sendMessage('Update status in GUI', value=progress[0], label=label)
+        if dialog_type == "GaugeProgress":
+            Publisher.sendMessage("Update status in GUI", value=progress[0], label=label)
         else:
-            if (progress[0] >= 99.999):
+            if progress[0] >= 99.999:
                 progress[0] = 100
 
-            if not(dlg.Update(progress[0],label)):
+            if not (dlg.Update(progress[0], label)):
                 dlg.Close()
 
         return progress[0]
 
     return UpdateProgress
 
-class Text(object):
+
+class Text:
     def __init__(self):
-        self.layer = 99
+        self.layer: int = 99
         self.children = []
         property = vtkTextProperty()
         property.SetFontSize(const.TEXT_SIZE)
@@ -181,85 +188,84 @@ class Text(object):
 
         self.SetPosition(const.TEXT_POS_LEFT_UP)
 
-    def SetColour(self, colour):
+    def SetColour(self, colour: Sequence[float]) -> None:
         self.property.SetColor(colour)
 
-    def ShadowOff(self):
+    def ShadowOff(self) -> None:
         self.property.ShadowOff()
 
-    def BoldOn(self):
+    def BoldOn(self) -> None:
         self.property.BoldOn()
 
-    def SetSize(self, size):
+    def SetSize(self, size: int) -> None:
         self.property.SetFontSize(size)
 
-    def SetValue(self, value):
+    def SetValue(self, value: Union[int, float, str]) -> None:
         if isinstance(value, int) or isinstance(value, float):
             value = str(value)
-            if sys.platform == 'win32':
-                value += "" # Otherwise 0 is not shown under win32
+            if sys.platform == "win32":
+                value += ""  # Otherwise 0 is not shown under win32
         # With some encoding in some dicom fields (like name) raises a
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
-        if sys.platform == 'win32':
-            self.mapper.SetInput(value.encode("utf-8", errors='replace'))
+        if sys.platform == "win32":
+            self.mapper.SetInput(value.encode("utf-8", errors="replace"))
         else:
             try:
                 self.mapper.SetInput(value.encode("latin-1"))
-            except(UnicodeEncodeError):
-                self.mapper.SetInput(value.encode("utf-8", errors='replace'))
+            except UnicodeEncodeError:
+                self.mapper.SetInput(value.encode("utf-8", errors="replace"))
 
-    def GetValue(self):
+    def GetValue(self) -> str:
         return self.mapper.GetInput()
 
-    def SetCoilDistanceValue(self, value):
-        #TODO: Not being used anymore. Can be deleted.
+    def SetCoilDistanceValue(self, value: Union[int, float, str]) -> None:
+        # TODO: Not being used anymore. Can be deleted.
         if isinstance(value, int) or isinstance(value, float):
-            value = 'Dist: ' + str("{:06.2f}".format(value)) + ' mm'
-            if sys.platform == 'win32':
+            value = "Dist: " + str(f"{value:06.2f}") + " mm"
+            if sys.platform == "win32":
                 value += ""  # Otherwise 0 is not shown under win32
                 # With some encoding in some dicom fields (like name) raises a
                 # UnicodeEncodeError because they have non-ascii characters. To avoid
                 # that we encode in utf-8.
 
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.mapper.SetInput(value.encode("utf-8"))
         else:
             try:
                 self.mapper.SetInput(value.encode("latin-1"))
-            except(UnicodeEncodeError):
+            except UnicodeEncodeError:
                 self.mapper.SetInput(value.encode("utf-8"))
 
-    def SetPosition(self, position):
-        self.actor.GetPositionCoordinate().SetValue(position[0],
-                                                    position[1])
+    def SetPosition(self, position: Tuple[float, float]) -> None:
+        self.actor.GetPositionCoordinate().SetValue(position[0], position[1])
 
-    def GetPosition(self, position):
-        self.actor.GetPositionCoordinate().GetValue()
+    def GetPosition(self) -> Tuple[float, float, float]:
+        return self.actor.GetPositionCoordinate().GetValue()
 
-    def SetJustificationToRight(self):
+    def SetJustificationToRight(self) -> None:
         self.property.SetJustificationToRight()
 
-    def SetJustificationToCentered(self):
+    def SetJustificationToCentered(self) -> None:
         self.property.SetJustificationToCentered()
 
-
-    def SetVerticalJustificationToBottom(self):
+    def SetVerticalJustificationToBottom(self) -> None:
         self.property.SetVerticalJustificationToBottom()
 
-    def SetVerticalJustificationToCentered(self):
+    def SetVerticalJustificationToCentered(self) -> None:
         self.property.SetVerticalJustificationToCentered()
 
-    def Show(self, value=1):
+    def Show(self, value: bool = True) -> None:
         if value:
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
 
-    def Hide(self):
+    def Hide(self) -> None:
         self.actor.VisibilityOff()
 
-class TextZero(object):
+
+class TextZero:
     def __init__(self):
         self.layer = 99
         self.children = []
@@ -268,7 +274,7 @@ class TextZero(object):
         property.SetFontFamilyToArial()
         property.BoldOn()
         property.ItalicOff()
-        #property.ShadowOn()
+        # property.ShadowOn()
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
@@ -280,71 +286,69 @@ class TextZero(object):
         actor.PickableOff()
         self.actor = actor
 
-        self.text = ''
+        self.text = ""
         self.position = (0, 0)
         self.symbolic_syze = wx.FONTSIZE_MEDIUM
         self.bottom_pos = False
         self.right_pos = False
 
-    def SetColour(self, colour):
+    def SetColour(self, colour: Sequence[float]) -> None:
         self.property.SetColor(colour)
 
-    def ShadowOff(self):
+    def ShadowOff(self) -> None:
         self.property.ShadowOff()
 
-    def SetSize(self, size):
+    def SetSize(self, size: int) -> None:
         self.property.SetFontSize(size)
         self.actor.GetTextProperty().ShallowCopy(self.property)
 
-    def SetSymbolicSize(self, size):
+    def SetSymbolicSize(self, size: int) -> None:
         self.symbolic_syze = size
 
-    def SetValue(self, value):
+    def SetValue(self, value: Union[int, float, str]) -> None:
         if isinstance(value, int) or isinstance(value, float):
             value = str(value)
-            if sys.platform == 'win32':
-                value += "" # Otherwise 0 is not shown under win32
+            if sys.platform == "win32":
+                value += ""  # Otherwise 0 is not shown under win32
         # With some encoding in some dicom fields (like name) raises a
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
         try:
             self.actor.SetInput(value.encode("cp1252"))
-        except(UnicodeEncodeError):
-            self.actor.SetInput(value.encode("utf-8","surrogatepass"))
+        except UnicodeEncodeError:
+            self.actor.SetInput(value.encode("utf-8", "surrogatepass"))
 
         self.text = value
 
-    def SetPosition(self, position):
+    def SetPosition(self, position: Tuple[float, float]) -> None:
         self.position = position
-        self.actor.GetPositionCoordinate().SetValue(position[0],
-                                                    position[1])
+        self.actor.GetPositionCoordinate().SetValue(position[0], position[1])
 
-    def GetPosition(self):
+    def GetPosition(self) -> Tuple[float, float, float]:
         return self.actor.GetPositionCoordinate().GetValue()
 
-    def SetJustificationToRight(self):
+    def SetJustificationToRight(self) -> None:
         self.property.SetJustificationToRight()
 
-    def SetJustificationToCentered(self):
+    def SetJustificationToCentered(self) -> None:
         self.property.SetJustificationToCentered()
 
-
-    def SetVerticalJustificationToBottom(self):
+    def SetVerticalJustificationToBottom(self) -> None:
         self.property.SetVerticalJustificationToBottom()
 
-    def SetVerticalJustificationToCentered(self):
+    def SetVerticalJustificationToCentered(self) -> None:
         self.property.SetVerticalJustificationToCentered()
 
-    def Show(self, value=1):
+    def Show(self, value: bool = True) -> None:
         if value:
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
 
-    def Hide(self):
+    def Hide(self) -> None:
         self.actor.VisibilityOff()
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: "CanvasRendererCTX") -> None:
         coord = vtkCoordinate()
         coord.SetCoordinateSystemToNormalizedDisplay()
         coord.SetValue(*self.position)
@@ -361,7 +365,7 @@ class TextZero(object):
         canvas.draw_text(self.text, (x, y), font=font)
 
 
-def numpy_to_vtkMatrix4x4(affine):
+def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:
     """
     Convert a numpy 4x4 array to a vtk 4x4 matrix
     :param affine: 4x4 array
@@ -380,19 +384,19 @@ def numpy_to_vtkMatrix4x4(affine):
 
 
 # TODO: Use the SurfaceManager >> CreateSurfaceFromFile inside surface.py method instead of duplicating code
-def CreateObjectPolyData(filename):
+def CreateObjectPolyData(filename: str) -> Any:
     """
     Coil for navigation rendered in volume viewer.
     """
     filename = utils.decode(filename, const.FS_ENCODE)
     if filename:
-        if filename.lower().endswith('.stl'):
+        if filename.lower().endswith(".stl"):
             reader = vtkSTLReader()
-        elif filename.lower().endswith('.ply'):
+        elif filename.lower().endswith(".ply"):
             reader = vtkPLYReader()
-        elif filename.lower().endswith('.obj'):
+        elif filename.lower().endswith(".obj"):
             reader = vtkOBJReader()
-        elif filename.lower().endswith('.vtp'):
+        elif filename.lower().endswith(".vtp"):
             reader = vtkXMLPolyDataReader()
         else:
             wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
@@ -411,7 +415,9 @@ def CreateObjectPolyData(filename):
     obj_polydata = reader.GetOutput()
 
     if obj_polydata.GetNumberOfPoints() == 0:
-        wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+        wx.MessageBox(
+            _("InVesalius was not able to import this surface"), _("Import surface error")
+        )
         obj_polydata = None
 
     return obj_polydata

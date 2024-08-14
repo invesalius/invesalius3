@@ -23,10 +23,9 @@ import math
 import numpy as np
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
-from invesalius.pubsub import pub as Publisher
-
 import invesalius.constants as const
 import invesalius.utils as utils
+from invesalius.pubsub import pub as Publisher
 
 
 class Box(metaclass=utils.Singleton):
@@ -180,7 +179,7 @@ class Box(metaclass=utils.Singleton):
 
     def UpdatePositionBySideBox(self, pc, axis, position):
         """
-        Checks the coordinates are in any side of box and update it. 
+        Checks the coordinates are in any side of box and update it.
         Is necessary to move limits of box.
         """
 
@@ -239,12 +238,11 @@ class Box(metaclass=utils.Singleton):
 
     def UpdatePositionByInsideBox(self, pc, axis):
         """
-        Checks the coordinates are inside the box and update it. 
+        Checks the coordinates are inside the box and update it.
         Is necessary to move box in pan event.
         """
 
         if axis == "AXIAL":
-
             if self.yf + pc[1] <= self.size_y and self.yi + pc[1] >= 0:
                 self.yf = self.yf + pc[1]
                 self.yi = self.yi + pc[1]
@@ -254,7 +252,6 @@ class Box(metaclass=utils.Singleton):
                 self.xi = self.xi + pc[0]
 
         if axis == "SAGITAL":
-
             if self.yf + pc[1] <= self.size_y and self.yi + pc[1] >= 0:
                 self.yf = self.yf + pc[1]
                 self.yi = self.yi + pc[1]
@@ -264,7 +261,6 @@ class Box(metaclass=utils.Singleton):
                 self.zi = self.zi + pc[2]
 
         if axis == "CORONAL":
-
             if self.xf + pc[0] <= self.size_x and self.xi + pc[0] >= 0:
                 self.xf = self.xf + pc[0]
                 self.xi = self.xi + pc[0]
@@ -278,8 +274,8 @@ class Box(metaclass=utils.Singleton):
 
 class DrawCrop2DRetangle:
     """
-    This class is responsible for draw and control user 
-    interactions with the box. Each side of box is displayed in an 
+    This class is responsible for draw and control user
+    interactions with the box. Each side of box is displayed in an
     anatomical orientation (axial, sagital or coronal).
     """
 
@@ -297,7 +293,6 @@ class DrawCrop2DRetangle:
         self.layer = 0
 
     def MouseMove(self, x, y):
-
         self.MouseInLine(x, y)
 
         x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
@@ -310,16 +305,9 @@ class DrawCrop2DRetangle:
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
 
         if self.viewer.orientation == "AXIAL":
-
-            if (
-                self.status_move == const.AXIAL_UPPER
-                or self.status_move == const.AXIAL_BOTTOM
-            ):
+            if self.status_move == const.AXIAL_UPPER or self.status_move == const.AXIAL_BOTTOM:
                 Publisher.sendMessage("Set interactor resize NS cursor")
-            elif (
-                self.status_move == const.AXIAL_LEFT
-                or self.status_move == const.AXIAL_RIGHT
-            ):
+            elif self.status_move == const.AXIAL_LEFT or self.status_move == const.AXIAL_RIGHT:
                 Publisher.sendMessage("Set interactor resize WE cursor")
             elif self.crop_pan == const.CROP_PAN:
                 Publisher.sendMessage("Set interactor resize NSWE cursor")
@@ -327,15 +315,9 @@ class DrawCrop2DRetangle:
                 Publisher.sendMessage("Set interactor default cursor")
 
         if self.viewer.orientation == "SAGITAL":
-            if (
-                self.status_move == const.SAGITAL_UPPER
-                or self.status_move == const.SAGITAL_BOTTOM
-            ):
+            if self.status_move == const.SAGITAL_UPPER or self.status_move == const.SAGITAL_BOTTOM:
                 Publisher.sendMessage("Set interactor resize NS cursor")
-            elif (
-                self.status_move == const.SAGITAL_LEFT
-                or self.status_move == const.SAGITAL_RIGHT
-            ):
+            elif self.status_move == const.SAGITAL_LEFT or self.status_move == const.SAGITAL_RIGHT:
                 Publisher.sendMessage("Set interactor resize WE cursor")
             elif self.crop_pan == const.CROP_PAN:
                 Publisher.sendMessage("Set interactor resize NSWE cursor")
@@ -343,15 +325,9 @@ class DrawCrop2DRetangle:
                 Publisher.sendMessage("Set interactor default cursor")
 
         if self.viewer.orientation == "CORONAL":
-            if (
-                self.status_move == const.CORONAL_UPPER
-                or self.status_move == const.CORONAL_BOTTOM
-            ):
+            if self.status_move == const.CORONAL_UPPER or self.status_move == const.CORONAL_BOTTOM:
                 Publisher.sendMessage("Set interactor resize NS cursor")
-            elif (
-                self.status_move == const.CORONAL_LEFT
-                or self.status_move == const.CORONAL_RIGHT
-            ):
+            elif self.status_move == const.CORONAL_LEFT or self.status_move == const.CORONAL_RIGHT:
                 Publisher.sendMessage("Set interactor resize WE cursor")
             elif self.crop_pan == const.CROP_PAN:
                 Publisher.sendMessage("Set interactor resize NSWE cursor")
@@ -494,7 +470,6 @@ class DrawCrop2DRetangle:
         self.UpdateValues(canvas)
 
     def point_into_box(self, p1, p2, pc, axis):
-
         if axis == "AXIAL":
             if (
                 pc[0] > self.box.xi + 10
@@ -530,7 +505,7 @@ class DrawCrop2DRetangle:
 
     def point_between_line(self, p1, p2, pc, axis):
         """
-        Checks whether a point is in the line limits 
+        Checks whether a point is in the line limits
         """
 
         if axis == "AXIAL":
@@ -577,7 +552,6 @@ class DrawCrop2DRetangle:
         return distance
 
     def Coord3DtoDisplay(self, x, y, z, canvas):
-
         coord = vtkCoordinate()
         coord.SetValue(x, y, z)
         cx, cy = coord.GetComputedDisplayValue(canvas.evt_renderer)
@@ -585,7 +559,6 @@ class DrawCrop2DRetangle:
         return (cx, cy)
 
     def MakeBox(self):
-
         slice_size = self.viewer.slice_.matrix.shape
         zf, yf, xf = slice_size[0] - 1, slice_size[1] - 1, slice_size[2] - 1
 
@@ -602,7 +575,6 @@ class DrawCrop2DRetangle:
             box.MakeMatrix()
 
     def UpdateValues(self, canvas):
-
         box = self.box
         slice_number = self.viewer.slice_data.number
 
@@ -619,9 +591,7 @@ class DrawCrop2DRetangle:
 
                 sn = slice_number * zs
                 if sn >= box.zi and sn <= box.zf:
-                    canvas.draw_line(
-                        (s_cxi, s_cyi), (s_cxf, s_cyf), colour=(255, 255, 255, 255)
-                    )
+                    canvas.draw_line((s_cxi, s_cyi), (s_cxf, s_cyf), colour=(255, 255, 255, 255))
 
         elif canvas.orientation == "CORONAL":
             for points in box.coronal.values():
@@ -634,13 +604,10 @@ class DrawCrop2DRetangle:
                 sn = slice_number * ys
 
                 if sn >= box.yi and sn <= box.yf:
-                    canvas.draw_line(
-                        (s_cxi, s_cyi), (s_cxf, s_cyf), colour=(255, 255, 255, 255)
-                    )
+                    canvas.draw_line((s_cxi, s_cyi), (s_cxf, s_cyf), colour=(255, 255, 255, 255))
 
         elif canvas.orientation == "SAGITAL":
             for points in box.sagital.values():
-
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
@@ -649,9 +616,7 @@ class DrawCrop2DRetangle:
 
                 sn = slice_number * xs
                 if sn >= box.xi and sn <= box.xf:
-                    canvas.draw_line(
-                        (s_cxi, s_cyi), (s_cxf, s_cyf), colour=(255, 255, 255, 255)
-                    )
+                    canvas.draw_line((s_cxi, s_cyi), (s_cxf, s_cyf), colour=(255, 255, 255, 255))
 
     def SetViewer(self, viewer):
         self.viewer = viewer
