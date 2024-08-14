@@ -17,9 +17,6 @@ from invesalius.pubsub import pub as Publisher
 
 
 class MEPVisualizer:
-    # TODO: find a way to not duplicate the brain actor
-    # TODO: enable/disable colormapping based on toggle button
-    # TODO: update config from prefrences
     def __init__(self):
         self.__bind_events()
         self.points = vtk.vtkPolyData()
@@ -211,9 +208,6 @@ class MEPVisualizer:
             markers (List[Marker]): The list of marker objects to add/update points for.
             clear_old (bool, default=False): If True, clears all existing points before updating.
         """
-        # if not self._config_params["mep_enabled"]:
-        #     return
-
         markers, skip = self._FilterMarkers(MarkersControl().list)
 
         if skip or not markers:  # Saves computation if the markers are not updated or irrelevant
@@ -368,103 +362,3 @@ class MEPVisualizer:
         """Cleanup the visualization when the project is closed."""
         self.DisplayMotorMap(False)
         self._SaveUserParameters()
-
-    # --- Unused Methods ---
-
-    # def OldLUT(self):
-    #     lut = vtk.vtkLookupTable()
-    #     # lut.SetTableRange(self._config_params.threshold_down, self._config_params.range_up)
-    #     lut.SetTableRange(
-    #         self._config_params["colormap_range_uv"]["min"],
-    #         self._config_params["colormap_range_uv"]["max"],
-    #     )
-    #     lut.SetNumberOfTableValues(4)
-    #     colorSeries = vtk.vtkColorSeries()
-
-    #     # from vtkmodules.vtkCommonDataModel import vtkColor3ub
-    #     # colorSeries.AddColor(vtkColor3ub(0, 0, 1))   # Blue
-    #     # colorSeries.AddColor(vtkColor3ub(0, 1, 0))   # Green
-    #     # colorSeries.AddColor(vtkColor3ub(1, 1, 0))   # Yellow
-    #     # colorSeries.AddColor(vtkColor3ub(1, 0, 0))   # Red
-    #     # seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
-    #     seriesEnum = colorSeries.BREWER_DIVERGING_PURPLE_ORANGE_4
-    #     colorSeries.SetColorScheme(seriesEnum)
-
-    #     colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
-    #     lut_map = vtk.vtkLookupTable()
-    #     lut_map.DeepCopy(lut)
-    #     # lut_map.SetTableValue(0, 1., 1., 1., 0.)
-    #     lut_map.Build()
-
-    #     return lut
-    # def render_visualization(self, surface):
-    #     if not surface:
-    #         print('No surface data found')
-    #         return
-
-    #     self.set_surface_actor(surface)
-    #     self._config_params['bounds'] = list(np.array(surface.GetBounds()))
-    #     points = self.points
-
-    #     range_up = points.GetPointData().GetScalars().GetRange()[1]
-    #     data_range = (self._config_params['threshold_down'], self._config_params['range_up'])
-    #     dim_size = self.dims_size
-    #     dims = np.array([dim_size, dim_size, dim_size])
-
-    #     interpolated_data = self.interpolate_data()
-    #     self.colored_surface = self.create_colored_surface(interpolated_data)
-    #     point_actor = self.create_point_actor(points, data_range)
-
-    #     self.colorBarActor = self.colorBarActor or self.create_colorbar_actor()
-
-    #     self.renderer.AddActor(self.colored_surface)
-    #     self.renderer.AddActor(point_actor)
-    #     self.renderer.AddActor(self.colorBarActor)
-
-    #     picker = vtk.vtkCellPicker()
-    #     picker.SetTolerance(0.005)
-    #     picker.PickFromListOn()
-
-    # def add_points_to_file(filename, new_coords, points_range):
-    #     """Appends new points and MEP values to the text file."""
-    #     new_mep_values = np.random.uniform(
-    #         points_range[0], points_range[1], len(new_coords))
-    #     # Combine coordinates and MEPs
-    #     new_data = np.hstack((new_coords, new_mep_values[:, np.newaxis]))
-    #     with open(filename, 'a') as f:
-    #         np.savetxt(f, new_data, delimiter='\t', fmt='%f')  # Append to file
-
-    # def read_point_data(self, filename='D:/tms_mep_visualization/data/MEP_data.txt'):
-    #     """Reads point data (coordinates and MEP amplitudes) from a text file."""
-    #     reader = vtk.vtkDelimitedTextReader()
-    #     reader.SetFileName(filename)
-    #     reader.DetectNumericColumnsOn()
-    #     reader.SetFieldDelimiterCharacters('\t')
-    #     reader.SetHaveHeaders(True)
-
-    #     table_points = vtk.vtkTableToPolyData()
-    #     table_points.SetInputConnection(reader.GetOutputPort())
-    #     table_points.SetXColumnIndex(0)
-    #     table_points.SetYColumnIndex(1)
-    #     table_points.SetZColumnIndex(2)
-    #     table_points.Update()
-
-    #     output = table_points.GetOutput()
-    #     # Table points are now converted to polydata and MEP is the active scalar
-    #     output.GetPointData().SetActiveScalars('MEP')
-
-    #     return output
-
-    # def read_surface_data(self, filename='data/T1.stl', actor_out=False):
-    #     """Reads the surface data from an STL file."""
-    #     reader = vtkSTLReader()
-    #     reader.SetFileName(filename)
-    #     reader.Update()
-    #     output = reader.GetOutput()
-    #     if actor_out:
-    #         actor = vtk.vtkActor()
-    #         mapper = vtk.vtkPolyDataMapper()
-    #         mapper.SetInputData(output)
-    #         actor.SetMapper(mapper)
-    #         return actor
-    #     return output
