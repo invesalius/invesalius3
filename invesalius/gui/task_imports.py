@@ -31,8 +31,6 @@ import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tractography as tractography
 from invesalius.pubsub import pub as Publisher
 
-# import invesalius.gui.task_mepmapping as mepmapping
-
 
 def GetCollapsedIconData():
     return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
