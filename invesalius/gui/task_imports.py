@@ -26,11 +26,12 @@ import invesalius.gui.task_efield as efield
 import invesalius.gui.task_exporter as exporter
 import invesalius.gui.task_fmrisupport as fmrisupport
 import invesalius.gui.task_importer as importer
-import invesalius.gui.task_mepmapping as mepmapping
 import invesalius.gui.task_slice as slice_
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tractography as tractography
 from invesalius.pubsub import pub as Publisher
+
+# import invesalius.gui.task_mepmapping as mepmapping
 
 
 def GetCollapsedIconData():
@@ -189,7 +190,7 @@ class InnerFoldPanel(wx.Panel):
             (_("Tractography"), tractography.TaskPanel),
             (_("E-Field"), efield.TaskPanel),
             (_("fMRI support"), fmrisupport.TaskPanel),
-            (_("MEP mapping"), mepmapping.TaskPanel),
+            # (_("MEP mapping"), mepmapping.TaskPanel), # TODO: Add marker file import and export colored stl
         ]
 
         style = fpb.CaptionBarStyle()

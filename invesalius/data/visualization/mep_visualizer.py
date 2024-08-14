@@ -3,12 +3,10 @@ from copy import deepcopy
 
 import numpy as np
 import vtk
-import vtkmodules.vtkInteractionStyle
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
-    vtkRenderer,
 )
 
 import invesalius.constants as const
@@ -66,7 +64,12 @@ class MEPVisualizer:
             session.SetConfig("mep_configuration", self._config_params)
 
     def _ResetConfigParams(self):
-        ses.Session().SetConfig("mep_configuration", deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS))
+        defaults = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
+        if self._config_params["enabled_once"]:
+            defaults["enabled_once"] = True
+
+        ses.Session().SetConfig("mep_configuration", defaults)
+        self._config_params = deepcopy(defaults)
 
     def _SaveUserParameters(self):
         ses.Session().SetConfig("mep_configuration", self._config_params)

@@ -17,35 +17,33 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-import wx.lib.colourselect as csel
 import sys
-import wx.lib.scrolledpanel as scrolled
+
+import matplotlib.pyplot as plt
 import nibabel as nb
 import numpy as np
-import matplotlib.pyplot as plt
 import wx
+import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
+import wx.lib.scrolledpanel as scrolled
 
 import invesalius.constants as const
-from invesalius.data.slice_ import Slice
 import invesalius.gui.dialogs as dlg
-import invesalius.gui.widgets.gradient as grad
-from invesalius.i18n import tr as _
-from invesalius.pubsub import pub as Publisher
 import invesalius.session as ses
 import invesalius.utils as utils
+from invesalius.data.slice_ import Slice
+from invesalius.i18n import tr as _
+from invesalius.pubsub import pub as Publisher
 
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
-
         wx.Panel.__init__(self, parent)
 
         inner_panel = InnerTaskPanel(self)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
-                  wx.LEFT, 7)
+        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT | wx.LEFT, 7)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
@@ -58,7 +56,6 @@ class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-        default_colour = self.GetBackgroundColour()
         # White background looks better
         background_colour = wx.Colour(255, 255, 255)
         self.SetBackgroundColour(background_colour)
@@ -74,8 +71,7 @@ class InnerTaskPanel(wx.Panel):
         self.cluster_volume = None
         self.zero_value = 0
 
-        line0 = wx.StaticText(self, -1,
-                              _("Motor Mapping Configuration"))
+        line0 = wx.StaticText(self, -1, _("Motor Mapping Configuration"))
 
         # Button for import config coil file
         # tooltip = _("Select the brain surface to be mapped on.")
@@ -90,8 +86,7 @@ class InnerTaskPanel(wx.Panel):
 
         # add surface panel window
         self.surface_panel = SurfaceProperties(self)
-        line1.Add(self.surface_panel, 5, wx.LEFT |
-                  wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT, 2)
+        line1.Add(self.surface_panel, 5, wx.LEFT | wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT, 2)
         line1.AddSpacer(5)
         # line1.Add(btn_load, 5, wx.LEFT | wx.TOP | wx.RIGHT, 1)
 
@@ -118,23 +113,25 @@ class InnerTaskPanel(wx.Panel):
         pass
 
     def OnSelectColormap(self, event=None):
-        self.current_colormap = self.colormaps[self.combo_thresh.GetSelection(
-        )]
-        colors = self.GenerateColormapColors(
-            self.current_colormap, self.number_colors)
+        self.current_colormap = self.colormaps[self.combo_thresh.GetSelection()]
+        colors = self.GenerateColormapColors(self.current_colormap, self.number_colors)
 
         self.UpdateGradient(self.gradient, colors)
 
         if isinstance(self.cluster_volume, np.ndarray):
-            self.apply_colormap(self.current_colormap,
-                                self.cluster_volume, self.zero_value)
+            self.apply_colormap(self.current_colormap, self.cluster_volume, self.zero_value)
 
     def GenerateColormapColors(self, colormap_name, number_colors=10):
         cmap = plt.get_cmap(colormap_name)
-        colors_gradient = [(int(255*cmap(i)[0]),
-                            int(255*cmap(i)[1]),
-                            int(255*cmap(i)[2]),
-                            int(255*cmap(i)[3])) for i in np.linspace(0, 1, number_colors)]
+        colors_gradient = [
+            (
+                int(255 * cmap(i)[0]),
+                int(255 * cmap(i)[1]),
+                int(255 * cmap(i)[2]),
+                int(255 * cmap(i)[3]),
+            )
+            for i in np.linspace(0, 1, number_colors)
+        ]
 
         return colors_gradient
 
@@ -148,8 +145,7 @@ class InnerTaskPanel(wx.Panel):
         self.Show(True)
 
     def OnLoadFmri(self, event=None):
-        filename = dlg.ShowImportOtherFilesDialog(
-            id_type=const.ID_NIFTI_IMPORT)
+        filename = dlg.ShowImportOtherFilesDialog(id_type=const.ID_NIFTI_IMPORT)
         filename = utils.decode(filename, const.FS_ENCODE)
 
         fmri_data = nb.squeeze_image(nb.load(filename))
@@ -159,24 +155,28 @@ class InnerTaskPanel(wx.Panel):
         cluster_volume_original = fmri_data.get_fdata().T[:, ::-1].copy()
         # Normalize the data to 0-1 range
         cluster_volume_normalized = (cluster_volume_original - np.min(cluster_volume_original)) / (
-            np.max(cluster_volume_original) - np.min(cluster_volume_original))
+            np.max(cluster_volume_original) - np.min(cluster_volume_original)
+        )
         # Convert data to 8-bit integer
-        self.cluster_volume = (
-            cluster_volume_normalized * 255).astype(np.uint8)
+        self.cluster_volume = (cluster_volume_normalized * 255).astype(np.uint8)
 
-        self.zero_value = int((0. - np.min(cluster_volume_original)) / (
-            np.max(cluster_volume_original) - np.min(cluster_volume_original)) * 255)
+        self.zero_value = int(
+            (0.0 - np.min(cluster_volume_original))
+            / (np.max(cluster_volume_original) - np.min(cluster_volume_original))
+            * 255
+        )
 
         if self.slc.matrix.shape != self.cluster_volume.shape:
             wx.MessageBox(
-                ("The overlay volume does not match the underlying structural volume"), ("InVesalius 3"))
+                ("The overlay volume does not match the underlying structural volume"),
+                ("InVesalius 3"),
+            )
 
         else:
-            self.slc.aux_matrices['color_overlay'] = self.cluster_volume
+            self.slc.aux_matrices["color_overlay"] = self.cluster_volume
             # 3. Show colors
-            self.slc.to_show_aux = 'color_overlay'
-            self.apply_colormap(self.current_colormap,
-                                self.cluster_volume, self.zero_value)
+            self.slc.to_show_aux = "color_overlay"
+            self.apply_colormap(self.current_colormap, self.cluster_volume, self.zero_value)
 
     def apply_colormap(self, colormap, cluster_volume, zero_value):
         # 2. Attribute different hue accordingly
@@ -188,18 +188,16 @@ class InnerTaskPanel(wx.Panel):
         # Map the scaled data to colors
         colors = cmap(cluster_volume_unique / 255)
         # Create a dictionary where keys are scaled data and values are colors
-        color_dict = {val: color for val, color in zip(
-            cluster_volume_unique, map(tuple, colors))}
+        color_dict = {val: color for val, color in zip(cluster_volume_unique, map(tuple, colors))}
 
-        self.slc.aux_matrices_colours['color_overlay'] = color_dict
+        self.slc.aux_matrices_colours["color_overlay"] = color_dict
         # add transparent color for nans and non GM voxels
-        if zero_value in self.slc.aux_matrices_colours['color_overlay']:
-            self.slc.aux_matrices_colours['color_overlay'][zero_value] = (
-                0.0, 0.0, 0.0, 0.0)
+        if zero_value in self.slc.aux_matrices_colours["color_overlay"]:
+            self.slc.aux_matrices_colours["color_overlay"][zero_value] = (0.0, 0.0, 0.0, 0.0)
         else:
             print("Zero value not found in color_overlay. No data is set as transparent.")
 
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage("Reload actual slice")
 
 
 class SurfaceProperties(scrolled.ScrolledPanel):
@@ -216,24 +214,21 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         # LINE 1
 
         # Combo related to mask name
-        combo_surface_name = wx.ComboBox(self, -1,
-                                         style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        combo_surface_name = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN | wx.CB_READONLY)
         # combo_surface_name.SetSelection(0)
-        if sys.platform != 'win32':
+        if sys.platform != "win32":
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
         self.combo_surface_name = combo_surface_name
 
         # Mask colour
-        button_colour = csel.ColourSelect(
-            self, -1, colour=(0, 0, 255), size=(22, -1))
+        button_colour = csel.ColourSelect(self, -1, colour=(0, 0, 255), size=(22, -1))
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
 
         # Sizer which represents the first line
         line1 = wx.BoxSizer(wx.HORIZONTAL)
-        line1.Add(combo_surface_name, 1, wx.LEFT |
-                  wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT, 7)
+        line1.Add(combo_surface_name, 1, wx.LEFT | wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT, 7)
         line1.Add(button_colour, 0, wx.TOP | wx.RIGHT, 7)
 
         # LINE 2
@@ -243,16 +238,14 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         # flag_link = wx.EXPAND | wx.GROW | wx.RIGHT
         fixed_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        fixed_sizer.Add(text_transparency, 0, wx.GROW |
-                        wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        fixed_sizer.Add(text_transparency, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         # fixed_sizer.AddSpacer(7)
         fixed_sizer.Add(line1, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 5)
 
         # LINE 4
         # # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(fixed_sizer, 0,
-                  wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 10)
+        sizer.Add(fixed_sizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 10)
         # sizer.Add(line1, 1, wx.GROW | wx.EXPAND | wx.TOP, 10)
 
         sizer.Fit(self)
@@ -271,12 +264,10 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.SetupScrolling()
 
     def __bind_events(self):
-        Publisher.subscribe(self.InsertNewSurface,
-                            'Update surface info in GUI')
-        Publisher.subscribe(self.ChangeSurfaceName,
-                            'Change surface name')
-        Publisher.subscribe(self.OnCloseProject, 'Close project data')
-        Publisher.subscribe(self.OnRemoveSurfaces, 'Remove surfaces')
+        Publisher.subscribe(self.InsertNewSurface, "Update surface info in GUI")
+        Publisher.subscribe(self.ChangeSurfaceName, "Change surface name")
+        Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.OnRemoveSurfaces, "Remove surfaces")
 
     def OnRemoveSurfaces(self, surface_indexes):
         s = self.combo_surface_name.GetSelection()
@@ -303,7 +294,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
 
     def CloseProject(self):
         n = self.combo_surface_name.GetCount()
-        for i in range(n-1, -1, -1):
+        for i in range(n - 1, -1, -1):
             self.combo_surface_name.Delete(i)
         self.surface_list = []
 
@@ -314,7 +305,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
     def InsertNewSurface(self, surface):
         index = surface.index
         name = surface.name
-        colour = [int(value*255) for value in surface.colour]
+        colour = [int(value * 255) for value in surface.colour]
         i = 0
         try:
             i = self.surface_list.index([name, index])
@@ -340,12 +331,16 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
         self.button_colour.SetColour(
-            [int(value*255) for value in self.surface_list[surface_index][2]])
-        Publisher.sendMessage('Change surface selected',
-                                surface_index=self.surface_list[surface_index][1])
+            [int(value * 255) for value in self.surface_list[surface_index][2]]
+        )
+        Publisher.sendMessage(
+            "Change surface selected", surface_index=self.surface_list[surface_index][1]
+        )
 
     def OnSelectColour(self, evt):
-        colour = [value/255.0 for value in evt.GetValue()]
-        Publisher.sendMessage('Set surface colour',
-                              surface_index=self.combo_surface_name.GetSelection(),
-                              colour=colour)
+        colour = [value / 255.0 for value in evt.GetValue()]
+        Publisher.sendMessage(
+            "Set surface colour",
+            surface_index=self.combo_surface_name.GetSelection(),
+            colour=colour,
+        )
