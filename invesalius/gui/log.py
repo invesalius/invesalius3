@@ -46,7 +46,7 @@ actionDictionary00 = {
 class ConsoleLogHandler(logging.StreamHandler):
     def __init__(self, textctrl):
         logging.StreamHandler.__init__(self)
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - (%(funcName)s) - %(message)s")
         self.setFormatter(formatter)
         self.textctrl = textctrl
 
@@ -170,6 +170,10 @@ class InvesaliusLogger:  # metaclass=Singleton):
     def getLogger(self, lname=__name__):
         # logger = logging.getLogger(lname)
         return self._logger
+
+    def formMessage(fName, className, funcName):
+        msg = "Hello ..."
+        return msg
 
     def logMessage(self, level, msg):
         level = level.upper()
@@ -296,16 +300,30 @@ class InvesaliusLogger:  # metaclass=Singleton):
         for handler in self._logger.handlers:
             handler.flush()
 
-def call_tracking_decorator01(message1, message2):
-	def decorator(fun):
-		invLogger._logger.debug(message1)
+def call_tracking_decorator01(message1, message2, message3=''):
+	def decorator(func):
+		#invLogger._logger.debug(message1)
         #msg = "Function {} called".format(fun.__name__)
         #invLogger._logger.debug(msg)
 		def wrapper(*args, **kwargs):
+			invLogger._logger.debug(f"File {message1}, Class {message2}, Function {message3}" )
 			invLogger._logger.debug(message2)
-			fun(*args, **kwargs)
+            #print(f"Decorator argument 1: {message1}")
+            #invLogger._logger.debug(f"Altitude: {message1}")
+			#invLogger._logger.debug(message3)
+            #msg = invLogger.formMessage(message1,message2,message3)
+			func(*args, **kwargs)
 		return wrapper
 	return decorator
+
+def decorator_with_args(arg1, arg2):
+	def actual_decorator(func):
+		def wrapper( * args, ** kwargs):
+			print(f"Decorator argument 1: {arg1}")
+			print(f"Decorator argument 2: {arg2}")
+			func( * args, ** kwargs)
+		return wrapper
+	return actual_decorator
 
 def call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
