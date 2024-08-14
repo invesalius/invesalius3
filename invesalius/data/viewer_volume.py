@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import math
-
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -108,6 +107,7 @@ from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.ruler_volume import GenericLeftRulerVolume
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
+from invesalius.data.visualization.mep_visualizer import MEPVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.i18n import tr as _
@@ -321,6 +321,8 @@ class Viewer(wx.Panel):
             actor_factory=self.actor_factory,
             vector_field_visualizer=self.vector_field_visualizer,
         )
+
+        self.mep_visualizer = MEPVisualizer()
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
@@ -1703,7 +1705,6 @@ class Viewer(wx.Panel):
 
     def find_and_extract_data(self, csv_filename, target_numbers):
         import csv
-
         matching_rows = []
         with open(csv_filename, "r") as csvfile:
             csv_reader = csv.reader(csvfile)
@@ -1979,7 +1980,6 @@ class Viewer(wx.Panel):
     def ShowEfieldAtCortexTarget(self):
         if self.target_at_cortex is not None:
             import vtk
-
             index = self.efield_mesh.FindPoint(self.target_at_cortex)
             if index in self.Id_list:
                 cell_number = self.Id_list.index(index)
@@ -2325,9 +2325,7 @@ class Viewer(wx.Panel):
 
     def SavedAllEfieldData(self, filename):
         import csv
-
         import invesalius.data.imagedata_utils as imagedata_utils
-
         header = [
             "Marker ID",
             "Enorm cell indexes",

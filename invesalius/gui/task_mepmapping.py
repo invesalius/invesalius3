@@ -36,7 +36,6 @@ from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 
-# TODO: This module is not used in the application. It is kept here for a future feature where the user can export the colored STL file.
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
