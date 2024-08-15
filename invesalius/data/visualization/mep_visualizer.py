@@ -19,6 +19,7 @@
 import random
 from copy import deepcopy
 
+import wx
 import numpy as np
 import vtk
 from vtk import vtkColorTransferFunction
@@ -257,8 +258,6 @@ class MEPVisualizer:
     def UpdateVisualization(self):
         if not self._config_params["mep_enabled"]:
             return
-        if self.is_navigating:
-            return
 
         self._CleanupVisualization()
 
@@ -274,7 +273,8 @@ class MEPVisualizer:
         Publisher.sendMessage("AppendActor", actor=self.point_actor)
         Publisher.sendMessage("AppendActor", actor=self.colorBarActor)
 
-        Publisher.sendMessage("Render volume viewer")
+        if not self.is_navigating:
+            Publisher.sendMessage("Render volume viewer")
 
     def CreateColorbarActor(self, lut=None) -> vtk.vtkActor:
         if lut is None:
