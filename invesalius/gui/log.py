@@ -299,18 +299,10 @@ class InvesaliusLogger:  # metaclass=Singleton):
         for handler in self._logger.handlers:
             handler.flush()
 
-def call_tracking_decorator(message1, message2, message3=''):
+def call_tracking_decorator(fileName, className, functionName=''):
 	def decorator(func):
-		#invLogger._logger.debug(message1)
-        #msg = "Function {} called".format(fun.__name__)
-        #invLogger._logger.debug(msg)
 		def wrapper(*args, **kwargs):
-			invLogger._logger.debug(f"Entered File {message1}, Class {message2}, Function {message3}" )
-			#invLogger._logger.debug(message2)
-            #print(f"Decorator argument 1: {message1}")
-            #invLogger._logger.debug(f"Altitude: {message1}")
-			#invLogger._logger.debug(message3)
-            #msg = invLogger.formMessage(message1,message2,message3)
+			invLogger._logger.debug(f"Entered File {fileName}, Class {className}, Function {functionName}" )
 			func(*args, **kwargs)
 		return wrapper
 	return decorator
