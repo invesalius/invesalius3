@@ -295,6 +295,3 @@ class MarkersControl(metaclass=Singleton):
         new_marker.marker_type = MarkerType.COIL_TARGET
 
         self.AddMarker(new_marker)
-
-    # def BroadcastMarkerList(self):
-    #    Publisher.sendMessage("Update marker list", markers=self.list)
