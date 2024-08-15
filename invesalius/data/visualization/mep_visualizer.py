@@ -19,9 +19,9 @@
 import random
 from copy import deepcopy
 
-import wx
 import numpy as np
 import vtk
+import wx
 from vtk import vtkColorTransferFunction
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkRenderingCore import (
