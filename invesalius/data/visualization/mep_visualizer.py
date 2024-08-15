@@ -38,7 +38,6 @@ from invesalius.pubsub import pub as Publisher
 
 class MEPVisualizer:
     def __init__(self):
-        self.__bind_events()
         self.points = vtk.vtkPolyData()
         self.surface = None
         self.colored_surface_actor = None
@@ -47,14 +46,15 @@ class MEPVisualizer:
         self.colorBarActor = None
         self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
 
-        self.surface_index = None
         self.marker_storage = None
+        self.first_load = True
 
         self.is_navigating = False
 
         self.dims_size = 10
 
         self._config_params = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
+        self.__bind_events()
         self._LoadUserParameters()
 
     # --- Event Handling ---
@@ -76,6 +76,12 @@ class MEPVisualizer:
         session = ses.Session()
         config = session.GetConfig("mep_configuration")
         if config:
+            config["enabled_once"] = False
+            config["mep_enabled"] = False
+            if (
+                config["brain_surface_index"] is not None
+            ):  # If there is a surface already selected then there is no point of showing the message
+                config["enabled_once"] = True
             self._config_params.update(config)
         else:
             session.SetConfig("mep_configuration", self._config_params)
@@ -101,19 +107,44 @@ class MEPVisualizer:
     def DisplayMotorMap(self, show: bool):
         if show:
             self._config_params["mep_enabled"] = True
-            self._config_params["enabled_once"] = True
+            if not self._config_params["enabled_once"]:
+                wx.MessageBox(
+                    "Please select a surface from preferences.",
+                    "MEP Mapping",
+                    wx.OK | wx.ICON_INFORMATION,
+                )
+                self._config_params["enabled_once"] = True
+                self._SaveUserParameters()
+                return
+
             if self.colorBarActor:
                 Publisher.sendMessage("Remove surface actor from viewer", actor=self.colorBarActor)
                 Publisher.sendMessage("Remove surface actor from viewer", actor=self.surface)
             self.colorBarActor = self.CreateColorbarActor()
+            if self._config_params["brain_surface_index"] is not None:  # Hides the original surface
+                Publisher.sendMessage(
+                    "Show surface",
+                    index=self._config_params["brain_surface_index"],
+                    visibility=False,
+                )
+                if self.first_load:
+                    Publisher.sendMessage(
+                        "Show only surface",
+                        surface_index=self._config_params["brain_surface_index"],
+                    )
+                    Publisher.sendMessage("Get visible surface actor")
+                    self.first_load = False
+
             self.UpdateVisualization()
-            if self.surface_index is not None:  # Hides the original surface
-                Publisher.sendMessage("Show surface", index=self.surface_index, visibility=False)
         else:
             self._config_params["mep_enabled"] = False
             self._CleanupVisualization()
-            if self.surface_index is not None:  # Shows the original surface
-                Publisher.sendMessage("Show surface", index=self.surface_index, visibility=True)
+            if self._config_params["brain_surface_index"] is not None:  # Shows the original surface
+                Publisher.sendMessage(
+                    "Show surface",
+                    index=self._config_params["brain_surface_index"],
+                    visibility=True,
+                )
         self._SaveUserParameters()
 
     # --- Data Interpolation and Visualization ---
@@ -183,14 +214,16 @@ class MEPVisualizer:
         return color_function
 
     def QueryBrainSurface(self):
-        Publisher.sendMessage("Load brain surface into MEP visualizer")
+        Publisher.sendMessage(
+            "Show only surface", surface_index=self._config_params["brain_surface_index"]
+        )
+        Publisher.sendMessage("Get visible surface actor")
 
     def SetBrainSurface(self, actor: vtk.vtkActor, index: int):
         self.surface = actor
-        self._config_params["brain_surface_index"] = index
         self.actors_dict[id(actor)] = actor
         self._config_params["bounds"] = list(np.array(actor.GetBounds()))
-        self.surface_index = index
+        self._config_params["brain_surface_index"] = index
         self.UpdateVisualization()
         # hide the original surface if MEP is enabled
         if self._config_params["mep_enabled"]:
@@ -242,18 +275,14 @@ class MEPVisualizer:
             new_point_id = points.InsertNextPoint(
                 marker.position[0], -marker.position[1], marker.position[2]
             )
-            mep_value = (
-                marker.mep_value
-                or random.uniform(0, self._config_params["colormap_range_uv"]["max"])
-                / self._config_params["colormap_range_uv"]["max"]
-            )
+            mep_value = marker.mep_value or 0
             mep_array.InsertNextValue(mep_value)
 
         self.points.SetPoints(points)
         self.points.GetPointData().SetActiveScalars("MEP")
         self.points.Modified()
-
-        self.UpdateVisualization()
+        if self._config_params["mep_enabled"]:
+            self.UpdateVisualization()
 
     def UpdateVisualization(self):
         if not self._config_params["mep_enabled"]:
@@ -378,4 +407,6 @@ class MEPVisualizer:
     def OnCloseProject(self):
         """Cleanup the visualization when the project is closed."""
         self.DisplayMotorMap(False)
+        self._config_params["mep_enabled"] = False
+        self._config_params["enabled_once"] = False
         self._SaveUserParameters()

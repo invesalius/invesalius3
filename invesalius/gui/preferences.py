@@ -585,11 +585,6 @@ class VisualizationTab(wx.Panel):
         self.proj = prj.Project()
         surface_index = self.combo_brain_surface_name.GetSelection()
         Publisher.sendMessage("Show only surface", surface_index=surface_index)
-        Publisher.sendMessage(
-            "Set MEP brain surface",
-            surface=self.proj.surface_dict[surface_index],
-            surface_index=surface_index,
-        )
         Publisher.sendMessage("Get visible surface actor")
 
         self.button_colour.SetColour(
