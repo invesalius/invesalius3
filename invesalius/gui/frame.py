@@ -756,7 +756,8 @@ class Frame(wx.Frame):
             console_logging = values[const.CONSOLE_LOGGING]
             console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
             excessive_force_adjust = values[const.EXCESSIVE_FORCE_ADJUST]
-            excessive_force_distance = values[const.EXCESSIVE_FORCE_DISTANCE]
+            excessive_force_distance = values[const.EXCESSIVE_FORCE_MIN]
+            force_centering_on = values[const.FORCE_SENSOR_CENTERING]
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
@@ -770,6 +771,7 @@ class Frame(wx.Frame):
             session.SetConfig("console_logging_level", console_logging_level)
             session.SetConfig("excessive_force_adjust", excessive_force_adjust)
             session.SetConfig("excessive_force_distance", excessive_force_distance)
+            session.SetConfig("force_centering_on", force_centering_on)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
