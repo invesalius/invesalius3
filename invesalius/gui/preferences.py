@@ -303,7 +303,7 @@ class LoggingTab(wx.Panel):
 
         self.Layout()
 
-    @log.call_tracking_decorator
+    @log.call_tracking_decorator00
     def OnModifyButton(self, e):
         logging_file = self.tc_log_file_name.GetValue()
         path, fname = os.path.split(logging_file)

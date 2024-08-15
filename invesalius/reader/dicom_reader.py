@@ -116,8 +116,8 @@ class LoadDicom:
         self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.run()
 
-    #@log.call_tracking_decorator01(os.path.basename(__file__), sys.modules[__name__])
-    @log.call_tracking_decorator01(os.path.basename(__file__), "LoadDicom", "Run")
+    #@log.call_tracking_decorator(os.path.basename(__file__), sys.modules[__name__])
+    @log.call_tracking_decorator(os.path.basename(__file__), "LoadDicom", "Run")
     def run(self):
         grouper = self.grouper
         reader = gdcm.ImageReader()
