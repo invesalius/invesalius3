@@ -220,7 +220,6 @@ class SurfaceManager:
         Publisher.subscribe(self.OnLoadSurfaceDict, "Load surface dict")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnSelectSurface, "Change surface selected")
-        Publisher.subscribe(self.OnShowOnlySurface, "Show only surface")
         # ----
         Publisher.subscribe(self.OnSplitSurface, "Split surface")
         Publisher.subscribe(self.OnLargestSurface, "Create surface from largest region")
@@ -705,9 +704,6 @@ class SurfaceManager:
         self.last_surface_index = surface_index
         #  if surface.is_shown:
         self.ShowActor(surface_index, True)
-
-    def OnShowOnlySurface(self, surface_index):
-        Publisher.sendMessage("Show single surface", index=surface_index, visibility=True)
 
     def OnLoadSurfaceDict(self, surface_dict):
         for key in surface_dict:

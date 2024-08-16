@@ -20,12 +20,28 @@ import random
 from copy import deepcopy
 
 import numpy as np
-import vtk
 import wx
 from vtk import vtkColorTransferFunction
-from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
+from vtkmodules.vtkCommonCore import (
+    vtkDoubleArray,
+    vtkPoints,
+)
+from vtkmodules.vtkCommonDataModel import (
+    vtkImageData,
+    vtkPolyData,
+)
+from vtkmodules.vtkFiltersCore import (
+    vtkPolyDataNormals,
+    vtkResampleWithDataSet,
+)
+from vtkmodules.vtkFiltersPoints import (
+    vtkGaussianKernel,
+    vtkPointInterpolator,
+)
+from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
+    vtkPointGaussianMapper,
     vtkPolyDataMapper,
 )
 
@@ -38,7 +54,7 @@ from invesalius.pubsub import pub as Publisher
 
 class MEPVisualizer:
     def __init__(self):
-        self.points = vtk.vtkPolyData()
+        self.points = vtkPolyData()
         self.surface = None
         self.colored_surface_actor = None
         self.point_actore = None
@@ -60,7 +76,6 @@ class MEPVisualizer:
     # --- Event Handling ---
 
     def __bind_events(self):
-        Publisher.subscribe(self.DisplayMotorMap, "Show motor map")
         Publisher.subscribe(self._ResetConfigParams, "Reset MEP Config")
         Publisher.subscribe(self.UpdateConfig, "Save Preferences")
         # Publisher.subscribe(self.UpdateMEPPoints, "Update marker list")
@@ -121,7 +136,7 @@ class MEPVisualizer:
                 )
                 self._config_params["enabled_once"] = True
                 self._SaveUserParameters()
-                return
+                return False
 
             if self.colorBarActor:
                 Publisher.sendMessage("Remove surface actor from viewer", actor=self.colorBarActor)
@@ -135,8 +150,9 @@ class MEPVisualizer:
                 )
                 if self.first_load:
                     Publisher.sendMessage(
-                        "Show only surface",
-                        surface_index=self._config_params["brain_surface_index"],
+                        "Show single surface",
+                        index=self._config_params["brain_surface_index"],
+                        visibility=True,
                     )
                     Publisher.sendMessage("Get visible surface actor")
                     self.first_load = False
@@ -152,6 +168,8 @@ class MEPVisualizer:
                     visibility=True,
                 )
         self._SaveUserParameters()
+
+        return True
 
     # --- Data Interpolation and Visualization ---
 
@@ -170,21 +188,21 @@ class MEPVisualizer:
         dims_size = self.dims_size
         dims = np.array([dims_size, dims_size, dims_size])
 
-        box = vtk.vtkImageData()
+        box = vtkImageData()
         box.SetDimensions(dims)
         box.SetSpacing((bounds[1::2] - bounds[:-1:2]) / (dims - 1))
         box.SetOrigin(bounds[::2])
 
-        gaussian_kernel = vtk.vtkGaussianKernel()
+        gaussian_kernel = vtkGaussianKernel()
         gaussian_kernel.SetSharpness(gaussian_sharpness)
         gaussian_kernel.SetRadius(gaussian_radius)
 
-        interpolator = vtk.vtkPointInterpolator()
+        interpolator = vtkPointInterpolator()
         interpolator.SetInputData(box)
         interpolator.SetSourceData(points)
         interpolator.SetKernel(gaussian_kernel)
 
-        resample = vtk.vtkResampleWithDataSet()
+        resample = vtkResampleWithDataSet()
 
         polydata = surface.GetMapper().GetInput()
         resample.SetInputData(polydata)
@@ -221,11 +239,13 @@ class MEPVisualizer:
 
     def QueryBrainSurface(self):
         Publisher.sendMessage(
-            "Show only surface", surface_index=self._config_params["brain_surface_index"]
+            "Show single surface",
+            index=self._config_params["brain_surface_index"],
+            visibility=True,
         )
         Publisher.sendMessage("Get visible surface actor")
 
-    def SetBrainSurface(self, actor: vtk.vtkActor, index: int):
+    def SetBrainSurface(self, actor: vtkActor, index: int):
         self.surface = actor
         self.actors_dict[id(actor)] = actor
         self._config_params["bounds"] = list(np.array(actor.GetBounds()))
@@ -270,10 +290,10 @@ class MEPVisualizer:
         if skip or not markers:  # Saves computation if the markers are not updated or irrelevant
             return
 
-        points = vtk.vtkPoints()
+        points = vtkPoints()
 
         point_data = self.points.GetPointData()
-        mep_array = vtk.vtkDoubleArray()
+        mep_array = vtkDoubleArray()
         mep_array.SetName("MEP")
         point_data.AddArray(mep_array)
 
@@ -311,10 +331,10 @@ class MEPVisualizer:
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
 
-    def CreateColorbarActor(self, lut=None) -> vtk.vtkActor:
+    def CreateColorbarActor(self, lut=None) -> vtkActor:
         if lut is None:
             lut = self._CustomColormap(self._config_params["mep_colormap"])
-        colorBarActor = vtk.vtkScalarBarActor()
+        colorBarActor = vtkScalarBarActor()
         colorBarActor.SetLookupTable(lut)
         colorBarActor.SetNumberOfLabels(4)
         colorBarActor.SetLabelFormat("%4.0f")
@@ -345,7 +365,7 @@ class MEPVisualizer:
         self.actors_dict[id(colorBarActor)] = colorBarActor
         return colorBarActor
 
-    def CreateColoredSurface(self, poly_data) -> vtk.vtkActor:
+    def CreateColoredSurface(self, poly_data) -> vtkActor:
         """Creates the actor for the surface with color mapping."""
         normals = vtkPolyDataNormals()
         normals.SetInputData(poly_data)
@@ -372,7 +392,7 @@ class MEPVisualizer:
 
     def CreatePointActor(self, points, data_range):
         """Creates the actor for the data points."""
-        point_mapper = vtk.vtkPointGaussianMapper()
+        point_mapper = vtkPointGaussianMapper()
         point_mapper.SetInputData(points)
         point_mapper.SetScalarRange(data_range)
         point_mapper.SetScaleFactor(1)

@@ -584,8 +584,9 @@ class VisualizationTab(wx.Panel):
 
         self.proj = prj.Project()
         surface_index = self.combo_brain_surface_name.GetSelection()
-        Publisher.sendMessage("Show only surface", surface_index=surface_index)
+        Publisher.sendMessage("Show single surface", index=surface_index, visibility=True)
         Publisher.sendMessage("Get visible surface actor")
+        Publisher.sendMessage("Press motor map button", pressed=True)
 
         self.button_colour.SetColour(
             [int(value * 255) for value in self.proj.surface_dict[surface_index].colour]

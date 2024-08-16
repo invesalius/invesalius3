@@ -154,6 +154,7 @@ class InnerFoldPanel(wx.Panel):
         self.tracker = nav_hub.tracker
         self.image = nav_hub.image
         self.navigation = nav_hub.navigation
+        self.mep_visualizer = nav_hub.mep_visualizer
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -1103,6 +1104,7 @@ class NavigationPanel(wx.Panel):
         self.image = nav_hub.image
         self.pedal_connector = nav_hub.pedal_connector
         self.neuronavigation_api = nav_hub.neuronavigation_api
+        self.mep_visualizer = nav_hub.mep_visualizer
 
         self.__bind_events()
 
@@ -1154,6 +1156,7 @@ class ControlPanel(wx.Panel):
         self.robot = nav_hub.robot
         self.icp = nav_hub.icp
         self.image = nav_hub.image
+        self.mep_visualizer = nav_hub.mep_visualizer
 
         self.nav_status = False
         self.target_mode = False
@@ -1423,6 +1426,9 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
         Publisher.subscribe(self.PressTargetModeButton, "Press target mode button")
+
+        Publisher.subscribe(self.PressMotorMapButton, "Press motor map button")
+        Publisher.subscribe(self.EnableMotorMapButton, "Enable motor map button")
 
         # Conditions for enabling 'target mode' button:
         Publisher.subscribe(self.TrackObject, "Track object")
@@ -1805,18 +1811,19 @@ class ControlPanel(wx.Panel):
                 self.robot.SetObjective(RobotObjective.NONE)
 
     # TMS Motor Mapping related
-    # 'Show Motor Map' button
-    def OnShowMotorMapButton(self, evt, ctrl):
-        # TODO: check if there are any motor mapping data available
-        # if not, show a message box saying that there is no motor mapping data available
+    # 'Motor Map' button
+    def PressMotorMapButton(self, pressed=False):
+        self.UpdateToggleButton(self.show_motor_map_button, pressed)
+        self.OnShowMotorMapButton()
 
-        if not ctrl.GetValue():
-            ctrl.SetBackgroundColour(self.RED_COLOR)
-            Publisher.sendMessage("Show motor map", show=False)
-        else:
-            ctrl.SetBackgroundColour(self.GREEN_COLOR)
-            Publisher.sendMessage("Show motor map", show=True)
-        # self.UpdateToggleButton(ctrl)
+    def EnableMotorMapButton(self, enabled=False):
+        self.EnableToggleButton(self.show_motor_map_button, enabled)
+        self.UpdateToggleButton(self.show_motor_map_button)
+
+    def OnShowMotorMapButton(self, evt=None, ctrl=None):
+        pressed = self.show_motor_map_button.GetValue()
+        if self.mep_visualizer.DisplayMotorMap(show=pressed):
+            self.UpdateToggleButton(self.show_motor_map_button)
 
 
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
