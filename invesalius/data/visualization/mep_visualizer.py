@@ -75,7 +75,7 @@ class MEPVisualizer:
     def _LoadUserParameters(self):
         session = ses.Session()
         config = session.GetConfig("mep_configuration")
-        if config:
+        if config:  # If there is a configuration saved in a previous session
             config["enabled_once"] = False
             config["mep_enabled"] = False
             if (
@@ -90,6 +90,12 @@ class MEPVisualizer:
         defaults = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         if self._config_params["enabled_once"]:
             defaults["enabled_once"] = True
+            defaults["bounds"] = self._config_params[
+                "bounds"
+            ]  # Keep the bounds of the surface if it was already selected (to avoid recalculating)
+            defaults["brain_surface_index"] = self._config_params[
+                "brain_surface_index"
+            ]  # Keep the previously selected index
 
         ses.Session().SetConfig("mep_configuration", defaults)
         self._config_params = deepcopy(defaults)
@@ -107,7 +113,7 @@ class MEPVisualizer:
     def DisplayMotorMap(self, show: bool):
         if show:
             self._config_params["mep_enabled"] = True
-            if not self._config_params["enabled_once"]:
+            if self._config_params["brain_surface_index"] is None:
                 wx.MessageBox(
                     "Please select a surface from preferences.",
                     "MEP Mapping",
