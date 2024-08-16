@@ -45,6 +45,7 @@ import invesalius.data.converters as converters
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
+import invesalius.gui.log as log
 
 # flag to control vtk error in read files
 no_error = True
@@ -151,6 +152,7 @@ class LoadBitmap:
 
         self.run()
 
+    @log.call_tracking_decorator(os.path.basename(__file__), "LoadBitmap", "Run")
     def run(self):
         global vtk_error
 
@@ -296,7 +298,7 @@ def VtkErrorPNGWriter(obj, f):
     global vtk_error
     vtk_error = True
 
-
+@log.call_tracking_decorator(os.path.basename(__file__), "", "ScipyRead")
 def ScipyRead(filepath):
     try:
         r = imread(filepath, flatten=True)
@@ -312,7 +314,7 @@ def ScipyRead(filepath):
     except IOError:
         return False
 
-
+@log.call_tracking_decorator(os.path.basename(__file__), "", "VtkRead")
 def VtkRead(filepath, t):
     if not const.VTK_WARNING:
         log_path = os.path.join(inv_paths.USER_LOG_DIR, "vtkoutput.txt")
@@ -362,7 +364,7 @@ def VtkRead(filepath, t):
         no_error = True
         return False
 
-
+@log.call_tracking_decorator(os.path.basename(__file__), "", "ReadBitmap")
 def ReadBitmap(filepath):
     t = VerifyDataType(filepath)
 
@@ -391,7 +393,7 @@ def ReadBitmap(filepath):
 
     return img_array
 
-
+@log.call_tracking_decorator(os.path.basename(__file__), "", "GetPixelSpacingFromInfoFile")
 def GetPixelSpacingFromInfoFile(filepath):
     filepath = utils.decode(filepath, const.FS_ENCODE)
 

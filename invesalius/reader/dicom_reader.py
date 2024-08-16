@@ -37,7 +37,6 @@ import plistlib
 
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
-import os
 import invesalius.constants as const
 import invesalius.reader.dicom as dicom
 import invesalius.reader.dicom_grouper as dicom_grouper
@@ -116,7 +115,6 @@ class LoadDicom:
         self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.run()
 
-    #@log.call_tracking_decorator(os.path.basename(__file__), sys.modules[__name__])
     @log.call_tracking_decorator(os.path.basename(__file__), "LoadDicom", "Run")
     def run(self):
         grouper = self.grouper

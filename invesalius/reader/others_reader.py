@@ -24,8 +24,9 @@ from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
 from invesalius import inv_paths
+import invesalius.gui.log as log
 
-
+@log.call_tracking_decorator(os.path.basename(__file__), "", "ReadOthers")
 def ReadOthers(dir_):
     """
     Read the given Analyze, NIfTI, Compressed NIfTI or PAR/REC file,
