@@ -96,7 +96,6 @@ class IterativeClosestPoint(metaclass=Singleton):
 
     def SetICP(self, navigation, use_icp):
         self.use_icp = use_icp
-        navigation.icp_queue.put_nowait([self.use_icp, self.m_icp])
 
         self.SaveState()
 

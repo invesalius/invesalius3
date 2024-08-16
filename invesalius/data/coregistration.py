@@ -350,14 +350,13 @@ class CoordinateCorregistrate(threading.Thread):
         self.coreg_data = coreg_data
         self.obj_datas = obj_datas
         self.coord_queue = queues[0]
-        self.view_tracts = view_tracts
         self.coord_tracts_queue = queues[1]
-        self.efield_queue = queues[4]
+        self.view_tracts = view_tracts
+        self.object_at_target_queue = queues[2]
+        self.efield_queue = queues[3]
         self.e_field_loaded = e_field_loaded
         self.event = event
         self.sle = sle
-        self.icp_queue = queues[2]
-        self.object_at_target_queue = queues[3]
         self.use_icp = icp.use_icp
         self.m_icp = icp.m_icp
         self.last_coord = None
@@ -382,18 +381,16 @@ class CoordinateCorregistrate(threading.Thread):
             corregistrate_object_dynamic if self.ref_mode_id else corregistrate_object_static
         )
 
+        icp = (self.use_icp, self.m_icp)
         while not self.event.is_set():
             try:
-                if not self.icp_queue.empty():
-                    self.use_icp, self.m_icp = self.icp_queue.get_nowait()
-
                 if not self.object_at_target_queue.empty():
                     self.target_flag = self.object_at_target_queue.get_nowait()
 
                 coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
 
                 coord_probe, m_img_probe = corregistrate_probe(
-                    m_change, r_stylus, coord_raw, self.ref_mode_id, icp=[self.use_icp, self.m_icp]
+                    m_change, r_stylus, coord_raw, self.ref_mode_id, icp=icp
                 )
 
                 coords = {"probe": coord_probe}
@@ -401,11 +398,10 @@ class CoordinateCorregistrate(threading.Thread):
 
                 for coil_name in obj_datas:
                     coord_coil, m_img_coil = corregistrate_object(
-                        m_change, obj_datas[coil_name], coord_raw, [self.use_icp, self.m_icp]
+                        m_change, obj_datas[coil_name], coord_raw, icp
                     )
                     coords[coil_name] = coord_coil
                     m_imgs[coil_name] = m_img_coil
-
 
                 # LUKATODO: this is an arbitrary coil, so efields/tracts work correctly with 1 coil but may bug out when using multiple
                 main_coil = next(iter(obj_datas))
@@ -425,14 +421,14 @@ class CoordinateCorregistrate(threading.Thread):
                         coord = self.last_coord + (self.target - self.last_coord) * 0.05
                         coords[main_coil] = coord
                         self.last_coord = coord
-                    
+
                     angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
                     translate = coord[0:3]
                     m_imgs[main_coil] = tr.compose_matrix(angles=angles, translate=translate)
-                
+
                 self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
 
-                # Compute data for efield/tracts 
+                # Compute data for efield/tracts
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]
 
@@ -440,8 +436,6 @@ class CoordinateCorregistrate(threading.Thread):
                     self.coord_tracts_queue.put_nowait(m_img_flip)
                 if self.e_field_loaded:
                     self.efield_queue.put_nowait([m_img, coord])
-                if not self.icp_queue.empty():
-                    self.icp_queue.task_done()
             except queue.Full:
                 pass
 

@@ -72,7 +72,7 @@ class CoilVisualizer:
 
         # Get the list of coil names of coils selected for navigation
         selected_coils = (session.GetConfig("navigation", {})).get("selected_coils", [])
-        
+
         saved_registrations = session.GetConfig("coil_registrations", {})
         for coil_name in selected_coils:
             if (coil := saved_registrations.get(coil_name, None)) is not None:
@@ -109,7 +109,7 @@ class CoilVisualizer:
 
         # Set the color of both target coil (representing the target) and the coil center (representing the actual coil).
         self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
-        #self.coil_center_actor.GetProperty().SetDiffuseColor(target_coil_color)
+        # self.coil_center_actor.GetProperty().SetDiffuseColor(target_coil_color) # LUKATODO
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -241,7 +241,7 @@ class CoilVisualizer:
 
         self.renderer.AddActor(coil_actor)
         self.renderer.AddActor(coil_center_actor)
-        
+
         self.coils[coil_name] = {}
         self.coils[coil_name]["actor"] = coil_actor
         self.coils[coil_name]["center_actor"] = coil_center_actor
@@ -266,7 +266,7 @@ class CoilVisualizer:
         # self.vector_field_assembly.SetVisibility(0)
 
     def ResetCoilVisualizer(self, n_coils):
-        self.RemoveCoil() # Remove all coils
+        self.RemoveCoil()  # Remove all coils
 
     def UpdateCoilPoses(self, m_imgs, coords):
         """
@@ -286,4 +286,4 @@ class CoilVisualizer:
             self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
 
             # LUKATODO
-            self.vector_field_assembly[name].SetUserMatrix(m_img_vtk)
+            self.vector_field_assembly.SetUserMatrix(m_img_vtk)

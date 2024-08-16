@@ -128,7 +128,6 @@ class UpdateNavigationScene(threading.Thread):
             self.coord_queue,
             self.serial_port_queue,
             self.tracts_queue,
-            self.icp_queue,
             self.e_field_norms_queue,
             self.e_field_IDs_queue,
         ) = vis_queues
@@ -146,7 +145,7 @@ class UpdateNavigationScene(threading.Thread):
 
                 probe_visible = marker_visibilities[0]
                 coil_visible = marker_visibilities[2]
-                #LUKATODO: this goes all the way to the wrappers, but should have coils_visible dict...
+                # LUKATODO: this goes all the way to the wrappers, but should have coils_visible dict...
 
                 # automatically track either coil or stylus if only one of them is visible, otherwise use navigation.track_coil
                 track_coil = (
@@ -158,7 +157,7 @@ class UpdateNavigationScene(threading.Thread):
                 track_this = main_coil if track_coil else "probe"
                 # choose which object to track in slices and viewer_volume pointer
                 coord = coords[track_this]
-                
+
                 # Remove probe, so that coords/m_imgs only contain coils
                 probe_coord = coords.pop("probe")
                 probe_m_img = m_imgs.pop("probe")
@@ -209,8 +208,11 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(
                         Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
                     )
-                    wx.CallAfter( # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
-                        Publisher.sendMessage, "Update coil pose", m_img=m_imgs[main_coil], coord=coords[main_coil]
+                    wx.CallAfter(  # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
+                        Publisher.sendMessage,
+                        "Update coil pose",
+                        m_img=m_imgs[main_coil],
+                        coord=coords[main_coil],
                     )
                     wx.CallAfter(
                         Publisher.sendMessage,
@@ -243,7 +245,10 @@ class UpdateNavigationScene(threading.Thread):
 
                 if probe_visible:
                     wx.CallAfter(
-                        Publisher.sendMessage, "Update probe pose", m_img=probe_m_img, coord=probe_coord
+                        Publisher.sendMessage,
+                        "Update probe pose",
+                        m_img=probe_m_img,
+                        coord=probe_coord,
                     )
 
                 # Render the volume viewer and the slice viewers.
@@ -275,7 +280,6 @@ class Navigation(metaclass=Singleton):
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
         self.coord_queue = QueueCustom(maxsize=1)
-        self.icp_queue = QueueCustom(maxsize=1)
         self.object_at_target_queue = QueueCustom(maxsize=1)
         self.efield_queue = QueueCustom(maxsize=1)
         self.e_field_norms_queue = QueueCustom(maxsize=1)
@@ -338,14 +342,18 @@ class Navigation(metaclass=Singleton):
         """
         session = ses.Session()
         if key is None:  # Save the whole state
-            state = {"selected_coils": list(self.coil_registrations), "n_coils": self.n_coils, "track_coil": self.track_coil}
+            state = {
+                "selected_coils": list(self.coil_registrations),
+                "n_coils": self.n_coils,
+                "track_coil": self.track_coil,
+            }
             if self.main_coil is not None:
                 state["main_coil"] = self.main_coil
             if self.r_stylus is not None:
                 state["r_stylus"] = self.r_stylus.tolist()
             session.SetConfig("navigation", state)
 
-        elif value is not None: # Save a specific state attribute
+        elif value is not None:  # Save a specific state attribute
             state = session.GetConfig("navigation", {})
             state[key] = value
             session.SetConfig("navigation", state)
@@ -371,8 +379,10 @@ class Navigation(metaclass=Singleton):
                     if coil_name in saved_coil_registrations
                 }
                 if self.coil_registrations:
-                    self.main_coil = state.get("main_coil", None) or next(iter(self.coil_registrations))
-            
+                    self.main_coil = state.get("main_coil", None) or next(
+                        iter(self.coil_registrations)
+                    )
+
             # Try to load stylus orientation data
             if "r_stylus" in state:
                 self.r_stylus = np.array(state["r_stylus"])
@@ -390,7 +400,7 @@ class Navigation(metaclass=Singleton):
             if self.main_coil == coil_name:
                 self.main_coil = None
                 self.SaveConfig()
-        
+
         self.SaveConfig()
 
     def CoilAtTarget(self, state):
@@ -510,7 +520,6 @@ class Navigation(metaclass=Singleton):
             self.coord_queue,
             self.serial_port_queue,
             self.tracts_queue,
-            self.icp_queue,
             self.e_field_norms_queue,
             self.e_field_IDs_queue,
         ]
@@ -561,7 +570,6 @@ class Navigation(metaclass=Singleton):
             queues = [
                 self.coord_queue,
                 self.coord_tracts_queue,
-                self.icp_queue,
                 self.object_at_target_queue,
                 self.efield_queue,
             ]
