@@ -125,7 +125,7 @@ def image_to_tracker(m_change, coord_raw, target, icp, obj_data):
     :return: The transformation matrices from invesalius coordinate system to tracker coordinate system
     :rtype: numpy.ndarray
     """
-    t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = obj_data
+    obj_id, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = obj_data
     m_target_in_image = dco.coordinates_to_transformation_matrix(
         position=target[:3],
         orientation=target[3:],

@@ -162,6 +162,11 @@ class Robot(metaclass=Singleton):
         if self.target is None:
             return False
 
+        navigation = self.navigation
+        # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
+        if navigation.m_change is None or navigation.obj_datas is not None:
+            return False
+
         # Compute the target in tracker coordinate system.
         coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
 
@@ -170,13 +175,8 @@ class Robot(metaclass=Singleton):
         #   to avoid modifying it.
         target = self.target[:]
         target[1] = -target[1]
-
-        # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
-        if self.navigation.m_change is None or self.navigation.obj_data is None:
-            return False
-
         m_target = dcr.image_to_tracker(
-            self.navigation.m_change, coord_raw, target, self.icp, self.navigation.obj_data
+            navigation.m_change, coord_raw, target, self.icp, navigation.obj_datas[navigation.main_coil]
         )
 
         Publisher.sendMessage(

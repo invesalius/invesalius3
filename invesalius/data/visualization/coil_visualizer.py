@@ -136,7 +136,8 @@ class CoilVisualizer:
 
         vtk_colors = vtk.vtkNamedColors()
 
-        decoded_path = self.coil_path.decode("utf-8")
+        # LUKATODO: this is an arbitrary coil... but works for single coil mode
+        decoded_path = next(iter(self.coils.values()))["path"]
 
         coil_filename = os.path.basename(decoded_path)
         coil_dir = os.path.dirname(decoded_path)
@@ -175,7 +176,7 @@ class CoilVisualizer:
         self.target_coil_actor.GetProperty().SetSpecular(0.5)
         self.target_coil_actor.GetProperty().SetSpecularPower(10)
         self.target_coil_actor.GetProperty().SetOpacity(0.3)
-        self.target_coil_actor.SetVisibility(self.show_coil_pressed)
+        self.target_coil_actor.SetVisibility(True) #LUKATODO
         self.target_coil_actor.SetUserMatrix(m_target)
 
         self.renderer.AddActor(self.target_coil_actor)

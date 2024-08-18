@@ -276,6 +276,7 @@ class Navigation(metaclass=Singleton):
         self.main_coil = None  # Which coil to track with pointer
         self.m_change = None
         self.r_stylus = None
+        self.obj_datas = None # This is accessed by the robot, gets value at StartNavigation
 
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
@@ -564,7 +565,9 @@ class Navigation(metaclass=Singleton):
                     self.m_change,
                 )
                 obj_datas[coil_name] = obj_data
-
+            
+            self.obj_datas = obj_datas
+            
             coreg_data = [self.m_change, self.r_stylus]
 
             queues = [
