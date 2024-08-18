@@ -134,6 +134,9 @@ class Mask3DEditor:
                                 mask_data[z, y, x] = 0
 
     def DoMaskEdit(self):
+        if len(self.polygons_to_operate) == 0:
+            return
+
         s = slc.Slice()
         _cur_mask = s.current_mask
 

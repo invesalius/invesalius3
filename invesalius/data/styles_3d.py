@@ -643,7 +643,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
         self.viewer = viewer
 
-        # Performs the cutting
+        # Manages the mask operations
         self.mask3deditor = m3e.Mask3DEditor()
 
         self.picker = vtkCellPicker()
@@ -656,9 +656,15 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnInsertPolygonPoint)
         self.AddObserver("RightButtonPressEvent", self.OnInsertPolygon)
 
+        Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
+
     def CleanUp(self):
         self.RemoveObservers("LeftButtonPressEvent")
         self.RemoveObservers("RightButtonPressEvent")
+
+    def ClearPolygons(self):
+        self.viewer.canvas.draw_list.clear()
+        self.viewer.UpdateCanvas()
 
     def OnInsertPolygonPoint(self, obj, evt):
         interactor = self.viewer.interactor
