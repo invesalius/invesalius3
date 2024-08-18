@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 import os
 import sys
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, SupportsInt, Tuple, Union
 
 import wx
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
@@ -38,9 +39,15 @@ from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
+if TYPE_CHECKING:
+    import numpy as np
+    from vtkmodules.vtkCommonExecutionModel import vtkAlgorithm
 
-class ProgressDialog(object):
-    def __init__(self, parent, maximum, abort=False):
+    from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
+
+
+class ProgressDialog:
+    def __init__(self, parent: Optional[wx.Window], maximum: int, abort: bool = False):
         self.title = "InVesalius 3"
         self.msg = _("Loading DICOM files")
         self.maximum = maximum
@@ -56,21 +63,21 @@ class ProgressDialog(object):
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
         self.dlg.SetSize(wx.Size(250, 150))
 
-    def Cancel(self, evt):
+    def Cancel(self, evt: wx.CommandEvent) -> None:
         Publisher.sendMessage("Cancel DICOM load")
 
-    def Update(self, value, message):
+    def Update(self, value: SupportsInt, message: str) -> Union[Tuple[bool, bool], bool]:
         if int(value) != self.maximum:
             try:
                 return self.dlg.Update(int(value), message)
             # TODO:
-            # Exception in the Windows XP 64 Bits with wxPython 2.8.10
-            except wx._core.PyAssertionError:
+            # Exception in the Wtindows XP 64 Bits with wxPython 2.8.10
+            except wx.PyAssertionError:
                 return True
         else:
             return False
 
-    def Close(self):
+    def Close(self) -> None:
         self.dlg.Destroy()
 
 
@@ -95,18 +102,20 @@ else:
 # http://jjinux.blogspot.com/2006/10/python-modifying-counter-in-closure.html
 
 
-def ShowProgress(number_of_filters=1, dialog_type="GaugeProgress"):
+def ShowProgress(
+    number_of_filters: int = 1, dialog_type: str = "GaugeProgress"
+) -> Callable[[Union[float, int, "vtkAlgorithm"], str], float]:
     """
     To use this closure, do something like this:
         UpdateProgress = ShowProgress(NUM_FILTERS)
         UpdateProgress(vtkObject)
     """
-    progress = [0]
-    last_obj_progress = [0]
+    progress: List[float] = [0]
+    last_obj_progress: List[float] = [0]
     if dialog_type == "ProgressDialog":
         try:
             dlg = ProgressDialog(wx.GetApp().GetTopWindow(), 100)
-        except (wx._core.PyNoAppError, AttributeError):
+        except (wx.PyNoAppError, AttributeError):
             return lambda obj, label: 0
 
     # when the pipeline is larger than 1, we have to consider this object
@@ -114,7 +123,7 @@ def ShowProgress(number_of_filters=1, dialog_type="GaugeProgress"):
     number_of_filters = max(number_of_filters, 1)
     ratio = 100.0 / number_of_filters
 
-    def UpdateProgress(obj, label=""):
+    def UpdateProgress(obj: Union[float, int, "vtkAlgorithm"], label: str = "") -> float:
         """
         Show progress on GUI according to pipeline execution.
         """
@@ -152,9 +161,9 @@ def ShowProgress(number_of_filters=1, dialog_type="GaugeProgress"):
     return UpdateProgress
 
 
-class Text(object):
+class Text:
     def __init__(self):
-        self.layer = 99
+        self.layer: int = 99
         self.children = []
         property = vtkTextProperty()
         property.SetFontSize(const.TEXT_SIZE)
@@ -179,19 +188,19 @@ class Text(object):
 
         self.SetPosition(const.TEXT_POS_LEFT_UP)
 
-    def SetColour(self, colour):
+    def SetColour(self, colour: Sequence[float]) -> None:
         self.property.SetColor(colour)
 
-    def ShadowOff(self):
+    def ShadowOff(self) -> None:
         self.property.ShadowOff()
 
-    def BoldOn(self):
+    def BoldOn(self) -> None:
         self.property.BoldOn()
 
-    def SetSize(self, size):
+    def SetSize(self, size: int) -> None:
         self.property.SetFontSize(size)
 
-    def SetValue(self, value):
+    def SetValue(self, value: Union[int, float, str]) -> None:
         if isinstance(value, int) or isinstance(value, float):
             value = str(value)
             if sys.platform == "win32":
@@ -207,13 +216,13 @@ class Text(object):
             except UnicodeEncodeError:
                 self.mapper.SetInput(value.encode("utf-8", errors="replace"))
 
-    def GetValue(self):
+    def GetValue(self) -> str:
         return self.mapper.GetInput()
 
-    def SetCoilDistanceValue(self, value):
+    def SetCoilDistanceValue(self, value: Union[int, float, str]) -> None:
         # TODO: Not being used anymore. Can be deleted.
         if isinstance(value, int) or isinstance(value, float):
-            value = "Dist: " + str("{:06.2f}".format(value)) + " mm"
+            value = "Dist: " + str(f"{value:06.2f}") + " mm"
             if sys.platform == "win32":
                 value += ""  # Otherwise 0 is not shown under win32
                 # With some encoding in some dicom fields (like name) raises a
@@ -228,35 +237,35 @@ class Text(object):
             except UnicodeEncodeError:
                 self.mapper.SetInput(value.encode("utf-8"))
 
-    def SetPosition(self, position):
+    def SetPosition(self, position: Tuple[float, float]) -> None:
         self.actor.GetPositionCoordinate().SetValue(position[0], position[1])
 
-    def GetPosition(self, position):
-        self.actor.GetPositionCoordinate().GetValue()
+    def GetPosition(self) -> Tuple[float, float, float]:
+        return self.actor.GetPositionCoordinate().GetValue()
 
-    def SetJustificationToRight(self):
+    def SetJustificationToRight(self) -> None:
         self.property.SetJustificationToRight()
 
-    def SetJustificationToCentered(self):
+    def SetJustificationToCentered(self) -> None:
         self.property.SetJustificationToCentered()
 
-    def SetVerticalJustificationToBottom(self):
+    def SetVerticalJustificationToBottom(self) -> None:
         self.property.SetVerticalJustificationToBottom()
 
-    def SetVerticalJustificationToCentered(self):
+    def SetVerticalJustificationToCentered(self) -> None:
         self.property.SetVerticalJustificationToCentered()
 
-    def Show(self, value=1):
+    def Show(self, value: bool = True) -> None:
         if value:
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
 
-    def Hide(self):
+    def Hide(self) -> None:
         self.actor.VisibilityOff()
 
 
-class TextZero(object):
+class TextZero:
     def __init__(self):
         self.layer = 99
         self.children = []
@@ -283,20 +292,20 @@ class TextZero(object):
         self.bottom_pos = False
         self.right_pos = False
 
-    def SetColour(self, colour):
+    def SetColour(self, colour: Sequence[float]) -> None:
         self.property.SetColor(colour)
 
-    def ShadowOff(self):
+    def ShadowOff(self) -> None:
         self.property.ShadowOff()
 
-    def SetSize(self, size):
+    def SetSize(self, size: int) -> None:
         self.property.SetFontSize(size)
         self.actor.GetTextProperty().ShallowCopy(self.property)
 
-    def SetSymbolicSize(self, size):
+    def SetSymbolicSize(self, size: int) -> None:
         self.symbolic_syze = size
 
-    def SetValue(self, value):
+    def SetValue(self, value: Union[int, float, str]) -> None:
         if isinstance(value, int) or isinstance(value, float):
             value = str(value)
             if sys.platform == "win32":
@@ -311,35 +320,35 @@ class TextZero(object):
 
         self.text = value
 
-    def SetPosition(self, position):
+    def SetPosition(self, position: Tuple[float, float]) -> None:
         self.position = position
         self.actor.GetPositionCoordinate().SetValue(position[0], position[1])
 
-    def GetPosition(self):
+    def GetPosition(self) -> Tuple[float, float, float]:
         return self.actor.GetPositionCoordinate().GetValue()
 
-    def SetJustificationToRight(self):
+    def SetJustificationToRight(self) -> None:
         self.property.SetJustificationToRight()
 
-    def SetJustificationToCentered(self):
+    def SetJustificationToCentered(self) -> None:
         self.property.SetJustificationToCentered()
 
-    def SetVerticalJustificationToBottom(self):
+    def SetVerticalJustificationToBottom(self) -> None:
         self.property.SetVerticalJustificationToBottom()
 
-    def SetVerticalJustificationToCentered(self):
+    def SetVerticalJustificationToCentered(self) -> None:
         self.property.SetVerticalJustificationToCentered()
 
-    def Show(self, value=1):
+    def Show(self, value: bool = True) -> None:
         if value:
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
 
-    def Hide(self):
+    def Hide(self) -> None:
         self.actor.VisibilityOff()
 
-    def draw_to_canvas(self, gc, canvas):
+    def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: "CanvasRendererCTX") -> None:
         coord = vtkCoordinate()
         coord.SetCoordinateSystemToNormalizedDisplay()
         coord.SetValue(*self.position)
@@ -356,7 +365,7 @@ class TextZero(object):
         canvas.draw_text(self.text, (x, y), font=font)
 
 
-def numpy_to_vtkMatrix4x4(affine):
+def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:
     """
     Convert a numpy 4x4 array to a vtk 4x4 matrix
     :param affine: 4x4 array
@@ -375,7 +384,7 @@ def numpy_to_vtkMatrix4x4(affine):
 
 
 # TODO: Use the SurfaceManager >> CreateSurfaceFromFile inside surface.py method instead of duplicating code
-def CreateObjectPolyData(filename):
+def CreateObjectPolyData(filename: str) -> Any:
     """
     Coil for navigation rendered in volume viewer.
     """

@@ -19,7 +19,7 @@
 
 import itertools
 import sys
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import psutil
 import wx
@@ -290,7 +290,7 @@ THRESHOLD_OUTVALUE = 0
 MASK_NAME_PATTERN = _("Mask %d")
 MASK_OPACITY = 0.40
 # MASK_OPACITY = 0.35
-MASK_COLOUR = [
+MASK_COLOUR: List[List[float]] = [
     [0.33, 1, 0.33],
     [1, 1, 0.33],
     [0.33, 0.91, 1],
@@ -312,7 +312,7 @@ MASK_COLOUR = [
 
 MEASURE_COLOUR = itertools.cycle([[1, 0, 0], [1, 0.4, 0], [0, 0, 1], [1, 0, 1], [0, 0.6, 0]])
 
-SURFACE_COLOUR = [
+SURFACE_COLOUR: List[Tuple[float, float, float]] = [
     (0.33, 1, 0.33),
     (1, 1, 0.33),
     (0.33, 0.91, 1),

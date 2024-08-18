@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-
 import math
-from typing import List, Tuple
+from typing import Iterable, List, Sequence, Tuple
 
 import numpy as np
 
 
-def calculate_distance(p1, p2):
+def calculate_distance(p1: Iterable[float], p2: Iterable[float]) -> float:
     """
     Calculates the euclidian distance between p1 and p2 points.
 
@@ -19,7 +17,7 @@ def calculate_distance(p1, p2):
     return math.sqrt(sum([(j - i) ** 2 for i, j in zip(p1, p2)]))
 
 
-def calculate_angle(v1, v2):
+def calculate_angle(v1: Tuple[float, ...], v2: Tuple[float, ...]) -> float:
     """
     Calculates the angle formed between vector v1 and v2.
 
@@ -34,7 +32,7 @@ def calculate_angle(v1, v2):
     return angle
 
 
-def calc_ellipse_area(a, b):
+def calc_ellipse_area(a: float, b: float) -> float:
     """
     Calculates the area of the ellipse with the given a and b radius.
 
@@ -62,7 +60,7 @@ def calc_ellipse_circumference(a: float, b: float) -> float:
     return circumference
 
 
-def calc_polygon_area(points):
+def calc_polygon_area(points: Sequence[Tuple[float, float]]) -> float:
     """
     Calculates the area from the polygon formed by given the points.
 
