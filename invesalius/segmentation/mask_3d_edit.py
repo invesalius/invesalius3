@@ -23,29 +23,40 @@ from skimage.draw import polygon
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
 from invesalius.pubsub import pub as Publisher
-from invesalius_cy.mask_cut import mask_cut
+from invesalius_cy.mask_cut import mask_cut, mask_cut_with_depth
+
+
+class Mask3DEditException(Exception):
+    pass
 
 
 class Mask3DEditor:
     def __init__(self):
         self.__bind_events()
         self.polygons_to_operate = []
-        self.model_to_screen = None
         self.spacing = None
         self.edit_mode = const.MASK_3D_EDIT_INCLUDE
+        self.use_depth = False
+        self.depth_val = None
+        self.model_to_screen = None
+        self.model_view = None
+        self.resolution = None  # (w, h)
+        self.clipping_range = None  # (near, far)
 
     def __bind_events(self):
         Publisher.subscribe(self.AddPolygon, "M3E add polygon")
         Publisher.subscribe(self.DoMaskEdit, "M3E apply edit")
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
-        Publisher.subscribe(self.SetMVP, "M3E set model_to_screen")
+        Publisher.subscribe(self.SetCamParameters, "M3E set camera")
         Publisher.subscribe(self.SetEditMode, "M3E set edit mode")
+        Publisher.subscribe(self.SetUseDepthForEdit, "M3E use depth")
+        Publisher.subscribe(self.SetDepthValue, "M3E depth value")
 
-    def AddPolygon(self, points, screen):
+    def AddPolygon(self, points):
         """
         Adds polygon to be used in the edit
         """
-        self.polygons_to_operate.append((points, screen))
+        self.polygons_to_operate.append(points)
 
     def ClearPolygons(self):
         """
@@ -53,11 +64,18 @@ class Mask3DEditor:
         """
         self.polygons_to_operate = []
 
-    def SetMVP(self, model_to_screen):
+    def SetCamParameters(self, params):
         """
         Sets the model-view-projection matrix used by the viewer
         """
-        self.model_to_screen = model_to_screen
+        if "model_to_screen" in params:
+            self.model_to_screen = params["model_to_screen"]
+        if "model_view" in params:
+            self.model_view = params["model_view"]
+        if "resolution" in params:
+            self.resolution = params["resolution"]
+        if "clipping_range" in params:
+            self.clipping_range = params["clipping_range"]
 
     def SetEditMode(self, mode):
         """
@@ -66,17 +84,25 @@ class Mask3DEditor:
         """
         self.edit_mode = mode
 
+    def SetUseDepthForEdit(self, use):
+        """
+        Sets whether to perform a mask cut using depth or through all
+        """
+        self.use_depth = use
+
+    def SetDepthValue(self, value):
+        self.depth_val = value
+
     def __create_filter(self):
         """
         Based on the polygons and screen resolution,
         create a filter for the edit.
         """
-        w, h = tuple(self.polygons_to_operate[0][1])
-
+        w, h = self.resolution
         _filter = np.zeros((h, w), dtype="uint8")
 
         # Include all selected polygons to create the cut
-        for poly_points, _ in self.polygons_to_operate:
+        for poly_points in self.polygons_to_operate:
             print(f"Poly Points: {poly_points}")
             poly = np.array(poly_points)
             rr, cc = polygon(poly[:, 1], poly[:, 0], _filter.shape)
@@ -88,7 +114,7 @@ class Mask3DEditor:
         return _filter
 
     # Unoptimized implementation
-    def __cut_mask_left_right(self, mask_data, spacing, _filter):
+    def __cut_mask(self, mask_data, spacing, _filter):
         """
         Cuts an Invesalius Mask with a filter (pixel-wise filter)
         mask_data: matrix data without metadata ([1:])
@@ -141,17 +167,29 @@ class Mask3DEditor:
         _cur_mask = s.current_mask
 
         if _cur_mask is None:
-            raise Exception("Attempted Slicing an empty mask")
+            raise Mask3DEditException("Attempted editing a non-existent mask")
 
         _filter = self.__create_filter()
 
         # Unoptimized implementation
-        # self.__cut_mask_left_right(_cur_mask.matrix[1:, 1:, 1:], s.spacing, _filter)
+        # self.__cut_mask(_cur_mask.matrix[1:, 1:, 1:], s.spacing, _filter)
 
         # Optimized implementation
         _mat = _cur_mask.matrix[1:, 1:, 1:].copy()
         sx, sy, sz = s.spacing
-        mask_cut(_mat, sx, sy, sz, _filter, self.model_to_screen, _mat)
+
+        print(s.spacing)
+        print(_mat.shape)
+
+        if self.use_depth:
+            near, far = self.clipping_range
+            depth = near + (far - near) * self.depth_val
+            mask_cut_with_depth(
+                _mat, sx, sy, sz, depth, _filter, self.model_to_screen, self.model_view, _mat
+            )
+        else:
+            mask_cut(_mat, sx, sy, sz, _filter, self.model_to_screen, _mat)
+
         _cur_mask.matrix[1:, 1:, 1:] = _mat
         _cur_mask.modified(all_volume=True)
 

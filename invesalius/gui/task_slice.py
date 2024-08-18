@@ -828,7 +828,7 @@ class EditionTools(wx.Panel):
         self.btn_do_3d_edit.Bind(wx.EVT_BUTTON, self.OnDoMaskEdit3D)
         self.combo_mask_edit_3d_op.Bind(wx.EVT_COMBOBOX, self.OnComboMaskEdit3DMode)
         self.cbox_mask_edit_3d_depth.Bind(wx.EVT_CHECKBOX, self.OnUseDepthMaskEdit3D)
-        self.spin_mask_edit_3d_depth.Bind(wx.EVT_SPIN, self.OnSpinDepthMaskEdit3D)
+        self.spin_mask_edit_3d_depth.Bind(wx.EVT_SPINCTRLDOUBLE, self.OnSpinDepthMaskEdit3D)
         self.btn_clear_3d_poly.Bind(wx.EVT_BUTTON, self.OnClearPolyMaskEdit3D)
 
     def __bind_events(self):
@@ -950,8 +950,9 @@ class EditionTools(wx.Panel):
         Publisher.sendMessage("M3E set edit mode", mode=op_id)
 
     def OnUseDepthMaskEdit3D(self, evt):
-        cb_val = self.cbox_mask_edit_3d.GetValue()
+        cb_val = self.cbox_mask_edit_3d_depth.GetValue()
         Publisher.sendMessage("M3E use depth", use=cb_val)
+        self.OnSpinDepthMaskEdit3D(evt)  # To pass the set value
 
     def OnSpinDepthMaskEdit3D(self, evt):
         spin_val = self.spin_mask_edit_3d_depth.GetValue()

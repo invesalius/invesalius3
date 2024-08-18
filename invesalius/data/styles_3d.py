@@ -680,7 +680,27 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.poly.insert_point((mouse_x, mouse_y))
         self.viewer.UpdateCanvas()
 
-    def __get_model_to_screen_volume(self):
+    def __make_camera_matrix(self):
+        camera = self.viewer.ren.GetActiveCamera()
+
+        # Get camera position (translation)
+        position = camera.GetPosition()
+        print(f"Camera Position: {position}")
+
+        # Get camera focal point (where the camera is looking)
+        focal_point = camera.GetFocalPoint()
+        print(f"Camera Focal Point: {focal_point}")
+
+        # Get the view up vector
+        view_up = camera.GetViewUp()
+        print(f"Camera View Up: {view_up}")
+
+        m = create_model_view_matrix(position, focal_point, view_up)
+        print(m)
+
+        return m
+
+    def __get_cam_parameters(self):
         w, h = self.viewer.GetSize()
         self.viewer.ren.Render()
         cam = self.viewer.ren.GetActiveCamera()
@@ -693,7 +713,14 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         MV = cam.GetViewTransformMatrix()
         MV = vtkarray_to_numpy(MV)
 
-        return M
+        params = {
+            "model_to_screen": M,
+            "model_view": MV,
+            "resolution": (w, h),
+            "clipping_range": (near, far),
+        }
+
+        return params
 
     def OnInsertPolygon(self, obj, evt):
         self.poly.complete_polygon()
@@ -702,14 +729,8 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
         self.viewer.ren.Render()
 
-        Publisher.sendMessage(
-            "M3E add polygon",
-            points=self.poly.polygon.points,
-            screen=self.viewer.ren.GetRenderWindow().GetSize(),
-        )
-        Publisher.sendMessage(
-            "M3E set model_to_screen", model_to_screen=self.__get_model_to_screen_volume()
-        )
+        Publisher.sendMessage("M3E add polygon", points=self.poly.polygon.points)
+        Publisher.sendMessage("M3E set camera", params=self.__get_cam_parameters())
 
 
 class Styles:
