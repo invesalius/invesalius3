@@ -36,7 +36,6 @@ def mask_cut(np.ndarray[image_t, ndim=3] mask_data,
     cdef DTYPEF64_t q0, q1, q2
 
     for z in prange(dz, nogil=True):
-    # for z in range(dz):
         for y in range(dy):
             for x in range(dx):
                 p0 = <float>(x*sx)
@@ -57,6 +56,6 @@ def mask_cut(np.ndarray[image_t, ndim=3] mask_data,
                     px = (q0/2.0 + 0.5) * (w - 1)
                     py = (q1/2.0 + 0.5) * (h - 1)
 
-                    if 0 <= px and 0 <= py:
-                        if filter[<int>round(py), <int>round(px)]:
+                    if 0 <= px <= w and 0 <= py <= h:
+                        if filter[<int>(py), <int>(px)]:
                             out[z, y, x] = 0

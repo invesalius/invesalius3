@@ -72,15 +72,15 @@ class Mask3DEditor:
         create a filter for the edit.
         """
         w, h = tuple(self.polygons_to_operate[0][1])
-        poly_points = self.polygons_to_operate[0][0]
-
-        # print(f'Filter: {_filter.shape}')
-        print(f"Poly Points: {poly_points}")
 
         _filter = np.zeros((h, w), dtype="uint8")
-        poly = np.array(poly_points)
-        rr, cc = polygon(poly[:, 1], poly[:, 0], _filter.shape)
-        _filter[rr, cc] = 1
+
+        # Include all selected polygons to create the cut
+        for poly_points, _ in self.polygons_to_operate:
+            print(f"Poly Points: {poly_points}")
+            poly = np.array(poly_points)
+            rr, cc = polygon(poly[:, 1], poly[:, 0], _filter.shape)
+            _filter[rr, cc] = 1
 
         if self.edit_mode == const.MASK_3D_EDIT_INCLUDE:
             _filter = 1 - _filter
