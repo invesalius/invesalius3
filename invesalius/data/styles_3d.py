@@ -649,7 +649,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.picker = vtkCellPicker()
         self.picker.PickFromListOn()
 
-        self.has_poly = False
+        self.has_open_poly = False
         self.poly = None
 
         self.RemoveObservers("LeftButtonPressEvent")
@@ -658,23 +658,17 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
     def CleanUp(self):
         self.RemoveObservers("LeftButtonPressEvent")
-        # self.viewer.canvas.unsubscribe_event('LeftButtonPressEvent')
         self.RemoveObservers("RightButtonPressEvent")
 
     def OnInsertPolygonPoint(self, obj, evt):
-        # TODO: Check if camera should be resized
-        renderer = self.viewer.ren
         interactor = self.viewer.interactor
-
-        renderer.ResetCamera()
-        renderer.ResetCameraClippingRange()
         interactor.Render()
 
         mouse_x, mouse_y = self.viewer.interactor.GetEventPosition()
 
-        if not self.has_poly:
+        if not self.has_open_poly:
             self.poly = PolygonSelectCanvas()
-            self.has_poly = True
+            self.has_open_poly = True
             self.viewer.canvas.draw_list.append(self.poly)
 
         self.poly.insert_point((mouse_x, mouse_y))
@@ -697,7 +691,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
     def OnInsertPolygon(self, obj, evt):
         self.poly.complete_polygon()
+        self.has_open_poly = False
+
         self.viewer.UpdateCanvas()
+        self.viewer.ren.Render()
 
         Publisher.sendMessage(
             "M3E add polygon",
