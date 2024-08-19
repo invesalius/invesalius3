@@ -171,6 +171,8 @@ class Mask3DEditor:
 
         _filter = self.__create_filter()
 
+        _prev_mat = _cur_mask.matrix.copy()
+
         # Unoptimized implementation
         # self.__cut_mask(_cur_mask.matrix[1:, 1:, 1:], s.spacing, _filter)
 
@@ -196,6 +198,9 @@ class Mask3DEditor:
         # Discard all buffers to reupdate view
         for ori in ["AXIAL", "CORONAL", "SAGITAL"]:
             s.buffer_slices[ori].discard_buffer()
+
+        # Save modification in the history
+        _cur_mask.save_history(0, "VOLUME", _cur_mask.matrix.copy(), _prev_mat)
 
         Publisher.sendMessage("Update mask 3D preview")
         Publisher.sendMessage("Reload actual slice")
