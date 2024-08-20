@@ -680,38 +680,27 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.poly.insert_point((mouse_x, mouse_y))
         self.viewer.UpdateCanvas()
 
-    def __make_camera_matrix(self):
-        camera = self.viewer.ren.GetActiveCamera()
-
-        # Get camera position (translation)
-        position = camera.GetPosition()
-        print(f"Camera Position: {position}")
-
-        # Get camera focal point (where the camera is looking)
-        focal_point = camera.GetFocalPoint()
-        print(f"Camera Focal Point: {focal_point}")
-
-        # Get the view up vector
-        view_up = camera.GetViewUp()
-        print(f"Camera View Up: {view_up}")
-
-        m = create_model_view_matrix(position, focal_point, view_up)
-        print(m)
-
-        return m
-
     def __get_cam_parameters(self):
         w, h = self.viewer.GetSize()
         self.viewer.ren.Render()
         cam = self.viewer.ren.GetActiveCamera()
         near, far = cam.GetClippingRange()
 
+        # This flip around the Y axis was done to countereffect the flip that vtk performs
+        # in volume.py:780. If we do not flip back, what is being displayed is flipped,
+        # although the actual coordinates are the initial ones, so the cutting gets wrong
+        # after rotations around y or x.
+        inv_Y_matrix = np.eye(4)
+        inv_Y_matrix[1, 1] = -1
+
         # Composite transform world to viewport (projection * view)
         M = cam.GetCompositeProjectionTransformMatrix(w / float(h), near, far)
         M = vtkarray_to_numpy(M)
+        M = M @ inv_Y_matrix
 
         MV = cam.GetViewTransformMatrix()
         MV = vtkarray_to_numpy(MV)
+        MV = MV @ inv_Y_matrix
 
         params = {
             "model_to_screen": M,
