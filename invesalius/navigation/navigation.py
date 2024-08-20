@@ -144,17 +144,10 @@ class UpdateNavigationScene(threading.Thread):
                 got_coords = True
 
                 probe_visible = marker_visibilities[0]
-                coil_visible = marker_visibilities[2]
-                # LUKATODO: this goes all the way to the wrappers, but should have coils_visible dict...
+                coil_visible = any(marker_visibilities[2:])  # is any coil visible?
 
-                # automatically track either coil or stylus if only one of them is visible, otherwise use navigation.track_coil
-                track_coil = (
-                    (coil_visible or not probe_visible)
-                    if (coil_visible ^ probe_visible)
-                    else self.navigation.track_coil
-                )
                 main_coil = self.navigation.main_coil
-                track_this = main_coil if track_coil else "probe"
+                track_this = main_coil if self.navigation.track_coil else "probe"
                 # choose which object to track in slices and viewer_volume pointer
                 coord = coords[track_this]
 
@@ -276,7 +269,7 @@ class Navigation(metaclass=Singleton):
         self.main_coil = None  # Which coil to track with pointer
         self.m_change = None
         self.r_stylus = None
-        self.obj_datas = None # This is accessed by the robot, gets value at StartNavigation
+        self.obj_datas = None  # This is accessed by the robot, gets value at StartNavigation
 
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
@@ -565,9 +558,9 @@ class Navigation(metaclass=Singleton):
                     self.m_change,
                 )
                 obj_datas[coil_name] = obj_data
-            
+
             self.obj_datas = obj_datas
-            
+
             coreg_data = [self.m_change, self.r_stylus]
 
             queues = [

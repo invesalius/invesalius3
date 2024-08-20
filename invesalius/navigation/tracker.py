@@ -199,7 +199,7 @@ class Tracker(metaclass=Singleton):
         )
 
         # If probe or head markers are not visible, show a warning and return early.
-        probe_visible, head_visible, _ = marker_visibilities
+        probe_visible, head_visible, *coils_visible = marker_visibilities
 
         if not probe_visible:
             dlg.ShowNavigationTrackerWarning(0, "probe marker not visible")

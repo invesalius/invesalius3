@@ -3960,12 +3960,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_sensor.Bind(wx.EVT_COMBOBOX, self.OnChoiceFTSensor)
         self.choice_sensor = choice_sensor
 
-        # Show tracker reference mode and sensor selection for certain trackers only
+        # Show sensor selection for certain trackers only
         if self.show_sensor_options:
-            choice_ref.Show(True)
             choice_sensor.Show(True)
         else:
-            choice_ref.Show(False)
             choice_sensor.Show(False)
 
         tooltip = _("Reset all fiducials")
@@ -4197,13 +4195,13 @@ class ObjectCalibrationDialog(wx.Dialog):
         )
 
         # If coil or probe markers are not visible, show a warning and return early.
-        probe_visible, _, coil_visible = marker_visibilities
+        probe_visible, head_visible, *coils_visible = marker_visibilities
 
         if not probe_visible:
             ShowNavigationTrackerWarning(0, "probe marker not visible")
             return
 
-        if not coil_visible:
+        if not coils_visible[self.obj_id - 2]:
             ShowNavigationTrackerWarning(0, "coil marker not visible")
             return
 
@@ -4664,7 +4662,7 @@ class ICPCorregistrationDialog(wx.Dialog):
     def CreatePoint(self, evt: Optional[wx.CommandEvent] = None) -> None:
         current_coord, marker_visibilities = self.GetCurrentCoord()
 
-        probe_visible, head_visible, _ = marker_visibilities
+        probe_visible, head_visible, *coils_visible = marker_visibilities
 
         if probe_visible and head_visible:
             self.AddMarker(3, (1, 0, 0), current_coord)
@@ -6877,14 +6875,13 @@ class ConfigurePolarisDialog(wx.Dialog):
         session = ses.Session()
         last_ndi_probe_marker = session.GetConfig("last_ndi_probe_marker", "")
         last_ndi_ref_marker = session.GetConfig("last_ndi_ref_marker", "")
-        last_ndi_obj_markers = session.GetConfig("last_ndi_obj_markers", "")
-
+        last_ndi_obj_markers = session.GetConfig("last_ndi_obj_markers", [])
         if not last_ndi_probe_marker:
             last_ndi_probe_marker = inv_paths.NDI_MAR_DIR_PROBE
         if not last_ndi_ref_marker:
             last_ndi_ref_marker = inv_paths.NDI_MAR_DIR_REF
-        if not last_ndi_obj_markers:
-            last_ndi_obj_markers = self.n_coils * [inv_paths.NDI_MAR_DIR_OBJ]
+        while len(last_ndi_obj_markers) < self.n_coils:
+            last_ndi_obj_markers.append(inv_paths.NDI_MAR_DIR_OBJ)
 
         self.dir_probe = wx.FilePickerCtrl(
             self,
@@ -6918,13 +6915,13 @@ class ConfigurePolarisDialog(wx.Dialog):
                 path=last_ndi_obj_markers[i],
                 style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
                 wildcard="Rom files (*.rom)|*.rom",
-                message="Select the ROM file of the object",
+                message=f"Select the ROM file of coil {i+1}",
                 size=(700, -1),
             )
             self.dir_objs.append(dir_obj)
 
             row_obj = wx.BoxSizer(wx.VERTICAL)
-            row_obj.Add(wx.StaticText(self, wx.ID_ANY, "Coil ROM file:"), 0, wx.TOP | wx.RIGHT, 5)
+            row_obj.Add(wx.StaticText(self, wx.ID_ANY, f"Coil {i+1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5)
             row_obj.Add(dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
             row_objs.append(row_obj)
 

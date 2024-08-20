@@ -393,13 +393,13 @@ class PolarisTrackerConnection(TrackerConnection):
 
         success = status == ID_OK
         if success:
-            com_port, probe_dir, ref_dir, obj_dir = dialog.GetValue()
+            com_port, probe_dir, ref_dir, obj_dirs = dialog.GetValue()
 
             self.configuration = {
                 "com_port": com_port,
                 "probe_dir": probe_dir,
                 "ref_dir": ref_dir,
-                "obj_dir": obj_dir,
+                "obj_dirs": obj_dirs,
             }
         else:
             self.lib_mode = None
@@ -427,9 +427,11 @@ class PolarisTrackerConnection(TrackerConnection):
             com_port = self.configuration["com_port"].encode(const.FS_ENCODE)
             probe_dir = self.configuration["probe_dir"].encode(const.FS_ENCODE)
             ref_dir = self.configuration["ref_dir"].encode(const.FS_ENCODE)
-            obj_dir = self.configuration["obj_dir"].encode(const.FS_ENCODE)
+            obj_dirs = pypolaris.StringVector() # SWIG fails to convert python list to vector<string>, so we directly create StringVector
+            for obj_dir in self.configuration["obj_dirs"]:
+                obj_dirs.append(obj_dir.encode(const.FS_ENCODE))
 
-            if connection.Initialize(com_port, probe_dir, ref_dir, obj_dir) != 0:
+            if connection.Initialize(com_port, probe_dir, ref_dir, obj_dirs) != 0:
                 lib_mode = None
                 print("Could not connect to polaris tracker.")
             else:

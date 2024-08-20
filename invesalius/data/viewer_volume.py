@@ -599,7 +599,7 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def OnSensors(self, marker_visibilities):
-        probe_id, ref_id, obj_id = marker_visibilities
+        probe_id, ref_id, *coil_ids = marker_visibilities
 
         if not self.probe:
             self.probe = True
@@ -616,7 +616,7 @@ class Viewer(wx.Panel):
             colour2 = green_color
         else:
             colour2 = red_color
-        if obj_id:
+        if any(coil_ids): #LUKATODO: add subscript to show how many coils are visible (green when all visible, orange when some not)
             colour3 = green_color
         else:
             colour3 = red_color
