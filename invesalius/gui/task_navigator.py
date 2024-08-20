@@ -583,7 +583,9 @@ class ImagePage(wx.Panel):
     def OnStartRegistration(self, evt, ctrl):
         value = ctrl.GetValue()
         registration_active = value
-        self._EnableState(state, registration_active)  # passes this argument to _EnableState under ObjectToolBar class in frame.py
+        self._EnableState(
+            state, registration_active
+        )  # passes this argument to _EnableState under ObjectToolBar class in frame.py
         if value:
             self.StartRegistration()
         else:

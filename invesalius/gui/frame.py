@@ -1930,7 +1930,7 @@ class ObjectToolBar(AuiToolBar):
         Based on given state, enable or disable menu items which
         depend if project is open or not.
         """
-        if state and not registration_active: #checking if registration is NOT active
+        if state and not registration_active:  # checking if registration is NOT active
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
