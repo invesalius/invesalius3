@@ -1554,11 +1554,18 @@ class TrackerTab(wx.Panel):
         return True
 
     def OnChooseNoOfCoils(self, evt, ctrl):
+        old_n_coils = self.n_coils
         if hasattr(evt, "GetSelection"):
             choice = evt.GetSelection()
             self.n_coils = choice + 1
         else:
             self.n_coils = 1
+
+        if self.n_coils != old_n_coils: # if n_coils was changed reset connection
+            tracker_id = self.tracker.tracker_id
+            self.tracker.DisconnectTracker()
+            self.tracker.SetTracker(tracker_id, n_coils=self.n_coils)
+
         ctrl.SetSelection(self.n_coils - 1)
         Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils)
         Publisher.sendMessage("Coil selection done", done=False)
