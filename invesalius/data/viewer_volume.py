@@ -1305,6 +1305,8 @@ class Viewer(wx.Panel):
         force_compensate_text.SetVerticalJustificationToBottom()
         force_compensate_text.BoldOn()
 
+        return force_compensate_text
+
     def CenterOfMass(self):
         barycenter = [0.0, 0.0, 0.0]
         proj = prj.Project()
