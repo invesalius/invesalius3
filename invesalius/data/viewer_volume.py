@@ -262,6 +262,7 @@ class Viewer(wx.Panel):
         self.pTarget = [0.0, 0.0, 0.0]
 
         self.distance_text = None
+        self.force_compensate_text = None
 
         # self.obj_axes = None
         self.mark_actor = None
@@ -469,6 +470,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(
             self.UpdateEfieldPointLocation, "Update point location for e-field calculation"
         )
+        Publisher.subscribe(self.UpdateForceCompensation, "Update force compensation displacement")
         Publisher.subscribe(self.GetEnorm, "Get enorm")
         Publisher.subscribe(self.TrackObject, "Track object")
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
@@ -984,12 +986,25 @@ class Viewer(wx.Panel):
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
 
+        if self.force_compensate_text is not None:
+            self.ren.RemoveActor(self.force_compensate_text.actor)
+
         # Create new actor for 'distance' text
         distance_text = self.CreateDistanceText()
         self.ren.AddActor(distance_text.actor)
 
         # Store the object for 'distance' text so it can be modified when distance changes.
         self.distance_text = distance_text
+
+        ##########################################
+        
+        force_compensate_text = self.CreateForceCompensateText()
+        self.ren.AddActor(force_compensate_text.actor)
+
+        # Store the object for 'distance' text so it can be modified when distance changes.
+        self.force_compensate_text = force_compensate_text
+
+        ##########################################
 
         self.CreateTargetGuide()
 
@@ -1026,6 +1041,11 @@ class Viewer(wx.Panel):
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
 
+        ##########################################
+        if self.force_compensate_text is not None:
+            self.ren.RemomveActor(self.force_compensate_text.actor)
+        ##########################################
+
         self.camera_show_object = None
         if self.actor_peel:
             if self.object_orientation_torus_actor:
@@ -1048,17 +1068,31 @@ class Viewer(wx.Panel):
         else:
             self.DisableTargetMode()
 
+    def UpdateForceCompensation(self, displacement):
+        formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(displacement)
+        if self.force_compensate_text is not None:
+                self.force_compensate_text.SetValue(formatted_force_compensate)
+        
+
     def OnUpdateCoilPose(self, m_img, coord):
         vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
             distance_to_target = distance.euclidean(
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
+            ### Make this variable dynamic of course
+            force_compensate_distance = 4.0
 
             formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
+            formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(force_compensate_distance)
 
             if self.distance_text is not None:
                 self.distance_text.SetValue(formatted_distance)
+
+            ##########################################
+            if self.force_compensate_text is not None:
+                self.force_compensate_text.SetValue(formatted_force_compensate)
+            ##########################################
 
             self.ren.ResetCamera()
             self.SetCameraTarget()
@@ -1262,6 +1296,14 @@ class Viewer(wx.Panel):
         distance_text.BoldOn()
 
         return distance_text
+    
+    def CreateForceCompensateText(self):
+        force_compensate_text = vtku.Text()
+
+        force_compensate_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
+        force_compensate_text.SetPosition((const.X, 1.0 - const.Y))
+        force_compensate_text.SetVerticalJustificationToBottom()
+        force_compensate_text.BoldOn()
 
     def CenterOfMass(self):
         barycenter = [0.0, 0.0, 0.0]
