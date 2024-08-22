@@ -253,18 +253,18 @@ def PolarisCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_m
     angles_ref = np.degrees(tr.euler_from_quaternion(ref[2:6], axes="rzyx"))
     trans_ref = np.array(ref[6:9]).astype(float)
     coord2 = np.hstack((trans_ref, angles_ref))
-    
+
     obj_coords = []
     for i in range(trck.objs.size()):
-        obj = trck.objs[i].decode(const.FS_ENCODE).split(",") 
+        obj = trck.objs[i].decode(const.FS_ENCODE).split(",")
         angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
         trans_obj = np.array(obj[6:9]).astype(float)
         obj_coords.append(np.hstack((trans_obj, angles_obj)))
-    
+
     coord = np.vstack([coord1, coord2, *obj_coords])
     marker_visibilities = [trck.probeID, trck.refID] + list(trck.objIDs)
 
-    return coord, marker_visibilities  
+    return coord, marker_visibilities
 
 
 def CameraCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode):

@@ -877,7 +877,7 @@ class ObjectTab(wx.Panel):
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
         self.navigation = navigation
-        self.coil_registrations = {} 
+        self.coil_registrations = {}
         self.__bind_events()
 
         # Sizer for displaying instructions
@@ -903,7 +903,7 @@ class ObjectTab(wx.Panel):
             ),
         )
         self.inner_sel_sizer = inner_sel_sizer = wx.FlexGridSizer(10, 1, 1)
-        
+
         # Coils are selected by toggling coil-buttons
         self.coil_btns = {}
         self.no_coils_lbl = None
@@ -942,13 +942,12 @@ class ObjectTab(wx.Panel):
         coil_sizer.Add(inner_coil_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         # Angle/Dist thresholds, timestamp interval
-        self.angle_threshold = (
-            self.session.GetConfig("angle_threshold", const.DEFAULT_ANGLE_THRESHOLD)
+        self.angle_threshold = self.session.GetConfig(
+            "angle_threshold", const.DEFAULT_ANGLE_THRESHOLD
         )
-        self.distance_threshold = (
-            self.session.GetConfig("distance_threshold", const.DEFAULT_DISTANCE_THRESHOLD)
+        self.distance_threshold = self.session.GetConfig(
+            "distance_threshold", const.DEFAULT_DISTANCE_THRESHOLD
         )
-
 
         # Change angles threshold
         text_angles = wx.StaticText(self, -1, _("Angle threshold (degrees):"))
@@ -1010,11 +1009,9 @@ class ObjectTab(wx.Panel):
             ]
         )
         self.SetSizerAndFit(main_sizer)
-        
+
         self.LoadConfig()
-        self.Layout()       
-
-
+        self.Layout()
 
     def AddCoilButton(self, coil_name):
         if self.no_coils_lbl is not None:
@@ -1050,13 +1047,13 @@ class ObjectTab(wx.Panel):
 
     def LoadConfig(self):
         state = self.session.GetConfig("navigation", {})
-        self.coil_registrations = self.session.GetConfig("coil_registrations", {})  
-        # Add a button for each coil 
+        self.coil_registrations = self.session.GetConfig("coil_registrations", {})
+        # Add a button for each coil
         for coil_name in self.coil_registrations:
             self.AddCoilButton(coil_name)
-        
+
         # Press the buttons for coils that were selected in config file
-        selected_coils = state.get("selected_coils", []) 
+        selected_coils = state.get("selected_coils", [])
         for coil_name in selected_coils:
             self.coil_btns[coil_name][0].SetValue(True)
 
@@ -1067,12 +1064,11 @@ class ObjectTab(wx.Panel):
         self.sel_sizer.GetStaticBox().SetLabel(
             f"TMS coil selection ({n_coils_selected} out of {n_coils})"
         )
-        
+
         if n_coils_selected == n_coils:
             # Allow only n_coils buttons to be pressed, so disable unpressed buttons
             for btn, *junk in self.coil_btns.values():
                 btn.Enable(btn.GetValue())
-
 
     def OnSelectCoil(self, event=None, name=None, select=False):
         coil_registration = None
@@ -1115,7 +1111,7 @@ class ObjectTab(wx.Panel):
 
         # Select/Unselect coil
         Publisher.sendMessage("Select coil", coil_name=name, coil_registration=coil_registration)
-        
+
         n_coils_selected = len(navigation.coil_registrations)
         n_coils = navigation.n_coils
         # Update label telling how many coils to select
@@ -1133,9 +1129,7 @@ class ObjectTab(wx.Panel):
             for btn, *junk in self.coil_btns.values():
                 btn.Enable(btn.GetValue())
         else:  # Enable all buttons
-            Publisher.sendMessage(
-                "Coil selection done", done=False
-            )
+            Publisher.sendMessage("Coil selection done", done=False)
             for btn, *junk in self.coil_btns.values():
                 btn.Enable(True)
 
@@ -1186,15 +1180,17 @@ class ObjectTab(wx.Panel):
         delete_coil = menu.Append(wx.ID_ANY, "Delete coil")
         set_obj_id = menu.Append(wx.ID_ANY, "Set coil index")
         save_coil = menu.Append(wx.ID_ANY, "Save coil to OBR file")
-        
+
         self.Bind(wx.EVT_MENU, (lambda event, name=name: DeleteCoil(event, name)), delete_coil)
         self.Bind(wx.EVT_MENU, (lambda event, name=name: SetObjID(event, name)), set_obj_id)
-        self.Bind(wx.EVT_MENU, (lambda event, name=name: self.OnSaveCoilToOBR(event, name)), save_coil)
+        self.Bind(
+            wx.EVT_MENU, (lambda event, name=name: self.OnSaveCoilToOBR(event, name)), save_coil
+        )
         self.PopupMenu(menu, event.GetPosition())
         menu.Destroy()
 
     def OnCreateNewCoil(self, event=None):
-        # Create a coil registration and save it by the given name 
+        # Create a coil registration and save it by the given name
         # Also used to edit coil registrations by overwriting to the same name
         if self.tracker.IsTrackerInitialized():
             dialog = dlg.ObjectCalibrationDialog(
@@ -1210,16 +1206,19 @@ class ObjectTab(wx.Panel):
                         # Warn that we are overwriting an old registration
                         dialog = wx.TextEntryDialog(
                             None,
-                            _("A registration with this name already exists. Enter a new name or overwrite an old coil registration"),
+                            _(
+                                "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
+                            ),
                             _("Warning: Coil Name Conflict"),
                             value=coil_name,
                         )
                         if dialog.ShowModal() == wx.ID_OK:
-                            coil_name = dialog.GetValue().strip()  # Update coil_name with user input
+                            coil_name = (
+                                dialog.GetValue().strip()
+                            )  # Update coil_name with user input
                         else:
                             return  # Cancel the operation if the user closes the dialog or cancels
                         dialog.Destroy()
-
 
                     # LUKATODO: update coil mesh elsewhere
                     # self.neuronavigation_api.update_coil_mesh(polydata)
@@ -1241,11 +1240,8 @@ class ObjectTab(wx.Panel):
                         if coil_btn.GetValue():
                             coil_btn.SetValue(False)
                             self.OnSelectCoil(name=coil_name, select=False)
-                        
-                        self.Layout()
 
-                        # LUKATODO: delete the below with dependencies
-                        Publisher.sendMessage("Press target mode button", pressed=False)
+                        self.Layout()
 
             except wx.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -1279,7 +1275,9 @@ class ObjectTab(wx.Panel):
                     # Warn that we are overwriting an old registration
                     dialog = wx.TextEntryDialog(
                         None,
-                        _("A registration with this name already exists. Enter a new name or overwrite an old coil registration"),
+                        _(
+                            "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
+                        ),
                         _("Warning: Coil Name Conflict"),
                         value=coil_name,
                     )
@@ -1297,7 +1295,7 @@ class ObjectTab(wx.Panel):
                     coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
                 # LUKATODO: what is neuronavigation_api.update_coil_mesh ?
-                #if polydata:
+                # if polydata:
                 #    self.neuronavigation_api.update_coil_mesh(polydata)
 
                 if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
@@ -1334,7 +1332,7 @@ class ObjectTab(wx.Panel):
 
     def OnSaveCoilToOBR(self, evt, coil_name):
         coil_registration = self.coil_registrations[coil_name]
-        
+
         filename = dlg.ShowLoadSaveDialog(
             message=_("Save object registration as..."),
             wildcard=_("Registration files (*.obr)|*.obr"),
@@ -1344,7 +1342,7 @@ class ObjectTab(wx.Panel):
         )
         if filename:
             hdr = (
-                coil_name 
+                coil_name
                 + "\t"
                 + utils.decode(coil_registration["path"], const.FS_ENCODE)
                 + "\t"
@@ -1359,7 +1357,6 @@ class ObjectTab(wx.Panel):
             data = np.hstack([coil_registration["fiducials"], coil_registration["orientations"]])
             np.savetxt(filename, data, fmt="%.4f", delimiter="\t", newline="\n", header=hdr)
             wx.MessageBox(_("Object file successfully saved"), _("Save"))
-
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         self.angle_threshold = ctrl.GetValue()
@@ -1561,7 +1558,7 @@ class TrackerTab(wx.Panel):
         else:
             self.n_coils = 1
 
-        if self.n_coils != old_n_coils: # if n_coils was changed reset connection
+        if self.n_coils != old_n_coils:  # if n_coils was changed reset connection
             tracker_id = self.tracker.tracker_id
             self.tracker.DisconnectTracker()
             self.tracker.SetTracker(tracker_id, n_coils=self.n_coils)

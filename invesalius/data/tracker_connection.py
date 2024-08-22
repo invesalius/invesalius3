@@ -427,7 +427,7 @@ class PolarisTrackerConnection(TrackerConnection):
             com_port = self.configuration["com_port"].encode(const.FS_ENCODE)
             probe_dir = self.configuration["probe_dir"].encode(const.FS_ENCODE)
             ref_dir = self.configuration["ref_dir"].encode(const.FS_ENCODE)
-            obj_dirs = pypolaris.StringVector() # SWIG fails to convert python list to vector<string>, so we directly create StringVector
+            obj_dirs = pypolaris.StringVector()  # SWIG fails to convert python list to vector<string>, so we directly create StringVector
             for obj_dir in self.configuration["obj_dirs"]:
                 obj_dirs.append(obj_dir.encode(const.FS_ENCODE))
 

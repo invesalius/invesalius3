@@ -343,7 +343,6 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
-        # LUKATODO: delete this?
         Publisher.sendMessage("Press target mode button", pressed=False)
 
     def UpdateCanvas(self):
@@ -616,7 +615,9 @@ class Viewer(wx.Panel):
             colour2 = green_color
         else:
             colour2 = red_color
-        if any(coil_ids): #LUKATODO: add subscript to show how many coils are visible (green when all visible, orange when some not)
+        if any(
+            coil_ids
+        ):  # LUKATODO: add subscript to show how many coils are visible (green when all visible, orange when some not)
             colour3 = green_color
         else:
             colour3 = red_color
@@ -2173,7 +2174,7 @@ class Viewer(wx.Panel):
             if session.GetConfig("debug_efield"):
                 self.e_field_norms = enorm_data[3][self.Id_list, 0]
                 self.e_field_col1 = enorm_data[3][self.Id_list, 1]
-                self.e_field_col2 = enorm_data[3][self.Id_list, 1] #LUKATODO: is this a typo?
+                self.e_field_col2 = enorm_data[3][self.Id_list, 1]  # LUKATODO: is this a typo?
                 self.e_field_col3 = enorm_data[3][self.Id_list, 3]
                 self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
                 max = np.array(self.e_field_norms).argmax()

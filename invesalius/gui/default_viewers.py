@@ -163,7 +163,9 @@ class Panel(wx.Panel):
 
     def MaximizeViewerVolume(self, enabled=True):
         if enabled:
-            self.aui_manager.MaximizePane(self.aui_manager.GetAllPanes()[-1]) # Viewer volume is the last pane
+            self.aui_manager.MaximizePane(
+                self.aui_manager.GetAllPanes()[-1]
+            )  # Viewer volume is the last pane
             Publisher.sendMessage("Show raycasting widget")
         else:
             self.aui_manager.RestoreMaximizedPane()

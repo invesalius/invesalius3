@@ -273,7 +273,7 @@ class InnerFoldPanel(wx.Panel):
         Publisher.sendMessage("Show coil in viewer volume", state=pressed)
 
     def CollapseNavigation(self, done):
-        if not done: # Coil selection is no longer complete, so hide navigation panel
+        if not done:  # Coil selection is no longer complete, so hide navigation panel
             self.fold_panel.Collapse(self.nav_panel)
 
     def OnFoldPressCaption(self, evt):
@@ -1108,7 +1108,13 @@ class StimulatorPage(wx.Panel):
         border = wx.FlexGridSizer(1, 2, 1)
         self.coil_registrations = []
 
-        lbl = wx.StaticText(self, -1, _(f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!"))
+        lbl = wx.StaticText(
+            self,
+            -1,
+            _(
+                f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!"
+            ),
+        )
         # lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.lbl = lbl
 
@@ -1155,7 +1161,9 @@ class StimulatorPage(wx.Panel):
 
     def CoilSelectionDone(self, done):
         if done:
-            self.lbl.SetLabel(f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!")
+            self.lbl.SetLabel(
+                f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!"
+            )
         else:
             self.lbl.SetLabel("Please select which coil(s) to track")
 
@@ -1773,7 +1781,6 @@ class ControlPanel(wx.Panel):
         Publisher.sendMessage("Press show-coil button", pressed=pressed)
         Publisher.sendMessage("Press show-probe button", pressed=(not pressed))
 
-
     # 'Lock to Target' button
     def OnLockToTargetButton(self, evt, ctrl):
         self.UpdateToggleButton(ctrl)
@@ -2046,7 +2053,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             wx.EVT_COMBOBOX, partial(self.OnChooseMainCoil, ctrl=select_main_coil)
         )
 
-        # If main coil is defined, select this in the combobox        
+        # If main coil is defined, select this in the combobox
         nav_state = self.session.GetConfig("navigation", {})
         if (main_coil := nav_state.get("main_coil", None)) is not None:
             main_coil_index = select_main_coil.FindString(main_coil)
@@ -2583,7 +2590,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         main_coil = ctrl.GetString(choice)
         self.navigation.SetMainCoil(main_coil)
         ctrl.SetSelection(choice)
-
 
     def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()

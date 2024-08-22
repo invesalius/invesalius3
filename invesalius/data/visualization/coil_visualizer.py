@@ -109,13 +109,13 @@ class CoilVisualizer:
 
         # Set the color of both target coil (representing the target) and the coil center (representing the actual coil).
         self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
-        # self.coil_center_actor.GetProperty().SetDiffuseColor(target_coil_color) # LUKATODO
+        # self.coil_center_actor.GetProperty().SetDiffuseColor(target_coil_color) # LUKATODO: use main_coil from navigation?
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
 
     # Called when 'show coil' button is pressed in the user interface or in code.
-    # LUKATODO: Right-click 'show coil' button to open combobox to choose specific coil to show/hide?
+    # LUKATODO: Right-click 'show coil' button to open combobox for choosing specific coil to show/hide
     def ShowCoil(self, state, coil_name=None):
         if coil_name is None:  # Show/hide all coils
             for coil in self.coils.values():
@@ -126,7 +126,7 @@ class CoilVisualizer:
         # LUKATODO: target?
         if self.target_coil_actor is not None:
             self.target_coil_actor.SetVisibility(state)
-        self.vector_field_assembly.SetVisibility(state)
+        # self.vector_field_assembly.SetVisibility(state) # LUKATODO: Keep this hidden for now
 
         if not self.is_navigating:
             self.interactor.Render()
@@ -176,7 +176,7 @@ class CoilVisualizer:
         self.target_coil_actor.GetProperty().SetSpecular(0.5)
         self.target_coil_actor.GetProperty().SetSpecularPower(10)
         self.target_coil_actor.GetProperty().SetOpacity(0.3)
-        self.target_coil_actor.SetVisibility(True) #LUKATODO
+        self.target_coil_actor.SetVisibility(True)
         self.target_coil_actor.SetUserMatrix(m_target)
 
         self.renderer.AddActor(self.target_coil_actor)
@@ -287,4 +287,4 @@ class CoilVisualizer:
             self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
 
             # LUKATODO
-            self.vector_field_assembly.SetUserMatrix(m_img_vtk)
+            # self.vector_field_assembly.SetUserMatrix(m_img_vtk)

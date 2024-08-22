@@ -176,7 +176,11 @@ class Robot(metaclass=Singleton):
         target = self.target[:]
         target[1] = -target[1]
         m_target = dcr.image_to_tracker(
-            navigation.m_change, coord_raw, target, self.icp, navigation.obj_datas[navigation.main_coil]
+            navigation.m_change,
+            coord_raw,
+            target,
+            self.icp,
+            navigation.obj_datas[navigation.main_coil],
         )
 
         Publisher.sendMessage(

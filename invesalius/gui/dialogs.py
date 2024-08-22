@@ -6921,7 +6921,9 @@ class ConfigurePolarisDialog(wx.Dialog):
             self.dir_objs.append(dir_obj)
 
             row_obj = wx.BoxSizer(wx.VERTICAL)
-            row_obj.Add(wx.StaticText(self, wx.ID_ANY, f"Coil {i+1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5)
+            row_obj.Add(
+                wx.StaticText(self, wx.ID_ANY, f"Coil {i+1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5
+            )
             row_obj.Add(dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
             row_objs.append(row_obj)
 
