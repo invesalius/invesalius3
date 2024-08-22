@@ -1301,7 +1301,7 @@ class Viewer(wx.Panel):
         force_compensate_text = vtku.Text()
 
         force_compensate_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
-        force_compensate_text.SetPosition((const.X, 2.0 - const.Y))
+        force_compensate_text.SetPosition((const.X, 0.9 - const.Y))
         force_compensate_text.SetVerticalJustificationToBottom()
         force_compensate_text.BoldOn()
 
