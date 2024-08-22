@@ -1,26 +1,34 @@
+from typing import TYPE_CHECKING, Tuple
+
 import numpy as np
 from scipy import ndimage
-from scipy.ndimage import generate_binary_structure, watershed_ift
+from scipy.ndimage import watershed_ift
+
+from invesalius.data.imagedata_utils import get_LUT_value
 
 try:
     from skimage.segmentation import watershed
 except ImportError:
     from skimage.morphology import watershed
 
-
-def get_LUT_value(data, window, level):
-    shape = data.shape
-    data_ = data.ravel()
-    data = np.piecewise(
-        data_,
-        [data_ <= (level - 0.5 - (window - 1) / 2), data_ > (level - 0.5 + (window - 1) / 2)],
-        [0, window, lambda data_: ((data_ - (level - 0.5)) / (window - 1) + 0.5) * (window)],
-    )
-    data.shape = shape
-    return data
+if TYPE_CHECKING:
+    import os
+    from multiprocessing import Queue
 
 
-def do_watershed(image, markers, tfile, shape, bstruct, algorithm, mg_size, use_ww_wl, wl, ww, q):
+def do_watershed(
+    image: np.ndarray,
+    markers: np.ndarray,
+    tfile: "str | bytes | os.PathLike[str]",
+    shape: "int | tuple[int, ...] | None",
+    bstruct: "int | np.ndarray | None",
+    algorithm: str,
+    mg_size: Tuple[int, ...],
+    use_ww_wl: bool,
+    wl: int,
+    ww: int,
+    q: "Queue[int]",
+) -> None:
     mask = np.memmap(tfile, shape=shape, dtype="uint8", mode="r+")
 
     if use_ww_wl:

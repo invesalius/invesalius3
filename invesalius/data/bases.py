@@ -1,3 +1,5 @@
+from typing import Any, List, Optional, Sequence, Tuple, Union
+
 import numpy as np
 
 import invesalius.data.coordinates as dco
@@ -5,7 +7,7 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.transformations as tr
 
 
-def angle_calculation(ap_axis, coil_axis):
+def angle_calculation(ap_axis: Sequence[Any], coil_axis: Sequence[Any]) -> float:
     """
     Calculate angle between two given axis (in degrees)
 
@@ -14,18 +16,19 @@ def angle_calculation(ap_axis, coil_axis):
     :return: angle between the two given axes
     """
 
-    ap_axis = np.array([ap_axis[0], ap_axis[1]])
-    coil_axis = np.array([float(coil_axis[0]), float(coil_axis[1])])
+    ap_axis_nd = np.array([ap_axis[0], ap_axis[1]])
+    coil_axis_nd = np.array([float(coil_axis[0]), float(coil_axis[1])])
     angle = np.rad2deg(
         np.arccos(
-            (np.dot(ap_axis, coil_axis)) / (np.linalg.norm(ap_axis) * np.linalg.norm(coil_axis))
+            (np.dot(ap_axis_nd, coil_axis_nd))
+            / (np.linalg.norm(ap_axis_nd) * np.linalg.norm(coil_axis_nd))
         )
     )
 
     return float(angle)
 
 
-def base_creation_old(fiducials):
+def base_creation_old(fiducials: np.ndarray) -> Tuple[np.matrix, np.ndarray, np.matrix]:
     """
     Calculate the origin and matrix for coordinate system transformation.
     q: origin of coordinate system
@@ -63,7 +66,9 @@ def base_creation_old(fiducials):
     return m, q, m_inv
 
 
-def base_creation(fiducials):
+def base_creation(
+    fiducials: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate the origin and matrix for coordinate system
     transformation.
@@ -103,7 +108,13 @@ def base_creation(fiducials):
     return m, q
 
 
-def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
+def calculate_fre(
+    fiducials_raw: np.ndarray,
+    fiducials: np.ndarray,
+    ref_mode_id: int,
+    m_change: np.ndarray,
+    m_icp: Optional[List[Union[int, np.ndarray]]] = None,
+) -> float:
     """
     Calculate the Fiducial Registration Error for neuronavigation.
 
@@ -162,7 +173,7 @@ def calculate_fre(fiducials_raw, fiducials, ref_mode_id, m_change, m_icp=None):
 #     return point_rot
 
 
-def transform_icp(m_img, m_icp):
+def transform_icp(m_img: np.ndarray, m_icp: np.ndarray) -> np.ndarray:
     coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
     m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = m_icp @ coord_img
     m_img[0, -1], m_img[1, -1], m_img[2, -1] = m_img[0, -1], -m_img[1, -1], m_img[2, -1]
@@ -170,7 +181,7 @@ def transform_icp(m_img, m_icp):
     return m_img
 
 
-def inverse_transform_icp(m_img, m_icp):
+def inverse_transform_icp(m_img: np.ndarray, m_icp: np.ndarray) -> np.ndarray:
     coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
     m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = np.linalg.inv(m_icp) @ coord_img
     m_img[0, -1], m_img[1, -1], m_img[2, -1] = m_img[0, -1], -m_img[1, -1], m_img[2, -1]
@@ -178,7 +189,9 @@ def inverse_transform_icp(m_img, m_icp):
     return m_img
 
 
-def object_registration(fiducials, orients, coord_raw, m_change):
+def object_registration(
+    fiducials: np.ndarray, orients: np.ndarray, coord_raw: np.ndarray, m_change: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
 
     :param fiducials: 3x3 array of fiducials translations
