@@ -263,6 +263,7 @@ class Viewer(wx.Panel):
 
         self.distance_text = None
         self.force_compensate_text = None
+        self.force_compensate_distance = 0
 
         # self.obj_axes = None
         self.mark_actor = None
@@ -1071,9 +1072,10 @@ class Viewer(wx.Panel):
             self.DisableTargetMode()
 
     def UpdateForceCompensation(self, displacement):
-        formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(displacement)
-        if self.force_compensate_text is not None:
-                self.force_compensate_text.SetValue(formatted_force_compensate)
+        pass
+        # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(displacement)
+        # if self.force_compensate_text is not None:
+        #         self.force_compensate_text.SetValue(formatted_force_compensate)
         
 
     def OnUpdateCoilPose(self, m_img, coord):
@@ -1082,19 +1084,15 @@ class Viewer(wx.Panel):
             distance_to_target = distance.euclidean(
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
-            ### Make this variable dynamic of course
-            force_compensate_distance = 3
 
             formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
-            # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(force_compensate_distance)
+            formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(self.force_compensate_distance)
 
             if self.distance_text is not None:
                 self.distance_text.SetValue(formatted_distance)
 
-            ##########################################
-            # if self.force_compensate_text is not None:
-            #     self.force_compensate_text.SetValue(formatted_force_compensate)
-            ##########################################
+            if self.force_compensate_text is not None:
+                self.force_compensate_text.SetValue(formatted_force_compensate)
 
             self.ren.ResetCamera()
             self.SetCameraTarget()
