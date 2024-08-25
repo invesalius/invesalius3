@@ -114,18 +114,26 @@ class CoilVisualizer:
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
 
-    # Called when 'show coil' button is pressed in the user interface or in code.
-    # LUKATODO: Right-click 'show coil' button to open combobox for choosing specific coil to show/hide
     def ShowCoil(self, state, coil_name=None):
         if coil_name is None:  # Show/hide all coils
             for coil in self.coils.values():
                 coil["actor"].SetVisibility(state)
+                coil["center_actor"].SetVisibility(state)
+            if self.target_coil_actor is not None:  # LUKATODO: target mode...
+                self.target_coil_actor.SetVisibility(state)
         elif (coil := self.coils.get(coil_name, None)) is not None:
-            coil["actor"].SetVisibility(state)
+            # Just toggle the visibility when dealing with specific coils
+            new_state = not coil["actor"].GetVisibility()
+            coil["actor"].SetVisibility(new_state)
+            coil["center_actor"].SetVisibility(new_state)
 
-        # LUKATODO: target?
-        if self.target_coil_actor is not None:
-            self.target_coil_actor.SetVisibility(state)
+            # If all coils are hidden/shown, update the color of Show-coil button
+            coils_visible = [coil["actor"].GetVisibility() for coil in self.coils.values()]
+            if not any(coils_visible):  # all coils are hidden
+                Publisher.sendMessage("Press show-coil button", pressed=False)
+            elif all(coils_visible):  # all coils are shown
+                Publisher.sendMessage("Press show-coil button", pressed=True)
+
         # self.vector_field_assembly.SetVisibility(state) # LUKATODO: Keep this hidden for now
 
         if not self.is_navigating:
