@@ -18,7 +18,6 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 import os
-import platform
 import sys
 
 try:
@@ -26,13 +25,10 @@ try:
 except ImportError:
     from PIL import Image
 
-import numpy as np
 import wx
 import wx.grid
-import wx.lib.colourselect as csel
 
 #  import invesalius.gui.widgets.listctrl as listmix
-import wx.lib.mixins.listctrl as listmix
 import wx.lib.platebtn as pbtn
 
 import invesalius.constants as const
@@ -42,7 +38,7 @@ from invesalius import inv_paths, project
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewIdRef() for i in range(4)]
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = (wx.NewIdRef() for i in range(4))
 
 TYPE = {
     const.LINEAR: _("Linear"),
@@ -184,8 +180,8 @@ class MeasureButtonControlPanel(wx.Panel):
         self.Fit()
 
         menu = wx.Menu()
-        item = menu.Append(const.MEASURE_LINEAR, _("Measure distance"))
-        item = menu.Append(const.MEASURE_ANGULAR, _("Measure angle"))
+        menu.Append(const.MEASURE_LINEAR, _("Measure distance"))
+        menu.Append(const.MEASURE_ANGULAR, _("Measure angle"))
         menu.Bind(wx.EVT_MENU, self.OnMenu)
         self.menu = menu
 
@@ -577,13 +573,13 @@ class MasksListCtrlPanel(InvListCtrl):
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
-        img_null = self.imagelist.Add(bitmap)
+        self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
-        img_check = self.imagelist.Add(bitmap)
+        self.imagelist.Add(bitmap)
 
         self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
 
@@ -990,13 +986,13 @@ class SurfacesListCtrlPanel(InvListCtrl):
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
-        img_null = self.imagelist.Add(bitmap)
+        self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
-        img_check = self.imagelist.Add(bitmap)
+        self.imagelist.Add(bitmap)
 
         self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
 
@@ -1039,8 +1035,8 @@ class SurfacesListCtrlPanel(InvListCtrl):
         index = surface.index
         name = surface.name
         colour = surface.colour
-        volume = "%.3f" % surface.volume
-        area = "%.3f" % surface.area
+        volume = f"{surface.volume:.3f}"
+        area = f"{surface.area:.3f}"
         transparency = "%d%%" % (int(100 * surface.transparency))
 
         if index not in self.surface_list_index:
@@ -1053,14 +1049,14 @@ class SurfacesListCtrlPanel(InvListCtrl):
             if (index in index_list) and index_list:
                 try:
                     self.UpdateItemInfo(index, name, volume, area, transparency, colour)
-                except wx._core.wxAssertionError:
+                except wx.wxAssertionError:
                     self.InsertNewItem(index, name, volume, area, transparency, colour)
             else:
                 self.InsertNewItem(index, name, volume, area, transparency, colour)
         else:
             try:
                 self.UpdateItemInfo(index, name, volume, area, transparency, colour)
-            except wx._core.wxAssertionError:
+            except wx.wxAssertionError:
                 self.InsertNewItem(index, name, volume, area, transparency, colour)
 
     def InsertNewItem(
@@ -1202,7 +1198,7 @@ class MeasuresListCtrlPanel(InvListCtrl):
         # Otherwise the parent's method will be overwritten and other
         # things will stop working, e.g.: OnCheckItem
 
-        last_index = evt.Index
+        # last_index = evt.Index
         #  Publisher.sendMessage('Change measurement selected',
         #  last_index)
         evt.Skip()
@@ -1241,13 +1237,13 @@ class MeasuresListCtrlPanel(InvListCtrl):
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
-        img_null = self.imagelist.Add(bitmap)
+        self.imagelist.Add(bitmap)
 
         image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
-        img_check = self.imagelist.Add(bitmap)
+        self.imagelist.Add(bitmap)
 
         self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
 
@@ -1294,18 +1290,18 @@ class MeasuresListCtrlPanel(InvListCtrl):
             image = self.CreateColourBitmap(m.colour)
             image_index = self.imagelist.Add(image)
 
-            index_list = self._list_index.keys()
+            # index_list = self._list_index.keys()
             self._list_index[m.index] = image_index
 
             colour = [255 * c for c in m.colour]
             type = TYPE[m.type]
             location = LOCATION[m.location]
             if m.type == const.LINEAR:
-                value = ("%.2f mm") % m.value
+                value = f"{m.value:.2f} mm"
             elif m.type == const.ANGULAR:
-                value = ("%.2f°") % m.value
+                value = f"{m.value:.2f}°"
             else:
-                value = ("%.3f") % m.value
+                value = f"{m.value:.3f}"
             self.InsertNewItem(m.index, m.name, colour, location, type, value)
 
             if not m.visible:
@@ -1322,14 +1318,14 @@ class MeasuresListCtrlPanel(InvListCtrl):
             if (index in index_list) and index_list:
                 try:
                     self.UpdateItemInfo(index, name, colour, location, type_, value)
-                except wx._core.wxAssertionError:
+                except wx.wxAssertionError:
                     self.InsertNewItem(index, name, colour, location, type_, value)
             else:
                 self.InsertNewItem(index, name, colour, location, type_, value)
         else:
             try:
                 self.UpdateItemInfo(index, name, colour, location, type_, value)
-            except wx._core.wxAssertionError:
+            except wx.wxAssertionError:
                 self.InsertNewItem(index, name, colour, location, type_, value)
 
     def InsertNewItem(
@@ -1417,13 +1413,13 @@ class AnnotationsListCtrlPanel(wx.ListCtrl):
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
-        img_check = self.imagelist.Add(bitmap)
+        img_check = self.imagelist.Add(bitmap)  # noqa: F841
 
         image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))
         bitmap.SetWidth(16)
-        bitmap.SetHeight(16)
-        img_null = self.imagelist.Add(bitmap)
+        bitmap.SetHeicght(16)
+        img_null = self.imagelist.Add(bitmap)  # noqa: F841
 
         image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
         bitmap = wx.Bitmap(image.Scale(16, 16))

@@ -18,7 +18,6 @@
 # --------------------------------------------------------------------
 
 import errno
-import math
 import os.path
 import platform
 import subprocess
@@ -27,7 +26,6 @@ import webbrowser
 
 import wx
 import wx.aui
-import wx.lib.popupctl as pc
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
 
 import invesalius.constants as const
@@ -416,7 +414,7 @@ class Frame(wx.Frame):
         if not (proj_name):
             self.SetTitle("InVesalius 3")
         else:
-            self.SetTitle("%s - InVesalius 3" % (proj_name))
+            self.SetTitle(f"{proj_name} - InVesalius 3")
 
     def _ShowContentPanel(self):
         """
@@ -697,9 +695,6 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Hide dbs folder")
         self.actived_navigation_mode.Check(const.ID_MODE_NAVIGATION, 0)
 
-    def OnInterpolatedSlices(self, status):
-        Publisher.sendMessage("Set interpolated slices", flag=status)
-
     def OnNavigationMode(self, status):
         if status and self._show_navigator_message and sys.platform != "win32":
             wx.MessageBox(
@@ -725,7 +720,7 @@ class Frame(wx.Frame):
             self.Reposition()
 
     def Reposition(self):
-        Publisher.sendMessage(("ProgressBar Reposition"))
+        Publisher.sendMessage("ProgressBar Reposition")
         self.sizeChanged = False
 
     def OnMove(self, evt):
@@ -843,14 +838,12 @@ class Frame(wx.Frame):
                 filename += ext
             try:
                 p.export_project(filename)
-            except (OSError, IOError) as err:
+            except OSError as err:
                 if err.errno == errno.EACCES:
-                    message = "It was not possible to save because you don't have permission to write at {}".format(
-                        dirpath
-                    )
+                    message = f"It was not possible to save because you don't have permission to write at {dirpath}"
                 else:
                     message = "It was not possible to save because"
-                d = dlg.ErrorMessageBox(None, "Save project error", "{}:\n{}".format(message, err))
+                d = dlg.ErrorMessageBox(None, "Save project error", f"{message}:\n{err}")
                 d.ShowModal()
                 d.Destroy()
             else:
@@ -1265,7 +1258,7 @@ class MenuBar(wx.MenuBar):
         image_menu.Append(wx.NewIdRef(), _("Flip"), flip_menu)
         image_menu.Append(wx.NewIdRef(), _("Swap axes"), swap_axes_menu)
 
-        mask_density_menu = image_menu.Append(
+        mask_density_menu = image_menu.Append(  # noqa: F841
             const.ID_MASK_DENSITY_MEASURE, _("Mask Density measure")
         )
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _("Reorient image\tCtrl+Shift+O"))
@@ -1678,11 +1671,11 @@ class ProjectToolBar(AuiToolBar):
         path = d.joinpath("preferences.png")
         BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-        path = d.joinpath("print_original.png")
-        BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        # path = d.joinpath("print_original.png")
+        # BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-        path = d.joinpath("tool_photo_original.png")
-        BMP_PHOTO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        # path = d.joinpath("tool_photo_original.png")
+        # BMP_PHOTO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
         self.AddTool(

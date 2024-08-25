@@ -23,7 +23,6 @@ from wx import ID_OK
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 from invesalius import inv_paths
-from invesalius.pubsub import pub as Publisher
 
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
@@ -48,7 +47,7 @@ class TrackerConnection:
             self.connection = False
             self.lib_mode = "wrapper"
             print("Tracker disconnected.")
-        except:
+        except Exception:
             self.connection = True
             self.lib_mode = "error"
             print("The tracker could not be disconnected.")
@@ -173,7 +172,7 @@ class PolhemusTrackerConnection(TrackerConnection):
             "fastrak",
             "isotrak",
             "patriot",
-        ], "Unsupported model for Polhemus tracker: {}".format(model)
+        ], f"Unsupported model for Polhemus tracker: {model}"
 
         super().__init__(model)
 
@@ -223,7 +222,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                         self.ConfigureCOMPort()
                     connection = self.PolhemusSerialConnection()
                     lib_mode = "serial"
-        except:
+        except Exception:
             lib_mode = "error"
             print("Could not connect to Polhemus by any method.")
 
@@ -255,7 +254,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                 print(
                     "Could not connect to Polhemus via wrapper without error: Initialize is False."
                 )
-        except:
+        except Exception:
             connection = None
             print("Could not connect to Polhemus via wrapper without error: Import failed.")
 
@@ -292,7 +291,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                 connection = None
                 print("Could not connect to Polhemus serial without error.")
 
-        except:
+        except Exception:
             connection = None
             print("Could not connect to Polhemus tracker.")
 
@@ -333,7 +332,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                 connection = None
                 print("Could not connect to Polhemus USB without error.")
 
-        except:
+        except Exception:
             print("Could not connect to Polhemus USB with error.")
 
         return connection
@@ -349,7 +348,7 @@ class PolhemusTrackerConnection(TrackerConnection):
 
             self.connection = False
             print("Tracker disconnected.")
-        except:
+        except Exception:
             self.connection = True
             self.lib_mode = "error"
             print("The tracker could not be disconnected.")
@@ -373,7 +372,7 @@ class CameraTrackerConnection(TrackerConnection):
             lib_mode = "wrapper"
 
             self.connection = connection
-        except:
+        except Exception:
             print("Could not connect to camera tracker.")
             lib_mode = "error"
 
@@ -436,7 +435,7 @@ class PolarisTrackerConnection(TrackerConnection):
                 print("Connected to polaris tracking device.")
                 self.connection = connection
 
-        except:
+        except Exception:
             lib_mode = "error"
             connection = None
             print("Could not connect to polaris tracker.")
@@ -495,7 +494,7 @@ class PolarisP4TrackerConnection(TrackerConnection):
             else:
                 print("Connect to Polaris P4 tracking device.")
 
-        except:
+        except Exception:
             lib_mode = "error"
             connection = None
             print("Could not connect to Polaris P4 tracker.")

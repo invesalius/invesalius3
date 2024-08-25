@@ -3,11 +3,6 @@
 
 import importlib
 import multiprocessing
-import os
-import pathlib
-import subprocess
-import sys
-import tempfile
 import time
 
 import numpy as np
@@ -144,7 +139,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.btn_stop.Disable()
         self.btn_close = wx.Button(self, wx.ID_CLOSE)
 
-        self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
+        self.txt_threshold.SetValue(f"{self.sld_threshold.GetValue():3d}%")
 
     def _do_layout(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -244,8 +239,8 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.main_sizer.SetSizeHints(self)
 
     def OnScrollThreshold(self, evt):
-        value = self.sld_threshold.GetValue()
-        self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
+        # value = self.sld_threshold.GetValue()
+        self.txt_threshold.SetValue(f"{self.sld_threshold.GetValue():3d}%")
         if self.segmented:
             self.apply_segment_threshold()
 
@@ -257,7 +252,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         except ValueError:
             value = self.sld_threshold.GetValue()
         self.sld_threshold.SetValue(value)
-        self.txt_threshold.SetValue("{:3d}%".format(value))
+        self.txt_threshold.SetValue(f"{value:3d}%")
 
         if self.segmented:
             self.apply_segment_threshold()
@@ -281,7 +276,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
-        prob_threshold = self.sld_threshold.GetValue() / 100.0
+        # prob_threshold = self.sld_threshold.GetValue() / 100.0
         self.btn_close.Disable()
         self.btn_stop.Enable()
         self.btn_segment.Disable()
@@ -488,7 +483,7 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
-        prob_threshold = self.sld_threshold.GetValue() / 100.0
+        # prob_threshold = self.sld_threshold.GetValue() / 100.0
         resize_by_spacing = self.chk_apply_resize_by_spacing.GetValue()
 
         self.btn_close.Disable()

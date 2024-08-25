@@ -24,7 +24,7 @@ import gettext
 import locale
 import os
 import sys
-from typing import Optional
+from typing import Callable, Optional
 
 import invesalius.utils as utl
 from invesalius.inv_paths import LOCALE_DIR
@@ -71,10 +71,12 @@ def GetLocaleOS() -> Optional[str]:
     return locale.getdefaultlocale()[0]
 
 
-def InstallLanguage(language: str):
+def InstallLanguage(language: str) -> Callable[[str], str]:
     file_path = os.path.split(__file__)[0]
     language_dir = LOCALE_DIR
-    if hasattr(sys, "frozen") and (sys.frozen == "windows_exe" or sys.frozen == "console_exe"):  # type: ignore
+    if hasattr(sys, "frozen") and (
+        getattr(sys, "frozen") == "windows_exe" or getattr(sys, "frozen") == "console_exe"
+    ):
         abs_file_path = os.path.abspath(file_path + os.sep + "..")
         abs_file_path = os.path.abspath(abs_file_path + os.sep + ".." + os.sep + "..")
         language_dir = os.path.join(abs_file_path, "locale")
@@ -86,13 +88,8 @@ def InstallLanguage(language: str):
 
     lang = gettext.translation("invesalius", language_dir, languages=[language])
 
-    # Using unicode
-    try:
-        lang.install(unicode=1)
-        return lang.ugettext
-    except TypeError:
-        lang.install()
-        return lang.gettext
+    lang.install()
+    return lang.gettext
 
 
 class Translator:

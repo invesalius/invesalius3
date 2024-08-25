@@ -1,8 +1,5 @@
-import numpy as np
 import vtk
-import wx
 
-import invesalius.data.coordinates as dco
 from invesalius.gui import dialogs
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton

@@ -212,9 +212,7 @@ class Tracker(metaclass=Singleton):
         # Update tracker fiducial with tracker coordinates
         self.tracker_fiducials[fiducial_index, :] = coord[0:3]
 
-        assert 0 <= fiducial_index <= 2, "Fiducial index out of range (0-2): {}".format(
-            fiducial_index
-        )
+        assert 0 <= fiducial_index <= 2, f"Fiducial index out of range (0-2): {fiducial_index}"
 
         self.tracker_fiducials_raw[2 * fiducial_index, :] = coord_raw[0, :]
         self.tracker_fiducials_raw[2 * fiducial_index + 1, :] = coord_raw[1, :]
@@ -226,7 +224,7 @@ class Tracker(metaclass=Singleton):
             coord_raw, 1
         )
 
-        print("Set tracker fiducial {} to coordinates {}.".format(fiducial_index, coord[0:3]))
+        print(f"Set tracker fiducial {fiducial_index} to coordinates {coord[0:3]}.")
 
         self.SaveState()
 

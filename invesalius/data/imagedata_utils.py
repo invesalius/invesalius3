@@ -19,7 +19,6 @@
 
 import math
 import os
-import sys
 import tempfile
 
 import gdcm
@@ -42,16 +41,6 @@ import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.data import vtk_utils as vtk_utils
 from invesalius.i18n import tr as _
 
-if sys.platform == "win32":
-    try:
-        import win32api
-
-        _has_win32api = True
-    except ImportError:
-        _has_win32api = False
-else:
-    _has_win32api = False
-
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
 
@@ -64,7 +53,7 @@ def ResampleImage3D(imagedata, value):
     extent = imagedata.GetExtent()
     size = imagedata.GetDimensions()
 
-    width = float(size[0])
+    # width = float(size[0])
     height = float(size[1] / value)
 
     resolution = (height / (extent[1] - extent[0]) + 1) * spacing[1]
@@ -83,8 +72,8 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, upd
     """
 
     extent = imagedata.GetExtent()
-    spacing = imagedata.GetSpacing()
-    dimensions = imagedata.GetDimensions()
+    # spacing = imagedata.GetSpacing()
+    # dimensions = imagedata.GetDimensions()
 
     if resolution_percentage:
         factor_x = resolution_percentage
@@ -355,7 +344,6 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     max_scalar = None
     min_scalar = None
 
-    xy_shape = None
     first_resample_entry = False
 
     for n, f in enumerate(files):

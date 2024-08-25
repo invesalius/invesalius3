@@ -24,7 +24,6 @@ import invesalius.constants as const
 import invesalius.gui.bitmap_preview_panel as bpp
 import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bpr
-from invesalius.gui.dialogs import ImportBitmapParameters as dialogs
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -43,7 +42,7 @@ EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
 
 class SelectEvent(wx.PyCommandEvent):
     def __init__(self, evtType, id):
-        super(SelectEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
     def GetSelectID(self):
         return self.SelectedID
@@ -372,7 +371,7 @@ class SeriesPanel(wx.Panel):
         self.Update()
 
     def OnSelectSerie(self, evt):
-        data = evt.GetItemData()
+        # data = evt.GetItemData()
         my_evt = SelectEvent(myEVT_SELECT_SERIE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())

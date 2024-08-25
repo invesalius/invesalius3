@@ -294,7 +294,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         viewer = self.viewer
         iren = viewer.interactor
-        operation = self.config.operation
+        # operation = self.config.operation
 
         viewer._set_editor_cursor_visibility(1)
 
@@ -341,7 +341,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
-        operation = self.config.operation
+        # operation = self.config.operation
 
         wx, wy, wz = viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         slice_data.cursor.SetPosition((wx, wy, wz))
@@ -411,8 +411,8 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
                 py = position / matrix.shape[1]
                 px = position % matrix.shape[1]
             elif orientation == "SAGITAL":
-                sx = spacing[2]
-                sy = spacing[1]
+                sx = spacing[2]  # noqa: F841
+                sy = spacing[1]  # noqa: F841
                 py = position / matrix.shape[1]
                 px = position % matrix.shape[1]
 
@@ -679,7 +679,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
     def OnWindowLevelMove(self, obj, evt):
         if self.left_pressed:
-            iren = obj.GetInteractor()
+            # iren = obj.GetInteractor()
             mouse_x, mouse_y = self.GetMousePosition()
             self.acum_achange_window += mouse_x - self.last_x
             self.acum_achange_level += mouse_y - self.last_y
@@ -802,7 +802,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.viewer.scroll_enabled = False
         else:
             if self.picker.GetViewProp():
-                renderer = self.viewer.slice_data.renderer
+                # renderer = self.viewer.slice_data.renderer
                 Publisher.sendMessage(
                     "Add measurement point",
                     position=(x, y, z),
@@ -988,7 +988,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         return (x, y, z)
 
     def _pick_position(self):
-        iren = self.viewer.interactor
+        # iren = self.viewer.interactor
         mx, my = self.GetMousePosition()
         return (mx, my)
 
@@ -1238,7 +1238,7 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
             max = self.viewer.slice_.GetMaxSliceNumber(self.viewer.orientation)
 
             position = self.viewer.interactor.GetLastEventPosition()
-            scroll_position = self.viewer.scroll.GetThumbPosition()
+            # scroll_position = self.viewer.scroll.GetThumbPosition()
 
             if (position[1] > self.last_position) and (self.acum_achange_slice > min):
                 self.acum_achange_slice -= 1
@@ -1470,7 +1470,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
     def EOnScrollForward(self, evt, obj):
         iren = self.viewer.interactor
-        viewer = self.viewer
+        # viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -1488,7 +1488,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
     def EOnScrollBackward(self, evt, obj):
         iren = self.viewer.interactor
-        viewer = self.viewer
+        # viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -1505,7 +1505,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             self.OnScrollBackward(obj, evt)
 
 
-class WatershedProgressWindow(object):
+class WatershedProgressWindow:
     def __init__(self, process):
         self.process = process
         self.title = "InVesalius 3"
@@ -1608,7 +1608,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_data.cursor.Show(0)
 
     def SetUp(self):
-        mask = self.viewer.slice_.current_mask.matrix
+        # mask = self.viewer.slice_.current_mask.matrix
         self._create_mask()
         self.viewer.slice_.to_show_aux = "watershed"
         self.viewer.OnScrollBar()
@@ -1694,7 +1694,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
     def WOnScrollBackward(self, obj, evt):
         iren = self.viewer.interactor
-        viewer = self.viewer
+        # viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -1712,7 +1712,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
     def WOnScrollForward(self, obj, evt):
         iren = self.viewer.interactor
-        viewer = self.viewer
+        # viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -1765,12 +1765,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         n = self.viewer.slice_data.number
         self.edit_mask_pixel(operation, n, cursor.GetPixels(), position, radius, self.orientation)
-        if self.orientation == "AXIAL":
-            mask = self.matrix[n, :, :]
-        elif self.orientation == "CORONAL":
-            mask = self.matrix[:, n, :]
-        elif self.orientation == "SAGITAL":
-            mask = self.matrix[:, :, n]
+        # if self.orientation == "AXIAL":
+        #     mask = self.matrix[n, :, :]
+        # elif self.orientation == "CORONAL":
+        #     mask = self.matrix[:, n, :]
+        # elif self.orientation == "SAGITAL":
+        #     mask = self.matrix[:, :, n]
         # TODO: To create a new function to reload images to viewer.
         viewer.OnScrollBar()
 
@@ -1815,12 +1815,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             self.edit_mask_pixel(
                 operation, n, cursor.GetPixels(), position, radius, self.orientation
             )
-            if self.orientation == "AXIAL":
-                mask = self.matrix[n, :, :]
-            elif self.orientation == "CORONAL":
-                mask = self.matrix[:, n, :]
-            elif self.orientation == "SAGITAL":
-                mask = self.matrix[:, :, n]
+            # if self.orientation == "AXIAL":
+            #     mask = self.matrix[n, :, :]
+            # elif self.orientation == "CORONAL":
+            #     mask = self.matrix[:, n, :]
+            # elif self.orientation == "SAGITAL":
+            #     mask = self.matrix[:, :, n]
             # TODO: To create a new function to reload images to viewer.
             viewer.OnScrollBar(update3D=False)
 
@@ -1934,8 +1934,8 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
             elif orientation == "SAGITAL":
-                sx = spacing[2]
-                sy = spacing[1]
+                sx = spacing[2]  # noqa: F841
+                sy = spacing[1]  # noqa: F841
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
 
@@ -2149,7 +2149,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             self._rotate()
         else:
             # Getting mouse position
-            iren = self.viewer.interactor
+            # iren = self.viewer.interactor
             mx, my = self.GetMousePosition()
 
             # Getting center value
@@ -2195,7 +2195,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Reload actual slice")
 
     def _move_center_rot(self):
-        iren = self.viewer.interactor
+        # iren = self.viewer.interactor
         mx, my = self.GetMousePosition()
 
         icx, icy, icz = self.viewer.slice_.center
@@ -2216,7 +2216,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
     def _rotate(self):
         # Getting mouse position
-        iren = self.viewer.interactor
+        # iren = self.viewer.interactor
         mx, my = self.GetMousePosition()
 
         cx, cy, cz = self.viewer.slice_.center
@@ -2250,7 +2250,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self._discard_buffers()
         if self.viewer.slice_.current_mask:
             self.viewer.slice_.current_mask.clear_history()
-        Publisher.sendMessage("Reload actual slice %s" % self.viewer.orientation)
+        Publisher.sendMessage(f"Reload actual slice {self.viewer.orientation}")
         self.p0 = self.get_image_point_coord(x, y, z)
 
     def get_image_point_coord(self, x, y, z):
@@ -2380,8 +2380,8 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
-        viewer = self.viewer
-        iren = viewer.interactor
+        # viewer = self.viewer
+        # iren = viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
@@ -2796,8 +2796,8 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Reload actual slice")
 
     def do_2d_seg(self):
-        viewer = self.viewer
-        iren = viewer.interactor
+        # viewer = self.viewer
+        # iren = viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
         x, y = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
@@ -2865,8 +2865,8 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.current_mask.save_history(index, self.orientation, mask, b_mask)
 
     def do_3d_seg(self):
-        viewer = self.viewer
-        iren = viewer.interactor
+        # viewer = self.viewer
+        # iren = viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
