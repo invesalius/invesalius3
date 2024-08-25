@@ -299,6 +299,9 @@ class InvesaliusLogger:  # metaclass=Singleton):
         for handler in self._logger.handlers:
             handler.flush()
 
+#####################################################################################
+#  Decorators for logging
+
 def call_tracking_decorator(fileName, className, functionName=''):
 	def decorator(func):
 		def wrapper(*args, **kwargs):
@@ -324,6 +327,12 @@ def call_tracking_decorator00(function: Callable[[str], None]):
 
     return wrapper_accepting_arguments
 
+class DecorateAllMethods:
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        for attr, value in cls.__dict__.items():
+            if callable(value):
+                setattr(cls, attr, call_tracking_decorator00(value))
 
 #####################################################################################
 #  Decorators for error handling
