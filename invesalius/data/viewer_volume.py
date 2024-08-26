@@ -989,8 +989,8 @@ class Viewer(wx.Panel):
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
 
-        if self.force_compensate_text is not None:
-            self.ren.RemoveActor(self.force_compensate_text.actor)
+        # if self.force_compensate_text is not None:
+        #     self.ren.RemoveActor(self.force_compensate_text.actor)
 
         # Create new actor for 'distance' text
         distance_text = self.CreateDistanceText()
@@ -1001,11 +1001,11 @@ class Viewer(wx.Panel):
 
         ##########################################
         
-        force_compensate_text = self.CreateForceCompensateText()
-        self.ren.AddActor(force_compensate_text.actor)
+        # force_compensate_text = self.CreateForceCompensateText()
+        # self.ren.AddActor(force_compensate_text.actor)
 
         # Store the object for 'distance' text so it can be modified when distance changes.
-        self.force_compensate_text = force_compensate_text
+        # self.force_compensate_text = force_compensate_text
 
         ##########################################
 
@@ -1045,8 +1045,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.distance_text.actor)
 
         ##########################################
-        if self.force_compensate_text is not None:
-            self.ren.RemomveActor(self.force_compensate_text.actor)
+        # if self.force_compensate_text is not None:
+        #     self.ren.RemomveActor(self.force_compensate_text.actor)
         ##########################################
 
         self.camera_show_object = None
@@ -1084,16 +1084,20 @@ class Viewer(wx.Panel):
             distance_to_target = distance.euclidean(
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
-
-            formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
-            formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(self.force_compensate_distance)
+            if self.force_compensate_distance < 0:
+                formatted_distance = "Distance: {: >5.1f} mm ↑".format(distance_to_target)
+            elif self.force_compensate_distance > 0:
+                formatted_distance = "Distance: {: >5.1f} mm ↓".format(distance_to_target)
+            else:
+                formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
+            # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(self.force_compensate_distance)
 
             if self.distance_text is not None:
                 self.distance_text.SetValue(formatted_distance)
 
             ##########################################
-            if self.force_compensate_text is not None:
-                self.force_compensate_text.SetValue(formatted_force_compensate)
+            # if self.force_compensate_text is not None:
+            #     self.force_compensate_text.SetValue(formatted_force_compensate)
             ##########################################
 
             self.ren.ResetCamera()
@@ -1299,15 +1303,15 @@ class Viewer(wx.Panel):
 
         return distance_text
     
-    def CreateForceCompensateText(self):
-        force_compensate_text = vtku.Text()
+    # def CreateForceCompensateText(self):
+    #     force_compensate_text = vtku.Text()
 
-        force_compensate_text.SetSize(20)
-        force_compensate_text.SetPosition((0.03, 0.09)) # to do dynamic positioning I'd have to run setPosition in some part of code that runs continuosly
-        force_compensate_text.SetVerticalJustificationToBottom()
-        force_compensate_text.BoldOn()
+    #     force_compensate_text.SetSize(20)
+    #     force_compensate_text.SetPosition((0.03, 0.09)) # to do dynamic positioning I'd have to run setPosition in some part of code that runs continuosly
+    #     force_compensate_text.SetVerticalJustificationToBottom()
+    #     force_compensate_text.BoldOn()
 
-        return force_compensate_text
+    #     return force_compensate_text
 
     def CenterOfMass(self):
         barycenter = [0.0, 0.0, 0.0]
