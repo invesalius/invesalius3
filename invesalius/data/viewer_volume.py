@@ -262,7 +262,7 @@ class Viewer(wx.Panel):
         self.pTarget = [0.0, 0.0, 0.0]
 
         self.distance_text = None
-        self.force_compensate_text = None
+        # self.force_compensate_text = None
         self.force_compensate_distance = 0
 
         # self.obj_axes = None
@@ -989,8 +989,8 @@ class Viewer(wx.Panel):
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
         
-        if self.force_compensate_text is not None:
-            self.ren.RemoveActor(self.force_compensate_text.actor)
+        # if self.force_compensate_text is not None:
+        #     self.ren.RemoveActor(self.force_compensate_text.actor)
 
         # Create new actor for 'distance' text
         distance_text = self.CreateDistanceText()
@@ -1001,11 +1001,11 @@ class Viewer(wx.Panel):
 
         ##########################################
         
-        force_compensate_text = self.CreateForceCompensateText()
-        self.ren.AddActor(force_compensate_text.actor)
+        # force_compensate_text = self.CreateForceCompensateText()
+        # self.ren.AddActor(force_compensate_text.actor)
 
-        # Store the object for 'compensate' text so it can be modified when distance changes.
-        self.force_compensate_text = force_compensate_text
+        # # Store the object for 'compensate' text so it can be modified when distance changes.
+        # self.force_compensate_text = force_compensate_text
 
         ##########################################
 
@@ -1045,8 +1045,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.distance_text.actor)
 
         ##########################################
-        if self.force_compensate_text is not None:
-            self.ren.RemomveActor(self.force_compensate_text.actor)
+        # if self.force_compensate_text is not None:
+        #     self.ren.RemomveActor(self.force_compensate_text.actor)
         ##########################################
 
         self.camera_show_object = None
@@ -1085,9 +1085,9 @@ class Viewer(wx.Panel):
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
             if self.force_compensate_distance < 0:
-                formatted_distance = "Distance: {: >5.1f} mm \u2191 UP".format(distance_to_target)
+                formatted_distance = "Distance: {: >5.1f} mm UP \u2191".format(distance_to_target)
             elif self.force_compensate_distance > 0:
-                formatted_distance = u"Distance: {: >5.1f} mm \u2191 ↓ DOWN".format(distance_to_target)
+                formatted_distance = u"Distance: {: >5.1f} mm DOWN ↓ \u2193".format(distance_to_target)
             else:
                 formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
             print(formatted_distance)
@@ -1305,14 +1305,14 @@ class Viewer(wx.Panel):
 
         return distance_text
     
-    def CreateForceCompensateText(self):
-        up_arrow_actor = vtku.vtkTextActor()
-        up_arrow_actor.SetInput("TESTTEST")  # Unicode for up arrow
-        up_arrow_actor.GetTextProperty().SetFontSize(24)
-        up_arrow_actor.GetTextProperty().SetColor(1.0, 1.0, 1.0)
-        up_arrow_actor.SetPosition(100, 100) #### Might wanna change
+    # def CreateForceCompensateText(self):
+        # up_arrow_actor = vtku.vtkTextActor()
+        # up_arrow_actor.SetInput("TESTTEST")  # Unicode for up arrow
+        # up_arrow_actor.GetTextProperty().SetFontSize(24)
+        # up_arrow_actor.GetTextProperty().SetColor(1.0, 1.0, 1.0)
+        # up_arrow_actor.SetPosition(100, 100) #### Might wanna change
 
-        return up_arrow_actor
+        # return up_arrow_actor
 
     # def CreateForceCompensateText(self):
     #     force_compensate_text = vtku.Text()
