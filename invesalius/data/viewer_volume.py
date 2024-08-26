@@ -1084,10 +1084,11 @@ class Viewer(wx.Panel):
             distance_to_target = distance.euclidean(
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
+            print("self.force_compensate_distonce", self.force_compensate_distance)
             if self.force_compensate_distance < 0:
-                formatted_distance = "Distance: {: >5.1f} mm ↑".format(distance_to_target)
+                formatted_distance = "Distance: {: >5.1f} mm ↑UP".format(distance_to_target)
             elif self.force_compensate_distance > 0:
-                formatted_distance = "Distance: {: >5.1f} mm ↓".format(distance_to_target)
+                formatted_distance = "Distance: {: >5.1f} mm ↓DOWN".format(distance_to_target)
             else:
                 formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
             # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(self.force_compensate_distance)
