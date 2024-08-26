@@ -1072,7 +1072,7 @@ class Viewer(wx.Panel):
             self.DisableTargetMode()
 
     def UpdateForceCompensation(self, displacement):
-        pass
+        self.force_compensate_distance = displacement
         # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(displacement)
         # if self.force_compensate_text is not None:
         #         self.force_compensate_text.SetValue(formatted_force_compensate)
@@ -1091,8 +1091,10 @@ class Viewer(wx.Panel):
             if self.distance_text is not None:
                 self.distance_text.SetValue(formatted_distance)
 
+            ##########################################
             if self.force_compensate_text is not None:
                 self.force_compensate_text.SetValue(formatted_force_compensate)
+            ##########################################
 
             self.ren.ResetCamera()
             self.SetCameraTarget()
@@ -1300,8 +1302,8 @@ class Viewer(wx.Panel):
     def CreateForceCompensateText(self):
         force_compensate_text = vtku.Text()
 
-        force_compensate_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
-        force_compensate_text.SetPosition((0.03, 0.1))
+        force_compensate_text.SetSize(20)
+        force_compensate_text.SetPosition((0.03, 0.09)) # to do dynamic positioning I'd have to run setPosition in some part of code that runs continuosly
         force_compensate_text.SetVerticalJustificationToBottom()
         force_compensate_text.BoldOn()
 
