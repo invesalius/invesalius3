@@ -834,7 +834,7 @@ class SingleImagePreview(wx.Panel):
                 wx.Yield()
             # TODO: temporary fix necessary in the Windows XP 64 Bits
             # BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
-            except wx._core.PyAssertionError:
+            except wx.PyAssertionError:
                 utils.debug("wx._core.PyAssertionError")
             finally:
                 wx.CallAfter(self.OnRun)
