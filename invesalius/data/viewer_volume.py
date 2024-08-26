@@ -988,9 +988,9 @@ class Viewer(wx.Panel):
         # Remove the previous actor for 'distance' text
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
-
-        # if self.force_compensate_text is not None:
-        #     self.ren.RemoveActor(self.force_compensate_text.actor)
+        
+        if self.force_compensate_text is not None:
+            self.ren.RemoveActor(self.force_compensate_text.actor)
 
         # Create new actor for 'distance' text
         distance_text = self.CreateDistanceText()
@@ -1001,11 +1001,11 @@ class Viewer(wx.Panel):
 
         ##########################################
         
-        # force_compensate_text = self.CreateForceCompensateText()
-        # self.ren.AddActor(force_compensate_text.actor)
+        force_compensate_text = self.CreateForceCompensateText()
+        self.ren.AddActor(force_compensate_text.actor)
 
-        # Store the object for 'distance' text so it can be modified when distance changes.
-        # self.force_compensate_text = force_compensate_text
+        # Store the object for 'compensate' text so it can be modified when distance changes.
+        self.force_compensate_text = force_compensate_text
 
         ##########################################
 
@@ -1045,8 +1045,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.distance_text.actor)
 
         ##########################################
-        # if self.force_compensate_text is not None:
-        #     self.ren.RemomveActor(self.force_compensate_text.actor)
+        if self.force_compensate_text is not None:
+            self.ren.RemomveActor(self.force_compensate_text.actor)
         ##########################################
 
         self.camera_show_object = None
@@ -1305,6 +1305,15 @@ class Viewer(wx.Panel):
 
         return distance_text
     
+    def CreateForceCompensateText(self):
+        up_arrow_actor = vtku.vtkTextActor()
+        up_arrow_actor.SetInput("TESTTEST")  # Unicode for up arrow
+        up_arrow_actor.GetTextProperty().SetFontSize(24)
+        up_arrow_actor.GetTextProperty().SetColor(1.0, 1.0, 1.0)
+        up_arrow_actor.SetPosition(100, 100) #### Might wanna change
+
+        return up_arrow_actor
+
     # def CreateForceCompensateText(self):
     #     force_compensate_text = vtku.Text()
 
