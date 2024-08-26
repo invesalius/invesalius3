@@ -562,6 +562,17 @@ class Navigation(metaclass=Singleton):
             self.obj_datas = obj_datas
 
             coreg_data = [self.m_change, self.r_stylus]
+            
+            
+            # LUKATODO: where does robot get actual data?
+
+            robot = Robot()
+            if robot.coil_name in self.coil_registrations:
+                # Tell robot at which index (obj_id) to find its coil in
+                Publisher.sendMessage(
+                    "Neuronavigation to Robot: Set coil index",
+                    data=self.coil_registrations[robot.coil_name]["obj_id"],
+                )
 
             queues = [
                 self.coord_queue,

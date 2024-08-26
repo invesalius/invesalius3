@@ -877,10 +877,11 @@ class ObjectTab(wx.Panel):
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
         self.navigation = navigation
+        self.robot = Robot()
         self.coil_registrations = {}
         self.__bind_events()
 
-        # Sizer for displaying instructions
+        ### Sizer for displaying instructions
         top_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, ("Instructions"))
         inner_top_sizer = wx.FlexGridSizer(1, 3, 1, 1)
         self.instruction_lbl = wx.StaticText(
@@ -894,7 +895,7 @@ class ObjectTab(wx.Panel):
         inner_top_sizer.Add(self.instruction_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
         top_sizer.Add(inner_top_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
-        # Sizer for choosing which coils to use in navigation
+        ### Sizer for choosing which coils to use in navigation
         self.sel_sizer = sel_sizer = wx.StaticBoxSizer(
             wx.VERTICAL,
             self,
@@ -914,7 +915,50 @@ class ObjectTab(wx.Panel):
             inner_sel_sizer.Add(self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
         sel_sizer.Add(inner_sel_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
-        # Sizer for TMS coil configuration
+        ### Sizer for choosing which coil is attached to the robot
+        self.robot_sizer = robot_sizer = wx.StaticBoxSizer(
+            wx.VERTICAL,
+            self,
+            _("Robot coil selection"),
+        )
+        self.inner_robot_sizer = inner_robot_sizer = wx.FlexGridSizer(2, 1, 1)
+
+        self.not_connected_txt = None
+        self.choice_robot_coil = None
+        if not self.robot.IsConnected():
+            self.not_connected_txt = wx.StaticText(self, -1, "Robot is not connected")
+            inner_robot_sizer.Add(
+                self.not_connected_txt, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5
+            )
+        else:
+            choice_robot_coil_lbl = wx.StaticText(self, -1, _("Coil attached to robot: "))
+            self.choice_robot_coil = choice_robot_coil = wx.ComboBox(
+                self,
+                -1,
+                f"{self.robot.coil_name or ''}",
+                size=wx.Size(90, 23),
+                choices=list(
+                    self.navigation.coil_registrations
+                ),  # List of coils selected for navigation
+                style=wx.CB_DROPDOWN | wx.CB_READONLY,
+            )
+
+            choice_robot_coil.SetToolTip(
+                "Specify which coil is attached to the robot",
+            )
+
+            choice_robot_coil.Bind(wx.EVT_COMBOBOX, (lambda event: self.OnChoiceRobotCoil(event)))
+
+            inner_robot_sizer.AddMany(
+                [
+                    (choice_robot_coil_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                    (choice_robot_coil, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                ]
+            )
+
+        robot_sizer.Add(inner_robot_sizer, 0, wx.ALL | wx.EXPAND, 10)
+
+        ### Sizer for TMS coil configuration
         tooltip = _("New TMS coil configuration")
         btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         btn_new.SetToolTip(tooltip)
@@ -941,6 +985,7 @@ class ObjectTab(wx.Panel):
         )
         coil_sizer.Add(inner_coil_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
+        ### Sizer for settings (conf_sizer)
         # Angle/Dist thresholds, timestamp interval
         self.angle_threshold = self.session.GetConfig(
             "angle_threshold", const.DEFAULT_ANGLE_THRESHOLD
@@ -1004,6 +1049,7 @@ class ObjectTab(wx.Panel):
             [
                 (top_sizer, 0, wx.ALL | wx.EXPAND, 10),
                 (sel_sizer, 0, wx.ALL | wx.EXPAND, 10),
+                (robot_sizer, 0, wx.ALL | wx.EXPAND, 10),
                 (coil_sizer, 0, wx.ALL | wx.EXPAND, 10),
                 (conf_sizer, 0, wx.ALL | wx.EXPAND, 10),
             ]
@@ -1012,6 +1058,10 @@ class ObjectTab(wx.Panel):
 
         self.LoadConfig()
         self.Layout()
+
+    def OnChoiceRobotCoil(self, event):
+        robot_coil_name = event.GetEventObject().GetStringSelection()
+        self.robot.SetCoilName(robot_coil_name)
 
     def AddCoilButton(self, coil_name):
         if self.no_coils_lbl is not None:
@@ -1114,11 +1164,16 @@ class ObjectTab(wx.Panel):
 
         n_coils_selected = len(navigation.coil_registrations)
         n_coils = navigation.n_coils
+
         # Update label telling how many coils to select
         self.sel_sizer.GetStaticBox().SetLabel(
             f"TMS coil selection ({n_coils_selected} out of {n_coils})"
         )
 
+        # Update robot coil combobox
+        if self.choice_robot_coil is not None:
+            self.choice_robot_coil.Set(list(navigation.coil_registrations))
+            self.choice_robot_coil.SetStringSelection(self.robot.coil_name or "")
         if n_coils_selected == n_coils:
             Publisher.sendMessage(
                 "Coil selection done", done=True

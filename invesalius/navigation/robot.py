@@ -43,8 +43,9 @@ class Robot(metaclass=Singleton):
         self.tracker = tracker
         self.navigation = navigation
         self.icp = icp
-
         self.enabled_in_gui = False
+
+        self.coil_name = None
 
         self.is_robot_connected = False
         self.robot_ip = None
@@ -142,6 +143,9 @@ class Robot(metaclass=Singleton):
     def IsConnected(self):
         return self.is_robot_connected
 
+    def IsReady(self): # LUKATODO: use this check before enabling robot for navigation...
+        self.IsConnected() and (self.coil_name in self.navigation.coil_registrations)
+
     def SetRobotIP(self, data):
         if data is not None:
             self.robot_ip = data
@@ -156,6 +160,9 @@ class Robot(metaclass=Singleton):
             data=self.matrix_tracker_to_robot.tolist(),
         )
         print("Robot initialized")
+
+    def SetCoilName(self, name):
+        self.coil_name = name
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -180,7 +187,7 @@ class Robot(metaclass=Singleton):
             coord_raw,
             target,
             self.icp,
-            navigation.obj_datas[navigation.main_coil],
+            navigation.obj_datas[self.coil_name],
         )
 
         Publisher.sendMessage(
