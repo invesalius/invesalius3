@@ -262,6 +262,7 @@ class Viewer(wx.Panel):
         self.pTarget = [0.0, 0.0, 0.0]
 
         self.distance_text = None
+        self.force_compensate_arrow_up = None
         # self.force_compensate_text = None
         self.force_compensate_distance = 0
 
@@ -989,15 +990,22 @@ class Viewer(wx.Panel):
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
         
-        # if self.force_compensate_text is not None:
-        #     self.ren.RemoveActor(self.force_compensate_text.actor)
+        if self.force_compensate_arrow_up is not None:
+            self.ren.RemoveActor(self.force_compensate_arrow_up)
 
         # Create new actor for 'distance' text
         distance_text = self.CreateDistanceText()
         self.ren.AddActor(distance_text.actor)
 
+        force_compensate_arrow_up = self.CreateCompensateArrowUp()
+        self.ren.AddActor(force_compensate_arrow_up)
+
+
+
+
         # Store the object for 'distance' text so it can be modified when distance changes.
         self.distance_text = distance_text
+        self.force_compensate_arrow_up = force_compensate_arrow_up
 
         ##########################################
         
@@ -1045,8 +1053,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.distance_text.actor)
 
         ##########################################
-        # if self.force_compensate_text is not None:
-        #     self.ren.RemomveActor(self.force_compensate_text.actor)
+        if self.force_compensate_arrow_up is not None:
+            self.ren.RemomveActor(self.force_compensate_arrow_up)
         ##########################################
 
         self.camera_show_object = None
@@ -1086,6 +1094,7 @@ class Viewer(wx.Panel):
             )
             if self.force_compensate_distance < 0:
                 formatted_distance = "Distance: {: >5.1f} mm UP \u2191".format(distance_to_target)
+                # self.force_compensate_arrow_up.SetOrientation()
             elif self.force_compensate_distance > 0:
                 formatted_distance = u"Distance: {: >5.1f} mm DOWN ↓ \u2193".format(distance_to_target)
             else:
@@ -1304,6 +1313,16 @@ class Viewer(wx.Panel):
         distance_text.BoldOn()
 
         return distance_text
+    
+    def CreateCompensateArrowUp(self):
+        # arrow_source = vtkArrowSource()
+
+        force_compensate_arrow_up = self.actor_factory.CreateArrow([-50, -35, 12], [-50, -35, 50])
+        force_compensate_arrow_up.GetProperty().SetColor(1, 1, 0)
+        force_compensate_arrow_up.RotateX(-60)
+        force_compensate_arrow_up.RotateZ(180)
+        return force_compensate_arrow_up
+
     
     # def CreateForceCompensateText(self):
         # up_arrow_actor = vtku.vtkTextActor()
