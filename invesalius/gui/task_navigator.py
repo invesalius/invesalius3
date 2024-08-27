@@ -730,7 +730,9 @@ class TrackerPage(wx.Panel):
     def StartRegistration(self):
         if not self.tracker.IsTrackerInitialized():
             self.start_button.SetValue(False)
-            dlg.ShowNavigationTrackerWarning(0, "choose")
+            # Open the tracker page in preferences
+            Publisher.sendMessage("Open preferences menu", page=2)
+            self.StartRegistration()
             return
 
         self.registration_on = True
