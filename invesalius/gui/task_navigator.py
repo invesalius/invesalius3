@@ -1165,7 +1165,7 @@ class ControlPanel(wx.Panel):
 
         # Toggle button for neuronavigation
         tooltip = _("Start navigation")
-        btn_nav = wx.ToggleButton(self, -1, _("Start neuronavigation"), size=wx.Size(80, -1))
+        btn_nav = wx.ToggleButton(self, -1, _("Start navigation"), size=wx.Size(80, -1))
         btn_nav.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         btn_nav.SetToolTip(tooltip)
         self.btn_nav = btn_nav
@@ -1491,15 +1491,15 @@ class ControlPanel(wx.Panel):
         nav_id = btn_nav.GetValue()
         if not nav_id:
             wx.CallAfter(Publisher.sendMessage, "Stop navigation")
-            tooltip = _("Start neuronavigation")
+            tooltip = _("Start navigation")
             btn_nav.SetToolTip(tooltip)
-            btn_nav.SetLabelText(_("Start neuronavigation"))
+            btn_nav.SetLabelText(_("Start navigation"))
         else:
             Publisher.sendMessage("Start navigation")
             if self.nav_status:
-                tooltip = _("Stop neuronavigation")
+                tooltip = _("Stop navigation")
                 btn_nav.SetToolTip(tooltip)
-                btn_nav.SetLabelText(_("Stop neuronavigation"))
+                btn_nav.SetLabelText(_("Stop navigation"))
             else:
                 btn_nav.SetValue(False)
 
