@@ -1099,7 +1099,6 @@ class Viewer(wx.Panel):
                 formatted_distance = u"Distance: {: >5.1f} mm DOWN ↓ \u2193".format(distance_to_target)
             else:
                 formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
-            print(formatted_distance)
 
             # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(self.force_compensate_distance)
 
@@ -1317,7 +1316,7 @@ class Viewer(wx.Panel):
     def CreateCompensateArrowUp(self):
         # arrow_source = vtkArrowSource()
 
-        force_compensate_arrow_up = self.actor_factory.CreateArrow([-50, -35, 12], [-50, -35, 50])
+        force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [10, 10, 10])
         force_compensate_arrow_up.GetProperty().SetColor(1, 1, 0)
         force_compensate_arrow_up.RotateX(-60)
         force_compensate_arrow_up.RotateZ(180)
