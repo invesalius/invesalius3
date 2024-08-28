@@ -990,22 +990,22 @@ class Viewer(wx.Panel):
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
         
-        if self.force_compensate_arrow_up is not None:
-            self.ren.RemoveActor(self.force_compensate_arrow_up)
+        # if self.force_compensate_arrow_up is not None:
+        #     self.ren.RemoveActor(self.force_compensate_arrow_up)
 
         # Create new actor for 'distance' text
         distance_text = self.CreateDistanceText()
         self.ren.AddActor(distance_text.actor)
 
-        force_compensate_arrow_up = self.CreateCompensateArrowUp()
-        self.ren.AddActor(force_compensate_arrow_up)
+        # force_compensate_arrow_up = self.CreateCompensateArrowUp()
+        # self.ren.AddActor(force_compensate_arrow_up)
 
 
 
 
         # Store the object for 'distance' text so it can be modified when distance changes.
-        self.distance_text = distance_text
-        self.force_compensate_arrow_up = force_compensate_arrow_up
+        # self.distance_text = distance_text
+        # self.force_compensate_arrow_up = force_compensate_arrow_up
 
         ##########################################
         
@@ -1053,8 +1053,8 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.distance_text.actor)
 
         ##########################################
-        if self.force_compensate_arrow_up is not None:
-            self.ren.RemomveActor(self.force_compensate_arrow_up)
+        # if self.force_compensate_arrow_up is not None:
+        #     self.ren.RemomveActor(self.force_compensate_arrow_up)
         ##########################################
 
         self.camera_show_object = None
