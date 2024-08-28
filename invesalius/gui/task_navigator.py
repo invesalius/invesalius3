@@ -436,19 +436,19 @@ class ImagePage(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
         sizer.Add(
-            self.btns_set_fiducial[0],      # Left Ear
+            self.btns_set_fiducial[0],  # Left Ear
             wx.GBPosition(1, 0),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_VERTICAL,
         )
         sizer.Add(
-            self.btns_set_fiducial[2],      # Nasion
+            self.btns_set_fiducial[2],  # Nasion
             wx.GBPosition(0, 2),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_HORIZONTAL,
         )
         sizer.Add(
-            self.btns_set_fiducial[1],      # Right Ear
+            self.btns_set_fiducial[1],  # Right Ear
             wx.GBPosition(1, 3),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_VERTICAL,
@@ -672,19 +672,19 @@ class TrackerPage(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
         sizer.Add(
-            self.fiducial_buttons[0],      # Left Ear
+            self.fiducial_buttons[0],  # Left Ear
             wx.GBPosition(1, 0),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_VERTICAL,
         )
         sizer.Add(
-            self.fiducial_buttons[2],      # Nasion
+            self.fiducial_buttons[2],  # Nasion
             wx.GBPosition(0, 2),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_HORIZONTAL,
         )
         sizer.Add(
-            self.fiducial_buttons[1],      # Right Ear
+            self.fiducial_buttons[1],  # Right Ear
             wx.GBPosition(1, 3),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_VERTICAL,
@@ -730,7 +730,9 @@ class TrackerPage(wx.Panel):
     def StartRegistration(self):
         if not self.tracker.IsTrackerInitialized():
             self.start_button.SetValue(False)
-            dlg.ShowNavigationTrackerWarning(0, "choose")
+            # Open the tracker page in preferences
+            Publisher.sendMessage("Open preferences menu", page=2)
+            self.StartRegistration()
             return
 
         self.registration_on = True
@@ -1165,7 +1167,7 @@ class ControlPanel(wx.Panel):
 
         # Toggle button for neuronavigation
         tooltip = _("Start navigation")
-        btn_nav = wx.ToggleButton(self, -1, _("Start neuronavigation"), size=wx.Size(80, -1))
+        btn_nav = wx.ToggleButton(self, -1, _("Start navigation"), size=wx.Size(80, -1))
         btn_nav.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         btn_nav.SetToolTip(tooltip)
         self.btn_nav = btn_nav
@@ -1491,15 +1493,15 @@ class ControlPanel(wx.Panel):
         nav_id = btn_nav.GetValue()
         if not nav_id:
             wx.CallAfter(Publisher.sendMessage, "Stop navigation")
-            tooltip = _("Start neuronavigation")
+            tooltip = _("Start navigation")
             btn_nav.SetToolTip(tooltip)
-            btn_nav.SetLabelText(_("Start neuronavigation"))
+            btn_nav.SetLabelText(_("Start navigation"))
         else:
             Publisher.sendMessage("Start navigation")
             if self.nav_status:
-                tooltip = _("Stop neuronavigation")
+                tooltip = _("Stop navigation")
                 btn_nav.SetToolTip(tooltip)
-                btn_nav.SetLabelText(_("Stop neuronavigation"))
+                btn_nav.SetLabelText(_("Stop navigation"))
             else:
                 btn_nav.SetValue(False)
 
