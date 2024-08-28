@@ -1117,34 +1117,27 @@ class StimulatorPage(wx.Panel):
         # lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.lbl = lbl
 
-        btn_edit = wx.Button(self, -1, _("Edit selection in Preferences"))
+        btn_edit = wx.Button(self, -1, _("Edit coil registration in Preferences"))
         btn_edit.SetToolTip("Open preferences menu")
         btn_edit.Bind(wx.EVT_BUTTON, self.OnEditPreferences)
+
+        next_button = wx.Button(self, label="Proceed to navigation")
+        next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
+        if not self.navigation.CoilSelectionDone():
+            self.lbl.SetLabel("Please select a coil registration")
+            next_button.Enable(False)
+        self.next_button = next_button
 
         border.AddMany(
             [
                 (lbl, 1, wx.EXPAND),
                 (btn_edit, 1, wx.EXPAND),
+                (next_button, 1, wx.EXPAND),
             ]
         )
-
-        next_button = wx.Button(self, label="Proceed to navigation")
-        next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
-        if not self.navigation.CoilSelectionDone():
-            self.lbl.SetLabel("Please select which coil(s) to track")
-            next_button.Enable(False)
-        self.next_button = next_button
-
-        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sizer.Add(next_button, 1, wx.EXPAND)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.AddMany(
-            [
-                (border, 0, wx.EXPAND, 5),
-                (bottom_sizer, 0, wx.EXPAND, 5),
-            ]
-        )
+        main_sizer.Add(border, 0, wx.EXPAND, 5)
 
         self.SetSizerAndFit(main_sizer)
         self.Layout()
@@ -1532,6 +1525,8 @@ class ControlPanel(wx.Panel):
         # Externally press/unpress and enable/disable buttons.
         Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
 
+        Publisher.subscribe(self.OnCoilSelectionDone, "Coil selection done")
+
         Publisher.subscribe(self.PressShowCoilButton, "Press show-coil button")
         Publisher.subscribe(self.EnableShowCoilButton, "Enable show-coil button")
 
@@ -1679,6 +1674,10 @@ class ControlPanel(wx.Panel):
         else:
             self.EnableToggleButton(self.checkbox_serial_port, 1)
             self.UpdateToggleButton(self.checkbox_serial_port)
+
+    def OnCoilSelectionDone(self, done):
+        self.PressTrackObjectButton(done)
+        self.PressShowCoilButton(pressed=done)
 
     # Robot
     def OnRobotStatus(self, data):
@@ -2074,6 +2073,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if (main_coil := nav_state.get("main_coil", None)) is not None:
             main_coil_index = select_main_coil.FindString(main_coil)
             select_main_coil.SetSelection(main_coil_index)
+
+        # Hide main_coil combobox if single coil mode
+        select_main_coil.Show(nav_state.get("n_coils", 1) != 1)
 
         sizer_main_coil = wx.FlexGridSizer(rows=1, cols=1, hgap=5, vgap=5)
         sizer_main_coil.Add(select_main_coil)
@@ -2600,6 +2602,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             select_main_coil.SetSelection(main_coil_index)
         else:
             select_main_coil.Clear()
+
+        if self.navigation.n_coils == 1:  # Single coil: hide main coil combobox
+            select_main_coil.Hide()
+        else:
+            select_main_coil.Show()
+        self.Layout()
 
     def OnChooseMainCoil(self, evt, ctrl):
         choice = evt.GetSelection()

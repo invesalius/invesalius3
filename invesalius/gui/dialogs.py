@@ -3881,10 +3881,12 @@ class ObjectCalibrationDialog(wx.Dialog):
     def __init__(
         self,
         tracker: "Tracker",
+        n_coils: "int",
         pedal_connector: "PedalConnector",
         neuronavigation_api: "NeuronavigationApi",
     ):
         self.tracker = tracker
+        self.n_coils = n_coils
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
@@ -3928,7 +3930,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         tooltip = _(
             "Choose the coil index in coord_raw. Choose 0 for static mode, 2 for dynamic mode and 3 onwards for multiple coils."
         )
-        choice_ref = wx.ComboBox(
+        choice_obj_id = wx.ComboBox(
             self,
             -1,
             "",
@@ -3936,14 +3938,15 @@ class ObjectCalibrationDialog(wx.Dialog):
             choices=["0"] + [str(i) for i in range(2, max_obj_id)],
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
-        choice_ref.SetToolTip(tooltip)
-        choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChooseObjID)
-        choice_ref.SetSelection(1)
-        choice_ref.Enable(True)
+        choice_obj_id.SetToolTip(tooltip)
+        choice_obj_id.Bind(wx.EVT_COMBOBOX, self.OnChooseObjID)
+        choice_obj_id.SetSelection(1)
+        choice_obj_id.Enable(True)
+
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
             self.obj_id = 0
-            choice_ref.SetSelection(0)
-            choice_ref.Enable(False)
+            choice_obj_id.SetSelection(0)
+            choice_obj_id.Enable(False)
 
         # ComboBox for sensor selection for FASTRAK
         tooltip = _("Choose the FASTRAK sensor port")
@@ -3977,7 +3980,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         btn_ok.SetToolTip(tooltip)
 
         extra_sizer = wx.FlexGridSizer(cols=1, hgap=5, vgap=10)
-        extra_sizer.AddMany([choice_ref, btn_reset, btn_ok, choice_sensor])
+        extra_sizer.AddMany([choice_obj_id, btn_reset, btn_ok, choice_sensor])
 
         # Buttons for object fiducials
         self.buttons = OrderedFiducialButtons(
@@ -4026,7 +4029,13 @@ class ObjectCalibrationDialog(wx.Dialog):
         main_sizer.Add(
             group_sizer, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP | wx.RIGHT | wx.BOTTOM, 10
         )
-        main_sizer.Add(name_sizer, 0, wx.EXPAND)
+        if self.n_coils > 1:  # Multicoil
+            main_sizer.Add(name_sizer, 0, wx.EXPAND)
+        else:  # Single coil mode
+            # Hide obj_id combobox
+            choice_obj_id.Enable(False)
+            choice_obj_id.Show(False)
+
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
@@ -4255,8 +4264,6 @@ class ObjectCalibrationDialog(wx.Dialog):
         # This is for Polhemus FASTRAK wrapper, where the sensor attached to the object can be the stylus (Static
         # reference - Selection 0 - index 0 for coordinates) or can be a 3rd sensor (Dynamic reference - Selection 1 -
         # index 2 for coordinates)
-        # I use the index 2 directly here to send to the coregistration module where it is possible to access without
-        # any conditional statement the correct index of coordinates.
 
         if evt.GetSelection() == 0:
             self.obj_id = 0
@@ -4279,7 +4286,11 @@ class ObjectCalibrationDialog(wx.Dialog):
     def GetValue(
         self,
     ) -> Tuple[np.ndarray, np.ndarray, int, Optional[bytes], Optional[vtkPolyData]]:
-        coil_name = self.name_box.GetValue().strip()
+        if self.n_coils > 1:
+            coil_name = self.name_box.GetValue().strip()
+        else:
+            coil_name = "default_coil"
+
         return (
             coil_name,
             self.coil_path,

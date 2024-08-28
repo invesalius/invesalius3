@@ -362,6 +362,9 @@ class Navigation(metaclass=Singleton):
         if state is not None:
             self.main_coil = state.get("main_coil", None)
             self.n_coils = state.get("n_coils", 1)
+            if self.n_coils == 1:
+                self.main_coil = "default_coil"
+
             self.track_coil = state.get("track_coil", False)
 
             # Try to load selected_coils (the list of names of coils to use for navigation)
@@ -373,7 +376,7 @@ class Navigation(metaclass=Singleton):
                     if coil_name in saved_coil_registrations
                 }
                 if self.coil_registrations:
-                    self.main_coil = state.get("main_coil", None) or next(
+                    self.main_coil = self.main_coil or next(
                         iter(self.coil_registrations)
                     )
 
@@ -562,8 +565,7 @@ class Navigation(metaclass=Singleton):
             self.obj_datas = obj_datas
 
             coreg_data = [self.m_change, self.r_stylus]
-            
-            
+
             # LUKATODO: where does robot get actual data?
 
             robot = Robot()
