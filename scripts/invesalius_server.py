@@ -20,8 +20,8 @@
 #     - If successful, a message should now appear in console window 2, indicating that the event was received.
 
 import asyncio
-import sys
 import json
+import sys
 
 import aioconsole
 import nest_asyncio
@@ -31,22 +31,24 @@ import uvicorn
 nest_asyncio.apply()
 
 if len(sys.argv) != 2:
-    print ("""This script allows sending events to InVesalius.
+    print("""This script allows sending events to InVesalius.
 
 Usage:  python invesalius_server.py port""")
     sys.exit(1)
 
 port = int(sys.argv[1])
 
-sio = socketio.AsyncServer(async_mode='asgi')
+sio = socketio.AsyncServer(async_mode="asgi")
 app = socketio.ASGIApp(sio)
 
 connected = False
+
 
 @sio.event
 def connect(sid, environ):
     global connected
     connected = True
+
 
 def print_json_error(e):
     print("Invalid JSON")
@@ -54,6 +56,7 @@ def print_json_error(e):
     print(" " * e.pos + "^")
     print(e.msg)
     print("")
+
 
 async def run():
     while True:
@@ -77,12 +80,14 @@ async def run():
             data={
                 "topic": topic,
                 "data": decoded,
-            }
+            },
         )
+
 
 async def main():
     asyncio.create_task(run())
-    uvicorn.run(app, port=port, host='0.0.0.0', loop='asyncio')
+    uvicorn.run(app, port=port, host="0.0.0.0", loop="asyncio")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(main(), debug=True)

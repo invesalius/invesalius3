@@ -1925,12 +1925,12 @@ class ObjectToolBar(AuiToolBar):
         #                bitmap = BMP_ANNOTATE,
         #                kind = wx.ITEM_CHECK)
 
-    def _EnableState(self, state):
+    def _EnableState(self, state, registration_active):
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
         """
-        if state:
+        if state and not registration_active:  # checking if registration is NOT active
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
