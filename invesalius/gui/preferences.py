@@ -503,9 +503,9 @@ class ObjectTab(wx.Panel):
 
         lbl = wx.StaticText(self, -1, _("Current Configuration:"))
         lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        lbl_new = wx.StaticText(self, -1, _("Create new configuration: "))
-        lbl_load = wx.StaticText(self, -1, _("Load configuration from file: "))
-        lbl_save = wx.StaticText(self, -1, _("Save configuration to file: "))
+
+        # Empty cell for the grid sizer
+        empty_cell = (0, 0)
 
         load_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("TMS coil registration"))
         inner_load_sizer = wx.FlexGridSizer(2, 4, 5)
@@ -513,12 +513,12 @@ class ObjectTab(wx.Panel):
             [
                 (lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
                 (config_txt, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (lbl_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
                 (btn_new, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (lbl_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                empty_cell,
                 (btn_load, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (lbl_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                empty_cell,
                 (btn_save, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                empty_cell,
             ]
         )
         load_sizer.Add(inner_load_sizer, 0, wx.ALL | wx.EXPAND, 10)
