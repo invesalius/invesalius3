@@ -1004,8 +1004,7 @@ class Viewer(wx.Panel):
 
 
         # Store the object for 'distance' text so it can be modified when distance changes.
-        # self.distance_text = distance_text
-        # self.force_compensate_arrow_up = force_compensate_arrow_up
+        self.distance_text = distance_text
 
         ##########################################
         
