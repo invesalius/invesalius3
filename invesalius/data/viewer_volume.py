@@ -964,7 +964,7 @@ class Viewer(wx.Panel):
             arrow_pitch_x1,
             arrow_pitch_x2,
         )
-        print("Creating force_compensate_arrow_up")
+        print("FORCE_COMP_ARROW_UP_IN_CREATE_TARGET_GUIDE")
         self.force_compensate_arrow_up = force_compensate_arrow_up
 
         for ind in self.guide_coil_actors:
@@ -973,7 +973,6 @@ class Viewer(wx.Panel):
         for ind in self.guide_arrow_actors:
             self.target_guide_renderer.AddActor(ind)
 
-        print("Adding the actor force_compensate_arrow_up")
         self.target_guide_renderer.AddActor(force_compensate_arrow_up)
 
     def EnableTargetMode(self):
@@ -1169,11 +1168,23 @@ class Viewer(wx.Panel):
                 self.target_guide_renderer.RemoveActor(self.force_compensate_arrow_up)
 
             print("creating force_compensate_arrow_up")
-            force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
+            # force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
+            offset = 5
+            force_compensate_arrow_up = self.actor_factory.CreateArrow(
+                [0, 0, offset], [0, 0, offset - coordry_arrow]
+            )
+            force_compensate_arrow_up.SetPosition(0, -300, 0)
+            force_compensate_arrow_up.RotateY(90)
+            force_compensate_arrow_up.RotateZ(180)
+            force_compensate_arrow_up.GetProperty().SetColor(1, 0, 0)
+
+
+
+
             print("Adding the actor force_compensate_arrow_up")
             self.target_guide_renderer.AddActor(force_compensate_arrow_up)
             ########
-            
+
             if (
                 self.angle_threshold * const.ARROW_SCALE
                 > coordrx_arrow
