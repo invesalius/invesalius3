@@ -1170,8 +1170,9 @@ class Viewer(wx.Panel):
             print("creating force_compensate_arrow_up")
             # force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
             offset = 5
+            print()
             force_compensate_arrow_up = self.actor_factory.CreateArrow(
-                [0, 0, 0], [0, 0, 0]
+                [0, 0, 0], [0, 0, 50]
             )
             force_compensate_arrow_up.SetPosition(0, -300, 0)
             force_compensate_arrow_up.RotateY(90)
