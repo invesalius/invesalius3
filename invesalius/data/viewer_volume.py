@@ -924,6 +924,8 @@ class Viewer(wx.Panel):
         obj_pitch.RotateY(90)
         obj_pitch.RotateZ(180)
 
+        force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
+        
         arrow_roll_z1 = self.actor_factory.CreateArrow([-50, -35, 12], [-50, -35, 50])
         arrow_roll_z1.GetProperty().SetColor(1, 1, 0)
         arrow_roll_z1.RotateX(-60)
@@ -962,12 +964,15 @@ class Viewer(wx.Panel):
             arrow_pitch_x1,
             arrow_pitch_x2,
         )
+        self.force_compensate_arrow_up = force_compensate_arrow_up
 
         for ind in self.guide_coil_actors:
             self.target_guide_renderer.AddActor(ind)
 
         for ind in self.guide_arrow_actors:
             self.target_guide_renderer.AddActor(ind)
+
+        self.target_guide_renderer.AddActor(force_compensate_arrow_up)
 
     def EnableTargetMode(self):
         # Store the current camera settings so that they can be restored when the target mode is disabled.
