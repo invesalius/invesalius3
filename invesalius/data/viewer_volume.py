@@ -1167,7 +1167,7 @@ class Viewer(wx.Panel):
             if self.force_compensate_arrow_up is not None:
                 self.target_guide_renderer.RemoveActor(self.force_compensate_arrow_up)
 
-            print("creating force_compensate_arrow_up")
+            # print("creating force_compensate_arrow_up")
             # force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
             force_compensate_arrow_up = self.actor_factory.CreateArrow(
                 [0, 0, 0], [0, -50, 0]
@@ -1180,7 +1180,7 @@ class Viewer(wx.Panel):
 
 
 
-            print("Adding the actor force_compensate_arrow_up")
+            # print("Adding the actor force_compensate_arrow_up")
             self.target_guide_renderer.AddActor(force_compensate_arrow_up)
             ########
 
