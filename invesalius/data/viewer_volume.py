@@ -1163,7 +1163,17 @@ class Viewer(wx.Panel):
             if self.guide_arrow_actors is not None:
                 for actor in self.guide_arrow_actors:
                     self.target_guide_renderer.RemoveActor(actor)
+            
+            ########
+            if self.force_compensate_arrow_up is not None:
+                self.target_guide_renderer.RemoveActor(self.force_compensate_arrow_up)
 
+            print("creating force_compensate_arrow_up")
+            force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
+            print("Adding the actor force_compensate_arrow_up")
+            self.target_guide_renderer.AddActor(force_compensate_arrow_up)
+            ########
+            
             if (
                 self.angle_threshold * const.ARROW_SCALE
                 > coordrx_arrow
