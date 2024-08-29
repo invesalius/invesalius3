@@ -163,7 +163,11 @@ class Marker:
         res = [
             field.name
             for field in dataclasses.fields(cls)
-            if (field.name != "version" and field.name != "marker_uuid")
+            if (
+                field.name != "version"
+                and field.name != "marker_uuid"
+                and field.name != "visualization"
+            )
         ]
         res.extend(["x_world", "y_world", "z_world", "alpha_world", "beta_world", "gamma_world"])
         return "\t".join(map(lambda x: '"%s"' % x, res))

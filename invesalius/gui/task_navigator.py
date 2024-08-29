@@ -2110,6 +2110,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - reduction_in_m_id))
 
         self.marker_list_ctrl.Show()
+        Publisher.sendMessage("Redraw MEP mapping")
 
     def _SetPointOfInterest(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
@@ -2806,6 +2807,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 return
         self.markers.Clear()
         self.itemDataMap.clear()
+        Publisher.sendMessage("Redraw MEP mapping")
 
     def OnDeleteFiducialMarker(self, label):
         indexes = []
@@ -2964,6 +2966,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             utils.debug(e)
 
         self.marker_list_ctrl.Show()
+        Publisher.sendMessage("Redraw MEP mapping")
         Publisher.sendMessage("Render volume viewer")
         Publisher.sendMessage("Update UI for refine tab")
         self.markers.SaveState()
