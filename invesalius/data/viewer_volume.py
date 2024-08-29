@@ -1312,14 +1312,14 @@ class Viewer(wx.Panel):
 
         return distance_text
     
-    def CreateCompensateArrowUp(self):
-        # arrow_source = vtkArrowSource()
+    # def CreateCompensateArrowUp(self):
+    #     # arrow_source = vtkArrowSource()
 
-        force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [10, 10, 10])
-        force_compensate_arrow_up.GetProperty().SetColor(1, 1, 0)
-        force_compensate_arrow_up.RotateX(-60)
-        force_compensate_arrow_up.RotateZ(180)
-        return force_compensate_arrow_up
+    #     force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [10, 10, 10])
+    #     force_compensate_arrow_up.GetProperty().SetColor(1, 1, 0)
+    #     force_compensate_arrow_up.RotateX(-60)
+    #     force_compensate_arrow_up.RotateZ(180)
+    #     return force_compensate_arrow_up
 
     
     # def CreateForceCompensateText(self):
