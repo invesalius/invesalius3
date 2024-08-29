@@ -75,33 +75,33 @@ class NeuronavigationApi(metaclass=Singleton):
         Publisher.subscribe(self.update_coil_at_target, "Coil at target")
         Publisher.subscribe(self.update_tracker_poses, "From Neuronavigation: Update tracker poses")
         Publisher.subscribe(self.update_target_orientation, "Update target orientation")
-        Publisher.subscribe(self.connect_to_robot, "Neuronavigation to Robot: Connect to robot")
-        Publisher.subscribe(self.set_target, "Neuronavigation to Robot: Set target")
-        Publisher.subscribe(self.unset_target, "Neuronavigation to Robot: Unset target")
-        Publisher.subscribe(
-            self.set_tracker_fiducials, "Neuronavigation to Robot: Set tracker fiducials"
-        )
-        Publisher.subscribe(
-            self.collect_robot_pose,
-            "Neuronavigation to Robot: Collect coordinates for the robot transformation matrix",
-        )
-        Publisher.subscribe(
-            self.reset_robot_transformation_matrix,
-            "Neuronavigation to Robot: Reset coordinates collection for the robot transformation matrix",
-        )
-        Publisher.subscribe(
-            self.estimate_robot_transformation_matrix,
-            "Neuronavigation to Robot: Estimate robot transformation matrix",
-        )
-        Publisher.subscribe(
-            self.set_robot_transformation_matrix,
-            "Neuronavigation to Robot: Set robot transformation matrix",
-        )
-        Publisher.subscribe(
-            self.update_displacement_to_target,
-            "Neuronavigation to Robot: Update displacement to target",
-        )
-        Publisher.subscribe(self.set_objective, "Neuronavigation to Robot: Set objective")
+        # Publisher.subscribe(self.connect_to_robot, "Neuronavigation to Robot: Connect to robot")
+        # Publisher.subscribe(self.set_target, "Neuronavigation to Robot: Set target")
+        # Publisher.subscribe(self.unset_target, "Neuronavigation to Robot: Unset target")
+        # Publisher.subscribe(
+        #     self.set_tracker_fiducials, "Neuronavigation to Robot: Set tracker fiducials"
+        # )
+        # Publisher.subscribe(
+        #     self.collect_robot_pose,
+        #     "Neuronavigation to Robot: Collect coordinates for the robot transformation matrix",
+        # )
+        # Publisher.subscribe(
+        #     self.reset_robot_transformation_matrix,
+        #     "Neuronavigation to Robot: Reset coordinates collection for the robot transformation matrix",
+        # )
+        # Publisher.subscribe(
+        #     self.estimate_robot_transformation_matrix,
+        #     "Neuronavigation to Robot: Estimate robot transformation matrix",
+        # )
+        # Publisher.subscribe(
+        #     self.set_robot_transformation_matrix,
+        #     "Neuronavigation to Robot: Set robot transformation matrix",
+        # )
+        # Publisher.subscribe(
+        #     self.update_displacement_to_target,
+        #     "Neuronavigation to Robot: Update displacement to target",
+        # )
+        # Publisher.subscribe(self.set_objective, "Neuronavigation to Robot: Set objective")
 
     # Functions for InVesalius to send updates.
 
@@ -309,14 +309,14 @@ class NeuronavigationApi(metaclass=Singleton):
     def __set_callbacks(self, connection):
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
         connection.set_callback__stimulation_pulse_received(self.stimulation_pulse_received)
-        connection.set_callback__update_robot_status(self.update_robot_status)
-        connection.set_callback__robot_connection_status(self.robot_connection_status)
-        connection.set_callback__robot_pose_collected(self.robot_pose_collected)
-        connection.set_callback__set_objective(self.set_objective_to_neuronavigation)
-        connection.set_callback__close_robot_dialog(self.close_robot_dialog)
-        connection.set_callback__update_robot_transformation_matrix(
-            self.update_robot_transformation_matrix
-        )
+        # connection.set_callback__update_robot_status(self.update_robot_status)
+        # connection.set_callback__robot_connection_status(self.robot_connection_status)
+        # connection.set_callback__robot_pose_collected(self.robot_pose_collected)
+        # connection.set_callback__set_objective(self.set_objective_to_neuronavigation)
+        # connection.set_callback__close_robot_dialog(self.close_robot_dialog)
+        # connection.set_callback__update_robot_transformation_matrix(
+        #     self.update_robot_transformation_matrix
+        # )
         connection.set_callback__set_vector_field(self.set_vector_field)
 
     def add_pedal_callback(self, name, callback, remove_when_released=False):
