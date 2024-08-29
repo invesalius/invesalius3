@@ -82,24 +82,33 @@ class Robot(metaclass=Singleton):
 
         Publisher.subscribe(self.TrackerFiducialsSet, "Tracker fiducials set")
 
-    def SaveConfig(self):
-        matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
-
-        state = {"robot_ip": self.robot_ip, "tracker_to_robot": matrix_tracker_to_robot}
+    def SaveConfig(self, key=None, value=None):
         session = ses.Session()
+        if key is None or value is None:
+            # Save the whole state
+            state = {"robot_ip": self.robot_ip, "tracker_to_robot": self.matrix_tracker_to_robot.tolist()}
+            if self.coil_name is not None:
+                state["robot_coil"] = self.coil_name
+        else:
+            state = session.GetConfig("robot", {})
+            state[key] = value
+
         session.SetConfig("robot", state)
 
     def LoadConfig(self):
         session = ses.Session()
-        state = session.GetConfig("robot")
+        state = session.GetConfig("robot", {})
+        
+        self.coil_name = state.get("robot_coil", None)
+        
+        self.robot_ip = state.get("robot_ip", None)
 
-        if state is None:
-            return False
+        self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
+        if self.matrix_tracker_to_robot is not None:
+            self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
 
-        self.robot_ip = state["robot_ip"]
-        self.matrix_tracker_to_robot = np.array(state["tracker_to_robot"])
-
-        return True
+        success = (self.robot_ip is not None and self.matrix_tracker_to_robot is not None)
+        return success
 
     def OnRobotConnectionStatus(self, data):
         # TODO: Is this check necessary?
@@ -163,6 +172,7 @@ class Robot(metaclass=Singleton):
 
     def SetCoilName(self, name):
         self.coil_name = name
+        self.SaveConfig("robot_coil", name)
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.

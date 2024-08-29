@@ -1169,9 +1169,20 @@ class ObjectTab(wx.Panel):
         )
 
         if n_coils_selected == n_coils:
-            # Allow only n_coils buttons to be pressed, so disable unpressed buttons
-            for btn, *junk in self.coil_btns.values():
-                btn.Enable(btn.GetValue())
+            self.CoilSelectionDone()
+
+    def CoilSelectionDone(self):
+        if self.navigation.n_coils == 1: # Tell the robot the coil name
+            self.robot.SetCoilName(next(iter(self.navigation.coil_registrations)))
+
+        Publisher.sendMessage(
+            "Coil selection done", done=True
+        )
+        Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
+
+        # Allow only n_coils buttons to be pressed, so disable unpressed coil-buttons
+        for btn, *junk in self.coil_btns.values():
+            btn.Enable(btn.GetValue())
 
     def OnSelectCoil(self, event=None, name=None, select=False):
         if name is None:
@@ -1239,15 +1250,9 @@ class ObjectTab(wx.Panel):
         if self.choice_robot_coil is not None:
             self.choice_robot_coil.Set(list(navigation.coil_registrations))
             self.choice_robot_coil.SetStringSelection(self.robot.coil_name or "")
-        if n_coils_selected == n_coils:
-            Publisher.sendMessage(
-                "Coil selection done", done=True
-            )  # Inform task_navigator that selection is done
-            Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
 
-            # Allow only n_coils buttons to be pressed, so disable unpressed buttons
-            for btn, *junk in self.coil_btns.values():
-                btn.Enable(btn.GetValue())
+        if n_coils_selected == n_coils:
+            self.CoilSelectionDone()
         else:  # Enable all buttons
             Publisher.sendMessage("Coil selection done", done=False)
             for btn, *junk in self.coil_btns.values():
@@ -1547,7 +1552,7 @@ class TrackerTab(wx.Panel):
         self.robot_ip = None
         self.matrix_tracker_to_robot = None
         self.n_coils = 1
-        self.state = self.LoadConfig()
+        self.LoadConfig()
 
         # ComboBox for choosing the no. of coils to track
         n_coils_options = [str(n) for n in range(1, 10)]
@@ -1704,13 +1709,10 @@ class TrackerTab(wx.Panel):
 
         state = session.GetConfig("robot")
 
-        if state is None:
-            return False
-
-        self.robot_ip = state["robot_ip"]
-        self.matrix_tracker_to_robot = np.array(state["tracker_to_robot"])
-
-        return True
+        self.robot_ip = state.get("robot_ip", None)
+        self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
+        if self.matrix_tracker_to_robot is not None:
+            self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
 
     def OnChooseNoOfCoils(self, evt, ctrl):
         old_n_coils = self.n_coils
