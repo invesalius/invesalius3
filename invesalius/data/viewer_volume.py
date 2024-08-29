@@ -1172,10 +1172,10 @@ class Viewer(wx.Panel):
             force_compensate_arrow_up = self.actor_factory.CreateArrow(
                 [0, 0, 0], [0, -50, 0]
             )
-            force_compensate_arrow_up.SetPosition(0, -550, 0)
+            force_compensate_arrow_up.SetPosition(0, -575, 0)
             force_compensate_arrow_up.RotateY(90)
             force_compensate_arrow_up.RotateZ(180)
-            force_compensate_arrow_up.GetProperty().SetColor(1, 1, 0)
+            force_compensate_arrow_up.GetProperty().SetColor(1, 1, 1)
 
 
 
