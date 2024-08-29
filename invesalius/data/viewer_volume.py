@@ -964,6 +964,7 @@ class Viewer(wx.Panel):
             arrow_pitch_x1,
             arrow_pitch_x2,
         )
+        print("Creating force_compensate_arrow_up")
         self.force_compensate_arrow_up = force_compensate_arrow_up
 
         for ind in self.guide_coil_actors:
@@ -972,6 +973,7 @@ class Viewer(wx.Panel):
         for ind in self.guide_arrow_actors:
             self.target_guide_renderer.AddActor(ind)
 
+        print("Adding the actor force_compensate_arrow_up")
         self.target_guide_renderer.AddActor(force_compensate_arrow_up)
 
     def EnableTargetMode(self):
