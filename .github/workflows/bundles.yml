@@ -8,5 +8,4 @@ jobs:
     uses: ./.github/workflows/win_base.yml
     with:
       win-architecture: 'x64'
-    secrets:
-      envPAT: ${{ secrets.envPAT }}
+    secrets: inherit
