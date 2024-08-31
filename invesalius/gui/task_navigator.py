@@ -1691,13 +1691,13 @@ class ControlPanel(wx.Panel):
         #   - Target is set
         #   - Target mode is on
         #   - Robot is connected
-        #   - The name of the coil attached to robot is specified
+        #   - The name of the coil attached to robot is being tracked
         track_target_button_enabled = (
             self.nav_status
             and self.target_selected
             and self.target_mode
             and self.robot.IsConnected()
-            and self.robot.coil_name in self.navigation.coil_registrations
+            and self.robot.GetCoilName() in self.navigation.coil_registrations
         )
         self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
 

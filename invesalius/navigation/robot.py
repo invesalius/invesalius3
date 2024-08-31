@@ -86,7 +86,10 @@ class Robot(metaclass=Singleton):
         session = ses.Session()
         if key is None or value is None:
             # Save the whole state
-            state = {"robot_ip": self.robot_ip, "tracker_to_robot": self.matrix_tracker_to_robot.tolist()}
+            state = {
+                "robot_ip": self.robot_ip,
+                "tracker_to_robot": self.matrix_tracker_to_robot.tolist(),
+            }
             if self.coil_name is not None:
                 state["robot_coil"] = self.coil_name
         else:
@@ -98,16 +101,16 @@ class Robot(metaclass=Singleton):
     def LoadConfig(self):
         session = ses.Session()
         state = session.GetConfig("robot", {})
-        
+
         self.coil_name = state.get("robot_coil", None)
-        
+
         self.robot_ip = state.get("robot_ip", None)
 
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
         if self.matrix_tracker_to_robot is not None:
             self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
 
-        success = (self.robot_ip is not None and self.matrix_tracker_to_robot is not None)
+        success = self.robot_ip is not None and self.matrix_tracker_to_robot is not None
         return success
 
     def OnRobotConnectionStatus(self, data):
@@ -152,7 +155,7 @@ class Robot(metaclass=Singleton):
     def IsConnected(self):
         return self.is_robot_connected
 
-    def IsReady(self): # LUKATODO: use this check before enabling robot for navigation...
+    def IsReady(self):  # LUKATODO: use this check before enabling robot for navigation...
         self.IsConnected() and (self.coil_name in self.navigation.coil_registrations)
 
     def SetRobotIP(self, data):
@@ -169,6 +172,9 @@ class Robot(metaclass=Singleton):
             data=self.matrix_tracker_to_robot.tolist(),
         )
         print("Robot initialized")
+
+    def GetCoilName(self):
+        return self.coil_name
 
     def SetCoilName(self, name):
         self.coil_name = name

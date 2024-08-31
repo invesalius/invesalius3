@@ -60,9 +60,7 @@ class Preferences(wx.Dialog):
 
             self.navigation_tab = NavigationTab(self.book, navigation)
             self.tracker_tab = TrackerTab(self.book, tracker, robot)
-            self.object_tab = ObjectTab(
-                self.book, navigation, tracker, pedal_connector, neuronavigation_api
-            )
+            self.object_tab = ObjectTab(self.book, navigation, tracker, pedal_connector)
 
             self.book.AddPage(self.navigation_tab, _("Navigation"))
             self.book.AddPage(self.tracker_tab, _("Tracker"))
@@ -861,7 +859,7 @@ class NavigationTab(wx.Panel):
 
 
 class ObjectTab(wx.Panel):
-    def __init__(self, parent, navigation, tracker, pedal_connector, neuronavigation_api):
+    def __init__(self, parent, navigation, tracker, pedal_connector):
         wx.Panel.__init__(self, parent)
 
         self.session = ses.Session()
@@ -870,7 +868,6 @@ class ObjectTab(wx.Panel):
 
         self.tracker = tracker
         self.pedal_connector = pedal_connector
-        self.neuronavigation_api = neuronavigation_api
         self.navigation = navigation
         self.robot = Robot()
         self.coil_registrations = {}
@@ -1007,7 +1004,7 @@ class ObjectTab(wx.Panel):
 
         self.not_connected_txt = None
         self.choice_robot_coil = None
-        if self.robot.IsConnected():
+        if not self.robot.IsConnected():
             self.not_connected_txt = wx.StaticText(self, -1, "Robot is not connected")
             inner_robot_sizer.Add(
                 self.not_connected_txt, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5
@@ -1017,7 +1014,7 @@ class ObjectTab(wx.Panel):
             self.choice_robot_coil = choice_robot_coil = wx.ComboBox(
                 self,
                 -1,
-                f"{self.robot.coil_name or ''}",
+                f"{self.robot.GetCoilName() or ''}",
                 size=wx.Size(90, 23),
                 choices=list(
                     self.navigation.coil_registrations
@@ -1074,7 +1071,7 @@ class ObjectTab(wx.Panel):
             coil_btn.Bind(
                 wx.EVT_RIGHT_DOWN, lambda event, name=coil_name: self.OnRightClickCoil(event, name)
             )
-            coil_btn.Show(show_button) 
+            coil_btn.Show(show_button)
             self.coil_btns[coil_name] = (coil_btn, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
 
             self.inner_sel_sizer.Add(coil_btn, 1, wx.EXPAND, 5)
@@ -1093,17 +1090,16 @@ class ObjectTab(wx.Panel):
 
         self.robot_sizer.GetStaticBox().Show(show_multicoil)
         self.robot_sizer.ShowItems(show_multicoil)
-        
+
         self.Layout()
 
-
     def OnSetCoilCount(self, n_coils):
-        multicoil_mode = n_coils > 1 
+        multicoil_mode = n_coils > 1
 
         if multicoil_mode:
             # Update multicoil GUI elements
             self.sel_sizer.GetStaticBox().SetLabel(f"TMS coil selection (0 out of {n_coils})")
-            
+
             # Reset (enable and unpress) all coil-buttons
             for btn, *junk in self.coil_btns.values():
                 btn.Enable()
@@ -1131,7 +1127,7 @@ class ObjectTab(wx.Panel):
         self.config_txt.SetLabel(
             f"{os.path.basename(self.coil_registrations.get('default_coil', {}).get('path', 'None'))}"
         )
-        
+
         n_coils_selected = len(selected_coils)
         self.sel_sizer.GetStaticBox().SetLabel(
             f"TMS coil selection ({n_coils_selected} out of {n_coils})"
@@ -1141,12 +1137,10 @@ class ObjectTab(wx.Panel):
             self.CoilSelectionDone()
 
     def CoilSelectionDone(self):
-        if self.navigation.n_coils == 1: # Tell the robot the coil name
+        if self.navigation.n_coils == 1:  # Tell the robot the coil name
             self.robot.SetCoilName(next(iter(self.navigation.coil_registrations)))
 
-        Publisher.sendMessage(
-            "Coil selection done", done=True
-        )
+        Publisher.sendMessage("Coil selection done", done=True)
         Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
 
         # Allow only n_coils buttons to be pressed, so disable unpressed coil-buttons
@@ -1196,7 +1190,7 @@ class ObjectTab(wx.Panel):
                 )
                 event.GetEventObject().SetValue(False)  # Unpress the button
                 return
-            
+
             # Press the coil button here in case selection was done via code without pressing button
             self.coil_btns[name][0].SetValue(True)
 
@@ -1217,7 +1211,7 @@ class ObjectTab(wx.Panel):
         # Update robot coil combobox
         if self.choice_robot_coil is not None:
             self.choice_robot_coil.Set(list(navigation.coil_registrations))
-            self.choice_robot_coil.SetStringSelection(self.robot.coil_name or "")
+            self.choice_robot_coil.SetStringSelection(self.robot.GetCoilName() or "")
 
         if n_coils_selected == n_coils:
             self.CoilSelectionDone()
@@ -1261,7 +1255,6 @@ class ObjectTab(wx.Panel):
                 self.tracker,
                 self.navigation.n_coils,
                 self.pedal_connector,
-                self.neuronavigation_api,
             )
             try:
                 if dialog.ShowModal() == wx.ID_OK:
@@ -1283,12 +1276,10 @@ class ObjectTab(wx.Panel):
                             coil_name = (
                                 dialog.GetValue().strip()
                             )  # Update coil_name with user input
+                            dialog.Destroy()
                         else:
+                            dialog.Destroy()
                             return  # Cancel the operation if the user closes the dialog or cancels
-                        dialog.Destroy()
-
-                    # LUKATODO: update coil mesh elsewhere
-                    # self.neuronavigation_api.update_coil_mesh(polydata)
 
                     if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
                         coil_registration = {
@@ -1308,11 +1299,11 @@ class ObjectTab(wx.Panel):
                             coil_btn.SetValue(False)
                             self.OnSelectCoil(name=coil_name, select=False)
 
-                    if self.navigation.n_coils == 1:
-                        # Select the coil that was created for navigation
-                        self.OnSelectCoil(name="default_coil", select=True)
-                        # Hide the coil-button
-                        coil_btn.Show(False)
+                        if self.navigation.n_coils == 1:
+                            # Select the coil that was created for navigation
+                            self.OnSelectCoil(name=coil_name, select=True)
+                            # Hide the coil-button
+                            coil_btn.Show(False)
 
                     self.Layout()
 
@@ -1369,10 +1360,6 @@ class ObjectTab(wx.Panel):
                 polydata = vtk_utils.CreateObjectPolyData(coil_path)
                 if not polydata:
                     coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-
-                # LUKATODO: what is neuronavigation_api.update_coil_mesh ?
-                # if polydata:
-                #    self.neuronavigation_api.update_coil_mesh(polydata)
 
                 if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
                     coil_registration = {

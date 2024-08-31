@@ -124,7 +124,6 @@ if TYPE_CHECKING:
     from invesalius.navigation.navigation import Navigation
     from invesalius.navigation.robot import Robot
     from invesalius.navigation.tracker import Tracker
-    from invesalius.net.neuronavigation_api import NeuronavigationApi
     from invesalius.net.pedal_connection import PedalConnector
     from typings.wx.type_defs import ColourType  # type: ignore
 
@@ -3883,12 +3882,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         tracker: "Tracker",
         n_coils: "int",
         pedal_connector: "PedalConnector",
-        neuronavigation_api: "NeuronavigationApi",
     ):
         self.tracker = tracker
         self.n_coils = n_coils
         self.pedal_connector = pedal_connector
-        self.neuronavigation_api = neuronavigation_api
 
         self.tracker_id = tracker.GetTrackerId()
         self.show_sensor_options: bool = self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS

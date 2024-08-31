@@ -47,6 +47,7 @@ from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
+import invesalius.data.polydata_utils as pu
 
 
 class NavigationHub(metaclass=Singleton):
@@ -376,9 +377,7 @@ class Navigation(metaclass=Singleton):
                     if coil_name in saved_coil_registrations
                 }
                 if self.coil_registrations:
-                    self.main_coil = self.main_coil or next(
-                        iter(self.coil_registrations)
-                    )
+                    self.main_coil = self.main_coil or next(iter(self.coil_registrations))
 
             # Try to load stylus orientation data
             if "r_stylus" in state:
@@ -431,6 +430,10 @@ class Navigation(metaclass=Singleton):
     def SetMainCoil(self, main_coil):
         self.main_coil = main_coil
         self.SaveConfig("main_coil", main_coil)
+
+        # Send the polydata of the main coil to the connection
+        polydata = pu.LoadPolydata(self.coil_registrations[main_coil]["path"])
+        self.neuronavigation_api.update_coil_mesh(polydata)
 
     def SetReferenceMode(self, value):
         self.ref_mode_id = value
@@ -566,14 +569,12 @@ class Navigation(metaclass=Singleton):
 
             coreg_data = [self.m_change, self.r_stylus]
 
-            # LUKATODO: where does robot get actual data?
-
             robot = Robot()
-            if robot.coil_name in self.coil_registrations:
+            if robot.GetCoilName() in self.coil_registrations:
                 # Tell robot at which index (obj_id) to find its coil in
                 Publisher.sendMessage(
                     "Neuronavigation to Robot: Set coil index",
-                    data=self.coil_registrations[robot.coil_name]["obj_id"],
+                    data=self.coil_registrations[robot.GetCoilName()]["obj_id"],
                 )
 
             queues = [
