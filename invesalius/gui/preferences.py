@@ -133,11 +133,6 @@ class Preferences(wx.Dialog):
         console_logging = log.invLogger.GetConfig("console_logging")
         console_logging_level = log.invLogger.GetConfig("console_logging_level")
 
-        mode = session.GetConfig("mode")
-
-        if mode == const.MODE_NAVIGATOR:
-            self.object_tab.LoadConfig()
-
         values = {
             const.RENDERING: rendering,
             const.SURFACE_INTERPOLATION: surface_interpolation,
@@ -903,7 +898,7 @@ class ObjectTab(wx.Panel):
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadCoilFromOBR)
 
-        tooltip = _("Save current TMS coil configuration to a file")
+        tooltip = _("Save TMS coil configuration to a file")
         btn_save = wx.Button(self, -1, _("Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
         btn_save.Enable(1)
@@ -982,24 +977,6 @@ class ObjectTab(wx.Panel):
             ]
         )
 
-        ### Sizer for displaying instructions (multicoil) ###
-        self.instruction_sizer = instruction_sizer = wx.StaticBoxSizer(
-            wx.VERTICAL, self, ("Instructions for using multiple coils")
-        )
-        inner_instruction_sizer = wx.FlexGridSizer(1, 3, 1, 1)
-        self.instruction_lbl = wx.StaticText(
-            self,
-            -1,
-            _(
-                f"Choose {navigation.n_coils} coils to use. If there are not enough options, create coil configurations below. You can edit configurations by overwriting them. Unused coils can be deleted by right-clicking its button."
-            ),
-        )
-        # instruction_lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
-        inner_instruction_sizer.Add(
-            self.instruction_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5
-        )
-        instruction_sizer.Add(inner_instruction_sizer, 0, wx.ALL | wx.EXPAND, 10)
-
         ### Sizer for choosing which coils to use in navigation (multicoil)
         self.sel_sizer = sel_sizer = wx.StaticBoxSizer(
             wx.VERTICAL,
@@ -1030,7 +1007,7 @@ class ObjectTab(wx.Panel):
 
         self.not_connected_txt = None
         self.choice_robot_coil = None
-        if not self.robot.IsConnected():
+        if self.robot.IsConnected():
             self.not_connected_txt = wx.StaticText(self, -1, "Robot is not connected")
             inner_robot_sizer.Add(
                 self.not_connected_txt, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5
@@ -1068,10 +1045,9 @@ class ObjectTab(wx.Panel):
         main_sizer.AddMany(
             [
                 (coil_sizer, 0, wx.ALL | wx.EXPAND, 10),
-                (conf_sizer, 0, wx.ALL | wx.EXPAND, 10),
-                (instruction_sizer, 0, wx.ALL | wx.EXPAND, 10),
                 (sel_sizer, 0, wx.ALL | wx.EXPAND, 10),
                 (robot_sizer, 0, wx.ALL | wx.EXPAND, 10),
+                (conf_sizer, 0, wx.ALL | wx.EXPAND, 10),
             ]
         )
         self.SetSizerAndFit(main_sizer)
@@ -1083,7 +1059,7 @@ class ObjectTab(wx.Panel):
         robot_coil_name = event.GetEventObject().GetStringSelection()
         self.robot.SetCoilName(robot_coil_name)
 
-    def AddCoilButton(self, coil_name):
+    def AddCoilButton(self, coil_name, show_button=True):
         if self.no_coils_lbl is not None:
             self.no_coils_lbl.Destroy()  # Remove obsolete message
             self.no_coils_lbl = None
@@ -1098,6 +1074,7 @@ class ObjectTab(wx.Panel):
             coil_btn.Bind(
                 wx.EVT_RIGHT_DOWN, lambda event, name=coil_name: self.OnRightClickCoil(event, name)
             )
+            coil_btn.Show(show_button) 
             self.coil_btns[coil_name] = (coil_btn, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
 
             self.inner_sel_sizer.Add(coil_btn, 1, wx.EXPAND, 5)
@@ -1105,65 +1082,57 @@ class ObjectTab(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.OnSetCoilCount, "Reset coil selection")
 
+    def ShowMulticoilGUI(self, show_multicoil):
+        # Show/hide singlecoil configuration text
+        self.config_txt.Show(not show_multicoil)
+        self.config_lbl.Show(not show_multicoil)
+
+        # Show/hide multicoil GUI elements
+        self.sel_sizer.GetStaticBox().Show(show_multicoil)
+        self.sel_sizer.ShowItems(show_multicoil)
+
+        self.robot_sizer.GetStaticBox().Show(show_multicoil)
+        self.robot_sizer.ShowItems(show_multicoil)
+        
+        self.Layout()
+
+
     def OnSetCoilCount(self, n_coils):
-        if n_coils == 1:
-            self.config_txt.Show(True)
-            self.config_lbl.Show(True)
+        multicoil_mode = n_coils > 1 
 
-            # Hide multicoil GUI elements
-            self.instruction_sizer.GetStaticBox().Show(False)
-            self.instruction_sizer.ShowItems(False)
-
-            self.sel_sizer.GetStaticBox().Show(False)
-            self.sel_sizer.ShowItems(False)
-
-            self.robot_sizer.GetStaticBox().Show(False)
-            self.robot_sizer.ShowItems(False)
-
-        else:
-            self.config_txt.Show(False)
-            self.config_lbl.Show(False)
-            # Multicoil mode
-            self.instruction_lbl.SetLabel(
-                f"Choose {n_coils} coils to use below. If there are not enough options, create coil configurations below. Here you can also edit configurations by using the same name. A coil can be deleted or its index can be changed by right-clicking its button."
-            )
+        if multicoil_mode:
+            # Update multicoil GUI elements
             self.sel_sizer.GetStaticBox().SetLabel(f"TMS coil selection (0 out of {n_coils})")
+            
             # Reset (enable and unpress) all coil-buttons
             for btn, *junk in self.coil_btns.values():
                 btn.Enable()
                 btn.SetValue(False)
 
-            # Show multicoil GUI elements
-            self.instruction_sizer.GetStaticBox().Show(True)
-            self.instruction_sizer.ShowItems(True)
-
-            self.sel_sizer.GetStaticBox().Show(True)
-            self.sel_sizer.ShowItems(True)
-
-            self.robot_sizer.GetStaticBox().Show(True)
-            self.robot_sizer.ShowItems(True)
-        self.Layout()
+        self.ShowMulticoilGUI(multicoil_mode)
 
     def LoadConfig(self):
         state = self.session.GetConfig("navigation", {})
+        n_coils = state.get("n_coils", 1)
+        multicoil_mode = n_coils > 1
+        self.ShowMulticoilGUI(multicoil_mode)
+
         self.coil_registrations = self.session.GetConfig("coil_registrations", {})
         # Add a button for each coil
         for coil_name in self.coil_registrations:
-            self.AddCoilButton(coil_name)
+            self.AddCoilButton(coil_name, show_button=multicoil_mode)
 
         # Press the buttons for coils that were selected in config file
         selected_coils = state.get("selected_coils", [])
         for coil_name in selected_coils:
             self.coil_btns[coil_name][0].SetValue(True)
 
-        n_coils_selected = len(selected_coils)
-        n_coils = state.get("n_coils", 1)
-        self.OnSetCoilCount(n_coils)
-
         # Update labels
         self.config_txt.SetLabel(
             f"{os.path.basename(self.coil_registrations.get('default_coil', {}).get('path', 'None'))}"
         )
+        
+        n_coils_selected = len(selected_coils)
         self.sel_sizer.GetStaticBox().SetLabel(
             f"TMS coil selection ({n_coils_selected} out of {n_coils})"
         )
@@ -1194,10 +1163,6 @@ class ObjectTab(wx.Panel):
         navigation = self.navigation
 
         if select or (event is not None and event.GetSelection()):  # If coil is selected
-            # Press the coil button here in case selection was done via code without pressing button
-            coil_btn = self.coil_btns[name][0]
-            coil_btn.SetValue(True)
-
             coil_registration = self.coil_registrations[name]
 
             # Check that the index of the chosen coil does not conflict with other selected coils
@@ -1231,6 +1196,9 @@ class ObjectTab(wx.Panel):
                 )
                 event.GetEventObject().SetValue(False)  # Unpress the button
                 return
+            
+            # Press the coil button here in case selection was done via code without pressing button
+            self.coil_btns[name][0].SetValue(True)
 
         # Select/Unselect coil
         Publisher.sendMessage("Select coil", coil_name=name, coil_registration=coil_registration)
@@ -1258,36 +1226,7 @@ class ObjectTab(wx.Panel):
             for btn, *junk in self.coil_btns.values():
                 btn.Enable(True)
 
-    def OnChoiceObjID(self, event, name):
-        obj_id = 0 if event.GetSelection() == 0 else event.GetSelection() + 1
-        self.coil_registrations[name]["obj_id"] = obj_id
-        self.session.SetConfig("coil_registrations", self.coil_registrations)
-
-        # Unselect the coil, because the new id may cause conflicts
-        self.coil_btns[name][0].SetValue(False)
-        self.OnSelectCoil(name=name, select=False)
-
-        event.GetEventObject().Destroy()  # Delete the obj_id combobox
-
     def OnRightClickCoil(self, event, name):
-        def SetObjID(event, name):
-            # Largest valid obj_id with the currently used Tracker (ie. coord_raw.shape[0])
-            max_obj_id = self.tracker.GetTrackerCoordinates(ref_mode_id=0)[2].shape[0]
-
-            choice_obj_id = wx.ComboBox(
-                self,
-                -1,
-                f"{str(self.coil_registrations[name]['obj_id'])}",
-                size=wx.Size(90, 23),
-                choices=["0"] + [str(id) for id in range(2, max_obj_id)],
-                style=wx.CB_DROPDOWN | wx.CB_READONLY,
-            )
-            tooltip = "Choose the coil index in coord_raw with the current tracker. Choose 0 for static mode, 2 for dynamic mode and 3 onwards for multiple coils."
-            choice_obj_id.SetToolTip(tooltip)
-            choice_obj_id.Bind(
-                wx.EVT_COMBOBOX, (lambda event, name=name: self.OnChoiceObjID(event, name))
-            )
-
         def DeleteCoil(event, name):
             del self.coil_registrations[name]
 
@@ -1303,11 +1242,9 @@ class ObjectTab(wx.Panel):
 
         menu = wx.Menu()
         delete_coil = menu.Append(wx.ID_ANY, "Delete coil")
-        set_obj_id = menu.Append(wx.ID_ANY, "Set coil index")
         save_coil = menu.Append(wx.ID_ANY, "Save coil to OBR file")
 
         self.Bind(wx.EVT_MENU, (lambda event, name=name: DeleteCoil(event, name)), delete_coil)
-        self.Bind(wx.EVT_MENU, (lambda event, name=name: SetObjID(event, name)), set_obj_id)
         self.Bind(
             wx.EVT_MENU,
             (lambda event, name=name: self.OnSaveCoilToOBR(event, coil_name=name)),
