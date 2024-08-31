@@ -10,8 +10,9 @@ jobs:
       win-architecture: 'x64'
     secrets: 
       token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Put current date into a variable
-      run: |
-        $DATE=& Get-Date -format yyyy-MM-dd
-        echo "DATE=$DATE" >> $env:GITHUB_ENV
+  
+    steps:
+      - name: Put current date into a variable
+        run: |
+          $DATE=& Get-Date -format yyyy-MM-dd
+          echo "DATE=$DATE" >> $env:GITHUB_ENV
