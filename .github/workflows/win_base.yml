@@ -1,0 +1,34 @@
+name: win64 bundle base
+
+on:
+  workflow_call:
+    inputs:
+      win-architecture:
+        required: true
+        type: string
+    secrets:
+      token:
+        required: true
+
+jobs:
+  build-win:
+    name: run on windows
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+        
+      - name: Setup VC++ 2022 (17.0)
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+        with:
+          vsversion: '17.0'
+          arch: ${{ inputs.win-architecture }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.2'
+          architecture: ${{ inputs.win-architecture }}
+          cache: 'pip'
