@@ -10,7 +10,6 @@ jobs:
       matrix:
         architecture: [x64]
         build_type: [normal, full]
-      
   steps:
     - uses: actions/checkout@v4
       with:
