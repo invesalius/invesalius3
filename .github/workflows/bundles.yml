@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build-win:
-    name: run on windows
+    name: build windows
     runs-on: windows-latest
     strategy:
       matrix:
@@ -103,3 +103,12 @@ jobs:
     #      This is a nightly release InVesalius.
     #      It's unstable compared to the official releases, **use it with caution**!
     #    files: installer/invesalius-3.1.99998_nightly_win64.exe
+
+  publish_packages:
+    name: publish packages
+    needs: build-win
+    runs-on: windows-latest
+    steps:
+      - name: Message
+        run: |
+          echo TESTE
