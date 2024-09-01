@@ -100,7 +100,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: invesalius_packages_artifacts
-          overwrite: true
           retention-days: 2
           path: ./installer/*.exe
 
