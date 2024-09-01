@@ -10,22 +10,23 @@ jobs:
       matrix:
         architecture: [x64]
         build_type: [normal, full]
-  steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: true
-      
-    - name: Put current date into a variable
-      run: |
-        $DATE=& Get-Date -format yyyy-MM-dd
-        echo "DATE=$DATE" >> $env:GITHUB_ENV
-        echo ${{ matrix.architecture }}
-
-    - name: Put current commit hash in a variable
-      run: |
-        $COMMIT=$(git rev-parse HEAD)
-        echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
         
+      steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+        
+      - name: Put current date into a variable
+        run: |
+          $DATE=& Get-Date -format yyyy-MM-dd
+          echo "DATE=$DATE" >> $env:GITHUB_ENV
+          echo ${{ matrix.architecture }}
+
+      - name: Put current commit hash in a variable
+        run: |
+          $COMMIT=$(git rev-parse HEAD)
+          echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
+          
     #- name: Setup VC++ 2022 (17.0)
     #  uses: ilammy/msvc-dev-cmd@v1.13.0
     #  with:
