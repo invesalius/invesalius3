@@ -9,14 +9,14 @@ jobs:
     strategy:
       matrix:
         architecture: [x64]
-        ai_ready: [not, yes]
+        ai_ready: [0, 1]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
         
       - name: Put current date into a variable
-        if: ${{ matrix.ai_ready }} == "yes"
+        if: ${{ matrix.ai_ready }} == 1
         run: |
           $DATE=& Get-Date -format yyyy-MM-dd
           echo "DATE=$DATE" >> $env:GITHUB_ENV
