@@ -1002,38 +1002,34 @@ class ObjectTab(wx.Panel):
         )
         self.inner_robot_sizer = inner_robot_sizer = wx.FlexGridSizer(2, 1, 1)
 
-        self.not_connected_txt = None
-        self.choice_robot_coil = None
+        self.robot_lbl = wx.StaticText(self, -1, _("Robot is connected. Coil attached to robot: "))
+        self.choice_robot_coil = choice_robot_coil = wx.ComboBox(
+            self,
+            -1,
+            f"{self.robot.GetCoilName() or ''}",
+            size=wx.Size(90, 23),
+            choices=list(
+                self.navigation.coil_registrations
+            ),  # List of coils selected for navigation
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+
+        choice_robot_coil.SetToolTip(
+            "Specify which coil is attached to the robot",
+        )
+
+        choice_robot_coil.Bind(wx.EVT_COMBOBOX, self.OnChoiceRobotCoil)
+
         if not self.robot.IsConnected():
-            self.not_connected_txt = wx.StaticText(self, -1, "Robot is not connected")
-            inner_robot_sizer.Add(
-                self.not_connected_txt, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5
-            )
-        else:
-            choice_robot_coil_lbl = wx.StaticText(self, -1, _("Coil attached to robot: "))
-            self.choice_robot_coil = choice_robot_coil = wx.ComboBox(
-                self,
-                -1,
-                f"{self.robot.GetCoilName() or ''}",
-                size=wx.Size(90, 23),
-                choices=list(
-                    self.navigation.coil_registrations
-                ),  # List of coils selected for navigation
-                style=wx.CB_DROPDOWN | wx.CB_READONLY,
-            )
+            self.robot_lbl.SetLabel("Robot is not connected")
+            choice_robot_coil.Show(False)  # Hide the combobox
 
-            choice_robot_coil.SetToolTip(
-                "Specify which coil is attached to the robot",
-            )
-
-            choice_robot_coil.Bind(wx.EVT_COMBOBOX, (lambda event: self.OnChoiceRobotCoil(event)))
-
-            inner_robot_sizer.AddMany(
-                [
-                    (choice_robot_coil_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                    (choice_robot_coil, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                ]
-            )
+        inner_robot_sizer.AddMany(
+            [
+                (self.robot_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (choice_robot_coil, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+            ]
+        )
 
         robot_sizer.Add(inner_robot_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
@@ -1051,6 +1047,22 @@ class ObjectTab(wx.Panel):
 
         self.LoadConfig()
         self.Layout()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnSetCoilCount, "Reset coil selection")
+        Publisher.subscribe(
+            self.OnRobotConnectionStatus, "Robot to Neuronavigation: Robot connection status"
+        )
+
+    def OnRobotConnectionStatus(self, data):
+        if data is None:
+            return
+
+        self.choice_robot_coil.Show(data)
+        if data:
+            self.robot_lbl.SetLabel("Robot is connected. Coil attached to robot: ")
+        else:
+            self.robot_lbl.SetLabel("Robot is not connected.")
 
     def OnChoiceRobotCoil(self, event):
         robot_coil_name = event.GetEventObject().GetStringSelection()
@@ -1076,9 +1088,6 @@ class ObjectTab(wx.Panel):
 
             self.inner_sel_sizer.Add(coil_btn, 1, wx.EXPAND, 5)
 
-    def __bind_events(self):
-        Publisher.subscribe(self.OnSetCoilCount, "Reset coil selection")
-
     def ShowMulticoilGUI(self, show_multicoil):
         # Show/hide singlecoil configuration text
         self.config_txt.Show(not show_multicoil)
@@ -1090,6 +1099,9 @@ class ObjectTab(wx.Panel):
 
         self.robot_sizer.GetStaticBox().Show(show_multicoil)
         self.robot_sizer.ShowItems(show_multicoil)
+
+        # Show the robot coil combobox only if the robot is connected
+        self.choice_robot_coil.Show(show_multicoil and self.robot.IsConnected())
 
         self.Layout()
 

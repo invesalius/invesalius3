@@ -28,6 +28,7 @@ import invesalius.constants as const
 import invesalius.data.bases as db
 import invesalius.data.coregistration as dcr
 import invesalius.data.e_field as e_field
+import invesalius.data.polydata_utils as pu
 import invesalius.data.serial_port_connection as spc
 import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
@@ -47,7 +48,6 @@ from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
-import invesalius.data.polydata_utils as pu
 
 
 class NavigationHub(metaclass=Singleton):
@@ -571,7 +571,7 @@ class Navigation(metaclass=Singleton):
 
             robot = Robot()
             if robot.GetCoilName() in self.coil_registrations:
-                # Tell robot at which index (obj_id) to find its coil in
+                # Tell robot at which index (obj_id) to find its coil in (relevant when there are multiple coils)
                 Publisher.sendMessage(
                     "Neuronavigation to Robot: Set coil index",
                     data=self.coil_registrations[robot.GetCoilName()]["obj_id"],
