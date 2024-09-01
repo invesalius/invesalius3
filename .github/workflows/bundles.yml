@@ -16,7 +16,7 @@ jobs:
           submodules: true
         
       - name: Put current date into a variable
-        if: ${{ matrix.ai_ready }} == '0'
+        if: ${{ matrix.ai_ready == 0}}
         run: |
           $DATE=& Get-Date -format yyyy-MM-dd
           echo "DATE=$DATE" >> $env:GITHUB_ENV
