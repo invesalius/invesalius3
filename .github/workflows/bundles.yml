@@ -19,7 +19,7 @@ jobs:
         run: |
           $DATE=& Get-Date -format yyyy-MM-dd
           echo "DATE=$DATE" >> $env:GITHUB_ENV
-          echo ${{ matrix.architecture }}
+          echo ${{ matrix.architecture }} ${{ matrix.build_type }}
 
       - name: Put current commit hash in a variable
         run: |
