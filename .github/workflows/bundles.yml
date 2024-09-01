@@ -11,7 +11,7 @@ jobs:
         architecture: [x64]
         build_type: [normal, full]
         
-      steps:
+    steps:
       with:
         node-architecture: ${{ matrix.architecture }}
 
