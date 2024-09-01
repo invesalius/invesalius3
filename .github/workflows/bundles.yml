@@ -96,10 +96,21 @@ jobs:
           cd ./installer
           dir
 
-      - name: Upload artifact of package file
+      - name: Upload artifact of package normal file
+        if: ${{ matrix.ai_ready == 0}}
         uses: actions/upload-artifact@v4
         with:
-          name: invesalius_packages_artifacts
+          overwrite: true
+          name: invesalius_package_exe_normal
+          retention-days: 2
+          path: ./installer/*.exe
+
+      - name: Upload artifact of package ai-ready file
+        if: ${{ matrix.ai_ready == 1}}
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: invesalius_package_exe_ai-ready
           retention-days: 2
           path: ./installer/*.exe
 
@@ -110,7 +121,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: invesalius_packages_artifacts
+          name: invesalius_package_exe_normal
+          path: ./
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: invesalius_package_exe_ai-ready
           path: ./
 
       - name: Message
