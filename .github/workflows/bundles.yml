@@ -3,7 +3,7 @@ name: generate bundles
 on: [push]
 
 jobs:
-  build-win64:
+  build-win:
     name: run on windows
     runs-on: windows-latest
     strategy:
@@ -11,95 +11,95 @@ jobs:
         architecture: [x64]
         build_type: [normal, full]
       
-      steps:
-        - uses: actions/checkout@v4
-          with:
-            submodules: true
-          
-        - name: Put current date into a variable
-          run: |
-            $DATE=& Get-Date -format yyyy-MM-dd
-            echo "DATE=$DATE" >> $env:GITHUB_ENV
-            echo ${{ matrix.architecture }}
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+      
+    - name: Put current date into a variable
+      run: |
+        $DATE=& Get-Date -format yyyy-MM-dd
+        echo "DATE=$DATE" >> $env:GITHUB_ENV
+        echo ${{ matrix.architecture }}
 
-        - name: Put current commit hash in a variable
-          run: |
-            $COMMIT=$(git rev-parse HEAD)
-            echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
-            
-        #- name: Setup VC++ 2022 (17.0)
-        #  uses: ilammy/msvc-dev-cmd@v1.13.0
-        #  with:
-        #    vsversion: '17.0'
-        #    arch: 'x64'
+    - name: Put current commit hash in a variable
+      run: |
+        $COMMIT=$(git rev-parse HEAD)
+        echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
         
-        #- name: Setup Python
-        #  uses: actions/setup-python@v5
-        #  with:
-        #    python-version: '3.11.2'
-        #    cache: 'pip'
+    #- name: Setup VC++ 2022 (17.0)
+    #  uses: ilammy/msvc-dev-cmd@v1.13.0
+    #  with:
+    #    vsversion: '17.0'
+    #    arch: 'x64'
+    
+    #- name: Setup Python
+    #  uses: actions/setup-python@v5
+    #  with:
+    #    python-version: '3.11.2'
+    #    cache: 'pip'
 
-        #- name: Upgrade pip and enable wheel support
-        #  run: python -m pip install --upgrade pip setuptools wheel 
+    #- name: Upgrade pip and enable wheel support
+    #  run: python -m pip install --upgrade pip setuptools wheel 
 
-        #- name: Install InVesalius requirements
-        #  run: pip install -r requirements.txt
+    #- name: Install InVesalius requirements
+    #  run: pip install -r requirements.txt
 
-        #- name: Compile InVesalius Cython parts
-        #  run: |
-        #        python3 setup.py build_ext --inplace
-        #        python3 setup.py build_plugins
+    #- name: Compile InVesalius Cython parts
+    #  run: |
+    #        python3 setup.py build_ext --inplace
+    #        python3 setup.py build_plugins
 
-        #- name: Insert version and commit hash into dialog.py
-        #  run: python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
+    #- name: Insert version and commit hash into dialog.py
+    #  run: python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
 
-        #- uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
-        #  id: pyinstaller
-        #  name: Download pyinstaller
-        #  with:
-        #    url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
-        #    target: ./pyinstaller/
+    #- uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+    #  id: pyinstaller
+    #  name: Download pyinstaller
+    #  with:
+    #    url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
+    #    target: ./pyinstaller/
 
-        #- name: Extract pyinstaller file
-        #  uses: ihiroky/extract-action@v1
-        #  with:
-        #    file_path: ./pyinstaller/v6.9.0.zip
-        #    extract_dir: ./pyinstaller/
+    #- name: Extract pyinstaller file
+    #  uses: ihiroky/extract-action@v1
+    #  with:
+    #    file_path: ./pyinstaller/v6.9.0.zip
+    #    extract_dir: ./pyinstaller/
 
-        #- name: Compile pyinstaller bootloader
-        #  run: |
-        #        cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
-        #        python3 ./waf distclean all
-        #        cd ..
-        #        pip install .
+    #- name: Compile pyinstaller bootloader
+    #  run: |
+    #        cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
+    #        python3 ./waf distclean all
+    #        cd ..
+    #        pip install .
 
-        #- name: Generate InVesalius .exe file
-        #  run: |
-        #        cp ./bundle_tools/win/app.spec ./  
-        #        pyinstaller app.spec --clean --noconfirm
-        #        mkdir installer
+    #- name: Generate InVesalius .exe file
+    #  run: |
+    #        cp ./bundle_tools/win/app.spec ./  
+    #        pyinstaller app.spec --clean --noconfirm
+    #        mkdir installer
 
-        #- name: Generate InVesalius installer
-        #  uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        #  with:
-        #    path: ./bundle_tools/win/generate_installer.iss
-        #    options: /F"invesalius-3.1.99998_nightly_win64"
+    #- name: Generate InVesalius installer
+    #  uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+    #  with:
+    #    path: ./bundle_tools/win/generate_installer.iss
+    #    options: /F"invesalius-3.1.99998_nightly_win64"
 
-        #- name: Show files
-        #  run: |
-        #    cd ./installer
-        #    dir
+    #- name: Show files
+    #  run: |
+    #    cd ./installer
+    #    dir
 
-        #- name: Update Nightly Release
-        #  uses: andelf/nightly-release@main
-        #  env:
-        #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        #  with:
-        #    tag_name: nightly
-        #    name: 'Nightly'
-        #    draft: false
-        #    prerelease: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.is-pre-release) || (github.event_name == 'schedule')}}
-        #    body: |
-        #      This is a nightly release InVesalius.
-        #      It's unstable compared to the official releases, **use it with caution**!
-        #    files: installer/invesalius-3.1.99998_nightly_win64.exe
+    #- name: Update Nightly Release
+    #  uses: andelf/nightly-release@main
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #  with:
+    #    tag_name: nightly
+    #    name: 'Nightly'
+    #    draft: false
+    #    prerelease: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.is-pre-release) || (github.event_name == 'schedule')}}
+    #    body: |
+    #      This is a nightly release InVesalius.
+    #      It's unstable compared to the official releases, **use it with caution**!
+    #    files: installer/invesalius-3.1.99998_nightly_win64.exe
