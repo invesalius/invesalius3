@@ -4,11 +4,11 @@ on: [push]
 
 jobs:
   build-win:
-    name: build windows
+    name: build windows packages
     runs-on: windows-latest
     strategy:
       matrix:
-        architecture: [x64]
+        architecture: ['x64']
         ai_ready: [0, 1]
     steps:
       - uses: actions/checkout@v4
@@ -27,11 +27,11 @@ jobs:
           $COMMIT=$(git rev-parse HEAD)
           echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
             
-    #- name: Setup VC++ 2022 (17.0)
-    #  uses: ilammy/msvc-dev-cmd@v1.13.0
-    #  with:
-    #    vsversion: '17.0'
-    #    arch: 'x64'
+      - name: Setup VC++ 2022 (17.0)
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+        with:
+          vsversion: '17.0'
+          arch: ${{ matrix.architecture }}
     
     #- name: Setup Python
     #  uses: actions/setup-python@v5
@@ -90,19 +90,7 @@ jobs:
     #    cd ./installer
     #    dir
 
-    #- name: Update Nightly Release
-    #  uses: andelf/nightly-release@main
-    #  env:
-    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #  with:
-    #    tag_name: nightly
-    #    name: 'Nightly'
-    #    draft: false
-    #    prerelease: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.is-pre-release) || (github.event_name == 'schedule')}}
-    #    body: |
-    #      This is a nightly release InVesalius.
-    #      It's unstable compared to the official releases, **use it with caution**!
-    #    files: installer/invesalius-3.1.99998_nightly_win64.exe
+
 
   publish_packages:
     name: publish packages
@@ -112,3 +100,17 @@ jobs:
       - name: Message
         run: |
           echo TESTE
+
+      #- name: Update Nightly Release
+      #  uses: andelf/nightly-release@main
+      #  env:
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #  with:
+      #    tag_name: nightly
+      #    name: 'Nightly'
+      #    draft: false
+      #    prerelease: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.is-pre-release) || (github.event_name == 'schedule')}}
+      #    body: |
+      #      This is a nightly release InVesalius.
+      #      It's unstable compared to the official releases, **use it with caution**!
+      #    files: installer/invesalius-3.1.99998_nightly_win64.exe
