@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         architecture: [x64]
-        build_type: [normal, full]
+        ai_ready: [not, yes]
     steps:
       - uses: actions/checkout@v4
         with:
