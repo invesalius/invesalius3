@@ -163,4 +163,6 @@ jobs:
           body: |
             This is a nightly release InVesalius.
             It's unstable compared to the official releases, **use it with caution**!
-          files: [./invesalius-3.1_nightly_ai-ready_win64.exe, ./invesalius-3.1_nightly_win64.exe]
+          files: |
+                  ./invesalius-3.1_nightly_ai-ready_win64.exe
+                  ./invesalius-3.1_nightly_win64.exe
