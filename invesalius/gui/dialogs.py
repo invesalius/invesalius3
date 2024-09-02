@@ -7546,9 +7546,12 @@ def ImportMarkers():
     )
     overwrite_image_checkbox = wx.CheckBox(dialog, -1, _("Overwrite current image fiducials"))
     clear_checkbox = wx.CheckBox(dialog, -1, _("Clear all previous markers"))
-    dialog.sizer.Add(overwrite_image_checkbox, 0, wx.CENTER)
-    dialog.sizer.Add(clear_checkbox, 0, wx.CENTER)
+    options_sizer = wx.StaticBoxSizer(wx.VERTICAL, dialog)
+    options_sizer.Add(overwrite_image_checkbox, 0, wx.LEFT)
+    options_sizer.Add(clear_checkbox, 0, wx.LEFT)
+    dialog.sizer.Add(options_sizer, 0, wx.EXPAND | wx.ALL, 5)
     dialog.FitSizers()
+
     if dialog.ShowModal() == wx.ID_OK:
         filename = dialog.GetPath()
 
@@ -7571,9 +7574,12 @@ def ImportImageFiducials():
     )
     load_markers_checkbox = wx.CheckBox(dialog, -1, _("Load other markers from file"))
     clear_checkbox = wx.CheckBox(dialog, -1, _("Clear all previous markers"))
-    dialog.sizer.Add(load_markers_checkbox, 0, wx.CENTER)
-    dialog.sizer.Add(clear_checkbox, 0, wx.CENTER)
+    options_sizer = wx.StaticBoxSizer(wx.VERTICAL, dialog)
+    options_sizer.Add(load_markers_checkbox, 0, wx.LEFT)
+    options_sizer.Add(clear_checkbox, 0, wx.LEFT)
+    dialog.sizer.Add(options_sizer, 0, wx.EXPAND | wx.ALL, 5)
     dialog.FitSizers()
+
     if dialog.ShowModal() == wx.ID_OK:
         filename = dialog.GetPath()
 
