@@ -43,6 +43,10 @@ jobs:
       - name: Install InVesalius requirements
         run: pip install -r requirements.txt
 
+      - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
+        if: ${{ matrix.ai_ready == 1}}
+        run: pip install torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+
       - name: Compile InVesalius Cython parts
         run: |
               python3 setup.py build_ext --inplace
@@ -76,6 +80,20 @@ jobs:
               cp ./bundle_tools/win/app.spec ./  
               pyinstaller app.spec --clean --noconfirm
               mkdir installer
+
+      - name: Download mandible ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
+        with:
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
+          target: ./ai/mandible_jit_ct/
+
+      - name: Download mandible ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
+        with:
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
+          target: ./ai/mandible_jit_ct/
 
       - name: Generate InVesalius installer - win64 ai-ready build
         if: ${{ matrix.ai_ready == 1 }}
@@ -133,18 +151,16 @@ jobs:
         run: |
           dir
 
-
-
-      #- name: Update Nightly Release
-      #  uses: andelf/nightly-release@main
-      #  env:
-      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #  with:
-      #    tag_name: nightly
-      #    name: 'Nightly'
-      #    draft: false
-      #    prerelease: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.is-pre-release) || (github.event_name == 'schedule')}}
-      #    body: |
-      #      This is a nightly release InVesalius.
-      #      It's unstable compared to the official releases, **use it with caution**!
-      #    files: installer/invesalius-3.1.99998_nightly_win64.exe
+      - name: Update Nightly Release
+        uses: andelf/nightly-release@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly
+          name: 'Nightly'
+          draft: false
+          prerelease: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.is-pre-release) || (github.event_name == 'schedule')}}
+          body: |
+            This is a nightly release InVesalius.
+            It's unstable compared to the official releases, **use it with caution**!
+          files: [./invesalius-3.1_nightly_ai-ready_win64.exe, ./invesalius-3.1_nightly_win64.exe]
