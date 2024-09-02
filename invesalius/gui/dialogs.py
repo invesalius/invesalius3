@@ -99,10 +99,10 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.polydata_utils as pu
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
+import invesalius.gui.utils as gui_utils
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
-import invesalius.gui.utils as gui_utils
 from invesalius import inv_paths
 from invesalius.gui.widgets.clut_imagedata import EVT_CLUT_NODE_CHANGED, CLUTImageDataWidget
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
@@ -7485,8 +7485,8 @@ def LoadMarkersFile(filename, load_image_fiducials=False, fiducials_only=False):
     :param load_image_fiducials: If True, loads image fiducials from the markers file.
     :param fiducials_only: If True, only loads fiducials, ignoring all other markers in the file.
     """
-    from invesalius.navigation.navigation import NavigationHub
     from invesalius.data.markers.marker import Marker
+    from invesalius.navigation.navigation import NavigationHub
     markers = NavigationHub().markers
 
     try:
@@ -7541,9 +7541,7 @@ def ImportMarkers():
     markers = NavigationHub().markers
 
     last_directory = ses.Session().GetConfig("last_directory_3d_surface", "")
-    dialog = FileSelectionDialog(
-        _("Load markers"), last_directory, const.WILDCARD_MARKER_FILES
-    )
+    dialog = FileSelectionDialog(_("Load markers"), last_directory, const.WILDCARD_MARKER_FILES)
     overwrite_image_checkbox = wx.CheckBox(dialog, -1, _("Overwrite current image fiducials"))
     clear_checkbox = wx.CheckBox(dialog, -1, _("Clear all previous markers"))
     options_sizer = wx.StaticBoxSizer(wx.VERTICAL, dialog)
