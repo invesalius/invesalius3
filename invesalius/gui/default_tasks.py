@@ -148,6 +148,7 @@ class Panel(wx.Panel):
         Publisher.sendMessage("Close Project")
         Publisher.sendMessage("Disconnect tracker")
         self.gbs.Hide(self.uppertaskpanel)
+        wx.GetApp().ProcessPendingEvents()
         self.uppertaskpanel.Destroy()
         self.uppertaskpanel = UpperTaskPanel(self)
         self.gbs.Add(self.uppertaskpanel, (0, 0), flag=wx.EXPAND)
