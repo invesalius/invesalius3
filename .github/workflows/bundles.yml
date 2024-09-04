@@ -82,18 +82,29 @@ jobs:
           url: "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
           target: ./ai/mandible_jit_ct/
 
-      - name: Download mandible ai weight
+      - name: Download trachea ai weight
         if: ${{ matrix.ai_ready == 1 }}
         uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
         with:
           url: "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
-          target: ./ai/trachea_jit_ct/
+          target: ./ai/trachea_ct/
 
-      - name: Generate InVesalius .exe file
+      - name: Fix trachea name ai weight
+        if: ${{ matrix.ai_ready == 1 }}
         run: |
-              cp ./bundle_tools/win/app.spec ./  
-              pyinstaller app.spec --clean --noconfirm
-              mkdir installer
+              move ./ai/trachea_ct/weights.pt ./ai/trachea_ct/trachea_ct.pt
+
+      - name: Download brain ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
+        with:
+          url: "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
+          target: ./ai/brain_mri_t1/
+
+      - name: Fix trachea name ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        run: |
+              move ./ai/brain_mri_t1/weights.pt ./ai/brain_mri_t1/brain_mri_t1.pt
 
       - name: Generate InVesalius installer - win64 ai-ready build
         if: ${{ matrix.ai_ready == 1 }}
