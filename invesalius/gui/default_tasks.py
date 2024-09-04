@@ -145,17 +145,14 @@ class Panel(wx.Panel):
         else:
             Publisher.sendMessage("Hide target button")
             session.SetConfig("mode", const.MODE_RP)
+        Publisher.sendMessage("Close Project")
+        Publisher.sendMessage("Disconnect tracker")
         self.gbs.Hide(self.uppertaskpanel)
         self.uppertaskpanel.Destroy()
         self.uppertaskpanel = UpperTaskPanel(self)
         self.gbs.Add(self.uppertaskpanel, (0, 0), flag=wx.EXPAND)
         self.Layout()
         self.Refresh()
-        project_status = session.GetConfig("project_status")
-        if project_status != const.PROJECT_STATUS_CLOSED:
-            Publisher.sendMessage("Load project data")
-            Publisher.sendMessage("Enable state project", state=True)
-
 
 # Lower fold panel
 class LowerTaskPanel(wx.Panel):
