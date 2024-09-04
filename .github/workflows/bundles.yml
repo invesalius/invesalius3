@@ -105,13 +105,12 @@ jobs:
         if: ${{ matrix.ai_ready == 1 }}
         run: |
               move ./ai/brain_mri_t1/weights.pt ./ai/brain_mri_t1/brain_mri_t1.pt
-              
+
       - name: Generate InVesalius .exe file
         run: |
               cp ./bundle_tools/win/app.spec ./  
               pyinstaller app.spec --clean --noconfirm
               mkdir installer
-          target: ./ai/trachea_ct/
 
       - name: Generate InVesalius installer - win64 ai-ready build
         if: ${{ matrix.ai_ready == 1 }}
