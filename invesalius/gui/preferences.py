@@ -1643,7 +1643,7 @@ class TrackerTab(wx.Panel):
         session = ses.Session()
         self.n_coils = session.GetConfig("navigation", {}).get("n_coils", 1)
 
-        state = session.GetConfig("robot")
+        state = session.GetConfig("robot", {})
 
         self.robot_ip = state.get("robot_ip", None)
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
