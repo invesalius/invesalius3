@@ -4032,6 +4032,8 @@ class ObjectCalibrationDialog(wx.Dialog):
             # Hide obj_id combobox
             choice_obj_id.Enable(False)
             choice_obj_id.Show(False)
+            name_sizer.Show(False)
+            name_sizer.ShowItems(False)
 
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
