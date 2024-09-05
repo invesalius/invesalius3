@@ -570,7 +570,7 @@ class Navigation(metaclass=Singleton):
             coreg_data = [self.m_change, self.r_stylus]
 
             robot = Robot()
-            if robot.GetCoilName() in self.coil_registrations:
+            if robot.IsReady():
                 # Tell robot at which index (obj_id) to find its coil in (relevant when there are multiple coils)
                 Publisher.sendMessage(
                     "Neuronavigation to Robot: Set coil index",
