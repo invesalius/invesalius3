@@ -142,6 +142,7 @@ class Panel(wx.Panel):
         Publisher.sendMessage("Close Project")
         project_status = session.GetConfig("project_status")
         if project_status != const.PROJECT_STATUS_CLOSED:
+            Publisher.sendMessage("Update Navigation Mode MenuBar")
             return
 
         if status:
