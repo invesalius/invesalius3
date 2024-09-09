@@ -494,8 +494,12 @@ class Navigation(metaclass=Singleton):
             # to vtk-system where stylus points in y-axis
             R = tr.euler_matrix(*np.radians([0, 0, -90]), axes="rxyz")[:3, :3]
 
-            # Rotation from tracker to VTK coordinate system
-            self.r_stylus = up_vtk @ np.linalg.inv(R @ up_trk @ np.linalg.inv(R))
+            # Reflect/flip the orientation in the vtk x-axis
+            x_flip = np.eye(3)
+            x_flip[0] = -x_flip[0]
+
+            # Rotation from tracker to VTK coordinate system (apply x_flip to orient stylus with NIFTI file)
+            self.r_stylus = x_flip @ up_vtk @ np.linalg.inv(R @ up_trk @ np.linalg.inv(R))
             # Save r_stylus to config file
             self.SaveConfig("r_stylus", self.r_stylus.tolist())
             return True
