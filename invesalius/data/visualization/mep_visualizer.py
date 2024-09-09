@@ -30,14 +30,18 @@ from vtkmodules.vtkCommonDataModel import (
     vtkImageData,
     vtkPolyData,
 )
+from vtkmodules.vtkCommonMath import vtkMatrix4x4
+from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
     vtkPolyDataNormals,
     vtkResampleWithDataSet,
 )
+from vtkmodules.vtkFiltersModeling import vtkCollisionDetectionFilter
 from vtkmodules.vtkFiltersPoints import (
     vtkGaussianKernel,
     vtkPointInterpolator,
 )
+from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
@@ -48,6 +52,8 @@ from vtkmodules.vtkRenderingCore import (
 import invesalius.constants as const
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
+import invesalius.data.vtk_utils as vtk_utils
+import invesalius.data.transformations as transformations
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 
@@ -182,6 +188,19 @@ class MEPVisualizer:
         if not points:
             raise ValueError("MEP Visualizer: No point data found")
 
+        markers, skip = self._FilterMarkers(MarkersControl().list)
+        projected_points = vtkPoints()
+
+        for marker in markers:
+            projected_point = self.projection_on_surface(marker)
+            new_point_id = projected_points.InsertNextPoint(
+                projected_point[0], -projected_point[1], projected_point[2]
+            )
+        points = vtkPoints()
+        points.SetPoints(projected_point)
+        points.GetPointData().SetActiveScalars("MEP")
+        points.Modified()
+
         bounds = np.array(self._config_params["bounds"])
         gaussian_sharpness = self._config_params["gaussian_sharpness"]
         gaussian_radius = self._config_params["gaussian_radius"]
@@ -199,7 +218,7 @@ class MEPVisualizer:
 
         interpolator = vtkPointInterpolator()
         interpolator.SetInputData(box)
-        interpolator.SetSourceData(points)
+        interpolator.SetSourceData(projected_points)
         interpolator.SetKernel(gaussian_kernel)
 
         resample = vtkResampleWithDataSet()
@@ -276,6 +295,61 @@ class MEPVisualizer:
         skip = coil_markers == self.marker_storage
 
         return coil_markers, skip
+
+    def collision_detection(self, m_point):
+        sphere0 = vtkSphereSource()
+        sphere0.SetRadius(2)
+        sphere0.SetPhiResolution(31)
+        sphere0.SetThetaResolution(31)
+        sphere0.SetCenter(0.0, 0, 0)
+        matrix1 = vtkMatrix4x4()
+        transform0 = vtkTransform()
+        t_translation = transformations.translation_matrix([0, 0, 0])
+        m_point_t = m_point @ t_translation
+        transform0.SetMatrix(vtk_utils.numpy_to_vtkMatrix4x4(m_point_t))
+
+        collide = vtkCollisionDetectionFilter()
+        collide.SetInputConnection(0, sphere0.GetOutputPort())
+        collide.SetTransform(0, transform0)
+        collide.SetInputData(1, self.surface.GetMapper().GetInput())
+        collide.SetMatrix(1, matrix1)
+        collide.SetBoxTolerance(0.0)
+        collide.SetCellTolerance(0.0)
+        collide.SetNumberOfCellsPerNode(2)
+        collide.SetCollisionModeToFirstContact()
+        collide.GenerateScalarsOn()
+
+        # Visualize
+        mapper1 = vtkPolyDataMapper()
+        mapper1.SetInputConnection(collide.GetOutputPort(0))
+        mapper1.ScalarVisibilityOff()
+        actor1 = vtkActor()
+        actor1.SetMapper(mapper1)
+        actor1.GetProperty().BackfaceCullingOn()
+        actor1.SetUserTransform(transform0)
+        init_position = actor1.GetCenter()
+
+        for i in range(0, 1000):
+            t_translation = transformations.translation_matrix([0, 0, -i / 3])
+            m_point_t = m_point @ t_translation
+            transform0.SetMatrix(vtk_utils.numpy_to_vtkMatrix4x4(m_point_t))
+            transform0.Update()
+            collide.Update()
+            if collide.GetNumberOfContacts() > 0:
+                return actor1.GetCenter()
+        print("no collision")
+        return init_position
+
+    def projection_on_surface(self, marker):
+        print("projecting target on brain surface")
+        a, b, g = np.radians(marker.orientation[:3])
+        r_ref = transformations.euler_matrix(a, b, g, axes='sxyz')
+        t_ref = transformations.translation_matrix([marker.position[0], marker.position[1], marker.position[2]])
+        m_point = transformations.concatenate_matrices(t_ref, r_ref)
+        m_point[1, -1] = -m_point[1, -1]
+        new_coord = self.collision_detection(m_point)
+
+        return new_coord
 
     def UpdateMEPPoints(self):
         """
