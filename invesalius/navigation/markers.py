@@ -22,7 +22,7 @@ import uuid
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.marker_transformator import MarkerTransformator
-from invesalius.navigation.robot import Robot, RobotObjective
+from invesalius.navigation.robot import RobotObjective
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -33,6 +33,12 @@ class MarkersControl(metaclass=Singleton):
         self.nav_status = False
         self.transformator = MarkerTransformator()
         self.robot = robot
+
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
+
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
 
     def SaveState(self):
         state = [marker.to_dict() for marker in self.list]
@@ -115,6 +121,17 @@ class MarkersControl(metaclass=Singleton):
         for idx, m in enumerate(self.list):
             m.marker_id = idx
 
+        self.SaveState()
+
+    def AddMultiple(self, markers_list):
+        Publisher.sendMessage("Set markers list rendering", render=False)
+        for marker in markers_list:
+            self.AddMarker(marker, render=False)
+
+        Publisher.sendMessage("Set markers list rendering", render=True)
+        if not self.nav_status:
+            Publisher.sendMessage("Render volume viewer")
+        Publisher.sendMessage("Update UI for refine tab")
         self.SaveState()
 
     def SetTarget(self, marker_id, check_for_previous=True):
