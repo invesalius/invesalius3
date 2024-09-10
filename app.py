@@ -520,7 +520,7 @@ def init():
     if hasattr(sys, "frozen") and sys.platform.startswith("win"):
         # Click in the .inv3 file support
         root = winreg.HKEY_CLASSES_ROOT
-        key = "InVesalius 3.1\InstallationDir"
+        key = r"InVesalius 3.1\InstallationDir"
         hKey = winreg.OpenKey(root, key, 0, winreg.KEY_READ)
         value, type_ = winreg.QueryValueEx(hKey, "")
         path = os.path.join(value, "dist")

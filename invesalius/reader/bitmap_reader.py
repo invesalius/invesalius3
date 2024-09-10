@@ -127,7 +127,7 @@ class BitmapFiles:
         self.bitmapfiles.append(bmp)
 
     def Sort(self, x):
-        c_re = re.compile("\d+")
+        c_re = re.compile(r"\d+")
         if len(c_re.findall(x[6])) > 0:
             return [int(i) for i in c_re.findall(x[6])]
         else:
