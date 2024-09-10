@@ -3888,8 +3888,10 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.pedal_connector = pedal_connector
 
         self.tracker_id = tracker.GetTrackerId()
-        self.show_sensor_options: bool = self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS
         self.obj_id = 2  # the index of the object in coord_raw
+        self.show_sensor_options: bool = (
+            self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS and self.obj_id == 0
+        )
         self.coil_path = None
         self.polydata = None
 
@@ -3927,17 +3929,22 @@ class ObjectCalibrationDialog(wx.Dialog):
         tooltip = _(
             "Choose the coil index in coord_raw. Choose 0 for static mode, 2 for dynamic mode and 3 onwards for multiple coils."
         )
+
+        # Static mode obj_id=0 (case where stylus is attached to coil) is only feasible for single coil-mode, so hide it in multicoil mode
+        choices = ["0"] if self.n_coils == 1 else []
+        choices += [str(i) for i in range(2, max_obj_id)]
+
         choice_obj_id = wx.ComboBox(
             self,
             -1,
             "",
             size=wx.Size(90, 23),
-            choices=["0"] + [str(i) for i in range(2, max_obj_id)],
+            choices=choices,
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
         choice_obj_id.SetToolTip(tooltip)
         choice_obj_id.Bind(wx.EVT_COMBOBOX, self.OnChooseObjID)
-        choice_obj_id.SetSelection(1)
+        choice_obj_id.SetStringSelection(str(self.obj_id))
         choice_obj_id.Enable(True)
 
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
@@ -4259,21 +4266,16 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ResetObjectFiducials()
 
     def OnChooseObjID(self, evt: wx.CommandEvent) -> None:
-        # When ref mode is changed the tracker coordinates are set to nan
-        # This is for Polhemus FASTRAK wrapper, where the sensor attached to the object can be the stylus (Static
-        # reference - Selection 0 - index 0 for coordinates) or can be a 3rd sensor (Dynamic reference - Selection 1 -
-        # index 2 for coordinates)
+        self.obj_id = int(evt.GetEventObject().GetStringSelection())
 
-        if evt.GetSelection() == 0:
-            self.obj_id = 0
-            self.choice_sensor.Show(False)
-        else:
-            self.obj_id = evt.GetSelection() + 1
-            self.choice_sensor.Show(self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS)
+        # choice_sensor is only shown for relevant trackers like Polhemus FASTRAK
+        # If obj_id=0, (ie. the stylus is attached to the coil), the sensor is not used, so hide this
+        self.choice_sensor.Show(
+            self.obj_id == 0 and self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS
+        )
 
+        # When obj_id is changed the object fiducials are reset
         self.ResetObjectFiducials()
-
-        # Used to update choice sensor controls
         self.Layout()
 
     def OnChoiceFTSensor(self, evt: wx.CommandEvent) -> None:

@@ -1189,7 +1189,9 @@ class ObjectTab(wx.Panel):
                     ),
                     _("InVesalius 3"),
                 )
-                event.GetEventObject().SetValue(False)  # Unpress the coil-button
+                self.coil_btns[name][0].SetValue(
+                    False
+                )  # Unpress the coil-button since its selection just failed
                 return
 
             # Check that the tracker used to configure the coil matches the currently used tracker
@@ -1200,7 +1202,7 @@ class ObjectTab(wx.Panel):
                     ),
                     _("InVesalius 3"),
                 )
-                event.GetEventObject().SetValue(False)  # Unpress the button
+                self.coil_btns[name][0].SetValue(False)  # Unpress the button
                 return
 
             # Press the coil button here in case selection was done via code without pressing button
@@ -1234,6 +1236,8 @@ class ObjectTab(wx.Panel):
 
     def OnRightClickCoil(self, event, name):
         def DeleteCoil(event, name):
+            # Unselect the coil first
+            self.OnSelectCoil(name, select=False)
             del self.coil_registrations[name]
 
             # Remove the coil-button
@@ -1311,11 +1315,16 @@ class ObjectTab(wx.Panel):
                             coil_btn.SetValue(False)
                             self.OnSelectCoil(name=coil_name, select=False)
 
-                        if self.navigation.n_coils == 1:
-                            # Select the coil that was created for navigation
+                        # Select the coil that was just created (if all coils have not been selected)
+                        if len(self.navigation.coil_registrations) < self.navigation.n_coils:
                             self.OnSelectCoil(name=coil_name, select=True)
-                            # Hide the coil-button
-                            coil_btn.Show(False)
+                        else:
+                            coil_btn.Enable(
+                                False
+                            )  # All coils have been selected so disable the new button
+
+                        # Show button only in multicoil mode
+                        coil_btn.Show(self.navigation.n_coils > 1)
 
                     self.Layout()
 

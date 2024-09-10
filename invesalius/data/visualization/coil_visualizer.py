@@ -271,8 +271,9 @@ class CoilVisualizer:
                 self.renderer.RemoveActor(coil["center_actor"])
             self.coils = {}
 
-        self.interactor.Render()
         # self.vector_field_assembly.SetVisibility(0)
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def ResetCoilVisualizer(self, n_coils):
         self.RemoveCoil()  # Remove all coils

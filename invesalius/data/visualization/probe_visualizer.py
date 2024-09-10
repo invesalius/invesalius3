@@ -27,13 +27,18 @@ class ProbeVisualizer:
     def __bind_events(self):
         Publisher.subscribe(self.ShowProbe, "Show probe in viewer volume")
         Publisher.subscribe(self.UpdateProbePose, "Update probe pose")
+        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+
+    def OnNavigationStatus(self, nav_status, vis_status):
+        self.is_navigating = nav_status
 
     def ShowProbe(self, state):
         self.show_probe = state
 
         if self.probe_actor:
             self.probe_actor.SetVisibility(self.show_probe)
-            self.interactor.Render()
+            if not self.is_navigating:
+                self.interactor.Render()
 
     def AddProbeActor(self, probe_path):
         vtk_colors = vtk.vtkNamedColors()
