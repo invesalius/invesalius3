@@ -21,9 +21,8 @@ class CoilVisualizer:
     # Color for the marker for target when the coil at the target.
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d("Green")
 
-    def __init__(self, renderer, interactor, actor_factory, vector_field_visualizer):
+    def __init__(self, renderer, actor_factory, vector_field_visualizer):
         self.renderer = renderer
-        self.interactor = interactor
         self.tracker = Tracker()
 
         # Keeps track of whether tracker fiducials have been set.
@@ -95,7 +94,7 @@ class CoilVisualizer:
 
         # If not navigating, render the scene.
         if not self.is_navigating:
-            self.interactor.Render()
+            Publisher.sendMessage("Render volume viewer")
 
     def SetCoilAtTarget(self, state):
         self.coil_at_target = state
@@ -118,14 +117,14 @@ class CoilVisualizer:
         if coil_name is None:  # Show/hide all coils
             for coil in self.coils.values():
                 coil["actor"].SetVisibility(state)
-                coil["center_actor"].SetVisibility(state)
+                coil["center_actor"].SetVisibility(True)  # Always show the center donut actor
             if self.target_coil_actor is not None:  # LUKATODO: target mode...
-                self.target_coil_actor.SetVisibility(state)
+                self.target_coil_actor.SetVisibility(True)  # Keep target visible for now
         elif (coil := self.coils.get(coil_name, None)) is not None:
             # Just toggle the visibility when dealing with specific coils
             new_state = not coil["actor"].GetVisibility()
             coil["actor"].SetVisibility(new_state)
-            coil["center_actor"].SetVisibility(new_state)
+            coil["center_actor"].SetVisibility(True)  # Always show the center donut actor
 
             # If all coils are hidden/shown, update the color of Show-coil button
             coils_visible = [coil["actor"].GetVisibility() for coil in self.coils.values()]
@@ -137,7 +136,7 @@ class CoilVisualizer:
         # self.vector_field_assembly.SetVisibility(state) # LUKATODO: Keep this hidden for now
 
         if not self.is_navigating:
-            self.interactor.Render()
+            Publisher.sendMessage("Render volume viewer")
 
     def AddTargetCoil(self, m_target):
         self.RemoveTargetCoil()
@@ -190,7 +189,7 @@ class CoilVisualizer:
         self.renderer.AddActor(self.target_coil_actor)
 
         if not self.is_navigating:
-            self.interactor.Render()
+            Publisher.sendMessage("Render volume viewer")
 
     def RemoveTargetCoil(self):
         if self.target_coil_actor is None:
@@ -273,7 +272,7 @@ class CoilVisualizer:
 
         # self.vector_field_assembly.SetVisibility(0)
         if not self.is_navigating:
-            self.interactor.Render()
+            Publisher.sendMessage("Render volume viewer")
 
     def ResetCoilVisualizer(self, n_coils):
         self.RemoveCoil()  # Remove all coils

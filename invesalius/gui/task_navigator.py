@@ -1074,7 +1074,7 @@ class StylusPage(wx.Panel):
         )
 
         if marker_visibilities[0] and marker_visibilities[1]:  # if probe and head are visible
-            if self.navigation.SetStylusOrientation(coord_raw) and not self.done:
+            if self.navigation.OnRecordStylusOrientation(coord_raw) and not self.done:
                 # if successfully created r_stylus in navigation for the first time: make the illustration green to show success
                 self.done = True
                 self.help.Destroy()  # show a colored (green) bitmap as opposed to grayscale
@@ -2135,7 +2135,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
 
         # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
-        self.markers.LoadState()
+        try:
+            self.markers.LoadState()
+        except:
+            self.session.DeleteStateFile()  # Delete state file if it is erroneous
 
         # Add all lines into main sizer
         group_sizer = wx.BoxSizer(wx.VERTICAL)

@@ -12,9 +12,8 @@ class ProbeVisualizer:
     A class for visualizing probe in the volume viewer.
     """
 
-    def __init__(self, renderer, interactor):
+    def __init__(self, renderer):
         self.renderer = renderer
-        self.interactor = interactor
 
         self.probe_actor = None
         self.probe_path = os.path.join(inv_paths.OBJ_DIR, "stylus.stl")
@@ -38,7 +37,7 @@ class ProbeVisualizer:
         if self.probe_actor:
             self.probe_actor.SetVisibility(self.show_probe)
             if not self.is_navigating:
-                self.interactor.Render()
+                Publisher.sendMessage("Render volume viewer")
 
     def AddProbeActor(self, probe_path):
         vtk_colors = vtk.vtkNamedColors()

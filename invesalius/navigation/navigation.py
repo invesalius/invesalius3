@@ -476,7 +476,7 @@ class Navigation(metaclass=Singleton):
             self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T, shear=False, scale=False
         )
 
-    def SetStylusOrientation(self, coord_raw):
+    def OnRecordStylusOrientation(self, coord_raw):
         if self.m_change is not None:
             m_probe = dcr.compute_marker_transformation(coord_raw, 0)
 

@@ -32,7 +32,10 @@ class IterativeClosestPoint(metaclass=Singleton):
         self.m_icp = None
         self.icp_fre = None
 
-        self.LoadState()
+        try:
+            self.LoadState()
+        except:
+            ses.Session().DeleteStateFile()
 
     def SaveState(self):
         m_icp = self.m_icp.tolist() if self.m_icp is not None else None

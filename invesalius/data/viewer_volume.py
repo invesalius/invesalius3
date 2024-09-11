@@ -309,12 +309,11 @@ class Viewer(wx.Panel):
         # An object to manage visualizing coils in the 3D viewer.
         self.coil_visualizer = CoilVisualizer(
             renderer=self.ren,
-            interactor=self.interactor,
             actor_factory=self.actor_factory,
             vector_field_visualizer=self.vector_field_visualizer,
         )
 
-        self.probe_visualizer = ProbeVisualizer(self.ren, self.interactor)
+        self.probe_visualizer = ProbeVisualizer(self.ren)
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()

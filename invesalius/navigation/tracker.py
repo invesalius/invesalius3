@@ -51,7 +51,10 @@ class Tracker(metaclass=Singleton):
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
-        self.LoadState()
+        try:
+            self.LoadState()
+        except:
+            ses.Session().DeleteStateFile()
 
     def SaveState(self):
         tracker_id = self.tracker_id

@@ -1260,7 +1260,7 @@ class ObjectTab(wx.Panel):
             (lambda event, name=name: self.OnSaveCoilToOBR(event, coil_name=name)),
             save_coil,
         )
-        self.PopupMenu(menu, event.GetPosition())
+        self.PopupMenu(menu)
         menu.Destroy()
 
     def OnCreateNewCoil(self, event=None):
