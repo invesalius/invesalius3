@@ -1697,7 +1697,6 @@ class ControlPanel(wx.Panel):
             and self.target_selected
             and self.target_mode
             and self.robot.IsConnected()
-            and self.robot.IsReady()
         )
         self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
 

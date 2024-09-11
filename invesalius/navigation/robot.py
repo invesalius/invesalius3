@@ -156,7 +156,7 @@ class Robot(metaclass=Singleton):
         return self.is_robot_connected
 
     def IsReady(self):  # LUKATODO: use this check before enabling robot for navigation...
-        self.IsConnected() and (self.coil_name in self.navigation.coil_registrations)
+        return self.IsConnected() and (self.coil_name in self.navigation.coil_registrations)
 
     def SetRobotIP(self, data):
         if data is not None:
@@ -187,7 +187,7 @@ class Robot(metaclass=Singleton):
 
         navigation = self.navigation
         # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
-        if navigation.m_change is None or navigation.obj_datas is not None:
+        if navigation.m_change is None or navigation.obj_datas is None:
             return False
 
         # Compute the target in tracker coordinate system.
