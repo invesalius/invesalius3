@@ -574,18 +574,18 @@ def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
     data.shape = shape
     return data
 
-def get_LUT_value_normalized(img, a_min, a_max,\
-                                b_min=0.0, b_max=1.0, clip=True):
-        #based on https://docs.monai.io/en/latest/_modules/monai/transforms/intensity/array.html#ScaleIntensity
-        
-        print(a_min, a_max, b_min, b_max, clip)
-        img = (img - a_min) / (a_max - a_min)
-        img = img * (b_max - b_min) + b_min
-        
-        if clip:
-            img = np.clip(img, b_min, b_max)
-        
-        return img
+
+def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True):
+    # based on https://docs.monai.io/en/latest/_modules/monai/transforms/intensity/array.html#ScaleIntensity
+
+    print(a_min, a_max, b_min, b_max, clip)
+    img = (img - a_min) / (a_max - a_min)
+    img = img * (b_max - b_min) + b_min
+
+    if clip:
+        img = np.clip(img, b_min, b_max)
+
+    return img
 
 
 def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
@@ -721,8 +721,9 @@ def random_sample_sphere(radius=3, size=100):
     xyz = scale * uvw
     return xyz
 
+
 def get_largest_connected_component(image):
     labels = label(image)
-    assert( labels.max() != 0 )
-    largest_component = labels == np.argmax(np.bincount(labels.flat)[1:])+1
+    assert labels.max() != 0
+    largest_component = labels == np.argmax(np.bincount(labels.flat)[1:]) + 1
     return largest_component

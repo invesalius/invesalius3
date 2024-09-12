@@ -97,7 +97,6 @@ class Session(metaclass=Singleton):
 
     def DeleteStateFile(self) -> None:
         if os.path.exists(STATE_PATH):
-
             os.remove(STATE_PATH)
             print("Successfully deleted state file.")
         else:

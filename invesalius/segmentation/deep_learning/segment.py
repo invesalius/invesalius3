@@ -525,6 +525,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
                 self.patch_size,
             )
 
+
 class ImplantCTSegmentProcess(SegmentProcess):
     def __init__(
         self,
@@ -553,7 +554,7 @@ class ImplantCTSegmentProcess(SegmentProcess):
             apply_wwwl=apply_wwwl,
             window_width=window_width,
             window_level=window_level,
-            patch_size=patch_size
+            patch_size=patch_size,
         )
 
         self.threshold = threshold
@@ -563,14 +564,12 @@ class ImplantCTSegmentProcess(SegmentProcess):
         self.method = method
 
         if self.method == 1:
-            self.torch_weights_file_name = 'implant_jit_ct_gray.pt'
+            self.torch_weights_file_name = "implant_jit_ct_gray.pt"
         else:
-            self.torch_weights_file_name = 'implant_jit_ct_binary.pt'
+            self.torch_weights_file_name = "implant_jit_ct_binary.pt"
 
         self.torch_weights_url = ""
-        self.torch_weights_hash = (
-            ""
-        )
+        self.torch_weights_hash = ""
 
     def _run_segmentation(self):
         image = np.memmap(
@@ -580,21 +579,21 @@ class ImplantCTSegmentProcess(SegmentProcess):
             mode="r",
         )
 
-        #FIX: to remove
-        image = np.flip(image,2)
+        # FIX: to remove
+        image = np.flip(image, 2)
 
         if self.method == 1:
-            #To use gray scale AI weight
+            # To use gray scale AI weight
             image = imagedata_utils.get_LUT_value_normalized(image, 700, 4000)
         else:
-            #To binary to use binary AI weight
+            # To binary to use binary AI weight
             image = image.copy()
             image[image < 300] = 0
             image[image >= 300] = 1
 
-            #Select only largest connected component
+            # Select only largest connected component
             image = imagedata_utils.get_largest_connected_component(image)
-            
+
             image = image.astype("float")
 
         probability_array = np.memmap(
@@ -603,20 +602,14 @@ class ImplantCTSegmentProcess(SegmentProcess):
             shape=self._image_shape,
             mode="r+",
         )
-        comm_array = np.memmap(
-            self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
-        )
+        comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
 
         if self.backend.lower() == "pytorch":
             if not self.torch_weights_file_name:
                 raise FileNotFoundError("Weights file not specified.")
-            folder = inv_paths.MODELS_DIR.joinpath(
-                self.torch_weights_file_name.split(".")[0]
-            )
+            folder = inv_paths.MODELS_DIR.joinpath(self.torch_weights_file_name.split(".")[0])
             system_state_dict_file = folder.joinpath(self.torch_weights_file_name)
-            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(
-                self.torch_weights_file_name
-            )
+            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(self.torch_weights_file_name)
             if system_state_dict_file.exists():
                 weights_file = system_state_dict_file
             elif user_state_dict_file.exists():
@@ -650,6 +643,5 @@ class ImplantCTSegmentProcess(SegmentProcess):
                 self.overlap,
                 probability_array,
                 comm_array,
-                self.patch_size
+                self.patch_size,
             )
-

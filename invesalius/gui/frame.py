@@ -768,11 +768,11 @@ class Frame(wx.Frame):
             logging_file = values[const.LOGFILE]
             console_logging = values[const.CONSOLE_LOGGING]
             console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
-            logging  = values[const.LOGGING]
-            logging_level  = values[const.LOGGING_LEVEL]
-            append_log_file  = values[const.APPEND_LOG_FILE]
+            logging = values[const.LOGGING]
+            logging_level = values[const.LOGGING_LEVEL]
+            append_log_file = values[const.APPEND_LOG_FILE]
             logging_file = values[const.LOGFILE]
-            
+
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
             session.SetConfig("language", language)
@@ -783,10 +783,10 @@ class Frame(wx.Frame):
             session.SetConfig("logging_file", logging_file)
             session.SetConfig("console_logging", console_logging)
             session.SetConfig("console_logging_level", console_logging_level)
-            session.SetConfig('do_logging', logging)
-            session.SetConfig('logging_level', logging_level)
-            session.SetConfig('append_log_file', append_log_file)
-            session.SetConfig('logging_file', logging_file)
+            session.SetConfig("do_logging", logging)
+            session.SetConfig("logging_level", logging_level)
+            session.SetConfig("append_log_file", append_log_file)
+            session.SetConfig("logging_file", logging_file)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
@@ -996,19 +996,22 @@ class Frame(wx.Frame):
 
     def OnImplantCTSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog
+
         if deep_learning_seg_dialog.HAS_TORCH:
             dlg = deep_learning_seg_dialog.ImplantSegmenterDialog(self)
             dlg.Show()
         else:
-            dlg = wx.MessageDialog(self,
-                                   _("It's not possible to run implant prediction because your system doesn't have the following modules installed:") \
-                                   + " Torch" ,
-                                   "InVesalius 3 - Implant prediction",
-                                   wx.ICON_INFORMATION | wx.OK)
+            dlg = wx.MessageDialog(
+                self,
+                _(
+                    "It's not possible to run implant prediction because your system doesn't have the following modules installed:"
+                )
+                + " Torch",
+                "InVesalius 3 - Implant prediction",
+                wx.ICON_INFORMATION | wx.OK,
+            )
             dlg.ShowModal()
             dlg.Destroy()
-
-
 
     def OnMandibleCTSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog

@@ -543,28 +543,48 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
             has_torch=True,
             has_plaidml=False,
             has_theano=False,
-            segmenter = segment.ImplantCTSegmentProcess,
+            segmenter=segment.ImplantCTSegmentProcess,
         )
 
     def _init_gui(self):
         super()._init_gui()
 
-        self.patch_txt = wx.StaticText(self,label="Patch size:")
+        self.patch_txt = wx.StaticText(self, label="Patch size:")
 
-        patch_size = ["48", "96", "160", "192", "240", "288",\
-                      "320", "336", "384", "432", "480", "528"] 
-        
-        self.patch_cmb = wx.ComboBox(self, choices=patch_size,value="192") 
+        patch_size = [
+            "48",
+            "96",
+            "160",
+            "192",
+            "240",
+            "288",
+            "320",
+            "336",
+            "384",
+            "432",
+            "480",
+            "528",
+        ]
+
+        self.patch_cmb = wx.ComboBox(self, choices=patch_size, value="192")
 
         self.path_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5) 
-        self.path_sizer.Add(self.patch_cmb, 2, wx.EXPAND | wx.ALL, 5) 
+        self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5)
+        self.path_sizer.Add(self.patch_cmb, 2, wx.EXPAND | wx.ALL, 5)
 
-        self.method = wx.RadioBox(self, -1, "Method", wx.DefaultPosition, wx.DefaultSize,\
-                        ["Binary", "Gray"], 2, wx.HORIZONTAL|wx.ALIGN_LEFT|wx.NO_BORDER)
+        self.method = wx.RadioBox(
+            self,
+            -1,
+            "Method",
+            wx.DefaultPosition,
+            wx.DefaultSize,
+            ["Binary", "Gray"],
+            2,
+            wx.HORIZONTAL | wx.ALIGN_LEFT | wx.NO_BORDER,
+        )
 
         self.method_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.method_sizer.Add(self.method, 2, wx.ALL, 5) 
+        self.method_sizer.Add(self.method, 2, wx.ALL, 5)
 
         self.Layout()
         self.Centre()
@@ -622,7 +642,7 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
                 method=method,
                 patch_size=patch_size,
                 resize_by_spacing=True,
-                image_spacing=slc.Slice().spacing
+                image_spacing=slc.Slice().spacing,
             )
             self.ps.start()
         except (multiprocessing.ProcessError, OSError, ValueError) as err:
@@ -630,9 +650,7 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
             self.HideProgress()
             dlg = dialogs.ErrorMessageBox(
                 None,
-                "It was not possible to start brain segmentation because:"
-                + "\n"
-                + str(err),
+                "It was not possible to start brain segmentation because:" + "\n" + str(err),
                 "Brain segmentation error",
                 #  wx.ICON_ERROR | wx.OK,
             )
