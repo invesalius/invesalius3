@@ -57,7 +57,7 @@ Source: ..\..\dist\app\*; DestDir: {app}\dist; Flags: ignoreversion recursesubdi
 ;Only the plugin folder should remain in "_internal" after installation.
 Source: ..\..\plugins\*; DestDir: {app}\dist\_internal\plugins; Flags: ignoreversion recursesubdirs createallsubdirs
 
-Source: ..\..\ai\*; DestDir: {app}\dist\ai; Flags: ignoreversion recursesubdirs createallsubdirs
+;Source: ..\..\ai\*; DestDir: {app}\dist\ai; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ..\..\locale\*; DestDir: {app}\dist\locale; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ..\..\icons\*; DestDir: {app}\dist\icons; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ..\..\presets\*; DestDir: {app}\dist\presets; Flags: ignoreversion recursesubdirs createallsubdirs
