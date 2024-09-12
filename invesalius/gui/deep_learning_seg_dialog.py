@@ -549,9 +549,6 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
     def _init_gui(self):
         super()._init_gui()
 
-        self.chk_apply_resize_by_spacing = wx.CheckBox(self, wx.ID_ANY, _("Resize by spacing"))
-        self.chk_apply_resize_by_spacing.SetValue(True)
-
         self.patch_txt = wx.StaticText(self,label="Patch size:")
 
         patch_size = ["48", "96", "160", "192", "240", "288",\
@@ -563,13 +560,19 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
         self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5) 
         self.path_sizer.Add(self.patch_cmb, 2, wx.EXPAND | wx.ALL, 5) 
 
+        self.method = wx.RadioBox(self, -1, "Method", wx.DefaultPosition, wx.DefaultSize,\
+                        ["Binary", "Gray"], 2, wx.HORIZONTAL|wx.ALIGN_LEFT|wx.NO_BORDER)
+
+        self.method_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.method_sizer.Add(self.method, 2, wx.ALL, 5) 
+
         self.Layout()
         self.Centre()
 
     def _do_layout(self):
         super()._do_layout()
-        self.main_sizer.Insert(8, self.chk_apply_resize_by_spacing, 0, wx.EXPAND | wx.ALL, 5)
-        self.main_sizer.Insert(9, self.path_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        self.main_sizer.Insert(8, self.path_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        self.main_sizer.Insert(9, self.method_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
     def OnSegment(self, evt):
         self.ShowProgress()
@@ -591,13 +594,12 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
         prob_threshold = self.sld_threshold.GetValue() / 100.0
-        resize_by_spacing = self.chk_apply_resize_by_spacing.GetValue()
+        method = self.method.GetSelection()
 
         self.btn_close.Disable()
         self.btn_stop.Enable()
         self.btn_segment.Disable()
         self.chk_new_mask.Disable()
-        self.chk_apply_resize_by_spacing.Disable()
 
         window_width = slc.Slice().window_width
         window_level = slc.Slice().window_level
@@ -617,8 +619,9 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
                 apply_wwwl,
                 window_width,
                 window_level,
+                method=method,
                 patch_size=patch_size,
-                resize_by_spacing=resize_by_spacing,
+                resize_by_spacing=True,
                 image_spacing=slc.Slice().spacing
             )
             self.ps.start()
@@ -637,4 +640,3 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
 
     def OnStop(self, evt):
         super().OnStop(evt)
-        self.chk_apply_resize_by_spacing.Enable()

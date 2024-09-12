@@ -537,6 +537,7 @@ class ImplantCTSegmentProcess(SegmentProcess):
         apply_wwwl=False,
         window_width=4000,
         window_level=700,
+        method=0,
         patch_size=192,
         threshold=150,
         resize_by_spacing=True,
@@ -559,8 +560,13 @@ class ImplantCTSegmentProcess(SegmentProcess):
         self.resize_by_spacing = resize_by_spacing
         self.image_spacing = image_spacing
         self.needed_spacing = (1.0, 1.0, 1.0)
+        self.method = method
 
-        self.torch_weights_file_name = 'implant_jit_ct.pt'
+        if self.method == 1:
+            self.torch_weights_file_name = 'implant_jit_ct_gray.pt'
+        else:
+            self.torch_weights_file_name = 'implant_jit_ct_binary.pt'
+
         self.torch_weights_url = ""
         self.torch_weights_hash = (
             ""
@@ -574,19 +580,22 @@ class ImplantCTSegmentProcess(SegmentProcess):
             mode="r",
         )
 
-        #if self.apply_wwwl:
-        #    print("Vai aplicar......................")
-        #    print(self.window_level, self.window_width)
-        #    self.window_level = 700
-        #    self.window_width = 4000
-        #    image = imagedata_utils.get_LUT_value(image, self.window_width,\
-        #        self.window_level)
-
         #FIX: to remove
         image = np.flip(image,2)
 
-        #FIX: To improve
-        image = imagedata_utils.get_LUT_value_normalized(image, 700, 4000)
+        if self.method == 1:
+            #To use gray scale AI weight
+            image = imagedata_utils.get_LUT_value_normalized(image, 700, 4000)
+        else:
+            #To binary to use binary AI weight
+            image = image.copy()
+            image[image < 300] = 0
+            image[image >= 300] = 1
+
+            #Select only largest connected component
+            image = imagedata_utils.get_largest_connected_component(image)
+            
+            image = image.astype("float")
 
         probability_array = np.memmap(
             self._prob_array_filename,

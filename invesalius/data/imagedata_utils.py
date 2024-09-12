@@ -27,6 +27,7 @@ import imageio
 import numpy as np
 from scipy.ndimage import shift, zoom
 from skimage.color import rgb2gray
+from skimage.measure import label
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkFiltersCore import vtkImageAppend
 from vtkmodules.vtkImagingCore import vtkExtractVOI, vtkImageClip, vtkImageResample
@@ -719,3 +720,9 @@ def random_sample_sphere(radius=3, size=100):
     scale = radius * np.divide(r, norm)
     xyz = scale * uvw
     return xyz
+
+def get_largest_connected_component(image):
+    labels = label(image)
+    assert( labels.max() != 0 )
+    largest_component = labels == np.argmax(np.bincount(labels.flat)[1:])+1
+    return largest_component
