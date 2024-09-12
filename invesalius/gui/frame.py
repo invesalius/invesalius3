@@ -114,6 +114,7 @@ class Frame(wx.Frame):
         # self.SetSize(wx.Size(1024, 748))
 
         self._show_navigator_message = True
+        self.edit_data_notebook_label = False
 
         # to control check and unckeck of menu view -> interpolated_slices
         main_menu = MenuBar(self)
@@ -176,6 +177,16 @@ class Frame(wx.Frame):
         # Bind global key events.
         self.Bind(wx.EVT_CHAR_HOOK, self.OnGlobalKey)
 
+        # Bind label edit events.
+        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnEditLabel)
+        self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
+
+    def OnEditLabel(self, evt):
+        if evt.GetEventType() == wx.wxEVT_LIST_BEGIN_LABEL_EDIT:
+            self.edit_data_notebook_label = True
+        if evt.GetEventType() == wx.wxEVT_LIST_END_LABEL_EDIT or evt.IsEditCancelled():
+            self.edit_data_notebook_label = False
+
     def OnGlobalKey(self, event):
         """
         Handle all key events at a global level.
@@ -183,12 +194,12 @@ class Frame(wx.Frame):
         keycode = event.GetKeyCode()
 
         # If the key is a move marker key, publish a message to move the marker.
-        if keycode in const.MOVEMENT_KEYCODES:
+        if keycode in const.MOVEMENT_KEYCODES and not self.edit_data_notebook_label:
             Publisher.sendMessage("Move marker by keyboard", keycode=keycode)
             return
 
         # Similarly with 'Del' key; publish a message to delete selected markers.
-        if keycode == wx.WXK_DELETE:
+        if keycode == wx.WXK_DELETE and not self.edit_data_notebook_label:
             Publisher.sendMessage("Delete selected markers")
             return
 
