@@ -86,14 +86,14 @@ jobs:
         if: ${{ matrix.ai_ready == 1 }}
         uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
         with:
-          url: "https://github.com/invesalius/weights/blob/main/cranioplasty_jit_ct_binary/cranioplasty_jit_ct_binary.pt"
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_binary/cranioplasty_jit_ct_binary.pt"
           target: ./ai/cranioplasty_jit_ct_binary/
 
       - name: Download cranioplasty gray ai weight
         if: ${{ matrix.ai_ready == 1 }}
         uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
         with:
-          url: "https://github.com/invesalius/weights/blob/main/cranioplasty_jit_ct_gray/cranioplasty_jit_ct_gray.pt"
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_gray/cranioplasty_jit_ct_gray.pt"
           target: ./ai/cranioplasty_jit_ct_gray/
 
       - name: Download trachea ai weight
