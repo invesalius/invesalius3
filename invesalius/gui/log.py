@@ -46,7 +46,8 @@ actionDictionary00 = {
 class ConsoleLogHandler(logging.StreamHandler):
     def __init__(self, textctrl):
         logging.StreamHandler.__init__(self)
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        #formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - (%(funcName)s) - %(message)s")
+        formatter = logging.Formatter("%(asctime)s - %(message)s")
         self.setFormatter(formatter)
         self.textctrl = textctrl
 
@@ -127,7 +128,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
             "console_logging_level": 0,
             "base_logging_level": logging.DEBUG,
             #'logging_format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            "logging_format": "%(asctime)s - %(levelname)s - %(message)s",
+            "logging_format": "%(asctime)s - %(message)s",
         }
         self.ReadConfigFile()
         self._logger.setLevel(self._config["base_logging_level"])
@@ -144,10 +145,10 @@ class InvesaliusLogger:  # metaclass=Singleton):
 
     def ReadConfigFile(self, fPath=LOG_CONFIG_PATH):
         try:
-            print(fPath, os.path.abspath(fPath))
+            #print(fPath, os.path.abspath(fPath))
             self._read_config_from_json(fPath)
             print("Reading Log config file ", fPath)
-            print(self._config)
+            #print(self._config)
         except Exception as e1:
             print("Error reading config file in ReadConfigFile:", e1)
         return True
@@ -171,6 +172,10 @@ class InvesaliusLogger:  # metaclass=Singleton):
         # logger = logging.getLogger(lname)
         return self._logger
 
+    def formMessage(fName, className, funcName):
+        msg = "Hello ..."
+        return msg
+
     def logMessage(self, level, msg):
         level = level.upper()
         if level == "DEBUG":
@@ -190,7 +195,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
         append_log_file = self._config["append_log_file"]
         logging_file = self._config["logging_file"]
         logging_file = os.path.abspath(logging_file)
-        print("logging_file:", logging_file)
+        #print("logging_file:", logging_file)
         console_logging = self._config["console_logging"]
         console_logging_level = self._config["console_logging_level"]
 
@@ -198,27 +203,27 @@ class InvesaliusLogger:  # metaclass=Singleton):
 
         if (self._frame == None) & (console_logging != 0):
             print("Initiating console logging ...")
-            # self._frame = ConsoleLogFrame(self.getLogger())
-
+            self._frame = ConsoleLogFrame(self.getLogger())
+            '''
             formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
             ch = logging.StreamHandler(sys.stderr)
             ch.setLevel(logging.DEBUG)
             ch.setFormatter(formatter)
             self._logger.addHandler(ch)
-
-            print("Initiated console logging ...")
+            '''
+            #print("Initiated console logging ...")
             self._logger.info("Initiated console logging ...")
 
-        msg = "file_logging: {}, console_logging: {}".format(file_logging, console_logging)
-        print(msg)
+        #msg = "file_logging: {}, console_logging: {}".format(file_logging, console_logging)
+        #print(msg)
 
-        self._logger.info(msg)
-        self._logger.info("configureLogging called ...")
-        self.logMessage("info", msg)
+        #self._logger.info(msg)
+        #self._logger.info("configureLogging called ...")
+        #self.logMessage("info", msg)
 
         if file_logging:
             # print('file_logging called ...')
-            self._logger.info("file_logging called ...")
+            #self._logger.info("file_logging called ...")
             file_logging_level = getattr(
                 logging, const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None
             )
@@ -263,7 +268,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
 
                     fh.setFormatter(formatter)
                     self._logger.addHandler(fh)
-                    msg = "Added file handler {}".format(logging_file)
+                    msg = "Initiated file log in  {}".format(logging_file)
                     self._logger.info(msg)
         else:
             self.closeFileLogging()
@@ -285,6 +290,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
         if self._frame != None:
             self._frame = None
 
+
     def closeLogging(self):
         self.closeFileLogging()
         self.closeConsoleLogging()
@@ -293,15 +299,40 @@ class InvesaliusLogger:  # metaclass=Singleton):
         for handler in self._logger.handlers:
             handler.flush()
 
+#####################################################################################
+#  Decorators for logging
 
-def call_tracking_decorator(function: Callable[[str], None]):
+def call_tracking_decorator(fileName, className, functionName=''):
+	def decorator(func):
+		def wrapper(*args, **kwargs):
+			invLogger._logger.debug(f"Entered File {fileName}, Class {className}, Function {functionName}" )
+			func(*args, **kwargs)
+		return wrapper
+	return decorator
+
+def decorator_with_args(arg1, arg2):
+	def actual_decorator(func):
+		def wrapper( * args, ** kwargs):
+			print(f"Decorator argument 1: {arg1}")
+			print(f"Decorator argument 2: {arg2}")
+			func( * args, ** kwargs)
+		return wrapper
+	return actual_decorator
+
+def call_tracking_decorator00(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
         msg = "Function {} called".format(function.__name__)
-        invLogger._logger.info(msg)
+        invLogger._logger.debug(msg)
         function(*args)
 
     return wrapper_accepting_arguments
 
+class DecorateAllMethods:
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        for attr, value in cls.__dict__.items():
+            if callable(value):
+                setattr(cls, attr, call_tracking_decorator00(value))
 
 #####################################################################################
 #  Decorators for error handling

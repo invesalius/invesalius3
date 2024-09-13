@@ -16,12 +16,13 @@ from invesalius.data import imagedata_utils
 from invesalius.data.converters import to_vtk
 from invesalius.net.utils import download_url_to_file
 from invesalius.utils import new_name_by_pattern
+import invesalius.gui.log as log
 
 from . import utils
 
 SIZE = 48
 
-
+@log.call_tracking_decorator(os.path.basename(__file__), "", "gen_patches")
 def gen_patches(image, patch_size, overlap):
     overlap = int(patch_size * overlap / 100)
     sz, sy, sx = image.shape
@@ -45,6 +46,7 @@ def gen_patches(image, patch_size, overlap):
         yield (idx + 1.0) / len(i_cuts), sub_image, ((iz, ez), (iy, ey), (ix, ex))
 
 
+@log.call_tracking_decorator(os.path.basename(__file__), "", "predict_patch")
 def predict_patch(sub_image, patch, nn_model, patch_size):
     (iz, ez), (iy, ey), (ix, ex) = patch
     sub_mask = nn_model.predict(sub_image.reshape(1, patch_size, patch_size, patch_size, 1))
@@ -53,6 +55,7 @@ def predict_patch(sub_image, patch, nn_model, patch_size):
     ]
 
 
+@log.call_tracking_decorator(os.path.basename(__file__), "", "predict_patch")
 def predict_patch_torch(sub_image, patch, nn_model, device, patch_size):
     import torch
 
@@ -72,6 +75,7 @@ def predict_patch_torch(sub_image, patch, nn_model, device, patch_size):
     ]
 
 
+@log.call_tracking_decorator(os.path.basename(__file__), "", "predict_patch")
 def segment_keras(image, weights_file, overlap, probability_array, comm_array, patch_size):
     import keras
 
@@ -102,6 +106,7 @@ def download_callback(comm_array):
     return _download_callback
 
 
+@log.call_tracking_decorator(os.path.basename(__file__), "", "segment_torch")
 def segment_torch(
     image, weights_file, overlap, device_id, probability_array, comm_array, patch_size
 ):
@@ -134,6 +139,7 @@ def segment_torch(
     comm_array[0] = np.Inf
 
 
+@log.call_tracking_decorator(os.path.basename(__file__), "", "segment_torch_jit")
 def segment_torch_jit(
     image,
     weights_file,
@@ -256,6 +262,7 @@ class SegmentProcess(ctx.Process):
 
         self.mask = None
 
+    @log.call_tracking_decorator(os.path.basename(__file__), "SegmentProcess", "run")
     def run(self):
         try:
             self._run_segmentation()
