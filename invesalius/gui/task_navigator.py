@@ -1498,6 +1498,7 @@ class ControlPanel(wx.Panel):
             btn_nav.SetLabelText(_("Start navigation"))
         else:
             Publisher.sendMessage("Start navigation")
+            Publisher.sendMessage("maximize_volume_pane")
             if self.nav_status:
                 tooltip = _("Stop navigation")
                 btn_nav.SetToolTip(tooltip)

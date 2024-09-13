@@ -157,6 +157,13 @@ class Panel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self._Exit, "Exit")
+        Publisher.subscribe(self.maximize_volume_pane, "maximize_volume_pane")
+
+    def maximize_volume_pane(self):
+        pane_info = self.aui_manager.GetPane("Volume") 
+        if pane_info.IsOk():
+            self.aui_manager.MaximizePane(pane_info)
+        self.aui_manager.Update()
 
     def OnMaximize(self, evt):
         if evt.GetPane().name == self.s4.name:
