@@ -1306,21 +1306,24 @@ class MenuBar(wx.MenuBar):
         image_menu.Append(wx.NewIdRef(), _("Flip"), flip_menu)
         image_menu.Append(wx.NewIdRef(), _("Swap axes"), swap_axes_menu)
 
-        mask_density_menu = image_menu.Append(
-            const.ID_MASK_DENSITY_MEASURE, _("Mask Density measure")
-        )
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _("Reorient image\tCtrl+Shift+O"))
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
         planning_menu = wx.Menu()
         planning_menu.Append(const.ID_PLANNING_CRANIOPLASTY, _("Cranioplasty"))
 
+        analysis_menu = wx.Menu()
+        mask_density_menu = analysis_menu.Append(
+            const.ID_MASK_DENSITY_MEASURE, _("Mask density measure")
+        )
+
         reorient_menu.Enable(False)
+        tools_menu.Append(-1, _("Analysis"), analysis_menu)
         tools_menu.Append(-1, _("Image"), image_menu)
         tools_menu.Append(-1, _("Mask"), mask_menu)
+        tools_menu.Append(-1, _("Planning"), planning_menu)
         tools_menu.Append(-1, _("Segmentation"), segmentation_menu)
         tools_menu.Append(-1, _("Surface"), surface_menu)
-        tools_menu.Append(-1, _("Planning"), planning_menu)
         self.tools_menu = tools_menu
 
         # View
