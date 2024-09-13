@@ -566,7 +566,7 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
             "528",
         ]
 
-        self.patch_cmb = wx.ComboBox(self, choices=patch_size, value="192")
+        self.patch_cmb = wx.ComboBox(self, choices=patch_size, value="480")
 
         self.path_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5)
@@ -575,7 +575,7 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
         self.method = wx.RadioBox(
             self,
             -1,
-            "Method",
+            "Method:",
             wx.DefaultPosition,
             wx.DefaultSize,
             ["Binary", "Gray"],

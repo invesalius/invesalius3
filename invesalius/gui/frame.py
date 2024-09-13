@@ -655,7 +655,7 @@ class Frame(wx.Frame):
             self.OnTracheSegmentation()
         elif id == const.ID_SEGMENTATION_MANDIBLE_CT:
             self.OnMandibleCTSegmentation()
-        elif id == const.ID_SEGMENTATION_IMPLANT_CT:
+        elif id == const.ID_PLANNING_CRANIOPLASTY:
             self.OnImplantCTSegmentation()
 
         elif id == const.ID_VIEW_INTERPOLATED:
@@ -1106,7 +1106,7 @@ class MenuBar(wx.MenuBar):
             const.ID_SEGMENTATION_BRAIN,
             const.ID_SEGMENTATION_TRACHEA,
             const.ID_SEGMENTATION_MANDIBLE_CT,
-            const.ID_SEGMENTATION_IMPLANT_CT,
+            const.ID_PLANNING_CRANIOPLASTY,
             const.ID_MASK_DENSITY_MEASURE,
             const.ID_CREATE_SURFACE,
             const.ID_CREATE_MASK,
@@ -1279,7 +1279,6 @@ class MenuBar(wx.MenuBar):
         segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
-        segmentation_menu.Append(const.ID_SEGMENTATION_IMPLANT_CT, _("Implant prediction (CT)"))
 
         # Surface Menu
         surface_menu = wx.Menu()
@@ -1313,11 +1312,15 @@ class MenuBar(wx.MenuBar):
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _("Reorient image\tCtrl+Shift+O"))
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
+        planning_menu = wx.Menu()
+        planning_menu.Append(const.ID_PLANNING_CRANIOPLASTY, _("Cranioplasty"))
+
         reorient_menu.Enable(False)
         tools_menu.Append(-1, _("Image"), image_menu)
         tools_menu.Append(-1, _("Mask"), mask_menu)
         tools_menu.Append(-1, _("Segmentation"), segmentation_menu)
         tools_menu.Append(-1, _("Surface"), surface_menu)
+        tools_menu.Append(-1, _("Planning"), planning_menu)
         self.tools_menu = tools_menu
 
         # View
