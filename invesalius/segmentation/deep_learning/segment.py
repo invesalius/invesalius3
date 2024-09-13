@@ -564,12 +564,17 @@ class ImplantCTSegmentProcess(SegmentProcess):
         self.method = method
 
         if self.method == 1:
-            self.torch_weights_file_name = "implant_jit_ct_gray.pt"
+            self.torch_weights_file_name = "cranioplasty_jit_ct_gray.pt"
+            self.torch_weights_url = "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_gray/cranioplasty_jit_ct_gray.pt"
+            self.torch_weights_hash = (
+                "eeb046514cec7b6655745bebcd8403da04009bf1760aabd0f72967a23b5b5f19"
+            )
         else:
-            self.torch_weights_file_name = "implant_jit_ct_binary.pt"
-
-        self.torch_weights_url = ""
-        self.torch_weights_hash = ""
+            self.torch_weights_file_name = "cranioplasty_jit_ct_binary.pt"
+            self.torch_weights_url = "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_binary/cranioplasty_jit_ct_binary.pt"
+            self.torch_weights_hash = (
+                "cfd9af5c53c5354959b8f5fd091a6208f6b1fa8a22ae8b4bf2e83cba5e735b41"
+            )
 
     def _run_segmentation(self):
         image = np.memmap(
