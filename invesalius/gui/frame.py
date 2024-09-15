@@ -653,6 +653,8 @@ class Frame(wx.Frame):
             self.OnTracheSegmentation()
         elif id == const.ID_SEGMENTATION_MANDIBLE_CT:
             self.OnMandibleCTSegmentation()
+        elif id == const.ID_PLANNING_CRANIOPLASTY:
+            self.OnImplantCTSegmentation()
 
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
@@ -761,6 +763,10 @@ class Frame(wx.Frame):
             logging_file = values[const.LOGFILE]
             console_logging = values[const.CONSOLE_LOGGING]
             console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
+            logging = values[const.LOGGING]
+            logging_level = values[const.LOGGING_LEVEL]
+            append_log_file = values[const.APPEND_LOG_FILE]
+            logging_file = values[const.LOGFILE]
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
@@ -772,6 +778,10 @@ class Frame(wx.Frame):
             session.SetConfig("logging_file", logging_file)
             session.SetConfig("console_logging", console_logging)
             session.SetConfig("console_logging_level", console_logging_level)
+            session.SetConfig("do_logging", logging)
+            session.SetConfig("logging_level", logging_level)
+            session.SetConfig("append_log_file", append_log_file)
+            session.SetConfig("logging_file", logging_file)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
@@ -977,6 +987,25 @@ class Frame(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
 
+    def OnImplantCTSegmentation(self):
+        from invesalius.gui import deep_learning_seg_dialog
+
+        if deep_learning_seg_dialog.HAS_TORCH:
+            dlg = deep_learning_seg_dialog.ImplantSegmenterDialog(self)
+            dlg.Show()
+        else:
+            dlg = wx.MessageDialog(
+                self,
+                _(
+                    "It's not possible to run implant prediction because your system doesn't have the following modules installed:"
+                )
+                + " Torch",
+                "InVesalius 3 - Implant prediction",
+                wx.ICON_INFORMATION | wx.OK,
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+
     def OnMandibleCTSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog
 
@@ -1070,6 +1099,7 @@ class MenuBar(wx.MenuBar):
             const.ID_SEGMENTATION_BRAIN,
             const.ID_SEGMENTATION_TRACHEA,
             const.ID_SEGMENTATION_MANDIBLE_CT,
+            const.ID_PLANNING_CRANIOPLASTY,
             const.ID_MASK_DENSITY_MEASURE,
             const.ID_CREATE_SURFACE,
             const.ID_CREATE_MASK,
@@ -1269,15 +1299,22 @@ class MenuBar(wx.MenuBar):
         image_menu.Append(wx.NewIdRef(), _("Flip"), flip_menu)
         image_menu.Append(wx.NewIdRef(), _("Swap axes"), swap_axes_menu)
 
-        mask_density_menu = image_menu.Append(  # noqa: F841
-            const.ID_MASK_DENSITY_MEASURE, _("Mask Density measure")
-        )
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _("Reorient image\tCtrl+Shift+O"))
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
+        planning_menu = wx.Menu()
+        planning_menu.Append(const.ID_PLANNING_CRANIOPLASTY, _("Cranioplasty"))
+
+        analysis_menu = wx.Menu()
+        mask_density_menu = analysis_menu.Append(
+            const.ID_MASK_DENSITY_MEASURE, _("Mask density measure")
+        )
+
         reorient_menu.Enable(False)
+        tools_menu.Append(-1, _("Analysis"), analysis_menu)
         tools_menu.Append(-1, _("Image"), image_menu)
         tools_menu.Append(-1, _("Mask"), mask_menu)
+        tools_menu.Append(-1, _("Planning"), planning_menu)
         tools_menu.Append(-1, _("Segmentation"), segmentation_menu)
         tools_menu.Append(-1, _("Surface"), surface_menu)
         self.tools_menu = tools_menu
