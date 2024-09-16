@@ -1502,7 +1502,7 @@ def random_quaternion(rand=None):
 
     """
     if rand is None:
-        rand = numpy.random.rand(3)
+        rand = numpy.random.default_rng().random(3)
     else:
         assert len(rand) == 3
     r1 = numpy.sqrt(1.0 - rand[0])
@@ -1816,7 +1816,7 @@ def random_vector(size):
     False
 
     """
-    return numpy.random.random(size)
+    return numpy.random.default_rng().random(size)
 
 
 def vector_product(v0, v1, axis=0):

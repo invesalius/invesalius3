@@ -6731,7 +6731,7 @@ class RobotCoregistrationDialog(wx.Dialog):
             reader = csv.reader(file, delimiter="\t")
             content = [row for row in reader]
 
-        self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
+        self.matrix_tracker_to_robot = np.vstack(list(np.float64(content)))
 
         # Send registration to robot.
         Publisher.sendMessage(

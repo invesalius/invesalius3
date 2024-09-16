@@ -467,7 +467,7 @@ class ComputeTractsACTThread(threading.Thread):
                 # Spherical sampling of seed coordinates ---
                 # compute the samples of a sphere centered on seed coordinate offset by the grid
                 # given in the invesalius-vtk space
-                samples = np.random.choice(coord_list_sphere.shape[1], size=100)
+                samples = np.random.default_rng().choice(coord_list_sphere.shape[1], size=100)
                 m_seed[:-1, -1] = coord_offset.copy()
                 # translate the spherical grid samples to the coil location in invesalius-vtk space
                 seed_trk_r_inv = m_seed @ coord_list_sphere[:, samples]
