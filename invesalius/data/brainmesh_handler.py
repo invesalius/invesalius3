@@ -3,7 +3,7 @@ import pyacvd
 
 # import os
 import pyvista
-from vtkmodules.vtkCommonColor import vtkColorSeries, vtkNamedColors
+from vtkmodules.vtkCommonColor import vtkColorSeries
 
 # import Trekker
 from vtkmodules.vtkCommonCore import (

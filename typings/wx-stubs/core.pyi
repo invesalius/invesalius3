@@ -24,7 +24,10 @@ Everything you need for building typical GUI applications is here.
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # This code block was included from src/core_ex.py
+import os
 import sys as _sys
+import warnings
+from collections import namedtuple
 from typing import Any, Callable, Iterable, Iterator, Literal, NoReturn, Sequence, overload
 
 import numpy as np
@@ -39,6 +42,7 @@ from .type_defs import (
     EventType,
     GBPositionType,
     GBSpanType,
+    MDIChildFrameBase,
     PenCap,
     PenStyle,
     PolygonFillMode,
@@ -49,13 +53,14 @@ from .type_defs import (
 )
 from .type_defs import PyAssertionError as PyAssertionError
 from .type_defs import PyNoAppError as PyNoAppError
+from .type_defs import wxAssertionError as wxAssertionError
 
 # Load version numbers from __version__ and some other initialization tasks...
 if "wxEVT_NULL" in dir():
     import wx._core
-    from wx.__version__ import *
+    from wx.__version__ import *  # noqa: F403
 
-    __version__ = VERSION_STRING  # type: ignore
+    __version__ = VERSION_STRING  # type: ignore  # noqa: F405
 
     # Add the build type to PlatformInfo
     # PlatformInfo = PlatformInfo + ("build-type: " + BUILD_TYPE,)
@@ -76,8 +81,6 @@ else:
 # be used in the python code here.
 wx = _sys.modules[__name__]
 
-import warnings
-
 class wxPyDeprecationWarning(DeprecationWarning):
     pass
 
@@ -90,78 +93,6 @@ def deprecated(item, msg="", useName=False):
     used with callable objects (functions, methods, classes) or with
     properties.
     """
-    import warnings
-
-    name = ""
-    if useName:
-        try:
-            name = " " + item.__name__
-        except AttributeError:
-            pass
-
-    if isinstance(item, type):
-        # It is a class.  Make a subclass that raises a warning.
-        class DeprecatedClassProxy(item):  # type: ignore
-            def __init__(*args, **kw):
-                warnings.warn(
-                    "Using deprecated class%s. %s" % (name, msg),
-                    wxPyDeprecationWarning,
-                    stacklevel=2,
-                )
-                item.__init__(*args, **kw)
-
-        DeprecatedClassProxy.__name__ = item.__name__
-        return DeprecatedClassProxy
-
-    elif callable(item):
-        # wrap a new function around the callable
-        def deprecated_func(*args, **kw):
-            warnings.warn(
-                "Call to deprecated item%s. %s" % (name, msg), wxPyDeprecationWarning, stacklevel=2
-            )
-            if not kw:
-                return item(*args)
-            return item(*args, **kw)
-        deprecated_func.__name__ = item.__name__
-        deprecated_func.__doc__ = item.__doc__
-        if hasattr(item, "__dict__"):
-            deprecated_func.__dict__.update(item.__dict__)
-        return deprecated_func
-
-    elif hasattr(item, "__get__"):
-        # it should be a property if there is a getter
-        class DepGetProp:
-            def __init__(self, item, msg):
-                self.item = item
-                self.msg = msg
-            def __get__(self, inst, klass):
-                warnings.warn(
-                    "Accessing deprecated property. %s" % msg, wxPyDeprecationWarning, stacklevel=2
-                )
-                return self.item.__get__(inst, klass)
-
-        class DepGetSetProp(DepGetProp):
-            def __set__(self, inst, val):
-                warnings.warn(
-                    "Accessing deprecated property. %s" % msg, wxPyDeprecationWarning, stacklevel=2
-                )
-                return self.item.__set__(inst, val)
-
-        class DepGetSetDelProp(DepGetSetProp):
-            def __delete__(self, inst):
-                warnings.warn(
-                    "Accessing deprecated property. %s" % msg, wxPyDeprecationWarning, stacklevel=2
-                )
-                return self.item.__delete__(inst)
-
-        if hasattr(item, "__set__") and hasattr(item, "__delete__"):
-            return DepGetSetDelProp(item, msg)
-        elif hasattr(item, "__set__"):
-            return DepGetSetProp(item, msg)
-        else:
-            return DepGetProp(item, msg)
-    else:
-        raise TypeError("unsupported type %s" % type(item))
 
 def deprecatedMsg(msg):
     """
@@ -4943,7 +4874,6 @@ def GetLocale():
 # ----------------------------------------------------------------------------
 # Add the directory where the wxWidgets catalogs were installed
 # to the default catalog path, if they were put in the package dir.
-import os
 
 _localedir = os.path.join(os.path.dirname(__file__), "locale")
 if os.path.exists(_localedir):
@@ -6773,25 +6703,13 @@ def GetDisplaySizeMM():
 DefaultPosition = Point()
 DefaultSize = Size()
 
-from collections import namedtuple
-
 _im_Point = namedtuple("_im_Point", ["x", "y"])
-del namedtuple
-
-from collections import namedtuple
 
 _im_Size = namedtuple("_im_Size", ["width", "height"])
-del namedtuple
-
-from collections import namedtuple
 
 _im_Rect = namedtuple("_im_Rect", ["x", "y", "width", "height"])
-del namedtuple
-
-from collections import namedtuple
 
 _im_RealPoint = namedtuple("_im_RealPoint", ["x", "y"])
-del namedtuple
 
 def IntersectRect(self, r1, r2):
     """
@@ -7255,15 +7173,9 @@ class Rect2D:
 
 # end of class Rect2D
 
-from collections import namedtuple
-
 _im_Point2D = namedtuple("_im_Point2D", ["x", "y"])
-del namedtuple
-
-from collections import namedtuple
 
 _im_Rect2D = namedtuple("_im_Rect2D", ["x", "y", "width", "height"])
-del namedtuple
 # -- end-geometry --#
 # -- begin-affinematrix2d --#
 
@@ -7620,10 +7532,7 @@ class Position:
 
 # end of class Position
 
-from collections import namedtuple
-
 _im_Position = namedtuple("_im_Position", ["Row", "Col"])
-del namedtuple
 # -- end-position --#
 # -- begin-colour --#
 C2S_NAME: int
@@ -7920,10 +7829,7 @@ LIGHT_GREY = Colour()
 RED = Colour()
 WHITE = Colour()
 
-from collections import namedtuple
-
 _im_Colour = namedtuple("_im_Colour", ["red", "green", "blue", "alpha"])
-del namedtuple
 
 NamedColour = wx.deprecated(Colour, "Use Colour instead.")
 # -- end-colour --#
@@ -15152,13 +15058,99 @@ class GraphicsFont(GraphicsObject):
     """
 
 # end of class GraphicsFont
-# end of class GraphicsPath
-NullGraphicsPen = GraphicsPen()
-NullGraphicsBrush = GraphicsBrush()
-NullGraphicsFont = GraphicsFont()
-NullGraphicsBitmap = GraphicsBitmap()
+class GraphicsMatrix(GraphicsObject):
+    """
+    A wxGraphicsMatrix is a native representation of an affine matrix.
+    """
+
+    def Concat(self, t):
+        """
+        Concat(t)
+
+        Concatenates the matrix passed with the current matrix.
+        """
+
+    def Get(self):
+        """
+        Get() -> (a, b, c, d, tx, ty)
+
+        Returns the component values of the matrix via the argument pointers.
+        """
+
+    def GetNativeMatrix(self):
+        """
+        GetNativeMatrix() -> void
+
+        Returns the native representation of the matrix.
+        """
+
+    def Invert(self):
+        """
+        Invert()
+
+        Inverts the matrix.
+        """
+
+    def IsEqual(self, t):
+        """
+        IsEqual(t) -> bool
+
+        Returns true if the elements of the transformation matrix are equal.
+        """
+
+    def IsIdentity(self):
+        """
+        IsIdentity() -> bool
+
+        Return true if this is the identity matrix.
+        """
+
+    def Rotate(self, angle):
+        """
+        Rotate(angle)
+
+        Rotates this matrix clockwise (in radians).
+        """
+
+    def Scale(self, xScale, yScale):
+        """
+        Scale(xScale, yScale)
+
+        Scales this matrix.
+        """
+
+    def Set(self, a=1.0, b=0.0, c=0.0, d=1.0, tx=0.0, ty=0.0):
+        """
+        Set(a=1.0, b=0.0, c=0.0, d=1.0, tx=0.0, ty=0.0)
+
+        Sets the matrix to the respective values (default values are the
+        identity matrix).
+        """
+
+    def TransformDistance(self, dx, dy):
+        """
+        TransformDistance(dx, dy) -> (dx, dy)
+
+        Applies this matrix to a distance (ie.
+        """
+
+    def TransformPoint(self, x, y):
+        """
+        TransformPoint(x, y) -> (x, y)
+
+        Applies this matrix to a point.
+        """
+
+    def Translate(self, dx, dy):
+        """
+        Translate(dx, dy)
+
+        Translates this matrix.
+        """
+    NativeMatrix = property(None, None)
+
+# end of class GraphicsMatrix
 NullGraphicsMatrix = GraphicsMatrix()
-NullGraphicsPath = GraphicsPath()
 
 class GraphicsPenInfo:
     """
@@ -16051,99 +16043,6 @@ class GraphicsGradientStops:
 
 # end of class GraphicsGradientStops
 
-class GraphicsMatrix(GraphicsObject):
-    """
-    A wxGraphicsMatrix is a native representation of an affine matrix.
-    """
-
-    def Concat(self, t):
-        """
-        Concat(t)
-
-        Concatenates the matrix passed with the current matrix.
-        """
-
-    def Get(self):
-        """
-        Get() -> (a, b, c, d, tx, ty)
-
-        Returns the component values of the matrix via the argument pointers.
-        """
-
-    def GetNativeMatrix(self):
-        """
-        GetNativeMatrix() -> void
-
-        Returns the native representation of the matrix.
-        """
-
-    def Invert(self):
-        """
-        Invert()
-
-        Inverts the matrix.
-        """
-
-    def IsEqual(self, t):
-        """
-        IsEqual(t) -> bool
-
-        Returns true if the elements of the transformation matrix are equal.
-        """
-
-    def IsIdentity(self):
-        """
-        IsIdentity() -> bool
-
-        Return true if this is the identity matrix.
-        """
-
-    def Rotate(self, angle):
-        """
-        Rotate(angle)
-
-        Rotates this matrix clockwise (in radians).
-        """
-
-    def Scale(self, xScale, yScale):
-        """
-        Scale(xScale, yScale)
-
-        Scales this matrix.
-        """
-
-    def Set(self, a=1.0, b=0.0, c=0.0, d=1.0, tx=0.0, ty=0.0):
-        """
-        Set(a=1.0, b=0.0, c=0.0, d=1.0, tx=0.0, ty=0.0)
-
-        Sets the matrix to the respective values (default values are the
-        identity matrix).
-        """
-
-    def TransformDistance(self, dx, dy):
-        """
-        TransformDistance(dx, dy) -> (dx, dy)
-
-        Applies this matrix to a distance (ie.
-        """
-
-    def TransformPoint(self, x, y):
-        """
-        TransformPoint(x, y) -> (x, y)
-
-        Applies this matrix to a point.
-        """
-
-    def Translate(self, dx, dy):
-        """
-        Translate(dx, dy)
-
-        Translates this matrix.
-        """
-    NativeMatrix = property(None, None)
-
-# end of class GraphicsMatrix
-
 class GraphicsPath(GraphicsObject):
     """
     A wxGraphicsPath is a native representation of a geometric path.
@@ -16301,6 +16200,13 @@ class GraphicsPath(GraphicsObject):
     Box = property(None, None)
     CurrentPoint = property(None, None)
     NativePath = property(None, None)
+
+# end of class GraphicsPath
+NullGraphicsPen = GraphicsPen()
+NullGraphicsBrush = GraphicsBrush()
+NullGraphicsFont = GraphicsFont()
+NullGraphicsBitmap = GraphicsBitmap()
+NullGraphicsPath = GraphicsPath()
 
 class GraphicsRenderer(Object):
     """
@@ -25977,12 +25883,7 @@ class GridBagSizer(FlexGridSizer):
 
 # end of class GridBagSizer
 
-from collections import namedtuple
-
 _im_GBPosition = namedtuple("_im_GBPosition", ["row", "col"])
-del namedtuple
-
-from collections import namedtuple
 
 _im_GBSpan = namedtuple("_im_GBSpan", ["rowspan", "colspan"])
 del namedtuple
@@ -28482,7 +28383,7 @@ class Window(WindowBase):
         with the currently selected font.
         """
 
-    def GetTextExtent(self, string):
+    def GetTextExtent(self, string: str) -> Size:
         """
         GetTextExtent(string) -> Size
 
@@ -39103,7 +39004,7 @@ class ScrollBar(Control):
         Returns the length of the scrollbar.
         """
 
-    def GetThumbPosition(self):
+    def GetThumbPosition(self) -> int:
         """
         GetThumbPosition() -> int
 
@@ -43113,18 +43014,7 @@ if "wxMac" in wx.PlatformInfo:
             style=CLRP_DEFAULT_STYLE,
             validator=wx.DefaultValidator,
             name="colourpicker",
-        ):
-            if type(colour) != wx.Colour:
-                colour = wx.Colour(colour)
-            wx.PickerBase.__init__(self)
-            self.CreateBase(parent, id, colour.GetAsString(), pos, size, style, validator, name)
-            widget = ColourPickerCtrl.ColourPickerButton(
-                self, -1, colour, style=self.GetPickerStyle(style)
-            )
-            self.SetPickerCtrl(widget)
-            widget.Bind(wx.EVT_COLOURPICKER_CHANGED, self.OnColourChange)
-            self.PostCreation()
-
+        ): ...
         def GetColour(self):
             """Set the displayed colour."""
             return self.GetPickerCtrl().GetColour()
@@ -48133,7 +48023,7 @@ class MDIParentFrame(Frame):
 
 # end of class MDIParentFrame
 
-class MDIChildFrame(MDIChildFrameBase):  # type: ignore
+class MDIChildFrame(MDIChildFrameBase):
     """
     MDIChildFrame()
     MDIChildFrame(parent, id=ID_ANY, title=EmptyString, pos=DefaultPosition, size=DefaultSize, style=DEFAULT_FRAME_STYLE, name=FrameNameStr)

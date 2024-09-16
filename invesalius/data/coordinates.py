@@ -21,7 +21,7 @@ import threading
 from math import cos, sin
 from random import uniform
 from time import sleep
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import wx

@@ -27,15 +27,8 @@ import sys
 import tempfile
 import time
 import traceback
-import weakref
 
 import numpy as np
-
-try:
-    import queue
-except ImportError:
-    import Queue as queue
-
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
 from vtkmodules.vtkCommonCore import (
@@ -80,7 +73,6 @@ import invesalius.utils as utl
 from invesalius.data.converters import convert_custom_bin_to_vtk
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
-from invesalius_cy import cy_mesh
 
 # TODO: Verificar ReleaseDataFlagOn and SetSource
 
@@ -424,7 +416,7 @@ class SurfaceManager:
         create_meshes_flag = False
         self.convert_to_inv = convert_to_inv
         scalp_index = None
-        with open(filename, "r") as config_file:
+        with open(filename) as config_file:
             config_dict = json.load(config_file)
         cortex = config_dict["path_meshes"] + config_dict["cortex"]
         bmeshes = config_dict["bmeshes"]
@@ -983,7 +975,7 @@ class SurfaceManager:
 
             try:
                 surface_filename, surface_measures = f.get()
-            except Exception as e:
+            except Exception:
                 print(_("InVesalius was not able to create the surface"))
                 print(traceback.print_exc())
                 return
@@ -1084,12 +1076,12 @@ class SurfaceManager:
                     try:
                         msg = msg_queue.get_nowait()
                         sp.Update(msg)
-                    except:
+                    except Exception:
                         sp.Update(None)
                     wx.Yield()
 
             t_end = time.time()
-            print("Elapsed time - {}".format(t_end - t_init))
+            print(f"Elapsed time - {t_end - t_init}")
             sp.Close()
             if sp.error:
                 dlg = GMD.GenericMessageDialog(None, sp.error, "Exception!", wx.OK | wx.ICON_ERROR)
@@ -1201,18 +1193,14 @@ class SurfaceManager:
                 if wx.GetApp() is None:
                     print(
                         _(
-                            "It was not possible to export the surface because you don't have permission to write to {} folder: {}".format(
-                                dirpath, err
-                            )
+                            f"It was not possible to export the surface because you don't have permission to write to {dirpath} folder: {err}"
                         )
                     )
                 else:
                     dlg = dialogs.ErrorMessageBox(
                         None,
                         _("Export surface error"),
-                        "It was not possible to export the surface because you don't have permission to write to {}:\n{}".format(
-                            dirpath, err
-                        ),
+                        f"It was not possible to export the surface because you don't have permission to write to {dirpath}:\n{err}",
                     )
                     dlg.ShowModal()
                     dlg.Destroy()

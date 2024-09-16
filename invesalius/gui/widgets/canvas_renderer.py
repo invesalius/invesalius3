@@ -421,7 +421,7 @@ class CanvasRendererCTX:
 
         self._ordered_draw_list = sorted(self._follow_draw_list(), key=lambda x: x[0])
         for (
-            l,
+            _,
             d,
         ) in (
             self._ordered_draw_list

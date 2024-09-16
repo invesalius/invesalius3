@@ -1,4 +1,3 @@
-import logging
 import os
 import pathlib
 import subprocess
@@ -60,7 +59,7 @@ class BuildPluginsCommand(setuptools.Command):
         plugins_folder = inv_folder.joinpath("plugins")
         for p in compilable_plugins:
             plugin_folder = plugins_folder.joinpath(p)
-            self.announce("Compiling plugin: {}".format(p))
+            self.announce(f"Compiling plugin: {p}")
             os.chdir(plugin_folder)
             subprocess.check_call([sys.executable, "setup.py", "build_ext", "--inplace"])
             os.chdir(inv_folder)

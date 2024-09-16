@@ -35,10 +35,8 @@ import wx.lib.scrolledpanel as scrolled
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
-import invesalius.project as prj
-import invesalius.utils as utl
 from invesalius import inv_paths
-from invesalius.gui.widgets.inv_spinctrl import InvFloatSpinCtrl, InvSpinCtrl
+from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -153,18 +151,16 @@ class InnerTaskPanel(scrolled.ScrolledPanel):
             evt.Skip()
 
     def OnLinkNewSurface(self, evt=None):
-        is_pubsub = True
-
         try:
             evt = evt.data
             evt = None
-        except:
+        except Exception:
             pass
 
         # import invesalius.gui.dialogs as dlg
         sl = slice_.Slice()
 
-        if sl.current_mask == None:
+        if sl.current_mask is None:
             dlg.InexistentMask()
             return
 
@@ -495,7 +491,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         ## MIX LINE 2 AND 3
         flag_link = wx.EXPAND | wx.GROW | wx.RIGHT
         flag_slider = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
-        flag_combo = wx.EXPAND | wx.GROW | wx.LEFT
+        # flag_combo = wx.EXPAND | wx.GROW | wx.LEFT
 
         fixed_sizer = wx.BoxSizer(wx.HORIZONTAL)
         fixed_sizer.AddMany(
@@ -591,7 +587,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         #  Publisher.sendMessage('Update surface data', (index))
 
     def OnComboName(self, evt):
-        surface_name = evt.GetString()
+        # surface_name = evt.GetString()
         surface_index = evt.GetSelection()
         Publisher.sendMessage(
             "Change surface selected", surface_index=self.surface_list[surface_index][1]
@@ -684,7 +680,4 @@ class QualityAdjustment(wx.Panel):
         self.SetAutoLayout(1)
 
     def OnComboQuality(self, evt):
-        print("TODO: Send Signal - Change surface quality: %s" % (evt.GetString()))
-
-    def OnDecimate(self, evt):
-        print("TODO: Send Signal - Decimate: %s" % float(self.spin.GetValue()) / 100)
+        print(f"TODO: Send Signal - Change surface quality: {evt.GetString()}")

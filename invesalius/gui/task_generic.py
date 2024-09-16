@@ -17,8 +17,6 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-import os
-import sys
 
 import wx
 import wx.lib.hyperlink as hl

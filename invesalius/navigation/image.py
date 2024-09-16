@@ -62,7 +62,7 @@ class Image:
         self.fiducials[fiducial_index, :] = position
         self.UpdateFiducialMarker(fiducial_index)
 
-        print("Image fiducial {} set to coordinates {}".format(fiducial_index, position))
+        print(f"Image fiducial {fiducial_index} set to coordinates {position}")
         ses.Session().ChangeProject()
         self.SaveState()
 

@@ -21,6 +21,8 @@ import sys
 
 import wx
 import wx.lib.agw.fourwaysplitter as fws
+import wx.lib.colourselect as csel
+import wx.lib.platebtn as pbtn
 
 import invesalius.constants as const
 import invesalius.data.viewer_slice as slice_viewer
@@ -241,14 +243,13 @@ class Panel(wx.Panel):
         splitter.AppendWindow(p1)
         splitter.AppendWindow(p2)
         splitter.AppendWindow(p3)
-        splitter.AppendWindow(p4)
 
         aui_manager.Update()
 
 
 class VolumeInteraction(wx.Panel):
     def __init__(self, parent, id):
-        super(VolumeInteraction, self).__init__(parent, id)
+        super().__init__(parent, id)
         self.can_show_raycasting_widget = 0
         self.__init_aui_manager()
         # sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -351,12 +352,6 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager.UnInit()
 
 
-import wx.lib.buttons as btn
-import wx.lib.colourselect as csel
-import wx.lib.platebtn as pbtn
-
-from invesalius.pubsub import pub as Publisher
-
 RAYCASTING_TOOLS = wx.NewIdRef()
 
 ID_TO_NAME = {}
@@ -398,7 +393,7 @@ class VolumeToolPanel(wx.Panel):
         BMP_3D_STEREO = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG
         )
-        BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
+        # BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
 
         self.button_raycasting = pbtn.PlateButton(
             self, -1, "", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
@@ -657,5 +652,5 @@ class VolumeToolPanel(wx.Panel):
         self.Refresh()
 
     def OnSelectColour(self, evt):
-        colour = c = [i / 255.0 for i in evt.GetValue()]
+        colour = [i / 255.0 for i in evt.GetValue()]
         Publisher.sendMessage("Change volume viewer background colour", colour=colour)

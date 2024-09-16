@@ -20,8 +20,6 @@ import os
 import plistlib
 import weakref
 
-import numpy
-import wx
 from packaging.version import Version
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonCore import vtkVersion
@@ -359,8 +357,8 @@ class Volume:
         curve_table = self.config["16bitClutCurves"]
         color_table = self.config["16bitClutColors"]
         colors = []
-        for i, l in enumerate(curve_table):
-            for j, lopacity in enumerate(l):
+        for i, element in enumerate(curve_table):
+            for j, lopacity in enumerate(element):
                 gray_level = lopacity["x"]
                 r = color_table[i][j]["red"]
                 g = color_table[i][j]["green"]
@@ -415,16 +413,16 @@ class Volume:
         self.ww = ww
         self.wl = wl
 
-        l1 = wl - ww / 2.0
-        l2 = wl + ww / 2.0
+        # l1 = wl - ww / 2.0
+        # l2 = wl + ww / 2.0
 
-        k1 = 0.0
-        k2 = 1.0
+        # k1 = 0.0
+        # k2 = 1.0
 
         opacity_transfer_func.AddSegment(0, 0, 2**16 - 1, 0)
 
-        for i, l in enumerate(curve_table):
-            for j, lopacity in enumerate(l):
+        for i, element in enumerate(curve_table):
+            for j, lopacity in enumerate(element):
                 gray_level = lopacity["x"]
                 # if gray_level <= l1:
                 #    opacity = k1
@@ -442,7 +440,6 @@ class Volume:
         else:
             opacity_transfer_func = vtkPiecewiseFunction()
         opacity_transfer_func.RemoveAllPoints()
-        opacities = []
 
         ww = self.config["ww"]
         wl = self.TranslateScale(scale, self.config["wl"])
@@ -456,8 +453,8 @@ class Volume:
         opacity_transfer_func.RemoveAllPoints()
         opacity_transfer_func.AddSegment(0, 0, 2**16 - 1, 0)
 
-        k1 = 0.0
-        k2 = 1.0
+        # k1 = 0.0
+        # k2 = 1.0
 
         opacity_transfer_func.AddPoint(l1, 0)
         opacity_transfer_func.AddPoint(l2, 1)
@@ -478,32 +475,6 @@ class Volume:
             self.config["backgroundColorRedComponent"] = colour[0] * 255
             self.config["backgroundColorGreenComponent"] = colour[1] * 255
             self.config["backgroundColorBlueComponent"] = colour[2] * 255
-
-    def BuildTable():
-        curve_table = p["16bitClutCurves"]
-        color_background = (
-            p["backgroundColorRedComponent"],
-            p["backgroundColorGreenComponent"],
-            p["backgroundColorBlueComponent"],
-        )
-        color_background = [i for i in color_background]
-        opacities = []
-        colors = []
-
-        for i, l in enumerate(curve_table):
-            for j, lopacity in enumerate(l):
-                gray_level = lopacity["x"]
-                opacity = lopacity["y"]
-
-                opacities.append((gray_level, opacity))
-
-                r = color_table[i][j]["red"]
-                g = color_table[i][j]["green"]
-                b = color_table[i][j]["blue"]
-
-                colors.append((gray_level, r, g, b))
-
-        return colors, opacities, color_background, p["useShading"]
 
     def SetShading(self):
         if self.config["useShading"]:
@@ -527,9 +498,9 @@ class Volume:
                 self.volume_mapper.SetBlendModeToComposite()
         else:
             if self.config.get("MIP", False):
-                raycasting_function = vtkVolumeRayCastMIPFunction()
+                raycasting_function = vtkVolumeRayCastMIPFunction()  # noqa: F821
             else:
-                raycasting_function = vtkVolumeRayCastCompositeFunction()
+                raycasting_function = vtkVolumeRayCastCompositeFunction()  # noqa: F821
                 raycasting_function.SetCompositeMethodToInterpolateFirst()
 
             session = ses.Session()
@@ -571,7 +542,6 @@ class Volume:
         self.image = image
 
     def LoadVolume(self):
-        proj = prj.Project()
         # image = imagedata_utils.to_vtk(n_array, spacing, slice_number, orientation)
 
         if not self.loaded_image:
@@ -582,10 +552,10 @@ class Volume:
 
         number_filters = len(self.config["convolutionFilters"])
 
-        if prj.Project().original_orientation == const.AXIAL:
-            flip_image = True
-        else:
-            flip_image = False
+        # if prj.Project().original_orientation == const.AXIAL:
+        #     flip_image = True
+        # else:
+        #     flip_image = False
 
         # if (flip_image):
         update_progress = vtk_utils.ShowProgress(2 + number_filters)
@@ -632,25 +602,16 @@ class Volume:
         # Changed the vtkVolumeRayCast to vtkFixedPointVolumeRayCastMapper
         # because it's faster and the image is better
         # TODO: To test if it's true.
-        if const.TYPE_RAYCASTING_MAPPER:
-            volume_mapper = vtkVolumeRayCastMapper()
+        session = ses.Session()
+        if not session.GetConfig("rendering"):
+            volume_mapper = vtkFixedPointVolumeRayCastMapper()
             # volume_mapper.AutoAdjustSampleDistancesOff()
-            # volume_mapper.SetInput(image2)
-            # volume_mapper.SetVolumeRayCastFunction(composite_function)
-            # volume_mapper.SetGradientEstimator(gradientEstimator)
-            volume_mapper.IntermixIntersectingGeometryOn()
             self.volume_mapper = volume_mapper
+            volume_mapper.IntermixIntersectingGeometryOn()
         else:
-            session = ses.Session()
-            if not session.GetConfig("rendering"):
-                volume_mapper = vtkFixedPointVolumeRayCastMapper()
-                # volume_mapper.AutoAdjustSampleDistancesOff()
-                self.volume_mapper = volume_mapper
-                volume_mapper.IntermixIntersectingGeometryOn()
-            else:
-                volume_mapper = vtkOpenGLGPUVolumeRayCastMapper()
-                volume_mapper.UseJitteringOn()
-                self.volume_mapper = volume_mapper
+            volume_mapper = vtkOpenGLGPUVolumeRayCastMapper()
+            volume_mapper.UseJitteringOn()
+            self.volume_mapper = volume_mapper
 
         self.SetTypeRaycasting()
         volume_mapper.SetInputData(image2)
@@ -911,7 +872,7 @@ class CutPlane:
 
     def Reset(self):
         plane_source = self.plane_source
-        plane_widget = self.plane_widget
+        # plane_widget = self.plane_widget
         plane_source.SetOrigin(self.origin)
         plane_source.SetPoint1(self.p1)
         plane_source.SetPoint2(self.p2)

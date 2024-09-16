@@ -92,7 +92,7 @@ class Visualize_E_field_Thread(threading.Thread):
                                     )
                             try:
                                 self.e_field_norms_queue.put_nowait(
-                                    ([T_rot, cp, coord, enorm, id_list])
+                                    [T_rot, cp, coord, enorm, id_list]
                                 )
 
                             except queue.Full:
