@@ -758,6 +758,42 @@ class EditionTools(wx.Panel):
         self.gradient_thresh = gradient_thresh
         self.bind_evt_gradient = True
 
+        ## LINE 5
+        m3ediv = wx.StaticLine(
+            self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL
+        )
+
+        cbox_mask_edit_3d = wx.CheckBox(self, -1, "Edit in 3D")
+        btn_do_3d_edit = wx.Button(self, -1, _("Cut"))
+        combo_mask_edit_3d_op = wx.ComboBox(
+            self, -1, "", choices=const.MASK_3D_EDIT_OP_NAME, style=wx.CB_DROPDOWN | wx.CB_READONLY
+        )
+        combo_mask_edit_3d_op.SetSelection(const.MASK_3D_EDIT_INCLUDE)
+
+        line5 = wx.BoxSizer(wx.HORIZONTAL)
+        # line5.Add(txt_mesh_edit_3d)
+        line5.Add(cbox_mask_edit_3d)
+        line5.Add(btn_do_3d_edit)
+        line5.Add(combo_mask_edit_3d_op)
+
+        self.cbox_mask_edit_3d = cbox_mask_edit_3d
+        self.btn_do_3d_edit = btn_do_3d_edit
+        self.combo_mask_edit_3d_op = combo_mask_edit_3d_op
+
+        ## LINE 6
+        cbox_mask_edit_3d_depth = wx.CheckBox(self, -1, "Cut with depth")
+        spin_mask_edit_3d_depth = wx.SpinCtrlDouble(self, value="1.0", min=0.0, max=1.0, inc=0.05)
+        btn_clear_3d_poly = wx.Button(self, -1, _("Clear Polygons"))
+
+        line6 = wx.BoxSizer(wx.HORIZONTAL)
+        line6.Add(cbox_mask_edit_3d_depth)
+        line6.Add(spin_mask_edit_3d_depth)
+        line6.Add(btn_clear_3d_poly)
+
+        self.cbox_mask_edit_3d_depth = cbox_mask_edit_3d_depth
+        self.spin_mask_edit_3d_depth = spin_mask_edit_3d_depth
+        self.btn_clear_3d_poly = btn_clear_3d_poly
+
         # Add lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.AddSpacer(7)
@@ -768,6 +804,12 @@ class EditionTools(wx.Panel):
         sizer.Add(text_thresh, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         sizer.AddSpacer(5)
         sizer.Add(gradient_thresh, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        sizer.AddSpacer(5)
+        sizer.Add(m3ediv, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        sizer.AddSpacer(3)
+        sizer.Add(line5, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        sizer.AddSpacer(3)
+        sizer.Add(line6, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         sizer.AddSpacer(7)
         sizer.Fit(self)
 
@@ -782,6 +824,12 @@ class EditionTools(wx.Panel):
         self.btn_brush_format.Bind(wx.EVT_MENU, self.OnMenu)
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnGradientChanged, self.gradient_thresh)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
+        self.cbox_mask_edit_3d.Bind(wx.EVT_CHECKBOX, self.OnCheckMaskEdit3D)
+        self.btn_do_3d_edit.Bind(wx.EVT_BUTTON, self.OnDoMaskEdit3D)
+        self.combo_mask_edit_3d_op.Bind(wx.EVT_COMBOBOX, self.OnComboMaskEdit3DMode)
+        self.cbox_mask_edit_3d_depth.Bind(wx.EVT_CHECKBOX, self.OnUseDepthMaskEdit3D)
+        self.spin_mask_edit_3d_depth.Bind(wx.EVT_SPINCTRLDOUBLE, self.OnSpinDepthMaskEdit3D)
+        self.btn_clear_3d_poly.Bind(wx.EVT_BUTTON, self.OnClearPolyMaskEdit3D)
 
     def __bind_events(self):
         Publisher.subscribe(self.SetThresholdBounds, "Update threshold limits")
@@ -884,6 +932,34 @@ class EditionTools(wx.Panel):
             self.txt_unit.SetLabel("px")
         self.unit = self.txt_unit.GetLabel()
         Publisher.sendMessage("Set edition brush unit", unit=self.unit)
+
+    def OnCheckMaskEdit3D(self, evt):
+        style_id = const.STATE_MASK_3D_EDIT
+
+        if self.cbox_mask_edit_3d.GetValue():
+            Publisher.sendMessage("Enable style", style=style_id)
+            Publisher.sendMessage("Enable mask 3D preview")
+        else:
+            Publisher.sendMessage("Disable style", style=style_id)
+
+    def OnDoMaskEdit3D(self, evt):
+        Publisher.sendMessage("M3E apply edit")
+
+    def OnComboMaskEdit3DMode(self, evt):
+        op_id = evt.GetSelection()
+        Publisher.sendMessage("M3E set edit mode", mode=op_id)
+
+    def OnUseDepthMaskEdit3D(self, evt):
+        cb_val = self.cbox_mask_edit_3d_depth.GetValue()
+        Publisher.sendMessage("M3E use depth", use=cb_val)
+        self.OnSpinDepthMaskEdit3D(evt)  # To pass the set value
+
+    def OnSpinDepthMaskEdit3D(self, evt):
+        spin_val = self.spin_mask_edit_3d_depth.GetValue()
+        Publisher.sendMessage("M3E depth value", value=spin_val)
+
+    def OnClearPolyMaskEdit3D(self, evt):
+        Publisher.sendMessage("M3E clear polygons")
 
 
 class WatershedTool(EditionTools):

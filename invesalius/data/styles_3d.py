@@ -28,9 +28,23 @@ from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPi
 
 import invesalius.constants as const
 import invesalius.project as prj
+import invesalius.segmentation.mask_3d_edit as m3e
+from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 
 PROP_MEASURE = 0.8
+
+import numpy as np
+
+
+# TODO: find a better place
+def vtkarray_to_numpy(m):
+    nm = np.zeros((4, 4))
+    for i in range(4):
+        for j in range(4):
+            nm[i, j] = m.GetElement(i, j)
+
+    return nm
 
 
 class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
@@ -620,6 +634,94 @@ class NavigationInteractorStyle(DefaultInteractorStyle):
         super().OnScrollBackward(evt, obj)
 
 
+class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style for selecting a polygon of interest and performing a mesh edit based on that.
+    """
+
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.viewer = viewer
+
+        # Manages the mask operations
+        self.mask3deditor = m3e.Mask3DEditor()
+
+        self.picker = vtkCellPicker()
+        self.picker.PickFromListOn()
+
+        self.has_open_poly = False
+        self.poly = None
+
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertPolygonPoint)
+        self.AddObserver("RightButtonPressEvent", self.OnInsertPolygon)
+
+        Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
+
+    def CleanUp(self):
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.RemoveObservers("RightButtonPressEvent")
+
+    def ClearPolygons(self):
+        self.viewer.canvas.draw_list.clear()
+        self.viewer.UpdateCanvas()
+
+    def OnInsertPolygonPoint(self, obj, evt):
+        interactor = self.viewer.interactor
+        interactor.Render()
+
+        mouse_x, mouse_y = self.viewer.interactor.GetEventPosition()
+
+        if not self.has_open_poly:
+            self.poly = PolygonSelectCanvas()
+            self.has_open_poly = True
+            self.viewer.canvas.draw_list.append(self.poly)
+
+        self.poly.insert_point((mouse_x, mouse_y))
+        self.viewer.UpdateCanvas()
+
+    def __get_cam_parameters(self):
+        w, h = self.viewer.GetSize()
+        self.viewer.ren.Render()
+        cam = self.viewer.ren.GetActiveCamera()
+        near, far = cam.GetClippingRange()
+
+        # This flip around the Y axis was done to countereffect the flip that vtk performs
+        # in volume.py:780. If we do not flip back, what is being displayed is flipped,
+        # although the actual coordinates are the initial ones, so the cutting gets wrong
+        # after rotations around y or x.
+        inv_Y_matrix = np.eye(4)
+        inv_Y_matrix[1, 1] = -1
+
+        # Composite transform world to viewport (projection * view)
+        M = cam.GetCompositeProjectionTransformMatrix(w / float(h), near, far)
+        M = vtkarray_to_numpy(M)
+        M = M @ inv_Y_matrix
+
+        MV = cam.GetViewTransformMatrix()
+        MV = vtkarray_to_numpy(MV)
+        MV = MV @ inv_Y_matrix
+
+        params = {
+            "model_to_screen": M,
+            "model_view": MV,
+            "resolution": (w, h),
+            "clipping_range": (near, far),
+        }
+
+        return params
+
+    def OnInsertPolygon(self, obj, evt):
+        self.poly.complete_polygon()
+        self.has_open_poly = False
+
+        self.viewer.UpdateCanvas()
+        self.viewer.ren.Render()
+
+        Publisher.sendMessage("M3E add polygon", points=self.poly.polygon.points)
+        Publisher.sendMessage("M3E set camera", params=self.__get_cam_parameters())
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -634,6 +736,7 @@ class Styles:
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_REGISTRATION: RegistrationInteractorStyle,
+        const.STATE_MASK_3D_EDIT: Mask3DEditorInteractorStyle,
     }
 
     @classmethod
