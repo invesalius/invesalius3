@@ -17,7 +17,6 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-import time
 
 import wx
 from vtkmodules.vtkInteractionStyle import (

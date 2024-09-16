@@ -54,7 +54,7 @@ class SelectionEvent(wx.PyCommandEvent):
 
 class PreviewEvent(wx.PyCommandEvent):
     def __init__(self, evtType, id):
-        super(PreviewEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
     def GetSelectID(self):
         return self.SelectedID
@@ -77,10 +77,10 @@ class PreviewEvent(wx.PyCommandEvent):
 
 class SerieEvent(PreviewEvent):
     def __init__(self, evtType, id):
-        super(SerieEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
 
-class BitmapInfo(object):
+class BitmapInfo:
     """
     Keep the informations and the image used by preview.
     """
@@ -108,7 +108,7 @@ class BitmapInfo(object):
 
 class DicomPaintPanel(wx.Panel):
     def __init__(self, parent):
-        super(DicomPaintPanel, self).__init__(parent)
+        super().__init__(parent)
         self._bind_events()
         self.image = None
         self.last_size = (10, 10)
@@ -157,7 +157,7 @@ class Preview(wx.Panel):
     """
 
     def __init__(self, parent):
-        super(Preview, self).__init__(parent)
+        super().__init__(parent)
         # Will it be white?
         self.select_on = False
         self.bitmap_info = None
@@ -280,7 +280,7 @@ class BitmapPreviewSeries(wx.Panel):
     """A dicom series preview panel"""
 
     def __init__(self, parent):
-        super(BitmapPreviewSeries, self).__init__(parent)
+        super().__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
         self.displayed_position = 0
@@ -367,7 +367,7 @@ class BitmapPreviewSeries(wx.Panel):
 
     def RemovePanel(self, data):
         for p, f in zip(self.previews, self.files):
-            if p.bitmap_info != None:
+            if p.bitmap_info is not None:
                 if data in p.bitmap_info.data[0]:
                     self.files.remove(f)
                     p.Hide()
@@ -380,7 +380,7 @@ class BitmapPreviewSeries(wx.Panel):
                     self.Layout()
 
         for n, p in enumerate(self.previews):
-            if p.bitmap_info != None:
+            if p.bitmap_info is not None:
                 if p.IsShown():
                     p.bitmap_info.pos = n
 
@@ -548,7 +548,7 @@ class SingleImagePreview(wx.Panel):
         Publisher.subscribe(self.ShowBlackSlice, "Show black slice in single preview image")
 
     def ShowBitmapByPosition(self, pos):
-        if pos != None:
+        if pos is not None:
             self.ShowSlice(int(pos))
 
     def OnSlider(self, evt):
@@ -629,7 +629,7 @@ class SingleImagePreview(wx.Panel):
         value1 = ""
         value2 = ""
 
-        value = "%s\n%s" % (value1, value2)
+        value = f"{value1}\n{value2}"
         self.text_image_location.SetValue(value)
 
         # self.text_patient.SetValue(value)

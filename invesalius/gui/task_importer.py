@@ -17,7 +17,6 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 import os
-import sys
 
 import wx
 
@@ -28,7 +27,6 @@ except ImportError:
 import wx.lib.platebtn as pbtn
 
 import invesalius.constants as const
-import invesalius.gui.dialogs as dlg
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher

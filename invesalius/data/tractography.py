@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -61,7 +59,7 @@ def compute_directions(trk_n, alpha=255):
     trk_d[-1, :] *= -1
     # check that linalg norm makes second norm
     # https://stackoverflow.com/questions/21030391/how-to-normalize-an-array-in-numpy
-    direction = 255 * np.absolute((trk_d / np.linalg.norm(trk_d, axis=1)[:, None]))
+    direction = 255 * np.absolute(trk_d / np.linalg.norm(trk_d, axis=1)[:, None])
     direction = np.hstack([direction, alpha * np.ones([direction.shape[0], 1])])
     return direction.astype(int)
 
@@ -467,7 +465,7 @@ class ComputeTractsACTThread(threading.Thread):
                 # Spherical sampling of seed coordinates ---
                 # compute the samples of a sphere centered on seed coordinate offset by the grid
                 # given in the invesalius-vtk space
-                samples = np.random.choice(coord_list_sphere.shape[1], size=100)
+                samples = np.random.default_rng().choice(coord_list_sphere.shape[1], size=100)
                 m_seed[:-1, -1] = coord_offset.copy()
                 # translate the spherical grid samples to the coil location in invesalius-vtk space
                 seed_trk_r_inv = m_seed @ coord_list_sphere[:, samples]

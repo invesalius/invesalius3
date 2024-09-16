@@ -133,7 +133,7 @@ class MeasureData(metaclass=utils.Singleton):
         return len(self._list_measures)
 
 
-class MeasurementManager(object):
+class MeasurementManager:
     """
     A class to manage the use (Addition, remotion and visibility) from
     measures.
@@ -279,9 +279,9 @@ class MeasurementManager(object):
             type_ = TYPE[type]
             location = LOCATION[location]
             if type == const.LINEAR:
-                value = "%.3f mm" % m.value
+                value = f"{m.value:.3f} mm"
             else:
-                value = "%.3f°" % m.value
+                value = f"{m.value:.3f}°"
 
             msg = ("Update measurement info in GUI",)
             Publisher.sendMessage(
@@ -317,9 +317,9 @@ class MeasurementManager(object):
         location = LOCATION[m.location]
 
         if m.type == const.LINEAR:
-            value = "%.3f mm" % m.value
+            value = f"{m.value:.3f} mm"
         else:
-            value = "%.3f°" % m.value
+            value = f"{m.value:.3f}°"
 
         Publisher.sendMessage(
             "Update measurement info in GUI",
@@ -370,7 +370,7 @@ class MeasurementManager(object):
             self.measures.remove((m, mr))
             Publisher.sendMessage("Remove GUI measurement", measure_index=idx)
             actors = mr.GetActors()
-            slice_number = self.current[0].slice_number
+            # slice_number = self.current[0].slice_number
             if m.location == const.SURFACE:
                 Publisher.sendMessage(
                     ("Remove actors " + str(self.current[0].location)), actors=actors
@@ -412,7 +412,7 @@ class MeasurementManager(object):
 
         self.measures.append((m, density_measure))
 
-        index = prj.Project().AddMeasurement(m)
+        # index = prj.Project().AddMeasurement(m)
 
         msg = ("Update measurement info in GUI",)
         Publisher.sendMessage(
@@ -422,7 +422,7 @@ class MeasurementManager(object):
             colour=m.colour,
             location=density_measure.orientation,
             type_="Density",
-            value="%.3f" % m.value,
+            value=f"{m.value:.3f}",
         )
 
     def OnCloseProject(self):
@@ -530,7 +530,7 @@ class DensityMeasurement:
         return d
 
 
-class CirclePointRepresentation(object):
+class CirclePointRepresentation:
     """
     This class represents a circle that indicate a point in the surface
     """
@@ -565,7 +565,7 @@ class CirclePointRepresentation(object):
         return a
 
 
-class CrossPointRepresentation(object):
+class CrossPointRepresentation:
     """
     This class represents a cross that indicate a point in the surface
     """
@@ -633,7 +633,7 @@ class CrossPointRepresentation(object):
         return a
 
 
-class LinearMeasure(object):
+class LinearMeasure:
     def __init__(self, colour=(1, 0, 0), representation=None):
         self.colour = colour
         self.points = []
@@ -651,7 +651,7 @@ class LinearMeasure(object):
         """
         Is this measure complete?
         """
-        return not self.point_actor2 is None
+        return self.point_actor2 is not None
 
     def AddPoint(self, x, y, z):
         if not self.point_actor1:
@@ -711,8 +711,8 @@ class LinearMeasure(object):
 
     def _draw_text(self):
         p1, p2 = self.points
-        text = " %.3f mm " % math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2))
-        x, y, z = [(i + j) / 2 for i, j in zip(p1, p2)]
+        text = f" {math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm "
+        x, y, z = ((i + j) / 2 for i, j in zip(p1, p2))
         textsource = vtkTextSource()
         textsource.SetText(text)
         textsource.SetBackgroundColor((250 / 255.0, 247 / 255.0, 218 / 255.0))
@@ -751,7 +751,7 @@ class LinearMeasure(object):
                 r, g, b = self.colour
                 canvas.draw_line(p0, p1, colour=(r * 255, g * 255, b * 255, 255))
 
-            txt = "%.3f mm" % self.GetValue()
+            txt = f"{self.GetValue():.3f} mm"
             canvas.draw_text_box(
                 txt,
                 (
@@ -820,7 +820,7 @@ class LinearMeasure(object):
         self.Remove()
 
 
-class AngularMeasure(object):
+class AngularMeasure:
     def __init__(self, colour=(1, 0, 0), representation=None):
         self.colour = colour
         self.points = []
@@ -836,7 +836,7 @@ class AngularMeasure(object):
         self.representation = representation
 
     def IsComplete(self):
-        return not self.point_actor3 is None
+        return self.point_actor3 is not None
 
     def AddPoint(self, x, y, z):
         if not self.point_actor1:
@@ -943,11 +943,11 @@ class AngularMeasure(object):
         if d1 < d2:
             d = d1
             p1 = self.points[0]
-            a, b, c = [j - i for i, j in zip(self.points[1], self.points[2])]
+            a, b, c = (j - i for i, j in zip(self.points[1], self.points[2]))
         else:
             d = d2
             p1 = self.points[2]
-            a, b, c = [j - i for i, j in zip(self.points[1], self.points[0])]
+            a, b, c = (j - i for i, j in zip(self.points[1], self.points[0]))
 
         t = d / math.sqrt(a**2 + b**2 + c**2)
         x = self.points[1][0] + a * t
@@ -963,7 +963,7 @@ class AngularMeasure(object):
         return arc
 
     def _draw_text(self):
-        text = " %.3f " % self.CalculateAngle()
+        text = f" {self.CalculateAngle():.3f} "
         x, y, z = self.points[1]
         textsource = vtkTextSource()
         textsource.SetText(text)
@@ -1003,7 +1003,7 @@ class AngularMeasure(object):
                 canvas.draw_line(p0, p1, colour=(r * 255, g * 255, b * 255, 255))
 
             if len(points) == 3:
-                txt = "%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
+                txt = f"{self.GetValue():.3f}° / {360.0 - self.GetValue():.3f}°"
                 r, g, b = self.colour
                 canvas.draw_arc(
                     points[1],
@@ -1102,7 +1102,7 @@ class AngularMeasure(object):
 
 class CircleDensityMeasure(CanvasHandlerBase):
     def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
-        super(CircleDensityMeasure, self).__init__(None)
+        super().__init__(None)
         self.parent = None
         self.children = []
         self.layer = 0
@@ -1217,7 +1217,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
                 colour=m.colour,
                 location=self.orientation,
                 type_=_("Density Ellipse"),
-                value="%.3f" % m.value,
+                value=f"{m.value:.3f}",
             )
 
     def set_measurement(self, dm):
@@ -1422,7 +1422,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
 
 class PolygonDensityMeasure(CanvasHandlerBase):
     def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
-        super(PolygonDensityMeasure, self).__init__(None)
+        super().__init__(None)
         self.parent = None
         self.children = []
         self.layer = 0
@@ -1723,5 +1723,5 @@ class PolygonDensityMeasure(CanvasHandlerBase):
                 colour=m.colour,
                 location=self.orientation,
                 type_=_("Density Polygon"),
-                value="%.3f" % m.value,
+                value=f"{m.value:.3f}",
             )

@@ -31,7 +31,8 @@ from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
 from invesalius import inv_paths
-from invesalius.data import imagedata_utils
+
+# from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, TwoWaysDictionary, debug, decode
@@ -386,8 +387,8 @@ class Project(metaclass=Singleton):
             folder = tempfile.mkdtemp()
         if not os.path.exists(folder):
             os.mkdir(folder)
-        image_file = os.path.join(folder, "matrix.dat")
-        image_mmap = imagedata_utils.array2memmap(image, image_file)
+        # image_file = os.path.join(folder, "matrix.dat")
+        # image_mmap = imagedata_utils.array2memmap(image, image_file)
         matrix = {"filename": "matrix.dat", "shape": image.shape, "dtype": str(image.dtype)}
         project = {
             # Format info

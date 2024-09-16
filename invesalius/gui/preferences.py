@@ -2,7 +2,6 @@ import os
 import sys
 from functools import partial
 
-import nibabel as nb
 import numpy as np
 import wx
 
@@ -675,7 +674,7 @@ class ObjectTab(wx.Panel):
 
         try:
             if filename:
-                with open(filename, "r") as text_file:
+                with open(filename) as text_file:
                     data = [s.split("\t") for s in text_file.readlines()]
 
                 registration_coordinates = np.array(data[1:]).astype(np.float32)
@@ -714,7 +713,7 @@ class ObjectTab(wx.Panel):
 
                 msg = _("Object file successfully loaded")
                 wx.MessageBox(msg, _("InVesalius 3"))
-        except:
+        except Exception:
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage("Update status text in GUI", label="")
 
