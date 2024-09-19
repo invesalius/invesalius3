@@ -51,7 +51,12 @@ class Tracker(metaclass=Singleton):
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
+        self.__bind_events()
+
         self.LoadState()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.DisconnectTracker, 'Disconnect tracker')
 
     def SaveState(self):
         tracker_id = self.tracker_id

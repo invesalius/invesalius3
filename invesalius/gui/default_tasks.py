@@ -134,24 +134,27 @@ class Panel(wx.Panel):
         Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
     def SetNavigationMode(self, status):
-        self.navigation_mode_status = status
         session = ses.Session()
+        Publisher.sendMessage("Close Project")
+        project_status = session.GetConfig("project_status")
+        if project_status != const.PROJECT_STATUS_CLOSED:
+            Publisher.sendMessage("Update Navigation Mode MenuBar")
+            return
+
         if status:
             session.SetConfig("mode", const.MODE_NAVIGATOR)
         else:
             Publisher.sendMessage("Hide target button")
             session.SetConfig("mode", const.MODE_RP)
+        Publisher.sendMessage("Disconnect tracker")
+
         self.gbs.Hide(self.uppertaskpanel)
+        wx.GetApp().ProcessPendingEvents()
         self.uppertaskpanel.Destroy()
         self.uppertaskpanel = UpperTaskPanel(self)
         self.gbs.Add(self.uppertaskpanel, (0, 0), flag=wx.EXPAND)
         self.Layout()
         self.Refresh()
-        project_status = session.GetConfig("project_status")
-        if project_status != const.PROJECT_STATUS_CLOSED:
-            Publisher.sendMessage("Load project data")
-            Publisher.sendMessage("Enable state project", state=True)
-
 
 # Lower fold panel
 class LowerTaskPanel(wx.Panel):
@@ -351,7 +354,6 @@ class UpperTaskPanel(wx.Panel):
             Publisher.subscribe(self.OnFoldSurface, "Fold surface task")
             Publisher.subscribe(self.OnFoldExport, "Fold export task")
         Publisher.subscribe(self.OnEnableState, "Enable state project")
-        # Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
     def OnOverwrite(self, surface_parameters):
         self.overwrite = surface_parameters["options"]["overwrite"]
