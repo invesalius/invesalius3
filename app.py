@@ -345,6 +345,8 @@ def parse_command_line():
         help="Debug navigated TMS E-field computation",
     )
 
+    parser.add_argument("--cranioplasty", help="Creates an AI-based cranioplasty implant.")
+
     args = parser.parse_args()
     return args
 
@@ -359,6 +361,7 @@ def use_cmd_optargs(args):
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
 
+        check_for_segmentation(args)
         check_for_export(args)
 
         return True
@@ -406,6 +409,11 @@ def use_cmd_optargs(args):
                 return True
 
     return False
+
+
+def check_for_segmentation(args):
+    if args.cranioplasty:
+        Publisher.sendMessage("Create implant for cranioplasty")
 
 
 def sanitize(text):
