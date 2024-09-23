@@ -108,6 +108,7 @@ class Robot(metaclass=Singleton):
         self.is_robot_connected = data
         if self.is_robot_connected:
             Publisher.sendMessage("Enable move away button", enabled=True)
+            Publisher.sendMessage("Enable free drive button", enabled=True)
 
     def RegisterRobot(self):
         Publisher.sendMessage("End busy cursor")
