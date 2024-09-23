@@ -16,11 +16,54 @@ from invesalius import inv_paths
 from invesalius.data import imagedata_utils
 from invesalius.data.converters import to_vtk
 from invesalius.net.utils import download_url_to_file
+from invesalius.pubsub import pub as Publisher
 from invesalius.utils import new_name_by_pattern
 
 from . import utils
 
 SIZE = 48
+
+
+def run_cranioplasty_implant():
+    """
+    This function was created to allow the creation of implants for
+    cranioplasty to be called by command line.
+    """
+    image = slc.Slice().matrix
+    backend = "pytorch"
+    device_id = list(utils.get_torch_devices().values())[0]
+    apply_wwwl = False
+    create_new_mask = True
+    use_gpu = True
+    resize_by_spacing = True
+    window_width = slc.Slice().window_width
+    window_level = slc.Slice().window_level
+    overlap = 50
+    patch_size = 480
+    method = 0  # binary
+
+    seg = ImplantCTSegmentProcess
+
+    ps = seg(
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap,
+        apply_wwwl,
+        window_width,
+        window_level,
+        method=method,
+        patch_size=patch_size,
+        resize_by_spacing=True,
+        image_spacing=slc.Slice().spacing,
+    )
+    ps._run_segmentation()
+    ps.apply_segment_threshold(0.75)
+    slc.Slice().discard_all_buffers()
+    Publisher.sendMessage("Reload actual slice")
+
 
 patch_type = Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]
 

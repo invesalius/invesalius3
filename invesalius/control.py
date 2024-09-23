@@ -45,6 +45,7 @@ import invesalius.utils as utils
 from invesalius import inv_paths, plugins
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+from invesalius.segmentation.deep_learning import segment
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -123,6 +124,9 @@ class Controller:
         Publisher.subscribe(self.update_mask_preview, "Update mask 3D preview")
 
         Publisher.subscribe(self.LoadProject, "Load project data")
+
+        # for call cranioplasty implant by command line
+        Publisher.subscribe(segment.run_cranioplasty_implant, "Create implant for cranioplasty")
 
     def SetBitmapSpacing(self, spacing: Tuple[float, float, float]) -> None:
         proj = prj.Project()
