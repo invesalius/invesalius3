@@ -1320,6 +1320,25 @@ class ControlPanel(wx.Panel):
         )
         self.robot_move_away_button = robot_move_away_button
 
+        # Toggle button for enable/disable free drive robot mode
+        tooltip = _("Free drive robot")
+        BMP_FREE_DRIVE = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("robot_free_drive.png")), wx.BITMAP_TYPE_PNG
+        )
+        robot_free_drive_button = wx.ToggleButton(
+            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        robot_free_drive_button.SetBackgroundColour(GREY_COLOR)
+        robot_free_drive_button.SetBitmap(BMP_FREE_DRIVE)
+        robot_free_drive_button.SetToolTip(tooltip)
+        robot_free_drive_button.SetValue(False)
+        robot_free_drive_button.Enable(False)
+        robot_free_drive_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnRobotFreeDriveButton, ctrl=robot_free_drive_button),
+        )
+        self.robot_free_drive_button = robot_free_drive_button
+
         # Sizers
         start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
         start_navigation_button_sizer.AddMany(
@@ -1341,11 +1360,12 @@ class ControlPanel(wx.Panel):
             ]
         )
 
-        robot_buttons_sizer = wx.FlexGridSizer(2, 5, 5)
+        robot_buttons_sizer = wx.FlexGridSizer(4, 5, 5)
         robot_buttons_sizer.AddMany(
             [
                 (robot_track_target_button),
                 (robot_move_away_button),
+                (robot_free_drive_button),
             ]
         )
 
@@ -1390,6 +1410,8 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.PressRobotMoveAwayButton, "Press move away button")
         Publisher.subscribe(self.EnableRobotMoveAwayButton, "Enable move away button")
+
+        Publisher.subscribe(self.EnableRobotFreeDriveButton, "Enable free drive button")
 
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
@@ -1571,6 +1593,10 @@ class ControlPanel(wx.Panel):
         # Enable 'move away' robot button if robot is connected.
         move_away_button_enabled = self.robot.IsConnected()
         self.EnableRobotMoveAwayButton(enabled=move_away_button_enabled)
+
+        # Enable 'free drive' robot button if robot is connected.
+        free_drive_button_enabled = self.robot.IsConnected()
+        self.EnableRobotFreeDriveButton(enabled=free_drive_button_enabled)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
@@ -1774,6 +1800,18 @@ class ControlPanel(wx.Panel):
             if self.robot.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
                 self.robot.SetObjective(RobotObjective.NONE)
 
+    # 'Free drive' button
+    def EnableRobotFreeDriveButton(self, enabled=False):
+        self.EnableToggleButton(self.robot_free_drive_button, enabled)
+        self.UpdateToggleButton(self.robot_free_drive_button)
+
+    def OnRobotFreeDriveButton(self, evt=None, ctrl=None):
+        self.UpdateToggleButton(self.robot_free_drive_button)
+        pressed = self.robot_free_drive_button.GetValue()
+        if pressed:
+            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=True)
+        else:
+            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
 
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def __init__(self, parent, nav_hub):
