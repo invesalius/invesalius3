@@ -254,6 +254,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self._fill_holes_auto, "Fill holes automatically")
 
         Publisher.subscribe(self._set_interpolation_method, "Set interpolation method")
+        Publisher.subscribe(self.do_threshold_to_all_slices, "Appy threshold all slices")
 
     def GetMaxSliceNumber(self, orientation: str) -> int:
         shape: Tuple[int, int, int] = self.matrix.shape
