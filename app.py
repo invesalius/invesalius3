@@ -360,10 +360,10 @@ def use_cmd_optargs(args):
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
-
-        check_for_cranioplasty(args)
-        check_for_export(args)
-
+        if args.cranioplasty:
+            check_for_cranioplasty(args)
+        else:
+            check_for_export(args)
         return True
 
     elif args.import_folder:
@@ -371,14 +371,20 @@ def use_cmd_optargs(args):
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
-        check_for_export(args)
+        if args.cranioplasty:
+            check_for_cranioplasty(args)
+        else:
+            check_for_export(args)
 
     elif args.other_file:
         Publisher.sendMessage("Open other files", filepath=args.other_file)
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
-        check_for_export(args)
+        if args.cranioplasty:
+            check_for_cranioplasty(args)
+        else:
+            check_for_export(args)
 
     elif args.import_all:
         import invesalius.reader.dicom_reader as dcm
@@ -441,9 +447,11 @@ def check_for_cranioplasty(args):
         # create implant mask
         Publisher.sendMessage("Create implant for cranioplasty")
 
+        path_ = args.export
+
         # convert masks to surfaces and exports them.
         Publisher.sendMessage(
-            "Export all surfaces separately", folder="./", filetype=const.FILETYPE_STL
+            "Export all surfaces separately", folder=path_, filetype=const.FILETYPE_STL
         )
 
 
