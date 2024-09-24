@@ -518,17 +518,9 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
     os.mkdir(os.path.join(folder, idir))
     filelist = []
     for t in tar.getmembers():
-        fsrc = tar.extractfile(t)
-        if fsrc is None:
-            raise Exception("Error extracting file")
+        tar.extract(t, path=folder, filter=tarfile.tar_filter)
         fname = os.path.join(folder, decode(t.name, "utf-8"))
-        fdst = open(fname, "wb")
-        shutil.copyfileobj(fsrc, fdst)
         filelist.append(fname)
-        fsrc.close()
-        fdst.close()
-        del fsrc
-        del fdst
     tar.close()
     return filelist
 
