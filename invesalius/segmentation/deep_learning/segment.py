@@ -1,16 +1,22 @@
 import itertools
 import multiprocessing
 import os
+import pathlib
+import sys
 import tempfile
 import traceback
+from typing import Generator, Tuple
 
 import numpy as np
 from skimage.transform import resize
+from vtkmodules.vtkIOXML import vtkXMLImageDataWriter
 
 import invesalius.data.slice_ as slc
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
+from invesalius.data.converters import to_vtk
 from invesalius.net.utils import download_url_to_file
+from invesalius.pubsub import pub as Publisher
 from invesalius.utils import new_name_by_pattern
 
 from . import utils
@@ -18,16 +24,72 @@ from . import utils
 SIZE = 48
 
 
-def gen_patches(image, patch_size, overlap):
+def run_cranioplasty_implant():
+    """
+    This function was created to allow the creation of implants for
+    cranioplasty to be called by command line.
+    """
+    image = slc.Slice().matrix
+    backend = "pytorch"
+    device_id = list(utils.get_torch_devices().values())[0]
+    apply_wwwl = False
+    create_new_mask = True
+    use_gpu = True
+    resize_by_spacing = True
+    window_width = slc.Slice().window_width
+    window_level = slc.Slice().window_level
+    overlap = 50
+    patch_size = 480
+    method = 0  # binary
+
+    seg = ImplantCTSegmentProcess
+
+    ps = seg(
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap,
+        apply_wwwl,
+        window_width,
+        window_level,
+        method=method,
+        patch_size=patch_size,
+        resize_by_spacing=True,
+        image_spacing=slc.Slice().spacing,
+    )
+    ps._run_segmentation()
+    ps.apply_segment_threshold(0.75)
+    slc.Slice().discard_all_buffers()
+    Publisher.sendMessage("Reload actual slice")
+
+
+patch_type = Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]
+
+
+def gen_patches(
+    image: np.ndarray, patch_size: int, overlap: int
+) -> Generator[Tuple[float, np.ndarray, patch_type], None, None]:
     overlap = int(patch_size * overlap / 100)
     sz, sy, sx = image.shape
-    i_cuts = list(
-        itertools.product(
-            range(0, sz, patch_size - overlap),
-            range(0, sy, patch_size - overlap),
-            range(0, sx, patch_size - overlap),
-        )
-    )
+    slices_x = [i for i in range(0, sx, patch_size - overlap) if i + patch_size <= sx]
+    if not slices_x:
+        slices_x.append(0)
+    elif slices_x[-1] + patch_size < sx:
+        slices_x.append(sx - patch_size)
+    slices_y = [i for i in range(0, sy, patch_size - overlap) if i + patch_size <= sy]
+    if not slices_y:
+        slices_y.append(0)
+    elif slices_y[-1] + patch_size < sy:
+        slices_y.append(sy - patch_size)
+    slices_z = [i for i in range(0, sz, patch_size - overlap) if i + patch_size <= sz]
+    if not slices_z:
+        slices_z.append(0)
+    elif slices_z[-1] + patch_size < sz:
+        slices_z.append(sz - patch_size)
+    i_cuts = list(itertools.product(slices_z, slices_y, slices_x))
+
     sub_image = np.empty(shape=(patch_size, patch_size, patch_size), dtype="float32")
     for idx, (iz, iy, ix) in enumerate(i_cuts):
         sub_image[:] = 0

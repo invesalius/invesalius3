@@ -345,6 +345,8 @@ def parse_command_line():
         help="Debug navigated TMS E-field computation",
     )
 
+    parser.add_argument("--cranioplasty", help="Creates an AI-based cranioplasty implant.")
+
     args = parser.parse_args()
     return args
 
@@ -359,6 +361,7 @@ def use_cmd_optargs(args):
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
 
+        check_for_cranioplasty(args)
         check_for_export(args)
 
         return True
@@ -406,6 +409,42 @@ def use_cmd_optargs(args):
                 return True
 
     return False
+
+
+def check_for_cranioplasty(args):
+    import invesalius.constants as const
+    from invesalius.i18n import tr as _
+
+    surface_options = {
+        "method": {
+            "algorithm": "Default",
+            "options": {},
+        },
+        "options": {
+            "index": 0,
+            "name": "",
+            "quality": _("Optimal *"),
+            "fill": False,
+            "keep_largest": False,
+            "overwrite": False,
+        },
+    }
+
+    if args.cranioplasty:
+        from invesalius.data import slice_
+        from invesalius.project import Project
+
+        # create cranium mask
+        Publisher.sendMessage("Update threshold limits", threshold_range=(226, 3071))
+        Publisher.sendMessage("Appy threshold all slices")
+
+        # create implant mask
+        Publisher.sendMessage("Create implant for cranioplasty")
+
+        # convert masks to surfaces and exports them.
+        Publisher.sendMessage(
+            "Export all surfaces separately", folder="./", filetype=const.FILETYPE_STL
+        )
 
 
 def sanitize(text):
