@@ -421,21 +421,6 @@ def check_for_cranioplasty(args):
     import invesalius.constants as const
     from invesalius.i18n import tr as _
 
-    surface_options = {
-        "method": {
-            "algorithm": "Default",
-            "options": {},
-        },
-        "options": {
-            "index": 0,
-            "name": "",
-            "quality": _("Optimal *"),
-            "fill": False,
-            "keep_largest": False,
-            "overwrite": False,
-        },
-    }
-
     if args.cranioplasty:
         from invesalius.data import slice_
         from invesalius.project import Project
