@@ -1813,6 +1813,7 @@ class ControlPanel(wx.Panel):
         else:
             Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
 
+
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
