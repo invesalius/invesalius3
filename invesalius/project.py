@@ -517,8 +517,9 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
     idir = decode(os.path.split(tar.getnames()[0])[0], "utf8")
     os.mkdir(os.path.join(folder, idir))
     filelist = []
+    tar_filter = getattr(tarfile, "tar_filter", None)  # For python < 3.12
     for t in tar.getmembers():
-        tar.extract(t, path=folder, filter=tarfile.tar_filter)
+        tar.extract(t, path=folder, filter=tar_filter)
         fname = os.path.join(folder, decode(t.name, "utf-8"))
         filelist.append(fname)
     tar.close()
