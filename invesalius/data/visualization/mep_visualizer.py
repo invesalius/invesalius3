@@ -336,7 +336,11 @@ class MEPVisualizer:
 
         markers, skip = self._FilterMarkers(MarkersControl().list)
 
-        if skip or not markers:  # Saves computation if the markers are not updated or irrelevant
+        if not markers:
+            self.points = vtkPolyData()
+            self.UpdateVisualization()
+            return
+        if skip:  # Saves computation if the markers are not updated or irrelevant
             return
 
         points = vtkPoints()
