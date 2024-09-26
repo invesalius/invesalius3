@@ -23,7 +23,7 @@ from functools import partial
 import numpy as np
 
 try:
-    import Trekker
+    import Trekker  # noqa: F401
 
     has_trekker = True
 except ImportError:
@@ -35,24 +35,17 @@ try:
 
     mTMS()
     has_mTMS = True
-except:
+except Exception:
     has_mTMS = False
 
 import wx
-
-try:
-    import wx.lib.agw.foldpanelbar as fpb
-except ImportError:
-    import wx.lib.foldpanelbar as fpb
-
 import wx.lib.masked.numctrl
 
 import invesalius.constants as const
 import invesalius.data.brainmesh_handler as brain
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
-from invesalius import inv_paths, utils
-from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
+from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import Navigation
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
@@ -84,10 +77,7 @@ class TaskPanel(wx.Panel):
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent, navigation):
         wx.Panel.__init__(self, parent)
-        try:
-            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
-        except AttributeError:
-            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         self.__bind_events()
 
         self.SetBackgroundColour(default_colour)
@@ -106,7 +96,7 @@ class InnerTaskPanel(wx.Panel):
         #  Check box to enable e-field visualization
         enable_efield = wx.CheckBox(self, -1, _("Enable E-field"))
         enable_efield.SetValue(False)
-        enable_efield.Enable(1)
+        enable_efield.Enable(True)
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
@@ -117,28 +107,28 @@ class InnerTaskPanel(wx.Panel):
 
         show_area = wx.CheckBox(self, -1, _("Show area above threshold"))
         show_area.SetValue(False)
-        show_area.Enable(1)
+        show_area.Enable(True)
         show_area.Bind(
             wx.EVT_CHECKBOX, partial(self.OnEnableShowAreaAboveThreshold, ctrl=show_area)
         )
 
         efield_tools = wx.CheckBox(self, -1, _("Enable Efield targeting tools"))
         efield_tools.SetValue(False)
-        efield_tools.Enable(1)
+        efield_tools.Enable(True)
         efield_tools.Bind(
             wx.EVT_CHECKBOX, partial(self.OnEnableEfieldTargetingTools, ctrl=efield_tools)
         )
 
         efield_cortex_markers = wx.CheckBox(self, -1, _("View cortex Markers"))
         efield_cortex_markers.SetValue(True)
-        efield_cortex_markers.Enable(1)
+        efield_cortex_markers.Enable(True)
         efield_cortex_markers.Bind(
             wx.EVT_CHECKBOX, partial(self.OnViewCortexMarkers, ctrl=efield_cortex_markers)
         )
 
         efield_save_automatically = wx.CheckBox(self, -1, _("Save Automatically"))
         efield_save_automatically.SetValue(False)
-        efield_save_automatically.Enable(1)
+        efield_save_automatically.Enable(True)
         efield_save_automatically.Bind(
             wx.EVT_CHECKBOX, partial(self.OnSaveEfieldAutomatically, ctrl=efield_save_automatically)
         )
@@ -146,7 +136,7 @@ class InnerTaskPanel(wx.Panel):
         tooltip2 = _("Load Brain Json config")
         btn_act2 = wx.Button(self, -1, _("Load Config"), size=wx.Size(100, 23))
         btn_act2.SetToolTip(tooltip2)
-        btn_act2.Enable(1)
+        btn_act2.Enable(True)
         btn_act2.Bind(wx.EVT_BUTTON, self.OnAddConfig)
 
         tooltip = _("Save Efield")
@@ -163,7 +153,7 @@ class InnerTaskPanel(wx.Panel):
 
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
-        spin_sleep.Enable(1)
+        spin_sleep.Enable(True)
         spin_sleep.SetRange(0.05, 10.0)
         spin_sleep.SetValue(self.sleep_nav)
         spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
@@ -171,7 +161,7 @@ class InnerTaskPanel(wx.Panel):
 
         text_threshold = wx.StaticText(self, -1, _("Threshold:"))
         spin_threshold = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
-        spin_threshold.Enable(1)
+        spin_threshold.Enable(True)
         spin_threshold.SetRange(0.1, 1)
         spin_threshold.SetValue(const.EFIELD_MAX_RANGE_SCALE)
         spin_threshold.Bind(wx.EVT_TEXT, partial(self.OnSelectThreshold, ctrl=spin_threshold))
@@ -179,7 +169,7 @@ class InnerTaskPanel(wx.Panel):
 
         text_ROI_size = wx.StaticText(self, -1, _("ROI size:"))
         spin_ROI_size = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
-        spin_ROI_size.Enable(1)
+        spin_ROI_size.Enable(True)
         spin_ROI_size.SetValue(const.EFIELD_ROI_SIZE)
         spin_ROI_size.Bind(wx.EVT_TEXT, partial(self.OnSelectROISize, ctrl=spin_ROI_size))
         spin_ROI_size.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectROISize, ctrl=spin_ROI_size))
@@ -456,7 +446,7 @@ class InnerTaskPanel(wx.Panel):
                 self.combo_change_coil.Insert(coil_name, elements)
 
     def OnComboCoil(self, evt):
-        coil_name = evt.GetString()
+        # coil_name = evt.GetString()
         coil_index = evt.GetSelection()
         if coil_index == 6:
             coil_set = True
@@ -523,12 +513,8 @@ class InnerTaskPanel(wx.Panel):
 
         proj = prj.Project()
         timestamp = time.localtime(time.time())
-        stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-        )
-        stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-        )
+        stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+        stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
         sep = "-"
         if self.path_meshes is None:
             import os
@@ -563,12 +549,8 @@ class InnerTaskPanel(wx.Panel):
 
             proj = prj.Project()
             timestamp = time.localtime(time.time())
-            stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-                timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-            )
-            stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-                timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-            )
+            stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+            stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
             sep = "-"
             if self.path_meshes is None:
                 import os

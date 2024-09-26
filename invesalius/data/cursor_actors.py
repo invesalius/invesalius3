@@ -77,7 +77,7 @@ def to_vtk(n_array, spacing, slice_number, orientation):
     return image_copy
 
 
-class CursorBase(object):
+class CursorBase:
     def __init__(self):
         self.colour = (0.0, 0.0, 1.0)
         self.opacity = 1
@@ -216,7 +216,7 @@ class CursorBase(object):
         pass
 
     def _set_colour(self, imagedata, colour):
-        scalar_range = int(imagedata.GetScalarRange()[1])
+        # scalar_range = int(imagedata.GetScalarRange()[1])
         r, g, b = colour[:3]
 
         # map scalar values into colors
@@ -247,7 +247,7 @@ class CursorCircle(CursorBase):
     # CursorCircleActor(vtkActor)
     def __init__(self):
         self.radius = 15.0
-        super(CursorCircle, self).__init__()
+        super().__init__()
 
     def _build_actor(self):
         """
@@ -307,7 +307,7 @@ class CursorCircle(CursorBase):
         if self.unit == "µm":
             r /= 1000.0
         if self.unit == "px":
-            sx, sy, sz = 1.0, 1.0, 1.0
+            sx, sy = 1.0, 1.0
         else:
             if self.orientation == "AXIAL":
                 sx = self.spacing[0]
@@ -333,7 +333,7 @@ class CursorCircle(CursorBase):
 class CursorRectangle(CursorBase):
     def __init__(self):
         self.radius = 15.0
-        super(CursorRectangle, self).__init__()
+        super().__init__()
 
     def _build_actor(self):
         """

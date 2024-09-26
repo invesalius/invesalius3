@@ -22,7 +22,7 @@ import uuid
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.marker_transformator import MarkerTransformator
-from invesalius.navigation.robot import Robot, RobotObjective
+from invesalius.navigation.robot import RobotObjective
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 

@@ -170,7 +170,7 @@ class Marker:
             )
         ]
         res.extend(["x_world", "y_world", "z_world", "alpha_world", "beta_world", "gamma_world"])
-        return "\t".join(map(lambda x: '"%s"' % x, res))
+        return "\t".join(map(lambda x: f'"{x}"', res))
 
     def to_csv_row(self):
         """Serialize to excel-friendly tab-separated string"""
@@ -185,11 +185,11 @@ class Marker:
                 continue
 
             if field.type is str:
-                res += '"%s"\t' % getattr(self, field.name)
+                res += f'"{getattr(self, field.name)}"\t'
             elif field.type is MarkerType:
-                res += "%s\t" % getattr(self, field.name).value
+                res += f"{getattr(self, field.name).value}\t"
             else:
-                res += "%s\t" % str(getattr(self, field.name))
+                res += f"{str(getattr(self, field.name))}\t"
 
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
             # Add world coordinates (in addition to the internal ones).

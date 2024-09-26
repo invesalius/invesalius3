@@ -295,12 +295,12 @@ class DrawCrop2DRetangle:
     def MouseMove(self, x, y):
         self.MouseInLine(x, y)
 
-        x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
+        # x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
         slice_spacing = self.viewer.slice_.spacing
         xs, ys, zs = slice_spacing
 
-        x_pos_sl = x_pos_sl_ * xs
-        y_pos_sl = y_pos_sl_ * ys
+        # x_pos_sl = x_pos_sl_ * xs
+        # y_pos_sl = y_pos_sl_ * ys
 
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
 
@@ -385,7 +385,7 @@ class DrawCrop2DRetangle:
 
                 if (
                     self.point_into_box(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL")
-                    and self.status_move == None
+                    and self.status_move is None
                 ):
                     self.crop_pan = const.CROP_PAN
                     # break
@@ -415,7 +415,7 @@ class DrawCrop2DRetangle:
 
                 if (
                     self.point_into_box(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL")
-                    and self.status_move == None
+                    and self.status_move is None
                 ):
                     self.crop_pan = const.CROP_PAN
                     # break
@@ -446,7 +446,7 @@ class DrawCrop2DRetangle:
 
                 if (
                     self.point_into_box(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL")
-                    and self.status_move == None
+                    and self.status_move is None
                 ):
                     self.crop_pan = const.CROP_PAN
                     # break

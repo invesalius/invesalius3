@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-import math
-
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -22,7 +19,6 @@ import math
 # from math import cos, sin
 import os
 import queue
-import random
 import sys
 
 import numpy as np
@@ -38,18 +34,15 @@ from vtkmodules.vtkCommonCore import (
     vtkDoubleArray,
     vtkIdList,
     vtkLookupTable,
-    vtkMath,
     vtkPoints,
     vtkUnsignedCharArray,
 )
 from vtkmodules.vtkCommonDataModel import (
-    vtkCellLocator,
     vtkPolyData,
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import vtkCenterOfMass, vtkGlyph3D, vtkPolyDataNormals
-from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
 from vtkmodules.vtkFiltersModeling import vtkBandedPolyDataContourFilter
 from vtkmodules.vtkFiltersSources import (
@@ -93,7 +86,6 @@ from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteracto
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
-import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
@@ -103,7 +95,6 @@ import invesalius.style as st
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data.actor_factory import ActorFactory
-from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.ruler_volume import GenericLeftRulerVolume
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
@@ -764,7 +755,7 @@ class Viewer(wx.Panel):
                 writer = vtkPostScriptWriter()
             elif filetype == const.FILETYPE_TIF:
                 writer = vtkTIFFWriter()
-                filename = "%s.tif" % filename.strip(".tif")
+                filename = "{}.tif".format(filename.strip(".tif"))
 
             writer.SetInputData(image)
             writer.SetFileName(filename.encode(const.FS_ENCODE))
@@ -1045,7 +1036,7 @@ class Viewer(wx.Panel):
             self.DisableTargetMode()
 
     def OnUpdateCoilPose(self, m_img, coord):
-        vtk_colors = vtkNamedColors()
+        # vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
             distance_to_target = distance.euclidean(
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
@@ -1293,7 +1284,7 @@ class Viewer(wx.Panel):
         v2 = v2 / np.linalg.norm(v2)  # unit vector
         v1 = np.cross(v3, v2)
         v1 = v1 / np.linalg.norm(v1)  # unit vector
-        x2 = x0 + v1
+        # x2 = x0 + v1
         # calculates the matrix for the change of coordinate systems (from canonical to the plane's).
         # remember that, in np.dot(M,p), even though p is a line vector (e.g.,np.array([1,2,3])), it is treated as a column for the dot multiplication.
         M_plane_inv = np.array(
@@ -1500,12 +1491,8 @@ class Viewer(wx.Panel):
 
             proj = prj.Project()
             timestamp = time.localtime(time.time())
-            stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-                timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-            )
-            stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-                timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-            )
+            stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+            stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
             sep = "-"
 
             if self.path_meshes is None:
@@ -1563,7 +1550,7 @@ class Viewer(wx.Panel):
     def CalculateDistanceMaxEfieldCoGE(self):
         self.distance_efield = distance.euclidean(self.center_gravity_position, self.position_max)
         self.SpreadEfieldFactorTextActor.SetValue(
-            "Spread distance: " + str("{:04.2f}".format(self.distance_efield))
+            "Spread distance: " + str(f"{self.distance_efield:04.2f}")
         )
 
     def EfieldVectors(self):
@@ -1705,11 +1692,13 @@ class Viewer(wx.Panel):
         import csv
 
         matching_rows = []
-        with open(csv_filename, "r") as csvfile:
+
+        with open(csv_filename) as csvfile:
             csv_reader = csv.reader(csvfile)
             for row in csv_reader:
                 # Extract the first three numbers from the current row
                 first_three_numbers = list(map(float, row[:3]))
+
                 # Check if the first three numbers match the target numbers
                 if first_three_numbers == target_numbers:
                     # If there's a match, append the row (excluding the first three numbers)
@@ -1978,16 +1967,14 @@ class Viewer(wx.Panel):
 
     def ShowEfieldAtCortexTarget(self):
         if self.target_at_cortex is not None:
-            import vtk
-
             index = self.efield_mesh.FindPoint(self.target_at_cortex)
             if index in self.Id_list:
                 cell_number = self.Id_list.index(index)
                 self.EfieldAtTargetLegend.SetValue(
-                    "Efield at Target: " + str("{:04.2f}".format(self.e_field_norms[cell_number]))
+                    "Efield at Target: " + str(f"{self.e_field_norms[cell_number]:04.2f}")
                 )
             else:
-                self.EfieldAtTargetLegend.SetValue("Efield at Target: " + str("{:04.2f}".format(0)))
+                self.EfieldAtTargetLegend.SetValue("Efield at Target: " + str(f"{0:04.2f}"))
 
     def CreateEfieldAtTargetLegend(self):
         if self.EfieldAtTargetLegend is not None:
@@ -2076,9 +2063,9 @@ class Viewer(wx.Panel):
                 distance = np.linalg.norm(point - p1)
                 if distance < closestDist:
                     closestDist = distance
-                    closestPoint = point
-                    pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
-                    angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
+                    # closestPoint = point
+                    # pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
+                    # angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     self.FindPointsAroundRadiusEfield(cellId)
                     self.radius_list.Sort()
         else:
@@ -2161,8 +2148,7 @@ class Viewer(wx.Panel):
         cp = cp * 0.001  # convert to meters
         cp = cp.tolist()
 
-        # is from posterior to anterior direction of the coil
-        ct1 = m_img_flip[:3, 1]
+        ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
         ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
         coil_dir = m_img_flip[:-1, 0]
         coil_face = m_img_flip[:-1, 1]
@@ -2210,11 +2196,11 @@ class Viewer(wx.Panel):
 
                     proj = prj.Project()
                     timestamp = time.localtime(time.time())
-                    stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-                        timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
+                    stamp_date = (
+                        f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
                     )
-                    stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-                        timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
+                    stamp_time = (
+                        f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
                     )
                     sep = "-"
 
@@ -2326,8 +2312,6 @@ class Viewer(wx.Panel):
     def SavedAllEfieldData(self, filename):
         import csv
 
-        import invesalius.data.imagedata_utils as imagedata_utils
-
         header = [
             "Marker ID",
             "Enorm cell indexes",
@@ -2350,14 +2334,14 @@ class Viewer(wx.Panel):
             writer.writerows(all_data)
 
     def GetCellIntersection(self, p1, p2, locator):
-        vtk_colors = vtkNamedColors()
+        # vtk_colors = vtkNamedColors()
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtkIdList()
         locator.FindCellsAlongLine(p1, p2, 0.001, intersectingCellIds)
         return intersectingCellIds
 
     def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir):
-        vtk_colors = vtkNamedColors()
+        # vtk_colors = vtkNamedColors()
         closestDist = 50
 
         # If intersection is was found, calculate angle and add actors.
@@ -2812,8 +2796,8 @@ class Viewer(wx.Panel):
         cam = self.ren.GetActiveCamera()
         cam.SetFocalPoint(0, 0, 0)
 
-        proj = prj.Project()
-        orig_orien = proj.original_orientation
+        # proj = prj.Project()
+        # orig_orien = proj.original_orientation
 
         xv, yv, zv = const.VOLUME_POSITION[const.AXIAL][0][view]
         xp, yp, zp = const.VOLUME_POSITION[const.AXIAL][1][view]

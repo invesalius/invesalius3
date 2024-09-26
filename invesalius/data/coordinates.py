@@ -21,7 +21,7 @@ import threading
 from math import cos, sin
 from random import uniform
 from time import sleep
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import wx
@@ -621,7 +621,7 @@ def dynamic_reference(probe, reference):
     # a: rotation of plane (X, Y) around Z axis (azimuth)
     # b: rotation of plane (X', Z) around Y' axis (elevation)
     # a: rotation of plane (Y', Z') around X'' axis (roll)
-    m_rot = np.mat(
+    m_rot = np.asmatrix(
         [
             [
                 cos(a) * cos(b),

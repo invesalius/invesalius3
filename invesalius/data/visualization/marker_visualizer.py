@@ -1,8 +1,7 @@
 import vtk
 
-import invesalius.constants as const
 import invesalius.data.coordinates as dco
-from invesalius.data.markers.marker import Marker, MarkerType
+from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
 
 
@@ -352,7 +351,7 @@ class MarkerVisualizer:
         actor = marker.visualization["actor"]
         highlighted = marker.visualization["highlighted"]
 
-        vtk_colors = vtk.vtkNamedColors()
+        # vtk_colors = vtk.vtkNamedColors()
         if state:
             # Change the color of the marker.
             actor.GetProperty().SetColor(self.COIL_AT_TARGET_COLOR)

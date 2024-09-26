@@ -870,7 +870,11 @@ class MessageBox(wx.Dialog):
 
 class ErrorMessageBox(wx.Dialog):
     def __init__(
-        self, parent: wx.Window, title: str, message: str, caption: str = "InVesalius3 Error"
+        self,
+        parent: Optional[wx.Window],
+        title: str,
+        message: str,
+        caption: str = "InVesalius3 Error",
     ):
         wx.Dialog.__init__(
             self, parent, title=caption, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
@@ -4618,7 +4622,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         return np.sqrt(float(d))
 
     def OnComboName(self, evt: wx.CommandEvent) -> None:
-        surface_name = evt.GetString()
+        # surface_name = evt.GetString()
         surface_index = evt.GetSelection()
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
@@ -4687,7 +4691,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         sourcePoints_vtk = vtkPoints()
 
         for i in range(len(sourcePoints)):
-            id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints[i])
+            sourcePoints_vtk.InsertNextPoint(sourcePoints[i])
 
         source = vtkPolyData()
         source.SetPoints(sourcePoints_vtk)
@@ -5534,7 +5538,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         sourcePoints = np.array(coord[:3])
         sourcePoints_vtk = vtkPoints()
         for i in range(len(sourcePoints)):
-            id0 = sourcePoints_vtk.InsertNextPoint(sourcePoints)
+            sourcePoints_vtk.InsertNextPoint(sourcePoints)
         source = vtkPolyData()
         source.SetPoints(sourcePoints_vtk)
 
@@ -6759,7 +6763,7 @@ class RobotCoregistrationDialog(wx.Dialog):
             reader = csv.reader(file, delimiter="\t")
             content = [row for row in reader]
 
-        self.matrix_tracker_to_robot = np.vstack(list(np.float_(content)))
+        self.matrix_tracker_to_robot = np.vstack(list(np.float64(content)))
 
         # Send registration to robot.
         Publisher.sendMessage(
