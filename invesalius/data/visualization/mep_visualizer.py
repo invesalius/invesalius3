@@ -48,9 +48,9 @@ from vtkmodules.vtkRenderingCore import (
 )
 
 import invesalius.constants as const
+import invesalius.data.transformations as transformations
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
-import invesalius.data.transformations as transformations
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 
@@ -251,7 +251,9 @@ class MEPVisualizer:
 
     def DecimateBrainSurface(self):
         triangle_filter = vtkTriangleFilter()
-        triangle_filter.SetInputData(self.surface.GetMapper().GetInput())  # Use vtkPolyData directly
+        triangle_filter.SetInputData(
+            self.surface.GetMapper().GetInput()
+        )  # Use vtkPolyData directly
         triangle_filter.Update()  # Perform triangulation
         triangulated_polydata = triangle_filter.GetOutput()
 
@@ -311,8 +313,10 @@ class MEPVisualizer:
     def projection_on_surface(self, marker):
         print("projecting target on brain surface")
         a, b, g = np.radians(marker.orientation[:3])
-        r_ref = transformations.euler_matrix(a, b, g, axes='sxyz')
-        t_ref = transformations.translation_matrix([marker.position[0], marker.position[1], marker.position[2]])
+        r_ref = transformations.euler_matrix(a, b, g, axes="sxyz")
+        t_ref = transformations.translation_matrix(
+            [marker.position[0], marker.position[1], marker.position[2]]
+        )
         m_point = transformations.concatenate_matrices(t_ref, r_ref)
         m_point[1, -1] = -m_point[1, -1]
         new_coord = self.collision_detection(m_point)
@@ -346,13 +350,15 @@ class MEPVisualizer:
             if not marker.z_cortex and not marker.y_cortex and not marker.y_cortex:
                 projected_point = self.projection_on_surface(marker)
                 marker.cortex_position_orientation = [
-                    projected_point[0], -projected_point[1], projected_point[2],
-                    marker.orientation[0], marker.orientation[1], marker.orientation[2]
+                    projected_point[0],
+                    -projected_point[1],
+                    projected_point[2],
+                    marker.orientation[0],
+                    marker.orientation[1],
+                    marker.orientation[2],
                 ]
 
-            points.InsertNextPoint(
-                marker.x_cortex, -marker.y_cortex, marker.z_cortex
-            )
+            points.InsertNextPoint(marker.x_cortex, -marker.y_cortex, marker.z_cortex)
             mep_value = marker.mep_value or 0
             mep_array.InsertNextValue(mep_value)
         MarkersControl().SaveState()
