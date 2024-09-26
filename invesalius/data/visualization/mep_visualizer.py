@@ -16,7 +16,6 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
-import random
 from copy import deepcopy
 
 import numpy as np
@@ -30,18 +29,17 @@ from vtkmodules.vtkCommonDataModel import (
     vtkImageData,
     vtkPolyData,
 )
-from vtkmodules.vtkCommonMath import vtkMatrix4x4
-from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
+    vtkDecimatePro,
+    vtkImplicitPolyDataDistance,
     vtkPolyDataNormals,
     vtkResampleWithDataSet,
+    vtkTriangleFilter,
 )
-from vtkmodules.vtkFiltersModeling import vtkCollisionDetectionFilter
 from vtkmodules.vtkFiltersPoints import (
     vtkGaussianKernel,
     vtkPointInterpolator,
 )
-from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
@@ -52,7 +50,6 @@ from vtkmodules.vtkRenderingCore import (
 import invesalius.constants as const
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
-import invesalius.data.vtk_utils as vtk_utils
 import invesalius.data.transformations as transformations
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
@@ -62,6 +59,7 @@ class MEPVisualizer:
     def __init__(self):
         self.points = vtkPolyData()
         self.surface = None
+        self.decimate_surface = None
         self.colored_surface_actor = None
         self.point_actore = None
 
@@ -162,8 +160,8 @@ class MEPVisualizer:
                     )
                     Publisher.sendMessage("Get visible surface actor")
                     self.first_load = False
-
             self.UpdateVisualization()
+            self.UpdateMEPPoints()
         else:
             self._config_params["mep_enabled"] = False
             self._CleanupVisualization()
@@ -188,19 +186,6 @@ class MEPVisualizer:
         if not points:
             raise ValueError("MEP Visualizer: No point data found")
 
-        markers, skip = self._FilterMarkers(MarkersControl().list)
-        projected_points = vtkPoints()
-
-        for marker in markers:
-            projected_point = self.projection_on_surface(marker)
-            new_point_id = projected_points.InsertNextPoint(
-                projected_point[0], -projected_point[1], projected_point[2]
-            )
-        points = vtkPoints()
-        points.SetPoints(projected_point)
-        points.GetPointData().SetActiveScalars("MEP")
-        points.Modified()
-
         bounds = np.array(self._config_params["bounds"])
         gaussian_sharpness = self._config_params["gaussian_sharpness"]
         gaussian_radius = self._config_params["gaussian_radius"]
@@ -218,7 +203,7 @@ class MEPVisualizer:
 
         interpolator = vtkPointInterpolator()
         interpolator.SetInputData(box)
-        interpolator.SetSourceData(projected_points)
+        interpolator.SetSourceData(points)
         interpolator.SetKernel(gaussian_kernel)
 
         resample = vtkResampleWithDataSet()
@@ -264,8 +249,23 @@ class MEPVisualizer:
         )
         Publisher.sendMessage("Get visible surface actor")
 
+    def DecimateBrainSurface(self):
+        triangle_filter = vtkTriangleFilter()
+        triangle_filter.SetInputData(self.surface.GetMapper().GetInput())  # Use vtkPolyData directly
+        triangle_filter.Update()  # Perform triangulation
+        triangulated_polydata = triangle_filter.GetOutput()
+
+        # Setup the decimation filter
+        decimate_filter = vtkDecimatePro()
+        decimate_filter.SetInputData(triangulated_polydata)
+        decimate_filter.SetTargetReduction(0.8)  # Reduce the number of triangles by 80%
+        decimate_filter.PreserveTopologyOn()  # Preserve the topology
+        decimate_filter.Update()
+        return decimate_filter
+
     def SetBrainSurface(self, actor: vtkActor, index: int):
         self.surface = actor
+        self.decimate_surface = self.DecimateBrainSurface()
         self.actors_dict[id(actor)] = actor
         self._config_params["bounds"] = list(np.array(actor.GetBounds()))
         self._config_params["brain_surface_index"] = index
@@ -297,48 +297,16 @@ class MEPVisualizer:
         return coil_markers, skip
 
     def collision_detection(self, m_point):
-        sphere0 = vtkSphereSource()
-        sphere0.SetRadius(2)
-        sphere0.SetPhiResolution(31)
-        sphere0.SetThetaResolution(31)
-        sphere0.SetCenter(0.0, 0, 0)
-        matrix1 = vtkMatrix4x4()
-        transform0 = vtkTransform()
-        t_translation = transformations.translation_matrix([0, 0, 0])
+        distance_function = vtkImplicitPolyDataDistance()
+        distance_function.SetInput(self.decimate_surface.GetOutput())
+        distance = distance_function.EvaluateFunction(m_point[:3, -1])
+        if distance > 30 or distance < 1:
+            print("no collision")
+            return m_point[:3, -1]
+
+        t_translation = transformations.translation_matrix([0, 0, -distance])
         m_point_t = m_point @ t_translation
-        transform0.SetMatrix(vtk_utils.numpy_to_vtkMatrix4x4(m_point_t))
-
-        collide = vtkCollisionDetectionFilter()
-        collide.SetInputConnection(0, sphere0.GetOutputPort())
-        collide.SetTransform(0, transform0)
-        collide.SetInputData(1, self.surface.GetMapper().GetInput())
-        collide.SetMatrix(1, matrix1)
-        collide.SetBoxTolerance(0.0)
-        collide.SetCellTolerance(0.0)
-        collide.SetNumberOfCellsPerNode(2)
-        collide.SetCollisionModeToFirstContact()
-        collide.GenerateScalarsOn()
-
-        # Visualize
-        mapper1 = vtkPolyDataMapper()
-        mapper1.SetInputConnection(collide.GetOutputPort(0))
-        mapper1.ScalarVisibilityOff()
-        actor1 = vtkActor()
-        actor1.SetMapper(mapper1)
-        actor1.GetProperty().BackfaceCullingOn()
-        actor1.SetUserTransform(transform0)
-        init_position = actor1.GetCenter()
-
-        for i in range(0, 1000):
-            t_translation = transformations.translation_matrix([0, 0, -i / 3])
-            m_point_t = m_point @ t_translation
-            transform0.SetMatrix(vtk_utils.numpy_to_vtkMatrix4x4(m_point_t))
-            transform0.Update()
-            collide.Update()
-            if collide.GetNumberOfContacts() > 0:
-                return actor1.GetCenter()
-        print("no collision")
-        return init_position
+        return m_point_t[:3, -1]
 
     def projection_on_surface(self, marker):
         print("projecting target on brain surface")
@@ -359,6 +327,9 @@ class MEPVisualizer:
             markers (List[Marker]): The list of marker objects to add/update points for.
             clear_old (bool, default=False): If True, clears all existing points before updating.
         """
+        if not self.surface:
+            return
+
         markers, skip = self._FilterMarkers(MarkersControl().list)
 
         if skip or not markers:  # Saves computation if the markers are not updated or irrelevant
@@ -372,11 +343,19 @@ class MEPVisualizer:
         point_data.AddArray(mep_array)
 
         for marker in markers:
-            new_point_id = points.InsertNextPoint(
-                marker.position[0], -marker.position[1], marker.position[2]
+            if not marker.z_cortex and not marker.y_cortex and not marker.y_cortex:
+                projected_point = self.projection_on_surface(marker)
+                marker.cortex_position_orientation = [
+                    projected_point[0], -projected_point[1], projected_point[2],
+                    marker.orientation[0], marker.orientation[1], marker.orientation[2]
+                ]
+
+            points.InsertNextPoint(
+                marker.x_cortex, -marker.y_cortex, marker.z_cortex
             )
             mep_value = marker.mep_value or 0
             mep_array.InsertNextValue(mep_value)
+        MarkersControl().SaveState()
 
         self.points.SetPoints(points)
         self.points.GetPointData().SetActiveScalars("MEP")

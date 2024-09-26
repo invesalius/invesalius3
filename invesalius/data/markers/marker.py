@@ -253,20 +253,7 @@ class Marker:
             else:
                 marker_type = MarkerType.COIL_TARGET.value
 
-        if all(
-            [
-                k in d
-                for k in [
-                    "x_cortex",
-                    "y_cortex",
-                    "z_cortex",
-                    "alpha_cortex",
-                    "beta_cortex",
-                    "gamma_cortex",
-                ]
-            ]
-        ):
-            cortex_position_orientation = [
+        cortex_position_orientation = d["cortex_position_orientation"] if "cortex_position_orientation" in d else [
                 d["x_cortex"],
                 d["y_cortex"],
                 d["z_cortex"],
@@ -274,8 +261,6 @@ class Marker:
                 d["beta_cortex"],
                 d["gamma_cortex"],
             ]
-        else:
-            cortex_position_orientation = [None, None, None, None, None, None]
 
         z_offset = d.get("z_offset", 0.0)
         z_rotation = d.get("z_rotation", 0.0)
