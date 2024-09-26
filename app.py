@@ -345,6 +345,8 @@ def parse_command_line():
         help="Debug navigated TMS E-field computation",
     )
 
+    parser.add_argument("--cranioplasty", help="Creates an AI-based cranioplasty implant.")
+
     args = parser.parse_args()
     return args
 
@@ -358,9 +360,10 @@ def use_cmd_optargs(args):
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
-
-        check_for_export(args)
-
+        if args.cranioplasty:
+            check_for_cranioplasty(args)
+        else:
+            check_for_export(args)
         return True
 
     elif args.import_folder:
@@ -368,14 +371,20 @@ def use_cmd_optargs(args):
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
-        check_for_export(args)
+        if args.cranioplasty:
+            check_for_cranioplasty(args)
+        else:
+            check_for_export(args)
 
     elif args.other_file:
         Publisher.sendMessage("Open other files", filepath=args.other_file)
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
-        check_for_export(args)
+        if args.cranioplasty:
+            check_for_cranioplasty(args)
+        else:
+            check_for_export(args)
 
     elif args.import_all:
         import invesalius.reader.dicom_reader as dcm
@@ -406,6 +415,29 @@ def use_cmd_optargs(args):
                 return True
 
     return False
+
+
+def check_for_cranioplasty(args):
+    import invesalius.constants as const
+    from invesalius.i18n import tr as _
+
+    if args.cranioplasty:
+        from invesalius.data import slice_
+        from invesalius.project import Project
+
+        # create cranium mask
+        Publisher.sendMessage("Update threshold limits", threshold_range=(226, 3071))
+        Publisher.sendMessage("Appy threshold all slices")
+
+        # create implant mask
+        Publisher.sendMessage("Create implant for cranioplasty")
+
+        path_ = args.export
+
+        # convert masks to surfaces and exports them.
+        Publisher.sendMessage(
+            "Export all surfaces separately", folder=path_, filetype=const.FILETYPE_STL
+        )
 
 
 def sanitize(text):
