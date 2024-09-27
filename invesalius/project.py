@@ -519,7 +519,10 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
     filelist = []
     tar_filter = getattr(tarfile, "tar_filter", None)  # For python < 3.12
     for t in tar.getmembers():
-        tar.extract(t, path=folder, filter=tar_filter)
+        try:
+            tar.extract(t, path=folder, filter=tar_filter)
+        except TypeError:
+            tar.extract(t, path=folder)
         fname = os.path.join(folder, decode(t.name, "utf-8"))
         filelist.append(fname)
     tar.close()
