@@ -93,6 +93,7 @@ line-length = 100
 
 [tool.ruff.lint]
 extend-select = ["UP","I"] # Introduces linting rules for pyupgrade and isort
+extend-ignore = ["E731"]
 
 [tool.ruff.format]
 line-ending = "lf"

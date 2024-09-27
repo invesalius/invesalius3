@@ -108,4 +108,4 @@ class IterativeClosestPoint(metaclass=Singleton):
         self.SaveState()
 
     def GetFreForUI(self):
-        return "{:.2f}".format(self.icp_fre) if self.icp_fre else ""
+        return f"{self.icp_fre:.2f}" if self.icp_fre else ""

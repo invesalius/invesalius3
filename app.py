@@ -18,8 +18,6 @@
 #    detalhes.
 # -------------------------------------------------------------------------
 
-from __future__ import print_function
-
 import argparse
 import multiprocessing
 import os
@@ -53,11 +51,7 @@ if sys.platform not in ("win32", "darwin"):
     os.environ["GDK_BACKEND"] = "x11"
 
 import wx
-
-try:
-    from wx.adv import SplashScreen
-except ImportError:
-    from wx import SplashScreen
+from wx.adv import SPLASH_CENTRE_ON_SCREEN, SPLASH_TIMEOUT, SplashScreen
 
 # import wx.lib.agw.advancedsplash as agw
 # if sys.platform.startswith('linux'):
@@ -66,6 +60,7 @@ except ImportError:
 #    if sys.platform != 'darwin':
 #        _SplashScreen = wx.SplashScreen
 import invesalius.gui.language_dialog as lang_dlg
+import invesalius.gui.log as log
 import invesalius.i18n as i18n
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -78,13 +73,8 @@ LANG = None
 # ------------------------------------------------------------------
 
 if sys.platform in ("linux2", "linux", "win32"):
-    try:
-        tmp_var = wx.GetXDisplay
-    except AttributeError:
-        # A workaround to make InVesalius run with wxPython4 from Ubuntu 18.04
-        wx.GetXDisplay = lambda: None
-    else:
-        del tmp_var
+    if not hasattr(wx, "GetXDisplay"):
+        setattr(wx, "GetXDisplay", lambda: None)
 
 
 session = ses.Session()
@@ -95,8 +85,6 @@ if session.ReadConfig():
             LANG = lang
         except FileNotFoundError:
             pass
-
-import invesalius.gui.log as log
 
 
 class InVesalius(wx.App):
@@ -203,7 +191,7 @@ class Inv3SplashScreen(SplashScreen):
                 icon_file = "splash_" + lang + ".png"
 
             if hasattr(sys, "frozen") and (
-                sys.frozen == "windows_exe" or sys.frozen == "console_exe"
+                getattr(sys, "frozen") == "windows_exe" or getattr(sys, "frozen") == "console_exe"
             ):
                 abs_file_path = os.path.abspath(".." + os.sep)
                 path = abs_file_path
@@ -215,10 +203,7 @@ class Inv3SplashScreen(SplashScreen):
 
             bmp = wx.Image(path).ConvertToBitmap()
 
-            try:
-                style = wx.adv.SPLASH_TIMEOUT | wx.adv.SPLASH_CENTRE_ON_SCREEN
-            except AttributeError:
-                style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
+            style = SPLASH_TIMEOUT | SPLASH_CENTRE_ON_SCREEN
 
             SplashScreen.__init__(
                 self, bitmap=bmp, splashStyle=style, milliseconds=1500, id=-1, parent=None
@@ -232,7 +217,6 @@ class Inv3SplashScreen(SplashScreen):
         # while splash is being shown
         from invesalius.control import Controller
         from invesalius.gui.frame import Frame
-        from invesalius.project import Project
 
         self.main = Frame(None)
         self.control = Controller(self.main)
@@ -289,14 +273,13 @@ def non_gui_startup(args):
     _ = i18n.InstallLanguage(lang)
 
     from invesalius.control import Controller
-    from invesalius.project import Project
 
     session = ses.Session()
     if not session.ReadConfig():
         session.CreateConfig()
         session.SetConfig("language", lang)
 
-    control = Controller(None)
+    _ = Controller(None)
 
     use_cmd_optargs(args)
 
@@ -362,6 +345,8 @@ def parse_command_line():
         help="Debug navigated TMS E-field computation",
     )
 
+    parser.add_argument("--cranioplasty", help="Creates an AI-based cranioplasty implant.")
+
     args = parser.parse_args()
     return args
 
@@ -375,9 +360,10 @@ def use_cmd_optargs(args):
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
-
-        check_for_export(args)
-
+        if args.cranioplasty:
+            check_for_cranioplasty(args)
+        else:
+            check_for_export(args)
         return True
 
     elif args.import_folder:
@@ -385,14 +371,20 @@ def use_cmd_optargs(args):
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
-        check_for_export(args)
+        if args.cranioplasty:
+            check_for_cranioplasty(args)
+        else:
+            check_for_export(args)
 
     elif args.other_file:
         Publisher.sendMessage("Open other files", filepath=args.other_file)
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
-        check_for_export(args)
+        if args.cranioplasty:
+            check_for_cranioplasty(args)
+        else:
+            check_for_export(args)
 
     elif args.import_all:
         import invesalius.reader.dicom_reader as dcm
@@ -425,6 +417,29 @@ def use_cmd_optargs(args):
     return False
 
 
+def check_for_cranioplasty(args):
+    import invesalius.constants as const
+    from invesalius.i18n import tr as _
+
+    if args.cranioplasty:
+        from invesalius.data import slice_
+        from invesalius.project import Project
+
+        # create cranium mask
+        Publisher.sendMessage("Update threshold limits", threshold_range=(226, 3071))
+        Publisher.sendMessage("Appy threshold all slices")
+
+        # create implant mask
+        Publisher.sendMessage("Create implant for cranioplasty")
+
+        path_ = args.export
+
+        # convert masks to surfaces and exports them.
+        Publisher.sendMessage(
+            "Export all surfaces separately", folder=path_, filetype=const.FILETYPE_STL
+        )
+
+
 def sanitize(text):
     text = str(text).strip().replace(" ", "_")
     return re.sub(r"(?u)[^-\w.]", "", text)
@@ -441,9 +456,9 @@ def check_for_export(args, suffix="", remove_surfaces=False):
 
         if suffix:
             if args.export.endswith(".stl"):
-                path_ = "{}-{}.stl".format(args.export[:-4], suffix)
+                path_ = f"{args.export[:-4]}-{suffix}.stl"
             else:
-                path_ = "{}-{}.stl".format(args.export, suffix)
+                path_ = f"{args.export}-{suffix}.stl"
         else:
             path_ = args.export
 
@@ -455,9 +470,9 @@ def check_for_export(args, suffix="", remove_surfaces=False):
 
             for threshold_name, threshold_range in Project().presets.thresh_ct.items():
                 if isinstance(threshold_range[0], int):
-                    path_ = "{}-{}-{}.stl".format(args.export_to_all, suffix, threshold_name)
+                    path_ = f"{args.export_to_all}-{suffix}-{threshold_name}.stl"
                     export(path_, threshold_range, remove_surface=True)
-        except:
+        except Exception:
             traceback.print_exc()
         finally:
             exit(0)
@@ -469,14 +484,15 @@ def check_for_export(args, suffix="", remove_surfaces=False):
         export_filename = args.export_project
         if suffix:
             export_filename, ext = os.path.splitext(export_filename)
-            export_filename = "{}-{}{}".format(export_filename, suffix, ext)
+            export_filename = f"{export_filename}-{suffix}{ext}"
 
         prj.export_project(export_filename, save_masks=args.save_masks)
-        print("Saved {}".format(export_filename))
+        print(f"Saved {export_filename}")
 
 
 def export(path_, threshold_range, remove_surface=False):
     import invesalius.constants as const
+    from invesalius.i18n import tr as _
 
     Publisher.sendMessage("Set threshold values", threshold_range=threshold_range)
 
@@ -504,7 +520,7 @@ def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
     """
     Print pubsub messages
     """
-    utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
+    utils.debug(f"{topic}\n\tParameters: {msg_data}")
 
 
 def init():
@@ -517,7 +533,7 @@ def init():
     multiprocessing.freeze_support()
 
     # Needed in win 32 exe
-    if hasattr(sys, "frozen") and sys.platform.startswith("win"):
+    if hasattr(sys, "frozen") and sys.platform == "win32":
         # Click in the .inv3 file support
         root = winreg.HKEY_CLASSES_ROOT
         key = "InVesalius 3.1\InstallationDir"
@@ -532,9 +548,9 @@ def init():
         if inv_paths.OLD_USER_INV_DIR.exists():
             inv_paths.copy_old_files()
 
-    if hasattr(sys, "frozen") and sys.frozen == "windows_exe":
+    if hasattr(sys, "frozen") and getattr(sys, "frozen") == "windows_exe":
         # Set system standard error output to file
-        path = inv_paths.USER_LOG_DIR.join("stderr.log")
+        path = inv_paths.USER_LOG_DIR.joinpath("stderr.log")
         sys.stderr = open(path, "w")
 
 
@@ -586,7 +602,7 @@ def main(connection=None, remote_host=None):
     if args.no_gui:
         non_gui_startup(args)
     else:
-        application = InVesalius(0)
+        application = InVesalius(False)
         application.MainLoop()
 
 

@@ -18,11 +18,8 @@
 # --------------------------------------------------------------------------
 
 import wx
+import wx.lib.agw.foldpanelbar as fpb
 
-try:
-    import wx.lib.agw.foldpanelbar as fpb
-except ModuleNotFoundError:
-    import wx.lib.foldpanelbar as fpb
 import invesalius.constants as const
 import invesalius.gui.data_notebook as nb
 import invesalius.gui.task_exporter as exporter
@@ -31,7 +28,6 @@ import invesalius.gui.task_imports as imports
 import invesalius.gui.task_navigator as navigator
 import invesalius.gui.task_slice as slice_
 import invesalius.gui.task_surface as surface
-import invesalius.gui.task_tools as tools
 import invesalius.session as ses
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
@@ -185,8 +181,8 @@ class LowerTaskPanel(wx.Panel):
 
         # Fold 1 - Data
         item = fold_panel.AddFoldPanel(_("Data"), collapsed=False, foldIcons=image_list)
-        style = fold_panel.GetCaptionStyle(item)
-        col = style.GetFirstColour()
+        # style = fold_panel.GetCaptionStyle(item)
+        # col = style.GetFirstColour()
         self.enable_items.append(item)
 
         # npanel = wx.Panel(self, -1)
@@ -308,9 +304,9 @@ class UpperTaskPanel(wx.Panel):
                     "%d. %s" % (i + 1, name), collapsed=True, foldIcons=image_list
                 )
             else:
-                item = fold_panel.AddFoldPanel("%s" % name, collapsed=True, foldIcons=image_list)
-            style = fold_panel.GetCaptionStyle(item)
-            col = style.GetFirstColour()
+                item = fold_panel.AddFoldPanel(f"{name}", collapsed=True, foldIcons=image_list)
+            # style = fold_panel.GetCaptionStyle(item)
+            # col = style.GetFirstColour()
 
             # Add panel to FoldPanel
             fold_panel.AddFoldPanelWindow(
@@ -388,7 +384,7 @@ class UpperTaskPanel(wx.Panel):
 
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
-        closed = evt.GetFoldStatus()
+        # closed = evt.GetFoldStatus()
 
         if id == self.__id_slice:
             Publisher.sendMessage("Retrieve task slice style")

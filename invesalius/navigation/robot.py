@@ -21,14 +21,11 @@ from enum import Enum
 
 import numpy as np
 import wx
-from wx import ID_OK
 
-import invesalius.constants as const
 import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.i18n import tr as _
-from invesalius.navigation.tracker import Tracker
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -111,6 +108,7 @@ class Robot(metaclass=Singleton):
         self.is_robot_connected = data
         if self.is_robot_connected:
             Publisher.sendMessage("Enable move away button", enabled=True)
+            Publisher.sendMessage("Enable free drive button", enabled=True)
 
     def RegisterRobot(self):
         Publisher.sendMessage("End busy cursor")

@@ -3,7 +3,6 @@ import os
 import vtk
 
 import invesalius.constants as const
-import invesalius.data.coordinates as dco
 import invesalius.data.polydata_utils as pu
 import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses

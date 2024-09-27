@@ -99,7 +99,7 @@ class DicomGroup:
         # Case to test: \other\higroma
         # condition created, if any dicom with the same
         # position, but 3D, leaving the same series.
-        if not "DERIVED" in dicom.image.type:
+        if "DERIVED" not in dicom.image.type:
             # if any dicom with the same position
             if pos not in self.slices_dict.keys():
                 self.slices_dict[pos] = dicom
@@ -138,7 +138,7 @@ class DicomGroup:
         sorter.SetZSpacingTolerance(1e-10)
         try:
             sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
-        except TypeError as e:
+        except TypeError:
             sorter.Sort(filelist)
         filelist = sorter.GetFilenames()
 
@@ -152,8 +152,8 @@ class DicomGroup:
         # This will be used to fix problem 1, after merging
         # single DicomGroups of same study_id and orientation
         list_ = list(self.slices_dict.values())
-        dicom = list_[0]
-        axis = ORIENT_MAP[dicom.image.orientation_label]
+        # dicom = list_[0]
+        # axis = ORIENT_MAP[dicom.image.orientation_label]
         # list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
         list_ = sorted(list_, key=lambda dicom: dicom.image.number)
         return list_
@@ -311,7 +311,7 @@ class PatientGroup:
             axis = ORIENT_MAP[group_key[0]]  # based on orientation
             for index in range(len(sorted_list) - 1):
                 current = sorted_list[index]
-                next = sorted_list[index + 1]
+                # next = sorted_list[index + 1]
 
                 pos_current = current.image.position[axis]
                 pos_next = current.image.position[axis]

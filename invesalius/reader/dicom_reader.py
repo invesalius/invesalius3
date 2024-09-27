@@ -18,9 +18,6 @@
 # --------------------------------------------------------------------------
 import os
 import sys
-import tempfile
-import threading
-from multiprocessing import cpu_count
 
 import gdcm
 
@@ -31,15 +28,12 @@ try:
 except AttributeError:
     pass
 
-import glob
-import plistlib
 
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
 import invesalius.reader.dicom as dicom
 import invesalius.reader.dicom_grouper as dicom_grouper
-import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
@@ -54,24 +48,6 @@ if sys.platform == "win32":
         _has_win32api = False
 else:
     _has_win32api = False
-
-
-def ReadDicomGroup(dir_):
-    patient_group = GetDicomGroups(dir_)
-    if len(patient_group) > 0:
-        filelist, dicom, zspacing = SelectLargerDicomGroup(patient_group)
-        filelist = SortFiles(filelist, dicom)
-        size = dicom.image.size
-        bits = dicom.image.bits_allocad
-
-        imagedata = CreateImageData(filelist, zspacing, size, bits)
-
-        session = ses.Session()
-        session.SetConfig("project_status", const.PROJECT_STATUS_NEW)
-
-        return imagedata, dicom
-    else:
-        return False
 
 
 def SelectLargerDicomGroup(patient_group):
@@ -137,7 +113,6 @@ class LoadDicom:
             stf = gdcm.StringFilter()
             stf.SetFile(file)
 
-            field_dict = {}
             data_dict = {}
 
             tag = gdcm.Tag(0x0008, 0x0005)
@@ -175,7 +150,7 @@ class LoadDicom:
 
                     tag_labels[stag] = data[0]
 
-                    if not group in data_dict.keys():
+                    if group not in data_dict.keys():
                         data_dict[group] = {}
 
                     if not (utils.VerifyInvalidPListCharacter(data[1])):
@@ -200,7 +175,7 @@ class LoadDicom:
 
                     tag_labels[stag] = data[0]
 
-                    if not group in data_dict.keys():
+                    if group not in data_dict.keys():
                         data_dict[group] = {}
 
                     if not (utils.VerifyInvalidPListCharacter(data[1])):
