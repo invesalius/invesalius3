@@ -1,7 +1,4 @@
-import math
-
 import numpy as np
-import vtk
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco

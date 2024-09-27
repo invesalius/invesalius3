@@ -36,19 +36,13 @@ try:
 
     mTMS()
     has_mTMS = True
-except:
+except Exception:
     has_mTMS = False
-
-import wx
-
-try:
-    import wx.lib.agw.foldpanelbar as fpb
-except ImportError:
-    import wx.lib.foldpanelbar as fpb
 
 import multiprocessing
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 
+import wx
 import wx.lib.agw.genericmessagedialog as GMD
 import wx.lib.masked.numctrl
 
@@ -60,7 +54,7 @@ import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 import invesalius.utils as utils
-from invesalius import inv_paths
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 
@@ -82,10 +76,8 @@ class TaskPanel(wx.Panel):
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        try:
-            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
-        except AttributeError:
-            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+
         self.SetBackgroundColour(default_colour)
 
         self.affine = np.identity(4)
@@ -112,28 +104,28 @@ class InnerTaskPanel(wx.Panel):
         tooltip = _("Load FOD")
         btn_load = wx.Button(self, -1, _("FOD"), size=wx.Size(50, 23))
         btn_load.SetToolTip(tooltip)
-        btn_load.Enable(1)
+        btn_load.Enable(True)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLinkFOD)
 
         # Button for loading Trekker configuration
         tooltip = _("Load Trekker configuration parameters")
         btn_load_cfg = wx.Button(self, -1, _("Configure"), size=wx.Size(65, 23))
         btn_load_cfg.SetToolTip(tooltip)
-        btn_load_cfg.Enable(1)
+        btn_load_cfg.Enable(True)
         btn_load_cfg.Bind(wx.EVT_BUTTON, self.OnLoadParameters)
 
         # Button for creating peel
         tooltip = _("Create peel")
         btn_mask = wx.Button(self, -1, _("Peel"), size=wx.Size(50, 23))
         btn_mask.SetToolTip(tooltip)
-        btn_mask.Enable(1)
+        btn_mask.Enable(True)
         btn_mask.Bind(wx.EVT_BUTTON, self.OnCreatePeel)
 
         # Button for creating new coil
         tooltip = _("Load anatomical labels")
         btn_act = wx.Button(self, -1, _("ACT"), size=wx.Size(50, 23))
         btn_act.SetToolTip(tooltip)
-        btn_act.Enable(1)
+        btn_act.Enable(True)
         btn_act.Bind(wx.EVT_BUTTON, self.OnLoadACT)
 
         # Create a horizontal sizer to represent button save
@@ -146,7 +138,7 @@ class InnerTaskPanel(wx.Panel):
         # Change peeling depth
         text_peel_depth = wx.StaticText(self, -1, _("Peeling depth (mm):"))
         spin_peel_depth = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
-        spin_peel_depth.Enable(1)
+        spin_peel_depth.Enable(True)
         spin_peel_depth.SetRange(0, const.MAX_PEEL_DEPTH)
         spin_peel_depth.SetValue(const.PEEL_DEPTH)
         spin_peel_depth.Bind(wx.EVT_TEXT, partial(self.OnSelectPeelingDepth, ctrl=spin_peel_depth))
@@ -157,7 +149,7 @@ class InnerTaskPanel(wx.Panel):
         # Change number of tracts
         text_ntracts = wx.StaticText(self, -1, _("Number tracts:"))
         spin_ntracts = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
-        spin_ntracts.Enable(1)
+        spin_ntracts.Enable(True)
         spin_ntracts.SetRange(1, 2000)
         spin_ntracts.SetValue(const.N_TRACTS)
         spin_ntracts.Bind(wx.EVT_TEXT, partial(self.OnSelectNumTracts, ctrl=spin_ntracts))
@@ -166,7 +158,7 @@ class InnerTaskPanel(wx.Panel):
         # Change seed offset for computing tracts
         text_offset = wx.StaticText(self, -1, _("Seed offset (mm):"))
         spin_offset = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.1)
-        spin_offset.Enable(1)
+        spin_offset.Enable(True)
         spin_offset.SetRange(0, 100.0)
         spin_offset.SetValue(self.seed_offset)
         spin_offset.Bind(wx.EVT_TEXT, partial(self.OnSelectOffset, ctrl=spin_offset))
@@ -176,7 +168,7 @@ class InnerTaskPanel(wx.Panel):
         # Change seed radius for computing tracts
         text_radius = wx.StaticText(self, -1, _("Seed radius (mm):"))
         spin_radius = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.1)
-        spin_radius.Enable(1)
+        spin_radius.Enable(True)
         spin_radius.SetRange(0, 100.0)
         spin_radius.SetValue(self.seed_radius)
         spin_radius.Bind(wx.EVT_TEXT, partial(self.OnSelectRadius, ctrl=spin_radius))
@@ -195,7 +187,7 @@ class InnerTaskPanel(wx.Panel):
         # Change opacity of brain mask visualization
         text_opacity = wx.StaticText(self, -1, _("Brain opacity:"))
         spin_opacity = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.1)
-        spin_opacity.Enable(0)
+        spin_opacity.Enable(False)
         spin_opacity.SetRange(0, 1.0)
         spin_opacity.SetValue(self.brain_opacity)
         spin_opacity.Bind(wx.EVT_TEXT, partial(self.OnSelectOpacity, ctrl=spin_opacity))
@@ -251,21 +243,21 @@ class InnerTaskPanel(wx.Panel):
         # Check box to enable tract visualization
         checktracts = wx.CheckBox(self, -1, _("Enable tracts"))
         checktracts.SetValue(False)
-        checktracts.Enable(0)
+        checktracts.Enable(False)
         checktracts.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableTracts, ctrl=checktracts))
         self.checktracts = checktracts
 
         # Check box to enable surface peeling
         checkpeeling = wx.CheckBox(self, -1, _("Peel surface"))
         checkpeeling.SetValue(False)
-        checkpeeling.Enable(0)
+        checkpeeling.Enable(False)
         checkpeeling.Bind(wx.EVT_CHECKBOX, partial(self.OnShowPeeling, ctrl=checkpeeling))
         self.checkpeeling = checkpeeling
 
         # Check box to enable tract visualization
         checkACT = wx.CheckBox(self, -1, _("ACT"))
         checkACT.SetValue(False)
-        checkACT.Enable(0)
+        checkACT.Enable(False)
         checkACT.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableACT, ctrl=checkACT))
         self.checkACT = checkACT
 
@@ -418,7 +410,7 @@ class InnerTaskPanel(wx.Panel):
                 self.tp.running = False
 
             t_end = time.time()
-            print("Elapsed time - {}".format(t_end - t_init))
+            print(f"Elapsed time - {t_end - t_init}")
             self.tp.Close()
             if self.tp.error:
                 dlgg = GMD.GenericMessageDialog(
@@ -488,7 +480,7 @@ class InnerTaskPanel(wx.Panel):
                     self.TrekkerCallback(completed_future)
 
                 t_end = time.time()
-                print("Elapsed time - {}".format(t_end - t_init))
+                print(f"Elapsed time - {t_end - t_init}")
                 self.tp.Close()
                 if self.tp.error:
                     dlgg = GMD.GenericMessageDialog(
@@ -497,7 +489,7 @@ class InnerTaskPanel(wx.Panel):
                     dlgg.ShowModal()
                 del self.tp
                 wx.MessageBox(_("FOD Import successful"), _("InVesalius 3"))
-            except:
+            except Exception:
                 Publisher.sendMessage(
                     "Update status text in GUI", label=_("Trekker initialization failed.")
                 )
@@ -508,11 +500,11 @@ class InnerTaskPanel(wx.Panel):
     def TrekkerCallback(self, trekker):
         self.tp.running = False
         print("Import Complete")
-        if trekker != None:
+        if trekker is not None:
             self.trekker = trekker.result()
             self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
 
-            self.checktracts.Enable(1)
+            self.checktracts.Enable(True)
             self.checktracts.SetValue(True)
             self.view_tracts = True
 
@@ -556,7 +548,7 @@ class InnerTaskPanel(wx.Panel):
                         self.tp.running = False
 
                     t_end = time.time()
-                    print("Elapsed time - {}".format(t_end - t_init))
+                    print(f"Elapsed time - {t_end - t_init}")
                     self.tp.Close()
                     if self.tp.error:
                         dlgg = GMD.GenericMessageDialog(
@@ -564,7 +556,7 @@ class InnerTaskPanel(wx.Panel):
                         )
                         dlgg.ShowModal()
                     del self.tp
-                    self.checkACT.Enable(1)
+                    self.checkACT.Enable(True)
                     self.checkACT.SetValue(True)
                     Publisher.sendMessage("Update ACT data", data=self.act_data_arr)
                     Publisher.sendMessage("Enable ACT", data=True)
@@ -572,7 +564,7 @@ class InnerTaskPanel(wx.Panel):
                         "Update status text in GUI", label=_("Trekker ACT loaded")
                     )
                     wx.MessageBox(_("ACT Import successful"), _("InVesalius 3"))
-            except:
+            except Exception:
                 Publisher.sendMessage(
                     "Update status text in GUI", label=_("ACT initialization failed.")
                 )
@@ -646,14 +638,14 @@ class InnerTaskPanel(wx.Panel):
         self.trekker_cfg = const.TREKKER_CONFIG
 
         self.checktracts.SetValue(False)
-        self.checktracts.Enable(0)
+        self.checktracts.Enable(False)
         self.checkpeeling.SetValue(False)
-        self.checkpeeling.Enable(0)
+        self.checkpeeling.Enable(False)
         self.checkACT.SetValue(False)
-        self.checkACT.Enable(0)
+        self.checkACT.Enable(False)
 
         self.spin_opacity.SetValue(const.BRAIN_OPACITY)
-        self.spin_opacity.Enable(0)
+        self.spin_opacity.Enable(False)
         Publisher.sendMessage("Update peel", flag=False, actor=self.brain_actor)
 
         self.peel_depth = const.PEEL_DEPTH

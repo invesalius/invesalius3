@@ -31,7 +31,8 @@ from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
 from invesalius import inv_paths
-from invesalius.data import imagedata_utils
+
+# from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, TwoWaysDictionary, debug, decode
@@ -386,8 +387,8 @@ class Project(metaclass=Singleton):
             folder = tempfile.mkdtemp()
         if not os.path.exists(folder):
             os.mkdir(folder)
-        image_file = os.path.join(folder, "matrix.dat")
-        image_mmap = imagedata_utils.array2memmap(image, image_file)
+        # image_file = os.path.join(folder, "matrix.dat")
+        # image_mmap = imagedata_utils.array2memmap(image, image_file)
         matrix = {"filename": "matrix.dat", "shape": image.shape, "dtype": str(image.dtype)}
         project = {
             # Format info
@@ -516,18 +517,14 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
     idir = decode(os.path.split(tar.getnames()[0])[0], "utf8")
     os.mkdir(os.path.join(folder, idir))
     filelist = []
+    tar_filter = getattr(tarfile, "tar_filter", None)  # For python < 3.12
     for t in tar.getmembers():
-        fsrc = tar.extractfile(t)
-        if fsrc is None:
-            raise Exception("Error extracting file")
+        try:
+            tar.extract(t, path=folder, filter=tar_filter)
+        except TypeError:
+            tar.extract(t, path=folder)
         fname = os.path.join(folder, decode(t.name, "utf-8"))
-        fdst = open(fname, "wb")
-        shutil.copyfileobj(fsrc, fdst)
         filelist.append(fname)
-        fsrc.close()
-        fdst.close()
-        del fsrc
-        del fdst
     tar.close()
     return filelist
 

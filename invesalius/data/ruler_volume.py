@@ -145,8 +145,8 @@ class RulerVolume(ABC):
         Returns:
             tuple: (image width in mm, image height in mm)
         """
-        initial_orientation = (0, 0, 1)  # up direction is z-axis
-        initial_rotational_axis = (0, 1, 0)  # y-axis
+        # initial_orientation = (0, 0, 1)  # up direction is z-axis
+        # initial_rotational_axis = (0, 1, 0)  # y-axis
         bounds = self.viewer_volume.surface.GetBounds()
         bounds_matrix = np.abs(
             np.array([bounds[0] - bounds[1], bounds[2] - bounds[3], bounds[4] - bounds[5]])

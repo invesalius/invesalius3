@@ -73,7 +73,7 @@ class ComboBoxLanguage:
         self.bitmapCmb = bitmapCmb = BitmapComboBox(parent, style=wx.CB_READONLY)
         for key in self.locales_key:
             # Based on composed flag filename, get bitmap
-            filepath = os.path.join(ICON_DIR, "%s.png" % (key))
+            filepath = os.path.join(ICON_DIR, f"{key}.png")
             bmp = wx.Bitmap(filepath, wx.BITMAP_TYPE_PNG)
             # Add bitmap and info to Combo
             bitmapCmb.Append(dict_locales[key], bmp, key)
@@ -95,7 +95,7 @@ class LanguageDialog(wx.Dialog):
     selected is writing in the config.ini"""
 
     def __init__(self, parent=None, startApp=None):
-        super(LanguageDialog, self).__init__(parent, title="")
+        super().__init__(parent, title="")
         self.__TranslateMessage__()
         self.SetTitle(_("Language selection"))
         self.__init_gui()

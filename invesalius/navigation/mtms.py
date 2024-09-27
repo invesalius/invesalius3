@@ -71,7 +71,7 @@ class mTMS:
                 "coil_pose(nav)": coil_pose_flip,
                 "intensity": self.intensity,
             }
-            self.df = self.df.append((pd.DataFrame([new_row], columns=self.df.columns)))
+            self.df = self.df.append(pd.DataFrame([new_row], columns=self.df.columns))
         else:
             print("Target is not valid. The offset is: ", offset)
 
@@ -84,13 +84,13 @@ class mTMS:
     def FindmTMSParameters(self, offset):
         # fname = "C:\\mTMS\\mTMS parameters\\PP\\PP31 mikael 1mm 15deg 5-coil grid.txt"
         fname = self.vi.GetControlValue("Get Pulse-parameters file")
-        with open(fname, "r") as the_file:
+        with open(fname) as the_file:
             all_data = [line.strip() for line in the_file.readlines()]
             data = all_data[18:]
         data = np.array([line.split("\t") for line in data])
 
         separator = "_"
-        target = separator.join(["{}".format(x) for x in offset])
+        target = separator.join([f"{x}" for x in offset])
         target_index = np.where(data[:, 0] == target)
 
         return target, target_index
@@ -119,12 +119,8 @@ class mTMS:
 
     def SaveSequence(self):
         timestamp = time.localtime(time.time())
-        stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-        )
-        stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-        )
+        stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+        stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
         sep = "_"
         parts = [stamp_date, stamp_time, self.log_name, "sequence"]
         default_filename = sep.join(parts) + ".csv"

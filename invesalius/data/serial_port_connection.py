@@ -49,16 +49,16 @@ class SerialPortConnection(threading.Thread):
             import serial
 
             self.connection = serial.Serial(self.com_port, baudrate=self.baud_rate, timeout=0)
-            print("Connection to port {} opened.".format(self.com_port))
+            print(f"Connection to port {self.com_port} opened.")
 
             Publisher.sendMessage("Serial port connection", state=True)
-        except:
-            print("Serial port init error: Connecting to port {} failed.".format(self.com_port))
+        except Exception:
+            print(f"Serial port init error: Connecting to port {self.com_port} failed.")
 
     def Disconnect(self):
         if self.connection:
             self.connection.close()
-            print("Connection to port {} closed.".format(self.com_port))
+            print(f"Connection to port {self.com_port} closed.")
 
             Publisher.sendMessage("Serial port connection", state=False)
 
@@ -66,7 +66,7 @@ class SerialPortConnection(threading.Thread):
         try:
             self.connection.send_break(constants.PULSE_DURATION_IN_MILLISECONDS / 1000)
             Publisher.sendMessage("Serial port pulse triggered")
-        except:
+        except Exception:
             print("Error: Serial port could not be written into.")
 
     def run(self):
@@ -76,7 +76,7 @@ class SerialPortConnection(threading.Thread):
                 lines = self.connection.readlines()
                 if lines:
                     trigger_on = True
-            except:
+            except Exception:
                 print("Error: Serial port could not be read.")
 
             if self.stylusplh:

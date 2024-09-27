@@ -29,19 +29,14 @@ try:
 
     mTMS()
     has_mTMS = True
-except:
+except Exception:
     has_mTMS = False
 
 import sys
 import uuid
 
 import wx
-
-try:
-    import wx.lib.agw.foldpanelbar as fpb
-except ImportError:
-    import wx.lib.foldpanelbar as fpb
-
+import wx.lib.agw.foldpanelbar as fpb
 import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
 import wx.lib.platebtn as pbtn
@@ -54,6 +49,7 @@ import invesalius.session as ses
 from invesalius import inv_paths, utils
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
+from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import NavigationHub
 from invesalius.navigation.robot import RobotObjective
 from invesalius.pubsub import pub as Publisher
@@ -280,7 +276,7 @@ class InnerFoldPanel(wx.Panel):
         expanded = evt.GetFoldStatus()
 
         if id == self.__id_nav:
-            status = self.CheckRegistration()
+            status = self.CheckRegistration()  # noqa: F841
 
         if not expanded:
             self.fold_panel.Expand(evt.GetTag())
@@ -306,10 +302,6 @@ class InnerFoldPanel(wx.Panel):
 class CoregistrationPanel(wx.Panel):
     def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
-        try:
-            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
-        except AttributeError:
-            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         # Changed from default color for OSX
         background_colour = (255, 255, 255)
         self.SetBackgroundColour(background_colour)
@@ -346,7 +338,8 @@ class CoregistrationPanel(wx.Panel):
         Publisher.subscribe(self._FoldImage, "Move to image page")
 
     def OnPageChanging(self, evt):
-        page = evt.GetOldSelection()
+        # page = evt.GetOldSelection()
+        pass
 
     def OnPageChanged(self, evt):
         old_page = evt.GetOldSelection()
@@ -508,9 +501,7 @@ class ImagePage(wx.Panel):
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
 
-        assert len(found) != 0, "No fiducial found for which {} = {}".format(
-            attribute_name, attribute_value
-        )
+        assert len(found) != 0, f"No fiducial found for which {attribute_name} = {attribute_value}"
         return found[0]
 
     def SetImageFiducial(self, fiducial_name, position):
@@ -766,9 +757,7 @@ class TrackerPage(wx.Panel):
     def GetFiducialByAttribute(self, fiducials, attribute_name, attribute_value):
         found = [fiducial for fiducial in fiducials if fiducial[attribute_name] == attribute_value]
 
-        assert len(found) != 0, "No fiducial found for which {} = {}".format(
-            attribute_name, attribute_value
-        )
+        assert len(found) != 0, f"No fiducial found for which {attribute_name} = {attribute_value}"
         return found[0]
 
     def OnSetTrackerFiducial(self, fiducial_name):
@@ -1331,6 +1320,25 @@ class ControlPanel(wx.Panel):
         )
         self.robot_move_away_button = robot_move_away_button
 
+        # Toggle button for enable/disable free drive robot mode
+        tooltip = _("Free drive robot")
+        BMP_FREE_DRIVE = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("robot_free_drive.png")), wx.BITMAP_TYPE_PNG
+        )
+        robot_free_drive_button = wx.ToggleButton(
+            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        robot_free_drive_button.SetBackgroundColour(GREY_COLOR)
+        robot_free_drive_button.SetBitmap(BMP_FREE_DRIVE)
+        robot_free_drive_button.SetToolTip(tooltip)
+        robot_free_drive_button.SetValue(False)
+        robot_free_drive_button.Enable(False)
+        robot_free_drive_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnRobotFreeDriveButton, ctrl=robot_free_drive_button),
+        )
+        self.robot_free_drive_button = robot_free_drive_button
+
         # Sizers
         start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
         start_navigation_button_sizer.AddMany(
@@ -1352,11 +1360,12 @@ class ControlPanel(wx.Panel):
             ]
         )
 
-        robot_buttons_sizer = wx.FlexGridSizer(2, 5, 5)
+        robot_buttons_sizer = wx.FlexGridSizer(4, 5, 5)
         robot_buttons_sizer.AddMany(
             [
                 (robot_track_target_button),
                 (robot_move_away_button),
+                (robot_free_drive_button),
             ]
         )
 
@@ -1401,6 +1410,8 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.PressRobotMoveAwayButton, "Press move away button")
         Publisher.subscribe(self.EnableRobotMoveAwayButton, "Enable move away button")
+
+        Publisher.subscribe(self.EnableRobotFreeDriveButton, "Enable free drive button")
 
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
@@ -1476,7 +1487,6 @@ class ControlPanel(wx.Panel):
 
         elif not self.tracker.IsTrackerInitialized():
             dlg.ShowNavigationTrackerWarning(0, "choose")
-            errors = True
 
         else:
             # Prepare GUI for navigation.
@@ -1584,6 +1594,10 @@ class ControlPanel(wx.Panel):
         # Enable 'move away' robot button if robot is connected.
         move_away_button_enabled = self.robot.IsConnected()
         self.EnableRobotMoveAwayButton(enabled=move_away_button_enabled)
+
+        # Enable 'free drive' robot button if robot is connected.
+        free_drive_button_enabled = self.robot.IsConnected()
+        self.EnableRobotFreeDriveButton(enabled=free_drive_button_enabled)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
@@ -1786,6 +1800,19 @@ class ControlPanel(wx.Panel):
             # objective set by another button; hence this check.
             if self.robot.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
                 self.robot.SetObjective(RobotObjective.NONE)
+
+    # 'Free drive' button
+    def EnableRobotFreeDriveButton(self, enabled=False):
+        self.EnableToggleButton(self.robot_free_drive_button, enabled)
+        self.UpdateToggleButton(self.robot_free_drive_button)
+
+    def OnRobotFreeDriveButton(self, evt=None, ctrl=None):
+        self.UpdateToggleButton(self.robot_free_drive_button)
+        pressed = self.robot_free_drive_button.GetValue()
+        if pressed:
+            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=True)
+        else:
+            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
 
 
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
@@ -2855,7 +2882,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def GetMarkersFromFile(self, filename, overwrite_image_fiducials):
         try:
-            with open(filename, "r") as file:
+            with open(filename) as file:
                 magick_line = file.readline()
                 assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
                 version = int(magick_line.split("_")[-1])
@@ -2929,12 +2956,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def OnSaveMarkers(self, evt):
         prj_data = prj.Project()
         timestamp = time.localtime(time.time())
-        stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-        )
-        stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-        )
+        stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+        stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
         sep = "-"
         parts = [stamp_date, stamp_time, prj_data.name, "markers"]
         default_filename = sep.join(parts) + ".mkss"
@@ -2953,16 +2976,16 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             const.MARKER_FILE_MAGICK_STRING,
             const.CURRENT_MARKER_FILE_VERSION,
         )
-        header_line = "%s\n" % Marker.to_csv_header()
+        header_line = f"{Marker.to_csv_header()}\n"
         data_lines = [marker.to_csv_row() + "\n" for marker in self.markers.list]
         try:
             with open(filename, "w", newline="") as file:
                 file.writelines([version_line, header_line])
                 file.writelines(data_lines)
                 file.close()
-        except Error as e:
+        except Exception as e:
             wx.MessageBox(_("Error writing markers file."), _("InVesalius 3"))
-            utils.debug(e)
+            utils.debug(str(e))
 
     def OnSelectColour(self, evt, ctrl):
         # TODO: Make sure GetValue returns 3 numbers (without alpha)

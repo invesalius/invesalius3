@@ -21,8 +21,6 @@ import os
 import re
 import sys
 import tempfile
-import threading
-from multiprocessing import cpu_count
 
 import numpy
 import wx
@@ -67,7 +65,7 @@ class Singleton:
         self.instance = None
 
     def __call__(self, *args, **kwds):
-        if self.instance == None:
+        if self.instance is None:
             self.instance = self.klass(*args, **kwds)
         return self.instance
 
@@ -177,7 +175,7 @@ class LoadBitmap:
         img.SetAxisMagnificationFactor(2, 1)
         img.Update()
 
-        tp = img.GetOutput().GetScalarTypeAsString()
+        # tp = img.GetOutput().GetScalarTypeAsString()
 
         image_copy = vtkImageData()
         image_copy.DeepCopy(img.GetOutput())
@@ -309,7 +307,7 @@ def ScipyRead(filepath):
             return simage
         else:
             return r
-    except IOError:
+    except OSError:
         return False
 
 
@@ -369,7 +367,7 @@ def ReadBitmap(filepath):
     if _has_win32api:
         filepath = win32api.GetShortPathName(filepath)
 
-    if t == False:
+    if t is False:
         try:
             measures_info = GetPixelSpacingFromInfoFile(filepath)
         except UnicodeDecodeError:
@@ -382,7 +380,7 @@ def ReadBitmap(filepath):
     img_array = VtkRead(filepath, t)
 
     if not (isinstance(img_array, numpy.ndarray)):
-        no_error = True
+        # no_error = True
 
         img_array = ScipyRead(filepath)
 
@@ -399,12 +397,12 @@ def GetPixelSpacingFromInfoFile(filepath):
         return False
 
     try:
-        fi = open(filepath, "r")
+        fi = open(filepath)
         lines = fi.readlines()
     except UnicodeDecodeError:
         # fix uCTI from CTI file
         try:
-            fi = open(filepath, "r", encoding="iso8859-1")
+            fi = open(filepath, encoding="iso8859-1")
             lines = fi.readlines()
         except UnicodeDecodeError:
             return False
@@ -424,12 +422,12 @@ def GetPixelSpacingFromInfoFile(filepath):
             return [spx * 0.001, spy * 0.001, spz * 0.001]
         else:
             # info text from skyscan
-            for l in lines:
-                if "Pixel Size" in l:
-                    if "um" in l:
+            for line in lines:
+                if "Pixel Size" in line:
+                    if "um" in line:
                         measure_scale = "um"
 
-                    value = l.split("=")[-1]
+                    value = line.split("=")[-1]
                     values.append(value)
 
             if len(values) > 0:
@@ -466,5 +464,5 @@ def VerifyDataType(filepath):
             return t
         else:
             return False
-    except IOError:
+    except OSError:
         return False

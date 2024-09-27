@@ -45,6 +45,7 @@ import invesalius.utils as utils
 from invesalius import inv_paths, plugins
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+from invesalius.segmentation.deep_learning import segment
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -123,6 +124,9 @@ class Controller:
         Publisher.subscribe(self.update_mask_preview, "Update mask 3D preview")
 
         Publisher.subscribe(self.LoadProject, "Load project data")
+
+        # for call cranioplasty implant by command line
+        Publisher.subscribe(segment.run_cranioplasty_implant, "Create implant for cranioplasty")
 
     def SetBitmapSpacing(self, spacing: Tuple[float, float, float]) -> None:
         proj = prj.Project()
@@ -383,8 +387,6 @@ class Controller:
 
             if isinstance(filename, str):
                 filename = utils.decode(filename, const.FS_ENCODE)
-
-            proj = prj.Project()
 
             # Update progress dialog
             Publisher.sendMessage(
@@ -702,13 +704,13 @@ class Controller:
 
         name = rec_data[0]
         orientation = rec_data[1]
-        sp_x = float(rec_data[2])
-        sp_y = float(rec_data[3])
-        sp_z = float(rec_data[4])
-        interval = int(rec_data[5])
+        # sp_x = float(rec_data[2])
+        # sp_y = float(rec_data[3])
+        # sp_z = float(rec_data[4])
+        # interval = int(rec_data[5])
 
-        bits = bmp_data.GetFirstPixelSize()
-        sx, sy = size = bmp_data.GetFirstBitmapSize()
+        # bits = bmp_data.GetFirstPixelSize()
+        # sx, sy = size = bmp_data.GetFirstBitmapSize()
 
         proj = prj.Project()
         proj.name = name
@@ -988,20 +990,20 @@ class Controller:
 
         size = dicom.image.size
         bits = dicom.image.bits_allocad
-        sop_class_uid = dicom.acquisition.sop_class_uid
+        # sop_class_uid = dicom.acquisition.sop_class_uid
         xyspacing = dicom.image.spacing
         orientation = dicom.image.orientation_label
-        samples_per_pixel = dicom.image.samples_per_pixel
+        # samples_per_pixel = dicom.image.samples_per_pixel
 
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)
 
-        if sop_class_uid == "1.2.840.10008.5.1.4.1.1.7":  # Secondary Capture Image Storage
-            use_dcmspacing = 1
-        else:
-            use_dcmspacing = 0
+        # if sop_class_uid == "1.2.840.10008.5.1.4.1.1.7":  # Secondary Capture Image Storage
+        #     use_dcmspacing = 1
+        # else:
+        #     use_dcmspacing = 0
 
-        imagedata = None
+        # imagedata = None
 
         if dicom.image.number_of_frames == 1:
             sx, sy = size

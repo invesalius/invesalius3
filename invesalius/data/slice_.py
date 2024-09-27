@@ -42,6 +42,7 @@ import invesalius.style as st
 import invesalius.utils as utils
 from invesalius.data import transformations
 from invesalius.data.mask import Mask
+from invesalius.i18n import tr as _
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 from invesalius_cy import mips, transforms
@@ -253,6 +254,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self._fill_holes_auto, "Fill holes automatically")
 
         Publisher.subscribe(self._set_interpolation_method, "Set interpolation method")
+        Publisher.subscribe(self.do_threshold_to_all_slices, "Appy threshold all slices")
 
     def GetMaxSliceNumber(self, orientation: str) -> int:
         shape: Tuple[int, int, int] = self.matrix.shape
@@ -557,8 +559,8 @@ class Slice(metaclass=utils.Singleton):
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
             elif orientation == "SAGITAL":
-                sx = self.spacing[2]
-                sy = self.spacing[1]
+                sx = self.spacing[2]  # noqa: F841
+                sy = self.spacing[1]  # noqa: F841
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
 
@@ -1295,7 +1297,7 @@ class Slice(metaclass=utils.Singleton):
 
     def UpdateSlice3D(self, widget, orientation):
         img = self.buffer_slices[orientation].vtk_image
-        original_orientation = Project().original_orientation
+        # original_orientation = Project().original_orientation
         cast = vtkImageCast()
         cast.SetInputData(img)
         cast.SetOutputScalarTypeToDouble()
@@ -1513,7 +1515,7 @@ class Slice(metaclass=utils.Singleton):
             return img_colours_bg.GetOutput()
 
     def do_colour_mask(self, imagedata, opacity):
-        scalar_range = int(imagedata.GetScalarRange()[1])
+        # scalar_range = int(imagedata.GetScalarRange()[1])
         r, g, b = self.current_mask.colour[:3]
 
         # map scalar values into colors
