@@ -376,12 +376,10 @@ class VisualizationTab(wx.Panel):
         )
 
         colormap_sizer = wx.BoxSizer(wx.VERTICAL)
-        spacer = wx.StaticText(bsizer_mep.GetStaticBox(), -1, "")
 
         colormap_sizer.AddMany(
             [
                 (lbl_colormap, 0, wx.TOP | wx.LEFT, 5),
-                #(spacer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
                 (colormap_gradient_sizer, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 5),
             ]
         )
