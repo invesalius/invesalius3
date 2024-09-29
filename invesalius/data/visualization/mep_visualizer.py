@@ -49,6 +49,7 @@ from vtkmodules.vtkRenderingCore import (
 
 import invesalius.constants as const
 import invesalius.data.transformations as transformations
+import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.navigation.markers import MarkersControl
@@ -142,7 +143,7 @@ class MEPVisualizer:
                 self._SaveUserParameters()
                 Publisher.sendMessage("Open preferences menu", page=0)
                 return False
-
+            progress_dialog = dialogs.BrainSurfaceLoadingProgressWindow()
             if self.colorBarActor:
                 Publisher.sendMessage("Remove surface actor from viewer", actor=self.colorBarActor)
                 Publisher.sendMessage("Remove surface actor from viewer", actor=self.surface)
@@ -161,8 +162,12 @@ class MEPVisualizer:
                     )
                     Publisher.sendMessage("Get visible surface actor")
                     self.first_load = False
+            progress_dialog.Update(
+                value=50, msg="Preparing brain surface..."
+            )
             self.UpdateVisualization()
             self.UpdateMEPPoints()
+            progress_dialog.Close()
         else:
             self._config_params["mep_enabled"] = False
             self._CleanupVisualization()

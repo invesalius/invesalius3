@@ -5972,6 +5972,28 @@ class TractographyProgressWindow:
         self.dlg.Destroy()
 
 
+class BrainSurfaceLoadingProgressWindow:
+    def __init__(self):
+        title = "InVesalius 3"
+        message = _("Loading brain surface...")
+        style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+        parent = wx.GetApp().GetTopWindow()
+
+        self.dlg = wx.ProgressDialog(title, message, parent=parent, style=style)
+        self.dlg.Show()
+
+    def Update(self, msg: Optional[str] = None, value=None) -> None:
+        if value:
+            self.dlg.Update(int(value), msg)
+        elif msg:
+            self.dlg.Pulse(msg)
+        else:
+            self.dlg.Pulse()
+
+    def Close(self) -> None:
+        self.dlg.Destroy()
+
+
 class SurfaceSmoothingProgressWindow:
     def __init__(self):
         title = "InVesalius 3"
