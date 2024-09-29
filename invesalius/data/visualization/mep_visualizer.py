@@ -134,12 +134,13 @@ class MEPVisualizer:
             self._config_params["mep_enabled"] = True
             if self._config_params["brain_surface_index"] is None:
                 wx.MessageBox(
-                    "Please select a surface from preferences.",
+                    "Please select a brain surface from preferences.",
                     "MEP Mapping",
                     wx.OK | wx.ICON_INFORMATION,
                 )
                 self._config_params["enabled_once"] = True
                 self._SaveUserParameters()
+                Publisher.sendMessage("Open preferences menu", page=0)
                 return False
 
             if self.colorBarActor:

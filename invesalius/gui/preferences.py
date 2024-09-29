@@ -288,6 +288,7 @@ class VisualizationTab(wx.Panel):
         line1.Add(button_colour, 0, wx.ALL | wx.EXPAND | wx.GROW, 7)
 
         surface_sel_lbl = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Brain Surface:"))
+        surface_sel_lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         surface_sel_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         surface_sel_sizer.Add(surface_sel_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
@@ -313,8 +314,8 @@ class VisualizationTab(wx.Panel):
         line_gaussian_radius = wx.BoxSizer(wx.HORIZONTAL)
         line_gaussian_radius.AddMany(
             [
-                (lbl_gaussian_radius, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
-                (self.spin_gaussian_radius, 0, wx.ALL | wx.EXPAND | wx.GROW, 5),
+                (lbl_gaussian_radius, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 0),
+                (self.spin_gaussian_radius, 0, wx.ALL | wx.EXPAND | wx.GROW, 0),
             ]
         )
 
@@ -337,13 +338,14 @@ class VisualizationTab(wx.Panel):
         line_std_dev = wx.BoxSizer(wx.HORIZONTAL)
         line_std_dev.AddMany(
             [
-                (lbl_std_dev, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
-                (self.spin_std_dev, 0, wx.ALL | wx.EXPAND | wx.GROW, 5),
+                (lbl_std_dev, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 0),
+                (self.spin_std_dev, 0, wx.ALL | wx.EXPAND | wx.GROW, 0),
             ]
         )
 
         # Select Colormap Line
         lbl_colormap = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Select Colormap:"))
+        lbl_colormap.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
 
         self.combo_thresh = wx.ComboBox(
             bsizer_mep.GetStaticBox(),
@@ -378,8 +380,8 @@ class VisualizationTab(wx.Panel):
 
         colormap_sizer.AddMany(
             [
-                (lbl_colormap, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
-                (spacer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
+                (lbl_colormap, 0, wx.TOP | wx.LEFT, 5),
+                #(spacer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
                 (colormap_gradient_sizer, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 5),
             ]
         )
@@ -466,11 +468,11 @@ class VisualizationTab(wx.Panel):
 
         colormap_custom.AddMany(
             [
-                (lbl_colormap_ranges, 0, wx.TOP | wx.LEFT, 10),
-                (line_cm_min, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
-                (line_cm_low, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
-                (line_cm_mid, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
-                (line_cm_max, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+                (lbl_colormap_ranges, 0, wx.TOP | wx.BOTTOM | wx.LEFT, 0),
+                (line_cm_min, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 0),
+                (line_cm_low, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 0),
+                (line_cm_mid, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 0),
+                (line_cm_max, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 0),
             ]
         )
 
