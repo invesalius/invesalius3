@@ -370,8 +370,8 @@ class VisualizationTab(wx.Panel):
         colormap_gradient_sizer = wx.BoxSizer(wx.HORIZONTAL)
         colormap_gradient_sizer.AddMany(
             [
-                (self.combo_thresh, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 5),
-                (self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
+                (self.combo_thresh, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5),
+                (self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5),
             ]
         )
 
@@ -379,7 +379,7 @@ class VisualizationTab(wx.Panel):
 
         colormap_sizer.AddMany(
             [
-                (lbl_colormap, 0, wx.TOP | wx.LEFT, 5),
+                (lbl_colormap, 0, wx.TOP | wx.BOTTOM | wx.LEFT, 5),
                 (colormap_gradient_sizer, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 5),
             ]
         )
@@ -399,13 +399,6 @@ class VisualizationTab(wx.Panel):
         self.spin_min.Enable(1)
         self.spin_min.SetRange(0, 10000)
         self.spin_min.SetValue(self.conf.get("colormap_range_uv").get("min"))
-        line_cm_min = wx.BoxSizer(wx.HORIZONTAL)
-        line_cm_min.AddMany(
-            [
-                (lbl_min, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
-                (self.spin_min, 0, wx.ALL | wx.EXPAND | wx.GROW, 5),
-            ]
-        )
 
         lbl_low = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Low Value (uV):"))
         self.spin_low = wx.SpinCtrlDouble(
@@ -414,13 +407,6 @@ class VisualizationTab(wx.Panel):
         self.spin_low.Enable(1)
         self.spin_low.SetRange(0, 10000)
         self.spin_low.SetValue(self.conf.get("colormap_range_uv").get("low"))
-        line_cm_low = wx.BoxSizer(wx.HORIZONTAL)
-        line_cm_low.AddMany(
-            [
-                (lbl_low, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
-                (self.spin_low, 0, wx.ALL | wx.EXPAND | wx.GROW, 5),
-            ]
-        )
 
         lbl_mid = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Mid Value (uV):"))
         self.spin_mid = wx.SpinCtrlDouble(
@@ -429,13 +415,6 @@ class VisualizationTab(wx.Panel):
         self.spin_mid.Enable(1)
         self.spin_mid.SetRange(0, 10000)
         self.spin_mid.SetValue(self.conf.get("colormap_range_uv").get("mid"))
-        line_cm_mid = wx.BoxSizer(wx.HORIZONTAL)
-        line_cm_mid.AddMany(
-            [
-                (lbl_mid, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
-                (self.spin_mid, 0, wx.ALL | wx.EXPAND | wx.GROW, 5),
-            ]
-        )
 
         lbl_max = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Max Value (uV):"))
         self.spin_max = wx.SpinCtrlDouble(
@@ -444,11 +423,24 @@ class VisualizationTab(wx.Panel):
         self.spin_max.Enable(1)
         self.spin_max.SetRange(0, 10000)
         self.spin_max.SetValue(self.conf.get("colormap_range_uv").get("max"))
-        line_cm_max = wx.BoxSizer(wx.HORIZONTAL)
-        line_cm_max.AddMany(
+
+        line_cm_texts = wx.BoxSizer(wx.HORIZONTAL)
+        line_cm_texts.AddMany(
             [
-                (lbl_max, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
-                (self.spin_max, 0, wx.ALL | wx.EXPAND | wx.GROW, 5),
+                (lbl_min, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
+                (lbl_low, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
+                (lbl_mid, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
+                (lbl_max, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
+            ]
+        )
+
+        line_cm_spins = wx.BoxSizer(wx.HORIZONTAL)
+        line_cm_spins.AddMany(
+            [
+                (self.spin_min, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
+                (self.spin_low, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
+                (self.spin_mid, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
+                (self.spin_max, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
             ]
         )
 
@@ -466,11 +458,9 @@ class VisualizationTab(wx.Panel):
 
         colormap_custom.AddMany(
             [
-                (lbl_colormap_ranges, 0, wx.TOP | wx.BOTTOM | wx.LEFT, 0),
-                (line_cm_min, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 0),
-                (line_cm_low, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 0),
-                (line_cm_mid, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 0),
-                (line_cm_max, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 0),
+                (lbl_colormap_ranges, 0, wx.TOP | wx.BOTTOM | wx.LEFT, 5),
+                (line_cm_texts, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 0),
+                (line_cm_spins, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 0),
             ]
         )
 
@@ -479,7 +469,7 @@ class VisualizationTab(wx.Panel):
         btn_reset.Bind(wx.EVT_BUTTON, self.ResetMEPSettings)
 
         # centered button reset
-        colormap_custom.Add(btn_reset, 0, wx.ALIGN_CENTER | wx.TOP, 10)
+        colormap_custom.Add(btn_reset, 0, wx.ALIGN_CENTER | wx.TOP, 15)
 
         colormap_sizer.Add(colormap_custom, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         bsizer_mep.AddMany(
