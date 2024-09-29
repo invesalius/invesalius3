@@ -162,9 +162,7 @@ class MEPVisualizer:
                     )
                     Publisher.sendMessage("Get visible surface actor")
                     self.first_load = False
-            progress_dialog.Update(
-                value=50, msg="Preparing brain surface..."
-            )
+            progress_dialog.Update(value=50, msg="Preparing brain surface...")
             self.UpdateVisualization()
             self.UpdateMEPPoints()
             progress_dialog.Close()
