@@ -3889,9 +3889,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.tracker_id = tracker.GetTrackerId()
         self.obj_id = 2  # the index of the object in coord_raw
-        self.show_sensor_options: bool = (
-            self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS
-        )
+        self.show_sensor_options: bool = self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS
         self.coil_path = None
         self.polydata = None
 
