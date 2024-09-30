@@ -1020,6 +1020,7 @@ DEFAULT_MEP_CONFIG_PARAMS = {
     "mep_colormap": "Viridis",
     "gaussian_sharpness": 0.4,
     "gaussian_radius": 20,
+    "dimensions_size": 20,
     "bounds": None,
     "colormap_range_uv": {"min": 50, "low": 200, "mid": 600, "max": 1000},
 }
