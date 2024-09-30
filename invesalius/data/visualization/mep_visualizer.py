@@ -281,7 +281,7 @@ class MEPVisualizer:
             Publisher.sendMessage("Show surface", index=index, visibility=False)
         self._SaveUserParameters()
 
-    def _FilterMarkers(self, markers: list[Marker]):
+    def _FilterMarkers(self, markers):
         """
         Checks if the markers were updated and if those updated are of type coil_target
         """
@@ -355,7 +355,7 @@ class MEPVisualizer:
         point_data.AddArray(mep_array)
 
         for marker in markers:
-            if not marker.z_cortex and not marker.y_cortex and not marker.y_cortex:
+            if not marker.x_cortex and not marker.y_cortex and not marker.z_cortex:
                 projected_point = self.projection_on_surface(marker)
                 marker.cortex_position_orientation = [
                     projected_point[0],
