@@ -72,8 +72,6 @@ class MEPVisualizer:
 
         self.is_navigating = False
 
-        self.dims_size = 20
-
         self._config_params = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         self.__bind_events()
         self._LoadUserParameters()
@@ -193,7 +191,7 @@ class MEPVisualizer:
         bounds = np.array(self._config_params["bounds"])
         gaussian_sharpness = self._config_params["gaussian_sharpness"]
         gaussian_radius = self._config_params["gaussian_radius"]
-        dims_size = self.dims_size
+        dims_size = self._config_params["dimensions_size"]
         dims = np.array([dims_size, dims_size, dims_size])
 
         box = vtkImageData()

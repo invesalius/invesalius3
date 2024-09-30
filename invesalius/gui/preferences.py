@@ -343,6 +343,29 @@ class VisualizationTab(wx.Panel):
             ]
         )
 
+        # Dimensions size line
+        lbl_dims_size = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Dimensions size:"))
+        self.spin_dims_size = wx.SpinCtrl(bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23))
+        self.spin_dims_size.Enable(1)
+        self.spin_dims_size.SetIncrement(5)
+        self.spin_dims_size.SetRange(10, 100)
+        self.spin_dims_size.SetValue(self.conf.get("dimensions_size"))
+
+        self.spin_dims_size.Bind(
+            wx.EVT_TEXT, partial(self.OnSelectDimsSize, ctrl=self.spin_dims_size)
+        )
+        self.spin_dims_size.Bind(
+            wx.EVT_SPINCTRL, partial(self.OnSelectDimsSize, ctrl=self.spin_dims_size)
+        )
+
+        line_dims_size = wx.BoxSizer(wx.HORIZONTAL)
+        line_dims_size.AddMany(
+            [
+                (lbl_dims_size, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 0),
+                (self.spin_dims_size, 0, wx.ALL | wx.EXPAND | wx.GROW, 0),
+            ]
+        )
+
         # Select Colormap Line
         lbl_colormap = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Select Colormap:"))
         lbl_colormap.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -477,6 +500,7 @@ class VisualizationTab(wx.Panel):
                 (surface_sel_sizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
                 (line_gaussian_radius, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
                 (line_std_dev, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+                (line_dims_size, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
                 (colormap_sizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
             ]
         )
@@ -512,6 +536,11 @@ class VisualizationTab(wx.Panel):
 
     def OnSelectGaussianRadius(self, evt, ctrl):
         self.conf["gaussian_radius"] = ctrl.GetValue()
+        # Save the configuration
+        self.session.SetConfig("mep_configuration", self.conf)
+
+    def OnSelectDimsSize(self, evt, ctrl):
+        self.conf["dimensions_size"] = ctrl.GetValue()
         # Save the configuration
         self.session.SetConfig("mep_configuration", self.conf)
 
