@@ -1014,7 +1014,6 @@ class StimulatorPage(wx.Panel):
         self.config_txt = config_txt
         self.config_txt.Hide()
 
-        lbl_edit = wx.StaticText(self, -1, _("Edit Configuration:"))
         btn_edit = wx.Button(self, -1, _("Preferences"))
         btn_edit.SetToolTip("Open preferences menu")
         btn_edit.Bind(wx.EVT_BUTTON, self.OnEditPreferences)
@@ -1025,8 +1024,7 @@ class StimulatorPage(wx.Panel):
                 (0, 0),
                 (config_txt, 1, wx.EXPAND | wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 10),
                 (0, 0),
-                (lbl_edit, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10),
-                (btn_edit, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 10),
+                (btn_edit, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10),
             ]
         )
 
