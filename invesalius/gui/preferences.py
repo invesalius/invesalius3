@@ -344,18 +344,16 @@ class VisualizationTab(wx.Panel):
         )
 
         # Dimensions size line
-        lbl_dims_size = wx.StaticText(
-            bsizer_mep.GetStaticBox(), -1, _("Dimensions size:")
-        )
-        self.spin_dims_size = wx.SpinCtrl(
-            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23)
-        )
+        lbl_dims_size = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Dimensions size:"))
+        self.spin_dims_size = wx.SpinCtrl(bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23))
         self.spin_dims_size.Enable(1)
         self.spin_dims_size.SetIncrement(5)
         self.spin_dims_size.SetRange(10, 100)
         self.spin_dims_size.SetValue(self.conf.get("dimensions_size"))
 
-        self.spin_dims_size.Bind(wx.EVT_TEXT, partial(self.OnSelectDimsSize, ctrl=self.spin_dims_size))
+        self.spin_dims_size.Bind(
+            wx.EVT_TEXT, partial(self.OnSelectDimsSize, ctrl=self.spin_dims_size)
+        )
         self.spin_dims_size.Bind(
             wx.EVT_SPINCTRL, partial(self.OnSelectDimsSize, ctrl=self.spin_dims_size)
         )
