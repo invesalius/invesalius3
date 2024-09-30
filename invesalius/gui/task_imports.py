@@ -183,6 +183,7 @@ class InnerFoldPanel(wx.Panel):
             (_("Tractography"), tractography.TaskPanel),
             (_("E-Field"), efield.TaskPanel),
             (_("fMRI support"), fmrisupport.TaskPanel),
+            # (_("MEP mapping"), mepmapping.TaskPanel), # TODO: Add marker file import and export colored stl
         ]
 
         style = fpb.CaptionBarStyle()

@@ -150,6 +150,7 @@ class InnerFoldPanel(wx.Panel):
         self.tracker = nav_hub.tracker
         self.image = nav_hub.image
         self.navigation = nav_hub.navigation
+        self.mep_visualizer = nav_hub.mep_visualizer
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -1094,6 +1095,7 @@ class NavigationPanel(wx.Panel):
         self.image = nav_hub.image
         self.pedal_connector = nav_hub.pedal_connector
         self.neuronavigation_api = nav_hub.neuronavigation_api
+        self.mep_visualizer = nav_hub.mep_visualizer
 
         self.__bind_events()
 
@@ -1145,6 +1147,7 @@ class ControlPanel(wx.Panel):
         self.robot = nav_hub.robot
         self.icp = nav_hub.icp
         self.image = nav_hub.image
+        self.mep_visualizer = nav_hub.mep_visualizer
 
         self.nav_status = False
         self.target_mode = False
@@ -1339,6 +1342,25 @@ class ControlPanel(wx.Panel):
         )
         self.robot_free_drive_button = robot_free_drive_button
 
+        # Toggle button for displaying TMS motor mapping on brain
+        tooltip = _("Show TMS motor mapping on brain")
+        BMP_MOTOR_MAP = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("brain_eye.png")), wx.BITMAP_TYPE_PNG
+        )
+        show_motor_map_button = wx.ToggleButton(
+            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        show_motor_map_button.SetBackgroundColour(GREY_COLOR)
+        show_motor_map_button.SetBitmap(BMP_MOTOR_MAP)
+        show_motor_map_button.SetToolTip(tooltip)
+        show_motor_map_button.SetValue(False)
+        show_motor_map_button.Enable(True)
+
+        show_motor_map_button.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnShowMotorMapButton, ctrl=show_motor_map_button)
+        )
+        self.show_motor_map_button = show_motor_map_button
+
         # Sizers
         start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
         start_navigation_button_sizer.AddMany(
@@ -1357,6 +1379,7 @@ class ControlPanel(wx.Panel):
                 (efield_checkbox),
                 (lock_to_target_button),
                 (show_coil_button),
+                (show_motor_map_button),
             ]
         )
 
@@ -1416,6 +1439,9 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
         Publisher.subscribe(self.PressTargetModeButton, "Press target mode button")
+
+        Publisher.subscribe(self.PressMotorMapButton, "Press motor map button")
+        Publisher.subscribe(self.EnableMotorMapButton, "Enable motor map button")
 
         # Conditions for enabling 'target mode' button:
         Publisher.subscribe(self.TrackObject, "Track object")
@@ -1813,6 +1839,21 @@ class ControlPanel(wx.Panel):
         else:
             Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
 
+    # TMS Motor Mapping related
+    # 'Motor Map' button
+    def PressMotorMapButton(self, pressed=False):
+        self.UpdateToggleButton(self.show_motor_map_button, pressed)
+        self.OnShowMotorMapButton()
+
+    def EnableMotorMapButton(self, enabled=False):
+        self.EnableToggleButton(self.show_motor_map_button, enabled)
+        self.UpdateToggleButton(self.show_motor_map_button)
+
+    def OnShowMotorMapButton(self, evt=None, ctrl=None):
+        pressed = self.show_motor_map_button.GetValue()
+        if self.mep_visualizer.DisplayMotorMap(show=pressed):
+            self.UpdateToggleButton(self.show_motor_map_button)
+
 
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def __init__(self, parent, nav_hub):
@@ -1941,6 +1982,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.InsertColumn(const.POINT_OF_INTEREST_TARGET_COLUMN, "Efield Target")
         marker_list_ctrl.SetColumnWidth(const.POINT_OF_INTEREST_TARGET_COLUMN, 45)
 
+        marker_list_ctrl.InsertColumn(const.MEP_COLUMN, "MEP (uV)")
+        marker_list_ctrl.SetColumnWidth(const.MEP_COLUMN, 45)
+
         if self.session.GetConfig("debug"):
             marker_list_ctrl.InsertColumn(const.X_COLUMN, "X")
             marker_list_ctrl.SetColumnWidth(const.X_COLUMN, 45)
@@ -2015,6 +2059,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UnsetTarget, "Unset target")
         Publisher.subscribe(self._UnsetPointOfInterest, "Unset point of interest")
         Publisher.subscribe(self._UpdateMarkerLabel, "Update marker label")
+        Publisher.subscribe(self._UpdateMEP, "Update marker mep")
 
     def __get_selected_items(self):
         """
@@ -2094,6 +2139,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - reduction_in_m_id))
 
         self.marker_list_ctrl.Show()
+        Publisher.sendMessage("Redraw MEP mapping")
 
     def _SetPointOfInterest(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
@@ -2130,6 +2176,20 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             current_uuid = data[-1]
             if current_uuid == uuid:
                 self.itemDataMap[key][const.LABEL_COLUMN] = marker.label
+
+    def _UpdateMEP(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
+        self.marker_list_ctrl.SetItem(idx, const.MEP_COLUMN, str(marker.mep_value))
+
+        # Update the marker label in self.itemDataMap so that sorting works
+        uuid = marker.marker_uuid
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.MEP_COLUMN] = marker.mep_value
+
+        # Trigger redraw MEP mapping
+        Publisher.sendMessage("Redraw MEP mapping")
 
     @staticmethod
     def __list_fiducial_labels():
@@ -2203,8 +2263,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
+            mep_menu_item = menu_id.Append(unique_menu_id + 4, _("Change MEP value"))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP, mep_menu_item)
             if is_active_target:
-                target_menu_item = menu_id.Append(unique_menu_id + 4, _("Unset target"))
+                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Unset target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
                 if has_mTMS:
                     brain_target_menu_item = menu_id.Append(
@@ -2212,7 +2274,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     )
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
-                target_menu_item = menu_id.Append(unique_menu_id + 4, _("Set as target"))
+                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Set as target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
@@ -2623,6 +2685,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_id = self.__get_marker_id(idx)
         self.markers.UnsetTarget(marker_id)
 
+    def OnMenuChangeMEP(self, evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.__get_marker(idx)
+
+        new_mep = dlg.ShowEnterMEPValue(self.marker_list_ctrl.GetItemText(idx, const.MEP_COLUMN))
+        self.markers.ChangeMEP(marker, new_mep)
+
     def _UnsetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
 
@@ -2768,6 +2837,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 return
         self.markers.Clear()
         self.itemDataMap.clear()
+        Publisher.sendMessage("Redraw MEP mapping")
 
     def OnDeleteFiducialMarker(self, label):
         indexes = []
@@ -2822,6 +2892,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         session_id=None,
         marker_type=None,
         cortex_position_orientation=None,
+        mep_value=None,
     ):
         if label is None:
             label = self.GetNextMarkerLabel()
@@ -2855,6 +2926,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             session_id=session_id,
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
+            mep_value=mep_value,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
 
@@ -2924,6 +2996,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             utils.debug(e)
 
         self.marker_list_ctrl.Show()
+        Publisher.sendMessage("Redraw MEP mapping")
         Publisher.sendMessage("Render volume viewer")
         Publisher.sendMessage("Update UI for refine tab")
         self.markers.SaveState()
@@ -3041,6 +3114,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         cortex_position_orientation=None,
         z_offset=0.0,
         z_rotation=0.0,
+        mep_value=None,
     ):
         """
         Create a new marker object.
@@ -3065,6 +3139,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
         marker.z_offset = z_offset
         marker.z_rotation = z_rotation
+        marker.mep_value = mep_value
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers.list)
@@ -3096,6 +3171,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         list_entry[const.POINT_OF_INTEREST_TARGET_COLUMN] = (
             "Yes" if marker.is_point_of_interest else ""
         )
+        list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
 
         if self.session.GetConfig("debug"):
             list_entry.append(round(marker.x, 1))
