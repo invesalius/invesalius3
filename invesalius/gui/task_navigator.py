@@ -48,6 +48,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 from invesalius import inv_paths, utils
 from invesalius.data.markers.marker import Marker, MarkerType
+from invesalius.gui.utils import CenteredBitmapToggleButton
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
 from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import NavigationHub
@@ -230,35 +231,8 @@ class InnerFoldPanel(wx.Panel):
     def OnHideDbs(self):
         self.dbs_item.Hide()
 
-    def OnCheckStatus(self, nav_status, vis_status):
-        if nav_status:
-            self.checkbox_serial_port.Enable(False)
-        else:
-            self.checkbox_serial_port.Enable(True)
-
-    def OnEnableSerialPort(self, evt, ctrl):
-        if ctrl.GetValue():
-            from wx import ID_OK
-
-            dlg_port = dlg.SetCOMPort(select_baud_rate=False)
-
-            if dlg_port.ShowModal() != ID_OK:
-                ctrl.SetValue(False)
-                return
-
-            com_port = dlg_port.GetCOMPort()
-            baud_rate = 115200
-
-            Publisher.sendMessage(
-                "Update serial port",
-                serial_port_in_use=True,
-                com_port=com_port,
-                baud_rate=baud_rate,
-            )
-        else:
-            Publisher.sendMessage("Update serial port", serial_port_in_use=False)
-
     # 'Show coil' button
+    # TODO: Remve the code below as it is not used anywhere
 
     # Called when the 'Show coil' button is pressed elsewhere in code.
     def PressShowCoilButton(self, pressed=False):
@@ -1179,25 +1153,21 @@ class ControlPanel(wx.Panel):
         # Toggle Button for Tractography
         tooltip = _("Control Tractography")
         BMP_TRACT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("tract.png")), wx.BITMAP_TYPE_PNG)
-        tractography_checkbox = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        tractography_button = CenteredBitmapToggleButton(self, -1, BMP_TRACT, size=ICON_SIZE)
+        tractography_button.SetBackgroundColour(GREY_COLOR)
+        tractography_button.SetBitmap(BMP_TRACT)
+        tractography_button.SetValue(False)
+        tractography_button.Enable(False)
+        tractography_button.SetToolTip(tooltip)
+        tractography_button.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnTractographyCheckbox, ctrl=tractography_button)
         )
-        tractography_checkbox.SetBackgroundColour(GREY_COLOR)
-        tractography_checkbox.SetBitmap(BMP_TRACT)
-        tractography_checkbox.SetValue(False)
-        tractography_checkbox.Enable(False)
-        tractography_checkbox.SetToolTip(tooltip)
-        tractography_checkbox.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnTractographyCheckbox, ctrl=tractography_checkbox)
-        )
-        self.tractography_checkbox = tractography_checkbox
+        self.tractography_button = tractography_button
 
         # Toggle button to track the coil
         tooltip = _("Track coil")
         BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
-        track_object_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
-        )
+        track_object_button = CenteredBitmapToggleButton(self, -1, BMP_TRACK, size=ICON_SIZE)
         track_object_button.SetBackgroundColour(GREY_COLOR)
         track_object_button.SetBitmap(BMP_TRACK)
         track_object_button.SetValue(False)
@@ -1214,9 +1184,7 @@ class ControlPanel(wx.Panel):
         BMP_LOCK = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("lock_to_target.png")), wx.BITMAP_TYPE_PNG
         )
-        lock_to_target_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
-        )
+        lock_to_target_button = CenteredBitmapToggleButton(self, -1, BMP_LOCK, size=ICON_SIZE)
         lock_to_target_button.SetBackgroundColour(GREY_COLOR)
         lock_to_target_button.SetBitmap(BMP_LOCK)
         lock_to_target_button.SetValue(False)
@@ -1232,7 +1200,7 @@ class ControlPanel(wx.Panel):
         BMP_SHOW_COIL = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG
         )
-        show_coil_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        show_coil_button = CenteredBitmapToggleButton(self, -1, BMP_SHOW_COIL, size=ICON_SIZE)
         show_coil_button.SetBackgroundColour(GREY_COLOR)
         show_coil_button.SetBitmap(BMP_SHOW_COIL)
         show_coil_button.SetToolTip(tooltip)
@@ -1242,40 +1210,43 @@ class ControlPanel(wx.Panel):
         self.show_coil_button = show_coil_button
 
         # Toggle Button to use serial port to trigger pulse signal and create markers
-        tooltip = _("Enable serial port communication to trigger pulse and create markers")
+        if sys.platform.startswith("win"):
+            tooltip = _("Enable serial port communication to trigger pulse and create markers")
+            color_trigger_button = RED_COLOR
+        else:
+            tooltip = _("Trigger pulse only supported in Windows")
+            color_trigger_button = GREY_COLOR
+
         BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("wave.png")), wx.BITMAP_TYPE_PNG)
-        checkbox_serial_port = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        select_serial_port_button = CenteredBitmapToggleButton(self, -1, BMP_PORT, size=ICON_SIZE)
+        select_serial_port_button.SetBackgroundColour(color_trigger_button)
+        select_serial_port_button.SetBitmap(BMP_PORT)
+        select_serial_port_button.SetToolTip(tooltip)
+        select_serial_port_button.SetValue(False)
+        select_serial_port_button.Enable(False)
+        select_serial_port_button.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnEnableSerialPort, ctrl=select_serial_port_button)
         )
-        checkbox_serial_port.SetBackgroundColour(RED_COLOR)
-        checkbox_serial_port.SetBitmap(BMP_PORT)
-        checkbox_serial_port.SetToolTip(tooltip)
-        checkbox_serial_port.SetValue(False)
-        checkbox_serial_port.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnEnableSerialPort, ctrl=checkbox_serial_port)
-        )
-        self.checkbox_serial_port = checkbox_serial_port
+        self.select_serial_port_button = select_serial_port_button
 
         # Toggle Button for Efield
         tooltip = _("Control E-Field")
         BMP_FIELD = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("field.png")), wx.BITMAP_TYPE_PNG)
-        efield_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        efield_checkbox.SetBackgroundColour(GREY_COLOR)
-        efield_checkbox.SetBitmap(BMP_FIELD)
-        efield_checkbox.SetValue(False)
-        efield_checkbox.Enable(False)
-        efield_checkbox.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnEfieldCheckbox, ctrl=efield_checkbox)
+        show_efield_button = CenteredBitmapToggleButton(self, -1, BMP_FIELD, size=ICON_SIZE)
+        show_efield_button.SetBackgroundColour(GREY_COLOR)
+        show_efield_button.SetBitmap(BMP_FIELD)
+        show_efield_button.SetValue(False)
+        show_efield_button.Enable(False)
+        show_efield_button.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnEfieldCheckbox, ctrl=show_efield_button)
         )
-        efield_checkbox.SetToolTip(tooltip)
-        self.efield_checkbox = efield_checkbox
+        show_efield_button.SetToolTip(tooltip)
+        self.show_efield_button = show_efield_button
 
         # Toggle Button for Target Mode
         tooltip = _("Target mode")
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
-        target_mode_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
-        )
+        target_mode_button = CenteredBitmapToggleButton(self, -1, BMP_TARGET, size=ICON_SIZE)
         target_mode_button.SetBackgroundColour(GREY_COLOR)
         target_mode_button.SetBitmap(BMP_TARGET)
         target_mode_button.SetValue(False)
@@ -1290,8 +1261,8 @@ class ControlPanel(wx.Panel):
         BMP_TRACK_TARGET = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("robot_track_target.png")), wx.BITMAP_TYPE_PNG
         )
-        robot_track_target_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        robot_track_target_button = CenteredBitmapToggleButton(
+            self, -1, BMP_TRACK_TARGET, size=ICON_SIZE
         )
         robot_track_target_button.SetBackgroundColour(GREY_COLOR)
         robot_track_target_button.SetBitmap(BMP_TRACK_TARGET)
@@ -1309,8 +1280,8 @@ class ControlPanel(wx.Panel):
         BMP_ENABLE_MOVE_AWAY = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("robot_move_away.png")), wx.BITMAP_TYPE_PNG
         )
-        robot_move_away_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        robot_move_away_button = CenteredBitmapToggleButton(
+            self, -1, BMP_ENABLE_MOVE_AWAY, size=ICON_SIZE
         )
         robot_move_away_button.SetBackgroundColour(GREY_COLOR)
         robot_move_away_button.SetBitmap(BMP_ENABLE_MOVE_AWAY)
@@ -1372,11 +1343,11 @@ class ControlPanel(wx.Panel):
         navigation_buttons_sizer = wx.FlexGridSizer(4, 5, 5)
         navigation_buttons_sizer.AddMany(
             [
-                (tractography_checkbox),
+                (tractography_button),
                 (target_mode_button),
                 (track_object_button),
-                (checkbox_serial_port),
-                (efield_checkbox),
+                (select_serial_port_button),
+                (show_efield_button),
                 (lock_to_target_button),
                 (show_coil_button),
                 (show_motor_map_button),
@@ -1484,7 +1455,7 @@ class ControlPanel(wx.Panel):
         self.PressTrackObjectButton(track_object["checked"])
 
     # Toggle Button Helpers
-    def UpdateToggleButton(self, ctrl, state=None):
+    def UpdateToggleButton(self, ctrl, state=None, alpha=255):
         # Changes background colour based on current state of toggle button if state is not set,
         # otherwise, uses state to set value.
         if state is None:
@@ -1493,18 +1464,18 @@ class ControlPanel(wx.Panel):
         ctrl.SetValue(state)
 
         if state:
-            ctrl.SetBackgroundColour(self.GREEN_COLOR)
+            ctrl.SetBackgroundColour(self.GREEN_COLOR + (alpha,))
         else:
-            ctrl.SetBackgroundColour(self.RED_COLOR)
+            ctrl.SetBackgroundColour(self.RED_COLOR + (alpha,))
 
-    def EnableToggleButton(self, ctrl, state):
+    def EnableToggleButton(self, ctrl, state, alpha=255):
         # Check if the button state is not changed, if so, return early. This is to prevent
         # unnecessary updates to the button.
         if ctrl.IsEnabled() == state:
             return
 
         ctrl.Enable(state)
-        ctrl.SetBackgroundColour(self.GREY_COLOR)
+        ctrl.SetBackgroundColour(self.GREY_COLOR + (alpha,))
 
     # Navigation
     def OnStartNavigation(self):
@@ -1582,12 +1553,13 @@ class ControlPanel(wx.Panel):
         self.UpdateRobotButtons()
 
     def OnCheckStatus(self, nav_status, vis_status):
-        if nav_status:
-            self.UpdateToggleButton(self.checkbox_serial_port)
-            self.EnableToggleButton(self.checkbox_serial_port, 0)
-        else:
-            self.EnableToggleButton(self.checkbox_serial_port, 1)
-            self.UpdateToggleButton(self.checkbox_serial_port)
+        for button in [self.select_serial_port_button, self.tractography_button]:
+            if nav_status:
+                alpha = 200
+            else:
+                alpha = 255
+        self.EnableToggleButton(button, not nav_status)
+        self.UpdateToggleButton(button, alpha=alpha)
 
         # Enable/Disable track-object checkbox if navigation is off/on and object registration is valid.
         obj_registration = self.navigation.GetObjectRegistration()
@@ -1645,8 +1617,8 @@ class ControlPanel(wx.Panel):
 
     def UpdateTractsVisualization(self, data):
         self.navigation.view_tracts = data
-        self.EnableToggleButton(self.tractography_checkbox, 1)
-        self.UpdateToggleButton(self.tractography_checkbox, data)
+        self.EnableToggleButton(self.tractography_button, 1)
+        self.UpdateToggleButton(self.tractography_button, data)
 
     def UpdatePeelVisualization(self, data):
         self.navigation.peel_loaded = data
