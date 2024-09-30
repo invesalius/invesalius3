@@ -1205,6 +1205,34 @@ def ShowEnterMarkerID(default: str) -> str:
     return result
 
 
+def ShowEnterMEPValue(default):
+    msg = _("Enter the MEP value (uV)")
+    if sys.platform == "darwin":
+        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
+    else:
+        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
+    dlg.ShowModal()
+    result = dlg.GetValue()
+    # check if the value is a number
+    try:
+        result = float(result)
+    except ValueError:
+        result = None
+    # if the value is not a number, raise error message
+    if result is None:
+        msg = _("The value entered is not a number.")
+        if sys.platform == "darwin":
+            dlg = wx.MessageDialog(None, "", msg, wx.OK)
+        else:
+            dlg = wx.MessageDialog(None, msg, "InVesalius 3", wx.OK)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    dlg.Destroy()
+
+    return result
+
+
 def ShowConfirmationDialog(msg: str = _("Proceed?")) -> int:
     # msg = _("Do you want to delete all markers?")
     if sys.platform == "darwin":
@@ -5939,6 +5967,28 @@ class TractographyProgressWindow:
             self.dlg.Pulse()
         else:
             self.dlg.Pulse(msg)
+
+    def Close(self) -> None:
+        self.dlg.Destroy()
+
+
+class BrainSurfaceLoadingProgressWindow:
+    def __init__(self):
+        title = "InVesalius 3"
+        message = _("Loading brain surface...")
+        style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+        parent = wx.GetApp().GetTopWindow()
+
+        self.dlg = wx.ProgressDialog(title, message, parent=parent, style=style)
+        self.dlg.Show()
+
+    def Update(self, msg: Optional[str] = None, value=None) -> None:
+        if value:
+            self.dlg.Update(int(value), msg)
+        elif msg:
+            self.dlg.Pulse(msg)
+        else:
+            self.dlg.Pulse()
 
     def Close(self) -> None:
         self.dlg.Destroy()
