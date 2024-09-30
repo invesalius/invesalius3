@@ -3890,7 +3890,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.tracker_id = tracker.GetTrackerId()
         self.obj_id = 2  # the index of the object in coord_raw
         self.show_sensor_options: bool = (
-            self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS and self.obj_id == 0
+            self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS
         )
         self.coil_path = None
         self.polydata = None
@@ -4212,13 +4212,14 @@ class ObjectCalibrationDialog(wx.Dialog):
         # If coil or probe markers are not visible, show a warning and return early.
         probe_visible, head_visible, *coils_visible = marker_visibilities
 
-        if not probe_visible:
-            ShowNavigationTrackerWarning(0, "probe marker not visible")
-            return
+        if not self.show_sensor_options:
+            if not probe_visible:
+                ShowNavigationTrackerWarning(0, "probe marker not visible")
+                return
 
-        if not coils_visible[self.obj_id - 2]:
-            ShowNavigationTrackerWarning(0, "coil marker not visible")
-            return
+            if not coils_visible[self.obj_id - 2]:
+                ShowNavigationTrackerWarning(0, "coil marker not visible")
+                return
 
         # XXX: The condition below happens when setting the "fixed" coordinate in the object calibration.
         #      The case is not handled by GetTrackerCoordinates function, therefore redo some computation
