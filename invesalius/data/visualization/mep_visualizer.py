@@ -62,7 +62,7 @@ class MEPVisualizer:
         self.surface = None
         self.decimate_surface = None
         self.colored_surface_actor = None
-        self.point_actore = None
+        self.point_actor = None
 
         self.colorBarActor = None
         self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
@@ -72,7 +72,7 @@ class MEPVisualizer:
 
         self.is_navigating = False
 
-        self.dims_size = 10
+        self.dims_size = 20
 
         self._config_params = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         self.__bind_events()
