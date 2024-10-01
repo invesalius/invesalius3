@@ -263,12 +263,18 @@ class MEPVisualizer:
             markers.append(marker.to_dict())
 
         # Find objects in the new list that are not in the old list (added)
-        added_objects = [new_obj for new_obj in markers if
-                         not any((new_obj == old_obj) for old_obj in self.marker_storage)]
+        added_objects = [
+            new_obj
+            for new_obj in markers
+            if not any((new_obj == old_obj) for old_obj in self.marker_storage)
+        ]
 
         # Find objects in the old list that are not in the new list (removed)
-        removed_objects = [old_obj for old_obj in self.marker_storage if
-                           not any((old_obj == new_obj) for new_obj in markers)]
+        removed_objects = [
+            old_obj
+            for old_obj in self.marker_storage
+            if not any((old_obj == new_obj) for new_obj in markers)
+        ]
 
         # Check if the lists have changed
         if not bool(added_objects or removed_objects):
