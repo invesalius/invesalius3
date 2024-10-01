@@ -212,7 +212,7 @@ class VisualizationTab(wx.Panel):
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
         # Creating MEP Mapping BoxSizer
-        if self.conf.get("enabled_once") is True:
+        if self.conf.get("mep_enabled") is True:
             self.bsizer_mep = self.InitMEPMapping(None)
             border.Add(self.bsizer_mep, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
@@ -271,9 +271,6 @@ class VisualizationTab(wx.Panel):
             combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
 
         self.combo_brain_surface_name = combo_brain_surface_name
-        index = self.conf.get("brain_surface_index")
-        if index is not None:
-            self.combo_brain_surface_name.SetSelection(index)
 
         # Mask colour
         button_colour = csel.ColourSelect(
@@ -603,7 +600,7 @@ class VisualizationTab(wx.Panel):
         self.proj = prj.Project()
         surface_index = self.combo_brain_surface_name.GetSelection()
         Publisher.sendMessage("Show single surface", index=surface_index, visibility=True)
-        Publisher.sendMessage("Get visible surface actor")
+        Publisher.sendMessage("Get brain surface actor", index=surface_index)
         Publisher.sendMessage("Press motor map button", pressed=True)
 
         self.button_colour.SetColour(

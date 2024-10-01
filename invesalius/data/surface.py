@@ -216,7 +216,7 @@ class SurfaceManager:
         Publisher.subscribe(self.OnSplitSurface, "Split surface")
         Publisher.subscribe(self.OnLargestSurface, "Create surface from largest region")
         Publisher.subscribe(self.OnSeedSurface, "Create surface from seeds")
-        Publisher.subscribe(self.GetVisibleSurfaceActor, "Get visible surface actor")
+        Publisher.subscribe(self.GetBrainSurfaceActor, "Get brain surface actor")
 
         Publisher.subscribe(self.OnDuplicate, "Duplicate surfaces")
         Publisher.subscribe(self.OnRemove, "Remove surfaces")
@@ -1130,18 +1130,12 @@ class SurfaceManager:
     def OnShowSurface(self, index, visibility):
         self.ShowActor(index, visibility)
 
-    def GetVisibleSurfaceActor(self):
+    def GetBrainSurfaceActor(self, index):
         """
         Gets the first visible surface actor.
         """
-        index = 0
-        for key in self.actors_dict:
-            if self.actors_dict[key].GetVisibility():
-                index = key
-                break
-
         Publisher.sendMessage(
-            "Load visible surface actor", actor=self.actors_dict[index], index=index
+            "Load brain surface actor", actor=self.actors_dict[index], index=index
         )
 
     def ShowActor(self, index, value):
