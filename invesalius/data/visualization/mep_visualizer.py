@@ -262,6 +262,7 @@ class MEPVisualizer:
         for marker in markers_list:
             markers.append(marker.to_dict())
 
+        # TODO: use modified markers list to make projection_on_surface
         # Find objects in the new list that are not in the old list (added)
         added_objects = [
             new_obj
