@@ -51,7 +51,10 @@ class Tracker(metaclass=Singleton):
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
-        self.LoadState()
+        try:
+            self.LoadState()
+        except:
+            ses.Session().DeleteStateFile()
 
     def SaveState(self):
         tracker_id = self.tracker_id
@@ -92,9 +95,9 @@ class Tracker(metaclass=Singleton):
 
         self.SetTracker(tracker_id=self.tracker_id, configuration=configuration)
 
-    def SetTracker(self, tracker_id, configuration=None):
+    def SetTracker(self, tracker_id, n_coils=1, configuration=None):
         if tracker_id:
-            self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
+            self.tracker_connection = tc.CreateTrackerConnection(tracker_id, n_coils)
 
             # Configure tracker.
             if configuration is not None:
@@ -199,7 +202,7 @@ class Tracker(metaclass=Singleton):
         )
 
         # If probe or head markers are not visible, show a warning and return early.
-        probe_visible, head_visible, _ = marker_visibilities
+        probe_visible, head_visible, *coils_visible = marker_visibilities
 
         if not probe_visible:
             dlg.ShowNavigationTrackerWarning(0, "probe marker not visible")

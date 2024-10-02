@@ -137,9 +137,7 @@ def calculate_fre(
 
     dist = np.zeros([3, 1])
     for i in range(0, 6, 2):
-        p_m, _ = dcr.corregistrate_dynamic(
-            (m_change, 0), fiducials_raw[i : i + 2], ref_mode_id, icp
-        )
+        p_m, _ = dcr.corregistrate_probe(m_change, None, fiducials_raw[i : i + 2], ref_mode_id, icp)
         dist[int(i / 2)] = np.sqrt(np.sum(np.power((p_m[:3] - fiducials[int(i / 2), :]), 2)))
 
     return float(np.sqrt(np.sum(dist**2) / 3))
@@ -176,7 +174,7 @@ def calculate_fre(
 def transform_icp(m_img: np.ndarray, m_icp: np.ndarray) -> np.ndarray:
     coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
     m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = m_icp @ coord_img
-    m_img[0, -1], m_img[1, -1], m_img[2, -1] = m_img[0, -1], -m_img[1, -1], m_img[2, -1]
+    m_img[1, -1] = -m_img[1, -1]
 
     return m_img
 
@@ -184,7 +182,7 @@ def transform_icp(m_img: np.ndarray, m_icp: np.ndarray) -> np.ndarray:
 def inverse_transform_icp(m_img: np.ndarray, m_icp: np.ndarray) -> np.ndarray:
     coord_img = [m_img[0, -1], -m_img[1, -1], m_img[2, -1], 1]
     m_img[0, -1], m_img[1, -1], m_img[2, -1], _ = np.linalg.inv(m_icp) @ coord_img
-    m_img[0, -1], m_img[1, -1], m_img[2, -1] = m_img[0, -1], -m_img[1, -1], m_img[2, -1]
+    m_img[1, -1] = -m_img[1, -1]
 
     return m_img
 
@@ -212,18 +210,15 @@ def object_registration(
         fids_raw[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[3, :])[:3]
 
     # compute initial alignment of probe fixed in the object in source frame
-
-    # XXX: Some duplicate processing is done here: the Euler angles are calculated once by
-    #      the lines below, and then again in dco.coordinates_to_transformation_matrix.
-    #
-    a, b, g = np.radians(coords[3, 3:])
-    r_s0_raw = tr.euler_matrix(a, b, g, axes="rzyx")
-
     s0_raw = dco.coordinates_to_transformation_matrix(
         position=coords[3, :3],
         orientation=coords[3, 3:],
         axes="rzyx",
     )
+
+    # copy rotation submatrix from s0_raw
+    r_s0_raw = np.eye(4)
+    r_s0_raw[:3, :3] = s0_raw[:3, :3]
 
     # compute change of basis for object fiducials in source frame
     base_obj_raw, q_obj_raw = base_creation(fids_raw[:3, :3])
