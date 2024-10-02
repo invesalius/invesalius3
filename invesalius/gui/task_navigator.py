@@ -2503,7 +2503,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         new_marker = self.__get_marker(idx).duplicate()
 
         # Add suffix to marker name.
-        new_marker.label = new_marker.label + " (copy)"
+        new_marker.label = str(new_marker.label) + " (copy)"
 
         self.markers.AddMarker(new_marker, render=True, focus=True)
 
@@ -2837,7 +2837,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 return
         self.markers.Clear()
         self.itemDataMap.clear()
-        Publisher.sendMessage("Redraw MEP mapping")
 
     def OnDeleteFiducialMarker(self, label):
         indexes = []
