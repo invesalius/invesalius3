@@ -208,6 +208,7 @@ class SurfaceManager:
 
         Publisher.subscribe(self.OnChangeSurfaceName, "Change surface name")
         Publisher.subscribe(self.OnShowSurface, "Show surface")
+        Publisher.subscribe(self.OnHideAllSurfaces, "Hide all surfaces")
         Publisher.subscribe(self.OnExportSurface, "Export surface to file")
         Publisher.subscribe(self.OnLoadSurfaceDict, "Load surface dict")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
@@ -1129,6 +1130,10 @@ class SurfaceManager:
 
     def OnShowSurface(self, index, visibility):
         self.ShowActor(index, visibility)
+
+    def OnHideAllSurfaces(self):
+        for key in self.actors_dict:
+            self.ShowActor(key, False)
 
     def GetBrainSurfaceActor(self, index):
         """

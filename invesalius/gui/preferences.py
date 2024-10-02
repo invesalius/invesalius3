@@ -514,6 +514,7 @@ class VisualizationTab(wx.Panel):
         self.conf = dict(self.session.GetConfig("mep_configuration"))
         self.spin_gaussian_radius.SetValue(self.conf.get("gaussian_radius"))
         self.spin_std_dev.SetValue(self.conf.get("gaussian_sharpness"))
+        self.spin_dims_size.SetValue(self.conf.get("dimensions_size"))
 
         self.combo_thresh.SetSelection(self.colormaps.index(self.conf.get("mep_colormap")))
         partial(self.OnSelectColormap, event=None, ctrl=self.combo_thresh)

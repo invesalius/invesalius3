@@ -68,9 +68,7 @@ class MEPVisualizer:
 
         self.colorBarActor = None
         self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
-
         self.marker_storage = []
-        self.first_load = True
 
         self.is_navigating = False
 
@@ -129,19 +127,9 @@ class MEPVisualizer:
                 return False
             progress_dialog = dialogs.BrainSurfaceLoadingProgressWindow()
             progress_dialog.Update(value=20, msg="Preparing brain surface...")
-            if self.colorBarActor:
-                Publisher.sendMessage("Remove surface actor from viewer", actor=self.colorBarActor)
-                Publisher.sendMessage("Remove surface actor from viewer", actor=self.surface)
-            self.colorBarActor = self.CreateColorbarActor()
-            if self.surface:  # Hides the original surface
-                Publisher.sendMessage(
-                    "Show single surface",
-                    index=self.surface_index,
-                    visibility=True,
-                )
-                Publisher.sendMessage("Get brain surface actor", index=self.surface_index)
-            progress_dialog.Update(value=50, msg="Preparing brain surface...")
+            Publisher.sendMessage("Hide all surfaces")
             self.UpdateVisualization()
+            progress_dialog.Update(value=50, msg="Preparing brain surface...")
             self.UpdateMEPPoints()
             progress_dialog.Close()
         else:
@@ -161,7 +149,7 @@ class MEPVisualizer:
     # --- Data Interpolation and Visualization ---
 
     def InterpolateData(self):
-        surface = self.surface
+        surface = self.decimate_surface
         points = self.points
         if not surface:
             # TODO: Show modal dialog to select a surface from project
@@ -190,7 +178,7 @@ class MEPVisualizer:
 
         resample = vtkResampleWithDataSet()
 
-        polydata = surface.GetMapper().GetInput()
+        polydata = surface.GetOutput()
         resample.SetInputData(polydata)
         resample.SetSourceConnection(interpolator.GetOutputPort())
         resample.SetPassPointArrays(1)
@@ -234,7 +222,7 @@ class MEPVisualizer:
         # Setup the decimation filter
         decimate_filter = vtkDecimatePro()
         decimate_filter.SetInputData(triangulated_polydata)
-        decimate_filter.SetTargetReduction(0.8)  # Reduce the number of triangles by 80%
+        decimate_filter.SetTargetReduction(0.6)  # Reduce the number of triangles by 60%
         decimate_filter.PreserveTopologyOn()  # Preserve the topology
         decimate_filter.Update()
         return decimate_filter
@@ -243,10 +231,8 @@ class MEPVisualizer:
         self.surface = actor
         self.surface_index = index
         self.decimate_surface = self.DecimateBrainSurface()
-        self.actors_dict[id(actor)] = actor
         self.bounds = np.array(actor.GetBounds())
-        self.UpdateVisualization()
-        # hide the original surface if MEP is enabled
+        self.marker_storage = []
         if self._config_params["mep_enabled"]:
             Publisher.sendMessage("Show surface", index=index, visibility=False)
         self._SaveUserParameters()
@@ -380,7 +366,6 @@ class MEPVisualizer:
         self.colorBarActor = self.CreateColorbarActor()
 
         Publisher.sendMessage("AppendActor", actor=self.colored_surface_actor)
-        Publisher.sendMessage("AppendActor", actor=self.surface)
         Publisher.sendMessage("AppendActor", actor=self.point_actor)
         Publisher.sendMessage("AppendActor", actor=self.colorBarActor)
 
@@ -425,7 +410,7 @@ class MEPVisualizer:
         """Creates the actor for the surface with color mapping."""
         normals = vtkPolyDataNormals()
         normals.SetInputData(poly_data)
-        normals.ComputePointNormalsOn()
+        normals.ComputePointNormalsOff()
         normals.ComputeCellNormalsOff()
         normals.Update()
 
@@ -500,4 +485,14 @@ class MEPVisualizer:
         """Cleanup the visualization when the project is closed."""
         self.DisplayMotorMap(False)
         self._config_params["mep_enabled"] = False
+        self.points = vtkPolyData()
+        self.surface = None
+        self.surface_index = None
+        self.decimate_surface = None
+        self.colored_surface_actor = None
+        self.point_actor = None
+        self.bounds = None
+        self.colorBarActor = None
+        self.actors_dict = {}
+        Publisher.sendMessage("Press motor map button", pressed=False)
         self._SaveUserParameters()
