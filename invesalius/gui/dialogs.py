@@ -1221,11 +1221,11 @@ def ShowEnterMEPValue(default):
     if result is None:
         msg = _("The value entered is not a number.")
         if sys.platform == "darwin":
-            dlg = wx.MessageDialog(None, "", msg, wx.OK)
+            dlg_warn = wx.MessageDialog(None, "", msg, wx.OK)
         else:
-            dlg = wx.MessageDialog(None, msg, "InVesalius 3", wx.OK)
-        dlg.ShowModal()
-        dlg.Destroy()
+            dlg_warn = wx.MessageDialog(None, msg, "InVesalius 3", wx.OK)
+        dlg_warn.ShowModal()
+        dlg_warn.Destroy()
 
     dlg.Destroy()
 

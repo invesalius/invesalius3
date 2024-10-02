@@ -310,11 +310,12 @@ class MEPVisualizer:
             markers (List[Marker]): The list of marker objects to add/update points for.
             clear_old (bool, default=False): If True, clears all existing points before updating.
         """
+        if not self._config_params["mep_enabled"]:
+            return
         if not self.surface:
             return
 
         markers, skip = self._FilterMarkers(MarkersControl().list)
-
         if not markers:
             self.points = vtkPolyData()
             self.UpdateVisualization()
