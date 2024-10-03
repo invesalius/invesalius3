@@ -123,7 +123,12 @@ PROP_MEASURE = 0.8
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=wx.Size(320, 320))
+        display_size = wx.GetDisplaySize()
+        # Set the initial volume wx.Panel size as half the screen resolution to fix the issue
+        # with small target guide icons when loading a state file with target selected
+        x = int(display_size[0] / 2)
+        y = int(display_size[1] / 2)
+        wx.Panel.__init__(self, parent, size=wx.Size(x, y))
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
 
         self.interaction_style = st.StyleStateManager()
