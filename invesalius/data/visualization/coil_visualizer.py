@@ -25,7 +25,7 @@ class CoilVisualizer:
     def __init__(self, renderer, actor_factory, vector_field_visualizer):
         self.renderer = renderer
         self.tracker = Tracker()
-        self.navigation = Navigation(None, None)  # Navigation is singleton so args dont matter
+
         # Keeps track of whether tracker fiducials have been set.
         self.tracker_fiducials_set = self.tracker.AreTrackerFiducialsSet()
 
@@ -109,9 +109,11 @@ class CoilVisualizer:
 
         # Set the color of both target coil (representing the target) and the coil center (representing the actual coil).
         self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
-        self.coils[self.navigation.main_coil]["center_actor"].GetProperty().SetDiffuseColor(
-            target_coil_color
-        )
+
+        # Multicoil mode will have a different GUI for targeting, so this is irrelevant for multicoil
+        # In single coil mode, just get the single coil
+        coil = next(iter(self.coils.values()), None)
+        coil["center_actor"].GetProperty().SetDiffuseColor(target_coil_color)
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
