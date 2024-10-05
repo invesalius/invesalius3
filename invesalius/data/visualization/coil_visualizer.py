@@ -123,8 +123,6 @@ class CoilVisualizer:
             for coil in self.coils.values():
                 coil["actor"].SetVisibility(state)
                 coil["center_actor"].SetVisibility(True)  # Always show the center donut actor
-            if self.target_coil_actor is not None:  # LUKATODO: target mode...
-                self.target_coil_actor.SetVisibility(True)  # Keep target visible for now
 
         elif (coil := self.coils.get(coil_name, None)) is not None:
             # Just toggle the visibility when dealing with specific coils
@@ -139,6 +137,8 @@ class CoilVisualizer:
             elif all(coils_visible):  # all coils are shown
                 Publisher.sendMessage("Press show-coil button", pressed=True)
 
+        if self.target_coil_actor is not None:
+            self.target_coil_actor.SetVisibility(state)
         # self.vector_field_assembly.SetVisibility(state) # LUKATODO: Keep this hidden for now
 
         if not self.is_navigating:
