@@ -1703,7 +1703,7 @@ class TrackerTab(wx.Panel):
             self.ShowParent()
 
     def OnChooseReferenceMode(self, evt, ctrl):
-        Navigation().SetReferenceMode(evt.GetSelection())
+        Navigation(None, None).SetReferenceMode(evt.GetSelection())
 
     def HideParent(self):  # hide preferences dialog box
         self.GetGrandParent().Hide()

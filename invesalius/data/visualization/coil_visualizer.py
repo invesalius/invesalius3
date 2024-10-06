@@ -6,6 +6,7 @@ import invesalius.constants as const
 import invesalius.data.polydata_utils as pu
 import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
+from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.tracker import Tracker
 from invesalius.pubsub import pub as Publisher
 
@@ -108,7 +109,11 @@ class CoilVisualizer:
 
         # Set the color of both target coil (representing the target) and the coil center (representing the actual coil).
         self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
-        # self.coil_center_actor.GetProperty().SetDiffuseColor(target_coil_color) # LUKATODO: use main_coil from navigation?
+
+        # Multicoil mode will have a different GUI for targeting, so this is irrelevant for multicoil
+        # In single coil mode, just get the single coil
+        coil = next(iter(self.coils.values()), None)
+        coil["center_actor"].GetProperty().SetDiffuseColor(target_coil_color)
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -118,8 +123,7 @@ class CoilVisualizer:
             for coil in self.coils.values():
                 coil["actor"].SetVisibility(state)
                 coil["center_actor"].SetVisibility(True)  # Always show the center donut actor
-            if self.target_coil_actor is not None:  # LUKATODO: target mode...
-                self.target_coil_actor.SetVisibility(True)  # Keep target visible for now
+
         elif (coil := self.coils.get(coil_name, None)) is not None:
             # Just toggle the visibility when dealing with specific coils
             new_state = not coil["actor"].GetVisibility()
@@ -133,6 +137,8 @@ class CoilVisualizer:
             elif all(coils_visible):  # all coils are shown
                 Publisher.sendMessage("Press show-coil button", pressed=True)
 
+        if self.target_coil_actor is not None:
+            self.target_coil_actor.SetVisibility(state)
         # self.vector_field_assembly.SetVisibility(state) # LUKATODO: Keep this hidden for now
 
         if not self.is_navigating:
