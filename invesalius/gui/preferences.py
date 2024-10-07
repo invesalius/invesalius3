@@ -92,7 +92,10 @@ class Preferences(wx.Dialog):
 
     def OnOK(self, event):
         Publisher.sendMessage("Save Preferences")
-        self.EndModal(wx.ID_OK)
+        try:
+            self.EndModal(wx.ID_OK)
+        except wx._core.wxAssertionError:
+            self.Destroy()
 
     def OnCharHook(self, event):
         if event.GetKeyCode() == wx.WXK_ESCAPE:
