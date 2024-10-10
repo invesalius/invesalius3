@@ -128,9 +128,14 @@ class Image:
     def OnStateProject(self, state):
         if state:
             if self.load_from_state:
-                self.LoadState()
                 self.load_from_state = False
+                try:
+                    self.LoadState()
+                except:
+                    ses.Session.DeleteStateFile()
+                    self.LoadProject()  # Load project if failed to load from state
             else:
                 self.LoadProject()
+
         self.SaveState()
         self.UpdateFiducialMarkers()

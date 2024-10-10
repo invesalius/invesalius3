@@ -60,15 +60,15 @@ class MEPVisualizer:
     def __init__(self):
         self.points = vtkPolyData()
         self.surface = None
+        self.surface_index = None
         self.decimate_surface = None
         self.colored_surface_actor = None
         self.point_actor = None
+        self.bounds = None
 
         self.colorBarActor = None
         self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
-
-        self.marker_storage = None
-        self.first_load = True
+        self.marker_storage = []
 
         self.is_navigating = False
 
@@ -85,8 +85,9 @@ class MEPVisualizer:
         # Publisher.subscribe(self.SetBrainSurface, "Set MEP brain surface")
         Publisher.subscribe(self.UpdateMEPPoints, "Redraw MEP mapping")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
-        Publisher.subscribe(self.SetBrainSurface, "Load visible surface actor")
+        Publisher.subscribe(self.SetBrainSurface, "Load brain surface actor")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.OnRemoveSurfaces, "Remove surfaces")
 
     # --- Configuration Management ---
 
@@ -94,27 +95,12 @@ class MEPVisualizer:
         session = ses.Session()
         config = session.GetConfig("mep_configuration")
         if config:  # If there is a configuration saved in a previous session
-            config["enabled_once"] = False
-            config["mep_enabled"] = False
-            if (
-                config["brain_surface_index"] is not None
-            ):  # If there is a surface already selected then there is no point of showing the message
-                config["enabled_once"] = True
             self._config_params.update(config)
         else:
             session.SetConfig("mep_configuration", self._config_params)
 
     def _ResetConfigParams(self):
         defaults = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
-        if self._config_params["enabled_once"]:
-            defaults["enabled_once"] = True
-            defaults["bounds"] = self._config_params[
-                "bounds"
-            ]  # Keep the bounds of the surface if it was already selected (to avoid recalculating)
-            defaults["brain_surface_index"] = self._config_params[
-                "brain_surface_index"
-            ]  # Keep the previously selected index
-
         ses.Session().SetConfig("mep_configuration", defaults)
         self._config_params = deepcopy(defaults)
 
@@ -123,7 +109,6 @@ class MEPVisualizer:
 
     def UpdateConfig(self):
         self._config_params = deepcopy(ses.Session().GetConfig("mep_configuration"))
-        # self.UpdateMEPPoints([])
         self.UpdateVisualization()
 
     # --- Motor Map Display ---
@@ -131,48 +116,32 @@ class MEPVisualizer:
     def DisplayMotorMap(self, show: bool):
         if show:
             self._config_params["mep_enabled"] = True
-            if self._config_params["brain_surface_index"] is None:
+            if not self.surface:
                 wx.MessageBox(
                     "Please select a brain surface from preferences.",
                     "MEP Mapping",
                     wx.OK | wx.ICON_INFORMATION,
                 )
-                self._config_params["enabled_once"] = True
                 self._SaveUserParameters()
                 Publisher.sendMessage("Open preferences menu", page=0)
                 return False
             progress_dialog = dialogs.BrainSurfaceLoadingProgressWindow()
-            if self.colorBarActor:
-                Publisher.sendMessage("Remove surface actor from viewer", actor=self.colorBarActor)
-                Publisher.sendMessage("Remove surface actor from viewer", actor=self.surface)
-            self.colorBarActor = self.CreateColorbarActor()
-            if self._config_params["brain_surface_index"] is not None:  # Hides the original surface
-                Publisher.sendMessage(
-                    "Show surface",
-                    index=self._config_params["brain_surface_index"],
-                    visibility=False,
-                )
-                if self.first_load:
-                    Publisher.sendMessage(
-                        "Show single surface",
-                        index=self._config_params["brain_surface_index"],
-                        visibility=True,
-                    )
-                    Publisher.sendMessage("Get visible surface actor")
-                    self.first_load = False
-            progress_dialog.Update(value=50, msg="Preparing brain surface...")
+            progress_dialog.Update(value=20, msg="Preparing brain surface...")
+            Publisher.sendMessage("Hide all surfaces")
             self.UpdateVisualization()
+            progress_dialog.Update(value=50, msg="Preparing brain surface...")
             self.UpdateMEPPoints()
             progress_dialog.Close()
         else:
             self._config_params["mep_enabled"] = False
             self._CleanupVisualization()
-            if self._config_params["brain_surface_index"] is not None:  # Shows the original surface
+            if self.surface:  # Shows the original surface
                 Publisher.sendMessage(
                     "Show surface",
-                    index=self._config_params["brain_surface_index"],
+                    index=self.surface_index,
                     visibility=True,
                 )
+            self.marker_storage = []
         self._SaveUserParameters()
 
         return True
@@ -180,7 +149,7 @@ class MEPVisualizer:
     # --- Data Interpolation and Visualization ---
 
     def InterpolateData(self):
-        surface = self.surface
+        surface = self.decimate_surface
         points = self.points
         if not surface:
             # TODO: Show modal dialog to select a surface from project
@@ -188,7 +157,6 @@ class MEPVisualizer:
         if not points:
             raise ValueError("MEP Visualizer: No point data found")
 
-        bounds = np.array(self._config_params["bounds"])
         gaussian_sharpness = self._config_params["gaussian_sharpness"]
         gaussian_radius = self._config_params["gaussian_radius"]
         dims_size = self._config_params["dimensions_size"]
@@ -196,8 +164,8 @@ class MEPVisualizer:
 
         box = vtkImageData()
         box.SetDimensions(dims)
-        box.SetSpacing((bounds[1::2] - bounds[:-1:2]) / (dims - 1))
-        box.SetOrigin(bounds[::2])
+        box.SetSpacing((self.bounds[1::2] - self.bounds[:-1:2]) / (dims - 1))
+        box.SetOrigin(self.bounds[::2])
 
         gaussian_kernel = vtkGaussianKernel()
         gaussian_kernel.SetSharpness(gaussian_sharpness)
@@ -210,7 +178,7 @@ class MEPVisualizer:
 
         resample = vtkResampleWithDataSet()
 
-        polydata = surface.GetMapper().GetInput()
+        polydata = surface.GetOutput()
         resample.SetInputData(polydata)
         resample.SetSourceConnection(interpolator.GetOutputPort())
         resample.SetPassPointArrays(1)
@@ -243,14 +211,6 @@ class MEPVisualizer:
 
         return color_function
 
-    def QueryBrainSurface(self):
-        Publisher.sendMessage(
-            "Show single surface",
-            index=self._config_params["brain_surface_index"],
-            visibility=True,
-        )
-        Publisher.sendMessage("Get visible surface actor")
-
     def DecimateBrainSurface(self):
         triangle_filter = vtkTriangleFilter()
         triangle_filter.SetInputData(
@@ -262,43 +222,60 @@ class MEPVisualizer:
         # Setup the decimation filter
         decimate_filter = vtkDecimatePro()
         decimate_filter.SetInputData(triangulated_polydata)
-        decimate_filter.SetTargetReduction(0.8)  # Reduce the number of triangles by 80%
+        decimate_filter.SetTargetReduction(0.6)  # Reduce the number of triangles by 60%
         decimate_filter.PreserveTopologyOn()  # Preserve the topology
         decimate_filter.Update()
         return decimate_filter
 
     def SetBrainSurface(self, actor: vtkActor, index: int):
         self.surface = actor
+        self.surface_index = index
         self.decimate_surface = self.DecimateBrainSurface()
-        self.actors_dict[id(actor)] = actor
-        self._config_params["bounds"] = list(np.array(actor.GetBounds()))
-        self._config_params["brain_surface_index"] = index
-        self.UpdateVisualization()
-        # hide the original surface if MEP is enabled
+        self.bounds = np.array(actor.GetBounds())
+        self.marker_storage = []
         if self._config_params["mep_enabled"]:
             Publisher.sendMessage("Show surface", index=index, visibility=False)
         self._SaveUserParameters()
 
-    def _FilterMarkers(self, markers):
+    def _FilterMarkers(self, markers_list):
         """
         Checks if the markers were updated and if those updated are of type coil_target
         """
-
-        self.marker_storage = self.marker_storage or markers
-
-        if not markers:
+        if not markers_list:
             return [], False
+
+        markers = []
+        for marker in markers_list:
+            markers.append(marker.to_dict())
+
+        # TODO: use modified markers list to make projection_on_surface
+        # Find objects in the new list that are not in the old list (added)
+        added_objects = [
+            new_obj
+            for new_obj in markers
+            if not any((new_obj == old_obj) for old_obj in self.marker_storage)
+        ]
+
+        # Find objects in the old list that are not in the new list (removed)
+        removed_objects = [
+            old_obj
+            for old_obj in self.marker_storage
+            if not any((old_obj == new_obj) for new_obj in markers)
+        ]
+
+        # Check if the lists have changed
+        if not bool(added_objects or removed_objects):
+            return None, True
 
         # Check if the markers are coil target markers
         coil_markers = []
-        for marker in markers:
+        for marker in markers_list:
             if marker.marker_type == MarkerType.COIL_TARGET:
                 coil_markers.append(marker)
 
-        # check if the coil markers were changed compared to the stored markers
-        skip = coil_markers == self.marker_storage
+        self.marker_storage = markers
 
-        return coil_markers, skip
+        return coil_markers, False
 
     def collision_detection(self, m_point):
         distance_function = vtkImplicitPolyDataDistance()
@@ -333,11 +310,12 @@ class MEPVisualizer:
             markers (List[Marker]): The list of marker objects to add/update points for.
             clear_old (bool, default=False): If True, clears all existing points before updating.
         """
+        if not self._config_params["mep_enabled"]:
+            return
         if not self.surface:
             return
 
         markers, skip = self._FilterMarkers(MarkersControl().list)
-
         if not markers:
             self.points = vtkPolyData()
             self.UpdateVisualization()
@@ -376,7 +354,7 @@ class MEPVisualizer:
             self.UpdateVisualization()
 
     def UpdateVisualization(self):
-        if not self._config_params["mep_enabled"]:
+        if not self._config_params["mep_enabled"] or not self.surface:
             return
 
         self._CleanupVisualization()
@@ -389,7 +367,6 @@ class MEPVisualizer:
         self.colorBarActor = self.CreateColorbarActor()
 
         Publisher.sendMessage("AppendActor", actor=self.colored_surface_actor)
-        Publisher.sendMessage("AppendActor", actor=self.surface)
         Publisher.sendMessage("AppendActor", actor=self.point_actor)
         Publisher.sendMessage("AppendActor", actor=self.colorBarActor)
 
@@ -434,7 +411,7 @@ class MEPVisualizer:
         """Creates the actor for the surface with color mapping."""
         normals = vtkPolyDataNormals()
         normals.SetInputData(poly_data)
-        normals.ComputePointNormalsOn()
+        normals.ComputePointNormalsOff()
         normals.ComputeCellNormalsOff()
         normals.Update()
 
@@ -460,7 +437,7 @@ class MEPVisualizer:
         point_mapper = vtkPointGaussianMapper()
         point_mapper.SetInputData(points)
         point_mapper.SetScalarRange(data_range)
-        point_mapper.SetScaleFactor(1)
+        point_mapper.SetScaleFactor(0.5)
         point_mapper.EmissiveOff()
         point_mapper.SetSplatShaderCode(
             "//VTK::Color::Impl\n"
@@ -495,9 +472,28 @@ class MEPVisualizer:
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
 
+    def OnRemoveSurfaces(self, surface_indexes):
+        for index in surface_indexes:
+            if index == self.surface_index:
+                self.surface = None
+                self.surface_index = None
+                self.DisplayMotorMap(False)
+                self._config_params["mep_enabled"] = False
+                self._SaveUserParameters()
+                Publisher.sendMessage("Press motor map button", pressed=False)
+
     def OnCloseProject(self):
         """Cleanup the visualization when the project is closed."""
         self.DisplayMotorMap(False)
         self._config_params["mep_enabled"] = False
-        self._config_params["enabled_once"] = False
+        self.points = vtkPolyData()
+        self.surface = None
+        self.surface_index = None
+        self.decimate_surface = None
+        self.colored_surface_actor = None
+        self.point_actor = None
+        self.bounds = None
+        self.colorBarActor = None
+        self.actors_dict = {}
+        Publisher.sendMessage("Press motor map button", pressed=False)
         self._SaveUserParameters()

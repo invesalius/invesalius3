@@ -99,6 +99,7 @@ from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.ruler_volume import GenericLeftRulerVolume
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
+from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.i18n import tr as _
@@ -122,7 +123,12 @@ PROP_MEASURE = 0.8
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=wx.Size(320, 320))
+        display_size = wx.GetDisplaySize()
+        # Set the initial volume wx.Panel size as half the screen resolution to fix the issue
+        # with small target guide icons when loading a state file with target selected
+        x = int(display_size[0] / 2)
+        y = int(display_size[1] / 2)
+        wx.Panel.__init__(self, parent, size=wx.Size(x, y))
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
 
         self.interaction_style = st.StyleStateManager()
@@ -308,10 +314,11 @@ class Viewer(wx.Panel):
         # An object to manage visualizing coils in the 3D viewer.
         self.coil_visualizer = CoilVisualizer(
             renderer=self.ren,
-            interactor=self.interactor,
             actor_factory=self.actor_factory,
             vector_field_visualizer=self.vector_field_visualizer,
         )
+
+        self.probe_visualizer = ProbeVisualizer(self.ren)
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
@@ -340,9 +347,6 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
-        # Automatically enable and press 'Track object' button.
-        Publisher.sendMessage("Enable track object button", enabled=True)
-        Publisher.sendMessage("Press track object button", pressed=True)
         Publisher.sendMessage("Press target mode button", pressed=False)
 
     def UpdateCanvas(self):
@@ -598,7 +602,7 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def OnSensors(self, marker_visibilities):
-        probe_id, ref_id, obj_id = marker_visibilities
+        probe_id, ref_id, *coil_ids = marker_visibilities
 
         if not self.probe:
             self.probe = True
@@ -615,7 +619,9 @@ class Viewer(wx.Panel):
             colour2 = green_color
         else:
             colour2 = red_color
-        if obj_id:
+        if any(
+            coil_ids
+        ):  # LUKATODO: add subscript to show how many coils are visible (green when all visible, orange when some not)
             colour3 = green_color
         else:
             colour3 = red_color
@@ -1342,6 +1348,10 @@ class Viewer(wx.Panel):
         # Update the pointer sphere.
         if self.pointer_actor is None:
             self.CreatePointer()
+
+        # Hide the pointer during targeting, as it would cover the coil center donut
+        self.pointer_actor.SetVisibility(not self.target_mode)
+
         self.pointer_actor.SetPosition(position)
         # Update the render window manually, as it is not updated automatically when not navigating.
         if not self.nav_status:
@@ -2172,7 +2182,7 @@ class Viewer(wx.Panel):
             if session.GetConfig("debug_efield"):
                 self.e_field_norms = enorm_data[3][self.Id_list, 0]
                 self.e_field_col1 = enorm_data[3][self.Id_list, 1]
-                self.e_field_col2 = enorm_data[3][self.Id_list, 1]
+                self.e_field_col2 = enorm_data[3][self.Id_list, 1]  # LUKATODO: is this a typo?
                 self.e_field_col3 = enorm_data[3][self.Id_list, 3]
                 self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
                 max = np.array(self.e_field_norms).argmax()
