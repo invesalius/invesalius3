@@ -110,20 +110,14 @@ class Session(metaclass=Singleton):
         self.WriteConfigFile()
 
     def GetConfig(self, key: str, default_value: Any = None) -> Any:
-        if key in self._config:
-            return self._config[key]
-        else:
-            return default_value
+        return self._config.get(key, default_value)
 
     def SetState(self, key: str, value: Any) -> None:
         self._state[key] = value
         self.WriteStateFile()
 
     def GetState(self, key: str, default_value: Any = None) -> Any:
-        if key in self._state:
-            return self._state[key]
-        else:
-            return default_value
+        return self._state.get(key, default_value)
 
     def IsOpen(self) -> bool:
         import invesalius.constants as const
@@ -289,6 +283,7 @@ class Session(metaclass=Singleton):
         success = False
         if os.path.exists(STATE_PATH):
             print("Restoring a previous state...")
+            print("State file found.", STATE_PATH)
 
             state_file = open(STATE_PATH)
             try:

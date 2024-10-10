@@ -208,6 +208,7 @@ class SurfaceManager:
 
         Publisher.subscribe(self.OnChangeSurfaceName, "Change surface name")
         Publisher.subscribe(self.OnShowSurface, "Show surface")
+        Publisher.subscribe(self.OnHideAllSurfaces, "Hide all surfaces")
         Publisher.subscribe(self.OnExportSurface, "Export surface to file")
         Publisher.subscribe(self.OnLoadSurfaceDict, "Load surface dict")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
@@ -216,6 +217,7 @@ class SurfaceManager:
         Publisher.subscribe(self.OnSplitSurface, "Split surface")
         Publisher.subscribe(self.OnLargestSurface, "Create surface from largest region")
         Publisher.subscribe(self.OnSeedSurface, "Create surface from seeds")
+        Publisher.subscribe(self.GetBrainSurfaceActor, "Get brain surface actor")
 
         Publisher.subscribe(self.OnDuplicate, "Duplicate surfaces")
         Publisher.subscribe(self.OnRemove, "Remove surfaces")
@@ -1128,6 +1130,18 @@ class SurfaceManager:
 
     def OnShowSurface(self, index, visibility):
         self.ShowActor(index, visibility)
+
+    def OnHideAllSurfaces(self):
+        for key in self.actors_dict:
+            self.ShowActor(key, False)
+
+    def GetBrainSurfaceActor(self, index):
+        """
+        Gets the first visible surface actor.
+        """
+        Publisher.sendMessage(
+            "Load brain surface actor", actor=self.actors_dict[index], index=index
+        )
 
     def ShowActor(self, index, value):
         """

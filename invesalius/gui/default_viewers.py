@@ -161,6 +161,7 @@ class Panel(wx.Panel):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self.OnRestore)
 
     def __bind_events(self):
+        Publisher.subscribe(self.MaximizeViewerVolume, "Set target mode")
         Publisher.subscribe(self._Exit, "Exit")
         Publisher.subscribe(self.maximize_volume_pane, "maximize_volume_pane")
         Publisher.subscribe(self.restore_volume_pane, "restore_volume_pane")
@@ -179,6 +180,17 @@ class Panel(wx.Panel):
             self.is_volume_pane_maximized = False
         self.aui_manager.Update()
 
+    def MaximizeViewerVolume(self, enabled=True):
+        if enabled:
+            self.aui_manager.MaximizePane(
+                self.aui_manager.GetAllPanes()[-1]
+            )  # Viewer volume is the last pane
+            Publisher.sendMessage("Show raycasting widget")
+        else:
+            self.aui_manager.RestoreMaximizedPane()
+            Publisher.sendMessage("Hide raycasting widget")
+        self.aui_manager.Update()
+
     def OnMaximize(self, evt):
         if evt.GetPane().name == self.s4.name:
             Publisher.sendMessage("Show raycasting widget")
@@ -187,83 +199,8 @@ class Panel(wx.Panel):
         if evt.GetPane().name == self.s4.name:
             Publisher.sendMessage("Hide raycasting widget")
 
-    def __init_four_way_splitter(self):
-        splitter = fws.FourWaySplitter(self, style=wx.SP_LIVE_UPDATE)
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(splitter, 1, wx.EXPAND)
-        self.SetSizer(sizer)
-
-        p1 = slice_viewer.Viewer(self, "AXIAL")
-        splitter.AppendWindow(p1)
-
-        p2 = slice_viewer.Viewer(self, "CORONAL")
-        splitter.AppendWindow(p2)
-
-        p3 = slice_viewer.Viewer(self, "SAGITAL")
-        splitter.AppendWindow(p3)
-
-        p4 = volume_viewer.Viewer(self)
-        splitter.AppendWindow(p4)
-
     def _Exit(self):
         self.aui_manager.UnInit()
-
-    def __init_mix(self):
-        aui_manager = wx.aui.AuiManager()
-        aui_manager.SetManagedWindow(self)
-
-        splitter = fws.FourWaySplitter(self, style=wx.SP_LIVE_UPDATE)
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(splitter, 1, wx.EXPAND)
-        self.SetSizer(sizer)
-
-        p1 = slice_viewer.Viewer(self, "AXIAL")
-        aui_manager.AddPane(
-            p1,
-            wx.aui.AuiPaneInfo()
-            .Name("Axial Slice")
-            .Caption(_("Axial slice"))
-            .MaximizeButton(True)
-            .CloseButton(False),
-        )
-
-        p2 = slice_viewer.Viewer(self, "CORONAL")
-        aui_manager.AddPane(
-            p2,
-            wx.aui.AuiPaneInfo()
-            .Name("Coronal Slice")
-            .Caption(_("Coronal slice"))
-            .MaximizeButton(True)
-            .CloseButton(False),
-        )
-
-        p3 = slice_viewer.Viewer(self, "SAGITAL")
-        aui_manager.AddPane(
-            p3,
-            wx.aui.AuiPaneInfo()
-            .Name("Sagittal Slice")
-            .Caption(_("Sagittal slice"))
-            .MaximizeButton(True)
-            .CloseButton(False),
-        )
-
-        # p4 = volume_viewer.Viewer(self)
-        aui_manager.AddPane(
-            VolumeViewerCover,
-            wx.aui.AuiPaneInfo()
-            .Name("Volume")
-            .Caption(_("Volume"))
-            .MaximizeButton(True)
-            .CloseButton(False),
-        )
-
-        splitter.AppendWindow(p1)
-        splitter.AppendWindow(p2)
-        splitter.AppendWindow(p3)
-
-        aui_manager.Update()
 
 
 class VolumeInteraction(wx.Panel):
