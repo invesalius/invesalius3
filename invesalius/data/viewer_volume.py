@@ -469,7 +469,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUnsetTarget, "Unset target")
         Publisher.subscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
         Publisher.subscribe(self.OnUpdateDistanceThreshold, "Update distance threshold")
-        Publisher.subscribe(self.OnUpdateRobotWarning, "Robot to Neuronavigation: Update robot warning")
+        Publisher.subscribe(
+            self.OnUpdateRobotWarning, "Robot to Neuronavigation: Update robot warning"
+        )
         Publisher.subscribe(self.OnUpdateTracts, "Update tracts")
         Publisher.subscribe(self.OnUpdateEfieldvis, "Update efield vis")
         Publisher.subscribe(self.InitializeColorArray, "Initialize color array")
