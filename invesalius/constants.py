@@ -614,6 +614,7 @@ ID_FLOODFILL_SEGMENTATION = wx.NewIdRef()
 ID_SEGMENTATION_BRAIN = wx.NewIdRef()
 ID_SEGMENTATION_TRACHEA = wx.NewIdRef()
 ID_SEGMENTATION_MANDIBLE_CT = wx.NewIdRef()
+ID_PLANNING_CRANIOPLASTY = wx.NewIdRef()
 ID_CROP_MASK = wx.NewIdRef()
 ID_DENSITY_MEASURE = wx.NewIdRef()
 ID_MASK_DENSITY_MEASURE = wx.NewIdRef()
@@ -735,6 +736,11 @@ RENDERING = 0
 SURFACE_INTERPOLATION = 1
 LANGUAGE = 2
 SLICE_INTERPOLATION = 3
+# Logging
+LOGGING = 4
+LOGGING_LEVEL = 5
+APPEND_LOG_FILE = 6
+LOGFILE = 7
 SERVER_AETITLE = 4
 SERVER_PORT = 5
 STORE_PATH = 6
@@ -799,9 +805,10 @@ LABEL_COLUMN = 3
 TARGET_COLUMN = 4
 Z_OFFSET_COLUMN = 5
 POINT_OF_INTEREST_TARGET_COLUMN = 6
-X_COLUMN = 7
-Y_COLUMN = 8
-Z_COLUMN = 9
+MEP_COLUMN = 7
+X_COLUMN = 8
+Y_COLUMN = 9
+Z_COLUMN = 10
 
 # ------------ Navigation defaults -------------------
 
@@ -1002,9 +1009,86 @@ TREKKER_CONFIG = {
 }
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
-CURRENT_MARKER_FILE_VERSION = 3
-SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3]
+CURRENT_MARKER_FILE_VERSION = 4
+SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3, 4]
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
+
+# Motor mapping visualization
+
+DEFAULT_MEP_CONFIG_PARAMS = {
+    "mep_enabled": False,
+    "threshold_down": 0,
+    "range_up": 1,
+    "mep_colormap": "Viridis",
+    "gaussian_sharpness": 1.0,
+    "gaussian_radius": 3,
+    "dimensions_size": 80,
+    "colormap_range_uv": {"min": 50, "low": 200, "mid": 600, "max": 1000},
+}
+
+
+MEP_COLORMAP_DEFINITIONS = {
+    "BlueCyanYellowRed": {  # Blue, Cyan, Yellow, Red
+        "min": (0.0, 0.0, 1.0),
+        "low": (0.0, 1.0, 1.0),
+        "mid": (1.0, 1.0, 0.0),
+        "max": (1.0, 0.0, 0.0),
+    },
+    "GreenYellowOrangeRed": {  # Green, Yellow, Orange, Red
+        "min": (0.0, 1.0, 0.0),
+        "low": (1.0, 1.0, 0.0),
+        "mid": (1.0, 0.647, 0.0),
+        "max": (1.0, 0.0, 0.0),
+    },
+    "PurpleBlueGreenYellow": {  # Purple, Blue, Green, Yellow
+        "min": (0.5, 0.0, 0.5),
+        "low": (0.0, 0.0, 1.0),
+        "mid": (0.0, 1.0, 0.0),
+        "max": (1.0, 1.0, 0.0),
+    },
+    "BlackGrayWhiteRed": {  # Black, Gray, White, Red (grayscale with highlight)
+        "min": (0.0, 0.0, 0.0),
+        "low": (0.5, 0.5, 0.5),
+        "mid": (1.0, 1.0, 1.0),
+        "max": (1.0, 0.0, 0.0),
+    },
+    "Viridis": {  # Viridis (perceptually uniform)
+        "min": (0.267004, 0.004874, 0.329415),
+        "low": (0.226337, 0.31071, 0.577055),
+        "mid": (0.993248, 0.906157, 0.143936),
+        "max": (0.968627, 0.813008, 0.0),
+    },
+    "Grayscale": {  # Grayscale (often used for CT/MRI)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.25, 0.25, 0.25),  # Dark Gray
+        "mid": (0.75, 0.75, 0.75),  # Light Gray
+        "max": (1.0, 1.0, 1.0),  # White
+    },
+    "HotMetal": {  # Hot Metal (useful for highlighting hot spots)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.5, 0.0, 0.0),  # Dark Red
+        "mid": (1.0, 0.5, 0.0),  # Orange
+        "max": (1.0, 1.0, 1.0),  # White
+    },
+    "Rainbow": {  # Rainbow (although not perceptually uniform, still common)
+        "min": (0.0, 0.0, 1.0),  # Blue
+        "low": (0.0, 1.0, 0.0),  # Green
+        "mid": (1.0, 1.0, 0.0),  # Yellow
+        "max": (1.0, 0.0, 0.0),  # Red
+    },
+    "Bone": {  # Bone (specifically designed for CT bone visualization)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.388, 0.224, 0.0),  # Brown
+        "mid": (0.902, 0.827, 0.631),  # Beige
+        "max": (1.0, 1.0, 1.0),  # White
+    },
+    "InvertedGrayscale": {  # Inverted Grayscale (sometimes used for PET)
+        "min": (1.0, 1.0, 1.0),  # White
+        "low": (0.75, 0.75, 0.75),  # Light Gray
+        "mid": (0.25, 0.25, 0.25),  # Dark Gray
+        "max": (0.0, 0.0, 0.0),  # Black
+    },
+}
 
 # Keycodes for moving markers using the keyboard
 MOVE_MARKER_LEFT_KEYCODE = 65  # A

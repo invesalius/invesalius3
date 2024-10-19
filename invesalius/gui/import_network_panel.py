@@ -174,7 +174,7 @@ class InnerPanel(wx.Panel):
             group = max(group.GetGroups(), key=lambda g: g.nslices)
 
         slice_amont = group.nslices
-        if (self.first_image_selection != None) and (
+        if (self.first_image_selection is not None) and (
             self.first_image_selection != self.last_image_selection
         ):
             slice_amont = (self.last_image_selection) - self.first_image_selection

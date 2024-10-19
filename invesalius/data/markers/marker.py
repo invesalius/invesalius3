@@ -75,6 +75,9 @@ class Marker:
     z_offset: float = 0.0
     visualization: dict = dataclasses.field(default_factory=dict)
     marker_uuid: str = ""
+    # #TODO: add a reference to original coil marker to relate it to MEP
+    # in micro Volts (but scale in milli Volts for display)
+    mep_value: float = dataclasses.field(default=None)
 
     # x, y, z can be jointly accessed as position
     @property
@@ -160,10 +163,14 @@ class Marker:
         res = [
             field.name
             for field in dataclasses.fields(cls)
-            if (field.name != "version" and field.name != "marker_uuid")
+            if (
+                field.name != "version"
+                and field.name != "marker_uuid"
+                and field.name != "visualization"
+            )
         ]
         res.extend(["x_world", "y_world", "z_world", "alpha_world", "beta_world", "gamma_world"])
-        return "\t".join(map(lambda x: '"%s"' % x, res))
+        return "\t".join(map(lambda x: f'"{x}"', res))
 
     def to_csv_row(self):
         """Serialize to excel-friendly tab-separated string"""
@@ -178,11 +185,11 @@ class Marker:
                 continue
 
             if field.type is str:
-                res += '"%s"\t' % getattr(self, field.name)
+                res += f'"{getattr(self, field.name)}"\t'
             elif field.type is MarkerType:
-                res += "%s\t" % getattr(self, field.name).value
+                res += f"{getattr(self, field.name).value}\t"
             else:
-                res += "%s\t" % str(getattr(self, field.name))
+                res += f"{str(getattr(self, field.name))}\t"
 
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
             # Add world coordinates (in addition to the internal ones).
@@ -217,6 +224,7 @@ class Marker:
             "cortex_position_orientation": self.cortex_position_orientation,
             "z_rotation": self.z_rotation,
             "z_offset": self.z_offset,
+            "mep_value": self.mep_value,
         }
 
     def from_dict(self, d):
@@ -245,20 +253,10 @@ class Marker:
             else:
                 marker_type = MarkerType.COIL_TARGET.value
 
-        if all(
-            [
-                k in d
-                for k in [
-                    "x_cortex",
-                    "y_cortex",
-                    "z_cortex",
-                    "alpha_cortex",
-                    "beta_cortex",
-                    "gamma_cortex",
-                ]
-            ]
-        ):
-            cortex_position_orientation = [
+        cortex_position_orientation = (
+            d["cortex_position_orientation"]
+            if "cortex_position_orientation" in d
+            else [
                 d["x_cortex"],
                 d["y_cortex"],
                 d["z_cortex"],
@@ -266,12 +264,12 @@ class Marker:
                 d["beta_cortex"],
                 d["gamma_cortex"],
             ]
-        else:
-            cortex_position_orientation = [None, None, None, None, None, None]
+        )
 
         z_offset = d.get("z_offset", 0.0)
         z_rotation = d.get("z_rotation", 0.0)
         is_point_of_interest = d.get("is_point_of_interest", False)
+        mep_value = d.get("mep_value", None)
 
         self.size = d["size"]
         self.label = d["label"]
@@ -287,6 +285,7 @@ class Marker:
         self.cortex_position_orientation = cortex_position_orientation
         self.z_offset = z_offset
         self.z_rotation = z_rotation
+        self.mep_value = mep_value
 
         return self
 

@@ -19,7 +19,6 @@
 
 import math
 import os
-import sys
 import tempfile
 
 import gdcm
@@ -27,6 +26,7 @@ import imageio
 import numpy as np
 from scipy.ndimage import shift, zoom
 from skimage.color import rgb2gray
+from skimage.measure import label
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkFiltersCore import vtkImageAppend
 from vtkmodules.vtkImagingCore import vtkExtractVOI, vtkImageClip, vtkImageResample
@@ -42,16 +42,6 @@ import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.data import vtk_utils as vtk_utils
 from invesalius.i18n import tr as _
 
-if sys.platform == "win32":
-    try:
-        import win32api
-
-        _has_win32api = True
-    except ImportError:
-        _has_win32api = False
-else:
-    _has_win32api = False
-
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
 
@@ -64,7 +54,7 @@ def ResampleImage3D(imagedata, value):
     extent = imagedata.GetExtent()
     size = imagedata.GetDimensions()
 
-    width = float(size[0])
+    # width = float(size[0])
     height = float(size[1] / value)
 
     resolution = (height / (extent[1] - extent[0]) + 1) * spacing[1]
@@ -83,8 +73,8 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, upd
     """
 
     extent = imagedata.GetExtent()
-    spacing = imagedata.GetSpacing()
-    dimensions = imagedata.GetDimensions()
+    # spacing = imagedata.GetSpacing()
+    # dimensions = imagedata.GetDimensions()
 
     if resolution_percentage:
         factor_x = resolution_percentage
@@ -355,7 +345,6 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     max_scalar = None
     min_scalar = None
 
-    xy_shape = None
     first_resample_entry = False
 
     for n, f in enumerate(files):
@@ -574,6 +563,19 @@ def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
     return data
 
 
+def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True):
+    # based on https://docs.monai.io/en/latest/_modules/monai/transforms/intensity/array.html#ScaleIntensity
+
+    print(a_min, a_max, b_min, b_max, clip)
+    img = (img - a_min) / (a_max - a_min)
+    img = img * (b_max - b_min) + b_min
+
+    if clip:
+        img = np.clip(img, b_min, b_max)
+
+    return img
+
+
 def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
     output = np.empty(shape=image.shape, dtype=output_dtype)
     imin, imax = image.min(), image.max()
@@ -699,10 +701,17 @@ def create_spherical_grid(radius=10, subdivision=1):
 
 
 def random_sample_sphere(radius=3, size=100):
-    uvw = np.random.normal(0, 1, (size, 3))
+    uvw = np.random.default_rng().normal(0, 1, (size, 3))
     norm = np.linalg.norm(uvw, axis=1, keepdims=True)
     # Change/remove **(1./3) to make samples more concentrated around the center
-    r = np.random.uniform(0, 1, (size, 1)) ** 1.5
+    r = np.random.default_rng().uniform(0, 1, (size, 1)) ** 1.5
     scale = radius * np.divide(r, norm)
     xyz = scale * uvw
     return xyz
+
+
+def get_largest_connected_component(image):
+    labels = label(image)
+    assert labels.max() != 0
+    largest_component = labels == np.argmax(np.bincount(labels.flat)[1:]) + 1
+    return largest_component

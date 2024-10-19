@@ -32,7 +32,10 @@ class IterativeClosestPoint(metaclass=Singleton):
         self.m_icp = None
         self.icp_fre = None
 
-        self.LoadState()
+        try:
+            self.LoadState()
+        except:
+            ses.Session().DeleteStateFile()
 
     def SaveState(self):
         m_icp = self.m_icp.tolist() if self.m_icp is not None else None
@@ -96,7 +99,6 @@ class IterativeClosestPoint(metaclass=Singleton):
 
     def SetICP(self, navigation, use_icp):
         self.use_icp = use_icp
-        navigation.icp_queue.put_nowait([self.use_icp, self.m_icp])
 
         self.SaveState()
 
@@ -108,4 +110,4 @@ class IterativeClosestPoint(metaclass=Singleton):
         self.SaveState()
 
     def GetFreForUI(self):
-        return "{:.2f}".format(self.icp_fre) if self.icp_fre else ""
+        return f"{self.icp_fre:.2f}" if self.icp_fre else ""

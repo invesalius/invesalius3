@@ -32,7 +32,6 @@ import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
 
 import invesalius.constants as const
-import invesalius.data.mask as mask
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.gradient as grad
@@ -213,7 +212,7 @@ class InnerTaskPanel(wx.Panel):
         try:
             evt.data
             evt = None
-        except:
+        except Exception:
             pass
 
         dialog = dlg.NewMask()
@@ -255,7 +254,7 @@ class FoldPanel(wx.Panel):
         self.inner_panel = inner_panel
 
     def GetMaskSelected(self):
-        x = self.inner_panel.GetMaskSelected()
+        # x = self.inner_panel.GetMaskSelected()
         return self.inner_panel.GetMaskSelected()
 
 
@@ -342,10 +341,10 @@ class InnerFoldPanel(wx.Panel):
 
     def __calc_best_size(self, panel):
         parent = panel.GetParent()
-        q = panel.Reparent(self)
+        _ = panel.Reparent(self)
 
         # gbs = self.gbs
-        fold_panel = self.fold_panel
+        # fold_panel = self.fold_panel
 
         # Calculating the size
         # gbs.AddGrowableRow(0, 1)
@@ -436,7 +435,7 @@ class InnerFoldPanel(wx.Panel):
             pass
 
     def GetMaskSelected(self):
-        x = self.mask_prop_panel.GetMaskSelected()
+        # x = self.mask_prop_panel.GetMaskSelected()
         return self.mask_prop_panel.GetMaskSelected()
 
 
@@ -604,16 +603,16 @@ class MaskProperties(wx.Panel):
         if self.combo_mask_name.IsEmpty():
             self.Enable()
         mask_name = mask.name
-        mask_thresh = mask.threshold_range
-        mask_colour = [int(c * 255) for c in mask.colour]
-        index = self.combo_mask_name.Append(mask_name)
+        # mask_thresh = mask.threshold_range
+        # mask_colour = [int(c * 255) for c in mask.colour]
+        _ = self.combo_mask_name.Append(mask_name)
         #  self.combo_mask_name.SetSelection(index)
         #  self.button_colour.SetColour(mask_colour)
         #  self.gradient.SetColour(mask_colour)
         #  self.combo_mask_name.SetSelection(index)
 
     def GetMaskSelected(self):
-        x = self.combo_mask_name.GetSelection()
+        # x = self.combo_mask_name.GetSelection()
         return self.combo_mask_name.GetSelection()
 
     def SetThresholdModes(self, thresh_modes_names, default_thresh):
@@ -649,7 +648,7 @@ class MaskProperties(wx.Panel):
         self.gradient.SetMaxRange(thresh_max)
 
     def OnComboName(self, evt):
-        mask_name = evt.GetString()
+        # mask_name = evt.GetString()
         mask_index = evt.GetSelection()
         Publisher.sendMessage("Change mask selected", index=mask_index)
         Publisher.sendMessage("Show mask", index=mask_index, value=True)

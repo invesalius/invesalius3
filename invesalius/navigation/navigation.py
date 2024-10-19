@@ -28,6 +28,7 @@ import invesalius.constants as const
 import invesalius.data.bases as db
 import invesalius.data.coregistration as dcr
 import invesalius.data.e_field as e_field
+import invesalius.data.polydata_utils as pu
 import invesalius.data.serial_port_connection as spc
 import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
@@ -35,8 +36,9 @@ import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 import invesalius.session as ses
-import invesalius.utils as utils
 from invesalius.data.markers.marker import MarkerType
+from invesalius.data.visualization.mep_visualizer import MEPVisualizer
+from invesalius.i18n import tr as _
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.markers import MarkersControl
@@ -68,6 +70,7 @@ class NavigationHub(metaclass=Singleton):
             icp=self.icp,
         )
         self.markers = MarkersControl(robot=self.robot)
+        self.mep_visualizer = MEPVisualizer()
 
 
 class QueueCustom(queue.Queue):
@@ -126,22 +129,32 @@ class UpdateNavigationScene(threading.Thread):
             self.coord_queue,
             self.serial_port_queue,
             self.tracts_queue,
-            self.icp_queue,
             self.e_field_norms_queue,
             self.e_field_IDs_queue,
         ) = vis_queues
         self.sle = sle
         self.event = event
         self.neuronavigation_api = neuronavigation_api
+        self.navigation = Navigation()
 
     def run(self):
         while not self.event.is_set():
             got_coords = False
-            object_visible_flag = False
             try:
-                coord, marker_visibilities, m_img, view_obj = self.coord_queue.get_nowait()
+                coords, marker_visibilities, m_imgs = self.coord_queue.get_nowait()
                 got_coords = True
-                object_visible_flag = marker_visibilities[2]
+
+                probe_visible = marker_visibilities[0]
+                coil_visible = any(marker_visibilities[2:])  # is any coil visible?
+
+                main_coil = self.navigation.main_coil
+                track_this = main_coil if self.navigation.track_coil else "probe"
+                # choose which object to track in slices and viewer_volume pointer
+                coord = coords[track_this]
+
+                # Remove probe, so that coords/m_imgs only contain coils
+                probe_coord = coords.pop("probe")
+                probe_m_img = m_imgs.pop("probe")
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -178,15 +191,39 @@ class UpdateNavigationScene(threading.Thread):
                 # new marker is created, it is created in the current position of the object.
                 wx.CallAfter(Publisher.sendMessage, "Set cross focal point", position=coord)
 
-                if self.e_field_loaded and object_visible_flag:
+                wx.CallAfter(
+                    Publisher.sendMessage,
+                    "Update volume viewer pointer",
+                    position=[coord[0], -coord[1], coord[2]],
+                )
+
+                if coil_visible:
+                    # Check pubsub "Update coil pose" dependencies
+                    wx.CallAfter(
+                        Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
+                    )
+                    wx.CallAfter(  # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
+                        Publisher.sendMessage,
+                        "Update coil pose",
+                        m_img=m_imgs[main_coil],
+                        coord=coords[main_coil],
+                    )
                     wx.CallAfter(
                         Publisher.sendMessage,
-                        "Update point location for e-field calculation",
-                        m_img=m_img,
-                        coord=coord,
-                        queue_IDs=self.e_field_IDs_queue,
+                        "Update object arrow matrix",
+                        m_img=m_imgs[main_coil],
+                        coord=coords[main_coil],
+                        flag=self.peel_loaded,
                     )
-                    if not self.e_field_norms_queue.empty():
+
+                    if self.e_field_loaded:
+                        wx.CallAfter(
+                            Publisher.sendMessage,
+                            "Update point location for e-field calculation",
+                            m_img=m_imgs[main_coil],
+                            coord=coords[main_coil],
+                            queue_IDs=self.e_field_IDs_queue,
+                        )
                         try:
                             enorm_data = self.e_field_norms_queue.get_nowait()
                             wx.CallAfter(
@@ -195,26 +232,19 @@ class UpdateNavigationScene(threading.Thread):
                                 enorm_data=enorm_data,
                                 plot_vector=self.plot_efield_vectors,
                             )
-                        finally:
+                        except queue.Empty:
+                            pass
+                        else:
                             self.e_field_norms_queue.task_done()
 
-                if view_obj:
-                    wx.CallAfter(
-                        Publisher.sendMessage, "Update coil pose", m_img=m_img, coord=coord
-                    )
+                if probe_visible:
                     wx.CallAfter(
                         Publisher.sendMessage,
-                        "Update object arrow matrix",
-                        m_img=m_img,
-                        coord=coord,
-                        flag=self.peel_loaded,
+                        "Update probe pose",
+                        m_img=probe_m_img,
+                        coord=probe_coord,
                     )
-                else:
-                    wx.CallAfter(
-                        Publisher.sendMessage,
-                        "Update volume viewer pointer",
-                        position=[coord[0], -coord[1], coord[2]],
-                    )
+
                 # Render the volume viewer and the slice viewers.
                 wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
                 wx.CallAfter(Publisher.sendMessage, "Update slice viewer")
@@ -233,16 +263,18 @@ class Navigation(metaclass=Singleton):
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
-        self.correg = None
         self.target = None
-        self.object_registration = None
-        self.track_obj = False
+        self.n_coils = 1
+        self.coil_registrations = {}
+        self.track_coil = False
+        self.main_coil = None  # Which coil to track with pointer
         self.m_change = None
-        self.obj_data = None
+        self.r_stylus = None
+        self.obj_datas = None  # This is accessed by the robot, gets value at StartNavigation
+
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
         self.coord_queue = QueueCustom(maxsize=1)
-        self.icp_queue = QueueCustom(maxsize=1)
         self.object_at_target_queue = QueueCustom(maxsize=1)
         self.efield_queue = QueueCustom(maxsize=1)
         self.e_field_norms_queue = QueueCustom(maxsize=1)
@@ -294,47 +326,78 @@ class Navigation(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.CoilAtTarget, "Coil at target")
+        Publisher.subscribe(self.SetNoOfCoils, "Reset coil selection")
+        Publisher.subscribe(self.SelectCoil, "Select coil")
         Publisher.subscribe(self.UpdateSerialPort, "Update serial port")
-        Publisher.subscribe(self.UpdateObjectRegistration, "Update object registration")
         Publisher.subscribe(self.TrackObject, "Track object")
 
-    def SaveConfig(self):
-        # XXX: This shouldn't be needed, but task_navigator.py currently calls UpdateObjectRegistration with
-        #   None parameter when the project is closed, crashing without this checks.
-        if self.object_registration is None:
-            return
-
-        object_fiducials, object_orientations, object_reference_mode, object_name = (
-            self.object_registration
-        )
-
-        state = {
-            "object_fiducials": object_fiducials.tolist(),
-            "object_orientations": object_orientations.tolist(),
-            "object_reference_mode": object_reference_mode,
-            "object_name": object_name.decode(const.FS_ENCODE),
-        }
-
+    def SaveConfig(self, key=None, value=None):
+        """
+        Save either the whole state, or a specific key-value pair into navigation configuration
+        """
         session = ses.Session()
-        session.SetConfig("navigation", state)
+        if key is None:  # Save the whole state
+            state = {
+                "selected_coils": list(self.coil_registrations),
+                "n_coils": self.n_coils,
+                "track_coil": self.track_coil,
+            }
+            if self.main_coil is not None:
+                state["main_coil"] = self.main_coil
+            if self.r_stylus is not None:
+                state["r_stylus"] = self.r_stylus.tolist()
+            session.SetConfig("navigation", state)
+
+        elif value is not None:  # Save a specific state attribute
+            state = session.GetConfig("navigation", {})
+            state[key] = value
+            session.SetConfig("navigation", state)
 
     def LoadConfig(self):
         session = ses.Session()
         state = session.GetConfig("navigation")
 
-        if state is None:
-            return
+        # Get the dict of all coil_registrations saved to config file
+        saved_coil_registrations = session.GetConfig("coil_registrations")
 
-        object_fiducials = np.array(state["object_fiducials"])
-        object_orientations = np.array(state["object_orientations"])
-        object_reference_mode = state["object_reference_mode"]
-        object_name = state["object_name"].encode(const.FS_ENCODE)
-        self.object_registration = (
-            object_fiducials,
-            object_orientations,
-            object_reference_mode,
-            object_name,
-        )
+        if state is not None:
+            self.main_coil = state.get("main_coil", None)
+            self.n_coils = state.get("n_coils", 1)
+            if self.n_coils == 1:
+                self.main_coil = "default_coil"
+
+            self.track_coil = state.get("track_coil", False)
+
+            # Try to load selected_coils (the list of names of coils to use for navigation)
+            if ("selected_coils" in state) and (saved_coil_registrations is not None):
+                selected_coils = state["selected_coils"]
+                self.coil_registrations = {
+                    coil_name: saved_coil_registrations[coil_name]
+                    for coil_name in selected_coils
+                    if coil_name in saved_coil_registrations
+                }
+                if self.coil_registrations:
+                    self.main_coil = self.main_coil or next(iter(self.coil_registrations))
+
+            # Try to load stylus orientation data
+            if "r_stylus" in state:
+                self.r_stylus = np.array(state["r_stylus"])
+
+    def CoilSelectionDone(self):
+        return len(self.coil_registrations) == self.n_coils
+
+    def SelectCoil(self, coil_name, coil_registration):
+        if coil_registration is not None:  # Add the coil to selection
+            self.coil_registrations[coil_name] = coil_registration
+            if self.main_coil is None:
+                self.main_coil = coil_name
+        else:  # Remove the coil from selection
+            self.coil_registrations.pop(coil_name, None)
+            if self.main_coil == coil_name:
+                self.main_coil = None
+                self.SaveConfig()
+
+        self.SaveConfig()
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
@@ -348,19 +411,29 @@ class Navigation(metaclass=Singleton):
         self.com_port = com_port
         self.baud_rate = baud_rate
 
-    def UpdateObjectRegistration(self, data=None):
-        self.object_registration = data
-
-        self.SaveConfig()
-
-    def GetObjectRegistration(self):
-        return self.object_registration
-
     def TrackObject(self, enabled=False):
-        self.track_obj = enabled
+        self.track_coil = enabled
+        self.SaveConfig()
 
     def SetLockToTarget(self, value):
         self.lock_to_target = value
+
+    def SetNoOfCoils(self, n_coils):
+        self.n_coils = n_coils
+        self.SaveConfig("n_coils", n_coils)
+
+        # Reset coil selection
+        self.coil_registrations = {}
+        self.main_coil = None
+        self.SaveConfig()
+
+    def SetMainCoil(self, main_coil):
+        self.main_coil = main_coil
+        self.SaveConfig("main_coil", main_coil)
+
+        # Send the polydata of the main coil to the connection
+        polydata = pu.LoadPolydata(self.coil_registrations[main_coil]["path"])
+        self.neuronavigation_api.update_coil_mesh(polydata)
 
     def SetReferenceMode(self, value):
         self.ref_mode_id = value
@@ -403,6 +476,36 @@ class Navigation(metaclass=Singleton):
             self.all_fiducials[3:, :].T, self.all_fiducials[:3, :].T, shear=False, scale=False
         )
 
+    def OnRecordStylusOrientation(self, coord_raw):
+        if self.m_change is not None:
+            m_probe = dcr.compute_marker_transformation(coord_raw, 0)
+
+            # transform probe to reference system if dynamic ref_mode
+            if self.ref_mode_id:
+                up_trk = dcr.object_to_reference(coord_raw, m_probe)[:3, :3]
+            else:
+                up_trk = m_probe[:3, :3]
+
+            # up_trk: orientation 'stylus pointing up along head' in tracker space
+            # up_vtk: orientation 'stylus pointing up along head' in vtk space
+            up_vtk = tr.euler_matrix(*np.radians([90.0, 0.0, 0.0]), axes="rxyz")[:3, :3]
+
+            # Rotate 90 degrees around z-axis from trk system where stylus points in x-axis
+            # to vtk-system where stylus points in y-axis
+            R = tr.euler_matrix(*np.radians([0, 0, -90]), axes="rxyz")[:3, :3]
+
+            # Reflect/flip the orientation in the vtk x-axis
+            x_flip = np.eye(3)
+            x_flip[0] = -x_flip[0]
+
+            # Rotation from tracker to VTK coordinate system (apply x_flip to orient stylus with NIFTI file)
+            self.r_stylus = x_flip @ up_vtk @ np.linalg.inv(R @ up_trk @ np.linalg.inv(R))
+            # Save r_stylus to config file
+            self.SaveConfig("r_stylus", self.r_stylus.tolist())
+            return True
+        else:
+            return False
+
     def StartNavigation(self, tracker, icp):
         # initialize jobs list
         jobs_list = []
@@ -421,77 +524,86 @@ class Navigation(metaclass=Singleton):
             self.coord_queue,
             self.serial_port_queue,
             self.tracts_queue,
-            self.icp_queue,
             self.e_field_norms_queue,
             self.e_field_IDs_queue,
         ]
 
         Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-        errors = False
 
-        if self.track_obj:
-            # if object tracking is selected
-            if self.object_registration is None:
-                # check if object registration was performed
-                wx.MessageBox(_("Perform coil registration before navigation."), _("InVesalius 3"))
-                errors = True
-            else:
-                # if object registration was correctly performed continue with navigation
-                # object_registration[0] is object 3x3 fiducial matrix and object_registration[1] is 3x3 orientation matrix
-                obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.object_registration
-
-                coreg_data = [self.m_change, obj_ref_mode]
-
+        if not self.CoilSelectionDone():
+            wx.MessageBox(
+                _(
+                    f"No. of coils to track is {self.n_coils}, but no. of coils registered is {len(self.coil_registrations)}"
+                ),
+                _("InVesalius 3"),
+            )
+        else:
+            # Pre-compute obj_datas: data/matrices for each coil to be used in coregistration
+            # data is accessed from dict by coil name
+            obj_datas = {}
+            for coil_name in self.coil_registrations:
                 if self.ref_mode_id:
                     coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
                 else:
                     coord_raw = np.array([None])
 
-                self.obj_data = db.object_registration(
-                    obj_fiducials, obj_orients, coord_raw, self.m_change
-                )
-                coreg_data.extend(self.obj_data)
+                coil_registration = self.coil_registrations[coil_name]
+                obj_id = coil_registration["obj_id"]
 
-                queues = [
-                    self.coord_queue,
-                    self.coord_tracts_queue,
-                    self.icp_queue,
-                    self.object_at_target_queue,
-                    self.efield_queue,
-                ]
-                jobs_list.append(
-                    dcr.CoordinateCorregistrate(
-                        self.ref_mode_id,
-                        tracker,
-                        coreg_data,
-                        self.view_tracts,
-                        queues,
-                        self.event,
-                        self.sleep_nav,
-                        tracker.tracker_id,
-                        self.target,
-                        icp,
-                        self.e_field_loaded,
+                # Check that the object index is in range of Tracker coordinates
+                if obj_id >= coord_raw.shape[0]:
+                    wx.MessageBox(
+                        _(
+                            f"Coil index {obj_id} for coil {coil_name} is out of range of current Tracker! Change the coil index in Preferences - TMS Coil tab"
+                        ),
+                        _("InVesalius 3"),
                     )
+                    return
+
+                # Pre-compute obj_datas: data/matrices for each coil to be used in coregistration
+                obj_data = (obj_id,) + db.object_registration(
+                    np.array(coil_registration["fiducials"]),
+                    np.array(coil_registration["orientations"]),
+                    coord_raw,
+                    self.m_change,
                 )
-        else:
-            coreg_data = (self.m_change, 0)
-            queues = [self.coord_queue, self.coord_tracts_queue, self.icp_queue, self.efield_queue]
+                obj_datas[coil_name] = obj_data
+
+            self.obj_datas = obj_datas
+
+            coreg_data = [self.m_change, self.r_stylus]
+
+            robot = Robot()
+            if robot.IsReady():
+                # Tell robot at which index (obj_id) to find its coil in (relevant when there are multiple coils)
+                Publisher.sendMessage(
+                    "Neuronavigation to Robot: Set coil index",
+                    data=self.coil_registrations[robot.GetCoilName()]["obj_id"],
+                )
+
+            queues = [
+                self.coord_queue,
+                self.coord_tracts_queue,
+                self.object_at_target_queue,
+                self.efield_queue,
+            ]
             jobs_list.append(
-                dcr.CoordinateCorregistrateNoObject(
+                dcr.CoordinateCorregistrate(
                     self.ref_mode_id,
                     tracker,
                     coreg_data,
+                    obj_datas,
                     self.view_tracts,
                     queues,
                     self.event,
                     self.sleep_nav,
+                    tracker.tracker_id,
+                    self.target,
                     icp,
                     self.e_field_loaded,
                 )
             )
 
-        if not errors:
             # TODO: Test the serial port thread
             if self.serial_port_in_use:
                 self.serial_port_connection = spc.SerialPortConnection(

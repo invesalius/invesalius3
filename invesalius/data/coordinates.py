@@ -21,7 +21,7 @@ import threading
 from math import cos, sin
 from random import uniform
 from time import sleep
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import wx
@@ -254,14 +254,17 @@ def PolarisCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_m
     trans_ref = np.array(ref[6:9]).astype(float)
     coord2 = np.hstack((trans_ref, angles_ref))
 
-    obj = trck.obj.decode(const.FS_ENCODE).split(",")
-    angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
-    trans_obj = np.array(obj[6:9]).astype(float)
-    coord3 = np.hstack((trans_obj, angles_obj))
+    obj_coords = []
+    for i in range(trck.objs.size()):
+        obj = trck.objs[i].decode(const.FS_ENCODE).split(",")
+        angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
+        trans_obj = np.array(obj[6:9]).astype(float)
+        obj_coords.append(np.hstack((trans_obj, angles_obj)))
 
-    coord = np.vstack([coord1, coord2, coord3])
+    coord = np.vstack([coord1, coord2, *obj_coords])
+    marker_visibilities = [trck.probeID, trck.refID] + list(trck.objIDs)
 
-    return coord, [trck.probeID, trck.refID, trck.objID]
+    return coord, marker_visibilities
 
 
 def CameraCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode):
@@ -538,6 +541,9 @@ def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, r
     coord4 = np.array(
         [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
     )
+    coord5 = np.array(
+        [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
+    )
 
     sleep(0.15)
 
@@ -555,9 +561,9 @@ def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, r
 
     # Always make the markers visible when using debug tracker; this enables registration, as it
     # is not possible to registering without markers.
-    marker_visibilities = [True, True, True]
+    marker_visibilities = [True, True, True, True, True]
 
-    return np.vstack([coord1, coord2, coord3, coord4]), marker_visibilities
+    return np.vstack([coord1, coord2, coord3, coord4, coord5]), marker_visibilities
 
 
 def coordinates_to_transformation_matrix(
@@ -621,7 +627,7 @@ def dynamic_reference(probe, reference):
     # a: rotation of plane (X, Y) around Z axis (azimuth)
     # b: rotation of plane (X', Z) around Y' axis (elevation)
     # a: rotation of plane (Y', Z') around X'' axis (roll)
-    m_rot = np.mat(
+    m_rot = np.asmatrix(
         [
             [
                 cos(a) * cos(b),

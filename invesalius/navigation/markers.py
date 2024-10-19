@@ -22,7 +22,7 @@ import uuid
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.marker_transformator import MarkerTransformator
-from invesalius.navigation.robot import Robot, RobotObjective
+from invesalius.navigation.robot import RobotObjective
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -76,6 +76,9 @@ class MarkersControl(metaclass=Singleton):
                 orientation=marker.orientation,
             )
 
+        if marker.mep_value:
+            Publisher.sendMessage("Update marker mep", marker=marker)
+
         if render:  # this behavior could be misleading
             self.SaveState()
 
@@ -103,6 +106,9 @@ class MarkersControl(metaclass=Singleton):
                 m.marker_id = idx
 
             self.SaveState()
+
+        if marker.mep_value:
+            Publisher.sendMessage("Redraw MEP mapping")
 
     def DeleteMultiple(self, marker_ids):
         markers = []
@@ -206,6 +212,11 @@ class MarkersControl(metaclass=Singleton):
     def ChangeLabel(self, marker, new_label):
         marker.label = str(new_label)
         Publisher.sendMessage("Update marker label", marker=marker)
+        self.SaveState()
+
+    def ChangeMEP(self, marker, new_mep):
+        marker.mep_value = new_mep
+        Publisher.sendMessage("Update marker mep", marker=marker)
 
         self.SaveState()
 

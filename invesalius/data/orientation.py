@@ -21,7 +21,7 @@ CORONAL = 1
 SAGITAL = 0
 
 
-class Orientation(object):
+class Orientation:
     def __init__(self, interactor, actor):
         self.interactor = interactor
         self.actor = actor
@@ -41,7 +41,7 @@ class Orientation(object):
             cam.SetViewUp(0, 1, 0)
 
             xs = extent[1] - extent[0] + 1
-            ys = extent[3] - extent[2] + 1
+            # ys = extent[3] - extent[2] + 1
 
         elif orientation == CORONAL:
             cam.SetFocalPoint(0, 0, 0)
@@ -50,7 +50,7 @@ class Orientation(object):
             cam.SetViewUp(0, 0, 1)
 
             xs = extent[1] - extent[0] + 1
-            ys = extent[5] - extent[4] + 1
+            # ys = extent[5] - extent[4] + 1
 
         elif orientation == SAGITAL:
             cam.SetFocalPoint(0, 0, 0)
@@ -59,7 +59,7 @@ class Orientation(object):
             cam.SetViewUp(0, 0, 1)
 
             xs = extent[3] - extent[2] + 1
-            ys = extent[5] - extent[4] + 1
+            # ys = extent[5] - extent[4] + 1
 
         if xs < 150:
             scale = 75
@@ -80,8 +80,8 @@ class Orientation(object):
     def UpdateDisplayExtent(self):
         extent = self.image.GetWholeExtent()
         if self.orientation == AXIAL:
-            xs = extent[1] - extent[0] + 1
-            ys = extent[3] - extent[2] + 1
+            # xs = extent[1] - extent[0] + 1
+            # ys = extent[3] - extent[2] + 1
 
             actor = self.actor
             actor.SetInput(self.image)
@@ -90,8 +90,8 @@ class Orientation(object):
             )
 
         elif self.orientation == CORONAL:
-            xs = extent[1] - extent[0] + 1
-            ys = extent[5] - extent[4] + 1
+            # xs = extent[1] - extent[0] + 1
+            # ys = extent[5] - extent[4] + 1
 
             actor = self.actor
             actor.SetInput(self.image)
@@ -100,8 +100,8 @@ class Orientation(object):
             )
 
         elif self.orientation == SAGITAL:
-            xs = extent[3] - extent[2] + 1
-            ys = extent[5] - extent[4] + 1
+            # xs = extent[3] - extent[2] + 1
+            # ys = extent[5] - extent[4] + 1
 
             actor = self.actor
             actor.SetInput(self.image)

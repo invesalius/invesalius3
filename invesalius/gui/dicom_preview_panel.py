@@ -21,7 +21,6 @@
 
 # TODO: To create a beautiful API
 import sys
-import tempfile
 import time
 
 import wx
@@ -38,6 +37,7 @@ import invesalius.reader.dicom_reader as dicom_reader
 import invesalius.utils as utils
 from invesalius.data import converters, imagedata_utils
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 if sys.platform == "win32":
@@ -88,7 +88,7 @@ class SelectionEvent(wx.PyCommandEvent):
 
 class PreviewEvent(wx.PyCommandEvent):
     def __init__(self, evtType, id):
-        super(PreviewEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
     def GetSelectID(self):
         return self.SelectedID
@@ -111,10 +111,10 @@ class PreviewEvent(wx.PyCommandEvent):
 
 class SerieEvent(PreviewEvent):
     def __init__(self, evtType, id):
-        super(SerieEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
 
-class DicomInfo(object):
+class DicomInfo:
     """
     Keep the informations and the image used by preview.
     """
@@ -145,7 +145,7 @@ class DicomInfo(object):
 
 class DicomPaintPanel(wx.Panel):
     def __init__(self, parent):
-        super(DicomPaintPanel, self).__init__(parent)
+        super().__init__(parent)
         self._bind_events()
         self.image = None
         self.last_size = (10, 10)
@@ -194,7 +194,7 @@ class Preview(wx.Panel):
     """
 
     def __init__(self, parent):
-        super(Preview, self).__init__(parent)
+        super().__init__(parent)
         # Will it be white?
         self.select_on = False
         self.dicom_info = None
@@ -275,10 +275,8 @@ class Preview(wx.Panel):
     def OnEnter(self, evt):
         if not self.select_on:
             # c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
-            try:
-                c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
-            except AttributeError:
-                c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+            c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
+
             self.SetBackgroundColour(c)
 
     def OnLeave(self, evt):
@@ -291,7 +289,7 @@ class Preview(wx.Panel):
         if evt.shiftDown:
             shift_pressed = True
 
-        dicom_id = self.dicom_info.id
+        # dicom_id = self.dicom_info.id
         self.select_on = True
         self.dicom_info.selected = True
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
@@ -345,7 +343,7 @@ class DicomPreviewSeries(wx.Panel):
     """A dicom series preview panel"""
 
     def __init__(self, parent):
-        super(DicomPreviewSeries, self).__init__(parent)
+        super().__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
         # self.sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -484,7 +482,7 @@ class DicomPreviewSlice(wx.Panel):
     """A dicom preview panel"""
 
     def __init__(self, parent):
-        super(DicomPreviewSlice, self).__init__(parent)
+        super().__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
         self.displayed_position = 0
@@ -535,7 +533,7 @@ class DicomPreviewSlice(wx.Panel):
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
 
     def SetDicomDirectory(self, directory):
-        utils.debug("Setting Dicom Directory %s" % directory)
+        utils.debug(f"Setting Dicom Directory {directory}")
         self.directory = directory
         self.series = dicom_reader.GetSeries(directory)[0]
 
@@ -557,7 +555,7 @@ class DicomPreviewSlice(wx.Panel):
                 for thumbnail in dicom.image.thumbnail_path:
                     print(thumbnail)
                     info = DicomInfo(
-                        n, dicom, _("Image %d") % (n), "%.2f" % (dicom.image.position[2]), _slice
+                        n, dicom, _("Image %d") % (n), f"{dicom.image.position[2]:.2f}", _slice
                     )
                     self.files.append(info)
                     n += 1
@@ -567,7 +565,7 @@ class DicomPreviewSlice(wx.Panel):
                     n,
                     dicom,
                     _("Image %d") % (dicom.image.number),
-                    "%.2f" % (dicom.image.position[2]),
+                    f"{dicom.image.position[2]:.2f}",
                 )
                 self.files.append(info)
                 n += 1
@@ -592,7 +590,7 @@ class DicomPreviewSlice(wx.Panel):
                 for thumbnail in dicom.image.thumbnail_path:
                     print(thumbnail)
                     info = DicomInfo(
-                        n, dicom, _("Image %d") % int(n), "%.2f" % (dicom.image.position[2]), _slice
+                        n, dicom, _("Image %d") % int(n), f"{dicom.image.position[2]:.2f}", _slice
                     )
                     self.files.append(info)
                     n += 1
@@ -602,7 +600,7 @@ class DicomPreviewSlice(wx.Panel):
                     n,
                     dicom,
                     _("Image %d") % int(dicom.image.number),
-                    "%.2f" % (dicom.image.position[2]),
+                    f"{dicom.image.position[2]:.2f}",
                 )
                 self.files.append(info)
                 n += 1
@@ -881,7 +879,7 @@ class SingleImagePreview(wx.Panel):
         else:
             value2 = ""
 
-        value = "%s\n%s" % (value1, value2)
+        value = f"{value1}\n{value2}"
         self.text_image_location.SetValue(value)
 
         ## Text related to patient/ acquisiiton data
