@@ -1,0 +1,51 @@
+version: "3"
+services:
+  ldap:
+    image: dcm4che/slapd-dcm4chee:2.6.5-31.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+    ports:
+      - "38900:389"
+    environment:
+      STORAGE_DIR: /storage/fs1
+  db:
+    image: dcm4che/postgres-dcm4chee:15.3-31
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+    environment:
+      POSTGRES_DB: pacsdb
+      POSTGRES_USER: pacs
+      POSTGRES_PASSWORD: pacs
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+  arc:
+    image: dcm4che/dcm4chee-arc-psql:5.31.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+      - "9990:9990"
+      - "9993:9993"
+      - "11112:11112"
+      - "2762:2762"
+      - "2575:2575"
+      - "12575:12575"
+    environment:
+      POSTGRES_DB: pacsdb
+      POSTGRES_USER: pacs
+      POSTGRES_PASSWORD: pacs
+      WILDFLY_WAIT_FOR: ldap:389 db:5432
+      WILDFLY_CHOWN: /storage
+    depends_on:
+      - ldap
+      - db
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./storage:/storage
