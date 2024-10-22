@@ -2133,6 +2133,34 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self, self.marker_list_ctrl.GetColumnCount()
         )
 
+        # Sub List Control
+        self.sub_marker_list_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.sub_marker_list_ctrl.InsertColumn(const.ID_COLUMN, "#")
+        self.sub_marker_list_ctrl.SetColumnWidth(const.ID_COLUMN, 24)
+
+        self.sub_marker_list_ctrl.InsertColumn(const.SESSION_COLUMN, "Session")
+        self.sub_marker_list_ctrl.SetColumnWidth(const.SESSION_COLUMN, 51)
+
+        self.sub_marker_list_ctrl.InsertColumn(const.MARKER_TYPE_COLUMN, "Type")
+        self.sub_marker_list_ctrl.SetColumnWidth(const.MARKER_TYPE_COLUMN, 77)
+
+        self.sub_marker_list_ctrl.InsertColumn(const.LABEL_COLUMN, "Label")
+        self.sub_marker_list_ctrl.SetColumnWidth(const.LABEL_COLUMN, 95)
+
+        self.sub_marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, "Target")
+        self.sub_marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
+
+        self.sub_marker_list_ctrl.InsertColumn(const.Z_OFFSET_COLUMN, "Z-offset")
+        self.sub_marker_list_ctrl.SetColumnWidth(const.Z_OFFSET_COLUMN, 45)
+
+        self.sub_marker_list_ctrl.InsertColumn(const.POINT_OF_INTEREST_TARGET_COLUMN, "Efield Target")
+        self.sub_marker_list_ctrl.SetColumnWidth(const.POINT_OF_INTEREST_TARGET_COLUMN, 45)
+
+        self.sub_marker_list_ctrl.InsertColumn(const.MEP_COLUMN, "MEP (uV)")
+        self.sub_marker_list_ctrl.SetColumnWidth(const.MEP_COLUMN, 45)
+        #self.sub_marker_list_ctrl.Hide()
+
+        self.sub_marker_items_list = {}
         # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
         try:
             self.markers.LoadState()
@@ -2146,6 +2174,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_main_coil, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+        group_sizer.Add(self.sub_marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Fit(self)
 
         self.SetSizer(group_sizer)
@@ -2534,6 +2563,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         event.SetEventObject(self.marker_list_ctrl)
         self.marker_list_ctrl.GetEventHandler().ProcessEvent(event)
 
+    def populate_sub_list(self, sub_items_list):
+        """Populate the sub list"""
+        self.sub_marker_list_ctrl.DeleteAllItems()
+        for sub_item in sub_items_list:
+            #self.sub_marker_list_ctrl.InsertItem(self.sub_marker_list_ctrl.GetItemCount(), sub_item)
+            self.sub_marker_list_ctrl.Append(sub_item)
+
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2564,6 +2600,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.currently_focused_marker = marker
         self.markers.SelectMarker(marker_id)
+        self.sub_marker_list_ctrl.DeleteAllItems()
+        if idx in self.sub_marker_items_list:
+            self.populate_sub_list([self.sub_marker_items_list[idx]])
+            self.sub_marker_list_ctrl.Show()
+        else:
+            self.sub_marker_list_ctrl.Hide()
+        self.Layout()  # Refresh layout
+        self.Update()
 
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
     #
@@ -3332,16 +3376,21 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             list_entry.append(round(marker.y, 1))
             list_entry.append(round(marker.z, 1))
 
-        self.marker_list_ctrl.Append(list_entry)
-        self.marker_list_ctrl.SetItemData(num_items, key)
+        if marker.marker_type == MarkerType.BRAIN_TARGET:
+            key_sub = 0
+            if len(self.sub_marker_items_list) > 0:
+                key_sub = list(self.sub_marker_items_list.keys())[-1] + 1
+            self.sub_marker_items_list[key_sub] = list_entry.copy()
+        else:
+            self.marker_list_ctrl.Append(list_entry)
+            self.marker_list_ctrl.SetItemData(num_items, key)
+
         data_map_entry = list_entry.copy()
 
         # Add the UUID to the entry in itemDataMap
         data_map_entry.append(marker.marker_uuid)
         self.itemDataMap[key] = data_map_entry
 
-        if marker.marker_type == MarkerType.BRAIN_TARGET:
-            self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(102, 178, 255))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 
