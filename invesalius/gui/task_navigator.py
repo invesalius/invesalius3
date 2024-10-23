@@ -2935,7 +2935,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         for marker in self.markers.list:
             filtered_dict = {key: value for key, value in self.itemDataMap.items() if isinstance(key, int)}
-            for data in filtered_dict.items():
+            for key, data in filtered_dict.items():
                 current_uuid = data[-1]
                 if current_uuid == marker.marker_uuid:
                     marker_id = self.markers.list.index(marker)
