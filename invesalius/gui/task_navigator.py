@@ -1328,7 +1328,7 @@ class ControlPanel(wx.Panel):
         # Toggle button for showing probe during navigation
         tooltip = _("Show probe")
         BMP_SHOW_PROBE = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("stylus.png")), wx.BITMAP_TYPE_PNG
+            str(inv_paths.ICON_DIR.joinpath("stylus_eye.png")), wx.BITMAP_TYPE_PNG
         )
         show_probe_button = wx.ToggleButton(
             self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
