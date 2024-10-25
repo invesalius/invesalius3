@@ -344,7 +344,7 @@ class NeuronavigationApi(metaclass=Singleton):
             # Swap x and y in the position
             vector["position"][0], vector["position"][1] = (
                 vector["position"][1],
-                vector["position"][0],
+                -vector["position"][0],
             )
             # Reverse the z orientation
             vector["orientation"][2] = -vector["orientation"][2]
