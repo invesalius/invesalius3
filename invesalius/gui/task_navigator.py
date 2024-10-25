@@ -279,11 +279,10 @@ class InnerFoldPanel(wx.Panel):
         id = evt.GetTag().GetId()
         expanded = evt.GetFoldStatus()
 
-        if expanded:
-            self.fold_panel.Collapse(evt.GetTag())
-        elif id != self.__id_nav or self.CheckRegistration():
-            # Only expand navigation panel if coil selection/registration is done
+        if not expanded:
             self.fold_panel.Expand(evt.GetTag())
+        else:
+            self.fold_panel.Collapse(evt.GetTag())
 
     def ResizeFPB(self):
         sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
