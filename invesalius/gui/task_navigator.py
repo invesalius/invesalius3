@@ -2152,12 +2152,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.sub_marker_list_ctrl.InsertColumn(const.Z_OFFSET_COLUMN, "Z-offset")
         self.sub_marker_list_ctrl.SetColumnWidth(const.Z_OFFSET_COLUMN, 45)
 
-        self.sub_marker_list_ctrl.InsertColumn(const.POINT_OF_INTEREST_TARGET_COLUMN, "Efield Target")
+        self.sub_marker_list_ctrl.InsertColumn(
+            const.POINT_OF_INTEREST_TARGET_COLUMN, "Efield Target"
+        )
         self.sub_marker_list_ctrl.SetColumnWidth(const.POINT_OF_INTEREST_TARGET_COLUMN, 45)
 
         self.sub_marker_list_ctrl.InsertColumn(const.MEP_COLUMN, "MEP (uV)")
         self.sub_marker_list_ctrl.SetColumnWidth(const.MEP_COLUMN, 45)
-        #self.sub_marker_list_ctrl.Hide()
+        # self.sub_marker_list_ctrl.Hide()
 
         self.sub_marker_items_list = {}
         # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
@@ -2241,7 +2243,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         return selection
 
     def __delete_multiple_markers(self, indexes):
-        marker_ids = [int(self.marker_list_ctrl.GetItem(idx, const.ID_COLUMN).GetText()) for idx in indexes]
+        marker_ids = [
+            int(self.marker_list_ctrl.GetItem(idx, const.ID_COLUMN).GetText()) for idx in indexes
+        ]
         self.markers.DeleteMultiple(marker_ids)
 
     def _DeleteMarker(self, marker):
@@ -2581,7 +2585,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         num_items = focused_marker_idx
         for i, sub_item in enumerate(sub_items_list):
             list_entry = ["" for _ in range(0, const.X_COLUMN)]
-            list_entry[const.ID_COLUMN] = str(num_items)+"."+str(i)
+            list_entry[const.ID_COLUMN] = str(num_items) + "." + str(i)
             list_entry[const.SESSION_COLUMN] = str(marker.session_id)
             list_entry[const.MARKER_TYPE_COLUMN] = MarkerType.BRAIN_TARGET.human_readable
             list_entry[const.LABEL_COLUMN] = marker.label
@@ -2947,7 +2951,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         For an index in self.marker_list_ctrl, returns the corresponding marker_id
         """
-        filtered_dict = {key: value for key, value in self.itemDataMap.items() if isinstance(key, int)}
+        filtered_dict = {
+            key: value for key, value in self.itemDataMap.items() if isinstance(key, int)
+        }
         if len(list(filtered_dict.items())) > idx:
             for marker in self.markers.list:
                 current_uuid = list(filtered_dict.items())[idx][-1][-1]
@@ -2961,7 +2967,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         For an index in self.marker_list_ctrl, returns the corresponding marker
         """
-        filtered_dict = {key: value for key, value in self.itemDataMap.items() if isinstance(key, int)}
+        filtered_dict = {
+            key: value for key, value in self.itemDataMap.items() if isinstance(key, int)
+        }
         for marker in self.markers.list:
             try:
                 current_uuid = list(filtered_dict.items())[idx][-1][-1]
@@ -3067,7 +3075,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     self.marker_list_ctrl.Select(idx_old, on=False)
 
                 # Focus and select the marker in the list control.
-                filtered_dict = {key: value for key, value in self.itemDataMap.items() if isinstance(key, int)}
+                filtered_dict = {
+                    key: value for key, value in self.itemDataMap.items() if isinstance(key, int)
+                }
                 for k, v in filtered_dict.items():
                     if v[-1] == m.marker_uuid:
                         idx = v[0]
@@ -3426,11 +3436,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
             num_items = focused_marker_idx
             if focused_marker_idx in self.sub_marker_items_list:
-                key = str(focused_marker_idx)+"."+str(len(self.sub_marker_items_list[focused_marker_idx]))
+                key = (
+                    str(focused_marker_idx)
+                    + "."
+                    + str(len(self.sub_marker_items_list[focused_marker_idx]))
+                )
                 list_entry[const.ID_COLUMN] = key
                 self.sub_marker_items_list[focused_marker_idx].append(list_entry.copy())
             else:
-                key = str(focused_marker_idx)+".0"
+                key = str(focused_marker_idx) + ".0"
                 list_entry[const.ID_COLUMN] = key
                 self.sub_marker_items_list[focused_marker_idx] = [list_entry.copy()]
         else:
@@ -3446,7 +3460,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Add the UUID to the entry in itemDataMap
         data_map_entry.append(marker.marker_uuid)
         self.itemDataMap[key] = data_map_entry
-
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 
