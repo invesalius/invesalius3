@@ -802,9 +802,10 @@ TARGET_COLUMN = 4
 Z_OFFSET_COLUMN = 5
 POINT_OF_INTEREST_TARGET_COLUMN = 6
 MEP_COLUMN = 7
-X_COLUMN = 8
-Y_COLUMN = 9
-Z_COLUMN = 10
+UUID = 8
+X_COLUMN = 9
+Y_COLUMN = 10
+Z_COLUMN = 11
 
 # ------------ Navigation defaults -------------------
 

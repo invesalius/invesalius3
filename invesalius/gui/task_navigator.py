@@ -2112,6 +2112,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.InsertColumn(const.MEP_COLUMN, "MEP (uV)")
         marker_list_ctrl.SetColumnWidth(const.MEP_COLUMN, 45)
 
+        marker_list_ctrl.InsertColumn(const.UUID, "UUID")
+        marker_list_ctrl.SetColumnWidth(const.UUID, 45)
+
         if self.session.GetConfig("debug"):
             marker_list_ctrl.InsertColumn(const.X_COLUMN, "X")
             marker_list_ctrl.SetColumnWidth(const.X_COLUMN, 45)
@@ -2159,6 +2162,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.sub_marker_list_ctrl.InsertColumn(const.MEP_COLUMN, "MEP (uV)")
         self.sub_marker_list_ctrl.SetColumnWidth(const.MEP_COLUMN, 45)
+
+        self.sub_marker_list_ctrl.InsertColumn(const.UUID, "UUID")
+        self.sub_marker_list_ctrl.SetColumnWidth(const.UUID, 45)
         # self.sub_marker_list_ctrl.Hide()
 
         self.sub_marker_items_list = {}
@@ -2307,11 +2313,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         num_items = self.marker_list_ctrl.GetItemCount()
         for n in range(num_items):
             m_id = self.__get_marker_id(n)
-            reduction_in_m_id = 0
-            for d_id in deleted_ids:
-                if m_id > d_id:
-                    reduction_in_m_id += 1
-            self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - reduction_in_m_id))
+            if m_id:
+                reduction_in_m_id = 0
+                for d_id in deleted_ids:
+                    if m_id > d_id:
+                        reduction_in_m_id += 1
+                self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - reduction_in_m_id))
 
         self.marker_list_ctrl.Show()
 
@@ -2591,6 +2598,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             list_entry[const.LABEL_COLUMN] = marker.label
             list_entry[const.TARGET_COLUMN] = "Yes" if marker.is_target else ""
             list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
+            list_entry[const.UUID] = str(marker.marker_uuid) if marker.marker_uuid else ""
             self.sub_marker_list_ctrl.Append(list_entry)
 
     # Called when a marker on the list gets the focus by the user left-clicking on it.
@@ -2951,15 +2959,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         For an index in self.marker_list_ctrl, returns the corresponding marker_id
         """
-        filtered_dict = {
-            key: value for key, value in self.itemDataMap.items() if isinstance(key, int)
-        }
-        if len(list(filtered_dict.items())) > idx:
-            for marker in self.markers.list:
-                current_uuid = list(filtered_dict.items())[idx][-1][-1]
-                if current_uuid == marker.marker_uuid:
-                    marker_id = self.markers.list.index(marker)
-                    return int(marker_id)
+        current_uuid = self.marker_list_ctrl.GetItem(idx, const.UUID).GetText()
+        for marker in self.markers.list:
+            if current_uuid == marker.marker_uuid:
+                marker_id = self.markers.list.index(marker)
+                return int(marker_id)
         list_item = self.marker_list_ctrl.GetItem(idx, const.ID_COLUMN)
         return int(list_item.GetText())
 
@@ -2967,15 +2971,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         For an index in self.marker_list_ctrl, returns the corresponding marker
         """
-        filtered_dict = {
-            key: value for key, value in self.itemDataMap.items() if isinstance(key, int)
-        }
+        current_uuid = self.marker_list_ctrl.GetItem(idx, const.UUID).GetText()
         for marker in self.markers.list:
-            try:
-                current_uuid = list(filtered_dict.items())[idx][-1][-1]
-            except:
-                marker_id = self.__get_marker_id(idx)
-                return self.markers.list[marker_id]
             if current_uuid == marker.marker_uuid:
                 marker_id = self.markers.list.index(marker)
                 return self.markers.list[marker_id]
@@ -3074,13 +3071,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 if idx_old != -1 and idx_old != idx:
                     self.marker_list_ctrl.Select(idx_old, on=False)
 
-                # Focus and select the marker in the list control.
-                filtered_dict = {
-                    key: value for key, value in self.itemDataMap.items() if isinstance(key, int)
-                }
-                for k, v in filtered_dict.items():
-                    if v[-1] == m.marker_uuid:
-                        idx = v[0]
+                current_uuid = self.marker_list_ctrl.GetItem(idx, const.UUID).GetText()
+                for i in range(self.marker_list_ctrl.GetItemCount()):
+                    if current_uuid == self.marker_list_ctrl.GetItem(i, const.UUID).GetText():
+                        idx = i
 
                 self.marker_list_ctrl.Focus(idx)
                 self.marker_list_ctrl.Select(idx, on=True)
@@ -3426,6 +3420,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             "Yes" if marker.is_point_of_interest else ""
         )
         list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
+        list_entry[const.UUID] = str(marker.marker_uuid) if marker.marker_uuid else ""
 
         if self.session.GetConfig("debug"):
             list_entry.append(round(marker.x, 1))

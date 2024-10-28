@@ -129,8 +129,8 @@ class MarkersControl(metaclass=Singleton):
                             brain_markers.append(self.list[i.marker_id])
             self.DeleteMarker(m_id, render=False)
 
-        brain_markers.sort(key=lambda x: x.marker_id, reverse=True)
-        Publisher.sendMessage("Delete brain markers", brain_markers=brain_markers)
+        if brain_markers:
+            Publisher.sendMessage("Delete brain markers", brain_markers=brain_markers)
         Publisher.sendMessage("Delete markers", markers=markers)
 
         for idx, m in enumerate(self.list):

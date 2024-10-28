@@ -292,6 +292,7 @@ class Marker:
         self.z_rotation = z_rotation
         self.mep_value = mep_value
         self.brain_target_list = brain_target_list
+        self.marker_uuid = marker_uuid
 
         return self
 
