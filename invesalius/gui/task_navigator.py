@@ -3071,7 +3071,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 if idx_old != -1 and idx_old != idx:
                     self.marker_list_ctrl.Select(idx_old, on=False)
 
-                current_uuid = self.marker_list_ctrl.GetItem(idx, const.UUID).GetText()
+                current_uuid = m.marker_uuid
                 for i in range(self.marker_list_ctrl.GetItemCount()):
                     if current_uuid == self.marker_list_ctrl.GetItem(i, const.UUID).GetText():
                         idx = i
@@ -3429,19 +3429,20 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         if marker.marker_type == MarkerType.BRAIN_TARGET:
             focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
-            num_items = focused_marker_idx
-            if focused_marker_idx in self.sub_marker_items_list:
-                key = (
-                    str(focused_marker_idx)
-                    + "."
-                    + str(len(self.sub_marker_items_list[focused_marker_idx]))
-                )
-                list_entry[const.ID_COLUMN] = key
-                self.sub_marker_items_list[focused_marker_idx].append(list_entry.copy())
-            else:
-                key = str(focused_marker_idx) + ".0"
-                list_entry[const.ID_COLUMN] = key
-                self.sub_marker_items_list[focused_marker_idx] = [list_entry.copy()]
+            if focused_marker_idx>=0:
+                num_items = focused_marker_idx
+                if focused_marker_idx in self.sub_marker_items_list:
+                    key = (
+                        str(focused_marker_idx)
+                        + "."
+                        + str(len(self.sub_marker_items_list[focused_marker_idx]))
+                    )
+                    list_entry[const.ID_COLUMN] = key
+                    self.sub_marker_items_list[focused_marker_idx].append(list_entry.copy())
+                else:
+                    key = str(focused_marker_idx) + ".0"
+                    list_entry[const.ID_COLUMN] = key
+                    self.sub_marker_items_list[focused_marker_idx] = [list_entry.copy()]
         else:
             key = 0
             if len(self.itemDataMap) > 0:
