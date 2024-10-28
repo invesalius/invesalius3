@@ -2249,9 +2249,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         return selection
 
     def __delete_multiple_markers(self, indexes):
-        marker_ids = [
-            int(self.marker_list_ctrl.GetItem(idx, const.ID_COLUMN).GetText()) for idx in indexes
-        ]
+        marker_ids = []
+        for idx in indexes:
+            current_uuid = self.marker_list_ctrl.GetItem(idx, const.UUID).GetText()
+            for marker in self.markers.list:
+                if current_uuid == marker.marker_uuid:
+                    marker_id = self.markers.list.index(marker)
+                    marker_ids.append(marker_id)
         self.markers.DeleteMultiple(marker_ids)
 
     def _DeleteMarker(self, marker):
@@ -2296,6 +2300,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
                 if current_uuid == deleted_uuid:
                     deleted_keys.append(key)
+
+            current_uuid = marker.marker_uuid
+            for i in range(self.marker_list_ctrl.GetItemCount()):
+                if current_uuid == self.marker_list_ctrl.GetItem(i, const.UUID).GetText():
+                    idx = i
             if idx:
                 self.marker_list_ctrl.DeleteItem(idx)
                 deleted_ids.append(marker.marker_id)
@@ -3123,8 +3132,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             first_deleted_index = indexes[0]
             first_existing_index = (
                 first_deleted_index
-                if first_deleted_index < len(self.markers.list)
-                else len(self.markers.list) - 1
+                if first_deleted_index < self.marker_list_ctrl.GetItemCount()
+                else self.marker_list_ctrl.GetItemCount() - 1
             )
 
             self.FocusOnMarker(first_existing_index)
