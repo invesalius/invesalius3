@@ -66,6 +66,7 @@ class MarkerVisualizer:
         Publisher.subscribe(self.HideMarkers, "Hide markers")
         Publisher.subscribe(self.ShowMarkers, "Show markers")
         Publisher.subscribe(self.DeleteMarkers, "Delete markers")
+        Publisher.subscribe(self.DeleteBrainMarkers, "Delete brain markers")
         Publisher.subscribe(self.DeleteMarker, "Delete marker")
         Publisher.subscribe(self.SetCameraToFocusOnMarker, "Set camera to focus on marker")
         Publisher.subscribe(self.HighlightMarker, "Highlight marker")
@@ -240,6 +241,14 @@ class MarkerVisualizer:
 
             # Mark the marker as not hidden.
             visualization["hidden"] = False
+
+        if not self.is_navigating:
+            self.interactor.Render()
+
+    def DeleteBrainMarkers(self, brain_markers):
+        for marker in brain_markers:
+            actor = marker.visualization["actor"]
+            self.renderer.RemoveActor(actor)
 
         if not self.is_navigating:
             self.interactor.Render()

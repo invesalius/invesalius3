@@ -2224,6 +2224,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UpdateMarkerLabel, "Update marker label")
         Publisher.subscribe(self._UpdateMEP, "Update marker mep")
 
+        Publisher.subscribe(self.SetVectorField, "Set vector field")
+
     def __get_selected_items(self):
         """
         Returns a (possibly empty) list of the selected items in the list control.
@@ -2239,7 +2241,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         return selection
 
     def __delete_multiple_markers(self, indexes):
-        marker_ids = [self.__get_marker_id(idx) for idx in indexes]
+        marker_ids = [int(self.marker_list_ctrl.GetItem(idx, const.ID_COLUMN).GetText()) for idx in indexes]
         self.markers.DeleteMultiple(marker_ids)
 
     def _DeleteMarker(self, marker):
@@ -2284,9 +2286,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
                 if current_uuid == deleted_uuid:
                     deleted_keys.append(key)
-
-            self.marker_list_ctrl.DeleteItem(idx)
-            deleted_ids.append(marker.marker_id)
+            if idx:
+                self.marker_list_ctrl.DeleteItem(idx)
+                deleted_ids.append(marker.marker_id)
+            else:
+                self.marker_list_ctrl.DeleteItem(0)
+                deleted_ids.append(marker.marker_id)
 
         # Remove all the deleted markers from itemDataMap
         for key in deleted_keys:
@@ -2383,6 +2388,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def UpdateCortexMarker(self, CoGposition, CoGorientation):
         self.cortex_position_orientation = CoGposition + CoGorientation
+
+    def SetVectorField(self, vector_field):
+        self.vector_field = vector_field
 
     def OnMouseRightDown(self, evt):
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2568,8 +2576,18 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def populate_sub_list(self, sub_items_list):
         """Populate the sub list"""
         self.sub_marker_list_ctrl.DeleteAllItems()
-        for sub_item in sub_items_list[0]:
-            self.sub_marker_list_ctrl.Append(sub_item)
+        focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.__get_marker(focused_marker_idx)
+        num_items = focused_marker_idx
+        for i, sub_item in enumerate(sub_items_list):
+            list_entry = ["" for _ in range(0, const.X_COLUMN)]
+            list_entry[const.ID_COLUMN] = str(num_items)+"."+str(i)
+            list_entry[const.SESSION_COLUMN] = str(marker.session_id)
+            list_entry[const.MARKER_TYPE_COLUMN] = MarkerType.BRAIN_TARGET.human_readable
+            list_entry[const.LABEL_COLUMN] = marker.label
+            list_entry[const.TARGET_COLUMN] = "Yes" if marker.is_target else ""
+            list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
+            self.sub_marker_list_ctrl.Append(list_entry)
 
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
@@ -2580,7 +2598,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             return
 
         marker_id = self.__get_marker_id(idx)
-        marker = self.markers.list[marker_id]
+        marker = self.__get_marker(idx)
 
         # XXX: There seems to be a bug in WxPython when selecting multiple items on the list using,
         #   e.g., shift and page-up/page-down keys. The bug is that the EVT_LIST_ITEM_SELECTED event
@@ -2602,8 +2620,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.currently_focused_marker = marker
         self.markers.SelectMarker(marker_id)
         self.sub_marker_list_ctrl.DeleteAllItems()
-        if idx in self.sub_marker_items_list:
-            self.populate_sub_list([self.sub_marker_items_list[idx]])
+        if marker.brain_target_list:
+            self.populate_sub_list(marker.brain_target_list)
             self.sub_marker_list_ctrl.Show()
         else:
             self.sub_marker_list_ctrl.Hide()
@@ -2618,7 +2636,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def SetCameraToFocusOnMarker(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
-        marker = self.markers.list[idx]
+        marker = self.__get_marker(idx)
         Publisher.sendMessage("Set camera to focus on marker", marker=marker)
 
     def OnCreateCoilTargetFromLandmark(self, evt):
@@ -2825,9 +2843,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def OnCreateBrainTargetFromLandmark(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
-        marker = self.__get_marker(list_index)
-        position = marker.position
-        orientation = marker.orientation
+        marker_coil = self.__get_marker(list_index)
+        position = marker_coil.position
+        orientation = marker_coil.orientation
 
         dialog = dlg.CreateBrainTargetDialog(
             marker=position + orientation, brain_actor=self.brain_actor
@@ -2851,7 +2869,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 #   should probably be modified to reflect that.
                 marker_type=MarkerType.BRAIN_TARGET,
             )
+            marker.marker_uuid = str(uuid.uuid4())
             self.markers.AddMarker(marker, render=True, focus=True)
+            marker_coil.brain_target_list.append(marker.to_dict())
 
             for position, orientation in zip(brain_position_list, brain_orientation_list):
                 marker = self.CreateMarker(
@@ -2859,7 +2879,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     orientation=list(orientation),
                     marker_type=MarkerType.BRAIN_TARGET,
                 )
+                marker.marker_uuid = str(uuid.uuid4())
                 self.markers.AddMarker(marker, render=True, focus=False)
+                marker_coil.brain_target_list.append(marker.to_dict())
 
         dialog.Destroy()
 
@@ -2925,6 +2947,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         For an index in self.marker_list_ctrl, returns the corresponding marker_id
         """
+        filtered_dict = {key: value for key, value in self.itemDataMap.items() if isinstance(key, int)}
+        if len(list(filtered_dict.items())) > idx:
+            for marker in self.markers.list:
+                current_uuid = list(filtered_dict.items())[idx][-1][-1]
+                if current_uuid == marker.marker_uuid:
+                    marker_id = self.markers.list.index(marker)
+                    return int(marker_id)
         list_item = self.marker_list_ctrl.GetItem(idx, const.ID_COLUMN)
         return int(list_item.GetText())
 
@@ -2932,14 +2961,18 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         For an index in self.marker_list_ctrl, returns the corresponding marker
         """
+        filtered_dict = {key: value for key, value in self.itemDataMap.items() if isinstance(key, int)}
         for marker in self.markers.list:
-            filtered_dict = {key: value for key, value in self.itemDataMap.items() if isinstance(key, int)}
-            for key, data in filtered_dict.items():
-                current_uuid = data[-1]
-                if current_uuid == marker.marker_uuid:
-                    marker_id = self.markers.list.index(marker)
+            try:
+                current_uuid = list(filtered_dict.items())[idx][-1][-1]
+            except:
+                marker_id = self.__get_marker_id(idx)
+                return self.markers.list[marker_id]
+            if current_uuid == marker.marker_uuid:
+                marker_id = self.markers.list.index(marker)
+                return self.markers.list[marker_id]
 
-        #marker_id = self.__get_marker_id(idx)
+        marker_id = self.__get_marker_id(idx)
         return self.markers.list[marker_id]
 
     def ChangeColor(self, evt):
@@ -3034,6 +3067,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     self.marker_list_ctrl.Select(idx_old, on=False)
 
                 # Focus and select the marker in the list control.
+                filtered_dict = {key: value for key, value in self.itemDataMap.items() if isinstance(key, int)}
+                for k, v in filtered_dict.items():
+                    if v[-1] == m.marker_uuid:
+                        idx = v[0]
+
                 self.marker_list_ctrl.Focus(idx)
                 self.marker_list_ctrl.Select(idx, on=True)
                 break
@@ -3325,6 +3363,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         z_offset=0.0,
         z_rotation=0.0,
         mep_value=None,
+        brain_target_list=[],
     ):
         """
         Create a new marker object.

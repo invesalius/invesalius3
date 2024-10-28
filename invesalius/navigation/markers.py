@@ -90,16 +90,23 @@ class MarkersControl(metaclass=Singleton):
     #       currently not be used outside this class.
     def DeleteMarker(self, marker_id, render=True):
         marker = self.list[marker_id]
-
+        indices_to_delete = [marker_id]
         if marker.is_target:
             self.UnsetTarget(marker_id)
         if marker.is_point_of_interest:
             self.UnsetPointOfInterest(marker_id)
+        if marker.brain_target_list:
+            for m in marker.brain_target_list:
+                for i in self.list:
+                    if i.marker_uuid == m["marker_uuid"]:
+                        indices_to_delete.append(i.marker_id)
 
         if render:
             Publisher.sendMessage("Delete marker", marker=marker)
 
-        del self.list[marker_id]
+        indices_to_delete.sort(reverse=True)
+        for i in indices_to_delete:
+            del self.list[i]
 
         if render:
             for idx, m in enumerate(self.list):
@@ -112,10 +119,18 @@ class MarkersControl(metaclass=Singleton):
 
     def DeleteMultiple(self, marker_ids):
         markers = []
+        brain_markers = []
         for m_id in sorted(marker_ids, reverse=True):
             markers.append(self.list[m_id])
+            if self.list[m_id].brain_target_list:
+                for m in self.list[m_id].brain_target_list:
+                    for i in self.list:
+                        if i.marker_uuid == m["marker_uuid"]:
+                            brain_markers.append(self.list[i.marker_id])
             self.DeleteMarker(m_id, render=False)
 
+        brain_markers.sort(key=lambda x: x.marker_id, reverse=True)
+        Publisher.sendMessage("Delete brain markers", brain_markers=brain_markers)
         Publisher.sendMessage("Delete markers", markers=markers)
 
         for idx, m in enumerate(self.list):
@@ -295,3 +310,6 @@ class MarkersControl(metaclass=Singleton):
         new_marker.marker_type = MarkerType.COIL_TARGET
 
         self.AddMarker(new_marker)
+
+    def AddBrainTarget(self, marker, new_brain_target):
+        marker.brain_target_list(new_brain_target)
