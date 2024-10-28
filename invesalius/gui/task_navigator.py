@@ -279,11 +279,10 @@ class InnerFoldPanel(wx.Panel):
         id = evt.GetTag().GetId()
         expanded = evt.GetFoldStatus()
 
-        if expanded:
-            self.fold_panel.Collapse(evt.GetTag())
-        elif id != self.__id_nav or self.CheckRegistration():
-            # Only expand navigation panel if coil selection/registration is done
+        if not expanded:
             self.fold_panel.Expand(evt.GetTag())
+        else:
+            self.fold_panel.Collapse(evt.GetTag())
 
     def ResizeFPB(self):
         sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
@@ -1328,7 +1327,7 @@ class ControlPanel(wx.Panel):
         # Toggle button for showing probe during navigation
         tooltip = _("Show probe")
         BMP_SHOW_PROBE = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("stylus.png")), wx.BITMAP_TYPE_PNG
+            str(inv_paths.ICON_DIR.joinpath("stylus_eye.png")), wx.BITMAP_TYPE_PNG
         )
         show_probe_button = wx.ToggleButton(
             self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE

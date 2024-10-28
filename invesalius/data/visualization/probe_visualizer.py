@@ -61,7 +61,7 @@ class ProbeVisualizer:
         probe_actor.GetProperty().SetAmbientColor(vtk_colors.GetColor3d("GhostWhite"))
         probe_actor.GetProperty().SetSpecular(30)
         probe_actor.GetProperty().SetSpecularPower(80)
-        probe_actor.GetProperty().SetOpacity(0.4)
+        probe_actor.GetProperty().SetOpacity(1.0)
         probe_actor.SetVisibility(0)
 
         self.probe_actor = probe_actor

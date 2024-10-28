@@ -255,6 +255,7 @@ class Viewer(wx.Panel):
         self.pTarget = [0.0, 0.0, 0.0]
 
         self.distance_text = None
+        self.robot_warnings_text = None
 
         # self.obj_axes = None
         self.mark_actor = None
@@ -468,6 +469,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUnsetTarget, "Unset target")
         Publisher.subscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
         Publisher.subscribe(self.OnUpdateDistanceThreshold, "Update distance threshold")
+        Publisher.subscribe(
+            self.OnUpdateRobotWarning, "Robot to Neuronavigation: Update robot warning"
+        )
         Publisher.subscribe(self.OnUpdateTracts, "Update tracts")
         Publisher.subscribe(self.OnUpdateEfieldvis, "Update efield vis")
         Publisher.subscribe(self.InitializeColorArray, "Initialize color array")
@@ -859,6 +863,10 @@ class Viewer(wx.Panel):
         print("updated to ", dist_threshold)
         self.distance_threshold = dist_threshold
 
+    def OnUpdateRobotWarning(self, robot_warning):
+        if self.robot_warnings_text is not None:
+            self.robot_warnings_text.SetValue(robot_warning)
+
     def IsTargetMode(self):
         return self.target_mode
 
@@ -984,6 +992,17 @@ class Viewer(wx.Panel):
         # Store the object for 'distance' text so it can be modified when distance changes.
         self.distance_text = distance_text
 
+        # Remove the previous actor for 'distance' text
+        if self.robot_warnings_text is not None:
+            self.ren.RemoveActor(self.robot_warnings_text.actor)
+
+        # Create new actor for 'distance' text
+        robot_warnings_text = self.CreateRobotWarningsText()
+        self.ren.AddActor(robot_warnings_text.actor)
+
+        # Store the object for 'distance' text so it can be modified when distance changes.
+        self.robot_warnings_text = robot_warnings_text
+
         self.CreateTargetGuide()
 
         self.ren.ResetCamera()
@@ -1018,6 +1037,10 @@ class Viewer(wx.Panel):
         # Remove the actor for 'distance' text.
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
+
+        # Remove the actor for 'distance' text.
+        if self.robot_warnings_text is not None:
+            self.ren.RemoveActor(self.robot_warnings_text.actor)
 
         self.camera_show_object = None
         if self.actor_peel:
@@ -1245,6 +1268,17 @@ class Viewer(wx.Panel):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
 
         return m_img_vtk
+
+    def CreateRobotWarningsText(self):
+        robot_warnings_text = vtku.Text()
+
+        robot_warnings_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
+        robot_warnings_text.SetPosition((const.X, 1.02 - const.YZ))
+        robot_warnings_text.SetVerticalJustificationToBottom()
+        robot_warnings_text.SetColour((1, 1, 0))
+        robot_warnings_text.BoldOn()
+
+        return robot_warnings_text
 
     def CreateDistanceText(self):
         distance_text = vtku.Text()
