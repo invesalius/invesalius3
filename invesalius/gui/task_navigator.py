@@ -2626,12 +2626,22 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         for i, sub_item in enumerate(sub_items_list):
             list_entry = ["" for _ in range(0, const.X_COLUMN)]
             list_entry[const.ID_COLUMN] = str(num_items) + "." + str(i)
-            list_entry[const.SESSION_COLUMN] = str(marker.brain_target_list[i]['session_id'])
+            list_entry[const.SESSION_COLUMN] = str(marker.brain_target_list[i]["session_id"])
             list_entry[const.MARKER_TYPE_COLUMN] = MarkerType.BRAIN_TARGET.human_readable
-            list_entry[const.LABEL_COLUMN] = marker.brain_target_list[i]['label']
-            list_entry[const.TARGET_COLUMN] = "Yes" if marker.brain_target_list[i]['is_target'] else ""
-            list_entry[const.MEP_COLUMN] = str(marker.brain_target_list[i]['mep_value']) if marker.brain_target_list[i]['mep_value'] else ""
-            list_entry[const.UUID] = str(marker.brain_target_list[i]['marker_uuid']) if marker.brain_target_list[i]['marker_uuid'] else ""
+            list_entry[const.LABEL_COLUMN] = marker.brain_target_list[i]["label"]
+            list_entry[const.TARGET_COLUMN] = (
+                "Yes" if marker.brain_target_list[i]["is_target"] else ""
+            )
+            list_entry[const.MEP_COLUMN] = (
+                str(marker.brain_target_list[i]["mep_value"])
+                if marker.brain_target_list[i]["mep_value"]
+                else ""
+            )
+            list_entry[const.UUID] = (
+                str(marker.brain_target_list[i]["marker_uuid"])
+                if marker.brain_target_list[i]["marker_uuid"]
+                else ""
+            )
             self.sub_marker_list_ctrl.Append(list_entry)
 
     # Called when a marker on the list gets the focus by the user left-clicking on it.
@@ -3463,7 +3473,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         if marker.marker_type == MarkerType.BRAIN_TARGET:
             focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
-            if focused_marker_idx>=0:
+            if focused_marker_idx >= 0:
                 num_items = focused_marker_idx
                 if focused_marker_idx in self.sub_marker_items_list:
                     key = (
