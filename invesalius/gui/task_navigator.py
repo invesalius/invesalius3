@@ -2412,6 +2412,30 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def SetVectorField(self, vector_field):
         self.vector_field = vector_field
 
+        # TODO: Add this to new markers from mtms
+        # marker_target = self.markers.FindTarget()
+        # if not marker_target:
+        #     return
+        #
+        # for vector in self.vector_field:
+        #     position = vector["position"],
+        #     orientation = vector["orientation"],
+        #     colour = vector["color"],
+        #     length_multiplier = vector["length"],
+        #
+        #     marker = self.CreateMarker(
+        #         position=position,
+        #         orientation=orientation,
+        #         colour=colour,
+        #         size=length_multiplier,
+        #         label=str(marker_target.label),
+        #         marker_type=MarkerType.BRAIN_TARGET,
+        #     )
+        #     marker.marker_uuid = str(uuid.uuid4())
+        #     marker_target.brain_target_list.append(marker.to_brain_targets_dict())
+        #
+        # self.markers.SaveState()
+
     def OnMouseRightDown(self, evt):
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
         focused_marker = self.__get_marker(focused_marker_idx)
@@ -2602,12 +2626,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         for i, sub_item in enumerate(sub_items_list):
             list_entry = ["" for _ in range(0, const.X_COLUMN)]
             list_entry[const.ID_COLUMN] = str(num_items) + "." + str(i)
-            list_entry[const.SESSION_COLUMN] = str(marker.session_id)
+            list_entry[const.SESSION_COLUMN] = str(marker.brain_target_list[i]['session_id'])
             list_entry[const.MARKER_TYPE_COLUMN] = MarkerType.BRAIN_TARGET.human_readable
-            list_entry[const.LABEL_COLUMN] = marker.label
-            list_entry[const.TARGET_COLUMN] = "Yes" if marker.is_target else ""
-            list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
-            list_entry[const.UUID] = str(marker.marker_uuid) if marker.marker_uuid else ""
+            list_entry[const.LABEL_COLUMN] = marker.brain_target_list[i]['label']
+            list_entry[const.TARGET_COLUMN] = "Yes" if marker.brain_target_list[i]['is_target'] else ""
+            list_entry[const.MEP_COLUMN] = str(marker.brain_target_list[i]['mep_value']) if marker.brain_target_list[i]['mep_value'] else ""
+            list_entry[const.UUID] = str(marker.brain_target_list[i]['marker_uuid']) if marker.brain_target_list[i]['marker_uuid'] else ""
             self.sub_marker_list_ctrl.Append(list_entry)
 
     # Called when a marker on the list gets the focus by the user left-clicking on it.
@@ -2891,8 +2915,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 marker_type=MarkerType.BRAIN_TARGET,
             )
             marker.marker_uuid = str(uuid.uuid4())
-            self.markers.AddMarker(marker, render=True, focus=True)
-            marker_coil.brain_target_list.append(marker.to_dict())
+            marker.label = str(marker_coil.label)
+            marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
 
             for position, orientation in zip(brain_position_list, brain_orientation_list):
                 marker = self.CreateMarker(
@@ -2901,9 +2925,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     marker_type=MarkerType.BRAIN_TARGET,
                 )
                 marker.marker_uuid = str(uuid.uuid4())
-                self.markers.AddMarker(marker, render=True, focus=False)
-                marker_coil.brain_target_list.append(marker.to_dict())
-
+                marker.label = str(marker_coil.label)
+                marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
+        self.markers.SaveState()
         dialog.Destroy()
 
     def OnMenuRemoveEfieldTarget(self, evt):
@@ -3031,8 +3055,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     size=0.05,
                     marker_type=MarkerType.BRAIN_TARGET,
                 )
-                self.markers.AddMarker(new_marker, render=True, focus=True)
-
+                new_marker.marker_uuid = str(uuid.uuid4())
+                new_marker.label = str(marker.label)
+                marker.brain_target_list.append(new_marker.to_brain_targets_dict())
+        self.markers.SaveState()
         dialog.Destroy()
 
     def OnSendBrainTarget(self, evt):
@@ -3376,7 +3402,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         z_offset=0.0,
         z_rotation=0.0,
         mep_value=None,
-        brain_target_list=[],
     ):
         """
         Create a new marker object.

@@ -210,6 +210,20 @@ class Marker:
         )
         return res
 
+    def to_brain_targets_dict(self):
+        return {
+            "position": self.position,
+            "orientation": self.orientation,
+            "colour": self.colour,
+            "size": self.size,
+            "label": self.label,
+            "is_target": self.is_target,
+            "marker_type": self.marker_type.value,
+            "session_id": self.session_id,
+            "mep_value": self.mep_value,
+            "marker_uuid": self.marker_uuid,
+        }
+
     def to_dict(self):
         return {
             "position": self.position,
