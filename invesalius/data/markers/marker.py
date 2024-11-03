@@ -222,6 +222,9 @@ class Marker:
             "session_id": self.session_id,
             "mep_value": self.mep_value,
             "marker_uuid": self.marker_uuid,
+            "x_mtms": self.x_mtms,
+            "y_mtms": self.y_mtms,
+            "r_mtms": self.r_mtms,
         }
 
     def to_dict(self):

@@ -2905,14 +2905,46 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             orientation=orientation,
         )
 
+    def transform_to_mtms(self, coil_position, coil_orientation_euler, brain_position):
+        """
+        Transforms the brain position from InVesalius coordinates to the coil's coordinate system.
+
+        Parameters:
+        - coil_position: array-like, shape (3,)
+          The position of the coil in the world coordinate system [x, y, z].
+        - coil_orientation_euler: array-like, shape (3,)
+          The orientation of the coil in Euler angles [roll, pitch, yaw] in radians.
+        - brain_position: array-like, shape (3,)
+          The position of the brain in the world coordinate system [x, y, z].
+
+        Returns:
+        - brain_position_in_coil_coords: numpy array, shape (3,)
+          The brain position in the coil's coordinate system.
+        """
+        import invesalius.data.transformations as tr
+        # Convert inputs to numpy arrays
+        coil_position = np.array(coil_position)
+        brain_position = np.array(brain_position)
+
+        # Convert Euler angles to rotation matrix
+        coil_rotation_matrix = tr.euler_matrix(coil_orientation_euler[0], coil_orientation_euler[1], coil_orientation_euler[2], 'sxyz')
+
+        # Step 1: Translate brain position to the coil's origin
+        translated_position = brain_position - coil_position
+
+        # Step 2: Rotate the translated position into the coil's coordinate system
+        brain_position_in_coil_coords = np.dot(coil_rotation_matrix[:3, :3].T, translated_position)
+
+        return brain_position_in_coil_coords
+
     def OnCreateBrainTargetFromLandmark(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         marker_coil = self.__get_marker(list_index)
-        position = marker_coil.position
-        orientation = marker_coil.orientation
+        position_coil = marker_coil.position
+        orientation_coil = marker_coil.orientation
 
         dialog = dlg.CreateBrainTargetDialog(
-            marker=position + orientation, brain_actor=self.brain_actor
+            marker=position_coil + orientation_coil, brain_actor=self.brain_actor
         )
         if dialog.ShowModal() == wx.ID_OK:
             (
@@ -2932,6 +2964,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 label=str(marker_coil.label),
             )
             marker.marker_uuid = str(uuid.uuid4())
+            #EXAMPLE. TODO with mtms
+            mtms_coords = self.transform_to_mtms(position_coil, orientation, position)
+            marker.x_mtms = np.round(mtms_coords[0],1)
+            marker.y_mtms = np.round(mtms_coords[1],1)
+            marker.r_mtms = np.round(orientation[2],0)
             marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
 
             for position, orientation in zip(brain_position_list, brain_orientation_list):
@@ -2943,6 +2980,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     label=str(marker_coil.label),
                 )
                 marker.marker_uuid = str(uuid.uuid4())
+                mtms_coords = self.transform_to_mtms(position_coil, orientation, position)
+                marker.x_mtms = np.round(mtms_coords[0], 1)
+                marker.y_mtms = np.round(mtms_coords[1], 1)
+                marker.r_mtms = np.round(orientation[2], 0)
                 marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
         self.markers.SaveState()
         dialog.Destroy()
