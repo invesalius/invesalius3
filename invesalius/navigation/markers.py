@@ -119,18 +119,10 @@ class MarkersControl(metaclass=Singleton):
 
     def DeleteMultiple(self, marker_ids):
         markers = []
-        brain_markers = []
         for m_id in sorted(marker_ids, reverse=True):
             markers.append(self.list[m_id])
-            if self.list[m_id].brain_target_list:
-                for m in self.list[m_id].brain_target_list:
-                    for i in self.list:
-                        if i.marker_uuid == m["marker_uuid"]:
-                            brain_markers.append(self.list[i.marker_id])
             self.DeleteMarker(m_id, render=False)
 
-        if brain_markers:
-            Publisher.sendMessage("Delete brain markers", brain_markers=brain_markers)
         Publisher.sendMessage("Delete markers", markers=markers)
 
         for idx, m in enumerate(self.list):

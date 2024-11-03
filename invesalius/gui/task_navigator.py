@@ -2239,13 +2239,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         return selection
 
     def __delete_multiple_markers(self, indexes):
-        marker_ids = []
-        for idx in indexes:
-            current_uuid = self.marker_list_ctrl.GetItem(idx, const.UUID).GetText()
-            for marker in self.markers.list:
-                if current_uuid == marker.marker_uuid:
-                    marker_id = self.markers.list.index(marker)
-                    marker_ids.append(marker_id)
+        marker_ids = [self.__get_marker_id(idx) for idx in indexes]
         self.markers.DeleteMultiple(marker_ids)
 
     def _DeleteMarker(self, marker):
@@ -2288,16 +2282,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 if current_uuid == deleted_uuid:
                     deleted_keys.append(key)
 
-            current_uuid = marker.marker_uuid
-            for i in range(self.marker_list_ctrl.GetItemCount()):
-                if current_uuid == self.marker_list_ctrl.GetItem(i, const.UUID).GetText():
-                    idx = i
-            if idx:
-                self.marker_list_ctrl.DeleteItem(idx)
-                deleted_ids.append(marker.marker_id)
-            else:
-                self.marker_list_ctrl.DeleteItem(0)
-                deleted_ids.append(marker.marker_id)
+            self.marker_list_ctrl.DeleteItem(idx)
+            deleted_ids.append(marker.marker_id)
 
         # Remove all the deleted markers from itemDataMap
         for key in deleted_keys:
@@ -2309,12 +2295,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         num_items = self.marker_list_ctrl.GetItemCount()
         for n in range(num_items):
             m_id = self.__get_marker_id(n)
-            if m_id:
-                reduction_in_m_id = 0
-                for d_id in deleted_ids:
-                    if m_id > d_id:
-                        reduction_in_m_id += 1
-                self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - reduction_in_m_id))
+            reduction_in_m_id = 0
+            for d_id in deleted_ids:
+                if m_id > d_id:
+                    reduction_in_m_id += 1
+            self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - reduction_in_m_id))
 
         self.marker_list_ctrl.Show()
 
@@ -3107,12 +3092,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         For an index in self.marker_list_ctrl, returns the corresponding marker
         """
-        current_uuid = self.marker_list_ctrl.GetItem(idx, const.UUID).GetText()
-        for marker in self.markers.list:
-            if current_uuid == marker.marker_uuid:
-                marker_id = self.markers.list.index(marker)
-                return self.markers.list[marker_id]
-
         marker_id = self.__get_marker_id(idx)
         return self.markers.list[marker_id]
 
@@ -3269,7 +3248,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
         brain_target_list = self.currently_focused_marker.brain_target_list
-        target_uuid = self.brain_targets_list_ctrl.GetItemText(list_index, const.UUID)
+        target_uuid = self.brain_targets_list_ctrl.GetItemText(list_index, const.BRAIN_UUID)
         # Remove entry with the specified UUID
         markers = [marker for marker in brain_target_list if marker.get('marker_uuid') != target_uuid]
         self.currently_focused_marker.brain_target_list = markers
