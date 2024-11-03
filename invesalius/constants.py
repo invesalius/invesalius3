@@ -807,6 +807,15 @@ X_COLUMN = 9
 Y_COLUMN = 10
 Z_COLUMN = 11
 
+# The column order in the brain marker panel
+#
+BRAIN_ID_COLUMN = 0
+BRAIN_SESSION_COLUMN = 1
+BRAIN_MARKER_TYPE_COLUMN = 2
+BRAIN_LABEL_COLUMN = 3
+BRAIN_MEP_COLUMN = 4
+BRAIN_UUID = 5
+
 # ------------ Navigation defaults -------------------
 
 MARKER_COLOUR = (1.0, 1.0, 0.0)

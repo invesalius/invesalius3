@@ -2136,38 +2136,28 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
 
         # Sub List Control
-        self.sub_marker_list_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
-        self.sub_marker_list_ctrl.InsertColumn(const.ID_COLUMN, "#")
-        self.sub_marker_list_ctrl.SetColumnWidth(const.ID_COLUMN, 24)
+        brain_targets_list_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_ID_COLUMN, "#")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_ID_COLUMN, 24)
 
-        self.sub_marker_list_ctrl.InsertColumn(const.SESSION_COLUMN, "Session")
-        self.sub_marker_list_ctrl.SetColumnWidth(const.SESSION_COLUMN, 51)
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_SESSION_COLUMN, "Session")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_SESSION_COLUMN, 51)
 
-        self.sub_marker_list_ctrl.InsertColumn(const.MARKER_TYPE_COLUMN, "Type")
-        self.sub_marker_list_ctrl.SetColumnWidth(const.MARKER_TYPE_COLUMN, 77)
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_MARKER_TYPE_COLUMN, "Type")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_MARKER_TYPE_COLUMN, 77)
 
-        self.sub_marker_list_ctrl.InsertColumn(const.LABEL_COLUMN, "Label")
-        self.sub_marker_list_ctrl.SetColumnWidth(const.LABEL_COLUMN, 95)
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_LABEL_COLUMN, "Label")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_LABEL_COLUMN, 95)
 
-        self.sub_marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, "Target")
-        self.sub_marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_MEP_COLUMN, "MEP (uV)")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_MEP_COLUMN, 45)
 
-        self.sub_marker_list_ctrl.InsertColumn(const.Z_OFFSET_COLUMN, "Z-offset")
-        self.sub_marker_list_ctrl.SetColumnWidth(const.Z_OFFSET_COLUMN, 45)
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_UUID, "UUID")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_UUID, 45)
+        # self.brain_targets_list_ctrl.Hide()
 
-        self.sub_marker_list_ctrl.InsertColumn(
-            const.POINT_OF_INTEREST_TARGET_COLUMN, "Efield Target"
-        )
-        self.sub_marker_list_ctrl.SetColumnWidth(const.POINT_OF_INTEREST_TARGET_COLUMN, 45)
-
-        self.sub_marker_list_ctrl.InsertColumn(const.MEP_COLUMN, "MEP (uV)")
-        self.sub_marker_list_ctrl.SetColumnWidth(const.MEP_COLUMN, 45)
-
-        self.sub_marker_list_ctrl.InsertColumn(const.UUID, "UUID")
-        self.sub_marker_list_ctrl.SetColumnWidth(const.UUID, 45)
-        # self.sub_marker_list_ctrl.Hide()
-
-        self.sub_marker_items_list = {}
+        brain_targets_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDownBrainTargets)
+        self.brain_targets_list_ctrl = brain_targets_list_ctrl
         # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
         try:
             self.markers.LoadState()
@@ -2181,7 +2171,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_main_coil, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
-        group_sizer.Add(self.sub_marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+        group_sizer.Add(brain_targets_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Fit(self)
 
         self.SetSizer(group_sizer)
@@ -2264,9 +2254,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         idx = self.__find_marker_index(deleted_marker_id)
         self.marker_list_ctrl.DeleteItem(idx)
         print("_DeleteMarker:", deleted_marker_uuid)
-
-        if idx in self.sub_marker_items_list:
-            self.sub_marker_items_list.pop(idx)
 
         # Delete the marker from itemDataMap
         for key, data in self.itemDataMap.items():
@@ -2583,6 +2570,40 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
+    def OnMouseRightDownBrainTargets(self, evt):
+        focused_marker_idx = self.brain_targets_list_ctrl.GetFocusedItem()
+        focused_marker = self.currently_focused_marker.brain_target_list[focused_marker_idx]
+        unique_menu_id = 1
+
+        # Check if the currently focused marker is the active target.
+        is_active_target = focused_marker["is_target"]
+
+        # Create the context menu.
+        menu_id = wx.Menu()
+
+        edit_id = menu_id.Append(unique_menu_id, _("Change label"))  # Use non-zero ID
+        menu_id.Bind(wx.EVT_MENU, self.ChangeLabelBrainTarget, edit_id)
+
+        delete_id = menu_id.Append(unique_menu_id + 2, _("Delete"))
+        menu_id.Bind(wx.EVT_MENU, self.OnDeleteSelectedBrainTarget, delete_id)
+
+        menu_id.AppendSeparator()
+
+        mep_menu_item = menu_id.Append(unique_menu_id + 3, _("Change MEP value"))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEPBrainTarget, mep_menu_item)
+
+
+        if has_mTMS:
+            send_brain_target_menu_item = menu_id.Append(
+                unique_menu_id + 5, _("Send brain target to mTMS")
+            )
+            menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu_item)
+
+        menu_id.AppendSeparator()
+
+        self.PopupMenu(menu_id)
+        menu_id.Destroy()
+
     # Programmatically set the focus on the marker with the given index, simulating left click.
     def FocusOnMarker(self, idx):
         # Deselect the previously focused marker.
@@ -2619,31 +2640,28 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def populate_sub_list(self, sub_items_list):
         """Populate the sub list"""
-        self.sub_marker_list_ctrl.DeleteAllItems()
+        self.brain_targets_list_ctrl.DeleteAllItems()
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.__get_marker(focused_marker_idx)
         num_items = focused_marker_idx
         brain_targets = []
         for i, sub_item in enumerate(sub_items_list):
-            list_entry = ["" for _ in range(0, const.X_COLUMN)]
-            list_entry[const.ID_COLUMN] = str(num_items) + "." + str(i)
-            list_entry[const.SESSION_COLUMN] = str(marker.brain_target_list[i]["session_id"])
-            list_entry[const.MARKER_TYPE_COLUMN] = MarkerType.BRAIN_TARGET.human_readable
-            list_entry[const.LABEL_COLUMN] = marker.brain_target_list[i]["label"]
-            list_entry[const.TARGET_COLUMN] = (
-                "Yes" if marker.brain_target_list[i]["is_target"] else ""
-            )
-            list_entry[const.MEP_COLUMN] = (
+            list_entry = ["" for _ in range(0, const.BRAIN_UUID+1)]
+            list_entry[const.BRAIN_ID_COLUMN] = str(num_items) + "." + str(i)
+            list_entry[const.BRAIN_SESSION_COLUMN] = str(marker.brain_target_list[i]["session_id"])
+            list_entry[const.BRAIN_MARKER_TYPE_COLUMN] = MarkerType.BRAIN_TARGET.human_readable
+            list_entry[const.BRAIN_LABEL_COLUMN] = marker.brain_target_list[i]["label"]
+            list_entry[const.BRAIN_MEP_COLUMN] = (
                 str(marker.brain_target_list[i]["mep_value"])
                 if marker.brain_target_list[i]["mep_value"]
                 else ""
             )
-            list_entry[const.UUID] = (
+            list_entry[const.BRAIN_UUID] = (
                 str(marker.brain_target_list[i]["marker_uuid"])
                 if marker.brain_target_list[i]["marker_uuid"]
                 else ""
             )
-            self.sub_marker_list_ctrl.Append(list_entry)
+            self.brain_targets_list_ctrl.Append(list_entry)
             x, y, z = marker.brain_target_list[i]["position"]
             brain_targets.append({
                                 "position": [x, -y, z],
@@ -2668,8 +2686,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         #   e.g., shift and page-up/page-down keys. The bug is that the EVT_LIST_ITEM_SELECTED event
         #   is triggered repeatedly for the same item (the one that was first selected). This is a
         #   workaround to prevent the event from being triggered repeatedly for the same item.
-        if self.currently_focused_marker is not None and marker == self.currently_focused_marker:
-            return
+        # TODO: check here!!
+        # if self.currently_focused_marker is not None and marker == self.currently_focused_marker:
+        #     return
 
         # When selecting multiple markers, e.g., by pressing ctrl while clicking on the markers, EVT_LIST_ITEM_SELECTED
         # event is triggered for each selected item, without triggering EVT_LIST_ITEM_DESELECTED event for the previously
@@ -2683,12 +2702,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.currently_focused_marker = marker
         self.markers.SelectMarker(marker_id)
-        self.sub_marker_list_ctrl.DeleteAllItems()
+        self.brain_targets_list_ctrl.DeleteAllItems()
         if marker.brain_target_list:
             self.populate_sub_list(marker.brain_target_list)
-            self.sub_marker_list_ctrl.Show()
+            self.brain_targets_list_ctrl.Show()
         else:
-            self.sub_marker_list_ctrl.Hide()
+            self.brain_targets_list_ctrl.Hide()
         self.Layout()  # Refresh layout
         self.Update()
 
@@ -2753,6 +2772,18 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.marker_list_ctrl.GetItemText(list_index, const.LABEL_COLUMN)
         )
         self.markers.ChangeLabel(marker, new_label)
+
+    def ChangeLabelBrainTarget(self, evt):
+        list_index = self.brain_targets_list_ctrl.GetFocusedItem()
+        if list_index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        marker = self.currently_focused_marker.brain_target_list[list_index]
+        marker["label"] = dlg.ShowEnterMarkerID(
+            marker["label"]
+        )
+        self.brain_targets_list_ctrl.SetItem(list_index, const.BRAIN_LABEL_COLUMN, marker["label"])
+        self.markers.SaveState()
 
     def OnMenuSetTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2985,6 +3016,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 marker.y_mtms = np.round(mtms_coords[1], 1)
                 marker.r_mtms = np.round(orientation[2], 0)
                 marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
+        self.OnMarkerFocused(evt=None)
         self.markers.SaveState()
         dialog.Destroy()
 
@@ -3017,6 +3049,19 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         new_mep = dlg.ShowEnterMEPValue(self.marker_list_ctrl.GetItemText(idx, const.MEP_COLUMN))
         self.markers.ChangeMEP(marker, new_mep)
+
+    def OnMenuChangeMEPBrainTarget(self, evt):
+        list_index = self.brain_targets_list_ctrl.GetFocusedItem()
+        if list_index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        marker = self.currently_focused_marker.brain_target_list[list_index]
+        if not marker["mep_value"]:
+            marker["mep_value"] = "0"
+        marker["mep_value"] = dlg.ShowEnterMEPValue(
+            marker["mep_value"]
+        )
+        self.brain_targets_list_ctrl.SetItem(list_index, const.BRAIN_MEP_COLUMN, str(marker["mep_value"]))
 
     def _UnsetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
@@ -3205,10 +3250,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if result != wx.ID_OK:
             return
 
-        for index in indexes:
-            if index in self.sub_marker_items_list:
-                self.sub_marker_items_list.pop(index)
-
         self.__delete_multiple_markers(indexes)
 
         # Re-focus on the marker with the same index as the first marker that was selected before deletion.
@@ -3221,6 +3262,19 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             )
 
             self.FocusOnMarker(first_existing_index)
+
+    def OnDeleteSelectedBrainTarget(self, evt):
+        list_index = self.brain_targets_list_ctrl.GetFocusedItem()
+        if list_index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        brain_target_list = self.currently_focused_marker.brain_target_list
+        target_uuid = self.brain_targets_list_ctrl.GetItemText(list_index, const.UUID)
+        # Remove entry with the specified UUID
+        markers = [marker for marker in brain_target_list if marker.get('marker_uuid') != target_uuid]
+        self.currently_focused_marker.brain_target_list = markers
+        self.OnMarkerFocused(evt=None)
+        self.markers.SaveState()
 
     def GetNextMarkerLabel(self):
         return self.markers.GetNextMarkerLabel()
@@ -3565,29 +3619,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             list_entry.append(round(marker.y, 1))
             list_entry.append(round(marker.z, 1))
 
-        if marker.marker_type == MarkerType.BRAIN_TARGET:
-            focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
-            if focused_marker_idx >= 0:
-                num_items = focused_marker_idx
-                if focused_marker_idx in self.sub_marker_items_list:
-                    key = (
-                        str(focused_marker_idx)
-                        + "."
-                        + str(len(self.sub_marker_items_list[focused_marker_idx]))
-                    )
-                    list_entry[const.ID_COLUMN] = key
-                    self.sub_marker_items_list[focused_marker_idx].append(list_entry.copy())
-                else:
-                    key = str(focused_marker_idx) + ".0"
-                    list_entry[const.ID_COLUMN] = key
-                    self.sub_marker_items_list[focused_marker_idx] = [list_entry.copy()]
-        else:
-            key = 0
-            if len(self.itemDataMap) > 0:
-                # If itemDataMap is not empty, set the new key as last key + 1
-                key = len(self.itemDataMap.keys()) + 1
-            self.marker_list_ctrl.Append(list_entry)
-            self.marker_list_ctrl.SetItemData(num_items, key)
+        key = 0
+        if len(self.itemDataMap) > 0:
+            # If itemDataMap is not empty, set the new key as last key + 1
+            key = len(self.itemDataMap.keys()) + 1
+        self.marker_list_ctrl.Append(list_entry)
+        self.marker_list_ctrl.SetItemData(num_items, key)
 
         data_map_entry = list_entry.copy()
 
