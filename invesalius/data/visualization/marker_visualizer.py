@@ -78,6 +78,7 @@ class MarkerVisualizer:
         Publisher.subscribe(self.UpdateBrainTargets, "Update brain targets")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.UpdateTargetMode, "Set target mode")
+        Publisher.subscribe(self.UpdateVectorFieldAssemblyVisibility, "Set vector field assembly visibility")
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -85,13 +86,18 @@ class MarkerVisualizer:
     def UpdateTargetMode(self, enabled=False):
         self.is_target_mode = enabled
 
+    def UpdateVectorFieldAssemblyVisibility(self, enabled=False):
+        self.vector_field_assembly.SetVisibility(enabled)
+        # If not navigating, render the scene.
+        if not self.is_navigating:
+            self.interactor.Render()
+
     def UpdateBrainTargets(self, brain_targets):
         """
         Update the vector field assembly to reflect the current vector field.
         """
         # Create a new vector field assembly.
         new_vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly(brain_targets)
-        self.vector_field_assembly.SetVisibility(1)
         # Replace the old vector field assembly with the new one.
         self.actor_factory.ReplaceActor(
             self.renderer, self.vector_field_assembly, new_vector_field_assembly
@@ -446,13 +452,13 @@ class MarkerVisualizer:
 
         # If the marker is a coil target, show the vector field assembly and update its position and orientation,
         # otherwise, hide the vector field assembly.
-        if marker_type == MarkerType.COIL_TARGET:
-            self.vector_field_assembly.SetVisibility(1)
-
-            self.vector_field_assembly.SetPosition(position_flipped)
-            self.vector_field_assembly.SetOrientation(orientation)
-        else:
-            self.vector_field_assembly.SetVisibility(0)
+        # if marker_type == MarkerType.COIL_TARGET:
+        #     self.vector_field_assembly.SetVisibility(1)
+        #
+        #     self.vector_field_assembly.SetPosition(position_flipped)
+        #     self.vector_field_assembly.SetOrientation(orientation)
+        # else:
+        #     self.vector_field_assembly.SetVisibility(0)
 
         # Return early if the marker is a target and the coil is at the target.
         #

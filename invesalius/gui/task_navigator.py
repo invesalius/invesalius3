@@ -2689,9 +2689,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.markers.SelectMarker(marker_id)
         self.brain_targets_list_ctrl.DeleteAllItems()
         if marker.brain_target_list:
+            Publisher.sendMessage("Set vector field assembly visibility", enabled=True)
             self.populate_sub_list(marker.brain_target_list)
             self.brain_targets_list_ctrl.Show()
         else:
+            Publisher.sendMessage("Set vector field assembly visibility", enabled=False)
             self.brain_targets_list_ctrl.Hide()
         self.Layout()  # Refresh layout
         self.Update()
