@@ -90,23 +90,15 @@ class MarkersControl(metaclass=Singleton):
     #       currently not be used outside this class.
     def DeleteMarker(self, marker_id, render=True):
         marker = self.list[marker_id]
-        indices_to_delete = [marker_id]
         if marker.is_target:
             self.UnsetTarget(marker_id)
         if marker.is_point_of_interest:
             self.UnsetPointOfInterest(marker_id)
-        if marker.brain_target_list:
-            for m in marker.brain_target_list:
-                for i in self.list:
-                    if i.marker_uuid == m["marker_uuid"]:
-                        indices_to_delete.append(i.marker_id)
 
         if render:
             Publisher.sendMessage("Delete marker", marker=marker)
 
-        indices_to_delete.sort(reverse=True)
-        for i in indices_to_delete:
-            del self.list[i]
+        del self.list[marker_id]
 
         if render:
             for idx, m in enumerate(self.list):
@@ -302,6 +294,3 @@ class MarkersControl(metaclass=Singleton):
         new_marker.marker_type = MarkerType.COIL_TARGET
 
         self.AddMarker(new_marker)
-
-    def AddBrainTarget(self, marker, new_brain_target):
-        marker.brain_target_list(new_brain_target)
