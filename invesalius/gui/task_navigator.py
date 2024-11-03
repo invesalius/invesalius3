@@ -3001,6 +3001,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 marker.y_mtms = np.round(mtms_coords[1], 1)
                 marker.r_mtms = np.round(orientation[2], 0)
                 marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
+
+        if marker_coil.brain_target_list:
+            self.marker_list_ctrl.SetItemBackgroundColour(list_index, wx.Colour(102, 178, 255))
         self.OnMarkerFocused(evt=None)
         self.markers.SaveState()
         dialog.Destroy()
@@ -3610,6 +3613,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Add the UUID to the entry in itemDataMap
         data_map_entry.append(marker.marker_uuid)
         self.itemDataMap[key] = data_map_entry
+
+        if marker.brain_target_list:
+            self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(102, 178, 255))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 
