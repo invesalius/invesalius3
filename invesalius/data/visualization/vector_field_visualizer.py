@@ -27,10 +27,12 @@ class VectorFieldVisualizer:
         self.vector_field = vector_field
         Publisher.sendMessage("Update vector field")
 
-    def CreateVectorFieldAssembly(self):
+    def CreateVectorFieldAssembly(self, vector_field=None):
         """
         Create an assembly for the current vector field.
         """
+        if not vector_field:
+            vector_field = self.vector_field
         assembly = vtk.vtkAssembly()
 
         actors = [
@@ -40,7 +42,7 @@ class VectorFieldVisualizer:
                 colour=vector["color"],
                 length_multiplier=vector["length"],
             )
-            for vector in self.vector_field
+            for vector in vector_field
         ]
 
         for actor in actors:

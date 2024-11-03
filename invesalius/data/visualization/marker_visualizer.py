@@ -76,7 +76,7 @@ class MarkerVisualizer:
         Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.SetTargetTransparency, "Set target transparency")
         Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
-        Publisher.subscribe(self.UpdateVectorField, "Update vector field")
+        Publisher.subscribe(self.UpdateBrainTargets, "Update brain targets")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.UpdateTargetMode, "Set target mode")
 
@@ -86,13 +86,13 @@ class MarkerVisualizer:
     def UpdateTargetMode(self, enabled=False):
         self.is_target_mode = enabled
 
-    def UpdateVectorField(self):
+    def UpdateBrainTargets(self, brain_targets):
         """
         Update the vector field assembly to reflect the current vector field.
         """
         # Create a new vector field assembly.
-        new_vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
-
+        new_vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly(brain_targets)
+        self.vector_field_assembly.SetVisibility(1)
         # Replace the old vector field assembly with the new one.
         self.actor_factory.ReplaceActor(
             self.renderer, self.vector_field_assembly, new_vector_field_assembly

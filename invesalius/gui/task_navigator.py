@@ -2623,6 +2623,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.__get_marker(focused_marker_idx)
         num_items = focused_marker_idx
+        brain_targets = []
         for i, sub_item in enumerate(sub_items_list):
             list_entry = ["" for _ in range(0, const.X_COLUMN)]
             list_entry[const.ID_COLUMN] = str(num_items) + "." + str(i)
@@ -2643,6 +2644,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 else ""
             )
             self.sub_marker_list_ctrl.Append(list_entry)
+            x, y, z = marker.brain_target_list[i]["position"]
+            brain_targets.append({
+                                "position": [x, -y, z],
+                                "orientation": marker.brain_target_list[i]["orientation"],
+                                "color": marker.brain_target_list[i]["colour"],
+                                "length": marker.brain_target_list[i]["size"]
+                            })
+        Publisher.sendMessage("Update brain targets", brain_targets=brain_targets)
 
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
@@ -2918,14 +2927,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker = self.CreateMarker(
                 position=position,
                 orientation=orientation,
-                # XXX: Setting the marker type to 'brain target' is inconsistent with the variable names above ('coil_position_list' etc.);
-                #   however, the dialog shown to the user by this function should be used exclusively for creating brain targets, hence the
-                #   variable naming (and the internal logic of the dialog where it currently returns both coil targets and brain targets)
-                #   should probably be modified to reflect that.
                 marker_type=MarkerType.BRAIN_TARGET,
+                size=1,
+                label=str(marker_coil.label),
             )
             marker.marker_uuid = str(uuid.uuid4())
-            marker.label = str(marker_coil.label)
             marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
 
             for position, orientation in zip(brain_position_list, brain_orientation_list):
@@ -2933,9 +2939,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     position=list(position),
                     orientation=list(orientation),
                     marker_type=MarkerType.BRAIN_TARGET,
+                    size=1,
+                    label=str(marker_coil.label),
                 )
                 marker.marker_uuid = str(uuid.uuid4())
-                marker.label = str(marker_coil.label)
                 marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
         self.markers.SaveState()
         dialog.Destroy()
