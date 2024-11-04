@@ -2222,7 +2222,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UpdateMarkerLabel, "Update marker label")
         Publisher.subscribe(self._UpdateMEP, "Update marker mep")
 
-        Publisher.subscribe(self.SetVectorField, "Set vector field")
+        Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
+        #Publisher.subscribe(self.SetVectorField, "Set vector field")
 
     def __get_selected_items(self):
         """
@@ -2381,32 +2382,32 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def UpdateCortexMarker(self, CoGposition, CoGorientation):
         self.cortex_position_orientation = CoGposition + CoGorientation
 
-    def SetVectorField(self, vector_field):
-        self.vector_field = vector_field
+    def SetBrainTarget(self, brain_targets):
+        marker_target = self.markers.FindTarget()
+        if not marker_target:
+            return
 
-        # TODO: Add this to new markers from mtms
-        # marker_target = self.markers.FindTarget()
-        # if not marker_target:
-        #     return
-        #
-        # for vector in self.vector_field:
-        #     position = vector["position"],
-        #     orientation = vector["orientation"],
-        #     colour = vector["color"],
-        #     length_multiplier = vector["length"],
-        #
-        #     marker = self.CreateMarker(
-        #         position=position,
-        #         orientation=orientation,
-        #         colour=colour,
-        #         size=length_multiplier,
-        #         label=str(marker_target.label),
-        #         marker_type=MarkerType.BRAIN_TARGET,
-        #     )
-        #     marker.marker_uuid = str(uuid.uuid4())
-        #     marker_target.brain_target_list.append(marker.to_brain_targets_dict())
-        #
-        # self.markers.SaveState()
+        for target in brain_targets:
+            position = target["position"],
+            orientation = target["orientation"],
+            colour = target["color"],
+            length_multiplier = target["length"],
+
+            marker = self.CreateMarker(
+                position=position,
+                orientation=orientation,
+                colour=colour,
+                size=length_multiplier,
+                label=str(marker_target.label),
+                marker_type=MarkerType.BRAIN_TARGET,
+            )
+            marker.marker_uuid = str(uuid.uuid4())
+            marker.x_mtms = -target["position"][1]
+            marker.y_mtms = target["position"][0]
+            marker.r_mtms = -target["orientation"][2]
+            marker_target.brain_target_list.append(marker.to_brain_targets_dict())
+
+        self.markers.SaveState()
 
     def OnMouseRightDown(self, evt):
         focused_marker_idx = self.marker_list_ctrl.GetFocusedItem()

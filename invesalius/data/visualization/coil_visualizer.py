@@ -301,4 +301,6 @@ class CoilVisualizer:
             self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
 
             # LUKATODO
+
+            ###LOOK HERE!
             # self.vector_field_assembly.SetUserMatrix(m_img_vtk)
