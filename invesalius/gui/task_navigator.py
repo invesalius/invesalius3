@@ -2138,7 +2138,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Sub List Control
         brain_targets_list_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
         brain_targets_list_ctrl.InsertColumn(const.BRAIN_ID_COLUMN, "#")
-        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_ID_COLUMN, 24)
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_ID_COLUMN, 26)
 
         brain_targets_list_ctrl.InsertColumn(const.BRAIN_SESSION_COLUMN, "Session")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_SESSION_COLUMN, 51)
@@ -2151,6 +2151,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         brain_targets_list_ctrl.InsertColumn(const.BRAIN_MEP_COLUMN, "MEP (uV)")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_MEP_COLUMN, 45)
+
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_X_MTMS, "X")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_X_MTMS, 45)
+
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_Y_MTMS, "Y")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_Y_MTMS, 45)
+
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_R_MTMS, "R")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_R_MTMS, 45)
 
         brain_targets_list_ctrl.InsertColumn(const.BRAIN_UUID, "UUID")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_UUID, 45)
@@ -2642,6 +2651,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 if marker.brain_target_list[i]["mep_value"]
                 else ""
             )
+            list_entry[const.BRAIN_X_MTMS] = marker.brain_target_list[i]["x_mtms"]
+            list_entry[const.BRAIN_Y_MTMS] = marker.brain_target_list[i]["y_mtms"]
+            list_entry[const.BRAIN_R_MTMS] = marker.brain_target_list[i]["r_mtms"]
             list_entry[const.BRAIN_UUID] = (
                 str(marker.brain_target_list[i]["marker_uuid"])
                 if marker.brain_target_list[i]["marker_uuid"]
