@@ -817,7 +817,8 @@ BRAIN_MEP_COLUMN = 4
 BRAIN_X_MTMS = 5
 BRAIN_Y_MTMS = 6
 BRAIN_R_MTMS = 7
-BRAIN_UUID = 8
+BRAIN_INTENSITY_MTMS = 8
+BRAIN_UUID = 9
 
 # ------------ Navigation defaults -------------------
 

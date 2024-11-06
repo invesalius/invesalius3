@@ -225,6 +225,7 @@ class Marker:
             "x_mtms": self.x_mtms,
             "y_mtms": self.y_mtms,
             "r_mtms": self.r_mtms,
+            "intensity_mtms": self.intensity_mtms,
         }
 
     def to_dict(self):

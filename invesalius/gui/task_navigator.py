@@ -43,6 +43,7 @@ import wx.lib.platebtn as pbtn
 from wx.lib.mixins.listctrl import ColumnSorterMixin
 
 import invesalius.constants as const
+import invesalius.data.coordinates as dco
 import invesalius.gui.dialogs as dlg
 import invesalius.project as prj
 import invesalius.session as ses
@@ -2152,14 +2153,17 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         brain_targets_list_ctrl.InsertColumn(const.BRAIN_MEP_COLUMN, "MEP (uV)")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_MEP_COLUMN, 45)
 
-        brain_targets_list_ctrl.InsertColumn(const.BRAIN_X_MTMS, "X")
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_X_MTMS, "X (mm)")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_X_MTMS, 45)
 
-        brain_targets_list_ctrl.InsertColumn(const.BRAIN_Y_MTMS, "Y")
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_Y_MTMS, "Y (mm)")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_Y_MTMS, 45)
 
-        brain_targets_list_ctrl.InsertColumn(const.BRAIN_R_MTMS, "R")
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_R_MTMS, "R (°)")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_R_MTMS, 45)
+
+        brain_targets_list_ctrl.InsertColumn(const.BRAIN_INTENSITY_MTMS, "Int. (V/m)")
+        brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_INTENSITY_MTMS, 45)
 
         brain_targets_list_ctrl.InsertColumn(const.BRAIN_UUID, "UUID")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_UUID, 45)
@@ -2398,24 +2402,39 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if not marker_target:
             return
 
-        for target in brain_targets:
-            position = (target["position"],)
-            orientation = (target["orientation"],)
-            colour = (target["color"],)
-            length_multiplier = (target["length"],)
+        position = marker_target.position
+        orientation = marker_target.orientation
+        position[1] = -position[1]
+        m_marker_target = dco.coordinates_to_transformation_matrix(
+            position=position,
+            orientation=orientation,
+            axes="sxyz",
+        )
 
+        for target in brain_targets:
+            m_offset_brain = dco.coordinates_to_transformation_matrix(
+                position=target["position"],
+                orientation=target["orientation"],
+                axes="sxyz",
+            )
+            m_brain = m_marker_target @ m_offset_brain
+            new_position, new_orientation = dco.transformation_matrix_to_coordinates(
+                m_brain, "sxyz"
+            )
+            new_position[1] = -new_position[1]
             marker = self.CreateMarker(
-                position=position,
-                orientation=orientation,
-                colour=colour,
-                size=length_multiplier,
+                position=new_position.tolist(),
+                orientation=new_orientation.tolist(),
+                colour=target["color"],
+                size=target["length"],
                 label=str(marker_target.label),
                 marker_type=MarkerType.BRAIN_TARGET,
             )
             marker.marker_uuid = str(uuid.uuid4())
-            marker.x_mtms = -target["position"][1]
-            marker.y_mtms = target["position"][0]
-            marker.r_mtms = -target["orientation"][2]
+            marker.x_mtms = target["mtms"][0]
+            marker.y_mtms = target["mtms"][1]
+            marker.r_mtms = target["mtms"][2]
+            marker.intensity_mtms = target["mtms"][3]
             marker_target.brain_target_list.append(marker.to_brain_targets_dict())
 
         self.markers.SaveState()
@@ -2655,6 +2674,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             list_entry[const.BRAIN_X_MTMS] = marker.brain_target_list[i]["x_mtms"]
             list_entry[const.BRAIN_Y_MTMS] = marker.brain_target_list[i]["y_mtms"]
             list_entry[const.BRAIN_R_MTMS] = marker.brain_target_list[i]["r_mtms"]
+            list_entry[const.BRAIN_INTENSITY_MTMS] = marker.brain_target_list[i]["intensity_mtms"]
             list_entry[const.BRAIN_UUID] = (
                 str(marker.brain_target_list[i]["marker_uuid"])
                 if marker.brain_target_list[i]["marker_uuid"]
@@ -2775,6 +2795,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.marker_list_ctrl.GetItemText(list_index, const.LABEL_COLUMN)
         )
         self.markers.ChangeLabel(marker, new_label)
+        brain_targets = [{
+                        "position": [10, -5, -15],
+                        "orientation": [0, 0, -45],
+                        "color": [0, 0, 1],
+                        "length": 50 / 100,
+                        "mtms": [5, 10, 45, 50],
+                        }]
+        Publisher.sendMessage("Set brain targets", brain_targets=brain_targets)
 
     def ChangeLabelBrainTarget(self, evt):
         list_index = self.brain_targets_list_ctrl.GetFocusedItem()

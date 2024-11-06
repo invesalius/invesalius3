@@ -302,5 +302,4 @@ class CoilVisualizer:
 
             # LUKATODO
 
-            ###LOOK HERE!
             # self.vector_field_assembly.SetUserMatrix(m_img_vtk)

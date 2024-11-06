@@ -342,7 +342,8 @@ class NeuronavigationApi(metaclass=Singleton):
                                 "position": [target.displacement_y, -target.displacement_x, -15],
                                 "orientation": [0, 0, -target.rotation_angle],
                                 "color": [0, 0, 1],
-                                "length": target.intensity / 100
+                                "length": target.intensity / 100,
+                                "mtms": [target.displacement_x, target.displacement_y, target.rotation_angle, target.intensity],
                             })
         wx.CallAfter(Publisher.sendMessage, "Set brain targets",  brain_targets=brain_targets)
 
