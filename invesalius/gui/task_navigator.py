@@ -2795,13 +2795,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.marker_list_ctrl.GetItemText(list_index, const.LABEL_COLUMN)
         )
         self.markers.ChangeLabel(marker, new_label)
-        brain_targets = [{
-                        "position": [10, -5, -15],
-                        "orientation": [0, 0, -45],
-                        "color": [0, 0, 1],
-                        "length": 50 / 100,
-                        "mtms": [5, 10, 45, 50],
-                        }]
+        brain_targets = [
+            {
+                "position": [10, -5, -15],
+                "orientation": [0, 0, -45],
+                "color": [0, 0, 1],
+                "length": 50 / 100,
+                "mtms": [5, 10, 45, 50],
+            }
+        ]
         Publisher.sendMessage("Set brain targets", brain_targets=brain_targets)
 
     def ChangeLabelBrainTarget(self, evt):
