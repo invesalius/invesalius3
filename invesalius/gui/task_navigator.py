@@ -2165,7 +2165,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_UUID, 45)
         # self.brain_targets_list_ctrl.Hide()
 
-        brain_targets_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDownBrainTargets)
+        brain_targets_list_ctrl.Bind(
+            wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDownBrainTargets
+        )
         self.brain_targets_list_ctrl = brain_targets_list_ctrl
         # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
         try:
@@ -2232,7 +2234,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UpdateMEP, "Update marker mep")
 
         Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
-        #Publisher.subscribe(self.SetVectorField, "Set vector field")
+        # Publisher.subscribe(self.SetVectorField, "Set vector field")
 
     def __get_selected_items(self):
         """
@@ -2397,10 +2399,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             return
 
         for target in brain_targets:
-            position = target["position"],
-            orientation = target["orientation"],
-            colour = target["color"],
-            length_multiplier = target["length"],
+            position = (target["position"],)
+            orientation = (target["orientation"],)
+            colour = (target["color"],)
+            length_multiplier = (target["length"],)
 
             marker = self.CreateMarker(
                 position=position,
@@ -2587,7 +2589,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         mep_menu_item = menu_id.Append(unique_menu_id + 3, _("Change MEP value"))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEPBrainTarget, mep_menu_item)
 
-
         if has_mTMS:
             send_brain_target_menu_item = menu_id.Append(
                 unique_menu_id + 5, _("Send brain target to mTMS")
@@ -2641,7 +2642,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         num_items = focused_marker_idx
         brain_targets = []
         for i, sub_item in enumerate(sub_items_list):
-            list_entry = ["" for _ in range(0, const.BRAIN_UUID+1)]
+            list_entry = ["" for _ in range(0, const.BRAIN_UUID + 1)]
             list_entry[const.BRAIN_ID_COLUMN] = str(num_items) + "." + str(i)
             list_entry[const.BRAIN_SESSION_COLUMN] = str(marker.brain_target_list[i]["session_id"])
             list_entry[const.BRAIN_MARKER_TYPE_COLUMN] = MarkerType.BRAIN_TARGET.human_readable
@@ -2661,12 +2662,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             )
             self.brain_targets_list_ctrl.Append(list_entry)
             x, y, z = marker.brain_target_list[i]["position"]
-            brain_targets.append({
-                                "position": [x, -y, z],
-                                "orientation": marker.brain_target_list[i]["orientation"],
-                                "color": marker.brain_target_list[i]["colour"],
-                                "length": marker.brain_target_list[i]["size"]
-                            })
+            brain_targets.append(
+                {
+                    "position": [x, -y, z],
+                    "orientation": marker.brain_target_list[i]["orientation"],
+                    "color": marker.brain_target_list[i]["colour"],
+                    "length": marker.brain_target_list[i]["size"],
+                }
+            )
         Publisher.sendMessage("Update brain targets", brain_targets=brain_targets)
 
     # Called when a marker on the list gets the focus by the user left-clicking on it.
@@ -2779,9 +2782,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
         marker = self.currently_focused_marker.brain_target_list[list_index]
-        marker["label"] = dlg.ShowEnterMarkerID(
-            marker["label"]
-        )
+        marker["label"] = dlg.ShowEnterMarkerID(marker["label"])
         self.brain_targets_list_ctrl.SetItem(list_index, const.BRAIN_LABEL_COLUMN, marker["label"])
         self.markers.SaveState()
 
@@ -2953,12 +2954,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
           The brain position in the coil's coordinate system.
         """
         import invesalius.data.transformations as tr
+
         # Convert inputs to numpy arrays
         coil_position = np.array(coil_position)
         brain_position = np.array(brain_position)
 
         # Convert Euler angles to rotation matrix
-        coil_rotation_matrix = tr.euler_matrix(coil_orientation_euler[0], coil_orientation_euler[1], coil_orientation_euler[2], 'sxyz')
+        coil_rotation_matrix = tr.euler_matrix(
+            coil_orientation_euler[0], coil_orientation_euler[1], coil_orientation_euler[2], "sxyz"
+        )
 
         # Step 1: Translate brain position to the coil's origin
         translated_position = brain_position - coil_position
@@ -2995,11 +2999,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 label=str(marker_coil.label),
             )
             marker.marker_uuid = str(uuid.uuid4())
-            #EXAMPLE. TODO with mtms
+            # EXAMPLE. TODO with mtms
             mtms_coords = self.transform_to_mtms(position_coil, orientation, position)
-            marker.x_mtms = np.round(mtms_coords[0],1)
-            marker.y_mtms = np.round(mtms_coords[1],1)
-            marker.r_mtms = np.round(orientation[2],0)
+            marker.x_mtms = np.round(mtms_coords[0], 1)
+            marker.y_mtms = np.round(mtms_coords[1], 1)
+            marker.r_mtms = np.round(orientation[2], 0)
             marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
 
             for position, orientation in zip(brain_position_list, brain_orientation_list):
@@ -3061,10 +3065,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.currently_focused_marker.brain_target_list[list_index]
         if not marker["mep_value"]:
             marker["mep_value"] = "0"
-        marker["mep_value"] = dlg.ShowEnterMEPValue(
-            marker["mep_value"]
+        marker["mep_value"] = dlg.ShowEnterMEPValue(marker["mep_value"])
+        self.brain_targets_list_ctrl.SetItem(
+            list_index, const.BRAIN_MEP_COLUMN, str(marker["mep_value"])
         )
-        self.brain_targets_list_ctrl.SetItem(list_index, const.BRAIN_MEP_COLUMN, str(marker["mep_value"]))
 
     def _UnsetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
@@ -3268,7 +3272,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         brain_target_list = self.currently_focused_marker.brain_target_list
         target_uuid = self.brain_targets_list_ctrl.GetItemText(list_index, const.BRAIN_UUID)
         # Remove entry with the specified UUID
-        markers = [marker for marker in brain_target_list if marker.get('marker_uuid') != target_uuid]
+        markers = [
+            marker for marker in brain_target_list if marker.get("marker_uuid") != target_uuid
+        ]
         self.currently_focused_marker.brain_target_list = markers
         self.OnMarkerFocused(evt=None)
         self.markers.SaveState()
@@ -3352,24 +3358,33 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Try to convert to int or float
         try:
-            if '.' in value or 'e' in value.lower():
+            if "." in value or "e" in value.lower():
                 return float(value)
             return int(value)
         except ValueError:
             # Handle quoted strings
-            if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+            if (value.startswith('"') and value.endswith('"')) or (
+                value.startswith("'") and value.endswith("'")
+            ):
                 return value[1:-1]
             return value  # Return as is if not recognized
 
     def _parse_list(self, list_str):
         """Parse a list from string format."""
-        return [self.ParseValue(el.strip()) for el in self._split_by_outer_commas(list_str[1:-1].strip())]
+        return [
+            self.ParseValue(el.strip())
+            for el in self._split_by_outer_commas(list_str[1:-1].strip())
+        ]
 
     def _parse_dict(self, dict_str):
         """Parse a dictionary from string format."""
         items = self._split_by_outer_commas(dict_str[1:-1].strip())
-        return {self.ParseValue(kv.split(":", 1)[0].strip()): self.ParseValue(kv.split(":", 1)[1].strip()) for kv in
-                items}
+        return {
+            self.ParseValue(kv.split(":", 1)[0].strip()): self.ParseValue(
+                kv.split(":", 1)[1].strip()
+            )
+            for kv in items
+        }
 
     def _split_by_outer_commas(self, string):
         """Split a string by commas that are not inside brackets or braces."""
@@ -3383,14 +3398,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             elif char in "]}" and depth > 0:
                 depth -= 1
 
-            if char == ',' and depth == 0:
-                elements.append(''.join(current_element).strip())
+            if char == "," and depth == 0:
+                elements.append("".join(current_element).strip())
                 current_element = []
             else:
                 current_element.append(char)
 
         if current_element:
-            elements.append(''.join(current_element).strip())
+            elements.append("".join(current_element).strip())
 
         return elements
 
