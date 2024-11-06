@@ -1956,13 +1956,11 @@ class Viewer(wx.Panel):
             + "% percent: "
             + str(n_clusters)
             + "\n"
-            + " distance:"
-            + str(distances_between_representatives)
+            + "Distance: " + str(f"{distances_between_representatives:04.2f}") 
             + "\n"
-            + "Focal Factor: "
-            + "  "
-            + str(focal_factor)
+            + "Focal Factor: " + str(f"{focal_factor:04.2f}")            
         )
+         
         self.focal_factor_members = [
             n_clusters,
             n_clusters / len(self.Id_list),
@@ -1975,7 +1973,7 @@ class Viewer(wx.Panel):
 
     def CreateClustersEfieldLegend(self):
         self.ClusterEfieldTextActor = self.CreateTextLegend(
-            const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION, (0.03, 0.99)
+            const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION, (0.12, 0.99)
         )
         self.ren.AddActor(self.ClusterEfieldTextActor.actor)
 
@@ -2207,7 +2205,7 @@ class Viewer(wx.Panel):
         coil_dir = m_img_flip[:-1, 0]
         coil_face = m_img_flip[:-1, 1]
         cn = np.cross(coil_dir, coil_face)
-        T_rot = np.append(ct1, ct2, axis=0)
+        T_rot = np.append(-ct1, ct2, axis=0)
         T_rot = np.append(T_rot, cn, axis=0)  # append
         T_rot = T_rot.tolist()  # to list
         Publisher.sendMessage("Send coil position and rotation", T_rot=T_rot, cp=cp, m_img=m_img)
@@ -2226,7 +2224,7 @@ class Viewer(wx.Panel):
             if session.GetConfig("debug_efield"):
                 self.e_field_norms = enorm_data[3][self.Id_list, 0]
                 self.e_field_col1 = enorm_data[3][self.Id_list, 1]
-                self.e_field_col2 = enorm_data[3][self.Id_list, 1]  # LUKATODO: is this a typo?
+                self.e_field_col2 = enorm_data[3][self.Id_list, 2]  # LUKATODO: is this a typo?
                 self.e_field_col3 = enorm_data[3][self.Id_list, 3]
                 self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
                 max = np.array(self.e_field_norms).argmax()
