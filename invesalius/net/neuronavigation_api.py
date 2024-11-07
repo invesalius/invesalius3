@@ -353,6 +353,7 @@ class NeuronavigationApi(metaclass=Singleton):
                 }
             )
         wx.CallAfter(Publisher.sendMessage, "Set brain targets", brain_targets=brain_targets)
+        wx.CallAfter(Publisher.sendMessage, "Create marker", marker_type=MarkerType.COIL_POSE)
 
     def set_vector_field(self, vector_field):
         # Modify vector_field to swap x and y coordinates and adjust z orientation to match mTMS

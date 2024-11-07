@@ -139,7 +139,7 @@ class CoilVisualizer:
 
         if self.target_coil_actor is not None:
             self.target_coil_actor.SetVisibility(state)
-        # self.vector_field_assembly.SetVisibility(state) # LUKATODO: Keep this hidden for now
+        self.vector_field_assembly.SetVisibility(state) # LUKATODO: Keep this hidden for now
 
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
@@ -262,7 +262,7 @@ class CoilVisualizer:
         self.coils[coil_name]["path"] = coil_path
 
         # LUKATODO: Vector field assembly follows a different pattern for addition, should unify.
-        # self.vector_field_assembly.SetVisibility(1)
+        self.vector_field_assembly.SetVisibility(1)
 
     def RemoveCoil(self, coil_name=None):
         if coil_name is not None:
@@ -302,4 +302,4 @@ class CoilVisualizer:
 
             # LUKATODO
 
-            # self.vector_field_assembly.SetUserMatrix(m_img_vtk)
+            self.vector_field_assembly.SetUserMatrix(m_img_vtk)
