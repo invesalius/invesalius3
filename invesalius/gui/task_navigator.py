@@ -3267,6 +3267,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 return
         self.markers.Clear()
         self.itemDataMap.clear()
+        Publisher.sendMessage("Set vector field assembly visibility", enabled=False)
+        self.brain_targets_list_ctrl.DeleteAllItems()
+        self.brain_targets_list_ctrl.Hide()
 
     def OnDeleteFiducialMarker(self, label):
         indexes = []
