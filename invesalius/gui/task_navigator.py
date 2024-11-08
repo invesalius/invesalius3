@@ -2589,6 +2589,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def OnMouseRightDownBrainTargets(self, evt):
         focused_marker_idx = self.brain_targets_list_ctrl.GetFocusedItem()
         focused_marker = self.currently_focused_marker.brain_target_list[focused_marker_idx]
+        self.focused_brain_marker = focused_marker
         unique_menu_id = 1
 
         # Check if the currently focused marker is the active target.
@@ -2607,6 +2608,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         mep_menu_item = menu_id.Append(unique_menu_id + 3, _("Change MEP value"))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEPBrainTarget, mep_menu_item)
+
+        create_coil_target_menu_item = menu_id.Append(
+            unique_menu_id + 4, _("Create coil target")
+        )
+        menu_id.Bind(
+            wx.EVT_MENU, self.OnCreateCoilTargetFromBrainTargets, create_coil_target_menu_item
+        )
 
         if has_mTMS:
             send_brain_target_menu_item = menu_id.Append(
@@ -2753,6 +2761,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(list_index)
 
         self.markers.CreateCoilTargetFromLandmark(marker)
+
+    def OnCreateCoilTargetFromBrainTargets(self, evt):
+        self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
 
     def OnCreateCoilTargetFromCoilPose(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -3034,6 +3045,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker.x_mtms = np.round(mtms_coords[0], 1)
             marker.y_mtms = np.round(mtms_coords[1], 1)
             marker.r_mtms = np.round(orientation[2], 0)
+            marker.intensity_mtms = 10
             marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
 
             for position, orientation in zip(brain_position_list, brain_orientation_list):
@@ -3049,6 +3061,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 marker.x_mtms = np.round(mtms_coords[0], 1)
                 marker.y_mtms = np.round(mtms_coords[1], 1)
                 marker.r_mtms = np.round(orientation[2], 0)
+                marker.intensity_mtms = 10
                 marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
 
         if marker_coil.brain_target_list:

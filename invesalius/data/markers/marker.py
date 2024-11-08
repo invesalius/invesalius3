@@ -64,9 +64,9 @@ class Marker:
     is_target: bool = False
     is_point_of_interest: bool = False
     session_id: int = 1
-    x_cortex: float = 0
-    y_cortex: float = 0
-    z_cortex: float = 0
+    x_cortex: float = dataclasses.field(default=None)
+    y_cortex: float = dataclasses.field(default=None)
+    z_cortex: float = dataclasses.field(default=None)
     alpha_cortex: float = dataclasses.field(default=None)
     beta_cortex: float = dataclasses.field(default=None)
     gamma_cortex: float = dataclasses.field(default=None)
