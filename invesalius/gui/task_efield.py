@@ -186,7 +186,7 @@ class InnerTaskPanel(wx.Panel):
 
         value = str(0)
         tooltip = _("dt(\u03bc s)")
-        self.input_dt = wx.TextCtrl(self, value=str(60), size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_dt = wx.TextCtrl(self, value=str(1), size=wx.Size(60, -1), style=wx.TE_CENTRE)
         self.input_dt.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.input_dt.SetBackgroundColour("WHITE")
         self.input_dt.SetEditable(1)
@@ -592,7 +592,7 @@ class InnerTaskPanel(wx.Panel):
             float(self.input_coil4.GetValue()),
             float(self.input_coil5.GetValue()),
         ]
-        self.input_coils = np.array(self.input_coils) * input_dt
+        self.input_coils = np.array(self.input_coils)# * input_dt
         self.input_coils = self.input_coils.tolist()
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
@@ -609,7 +609,7 @@ class InnerTaskPanel(wx.Panel):
         #dIs[1] = -dIs[1]
         #dIs[2] = -dIs[2]
         self.input_coils = dIs
-        self.input_coils = np.array(self.input_coils) * input_dt
+        self.input_coils = np.array(self.input_coils)# * input_dt
         self.input_coil1.SetValue(str(dIs[0]))
         self.input_coil2.SetValue(str(dIs[1]))
         self.input_coil3.SetValue(str(dIs[2]))
