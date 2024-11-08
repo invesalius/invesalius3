@@ -2235,11 +2235,17 @@ class Viewer(wx.Panel):
                 ]
             else:
                 self.e_field_norms = enorm_data[3].enorm
+                self.e_field_norms =[self.e_field_norms[i] for i in self.Id_list]
                 self.e_field_col1 = enorm_data[3].column1
                 self.e_field_col2 = enorm_data[3].column2
                 self.e_field_col3 = enorm_data[3].column3
+                if len(self.e_field_col1) > 1:
+                    self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
+                    self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
+                    self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
+
                 self.max_efield_array = enorm_data[3].mvector
-                self.Idmax = self.Id_list[enorm_data[3].maxindex]
+                self.Idmax = enorm_data[3].maxindex #self.Id_list[enorm_data[3].maxindex]
                 if self.save_automatically and self.plot_no_connection:
                     import time
 
