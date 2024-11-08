@@ -2609,9 +2609,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         mep_menu_item = menu_id.Append(unique_menu_id + 3, _("Change MEP value"))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEPBrainTarget, mep_menu_item)
 
-        create_coil_target_menu_item = menu_id.Append(
-            unique_menu_id + 4, _("Create coil target")
-        )
+        create_coil_target_menu_item = menu_id.Append(unique_menu_id + 4, _("Create coil target"))
         menu_id.Bind(
             wx.EVT_MENU, self.OnCreateCoilTargetFromBrainTargets, create_coil_target_menu_item
         )
