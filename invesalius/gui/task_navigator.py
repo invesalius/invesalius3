@@ -2435,8 +2435,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker.y_mtms = target["mtms"][1]
             marker.r_mtms = target["mtms"][2]
             marker.intensity_mtms = target["mtms"][3]
+            #TODO: MEP
+            marker.mep_value = 0
             marker_target.brain_target_list.append(marker.to_brain_targets_dict())
 
+        Publisher.sendMessage("Redraw MEP mapping from brain targets")
         self.markers.SaveState()
 
     def OnMouseRightDown(self, evt):
@@ -2804,16 +2807,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.marker_list_ctrl.GetItemText(list_index, const.LABEL_COLUMN)
         )
         self.markers.ChangeLabel(marker, new_label)
-        brain_targets = [
-            {
-                "position": [10, -5, -15],
-                "orientation": [0, 0, -45],
-                "color": [0, 0, 1],
-                "length": 50 / 100,
-                "mtms": [5, 10, 45, 50],
-            }
-        ]
-        Publisher.sendMessage("Set brain targets", brain_targets=brain_targets)
 
     def ChangeLabelBrainTarget(self, evt):
         list_index = self.brain_targets_list_ctrl.GetFocusedItem()
@@ -3106,10 +3099,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.currently_focused_marker.brain_target_list[list_index]
         if not marker["mep_value"]:
             marker["mep_value"] = "0"
-        marker["mep_value"] = dlg.ShowEnterMEPValue(marker["mep_value"])
+        marker["mep_value"] = dlg.ShowEnterMEPValue(str(marker["mep_value"]))
         self.brain_targets_list_ctrl.SetItem(
             list_index, const.BRAIN_MEP_COLUMN, str(marker["mep_value"])
         )
+        Publisher.sendMessage("Redraw MEP mapping from brain targets")
 
     def _UnsetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
