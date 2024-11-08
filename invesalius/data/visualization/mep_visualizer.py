@@ -84,7 +84,9 @@ class MEPVisualizer:
         # Publisher.subscribe(self.UpdateMEPPoints, "Update marker list")
         # Publisher.subscribe(self.SetBrainSurface, "Set MEP brain surface")
         Publisher.subscribe(self.UpdateMEPPoints, "Redraw MEP mapping")
-        Publisher.subscribe(self.UpdateMEPPointsFromBrainTargets, "Redraw MEP mapping from brain targets")
+        Publisher.subscribe(
+            self.UpdateMEPPointsFromBrainTargets, "Redraw MEP mapping from brain targets"
+        )
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.SetBrainSurface, "Load brain surface actor")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
@@ -386,7 +388,9 @@ class MEPVisualizer:
         point_data.AddArray(mep_array)
 
         for marker in brain_markers:
-            points.InsertNextPoint(marker["position"][0], -marker["position"][1], marker["position"][2])
+            points.InsertNextPoint(
+                marker["position"][0], -marker["position"][1], marker["position"][2]
+            )
             mep_value = marker["mep_value"] or 0
             mep_array.InsertNextValue(mep_value)
         MarkersControl().SaveState()

@@ -2435,7 +2435,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker.y_mtms = target["mtms"][1]
             marker.r_mtms = target["mtms"][2]
             marker.intensity_mtms = target["mtms"][3]
-            #TODO: MEP
+            # TODO: MEP
             marker.mep_value = 0
             marker_target.brain_target_list.append(marker.to_brain_targets_dict())
 
