@@ -177,6 +177,9 @@ class Panel(wx.Panel):
         self.aui_manager.Update()
 
     def MaximizeViewerVolume(self):
+        # Restore volume viewer to make sure it is not already maximized before attempting to maximize it
+        # to fix the issue with panes locking into the maximized state where they cannot be restored
+        self.RestoreViewerVolume()
         self.aui_manager.MaximizePane(
             self.aui_manager.GetAllPanes()[-1]
         )  # Viewer volume is the last pane
