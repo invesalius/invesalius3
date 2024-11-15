@@ -158,18 +158,29 @@ class Panel(wx.Panel):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self.OnRestore)
 
     def __bind_events(self):
-        Publisher.subscribe(self.MaximizeViewerVolume, "Set target mode")
+        Publisher.subscribe(self.OnSetTargetMode, "Set target mode")
+        Publisher.subscribe(self.OnStartNavigation, "Start navigation")
         Publisher.subscribe(self._Exit, "Exit")
 
-    def MaximizeViewerVolume(self, enabled=True):
+    def OnSetTargetMode(self, enabled=True):
         if enabled:
-            self.aui_manager.MaximizePane(
-                self.aui_manager.GetAllPanes()[-1]
-            )  # Viewer volume is the last pane
-            Publisher.sendMessage("Show raycasting widget")
+            self.MaximizeViewerVolume()
         else:
-            self.aui_manager.RestoreMaximizedPane()
-            Publisher.sendMessage("Hide raycasting widget")
+            self.RestoreViewerVolume()
+
+    def OnStartNavigation(self):
+        self.MaximizeViewerVolume()
+
+    def RestoreViewerVolume(self):
+        self.aui_manager.RestoreMaximizedPane()
+        Publisher.sendMessage("Hide raycasting widget")
+        self.aui_manager.Update()
+
+    def MaximizeViewerVolume(self):
+        self.aui_manager.MaximizePane(
+            self.aui_manager.GetAllPanes()[-1]
+        )  # Viewer volume is the last pane
+        Publisher.sendMessage("Show raycasting widget")
         self.aui_manager.Update()
 
     def OnMaximize(self, evt):
