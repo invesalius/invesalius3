@@ -435,7 +435,7 @@ class ImagePage(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
         sizer.Add(
-            self.btns_set_fiducial[0],  # Left Ear
+            self.btns_set_fiducial[1],  # Right Ear
             wx.GBPosition(1, 0),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_VERTICAL,
@@ -447,7 +447,7 @@ class ImagePage(wx.Panel):
             flag=wx.ALIGN_CENTER_HORIZONTAL,
         )
         sizer.Add(
-            self.btns_set_fiducial[1],  # Right Ear
+            self.btns_set_fiducial[0],  # Left Ear
             wx.GBPosition(1, 3),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_VERTICAL,
@@ -669,7 +669,7 @@ class TrackerPage(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
         sizer.Add(
-            self.fiducial_buttons[0],  # Left Ear
+            self.fiducial_buttons[1],  # Right Ear
             wx.GBPosition(1, 0),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_VERTICAL,
@@ -681,7 +681,7 @@ class TrackerPage(wx.Panel):
             flag=wx.ALIGN_CENTER_HORIZONTAL,
         )
         sizer.Add(
-            self.fiducial_buttons[1],  # Right Ear
+            self.fiducial_buttons[0],  # Left Ear
             wx.GBPosition(1, 3),
             span=wx.GBSpan(1, 2),
             flag=wx.ALIGN_CENTER_VERTICAL,
