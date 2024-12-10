@@ -258,5 +258,6 @@ tags
 *.patch
 *.diff
 
+storage
 # MacOS temporary file
 .DS_Store
