@@ -1038,7 +1038,7 @@ class Viewer(wx.Panel):
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
 
-        # Remove the actor for 'distance' text.
+        # Remove the actor for 'robot warnings' text.
         if self.robot_warnings_text is not None:
             self.ren.RemoveActor(self.robot_warnings_text.actor)
 
