@@ -52,6 +52,9 @@ class Panel(wx.Panel):
         # self.__init_four_way_splitter()
         # self.__init_mix()
 
+        # Track if the volume pane is currently maximized
+        self.is_volume_pane_maximized = False
+
     def __init_aui_manager(self):
         self.aui_manager = wx.aui.AuiManager()
         self.aui_manager.SetManagedWindow(self)
@@ -161,6 +164,22 @@ class Panel(wx.Panel):
         Publisher.subscribe(self.OnSetTargetMode, "Set target mode")
         Publisher.subscribe(self.OnStartNavigation, "Start navigation")
         Publisher.subscribe(self._Exit, "Exit")
+        Publisher.subscribe(self.maximize_volume_pane, "maximize_volume_pane")
+        Publisher.subscribe(self.restore_volume_pane, "restore_volume_pane")
+
+    def maximize_volume_pane(self):
+        pane_info = self.aui_manager.GetPane("Volume")
+        if pane_info.IsOk() and not self.is_volume_pane_maximized:
+            self.aui_manager.MaximizePane(pane_info)
+            self.is_volume_pane_maximized = True
+        self.aui_manager.Update()
+
+    def restore_volume_pane(self):
+        pane_info = self.aui_manager.GetPane("Volume")
+        if pane_info.IsOk() and self.is_volume_pane_maximized:
+            self.aui_manager.RestorePane(pane_info)
+            self.is_volume_pane_maximized = False
+        self.aui_manager.Update()
 
     def OnSetTargetMode(self, enabled=True):
         if enabled:

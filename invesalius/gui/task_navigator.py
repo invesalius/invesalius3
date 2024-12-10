@@ -1614,11 +1614,14 @@ class ControlPanel(wx.Panel):
         nav_id = btn_nav.GetValue()
         if not nav_id:
             wx.CallAfter(Publisher.sendMessage, "Stop navigation")
+            # Ensure volume pane is restored when stopping navigation
+            Publisher.sendMessage("restore_volume_pane")
             tooltip = _("Start navigation")
             btn_nav.SetToolTip(tooltip)
             btn_nav.SetLabelText(_("Start navigation"))
         else:
             Publisher.sendMessage("Start navigation")
+            Publisher.sendMessage("maximize_volume_pane")
             if self.nav_status:
                 tooltip = _("Stop navigation")
                 btn_nav.SetToolTip(tooltip)
