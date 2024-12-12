@@ -263,3 +263,6 @@ tags
 .DS_Store
 *.xlsx
 icons/robot_track_target.svg
+/invesalius/bin
+/invesalius
+/pikaur
