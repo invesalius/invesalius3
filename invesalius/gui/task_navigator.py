@@ -1203,6 +1203,12 @@ class NavigationPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.OnUpdateNavigationPanel, "Update navigation panel")
+
+    def OnUpdateNavigationPanel(self):
+        self.sizer.Fit(self)
+        if self.GetParent().IsExpanded():
+            self.GetParent().Fit()
 
     def OnCloseProject(self):
         self.tracker.ResetTrackerFiducials()
@@ -2091,6 +2097,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # at most 1080 pixels (a commonly used height in laptops). Otherwise, the height grows linearly with
         # the screen height.
         marker_list_height = max(120, int(screen_height / 4))
+        self.marker_list_height = marker_list_height
 
         marker_list_ctrl = wx.ListCtrl(
             self, -1, style=wx.LC_REPORT, size=wx.Size(0, marker_list_height)
@@ -2143,7 +2150,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
 
         # Sub List Control
-        brain_targets_list_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        brain_targets_list_ctrl = wx.ListCtrl(
+            self, style=wx.LC_REPORT, size=wx.Size(0, marker_list_height)
+        )
         brain_targets_list_ctrl.InsertColumn(const.BRAIN_ID_COLUMN, "#")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_ID_COLUMN, 26)
 
@@ -2173,7 +2182,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         brain_targets_list_ctrl.InsertColumn(const.BRAIN_UUID, "UUID")
         brain_targets_list_ctrl.SetColumnWidth(const.BRAIN_UUID, 45)
-        # self.brain_targets_list_ctrl.Hide()
+        brain_targets_list_ctrl.Hide()
 
         brain_targets_list_ctrl.Bind(
             wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDownBrainTargets
@@ -2707,6 +2716,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             )
         Publisher.sendMessage("Update brain targets", brain_targets=brain_targets)
 
+    def ResizeListCtrl(self, width):
+        self.brain_targets_list_ctrl.SetMinSize((self.marker_list_ctrl.GetSize()[0], width))
+        self.marker_list_ctrl.SetMinSize((self.marker_list_ctrl.GetSize()[0], width))
+        self.brain_targets_list_ctrl.SetSize((self.marker_list_ctrl.GetSize()[0], width))
+        self.marker_list_ctrl.SetSize((self.marker_list_ctrl.GetSize()[0], width))
+
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -2743,10 +2758,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             Publisher.sendMessage("Set vector field assembly visibility", enabled=True)
             self.populate_sub_list(marker.brain_target_list)
             self.brain_targets_list_ctrl.Show()
+            width = self.marker_list_height / 2
         else:
             Publisher.sendMessage("Set vector field assembly visibility", enabled=False)
             self.brain_targets_list_ctrl.Hide()
-        self.Layout()  # Refresh layout
+            width = self.marker_list_height
+        self.ResizeListCtrl(width)
+        Publisher.sendMessage("Update navigation panel")
         self.Update()
 
     # Called when a marker on the list loses the focus by the user left-clicking on another marker.
