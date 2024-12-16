@@ -1066,7 +1066,7 @@ MEP_COLORMAP_DEFINITIONS = {
         "min": (0.267, 0.004, 0.329),
         "low": (0.192, 0.408, 0.556),
         "mid": (0.137, 0.718, 0.475),
-        "max": 	(0.993, 0.906, 0.144),
+        "max": (0.993, 0.906, 0.144),
     },
     "Grayscale": {  # Grayscale (often used for CT/MRI)
         "min": (0.0, 0.0, 0.0),  # Black
