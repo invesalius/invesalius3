@@ -78,7 +78,9 @@ class MarkerVisualizer:
         Publisher.subscribe(self.UpdateBrainTargets, "Update brain targets")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.UpdateTargetMode, "Set target mode")
-        Publisher.subscribe(self.UpdateVectorFieldAssemblyVisibility, "Set vector field assembly visibility")
+        Publisher.subscribe(
+            self.UpdateVectorFieldAssemblyVisibility, "Set vector field assembly visibility"
+        )
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -97,7 +99,9 @@ class MarkerVisualizer:
         Update the vector field assembly to reflect the current vector field.
         """
         # Create a new vector field assembly.
-        new_vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly(brain_targets)
+        new_vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly(
+            brain_targets
+        )
         # Replace the old vector field assembly with the new one.
         self.actor_factory.ReplaceActor(
             self.renderer, self.vector_field_assembly, new_vector_field_assembly
