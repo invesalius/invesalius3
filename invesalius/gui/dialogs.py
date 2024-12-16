@@ -1207,9 +1207,9 @@ def ShowEnterMarkerID(default: str) -> str:
 def ShowEnterMEPValue(default):
     msg = _("Enter the MEP value (uV)")
     if sys.platform == "darwin":
-        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
+        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=str(default))
     else:
-        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
+        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=str(default))
     dlg.ShowModal()
     result = dlg.GetValue()
     # check if the value is a number
