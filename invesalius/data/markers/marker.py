@@ -64,9 +64,9 @@ class Marker:
     is_target: bool = False
     is_point_of_interest: bool = False
     session_id: int = 1
-    x_cortex: float = 0
-    y_cortex: float = 0
-    z_cortex: float = 0
+    x_cortex: float = dataclasses.field(default=None)
+    y_cortex: float = dataclasses.field(default=None)
+    z_cortex: float = dataclasses.field(default=None)
     alpha_cortex: float = dataclasses.field(default=None)
     beta_cortex: float = dataclasses.field(default=None)
     gamma_cortex: float = dataclasses.field(default=None)
@@ -78,6 +78,7 @@ class Marker:
     # #TODO: add a reference to original coil marker to relate it to MEP
     # in micro Volts (but scale in milli Volts for display)
     mep_value: float = dataclasses.field(default=None)
+    brain_target_list: list = dataclasses.field(default_factory=list)
 
     # x, y, z can be jointly accessed as position
     @property
@@ -209,6 +210,24 @@ class Marker:
         )
         return res
 
+    def to_brain_targets_dict(self):
+        return {
+            "position": self.position,
+            "orientation": self.orientation,
+            "colour": self.colour,
+            "size": self.size,
+            "label": self.label,
+            "is_target": self.is_target,
+            "marker_type": self.marker_type.value,
+            "session_id": self.session_id,
+            "mep_value": self.mep_value,
+            "marker_uuid": self.marker_uuid,
+            "x_mtms": self.x_mtms,
+            "y_mtms": self.y_mtms,
+            "r_mtms": self.r_mtms,
+            "intensity_mtms": self.intensity_mtms,
+        }
+
     def to_dict(self):
         return {
             "position": self.position,
@@ -225,6 +244,8 @@ class Marker:
             "z_rotation": self.z_rotation,
             "z_offset": self.z_offset,
             "mep_value": self.mep_value,
+            "brain_target_list": self.brain_target_list,
+            "marker_uuid": self.marker_uuid,
         }
 
     def from_dict(self, d):
@@ -270,6 +291,8 @@ class Marker:
         z_rotation = d.get("z_rotation", 0.0)
         is_point_of_interest = d.get("is_point_of_interest", False)
         mep_value = d.get("mep_value", None)
+        brain_target_list = d.get("brain_target_list", [])
+        marker_uuid = d.get("marker_uuid", "")
 
         self.size = d["size"]
         self.label = d["label"]
@@ -286,6 +309,8 @@ class Marker:
         self.z_offset = z_offset
         self.z_rotation = z_rotation
         self.mep_value = mep_value
+        self.brain_target_list = brain_target_list
+        self.marker_uuid = marker_uuid
 
         return self
 

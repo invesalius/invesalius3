@@ -802,9 +802,23 @@ TARGET_COLUMN = 4
 Z_OFFSET_COLUMN = 5
 POINT_OF_INTEREST_TARGET_COLUMN = 6
 MEP_COLUMN = 7
-X_COLUMN = 8
-Y_COLUMN = 9
-Z_COLUMN = 10
+UUID = 8
+X_COLUMN = 9
+Y_COLUMN = 10
+Z_COLUMN = 11
+
+# The column order in the brain marker panel
+#
+BRAIN_ID_COLUMN = 0
+BRAIN_SESSION_COLUMN = 1
+BRAIN_MARKER_TYPE_COLUMN = 2
+BRAIN_LABEL_COLUMN = 3
+BRAIN_MEP_COLUMN = 4
+BRAIN_X_MTMS = 5
+BRAIN_Y_MTMS = 6
+BRAIN_R_MTMS = 7
+BRAIN_INTENSITY_MTMS = 8
+BRAIN_UUID = 9
 
 # ------------ Navigation defaults -------------------
 
@@ -1049,10 +1063,10 @@ MEP_COLORMAP_DEFINITIONS = {
         "max": (1.0, 0.0, 0.0),
     },
     "Viridis": {  # Viridis (perceptually uniform)
-        "min": (0.267004, 0.004874, 0.329415),
-        "low": (0.226337, 0.31071, 0.577055),
-        "mid": (0.993248, 0.906157, 0.143936),
-        "max": (0.968627, 0.813008, 0.0),
+        "min": (0.267, 0.004, 0.329),
+        "low": (0.192, 0.408, 0.556),
+        "mid": (0.137, 0.718, 0.475),
+        "max": (0.993, 0.906, 0.144),
     },
     "Grayscale": {  # Grayscale (often used for CT/MRI)
         "min": (0.0, 0.0, 0.0),  # Black

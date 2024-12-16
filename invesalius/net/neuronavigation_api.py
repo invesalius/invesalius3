@@ -334,8 +334,25 @@ class NeuronavigationApi(metaclass=Singleton):
     def open_orientation_dialog(self, target_id):
         wx.CallAfter(Publisher.sendMessage, "Open marker orientation dialog", marker_id=target_id)
 
-    def stimulation_pulse_received(self):
+    def stimulation_pulse_received(self, targets):
         # TODO: If marker should not be created always when receiving a stimulation pulse, add the logic here.
+        brain_targets = []
+        for target in targets:
+            brain_targets.append(
+                {
+                    "position": [target.displacement_y, -target.displacement_x, -15],
+                    "orientation": [0, 0, -target.rotation_angle],
+                    "color": [0, 0, 1],
+                    "length": target.intensity / 100,
+                    "mtms": [
+                        target.displacement_x,
+                        target.displacement_y,
+                        target.rotation_angle,
+                        target.intensity,
+                    ],
+                }
+            )
+        wx.CallAfter(Publisher.sendMessage, "Set brain targets", brain_targets=brain_targets)
         wx.CallAfter(Publisher.sendMessage, "Create marker", marker_type=MarkerType.COIL_POSE)
 
     def set_vector_field(self, vector_field):

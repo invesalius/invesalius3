@@ -84,6 +84,9 @@ class MEPVisualizer:
         # Publisher.subscribe(self.UpdateMEPPoints, "Update marker list")
         # Publisher.subscribe(self.SetBrainSurface, "Set MEP brain surface")
         Publisher.subscribe(self.UpdateMEPPoints, "Redraw MEP mapping")
+        Publisher.subscribe(
+            self.UpdateMEPPointsFromBrainTargets, "Redraw MEP mapping from brain targets"
+        )
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.SetBrainSurface, "Load brain surface actor")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
@@ -131,6 +134,7 @@ class MEPVisualizer:
             self.UpdateVisualization()
             progress_dialog.Update(value=50, msg="Preparing brain surface...")
             self.UpdateMEPPoints()
+            self.UpdateMEPPointsFromBrainTargets()
             progress_dialog.Close()
         else:
             self._config_params["mep_enabled"] = False
@@ -344,6 +348,50 @@ class MEPVisualizer:
 
             points.InsertNextPoint(marker.x_cortex, -marker.y_cortex, marker.z_cortex)
             mep_value = marker.mep_value or 0
+            mep_array.InsertNextValue(mep_value)
+        MarkersControl().SaveState()
+
+        self.points.SetPoints(points)
+        self.points.GetPointData().SetActiveScalars("MEP")
+        self.points.Modified()
+        if self._config_params["mep_enabled"]:
+            self.UpdateVisualization()
+
+    def UpdateMEPPointsFromBrainTargets(self):
+        """
+        Updates or creates the point data with MEP values from a list of markers.
+
+        Args:
+            markers (List[Marker]): The list of marker objects to add/update points for.
+            clear_old (bool, default=False): If True, clears all existing points before updating.
+        """
+        if not self._config_params["mep_enabled"]:
+            return
+        if not self.surface:
+            return
+        brain_markers = []
+        for marker in MarkersControl().list:
+            if marker.brain_target_list:
+                for m in marker.brain_target_list:
+                    brain_markers.append(m)
+
+        if not brain_markers:
+            self.points = vtkPolyData()
+            self.UpdateVisualization()
+            return
+
+        points = vtkPoints()
+
+        point_data = self.points.GetPointData()
+        mep_array = vtkDoubleArray()
+        mep_array.SetName("MEP")
+        point_data.AddArray(mep_array)
+
+        for marker in brain_markers:
+            points.InsertNextPoint(
+                marker["position"][0], -marker["position"][1], marker["position"][2]
+            )
+            mep_value = marker["mep_value"] or 0
             mep_array.InsertNextValue(mep_value)
         MarkersControl().SaveState()
 
