@@ -2239,6 +2239,9 @@ class Viewer(wx.Panel):
                 self.e_field_col1 = enorm_data[3].column1
                 self.e_field_col2 = enorm_data[3].column2
                 self.e_field_col3 = enorm_data[3].column3
+                self.e_field_col1_to_save = enorm_data[3].column1
+                self.e_field_col2_to_save = enorm_data[3].column2
+                self.e_field_col3_to_save = enorm_data[3].column3
                 if len(self.e_field_col1) > 1:
                     self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
                     self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
@@ -2324,11 +2327,9 @@ class Viewer(wx.Panel):
             efield_coords_position = [list(position_world), list(orientation_world)]
         if plot_efield_vectors:
             if self.plot_no_connection:
-                e_field_vectors = [
-                    list(self.e_field_col1),
-                    list(self.e_field_col2),
-                    list(self.e_field_col3),
-                ]
+                e_field_vectors = [[list(self.e_field_col1_to_save)],
+                                   [list(self.e_field_col2_to_save)], 
+                                   [list(self.e_field_col3_to_save)]] 
             else:
                 e_field_vectors = list(self.max_efield_array)
             all_data.append(
