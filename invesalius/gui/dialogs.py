@@ -7490,7 +7490,7 @@ def LoadMarkersFile(filename, load_image_fiducials=False, fiducials_only=False):
     markers = NavigationHub().markers
 
     try:
-        with open(filename, "r") as file:
+        with open(filename) as file:
             magick_line = file.readline()
             assert magick_line.startswith(const.MARKER_FILE_MAGICK_STRING)
             version = int(magick_line.split("_")[-1])
