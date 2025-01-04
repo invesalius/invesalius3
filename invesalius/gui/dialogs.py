@@ -7487,6 +7487,7 @@ def LoadMarkersFile(filename, load_image_fiducials=False, fiducials_only=False):
     """
     from invesalius.data.markers.marker import Marker
     from invesalius.navigation.navigation import NavigationHub
+
     markers = NavigationHub().markers
 
     try:
@@ -7538,6 +7539,7 @@ def ImportMarkers():
     Markers are appended to the end of the current marker list.
     """
     from invesalius.navigation.navigation import NavigationHub
+
     markers = NavigationHub().markers
 
     last_directory = ses.Session().GetConfig("last_directory_3d_surface", "")
@@ -7564,6 +7566,7 @@ def ImportImageFiducials():
     Show dialog to load image fiducials from markers file
     """
     from invesalius.navigation.navigation import NavigationHub
+
     markers = NavigationHub().markers
 
     last_directory = ses.Session().GetConfig("last_directory_3d_surface", "")

@@ -468,19 +468,14 @@ def parse_value(value):
 
 def _parse_list(list_str):
     """Parse a list from string format."""
-    return [
-        parse_value(el.strip())
-        for el in _split_by_outer_commas(list_str[1:-1].strip())
-    ]
+    return [parse_value(el.strip()) for el in _split_by_outer_commas(list_str[1:-1].strip())]
 
 
 def _parse_dict(dict_str):
     """Parse a dictionary from string format."""
     items = _split_by_outer_commas(dict_str[1:-1].strip())
     return {
-        parse_value(kv.split(":", 1)[0].strip()): parse_value(
-            kv.split(":", 1)[1].strip()
-        )
+        parse_value(kv.split(":", 1)[0].strip()): parse_value(kv.split(":", 1)[1].strip())
         for kv in items
     }
 

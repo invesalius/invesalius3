@@ -23,13 +23,13 @@ if TYPE_CHECKING:
 
 import itertools
 
-
 import invesalius.constants as const
 
 
 def calc_width_needed(widget: "wx.Window", num_chars: int) -> int:
     width, height = widget.GetTextExtent("M" * num_chars)
     return width
+
 
 def list_fiducial_labels():
     """Return the list of marker labels denoting fiducials."""
