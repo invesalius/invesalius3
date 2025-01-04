@@ -460,7 +460,7 @@ def parse_value(value):
     except ValueError:
         # Handle quoted strings
         if (value.startswith('"') and value.endswith('"')) or (
-                value.startswith("'") and value.endswith("'")
+            value.startswith("'") and value.endswith("'")
         ):
             return value[1:-1]
         return value  # Return as is if not recognized
