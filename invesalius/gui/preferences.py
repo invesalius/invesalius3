@@ -163,7 +163,11 @@ class VisualizationTab(wx.Panel):
         self.number_colors = 4
         self.cluster_volume = None
 
-        self.conf = dict(self.session.GetConfig("mep_configuration"))
+        self.conf = self.session.GetConfig("mep_configuration")
+        if self.conf is None:
+            self.conf = {}
+        else:
+            self.conf = dict(self.conf)
         self.conf["mep_colormap"] = self.conf.get("mep_colormap", "Viridis")
 
         bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
