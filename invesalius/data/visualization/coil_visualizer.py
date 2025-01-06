@@ -124,7 +124,7 @@ class CoilVisualizer:
             for coil in self.coils.values():
                 coil["actor"].SetVisibility(state)
                 coil["center_actor"].SetVisibility(True)  # Always show the center donut actor
-            
+
             # Update the button state after toggling all coils
             coils_visible = [coil["actor"].GetVisibility() for coil in self.coils.values()]
             if not any(coils_visible):  # all coils are hidden
@@ -143,7 +143,6 @@ class CoilVisualizer:
 
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
-
 
     def AddTargetCoil(self, m_target):
         self.RemoveTargetCoil()
