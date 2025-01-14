@@ -1207,9 +1207,9 @@ def ShowEnterMarkerID(default: str) -> str:
 def ShowEnterMEPValue(default):
     msg = _("Enter the MEP value (uV)")
     if sys.platform == "darwin":
-        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
+        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=str(default))
     else:
-        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
+        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=str(default))
     dlg.ShowModal()
     result = dlg.GetValue()
     # check if the value is a number
@@ -6510,7 +6510,7 @@ class SetRobotIP(wx.Dialog):
     def _init_gui(self) -> None:
         # ComboBox for spatial tracker device selection
         tooltip = _("Choose or type the robot IP")
-        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_ElFIN_IP
+        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_IPS
         choice_IP = wx.ComboBox(
             self, -1, "", choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER
         )
