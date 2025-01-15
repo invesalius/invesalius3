@@ -1978,6 +1978,25 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         }
 
 
+class SelectLargestSurfaceProgressWindow:
+    def __init__(self):
+        title = "InVesalius 3"
+        message = "Creating a new surface form the largest contiguous region..."
+        style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+        parent = wx.GetApp().GetTopWindow()
+        self.dlg = wx.ProgressDialog(title, message, parent=parent, style=style)
+        self.dlg.Show()
+
+    def Update(self, msg: Optional[str] = None, value=None) -> None:
+        if msg is None:
+            self.dlg.Pulse()
+        else:
+            self.dlg.Pulse(msg)
+
+    def Close(self) -> None:
+        self.dlg.Destroy()
+
+
 class SurfaceTransparencyDialog(wx.Dialog):
     def __init__(
         self, parent: Optional[wx.Window], surface_index: int = 0, transparency: int = 0

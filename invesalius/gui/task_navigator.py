@@ -44,6 +44,7 @@ from wx.lib.mixins.listctrl import ColumnSorterMixin
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
+import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.gradient as grad
 import invesalius.project as prj
@@ -404,8 +405,8 @@ class HeadModelPage(wx.Panel):
         main_sizer.Add(label_combo, 0, wx.ALIGN_CENTER | wx.TOP, 10)
 
         # Create mask selection combo box
-        self.combo_box = wx.ComboBox(self, choices=[], style=wx.CB_READONLY)
-        top_sizer.Add(self.combo_box, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 20)
+        self.combo_mask = wx.ComboBox(self, choices=[], style=wx.CB_READONLY)
+        top_sizer.Add(self.combo_mask, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 20)
 
         # Add label above mask threshold bar
         label_thresh = wx.StaticText(self, label="Threshold")
@@ -415,6 +416,12 @@ class HeadModelPage(wx.Panel):
         gradient = grad.GradientCtrl(self, -1, -5000, 5000, 0, 5000, (0, 255, 0, 100))
         self.gradient = gradient
         top_sizer.Add(self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+
+        # Add create surface button
+        create_head_button = wx.Button(self, label="Create 3D head")
+        create_head_button.Bind(wx.EVT_BUTTON, partial(self.OnCreateHead))
+        bottom_sizer.AddStretchSpacer()
+        bottom_sizer.Add(create_head_button, 0, wx.ALIGN_CENTER)
 
         # Add next button
         next_button = wx.Button(self, label="Next")
@@ -447,7 +454,7 @@ class HeadModelPage(wx.Panel):
         Publisher.subscribe(self.AddMask, "Add mask")
 
     def __bind_events_wx(self):
-        self.combo_box.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        self.combo_mask.Bind(wx.EVT_COMBOBOX, self.OnComboName)
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
         self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanging, self.gradient)
 
@@ -457,17 +464,17 @@ class HeadModelPage(wx.Panel):
         Publisher.sendMessage("Show mask", index=mask_index, value=True)
 
     def AddMask(self, mask):
-        self.combo_box.Append(mask.name)
+        self.combo_mask.Append(mask.name)
 
     def SelectMaskName(self, index):
         if index >= 0:
-            self.combo_box.SetSelection(index)
+            self.combo_mask.SetSelection(index)
         else:
-            self.combo_box.SetValue("")
+            self.combo_mask.SetValue("")
 
     def OnRemoveMasks(self, mask_indexes):
         for i in mask_indexes:
-            self.combo_box.Delete(i)
+            self.combo_mask.Delete(i)
 
     def SetThresholdBounds(self, threshold_range):
         thresh_min = threshold_range[0]
@@ -501,6 +508,52 @@ class HeadModelPage(wx.Panel):
 
     def SetItemsColour(self, colour):
         self.gradient.SetColour(colour)
+
+    def OnCreateHead(self, evt):
+        self.OnCreateSurface(evt)
+        self.SelectLargestSurface()
+
+    def OnCreateSurface(self, evt):
+        algorithm = "Default"
+        options = {}
+        to_generate = True
+        if self.combo_mask.GetSelection() != -1:
+            sl = slice_.Slice()
+            if sl.current_mask.was_edited:
+                dlgs = dlg.SurfaceDialog()
+                if dlgs.ShowModal() == wx.ID_OK:
+                    algorithm = dlgs.GetAlgorithmSelected()
+                    options = dlgs.GetOptions()
+                else:
+                    to_generate = False
+                dlgs.Destroy()
+            if to_generate:
+                proj = prj.Project()
+                for idx in proj.mask_dict:
+                    if proj.mask_dict[idx] is sl.current_mask:
+                        mask_index = idx
+                        break
+                else:
+                    return
+                method = {"algorithm": algorithm, "options": options}
+                srf_options = {
+                    "index": mask_index,
+                    "name": "",
+                    "quality": _("Optimal *"),
+                    "fill": False,
+                    "keep_largest": False,
+                    "overwrite": False,
+                }
+                Publisher.sendMessage(
+                    "Create surface from index",
+                    surface_parameters={"method": method, "options": srf_options},
+                )
+                Publisher.sendMessage("Fold surface task")
+        else:
+            dlg.InexistentMask()
+
+    def SelectLargestSurface(self):
+        Publisher.sendMessage("Create surface from largest region")
 
 
 class ImagePage(wx.Panel):
