@@ -45,6 +45,7 @@ from wx.lib.mixins.listctrl import ColumnSorterMixin
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.gui.dialogs as dlg
+import invesalius.gui.widgets.gradient as grad
 import invesalius.project as prj
 import invesalius.session as ses
 from invesalius import inv_paths, utils
@@ -318,6 +319,7 @@ class CoregistrationPanel(wx.Panel):
         self.tracker = nav_hub.tracker
         self.image = nav_hub.image
 
+        book.AddPage(HeadModelPage(book, nav_hub), _("Head"))
         book.AddPage(ImagePage(book, nav_hub), _("Image"))
         book.AddPage(TrackerPage(book, nav_hub), _("Patient"))
         book.AddPage(RefinePage(book, nav_hub), _("Refine"))
@@ -335,6 +337,7 @@ class CoregistrationPanel(wx.Panel):
         self.__bind_events()
 
     def __bind_events(self):
+        Publisher.subscribe(self._FoldHead, "Move to head model page")
         Publisher.subscribe(self._FoldTracker, "Move to tracker page")
         Publisher.subscribe(self._FoldRefine, "Move to refine page")
         Publisher.subscribe(self._FoldStylus, "Move to stylus page")
@@ -350,38 +353,154 @@ class CoregistrationPanel(wx.Panel):
         new_page = evt.GetSelection()
 
         # old page validations
-        if old_page == 0:
+        if old_page <= const.IMAGE_PAGE and new_page > const.IMAGE_PAGE:
             # Do not allow user to move to other (forward) tabs if image fiducials not done.
             if not self.image.AreImageFiducialsSet():
-                self.book.SetSelection(0)
+                self.book.SetSelection(const.IMAGE_PAGE)
                 wx.MessageBox(_("Please do the image registration first."), _("InVesalius 3"))
-        if old_page != 2:
+        if old_page != const.REFINE_PAGE:
             # Load data into refine tab
             Publisher.sendMessage("Update UI for refine tab")
 
         # new page validations
-        if (old_page == 1) and (new_page > 1):
+        if (old_page == const.TRACKER_PAGE) and (new_page > const.TRACKER_PAGE):
             # Do not allow user to move to other (forward) tabs if tracker fiducials not done.
             if self.image.AreImageFiducialsSet() and not self.tracker.AreTrackerFiducialsSet():
-                self.book.SetSelection(1)
+                self.book.SetSelection(const.TRACKER_PAGE)
                 wx.MessageBox(_("Please do the tracker registration first."), _("InVesalius 3"))
 
     # Unfold specific notebook pages
+    def _FoldHead(self):
+        self.book.SetSelection(const.HEAD_PAGE)
+
     def _FoldImage(self):
-        self.book.SetSelection(0)
+        self.book.SetSelection(const.IMAGE_PAGE)
 
     def _FoldTracker(self):
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
-        self.book.SetSelection(1)
+        self.book.SetSelection(const.TRACKER_PAGE)
 
     def _FoldRefine(self):
-        self.book.SetSelection(2)
+        self.book.SetSelection(const.REFINE_PAGE)
 
     def _FoldStylus(self):
-        self.book.SetSelection(3)
+        self.book.SetSelection(const.STYLUS_PAGE)
 
     def _FoldStimulator(self):
-        self.book.SetSelection(4)
+        self.book.SetSelection(const.STIMULATOR_PAGE)
+
+
+class HeadModelPage(wx.Panel):
+    def __init__(self, parent, nav_hub):
+        wx.Panel.__init__(self, parent)
+
+        # Create sizers
+        top_sizer = wx.BoxSizer(wx.VERTICAL)
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Add label above combo box
+        label_combo = wx.StaticText(self, label="Mask selection")
+        main_sizer.Add(label_combo, 0, wx.ALIGN_CENTER | wx.TOP, 10)
+
+        # Create mask selection combo box
+        self.combo_box = wx.ComboBox(self, choices=[], style=wx.CB_READONLY)
+        top_sizer.Add(self.combo_box, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 20)
+
+        # Add label above mask threshold bar
+        label_thresh = wx.StaticText(self, label="Threshold")
+        top_sizer.Add(label_thresh, 0, wx.ALIGN_CENTER | wx.TOP, 10)
+
+        # Create mask threshold gradient bar
+        gradient = grad.GradientCtrl(self, -1, -5000, 5000, 0, 5000, (0, 255, 0, 100))
+        self.gradient = gradient
+        top_sizer.Add(self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+
+        # Add next button
+        next_button = wx.Button(self, label="Next")
+        next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
+
+        bottom_sizer.AddStretchSpacer()
+        bottom_sizer.Add(next_button, 0, wx.ALIGN_CENTER)
+        bottom_sizer.AddStretchSpacer()
+
+        # Main sizer config
+        main_sizer.Add(top_sizer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 10)
+        main_sizer.AddStretchSpacer()
+        main_sizer.Add(bottom_sizer, 0, wx.EXPAND | wx.BOTTOM, 10)
+
+        self.SetSizerAndFit(main_sizer)
+        self.Layout()
+        self.__bind_events()
+        self.__bind_events_wx()
+
+    def OnNext(self, evt):
+        Publisher.sendMessage("Move to image page")
+
+    def __bind_events(self):
+        Publisher.subscribe(self.SetThresholdBounds, "Update threshold limits")
+        Publisher.subscribe(self.SetThresholdValues, "Set threshold values in gradient")
+        Publisher.subscribe(self.SetThresholdValues2, "Set threshold values")
+        Publisher.subscribe(self.SelectMaskName, "Select mask name in combo")
+        Publisher.subscribe(self.SetItemsColour, "Set GUI items colour")
+        Publisher.subscribe(self.OnRemoveMasks, "Remove masks")
+        Publisher.subscribe(self.AddMask, "Add mask")
+
+    def __bind_events_wx(self):
+        self.combo_box.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
+        self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanging, self.gradient)
+
+    def OnComboName(self, evt):
+        mask_index = evt.GetSelection()
+        Publisher.sendMessage("Change mask selected", index=mask_index)
+        Publisher.sendMessage("Show mask", index=mask_index, value=True)
+
+    def AddMask(self, mask):
+        self.combo_box.Append(mask.name)
+
+    def SelectMaskName(self, index):
+        if index >= 0:
+            self.combo_box.SetSelection(index)
+        else:
+            self.combo_box.SetValue("")
+
+    def OnRemoveMasks(self, mask_indexes):
+        for i in mask_indexes:
+            self.combo_box.Delete(i)
+
+    def SetThresholdBounds(self, threshold_range):
+        thresh_min = threshold_range[0]
+        thresh_max = threshold_range[1]
+        self.gradient.SetMinRange(thresh_min)
+        self.gradient.SetMaxRange(thresh_max)
+
+    def SetThresholdValues(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
+        self.gradient.SetMinValue(thresh_min)
+        self.gradient.SetMaxValue(thresh_max)
+
+    def SetThresholdValues2(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
+        self.gradient.SetMinValue(thresh_min)
+        self.gradient.SetMaxValue(thresh_max)
+
+    def OnSlideChanged(self, evt):
+        thresh_min = self.gradient.GetMinValue()
+        thresh_max = self.gradient.GetMaxValue()
+        Publisher.sendMessage("Set threshold values", threshold_range=(thresh_min, thresh_max))
+        session = ses.Session()
+        session.ChangeProject()
+
+    def OnSlideChanging(self, evt):
+        thresh_min = self.gradient.GetMinValue()
+        thresh_max = self.gradient.GetMaxValue()
+        Publisher.sendMessage("Changing threshold values", threshold_range=(thresh_min, thresh_max))
+        session = ses.Session()
+        session.ChangeProject()
+
+    def SetItemsColour(self, colour):
+        self.gradient.SetColour(colour)
 
 
 class ImagePage(wx.Panel):
@@ -428,10 +547,16 @@ class ImagePage(wx.Panel):
         next_button.Disable()
         self.next_button = next_button
 
+        back_button = wx.Button(self, label="Back")
+        back_button.Bind(wx.EVT_BUTTON, partial(self.OnBack))
+        self.back_button = back_button
+
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
         top_sizer.AddMany([(start_button), (reset_button)])
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.Add(back_button)
+        bottom_sizer.AddSpacer(120)
         bottom_sizer.Add(next_button)
 
         sizer = wx.GridBagSizer(5, 5)
@@ -556,6 +681,9 @@ class ImagePage(wx.Panel):
     def OnReset(self, evt, ctrl):
         self.image.ResetImageFiducials()
         self.OnResetImageFiducials()
+
+    def OnBack(self, evt):
+        Publisher.sendMessage("Move to head model page")
 
     def OnResetImageFiducials(self):
         self.next_button.Disable()
