@@ -32,6 +32,7 @@ try:
 except Exception:
     has_mTMS = False
 
+import importlib.util
 import sys
 import uuid
 
@@ -393,6 +394,7 @@ class CoregistrationPanel(wx.Panel):
 
 class HeadModelPage(wx.Panel):
     def __init__(self, parent, nav_hub):
+        self.remove_non_visible_faces = False
         wx.Panel.__init__(self, parent)
 
         # Create sizers
@@ -418,7 +420,7 @@ class HeadModelPage(wx.Panel):
         top_sizer.Add(self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
 
         # Add create surface button
-        create_head_button = wx.Button(self, label="Create 3D head")
+        create_head_button = wx.Button(self, label="Create head surface")
         create_head_button.Bind(wx.EVT_BUTTON, partial(self.OnCreateHead))
         bottom_sizer.AddStretchSpacer()
         bottom_sizer.Add(create_head_button, 0, wx.ALIGN_CENTER)
@@ -450,6 +452,7 @@ class HeadModelPage(wx.Panel):
         Publisher.subscribe(self.SetThresholdValues2, "Set threshold values")
         Publisher.subscribe(self.SelectMaskName, "Select mask name in combo")
         Publisher.subscribe(self.SetItemsColour, "Set GUI items colour")
+        Publisher.subscribe(self.OnPluginsFound, "Add plugins menu items")
         Publisher.subscribe(self.OnRemoveMasks, "Remove masks")
         Publisher.subscribe(self.AddMask, "Add mask")
 
@@ -506,12 +509,19 @@ class HeadModelPage(wx.Panel):
         session = ses.Session()
         session.ChangeProject()
 
+    def OnPluginsFound(self, items):
+        print("OnPluginsFound in task_navigator.py")
+        for item in items:
+            if item == "Remove non-visible faces":
+                self.remove_non_visible_faces = True
+
     def SetItemsColour(self, colour):
         self.gradient.SetColour(colour)
 
     def OnCreateHead(self, evt):
         self.OnCreateSurface(evt)
         self.SelectLargestSurface()
+        self.RemoveNonVisibleFaces()
 
     def OnCreateSurface(self, evt):
         algorithm = "Default"
@@ -554,6 +564,19 @@ class HeadModelPage(wx.Panel):
 
     def SelectLargestSurface(self):
         Publisher.sendMessage("Create surface from largest region")
+
+    def RemoveNonVisibleFaces(self):
+        plugin_name = "Remove non-visible faces"
+
+        # Check that the remove non-visible faces plugin is installed
+        if self.remove_non_visible_faces:
+            # Try to import and run the plugin
+            try:
+                main = importlib.import_module(plugin_name + ".main")
+                main.load()
+            # Make sure the plugin has been loaded
+            except ModuleNotFoundError:
+                Publisher.sendMessage("Load plugin", plugin_name=plugin_name)
 
 
 class ImagePage(wx.Panel):
