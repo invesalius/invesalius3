@@ -88,6 +88,9 @@ class Session(metaclass=Singleton):
             "logging_file": "",
             "console_logging": 0,
             "console_logging_level": 0,
+            "robot":{
+                "robot_ip_options": const.ROBOT_IPS,
+            },
         }
         self.WriteConfigFile()
 

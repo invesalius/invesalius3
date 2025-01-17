@@ -49,6 +49,7 @@ class Robot(metaclass=Singleton):
 
         self.is_robot_connected = False
         self.robot_ip = None
+        self.robot_ip_options = []
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
         self.target = None
@@ -88,6 +89,7 @@ class Robot(metaclass=Singleton):
             # Save the whole state
             state = {
                 "robot_ip": self.robot_ip,
+                "robot_ip_options": self.robot_ip_options,
                 "tracker_to_robot": self.matrix_tracker_to_robot.tolist(),
             }
             if self.coil_name is not None:
@@ -105,6 +107,7 @@ class Robot(metaclass=Singleton):
         self.coil_name = state.get("robot_coil", None)
 
         self.robot_ip = state.get("robot_ip", None)
+        self.robot_ip_options = state.get("robot_ip_options", [])
 
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
         if self.matrix_tracker_to_robot is not None:
