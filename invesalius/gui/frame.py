@@ -173,6 +173,7 @@ class Frame(wx.Frame):
 
         # Close InVesalius main window, hence exit the software.
         self.Bind(wx.EVT_CLOSE, self.OnExit)
+        self.Bind(wx.EVT_ICONIZE, self.OnIconize)
 
         # Bind global key events.
         self.Bind(wx.EVT_CHAR_HOOK, self.OnGlobalKey)
@@ -540,6 +541,17 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Exit")
             if status == 1:
                 Publisher.sendMessage("Exit session")
+
+    def OnIconize(self, evt):
+        print("Window minimized")
+        if self.IsIconized():
+            self.CloseAllMenus()
+        evt.Skip()
+
+    def CloseAllMenus(self):
+        simulator = wx.UIActionSimulator()
+        simulator.MouseMove(0, 0)
+        simulator.MouseClick()
 
     def OnMenuClick(self, evt):
         """
