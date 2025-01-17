@@ -32,7 +32,6 @@ try:
 except Exception:
     has_mTMS = False
 
-import importlib.util
 import sys
 import uuid
 
@@ -421,7 +420,7 @@ class HeadModelPage(wx.Panel):
 
         # Add create surface button
         create_head_button = wx.Button(self, label="Create head surface")
-        create_head_button.Bind(wx.EVT_BUTTON, partial(self.OnCreateHead))
+        create_head_button.Bind(wx.EVT_BUTTON, partial(self.OnCreateHeadSurface))
         bottom_sizer.AddStretchSpacer()
         bottom_sizer.Add(create_head_button, 0, wx.ALIGN_CENTER)
 
@@ -510,15 +509,17 @@ class HeadModelPage(wx.Panel):
         session.ChangeProject()
 
     def OnPluginsFound(self, items):
-        print("OnPluginsFound in task_navigator.py")
         for item in items:
             if item == "Remove non-visible faces":
                 self.remove_non_visible_faces = True
+                break
 
     def SetItemsColour(self, colour):
         self.gradient.SetColour(colour)
 
-    def OnCreateHead(self, evt):
+    # Creates the head surface from a mask, selects the largest contiguous region,
+    # and removes non-visible faces if the plugin is installed
+    def OnCreateHeadSurface(self, evt):
         self.OnCreateSurface(evt)
         self.SelectLargestSurface()
         self.RemoveNonVisibleFaces()
@@ -566,17 +567,8 @@ class HeadModelPage(wx.Panel):
         Publisher.sendMessage("Create surface from largest region")
 
     def RemoveNonVisibleFaces(self):
-        plugin_name = "Remove non-visible faces"
-
-        # Check that the remove non-visible faces plugin is installed
         if self.remove_non_visible_faces:
-            # Try to import and run the plugin
-            try:
-                main = importlib.import_module(plugin_name + ".main")
-                main.load()
-            # Make sure the plugin has been loaded
-            except ModuleNotFoundError:
-                Publisher.sendMessage("Load plugin", plugin_name=plugin_name)
+            Publisher.sendMessage("Remove non-visible faces")
 
 
 class ImagePage(wx.Panel):
