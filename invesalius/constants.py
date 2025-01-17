@@ -822,7 +822,7 @@ BRAIN_UUID = 9
 
 # Page order in the coregistration panel
 
-HEAD_PAGE = 0
+SURFACE_PAGE = 0
 IMAGE_PAGE = 1
 TRACKER_PAGE = 2
 REFINE_PAGE = 3

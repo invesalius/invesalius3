@@ -320,7 +320,7 @@ class CoregistrationPanel(wx.Panel):
         self.tracker = nav_hub.tracker
         self.image = nav_hub.image
 
-        book.AddPage(HeadModelPage(book, nav_hub), _("Head"))
+        book.AddPage(SurfacePage(book, nav_hub), _("Surface"))
         book.AddPage(ImagePage(book, nav_hub), _("Image"))
         book.AddPage(TrackerPage(book, nav_hub), _("Patient"))
         book.AddPage(RefinePage(book, nav_hub), _("Refine"))
@@ -372,7 +372,7 @@ class CoregistrationPanel(wx.Panel):
 
     # Unfold specific notebook pages
     def _FoldHead(self):
-        self.book.SetSelection(const.HEAD_PAGE)
+        self.book.SetSelection(const.SURFACE_PAGE)
 
     def _FoldImage(self):
         self.book.SetSelection(const.IMAGE_PAGE)
@@ -391,7 +391,7 @@ class CoregistrationPanel(wx.Panel):
         self.book.SetSelection(const.STIMULATOR_PAGE)
 
 
-class HeadModelPage(wx.Panel):
+class SurfacePage(wx.Panel):
     def __init__(self, parent, nav_hub):
         self.remove_non_visible_faces = False
         wx.Panel.__init__(self, parent)
