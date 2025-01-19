@@ -501,6 +501,10 @@ def Compress(
     else:
         tar = tarfile.open(temp_inv3, "w")
     for name in filelist:
+        sanit_name = os.path.normpath(filelist[name])  # Sanitizing path
+        if ".." in sanit_name or os.path.isabs(sanit_name):
+            continue
+
         tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
     tar.close()
     os.close(fd_inv3)
@@ -519,11 +523,17 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
     filelist = []
     tar_filter = getattr(tarfile, "tar_filter", None)  # For python < 3.12
     for t in tar.getmembers():
+        fname = os.path.join(folder, decode(t.name, "utf-8"))
+        fname = os.path.normpath(fname)
+        if not os.path.commonprefix(
+            [os.path.abspath(folder), os.path.abspath(fname)]
+        ) == os.path.abspath(folder):
+            raise Exception(f"Directory traversal detected: {t.name}")
+
         try:
             tar.extract(t, path=folder, filter=tar_filter)
         except TypeError:
             tar.extract(t, path=folder)
-        fname = os.path.join(folder, decode(t.name, "utf-8"))
         filelist.append(fname)
     tar.close()
     return filelist
@@ -533,8 +543,17 @@ def Extract_(
     filename: Union[str, bytes, os.PathLike], folder: Union[str, os.PathLike]
 ) -> List[str]:
     tar = tarfile.open(filename, "r:gz")
+    filelist = []
+
+    for member in tar.getmembers():
+        member_name = os.path.basename(member.name)  # Strip directory path
+        fname = os.path.join(folder, member_name)
+
+        if os.path.commonpath([folder, fname]) == folder:
+            tar.extract(member, path=folder)
+            filelist.append(fname)
+        else:
+            print(f"Skipping potential unsafe file: {member.name}")
     # tar.list(verbose=True)
-    tar.extractall(folder)
-    filelist = [os.path.join(folder, i) for i in tar.getnames()]
     tar.close()
     return filelist
