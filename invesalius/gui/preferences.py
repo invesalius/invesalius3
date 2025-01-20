@@ -1586,14 +1586,20 @@ class TrackerTab(wx.Panel):
         )
         choice_IP.SetToolTip(tooltip)
 
-        if self.robot.robot_ip is not None:
+        if self.robot.robot_ip is not None and len(self.robot.robot_ip_options) != 0:
             choice_IP.SetSelection(robot_ip_options.index(self.robot.robot_ip))
+            self.robot_ip = choice_IP.GetValue()
 
-        if choice_IP.IsListEmpty:
-            choice_IP.SetSelection(0)
+        elif self.robot.robot_ip is not None:
+            choice_IP.SetValue(self.robot.robot_ip)
+            self.robot_ip = choice_IP.GetValue()
 
-        if choice_IP.IsTextEmpty() and choice_IP.IsListEmpty():
+        elif choice_IP.IsTextEmpty() and choice_IP.IsListEmpty():
             choice_IP.ChangeValue(_("Select or type robot IP"))
+
+        elif choice_IP.IsTextEmpty():
+            choice_IP.SetSelection(0)
+            self.robot_ip = choice_IP.GetValue()
 
         choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
         choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
@@ -1621,14 +1627,7 @@ class TrackerTab(wx.Panel):
         self.btn_rob = btn_rob
 
         status_text = wx.StaticText(self, -1, "Status")
-        if self.robot.IsConnected():
-            status_text.SetForegroundColour(wx.Colour(0, 128, 0))
-            status_text.SetLabelText("Robot is connected!")
-            if self.robot.matrix_tracker_to_robot is not None:
-                status_text.SetLabelText("Robot is fully setup!")
-        else:
-            status_text.SetForegroundColour(wx.Colour(255, 0, 0))
-            status_text.SetLabelText(_("Robot is not connected!"))
+        status_text.SetLabelText(_("Robot is not connected!"))
         self.status_text = status_text
 
         btn_rob_con = wx.Button(self, -1, _("Register"))
@@ -1808,20 +1807,16 @@ class TrackerTab(wx.Panel):
                 pass
 
     def OnRobotConnect(self, evt):
-        if self.robot_ip is not None:
-            if self.verifyFormatIP(self.robot_ip):
-                self.status_text.SetLabelText(_("Trying to connect to robot..."))
-                self.btn_rob_con.Hide()
-                self.robot.SetRobotIP(self.robot_ip)
-                Publisher.sendMessage(
-                    "Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip
-                )
-
-                if not self.robot.IsConnected():
-                    self.status_text.SetLabelText(_("It wasn't possible to connect with robot..."))
+        if self.robot_ip is not None and self.verifyFormatIP(self.robot_ip):
+            self.status_text.SetLabelText(_("Trying to connect to robot..."))
+            self.btn_rob_con.Hide()
+            self.robot.SetRobotIP(self.robot_ip)
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip
+            )
 
         else:
-            self.status_text.SetLabelText(_("Select or typing IP before to connect!"))
+            self.status_text.SetLabelText(_("Please select or enter valid IP before connecting!"))
 
     def OnRobotRegister(self, evt):
         if sys.platform == "darwin":
