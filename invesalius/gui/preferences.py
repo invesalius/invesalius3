@@ -1654,10 +1654,11 @@ class TrackerTab(wx.Panel):
             (btn_rob, 0, wx.ALIGN_CENTER_VERTICAL),
         ])
 
-        rob_status_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=3, vgap=3)
+        rob_status_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=3, vgap=3)
         rob_status_sizer.AddMany([
-            (status_text, 1, wx.EXPAND),
-            (btn_rob_con, 0, wx.ALIGN_CENTER_VERTICAL),
+            (status_text, 1, wx.LEFT | wx.ALIGN_CENTER_VERTICAL),
+            (0,0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL),
+            (btn_rob_con, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL),
         ])
 
         rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
@@ -1833,6 +1834,7 @@ class TrackerTab(wx.Panel):
         if data:
             self.status_text.SetLabelText("Setup robot transformation matrix:")
             self.btn_rob_con.Show()
+            self.Layout()
 
     def OnSetRobotTransformationMatrix(self, data):
         if self.robot.matrix_tracker_to_robot is not None:
