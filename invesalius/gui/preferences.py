@@ -165,7 +165,7 @@ class VisualizationTab(wx.Panel):
 
         self.conf = self.session.GetConfig("mep_configuration")
         try:
-            self.conf = dict(self.session.GetConfig("mep_configuration"))
+            self.conf = dict(self.conf)
         except TypeError:
             self.conf = {}
         self.conf["mep_colormap"] = self.conf.get("mep_colormap", "Viridis")
