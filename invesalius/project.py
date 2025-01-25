@@ -517,23 +517,24 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
         folder = win32api.GetShortPathName(folder)
     folder = decode(folder, const.FS_ENCODE)
 
+    def custom_tar_filter(file: tarfile.TarInfo, path: Union[str, os.PathLike]):
+        file.name = os.path.normpath(file.name).lstrip(os.sep)
+        file_path = os.path.abspath(os.path.join(path, file.name))
+        if not file_path.startswith(os.path.abspath(path)):
+            raise SecurityError(f"Blocked potential directory traversal attack: {file.name}")
+        return file
+
     tar = tarfile.open(filename, "r")
     idir = decode(os.path.split(tar.getnames()[0])[0], "utf8")
     os.mkdir(os.path.join(folder, idir))
     filelist = []
-    tar_filter = getattr(tarfile, "tar_filter", None)  # For python < 3.12
+    tar_filter = getattr(tarfile, "tar_filter", custom_tar_filter)
     for t in tar.getmembers():
-        fname = os.path.join(folder, decode(t.name, "utf-8"))
-        fname = os.path.normpath(fname)
-        if not os.path.commonprefix(
-            [os.path.abspath(folder), os.path.abspath(fname)]
-        ) == os.path.abspath(folder):
-            raise Exception(f"Directory traversal detected: {t.name}")
-
         try:
             tar.extract(t, path=folder, filter=tar_filter)
         except TypeError:
             tar.extract(t, path=folder)
+        fname = os.path.join(folder, decode(t.name, "utf-8"))
         filelist.append(fname)
     tar.close()
     return filelist
