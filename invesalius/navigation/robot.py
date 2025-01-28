@@ -120,11 +120,14 @@ class Robot(metaclass=Singleton):
         # TODO: Is this check necessary?
         if not data:
             return
+        if data == "Connected":
+            self.is_robot_connected = True
 
-        self.is_robot_connected = data
         if self.is_robot_connected:
             Publisher.sendMessage("Enable move away button", enabled=True)
             Publisher.sendMessage("Enable free drive button", enabled=True)
+        else:
+            self.is_robot_connected = False
 
     def RegisterRobot(self):
         Publisher.sendMessage("End busy cursor")
