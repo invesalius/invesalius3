@@ -31,6 +31,7 @@ from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
 from invesalius import inv_paths
+from invesalius.gui.dialogs import ErrorMessageBox
 
 # from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
@@ -512,30 +513,42 @@ def Compress(
     # os.chdir(current_dir)
 
 
+def custom_tar_filter(file: tarfile.TarInfo, path: Union[str, os.PathLike]):
+    file.name = os.path.normpath(file.name).lstrip(os.sep)
+    file_path = os.path.abspath(os.path.join(path, file.name))
+    if not file_path.startswith(os.path.abspath(path)):
+        dlg = ErrorMessageBox(
+            None,
+            "Security Alert",
+            f"Potential directory traversal detected: {file.name}. Skipping file extraction.",
+        )
+        dlg.ShowModal()
+        dlg.Destroy()
+        return None
+    return file
+
+
 def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, os.PathLike]):
     if _has_win32api:
         folder = win32api.GetShortPathName(folder)
     folder = decode(folder, const.FS_ENCODE)
-
-    def custom_tar_filter(file: tarfile.TarInfo, path: Union[str, os.PathLike]):
-        file.name = os.path.normpath(file.name).lstrip(os.sep)
-        file_path = os.path.abspath(os.path.join(path, file.name))
-        if not file_path.startswith(os.path.abspath(path)):
-            raise SecurityError(f"Blocked potential directory traversal attack: {file.name}")
-        return file
-
     tar = tarfile.open(filename, "r")
     idir = decode(os.path.split(tar.getnames()[0])[0], "utf8")
-    os.mkdir(os.path.join(folder, idir))
+    os.makedirs(os.path.join(folder, idir), exist_ok=True)
     filelist = []
-    tar_filter = getattr(tarfile, "tar_filter", custom_tar_filter)
+    tar_filter = getattr(tarfile, "tar_filter", None)
     for t in tar.getmembers():
         try:
             tar.extract(t, path=folder, filter=tar_filter)
-        except TypeError:
-            tar.extract(t, path=folder)
-        fname = os.path.join(folder, decode(t.name, "utf-8"))
-        filelist.append(fname)
+            fname = os.path.join(folder, decode(t.name, "utf-8"))
+            filelist.append(fname)
+        except (TypeError, AttributeError, tarfile.OutsideDestinationError):
+            filtered = custom_tar_filter(t, folder)
+            if filtered is not None:
+                tar.extract(filtered, path=folder)
+                fname = os.path.join(folder, decode(filtered.name, "utf-8"))
+                filelist.append(fname)
+
     tar.close()
     return filelist
 
