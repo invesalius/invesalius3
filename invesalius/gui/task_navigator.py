@@ -393,12 +393,11 @@ class CoregistrationPanel(wx.Panel):
 
 class SurfacePage(wx.Panel):
     def __init__(self, parent, nav_hub):
-        self.remove_non_visible_faces = False
         wx.Panel.__init__(self, parent)
 
         # Create sizers
         top_sizer = wx.BoxSizer(wx.VERTICAL)
-        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Add label above combo box
@@ -418,19 +417,30 @@ class SurfacePage(wx.Panel):
         self.gradient = gradient
         top_sizer.Add(self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
 
+        # Checkbox for selecting the largest surface
+        self.select_largest_surface_checkbox = wx.CheckBox(self, label="Select largest surface")
+        top_sizer.AddStretchSpacer(2)
+        top_sizer.Add(self.select_largest_surface_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
+        top_sizer.AddSpacer(5)
+        self.select_largest_surface_checkbox.SetValue(True)
+
+        # Checkbox for removing non-visible faces
+        self.remove_non_visible_checkbox = wx.CheckBox(self, label="Remove non-visible faces")
+        top_sizer.Add(self.remove_non_visible_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
+
+        # Disable the checkbox by default and enable it only if the plugin is found
+        self.remove_non_visible_checkbox.Disable()
+
         # Add create surface button
         create_head_button = wx.Button(self, label="Create head surface")
         create_head_button.Bind(wx.EVT_BUTTON, partial(self.OnCreateHeadSurface))
-        bottom_sizer.AddStretchSpacer()
-        bottom_sizer.Add(create_head_button, 0, wx.ALIGN_CENTER)
+        top_sizer.AddStretchSpacer()
+        top_sizer.Add(create_head_button, 0, wx.ALIGN_CENTER)
 
         # Add next button
         next_button = wx.Button(self, label="Next")
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
-
-        bottom_sizer.AddStretchSpacer()
-        bottom_sizer.Add(next_button, 0, wx.ALIGN_CENTER)
-        bottom_sizer.AddStretchSpacer()
+        bottom_sizer.Add(next_button, 0, wx.ALIGN_RIGHT | wx.RIGHT, 10)
 
         # Main sizer config
         main_sizer.Add(top_sizer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 10)
@@ -511,7 +521,8 @@ class SurfacePage(wx.Panel):
     def OnPluginsFound(self, items):
         for item in items:
             if item == "Remove non-visible faces":
-                self.remove_non_visible_faces = True
+                self.remove_non_visible_checkbox.Enable()
+                self.remove_non_visible_checkbox.SetValue(True)
                 break
 
     def SetItemsColour(self, colour):
@@ -564,10 +575,11 @@ class SurfacePage(wx.Panel):
             dlg.InexistentMask()
 
     def SelectLargestSurface(self):
-        Publisher.sendMessage("Create surface from largest region")
+        if self.select_largest_surface_checkbox.IsChecked():
+            Publisher.sendMessage("Create surface from largest region")
 
     def RemoveNonVisibleFaces(self):
-        if self.remove_non_visible_faces:
+        if self.remove_non_visible_checkbox.IsChecked():
             Publisher.sendMessage("Remove non-visible faces")
 
 
