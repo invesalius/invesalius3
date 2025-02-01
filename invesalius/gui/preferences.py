@@ -1765,6 +1765,7 @@ class TrackerTab(wx.Panel):
             return True
         else:
             self.status_text.SetLabelText(_("Robot is not connected and invalid IP!"))
+            return False
 
     def OnTxt_Ent(self, evt, ctrl):
 
@@ -1783,9 +1784,9 @@ class TrackerTab(wx.Panel):
         else:
 
             self.btn_rob_con.Hide()
+            self.robot_ip = robot_ip_input
 
-            if self.verifyFormatIP(robot_ip_input):
-                self.robot_ip = robot_ip_input
+            if self.verifyFormatIP(self.robot_ip):
                 self.status_text.SetLabelText(_("Robot is not connected!"))
 
     def OnChoiceIP(self, evt, ctrl):
@@ -1795,29 +1796,50 @@ class TrackerTab(wx.Panel):
         if self.robot_ip is not None:
             new_ip = self.choice_IP.GetValue()
 
-            if new_ip is not None:
-                self.choice_IP.Append(new_ip)
+            if new_ip is not None and self.verifyFormatIP(new_ip):
+                if new_ip not in self.robot.robot_ip_options:
 
-                self.robot.robot_ip_options.append(new_ip)
+                    self.choice_IP.Append(new_ip)
 
-                self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+                    self.robot.robot_ip_options.append(new_ip)
+
+                    self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+                else:
+
+                    self.choice_IP.SetSelection(self.robot.robot_ip_options.index(new_ip))
+            else:
+                self.status_text.SetLabelText(_("Please select or enter valid IP!"))
 
     def OnRemoveIP(self, evt):
-
         if self.robot_ip is not None:
             current_ip = self.choice_IP.GetValue()
 
-            try:
-                index = self.choice_IP.FindString(current_ip)
-                self.choice_IP.Delete(index)
+            confirm_dlg = wx.MessageDialog(
+                self,
+                _(f"Do you really want to remove the IP '{current_ip}' from the list?"),
+                _("Confirmation"),
+                wx.YES_NO | wx.ICON_QUESTION
+            )
 
-                self.robot.robot_ip_options.remove(current_ip)
+            if confirm_dlg.ShowModal() == wx.ID_YES:
+                try:
 
-                self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+                    index = self.choice_IP.FindString(current_ip)
+                    self.choice_IP.Delete(index)
 
-                self.choice_IP.SetSelection(0)
-            except:
-                pass
+                    self.robot.robot_ip_options.remove(current_ip)
+                    self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+
+                    if self.choice_IP.GetCount() > 0:
+                        self.choice_IP.SetSelection(0)
+                    else:
+                        self.choice_IP.SetValue("")
+
+                except Exception as e:
+
+                    wx.MessageBox(_(f"An error occurred while removing the IP:\n{e}"), "Erro", wx.OK | wx.ICON_ERROR)
+
+            confirm_dlg.Destroy()
 
     def OnRobotConnect(self, evt):
         if self.robot_ip is not None and self.verifyFormatIP(self.robot_ip):
