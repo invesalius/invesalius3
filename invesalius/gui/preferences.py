@@ -1,7 +1,7 @@
 import os
+import re
 import sys
 from functools import partial
-import re
 
 import numpy as np
 import wx
@@ -23,6 +23,7 @@ from invesalius.navigation.tracker import Tracker
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
+
 
 class Preferences(wx.Dialog):
     def __init__(
@@ -1491,7 +1492,6 @@ class ObjectTab(wx.Panel):
 
 class TrackerTab(wx.Panel):
     def __init__(self, parent, tracker, robot):
-
         wx.Panel.__init__(self, parent)
 
         self.__bind_events()
@@ -1635,7 +1635,6 @@ class TrackerTab(wx.Panel):
         btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotRegister)
 
         if self.robot.IsConnected():
-
             self.status_text.SetLabelText(_("Robot is connected!"))
 
             if self.matrix_tracker_to_robot is None:
@@ -1652,13 +1651,15 @@ class TrackerTab(wx.Panel):
 
         rob_ip_sizer = wx.FlexGridSizer(rows=1, cols=5, hgap=3, vgap=3)
         rob_ip_sizer.AddGrowableCol(3, 1)
-        rob_ip_sizer.AddMany([
-            (lbl_rob, 0, wx.ALIGN_CENTER_VERTICAL),
-            (btn_rob_add_ip, 0, wx.ALIGN_CENTER_VERTICAL),
-            (btn_rob_rem_ip, 0, wx.ALIGN_CENTER_VERTICAL),
-            (choice_IP, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND),
-            (btn_rob, 0, wx.ALIGN_CENTER_VERTICAL),
-        ])
+        rob_ip_sizer.AddMany(
+            [
+                (lbl_rob, 0, wx.ALIGN_CENTER_VERTICAL),
+                (btn_rob_add_ip, 0, wx.ALIGN_CENTER_VERTICAL),
+                (btn_rob_rem_ip, 0, wx.ALIGN_CENTER_VERTICAL),
+                (choice_IP, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND),
+                (btn_rob, 0, wx.ALIGN_CENTER_VERTICAL),
+            ]
+        )
 
         rob_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
         rob_status_sizer.Add(status_text, 1, wx.LEFT | wx.ALIGN_CENTER_VERTICAL)
@@ -1677,7 +1678,6 @@ class TrackerTab(wx.Panel):
         self.Layout()
 
         Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
-
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
@@ -1751,7 +1751,6 @@ class TrackerTab(wx.Panel):
         self.GetGrandParent().Show()
 
     def verifyFormatIP(self, robot_ip):
-
         robot_ip_strip = robot_ip.strip()
 
         full_ip_pattern = re.compile(
@@ -1768,21 +1767,18 @@ class TrackerTab(wx.Panel):
             return False
 
     def OnTxt_Ent(self, evt, ctrl):
-
         robot_ip_input = ctrl.GetValue()
 
-        robot_ip_input = re.sub(r'[^0-9.]', '', robot_ip_input)
+        robot_ip_input = re.sub(r"[^0-9.]", "", robot_ip_input)
 
         ctrl.ChangeValue(robot_ip_input)
 
         msg_box = _("Select or type robot IP:")
 
         if robot_ip_input == "":
-
             ctrl.ChangeValue(msg_box)
 
         else:
-
             self.btn_rob_con.Hide()
             self.robot_ip = robot_ip_input
 
@@ -1798,14 +1794,12 @@ class TrackerTab(wx.Panel):
 
             if new_ip is not None and self.verifyFormatIP(new_ip):
                 if new_ip not in self.robot.robot_ip_options:
-
                     self.choice_IP.Append(new_ip)
 
                     self.robot.robot_ip_options.append(new_ip)
 
                     self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
                 else:
-
                     self.choice_IP.SetSelection(self.robot.robot_ip_options.index(new_ip))
             else:
                 self.status_text.SetLabelText(_("Please select or enter valid IP!"))
@@ -1818,12 +1812,11 @@ class TrackerTab(wx.Panel):
                 self,
                 _(f"Do you really want to remove the IP '{current_ip}' from the list?"),
                 _("Confirmation"),
-                wx.YES_NO | wx.ICON_QUESTION
+                wx.YES_NO | wx.ICON_QUESTION,
             )
 
             if confirm_dlg.ShowModal() == wx.ID_YES:
                 try:
-
                     index = self.choice_IP.FindString(current_ip)
                     self.choice_IP.Delete(index)
 
@@ -1836,8 +1829,11 @@ class TrackerTab(wx.Panel):
                         self.choice_IP.SetValue("")
 
                 except Exception as e:
-
-                    wx.MessageBox(_(f"An error occurred while removing the IP:\n{e}"), "Erro", wx.OK | wx.ICON_ERROR)
+                    wx.MessageBox(
+                        _(f"An error occurred while removing the IP:\n{e}"),
+                        "Erro",
+                        wx.OK | wx.ICON_ERROR,
+                    )
 
             confirm_dlg.Destroy()
 
@@ -1873,8 +1869,10 @@ class TrackerTab(wx.Panel):
             self.btn_rob_con.Show()
             self.Layout()
 
-            if self.robot.robot_ip not in self.robot.robot_ip_options and self.robot.robot_ip is not None:
-
+            if (
+                self.robot.robot_ip not in self.robot.robot_ip_options
+                and self.robot.robot_ip is not None
+            ):
                 self.robot.robot_ip_options.append(self.robot.robot_ip)
         else:
             if self.robot.robot_ip is not None:
