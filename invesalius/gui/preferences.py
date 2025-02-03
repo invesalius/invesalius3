@@ -1752,7 +1752,6 @@ class TrackerTab(wx.Panel):
 
     def verifyFormatIP(self, robot_ip):
         robot_ip_strip = robot_ip.strip()
-
         full_ip_pattern = re.compile(
             r"^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
             r"\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
@@ -1768,20 +1767,16 @@ class TrackerTab(wx.Panel):
 
     def OnTxt_Ent(self, evt, ctrl):
         robot_ip_input = ctrl.GetValue()
-
         robot_ip_input = re.sub(r"[^0-9.]", "", robot_ip_input)
-
         ctrl.ChangeValue(robot_ip_input)
 
         msg_box = _("Select or type robot IP:")
 
         if robot_ip_input == "":
             ctrl.ChangeValue(msg_box)
-
         else:
             self.btn_rob_con.Hide()
             self.robot_ip = robot_ip_input
-
             if self.verifyFormatIP(self.robot_ip):
                 self.status_text.SetLabelText(_("Robot is not connected!"))
 
@@ -1795,9 +1790,7 @@ class TrackerTab(wx.Panel):
             if new_ip is not None and self.verifyFormatIP(new_ip):
                 if new_ip not in self.robot.robot_ip_options:
                     self.choice_IP.Append(new_ip)
-
                     self.robot.robot_ip_options.append(new_ip)
-
                     self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
                 else:
                     self.choice_IP.SetSelection(self.robot.robot_ip_options.index(new_ip))
@@ -1846,7 +1839,6 @@ class TrackerTab(wx.Panel):
             Publisher.sendMessage(
                 "Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip
             )
-
         else:
             self.status_text.SetLabelText(_("Please select or enter valid IP before connecting!"))
 
@@ -1864,7 +1856,6 @@ class TrackerTab(wx.Panel):
     def OnRobotStatus(self, data):
         if data == "Connected":
             self.robot.is_robot_connected = True
-
             self.status_text.SetLabelText(_("Setup robot transformation matrix:"))
             self.btn_rob_con.Show()
             self.Layout()
