@@ -51,6 +51,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 from invesalius import inv_paths, utils
 from invesalius.data.markers.marker import Marker, MarkerType
+from invesalius.gui import deep_learning_seg_dialog
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
 from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import NavigationHub
@@ -320,7 +321,7 @@ class CoregistrationPanel(wx.Panel):
         self.tracker = nav_hub.tracker
         self.image = nav_hub.image
 
-        book.AddPage(SurfacePage(book, nav_hub), _("Surface"))
+        book.AddPage(HeadPage(book, nav_hub), _("Head"))
         book.AddPage(ImagePage(book, nav_hub), _("Image"))
         book.AddPage(TrackerPage(book, nav_hub), _("Patient"))
         book.AddPage(RefinePage(book, nav_hub), _("Refine"))
@@ -372,7 +373,7 @@ class CoregistrationPanel(wx.Panel):
 
     # Unfold specific notebook pages
     def _FoldHead(self):
-        self.book.SetSelection(const.SURFACE_PAGE)
+        self.book.SetSelection(const.HEAD_PAGE)
 
     def _FoldImage(self):
         self.book.SetSelection(const.IMAGE_PAGE)
@@ -391,7 +392,7 @@ class CoregistrationPanel(wx.Panel):
         self.book.SetSelection(const.STIMULATOR_PAGE)
 
 
-class SurfacePage(wx.Panel):
+class HeadPage(wx.Panel):
     def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
 
@@ -427,9 +428,14 @@ class SurfacePage(wx.Panel):
         # Checkbox for removing non-visible faces
         self.remove_non_visible_checkbox = wx.CheckBox(self, label="Remove non-visible faces")
         top_sizer.Add(self.remove_non_visible_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
+        top_sizer.AddSpacer(5)
 
         # Disable the checkbox by default and enable it only if the plugin is found
         self.remove_non_visible_checkbox.Disable()
+
+        # Checkbox for brain segmentation
+        self.brain_segmentation_checkbox = wx.CheckBox(self, label="Brain segmentation")
+        top_sizer.Add(self.brain_segmentation_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
 
         # Add create surface button
         create_head_button = wx.Button(self, label="Create head surface")
@@ -456,6 +462,7 @@ class SurfacePage(wx.Panel):
         Publisher.sendMessage("Move to image page")
 
     def __bind_events(self):
+        Publisher.subscribe(self.OnSuccessfulBrainSegmentation, "Brain segmentation completed")
         Publisher.subscribe(self.SetThresholdBounds, "Update threshold limits")
         Publisher.subscribe(self.SetThresholdValues, "Set threshold values in gradient")
         Publisher.subscribe(self.SetThresholdValues2, "Set threshold values")
@@ -528,27 +535,65 @@ class SurfacePage(wx.Panel):
     def SetItemsColour(self, colour):
         self.gradient.SetColour(colour)
 
-    # Creates the head surface from a mask, selects the largest contiguous region,
-    # and removes non-visible faces if the plugin is installed
+    # Creates the head surface from a mask, and depending on the checkboxes
+    # selects the largest surface, removes non-visible faces, and does brain segmentation
     def OnCreateHeadSurface(self, evt):
-        self.OnCreateSurface(evt)
-        self.SelectLargestSurface()
-        self.RemoveNonVisibleFaces()
+        self.CreateSurface(evt)
 
-    def OnCreateSurface(self, evt):
+        if self.select_largest_surface_checkbox.IsChecked():
+            self.SelectLargestSurface()
+
+        if self.remove_non_visible_checkbox.IsChecked():
+            self.RemoveNonVisibleFaces()
+
+        if self.brain_segmentation_checkbox.IsChecked():
+            self.SegmentBrain()
+
+    def CreateBrainSurface(self):
+        options = {"angle": 0.7, "max distance": 3.0, "min weight": 0.5, "steps": 10}
+        algorithm = "ca_smoothing"
+        proj = prj.Project()
+        mask_index = len(proj.mask_dict) - 1
+
+        if self.combo_mask.GetSelection() != -1:
+            sl = slice_.Slice()
+            for idx in proj.mask_dict:
+                if proj.mask_dict[idx] is sl.current_mask:
+                    mask_index = idx
+                    break
+
+            method = {"algorithm": algorithm, "options": options}
+            srf_options = {
+                "index": mask_index,
+                "name": "",
+                "quality": _("Optimal *"),
+                "fill": False,
+                "keep_largest": False,
+                "overwrite": False,
+            }
+            Publisher.sendMessage(
+                "Create surface from index",
+                surface_parameters={"method": method, "options": srf_options},
+            )
+            Publisher.sendMessage("Fold surface task")
+
+        else:
+            dlg.InexistentMask()
+
+    def CreateSurface(self, evt):
         algorithm = "Default"
         options = {}
         to_generate = True
         if self.combo_mask.GetSelection() != -1:
             sl = slice_.Slice()
             if sl.current_mask.was_edited:
-                dlgs = dlg.SurfaceDialog()
-                if dlgs.ShowModal() == wx.ID_OK:
-                    algorithm = dlgs.GetAlgorithmSelected()
-                    options = dlgs.GetOptions()
+                surface_dlg = dlg.SurfaceDialog()
+                if surface_dlg.ShowModal() == wx.ID_OK:
+                    algorithm = surface_dlg.GetAlgorithmSelected()
+                    options = surface_dlg.GetOptions()
                 else:
                     to_generate = False
-                dlgs.Destroy()
+                surface_dlg.Destroy()
             if to_generate:
                 proj = prj.Project()
                 for idx in proj.mask_dict:
@@ -575,12 +620,40 @@ class SurfacePage(wx.Panel):
             dlg.InexistentMask()
 
     def SelectLargestSurface(self):
-        if self.select_largest_surface_checkbox.IsChecked():
-            Publisher.sendMessage("Create surface from largest region")
+        Publisher.sendMessage("Create surface from largest region")
 
     def RemoveNonVisibleFaces(self):
-        if self.remove_non_visible_checkbox.IsChecked():
-            Publisher.sendMessage("Remove non-visible faces")
+        Publisher.sendMessage("Remove non-visible faces")
+
+    def OnSuccessfulBrainSegmentation(self):
+        self.CreateBrainSurface()
+        proj = prj.Project()
+        idx = len(proj.surface_dict) - 1
+        Publisher.sendMessage("Show single surface", index=idx, visibility=True)
+
+    def SegmentBrain(self):
+        if (
+            deep_learning_seg_dialog.HAS_PLAIDML
+            or deep_learning_seg_dialog.HAS_THEANO
+            or deep_learning_seg_dialog.HAS_TORCH
+        ):
+            segmentation_dlg = deep_learning_seg_dialog.BrainSegmenterDialog(
+                self, close_on_completion=True
+            )
+            segmentation_dlg.CenterOnScreen()
+            segmentation_dlg.Show()
+        else:
+            segmentation_dlg = wx.MessageDialog(
+                self,
+                _(
+                    "It's not possible to run brain segmenter because your system doesn't have the following modules installed:"
+                )
+                + " Torch, PlaidML or Theano",
+                "InVesalius 3 - Brain segmenter",
+                wx.ICON_INFORMATION | wx.OK,
+            )
+            segmentation_dlg.ShowModal()
+            segmentation_dlg.Destroy()
 
 
 class ImagePage(wx.Panel):
