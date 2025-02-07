@@ -1,7 +1,7 @@
 import queue
 import threading
 import time
-
+import timeit
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkIdList
 
@@ -56,6 +56,9 @@ class Visualize_E_field_Thread(threading.Thread):
 
     def run(self):
         while not self.event.is_set():
+            t = time.process_time()
+            t1 = time.perf_counter()
+            t2 = timeit.default_timer()
             if not self.e_field_IDs_queue.empty():
                 try:
                     self.ID_list = self.e_field_IDs_queue.get_nowait()
@@ -99,5 +102,12 @@ class Visualize_E_field_Thread(threading.Thread):
                                 pass
 
                             self.coord_old = coord
+            elapsed_time = time.process_time()-t
+            elapsed_time_per = time.perf_counter()-t1
+            elapsed_time_timeit = timeit.default_timer()-t2
+
+            #print('process time Efield', elapsed_time)
+            #print('performance counter Efield', elapsed_time_per)
+            #print('time it Efield', elapsed_time_timeit)
 
             time.sleep(self.sle)

@@ -20,7 +20,8 @@
 import queue
 import threading
 from time import sleep
-
+import time 
+import timeit
 import numpy as np
 import wx
 
@@ -139,6 +140,9 @@ class UpdateNavigationScene(threading.Thread):
 
     def run(self):
         while not self.event.is_set():
+            t = time.process_time()
+            t1 = time.perf_counter()
+            t2 = timeit.default_timer()
             got_coords = False
             try:
                 coords, marker_visibilities, m_imgs = self.coord_queue.get_nowait()
@@ -254,6 +258,14 @@ class UpdateNavigationScene(threading.Thread):
             except queue.Empty:
                 if got_coords:
                     self.coord_queue.task_done()
+            elapsed_time = time.process_time()-t
+            elapsed_time_per = time.perf_counter()-t1
+            elapsed_time_timeit = timeit.default_timer()-t2
+
+            #print('process time', elapsed_time)
+            #print('performance coutner', elapsed_time_per)
+            #print('time it', elapsed_time_timeit)
+
 
             sleep(self.sle)
 
