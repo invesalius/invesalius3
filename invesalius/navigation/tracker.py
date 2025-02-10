@@ -17,11 +17,11 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-from typing import Tuple, List, Optional, Dict, cast
-from numpy.typing import NDArray  # Added for proper ndarray type annotations
 import threading
+from typing import Dict, List, Optional, Tuple, cast
 
 import numpy as np
+from numpy.typing import NDArray  # Added for proper ndarray type annotations
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
@@ -55,7 +55,7 @@ class Tracker(metaclass=Singleton):
 
         try:
             self.LoadState()
-        except:
+        except:  # noqa: E722
             ses.Session().DeleteStateFile()
 
     def SaveState(self) -> None:
@@ -83,7 +83,7 @@ class Tracker(metaclass=Singleton):
         if state is None:
             return
 
-        from typing import cast 
+        from typing import cast
         tracker_id: int = cast(int, state["tracker_id"])  
         tracker_fiducials: NDArray[np.float64] = np.array(state["tracker_fiducials"])
         tracker_fiducials_raw: NDArray[np.float64] = np.array(state["tracker_fiducials_raw"])
