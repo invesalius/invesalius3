@@ -717,7 +717,7 @@ class LoggingTab(wx.Panel):
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_logging, 1, wx.EXPAND | wx.ALL, 10)  # | wx.FIXED_MINSIZE, 10)
         border.Add(bsizer_console_logging, 1, wx.EXPAND | wx.ALL, 10)  # | wx.FIXED_MINSIZE, 10)
-        
+
         self.SetSizerAndFit(border)
 
         self.Layout()
@@ -861,21 +861,24 @@ class NavigationTab(wx.Panel):
             choices=["No", "Yes"],
             majorDimension=2,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER | wx.FIXED_MINSIZE,
-        )   
+        )
 
         min_force_threshold = wx.StaticText(self, -1, _("Min force (N):"))
-        min_force_threshold_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        min_force_threshold_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(
+            self, -1, "", size=wx.Size(50, 23), inc=0.01
+        )
         min_force_threshold_spin.Enable(1)
         min_force_threshold_spin.SetRange(2.0, 10.0)
         min_force_threshold_spin.SetValue(self.min_force_threshold)
         # spin_nav_move.Bind(wx.EVT_TEXT, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
         # spin_nav_move.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectNavSleep, ctrl=spin_nav_sleep))
-        
 
         # Add this variable into a legit variable lol
         self.max_force_threshold = 10.0
         max_force_threshold = wx.StaticText(self, -1, _("Max force (N):"))
-        max_force_threshold_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        max_force_threshold_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(
+            self, -1, "", size=wx.Size(50, 23), inc=0.01
+        )
         max_force_threshold_spin.Enable(1)
         max_force_threshold_spin.SetRange(2.0, 20.0)
         max_force_threshold_spin.SetValue(self.max_force_threshold)
@@ -902,7 +905,7 @@ class NavigationTab(wx.Panel):
 
         bsizer_force_centering = wx.BoxSizer(wx.HORIZONTAL)
         bsizer_force_centering_threshold = wx.BoxSizer(wx.HORIZONTAL)
-        
+
         ##### ADD ANOTHER rb_force_adjust
         rb_force_centering = self.rb_force_centering = wx.RadioBox(
             self,
@@ -916,7 +919,9 @@ class NavigationTab(wx.Panel):
         bsizer_force_centering.Add(rb_force_centering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 5)
 
         distance_threshold = wx.StaticText(self, -1, _("Distance threshold (mm):"))
-        distance_threshold_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
+        distance_threshold_spin = self.force_adjust_distance_spin = wx.SpinCtrlDouble(
+            self, -1, "", size=wx.Size(50, 23), inc=0.01
+        )
         distance_threshold_spin.Enable(1)
         distance_threshold_spin.SetRange(1.0, 10.0)
         distance_threshold_spin.SetValue(self.min_force_threshold)
@@ -929,15 +934,19 @@ class NavigationTab(wx.Panel):
                 (distance_threshold_spin, 0, wx.ALL | wx.EXPAND | wx.GROW, 5),
             ]
         )
-        
-        
+
         bsizer_force.Add(bsizer_force_centering, 0, wx.TOP | wx.LEFT | wx.EXPAND, 0)
-        bsizer_force.Add(bsizer_force_centering_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        bsizer_force.Add(
+            bsizer_force_centering_threshold,
+            0,
+            wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP,
+            5,
+        )
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(conf_sizer, 0, wx.ALL | wx.EXPAND, 10)
         main_sizer.Add(bsizer_force, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
-        
+
         self.SetSizerAndFit(main_sizer)
         self.Layout()
 
@@ -951,7 +960,9 @@ class NavigationTab(wx.Panel):
         self.sleep_coord = ctrl.GetValue()
         Publisher.sendMessage("Update coord sleep", data=self.sleep_coord)
 
-        self.session.SetConfig("sleep_coord", self.sleep_nav) # I presume this is wrong and should be self.sleep_coord, come back to it. 
+        self.session.SetConfig(
+            "sleep_coord", self.sleep_nav
+        )  # I presume this is wrong and should be self.sleep_coord, come back to it.
 
     def LoadConfig(self):
         sleep_nav = self.session.GetConfig("sleep_nav")
@@ -967,7 +978,6 @@ class NavigationTab(wx.Panel):
 
         if force_adjust_distance is not None:
             self.min_force_threshold = force_adjust_distance
-
 
     def GetSelection(self):
         options = {
@@ -985,7 +995,6 @@ class NavigationTab(wx.Panel):
         self.rb_force_adjust.SetSelection(int(ft_pressure_adjust_on))
         self.rb_force_centering.SetSelection(int(ft_centering_on))
         self.force_adjust_distance_spin.SetValue(force_adjust_distance)
-
 
 
 class ObjectTab(wx.Panel):

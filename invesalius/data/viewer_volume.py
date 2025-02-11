@@ -511,7 +511,8 @@ class Viewer(wx.Panel):
             self.OnUpdateRobotStatus, "Robot to Neuronavigation: Update robot status"
         )
         Publisher.subscribe(
-            self.UpdateForceCompensation, "Robot to Neuronavigation: Update force compensation displacement"
+            self.UpdateForceCompensation,
+            "Robot to Neuronavigation: Update force compensation displacement",
         )
         Publisher.subscribe(self.GetCoilPosition, "Calculate position and rotation")
         Publisher.subscribe(
@@ -1007,9 +1008,6 @@ class Viewer(wx.Panel):
         # force_compensate_arrow_up = self.CreateCompensateArrowUp()
         # self.ren.AddActor(force_compensate_arrow_up)
 
-
-
-
         # Store the object for 'distance' text so it can be modified when distance changes.
         self.distance_text = distance_text
 
@@ -1106,7 +1104,6 @@ class Viewer(wx.Panel):
         # if self.force_compensate_text is not None:
         #         self.force_compensate_text.SetValue(formatted_force_compensate)
 
-
     def OnUpdateCoilPose(self, m_img, coord):
         # vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
@@ -1186,16 +1183,11 @@ class Viewer(wx.Panel):
 
             # print("creating force_compensate_arrow_up")
             # force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
-            force_compensate_arrow_up = self.actor_factory.CreateArrow(
-                [0, 0, 0], [0, -50, 0]
-            )
+            force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, -50, 0])
             force_compensate_arrow_up.SetPosition(0, -575, 0)
             force_compensate_arrow_up.RotateY(90)
             force_compensate_arrow_up.RotateZ(180)
             force_compensate_arrow_up.GetProperty().SetColor(1, 1, 1)
-
-
-
 
             # print("Adding the actor force_compensate_arrow_up")
             self.target_guide_renderer.AddActor(force_compensate_arrow_up)
@@ -1376,15 +1368,14 @@ class Viewer(wx.Panel):
     #     force_compensate_arrow_up.RotateZ(180)
     #     return force_compensate_arrow_up
 
-
     # def CreateForceCompensateText(self):
-        # up_arrow_actor = vtku.vtkTextActor()
-        # up_arrow_actor.SetInput("TESTTEST")  # Unicode for up arrow
-        # up_arrow_actor.GetTextProperty().SetFontSize(24)
-        # up_arrow_actor.GetTextProperty().SetColor(1.0, 1.0, 1.0)
-        # up_arrow_actor.SetPosition(100, 100) #### Might wanna change
+    # up_arrow_actor = vtku.vtkTextActor()
+    # up_arrow_actor.SetInput("TESTTEST")  # Unicode for up arrow
+    # up_arrow_actor.GetTextProperty().SetFontSize(24)
+    # up_arrow_actor.GetTextProperty().SetColor(1.0, 1.0, 1.0)
+    # up_arrow_actor.SetPosition(100, 100) #### Might wanna change
 
-        # return up_arrow_actor
+    # return up_arrow_actor
 
     # def CreateForceCompensateText(self):
     #     force_compensate_text = vtku.Text()
