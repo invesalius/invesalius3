@@ -21,6 +21,7 @@ import threading
 from math import cos, sin
 from random import uniform
 from time import sleep
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import wx
@@ -30,22 +31,25 @@ import invesalius.data.transformations as tr
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
 
+if TYPE_CHECKING:
+    from invesalius.data.tracker_connection import TrackerConnection
+
 
 class TrackerCoordinates:
     def __init__(self):
-        self.coord = None
+        self.coord: Optional[np.ndarray] = None
         self.marker_visibilities = [False, False, False]
         self.previous_marker_visibilities = self.marker_visibilities
         self.nav_status = False
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.OnUpdateNavigationStatus, "Navigation status")
 
-    def OnUpdateNavigationStatus(self, nav_status, vis_status):
+    def OnUpdateNavigationStatus(self, nav_status: bool, vis_status) -> None:
         self.nav_status = nav_status
 
-    def SetCoordinates(self, coord, marker_visibilities):
+    def SetCoordinates(self, coord, marker_visibilities: List[bool]) -> None:
         self.coord = coord
         self.marker_visibilities = marker_visibilities
         if not self.nav_status:
@@ -64,7 +68,7 @@ class TrackerCoordinates:
                 wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
                 self.previous_marker_visibilities = self.marker_visibilities
 
-    def GetCoordinates(self):
+    def GetCoordinates(self) -> Tuple[Optional[np.ndarray], List[bool]]:
         if self.nav_status:
             wx.CallAfter(
                 Publisher.sendMessage,
@@ -83,7 +87,9 @@ class TrackerCoordinates:
         return self.coord, self.marker_visibilities
 
 
-def GetCoordinatesForThread(tracker_connection, tracker_id, ref_mode):
+def GetCoordinatesForThread(
+    tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int
+):
     """
     Read coordinates from spatial tracking devices using
 
@@ -114,7 +120,7 @@ def GetCoordinatesForThread(tracker_connection, tracker_id, ref_mode):
     return coord, marker_visibilities
 
 
-def PolarisP4Coord(tracker_connection, tracker_id, ref_mode):
+def PolarisP4Coord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -158,7 +164,7 @@ def PolarisP4Coord(tracker_connection, tracker_id, ref_mode):
     return coord, [trck.probeID, trck.refID, trck.objID]
 
 
-def OptitrackCoord(tracker_connection, tracker_id, ref_mode):
+def OptitrackCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     """
 
     Obtains coordinates and angles of tracking rigid bodies (Measurement Probe, Coil, Head). Converts orientations from quaternion
@@ -234,7 +240,7 @@ def OptitrackCoord(tracker_connection, tracker_id, ref_mode):
     return coord, [trck.probeID, trck.HeadID, trck.coilID]
 
 
-def PolarisCoord(tracker_connection, tracker_id, ref_mode):
+def PolarisCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -248,24 +254,27 @@ def PolarisCoord(tracker_connection, tracker_id, ref_mode):
     trans_ref = np.array(ref[6:9]).astype(float)
     coord2 = np.hstack((trans_ref, angles_ref))
 
-    obj = trck.obj.decode(const.FS_ENCODE).split(",")
-    angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
-    trans_obj = np.array(obj[6:9]).astype(float)
-    coord3 = np.hstack((trans_obj, angles_obj))
+    obj_coords = []
+    for i in range(trck.objs.size()):
+        obj = trck.objs[i].decode(const.FS_ENCODE).split(",")
+        angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
+        trans_obj = np.array(obj[6:9]).astype(float)
+        obj_coords.append(np.hstack((trans_obj, angles_obj)))
 
-    coord = np.vstack([coord1, coord2, coord3])
+    coord = np.vstack([coord1, coord2, *obj_coords])
+    marker_visibilities = [trck.probeID, trck.refID] + list(trck.objIDs)
 
-    return coord, [trck.probeID, trck.refID, trck.objID]
+    return coord, marker_visibilities
 
 
-def CameraCoord(tracker_connection, tracker_id, ref_mode):
+def CameraCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode):
     trck = tracker_connection.GetConnection()
     coord, probeID, refID, coilID = trck.Run()
 
     return coord, [probeID, refID, coilID]
 
 
-def ClaronCoord(tracker_connection, tracker_id, ref_mode):
+def ClaronCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -309,7 +318,7 @@ def ClaronCoord(tracker_connection, tracker_id, ref_mode):
     return coord, [trck.probeID, trck.refID, trck.coilID]
 
 
-def PolhemusCoord(tracker_connection, tracker_id, ref_mode):
+def PolhemusCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     lib_mode = tracker_connection.GetLibMode()
 
     coord = None
@@ -326,7 +335,7 @@ def PolhemusCoord(tracker_connection, tracker_id, ref_mode):
     return coord, [True, True, True]
 
 
-def PolhemusWrapperCoord(tracker_connection, tracker_id, ref_mode):
+def PolhemusWrapperCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     trck = tracker_connection.GetConnection()
     trck.Run()
 
@@ -384,7 +393,7 @@ def PolhemusWrapperCoord(tracker_connection, tracker_id, ref_mode):
     return coord
 
 
-def PolhemusUSBCoord(tracker_connection, tracker_id, ref_mode):
+def PolhemusUSBCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     trck = tracker_connection.GetConnection()
 
     endpoint = trck[0][(0, 0)][0]
@@ -437,7 +446,7 @@ def PolhemusUSBCoord(tracker_connection, tracker_id, ref_mode):
         return coord
 
 
-def PolhemusSerialCoord(tracker_connection, tracker_id, ref_mode):
+def PolhemusSerialCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     trck = tracker_connection.GetConnection()
 
     # mudanca para fastrak - ref 1 tem somente x, y, z
@@ -482,7 +491,7 @@ def PolhemusSerialCoord(tracker_connection, tracker_id, ref_mode):
     return coord
 
 
-def RobotCoord(tracker_connection, tracker_id, ref_mode):
+def RobotCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     tracker_id = tracker_connection.GetTrackerId()
 
     coord_tracker, marker_visibilities = GetCoordinatesForThread(
@@ -492,7 +501,7 @@ def RobotCoord(tracker_connection, tracker_id, ref_mode):
     return np.vstack([coord_tracker[0], coord_tracker[1], coord_tracker[2]]), marker_visibilities
 
 
-def DebugCoordRandom(tracker_connection, tracker_id, ref_mode):
+def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
     """
     Method to simulate a tracking device for debug and error check. Generate a random
     x, y, z, alfa, beta and gama coordinates in interval [1, 200[
@@ -532,6 +541,9 @@ def DebugCoordRandom(tracker_connection, tracker_id, ref_mode):
     coord4 = np.array(
         [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
     )
+    coord5 = np.array(
+        [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
+    )
 
     sleep(0.15)
 
@@ -549,12 +561,16 @@ def DebugCoordRandom(tracker_connection, tracker_id, ref_mode):
 
     # Always make the markers visible when using debug tracker; this enables registration, as it
     # is not possible to registering without markers.
-    marker_visibilities = [True, True, True]
+    marker_visibilities = [True, True, True, True, True]
 
-    return np.vstack([coord1, coord2, coord3, coord4]), marker_visibilities
+    return np.vstack([coord1, coord2, coord3, coord4, coord5]), marker_visibilities
 
 
-def coordinates_to_transformation_matrix(position, orientation, axes="sxyz"):
+def coordinates_to_transformation_matrix(
+    position: Union[Sequence[float], np.ndarray],
+    orientation: Union[Sequence[float], np.ndarray],
+    axes: str = "sxyz",
+) -> np.ndarray:
     """
     Transform vectors consisting of position and orientation (in Euler angles) in 3d-space into a 4x4
     transformation matrix that combines the rotation and translation.
@@ -611,7 +627,7 @@ def dynamic_reference(probe, reference):
     # a: rotation of plane (X, Y) around Z axis (azimuth)
     # b: rotation of plane (X', Z) around Y' axis (elevation)
     # a: rotation of plane (Y', Z') around X'' axis (roll)
-    m_rot = np.mat(
+    m_rot = np.asmatrix(
         [
             [
                 cos(a) * cos(b),
@@ -695,7 +711,7 @@ def dynamic_reference_m2(probe, reference):
     return coord_rot[0], coord_rot[1], coord_rot[2], np.degrees(al), np.degrees(be), np.degrees(ga)
 
 
-def str2float(data):
+def str2float(data: str) -> List[float]:
     """
     Converts string detected wth Polhemus device to float array of coordinates. This method applies
     a correction for the minus sign in string that raises error while splitting the string into coordinates.
@@ -709,13 +725,13 @@ def str2float(data):
             data = data[: i + count] + " " + data[i + count :]
             count += 1
 
-    data = [s for s in data.split()]
-    data = [float(s) for s in data[1 : len(data)]]
+    new_data = [s for s in data.split()]
+    ret = [float(s) for s in new_data[1 : len(new_data)]]
 
-    return data
+    return ret
 
 
-def offset_coordinate(p_old, norm_vec, offset):
+def offset_coordinate(p_old: np.ndarray, norm_vec: np.ndarray, offset: float) -> np.ndarray:
     """
     Translate the coordinates of a point along a vector
     :param p_old: (x, y, z) array with current point coordinates
@@ -728,7 +744,13 @@ def offset_coordinate(p_old, norm_vec, offset):
 
 
 class ReceiveCoordinates(threading.Thread):
-    def __init__(self, tracker_connection, tracker_id, TrackerCoordinates, event):
+    def __init__(
+        self,
+        tracker_connection: "TrackerConnection",
+        tracker_id: int,
+        TrackerCoordinates: TrackerCoordinates,
+        event: threading.Event,
+    ):
         threading.Thread.__init__(self, name="ReceiveCoordinates")
         self.__bind_events()
 
@@ -741,13 +763,13 @@ class ReceiveCoordinates(threading.Thread):
         self.event = event
         self.TrackerCoordinates = TrackerCoordinates
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.UpdateCoordSleep, "Update coord sleep")
 
-    def UpdateCoordSleep(self, data):
+    def UpdateCoordSleep(self, data) -> None:
         self.sleep_coord = data
 
-    def run(self):
+    def run(self) -> None:
         while not self.event.is_set():
             coord_raw, marker_visibilities = GetCoordinatesForThread(
                 self.tracker_connection, self.tracker_id, const.DEFAULT_REF_MODE

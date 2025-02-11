@@ -18,26 +18,28 @@
 # --------------------------------------------------------------------------
 
 import datetime
-import glob
 import os
 import plistlib
 import shutil
 import sys
 import tarfile
 import tempfile
+from typing import TYPE_CHECKING, Dict, List, Union
 
 import numpy as np
-import wx
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
-import invesalius.data.polydata_utils as pu
-import invesalius.version as version
 from invesalius import inv_paths
-from invesalius.data import imagedata_utils
+from invesalius.gui.dialogs import ErrorMessageBox
+
+# from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import Singleton, TwoWaysDictionary, debug, decode, touch
+from invesalius.utils import Singleton, TwoWaysDictionary, debug, decode
+
+if TYPE_CHECKING:
+    from invesalius.data.mask import Mask
 
 if sys.platform == "win32":
     try:
@@ -97,14 +99,14 @@ class Project(metaclass=Singleton):
         # TODO: Future +
         # Allow insertion of new surface quality modes
 
-    def Close(self):
+    def Close(self) -> None:
         for name in self.__dict__:
             attr = getattr(self, name)
             del attr
 
         self.__init__()
 
-    def AddMask(self, mask):
+    def AddMask(self, mask: "Mask") -> int:
         """
         Insert new mask (Mask) into project data.
 
@@ -119,7 +121,7 @@ class Project(metaclass=Singleton):
         mask.index = index
         return index
 
-    def RemoveMask(self, index):
+    def RemoveMask(self, index: int) -> None:
         new_dict = TwoWaysDictionary()
         new_index = 0
         for i in self.mask_dict:
@@ -187,8 +189,8 @@ class Project(metaclass=Singleton):
             debug("Different Acquisition Modality!!!")
         self.modality = type_
 
-    def SetRaycastPreset(self, label):
-        path = os.path.join(RAYCASTING_PRESETS_DIRECTORY, label + ".plist")
+    def SetRaycastPreset(self, label: str) -> None:
+        path = os.path.join(inv_paths.RAYCASTING_PRESETS_DIRECTORY, label + ".plist")
         with open(path, "r+b") as f:
             preset = plistlib.load(f, fmt=plistlib.FMT_XML)
         Publisher.sendMessage("Set raycasting preset", preset)
@@ -206,7 +208,7 @@ class Project(metaclass=Singleton):
 
         self.compress = compress
 
-        filename_tmp = os.path.join(dir_temp, "matrix.dat")
+        # filename_tmp = os.path.join(dir_temp, "matrix.dat")
         filelist = {}
 
         project = {
@@ -323,7 +325,7 @@ class Project(metaclass=Singleton):
         self.compress = project.get("compress", True)
 
         # Opening the matrix containing the slices
-        filepath = os.path.join(dirpath, project["matrix"]["filename"])
+        filepath: str = os.path.join(dirpath, project["matrix"]["filename"])
         self.matrix_filename = filepath
         self.matrix_shape = project["matrix"]["shape"]
         self.matrix_dtype = project["matrix"]["dtype"]
@@ -348,7 +350,7 @@ class Project(metaclass=Singleton):
             self.mask_dict[m.index] = m
 
         # Opening the surfaces
-        self.surface_dict = {}
+        self.surface_dict: dict[int, srf.Surface] = {}
         for index in sorted(project.get("surfaces", []), key=lambda x: int(x)):
             filename = project["surfaces"][index]
             filepath = os.path.join(dirpath, filename)
@@ -386,8 +388,8 @@ class Project(metaclass=Singleton):
             folder = tempfile.mkdtemp()
         if not os.path.exists(folder):
             os.mkdir(folder)
-        image_file = os.path.join(folder, "matrix.dat")
-        image_mmap = imagedata_utils.array2memmap(image, image_file)
+        # image_file = os.path.join(folder, "matrix.dat")
+        # image_mmap = imagedata_utils.array2memmap(image, image_file)
         matrix = {"filename": "matrix.dat", "shape": image.shape, "dtype": str(image.dtype)}
         project = {
             # Format info
@@ -404,7 +406,7 @@ class Project(metaclass=Singleton):
             "scalar_range": (int(image.min()), int(image.max())),
             "spacing": spacing,
             "affine": affine,
-            "image_fiducials": np.full([3, 3], np.nan),
+            "image_fiducials": np.full([3, 3], np.nan).tolist(),
             "matrix": matrix,
         }
 
@@ -442,7 +444,7 @@ class Project(metaclass=Singleton):
                 for index in self.mask_dict:
                     mask = self.mask_dict[index]
                     s.do_threshold_to_all_slices(mask)
-                    key = "masks/{}".format(index)
+                    key = f"masks/{index}"
                     f[key + "/name"] = mask.name
                     f[key + "/matrix"] = mask.matrix[1:, 1:, 1:]
                     f[key + "/colour"] = mask.colour[:3]
@@ -477,12 +479,17 @@ class Project(metaclass=Singleton):
                 else:
                     ext = ".nii"
                     basename = filename
-                nib.save(mask_nifti, "{}_mask_{}_{}{}".format(basename, mask.index, mask.name, ext))
+                nib.save(mask_nifti, f"{basename}_mask_{mask.index}_{mask.name}{ext}")
 
 
-def Compress(folder, filename, filelist, compress=False):
+def Compress(
+    folder: Union[str, os.PathLike],
+    filename: Union[str, os.PathLike],
+    filelist: Dict[Union[str, os.PathLike], Union[str, os.PathLike]],
+    compress: bool = False,
+) -> None:
     tmpdir, tmpdir_ = os.path.split(folder)
-    current_dir = os.path.abspath(".")
+    # current_dir = os.path.abspath(".")
     fd_inv3, temp_inv3 = tempfile.mkstemp()
     if _has_win32api:
         temp_inv3 = win32api.GetShortPathName(temp_inv3)
@@ -495,6 +502,10 @@ def Compress(folder, filename, filelist, compress=False):
     else:
         tar = tarfile.open(temp_inv3, "w")
     for name in filelist:
+        sanit_name = os.path.normpath(filelist[name])  # Sanitizing path
+        if ".." in sanit_name or os.path.isabs(sanit_name):
+            continue
+
         tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
     tar.close()
     os.close(fd_inv3)
@@ -502,33 +513,61 @@ def Compress(folder, filename, filelist, compress=False):
     # os.chdir(current_dir)
 
 
-def Extract(filename, folder):
+def custom_tar_filter(file: tarfile.TarInfo, path: Union[str, os.PathLike]):
+    file.name = os.path.normpath(file.name).lstrip(os.sep)
+    file_path = os.path.abspath(os.path.join(path, file.name))
+    if not file_path.startswith(os.path.abspath(path)):
+        dlg = ErrorMessageBox(
+            None,
+            "Security Alert",
+            f"Potential directory traversal detected: {file.name}. Skipping file extraction.",
+        )
+        dlg.ShowModal()
+        dlg.Destroy()
+        return None
+    return file
+
+
+def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, os.PathLike]):
     if _has_win32api:
         folder = win32api.GetShortPathName(folder)
     folder = decode(folder, const.FS_ENCODE)
-
     tar = tarfile.open(filename, "r")
     idir = decode(os.path.split(tar.getnames()[0])[0], "utf8")
-    os.mkdir(os.path.join(folder, idir))
+    os.makedirs(os.path.join(folder, idir), exist_ok=True)
     filelist = []
+    tar_filter = getattr(tarfile, "tar_filter", None)
     for t in tar.getmembers():
-        fsrc = tar.extractfile(t)
-        fname = os.path.join(folder, decode(t.name, "utf-8"))
-        fdst = open(fname, "wb")
-        shutil.copyfileobj(fsrc, fdst)
-        filelist.append(fname)
-        fsrc.close()
-        fdst.close()
-        del fsrc
-        del fdst
+        try:
+            tar.extract(t, path=folder, filter=tar_filter)
+            fname = os.path.join(folder, decode(t.name, "utf-8"))
+            filelist.append(fname)
+        except (TypeError, AttributeError, tarfile.OutsideDestinationError):
+            filtered = custom_tar_filter(t, folder)
+            if filtered is not None:
+                tar.extract(filtered, path=folder)
+                fname = os.path.join(folder, decode(filtered.name, "utf-8"))
+                filelist.append(fname)
+
     tar.close()
     return filelist
 
 
-def Extract_(filename, folder):
+def Extract_(
+    filename: Union[str, bytes, os.PathLike], folder: Union[str, os.PathLike]
+) -> List[str]:
     tar = tarfile.open(filename, "r:gz")
+    filelist = []
+
+    for member in tar.getmembers():
+        member_name = os.path.basename(member.name)  # Strip directory path
+        fname = os.path.join(folder, member_name)
+
+        if os.path.commonpath([folder, fname]) == folder:
+            tar.extract(member, path=folder)
+            filelist.append(fname)
+        else:
+            print(f"Skipping potential unsafe file: {member.name}")
     # tar.list(verbose=True)
-    tar.extractall(folder)
-    filelist = [os.path.join(folder, i) for i in tar.getnames()]
     tar.close()
     return filelist

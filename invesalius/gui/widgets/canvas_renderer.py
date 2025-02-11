@@ -240,7 +240,7 @@ class CanvasRendererCTX:
             #  self._drag_obj.mouse_move(evt_obj)
         else:
             was_over = self._over_obj
-            redraw = self.get_over_mouse_obj(x, y) or was_over
+            redraw = bool(self.get_over_mouse_obj(x, y) or was_over)
 
             if was_over and was_over != self._over_obj:
                 try:
@@ -421,7 +421,7 @@ class CanvasRendererCTX:
 
         self._ordered_draw_list = sorted(self._follow_draw_list(), key=lambda x: x[0])
         for (
-            l,
+            _,
             d,
         ) in (
             self._ordered_draw_list
@@ -995,7 +995,7 @@ class TextBox(CanvasHandlerBase):
             return self
         return None
 
-    def on_mouse_move(self, evt: Any) -> Literal[True]:
+    def on_mouse_move(self, evt: CanvasEvent) -> Literal[True]:
         mx, my = evt.position
         x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
         self.position = [
@@ -1014,7 +1014,7 @@ class TextBox(CanvasHandlerBase):
         #  self.layer = 0
         self._highlight = False
 
-    def on_select(self, evt: Any) -> None:
+    def on_select(self, evt: CanvasEvent) -> None:
         mx, my = evt.position
         x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
         self._last_position = (x, y, z)
@@ -1063,7 +1063,7 @@ class CircleHandler(CanvasHandlerBase):
             )
             self.bbox = (x - w / 2, y - h / 2, x + w / 2, y + h / 2)
 
-    def on_mouse_move(self, evt: Any) -> Literal[True]:
+    def on_mouse_move(self, evt: CanvasEvent) -> Literal[True]:
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -1157,7 +1157,7 @@ class Polygon(CanvasHandlerBase):
         self.handlers.append(handler)
         self.points.append(point)
 
-    def on_mouse_move(self, evt: Any) -> None:
+    def on_mouse_move(self, evt: CanvasEvent) -> None:
         if evt.root_event_obj is self:
             self.on_mouse_move2(evt)
         else:
@@ -1169,7 +1169,7 @@ class Polygon(CanvasHandlerBase):
         if self.closed and self._path and self._path.Contains(x, -y):
             return self
 
-    def on_mouse_move2(self, evt: Any) -> Literal[True]:
+    def on_mouse_move2(self, evt: CanvasEvent) -> Literal[True]:
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -1197,7 +1197,7 @@ class Polygon(CanvasHandlerBase):
         #  self.interactive = False
         #  self.layer = 0
 
-    def on_select(self, evt: Any) -> None:
+    def on_select(self, evt: CanvasEvent) -> None:
         mx, my = evt.position
         self.interactive = True
         print("on_select", self.interactive)
@@ -1346,14 +1346,14 @@ class Ellipse(CanvasHandlerBase):
         self.point2 = pos
         self.handler_2.position = pos
 
-    def on_mouse_move(self, evt: Any) -> None:
+    def on_mouse_move(self, evt: CanvasEvent) -> None:
         if evt.root_event_obj is self:
             self.on_mouse_move2(evt)
         else:
             self.move_p1(evt)
             self.move_p2(evt)
 
-    def move_p1(self, evt: Any) -> None:
+    def move_p1(self, evt: CanvasEvent) -> None:
         pos = self.handler_1.position
         if evt.viewer.orientation == "AXIAL":
             pos = pos[0], self.point1[1], self.point1[2]
@@ -1372,7 +1372,7 @@ class Ellipse(CanvasHandlerBase):
 
             self.set_point2(tuple(point2))
 
-    def move_p2(self, evt: Any) -> None:
+    def move_p2(self, evt: CanvasEvent) -> None:
         pos = self.handler_2.position
         if evt.viewer.orientation == "AXIAL":
             pos = self.point2[0], pos[1], self.point2[2]
@@ -1404,7 +1404,7 @@ class Ellipse(CanvasHandlerBase):
         if xi <= x <= xf and yi <= y <= yf:
             return self
 
-    def on_mouse_move2(self, evt: Any) -> Literal[True]:
+    def on_mouse_move2(self, evt: CanvasEvent) -> Literal[True]:
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -1422,7 +1422,7 @@ class Ellipse(CanvasHandlerBase):
 
         return True
 
-    def on_select(self, evt: Any) -> None:
+    def on_select(self, evt: CanvasEvent) -> None:
         self.interactive = True
         mx, my = evt.position
         if self.is_3d:

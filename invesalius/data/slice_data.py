@@ -29,7 +29,7 @@ BORDER_ALL = BORDER_UP | BORDER_DOWN | BORDER_LEFT | BORDER_RIGHT
 BORDER_NONE = 0
 
 
-class SliceData(object):
+class SliceData:
     def __init__(self):
         self.actor = None
         self.cursor = None

@@ -23,7 +23,6 @@ from wx import ID_OK
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 from invesalius import inv_paths
-from invesalius.pubsub import pub as Publisher
 
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
@@ -31,7 +30,7 @@ from invesalius.pubsub import pub as Publisher
 
 
 class TrackerConnection:
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         self.connection = None
         self.configuration = None
         self.model = model
@@ -48,7 +47,7 @@ class TrackerConnection:
             self.connection = False
             self.lib_mode = "wrapper"
             print("Tracker disconnected.")
-        except:
+        except Exception:
             self.connection = True
             self.lib_mode = "error"
             print("The tracker could not be disconnected.")
@@ -81,7 +80,7 @@ class OptitrackTrackerConnection(TrackerConnection):
     loads User Profile (Rigid bodies information).
     """
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -128,7 +127,7 @@ class OptitrackTrackerConnection(TrackerConnection):
 
 
 class ClaronTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -168,12 +167,12 @@ class ClaronTrackerConnection(TrackerConnection):
 
 
 class PolhemusTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         assert model in [
             "fastrak",
             "isotrak",
             "patriot",
-        ], "Unsupported model for Polhemus tracker: {}".format(model)
+        ], f"Unsupported model for Polhemus tracker: {model}"
 
         super().__init__(model)
 
@@ -223,7 +222,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                         self.ConfigureCOMPort()
                     connection = self.PolhemusSerialConnection()
                     lib_mode = "serial"
-        except:
+        except Exception:
             lib_mode = "error"
             print("Could not connect to Polhemus by any method.")
 
@@ -255,7 +254,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                 print(
                     "Could not connect to Polhemus via wrapper without error: Initialize is False."
                 )
-        except:
+        except Exception:
             connection = None
             print("Could not connect to Polhemus via wrapper without error: Import failed.")
 
@@ -292,7 +291,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                 connection = None
                 print("Could not connect to Polhemus serial without error.")
 
-        except:
+        except Exception:
             connection = None
             print("Could not connect to Polhemus tracker.")
 
@@ -333,7 +332,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                 connection = None
                 print("Could not connect to Polhemus USB without error.")
 
-        except:
+        except Exception:
             print("Could not connect to Polhemus USB with error.")
 
         return connection
@@ -349,14 +348,14 @@ class PolhemusTrackerConnection(TrackerConnection):
 
             self.connection = False
             print("Tracker disconnected.")
-        except:
+        except Exception:
             self.connection = True
             self.lib_mode = "error"
             print("The tracker could not be disconnected.")
 
 
 class CameraTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -373,7 +372,7 @@ class CameraTrackerConnection(TrackerConnection):
             lib_mode = "wrapper"
 
             self.connection = connection
-        except:
+        except Exception:
             print("Could not connect to camera tracker.")
             lib_mode = "error"
 
@@ -384,22 +383,23 @@ class CameraTrackerConnection(TrackerConnection):
 
 
 class PolarisTrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
+        self.n_coils = n_coils
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.ConfigurePolarisDialog()
+        dialog = dlg.ConfigurePolarisDialog(self.n_coils)
         status = dialog.ShowModal()
 
         success = status == ID_OK
         if success:
-            com_port, probe_dir, ref_dir, obj_dir = dialog.GetValue()
+            com_port, probe_dir, ref_dir, obj_dirs = dialog.GetValue()
 
             self.configuration = {
                 "com_port": com_port,
                 "probe_dir": probe_dir,
                 "ref_dir": ref_dir,
-                "obj_dir": obj_dir,
+                "obj_dirs": obj_dirs,
             }
         else:
             self.lib_mode = None
@@ -427,16 +427,18 @@ class PolarisTrackerConnection(TrackerConnection):
             com_port = self.configuration["com_port"].encode(const.FS_ENCODE)
             probe_dir = self.configuration["probe_dir"].encode(const.FS_ENCODE)
             ref_dir = self.configuration["ref_dir"].encode(const.FS_ENCODE)
-            obj_dir = self.configuration["obj_dir"].encode(const.FS_ENCODE)
+            obj_dirs = pypolaris.StringVector()  # SWIG fails to convert python list to vector<string>, so we directly create StringVector
+            for obj_dir in self.configuration["obj_dirs"]:
+                obj_dirs.append(obj_dir.encode(const.FS_ENCODE))
 
-            if connection.Initialize(com_port, probe_dir, ref_dir, obj_dir) != 0:
+            if connection.Initialize(com_port, probe_dir, ref_dir, obj_dirs) != 0:
                 lib_mode = None
                 print("Could not connect to polaris tracker.")
             else:
                 print("Connected to polaris tracking device.")
                 self.connection = connection
 
-        except:
+        except Exception:
             lib_mode = "error"
             connection = None
             print("Could not connect to polaris tracker.")
@@ -448,11 +450,11 @@ class PolarisTrackerConnection(TrackerConnection):
 
 
 class PolarisP4TrackerConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
-        dialog = dlg.ConfigurePolarisDialog()
+        dialog = dlg.ConfigurePolarisDialog(1)
         status = dialog.ShowModal()
 
         success = status == ID_OK
@@ -495,7 +497,7 @@ class PolarisP4TrackerConnection(TrackerConnection):
             else:
                 print("Connect to Polaris P4 tracking device.")
 
-        except:
+        except Exception:
             lib_mode = "error"
             connection = None
             print("Could not connect to Polaris P4 tracker.")
@@ -508,7 +510,7 @@ class PolarisP4TrackerConnection(TrackerConnection):
 
 
 class DebugTrackerRandomConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -526,7 +528,7 @@ class DebugTrackerRandomConnection(TrackerConnection):
 
 
 class DebugTrackerApproachConnection(TrackerConnection):
-    def __init__(self, model=None):
+    def __init__(self, model=None, n_coils=1):
         super().__init__(model)
 
     def Configure(self):
@@ -557,7 +559,7 @@ TRACKER_CONNECTION_CLASSES = {
 }
 
 
-def CreateTrackerConnection(tracker_id):
+def CreateTrackerConnection(tracker_id, n_coils):
     """
     Initialize spatial tracker connection for coordinate detection during navigation.
 
@@ -579,5 +581,5 @@ def CreateTrackerConnection(tracker_id):
     else:
         model = None
 
-    tracker_connection = tracker_connection_class(model=model)
+    tracker_connection = tracker_connection_class(model=model, n_coils=n_coils)
     return tracker_connection

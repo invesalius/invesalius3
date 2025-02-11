@@ -27,7 +27,6 @@ import weakref
 
 import numpy as np
 from scipy import ndimage
-from vtkmodules.util import numpy_support
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
@@ -37,7 +36,7 @@ from invesalius.pubsub import pub as Publisher
 from invesalius_cy import floodfill
 
 
-class EditionHistoryNode(object):
+class EditionHistoryNode:
     def __init__(self, index, orientation, array, clean=False):
         self.index = index
         self.orientation = orientation
@@ -75,7 +74,7 @@ class EditionHistoryNode(object):
         os.remove(self.filename)
 
 
-class EditionHistory(object):
+class EditionHistory:
     def __init__(self, size=50):
         self.history = []
         self.index = -1
@@ -295,8 +294,8 @@ class Mask:
     def SavePlist(self, dir_temp, filelist):
         mask = {}
         filename = "mask_%d" % self.index
-        mask_filename = "%s.dat" % filename
-        mask_filepath = os.path.join(dir_temp, mask_filename)
+        mask_filename = f"{filename}.dat"
+        # mask_filepath = os.path.join(dir_temp, mask_filename)
         filelist[self.temp_file] = mask_filename
         # self._save_mask(mask_filepath)
 

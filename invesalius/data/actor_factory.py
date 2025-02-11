@@ -10,7 +10,7 @@ import invesalius.project as prj
 from invesalius import inv_paths
 
 
-class ActorFactory(object):
+class ActorFactory:
     def __init__(self):
         pass
 

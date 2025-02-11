@@ -5,6 +5,7 @@ import pathlib
 import sys
 import tempfile
 import traceback
+from typing import Generator, Tuple
 
 import numpy as np
 from skimage.transform import resize
@@ -15,6 +16,7 @@ from invesalius import inv_paths
 from invesalius.data import imagedata_utils
 from invesalius.data.converters import to_vtk
 from invesalius.net.utils import download_url_to_file
+from invesalius.pubsub import pub as Publisher
 from invesalius.utils import new_name_by_pattern
 
 from . import utils
@@ -22,16 +24,72 @@ from . import utils
 SIZE = 48
 
 
-def gen_patches(image, patch_size, overlap):
+def run_cranioplasty_implant():
+    """
+    This function was created to allow the creation of implants for
+    cranioplasty to be called by command line.
+    """
+    image = slc.Slice().matrix
+    backend = "pytorch"
+    device_id = list(utils.get_torch_devices().values())[0]
+    apply_wwwl = False
+    create_new_mask = True
+    use_gpu = True
+    resize_by_spacing = True
+    window_width = slc.Slice().window_width
+    window_level = slc.Slice().window_level
+    overlap = 50
+    patch_size = 480
+    method = 0  # binary
+
+    seg = ImplantCTSegmentProcess
+
+    ps = seg(
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap,
+        apply_wwwl,
+        window_width,
+        window_level,
+        method=method,
+        patch_size=patch_size,
+        resize_by_spacing=True,
+        image_spacing=slc.Slice().spacing,
+    )
+    ps._run_segmentation()
+    ps.apply_segment_threshold(0.75)
+    slc.Slice().discard_all_buffers()
+    Publisher.sendMessage("Reload actual slice")
+
+
+patch_type = Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]
+
+
+def gen_patches(
+    image: np.ndarray, patch_size: int, overlap: int
+) -> Generator[Tuple[float, np.ndarray, patch_type], None, None]:
     overlap = int(patch_size * overlap / 100)
     sz, sy, sx = image.shape
-    i_cuts = list(
-        itertools.product(
-            range(0, sz, patch_size - overlap),
-            range(0, sy, patch_size - overlap),
-            range(0, sx, patch_size - overlap),
-        )
-    )
+    slices_x = [i for i in range(0, sx, patch_size - overlap) if i + patch_size <= sx]
+    if not slices_x:
+        slices_x.append(0)
+    elif slices_x[-1] + patch_size < sx:
+        slices_x.append(sx - patch_size)
+    slices_y = [i for i in range(0, sy, patch_size - overlap) if i + patch_size <= sy]
+    if not slices_y:
+        slices_y.append(0)
+    elif slices_y[-1] + patch_size < sy:
+        slices_y.append(sy - patch_size)
+    slices_z = [i for i in range(0, sz, patch_size - overlap) if i + patch_size <= sz]
+    if not slices_z:
+        slices_z.append(0)
+    elif slices_z[-1] + patch_size < sz:
+        slices_z.append(sz - patch_size)
+    i_cuts = list(itertools.product(slices_z, slices_y, slices_x))
+
     sub_image = np.empty(shape=(patch_size, patch_size, patch_size), dtype="float32")
     for idx, (iz, iy, ix) in enumerate(i_cuts):
         sub_image[:] = 0
@@ -76,7 +134,7 @@ def segment_keras(image, weights_file, overlap, probability_array, comm_array, p
     import keras
 
     # Loading model
-    with open(weights_file, "r") as json_file:
+    with open(weights_file) as json_file:
         model = keras.models.model_from_json(json_file.read())
     model.load_weights(str(weights_file.parent.joinpath("model.h5")))
     model.compile("Adam", "binary_crossentropy")
@@ -92,7 +150,7 @@ def segment_keras(image, weights_file, overlap, probability_array, comm_array, p
         sums[iz:ez, iy:ey, ix:ex] += 1
 
     probability_array /= sums
-    comm_array[0] = np.Inf
+    comm_array[0] = np.inf
 
 
 def download_callback(comm_array):
@@ -131,7 +189,7 @@ def segment_torch(
             sums[iz:ez, iy:ey, ix:ex] += 1
 
     probability_array /= sums
-    comm_array[0] = np.Inf
+    comm_array[0] = np.inf
 
 
 def segment_torch_jit(
@@ -194,7 +252,7 @@ def segment_torch_jit(
             probability_array, output_shape=old_shape, preserve_range=True
         )
 
-    comm_array[0] = np.Inf
+    comm_array[0] = np.inf
 
 
 ctx = multiprocessing.get_context("spawn")
@@ -513,6 +571,132 @@ class MandibleCTSegmentProcess(SegmentProcess):
                 resize_by_spacing=self.resize_by_spacing,
                 image_spacing=self.image_spacing,
                 needed_spacing=self.needed_spacing,
+            )
+        else:
+            utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
+            segment_keras(
+                image,
+                self.keras_weight_file,
+                self.overlap,
+                probability_array,
+                comm_array,
+                self.patch_size,
+            )
+
+
+class ImplantCTSegmentProcess(SegmentProcess):
+    def __init__(
+        self,
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap=50,
+        apply_wwwl=False,
+        window_width=4000,
+        window_level=700,
+        method=0,
+        patch_size=192,
+        threshold=150,
+        resize_by_spacing=True,
+        image_spacing=(1.0, 1.0, 1.0),
+    ):
+        super().__init__(
+            image,
+            create_new_mask,
+            backend,
+            device_id,
+            use_gpu,
+            overlap=overlap,
+            apply_wwwl=apply_wwwl,
+            window_width=window_width,
+            window_level=window_level,
+            patch_size=patch_size,
+        )
+
+        self.threshold = threshold
+        self.resize_by_spacing = resize_by_spacing
+        self.image_spacing = image_spacing
+        self.needed_spacing = (1.0, 1.0, 1.0)
+        self.method = method
+
+        if self.method == 1:
+            self.torch_weights_file_name = "cranioplasty_jit_ct_gray.pt"
+            self.torch_weights_url = "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_gray/cranioplasty_jit_ct_gray.pt"
+            self.torch_weights_hash = (
+                "eeb046514cec7b6655745bebcd8403da04009bf1760aabd0f72967a23b5b5f19"
+            )
+        else:
+            self.torch_weights_file_name = "cranioplasty_jit_ct_binary.pt"
+            self.torch_weights_url = "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_binary/cranioplasty_jit_ct_binary.pt"
+            self.torch_weights_hash = (
+                "cfd9af5c53c5354959b8f5fd091a6208f6b1fa8a22ae8b4bf2e83cba5e735b41"
+            )
+
+    def _run_segmentation(self):
+        image = np.memmap(
+            self._image_filename,
+            dtype=self._image_dtype,
+            shape=self._image_shape,
+            mode="r",
+        )
+
+        # FIX: to remove
+        image = np.flip(image, 2)
+
+        if self.method == 1:
+            # To use gray scale AI weight
+            image = imagedata_utils.get_LUT_value_normalized(image, 700, 4000)
+        else:
+            # To binary to use binary AI weight
+            image = image.copy()
+            image[image < 300] = 0
+            image[image >= 300] = 1
+
+            # Select only largest connected component
+            image = imagedata_utils.get_largest_connected_component(image)
+
+            image = image.astype("float")
+
+        probability_array = np.memmap(
+            self._prob_array_filename,
+            dtype=np.float32,
+            shape=self._image_shape,
+            mode="r+",
+        )
+        comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
+
+        if self.backend.lower() == "pytorch":
+            if not self.torch_weights_file_name:
+                raise FileNotFoundError("Weights file not specified.")
+            folder = inv_paths.MODELS_DIR.joinpath(self.torch_weights_file_name.split(".")[0])
+            system_state_dict_file = folder.joinpath(self.torch_weights_file_name)
+            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(self.torch_weights_file_name)
+            if system_state_dict_file.exists():
+                weights_file = system_state_dict_file
+            elif user_state_dict_file.exists():
+                weights_file = user_state_dict_file
+            else:
+                download_url_to_file(
+                    self.torch_weights_url,
+                    user_state_dict_file,
+                    self.torch_weights_hash,
+                    download_callback(comm_array),
+                )
+                weights_file = user_state_dict_file
+            segment_torch_jit(
+                image,
+                weights_file,
+                self.overlap,
+                self.device_id,
+                probability_array,
+                comm_array,
+                self.patch_size,
+                resize_by_spacing=self.resize_by_spacing,
+                image_spacing=self.image_spacing,
+                needed_spacing=self.needed_spacing,
+                flipped=True,
             )
         else:
             utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)

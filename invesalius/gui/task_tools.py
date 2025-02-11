@@ -20,16 +20,11 @@
 import os
 
 import wx
-
-try:
-    import wx.lib.agw.hyperlink as hl
-except ImportError:
-    import wx.lib.hyperlink as hl
-
+import wx.lib.agw.hyperlink as hl
 import wx.lib.platebtn as pbtn
 
-import invesalius.constants as const
 import invesalius.constants as constants
+from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -114,8 +109,8 @@ class InnerTaskPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
         # Tags and grid sizer for fixed items
-        flag_link = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
-        flag_button = wx.EXPAND | wx.GROW
+        # flag_link = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
+        # flag_button = wx.EXPAND | wx.GROW
 
         sizer = wx.GridBagSizer(hgap=0, vgap=0)
         sizer.Add(txt_measure, pos=(0, 0), flag=wx.GROW | wx.EXPAND | wx.TOP, border=3)

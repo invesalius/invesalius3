@@ -19,7 +19,7 @@
 
 import itertools
 import sys
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import psutil
 import wx
@@ -290,7 +290,7 @@ THRESHOLD_OUTVALUE = 0
 MASK_NAME_PATTERN = _("Mask %d")
 MASK_OPACITY = 0.40
 # MASK_OPACITY = 0.35
-MASK_COLOUR = [
+MASK_COLOUR: List[List[float]] = [
     [0.33, 1, 0.33],
     [1, 1, 0.33],
     [0.33, 0.91, 1],
@@ -312,7 +312,7 @@ MASK_COLOUR = [
 
 MEASURE_COLOUR = itertools.cycle([[1, 0, 0], [1, 0.4, 0], [0, 0, 1], [1, 0, 1], [0, 0.6, 0]])
 
-SURFACE_COLOUR = [
+SURFACE_COLOUR: List[Tuple[float, float, float]] = [
     (0.33, 1, 0.33),
     (1, 1, 0.33),
     (0.33, 0.91, 1),
@@ -613,6 +613,7 @@ ID_FLOODFILL_SEGMENTATION = wx.NewIdRef()
 ID_SEGMENTATION_BRAIN = wx.NewIdRef()
 ID_SEGMENTATION_TRACHEA = wx.NewIdRef()
 ID_SEGMENTATION_MANDIBLE_CT = wx.NewIdRef()
+ID_PLANNING_CRANIOPLASTY = wx.NewIdRef()
 ID_CROP_MASK = wx.NewIdRef()
 ID_DENSITY_MEASURE = wx.NewIdRef()
 ID_MASK_DENSITY_MEASURE = wx.NewIdRef()
@@ -734,6 +735,11 @@ RENDERING = 0
 SURFACE_INTERPOLATION = 1
 LANGUAGE = 2
 SLICE_INTERPOLATION = 3
+# Logging
+LOGGING = 4
+LOGGING_LEVEL = 5
+APPEND_LOG_FILE = 6
+LOGFILE = 7
 
 
 # ------------ Logging options key------------
@@ -804,9 +810,24 @@ LABEL_COLUMN = 3
 TARGET_COLUMN = 4
 Z_OFFSET_COLUMN = 5
 POINT_OF_INTEREST_TARGET_COLUMN = 6
-X_COLUMN = 7
-Y_COLUMN = 8
-Z_COLUMN = 9
+MEP_COLUMN = 7
+UUID = 8
+X_COLUMN = 9
+Y_COLUMN = 10
+Z_COLUMN = 11
+
+# The column order in the brain marker panel
+#
+BRAIN_ID_COLUMN = 0
+BRAIN_SESSION_COLUMN = 1
+BRAIN_MARKER_TYPE_COLUMN = 2
+BRAIN_LABEL_COLUMN = 3
+BRAIN_MEP_COLUMN = 4
+BRAIN_X_MTMS = 5
+BRAIN_Y_MTMS = 6
+BRAIN_R_MTMS = 7
+BRAIN_INTENSITY_MTMS = 8
+BRAIN_UUID = 9
 
 # ------------ Navigation defaults -------------------
 
@@ -830,7 +851,7 @@ DEBUGTRACKAPPROACH = 10
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b"COM1"
-NDI_IP = ["P9-13715.local", "P9-13719.local"]
+NDI_IP = ["P9-13715.local", "P9-13719.local", "P9-25026.local"]
 
 TRACKERS = [
     _("Claron MicronTracker"),
@@ -1007,9 +1028,86 @@ TREKKER_CONFIG = {
 }
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
-CURRENT_MARKER_FILE_VERSION = 3
-SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3]
+CURRENT_MARKER_FILE_VERSION = 4
+SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3, 4]
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
+
+# Motor mapping visualization
+
+DEFAULT_MEP_CONFIG_PARAMS = {
+    "mep_enabled": False,
+    "threshold_down": 0,
+    "range_up": 1,
+    "mep_colormap": "Viridis",
+    "gaussian_sharpness": 1.0,
+    "gaussian_radius": 3,
+    "dimensions_size": 80,
+    "colormap_range_uv": {"min": 50, "low": 200, "mid": 600, "max": 1000},
+}
+
+
+MEP_COLORMAP_DEFINITIONS = {
+    "BlueCyanYellowRed": {  # Blue, Cyan, Yellow, Red
+        "min": (0.0, 0.0, 1.0),
+        "low": (0.0, 1.0, 1.0),
+        "mid": (1.0, 1.0, 0.0),
+        "max": (1.0, 0.0, 0.0),
+    },
+    "GreenYellowOrangeRed": {  # Green, Yellow, Orange, Red
+        "min": (0.0, 1.0, 0.0),
+        "low": (1.0, 1.0, 0.0),
+        "mid": (1.0, 0.647, 0.0),
+        "max": (1.0, 0.0, 0.0),
+    },
+    "PurpleBlueGreenYellow": {  # Purple, Blue, Green, Yellow
+        "min": (0.5, 0.0, 0.5),
+        "low": (0.0, 0.0, 1.0),
+        "mid": (0.0, 1.0, 0.0),
+        "max": (1.0, 1.0, 0.0),
+    },
+    "BlackGrayWhiteRed": {  # Black, Gray, White, Red (grayscale with highlight)
+        "min": (0.0, 0.0, 0.0),
+        "low": (0.5, 0.5, 0.5),
+        "mid": (1.0, 1.0, 1.0),
+        "max": (1.0, 0.0, 0.0),
+    },
+    "Viridis": {  # Viridis (perceptually uniform)
+        "min": (0.267, 0.004, 0.329),
+        "low": (0.192, 0.408, 0.556),
+        "mid": (0.137, 0.718, 0.475),
+        "max": (0.993, 0.906, 0.144),
+    },
+    "Grayscale": {  # Grayscale (often used for CT/MRI)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.25, 0.25, 0.25),  # Dark Gray
+        "mid": (0.75, 0.75, 0.75),  # Light Gray
+        "max": (1.0, 1.0, 1.0),  # White
+    },
+    "HotMetal": {  # Hot Metal (useful for highlighting hot spots)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.5, 0.0, 0.0),  # Dark Red
+        "mid": (1.0, 0.5, 0.0),  # Orange
+        "max": (1.0, 1.0, 1.0),  # White
+    },
+    "Rainbow": {  # Rainbow (although not perceptually uniform, still common)
+        "min": (0.0, 0.0, 1.0),  # Blue
+        "low": (0.0, 1.0, 0.0),  # Green
+        "mid": (1.0, 1.0, 0.0),  # Yellow
+        "max": (1.0, 0.0, 0.0),  # Red
+    },
+    "Bone": {  # Bone (specifically designed for CT bone visualization)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.388, 0.224, 0.0),  # Brown
+        "mid": (0.902, 0.827, 0.631),  # Beige
+        "max": (1.0, 1.0, 1.0),  # White
+    },
+    "InvertedGrayscale": {  # Inverted Grayscale (sometimes used for PET)
+        "min": (1.0, 1.0, 1.0),  # White
+        "low": (0.75, 0.75, 0.75),  # Light Gray
+        "mid": (0.25, 0.25, 0.25),  # Dark Gray
+        "max": (0.0, 0.0, 0.0),  # Black
+    },
+}
 
 # Keycodes for moving markers using the keyboard
 MOVE_MARKER_LEFT_KEYCODE = 65  # A
@@ -1051,8 +1149,14 @@ BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 # Robot
-ROBOT_ElFIN_IP = ["192.168.200.251", "143.107.220.251", "169.254.153.251", "127.0.0.1"]
-ROBOT_DOBOT_IP = ["192.168.1.6"]
+ROBOT_IPS = [
+    "192.168.200.251",
+    "143.107.220.251",
+    "169.254.153.251",
+    "127.0.0.1",
+    "192.168.1.6",
+    "169.254.128.103",
+]
 
 MTMS_RADIUS = 15
 

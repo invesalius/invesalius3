@@ -21,14 +21,11 @@ from enum import Enum
 
 import numpy as np
 import wx
-from wx import ID_OK
 
-import invesalius.constants as const
 import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.i18n import tr as _
-from invesalius.navigation.tracker import Tracker
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -46,8 +43,9 @@ class Robot(metaclass=Singleton):
         self.tracker = tracker
         self.navigation = navigation
         self.icp = icp
-
         self.enabled_in_gui = False
+
+        self.coil_name = None
 
         self.is_robot_connected = False
         self.robot_ip = None
@@ -84,24 +82,36 @@ class Robot(metaclass=Singleton):
 
         Publisher.subscribe(self.TrackerFiducialsSet, "Tracker fiducials set")
 
-    def SaveConfig(self):
-        matrix_tracker_to_robot = self.matrix_tracker_to_robot.tolist()
-
-        state = {"robot_ip": self.robot_ip, "tracker_to_robot": matrix_tracker_to_robot}
+    def SaveConfig(self, key=None, value=None):
         session = ses.Session()
+        if key is None or value is None:
+            # Save the whole state
+            state = {
+                "robot_ip": self.robot_ip,
+                "tracker_to_robot": self.matrix_tracker_to_robot.tolist(),
+            }
+            if self.coil_name is not None:
+                state["robot_coil"] = self.coil_name
+        else:
+            state = session.GetConfig("robot", {})
+            state[key] = value
+
         session.SetConfig("robot", state)
 
     def LoadConfig(self):
         session = ses.Session()
-        state = session.GetConfig("robot")
+        state = session.GetConfig("robot", {})
 
-        if state is None:
-            return False
+        self.coil_name = state.get("robot_coil", None)
 
-        self.robot_ip = state["robot_ip"]
-        self.matrix_tracker_to_robot = np.array(state["tracker_to_robot"])
+        self.robot_ip = state.get("robot_ip", None)
 
-        return True
+        self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
+        if self.matrix_tracker_to_robot is not None:
+            self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
+
+        success = self.robot_ip is not None and self.matrix_tracker_to_robot is not None
+        return success
 
     def OnRobotConnectionStatus(self, data):
         # TODO: Is this check necessary?
@@ -111,6 +121,7 @@ class Robot(metaclass=Singleton):
         self.is_robot_connected = data
         if self.is_robot_connected:
             Publisher.sendMessage("Enable move away button", enabled=True)
+            Publisher.sendMessage("Enable free drive button", enabled=True)
 
     def RegisterRobot(self):
         Publisher.sendMessage("End busy cursor")
@@ -144,6 +155,9 @@ class Robot(metaclass=Singleton):
     def IsConnected(self):
         return self.is_robot_connected
 
+    def IsReady(self):  # LUKATODO: use this check before enabling robot for navigation...
+        return self.IsConnected() and (self.coil_name in self.navigation.coil_registrations)
+
     def SetRobotIP(self, data):
         if data is not None:
             self.robot_ip = data
@@ -159,9 +173,21 @@ class Robot(metaclass=Singleton):
         )
         print("Robot initialized")
 
+    def GetCoilName(self):
+        return self.coil_name
+
+    def SetCoilName(self, name):
+        self.coil_name = name
+        self.SaveConfig("robot_coil", name)
+
     def SendTargetToRobot(self):
         # If the target is not set, return early.
         if self.target is None:
+            return False
+
+        navigation = self.navigation
+        # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
+        if navigation.m_change is None or navigation.obj_datas is None:
             return False
 
         # Compute the target in tracker coordinate system.
@@ -172,13 +198,12 @@ class Robot(metaclass=Singleton):
         #   to avoid modifying it.
         target = self.target[:]
         target[1] = -target[1]
-
-        # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
-        if self.navigation.m_change is None or self.navigation.obj_data is None:
-            return False
-
         m_target = dcr.image_to_tracker(
-            self.navigation.m_change, coord_raw, target, self.icp, self.navigation.obj_data
+            navigation.m_change,
+            coord_raw,
+            target,
+            self.icp,
+            navigation.obj_datas[self.coil_name],
         )
 
         Publisher.sendMessage(

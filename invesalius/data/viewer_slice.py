@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -19,12 +18,9 @@
 # --------------------------------------------------------------------------
 
 import collections
-import itertools
 import os
 import sys
-import tempfile
 
-import numpy as np
 import wx
 from vtkmodules.vtkFiltersGeneral import vtkCursor3D
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
@@ -50,7 +46,6 @@ from vtkmodules.vtkRenderingCore import (
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 import invesalius.constants as const
-import invesalius.data.converters as converters
 import invesalius.data.cursor_actors as ca
 import invesalius.data.measures as measures
 import invesalius.data.slice_ as sl
@@ -171,15 +166,15 @@ class ContourMIPConfig(wx.Panel):
 
     def OnSetMIPSize(self, number_slices):
         val = self.mip_size_spin.GetValue()
-        Publisher.sendMessage("Set MIP size %s" % self.orientation, number_slices=val)
+        Publisher.sendMessage(f"Set MIP size {self.orientation}", number_slices=val)
 
     def OnSetMIPBorder(self, evt):
         val = self.border_spin.GetValue()
-        Publisher.sendMessage("Set MIP border %s" % self.orientation, border_size=val)
+        Publisher.sendMessage(f"Set MIP border {self.orientation}", border_size=val)
 
     def OnCheckInverted(self, evt):
         val = self.inverted.GetValue()
-        Publisher.sendMessage("Set MIP Invert %s" % self.orientation, invert=val)
+        Publisher.sendMessage(f"Set MIP Invert {self.orientation}", invert=val)
 
     def _set_projection_type(self, projection_id):
         if projection_id in (const.PROJECTION_MIDA, const.PROJECTION_CONTOUR_MIDA):
@@ -583,7 +578,7 @@ class Viewer(wx.Panel):
         vtk 5.4.3
         """
         ren = slice_data.renderer
-        size = ren.GetSize()
+        # size = ren.GetSize()
 
         ren.ResetCamera()
         ren.GetActiveCamera().Zoom(1.0)
@@ -871,7 +866,7 @@ class Viewer(wx.Panel):
             picker = self.pick
 
         slice_data = self.slice_data
-        renderer = slice_data.renderer
+        # renderer = slice_data.renderer
 
         coord = self.get_coordinate_cursor(picker)
         position = slice_data.actor.GetInput().FindPoint(coord)
@@ -885,9 +880,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.LoadImagedata, "Load slice to viewer")
         Publisher.subscribe(self.SetBrushColour, "Change mask colour")
         Publisher.subscribe(self.UpdateRender, "Update slice viewer")
-        Publisher.subscribe(self.UpdateRender, "Update slice viewer %s" % self.orientation)
+        Publisher.subscribe(self.UpdateRender, f"Update slice viewer {self.orientation}")
         Publisher.subscribe(self.UpdateCanvas, "Redraw canvas")
-        Publisher.subscribe(self.UpdateCanvas, "Redraw canvas %s" % self.orientation)
+        Publisher.subscribe(self.UpdateCanvas, f"Redraw canvas {self.orientation}")
         Publisher.subscribe(self.ChangeSliceNumber, ("Set scroll position", self.orientation))
         # Publisher.subscribe(self.__update_cross_position,
         #                     'Update cross position')
@@ -927,13 +922,13 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
 
         Publisher.subscribe(self.ReloadActualSlice, "Reload actual slice")
-        Publisher.subscribe(self.ReloadActualSlice, "Reload actual slice %s" % self.orientation)
+        Publisher.subscribe(self.ReloadActualSlice, f"Reload actual slice {self.orientation}")
         Publisher.subscribe(self.OnUpdateScroll, "Update scroll")
 
         # MIP
-        Publisher.subscribe(self.OnSetMIPSize, "Set MIP size %s" % self.orientation)
-        Publisher.subscribe(self.OnSetMIPBorder, "Set MIP border %s" % self.orientation)
-        Publisher.subscribe(self.OnSetMIPInvert, "Set MIP Invert %s" % self.orientation)
+        Publisher.subscribe(self.OnSetMIPSize, f"Set MIP size {self.orientation}")
+        Publisher.subscribe(self.OnSetMIPBorder, f"Set MIP border {self.orientation}")
+        Publisher.subscribe(self.OnSetMIPInvert, f"Set MIP Invert {self.orientation}")
         Publisher.subscribe(self.OnShowMIPInterface, "Show MIP interface")
 
         Publisher.subscribe(self.OnSetOverwriteMask, "Set overwrite mask")
@@ -1016,7 +1011,7 @@ class Viewer(wx.Panel):
                     writer = vtkPostScriptWriter()
                 elif filetype == const.FILETYPE_TIF:
                     writer = vtkTIFFWriter()
-                    filename = "%s.tif" % filename.strip(".tif")
+                    filename = "{}.tif".format(filename.strip(".tif"))
 
                 writer.SetInputData(image)
                 writer.SetFileName(filename.encode(const.FS_ENCODE))
@@ -1274,7 +1269,7 @@ class Viewer(wx.Panel):
         return slice_data
 
     def UpdateInterpolatedSlice(self):
-        if self.slice_actor != None:
+        if self.slice_actor is not None:
             session = ses.Session()
             if session.GetConfig("slice_interpolation"):
                 self.slice_actor.InterpolateOff()
@@ -1285,8 +1280,8 @@ class Viewer(wx.Panel):
 
     def SetInterpolatedSlices(self, flag):
         self.interpolation_slice_status = flag
-        if self.slice_actor != None:
-            if self.interpolation_slice_status == True:
+        if self.slice_actor is not None:
+            if self.interpolation_slice_status is True:
                 self.slice_actor.InterpolateOn()
             else:
                 self.slice_actor.InterpolateOff()
@@ -1294,7 +1289,7 @@ class Viewer(wx.Panel):
                 self.UpdateRender()
 
     def __update_camera(self):
-        orientation = self.orientation
+        # orientation = self.orientation
         proj = project.Project()
         orig_orien = proj.original_orientation
 
@@ -1369,7 +1364,7 @@ class Viewer(wx.Panel):
         self.OnScrollBar()
 
     def UpdateSlice3D(self, pos):
-        original_orientation = project.Project().original_orientation
+        # original_orientation = project.Project().original_orientation
         pos = self.scroll.GetThumbPosition()
         Publisher.sendMessage(
             "Change slice from slice plane", orientation=self.orientation, index=pos
@@ -1398,7 +1393,7 @@ class Viewer(wx.Panel):
             evt.Skip()
 
     def OnScrollBarRelease(self, evt):
-        pos = self.scroll.GetThumbPosition()
+        # pos = self.scroll.GetThumbPosition()
         evt.Skip()
 
     def OnKeyDown(self, evt=None, obj=None):

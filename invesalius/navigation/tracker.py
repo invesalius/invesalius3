@@ -51,7 +51,10 @@ class Tracker(metaclass=Singleton):
 
         self.TrackerCoordinates = dco.TrackerCoordinates()
 
-        self.LoadState()
+        try:
+            self.LoadState()
+        except:
+            ses.Session().DeleteStateFile()
 
     def SaveState(self):
         tracker_id = self.tracker_id
@@ -92,9 +95,9 @@ class Tracker(metaclass=Singleton):
 
         self.SetTracker(tracker_id=self.tracker_id, configuration=configuration)
 
-    def SetTracker(self, tracker_id, configuration=None):
+    def SetTracker(self, tracker_id, n_coils=1, configuration=None):
         if tracker_id:
-            self.tracker_connection = tc.CreateTrackerConnection(tracker_id)
+            self.tracker_connection = tc.CreateTrackerConnection(tracker_id, n_coils)
 
             # Configure tracker.
             if configuration is not None:
@@ -199,7 +202,7 @@ class Tracker(metaclass=Singleton):
         )
 
         # If probe or head markers are not visible, show a warning and return early.
-        probe_visible, head_visible, _ = marker_visibilities
+        probe_visible, head_visible, *coils_visible = marker_visibilities
 
         if not probe_visible:
             dlg.ShowNavigationTrackerWarning(0, "probe marker not visible")
@@ -212,9 +215,7 @@ class Tracker(metaclass=Singleton):
         # Update tracker fiducial with tracker coordinates
         self.tracker_fiducials[fiducial_index, :] = coord[0:3]
 
-        assert 0 <= fiducial_index <= 2, "Fiducial index out of range (0-2): {}".format(
-            fiducial_index
-        )
+        assert 0 <= fiducial_index <= 2, f"Fiducial index out of range (0-2): {fiducial_index}"
 
         self.tracker_fiducials_raw[2 * fiducial_index, :] = coord_raw[0, :]
         self.tracker_fiducials_raw[2 * fiducial_index + 1, :] = coord_raw[1, :]
@@ -226,7 +227,7 @@ class Tracker(metaclass=Singleton):
             coord_raw, 1
         )
 
-        print("Set tracker fiducial {} to coordinates {}.".format(fiducial_index, coord[0:3]))
+        print(f"Set tracker fiducial {fiducial_index} to coordinates {coord[0:3]}.")
 
         self.SaveState()
 

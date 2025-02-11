@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-import math
-
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -22,7 +19,6 @@ import math
 # from math import cos, sin
 import os
 import queue
-import random
 import sys
 
 import numpy as np
@@ -33,31 +29,24 @@ from vtk import vtkCommand
 from vtkmodules.vtkCommonColor import vtkColorSeries, vtkNamedColors
 
 # TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
-from vtkmodules.vtkCommonComputationalGeometry import vtkParametricTorus
 from vtkmodules.vtkCommonCore import (
     mutable,
     vtkDoubleArray,
     vtkIdList,
     vtkLookupTable,
-    vtkMath,
     vtkPoints,
     vtkUnsignedCharArray,
 )
 from vtkmodules.vtkCommonDataModel import (
-    vtkCellLocator,
     vtkPolyData,
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import vtkCenterOfMass, vtkGlyph3D, vtkPolyDataNormals
-from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
 from vtkmodules.vtkFiltersModeling import vtkBandedPolyDataContourFilter
 from vtkmodules.vtkFiltersSources import (
     vtkArrowSource,
-    vtkDiskSource,
-    vtkLineSource,
-    vtkParametricFunctionSource,
     vtkSphereSource,
 )
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera
@@ -81,7 +70,7 @@ from vtkmodules.vtkIOImage import (
     vtkPostScriptWriter,
     vtkTIFFWriter,
 )
-from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor, vtkScalarBarActor
+from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPointPicker,
@@ -97,7 +86,6 @@ from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteracto
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
-import invesalius.data.slice_ as sl
 import invesalius.data.styles_3d as styles
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
@@ -107,11 +95,11 @@ import invesalius.style as st
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data.actor_factory import ActorFactory
-from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.ruler_volume import GenericLeftRulerVolume
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
+from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.i18n import tr as _
@@ -135,7 +123,12 @@ PROP_MEASURE = 0.8
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=wx.Size(320, 320))
+        display_size = wx.GetDisplaySize()
+        # Set the initial volume wx.Panel size as half the screen resolution to fix the issue
+        # with small target guide icons when loading a state file with target selected
+        x = int(display_size[0] / 2)
+        y = int(display_size[1] / 2)
+        wx.Panel.__init__(self, parent, size=wx.Size(x, y))
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
 
         self.interaction_style = st.StyleStateManager()
@@ -262,6 +255,7 @@ class Viewer(wx.Panel):
         self.pTarget = [0.0, 0.0, 0.0]
 
         self.distance_text = None
+        self.robot_warnings_text = None
         self.force_compensate_arrow_up = None
         # self.force_compensate_text = None
         self.force_compensate_distance = 0
@@ -324,10 +318,11 @@ class Viewer(wx.Panel):
         # An object to manage visualizing coils in the 3D viewer.
         self.coil_visualizer = CoilVisualizer(
             renderer=self.ren,
-            interactor=self.interactor,
             actor_factory=self.actor_factory,
             vector_field_visualizer=self.vector_field_visualizer,
         )
+
+        self.probe_visualizer = ProbeVisualizer(self.ren)
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
@@ -356,9 +351,6 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
-        # Automatically enable and press 'Track object' button.
-        Publisher.sendMessage("Enable track object button", enabled=True)
-        Publisher.sendMessage("Press track object button", pressed=True)
         Publisher.sendMessage("Press target mode button", pressed=False)
 
     def UpdateCanvas(self):
@@ -480,6 +472,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUnsetTarget, "Unset target")
         Publisher.subscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
         Publisher.subscribe(self.OnUpdateDistanceThreshold, "Update distance threshold")
+        Publisher.subscribe(
+            self.OnUpdateRobotWarning, "Robot to Neuronavigation: Update robot warning"
+        )
         Publisher.subscribe(self.OnUpdateTracts, "Update tracts")
         Publisher.subscribe(self.OnUpdateEfieldvis, "Update efield vis")
         Publisher.subscribe(self.InitializeColorArray, "Initialize color array")
@@ -617,7 +612,7 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def OnSensors(self, marker_visibilities):
-        probe_id, ref_id, obj_id = marker_visibilities
+        probe_id, ref_id, *coil_ids = marker_visibilities
 
         if not self.probe:
             self.probe = True
@@ -634,7 +629,9 @@ class Viewer(wx.Panel):
             colour2 = green_color
         else:
             colour2 = red_color
-        if obj_id:
+        if any(
+            coil_ids
+        ):  # LUKATODO: add subscript to show how many coils are visible (green when all visible, orange when some not)
             colour3 = green_color
         else:
             colour3 = red_color
@@ -774,7 +771,7 @@ class Viewer(wx.Panel):
                 writer = vtkPostScriptWriter()
             elif filetype == const.FILETYPE_TIF:
                 writer = vtkTIFFWriter()
-                filename = "%s.tif" % filename.strip(".tif")
+                filename = "{}.tif".format(filename.strip(".tif"))
 
             writer.SetInputData(image)
             writer.SetFileName(filename.encode(const.FS_ENCODE))
@@ -872,6 +869,10 @@ class Viewer(wx.Panel):
         print("updated to ", dist_threshold)
         self.distance_threshold = dist_threshold
 
+    def OnUpdateRobotWarning(self, robot_warning):
+        if self.robot_warnings_text is not None:
+            self.robot_warnings_text.SetValue(robot_warning)
+
     def IsTargetMode(self):
         return self.target_mode
 
@@ -925,7 +926,7 @@ class Viewer(wx.Panel):
         obj_pitch.RotateZ(180)
 
         force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
-        
+
         arrow_roll_z1 = self.actor_factory.CreateArrow([-50, -35, 12], [-50, -35, 50])
         arrow_roll_z1.GetProperty().SetColor(1, 1, 0)
         arrow_roll_z1.RotateX(-60)
@@ -995,7 +996,7 @@ class Viewer(wx.Panel):
         # Remove the previous actor for 'distance' text
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
-        
+
         # if self.force_compensate_arrow_up is not None:
         #     self.ren.RemoveActor(self.force_compensate_arrow_up)
 
@@ -1012,8 +1013,19 @@ class Viewer(wx.Panel):
         # Store the object for 'distance' text so it can be modified when distance changes.
         self.distance_text = distance_text
 
+        # Remove the previous actor for 'distance' text
+        if self.robot_warnings_text is not None:
+            self.ren.RemoveActor(self.robot_warnings_text.actor)
+
+        # Create new actor for 'distance' text
+        robot_warnings_text = self.CreateRobotWarningsText()
+        self.ren.AddActor(robot_warnings_text.actor)
+
+        # Store the object for 'distance' text so it can be modified when distance changes.
+        self.robot_warnings_text = robot_warnings_text
+
         ##########################################
-        
+
         # force_compensate_text = self.CreateForceCompensateText()
         # self.ren.AddActor(force_compensate_text.actor)
 
@@ -1057,6 +1069,10 @@ class Viewer(wx.Panel):
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
 
+        # Remove the actor for 'robot warnings' text.
+        if self.robot_warnings_text is not None:
+            self.ren.RemoveActor(self.robot_warnings_text.actor)
+
         ##########################################
         # if self.force_compensate_arrow_up is not None:
         #     self.ren.RemomveActor(self.force_compensate_arrow_up)
@@ -1089,21 +1105,22 @@ class Viewer(wx.Panel):
         # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(displacement)
         # if self.force_compensate_text is not None:
         #         self.force_compensate_text.SetValue(formatted_force_compensate)
-        
+
 
     def OnUpdateCoilPose(self, m_img, coord):
-        vtk_colors = vtkNamedColors()
+        # vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
             distance_to_target = distance.euclidean(
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
+
             if self.force_compensate_distance < 0:
-                formatted_distance = "Distance: {: >5.1f} mm UP \u2191".format(distance_to_target)
+                formatted_distance = f"Distance: {distance_to_target: >5.1f} mm UP \u2191"
                 # self.force_compensate_arrow_up.SetOrientation()
             elif self.force_compensate_distance > 0:
-                formatted_distance = u"Distance: {: >5.1f} mm DOWN ↓ \u2193".format(distance_to_target)
+                formatted_distance = f"Distance: {distance_to_target: >5.1f} mm DOWN ↓\u2193"
             else:
-                formatted_distance = "Distance: {: >5.1f} mm".format(distance_to_target)
+                formatted_distance = f"Distance: {distance_to_target: >5.1f} mm"
 
             # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(self.force_compensate_distance)
 
@@ -1162,7 +1179,7 @@ class Viewer(wx.Panel):
             if self.guide_arrow_actors is not None:
                 for actor in self.guide_arrow_actors:
                     self.target_guide_renderer.RemoveActor(actor)
-            
+
             ########
             if self.force_compensate_arrow_up is not None:
                 self.target_guide_renderer.RemoveActor(self.force_compensate_arrow_up)
@@ -1311,7 +1328,7 @@ class Viewer(wx.Panel):
 
         self.coil_visualizer.AddTargetCoil(self.m_target)
 
-        print("Target updated to coordinates {}".format(coord))
+        print(f"Target updated to coordinates {coord}")
 
     def CreateVTKObjectMatrix(self, direction, orientation):
         m_img = dco.coordinates_to_transformation_matrix(
@@ -1329,6 +1346,17 @@ class Viewer(wx.Panel):
 
         return m_img_vtk
 
+    def CreateRobotWarningsText(self):
+        robot_warnings_text = vtku.Text()
+
+        robot_warnings_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
+        robot_warnings_text.SetPosition((const.X, 1.02 - const.YZ))
+        robot_warnings_text.SetVerticalJustificationToBottom()
+        robot_warnings_text.SetColour((1, 1, 0))
+        robot_warnings_text.BoldOn()
+
+        return robot_warnings_text
+
     def CreateDistanceText(self):
         distance_text = vtku.Text()
 
@@ -1338,7 +1366,7 @@ class Viewer(wx.Panel):
         distance_text.BoldOn()
 
         return distance_text
-    
+
     # def CreateCompensateArrowUp(self):
     #     # arrow_source = vtkArrowSource()
 
@@ -1348,7 +1376,7 @@ class Viewer(wx.Panel):
     #     force_compensate_arrow_up.RotateZ(180)
     #     return force_compensate_arrow_up
 
-    
+
     # def CreateForceCompensateText(self):
         # up_arrow_actor = vtku.vtkTextActor()
         # up_arrow_actor.SetInput("TESTTEST")  # Unicode for up arrow
@@ -1402,7 +1430,7 @@ class Viewer(wx.Panel):
         v2 = v2 / np.linalg.norm(v2)  # unit vector
         v1 = np.cross(v3, v2)
         v1 = v1 / np.linalg.norm(v1)  # unit vector
-        x2 = x0 + v1
+        # x2 = x0 + v1
         # calculates the matrix for the change of coordinate systems (from canonical to the plane's).
         # remember that, in np.dot(M,p), even though p is a line vector (e.g.,np.array([1,2,3])), it is treated as a column for the dot multiplication.
         M_plane_inv = np.array(
@@ -1460,6 +1488,10 @@ class Viewer(wx.Panel):
         # Update the pointer sphere.
         if self.pointer_actor is None:
             self.CreatePointer()
+
+        # Hide the pointer during targeting, as it would cover the coil center donut
+        self.pointer_actor.SetVisibility(not self.target_mode)
+
         self.pointer_actor.SetPosition(position)
         # Update the render window manually, as it is not updated automatically when not navigating.
         if not self.nav_status:
@@ -1609,12 +1641,8 @@ class Viewer(wx.Panel):
 
             proj = prj.Project()
             timestamp = time.localtime(time.time())
-            stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-                timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-            )
-            stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-                timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-            )
+            stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+            stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
             sep = "-"
 
             if self.path_meshes is None:
@@ -1672,7 +1700,7 @@ class Viewer(wx.Panel):
     def CalculateDistanceMaxEfieldCoGE(self):
         self.distance_efield = distance.euclidean(self.center_gravity_position, self.position_max)
         self.SpreadEfieldFactorTextActor.SetValue(
-            "Spread distance: " + str("{:04.2f}".format(self.distance_efield))
+            "Spread distance: " + str(f"{self.distance_efield:04.2f}")
         )
 
     def EfieldVectors(self):
@@ -1815,7 +1843,7 @@ class Viewer(wx.Panel):
 
         matching_rows = []
 
-        with open(csv_filename, "r") as csvfile:
+        with open(csv_filename) as csvfile:
             csv_reader = csv.reader(csvfile)
             for row in csv_reader:
                 # Extract the first three numbers from the current row
@@ -2089,16 +2117,14 @@ class Viewer(wx.Panel):
 
     def ShowEfieldAtCortexTarget(self):
         if self.target_at_cortex is not None:
-            import vtk
-
             index = self.efield_mesh.FindPoint(self.target_at_cortex)
             if index in self.Id_list:
                 cell_number = self.Id_list.index(index)
                 self.EfieldAtTargetLegend.SetValue(
-                    "Efield at Target: " + str("{:04.2f}".format(self.e_field_norms[cell_number]))
+                    "Efield at Target: " + str(f"{self.e_field_norms[cell_number]:04.2f}")
                 )
             else:
-                self.EfieldAtTargetLegend.SetValue("Efield at Target: " + str("{:04.2f}".format(0)))
+                self.EfieldAtTargetLegend.SetValue("Efield at Target: " + str(f"{0:04.2f}"))
 
     def CreateEfieldAtTargetLegend(self):
         if self.EfieldAtTargetLegend is not None:
@@ -2187,9 +2213,9 @@ class Viewer(wx.Panel):
                 distance = np.linalg.norm(point - p1)
                 if distance < closestDist:
                     closestDist = distance
-                    closestPoint = point
-                    pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
-                    angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
+                    # closestPoint = point
+                    # pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
+                    # angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     self.FindPointsAroundRadiusEfield(cellId)
                     self.radius_list.Sort()
         else:
@@ -2248,7 +2274,7 @@ class Viewer(wx.Panel):
             self.e_field_IDs_queue = queue_IDs
             if self.radius_list.GetNumberOfIds() != 0:
                 if np.all(self.old_coord != coord):
-                    self.e_field_IDs_queue.put_nowait((self.radius_list))
+                    self.e_field_IDs_queue.put_nowait(self.radius_list)
                 self.old_coord = np.array([coord])
         except queue.Full:
             pass
@@ -2296,7 +2322,7 @@ class Viewer(wx.Panel):
             if session.GetConfig("debug_efield"):
                 self.e_field_norms = enorm_data[3][self.Id_list, 0]
                 self.e_field_col1 = enorm_data[3][self.Id_list, 1]
-                self.e_field_col2 = enorm_data[3][self.Id_list, 1]
+                self.e_field_col2 = enorm_data[3][self.Id_list, 1]  # LUKATODO: is this a typo?
                 self.e_field_col3 = enorm_data[3][self.Id_list, 3]
                 self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
                 max = np.array(self.e_field_norms).argmax()
@@ -2320,11 +2346,11 @@ class Viewer(wx.Panel):
 
                     proj = prj.Project()
                     timestamp = time.localtime(time.time())
-                    stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-                        timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
+                    stamp_date = (
+                        f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
                     )
-                    stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-                        timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
+                    stamp_time = (
+                        f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
                     )
                     sep = "-"
 
@@ -2436,8 +2462,6 @@ class Viewer(wx.Panel):
     def SavedAllEfieldData(self, filename):
         import csv
 
-        import invesalius.data.imagedata_utils as imagedata_utils
-
         header = [
             "Marker ID",
             "Enorm cell indexes",
@@ -2460,14 +2484,14 @@ class Viewer(wx.Panel):
             writer.writerows(all_data)
 
     def GetCellIntersection(self, p1, p2, locator):
-        vtk_colors = vtkNamedColors()
+        # vtk_colors = vtkNamedColors()
         # This find store the triangles that intersect the coil's normal
         intersectingCellIds = vtkIdList()
         locator.FindCellsAlongLine(p1, p2, 0.001, intersectingCellIds)
         return intersectingCellIds
 
     def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir):
-        vtk_colors = vtkNamedColors()
+        # vtk_colors = vtkNamedColors()
         closestDist = 50
 
         # If intersection is was found, calculate angle and add actors.
@@ -2922,8 +2946,8 @@ class Viewer(wx.Panel):
         cam = self.ren.GetActiveCamera()
         cam.SetFocalPoint(0, 0, 0)
 
-        proj = prj.Project()
-        orig_orien = proj.original_orientation
+        # proj = prj.Project()
+        # orig_orien = proj.original_orientation
 
         xv, yv, zv = const.VOLUME_POSITION[const.AXIAL][0][view]
         xp, yp, zp = const.VOLUME_POSITION[const.AXIAL][1][view]

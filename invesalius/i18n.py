@@ -19,22 +19,19 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-try:
-    import configparser as ConfigParser
-except ImportError:
-    import ConfigParser
 
 import gettext
 import locale
 import os
 import sys
+from typing import Callable, Optional
 
 import invesalius.utils as utl
 from invesalius.inv_paths import LOCALE_DIR
 from invesalius.session import Session
 
 
-def GetLocales():
+def GetLocales() -> utl.TwoWaysDictionary:
     """Return a dictionary which defines supported languages"""
     d = utl.TwoWaysDictionary(
         {
@@ -62,7 +59,7 @@ def GetLocales():
     return d
 
 
-def GetLocaleOS():
+def GetLocaleOS() -> Optional[str]:
     """Return language of the operating system."""
     if sys.platform == "darwin":
         # The app can't get the location then it has to set
@@ -74,10 +71,12 @@ def GetLocaleOS():
     return locale.getdefaultlocale()[0]
 
 
-def InstallLanguage(language):
+def InstallLanguage(language: str) -> Callable[[str], str]:
     file_path = os.path.split(__file__)[0]
     language_dir = LOCALE_DIR
-    if hasattr(sys, "frozen") and (sys.frozen == "windows_exe" or sys.frozen == "console_exe"):
+    if hasattr(sys, "frozen") and (
+        getattr(sys, "frozen") == "windows_exe" or getattr(sys, "frozen") == "console_exe"
+    ):
         abs_file_path = os.path.abspath(file_path + os.sep + "..")
         abs_file_path = os.path.abspath(abs_file_path + os.sep + ".." + os.sep + "..")
         language_dir = os.path.join(abs_file_path, "locale")
@@ -89,13 +88,8 @@ def InstallLanguage(language):
 
     lang = gettext.translation("invesalius", language_dir, languages=[language])
 
-    # Using unicode
-    try:
-        lang.install(unicode=1)
-        return lang.ugettext
-    except TypeError:
-        lang.install()
-        return lang.gettext
+    lang.install()
+    return lang.gettext
 
 
 class Translator:
@@ -111,7 +105,7 @@ class Translator:
             self.gettext = InstallLanguage(lang)
         return self.gettext(message)
 
-    def reset(self):
+    def reset(self) -> None:
         self.gettext = None
 
 

@@ -2,7 +2,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python==3.11
+  - python==3.11.10
   - cython==3.0.10
   - pillow==10.3.0
   - pypubsub==4.0.3
@@ -12,7 +12,6 @@ dependencies:
   - numpy==1.26.4
   - psutil==6.0.0
   - pyserial==3.5
-  - pytorch==2.3.1
   - requests==2.32.3
   - scipy==1.14.0
   - vtk==9.3.0
@@ -30,9 +29,10 @@ dependencies:
     - pyclaron
     - polhemusFT
     - polhemus
-    - pypolaris==0.0.7
+    - pypolaris==0.0.8
     - scikit-image==0.24.0
     - scikit-learn==1.5.0
+    - torch==2.3.1
     - Trekker==0.9
     - uvicorn[standard]==0.30.1
     - wxPython==4.2.1

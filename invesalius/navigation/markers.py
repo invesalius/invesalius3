@@ -22,7 +22,7 @@ import uuid
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.marker_transformator import MarkerTransformator
-from invesalius.navigation.robot import Robot, RobotObjective
+from invesalius.navigation.robot import RobotObjective
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -76,6 +76,9 @@ class MarkersControl(metaclass=Singleton):
                 orientation=marker.orientation,
             )
 
+        if marker.mep_value:
+            Publisher.sendMessage("Update marker mep", marker=marker)
+
         if render:  # this behavior could be misleading
             self.SaveState()
 
@@ -87,7 +90,6 @@ class MarkersControl(metaclass=Singleton):
     #       currently not be used outside this class.
     def DeleteMarker(self, marker_id, render=True):
         marker = self.list[marker_id]
-
         if marker.is_target:
             self.UnsetTarget(marker_id)
         if marker.is_point_of_interest:
@@ -103,6 +105,9 @@ class MarkersControl(metaclass=Singleton):
                 m.marker_id = idx
 
             self.SaveState()
+
+        if marker.mep_value:
+            Publisher.sendMessage("Redraw MEP mapping")
 
     def DeleteMultiple(self, marker_ids):
         markers = []
@@ -206,6 +211,11 @@ class MarkersControl(metaclass=Singleton):
     def ChangeLabel(self, marker, new_label):
         marker.label = str(new_label)
         Publisher.sendMessage("Update marker label", marker=marker)
+        self.SaveState()
+
+    def ChangeMEP(self, marker, new_mep):
+        marker.mep_value = new_mep
+        Publisher.sendMessage("Update marker mep", marker=marker)
 
         self.SaveState()
 
@@ -274,6 +284,32 @@ class MarkersControl(metaclass=Singleton):
             opposite_side=True,
         )
         new_marker.marker_type = MarkerType.COIL_TARGET
+        new_marker.label = self.GetNextMarkerLabel()
+
+        self.AddMarker(new_marker)
+
+    def CreateCoilTargetFromBrainTarget(self, marker):
+        new_marker = Marker()
+
+        new_marker.position = marker["position"]
+        new_marker.orientation = marker["orientation"]
+        new_marker.marker_type = MarkerType.COIL_TARGET
+
+        # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
+        new_marker.marker_id = len(self.list)
+        # Create an uuid for the marker
+        new_marker.marker_uuid = str(uuid.uuid4())
+        # Set the visualization attribute to an empty dictionary.
+        new_marker.visualization = {}
+        # Unset the is_target attribute.
+        new_marker.is_target = False
+
+        self.transformator.ProjectToScalp(
+            marker=new_marker,
+            # We are projecting the marker that is on the brain surface; hence, project to the opposite side
+            # of the scalp because the normal vectors are unreliable on the brain side of the scalp.
+            opposite_side=True,
+        )
         new_marker.label = self.GetNextMarkerLabel()
 
         self.AddMarker(new_marker)

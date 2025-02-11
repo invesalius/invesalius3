@@ -73,8 +73,35 @@ class NeuronavigationApi(metaclass=Singleton):
         Publisher.subscribe(self.stop_navigation, "Stop navigation")
         Publisher.subscribe(self.update_target_mode, "Set target mode")
         Publisher.subscribe(self.update_coil_at_target, "Coil at target")
-        # Publisher.subscribe(self.update_focus, 'Set cross focal point')
+        Publisher.subscribe(self.update_tracker_poses, "From Neuronavigation: Update tracker poses")
         Publisher.subscribe(self.update_target_orientation, "Update target orientation")
+        # Publisher.subscribe(self.connect_to_robot, "Neuronavigation to Robot: Connect to robot")
+        # Publisher.subscribe(self.set_target, "Neuronavigation to Robot: Set target")
+        # Publisher.subscribe(self.unset_target, "Neuronavigation to Robot: Unset target")
+        # Publisher.subscribe(
+        #     self.set_tracker_fiducials, "Neuronavigation to Robot: Set tracker fiducials"
+        # )
+        # Publisher.subscribe(
+        #     self.collect_robot_pose,
+        #     "Neuronavigation to Robot: Collect coordinates for the robot transformation matrix",
+        # )
+        # Publisher.subscribe(
+        #     self.reset_robot_transformation_matrix,
+        #     "Neuronavigation to Robot: Reset coordinates collection for the robot transformation matrix",
+        # )
+        # Publisher.subscribe(
+        #     self.estimate_robot_transformation_matrix,
+        #     "Neuronavigation to Robot: Estimate robot transformation matrix",
+        # )
+        # Publisher.subscribe(
+        #     self.set_robot_transformation_matrix,
+        #     "Neuronavigation to Robot: Set robot transformation matrix",
+        # )
+        # Publisher.subscribe(
+        #     self.update_displacement_to_target,
+        #     "Neuronavigation to Robot: Update displacement to target",
+        # )
+        # Publisher.subscribe(self.set_objective, "Neuronavigation to Robot: Set objective")
 
     # Functions for InVesalius to send updates.
 
@@ -107,6 +134,61 @@ class NeuronavigationApi(metaclass=Singleton):
     #   would require changing 'Set cross focal point' publishers and subscribers
     #   throughout the code.
     #
+    def update_tracker_poses(self, poses, visibilities):
+        if self.connection is not None:
+            self.connection.update_tracker_poses(
+                poses=poses,
+                visibilities=visibilities,
+            )
+
+    def connect_to_robot(self, robot_IP):
+        if self.connection is not None:
+            self.connection.connect_to_robot(
+                robot_ip=robot_IP,
+            )
+
+    def set_target(self, target):
+        if self.connection is not None:
+            self.connection.set_target(
+                target=target,
+            )
+
+    def unset_target(self):
+        if self.connection is not None:
+            self.connection.unset_target()
+
+    def set_tracker_fiducials(self, tracker_fiducials):
+        if self.connection is not None:
+            self.connection.update_set_tracker_fiducials(tracker_fiducials=tracker_fiducials)
+
+    def collect_robot_pose(self, data):
+        if self.connection is not None:
+            self.connection.collect_robot_pose()
+
+    def reset_robot_transformation_matrix(self, data):
+        if self.connection is not None:
+            self.connection.reset_robot_transformation_matrix()
+
+    def estimate_robot_transformation_matrix(self, data):
+        if self.connection is not None:
+            self.connection.estimate_robot_transformation_matrix()
+
+    def set_robot_transformation_matrix(self, data):
+        if self.connection is not None:
+            self.connection.set_robot_transformation_matrix(matrix_tracker_to_robot=data)
+
+    def update_displacement_to_target(self, displacement):
+        if self.connection is not None:
+            self.connection.update_displacement_to_target(
+                displacement=displacement,
+            )
+
+    def set_objective(self, objective):
+        if self.connection is not None:
+            self.connection.set_objective(
+                objective=objective,
+            )
+
     def update_focus(self, position):
         if self.connection is not None:
             self.connection.update_focus(
@@ -227,6 +309,14 @@ class NeuronavigationApi(metaclass=Singleton):
     def __set_callbacks(self, connection):
         connection.set_callback__open_orientation_dialog(self.open_orientation_dialog)
         connection.set_callback__stimulation_pulse_received(self.stimulation_pulse_received)
+        # connection.set_callback__update_robot_status(self.update_robot_status)
+        # connection.set_callback__robot_connection_status(self.robot_connection_status)
+        # connection.set_callback__robot_pose_collected(self.robot_pose_collected)
+        # connection.set_callback__set_objective(self.set_objective_to_neuronavigation)
+        # connection.set_callback__close_robot_dialog(self.close_robot_dialog)
+        # connection.set_callback__update_robot_transformation_matrix(
+        #     self.update_robot_transformation_matrix
+        # )
         connection.set_callback__set_vector_field(self.set_vector_field)
 
     def add_pedal_callback(self, name, callback, remove_when_released=False):
@@ -244,9 +334,68 @@ class NeuronavigationApi(metaclass=Singleton):
     def open_orientation_dialog(self, target_id):
         wx.CallAfter(Publisher.sendMessage, "Open marker orientation dialog", marker_id=target_id)
 
-    def stimulation_pulse_received(self):
+    def stimulation_pulse_received(self, targets):
         # TODO: If marker should not be created always when receiving a stimulation pulse, add the logic here.
+        brain_targets = []
+        for target in targets:
+            brain_targets.append(
+                {
+                    "position": [target.displacement_y, -target.displacement_x, -15],
+                    "orientation": [0, 0, -target.rotation_angle],
+                    "color": [0, 0, 1],
+                    "length": target.intensity / 100,
+                    "mtms": [
+                        target.displacement_x,
+                        target.displacement_y,
+                        target.rotation_angle,
+                        target.intensity,
+                    ],
+                }
+            )
+        wx.CallAfter(Publisher.sendMessage, "Set brain targets", brain_targets=brain_targets)
         wx.CallAfter(Publisher.sendMessage, "Create marker", marker_type=MarkerType.COIL_POSE)
 
     def set_vector_field(self, vector_field):
+        # Modify vector_field to swap x and y coordinates and adjust z orientation to match mTMS
+        for vector in vector_field:
+            # Swap x and y in the position
+            vector["position"][0], vector["position"][1] = (
+                vector["position"][1],
+                -vector["position"][0],
+            )
+            # Reverse the z orientation
+            vector["orientation"][2] = -vector["orientation"][2]
         wx.CallAfter(Publisher.sendMessage, "Set vector field", vector_field=vector_field)
+
+    def update_robot_status(self, status):
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "Robot to Neuronavigation: Update robot status",
+            robot_status=status,
+        )
+
+    def robot_connection_status(self, status):
+        wx.CallAfter(
+            Publisher.sendMessage, "Robot to Neuronavigation: Robot connection status", data=status
+        )
+
+    def robot_pose_collected(self, status):
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "Robot to Neuronavigation: Coordinates for the robot transformation matrix collected",
+        )
+
+    def set_objective_to_neuronavigation(self, objective):
+        wx.CallAfter(
+            Publisher.sendMessage, "Robot to Neuronavigation: Set objective", objective=objective
+        )
+
+    def close_robot_dialog(self, status):
+        wx.CallAfter(Publisher.sendMessage, "Robot to Neuronavigation: Close robot dialog")
+
+    def update_robot_transformation_matrix(self, matrix):
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "Robot to Neuronavigation: Update robot transformation matrix",
+            data=matrix,
+        )
