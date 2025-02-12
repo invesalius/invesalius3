@@ -56,7 +56,7 @@ def subscribe(listener: UserListener, topicName: str, **curriedArgs) -> Tuple[Li
     :param topicName:
     :param curriedArgs:
     """
-    subscribedListener, success = Publisher.subscribe(listener, topicName, **curriedArgs) 
+    subscribedListener, success = Publisher.subscribe(listener, topicName, **curriedArgs)  # type: ignore This is a bug in PyPubSub
     return subscribedListener, success
 
 
