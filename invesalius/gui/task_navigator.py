@@ -554,6 +554,7 @@ class HeadPage(wx.Panel):
         algorithm = "ca_smoothing"
         proj = prj.Project()
         mask_index = len(proj.mask_dict) - 1
+        brain_colour = [235, 245, 255]
 
         if self.combo_mask.GetSelection() != -1:
             sl = slice_.Slice()
@@ -576,6 +577,20 @@ class HeadPage(wx.Panel):
                 surface_parameters={"method": method, "options": srf_options},
             )
             Publisher.sendMessage("Fold surface task")
+
+            surface_idx = len(proj.surface_dict) - 1
+            brain_vtk_colour = [c / 255.0 for c in brain_colour]
+
+            Publisher.sendMessage(
+                "Set surface colour", surface_index=surface_idx, colour=brain_vtk_colour
+            )
+
+            # Select the edited surface to update the color in the surface properties GUI
+            Publisher.sendMessage("Change surface selected", surface_index=surface_idx)
+
+            # Visualize the scalp and brain surfaces
+            last_two = list(range(len(proj.surface_dict) - 2, len(proj.surface_dict)))
+            Publisher.sendMessage("Show multiple surfaces", index_list=last_two, visibility=True)
 
         else:
             dlg.InexistentMask()
@@ -625,11 +640,27 @@ class HeadPage(wx.Panel):
     def RemoveNonVisibleFaces(self):
         Publisher.sendMessage("Remove non-visible faces")
 
+        proj = prj.Project()
+        surface_idx = len(proj.surface_dict) - 1
+        scalp_colour = [255, 235, 255]
+        transparency = 0.25
+        scalp_vtk_colour = [c / 255.0 for c in scalp_colour]
+
+        Publisher.sendMessage(
+            "Set surface colour", surface_index=surface_idx, colour=scalp_vtk_colour
+        )
+        Publisher.sendMessage(
+            "Set surface transparency", surface_index=surface_idx, transparency=transparency
+        )
+
+        # Select the edited surface to update the color in the surface properties GUI
+        Publisher.sendMessage("Change surface selected", surface_index=surface_idx)
+
+        # Hide other surfaces
+        Publisher.sendMessage("Show single surface", index=surface_idx, visibility=True)
+
     def OnSuccessfulBrainSegmentation(self):
         self.CreateBrainSurface()
-        proj = prj.Project()
-        idx = len(proj.surface_dict) - 1
-        Publisher.sendMessage("Show single surface", index=idx, visibility=True)
 
     def SegmentBrain(self):
         if (
