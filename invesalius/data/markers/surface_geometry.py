@@ -13,6 +13,10 @@ class SurfaceGeometry(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor, "Load surface actor into viewer")
+        Publisher.subscribe(self.OnCloseProject, "Close project data")
+
+    def OnCloseProject(self):
+        self.surfaces = []
 
     def PrecalculateSurfaceData(self, actor):
         normals = self.GetSurfaceNormals(actor)
