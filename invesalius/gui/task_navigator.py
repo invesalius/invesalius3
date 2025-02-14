@@ -434,7 +434,9 @@ class HeadPage(wx.Panel):
         self.remove_non_visible_checkbox.Disable()
 
         # Checkbox for brain segmentation
-        self.brain_segmentation_checkbox = wx.CheckBox(self, label="Brain segmentation")
+        self.brain_segmentation_checkbox = wx.CheckBox(
+            self, label="Brain segmentation (~ a few minutes)"
+        )
         top_sizer.Add(self.brain_segmentation_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
 
         # Add create surface button
@@ -669,7 +671,7 @@ class HeadPage(wx.Panel):
             or deep_learning_seg_dialog.HAS_TORCH
         ):
             segmentation_dlg = deep_learning_seg_dialog.BrainSegmenterDialog(
-                self, close_on_completion=True
+                self, auto_segment=True
             )
             segmentation_dlg.CenterOnScreen()
             segmentation_dlg.Show()

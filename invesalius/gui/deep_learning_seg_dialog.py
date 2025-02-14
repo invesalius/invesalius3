@@ -51,7 +51,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self,
         parent,
         title,
-        close_on_completion=False,
+        auto_segment=False,
         has_torch=True,
         has_plaidml=True,
         has_theano=True,
@@ -75,7 +75,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         #  self.pg_dialog = None
         self.torch_devices = TORCH_DEVICES
         self.plaidml_devices = PLAIDML_DEVICES
-        self.close_on_completion = close_on_completion
+        self.auto_segment = auto_segment
 
         self.backends = backends
 
@@ -94,6 +94,9 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
         self.OnSetBackend()
         self.HideProgress()
+
+        if self.auto_segment:
+            self.OnSegment(self)
 
     def _init_gui(self):
         self.cb_backends = wx.ComboBox(
@@ -340,7 +343,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.elapsed_time_timer.Stop()
         self.apply_segment_threshold()
 
-        if self.close_on_completion:
+        if self.auto_segment:
             self.OnClose(self)
             Publisher.sendMessage("Brain segmentation completed")
 
@@ -406,7 +409,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
 
 class BrainSegmenterDialog(DeepLearningSegmenterDialog):
-    def __init__(self, parent, close_on_completion=False):
+    def __init__(self, parent, auto_segment=False):
         super().__init__(
             parent=parent,
             title=_("Brain segmentation"),
@@ -414,7 +417,7 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
             has_plaidml=True,
             has_theano=True,
             segmenter=segment.BrainSegmentProcess,
-            close_on_completion=close_on_completion,
+            auto_segment=auto_segment,
         )
 
 
