@@ -42,8 +42,16 @@ class SurfaceGeometry(metaclass=Singleton):
             }
         )
 
-    def SmoothSurface(self, polydata, actor, smooth_iterations=100, relaxation_factor=0.4,
-                      hole_size=1000, inflate_scale=0.1, inflate_iterations=20):
+    def SmoothSurface(
+        self,
+        polydata,
+        actor,
+        smooth_iterations=100,
+        relaxation_factor=0.4,
+        hole_size=1000,
+        inflate_scale=0.1,
+        inflate_iterations=20,
+    ):
         # Preprocessing: Clean and triangulate input data
         cleaner = vtk.vtkCleanPolyData()
         cleaner.SetInputData(polydata)
@@ -60,7 +68,7 @@ class SurfaceGeometry(metaclass=Singleton):
         normals.SplittingOff()
         normals.Update()
 
-        #This step involves explicitly copying points and connectivity information to a new vtkPolyData.
+        # This step involves explicitly copying points and connectivity information to a new vtkPolyData.
         # It ensures that all connectivity information is accurate and explicitly defined.
         new_points = vtk.vtkPoints()
         new_polys = vtk.vtkCellArray()
