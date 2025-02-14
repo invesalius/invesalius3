@@ -331,7 +331,6 @@ class UpperTaskPanel(wx.Panel):
                 elif name == _("Configure 3D surface"):
                     self.__id_surface = item.GetId()
 
-        fold_panel.Expand(fold_panel.GetFoldPanel(0))
         self.fold_panel = fold_panel
         self.image_list = image_list
 
@@ -341,6 +340,12 @@ class UpperTaskPanel(wx.Panel):
         self.SetStateProjectClose()
         self.SetSizerAndFit(sizer)
         self.__bind_events()
+
+        # Show the navigation panel in navigation mode; otherwise, show the imports panel
+        if mode == const.MODE_NAVIGATOR:
+            self.fold_panel.Expand(self.fold_panel.GetFoldPanel(1))
+        else:
+            self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
 
     def __bind_events(self):
         session = ses.Session()
