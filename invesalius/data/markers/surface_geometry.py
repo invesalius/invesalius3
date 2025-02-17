@@ -13,6 +13,10 @@ class SurfaceGeometry(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor, "Load surface actor into viewer")
+        Publisher.subscribe(self.OnCloseProject, "Close project data")
+
+    def OnCloseProject(self):
+        self.surfaces = []
 
     def PrecalculateSurfaceData(self, actor):
         normals = self.GetSurfaceNormals(actor)
@@ -38,31 +42,116 @@ class SurfaceGeometry(metaclass=Singleton):
             }
         )
 
-    def SmoothSurface(self, actor):
-        mapper = actor.GetMapper()
-        polydata = mapper.GetInput()
+    def SmoothSurface(
+        self,
+        polydata,
+        actor,
+        progress_window,
+        smooth_iterations=100,
+        relaxation_factor=0.4,
+        hole_size=1000,
+        inflate_scale=0.1,
+        inflate_iterations=20,
+    ):
+        # Preprocessing: Clean and triangulate input data
+        cleaner = vtk.vtkCleanPolyData()
+        cleaner.SetInputData(polydata)
+        cleaner.Update()
 
-        # Create the smoothing filter.
-        smoother = vtk.vtkSmoothPolyDataFilter()
-        smoother.SetInputData(polydata)
-        # TODO: Having many iterations is slow and should be probably computed
-        #   only once and then stored on the disk - not re-computed every time InVesalius
-        #   is started. Setting the number of iterations, e.g., to a relatively small value such
-        #   as 100 does not seem to provide that good results.
-        #
-        # TODO: The smoothing filter is effectively disabled for now by setting the number of iterations
-        #   to 0, as it does not seem to work consistently with all surfaces. Investigate more on how
-        #   this should be used. An initial value that seemed to work with some, but not all surfaces
-        #   was 400.
-        smoother.SetNumberOfIterations(0)
-        smoother.SetRelaxationFactor(0.9)
-        smoother.FeatureEdgeSmoothingOff()
-        smoother.BoundarySmoothingOn()
-        smoother.Update()
+        triangles = vtk.vtkTriangleFilter()
+        triangles.SetInputConnection(cleaner.GetOutputPort())
+        triangles.Update()
 
-        # Create a new mapper for the smoothed data.
+        # Compute consistent normals
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInputConnection(triangles.GetOutputPort())
+        normals.ConsistencyOn()
+        normals.SplittingOff()
+        normals.Update()
+
+        progress_window.Update()
+        # This step involves explicitly copying points and connectivity information to a new vtkPolyData.
+        # It ensures that all connectivity information is accurate and explicitly defined.
+        new_points = vtk.vtkPoints()
+        new_polys = vtk.vtkCellArray()
+        num_points = normals.GetOutput().GetNumberOfPoints()
+        for i in range(num_points):
+            p = normals.GetOutput().GetPoint(i)
+            new_points.InsertNextPoint(p)
+            progress_window.Update()
+
+        # Copy cells
+        polys = normals.GetOutput().GetPolys()
+        polys.InitTraversal()
+        id_list = vtk.vtkIdList()
+        while polys.GetNextCell(id_list):
+            new_polys.InsertNextCell(id_list)
+            progress_window.Update()
+
+        new_polydata = vtk.vtkPolyData()
+        new_polydata.SetPoints(new_points)
+        new_polydata.SetPolys(new_polys)
+
+        def apply_smoothing_and_filling(input_pd):
+            """Helper function to apply smoothing and hole filling."""
+            smoother = vtk.vtkSmoothPolyDataFilter()
+            smoother.SetInputData(input_pd)
+            smoother.SetNumberOfIterations(smooth_iterations)
+            smoother.SetRelaxationFactor(relaxation_factor)
+            smoother.FeatureEdgeSmoothingOff()
+            smoother.BoundarySmoothingOff()
+            smoother.Update()
+            progress_window.Update()
+
+            filler = vtk.vtkFillHolesFilter()
+            filler.SetInputConnection(smoother.GetOutputPort())
+            filler.SetHoleSize(hole_size)
+            filler.Update()
+            progress_window.Update()
+            return filler.GetOutput()
+
+        # Process through two rounds of smoothing and filling
+        processed_data = apply_smoothing_and_filling(new_polydata)
+
+        # Mesh inflation with iterative normal displacement
+        def inflate_mesh(input_pd):
+            """Inflate mesh by displacing points along their normals."""
+            normal_generator = vtk.vtkPolyDataNormals()
+            normal_generator.SetInputData(input_pd)
+            normal_generator.ComputePointNormalsOn()
+            normal_generator.Update()
+
+            inflated = vtk.vtkPolyData()
+            inflated.DeepCopy(input_pd)
+            points = inflated.GetPoints()
+
+            for _ in range(inflate_iterations):
+                normals_data = normal_generator.GetOutput().GetPointData().GetNormals()
+                new_points = vtk.vtkPoints()
+                new_points.DeepCopy(points)
+
+                for i in range(new_points.GetNumberOfPoints()):
+                    p = new_points.GetPoint(i)
+                    n = normals_data.GetTuple(i)
+                    new_point = [p[j] + inflate_scale * n[j] for j in range(3)]
+                    new_points.SetPoint(i, new_point)
+
+                inflated.SetPoints(new_points)
+                # Update normals for next iteration
+                normal_generator.SetInputData(inflated)
+                normal_generator.Update()
+                points = inflated.GetPoints()
+                progress_window.Update()
+
+            return inflated
+
+        inflated_mesh = inflate_mesh(processed_data)
+        processed_data = apply_smoothing_and_filling(inflated_mesh)
+        progress_window.Update()
+
+        # Create and configure visualization components
         smoothed_mapper = vtk.vtkPolyDataMapper()
-        smoothed_mapper.SetInputData(smoother.GetOutput())
+        smoothed_mapper.SetInputData(processed_data)
 
         # Create a new actor using the smoothed mapper.
         smoothed_actor = vtk.vtkActor()
@@ -150,12 +239,13 @@ class SurfaceGeometry(metaclass=Singleton):
         # Compute smoothed surface if it has not been computed yet.
         if highest_surface["smoothed"] is None:
             progress_window = dialogs.SurfaceSmoothingProgressWindow()
-
+            progress_window.Update()
+            polydata = highest_surface["original"]["polydata"]
             actor = highest_surface["original"]["actor"]
 
             # Create a smoothed version of the actor.
-            smoothed_actor = self.SmoothSurface(actor)
-
+            smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
+            progress_window.Update()
             highest_surface["smoothed"] = self.PrecalculateSurfaceData(smoothed_actor)
 
             progress_window.Close()
