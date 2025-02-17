@@ -46,6 +46,7 @@ class SurfaceGeometry(metaclass=Singleton):
         self,
         polydata,
         actor,
+        progress_window,
         smooth_iterations=100,
         relaxation_factor=0.4,
         hole_size=1000,
@@ -68,6 +69,7 @@ class SurfaceGeometry(metaclass=Singleton):
         normals.SplittingOff()
         normals.Update()
 
+        progress_window.Update()
         # This step involves explicitly copying points and connectivity information to a new vtkPolyData.
         # It ensures that all connectivity information is accurate and explicitly defined.
         new_points = vtk.vtkPoints()
@@ -76,6 +78,7 @@ class SurfaceGeometry(metaclass=Singleton):
         for i in range(num_points):
             p = normals.GetOutput().GetPoint(i)
             new_points.InsertNextPoint(p)
+            progress_window.Update()
 
         # Copy cells
         polys = normals.GetOutput().GetPolys()
@@ -83,6 +86,7 @@ class SurfaceGeometry(metaclass=Singleton):
         id_list = vtk.vtkIdList()
         while polys.GetNextCell(id_list):
             new_polys.InsertNextCell(id_list)
+            progress_window.Update()
 
         new_polydata = vtk.vtkPolyData()
         new_polydata.SetPoints(new_points)
@@ -97,11 +101,13 @@ class SurfaceGeometry(metaclass=Singleton):
             smoother.FeatureEdgeSmoothingOff()
             smoother.BoundarySmoothingOff()
             smoother.Update()
+            progress_window.Update()
 
             filler = vtk.vtkFillHolesFilter()
             filler.SetInputConnection(smoother.GetOutputPort())
             filler.SetHoleSize(hole_size)
             filler.Update()
+            progress_window.Update()
             return filler.GetOutput()
 
         # Process through two rounds of smoothing and filling
@@ -135,11 +141,13 @@ class SurfaceGeometry(metaclass=Singleton):
                 normal_generator.SetInputData(inflated)
                 normal_generator.Update()
                 points = inflated.GetPoints()
+                progress_window.Update()
 
             return inflated
 
         inflated_mesh = inflate_mesh(processed_data)
         processed_data = apply_smoothing_and_filling(inflated_mesh)
+        progress_window.Update()
 
         # Create and configure visualization components
         smoothed_mapper = vtk.vtkPolyDataMapper()
@@ -231,13 +239,13 @@ class SurfaceGeometry(metaclass=Singleton):
         # Compute smoothed surface if it has not been computed yet.
         if highest_surface["smoothed"] is None:
             progress_window = dialogs.SurfaceSmoothingProgressWindow()
-
+            progress_window.Update()
             polydata = highest_surface["original"]["polydata"]
             actor = highest_surface["original"]["actor"]
 
             # Create a smoothed version of the actor.
-            smoothed_actor = self.SmoothSurface(polydata, actor)
-
+            smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
+            progress_window.Update()
             highest_surface["smoothed"] = self.PrecalculateSurfaceData(smoothed_actor)
 
             progress_window.Close()
