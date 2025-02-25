@@ -312,7 +312,7 @@ class SurfaceManager:
 
         Publisher.sendMessage("Show multiple surfaces", index_list=index_list, visibility=True)
 
-    def OnLargestSurface(self, overwrite=False):
+    def OnLargestSurface(self, overwrite=False, name=""):
         """
         Create a new surface, based on largest part of the last
         selected surface.
@@ -324,11 +324,14 @@ class SurfaceManager:
         surface = proj.surface_dict[index]
 
         new_polydata = pu.SelectLargestPart(surface.polydata)
-        new_index = self.CreateSurfaceFromPolydata(new_polydata, overwrite=overwrite)
+        new_index = self.CreateSurfaceFromPolydata(new_polydata, overwrite=overwrite, name=name)
         Publisher.sendMessage("Show single surface", index=new_index, visibility=True)
         progress_dialog.Close()
 
     def OnRemoveNonVisibleFaces(self):
+        """
+        Create a new surface where non-visible faces have been removed.
+        """
         progress_dialog = dialogs.RemoveNonVisibleFacesProgressWindow()
         progress_dialog.Update()
 

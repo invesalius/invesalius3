@@ -558,7 +558,7 @@ class HeadPage(wx.Panel):
             method = {"algorithm": algorithm, "options": options}
             srf_options = {
                 "index": mask_index,
-                "name": "",
+                "name": "Brain",
                 "quality": _("Optimal *"),
                 "fill": False,
                 "keep_largest": False,
@@ -612,7 +612,7 @@ class HeadPage(wx.Panel):
                 method = {"algorithm": algorithm, "options": options}
                 srf_options = {
                     "index": mask_index,
-                    "name": "",
+                    "name": "Scalp",
                     "quality": _("Optimal *"),
                     "fill": False,
                     "keep_largest": False,
@@ -627,7 +627,7 @@ class HeadPage(wx.Panel):
             dlg.InexistentMask()
 
     def SelectLargestSurface(self):
-        Publisher.sendMessage("Create surface from largest region", overwrite=True)
+        Publisher.sendMessage("Create surface from largest region", overwrite=True, name="Scalp")
 
     def RemoveNonVisibleFaces(self):
         Publisher.sendMessage("Remove non-visible faces")
