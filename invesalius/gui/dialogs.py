@@ -6067,6 +6067,12 @@ class SurfaceSmoothingProgressWindow:
         self.dlg = wx.ProgressDialog(title, message, parent=parent, style=style)
         self.dlg.Show()
 
+    def Update(self, msg: Optional[str] = None, value=None) -> None:
+        if msg is None:
+            self.dlg.Pulse()
+        else:
+            self.dlg.Pulse(msg)
+
     def Close(self) -> None:
         self.dlg.Destroy()
 
