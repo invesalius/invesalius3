@@ -542,7 +542,7 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
             tar.extract(t, path=folder, filter=tar_filter)
             fname = os.path.join(folder, decode(t.name, "utf-8"))
             filelist.append(fname)
-        except (TypeError, AttributeError, tarfile.OutsideDestinationError):
+        except (TypeError, AttributeError, tarfile.TarError):
             filtered = custom_tar_filter(t, folder)
             if filtered is not None:
                 tar.extract(filtered, path=folder)
