@@ -73,6 +73,7 @@ import invesalius.utils as utl
 from invesalius.data.converters import convert_custom_bin_to_vtk
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
+from invesalius.utils import new_name_by_pattern
 
 # TODO: Verificar ReleaseDataFlagOn and SetSource
 
@@ -216,6 +217,7 @@ class SurfaceManager:
         # ----
         Publisher.subscribe(self.OnSplitSurface, "Split surface")
         Publisher.subscribe(self.OnLargestSurface, "Create surface from largest region")
+        Publisher.subscribe(self.OnRemoveNonVisibleFaces, "Remove non-visible faces")
         Publisher.subscribe(self.OnSeedSurface, "Create surface from seeds")
         Publisher.subscribe(self.GetBrainSurfaceActor, "Get brain surface actor")
 
@@ -310,7 +312,7 @@ class SurfaceManager:
 
         Publisher.sendMessage("Show multiple surfaces", index_list=index_list, visibility=True)
 
-    def OnLargestSurface(self):
+    def OnLargestSurface(self, overwrite=False):
         """
         Create a new surface, based on largest part of the last
         selected surface.
@@ -322,8 +324,29 @@ class SurfaceManager:
         surface = proj.surface_dict[index]
 
         new_polydata = pu.SelectLargestPart(surface.polydata)
-        new_index = self.CreateSurfaceFromPolydata(new_polydata)
+        new_index = self.CreateSurfaceFromPolydata(new_polydata, overwrite=overwrite)
         Publisher.sendMessage("Show single surface", index=new_index, visibility=True)
+        progress_dialog.Close()
+
+    def OnRemoveNonVisibleFaces(self):
+        progress_dialog = dialogs.RemoveNonVisibleFacesProgressWindow()
+        progress_dialog.Update()
+
+        proj = prj.Project()
+        index = self.last_surface_index
+        surface = proj.surface_dict[index]
+        new_polydata = pu.RemoveNonVisibleFaces(surface.polydata)
+
+        name = new_name_by_pattern(f"{surface.name}_removed_nonvisible")
+        overwrite = True
+
+        Publisher.sendMessage(
+            "Create surface from polydata",
+            polydata=new_polydata,
+            name=name,
+            overwrite=overwrite,
+        )
+        Publisher.sendMessage("Fold surface task")
         progress_dialog.Close()
 
     def OnImportCustomBinFile(self, filename):

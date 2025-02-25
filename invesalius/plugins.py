@@ -26,10 +26,8 @@ from itertools import chain
 from types import ModuleType
 from typing import TYPE_CHECKING
 
-from invesalius import inv_paths, project
-from invesalius.gui import dialogs
+from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import new_name_by_pattern
 
 if TYPE_CHECKING:
     import os
@@ -53,7 +51,6 @@ class PluginManager:
 
     def __bind_pubsub_evt(self) -> None:
         Publisher.subscribe(self.load_plugin, "Load plugin")
-        Publisher.subscribe(self.remove_non_visible_faces_no_gui, "Remove non-visible faces")
 
     def find_plugins(self) -> None:
         self.plugins = {}
@@ -90,42 +87,3 @@ class PluginManager:
             sys.modules[plugin_name] = plugin_module
             main = importlib.import_module(plugin_name + ".main")
             main.load()
-
-    # Remove non-visible faces from a surface without using the plugin GUI.
-    # Defaults to the last surface in surface_dict which is generally the newest surface
-    def remove_non_visible_faces_no_gui(self, surface_idx: int = -1) -> None:
-        plugin_name = "Remove non-visible faces"
-        if plugin_name in self.plugins:
-            progress_dialog = dialogs.RemoveNonVisibleFacesProgressWindow()
-            progress_dialog.Update()
-            plugin_module = import_source(
-                plugin_name, self.plugins[plugin_name]["folder"].joinpath("__init__.py")
-            )
-            sys.modules[plugin_name] = plugin_module
-            remove_faces = importlib.import_module(plugin_name + ".remove_non_visible_faces")
-
-            inv_proj = project.Project()
-            try:
-                surface = list(inv_proj.surface_dict.values())[surface_idx]
-            except IndexError:
-                print(f"Invalid surface_dict index {surface_idx}, did not remove non-visible faces")
-                return
-
-            overwrite = False
-            new_polydata = remove_faces.remove_non_visible_faces(
-                surface.polydata, remove_visible=False
-            )
-
-            name = new_name_by_pattern(f"{surface.name}_removed_nonvisible")
-            colour = None
-
-            Publisher.sendMessage(
-                "Create surface from polydata",
-                polydata=new_polydata,
-                name=name,
-                overwrite=overwrite,
-                index=surface_idx,
-                colour=colour,
-            )
-            Publisher.sendMessage("Fold surface task")
-            progress_dialog.Close()

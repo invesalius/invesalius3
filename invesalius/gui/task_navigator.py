@@ -429,9 +429,7 @@ class HeadPage(wx.Panel):
         self.remove_non_visible_checkbox = wx.CheckBox(self, label="Remove non-visible faces")
         top_sizer.Add(self.remove_non_visible_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
         top_sizer.AddSpacer(5)
-
-        # Disable the checkbox by default and enable it only if the plugin is found
-        self.remove_non_visible_checkbox.Disable()
+        self.remove_non_visible_checkbox.SetValue(True)
 
         # Checkbox for brain segmentation
         self.brain_segmentation_checkbox = wx.CheckBox(
@@ -470,7 +468,6 @@ class HeadPage(wx.Panel):
         Publisher.subscribe(self.SetThresholdValues2, "Set threshold values")
         Publisher.subscribe(self.SelectMaskName, "Select mask name in combo")
         Publisher.subscribe(self.SetItemsColour, "Set GUI items colour")
-        Publisher.subscribe(self.OnPluginsFound, "Add plugins menu items")
         Publisher.subscribe(self.OnRemoveMasks, "Remove masks")
         Publisher.subscribe(self.AddMask, "Add mask")
 
@@ -526,13 +523,6 @@ class HeadPage(wx.Panel):
         Publisher.sendMessage("Changing threshold values", threshold_range=(thresh_min, thresh_max))
         session = ses.Session()
         session.ChangeProject()
-
-    def OnPluginsFound(self, items):
-        for item in items:
-            if item == "Remove non-visible faces":
-                self.remove_non_visible_checkbox.Enable()
-                self.remove_non_visible_checkbox.SetValue(True)
-                break
 
     def SetItemsColour(self, colour):
         self.gradient.SetColour(colour)
@@ -637,7 +627,7 @@ class HeadPage(wx.Panel):
             dlg.InexistentMask()
 
     def SelectLargestSurface(self):
-        Publisher.sendMessage("Create surface from largest region")
+        Publisher.sendMessage("Create surface from largest region", overwrite=True)
 
     def RemoveNonVisibleFaces(self):
         Publisher.sendMessage("Remove non-visible faces")
