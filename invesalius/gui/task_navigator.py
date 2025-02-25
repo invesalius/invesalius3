@@ -561,7 +561,7 @@ class HeadPage(wx.Panel):
                 "name": "Brain",
                 "quality": _("Optimal *"),
                 "fill": False,
-                "keep_largest": False,
+                "keep_largest": True,
                 "overwrite": False,
             }
             Publisher.sendMessage(
