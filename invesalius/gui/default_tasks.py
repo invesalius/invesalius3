@@ -104,7 +104,7 @@ def GetExpandedIconImage():
 # Main panel
 class Panel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5), size=wx.Size(350, 656))
+        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5), size=wx.Size(385, 656))
 
         # sizer = wx.BoxSizer(wx.VERTICAL)
         gbs = wx.GridBagSizer(5, 5)

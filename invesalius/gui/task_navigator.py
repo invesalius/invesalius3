@@ -42,6 +42,11 @@ import wx.lib.masked.numctrl
 import wx.lib.platebtn as pbtn
 from wx.lib.mixins.listctrl import ColumnSorterMixin
 
+try:
+    import wx.lib.agw.hyperlink as hl
+except ImportError:
+    import wx.lib.hyperlink as hl
+
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as slice_
@@ -321,6 +326,7 @@ class CoregistrationPanel(wx.Panel):
         self.tracker = nav_hub.tracker
         self.image = nav_hub.image
 
+        book.AddPage(ImportsPage(book, nav_hub), _("Imports"))
         book.AddPage(HeadPage(book, nav_hub), _("Head"))
         book.AddPage(ImagePage(book, nav_hub), _("Image"))
         book.AddPage(TrackerPage(book, nav_hub), _("Patient"))
@@ -328,7 +334,14 @@ class CoregistrationPanel(wx.Panel):
         book.AddPage(StylusPage(book, nav_hub), _("Stylus"))
         book.AddPage(StimulatorPage(book, nav_hub), _("TMS Coil"))
 
-        book.SetSelection(0)
+        session = ses.Session()
+        project_status = session.GetConfig("project_status")
+
+        # Show the head page by default if there is a project loaded
+        if project_status != const.PROJECT_STATUS_CLOSED:
+            book.SetSelection(const.HEAD_PAGE)
+        else:
+            book.SetSelection(const.IMPORTS_PAGE)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(book, 0, wx.EXPAND)
@@ -339,6 +352,7 @@ class CoregistrationPanel(wx.Panel):
         self.__bind_events()
 
     def __bind_events(self):
+        Publisher.subscribe(self._FoldImports, "Move to imports page")
         Publisher.subscribe(self._FoldHead, "Move to head model page")
         Publisher.subscribe(self._FoldTracker, "Move to tracker page")
         Publisher.subscribe(self._FoldRefine, "Move to refine page")
@@ -372,6 +386,9 @@ class CoregistrationPanel(wx.Panel):
                 wx.MessageBox(_("Please do the tracker registration first."), _("InVesalius 3"))
 
     # Unfold specific notebook pages
+    def _FoldImports(self):
+        self.book.SetSelection(const.IMPORTS_PAGE)
+
     def _FoldHead(self):
         self.book.SetSelection(const.HEAD_PAGE)
 
@@ -392,13 +409,203 @@ class CoregistrationPanel(wx.Panel):
         self.book.SetSelection(const.STIMULATOR_PAGE)
 
 
+class ImportsPage(wx.Panel):
+    def __init__(self, parent, nav_hub):
+        wx.Panel.__init__(self, parent)
+
+        background_colour = wx.Colour(255, 255, 255)
+        self.SetBackgroundColour(background_colour)
+
+        self.navigation = nav_hub
+        self.BTN_IMPORT_LOCAL_NAV = wx.NewIdRef()
+        self.BTN_OPEN_PROJECT_NAV = wx.NewIdRef()
+        self.BTN_IMPORT_NIFTI_NAV = wx.NewIdRef()
+        self.BTN_NEXT = wx.NewIdRef()
+
+        self.top_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.bottom_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Counter for projects loaded in current GUI
+        self.proj_count = 0
+
+        # Fixed hyperlink items
+        tooltip = _("Select DICOM files to be reconstructed")
+        link_import_local = hl.HyperLinkCtrl(self, -1, _("Import DICOM images..."))
+        link_import_local.SetUnderlines(False, False, False)
+        link_import_local.SetBold(True)
+        link_import_local.SetColours("BLACK", "BLACK", "BLACK")
+        link_import_local.SetBackgroundColour(background_colour)
+        link_import_local.SetToolTip(tooltip)
+        link_import_local.AutoBrowse(False)
+        link_import_local.UpdateLink()
+        link_import_local.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImport)
+
+        tooltip = _("Select NIFTI files to be reconstructed")
+        link_import_nifti = hl.HyperLinkCtrl(self, -1, _("Import NIFTI images..."))
+        link_import_nifti.SetUnderlines(False, False, False)
+        link_import_nifti.SetBold(True)
+        link_import_nifti.SetColours("BLACK", "BLACK", "BLACK")
+        link_import_nifti.SetBackgroundColour(background_colour)
+        link_import_nifti.SetToolTip(tooltip)
+        link_import_nifti.AutoBrowse(False)
+        link_import_nifti.UpdateLink()
+        link_import_nifti.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportNifti)
+
+        tooltip = _("Open an existing InVesalius project...")
+        link_open_proj = hl.HyperLinkCtrl(self, -1, _("Open an existing project..."))
+        link_open_proj.SetUnderlines(False, False, False)
+        link_open_proj.SetBold(True)
+        link_open_proj.SetColours("BLACK", "BLACK", "BLACK")
+        link_open_proj.SetBackgroundColour(background_colour)
+        link_open_proj.SetToolTip(tooltip)
+        link_open_proj.AutoBrowse(False)
+        link_open_proj.UpdateLink()
+        link_open_proj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkOpenProject)
+
+        # Images for buttons
+        BMP_IMPORT = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("file_import_original.png")), wx.BITMAP_TYPE_PNG
+        )
+        BMP_OPEN_PROJECT = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("file_open_original.png")), wx.BITMAP_TYPE_PNG
+        )
+
+        # Buttons related to hyperlinks
+        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+
+        button_import_local = pbtn.PlateButton(
+            self, self.BTN_IMPORT_LOCAL_NAV, "", BMP_IMPORT, style=button_style
+        )
+        button_import_local.SetBackgroundColour(self.GetBackgroundColour())
+        button_import_nifti = pbtn.PlateButton(
+            self, self.BTN_IMPORT_NIFTI_NAV, "", BMP_IMPORT, style=button_style
+        )
+        button_import_nifti.SetBackgroundColour(self.GetBackgroundColour())
+        button_open_proj = pbtn.PlateButton(
+            self, self.BTN_OPEN_PROJECT_NAV, "", BMP_OPEN_PROJECT, style=button_style
+        )
+        button_open_proj.SetBackgroundColour(self.GetBackgroundColour())
+
+        # Next button
+        next_button = wx.Button(self, id=self.BTN_NEXT, label="Next")
+        self.bottom_sizer.Add(next_button, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # When using PlaneButtons, it is necessary to bind events from parent window
+        self.Bind(wx.EVT_BUTTON, self.OnButton)
+
+        # Tags and grid sizer for fixed items
+        flag_link = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
+        flag_button = wx.EXPAND | wx.GROW
+
+        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
+        fixed_sizer.AddGrowableCol(0, 1)
+        fixed_sizer.AddMany(
+            [
+                (link_import_local, 1, flag_link, 3),
+                (button_import_local, 0, flag_button),
+                (link_import_nifti, 3, flag_link, 3),
+                (button_import_nifti, 0, flag_button),
+                (link_open_proj, 5, flag_link, 3),
+                (button_open_proj, 0, flag_button),
+            ]
+        )
+
+        # Add top and bottom sizers to the main sizer
+        self.top_sizer.Add(fixed_sizer, 0, wx.GROW | wx.EXPAND)
+        self.main_sizer.Add(self.top_sizer, 0, wx.GROW | wx.EXPAND)
+        self.main_sizer.AddStretchSpacer()
+        self.main_sizer.Add(self.bottom_sizer, 0, wx.GROW | wx.EXPAND)
+
+        # Update main sizer and panel layout
+        self.SetSizer(self.main_sizer)
+        self.Update()
+        self.SetAutoLayout(1)
+        self.sizer = self.main_sizer
+
+        # Load a list of recent projects
+        self.LoadRecentProjects()
+
+    def OnLinkOpenProject(self, event):
+        self.OpenProject()
+        event.Skip()
+
+    def OpenProject(self, path=None):
+        if path:
+            Publisher.sendMessage("Open recent project", filepath=path)
+        else:
+            Publisher.sendMessage("Show open project dialog")
+
+    def OnLinkImport(self, event):
+        self.ImportDicom()
+        event.Skip()
+
+    def ImportDicom(self):
+        Publisher.sendMessage("Show import directory dialog")
+
+    def OnLinkImportNifti(self, event):
+        self.ImportNifti()
+        event.Skip()
+
+    def ImportNifti(self):
+        Publisher.sendMessage("Show import other files dialog", id_type=const.ID_NIFTI_IMPORT)
+
+    def OnButton(self, evt):
+        id = evt.GetId()
+
+        if id == self.BTN_NEXT:
+            Publisher.sendMessage("Move to head model page")
+        elif id == self.BTN_IMPORT_LOCAL_NAV:
+            self.ImportDicom()
+        elif id == self.BTN_IMPORT_NIFTI_NAV:
+            self.ImportNifti()
+        elif id == self.BTN_OPEN_PROJECT_NAV:
+            self.OpenProject()
+
+    # Add a list of recent projects to the Imports page of the navigation panel
+    def LoadRecentProjects(self):
+        import invesalius.session as ses
+
+        session = ses.Session()
+        recent_projects = session.GetConfig("recent_projects")
+
+        for path, filename in recent_projects:
+            self.LoadProject(filename, path)
+
+    def LoadProject(self, proj_name="Unnamed", proj_dir=""):
+        """
+        Create a hyperlink for the project, and add it to the list of recent projects
+        on the Imports page of the navigation panel. The list is capped at 3 projects.
+        """
+        proj_path = os.path.join(proj_dir, proj_name)
+
+        if self.proj_count < 3:
+            self.proj_count += 1
+
+            # Create labels
+            label = "     " + str(self.proj_count) + ". " + proj_name
+
+            # Create corresponding hyperlink
+            proj_link = hl.HyperLinkCtrl(self, -1, label)
+            proj_link.SetUnderlines(False, False, False)
+            proj_link.SetColours("BLACK", "BLACK", "BLACK")
+            proj_link.SetBackgroundColour(self.GetBackgroundColour())
+            proj_link.AutoBrowse(False)
+            proj_link.UpdateLink()
+            proj_link.Bind(hl.EVT_HYPERLINK_LEFT, lambda e: self.OpenProject(proj_path))
+
+            # Add the link to the sizer and to the hyperlinks list
+            self.top_sizer.Add(proj_link, 1, wx.GROW | wx.EXPAND | wx.ALL, 2)
+            self.Update()
+
+
 class HeadPage(wx.Panel):
     def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
 
         # Create sizers
         top_sizer = wx.BoxSizer(wx.VERTICAL)
-        bottom_sizer = wx.BoxSizer(wx.VERTICAL)
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Add label above combo box
@@ -443,10 +650,14 @@ class HeadPage(wx.Panel):
         top_sizer.AddStretchSpacer()
         top_sizer.Add(create_head_button, 0, wx.ALIGN_CENTER)
 
-        # Add next button
+        # Add next and back buttons
+        back_button = wx.Button(self, label="Back")
+        back_button.Bind(wx.EVT_BUTTON, partial(self.OnBack))
+        bottom_sizer.Add(back_button, 0, wx.LEFT, 10)
+        bottom_sizer.AddStretchSpacer()
         next_button = wx.Button(self, label="Next")
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
-        bottom_sizer.Add(next_button, 0, wx.ALIGN_RIGHT | wx.RIGHT, 10)
+        bottom_sizer.Add(next_button, 0, wx.RIGHT, 10)
 
         # Main sizer config
         main_sizer.Add(top_sizer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 10)
@@ -460,6 +671,9 @@ class HeadPage(wx.Panel):
 
     def OnNext(self, evt):
         Publisher.sendMessage("Move to image page")
+
+    def OnBack(self, evt):
+        Publisher.sendMessage("Move to imports page")
 
     def __bind_events(self):
         Publisher.subscribe(self.OnSuccessfulBrainSegmentation, "Brain segmentation completed")

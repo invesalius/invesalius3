@@ -823,12 +823,13 @@ BRAIN_UUID = 9
 
 # Page order in the coregistration panel
 
-HEAD_PAGE = 0
-IMAGE_PAGE = 1
-TRACKER_PAGE = 2
-REFINE_PAGE = 3
-STYLUS_PAGE = 4
-STIMULATOR_PAGE = 5
+IMPORTS_PAGE = 0
+HEAD_PAGE = 1
+IMAGE_PAGE = 2
+TRACKER_PAGE = 3
+REFINE_PAGE = 4
+STYLUS_PAGE = 5
+STIMULATOR_PAGE = 6
 
 # ------------ Navigation defaults -------------------
 
