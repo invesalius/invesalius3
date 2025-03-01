@@ -1,6 +1,6 @@
 [project]
 name = "InVesalius"
-version = "3.1.99998"
+# version = "3.1.99998"
 description = "3D medical imaging reconstruction software"
 keywords = [
   "medical imaging",
@@ -9,12 +9,81 @@ keywords = [
   "3D printing",
   "neuronavigation",
 ]
+dependencies = [
+    "cython==3.0.10",
+    "h5py==3.11.0",
+    "imageio==2.34.2",
+    "matplotlib==3.9.0",
+    "nibabel==5.2.1",
+    "numpy==1.26.4",
+    "optitrack ; python_full_version == '3.8.*' and sys_platform == 'windows'",
+    "pd",
+    "pillow==10.3.0",
+    "plaidml-keras==0.7.0 ; python_full_version < '3.9'",
+    "psutil==6.0.0",
+    "pyacvd==0.2.11",
+    "pyclaron ; python_full_version == '3.8.*' and sys_platform == 'windows'",
+    "pypubsub==4.0.3",
+    "pyserial==3.5",
+    "python-gdcm==3.0.24",
+    "scikit-image==0.24.0",
+    "scipy==1.14.0",
+    "setuptools-scm",
+    "torch==2.3.1",
+    "vtk==9.3.0",
+    "wxpython==4.2.1",
+]
+dynamic = ["version"]
 license = { file = "LICENSE.txt" }
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 
-[tool.setuptools]
-packages = ["invesalius", "invesalius_cy"]
+
+[dependency-groups]
+dev = [
+    "aioconsole==0.7.1",
+    "mido==1.2.10",
+    "mypy==1.10.1",
+    "nest-asyncio==1.6.0",
+    "pre-commit~=3.7.1",
+    "python-rtmidi==1.5.8",
+    "python-socketio[client]==5.11.3",
+    "requests==2.32.3",
+    "ruff~=0.5.0",
+    "scikit-learn==1.5.0",
+    "uvicorn[standard]==0.30.1",
+    "scikit-build-core"
+    
+]
+
+# [project.gui-scripts]
+# inv = 'Invesalius.app:main'
+
+[build-system]
+requires = ["scikit-build-core", "cython >= 3.0.2", "numpy >= 1.26.4"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+experimental = true
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+sdist.include = ["invesalius/version.py"]
+
+[tool.setuptools_scm]  # Section required
+write_to = "invesalius/version.py"
+
+
+
+# [tool.hatch.version]
+# source = "vcs"
+
+# [tool.hatch.metadata]
+# allow-direct-references = true
+
+# [tool.hatch.build.targets.wheel]
+# packages = ["invesalius", "invesalius_cy"]
+
+# [tool.setuptools]
+# packages = ["invesalius", "invesalius_cy"]
 
 [tool.mypy]
 mypy_path = "typings"
@@ -97,3 +166,4 @@ extend-ignore = ["E731"]
 
 [tool.ruff.format]
 line-ending = "lf"
+

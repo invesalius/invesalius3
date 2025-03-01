@@ -18,4 +18,4 @@ ctypedef np.float32_t normal_t
 IF UNAME_MACHINE == 'AMD64':
     ctypedef np.int64_t vertex_id_t
 ELSE:
-    ctypedef np.int_t vertex_id_t
+    ctypedef np.int32_t vertex_id_t

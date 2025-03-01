@@ -12,6 +12,7 @@
 
 # CMake
 cmake-build-*/
+invesalius/version.py
 
 # File-based project format
 *.iws
