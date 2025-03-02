@@ -34,6 +34,12 @@ class MarkersControl(metaclass=Singleton):
         self.transformator = MarkerTransformator()
         self.robot = robot
 
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
+
+    def UpdateNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
+
     def SaveState(self):
         state = [marker.to_dict() for marker in self.list]
 
@@ -120,6 +126,17 @@ class MarkersControl(metaclass=Singleton):
         for idx, m in enumerate(self.list):
             m.marker_id = idx
 
+        self.SaveState()
+
+    def AddMultiple(self, markers_list):
+        Publisher.sendMessage("Set markers list rendering", render=False)
+        for marker in markers_list:
+            self.AddMarker(marker, render=False)
+
+        Publisher.sendMessage("Set markers list rendering", render=True)
+        if not self.nav_status:
+            Publisher.sendMessage("Render volume viewer")
+        Publisher.sendMessage("Update UI for refine tab")
         self.SaveState()
 
     def SetTarget(self, marker_id, check_for_previous=True):

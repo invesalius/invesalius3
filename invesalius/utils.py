@@ -430,3 +430,75 @@ def deep_merge_dict(d, u):
         else:
             d[k] = v
     return d
+
+
+# Given a string, try to parse it as an integer, float, or string.
+def parse_value(value):
+    value = value.strip()
+
+    # Handle None, booleans, empty list, and basic types
+    if value == "None":
+        return None
+    if value == "True":
+        return True
+    if value == "False":
+        return False
+    if value == "[]":
+        return []
+
+    # Handle lists and dictionaries
+    if value.startswith("[") and value.endswith("]"):
+        return _parse_list(value)
+    if value.startswith("{") and value.endswith("}"):
+        return _parse_dict(value)
+
+    # Try to convert to int or float
+    try:
+        if "." in value or "e" in value.lower():
+            return float(value)
+        return int(value)
+    except ValueError:
+        # Handle quoted strings
+        if (value.startswith('"') and value.endswith('"')) or (
+            value.startswith("'") and value.endswith("'")
+        ):
+            return value[1:-1]
+        return value  # Return as is if not recognized
+
+
+def _parse_list(list_str):
+    """Parse a list from string format."""
+    return [parse_value(el.strip()) for el in _split_by_outer_commas(list_str[1:-1].strip())]
+
+
+def _parse_dict(dict_str):
+    """Parse a dictionary from string format."""
+    items = _split_by_outer_commas(dict_str[1:-1].strip())
+    return {
+        parse_value(kv.split(":", 1)[0].strip()): parse_value(kv.split(":", 1)[1].strip())
+        for kv in items
+    }
+
+
+def _split_by_outer_commas(string):
+    """Split a string by commas that are not inside brackets or braces."""
+    elements = []
+    depth = 0
+    current_element = []
+
+    for char in string:
+        if char in "[{":
+            depth += 1
+        elif char in "]}" and depth > 0:
+            depth -= 1
+
+        if char == "," and depth == 0:
+            elements.append("".join(current_element).strip())
+            current_element = []
+        else:
+            current_element.append(char)
+
+    if current_element:
+        elements.append("".join(current_element).strip())
+
+    return elements
