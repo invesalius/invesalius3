@@ -373,7 +373,11 @@ class CoregistrationPanel(wx.Panel):
 
         session = ses.Session()
         project_status = session.GetConfig("project_status")
-        if old_page == const.IMPORTS_PAGE and project_status == const.PROJECT_STATUS_CLOSED and new_page != const.IMPORTS_PAGE:
+        if (
+            old_page == const.IMPORTS_PAGE
+            and project_status == const.PROJECT_STATUS_CLOSED
+            and new_page != const.IMPORTS_PAGE
+        ):
             # Do not allow user to move to other (forward) tabs.
             self.book.SetSelection(const.IMPORTS_PAGE)
             wx.MessageBox(_("Please import image first."), _("InVesalius 3"))

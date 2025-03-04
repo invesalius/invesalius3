@@ -305,7 +305,9 @@ class SurfaceManager:
         proj = prj.Project()
         surface = proj.surface_dict[index]
 
-        new_polydata = pu.ApplySmoothFilter(polydata=surface.polydata, iterations=20, relaxation_factor=0.4)
+        new_polydata = pu.ApplySmoothFilter(
+            polydata=surface.polydata, iterations=20, relaxation_factor=0.4
+        )
         new_index = self.CreateSurfaceFromPolydata(new_polydata, overwrite=overwrite, name=name)
         Publisher.sendMessage("Show single surface", index=new_index, visibility=True)
         progress_dialog.Close()
