@@ -1998,6 +1998,25 @@ class SelectLargestSurfaceProgressWindow:
         self.dlg.Destroy()
 
 
+class SmoothSurfaceProgressWindow:
+    def __init__(self):
+        title = "InVesalius 3"
+        message = "Creating a new smooth surface ..."
+        style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+        parent = wx.GetApp().GetTopWindow()
+        self.dlg = wx.ProgressDialog(title, message, parent=parent, style=style)
+        self.dlg.Show()
+
+    def Update(self, msg: Optional[str] = None, value=None) -> None:
+        if msg is None:
+            self.dlg.Pulse()
+        else:
+            self.dlg.Pulse(msg)
+
+    def Close(self) -> None:
+        self.dlg.Destroy()
+
+
 class RemoveNonVisibleFacesProgressWindow:
     def __init__(self):
         title = "InVesalius 3"

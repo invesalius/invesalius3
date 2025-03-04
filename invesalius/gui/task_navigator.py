@@ -231,7 +231,6 @@ class InnerFoldPanel(wx.Panel):
     def OnEnableState(self, state):
         if not state:
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
-            Publisher.sendMessage("Move to image page")
 
     def OnShowDbs(self):
         self.dbs_item.Show()
@@ -338,7 +337,7 @@ class CoregistrationPanel(wx.Panel):
         project_status = session.GetConfig("project_status")
 
         # Show the head page by default if there is a project loaded
-        if project_status != const.PROJECT_STATUS_CLOSED:
+        if project_status == const.PROJECT_STATUS_OPENED:
             book.SetSelection(const.HEAD_PAGE)
         else:
             book.SetSelection(const.IMPORTS_PAGE)
@@ -359,6 +358,10 @@ class CoregistrationPanel(wx.Panel):
         Publisher.subscribe(self._FoldStylus, "Move to stylus page")
         Publisher.subscribe(self._FoldStimulator, "Move to stimulator page")
         Publisher.subscribe(self._FoldImage, "Move to image page")
+        Publisher.subscribe(self.OnCloseProject, "Close project data")
+
+    def OnCloseProject(self):
+        self.book.SetSelection(const.IMPORTS_PAGE)
 
     def OnPageChanging(self, evt):
         # page = evt.GetOldSelection()
@@ -367,6 +370,14 @@ class CoregistrationPanel(wx.Panel):
     def OnPageChanged(self, evt):
         old_page = evt.GetOldSelection()
         new_page = evt.GetSelection()
+
+        session = ses.Session()
+        project_status = session.GetConfig("project_status")
+        if old_page == const.IMPORTS_PAGE and project_status == const.PROJECT_STATUS_CLOSED and new_page != const.IMPORTS_PAGE:
+            # Do not allow user to move to other (forward) tabs.
+            self.book.SetSelection(const.IMPORTS_PAGE)
+            wx.MessageBox(_("Please import image first."), _("InVesalius 3"))
+            return
 
         # old page validations
         if old_page <= const.IMAGE_PAGE and new_page > const.IMAGE_PAGE:
@@ -535,6 +546,7 @@ class ImportsPage(wx.Panel):
             Publisher.sendMessage("Open recent project", filepath=path)
         else:
             Publisher.sendMessage("Show open project dialog")
+        Publisher.sendMessage("Move to head model page")
 
     def OnLinkImport(self, event):
         self.ImportDicom()
@@ -542,6 +554,7 @@ class ImportsPage(wx.Panel):
 
     def ImportDicom(self):
         Publisher.sendMessage("Show import directory dialog")
+        Publisher.sendMessage("Move to head model page")
 
     def OnLinkImportNifti(self, event):
         self.ImportNifti()
@@ -549,6 +562,7 @@ class ImportsPage(wx.Panel):
 
     def ImportNifti(self):
         Publisher.sendMessage("Show import other files dialog", id_type=const.ID_NIFTI_IMPORT)
+        Publisher.sendMessage("Move to head model page")
 
     def OnButton(self, evt):
         id = evt.GetId()
@@ -627,7 +641,7 @@ class HeadPage(wx.Panel):
 
         # Checkbox for selecting the largest surface
         self.select_largest_surface_checkbox = wx.CheckBox(self, label="Select largest surface")
-        top_sizer.AddStretchSpacer(2)
+        top_sizer.AddStretchSpacer(1)
         top_sizer.Add(self.select_largest_surface_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
         top_sizer.AddSpacer(5)
         self.select_largest_surface_checkbox.SetValue(True)
@@ -637,6 +651,12 @@ class HeadPage(wx.Panel):
         top_sizer.Add(self.remove_non_visible_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
         top_sizer.AddSpacer(5)
         self.remove_non_visible_checkbox.SetValue(True)
+
+        # Checkbox for smooth scalp surface
+        self.smooth_surface_checkbox = wx.CheckBox(self, label="Smooth scalp surface")
+        top_sizer.Add(self.smooth_surface_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
+        top_sizer.AddSpacer(5)
+        self.smooth_surface_checkbox.SetValue(True)
 
         # Checkbox for brain segmentation
         self.brain_segmentation_checkbox = wx.CheckBox(
@@ -684,6 +704,10 @@ class HeadPage(wx.Panel):
         Publisher.subscribe(self.SetItemsColour, "Set GUI items colour")
         Publisher.subscribe(self.OnRemoveMasks, "Remove masks")
         Publisher.subscribe(self.AddMask, "Add mask")
+        Publisher.subscribe(self.OnCloseProject, "Close project data")
+
+    def OnCloseProject(self):
+        self.OnRemoveMasks(list(reversed(range(self.combo_mask.GetCount()))))
 
     def __bind_events_wx(self):
         self.combo_mask.Bind(wx.EVT_COMBOBOX, self.OnComboName)
@@ -744,7 +768,8 @@ class HeadPage(wx.Panel):
     # Creates the head surface from a mask, and depending on the checkboxes
     # selects the largest surface, removes non-visible faces, and does brain segmentation
     def OnCreateHeadSurface(self, evt):
-        self.CreateSurface(evt)
+        if not self.CreateSurface(evt):
+            return
 
         if self.select_largest_surface_checkbox.IsChecked():
             self.SelectLargestSurface()
@@ -752,8 +777,15 @@ class HeadPage(wx.Panel):
         if self.remove_non_visible_checkbox.IsChecked():
             self.RemoveNonVisibleFaces()
 
+        if self.smooth_surface_checkbox.IsChecked():
+            self.SmoothSurface()
+
+        self.VisualizeScalpSurface()
+
         if self.brain_segmentation_checkbox.IsChecked():
             self.SegmentBrain()
+
+        Publisher.sendMessage("Move to image page")
 
     def CreateBrainSurface(self):
         options = {"angle": 0.7, "max distance": 3.0, "min weight": 0.5, "steps": 10}
@@ -822,13 +854,13 @@ class HeadPage(wx.Panel):
                         mask_index = idx
                         break
                 else:
-                    return
+                    return False
                 method = {"algorithm": algorithm, "options": options}
                 srf_options = {
                     "index": mask_index,
                     "name": "Scalp",
                     "quality": _("Optimal *"),
-                    "fill": False,
+                    "fill": True,
                     "keep_largest": False,
                     "overwrite": False,
                 }
@@ -837,8 +869,10 @@ class HeadPage(wx.Panel):
                     surface_parameters={"method": method, "options": srf_options},
                 )
                 Publisher.sendMessage("Fold surface task")
+            return True
         else:
             dlg.InexistentMask()
+            return False
 
     def SelectLargestSurface(self):
         Publisher.sendMessage("Create surface from largest region", overwrite=True, name="Scalp")
@@ -846,6 +880,10 @@ class HeadPage(wx.Panel):
     def RemoveNonVisibleFaces(self):
         Publisher.sendMessage("Remove non-visible faces")
 
+    def SmoothSurface(self):
+        Publisher.sendMessage("Create smooth surface", overwrite=True, name="Scalp")
+
+    def VisualizeScalpSurface(self):
         proj = prj.Project()
         surface_idx = len(proj.surface_dict) - 1
         scalp_colour = [255, 235, 255]

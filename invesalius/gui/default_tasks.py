@@ -375,9 +375,12 @@ class UpperTaskPanel(wx.Panel):
             self.SetStateProjectClose()
 
     def SetStateProjectClose(self):
+        session = ses.Session()
+        mode = session.GetConfig("mode")
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
         for item in self.enable_items:
-            item.Disable()
+            if mode != const.MODE_NAVIGATOR:
+                item.Disable()
 
     def SetStateProjectOpen(self):
         session = ses.Session()

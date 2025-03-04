@@ -219,6 +219,7 @@ class SurfaceManager:
         Publisher.subscribe(self.OnLargestSurface, "Create surface from largest region")
         Publisher.subscribe(self.OnRemoveNonVisibleFaces, "Remove non-visible faces")
         Publisher.subscribe(self.OnSeedSurface, "Create surface from seeds")
+        Publisher.subscribe(self.OnSmoothSurface, "Create smooth surface")
         Publisher.subscribe(self.GetBrainSurfaceActor, "Get brain surface actor")
 
         Publisher.subscribe(self.OnDuplicate, "Duplicate surfaces")
@@ -293,6 +294,21 @@ class SurfaceManager:
         index = self.CreateSurfaceFromPolydata(new_polydata)
         Publisher.sendMessage("Show single surface", index=index, visibility=True)
         # self.ShowActor(index, True)
+
+    def OnSmoothSurface(self, overwrite=False, name=""):
+        """
+        Create a new smooth surface, based on the last selected surface.
+        """
+        progress_dialog = dialogs.SmoothSurfaceProgressWindow()
+        progress_dialog.Update()
+        index = self.last_surface_index
+        proj = prj.Project()
+        surface = proj.surface_dict[index]
+
+        new_polydata = pu.ApplySmoothFilter(polydata=surface.polydata, iterations=20, relaxation_factor=0.4)
+        new_index = self.CreateSurfaceFromPolydata(new_polydata, overwrite=overwrite, name=name)
+        Publisher.sendMessage("Show single surface", index=new_index, visibility=True)
+        progress_dialog.Close()
 
     def OnSplitSurface(self):
         """

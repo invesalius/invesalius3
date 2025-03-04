@@ -96,14 +96,18 @@ def ApplySmoothFilter(
     smoother.SetNumberOfIterations(iterations)
     smoother.SetFeatureAngle(80)
     smoother.SetRelaxationFactor(relaxation_factor)
-    smoother.FeatureEdgeSmoothingOn()
-    smoother.BoundarySmoothingOn()
-    smoother.GetOutput().ReleaseDataFlagOn()
+    smoother.FeatureEdgeSmoothingOff()
+    smoother.BoundarySmoothingOff()
+    smoother.Update()
+    filler = vtkFillHolesFilter()
+    filler.SetInputConnection(smoother.GetOutputPort())
+    filler.SetHoleSize(1000)
+    filler.Update()
     smoother.AddObserver(
         "ProgressEvent", lambda obj, evt: UpdateProgress(smoother, "Smoothing surface...")
     )
 
-    return smoother.GetOutput()
+    return filler.GetOutput()
 
 
 def FillSurfaceHole(polydata: vtkPolyData) -> "vtkPolyData":
