@@ -69,7 +69,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 .skbuild-info.json
-uv.lock
 
 #Sample files
 samples/

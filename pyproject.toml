@@ -57,9 +57,11 @@ dev = [
 [project.gui-scripts]
 inv = 'invesalius.app:main'
 
+
 [build-system]
 requires = ["scikit-build-core", "cython >= 3.0.2", "numpy >= 1.26.4"]
 build-backend = "scikit_build_core.build"
+
 
 [tool.scikit-build]
 experimental = true
@@ -67,11 +69,9 @@ wheel.packages = ["invesalius","invesalius_cy"]
 editable.mode = "inplace"
 
 
-
-
-
 [tool.setuptools]
 packages = ["invesalius","invesalius_cy"]
+
 
 [tool.mypy]
 mypy_path = "typings"
@@ -91,6 +91,7 @@ no_implicit_reexport = false
 follow_imports = "skip" # change to normal later
 explicit_package_bases = true
 disable_error_code =  ["attr-defined", "no-redef"]
+
 
 [[tool.mypy.overrides]]
 module = 'wx.*'
@@ -142,6 +143,7 @@ module = [
     'sigar.*',
 ]
 ignore_missing_imports = true
+
 
 [tool.ruff]
 include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py',"typings/**/*.pyi"]
