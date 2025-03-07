@@ -691,6 +691,10 @@ class Frame(wx.Frame):
         elif id == const.ID_CREATE_SURFACE:
             Publisher.sendMessage("Open create surface dialog")
 
+        elif id == const.ID_REMOVE_NON_VISIBLE_FACES:
+            dialog = dlg.RemoveNonVisibleFacesDialog(self)
+            dialog.Show()
+
         elif id == const.ID_CREATE_MASK:
             Publisher.sendMessage("New mask from shortcut")
 
@@ -1284,6 +1288,10 @@ class MenuBar(wx.MenuBar):
         surface_menu = wx.Menu()
         self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, ("New\tCtrl+Shift+C"))
         self.create_surface.Enable(False)
+
+        self.remove_non_visible = surface_menu.Append(
+            const.ID_REMOVE_NON_VISIBLE_FACES, _("Remove non-visible faces")
+        )
 
         # Image menu
         image_menu = wx.Menu()

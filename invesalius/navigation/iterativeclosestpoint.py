@@ -17,6 +17,8 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import wx
 
@@ -25,19 +27,22 @@ import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.utils import Singleton
 
+if TYPE_CHECKING:
+    from invesalius.navigation.navigation import Navigation
+    from invesalius.navigation.tracker import Tracker
 
 class IterativeClosestPoint(metaclass=Singleton):
-    def __init__(self):
+    def __init__(self) -> None:
         self.use_icp = False
         self.m_icp = None
         self.icp_fre = None
 
         try:
             self.LoadState()
-        except:
+        except:  # noqa: E722
             ses.Session().DeleteStateFile()
 
-    def SaveState(self):
+    def SaveState(self) -> None:
         m_icp = self.m_icp.tolist() if self.m_icp is not None else None
         state = {
             "use_icp": self.use_icp,
@@ -48,7 +53,7 @@ class IterativeClosestPoint(metaclass=Singleton):
         session = ses.Session()
         session.SetState("icp", state)
 
-    def LoadState(self):
+    def LoadState(self) -> None:
         session = ses.Session()
         state = session.GetState("icp")
 
@@ -59,7 +64,7 @@ class IterativeClosestPoint(metaclass=Singleton):
         self.m_icp = np.array(state["m_icp"])
         self.icp_fre = state["icp_fre"]
 
-    def RegisterICP(self, navigation, tracker):
+    def RegisterICP(self, navigation: "Navigation", tracker: "Tracker") -> None:
         # If ICP is already in use, return.
         if self.use_icp:
             return
@@ -97,17 +102,17 @@ class IterativeClosestPoint(metaclass=Singleton):
 
         self.SetICP(navigation, self.use_icp)
 
-    def SetICP(self, navigation, use_icp):
+    def SetICP(self, navigation: "Navigation", use_icp: bool) -> None:
         self.use_icp = use_icp
 
         self.SaveState()
 
-    def ResetICP(self):
+    def ResetICP(self) -> None:
         self.use_icp = False
         self.m_icp = None
         self.icp_fre = None
 
         self.SaveState()
 
-    def GetFreForUI(self):
+    def GetFreForUI(self) -> str:
         return f"{self.icp_fre:.2f}" if self.icp_fre else ""
