@@ -514,12 +514,20 @@ class Frame(wx.Frame):
                 None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
             )
             dialog.ShowCheckBox("Store session", True)
+        
+        def on_close(event):
+            dialog.EndModal(wx.ID_CANCEL)
+            event.Skip()
+
+        dialog.Bind(wx.EVT_CLOSE, on_close)
 
         answer = dialog.ShowModal()
         save = dialog.IsCheckBoxChecked()
         dialog.Destroy()
 
         # logger = log.MyLogger()
+        if answer == wx.ID_CANCEL:
+            return 0
 
         if not save and answer == wx.ID_YES:
             log.invLogger.closeLogging()
