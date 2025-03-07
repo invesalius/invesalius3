@@ -256,6 +256,9 @@ class Viewer(wx.Panel):
 
         self.distance_text = None
         self.robot_warnings_text = None
+        self.force_compensate_arrow_up = None
+        # self.force_compensate_text = None
+        self.force_compensate_distance = 0
 
         # self.obj_axes = None
         self.mark_actor = None
@@ -506,6 +509,10 @@ class Viewer(wx.Panel):
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(
             self.OnUpdateRobotStatus, "Robot to Neuronavigation: Update robot status"
+        )
+        Publisher.subscribe(
+            self.UpdateForceCompensation,
+            "Robot to Neuronavigation: Update force compensation displacement",
         )
         Publisher.subscribe(self.GetCoilPosition, "Calculate position and rotation")
         Publisher.subscribe(
@@ -919,6 +926,8 @@ class Viewer(wx.Panel):
         obj_pitch.RotateY(90)
         obj_pitch.RotateZ(180)
 
+        force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
+
         arrow_roll_z1 = self.actor_factory.CreateArrow([-50, -35, 12], [-50, -35, 50])
         arrow_roll_z1.GetProperty().SetColor(1, 1, 0)
         arrow_roll_z1.RotateX(-60)
@@ -957,12 +966,16 @@ class Viewer(wx.Panel):
             arrow_pitch_x1,
             arrow_pitch_x2,
         )
+        print("FORCE_COMP_ARROW_UP_IN_CREATE_TARGET_GUIDE")
+        self.force_compensate_arrow_up = force_compensate_arrow_up
 
         for ind in self.guide_coil_actors:
             self.target_guide_renderer.AddActor(ind)
 
         for ind in self.guide_arrow_actors:
             self.target_guide_renderer.AddActor(ind)
+
+        self.target_guide_renderer.AddActor(force_compensate_arrow_up)
 
     def EnableTargetMode(self):
         # Store the current camera settings so that they can be restored when the target mode is disabled.
@@ -985,9 +998,15 @@ class Viewer(wx.Panel):
         if self.distance_text is not None:
             self.ren.RemoveActor(self.distance_text.actor)
 
+        # if self.force_compensate_arrow_up is not None:
+        #     self.ren.RemoveActor(self.force_compensate_arrow_up)
+
         # Create new actor for 'distance' text
         distance_text = self.CreateDistanceText()
         self.ren.AddActor(distance_text.actor)
+
+        # force_compensate_arrow_up = self.CreateCompensateArrowUp()
+        # self.ren.AddActor(force_compensate_arrow_up)
 
         # Store the object for 'distance' text so it can be modified when distance changes.
         self.distance_text = distance_text
@@ -1002,6 +1021,16 @@ class Viewer(wx.Panel):
 
         # Store the object for 'distance' text so it can be modified when distance changes.
         self.robot_warnings_text = robot_warnings_text
+
+        ##########################################
+
+        # force_compensate_text = self.CreateForceCompensateText()
+        # self.ren.AddActor(force_compensate_text.actor)
+
+        # # Store the object for 'compensate' text so it can be modified when distance changes.
+        # self.force_compensate_text = force_compensate_text
+
+        ##########################################
 
         self.CreateTargetGuide()
 
@@ -1042,6 +1071,11 @@ class Viewer(wx.Panel):
         if self.robot_warnings_text is not None:
             self.ren.RemoveActor(self.robot_warnings_text.actor)
 
+        ##########################################
+        # if self.force_compensate_arrow_up is not None:
+        #     self.ren.RemomveActor(self.force_compensate_arrow_up)
+        ##########################################
+
         self.camera_show_object = None
         if self.actor_peel:
             if self.object_orientation_torus_actor:
@@ -1064,6 +1098,12 @@ class Viewer(wx.Panel):
         else:
             self.DisableTargetMode()
 
+    def UpdateForceCompensation(self, displacement):
+        self.force_compensate_distance = displacement
+        # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(displacement)
+        # if self.force_compensate_text is not None:
+        #         self.force_compensate_text.SetValue(formatted_force_compensate)
+
     def OnUpdateCoilPose(self, m_img, coord):
         # vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
@@ -1071,10 +1111,23 @@ class Viewer(wx.Panel):
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
 
-            formatted_distance = f"Distance: {distance_to_target: >5.1f} mm"
+            if self.force_compensate_distance < 0:
+                formatted_distance = f"Distance: {distance_to_target: >5.1f} mm UP \u2191"
+                # self.force_compensate_arrow_up.SetOrientation()
+            elif self.force_compensate_distance > 0:
+                formatted_distance = f"Distance: {distance_to_target: >5.1f} mm DOWN ↓\u2193"
+            else:
+                formatted_distance = f"Distance: {distance_to_target: >5.1f} mm"
+
+            # formatted_force_compensate = "Force Compensate: {: >5.1f} mm".format(self.force_compensate_distance)
 
             if self.distance_text is not None:
                 self.distance_text.SetValue(formatted_distance)
+
+            ##########################################
+            # if self.force_compensate_text is not None:
+            #     self.force_compensate_text.SetValue(formatted_force_compensate)
+            ##########################################
 
             self.ren.ResetCamera()
             self.SetCameraTarget()
@@ -1123,6 +1176,22 @@ class Viewer(wx.Panel):
             if self.guide_arrow_actors is not None:
                 for actor in self.guide_arrow_actors:
                     self.target_guide_renderer.RemoveActor(actor)
+
+            ########
+            if self.force_compensate_arrow_up is not None:
+                self.target_guide_renderer.RemoveActor(self.force_compensate_arrow_up)
+
+            # print("creating force_compensate_arrow_up")
+            # force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, 0, 50])
+            force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [0, -50, 0])
+            force_compensate_arrow_up.SetPosition(0, -575, 0)
+            force_compensate_arrow_up.RotateY(90)
+            force_compensate_arrow_up.RotateZ(180)
+            force_compensate_arrow_up.GetProperty().SetColor(1, 1, 1)
+
+            # print("Adding the actor force_compensate_arrow_up")
+            self.target_guide_renderer.AddActor(force_compensate_arrow_up)
+            ########
 
             if (
                 self.angle_threshold * const.ARROW_SCALE
@@ -1289,6 +1358,34 @@ class Viewer(wx.Panel):
         distance_text.BoldOn()
 
         return distance_text
+
+    # def CreateCompensateArrowUp(self):
+    #     # arrow_source = vtkArrowSource()
+
+    #     force_compensate_arrow_up = self.actor_factory.CreateArrow([0, 0, 0], [10, 10, 10])
+    #     force_compensate_arrow_up.GetProperty().SetColor(1, 1, 0)
+    #     force_compensate_arrow_up.RotateX(-60)
+    #     force_compensate_arrow_up.RotateZ(180)
+    #     return force_compensate_arrow_up
+
+    # def CreateForceCompensateText(self):
+    # up_arrow_actor = vtku.vtkTextActor()
+    # up_arrow_actor.SetInput("TESTTEST")  # Unicode for up arrow
+    # up_arrow_actor.GetTextProperty().SetFontSize(24)
+    # up_arrow_actor.GetTextProperty().SetColor(1.0, 1.0, 1.0)
+    # up_arrow_actor.SetPosition(100, 100) #### Might wanna change
+
+    # return up_arrow_actor
+
+    # def CreateForceCompensateText(self):
+    #     force_compensate_text = vtku.Text()
+
+    #     force_compensate_text.SetSize(20)
+    #     force_compensate_text.SetPosition((0.03, 0.09)) # to do dynamic positioning I'd have to run setPosition in some part of code that runs continuosly
+    #     force_compensate_text.SetVerticalJustificationToBottom()
+    #     force_compensate_text.BoldOn()
+
+    #     return force_compensate_text
 
     def CenterOfMass(self):
         barycenter = [0.0, 0.0, 0.0]
