@@ -17,9 +17,11 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+from typing import Optional, Any, MutableSequence
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
-from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper
+from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper, vtkRenderer, vtkRenderWindowInteractor
+from vtkmodules.vtkCommonDataModel import vtkImageData
 
 AXIAL, SAGITAL, CORONAL = 0, 1, 2
 PLANE_DATA = {AXIAL: ["z", (0, 0, 1)], SAGITAL: ["x", (1, 0, 0)], CORONAL: ["y", (0, 1, 0)]}
@@ -40,36 +42,37 @@ class Plane:
     axial_plane.Update()
     """
 
-    def __init__(self):
-        self.orientation = AXIAL
-        self.render = None
-        self.iren = None
-        self.index = 0
-        self.source = None
-        self.widget = None
-        self.actor = None
+    def __init__(self) -> None:
+        self.orientation: int = AXIAL
+        self.render: Optional[vtkRenderer] = None
+        self.iren: Optional[vtkRenderWindowInteractor] = None
+        self.index: int = 0
+        self.source: Optional[vtkPlaneSource] = None
+        self.widget: Optional[vtkImagePlaneWidget] = None
+        self.actor: Optional[vtkActor] = None
 
-    def SetOrientation(self, orientation=AXIAL):
+    def SetOrientation(self, orientation: int = AXIAL) -> None:
         self.orientation = orientation
 
-    def SetRender(self, render=None):
+    def SetRender(self, render: Optional[vtkRenderer] = None) -> None:
         self.render = render
 
-    def SetInteractor(self, iren=None):
+    def SetInteractor(self, iren: Optional[vtkRenderWindowInteractor] = None) -> None:
         self.iren = iren
 
-    def SetSliceIndex(self, index):
+    def SetSliceIndex(self, index: int) -> None:
         self.index = 0
-        try:
-            self.widget.SetSliceIndex(int(index))
-        except AttributeError:
-            pass
-        else:
-            self.Update()
-            if self.widget.GetEnabled():
-                print("send signal - update slice info in panel and in 2d")
+        if self.widget is not None:
+            try:
+                self.widget.SetSliceIndex(int(index))
+            except AttributeError:
+                pass
+            else:
+                self.Update()
+                if self.widget.GetEnabled():
+                    print("send signal - update slice info in panel and in 2d")
 
-    def SetInput(self, imagedata):
+    def SetInput(self, imagedata: vtkImageData) -> None:
         axes = PLANE_DATA[self.orientation][0]  # "x", "y" or "z"
         colour = PLANE_DATA[self.orientation][1]
 
@@ -107,10 +110,10 @@ class Plane:
 
         # Syncronize coloured outline with texture appropriately
         source = vtkPlaneSource()
-        source.SetOrigin(widget.GetOrigin())
-        source.SetPoint1(widget.GetPoint1())
-        source.SetPoint2(widget.GetPoint2())
-        source.SetNormal(widget.GetNormal())
+        source.SetOrigin(list(widget.GetOrigin()))
+        source.SetPoint1(list(widget.GetPoint1()))
+        source.SetPoint2(list(widget.GetPoint2()))
+        source.SetNormal(list(widget.GetNormal()))
         self.source = source
 
         mapper = vtkPolyDataMapper()
@@ -122,24 +125,27 @@ class Plane:
         actor.VisibilityOff()
         self.actor = actor
 
-        self.render.AddActor(actor)
+        if self.render is not None:
+            self.render.AddActor(actor)
 
-    def Update(self, x=None, y=None):
+    def Update(self, x: Optional[Any] = None, y: Optional[Any] = None) -> None:
         source = self.source
         widget = self.widget
 
-        source.SetOrigin(widget.GetOrigin())
-        source.SetPoint1(widget.GetPoint1())
-        source.SetPoint2(widget.GetPoint2())
-        source.SetNormal(widget.GetNormal())
+        if source and widget:
+            source.SetOrigin(list(widget.GetOrigin()))
+            source.SetPoint1(list(widget.GetPoint1()))
+            source.SetPoint2(list(widget.GetPoint2()))
+            source.SetNormal(list(widget.GetNormal()))
 
-    def Show(self, show=1):
+    def Show(self, show: int = 1) -> None:
         actor = self.actor
         widget = self.widget
 
-        if show:
-            actor.VisibilityOn()
-            widget.On()
-        else:
-            actor.VisibilityOff()
-            widget.Off()
+        if actor and widget:
+            if show:
+                actor.VisibilityOn()
+                widget.On()
+            else:
+                actor.VisibilityOff()
+                widget.Off()
