@@ -17,11 +17,18 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-from typing import Optional, Any, MutableSequence
+from typing import Any, MutableSequence, Optional
+
+from vtkmodules.vtkCommonDataModel import vtkImageData
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
-from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper, vtkRenderer, vtkRenderWindowInteractor
-from vtkmodules.vtkCommonDataModel import vtkImageData
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkCellPicker,
+    vtkPolyDataMapper,
+    vtkRenderer,
+    vtkRenderWindowInteractor,
+)
 
 AXIAL, SAGITAL, CORONAL = 0, 1, 2
 PLANE_DATA = {AXIAL: ["z", (0, 0, 1)], SAGITAL: ["x", (1, 0, 0)], CORONAL: ["y", (0, 1, 0)]}

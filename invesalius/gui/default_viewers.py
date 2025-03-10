@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 import os
 import sys
+from typing import Any, List, Tuple
 
 import wx
 import wx.lib.agw.fourwaysplitter as fws
@@ -40,7 +41,6 @@ from invesalius.gui.widgets.clut_raycasting import (
 )
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from typing import Any, List, Tuple
 
 
 class Panel(wx.Panel):

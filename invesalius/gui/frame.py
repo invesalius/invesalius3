@@ -17,13 +17,13 @@
 #    detalhes.
 # --------------------------------------------------------------------
 
-from typing import Any, List, Optional, Tuple, Dict
 import errno
 import os.path
 import platform
 import subprocess
 import sys
 import webbrowser
+from typing import Any, Dict, List, Optional, Tuple
 
 import wx
 import wx.aui
