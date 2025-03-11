@@ -62,7 +62,7 @@ class Image:
         self.fiducials = prj.Project().image_fiducials
 
     def SetImageFiducial(
-        self, fiducial_index: int, position: Union[Sequence[Union[int, float]], NDArray[int, float]]
+        self, fiducial_index: int, position: Union[Sequence[Union[int, float]], np.ndarray]
     ) -> None:
         self.fiducials[fiducial_index, :] = position
         self.UpdateFiducialMarker(fiducial_index)
