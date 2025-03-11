@@ -987,9 +987,9 @@ class ImagePage(wx.Panel):
         top_sizer.AddMany([(start_button), (reset_button)])
 
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sizer.Add(back_button)
-        bottom_sizer.AddSpacer(120)
-        bottom_sizer.Add(next_button)
+        bottom_sizer.Add(back_button, 0, wx.LEFT, 10)
+        bottom_sizer.AddStretchSpacer()
+        bottom_sizer.Add(next_button, 0, wx.RIGHT, 10)
 
         sizer = wx.GridBagSizer(5, 5)
         sizer.Add(
@@ -1012,12 +1012,14 @@ class ImagePage(wx.Panel):
         )
         sizer.Add(background, wx.GBPosition(1, 2))
 
+        stretch_spacer = (0, 0, 1)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
             [
                 (top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10),
                 (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5),
-                (bottom_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 30),
+                stretch_spacer,
+                (bottom_sizer, 0, wx.EXPAND | wx.BOTTOM, 10),
             ]
         )
         self.sizer = main_sizer
@@ -1213,6 +1215,8 @@ class TrackerPage(wx.Panel):
 
         self.main_label = main_label
 
+        stretch_spacer = (0, 0, 1)
+
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
         top_sizer.AddMany([(start_button), (reset_button)])
 
@@ -1222,9 +1226,11 @@ class TrackerPage(wx.Panel):
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
         bottom_sizer.AddMany(
             [
-                (back_button, 0, wx.EXPAND),
+                (back_button, 0, wx.LEFT, 10),
+                stretch_spacer,
                 (preferences_button, 0, wx.EXPAND),
-                (next_button, 0, wx.EXPAND),
+                stretch_spacer,
+                (next_button, 0, wx.RIGHT, 10),
             ]
         )
 
@@ -1262,9 +1268,10 @@ class TrackerPage(wx.Panel):
             [
                 (top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10),
                 (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5),
+                stretch_spacer,
                 (middle_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP, 20),
                 (5, 5),
-                (bottom_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT | wx.BOTTOM, 20),
+                (bottom_sizer, 0, wx.EXPAND | wx.BOTTOM, 10),
             ]
         )
 
@@ -1495,12 +1502,16 @@ class RefinePage(wx.Panel):
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
         self.next_button = next_button
 
+        stretch_spacer = (0, 0, 1)
+
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_sizer.AddMany(
             [
-                (back_button, 0, wx.EXPAND),
+                (back_button, 0, wx.LEFT, 10),
+                stretch_spacer,
                 (refine_button, 0, wx.EXPAND),
-                (next_button, 0, wx.EXPAND),
+                stretch_spacer,
+                (next_button, 0, wx.RIGHT, 10),
             ]
         )
 
@@ -1513,8 +1524,8 @@ class RefinePage(wx.Panel):
                 (coord_sizer_track, 0, wx.ALIGN_CENTER_HORIZONTAL),
                 (10, 10, 0),
                 (fre_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
-                (button_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 20),
-                (10, 10, 0),
+                stretch_spacer,
+                (button_sizer, 0, wx.EXPAND | wx.BOTTOM, 10),
             ]
         )
         self.sizer = main_sizer
@@ -1609,15 +1620,22 @@ class StylusPage(wx.Panel):
         next_button = wx.Button(self, label="Next")
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
 
-        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sizer.Add(back_button)
-        bottom_sizer.Add(next_button)
+        stretch_spacer = (0, 0, 1)
 
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.AddMany(
+            [
+                (back_button, 0, wx.LEFT, 10),
+                stretch_spacer,
+                (next_button, 0, wx.RIGHT, 10),
+            ]
+        )
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
             [
                 (border, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 1),
-                (bottom_sizer, 0, wx.ALIGN_CENTER | wx.CENTER | wx.TOP, 1),
+                stretch_spacer,
+                (bottom_sizer, 0, wx.EXPAND | wx.BOTTOM, 10),
             ]
         )
 
@@ -1676,12 +1694,16 @@ class StimulatorPage(wx.Panel):
         )
         # lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.lbl = lbl
+        stretch_spacer = (0, 0, 1)
 
         btn_edit = wx.Button(self, -1, _("Edit coil registration in Preferences"))
         btn_edit.SetToolTip("Open preferences menu")
         btn_edit.Bind(wx.EVT_BUTTON, self.OnEditPreferences)
 
-        next_button = wx.Button(self, label="Proceed to navigation")
+        back_button = wx.Button(self, label="Back")
+        back_button.Bind(wx.EVT_BUTTON, self.OnBack)
+
+        next_button = wx.Button(self, label="Navigation")
         next_button.Bind(wx.EVT_BUTTON, partial(self.OnNext))
         if not self.navigation.CoilSelectionDone():
             self.lbl.SetLabel("Please select a coil registration")
@@ -1692,12 +1714,25 @@ class StimulatorPage(wx.Panel):
             [
                 (lbl, 1, wx.EXPAND),
                 (btn_edit, 1, wx.EXPAND),
-                (next_button, 1, wx.EXPAND),
+            ]
+        )
+        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sizer.AddMany(
+            [
+                (back_button, 0, wx.LEFT, 10),
+                stretch_spacer,
+                (next_button, 0, wx.RIGHT, 10),
             ]
         )
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(border, 0, wx.EXPAND, 5)
+        main_sizer.AddMany(
+            [
+                (border, 0, wx.ALIGN_CENTER | wx.TOP, 10),
+                stretch_spacer,
+                (bottom_sizer, 0, wx.EXPAND | wx.BOTTOM, 10),
+            ]
+        )
 
         self.SetSizerAndFit(main_sizer)
         self.Layout()
@@ -1724,6 +1759,9 @@ class StimulatorPage(wx.Panel):
 
     def OnEditPreferences(self, evt):
         Publisher.sendMessage("Open preferences menu", page=3)
+
+    def OnBack(self, evt):
+        Publisher.sendMessage("Move to stylus page")
 
     def OnNext(self, evt):
         Publisher.sendMessage("Open navigation menu")
