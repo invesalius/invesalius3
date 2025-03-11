@@ -17,7 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Sequence, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -40,7 +40,7 @@ class Image:
         return self._fiducials
 
     @fiducials.setter
-    def fiducials(self, value: NDArray[np.float64]) -> None:
+    def fiducials(self, value: NDArray[Union[int, float]]) -> None:
         self._fiducials = value
 
     def __bind_events(self) -> None:
@@ -61,7 +61,9 @@ class Image:
     def LoadProject(self) -> None:
         self.fiducials = prj.Project().image_fiducials
 
-    def SetImageFiducial(self, fiducial_index: int, position: Iterable[int]) -> None:
+    def SetImageFiducial(
+        self, fiducial_index: int, position: Union[Sequence[Union[int, float]], NDArray[int, float]]
+    ) -> None:
         self.fiducials[fiducial_index, :] = position
         self.UpdateFiducialMarker(fiducial_index)
 
@@ -69,7 +71,7 @@ class Image:
         ses.Session().ChangeProject()
         self.SaveState()
 
-    def GetImageFiducials(self) -> NDArray[np.float64]:
+    def GetImageFiducials(self) -> NDArray[float]:
         return self.fiducials
 
     def ResetImageFiducials(self) -> None:
@@ -78,7 +80,7 @@ class Image:
         Publisher.sendMessage("Reset image fiducials")
         self.SaveState()
 
-    def GetImageFiducialForUI(self, fiducial_index: int, coordinate: Iterable[int]) -> Any:
+    def GetImageFiducialForUI(self, fiducial_index: int, coordinate: Sequence[int]) -> Any:
         value = self.fiducials[fiducial_index, coordinate]
         if np.isnan(value):
             value = 0
