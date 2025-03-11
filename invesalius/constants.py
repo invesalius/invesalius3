@@ -618,6 +618,7 @@ ID_CROP_MASK = wx.NewIdRef()
 ID_DENSITY_MEASURE = wx.NewIdRef()
 ID_MASK_DENSITY_MEASURE = wx.NewIdRef()
 ID_CREATE_SURFACE = wx.NewIdRef()
+ID_REMOVE_NON_VISIBLE_FACES = wx.NewIdRef()
 ID_CREATE_MASK = wx.NewIdRef()
 ID_MASK_3D_PREVIEW = wx.NewIdRef()
 ID_MASK_3D_RELOAD = wx.NewIdRef()
@@ -819,6 +820,16 @@ BRAIN_Y_MTMS = 6
 BRAIN_R_MTMS = 7
 BRAIN_INTENSITY_MTMS = 8
 BRAIN_UUID = 9
+
+# Page order in the coregistration panel
+
+IMPORTS_PAGE = 0
+HEAD_PAGE = 1
+IMAGE_PAGE = 2
+TRACKER_PAGE = 3
+REFINE_PAGE = 4
+STYLUS_PAGE = 5
+STIMULATOR_PAGE = 6
 
 # ------------ Navigation defaults -------------------
 
