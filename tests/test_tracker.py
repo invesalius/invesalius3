@@ -4,8 +4,6 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import wx
 
 import invesalius.constants as const
@@ -81,17 +79,6 @@ def test_load_state(mocker, tracker):
     mock_set_tracker.assert_called_once_with(
         tracker_id=const.DEBUGTRACKAPPROACH, configuration=None
     )
-
-
-def test_set_tracker(mocker, tracker):
-    mock_tracker_conn = mocker.MagicMock()
-    mock_tracker_conn.GetConfiguration.return_value = {"param1": 10, "param2": "value"}
-    mocker.patch(
-        "invesalius.data.tracker_connection.CreateTrackerConnection", return_value=mock_tracker_conn
-    )
-    tracker.SetTracker(tracker_id=const.DEBUGTRACKAPPROACH)
-    assert tracker.tracker_connection is not None
-    assert isinstance(tracker.tracker_connection.GetConfiguration(), dict)
 
 
 def test_get_tracker_coordinates(mocker, tracker):

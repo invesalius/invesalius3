@@ -4,7 +4,6 @@ from unittest.mock import call
 
 import pytest
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from invesalius.pubsub.pub import (
     add_sendMessage_hook,
     sendMessage,
