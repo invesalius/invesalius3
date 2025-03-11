@@ -1,16 +1,18 @@
-import sys
 import os
-import pytest
+import sys
 from unittest.mock import call
+
+import pytest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from invesalius.pubsub.pub import (
-    subscribe,
-    unsubscribe,
+    add_sendMessage_hook,
     sendMessage,
     sendMessage_no_hook,
-    add_sendMessage_hook,
+    subscribe,
+    unsubscribe,
 )
+
 
 @pytest.fixture
 def mock_publisher(mocker):
