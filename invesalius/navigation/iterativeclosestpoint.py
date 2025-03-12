@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from invesalius.navigation.navigation import Navigation
     from invesalius.navigation.tracker import Tracker
 
+
 class IterativeClosestPoint(metaclass=Singleton):
     def __init__(self) -> None:
         self.use_icp = False
