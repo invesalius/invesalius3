@@ -141,6 +141,7 @@ module = [
     'win32com.client.*',
     'win32com.*',
     'sigar.*',
+    'numpy.*',
 ]
 ignore_missing_imports = true
 
