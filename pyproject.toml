@@ -30,7 +30,7 @@ dependencies = [
     "setuptools-scm",
     "torch==2.3.1",
     "vtk==9.3.0",
-    "wxpython==4.2.1",
+    "wxpython==4.2.2",
 ]
 license = { file = "LICENSE.txt" }
 readme = "README.md"
