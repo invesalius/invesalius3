@@ -35,24 +35,6 @@ jobs:
           uv venv --python 3.12
           uv sync
 
-      # - name: Check inside inv_cy/release
-      #   run: |
-      #     .venv\Scripts\activate
-      #     dir invesalius_cy\Release
-
-      # - name: Check current dir
-      #   run: |
-      #     dir
-
-      # - name: site packages data
-      #   run: |
-      #     dir .venv\Lib\site-packages
-
-      # - name: Inside inv_cy
-      #   run: |
-      #     uv pip list
-      #     dir .\invesalius_cy\
-
       - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
         if: ${{ matrix.ai_ready == 1}}
         run: |
