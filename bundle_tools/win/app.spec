@@ -15,7 +15,8 @@ from PyInstaller.utils.hooks import get_module_file_attribute, collect_dynamic_l
 from PyInstaller.compat import is_win
 
 python_dir = os.path.dirname(sys.executable)
-site_packages = os.path.join(python_dir,'Lib','site-packages')
+venv_path = os.path.dirname(python_dir)
+site_packages = os.path.join(venv_path,'Lib','site-packages')
 
 
 def check_extension(item): 
@@ -60,18 +61,18 @@ for v in vtk_files:
         libraries.append((v, dest_dir))
 
 #add interpolation module (pyinstaller not take automatically)
-libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy',\
+libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy\Release',\
     'interpolation.*.pyd'))[0],'invesalius_cy'))
 
 #add plaidml modules and files
-#libraries.append((os.path.join(python_dir,'library','bin','plaidml.dll'),'library\\bin'))
+#libraries.append((os.path.join(venv_path,'library','bin','plaidml.dll'),'library\\bin'))
 #
-#plaidml_files = get_all_files(os.path.join(python_dir,'share','plaidml'))
+#plaidml_files = get_all_files(os.path.join(venv_path,'share','plaidml'))
 #
 #for v in plaidml_files:
 #    if not(check_extension(v)):
 #        #take only folder name and remove first '\\'
-#        dest_dir = os.path.dirname(v.replace(python_dir,''))[1:]
+#        dest_dir = os.path.dirname(v.replace(venv_path,''))[1:]
 #        libraries.append((v, dest_dir))
 #
 #
