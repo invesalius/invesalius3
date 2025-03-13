@@ -61,7 +61,7 @@ for v in vtk_files:
         libraries.append((v, dest_dir))
 
 #add interpolation module (pyinstaller not take automatically)
-libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy\Release',\ 
+libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy\Release', 
     'interpolation.*.pyd'))[0],'invesalius_cy')) #.pyd files are inside of invesalius_cy\Release
 
 #add plaidml modules and files
