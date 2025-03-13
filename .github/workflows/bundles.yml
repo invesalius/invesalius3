@@ -1,25 +1,30 @@
 name: generate bundles
 
-on: [push]
+on: 
+  workflow_dispatch:
+    inputs:
+      is-pre-release:
+        description: "is pre-release"
+        required: true
+        type: boolean
 
 jobs:
   build-win:
     name: build windows packages
     runs-on: windows-latest
-    strategy:
-      matrix:
-        architecture: ['x64']
-        ai_ready: [0, 1]
+    # strategy:
+    #   matrix:
+    #     architecture: ['x64']
+    #     ai_ready: [0, 1]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
-        
+             
       - name: Put current date into a variable
         run: |
           $DATE=& Get-Date -format yyyy-MM-dd
           echo "DATE=$DATE" >> $env:GITHUB_ENV
-
       - name: Put current commit hash in a variable
         run: |
           $COMMIT=$(git rev-parse HEAD)
@@ -30,31 +35,71 @@ jobs:
         with:
           vsversion: '17.0'
           arch: ${{ matrix.architecture }}
+
+  #     - name: Setup C/C++ Compiler
+  # # You may pin to the exact commit or the version.
+  # # uses: rlalik/setup-cpp-compiler@f39db50a7fd04bfd65ce41e8fec0ac185ae59dfb
+  #       uses: rlalik/setup-cpp-compiler@v1.2
+        
+          
+
+      # - name: Setup Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: "3.11.2"
+      #     cache: "pip"
     
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11.2'
-          cache: 'pip'
+      - name: install uv
+        run: |
+          powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/0.6.5/install.ps1 | iex"
+          $env:Path = "C:\Users\runneradmin\.local\bin;$env:Path"
+          
+      - name: install venv and sync dependencies
+        run : |
+          uv venv --python 3.12
+          uv sync 
 
-      - name: Upgrade pip and enable wheel support
-        run: python -m pip install --upgrade pip setuptools wheel 
 
-      - name: Install InVesalius requirements
-        run: pip install -r requirements.txt
+      - name: which python
+        run: |
+          .venv\Scripts\activate
+          which python
+          cd invesalius_cy
+          cmake --build . --config Release
+
+      - name: Check for .pyd files
+        run: |
+          dir /s /b *.pyd
+          cd ..
+          
+          
+      - name: site packages data
+        run: |
+          dir .venv\Lib\site-packages
+          
+      # - name: Upgrade pip and enable wheel support
+      #   run: python -m pip install --upgrade pip setuptools wheel 
+
+      - name: Pip list
+        run: |
+          pwd
+          uv pip list
+          dir .\invesalius_cy\
 
       - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
         if: ${{ matrix.ai_ready == 1}}
-        run: pip install torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
-
-      - name: Compile InVesalius Cython parts
         run: |
-              python3 setup.py build_ext --inplace
-              python3 setup.py build_plugins
+          uv pip install  torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+  
+      # - name: Compile InVesalius Cython parts
+      #   run: |
+      #         python3 setup.py build_ext --inplace
+      #         python3 setup.py build_plugins
 
       - name: Insert version and commit hash into dialog.py
-        run: python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
-
+        run: |
+          .venv\Scripts\activate
+          uv run bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         id: pyinstaller
         name: Download pyinstaller
@@ -70,11 +115,12 @@ jobs:
 
       - name: Compile pyinstaller bootloader
         run: |
+              .venv\Scripts\activate
               cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
               python3 ./waf distclean all
               cd ..
-              pip install .
-
+              uv pip install .
+              dir
       - name: Download mandible ai weight
         if: ${{ matrix.ai_ready == 1 }}
         uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
@@ -107,7 +153,6 @@ jobs:
         if: ${{ matrix.ai_ready == 1 }}
         run: |
               move ./ai/trachea_ct/weights.pt ./ai/trachea_ct/trachea_ct.pt
-
       - name: Download brain ai weight
         if: ${{ matrix.ai_ready == 1 }}
         uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
@@ -119,13 +164,12 @@ jobs:
         if: ${{ matrix.ai_ready == 1 }}
         run: |
               move ./ai/brain_mri_t1/weights.pt ./ai/brain_mri_t1/brain_mri_t1.pt
-
       - name: Generate InVesalius .exe file
         run: |
+              .venv\Scripts\activate
               cp ./bundle_tools/win/app.spec ./  
               pyinstaller app.spec --clean --noconfirm
               mkdir installer
-
       - name: Generate InVesalius installer - win64 ai-ready build
         if: ${{ matrix.ai_ready == 1 }}
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
@@ -144,7 +188,6 @@ jobs:
         run: |
           cd ./installer
           dir
-
       - name: Upload artifact of package normal file
         if: ${{ matrix.ai_ready == 0}}
         uses: actions/upload-artifact@v4
@@ -181,7 +224,6 @@ jobs:
       - name: Message
         run: |
           dir
-
       - name: Update Nightly Release
         uses: andelf/nightly-release@main
         env:
