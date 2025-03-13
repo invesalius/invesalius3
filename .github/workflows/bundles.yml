@@ -30,11 +30,12 @@ jobs:
           $COMMIT=$(git rev-parse HEAD)
           echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
             
-      - name: Setup VC++ 2022 (17.0)
-        uses: ilammy/msvc-dev-cmd@v1.13.0
-        with:
-          vsversion: '17.0'
-          arch: ${{ matrix.architecture }}
+      # - name: Setup VC++ 2022 (17.0)
+      #   uses: ilammy/msvc-dev-cmd@v1.13.0
+      #    with:
+      #     vsversion: '17.0'
+      #      arch: ${{ matrix.architecture }}
+
 
   #     - name: Setup C/C++ Compiler
   # # You may pin to the exact commit or the version.
