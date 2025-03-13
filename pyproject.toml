@@ -34,7 +34,7 @@ dependencies = [
 ]
 license = { file = "LICENSE.txt" }
 readme = "README.md"
-requires-python = ">=3.12.*"
+requires-python = "==3.12.*"
 
 
 [dependency-groups]
