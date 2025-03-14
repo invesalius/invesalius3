@@ -56,12 +56,13 @@ jobs:
         with:
           file_path: ./pyinstaller/v6.9.0.zip
           extract_dir: ./pyinstaller/
-          
+
       - name: copy .pyd files to invesalius_cy
         run: |
-          Copy-Item -Recurse invesalius_cy\Release -Destination invesalius_cy
+          Copy-Item -Path invesalius_cy\Release\* -Destination invesalius_cy -Recurse -Force
+
           dir
-         
+
       - name: Compile pyinstaller bootloader
         run: |
           .venv\Scripts\activate
@@ -69,8 +70,6 @@ jobs:
           python3 ./waf distclean all
           cd ..
           uv pip install .
-
-       
 
       - name: Download mandible ai weight
         if: ${{ matrix.ai_ready == 1 }}
