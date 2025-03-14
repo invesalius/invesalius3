@@ -32,7 +32,6 @@ jobs:
 
       - name: install venv and sync dependencies
         run: |
-          uv venv --python 3.12
           uv sync
 
       - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
