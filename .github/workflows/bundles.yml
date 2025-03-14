@@ -61,8 +61,6 @@ jobs:
         run: |
           Copy-Item -Path invesalius_cy\Release\* -Destination invesalius_cy -Recurse -Force
 
-          dir
-
       - name: Compile pyinstaller bootloader
         run: |
           .venv\Scripts\activate
