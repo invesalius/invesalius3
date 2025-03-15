@@ -67,6 +67,10 @@ import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 
+# Import the enhanced error handling and logging system
+import invesalius.error_handling
+import invesalius.enhanced_logging
+
 FS_ENCODE = sys.getfilesystemencoding()
 LANG = None
 
@@ -120,7 +124,15 @@ class InVesalius(wx.App):
         self.SetTopWindow(self.frame)
         self.frame.Show()
         self.frame.Raise()
-        # logger = log.MyLogger()
+        
+        # Initialize the enhanced logging system
+        invesalius.enhanced_logging.register_menu_handler()
+        
+        # Initialize the error handling tests
+        from invesalius import test_error_handling
+        test_error_handling.register_menu_handler()
+        
+        # Initialize the legacy logging system for backward compatibility
         log.invLogger.configureLogging()
 
 
@@ -536,7 +548,7 @@ def init():
     if hasattr(sys, "frozen") and sys.platform == "win32":
         # Click in the .inv3 file support
         root = winreg.HKEY_CLASSES_ROOT
-        key = "InVesalius 3.1\InstallationDir"
+        key = r"InVesalius 3.1\InstallationDir"
         hKey = winreg.OpenKey(root, key, 0, winreg.KEY_READ)
         value, type_ = winreg.QueryValueEx(hKey, "")
         path = os.path.join(value, "dist")
