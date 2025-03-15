@@ -547,8 +547,19 @@ class Frame(wx.Frame):
         if status:
             Publisher.sendMessage("Disconnect tracker")
             Publisher.sendMessage("Exit")
+            
+            # Clean up any open log viewer
+            try:
+                from invesalius import enhanced_logging
+                enhanced_logging.enhanced_logger.cleanup()
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print(f"Error cleaning up log viewer: {e}")
+            
             if status == 1:
                 Publisher.sendMessage("Exit session")
+            self.Destroy()
 
     def OnMenuClick(self, evt):
         """
@@ -1077,59 +1088,9 @@ class Frame(wx.Frame):
         print("OnShowLogViewer called")  # Debug output
         
         try:
-            # Create a simple standalone log viewer dialog
-            log_dialog = wx.Dialog(self, title="InVesalius Log Viewer", size=(800, 600),
-                                style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
-            
-            # Create the main panel and sizer
-            panel = wx.Panel(log_dialog)
-            main_sizer = wx.BoxSizer(wx.VERTICAL)
-            
-            # Add a text control to display logs
-            log_text = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
-            main_sizer.Add(log_text, 1, wx.EXPAND | wx.ALL, 5)
-            
-            # Add a refresh button
-            button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            refresh_button = wx.Button(panel, label="Refresh")
-            close_button = wx.Button(panel, label="Close")
-            button_sizer.Add(refresh_button, 0, wx.ALL, 5)
-            button_sizer.Add(close_button, 0, wx.ALL, 5)
-            main_sizer.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
-            
-            panel.SetSizer(main_sizer)
-            
-            # Get logs from the logger
+            # Use the enhanced log viewer from enhanced_logging.py
             from invesalius import enhanced_logging
-            logger = enhanced_logging.get_logger("frame")
-            logger.info("Log viewer opened")
-            
-            # Function to populate the log text
-            def populate_logs():
-                log_text.Clear()
-                # Add some sample logs
-                log_text.AppendText("=== InVesalius Log Viewer ===\n\n")
-                log_text.AppendText("Current time: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n\n")
-                
-                # Add recent log messages
-                log_text.AppendText("Recent log messages:\n")
-                log_text.AppendText("-------------------\n")
-                
-                # Get logs from the enhanced_logging module
-                handler = enhanced_logging.enhanced_logger._in_memory_handler
-                for record in handler.records:
-                    log_text.AppendText(f"{record.timestamp} - {record.level} - {record.name} - {record.message}\n")
-            
-            # Populate logs initially
-            populate_logs()
-            
-            # Bind events
-            refresh_button.Bind(wx.EVT_BUTTON, lambda evt: populate_logs())
-            close_button.Bind(wx.EVT_BUTTON, lambda evt: log_dialog.EndModal(wx.ID_CANCEL))
-            
-            # Show the dialog
-            log_dialog.ShowModal()
-            log_dialog.Destroy()
+            enhanced_logging.show_log_viewer(self)
             
         except Exception as e:
             print(f"Error showing log viewer: {e}")
@@ -1239,6 +1200,18 @@ class Frame(wx.Frame):
                 logger.warning("This is a warning message")
                 logger.error("This is an error message")
                 logger.critical("This is a critical message")
+                
+                # Add some more detailed log messages for testing the enhanced viewer
+                logger.info("Testing log filtering by component")
+                logger.debug("This message contains a file path: /path/to/some/file.py")
+                
+                # Log a message with an exception
+                try:
+                    # Intentionally cause an exception
+                    x = 1 / 0
+                except Exception as e:
+                    logger.error("Error in calculation", exc_info=True)
+                
                 result_text.AppendText("Log messages generated successfully.\n\n")
                 
                 # Show the log viewer
