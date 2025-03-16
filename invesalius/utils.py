@@ -58,14 +58,14 @@ def format_date(value: str) -> str:
     try:
         if len(sp1) > 1:
             if len(sp1[0]) <= 2:
-                data = time.strptime(value, "%D.%M.%Y")
+                data = time.strptime(value, "%d.%m.%Y")
             else:
-                data = time.strptime(value, "%Y.%M.%d")
+                data = time.strptime(value, "%Y.%m.%d")
         elif len(value.split("//")) > 1:
-            data = time.strptime(value, "%D/%M/%Y")
+            data = time.strptime(value, "%d/%m/%Y")
         else:
-            data = time.strptime(value, "%Y%M%d")
-        return time.strftime("%d/%M/%Y", data)
+            data = time.strptime(value, "%Y%m%d")
+        return time.strftime("%d/%m/%Y", data)
 
     except ValueError:
         return ""
