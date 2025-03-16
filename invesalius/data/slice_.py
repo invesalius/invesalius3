@@ -273,15 +273,17 @@ class Slice(metaclass=utils.Singleton):
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_mask()
             buffer_.discard_mask()
-        
-    def get_world_to_invesalius_vtk_affine(self, inverse : bool = False) -> Tuple[np.ndarray, "vtkMatrix4x4", float]:
+
+    def get_world_to_invesalius_vtk_affine(
+        self, inverse: bool = False
+    ) -> Tuple[np.ndarray, "vtkMatrix4x4", float]:
         """
         Creates an affine matrix with img_shift adjustment and returns both the NumPy
         and VTK versions of the matrix, along with the img_shift value.
-        
+
         Args:
             inverse (bool): If True, returns the inverse transformation matrix
-            
+
         Returns:
             tuple: (adjusted_affine_numpy, adjusted_affine_vtk, img_shift)
                 - adjusted_affine_numpy (np.ndarray): The 4x4 transformation matrix as NumPy array
@@ -295,19 +297,19 @@ class Slice(metaclass=utils.Singleton):
             prj_data = Project()
             matrix_shape = tuple(prj_data.matrix_shape)
             spacing = tuple(prj_data.spacing)
-        except (AttributeError):
+        except AttributeError:
             matrix_shape = self.matrix.shape
             spacing = self.spacing
-        
+
         img_shift = spacing[1] * (matrix_shape[1] - 1)
         adjusted_affine = self.affine.copy()
         adjusted_affine[1, -1] -= img_shift
         if inverse:
             adjusted_affine = np.linalg.inv(adjusted_affine)
         affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(adjusted_affine)
-        
+
         return adjusted_affine, affine_vtk, img_shift
-    
+
     def OnRemoveMasks(self, mask_indexes):
         proj = Project()
         for item in mask_indexes:
