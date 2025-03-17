@@ -17,7 +17,10 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+from typing import Any, Dict, Sequence, Union
+
 import numpy as np
+from numpy.typing import NDArray
 
 import invesalius.constants as const
 import invesalius.project as prj
@@ -27,38 +30,40 @@ from invesalius.pubsub import pub as Publisher
 
 
 class Image:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__bind_events()
         self._fiducials = np.full([3, 3], np.nan)
         self.load_from_state = not ses.Session().ExitedSuccessfullyLastTime()
 
     @property
-    def fiducials(self):
+    def fiducials(self) -> NDArray[np.float64]:
         return self._fiducials
 
     @fiducials.setter
-    def fiducials(self, value):
+    def fiducials(self, value: NDArray[Union[int, float]]) -> None:
         self._fiducials = value
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.OnStateProject, "Enable state project")
 
-    def SaveState(self):
+    def SaveState(self) -> None:
         state = {"image_fiducials": self.fiducials.tolist()}
         session = ses.Session()
         session.SetState("image", state)
         prj.Project().image_fiducials = self._fiducials
 
-    def LoadState(self):
+    def LoadState(self) -> None:
         session = ses.Session()
         state = session.GetState("image")
         if state is not None:
             self.fiducials = np.array(state["image_fiducials"])
 
-    def LoadProject(self):
+    def LoadProject(self) -> None:
         self.fiducials = prj.Project().image_fiducials
 
-    def SetImageFiducial(self, fiducial_index, position):
+    def SetImageFiducial(
+        self, fiducial_index: int, position: Union[Sequence[Union[int, float]], np.ndarray]
+    ) -> None:
         self.fiducials[fiducial_index, :] = position
         self.UpdateFiducialMarker(fiducial_index)
 
@@ -66,29 +71,29 @@ class Image:
         ses.Session().ChangeProject()
         self.SaveState()
 
-    def GetImageFiducials(self):
+    def GetImageFiducials(self) -> NDArray[float]:
         return self.fiducials
 
-    def ResetImageFiducials(self):
+    def ResetImageFiducials(self) -> None:
         self.fiducials = np.full([3, 3], np.nan)
         ses.Session().ChangeProject()
         Publisher.sendMessage("Reset image fiducials")
         self.SaveState()
 
-    def GetImageFiducialForUI(self, fiducial_index, coordinate):
+    def GetImageFiducialForUI(self, fiducial_index: int, coordinate: Sequence[int]) -> Any:
         value = self.fiducials[fiducial_index, coordinate]
         if np.isnan(value):
             value = 0
 
         return value
 
-    def AreImageFiducialsSet(self):
+    def AreImageFiducialsSet(self) -> bool:
         return not np.isnan(self.fiducials).any()
 
-    def IsImageFiducialSet(self, fiducial_index):
+    def IsImageFiducialSet(self, fiducial_index: int) -> bool:
         return not np.isnan(self.fiducials)[fiducial_index].any()
 
-    def UpdateFiducialMarker(self, fiducial_index):
+    def UpdateFiducialMarker(self, fiducial_index: int) -> None:
         fiducial_name = next(
             (
                 f["fiducial_name"]
@@ -120,12 +125,12 @@ class Image:
                 seed=seed,
             )
 
-    def UpdateFiducialMarkers(self):
+    def UpdateFiducialMarkers(self) -> None:
         for fiducial in const.IMAGE_FIDUCIALS:
             fiducial_index = fiducial["fiducial_index"]
             self.UpdateFiducialMarker(fiducial_index)
 
-    def OnStateProject(self, state):
+    def OnStateProject(self, state: Dict[str, object]) -> None:
         if state:
             if self.load_from_state:
                 self.load_from_state = False
