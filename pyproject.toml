@@ -30,11 +30,11 @@ dependencies = [
     "setuptools-scm",
     "torch==2.3.1",
     "vtk==9.3.0",
-    "wxpython==4.2.1",
+    "wxpython==4.2.2",
 ]
 license = { file = "LICENSE.txt" }
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = "==3.12.*"
 
 
 [dependency-groups]
@@ -143,6 +143,7 @@ module = [
     'win32com.client.*',
     'win32com.*',
     'sigar.*',
+    'numpy.*',
 ]
 ignore_missing_imports = true
 

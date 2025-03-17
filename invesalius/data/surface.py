@@ -599,14 +599,8 @@ class SurfaceManager:
         :return: transformed polydata
         :rtype: vtkPolydata
         """
-        matrix_shape = sl.Slice().matrix.shape
-        spacing = sl.Slice().spacing
-        img_shift = spacing[1] * (matrix_shape[1] - 1)
-        affine = sl.Slice().affine.copy()
-        affine[1, -1] -= img_shift
-        if inverse:
-            affine = np.linalg.inv(affine)
-        affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+        slic = sl.Slice()
+        affine, affine_vtk, _ = slic.get_world_to_invesalius_vtk_affine(inverse=inverse)
 
         polydata_transform = vtkTransform()
         polydata_transform.PostMultiply()
