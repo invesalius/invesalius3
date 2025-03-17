@@ -1,6 +1,7 @@
 import os
 import sys
-from unittest.mock import MagicMock
+import threading
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -98,6 +99,16 @@ def test_get_tracker_coordinates(mocker, tracker):
     assert visibilities == (True, True, True)
     assert np.allclose(coord_avg, np.array([1.5, 2.5, -3.5]), atol=1e-6)
     assert np.allclose(coord_raw_avg, np.array([[1.5, 2.5, -3.5], [4.5, 5.5, 6.5]]), atol=1e-6)
+
+
+def test_set_tracker(mocker, tracker):
+    mock_tracker_conn = mocker.MagicMock()
+    mock_tracker_conn.GetConfiguration.return_value = {"param1": 10, "param2": "value"}
+    mocker.patch(
+        "invesalius.data.tracker_connection.CreateTrackerConnection", return_value=mock_tracker_conn
+    )
+    with patch.object(threading.Thread, "start"):
+        tracker.SetTracker(tracker_id=const.DEBUGTRACKAPPROACH)
 
 
 def test_get_tracker_id(tracker):
