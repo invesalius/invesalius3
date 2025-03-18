@@ -23,15 +23,20 @@ import pathlib
 import sys
 
 
-def edit_file(path, date, commit_hash, nightly):
+def edit_file(path: str, date: str, commit_hash: str, nightly: bool):
     """
     This code inserts the date and hash of the last commit into dialogs.py so that
     the user can provide this information (about window) in any support request.
+
+    Args:
+        path (str): Path to the file to modify.
+        date (str): Release date.
+        commit_hash (str): Git commit hash.
+        nightly (bool): Whether this is a nightly build.
     """
 
-    file = open(path, "r")
-    content = file.read()
-    file.close()
+    with open(path, "r") as file:
+        content = file.read()
 
     # path = invesalius/gui/dialog.py
     to_replace = "info.Version = const.INVESALIUS_VERSION"
@@ -55,17 +60,14 @@ def edit_file(path, date, commit_hash, nightly):
             + "...'"
         )
 
-    content = content.replace(to_replace, new_content)
-
-    file = open(path, "w")
-    file.write(content)
-    file.close()
+    with open(path, "w") as file:
+        file.write(content.replace(to_replace, new_content))
 
 
 if __name__ == "__main__":
-    path = pathlib.Path(sys.argv[1])
-    date = sys.argv[2]
-    commit_hash = sys.argv[3]
-    nightly = sys.argv[4]
+    path: str = pathlib.Path(sys.argv[1])
+    date: str = sys.argv[2]
+    commit_hash: str = sys.argv[3]
+    nightly: bool = sys.argv[4]
 
-    edit_file(path, date, commit_hash, bool(nightly))
+    edit_file(path, date, commit_hash, nightly)
