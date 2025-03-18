@@ -1420,10 +1420,15 @@ class Viewer(wx.Panel):
                 self.pointer_actor.SetVisibility(1)
 
         if flag and actor:
-            self.ren.AddActor(actor)
-            self.actor_peel = actor
-            self.ren.AddActor(self.object_orientation_torus_actor)
-            self.ren.AddActor(self.obj_projection_arrow_actor)
+            # Instead of adding the actor directly, send it to SurfaceManager
+            polydata = actor.GetMapper().GetInput()
+            Publisher.sendMessage(
+                "Create surface from polydata",
+                polydata=polydata,
+                name="Peeled Brain",
+                transparency=actor.GetProperty().GetOpacity(),
+                peeled_brain=True
+            )
 
         if not self.nav_status:
             self.UpdateRender()

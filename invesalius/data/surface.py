@@ -624,6 +624,7 @@ class SurfaceManager:
         volume=None,
         area=None,
         scalar=False,
+        peeled_brain=False
     ):
         if self.convert_to_inv:
             polydata = self.ConvertPolydataToInv(polydata)
@@ -645,23 +646,31 @@ class SurfaceManager:
 
         actor = vtkActor()
         actor.SetMapper(mapper)
-        actor.GetProperty().SetBackfaceCulling(1)
-
+        actor.GetProperty().SetBackfaceCulling(1)        
+        
         if overwrite:
             if index is None:
                 index = self.last_surface_index
             surface = Surface(index=index)
         else:
             surface = Surface()
-
-        if not colour:
-            surface.colour = random.choice(const.SURFACE_COLOUR)
-        else:
-            surface.colour = colour
         surface.polydata = polydata
 
-        if transparency:
-            surface.transparency = transparency
+         # Handle peeled brain separately to restrict color changes
+        if peeled_brain:
+            actor.GetProperty().SetColor(1.0, 1.0, 1.0)  # Fixed white color
+            if transparency is not None:
+                actor.GetProperty().SetOpacity(1 - transparency)
+            surface.colour = (1.0, 1.0, 1.0)  # White color
+            surface.transparency = transparency if transparency is not None else 0
+        else:
+            if not colour:
+                surface.colour = random.choice(const.SURFACE_COLOUR)
+            else:
+                surface.colour = colour
+
+            if transparency:
+                surface.transparency = transparency
 
         if name:
             surface.name = name
