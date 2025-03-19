@@ -1427,7 +1427,7 @@ class Viewer(wx.Panel):
                 polydata=polydata,
                 name="Peeled Brain",
                 transparency=actor.GetProperty().GetOpacity(),
-                peeled_brain=True
+                peeled_brain=True,
             )
 
         if not self.nav_status:

@@ -130,7 +130,7 @@ class Surface:
             "visible": bool(self.is_shown),
             "volume": self.volume,
             "area": self.area,
-            "peel":self.peel,
+            "peel": self.peel,
         }
         plist_filename = filename + ".plist"
         # plist_filepath = os.path.join(dir_temp, filename + '.plist')
@@ -628,7 +628,7 @@ class SurfaceManager:
         volume=None,
         area=None,
         scalar=False,
-        peeled_brain=False
+        peeled_brain=False,
     ):
         if self.convert_to_inv:
             polydata = self.ConvertPolydataToInv(polydata)
@@ -650,8 +650,8 @@ class SurfaceManager:
 
         actor = vtkActor()
         actor.SetMapper(mapper)
-        actor.GetProperty().SetBackfaceCulling(1)        
-        
+        actor.GetProperty().SetBackfaceCulling(1)
+
         if overwrite:
             if index is None:
                 index = self.last_surface_index
@@ -660,7 +660,7 @@ class SurfaceManager:
             surface = Surface()
         surface.polydata = polydata
 
-         # Handle peeled brain separately to restrict color changes
+        # Handle peeled brain separately to restrict color changes
         if peeled_brain:
             actor.GetProperty().SetColor(1.0, 1.0, 1.0)  # Fixed white color
             if transparency is not None:
