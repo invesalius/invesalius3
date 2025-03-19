@@ -23,7 +23,7 @@ import pathlib
 import sys
 
 
-def edit_file(path: str, date: str, commit_hash: str, nightly: bool):
+def edit_file(path: str, date: str, commit_hash: str, nightly: bool) -> None:
     """
     This code inserts the date and hash of the last commit into dialogs.py so that
     the user can provide this information (about window) in any support request.
@@ -65,9 +65,9 @@ def edit_file(path: str, date: str, commit_hash: str, nightly: bool):
 
 
 if __name__ == "__main__":
-    path: str = pathlib.Path(sys.argv[1])
+    path: str = str(pathlib.Path(sys.argv[1]))
     date: str = sys.argv[2]
     commit_hash: str = sys.argv[3]
-    nightly: bool = sys.argv[4]
+    nightly: bool = sys.argv[4].lower() == "true"
 
     edit_file(path, date, commit_hash, nightly)
