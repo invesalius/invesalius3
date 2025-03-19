@@ -583,7 +583,16 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         transparency = 100 * surface.transparency
         # print("Button color: ", colour)
         self.button_colour.SetColour(colour)
+        print("insertnewsurface")
+        print(surface.peel)
+        if surface.peel:
+            wx.CallAfter(self.button_colour.Enable, False)
+        else:
+            wx.CallAfter(self.button_colour.Enable, True)
         self.slider_transparency.SetValue(int(transparency))
+        self.button_colour.Refresh()
+        self.Layout()
+
         #  Publisher.sendMessage('Update surface data', (index))
 
     def OnComboName(self, evt):

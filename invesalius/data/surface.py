@@ -98,6 +98,7 @@ class Surface:
         self.volume = 0.0
         self.area = 0.0
         self.is_shown = 1
+        self.peel = False
         if not name:
             self.name = const.SURFACE_NAME_PATTERN % (self.index + 1)
         else:
@@ -129,6 +130,7 @@ class Surface:
             "visible": bool(self.is_shown),
             "volume": self.volume,
             "area": self.area,
+            "peel":self.peel,
         }
         plist_filename = filename + ".plist"
         # plist_filepath = os.path.join(dir_temp, filename + '.plist')
@@ -151,6 +153,7 @@ class Surface:
         self.transparency = sp["transparency"]
         self.is_shown = sp["visible"]
         self.volume = sp["volume"]
+        self.peel = sp.get("peel", False)
         try:
             self.area = sp["area"]
         except KeyError:
@@ -253,6 +256,7 @@ class SurfaceManager:
                 transparency=original_surface.transparency,
                 volume=original_surface.volume,
                 area=original_surface.area,
+                peeled_brain=original_surface.peel,
             )
 
     def OnRemove(self, surface_indexes):
@@ -663,6 +667,7 @@ class SurfaceManager:
                 actor.GetProperty().SetOpacity(1 - transparency)
             surface.colour = (1.0, 1.0, 1.0)  # White color
             surface.transparency = transparency if transparency is not None else 0
+            surface.peel = True
         else:
             if not colour:
                 surface.colour = random.choice(const.SURFACE_COLOUR)
