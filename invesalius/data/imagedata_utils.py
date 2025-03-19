@@ -33,6 +33,7 @@ from vtkmodules.vtkImagingCore import vtkExtractVOI, vtkImageClip, vtkImageResam
 from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
 from vtkmodules.vtkInteractionImage import vtkImageViewer
 from vtkmodules.vtkIOXML import vtkXMLImageDataReader, vtkXMLImageDataWriter
+from vtkmodules.vtkCommonDataModel import vtkImageData
 
 import invesalius.data.converters as converters
 import invesalius.data.coordinates as dco
@@ -41,6 +42,44 @@ import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.data import vtk_utils as vtk_utils
 from invesalius.i18n import tr as _
+
+def to_vtk(n_array, spacing, slice_number, orientation):
+    """
+    It transforms a numpy array into a vtkImageData.
+    """
+    try:
+        dz, dy, dx = n_array.shape
+    except ValueError:
+        dy, dx = n_array.shape
+        dz = 1
+
+    v_image = numpy_support.numpy_to_vtk(n_array.flat)
+
+    if orientation == "AXIAL":
+        extent = (0, dx - 1, 0, dy - 1, slice_number, slice_number + dz - 1)
+    elif orientation == "SAGITAL":
+        extent = (slice_number, slice_number + dx - 1, 0, dy - 1, 0, dz - 1)
+    elif orientation == "CORONAL":
+        extent = (0, dx - 1, slice_number, slice_number + dy - 1, 0, dz - 1)
+
+    image = vtkImageData()
+    image.SetOrigin(0, 0, 0)
+    image.SetSpacing(spacing)
+    image.SetDimensions(dx, dy, dz)
+    image.SetExtent(extent)
+    #  image.SetNumberOfScalarComponents(1)
+    #  image.SetScalarType(numpy_support.get_vtk_array_type(n_array.dtype))
+    image.AllocateScalars(numpy_support.get_vtk_array_type(n_array.dtype), 1)
+    #  image.Update()
+    image.GetCellData().SetScalars(v_image)
+    image.GetPointData().SetScalars(v_image)
+    #  image.Update()
+
+    image_copy = vtkImageData()
+    image_copy.DeepCopy(image)
+    #  image_copy.Update()
+
+    return image_copy
 
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
