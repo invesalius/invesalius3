@@ -995,6 +995,7 @@ class Controller:
         orientation = dicom.image.orientation_label
         # samples_per_pixel = dicom.image.samples_per_pixel
 
+        # default window width and height from dicom header
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)
 
@@ -1040,6 +1041,14 @@ class Controller:
             self.matrix, scalar_range, spacing, self.filename = image_utils.dcmmf2memmap(
                 filelist[0], orientation
             )
+
+        # check if dicom acquisition is MR and apply percentile normalization
+        if dicom.acquisition.modality.upper() in ["MR"]:
+            percentile_2 = np.percentile(self.matrix, 2)
+            percentile_98 = np.percentile(self.matrix, 98)
+        
+            wl = float((percentile_2 + percentile_98) * 0.5)
+            ww = float(percentile_98 - percentile_2)
 
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
