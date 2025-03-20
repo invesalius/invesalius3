@@ -33,13 +33,54 @@ jobs:
           extra_args: --files ${{ steps.file_changes.outputs.files }}
 
   run-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04  # Changed to Ubuntu 20.04 for better wxPython support
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.10.7
+
+      - name: Install Ubuntu dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+                  freeglut3-dev \
+                  libcurl4-openssl-dev \
+                  libexpat1-dev \
+                  libgl1-mesa-dev \
+                  libglu1-mesa-dev \
+                  libgtk-3-dev \
+                  libjpeg-dev \
+                  libnotify-dev \
+                  libsdl2-dev \
+                  libsm-dev \
+                  libtiff-dev \
+                  libwebkit2gtk-4.0-dev \
+                  libxtst-dev \
+                  libunwind-dev \
+                  libgstreamer1.0-dev \
+                  libgstreamer-plugins-base1.0-dev \
+                  libpng-dev \
+                  libxrandr-dev \
+                  libxinerama-dev \
+                  libxcursor-dev \
+                  libxcomposite-dev \
+                  libfreetype6-dev \
+                  libxi-dev \
+                  python3.10-dev  # Required for wxPython builds
+
+      - name: Install required Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install wheel requests jsonschema pylint twisted
+
+      - name: Install doxygen
+        run: sudo apt-get install -y doxygen
+
+      - name: Install wxPython
+        run: |
+          python -m pip install wxPython==4.2.0 --prefer-binary --no-cache-dir --jobs 4
 
       - name: Install dependencies
         run: |
@@ -48,7 +89,7 @@ jobs:
           pip install pytest
 
       - name: Run tests
-        run: pytest  
+        run: pytest
 
   combined-checks:
     runs-on: ubuntu-latest
