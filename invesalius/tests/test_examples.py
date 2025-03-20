@@ -5,7 +5,7 @@ def test_always_pass():
 
 
 def test_math():
-    assert 2 + 2 == 4
+    assert 2 + 1 == 3
 
 
 def test_string():
