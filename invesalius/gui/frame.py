@@ -33,6 +33,7 @@ import invesalius.gui.default_tasks as tasks
 import invesalius.gui.default_viewers as viewers
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.import_bitmap_panel as imp_bmp
+import invesalius.gui.import_network_panel as imp_net
 import invesalius.gui.import_panel as imp
 import invesalius.gui.log as log
 import invesalius.gui.preferences as preferences
@@ -151,6 +152,7 @@ class Frame(wx.Frame):
         sub(self._HideContentPanel, "Hide content panel")
         sub(self._HideImportPanel, "Hide import panel")
         sub(self._HideTask, "Hide task panel")
+        sub(self._HideImportNetwork, "Hide import network panel")
         sub(self._SetProjectName, "Set project name")
         sub(self._ShowContentPanel, "Show content panel")
         sub(self._ShowImportPanel, "Show import panel in frame")
@@ -286,11 +288,18 @@ class Frame(wx.Frame):
             .CaptionVisible(True),
         )
 
-        #  ncaption = _("Retrieve DICOM from PACS")
-        #  aui_manager.AddPane(imp_net.Panel(self), wx.aui.AuiPaneInfo().
-        #  Name("Retrieve").Centre().Hide().
-        #  MaximizeButton(True).Floatable(True).
-        #  Caption(ncaption).CaptionVisible(True))
+        ncaption = _("Retrieve DICOM from PACS")
+        aui_manager.AddPane(
+            imp_net.Panel(self),
+            wx.aui.AuiPaneInfo()
+            .Name("Retrieve")
+            .Centre()
+            .Hide()
+            .MaximizeButton(True)
+            .Floatable(True)
+            .Caption(ncaption)
+            .CaptionVisible(True),
+        )
 
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
@@ -409,6 +418,15 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
+    def _HideImportNetwork(self):
+        """Hide import network panel."""
+
+        aui_manager = self.aui_manager
+        aui_manager.GetPane("Retrieve").Show(0)
+        aui_manager.GetPane("Data").Show(0)
+        aui_manager.GetPane("Tasks").Show(1)
+        aui_manager.Update()
+
     def _HideImportPanel(self):
         """
         Hide import panel and show tasks.
@@ -450,10 +468,11 @@ class Frame(wx.Frame):
         aui_manager.Update()
 
     def _ShowImportNetwork(self):
-        """
-        Show viewers and task, hide import panel.
-        """
+        """Show viewers and task, hide import panel."""
+
+        Publisher.sendMessage("Close Project")
         Publisher.sendMessage("Set layout button full")
+
         aui_manager = self.aui_manager
         aui_manager.GetPane("Retrieve").Show(1)
         aui_manager.GetPane("Data").Show(0)
@@ -769,6 +788,10 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
+            server_aetitle = values[const.SERVER_AETITLE]
+            server_port = values[const.SERVER_PORT]
+            store_path = values[const.STORE_PATH]
+            server_ip = values[const.SERVER_IP]
             file_logging = values[const.FILE_LOGGING]
             file_logging_level = values[const.FILE_LOGGING_LEVEL]
             append_log_file = values[const.APPEND_LOG_FILE]
@@ -784,6 +807,10 @@ class Frame(wx.Frame):
             session.SetConfig("surface_interpolation", surface_interpolation)
             session.SetConfig("language", language)
             session.SetConfig("slice_interpolation", slice_interpolation)
+            session.SetConfig("server_aetitle", server_aetitle)
+            session.SetConfig("server_port", server_port)
+            session.SetConfig("store_path", store_path)
+            session.SetConfig("server_ip", server_ip)
             session.SetConfig("file_logging", file_logging)
             session.SetConfig("file_logging_level", file_logging_level)
             session.SetConfig("append_log_file", append_log_file)
@@ -1165,7 +1192,7 @@ class MenuBar(wx.MenuBar):
         file_menu = wx.Menu()
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
-        # app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
+        app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
         file_menu.Append(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
