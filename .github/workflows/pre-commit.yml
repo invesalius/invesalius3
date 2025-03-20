@@ -68,7 +68,6 @@ jobs:
                   libxcomposite-dev \
                   libfreetype6-dev \
                   libxi-dev \
-                  python3.10-dev  # Required for wxPython builds
 
       - name: Install required Python packages
         run: |
