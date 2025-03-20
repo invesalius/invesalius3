@@ -16,6 +16,7 @@ torch==2.3.1
 plaidml-keras==0.7.0; python_version <= '3.8'
 
 # Utilities
+pytest==7.4.1
 Cython==3.0.10
 Pypubsub==4.0.3
 h5py==3.11.0
