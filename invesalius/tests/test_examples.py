@@ -3,11 +3,14 @@
 def test_always_pass():
     assert True
 
+
 def test_math():
     assert 2 + 2 == 4
 
+
 def test_string():
     assert "Hello".upper() == "HELLO"
+
 
 def test_list():
     sample_list = [1, 2, 3]
