@@ -33,7 +33,7 @@ jobs:
           extra_args: --files ${{ steps.file_changes.outputs.files }}
 
   run-tests:
-    runs-on: ubuntu-20.04  # Changed to Ubuntu 20.04 for better wxPython support
+    runs-on: ubuntu-20.04  
     steps:
       - uses: actions/checkout@v4
 
@@ -69,26 +69,15 @@ jobs:
                   libfreetype6-dev \
                   libxi-dev \
 
-      - name: Install required Python packages
-        run: |
-          python -m pip install --upgrade pip
-          pip install wheel requests jsonschema pylint twisted
-
-      - name: Install doxygen
-        run: sudo apt-get install -y doxygen
-
-      - name: Install wxPython
-        run: |
-          python -m pip install wxPython==4.2.0 --prefer-binary --no-cache-dir --jobs 4
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt 
           pip install pytest
 
       - name: Run tests
         run: pytest
+
 
   combined-checks:
     runs-on: ubuntu-latest
