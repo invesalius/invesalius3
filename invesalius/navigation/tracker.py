@@ -84,11 +84,16 @@ class Tracker(metaclass=Singleton):
             return
 
         from typing import cast
-        tracker_id: int = cast(int, state["tracker_id"])  
+
+        tracker_id: int = cast(int, state["tracker_id"])
         tracker_fiducials: NDArray[np.float64] = np.array(state["tracker_fiducials"])
         tracker_fiducials_raw: NDArray[np.float64] = np.array(state["tracker_fiducials_raw"])
-        m_tracker_fiducials_raw: NDArray[np.float64] = np.array(state["marker_tracker_fiducials_raw"])
-        configuration: Optional[Dict[str, object]] = cast(Optional[Dict[str, object]], state["configuration"])  # Modified: cast configuration
+        m_tracker_fiducials_raw: NDArray[np.float64] = np.array(
+            state["marker_tracker_fiducials_raw"]
+        )
+        configuration: Optional[Dict[str, object]] = cast(
+            Optional[Dict[str, object]], state["configuration"]
+        )  # Modified: cast configuration
 
         self.tracker_id = tracker_id
         self.tracker_fiducials = tracker_fiducials
@@ -97,7 +102,9 @@ class Tracker(metaclass=Singleton):
 
         self.SetTracker(tracker_id=self.tracker_id, configuration=configuration)
 
-    def SetTracker(self, tracker_id: int, n_coils: int = 1, configuration: Optional[Dict[str, object]] = None) -> None:
+    def SetTracker(
+        self, tracker_id: int, n_coils: int = 1, configuration: Optional[Dict[str, object]] = None
+    ) -> None:
         if tracker_id:
             self.tracker_connection = tc.CreateTrackerConnection(tracker_id, n_coils)
 
@@ -178,7 +185,9 @@ class Tracker(metaclass=Singleton):
     def AreTrackerFiducialsSet(self) -> bool:
         return not np.isnan(self.tracker_fiducials).any()
 
-    def GetTrackerCoordinates(self, ref_mode_id: int, n_samples: int = 1) -> Tuple[Tuple[bool, ...], NDArray[np.float64], NDArray[np.float64]]:
+    def GetTrackerCoordinates(
+        self, ref_mode_id: int, n_samples: int = 1
+    ) -> Tuple[Tuple[bool, ...], NDArray[np.float64], NDArray[np.float64]]:
         coord_raw_samples: Dict[int, NDArray[np.float64]] = {}
         coord_samples: Dict[int, NDArray[np.float64]] = {}
 

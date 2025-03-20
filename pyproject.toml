@@ -51,6 +51,8 @@ dev = [
     "scikit-learn==1.5.0",
     "uvicorn[standard]==0.30.1",
     "scikit-build-core",
+    "pytest==8.3.5",
+    "pytest-mock==3.14.0",
 ]
 
 
@@ -141,6 +143,7 @@ module = [
     'win32com.client.*',
     'win32com.*',
     'sigar.*',
+    'numpy.*',
 ]
 ignore_missing_imports = true
 
