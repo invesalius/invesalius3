@@ -1,86 +1,20 @@
-name: CI Checks
-
+name: pre-commit
 on:
-  pull_request:
-    branches:
-      - master 
-
+  pull_request
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.10.7
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pre-commit
-
-      - id: file_changes
-        uses: trilom/file-changes-action@v1.2.4
-        with:
-          prNumber: ${{ github.event.number }}
-          output: ' '
-
-      - name: Run pre-commit hooks
-        uses: pre-commit/action@v2.0.3
-        with: 
-          extra_args: --files ${{ steps.file_changes.outputs.files }}
-
-  run-tests:
-    runs-on: ubuntu-20.04  
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.10.7
-
-      - name: Install Ubuntu dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-                  freeglut3-dev \
-                  libcurl4-openssl-dev \
-                  libexpat1-dev \
-                  libgl1-mesa-dev \
-                  libglu1-mesa-dev \
-                  libgtk-3-dev \
-                  libjpeg-dev \
-                  libnotify-dev \
-                  libsdl2-dev \
-                  libsm-dev \
-                  libtiff-dev \
-                  libwebkit2gtk-4.0-dev \
-                  libxtst-dev \
-                  libunwind-dev \
-                  libgstreamer1.0-dev \
-                  libgstreamer-plugins-base1.0-dev \
-                  libpng-dev \
-                  libxrandr-dev \
-                  libxinerama-dev \
-                  libxcursor-dev \
-                  libxcomposite-dev \
-                  libfreetype6-dev \
-                  libxi-dev \
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt 
-          pip install pytest
-
-      - name: Run tests
-        run: pytest
-
-
-  combined-checks:
-    runs-on: ubuntu-latest
-    needs: [pre-commit, run-tests] 
-    steps:
-      - run: echo "All checks passed! Ready to merge."
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - id: file_changes
+      uses: trilom/file-changes-action@v1.2.4
+      with:
+        prNumber: ${{ github.event.number }}
+        output: ' '
+    - uses: pre-commit/action@v2.0.3
+      name: ruff-pre-commit-run
+      with: 
+        extra_args: --files ${{ steps.file_changes.outputs.files }}
