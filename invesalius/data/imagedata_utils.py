@@ -23,7 +23,9 @@ import tempfile
 
 import gdcm
 import imageio
+from typing import Literal
 import numpy as np
+import numpy.typing as npt
 from scipy.ndimage import shift, zoom
 from skimage.color import rgb2gray
 from skimage.measure import label
@@ -43,7 +45,7 @@ import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.data import vtk_utils as vtk_utils
 from invesalius.i18n import tr as _
 
-def to_vtk(n_array, spacing, slice_number, orientation):
+def to_vtk(n_array: npt.NDArray, spacing: tuple[float, float, float], slice_number: int, orientation: Literal["AXIAL", "SAGITAL", "CORONAL"]) ->vtkImageData:
     """
     It transforms a numpy array into a vtkImageData.
     """
