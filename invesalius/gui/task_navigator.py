@@ -381,6 +381,7 @@ class CoregistrationPanel(wx.Panel):
             # Do not allow user to move to other (forward) tabs.
             self.book.SetSelection(const.IMPORTS_PAGE)
             from invesalius.error_handling import show_warning
+
             show_warning(_("InVesalius 3"), _("Please import image first."))
             return
 
@@ -390,6 +391,7 @@ class CoregistrationPanel(wx.Panel):
             if not self.image.AreImageFiducialsSet():
                 self.book.SetSelection(const.IMAGE_PAGE)
                 from invesalius.error_handling import show_warning
+
                 show_warning(_("InVesalius 3"), _("Please do the image registration first."))
         if old_page != const.REFINE_PAGE:
             # Load data into refine tab
@@ -401,6 +403,7 @@ class CoregistrationPanel(wx.Panel):
             if self.image.AreImageFiducialsSet() and not self.tracker.AreTrackerFiducialsSet():
                 self.book.SetSelection(const.TRACKER_PAGE)
                 from invesalius.error_handling import show_warning
+
                 show_warning(_("InVesalius 3"), _("Please do the tracker registration first."))
 
     # Unfold specific notebook pages
