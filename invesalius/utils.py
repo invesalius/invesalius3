@@ -309,7 +309,6 @@ def get_system_encoding() -> Optional[str]:
 
 def UpdateCheck() -> None:
     import requests
-
     import wx
 
     import invesalius.session as ses
