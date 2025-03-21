@@ -93,6 +93,7 @@ from wx.adv import AboutBox, AboutDialogInfo, BitmapComboBox
 from wx.lib import masked
 from wx.lib.wordwrap import wordwrap
 
+import invesalius
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
@@ -1473,7 +1474,7 @@ def SaveChangesDialog2(filename: "str | bytes | os.PathLike[str]") -> Literal[0,
 def ShowAboutDialog(parent: wx.Window) -> None:
     info = AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = const.INVESALIUS_VERSION
+    info.Version = invesalius.__version__
 
     year = datetime.date.today().year
 

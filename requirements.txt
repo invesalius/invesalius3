@@ -26,3 +26,7 @@ wxPython==4.2.2
 pyacvd==0.2.11
 optitrack ; python_version == "3.8" and sys_platform == "windows"
 pyclaron ; python_version == "3.8" and sys_platform == "windows"
+
+# Testing
+pytest==8.3.5
+pytest-mock==3.14.0
