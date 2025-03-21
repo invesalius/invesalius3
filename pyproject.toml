@@ -155,7 +155,7 @@ ignore_missing_imports = true
 [tool.ruff]
 include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py',"typings/**/*.pyi"]
 line-length = 100
-# extend-exclude = ["plugins"]
+extend-exclude = ["invesalius/__version__.py"]
 
 [tool.ruff.lint]
 extend-select = ["UP","I"] # Introduces linting rules for pyupgrade and isort
