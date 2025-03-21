@@ -25,6 +25,7 @@ dependencies = [
     "pypubsub==4.0.3",
     "pyserial==3.5",
     "python-gdcm==3.0.24",
+    "requests>=2.32.3",
     "scikit-image==0.24.0",
     "scipy==1.14.0",
     "setuptools-scm",
@@ -154,7 +155,7 @@ ignore_missing_imports = true
 [tool.ruff]
 include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py',"typings/**/*.pyi"]
 line-length = 100
-# extend-exclude = ["plugins"]
+extend-exclude = ["invesalius/__version__.py"]
 
 [tool.ruff.lint]
 extend-select = ["UP","I"] # Introduces linting rules for pyupgrade and isort
