@@ -30,6 +30,8 @@ from typing import Any, List, Optional
 import numpy as np
 from packaging.version import Version
 
+import invesalius
+
 
 def format_time(value: str) -> str:
     sp1 = value.split(".")
@@ -347,7 +349,7 @@ def UpdateCheck() -> None:
         headers = {"User-Agent": "Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)"}
         data: Any = {
             "update_protocol_version": "1",
-            "invesalius_version": const.INVESALIUS_VERSION,
+            "invesalius_version": invesalius.__version__,
             "platform": sys.platform,
             "architecture": platform.architecture()[0],
             "language": lang,
@@ -364,7 +366,7 @@ def UpdateCheck() -> None:
 
         try:
             last_ver = Version(last)
-            actual_ver = Version(const.INVESALIUS_VERSION)
+            actual_ver = Version(invesalius.__version__)
         except (ValueError, AttributeError):
             return
 

@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Dict, List, Union
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
+import invesalius
 import invesalius.constants as const
 from invesalius import inv_paths
 from invesalius.gui.dialogs import ErrorMessageBox
@@ -79,7 +80,7 @@ class Project(metaclass=Singleton):
 
         self.compress = False
 
-        self.invesalius_version = const.INVESALIUS_VERSION
+        self.invesalius_version = invesalius.__version__
 
         self.presets = Presets()
 
@@ -214,7 +215,7 @@ class Project(metaclass=Singleton):
         project = {
             # Format info
             "format_version": const.INVESALIUS_ACTUAL_FORMAT_VERSION,
-            "invesalius_version": const.INVESALIUS_VERSION,
+            "invesalius_version": invesalius.__version__,
             "date": datetime.datetime.now().isoformat(),
             "compress": self.compress,
             # case info
@@ -394,7 +395,7 @@ class Project(metaclass=Singleton):
         project = {
             # Format info
             "format_version": const.INVESALIUS_ACTUAL_FORMAT_VERSION,
-            "invesalius_version": const.INVESALIUS_VERSION,
+            "invesalius_version": invesalius.__version__,
             "date": datetime.datetime.now().isoformat(),
             "compress": True,
             # case info
@@ -430,7 +431,7 @@ class Project(metaclass=Singleton):
             f["image"] = s.matrix
             f["spacing"] = s.spacing
 
-            f["invesalius_version"] = const.INVESALIUS_VERSION
+            f["invesalius_version"] = invesalius.__version__
             f["date"] = datetime.datetime.now().isoformat()
             f["compress"] = self.compress
             f["name"] = self.name  # patient's name
