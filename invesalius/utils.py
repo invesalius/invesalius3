@@ -308,13 +308,7 @@ def get_system_encoding() -> Optional[str]:
 
 
 def UpdateCheck() -> None:
-    try:
-        from urllib.parse import urlencode
-        from urllib.request import Request, urlopen
-    except ImportError:
-        from urllib import urlencode
-
-        from urllib2 import Request, urlopen
+    import requests
 
     import wx
 
@@ -346,7 +340,6 @@ def UpdateCheck() -> None:
         import invesalius.constants as const
 
         url = "https://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
-        headers = {"User-Agent": "Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)"}
         data: Any = {
             "update_protocol_version": "1",
             "invesalius_version": invesalius.__version__,
@@ -355,14 +348,8 @@ def UpdateCheck() -> None:
             "language": lang,
             "random_id": random_id,
         }
-        data = urlencode(data).encode("utf8")
-        req = Request(url, data, headers)
-        try:
-            response = urlopen(req, timeout=10)
-        except Exception:
-            return
-        last = response.readline().rstrip().decode("utf8")
-        url = response.readline().rstrip().decode("utf8")
+        response = requests.post(url, data=data, verify=False)
+        last, url = response.text.split()
 
         try:
             last_ver = Version(last)
@@ -371,7 +358,7 @@ def UpdateCheck() -> None:
             return
 
         if last_ver > actual_ver:
-            print("  ...New update found!!! -> version:", last)  # , ", url=",url
+            print("  ...New update found!!! -> version:", last)
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
 
