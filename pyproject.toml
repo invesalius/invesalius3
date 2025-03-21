@@ -25,6 +25,7 @@ dependencies = [
     "pypubsub==4.0.3",
     "pyserial==3.5",
     "python-gdcm==3.0.24",
+    "requests>=2.32.3",
     "scikit-image==0.24.0",
     "scipy==1.14.0",
     "setuptools-scm",
