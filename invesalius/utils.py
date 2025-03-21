@@ -193,7 +193,8 @@ class TwoWaysDictionary(dict):
         """
         Find the key (first) with the given value
         """
-        return self.get_keys(value)[0]
+        keys = self.get_keys(value)
+        return keys[0] if keys else None
 
     def get_keys(self, value):
         """
@@ -204,14 +205,14 @@ class TwoWaysDictionary(dict):
     def remove(self, key):
         try:
             self.pop(key)
-        except TypeError:
-            debug("TwoWaysDictionary: no item")
+        except KeyError:
+            debug("TwoWaysDictionary: key not found")
 
     def get_value(self, key):
         """
         Find the value given a key.
         """
-        return self[key]
+        return self.get(key, None)
 
 
 # DEPRECATED
