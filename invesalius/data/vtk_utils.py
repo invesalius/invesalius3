@@ -219,24 +219,6 @@ class Text:
     def GetValue(self) -> str:
         return self.mapper.GetInput()
 
-    def SetCoilDistanceValue(self, value: Union[int, float, str]) -> None:
-        # TODO: Not being used anymore. Can be deleted.
-        if isinstance(value, int) or isinstance(value, float):
-            value = "Dist: " + str(f"{value:06.2f}") + " mm"
-            if sys.platform == "win32":
-                value += ""  # Otherwise 0 is not shown under win32
-                # With some encoding in some dicom fields (like name) raises a
-                # UnicodeEncodeError because they have non-ascii characters. To avoid
-                # that we encode in utf-8.
-
-        if sys.platform == "win32":
-            self.mapper.SetInput(value.encode("utf-8"))
-        else:
-            try:
-                self.mapper.SetInput(value.encode("latin-1"))
-            except UnicodeEncodeError:
-                self.mapper.SetInput(value.encode("utf-8"))
-
     def SetPosition(self, position: Tuple[float, float]) -> None:
         self.actor.GetPositionCoordinate().SetValue(position[0], position[1])
 
