@@ -514,12 +514,12 @@ class Frame(wx.Frame):
         msg = _("Are you sure you want to exit?")
         if sys.platform == "darwin":
             dialog = wx.RichMessageDialog(
-                None, "", msg, wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
+                None, "", msg, wx.ICON_QUESTION | wx.OK | wx.CANCEL | wx.CANCEL_DEFAULT
             )
             dialog.ShowCheckBox("Store session", True)
         else:
             dialog = wx.RichMessageDialog(
-                None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
+                None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.OK | wx.CANCEL | wx.CANCEL_DEFAULT
             )
             dialog.ShowCheckBox("Store session", True)
 
@@ -529,10 +529,10 @@ class Frame(wx.Frame):
 
         # logger = log.MyLogger()
 
-        if not save and answer == wx.ID_YES:
+        if not save and answer == wx.ID_OK:
             log.invLogger.closeLogging()
             return 1  # Exit and delete session
-        elif save and answer == wx.ID_YES:
+        elif save and answer == wx.ID_OK:
             log.invLogger.closeLogging()
             return 2  # Exit without deleting session
         else:
