@@ -17,9 +17,6 @@ class ActorFactory:
 
     # Utilities
 
-    # TODO: This is copied from viewer_volume.py, should be de-duplicated and moved to a single place.
-    # DONE: Removed from here and imported from viewer_volume
-
     # Methods for creating actors
 
     def CreateLine(self, startpoint, endpoint, colour=(1, 1, 1)):

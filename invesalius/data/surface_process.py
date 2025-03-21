@@ -23,30 +23,8 @@ from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
 import invesalius.data.converters as converters
+import invesalius.data.imagedata_utils as imagedata_utils
 from invesalius_cy import cy_mesh
-
-
-# TODO: Code duplicated from file {imagedata_utils.py}.
-def ResampleImage3D(imagedata, value):
-    """
-    Resample vtkImageData matrix.
-    """
-    spacing = imagedata.GetSpacing()
-    extent = imagedata.GetExtent()
-    size = imagedata.GetDimensions()
-
-    # width = float(size[0])
-    height = float(size[1] / value)
-
-    resolution = (height / (extent[1] - extent[0]) + 1) * spacing[1]
-
-    resample = vtkImageResample()
-    resample.SetInputData(imagedata)
-    resample.SetAxisMagnificationFactor(0, resolution)
-    resample.SetAxisMagnificationFactor(1, resolution)
-
-    return resample.GetOutput()
-
 
 def pad_image(image, pad_value, pad_bottom, pad_top):
     dz, dy, dx = image.shape
@@ -150,7 +128,7 @@ def create_surface_piece(
         del a_image
 
     #  if imagedata_resolution:
-    #  image = ResampleImage3D(image, imagedata_resolution)
+    #  image = imagedata_utils.ResampleImage3D(image, imagedata_resolution)
 
     flip = vtkImageFlip()
     flip.SetInputData(image)
