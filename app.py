@@ -53,12 +53,8 @@ if sys.platform not in ("win32", "darwin"):
 import wx
 from wx.adv import SPLASH_CENTRE_ON_SCREEN, SPLASH_TIMEOUT, SplashScreen
 
-# import wx.lib.agw.advancedsplash as agw
-# if sys.platform.startswith('linux'):
-#    _SplashScreen = agw.AdvancedSplash
-# else:
-#    if sys.platform != 'darwin':
-#        _SplashScreen = wx.SplashScreen
+import invesalius.enhanced_logging
+import invesalius.error_handling
 import invesalius.gui.language_dialog as lang_dlg
 import invesalius.gui.log as log
 import invesalius.i18n as i18n
@@ -120,7 +116,16 @@ class InVesalius(wx.App):
         self.SetTopWindow(self.frame)
         self.frame.Show()
         self.frame.Raise()
-        # logger = log.MyLogger()
+
+        # Initialize the enhanced logging system
+        invesalius.enhanced_logging.register_menu_handler()
+
+        # Initialize the error handling tests
+        from invesalius import test_error_handling
+
+        test_error_handling.register_menu_handler()
+
+        # Initialize the legacy logging system for backward compatibility
         log.invLogger.configureLogging()
 
 
@@ -536,7 +541,7 @@ def init():
     if hasattr(sys, "frozen") and sys.platform == "win32":
         # Click in the .inv3 file support
         root = winreg.HKEY_CLASSES_ROOT
-        key = "InVesalius 3.1\InstallationDir"
+        key = r"InVesalius 3.1\InstallationDir"
         hKey = winreg.OpenKey(root, key, 0, winreg.KEY_READ)
         value, type_ = winreg.QueryValueEx(hKey, "")
         path = os.path.join(value, "dist")
