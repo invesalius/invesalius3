@@ -448,7 +448,7 @@ class TempFileManager(metaclass=Singleton):
     # Constants
     CLEANUP_TIMEOUT = 5
     MAX_WORKERS = 4
-    OLD_FILE_THRESHOLD = 60
+    OLD_FILE_THRESHOLD = 3600
 
     def __init__(self):
         self._temp_files: Dict[str, Dict[str, Any]] = {}
