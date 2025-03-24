@@ -250,7 +250,7 @@ class Controller:
             or project_status == const.PROJECT_STATUS_CHANGED
         ):
             project_path = session.GetState("project_path")
-            if project_path is not None:  # Only try to save if there is a valid project
+            if project_path is not None:
                 filename = project_path[1]
                 answer = dialog.SaveChangesDialog2(filename)
                 if answer:
@@ -324,26 +324,25 @@ class Controller:
     def OnOpenProject(self, filepath: "str | Path") -> None:
         self.OpenProject(filepath)
 
-    def OnOpenRecentProject(self, project_path):
-        if project_path is None:
-            return
+    def OnOpenRecentProject(self, filepath: "str | Path") -> None:
+        if os.path.exists(filepath):
+            session = ses.Session()
+            project_status = session.GetConfig("project_status")
+            if (
+                project_status == const.PROJECT_STATUS_NEW
+                or project_status == const.PROJECT_STATUS_CHANGED
+            ):
+                project_path = session.GetState("project_path")
+                filename = project_path[1]
 
-        # Handle both string and tuple inputs
-        if isinstance(project_path, str):
-            filename = project_path
+                answer = dialog.SaveChangesDialog2(filename)
+                if answer:
+                    self.ShowDialogSaveProject()
+            if session.IsOpen():
+                self.CloseProject()
+            self.OpenProject(filepath)
         else:
-            filename = project_path[1]
-
-        if not os.path.exists(filename):
-            wx.MessageBox(
-                _("Project file not found."),
-                _("Error"),
-                wx.OK | wx.ICON_ERROR,
-            )
-            return
-
-        self.OnCloseProject()
-        self.OnOpenProject(filename)
+            dialog.InexistentPath(filepath)
 
     def OpenProject(self, filepath: "str | Path") -> None:
         Publisher.sendMessage("Begin busy cursor")
@@ -447,7 +446,6 @@ class Controller:
         Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
 
     def OnCloseProject(self) -> None:
-        """Handler for project close events."""
         self.CloseProject()
 
     ###########################

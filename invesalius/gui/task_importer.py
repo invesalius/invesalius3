@@ -255,7 +255,7 @@ class InnerTaskPanel(wx.Panel):
 
     def OpenProject(self, path=None):
         if path:
-            Publisher.sendMessage("Open recent project", project_path=path)
+            Publisher.sendMessage("Open recent project", filepath=path)
         else:
             Publisher.sendMessage("Show open project dialog")
 

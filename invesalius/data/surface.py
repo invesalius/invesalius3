@@ -140,6 +140,7 @@ class Surface:
             "area": self.area,
         }
         plist_filename = filename + ".plist"
+        # plist_filepath = os.path.join(dir_temp, filename + '.plist')
         temp_fd, temp_plist = tempfile.mkstemp()
         self._temp_manager.register_temp_file(temp_plist)
         with open(temp_plist, "w+b") as f:
@@ -177,7 +178,6 @@ class Surface:
             self.polydata = None
 
     def __del__(self):
-        """Cleanup temporary files and resources."""
         if hasattr(self, "_temp_file") and self._temp_file is not None:
             try:
                 self._temp_manager.decrement_refs(self._temp_file)
@@ -191,13 +191,11 @@ class Surface:
                 pass
 
     def CloseProject(self):
-        """Clean up resources when project is closed."""
         for index in self.actors_dict:
             Publisher.sendMessage("Remove surface actor from viewer", actor=self.actors_dict[index])
         del self.actors_dict
         self.actors_dict = {}
 
-        # Clean up temporary files
         if hasattr(self, "_temp_file") and self._temp_file is not None:
             try:
                 self._temp_manager.decrement_refs(self._temp_file)
@@ -210,7 +208,6 @@ class Surface:
             except Exception:
                 pass
 
-        # restarting the surface index
         Surface.general_index = -1
 
         self.affine_vtk = None
@@ -776,7 +773,6 @@ class SurfaceManager:
         self.CloseProject()
 
     def CloseProject(self):
-        """Clean up resources when project is closed."""
         proj = prj.Project()
         for index in self.actors_dict:
             actor = self.actors_dict[index]
@@ -786,6 +782,7 @@ class SurfaceManager:
                 surface.cleanup()
 
         self.actors_dict = {}
+        # restarting the surface index
         self.last_surface_index = 0
         Surface.general_index = -1
 

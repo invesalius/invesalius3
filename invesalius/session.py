@@ -47,7 +47,6 @@ class Session(metaclass=Singleton):
     def __init__(self):
         self.temp_item = False
         self.mask_3d_preview = False
-        self._exited_successfully_last_time = True
         self._config: Dict[str, Union[int, str, bool, List[Tuple[str, str]]]] = {
             "project_status": 3,
             "language": "",
@@ -60,7 +59,6 @@ class Session(metaclass=Singleton):
             "console_logging_level": 0,
         }
         self._exited_successfully_last_time = not self._ReadState()
-        # self._state = {}
         self._temp_manager = TempFileManager()
 
         # Try to read config, if it fails create a new one
@@ -139,6 +137,7 @@ class Session(metaclass=Singleton):
         debug("Session.CloseProject")
         self.SetState("project_path", None)
         self.SetConfig("project_status", const.PROJECT_STATUS_CLOSED)
+        # self.mode = const.MODE_RP
         self.temp_item = False
 
         # Clean up project-related temporary files
@@ -316,22 +315,17 @@ class Session(metaclass=Singleton):
         return success
 
     def _Exit(self) -> None:
-        """Handle application exit by cleaning up project but preserving state."""
         try:
             self.CloseProject()
-            # Save the state one last time before exiting
             self.WriteStateFile()
-            # Mark that we exited successfully
             self._exited_successfully_last_time = True
             self.WriteConfigFile()
             print("Exited successfully")
         except Exception as e:
-            # If something went wrong during exit, mark it
             self._exited_successfully_last_time = False
             self.WriteConfigFile()
             print(f"Error during exit: {str(e)}")
 
     def cleanup(self):
-        """Clean up all temporary files when the application exits."""
         self._temp_manager.cleanup_all()
         self._temp_manager.shutdown()

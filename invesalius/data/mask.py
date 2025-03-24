@@ -207,27 +207,31 @@ class EditionHistory:
 class Mask:
     general_index = -1
 
-    def __init__(self, index=None, name=""):
+    def __init__(self, index=None):
         Mask.general_index += 1
         if index is None:
             self.index = Mask.general_index
         else:
             self.index = index
             Mask.general_index -= 1
-        self.name = name
-        self.colour = [random.random(), random.random(), random.random(), 1.0]
+        self.matrix = None
+        self.spacing = (1.0, 1.0, 1.0)
+        self.imagedata = None
+        self.colour = random.choice(const.MASK_COLOUR)
         self.opacity = const.MASK_OPACITY
-        self.threshold_range = ""
-        self.edition_threshold_range = ""
-        self.is_shown = True
+        self.threshold_range = const.THRESHOLD_RANGE
+        self.name = const.MASK_NAME_PATTERN % (Mask.general_index + 1)
+        self.edition_threshold_range = [const.THRESHOLD_OUTVALUE, const.THRESHOLD_INVALUE]
+        self.is_shown = 1
         self.was_edited = False
         self.volume = None
-        self.imagedata = None
+        self.auto_update_mask = True
         self._modified_callbacks = []
+        self.modified_time = 0
+        self.__bind_events()
         self._temp_manager = TempFileManager()
         self._temp_file = None
         self._temp_fd = None
-        self.matrix = None
 
         self.history = EditionHistory()
 
@@ -392,7 +396,13 @@ class Mask:
         self._modified_callbacks = callbacks
         return removed
 
-    def _create_temp_matrix(self, shape):
+    def create_mask(self, shape):
+        """
+        Creates a new mask object. This method do not append this new mask into the project.
+
+        Parameters:
+            shape(int, int, int): The shape of the new mask.
+        """
         self._temp_fd, self._temp_file = tempfile.mkstemp()
         self._temp_manager.register_temp_file(self._temp_file)
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
@@ -429,15 +439,10 @@ class Mask:
             Publisher.sendMessage("Render volume viewer")
             self.imagedata = None
             self.volume = None
-
-        # Ensure matrix is properly flushed and closed
-        if hasattr(self, "matrix") and self.matrix is not None:
-            try:
-                self.matrix.flush()  # Ensure all changes are written to disk
-                self.matrix._mmap.close()  # Close the underlying mmap object
-                del self.matrix  # Remove reference to allow garbage collection
-            except (AttributeError, IOError) as e:
-                print(f"Error closing matrix: {e}")
+        try:
+            del self.matrix
+        except AttributeError:
+            pass
 
         if self._temp_file:
             self._temp_manager.decrement_refs(self._temp_file)
@@ -466,7 +471,7 @@ class Mask:
         new_mask.is_shown = self.is_shown
         new_mask.was_edited = self.was_edited
 
-        new_mask._create_temp_matrix(shape=[i - 1 for i in self.matrix.shape])
+        new_mask.create_mask(shape=[i - 1 for i in self.matrix.shape])
         new_mask.matrix[:] = self.matrix[:]
         new_mask.spacing = self.spacing
 
@@ -519,11 +524,10 @@ class Mask:
                 self.save_history(index, orientation, matrix.copy(), cp_mask)
 
     def __del__(self):
-        """Cleanup temporary files and resources."""
-        self.cleanup()  # Ensure cleanup is called when object is deleted
+        self.cleanup()
 
     def CloseProject(self):
         """Clean up resources when project is closed."""
-        self.cleanup()  # Reuse cleanup logic
+        self.cleanup()
         self.matrix = None
         self.filename = None
