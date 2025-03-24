@@ -27,27 +27,35 @@ import sys
 import tempfile
 import time
 import traceback
+import weakref
 
 import numpy as np
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
 from vtkmodules.vtkCommonCore import (
+    vtkFileOutputWindow,
     vtkIdList,
+    vtkOutputWindow,
     vtkPoints,
 )
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkTriangle
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
+    vtkCleanPolyData,
     vtkMassProperties,
     vtkPolyDataNormals,
     vtkStripper,
     vtkTriangleFilter,
 )
-from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
+from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter, vtkWarpScalar
+from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
+from vtkmodules.vtkFiltersModeling import vtkFillHolesFilter
+from vtkmodules.vtkFiltersSMP import vtkSMPContourGrid
+from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
-from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
+from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper, vtkProperty
 
 from invesalius.pubsub import pub as Publisher
 
@@ -73,7 +81,7 @@ import invesalius.utils as utl
 from invesalius.data.converters import convert_custom_bin_to_vtk
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
-from invesalius.utils import new_name_by_pattern
+from invesalius.utils import TempFileManager, new_name_by_pattern
 
 # TODO: Verificar ReleaseDataFlagOn and SetSource
 
@@ -102,8 +110,8 @@ class Surface:
             self.name = const.SURFACE_NAME_PATTERN % (self.index + 1)
         else:
             self.name = name
-
         self.filename = None
+        self._temp_manager = TempFileManager()
 
     def SavePlist(self, dir_temp, filelist):
         if self.filename and os.path.exists(self.filename):
@@ -114,6 +122,7 @@ class Surface:
             filename = "surface_%d" % self.index
             vtp_filename = filename + ".vtp"
             vtp_fd, vtp_filepath = tempfile.mkstemp()
+            self._temp_manager.register_temp_file(vtp_filepath)
             pu.Export(self.polydata, vtp_filepath, bin=True)
             self.filename = vtp_filepath
             os.close(vtp_fd)
@@ -131,11 +140,10 @@ class Surface:
             "area": self.area,
         }
         plist_filename = filename + ".plist"
-        # plist_filepath = os.path.join(dir_temp, filename + '.plist')
         temp_fd, temp_plist = tempfile.mkstemp()
+        self._temp_manager.register_temp_file(temp_plist)
         with open(temp_plist, "w+b") as f:
             plistlib.dump(surface, f)
-
         filelist[temp_plist] = plist_filename
         os.close(temp_fd)
 
@@ -160,6 +168,55 @@ class Surface:
 
     def _set_class_index(self, index):
         Surface.general_index = index
+
+    def cleanup(self):
+        if self.filename:
+            self._temp_manager.decrement_refs(self.filename)
+        if self.polydata:
+            self.polydata.ReleaseData()
+            self.polydata = None
+
+    def __del__(self):
+        """Cleanup temporary files and resources."""
+        if hasattr(self, "_temp_file") and self._temp_file is not None:
+            try:
+                self._temp_manager.decrement_refs(self._temp_file)
+            except Exception:
+                pass
+
+        if hasattr(self, "filename") and self.filename is not None:
+            try:
+                self._temp_manager.decrement_refs(self.filename)
+            except Exception:
+                pass
+
+    def CloseProject(self):
+        """Clean up resources when project is closed."""
+        for index in self.actors_dict:
+            Publisher.sendMessage("Remove surface actor from viewer", actor=self.actors_dict[index])
+        del self.actors_dict
+        self.actors_dict = {}
+
+        # Clean up temporary files
+        if hasattr(self, "_temp_file") and self._temp_file is not None:
+            try:
+                self._temp_manager.decrement_refs(self._temp_file)
+            except Exception:
+                pass
+
+        if hasattr(self, "filename") and self.filename is not None:
+            try:
+                self._temp_manager.decrement_refs(self.filename)
+            except Exception:
+                pass
+
+        # restarting the surface index
+        Surface.general_index = -1
+
+        self.affine_vtk = None
+        self.convert_to_inv = False
+        self._temp_file = None
+        self.filename = None
 
 
 # TODO: will be initialized inside control as it is being done?
@@ -719,16 +776,18 @@ class SurfaceManager:
         self.CloseProject()
 
     def CloseProject(self):
+        """Clean up resources when project is closed."""
+        proj = prj.Project()
         for index in self.actors_dict:
-            Publisher.sendMessage("Remove surface actor from viewer", actor=self.actors_dict[index])
-        del self.actors_dict
+            actor = self.actors_dict[index]
+            Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
+            if index in proj.surface_dict:
+                surface = proj.surface_dict[index]
+                surface.cleanup()
+
         self.actors_dict = {}
-
-        # restarting the surface index
+        self.last_surface_index = 0
         Surface.general_index = -1
-
-        self.affine_vtk = None
-        self.convert_to_inv = False
 
     def OnSelectSurface(self, surface_index):
         # self.last_surface_index = surface_index
@@ -887,7 +946,7 @@ class SurfaceManager:
         filename_img = slice_.matrix_filename
         spacing = slice_.spacing
 
-        mask_temp_file = mask.temp_file
+        mask_temp_file = mask._temp_file
         mask_shape = mask.matrix.shape
         mask_dtype = mask.matrix.dtype
 

@@ -107,6 +107,14 @@ class InVesalius(wx.App):
 
         return True
 
+    def OnExit(self):
+        """
+        Called when the application is about to exit.
+        """
+        # Clean up temporary files
+        session.cleanup()
+        return 0
+
     def MacOpenFile(self, filename):
         """
         Open drag & drop files under darwin

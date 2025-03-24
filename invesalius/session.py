@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import Singleton, debug, deep_merge_dict
+from invesalius.utils import Singleton, TempFileManager, debug, deep_merge_dict
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -47,6 +47,7 @@ class Session(metaclass=Singleton):
     def __init__(self):
         self.temp_item = False
         self.mask_3d_preview = False
+        self._exited_successfully_last_time = True
         self._config: Dict[str, Union[int, str, bool, List[Tuple[str, str]]]] = {
             "project_status": 3,
             "language": "",
@@ -59,6 +60,14 @@ class Session(metaclass=Singleton):
             "console_logging_level": 0,
         }
         self._exited_successfully_last_time = not self._ReadState()
+        # self._state = {}
+        self._temp_manager = TempFileManager()
+
+        # Try to read config, if it fails create a new one
+        if not self.ReadConfig():
+            self.CreateConfig()
+
+        self._ReadState()
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -130,8 +139,13 @@ class Session(metaclass=Singleton):
         debug("Session.CloseProject")
         self.SetState("project_path", None)
         self.SetConfig("project_status", const.PROJECT_STATUS_CLOSED)
-        # self.mode = const.MODE_RP
         self.temp_item = False
+
+        # Clean up project-related temporary files
+        from invesalius.project import Project
+
+        project = Project()
+        project.cleanup()
 
     def SaveProject(self, path: Union[Tuple[()], Tuple[str, str]] = ()) -> None:
         import invesalius.constants as const
@@ -302,5 +316,22 @@ class Session(metaclass=Singleton):
         return success
 
     def _Exit(self) -> None:
-        self.CloseProject()
-        self.DeleteStateFile()
+        """Handle application exit by cleaning up project but preserving state."""
+        try:
+            self.CloseProject()
+            # Save the state one last time before exiting
+            self.WriteStateFile()
+            # Mark that we exited successfully
+            self._exited_successfully_last_time = True
+            self.WriteConfigFile()
+            print("Exited successfully")
+        except Exception as e:
+            # If something went wrong during exit, mark it
+            self._exited_successfully_last_time = False
+            self.WriteConfigFile()
+            print(f"Error during exit: {str(e)}")
+
+    def cleanup(self):
+        """Clean up all temporary files when the application exits."""
+        self._temp_manager.cleanup_all()
+        self._temp_manager.shutdown()

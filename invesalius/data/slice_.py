@@ -368,10 +368,11 @@ class Slice(metaclass=utils.Singleton):
         self.CloseProject()
 
     def CloseProject(self):
-        f = self._matrix.filename
-        self._matrix._mmap.close()
-        self._matrix = None
-        os.remove(f)
+        if self._matrix is not None:
+            f = self._matrix.filename
+            self._matrix._mmap.close()
+            self._matrix = None
+            os.remove(f)
         self.current_mask = None
 
         for name in self.aux_matrices:
@@ -1231,6 +1232,10 @@ class Slice(metaclass=utils.Singleton):
         proj = Project()
         mask = proj.mask_dict[surface_parameters["options"]["index"]]
 
+        # Ensure mask has a temporary file
+        if not hasattr(mask, "_temp_file") or not mask._temp_file:
+            mask._create_temp_matrix(self.matrix.shape)
+
         self.do_threshold_to_all_slices(mask)
         Publisher.sendMessage(
             "Create surface",
@@ -1350,52 +1355,33 @@ class Slice(metaclass=utils.Singleton):
         # else:
         # widget.SetInput(cast.GetOutput())
 
-    def create_new_mask(
-        self,
-        name=None,
-        colour=None,
-        opacity=None,
-        threshold_range=None,
-        edition_threshold_range=None,
-        add_to_project=True,
-        show=True,
-    ):
+    def create_new_mask(self, name=None, threshold_range=None, colour=None, show=True):
         """
-        Creates a new mask and add it to project.
-
-        Parameters:
-            name (string): name of the new mask. If name is None a automatic
-                name will be used.
-            colour (R, G, B): a RGB tuple of float number.
-            opacity (float): a float number, from 0 to 1. If opacity is None
-                the default one will be used.
-            threshold_range (int, int): a 2-tuple indicating threshold range.
-                If None the default one will be used.
-            edition_threshold_range (int, int): a 2-tuple indicating threshold
-                range. If None the default one will be used.
-            show (bool): if this new mask will be showed and set as current
-                mask.
-
-        Returns:
-            new_mask: The new mask object.
+        Creates a new mask and adds it to the project.
         """
         future_mask = Mask()
-        future_mask.create_mask(self.matrix.shape)
-        future_mask.spacing = self.spacing
+        future_mask._create_temp_matrix(self.matrix.shape)
 
-        if name:
-            future_mask.name = name
-        if colour:
-            future_mask.colour = colour
-        if opacity:
-            future_mask.opacity = opacity
-        if edition_threshold_range:
-            future_mask.edition_threshold_range = edition_threshold_range
-        if threshold_range:
-            future_mask.threshold_range = threshold_range
+        if threshold_range is None:
+            # Use default threshold range from project or constants
+            proj = Project()
+            if hasattr(proj, "threshold_range"):
+                threshold_range = proj.threshold_range
+            else:
+                threshold_range = const.THRESHOLD_RANGE
 
-        if add_to_project:
-            self._add_mask_into_proj(future_mask, show=show)
+        future_mask.threshold_range = threshold_range
+        future_mask.edition_threshold_range = threshold_range
+
+        if colour is None:
+            colour = const.MASK_COLOUR[0]
+        future_mask.colour = colour
+
+        if name is None:
+            name = const.MASK_NAME_PATTERN % (len(Project().mask_dict) + 1)
+        future_mask.name = name
+
+        self._add_mask_into_proj(future_mask, show=show)
 
         return future_mask
 

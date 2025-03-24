@@ -17,6 +17,12 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+# Mode constants - defined at top level to avoid circular imports
+MODE_RP = 0
+MODE_NAVIGATOR = 1
+MODE_RADIOLOGY = 2
+MODE_ODONTOLOGY = 3
+
 import itertools
 import sys
 from typing import Dict, List, Optional, Tuple, Union
@@ -25,7 +31,14 @@ import psutil
 import wx
 
 from invesalius import inv_paths
-from invesalius.i18n import tr as _
+
+
+# Lazy import of tr to avoid circular dependency
+def _(text):
+    from invesalius.i18n import tr
+
+    return tr(text)
+
 
 # from invesalius.project import Project
 INVESALIUS_VERSION = "3.1.99998"
