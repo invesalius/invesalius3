@@ -104,7 +104,7 @@ def GetExpandedIconImage():
 # Main panel
 class Panel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5), size=wx.Size(350, 656))
+        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5), size=wx.Size(385, 656))
 
         # sizer = wx.BoxSizer(wx.VERTICAL)
         gbs = wx.GridBagSizer(5, 5)
@@ -331,7 +331,6 @@ class UpperTaskPanel(wx.Panel):
                 elif name == _("Configure 3D surface"):
                     self.__id_surface = item.GetId()
 
-        fold_panel.Expand(fold_panel.GetFoldPanel(0))
         self.fold_panel = fold_panel
         self.image_list = image_list
 
@@ -341,6 +340,12 @@ class UpperTaskPanel(wx.Panel):
         self.SetStateProjectClose()
         self.SetSizerAndFit(sizer)
         self.__bind_events()
+
+        # Show the navigation panel in navigation mode; otherwise, show the imports panel
+        if mode == const.MODE_NAVIGATOR:
+            self.fold_panel.Expand(self.fold_panel.GetFoldPanel(1))
+        else:
+            self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
 
     def __bind_events(self):
         session = ses.Session()
@@ -370,9 +375,12 @@ class UpperTaskPanel(wx.Panel):
             self.SetStateProjectClose()
 
     def SetStateProjectClose(self):
+        session = ses.Session()
+        mode = session.GetConfig("mode")
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
         for item in self.enable_items:
-            item.Disable()
+            if mode != const.MODE_NAVIGATOR:
+                item.Disable()
 
     def SetStateProjectOpen(self):
         session = ses.Session()

@@ -192,6 +192,14 @@ class Frame(wx.Frame):
         Handle all key events at a global level.
         """
         keycode = event.GetKeyCode()
+        modifiers = event.GetModifiers()
+
+        # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
+        if modifiers & wx.MOD_CONTROL:
+            unicode = event.GetUnicodeKey()
+            if unicode in (ord("s"), ord("S"), ord("q"), ord("Q")):
+                event.Skip()
+                return
 
         # If the key is a move marker key, publish a message to move the marker.
         if keycode in const.MOVEMENT_KEYCODES and not self.edit_data_notebook_label:
@@ -690,6 +698,10 @@ class Frame(wx.Frame):
 
         elif id == const.ID_CREATE_SURFACE:
             Publisher.sendMessage("Open create surface dialog")
+
+        elif id == const.ID_REMOVE_NON_VISIBLE_FACES:
+            dialog = dlg.RemoveNonVisibleFacesDialog(self)
+            dialog.Show()
 
         elif id == const.ID_CREATE_MASK:
             Publisher.sendMessage("New mask from shortcut")
@@ -1277,6 +1289,10 @@ class MenuBar(wx.MenuBar):
         surface_menu = wx.Menu()
         self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, ("New\tCtrl+Shift+C"))
         self.create_surface.Enable(False)
+
+        self.remove_non_visible = surface_menu.Append(
+            const.ID_REMOVE_NON_VISIBLE_FACES, _("Remove non-visible faces")
+        )
 
         # Image menu
         image_menu = wx.Menu()
