@@ -55,7 +55,6 @@ class CoilVisualizer:
         self.LoadConfig()
 
         self.ShowCoil(False)
-        Publisher.sendMessage("Press show-coil button", pressed=False)  # disable by default
 
         self.__bind_events()
 
@@ -125,17 +124,21 @@ class CoilVisualizer:
                 coil["actor"].SetVisibility(state)
                 coil["center_actor"].SetVisibility(True)  # Always show the center donut actor
 
-            # Update the button state after toggling all coils
-            coils_visible = [coil["actor"].GetVisibility() for coil in self.coils.values()]
-            if not any(coils_visible):  # all coils are hidden
-                Publisher.sendMessage("Press show-coil button", pressed=False)
-            elif all(coils_visible):  # all coils are shown
-                Publisher.sendMessage("Press show-coil button", pressed=True)
-
         elif (coil := self.coils.get(coil_name, None)) is not None:
+            # Just toggle the visibility when dealing with specific coils
             new_state = not coil["actor"].GetVisibility()
             coil["actor"].SetVisibility(new_state)
             coil["center_actor"].SetVisibility(True)  # Always show the center donut actor
+
+            # If all coils are hidden/shown, update the color of Show-coil button
+            if self.coils:  # Only check visibility if there are coils
+                coils_visible = [coil["actor"].GetVisibility() for coil in self.coils.values()]
+                if not any(coils_visible):  # all coils are hidden
+                    Publisher.sendMessage("Press show-coil button", pressed=False)
+                elif all(coils_visible):  # all coils are shown
+                    Publisher.sendMessage("Press show-coil button", pressed=True)
+            else:  # No coils, button should be disabled
+                Publisher.sendMessage("Press show-coil button", pressed=False)
 
         if self.target_coil_actor is not None:
             self.target_coil_actor.SetVisibility(state)

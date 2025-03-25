@@ -270,14 +270,18 @@ class InnerFoldPanel(wx.Panel):
     # Called when the 'Show coil' button is pressed elsewhere in code.
     def PressShowCoilButton(self, pressed=False):
         self.show_coil_button.SetValue(pressed)
-        self.OnShowCoil()
+        print(f"Pressed: {pressed}")
+        if pressed:
+            self.show_coil_button.SetBackgroundColour(self.GREEN_COLOR)
+        else:
+            self.show_coil_button.SetBackgroundColour(self.RED_COLOR)
 
     def EnableShowCoilButton(self, enabled=False):
         self.show_coil_button.Enable(enabled)
 
-    def OnShowCoil(self, evt=None):
+    def OnShowCoil(self, evt=None, coil_name=None):
         pressed = self.show_coil_button.GetValue()
-        Publisher.sendMessage("Show coil in viewer volume", state=pressed, coil_name=None)
+        Publisher.sendMessage("Show coil in viewer volume", state=pressed, coil_name=coil_name)
 
     def CollapseNavigation(self, done):
         if not done:  # Coil selection is no longer complete, so hide navigation panel
@@ -2381,9 +2385,9 @@ class ControlPanel(wx.Panel):
         if not pressed and self.target_mode_button.GetValue():
             Publisher.sendMessage("Press target mode button", pressed=False)
 
-        # Automatically press or unpress 'Show coil' and 'Show probe' button.
-        Publisher.sendMessage("Press show-coil button", pressed=pressed)
-        Publisher.sendMessage("Press show-probe button", pressed=(not pressed))
+        if evt is not None:
+            Publisher.sendMessage("Press show-coil button", pressed=pressed)
+            Publisher.sendMessage("Press show-probe button", pressed=(not pressed))
 
     # 'Lock to Target' button
     def OnLockToTargetButton(self, evt, ctrl):
@@ -2393,8 +2397,8 @@ class ControlPanel(wx.Panel):
 
     # 'Show coil' button
     def PressShowCoilButton(self, pressed=False):
+        print(pressed)
         self.UpdateToggleButton(self.show_coil_button, pressed)
-        self.OnShowCoil()
 
     def EnableShowCoilButton(self, enabled=False):
         self.EnableToggleButton(self.show_coil_button, enabled)
