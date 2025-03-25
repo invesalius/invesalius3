@@ -61,11 +61,9 @@ class Session(metaclass=Singleton):
         self._exited_successfully_last_time = not self._ReadState()
         self._temp_manager = TempFileManager()
 
-        # Try to read config, if it fails create a new one
         if not self.ReadConfig():
             self.CreateConfig()
 
-        self._ReadState()
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -319,8 +317,6 @@ class Session(metaclass=Singleton):
             self.CloseProject()
             self.WriteStateFile()
             self._exited_successfully_last_time = True
-            self.WriteConfigFile()
-            print("Exited successfully")
         except Exception as e:
             self._exited_successfully_last_time = False
             self.WriteConfigFile()

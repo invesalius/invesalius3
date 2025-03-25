@@ -33,29 +33,22 @@ import numpy as np
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
 from vtkmodules.vtkCommonCore import (
-    vtkFileOutputWindow,
     vtkIdList,
-    vtkOutputWindow,
     vtkPoints,
 )
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkTriangle
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
-    vtkCleanPolyData,
     vtkMassProperties,
     vtkPolyDataNormals,
     vtkStripper,
     vtkTriangleFilter,
 )
-from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter, vtkWarpScalar
-from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
-from vtkmodules.vtkFiltersModeling import vtkFillHolesFilter
-from vtkmodules.vtkFiltersSMP import vtkSMPContourGrid
-from vtkmodules.vtkFiltersSources import vtkSphereSource
+from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
-from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper, vtkProperty
+from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
 from invesalius.pubsub import pub as Publisher
 
@@ -74,7 +67,6 @@ import invesalius.data.imagedata_utils as iu
 import invesalius.data.polydata_utils as pu
 import invesalius.data.slice_ as sl
 import invesalius.data.surface_process as surface_process
-import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utl
@@ -201,7 +193,6 @@ class Surface:
                 self._temp_manager.decrement_refs(self._temp_file)
             except Exception:
                 pass
-
         if hasattr(self, "filename") and self.filename is not None:
             try:
                 self._temp_manager.decrement_refs(self.filename)

@@ -486,7 +486,7 @@ class Project(metaclass=Singleton):
                 nib.save(mask_nifti, f"{basename}_mask_{mask.index}_{mask.name}{ext}")
 
     def cleanup(self):
-        """Clean up all project-related temporary files."""
+        # Clean up all project-related temporary files.
         self._temp_manager.cleanup_all()
 
 

@@ -33,7 +33,6 @@ import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
@@ -567,7 +566,6 @@ class TempFileManager(metaclass=Singleton):
     def _safe_remove_file(self, file_path: str) -> None:
         if not file_path or file_path in self._ignored_files:
             return
-
         try:
             if os.path.exists(file_path):
                 # logger.debug(f"Attempting to remove {file_path}")
