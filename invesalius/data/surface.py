@@ -47,7 +47,7 @@ from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
-from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
+from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper, vtkWindowLevelLookupTable
 
 from invesalius.pubsub import pub as Publisher
 
@@ -248,6 +248,9 @@ class SurfaceManager:
             names_list = [surface_dict[i].name for i in surface_dict.keys()]
             new_name = utl.next_copy_name(name, names_list)
             # create new mask
+            # do not duplicate if it is a peel
+            if original_surface.peel:
+                continue
             self.CreateSurfaceFromPolydata(
                 polydata=original_surface.polydata,
                 overwrite=False,
@@ -266,6 +269,7 @@ class SurfaceManager:
         new_dict = {}
         if surface_indexes:
             for index in surface_indexes:
+                is_peel = proj.surface_dict[index].peel
                 proj.RemoveSurface(index)
                 if index in old_dict:
                     actor = old_dict[index]
@@ -275,7 +279,9 @@ class SurfaceManager:
                         if i > index:
                             new_dict[i - 1] = old_dict[i]
                     old_dict = new_dict
-                    Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
+                    Publisher.sendMessage(
+                        "Remove surface actor from viewer", actor=actor, peeled_brain=is_peel
+                    )
             self.actors_dict = new_dict
 
         if self.last_surface_index in surface_indexes:
@@ -629,6 +635,9 @@ class SurfaceManager:
         area=None,
         scalar=False,
         peeled_brain=False,
+        peel_actor=None,
+        peeled_surface_index=None,
+        callable=None,
     ):
         if self.convert_to_inv:
             polydata = self.ConvertPolydataToInv(polydata)
@@ -650,7 +659,13 @@ class SurfaceManager:
 
         actor = vtkActor()
         actor.SetMapper(mapper)
-        actor.GetProperty().SetBackfaceCulling(1)
+        if not peeled_brain:
+            actor.GetProperty().SetBackfaceCulling(1)
+
+        if peel_actor is not None:
+            peel_mapper = vtkPolyDataMapper()
+            peel_mapper.ShallowCopy(peel_actor.GetMapper())
+            actor.SetMapper(peel_mapper)
 
         if overwrite:
             if index is None:
@@ -688,6 +703,8 @@ class SurfaceManager:
             index = proj.AddSurface(surface)
             surface.index = index
             self.last_surface_index = index
+            if peeled_surface_index is None and callable:
+                callable(index)
 
         # Set actor colour and transparency
         actor.GetProperty().SetColor(surface.colour[:3])
@@ -725,7 +742,9 @@ class SurfaceManager:
 
         self.last_surface_index = surface.index
 
-        Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+        Publisher.sendMessage(
+            "Load surface actor into viewer", actor=actor, peeled_brain=peeled_brain
+        )
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
         return surface.index
 
@@ -755,8 +774,12 @@ class SurfaceManager:
         self.ShowActor(surface_index, True)
 
     def OnLoadSurfaceDict(self, surface_dict):
+        slic = sl.Slice()
+        ww = slic.window_width
+        wl = slic.window_level
         for key in surface_dict:
             surface = surface_dict[key]
+            is_peel = surface.peel
 
             # Map polygonal data (vtkPolyData) to graphics primitives.
             normals = vtkPolyDataNormals()
@@ -773,12 +796,26 @@ class SurfaceManager:
 
             mapper = vtkPolyDataMapper()
             mapper.SetInputConnection(stripper.GetOutputPort())
-            mapper.ScalarVisibilityOff()
+            # mapper.ScalarVisibilityOff()
             #  mapper.ImmediateModeRenderingOn() # improve performance
+            if is_peel:
+                # Use window-level LUT for peeled surfaces
+                lut = vtkWindowLevelLookupTable()
+                lut.SetWindow(ww)
+                lut.SetLevel(wl)
+                lut.Build()
+
+                mapper.SetLookupTable(lut)
+                mapper.SetScalarRange(wl - ww / 2, wl + ww / 2)
+                mapper.InterpolateScalarsBeforeMappingOn()
+                mapper.ScalarVisibilityOn()
+            else:
+                mapper.ScalarVisibilityOff()
 
             # Represent an object (geometry & properties) in the rendered scene
             actor = vtkActor()
-            actor.GetProperty().SetBackfaceCulling(1)
+            if not is_peel:
+                actor.GetProperty().SetBackfaceCulling(1)
             actor.SetMapper(mapper)
 
             # Set actor colour and transparency

@@ -583,8 +583,6 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         transparency = 100 * surface.transparency
         # print("Button color: ", colour)
         self.button_colour.SetColour(colour)
-        print("insertnewsurface")
-        print(surface.peel)
         if surface.peel:
             wx.CallAfter(self.button_colour.Enable, False)
         else:

@@ -348,6 +348,9 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
+        # store the index of peeled surface
+        self.peeled_surface_index = None
+
         Publisher.sendMessage("Press target mode button", pressed=False)
 
     def UpdateCanvas(self):
@@ -1410,15 +1413,10 @@ class Viewer(wx.Panel):
 
         return coil_dir, p2_norm, coil_norm, p1
 
-    def AddPeeledSurface(self, flag, actor):
-        if self.actor_peel:
-            self.ren.RemoveActor(self.actor_peel)
-            self.ren.RemoveActor(self.object_orientation_torus_actor)
-            self.ren.RemoveActor(self.obj_projection_arrow_actor)
-            self.actor_peel = None
-            if self.pointer_actor:
-                self.pointer_actor.SetVisibility(1)
+    def OnPeeledSurfaceCreation(self, index):
+        self.peeled_surface_index = index
 
+    def AddPeeledSurface(self, flag, actor):
         if flag and actor:
             # Instead of adding the actor directly, send it to SurfaceManager
             polydata = actor.GetMapper().GetInput()
@@ -1428,6 +1426,10 @@ class Viewer(wx.Panel):
                 name="Peeled Brain",
                 transparency=actor.GetProperty().GetOpacity(),
                 peeled_brain=True,
+                peel_actor=actor,
+                peeled_surface_index=self.peeled_surface_index,
+                overwrite=self.peeled_surface_index is not None,
+                callable=self.OnPeeledSurfaceCreation,
             )
 
         if not self.nav_status:
@@ -2709,10 +2711,24 @@ class Viewer(wx.Panel):
         self.ren.SetBackground(colour[:3])
         self.UpdateRender()
 
-    def AddSurface(self, actor):
+    def AddSurface(self, actor, peeled_brain=False):
         # Add the actor to the renderer.
+        if peeled_brain and self.actor_peel:
+            self.ren.RemoveActor(self.actor_peel)
+            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            self.ren.RemoveActor(self.obj_projection_arrow_actor)
+            self.actor_peel = None
+            if self.pointer_actor:
+                self.pointer_actor.SetVisibility(1)
+
         ren = self.ren
         ren.AddActor(actor)
+
+        if peeled_brain:
+            # self.ren.AddActor(actor)
+            self.actor_peel = actor
+            self.ren.AddActor(self.object_orientation_torus_actor)
+            self.ren.AddActor(self.obj_projection_arrow_actor)
 
         self.surface_added = True
 
@@ -2738,9 +2754,16 @@ class Viewer(wx.Panel):
         self.surface = actor
         self.EnableRuler()
 
-    def RemoveSurface(self, actor):
+    def RemoveSurface(self, actor, peeled_brain=False):
         # Remove the actor from the renderer.
         self.ren.RemoveActor(actor)
+        if peeled_brain:
+            self.OnPeeledSurfaceCreation(None)
+            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            self.ren.RemoveActor(self.obj_projection_arrow_actor)
+            self.actor_peel = None
+            if self.pointer_actor:
+                self.pointer_actor.SetVisibility(1)
         if not self.nav_status:
             self.UpdateRender()
 
