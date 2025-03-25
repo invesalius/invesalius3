@@ -137,7 +137,7 @@ class CoilVisualizer:
                     Publisher.sendMessage("Press show-coil button", pressed=False)
                 elif all(coils_visible):  # all coils are shown
                     Publisher.sendMessage("Press show-coil button", pressed=True)
-            else:  # No coils, button should be disabled
+            else:  # no coils
                 Publisher.sendMessage("Press show-coil button", pressed=False)
 
         if self.target_coil_actor is not None:

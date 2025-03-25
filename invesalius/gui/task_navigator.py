@@ -2397,7 +2397,6 @@ class ControlPanel(wx.Panel):
 
     # 'Show coil' button
     def PressShowCoilButton(self, pressed=False):
-        print(pressed)
         self.UpdateToggleButton(self.show_coil_button, pressed)
 
     def EnableShowCoilButton(self, enabled=False):
