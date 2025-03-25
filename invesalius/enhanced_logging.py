@@ -103,6 +103,10 @@ class LogRecord:
         pathname: Optional[str] = None,
         lineno: Optional[int] = None,
         exc_info: Optional[str] = None,
+        args: Optional[tuple] = None,
+        funcName: Optional[str] = None,
+        thread: Optional[int] = None,
+        threadName: Optional[str] = None,
     ):
         self.timestamp = timestamp
         self.level = level
@@ -111,6 +115,10 @@ class LogRecord:
         self.pathname = pathname
         self.lineno = lineno
         self.exc_info = exc_info
+        self.args = args
+        self.funcName = funcName
+        self.thread = thread
+        self.threadName = threadName
 
     @classmethod
     def from_record(cls, record: logging.LogRecord) -> "LogRecord":
@@ -118,30 +126,65 @@ class LogRecord:
         exc_info = None
         if record.exc_info:
             import traceback
-
             exc_info = "".join(traceback.format_exception(*record.exc_info))
+
+        # Format the message with args if any
+        message = record.getMessage()
 
         return cls(
             timestamp=datetime.fromtimestamp(record.created).strftime("%Y-%m-%d %H:%M:%S,%f")[:-3],
             level=record.levelname,
             name=record.name,
-            message=record.getMessage(),
+            message=message,
             pathname=record.pathname,
             lineno=record.lineno,
             exc_info=exc_info,
+            args=record.args if hasattr(record, 'args') else None,
+            funcName=record.funcName if hasattr(record, 'funcName') else None,
+            thread=record.thread if hasattr(record, 'thread') else None,
+            threadName=record.threadName if hasattr(record, 'threadName') else None,
         )
+        
+    def get_full_details(self) -> str:
+        """Return a detailed string representation of the record."""
+        details = f"Timestamp: {self.timestamp}\n"
+        details += f"Level: {self.level}\n"
+        details += f"Component: {self.name}\n"
+        details += f"Message: {self.message}\n"
+        
+        if self.pathname:
+            details += f"File: {self.pathname}\n"
+        
+        if self.lineno:
+            details += f"Line: {self.lineno}\n"
+            
+        if self.funcName:
+            details += f"Function: {self.funcName}\n"
+            
+        if self.thread:
+            details += f"Thread: {self.thread}"
+            if self.threadName:
+                details += f" ({self.threadName})"
+            details += "\n"
+            
+        if self.exc_info:
+            details += f"\nException Information:\n{self.exc_info}\n"
+            
+        return details
 
 
 class InMemoryHandler(logging.Handler):
     """Logging handler that keeps records in memory for the GUI."""
 
-    def __init__(self, capacity: int = 1000):
+    def __init__(self, capacity: int = 5000):
         super().__init__()
         self.capacity = capacity
         self.records = []
         self.formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(pathname)s:%(lineno)d - %(message)s"
         )
+        # Set level to DEBUG to capture all logs
+        self.setLevel(logging.DEBUG)
 
     def emit(self, record: logging.LogRecord) -> None:
         """Emit a record."""
@@ -173,11 +216,14 @@ class LogViewerFrame(wx.Frame):
         super().__init__(
             parent,
             title=_("InVesalius Enhanced Log Viewer"),
-            size=(1000, 700),
+            size=(1200, 800),
             style=wx.DEFAULT_FRAME_STYLE | wx.RESIZE_BORDER,
         )
 
         self.in_memory_handler = in_memory_handler
+        self.search_results = []
+        self.current_search_index = -1
+        self.search_history = []
 
         # Create main panel and sizer
         self.panel = wx.Panel(self)
@@ -203,16 +249,10 @@ class LogViewerFrame(wx.Frame):
         # Time filter
         time_label = wx.StaticText(self.panel, label=_("Time:"))
         self.time_choice = wx.Choice(
-            self.panel, choices=["ALL", "Last hour", "Last day", "Custom..."]
+            self.panel, choices=["ALL", "Last hour", "Last day", "Last week", "Custom..."]
         )
         self.time_choice.SetSelection(0)
         self.time_choice.Bind(wx.EVT_CHOICE, self.on_time_filter_changed)
-
-        # Search box
-        search_label = wx.StaticText(self.panel, label=_("Search:"))
-        self.search_text = wx.SearchCtrl(self.panel, style=wx.TE_PROCESS_ENTER)
-        self.search_text.Bind(wx.EVT_SEARCH, self.on_search)
-        self.search_text.Bind(wx.EVT_TEXT_ENTER, self.on_search)
 
         # Add filter controls to sizer
         filter_sizer.Add(level_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
@@ -221,10 +261,44 @@ class LogViewerFrame(wx.Frame):
         filter_sizer.Add(self.component_choice, 0, wx.RIGHT, 10)
         filter_sizer.Add(time_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         filter_sizer.Add(self.time_choice, 0, wx.RIGHT, 10)
-        filter_sizer.Add(search_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        filter_sizer.Add(self.search_text, 1, wx.RIGHT, 5)
 
         main_sizer.Add(filter_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        # Create search panel
+        search_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        search_label = wx.StaticText(self.panel, label=_("Search:"))
+        
+        # Use a ComboBox instead of a TextCtrl for better keyboard handling and search history
+        self.search_text = wx.ComboBox(self.panel, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+        self.search_text.Bind(wx.EVT_TEXT_ENTER, self.on_search)
+        self.search_text.Bind(wx.EVT_KEY_DOWN, self.on_search_key_down)
+        
+        search_button = wx.Button(self.panel, label=_("Search"))
+        search_button.Bind(wx.EVT_BUTTON, self.on_search)
+        
+        clear_button = wx.Button(self.panel, label=_("Clear"))
+        clear_button.Bind(wx.EVT_BUTTON, self.on_search_cancel)
+
+        # Add search navigation buttons
+        self.search_prev_btn = wx.Button(self.panel, label="◀ Previous")
+        self.search_next_btn = wx.Button(self.panel, label="Next ▶")
+        self.search_prev_btn.Bind(wx.EVT_BUTTON, self.on_search_prev)
+        self.search_next_btn.Bind(wx.EVT_BUTTON, self.on_search_next)
+        self.search_prev_btn.Enable(False)
+        self.search_next_btn.Enable(False)
+        
+        # Add search match count
+        self.search_count = wx.StaticText(self.panel, label="")
+        
+        search_sizer.Add(search_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        search_sizer.Add(self.search_text, 1, wx.RIGHT, 5)
+        search_sizer.Add(search_button, 0, wx.RIGHT, 5)
+        search_sizer.Add(clear_button, 0, wx.RIGHT, 5)
+        search_sizer.Add(self.search_prev_btn, 0, wx.RIGHT, 5)
+        search_sizer.Add(self.search_next_btn, 0, wx.RIGHT, 5)
+        search_sizer.Add(self.search_count, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        
+        main_sizer.Add(search_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         # Create splitter window
         self.splitter = wx.SplitterWindow(self.panel, style=wx.SP_3D | wx.SP_LIVE_UPDATE)
@@ -244,12 +318,12 @@ class LogViewerFrame(wx.Frame):
         self.log_grid.SetColLabelValue(4, _("File"))
         self.log_grid.SetColLabelValue(5, _("Line"))
 
-        self.log_grid.SetColSize(0, 150)  # Time
-        self.log_grid.SetColSize(1, 80)  # Level
-        self.log_grid.SetColSize(2, 150)  # Component
-        self.log_grid.SetColSize(3, 300)  # Message
+        self.log_grid.SetColSize(0, 180)  # Time
+        self.log_grid.SetColSize(1, 80)   # Level
+        self.log_grid.SetColSize(2, 180)  # Component
+        self.log_grid.SetColSize(3, 400)  # Message
         self.log_grid.SetColSize(4, 200)  # File
-        self.log_grid.SetColSize(5, 50)  # Line
+        self.log_grid.SetColSize(5, 60)   # Line
 
         self.log_grid.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.on_cell_double_click)
         self.log_grid.Bind(wx.grid.EVT_GRID_SELECT_CELL, self.on_cell_select)
@@ -265,6 +339,10 @@ class LogViewerFrame(wx.Frame):
         self.detail_text = wx.TextCtrl(
             self.detail_panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL
         )
+        
+        # Set a monospace font for better readability
+        font = wx.Font(10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        self.detail_text.SetFont(font)
 
         detail_sizer.Add(detail_label, 0, wx.ALL, 5)
         detail_sizer.Add(self.detail_text, 1, wx.EXPAND | wx.ALL, 5)
@@ -280,6 +358,9 @@ class LogViewerFrame(wx.Frame):
         # Create button panel
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        self.auto_refresh_cb = wx.CheckBox(self.panel, label=_("Auto refresh"))
+        self.auto_refresh_cb.SetValue(True)
+        
         self.refresh_button = wx.Button(self.panel, label=_("Refresh"))
         self.refresh_button.Bind(wx.EVT_BUTTON, self.on_refresh)
 
@@ -288,10 +369,15 @@ class LogViewerFrame(wx.Frame):
 
         self.export_button = wx.Button(self.panel, label=_("Export"))
         self.export_button.Bind(wx.EVT_BUTTON, self.on_export)
+        
+        self.copy_all_button = wx.Button(self.panel, label=_("Copy All"))
+        self.copy_all_button.Bind(wx.EVT_BUTTON, self.on_copy_all)
 
+        button_sizer.Add(self.auto_refresh_cb, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
         button_sizer.Add(self.refresh_button, 0, wx.RIGHT, 5)
         button_sizer.Add(self.clear_button, 0, wx.RIGHT, 5)
-        button_sizer.Add(self.export_button, 0)
+        button_sizer.Add(self.export_button, 0, wx.RIGHT, 5)
+        button_sizer.Add(self.copy_all_button, 0)
 
         main_sizer.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
 
@@ -312,7 +398,7 @@ class LogViewerFrame(wx.Frame):
         # Set up auto-refresh timer
         self.refresh_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer, self.refresh_timer)
-        self.refresh_timer.Start(5000)  # Refresh every 5 seconds
+        self.refresh_timer.Start(2000)  # Refresh every 2 seconds
 
         # Bind the close event
         self.Bind(wx.EVT_CLOSE, self.on_close)
@@ -341,24 +427,54 @@ class LogViewerFrame(wx.Frame):
                 self.log_grid.SetCellValue(i, 5, str(record.lineno))
 
             # Color the row based on log level
-            if record.level == "ERROR" or record.level == "CRITICAL":
+            if record.level == "CRITICAL":
+                for col in range(6):
+                    self.log_grid.SetCellBackgroundColour(i, col, wx.Colour(255, 150, 150))
+                    self.log_grid.SetCellTextColour(i, col, wx.Colour(128, 0, 0))
+                    self.log_grid.SetCellFont(i, col, wx.Font(wx.NORMAL_FONT.GetPointSize(), wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+            elif record.level == "ERROR":
                 for col in range(6):
                     self.log_grid.SetCellBackgroundColour(i, col, wx.Colour(255, 200, 200))
+                    self.log_grid.SetCellTextColour(i, col, wx.Colour(139, 0, 0))
             elif record.level == "WARNING":
                 for col in range(6):
-                    self.log_grid.SetCellBackgroundColour(i, col, wx.Colour(255, 255, 200))
-            elif record.level == "DEBUG":
+                    self.log_grid.SetCellBackgroundColour(i, col, wx.Colour(255, 200, 200))
+                    self.log_grid.SetCellTextColour(i, col, wx.Colour(139, 0, 0))
+            elif record.level == "INFO":
+                # Normal color, slightly highlighted
                 for col in range(6):
-                    self.log_grid.SetCellBackgroundColour(i, col, wx.Colour(230, 230, 230))
+                    self.log_grid.SetCellBackgroundColour(i, col, wx.Colour(240, 255, 240))
+            elif record.level == "DEBUG":
+                # Lighter gray for debug
+                for col in range(6):
+                    self.log_grid.SetCellBackgroundColour(i, col, wx.Colour(240, 240, 240))
+                    self.log_grid.SetCellTextColour(i, col, wx.Colour(100, 100, 100))
+
+        # If we have search results, highlight them
+        if self.search_results:
+            self.highlight_search_results()
 
         # Update status bar with counts
         total_records = len(self.in_memory_handler.records)
         filtered_records = len(records)
-        self.SetStatusText(f"Showing {filtered_records} of {total_records} log records")
+        
+        # Count by level
+        level_counts = {}
+        for record in records:
+            level_counts[record.level] = level_counts.get(record.level, 0) + 1
+            
+        level_info = ", ".join([f"{level}: {count}" for level, count in level_counts.items()])
+        self.SetStatusText(f"Showing {filtered_records} of {total_records} log records ({level_info})")
+        
+        # Auto-scroll to the bottom if we're not in the middle of searching
+        if not self.search_results and filtered_records > 0:
+            self.log_grid.GoToCell(filtered_records - 1, 0)
+            self.log_grid.SelectRow(filtered_records - 1)
+            self._show_details_for_row(filtered_records - 1)
 
     def get_filtered_records(self):
         """Get records filtered by the current filter settings."""
-        records = self.in_memory_handler.records
+        records = self.in_memory_handler.records.copy()  # Work with a copy to avoid race conditions
 
         # Filter by level
         level = self.level_choice.GetStringSelection()
@@ -380,19 +496,24 @@ class LogViewerFrame(wx.Frame):
             elif time_filter == "Last day":
                 one_day_ago = now - timedelta(days=1)
                 records = [r for r in records if self._parse_timestamp(r.timestamp) > one_day_ago]
+            elif time_filter == "Last week":
+                one_week_ago = now - timedelta(days=7)
+                records = [r for r in records if self._parse_timestamp(r.timestamp) > one_week_ago]
 
-        # Filter by search text
-        search_text = self.search_text.GetValue().lower()
-        if search_text:
-            records = [
-                r
-                for r in records
-                if (
-                    search_text in r.message.lower()
-                    or search_text in r.name.lower()
-                    or (r.pathname and search_text in r.pathname.lower())
-                )
-            ]
+        # Filter by search text (if not using the search navigation)
+        if not self.search_results:
+            search_text = self.search_text.GetValue().lower()
+            if search_text:
+                records = [
+                    r
+                    for r in records
+                    if (
+                        search_text in r.message.lower()
+                        or search_text in r.name.lower()
+                        or (r.pathname and search_text in r.pathname.lower())
+                        or search_text in r.level.lower()
+                    )
+                ]
 
         return records
 
@@ -401,14 +522,19 @@ class LogViewerFrame(wx.Frame):
         try:
             return datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S,%f")
         except ValueError:
-            # If parsing fails, return a very old date
-            return datetime(1970, 1, 1)
+            try:
+                # Try an alternative format without milliseconds
+                return datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                # If parsing fails, return a very old date
+                return datetime(1970, 1, 1)
 
     def update_component_list(self):
         """Update the component filter list with available components."""
         components = set(["ALL"])
         for record in self.in_memory_handler.records:
-            components.add(record.name)
+            if record.name:  # Ensure we don't add empty component names
+                components.add(record.name)
 
         current_selection = self.component_choice.GetStringSelection()
         self.component_choice.Clear()
@@ -442,9 +568,143 @@ class LogViewerFrame(wx.Frame):
 
         self.populate_logs()
 
+    def on_search_key_down(self, event):
+        """Handle key down events for the search field."""
+        # Process navigation keys
+        key_code = event.GetKeyCode()
+        
+        if key_code == wx.WXK_RETURN:
+            # Enter key - perform search
+            self.on_search(event)
+            return
+        elif key_code == wx.WXK_ESCAPE:
+            # Escape key - clear search
+            self.on_search_cancel(event)
+            return
+        elif key_code == wx.WXK_UP and event.ControlDown():
+            # Ctrl+Up - go to previous search result
+            self.on_search_prev(event)
+            return
+        elif key_code == wx.WXK_DOWN and event.ControlDown():
+            # Ctrl+Down - go to next search result
+            self.on_search_next(event)
+            return
+        
+        # Allow the event to propagate normally for other keys
+        event.Skip()
+
     def on_search(self, event):
         """Handle search events."""
-        self.populate_logs()
+        search_text = self.search_text.GetValue().strip().lower()
+        if not search_text:
+            # Clear search results if search box is empty
+            self.search_results = []
+            self.current_search_index = -1
+            self.search_prev_btn.Enable(False)
+            self.search_next_btn.Enable(False)
+            self.search_count.SetLabel("")
+            self.populate_logs()  # Refresh to clear highlights
+            return
+        
+        # Add to search history if not already present
+        if search_text not in self.search_history:
+            self.search_history.append(search_text)
+            # Keep only the last 10 searches
+            if len(self.search_history) > 10:
+                self.search_history.pop(0)
+            
+            # Update the combobox with the search history
+            self.search_text.Clear()
+            for item in self.search_history:
+                self.search_text.Append(item)
+            self.search_text.SetValue(search_text)
+        
+        # Get filtered records
+        records = self.get_filtered_records()
+        
+        # Search for matching records
+        self.search_results = []
+        for i, record in enumerate(records):
+            # Check in message, component name, file path, and level
+            if (search_text in record.message.lower() or
+                search_text in record.name.lower() or
+                (record.pathname and search_text in record.pathname.lower()) or
+                search_text in record.level.lower()):
+                self.search_results.append(i)
+        
+        # Update UI to show search results
+        if self.search_results:
+            self.current_search_index = 0
+            self.search_prev_btn.Enable(True)
+            self.search_next_btn.Enable(True)
+            self.search_count.SetLabel(f"Match {self.current_search_index + 1} of {len(self.search_results)}")
+            self.highlight_search_results()
+            self.navigate_to_current_search()
+        else:
+            self.current_search_index = -1
+            self.search_prev_btn.Enable(False)
+            self.search_next_btn.Enable(False)
+            self.search_count.SetLabel("No matches")
+            self.populate_logs()  # Refresh to clear highlights
+
+    def on_search_cancel(self, event):
+        """Handle canceling search."""
+        self.search_text.SetValue("")
+        self.search_results = []
+        self.current_search_index = -1
+        self.search_prev_btn.Enable(False)
+        self.search_next_btn.Enable(False)
+        self.search_count.SetLabel("")
+        self.populate_logs()  # Refresh to clear highlights
+    
+    def on_search_prev(self, event):
+        """Navigate to previous search result."""
+        if not self.search_results:
+            return
+            
+        self.current_search_index = (self.current_search_index - 1) % len(self.search_results)
+        self.search_count.SetLabel(f"Match {self.current_search_index + 1} of {len(self.search_results)}")
+        self.navigate_to_current_search()
+    
+    def on_search_next(self, event):
+        """Navigate to next search result."""
+        if not self.search_results:
+            return
+            
+        self.current_search_index = (self.current_search_index + 1) % len(self.search_results)
+        self.search_count.SetLabel(f"Match {self.current_search_index + 1} of {len(self.search_results)}")
+        self.navigate_to_current_search()
+    
+    def highlight_search_results(self):
+        """Highlight all search results in the grid."""
+        search_text = self.search_text.GetValue().strip().lower()
+        if not search_text:
+            return
+            
+        # Highlight all matches
+        for i in self.search_results:
+            # Use a distinct background color for search results
+            for col in range(6):
+                # Get current background color
+                current_bg = self.log_grid.GetCellBackgroundColour(i, col)
+                # Make it more yellowish while preserving the log level color
+                r, g, b = current_bg.Red(), current_bg.Green(), current_bg.Blue()
+                # Increase yellow component
+                self.log_grid.SetCellBackgroundColour(i, col, wx.Colour(min(r + 20, 255), min(g + 20, 255), b))
+    
+    def navigate_to_current_search(self):
+        """Navigate to the current search result."""
+        if not self.search_results or self.current_search_index < 0:
+            return
+            
+        row = self.search_results[self.current_search_index]
+        # Select and scroll to the row
+        self.log_grid.ClearSelection()
+        self.log_grid.GoToCell(row, 0)
+        self.log_grid.SelectRow(row)
+        
+        # Show details for the selected row
+        self._show_details_for_row(row)
 
     def on_refresh(self, event):
         """Handle refresh button click."""
@@ -453,10 +713,19 @@ class LogViewerFrame(wx.Frame):
 
     def on_timer(self, event):
         """Handle timer events for auto-refresh."""
-        # Only refresh if there are new logs
-        if len(self.in_memory_handler.records) > self.log_grid.GetNumberRows():
-            self.update_component_list()
-            self.populate_logs()
+        # Only refresh if auto-refresh is enabled and there are new logs
+        if self.auto_refresh_cb.GetValue():
+            current_records = len(self.get_filtered_records())
+            grid_rows = self.log_grid.GetNumberRows()
+            
+            # Check if the number of records has changed
+            if current_records != grid_rows:
+                self.update_component_list()
+                self.populate_logs()
+            
+        # Refresh the timer if needed
+        if not self.refresh_timer.IsRunning() and self.auto_refresh_cb.GetValue():
+            self.refresh_timer.Start(2000)
 
     def on_clear(self, event):
         """Handle clear button click."""
@@ -538,8 +807,8 @@ class LogViewerFrame(wx.Frame):
             dlg = wx.Dialog(
                 self,
                 title=_("Log Record Details"),
-                size=(700, 500),
-                style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+                size=(900, 600),
+                style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX
             )
 
             panel = wx.Panel(dlg)
@@ -555,20 +824,14 @@ class LogViewerFrame(wx.Frame):
             basic_text = wx.TextCtrl(
                 basic_panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL
             )
-
-            # Display detailed information
-            detail_text = f"Timestamp: {record.timestamp}\n"
-            detail_text += f"Level: {record.level}\n"
-            detail_text += f"Component: {record.name}\n"
-            detail_text += f"Message: {record.message}\n\n"
-
-            if record.pathname:
-                detail_text += f"File: {record.pathname}\n"
-
-            if record.lineno:
-                detail_text += f"Line: {record.lineno}\n"
-
-            basic_text.SetValue(detail_text)
+            
+            # Set monospace font for better readability
+            font = wx.Font(10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+            basic_text.SetFont(font)
+            
+            # Use the full details method from LogRecord
+            basic_text.SetValue(record.get_full_details())
+            
             basic_sizer.Add(basic_text, 1, wx.EXPAND | wx.ALL, 5)
             basic_panel.SetSizer(basic_sizer)
 
@@ -580,6 +843,7 @@ class LogViewerFrame(wx.Frame):
                 exc_text = wx.TextCtrl(
                     exc_panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL
                 )
+                exc_text.SetFont(font)
                 exc_text.SetValue(record.exc_info)
                 exc_sizer.Add(exc_text, 1, wx.EXPAND | wx.ALL, 5)
                 exc_panel.SetSizer(exc_sizer)
@@ -589,12 +853,51 @@ class LogViewerFrame(wx.Frame):
             else:
                 notebook.AddPage(basic_panel, _("Details"))
 
+            # Context info page (stack trace or code context if available)
+            if hasattr(record, 'pathname') and record.pathname and hasattr(record, 'lineno') and record.lineno:
+                try:
+                    # Try to get the source code around the log line
+                    import linecache
+                    context_panel = wx.Panel(notebook)
+                    context_sizer = wx.BoxSizer(wx.VERTICAL)
+                    
+                    context_text = wx.TextCtrl(
+                        context_panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL
+                    )
+                    context_text.SetFont(font)
+                    
+                    # Get source lines around the log line
+                    context_lines = []
+                    for i in range(max(1, record.lineno - 5), record.lineno + 6):
+                        line = linecache.getline(record.pathname, i)
+                        if line:
+                            prefix = ">" if i == record.lineno else " "
+                            context_lines.append(f"{prefix} {i:4d}: {line}")
+                    
+                    if context_lines:
+                        context_text.SetValue(f"Source file: {record.pathname}\n\n" + "".join(context_lines))
+                        context_sizer.Add(context_text, 1, wx.EXPAND | wx.ALL, 5)
+                        context_panel.SetSizer(context_sizer)
+                        notebook.AddPage(context_panel, _("Source Context"))
+                except Exception as e:
+                    # If we can't get the source, don't add the page
+                    pass
+
             sizer.Add(notebook, 1, wx.EXPAND | wx.ALL, 5)
 
-            # Add a close button
+            # Add copy and close buttons
+            button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            
+            copy_button = wx.Button(panel, label=_("Copy to Clipboard"))
+            copy_button.Bind(wx.EVT_BUTTON, lambda evt, rec=record: self.copy_record_to_clipboard(rec))
+            
             close_button = wx.Button(panel, wx.ID_CLOSE)
             close_button.Bind(wx.EVT_BUTTON, lambda evt: dlg.EndModal(wx.ID_CLOSE))
-            sizer.Add(close_button, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+            
+            button_sizer.Add(copy_button, 0, wx.RIGHT, 10)
+            button_sizer.Add(close_button, 0)
+            
+            sizer.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
 
             panel.SetSizer(sizer)
 
@@ -602,6 +905,17 @@ class LogViewerFrame(wx.Frame):
             dlg.Destroy()
 
         event.Skip()
+        
+    def copy_record_to_clipboard(self, record):
+        """Copy record details to clipboard."""
+        if wx.TheClipboard.Open():
+            wx.TheClipboard.SetData(wx.TextDataObject(record.get_full_details()))
+            wx.TheClipboard.Close()
+            wx.MessageBox(
+                _("Record details copied to clipboard."),
+                _("Copy Complete"),
+                wx.OK | wx.ICON_INFORMATION
+            )
 
     def _show_details_for_row(self, row):
         """Show details for the selected row in the detail panel."""
@@ -609,23 +923,8 @@ class LogViewerFrame(wx.Frame):
 
         if 0 <= row < len(records):
             record = records[row]
-
-            # Display detailed information
-            detail_text = f"Timestamp: {record.timestamp}\n"
-            detail_text += f"Level: {record.level}\n"
-            detail_text += f"Component: {record.name}\n"
-            detail_text += f"Message: {record.message}\n\n"
-
-            if record.pathname:
-                detail_text += f"File: {record.pathname}\n"
-
-            if record.lineno:
-                detail_text += f"Line: {record.lineno}\n"
-
-            if record.exc_info:
-                detail_text += f"\nException Information:\n{record.exc_info}\n"
-
-            self.detail_text.SetValue(detail_text)
+            # Use the full details method from LogRecord
+            self.detail_text.SetValue(record.get_full_details())
 
     def on_close(self, event):
         """Handle the close event by hiding the frame instead of destroying it."""
@@ -641,16 +940,53 @@ class LogViewerFrame(wx.Frame):
 
         # Don't call event.Skip() to prevent the default close behavior
 
+    def on_copy_all(self, event):
+        """Copy all currently filtered logs to the clipboard."""
+        records = self.get_filtered_records()
+        if not records:
+            wx.MessageBox(
+                _("No log records to copy."),
+                _("Copy Failed"),
+                wx.OK | wx.ICON_WARNING
+            )
+            return
+            
+        # Format all records
+        text = ""
+        for record in records:
+            text += f"{record.timestamp} - {record.level} - {record.name} - {record.message}\n"
+            
+        # Copy to clipboard
+        if wx.TheClipboard.Open():
+            wx.TheClipboard.SetData(wx.TextDataObject(text))
+            wx.TheClipboard.Close()
+            wx.MessageBox(
+                _("Log records copied to clipboard."),
+                _("Copy Complete"),
+                wx.OK | wx.ICON_INFORMATION
+            )
+
 
 class EnhancedLogger:
     """Enhanced logger for InVesalius."""
 
     def __init__(self):
         """Initialize the enhanced logger."""
+        # Make a deep copy to avoid modifying the original
         self._config = DEFAULT_LOG_CONFIG.copy()
         self._logger = logging.getLogger("invesalius")
-        self._in_memory_handler = InMemoryHandler()
+        
+        # Create in-memory handler with larger capacity
+        self._in_memory_handler = InMemoryHandler(capacity=10000)
+        self._in_memory_handler.setLevel(logging.DEBUG)  # Capture all logs
+        
+        # Add handler to the root logger to ensure we capture all logs
+        root_logger = logging.getLogger()
+        root_logger.addHandler(self._in_memory_handler)
+        
+        # Also add to our app logger
         self._logger.addHandler(self._in_memory_handler)
+        
         self._log_viewer_frame = None
 
         # Create the log directory if it doesn't exist
@@ -661,10 +997,12 @@ class EnhancedLogger:
 
         # Configure logging
         self._configure_logging()
+        
+        # Log startup message
+        self._logger.info("Enhanced logging system initialized")
 
         # Register cleanup handler for application exit
         import atexit
-
         atexit.register(self.cleanup)
 
     def _read_config(self) -> None:
@@ -688,20 +1026,40 @@ class EnhancedLogger:
     def _configure_logging(self) -> None:
         """Configure logging based on the configuration."""
         try:
+            # Ensure the root logger will capture everything
+            root_logger = logging.getLogger()
+            root_logger.setLevel(logging.DEBUG)
+            
             # Configure logging
             logging.config.dictConfig(self._config)
 
             # Get the logger
             self._logger = logging.getLogger("invesalius")
-
-            # Add the in-memory handler if it's not already added
+            
+            # Ensure our loggers have the in-memory handler
             if not any(isinstance(h, InMemoryHandler) for h in self._logger.handlers):
                 self._logger.addHandler(self._in_memory_handler)
+                
+            if not any(isinstance(h, InMemoryHandler) for h in root_logger.handlers):
+                root_logger.addHandler(self._in_memory_handler)
 
             # Log the configuration
             self._logger.info("Logging configured")
+            
+            # Log additional configuration information
+            handlers_info = {
+                "file_logging": any(isinstance(h, logging.FileHandler) for h in self._logger.handlers),
+                "console_logging": any(isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler) for h in self._logger.handlers),
+            }
+            
+            self._logger.info(f"file_logging: {int(handlers_info['file_logging'])}, console_logging: {int(handlers_info['console_logging'])}")
+            self._logger.info("configureLogging called ...")
+            self._logger.info(f"file_logging: {int(handlers_info['file_logging'])}, console_logging: {int(handlers_info['console_logging'])}")
+            
         except Exception as e:
             print(f"Error configuring logging: {e}")
+            import traceback
+            traceback.print_exc()
 
     def get_logger(self, name: Optional[str] = None) -> logging.Logger:
         """Get a logger."""
@@ -718,7 +1076,7 @@ class EnhancedLogger:
             else:
                 # Restart the timer if it was stopped
                 if not self._log_viewer_frame.refresh_timer.IsRunning():
-                    self._log_viewer_frame.refresh_timer.Start(5000)
+                    self._log_viewer_frame.refresh_timer.Start(2000)
 
                 # Refresh the log viewer with the latest logs
                 self._log_viewer_frame.update_component_list()

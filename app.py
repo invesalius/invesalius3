@@ -141,6 +141,11 @@ class Inv3SplashScreen(SplashScreen):
         # Splash screen image will depend on the current language
         lang = LANG
         self.locale = wx.Locale(wx.LANGUAGE_ENGLISH)
+        
+        # Initialize attributes to avoid errors
+        self.control = None
+        self.main = None
+        self.fc = None
 
         # Language information is available in session configuration
         # file. First we need to check if this file exist, if now, it
@@ -254,20 +259,19 @@ class Inv3SplashScreen(SplashScreen):
         # destroyed
         evt.Skip()
         self.Hide()
-        evt.GetEventObject().Destroy()
 
         # If the timer is still running then go ahead and show the
         # main frame now
-        if self.fc.IsRunning():
+        if hasattr(self, 'fc') and self.fc and self.fc.IsRunning():
             self.fc.Stop()
             self.ShowMain()
 
     def ShowMain(self):
-        # Show main frame
-        self.main.Show()
-
-        if self.fc.IsRunning():
-            self.Raise()
+        if not self.main.IsShown():
+            self.main.Show()
+            self.main.Raise()
+        # Destroy the splash screen
+        self.Destroy()
 
 
 def non_gui_startup(args):
