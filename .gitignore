@@ -160,7 +160,6 @@ ENV/
 env.bak/
 venv.bak/
 myenv/
-samples/
 
 # Spyder project settings
 .spyderproject
