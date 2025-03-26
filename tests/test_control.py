@@ -36,6 +36,8 @@ def test_set_bitmap_spacing():
 
 def test_show_dialog_import_directory(mock_session, mocker):
     controller = Controller(None)
+    mock_session.GetConfig.return_value = const.PROJECT_STATUS_NEW  # Assume project is new
+    mock_session.GetState.return_value = ["/dummy/path", "test_project.inv3"]
 
     mock_import_dialog = mocker.patch(
         "invesalius.gui.dialogs.ShowImportDirDialog", return_value="/test/dummyPath"
@@ -43,16 +45,20 @@ def test_show_dialog_import_directory(mock_session, mocker):
     mock_listdir = mocker.patch("os.listdir", return_value=[])
     mock_start_import_panel = mocker.patch.object(controller, "StartImportPanel")
     mock_import_empty_dialog = mocker.patch("invesalius.gui.dialogs.ImportEmptyDirectory")
+    mock_save_changes = mocker.patch("invesalius.gui.dialogs.SaveChangesDialog2", return_value=True)
+    mock_close_project = mocker.patch.object(controller, "CloseProject")
+    mock_save_project = mocker.patch.object(controller, "ShowDialogSaveProject")
 
     controller.ShowDialogImportDirectory()
 
     mock_import_dialog.assert_called_once()
     mock_listdir.assert_called_once_with("/test/dummyPath")
 
-    # Verify behavior when directory is empty
-    mock_import_empty_dialog.assert_called_once_with(
-        "/test/dummyPath"
-    )  # Ensure ImportEmptyDirectory is called
+    mock_import_empty_dialog.assert_called_once_with("/test/dummyPath")
+    mock_save_changes.assert_called_once_with("test_project.inv3")
+    mock_save_project.assert_called_once()
+    mock_close_project.assert_called_once()
+
     mock_start_import_panel.assert_not_called()
     mock_listdir.return_value = ["file1.dcm", "file2.dcm"]
     controller.ShowDialogImportDirectory()
