@@ -1153,7 +1153,11 @@ class ObjectTab(wx.Panel):
         )
 
         if n_coils_selected == n_coils:
-            self.CoilSelectionDone()
+            for btn, *junk in self.coil_btns.values():
+                btn.Enable(btn.GetValue())
+        else:
+            for btn, *junk in self.coil_btns.values():
+                btn.Enable(True)
 
     def CoilSelectionDone(self):
         if self.navigation.n_coils == 1:  # Tell the robot the coil name

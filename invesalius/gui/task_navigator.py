@@ -2219,6 +2219,9 @@ class ControlPanel(wx.Panel):
             # Ensure that the target is sent to robot when navigation starts.
             self.robot.SendTargetToRobot()
 
+            if self.navigation.CoilSelectionDone():
+                Publisher.sendMessage("Press show-coil button", pressed=True)
+
     def OnStartNavigationButton(self, evt, btn_nav):
         nav_id = btn_nav.GetValue()
         if not nav_id:
