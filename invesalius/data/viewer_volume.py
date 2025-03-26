@@ -1413,10 +1413,7 @@ class Viewer(wx.Panel):
 
         return coil_dir, p2_norm, coil_norm, p1
 
-    def OnPeeledSurfaceCreation(self, index):
-        self.peeled_surface_index = index
-
-    def AddPeeledSurface(self, flag, actor):
+    def AddPeeledSurface(self, flag, actor, peel_depth=None, peel_opacity=None):
         if flag and actor:
             # Instead of adding the actor directly, send it to SurfaceManager
             polydata = actor.GetMapper().GetInput()
@@ -1427,9 +1424,8 @@ class Viewer(wx.Panel):
                 transparency=actor.GetProperty().GetOpacity(),
                 peeled_brain=True,
                 peel_actor=actor,
-                peeled_surface_index=self.peeled_surface_index,
-                overwrite=self.peeled_surface_index is not None,
-                callable=self.OnPeeledSurfaceCreation,
+                peel_depth=peel_depth,
+                peel_opacity=peel_opacity,
             )
 
         if not self.nav_status:
@@ -2758,7 +2754,6 @@ class Viewer(wx.Panel):
         # Remove the actor from the renderer.
         self.ren.RemoveActor(actor)
         if peeled_brain:
-            self.OnPeeledSurfaceCreation(None)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.actor_peel = None

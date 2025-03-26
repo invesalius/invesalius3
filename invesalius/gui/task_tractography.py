@@ -145,6 +145,7 @@ class InnerTaskPanel(wx.Panel):
         spin_peel_depth.Bind(
             wx.EVT_SPINCTRL, partial(self.OnSelectPeelingDepth, ctrl=spin_peel_depth)
         )
+        self.spin_peel_depth = spin_peel_depth
 
         # Change number of tracts
         text_ntracts = wx.StaticText(self, -1, _("Number tracts:"))
@@ -295,12 +296,21 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnUpdateTracts, "Set cross focal point")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.loadpeelsettings, "Initialize peel depth and opacity")
+
+    def loadpeelsettings(self, peel_depth, peel_opacity):
+        if peel_depth is not None:
+            self.peel_depth = peel_depth
+            self.spin_peel_depth.SetValue(peel_depth)
+        if peel_opacity is not None:
+            self.brain_opacity = peel_opacity
+            self.spin_opacity.SetValue(peel_opacity)
 
     def OnSelectPeelingDepth(self, evt, ctrl):
         self.peel_depth = ctrl.GetValue()
         if self.checkpeeling.GetValue():
             actor = self.brain_peel.get_actor(self.peel_depth)
-            Publisher.sendMessage("Update peel", flag=True, actor=actor)
+            Publisher.sendMessage("Update peel", flag=True, actor=actor, peel_depth=self.peel_depth)
             Publisher.sendMessage(
                 "Get peel centers and normals",
                 centers=self.brain_peel.peel_centers,
@@ -331,7 +341,10 @@ class InnerTaskPanel(wx.Panel):
 
     def OnSelectOpacity(self, evt, ctrl):
         self.brain_actor.GetProperty().SetOpacity(ctrl.GetValue())
-        Publisher.sendMessage("Update peel", flag=True, actor=self.brain_actor)
+        self.brain_opacity = ctrl.GetValue()
+        Publisher.sendMessage(
+            "Update peel", flag=True, actor=self.brain_actor, peel_opacity=self.brain_opacity
+        )
 
     def OnShowPeeling(self, evt, ctrl):
         # self.view_peeling = ctrl.GetValue()
@@ -420,7 +433,13 @@ class InnerTaskPanel(wx.Panel):
 
             self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
             self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
-            Publisher.sendMessage("Update peel", flag=True, actor=self.brain_actor)
+            Publisher.sendMessage(
+                "Update peel",
+                flag=True,
+                actor=self.brain_actor,
+                peel_depth=self.peel_depth,
+                peel_opacity=self.brain_opacity,
+            )
             Publisher.sendMessage(
                 "Get peel centers and normals",
                 centers=self.brain_peel.peel_centers,
