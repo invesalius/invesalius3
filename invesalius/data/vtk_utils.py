@@ -34,6 +34,7 @@ from vtkmodules.vtkRenderingCore import (
 )
 
 import invesalius.constants as const
+import invesalius.data.coordinates as dco
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
@@ -403,3 +404,19 @@ def CreateObjectPolyData(filename: str) -> Any:
         obj_polydata = None
 
     return obj_polydata
+
+def CreateVTKObjectMatrix(self, direction, orientation):
+    m_img = dco.coordinates_to_transformation_matrix(
+        position=direction,
+        orientation=orientation,
+        axes="sxyz",
+    )
+    m_img = np.asmatrix(m_img)
+
+    m_img_vtk = vtkMatrix4x4()
+
+    for row in range(0, 4):
+        for col in range(0, 4):
+            m_img_vtk.SetElement(row, col, m_img[row, col])
+
+    return m_img_vtk

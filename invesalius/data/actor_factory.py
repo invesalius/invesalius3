@@ -7,7 +7,7 @@ import vtk
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.project as prj
-import invesalius.data.viewer_volume as vv
+import invesalius.data.vtk_utils as vtku
 from invesalius import inv_paths
 
 
@@ -301,7 +301,7 @@ class ActorFactory:
         Update the position and orientation of an existing actor.
         """
         # Create the transformation matrix for the new position and orientation.
-        m_img_vtk = vv.CreateVTKObjectMatrix(new_position, new_orientation)
+        m_img_vtk = vtku.CreateVTKObjectMatrix(new_position, new_orientation)
 
         # Create a vtkTransform and apply the new matrix.
         transform = vtk.vtkTransform()

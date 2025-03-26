@@ -969,7 +969,7 @@ class Viewer(wx.Panel):
         self.stored_camera_settings = self.GetCameraSettings()
 
         # Set the transformation matrix for the target.
-        self.m_target = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
+        self.m_target = vtku.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
 
         if self.actor_peel:
             self.object_orientation_torus_actor.SetVisibility(0)
@@ -1247,27 +1247,11 @@ class Viewer(wx.Panel):
 
         # Store the new target coordinates and create a new transformation matrix for the target.
         self.target_coord = coord
-        self.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
+        self.m_target = vtku.CreateVTKObjectMatrix(coord[:3], coord[3:])
 
         self.coil_visualizer.AddTargetCoil(self.m_target)
 
         print(f"Target updated to coordinates {coord}")
-
-    def CreateVTKObjectMatrix(self, direction, orientation):
-        m_img = dco.coordinates_to_transformation_matrix(
-            position=direction,
-            orientation=orientation,
-            axes="sxyz",
-        )
-        m_img = np.asmatrix(m_img)
-
-        m_img_vtk = vtkMatrix4x4()
-
-        for row in range(0, 4):
-            for col in range(0, 4):
-                m_img_vtk.SetElement(row, col, m_img[row, col])
-
-        return m_img_vtk
 
     def CreateRobotWarningsText(self):
         robot_warnings_text = vtku.Text()
