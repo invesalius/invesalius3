@@ -45,19 +45,20 @@ jobs:
                   libfreetype6-dev \
                   libxi-dev \
 
-      - name: Install uv with caching
-        uses: astral-sh/setup-uv@v5
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
         with:
-          python-version: 3.12
-          enable-cache: true
-          cache-dependency-glob: |
-            **/requirements*.txt
-            **/pyproject.toml
-            **/uv.lock
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-
-      - name: Install dependencies
-        run: uv pip install -r requirements.txt
+      - name: Setup Python virtual environment and install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run tests
         run: |
