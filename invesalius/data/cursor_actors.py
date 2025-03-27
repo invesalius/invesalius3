@@ -20,9 +20,7 @@
 import math
 
 import numpy
-from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonCore import vtkLookupTable, vtkVersion
-from vtkmodules.vtkCommonDataModel import vtkImageData
 from vtkmodules.vtkImagingCore import vtkImageMapToColors
 from vtkmodules.vtkRenderingCore import (
     vtkImageActor,
@@ -30,52 +28,11 @@ from vtkmodules.vtkRenderingCore import (
     vtkImageSlice,
     vtkImageSliceMapper,
 )
+from invesalius.data import imagedata_utils as imagedata_utils
 
 import invesalius.constants as const
 
 ORIENTATION = {"AXIAL": 2, "CORONAL": 1, "SAGITAL": 0}
-
-
-def to_vtk(n_array, spacing, slice_number, orientation):
-    """
-    It transforms a numpy array into a vtkImageData.
-    """
-    # TODO Merge this function with imagedata_utils.to_vtk to eliminate
-    # duplicated code
-    try:
-        dz, dy, dx = n_array.shape
-    except ValueError:
-        dy, dx = n_array.shape
-        dz = 1
-
-    v_image = numpy_support.numpy_to_vtk(n_array.flat)
-
-    if orientation == "AXIAL":
-        extent = (0, dx - 1, 0, dy - 1, slice_number, slice_number + dz - 1)
-    elif orientation == "SAGITAL":
-        extent = (slice_number, slice_number + dx - 1, 0, dy - 1, 0, dz - 1)
-    elif orientation == "CORONAL":
-        extent = (0, dx - 1, slice_number, slice_number + dy - 1, 0, dz - 1)
-
-    image = vtkImageData()
-    image.SetOrigin(0, 0, 0)
-    image.SetSpacing(spacing)
-    image.SetDimensions(dx, dy, dz)
-    image.SetExtent(extent)
-    #  image.SetNumberOfScalarComponents(1)
-    #  image.SetScalarType(numpy_support.get_vtk_array_type(n_array.dtype))
-    image.AllocateScalars(numpy_support.get_vtk_array_type(n_array.dtype), 1)
-    #  image.Update()
-    image.GetCellData().SetScalars(v_image)
-    image.GetPointData().SetScalars(v_image)
-    #  image.Update()
-
-    image_copy = vtkImageData()
-    image_copy.DeepCopy(image)
-    #  image_copy.Update()
-
-    return image_copy
-
 
 class CursorBase:
     def __init__(self):
@@ -285,7 +242,7 @@ class CursorCircle(CursorBase):
         z, y, x = numpy.ogrid[zi:zf, yi:yf, xi:xf]
 
         circle_m = (z * sz) ** 2 + (y * sy) ** 2 + (x * sx) ** 2 <= r**2
-        circle_i = to_vtk(circle_m.astype("uint8"), self.spacing, 0, self.orientation)
+        circle_i = imagedata_utils.to_vtk(circle_m.astype("uint8"), self.spacing, 0, self.orientation)
         circle_ci = self._set_colour(circle_i, self.colour)
 
         if self.mapper is None:
@@ -361,7 +318,7 @@ class CursorRectangle(CursorBase):
             z = int(math.floor(r / sz))
 
         rectangle_m = numpy.ones((z, y, x), dtype="uint8")
-        rectangle_i = to_vtk(rectangle_m, self.spacing, 0, self.orientation)
+        rectangle_i = imagedata_utils.to_vtk(rectangle_m, self.spacing, 0, self.orientation)
         rectangle_ci = self._set_colour(rectangle_i, self.colour)
 
         if self.mapper is None:
