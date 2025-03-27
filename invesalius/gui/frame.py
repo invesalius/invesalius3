@@ -61,7 +61,7 @@ VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range
 [ID_SHOW_LOG_VIEWER] = [wx.NewIdRef() for number in range(1)]
 
 WILDCARD_EXPORT_SLICE = (
-    "HDF5 (*.hdf5)|*.hdf5|" "NIfTI 1 (*.nii)|*.nii|" "Compressed NIfTI (*.nii.gz)|*.nii.gz"
+    "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
 )
 
 IDX_EXT = {0: ".hdf5", 1: ".nii", 2: ".nii.gz"}
@@ -174,15 +174,15 @@ class Frame(wx.Frame):
         """
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_IDLE, self.OnIdle)
-        
+
         # Bind all menu events to the OnMenuClick handler
         # Main menu items
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
-        
+
         # Specific bindings for undo/redo
         self.Bind(wx.EVT_MENU, self.OnUndo, id=const.ID_EDIT_UNDO)
         self.Bind(wx.EVT_MENU, self.OnRedo, id=const.ID_EDIT_REDO)
-        
+
         # Close InVesalius main window, hence exit the software.
         self.Bind(wx.EVT_CLOSE, self.OnExit)
 
@@ -205,7 +205,7 @@ class Frame(wx.Frame):
         """
         keycode = event.GetKeyCode()
         modifiers = event.GetModifiers()
-        
+
         # Check if the focus is on a text entry field
         focused = wx.Window.FindFocus()
         is_search_field = False
@@ -221,7 +221,11 @@ class Frame(wx.Frame):
 
         # If the key is a move marker key, publish a message to move the marker,
         # but only if we're not in a search field
-        if keycode in const.MOVEMENT_KEYCODES and not self.edit_data_notebook_label and not is_search_field:
+        if (
+            keycode in const.MOVEMENT_KEYCODES
+            and not self.edit_data_notebook_label
+            and not is_search_field
+        ):
             Publisher.sendMessage("Move marker by keyboard", keycode=keycode)
             return
 
@@ -740,7 +744,7 @@ class Frame(wx.Frame):
 
         elif id == const.ID_PLUGINS_SHOW_PATH:
             self.ShowPluginsFolder()
-            
+
         elif id == ID_SHOW_LOG_VIEWER:
             self.OnShowLogViewer(evt)
 
@@ -1779,7 +1783,7 @@ class ProjectToolBar(AuiToolBar):
         """
         sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
-        
+
         # Bind events for toolbar buttons
         self.Bind(wx.EVT_TOOL, self.OnToolClick)
 
@@ -1883,6 +1887,7 @@ class ProjectToolBar(AuiToolBar):
         except Exception as e:
             print(f"Error handling toolbar click: {e}")
             import traceback
+
             traceback.print_exc()
 
 
@@ -2285,6 +2290,7 @@ class SliceToolBar(AuiToolBar):
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 
+
 class LayoutToolBar(AuiToolBar):
     """
     Toolbar related to general layout/ visualization configuration
@@ -2490,6 +2496,7 @@ class LayoutToolBar(AuiToolBar):
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
+
 
 class HistoryToolBar(AuiToolBar):
     """

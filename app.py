@@ -136,7 +136,7 @@ class Inv3SplashScreen(SplashScreen):
         # Splash screen image will depend on the current language
         lang = LANG
         self.locale = wx.Locale(wx.LANGUAGE_ENGLISH)
-        
+
         # Initialize attributes to avoid errors
         self.control = None
         self.main = None
@@ -257,7 +257,7 @@ class Inv3SplashScreen(SplashScreen):
 
         # If the timer is still running then go ahead and show the
         # main frame now
-        if hasattr(self, 'fc') and self.fc and self.fc.IsRunning():
+        if hasattr(self, "fc") and self.fc and self.fc.IsRunning():
             self.fc.Stop()
             self.ShowMain()
 
