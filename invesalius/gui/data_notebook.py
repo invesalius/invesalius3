@@ -812,6 +812,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
     def on_mouse_right_click(self, event):
         start_idx = 1
         focused_idx = self.GetFocusedItem()
+        self.surface_dict = project.Project().surface_dict
 
         # Select the surface that was clicked
         Publisher.sendMessage("Change surface selected", surface_index=focused_idx)
@@ -820,6 +821,8 @@ class SurfacesListCtrlPanel(InvListCtrl):
         surface_context_menu = wx.Menu()
 
         colour_id = surface_context_menu.Append(start_idx, _("Change color"))
+        if self.surface_dict[focused_idx].peel:
+            colour_id.Enable(0)
         surface_context_menu.Bind(wx.EVT_MENU, self.change_surface_color, colour_id)
 
         transparency_id = surface_context_menu.Append(start_idx + 1, _("Change transparency"))
