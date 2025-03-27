@@ -15,6 +15,7 @@ import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 from invesalius import inv_paths, utils
 from invesalius.gui.language_dialog import ComboBoxLanguage
+from invesalius.gui.network.dicom_server_panel import DicomServerPanel
 from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import Navigation
 from invesalius.navigation.robot import Robot
@@ -41,6 +42,7 @@ class Preferences(wx.Dialog):
 
         self.visualization_tab = VisualizationTab(self.book)
         self.language_tab = LanguageTab(self.book)
+        self.network = DicomServerPanel(self.book)
         if self.have_log_tab == 1:
             self.logging_tab = LoggingTab(self.book)
 
@@ -67,6 +69,7 @@ class Preferences(wx.Dialog):
             self.book.AddPage(self.object_tab, _("TMS Coil"))
 
         self.book.AddPage(self.language_tab, _("Language"))
+        self.book.AddPage(self.network, _("Network"))
         if self.have_log_tab == 1:
             self.book.AddPage(self.logging_tab, _("Logging"))
 
@@ -109,9 +112,11 @@ class Preferences(wx.Dialog):
 
         lang = self.language_tab.GetSelection()
         viewer = self.visualization_tab.GetSelection()
+        network = self.network.as_dict()
 
         values.update(lang)
         values.update(viewer)
+        values.update(network)
 
         if self.have_log_tab == 1:
             logging = self.logging_tab.GetSelection()
