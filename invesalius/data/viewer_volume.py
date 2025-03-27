@@ -1421,15 +1421,15 @@ class Viewer(wx.Panel):
                 "Create surface from polydata",
                 polydata=polydata,
                 name="Peeled Brain",
-                transparency=actor.GetProperty().GetOpacity(),
+                transparency=1 - actor.GetProperty().GetOpacity(),
                 peeled_brain=True,
                 peel_actor=actor,
                 peel_depth=peel_depth,
                 peel_opacity=peel_opacity,
             )
 
-        if not self.nav_status:
-            self.UpdateRender()
+        # if not self.nav_status:
+        #     self.UpdateRender()
 
     def GetPeelCenters(self, centers, normals):
         self.peel_centers = centers

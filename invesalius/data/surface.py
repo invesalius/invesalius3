@@ -676,8 +676,8 @@ class SurfaceManager:
 
         actor = vtkActor()
         actor.SetMapper(mapper)
-        if not peeled_brain:
-            actor.GetProperty().SetBackfaceCulling(1)
+
+        actor.GetProperty().SetBackfaceCulling(1)
 
         if peel_actor is not None:
             peel_mapper = vtkPolyDataMapper()
@@ -696,9 +696,9 @@ class SurfaceManager:
 
         # Handle peeled brain separately to restrict color changes
         if peeled_brain:
-            actor.GetProperty().SetColor(1.0, 1.0, 1.0)  # Fixed white color
-            if transparency is not None:
-                actor.GetProperty().SetOpacity(1 - transparency)
+            # actor.GetProperty().SetColor(1.0, 1.0, 1.0)  # Fixed white color
+            # if transparency is not None:
+            #     actor.GetProperty().SetOpacity(1 - transparency)
             surface.colour = (1.0, 1.0, 1.0)  # White color
             surface.transparency = transparency if transparency is not None else 0
             surface.peel = True
@@ -846,8 +846,7 @@ class SurfaceManager:
 
             # Represent an object (geometry & properties) in the rendered scene
             actor = vtkActor()
-            if not is_peel:
-                actor.GetProperty().SetBackfaceCulling(1)
+            actor.GetProperty().SetBackfaceCulling(1)
             actor.SetMapper(mapper)
 
             # Set actor colour and transparency

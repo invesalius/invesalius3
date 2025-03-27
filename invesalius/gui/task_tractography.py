@@ -307,6 +307,8 @@ class InnerTaskPanel(wx.Panel):
             self.spin_opacity.SetValue(peel_opacity)
 
     def OnSelectPeelingDepth(self, evt, ctrl):
+        if ctrl.GetValue() == self.peel_depth:
+            return
         self.peel_depth = ctrl.GetValue()
         if self.checkpeeling.GetValue():
             actor = self.brain_peel.get_actor(self.peel_depth)
