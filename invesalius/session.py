@@ -59,6 +59,7 @@ class Session(metaclass=Singleton):
             "console_logging_level": 0,
         }
         self._exited_successfully_last_time = not self._ReadState()
+        self._config_load_success = self._ReadConfig()
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -264,9 +265,7 @@ class Session(metaclass=Singleton):
         #  if not(sys.platform == 'win32'):
         #  self.SetConfig('last_dicom_folder', last_dicom_folder.decode('utf-8'))
 
-    # TODO: Make also this function private so that it is run when the class constructor is run.
-    #   (Compare to _ReadState below.)
-    def ReadConfig(self) -> bool:
+    def _ReadConfig(self) -> bool:
         try:
             self._read_config_from_json(CONFIG_PATH)
         except Exception as e1:
@@ -278,6 +277,9 @@ class Session(metaclass=Singleton):
                 return False
         self.WriteConfigFile()
         return True
+
+    def ReadConfig(self) -> bool:
+        return self._config_load_success
 
     def _ReadState(self) -> bool:
         success = False
