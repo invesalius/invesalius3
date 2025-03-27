@@ -120,11 +120,6 @@ class InVesalius(wx.App):
         # Initialize the enhanced logging system
         invesalius.enhanced_logging.register_menu_handler()
 
-        # Initialize the error handling tests
-        from invesalius import test_error_handling
-
-        test_error_handling.register_menu_handler()
-
         # Initialize the legacy logging system for backward compatibility
         log.invLogger.configureLogging()
 

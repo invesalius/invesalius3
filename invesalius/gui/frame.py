@@ -58,7 +58,7 @@ except ImportError:
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range(3)]
 
 # Custom IDs for our new menu items
-[ID_SHOW_LOG_VIEWER, ID_RUN_ERROR_HANDLING_TESTS] = [wx.NewIdRef() for number in range(2)]
+[ID_SHOW_LOG_VIEWER] = [wx.NewIdRef() for number in range(1)]
 
 WILDCARD_EXPORT_SLICE = (
     "HDF5 (*.hdf5)|*.hdf5|" "NIfTI 1 (*.nii)|*.nii|" "Compressed NIfTI (*.nii.gz)|*.nii.gz"
@@ -205,6 +205,12 @@ class Frame(wx.Frame):
         """
         keycode = event.GetKeyCode()
         modifiers = event.GetModifiers()
+        
+        # Check if the focus is on a text entry field
+        focused = wx.Window.FindFocus()
+        is_search_field = False
+        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
+            is_search_field = True
 
         # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
         if modifiers & wx.MOD_CONTROL:
@@ -213,13 +219,14 @@ class Frame(wx.Frame):
                 event.Skip()
                 return
 
-        # If the key is a move marker key, publish a message to move the marker.
-        if keycode in const.MOVEMENT_KEYCODES and not self.edit_data_notebook_label:
+        # If the key is a move marker key, publish a message to move the marker,
+        # but only if we're not in a search field
+        if keycode in const.MOVEMENT_KEYCODES and not self.edit_data_notebook_label and not is_search_field:
             Publisher.sendMessage("Move marker by keyboard", keycode=keycode)
             return
 
         # Similarly with 'Del' key; publish a message to delete selected markers.
-        if keycode == wx.WXK_DELETE and not self.edit_data_notebook_label:
+        if keycode == wx.WXK_DELETE and not self.edit_data_notebook_label and not is_search_field:
             Publisher.sendMessage("Delete selected markers")
             return
 
@@ -737,9 +744,6 @@ class Frame(wx.Frame):
         elif id == ID_SHOW_LOG_VIEWER:
             self.OnShowLogViewer(evt)
 
-        elif id == ID_RUN_ERROR_HANDLING_TESTS:
-            self.OnRunErrorHandlingTests(evt)
-        
         # If none of the above matched, log unknown event ID
         else:
             print(f"Unhandled menu/toolbar event ID: {id}")
@@ -1102,12 +1106,11 @@ class Frame(wx.Frame):
 
     def OnShowLogViewer(self, evt):
         """Show the log viewer."""
-        print("OnShowLogViewer called")  # Debug output
-
         try:
-            # Use the enhanced log viewer from enhanced_logging.py
+            # Import the enhanced_logging module
             from invesalius import enhanced_logging
 
+            # Show the log viewer
             enhanced_logging.show_log_viewer(self)
 
         except Exception as e:
@@ -1118,154 +1121,6 @@ class Frame(wx.Frame):
 
             # Show error message
             wx.MessageBox(f"Error showing log viewer: {e}", "Error", wx.OK | wx.ICON_ERROR)
-
-    def OnRunErrorHandlingTests(self, evt):
-        """Run the error handling tests."""
-        print("OnRunErrorHandlingTests called")  # Debug output
-
-        try:
-            # Create a simple standalone error handling test dialog
-            test_dialog = wx.Dialog(
-                self,
-                title="Error Handling Tests",
-                size=(600, 400),
-                style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-            )
-
-            # Create the main panel and sizer
-            panel = wx.Panel(test_dialog)
-            main_sizer = wx.BoxSizer(wx.VERTICAL)
-
-            # Add a text control to display test results
-            result_text = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
-            main_sizer.Add(result_text, 1, wx.EXPAND | wx.ALL, 5)
-
-            # Add test buttons
-            button_sizer = wx.BoxSizer(wx.VERTICAL)
-
-            test1_button = wx.Button(panel, label="Test Basic Error Handling")
-            test2_button = wx.Button(panel, label="Test Custom Exception")
-            test3_button = wx.Button(panel, label="Test Error Dialog")
-            test4_button = wx.Button(panel, label="Generate Log Messages")
-            close_button = wx.Button(panel, label="Close")
-
-            button_sizer.Add(test1_button, 0, wx.EXPAND | wx.ALL, 5)
-            button_sizer.Add(test2_button, 0, wx.EXPAND | wx.ALL, 5)
-            button_sizer.Add(test3_button, 0, wx.EXPAND | wx.ALL, 5)
-            button_sizer.Add(test4_button, 0, wx.EXPAND | wx.ALL, 5)
-            button_sizer.Add(close_button, 0, wx.EXPAND | wx.ALL, 5)
-
-            main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
-
-            panel.SetSizer(main_sizer)
-
-            # Import necessary modules
-            from invesalius import enhanced_logging
-            from invesalius.error_handling import (
-                DicomError,
-                ErrorCategory,
-                ErrorSeverity,
-                InVesaliusException,
-                IOError,
-                SegmentationError,
-                show_error_dialog,
-            )
-
-            # Get a logger
-            logger = enhanced_logging.get_logger("error_tests")
-            logger.info("Error handling tests started")
-
-            # Add initial text
-            result_text.AppendText("=== InVesalius Error Handling Tests ===\n\n")
-            result_text.AppendText("Click the buttons below to run different tests.\n\n")
-
-            # Test functions
-            def test_basic_error():
-                try:
-                    result_text.AppendText("Testing basic error handling...\n")
-                    # Simulate a division by zero error
-                    x = 1 / 0
-                except Exception as e:
-                    result_text.AppendText(f"Caught exception: {type(e).__name__}: {str(e)}\n")
-                    logger.error(f"Test basic error: {str(e)}", exc_info=True)
-                    result_text.AppendText("Error logged successfully.\n\n")
-
-            def test_custom_exception():
-                try:
-                    result_text.AppendText("Testing custom exception...\n")
-                    # Create and raise a custom exception
-                    raise IOError(
-                        "This is a test IO error",
-                        details={"file": "test.txt"},
-                        original_exception=FileNotFoundError("File not found"),
-                    )
-                except InVesaliusException as e:
-                    result_text.AppendText(
-                        f"Caught custom exception: {type(e).__name__}: {e.message}\n"
-                    )
-                    result_text.AppendText(
-                        f"Category: {e.category.name}, Severity: {e.severity.name}\n"
-                    )
-                    logger.error(f"Test custom exception: {e.message}", exc_info=True)
-                    result_text.AppendText("Custom exception handled successfully.\n\n")
-
-            def test_error_dialog():
-                result_text.AppendText("Testing error dialog...\n")
-                # Create a custom exception
-                exception = DicomError(
-                    "This is a test DICOM error",
-                    details={"file": "test.dcm"},
-                    original_exception=ValueError("Invalid DICOM file"),
-                )
-                # Show the error dialog
-                show_error_dialog("Test Error Dialog", exception)
-                result_text.AppendText("Error dialog shown successfully.\n\n")
-
-            def generate_log_messages():
-                result_text.AppendText("Generating log messages...\n")
-                logger.debug("This is a debug message")
-                logger.info("This is an info message")
-                logger.warning("This is a warning message")
-                logger.error("This is an error message")
-                logger.critical("This is a critical message")
-
-                # Add some more detailed log messages for testing the enhanced viewer
-                logger.info("Testing log filtering by component")
-                logger.debug("This message contains a file path: /path/to/some/file.py")
-
-                # Log a message with an exception
-                try:
-                    # Intentionally cause an exception
-                    x = 1 / 0
-                except Exception as e:
-                    logger.error("Error in calculation", exc_info=True)
-
-                result_text.AppendText("Log messages generated successfully.\n\n")
-
-                # Show the log viewer
-                self.OnShowLogViewer(None)
-
-            # Bind events
-            test1_button.Bind(wx.EVT_BUTTON, lambda evt: test_basic_error())
-            test2_button.Bind(wx.EVT_BUTTON, lambda evt: test_custom_exception())
-            test3_button.Bind(wx.EVT_BUTTON, lambda evt: test_error_dialog())
-            test4_button.Bind(wx.EVT_BUTTON, lambda evt: generate_log_messages())
-            close_button.Bind(wx.EVT_BUTTON, lambda evt: test_dialog.EndModal(wx.ID_CANCEL))
-
-            # Show the dialog
-            test_dialog.ShowModal()
-            test_dialog.Destroy()
-
-        except Exception as e:
-            print(f"Error running error handling tests: {e}")
-            import traceback
-
-            traceback.print_exc()
-
-            # Show error message
-            wx.MessageBox(
-                f"Error running error handling tests: {e}", "Error", wx.OK | wx.ICON_ERROR
-            )
 
 
 # ------------------------------------------------------------------
@@ -1541,7 +1396,6 @@ class MenuBar(wx.MenuBar):
 
         # Add log viewer and error handling test menu items
         tools_menu.Append(ID_SHOW_LOG_VIEWER, _("Show Log Viewer"))
-        tools_menu.Append(ID_RUN_ERROR_HANDLING_TESTS, _("Run Error Handling Tests"))
 
         self.tools_menu = tools_menu
 
