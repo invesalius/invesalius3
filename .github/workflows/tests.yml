@@ -10,7 +10,9 @@ jobs:
     runs-on: ubuntu-20.04  # Changed to Ubuntu 20.04 for better wxPython support
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0  # Ensure full repo history for setuptools_scm
+          
       - uses: actions/setup-python@v5
         with:
           python-version: 3.12
