@@ -53,7 +53,7 @@ jobs:
         run: uv pip install -r requirements.txt
 
       - name: Run tests
-        run: uv run pytest
+        run: pytest
 
   combined-checks:
     runs-on: ubuntu-20.04
