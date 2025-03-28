@@ -45,32 +45,24 @@ jobs:
                   libfreetype6-dev \
                   libxi-dev \
 
-      - name: Install uv and set up Python
-        uses: astral-sh/setup-uv@v5
-        with:
-          python-version: 3.12
-          enable-cache: true  # optional, speeds up repeated runs
-
-
-      - name: Cache pip dependencies
+      - name: Cache uv dependencies
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            uv-${{ runner.os }}-
 
-      - name: Setup Python virtual environment and install dependencies
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          uv pip install -r requirements.txt
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+          enable-cache: false 
+
+      - name: Install dependencies with uv
+        run: uv pip install -r requirements.txt
 
       - name: Run tests with xvfb
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          xvfb-run -a bash -c "source venv/bin/activate && pytest"
+        run: xvfb-run -a uv pip run pytest
 
 
   combined-checks:
