@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from pathlib import Path
 from unittest.mock import call, mock_open
 
 import pytest
@@ -20,10 +21,11 @@ def test_set_and_get_config():
 def test_write_config_file(mocker):
     mock_file = mock_open()
     mocker.patch("builtins.open", mock_file)
+    mocker.patch("pathlib.Path.mkdir")
     mock_json_dump = mocker.patch("json.dump")
     session._config = {"debug": True, "language": "en", "file_logging": 1}
     session.WriteConfigFile()
-    mock_file.assert_called_once_with(CONFIG_PATH, "w")
+    mock_file.assert_called_once_with(Path(CONFIG_PATH), "w")
     expected_data = {"debug": True, "language": "en", "file_logging": 1}
     mock_json_dump.assert_called_once_with(expected_data, mock_file(), sort_keys=True, indent=4)
 
