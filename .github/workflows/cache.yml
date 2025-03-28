@@ -44,10 +44,12 @@ jobs:
                   libfreetype6-dev \
                   libxi-dev \
 
-      - name: Cache uv dependencies
+      - name: Cache dependencies (uv cache + virtualenv)
         uses: actions/cache@v3
         with:
-          path: ~/.cache/uv
+          path: |
+            ~/.cache/uv
+            .venv
           key: uv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             uv-${{ runner.os }}-
@@ -58,5 +60,8 @@ jobs:
           enable-cache: false
 
       - name: Install dependencies with uv
-        run: uv pip install -r requirements.txt
+        run: |
+          uv venv .venv
+          source .venv/bin/activate
+          uv pip install -r requirements.txt
 

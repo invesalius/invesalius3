@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensure full repo history for setuptools_scm
+          fetch-depth: 0  
 
       - uses: actions/setup-python@v5
         with:
@@ -62,7 +62,7 @@ jobs:
         run: uv pip install -r requirements.txt
 
       - name: Run tests with xvfb
-        run: xvfb-run -a uv pip run pytest
+        run: xvfb-run -a bash -c "source .venv/bin/activate && pytest"
 
 
   combined-checks:
