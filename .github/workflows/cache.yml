@@ -44,17 +44,19 @@ jobs:
                   libfreetype6-dev \
                   libxi-dev \
 
-      - name: Cache pip dependencies
-        id: cache
+      - name: Cache uv dependencies
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
 
-      - if: steps.cache.outputs.cache-hit != 'true' 
-        name: Install Python dependencies
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+          enable-cache: false
+
+      - name: Install dependencies with uv
+        run: uv pip install -r requirements.txt
+
