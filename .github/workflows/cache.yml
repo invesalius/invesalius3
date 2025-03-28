@@ -47,9 +47,7 @@ jobs:
       - name: Cache dependencies (uv cache + virtualenv)
         uses: actions/cache@v3
         with:
-          path: |
-            ~/.cache/uv
-            .venv
+          path: venv
           key: uv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             uv-${{ runner.os }}-
@@ -61,7 +59,7 @@ jobs:
 
       - name: Install dependencies with uv
         run: |
-          uv venv .venv
-          source .venv/bin/activate
+          uv venv venv
+          source venv/bin/activate
           uv pip install -r requirements.txt
 
