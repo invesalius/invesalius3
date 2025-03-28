@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensure full repo history for setuptools_scm
+          fetch-depth: 0  
 
       - uses: actions/setup-python@v5
         with:
