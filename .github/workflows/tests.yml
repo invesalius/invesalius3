@@ -55,15 +55,16 @@ jobs:
 
       - name: Setup Python virtual environment and install dependencies
         run: |
-          python -m venv .venv
-          source .venv/bin/activate
+          python -m venv venv
+          source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Run tests with xvfb
         run: |
-          source .venv/bin/activate
-          pytest
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          xvfb-run -a bash -c "source venv/bin/activate && pytest"
 
 
   combined-checks:
