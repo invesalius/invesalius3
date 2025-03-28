@@ -66,13 +66,14 @@ def test_read_state(mocker):
     assert success is True
 
 
-# def test_create_state(mocker):
-#     mock_state_json = mock_open()
-#     mocker.patch("builtins.open", mock_state_json)
-#     mock_json_dump = mocker.patch("json.dump")
-#     session.CreateState()
-#     mock_state_json.assert_called_once_with(STATE_PATH, "w")
-#     mock_json_dump.assert_called_once_with({}, mock_state_json(), sort_keys=True, indent=4)
+def test_create_state(mocker):
+    mock_state_json = mock_open()
+    mocker.patch("builtins.open", mock_state_json)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json_dump = mocker.patch("json.dump")
+    session.CreateState()
+    mock_state_json.assert_called_once_with(Path(STATE_PATH), "w")
+    mock_json_dump.assert_called_once_with({}, mock_state_json(), sort_keys=True, indent=4)
 
 
 # def test_set_and_get_state(mocker):
