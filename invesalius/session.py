@@ -23,15 +23,13 @@ import configparser as ConfigParser
 import json
 import os
 from json.decoder import JSONDecodeError
+from pathlib import Path
 from random import randint
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, deep_merge_dict
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.json")
 OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.cfg")
