@@ -107,6 +107,10 @@ class InVesalius(wx.App):
 
         return True
 
+    def OnExit(self):
+        session.cleanup()
+        return 0
+
     def MacOpenFile(self, filename):
         """
         Open drag & drop files under darwin
@@ -213,6 +217,11 @@ class Inv3SplashScreen(SplashScreen):
             wx.CallLater(200, self.Startup)
 
     def Startup(self):
+        # Initialize translations first
+        from invesalius.constants import init_translations
+
+        init_translations()
+
         # Importing takes sometime, therefore it will be done
         # while splash is being shown
         from invesalius.control import Controller

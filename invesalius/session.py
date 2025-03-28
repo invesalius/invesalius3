@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import Singleton, debug, deep_merge_dict
+from invesalius.utils import Singleton, TempFileManager, debug, deep_merge_dict
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -59,6 +59,11 @@ class Session(metaclass=Singleton):
             "console_logging_level": 0,
         }
         self._exited_successfully_last_time = not self._ReadState()
+        self._temp_manager = TempFileManager()
+
+        if not self.ReadConfig():
+            self.CreateConfig()
+
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -132,6 +137,12 @@ class Session(metaclass=Singleton):
         self.SetConfig("project_status", const.PROJECT_STATUS_CLOSED)
         # self.mode = const.MODE_RP
         self.temp_item = False
+
+        # Clean up project-related temporary files
+        from invesalius.project import Project
+
+        project = Project()
+        project.cleanup()
 
     def SaveProject(self, path: Union[Tuple[()], Tuple[str, str]] = ()) -> None:
         import invesalius.constants as const
@@ -302,5 +313,15 @@ class Session(metaclass=Singleton):
         return success
 
     def _Exit(self) -> None:
-        self.CloseProject()
-        self.DeleteStateFile()
+        try:
+            self.CloseProject()
+            self.WriteStateFile()
+            self._exited_successfully_last_time = True
+        except Exception as e:
+            self._exited_successfully_last_time = False
+            self.WriteConfigFile()
+            print(f"Error during exit: {str(e)}")
+
+    def cleanup(self):
+        self._temp_manager.cleanup_all()
+        self._temp_manager.shutdown()
