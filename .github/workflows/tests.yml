@@ -1,0 +1,77 @@
+name: tests
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-20.04  # Changed to Ubuntu 20.04 for better wxPython support test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Install Ubuntu dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+                  freeglut3-dev \
+                  libcurl4-openssl-dev \
+                  libexpat1-dev \
+                  libgl1-mesa-dev \
+                  libglu1-mesa-dev \
+                  libgtk-3-dev \
+                  libjpeg-dev \
+                  libnotify-dev \
+                  libsdl2-dev \
+                  libsm-dev \
+                  libtiff-dev \
+                  libwebkit2gtk-4.0-dev \
+                  libxtst-dev \
+                  libunwind-dev \
+                  libgstreamer1.0-dev \
+                  libgstreamer-plugins-base1.0-dev \
+                  libpng-dev \
+                  libxrandr-dev \
+                  libxinerama-dev \
+                  libxcursor-dev \
+                  libxcomposite-dev \
+                  libfreetype6-dev \
+                  libxi-dev \
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v3
+        with:
+          path: venv
+          key: uv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+          enable-cache: false 
+
+      - name: Install dependencies with uv
+        run: |
+          if [ ! -d "venv" ]; then
+            uv venv venv
+            source venv/bin/activate
+            uv pip install -r requirements.txt
+          fi
+
+      - name: Run tests with xvfb
+        run: xvfb-run -a bash -c "source venv/bin/activate && pytest"
+
+
+  combined-checks:
+    runs-on: ubuntu-20.04
+    needs: [run-tests]
+    steps:
+      - run: echo "All checks passed! Ready to merge."
