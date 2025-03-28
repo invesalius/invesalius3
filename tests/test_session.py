@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from pathlib import Path
 from unittest.mock import call, mock_open
 
 import pytest
@@ -17,15 +18,16 @@ def test_set_and_get_config():
     assert session.GetConfig("debug") == True
 
 
-# def test_write_config_file(mocker):
-#     mock_file = mock_open()
-#     mocker.patch("builtins.open", mock_file)
-#     mock_json_dump = mocker.patch("json.dump")
-#     session._config = {"debug": True, "language": "en", "file_logging": 1}
-#     session.WriteConfigFile()
-#     mock_file.assert_called_once_with(CONFIG_PATH, "w")
-#     expected_data = {"debug": True, "language": "en", "file_logging": 1}
-#     mock_json_dump.assert_called_once_with(expected_data, mock_file(), sort_keys=True, indent=4)
+def test_write_config_file(mocker):
+    mock_file = mock_open()
+    mocker.patch("builtins.open", mock_file)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json_dump = mocker.patch("json.dump")
+    session._config = {"debug": True, "language": "en", "file_logging": 1}
+    session.WriteConfigFile()
+    mock_file.assert_called_once_with(Path(CONFIG_PATH), "w")
+    expected_data = {"debug": True, "language": "en", "file_logging": 1}
+    mock_json_dump.assert_called_once_with(expected_data, mock_file(), sort_keys=True, indent=4)
 
 
 def test_create_config(mocker):
@@ -64,23 +66,26 @@ def test_read_state(mocker):
     assert success is True
 
 
-# def test_create_state(mocker):
-#     mock_state_json = mock_open()
-#     mocker.patch("builtins.open", mock_state_json)
-#     mock_json_dump = mocker.patch("json.dump")
-#     session.CreateState()
-#     mock_state_json.assert_called_once_with(STATE_PATH, "w")
-#     mock_json_dump.assert_called_once_with({}, mock_state_json(), sort_keys=True, indent=4)
+def test_create_state(mocker):
+    mock_state_json = mock_open()
+    mocker.patch("builtins.open", mock_state_json)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json_dump = mocker.patch("json.dump")
+    session.CreateState()
+    mock_state_json.assert_called_once_with(Path(STATE_PATH), "w")
+    mock_json_dump.assert_called_once_with({}, mock_state_json(), sort_keys=True, indent=4)
 
 
-# def test_set_and_get_state(mocker):
-#     mock_file = mock_open()
-#     mocker.patch("builtins.open", mock_file)
-#     mock_json = mocker.patch("json.dump")
-#     session.SetState("test_key", "test_value")
-#     mock_file.assert_called_once_with(STATE_PATH, "w")
-#     mock_json.assert_called_once_with(session._state, mock_file(), sort_keys=True, indent=4)
-#     assert session.GetState("test_key") == "test_value"
+def test_set_and_get_state(mocker):
+    mock_file = mock_open()
+    mocker.patch("builtins.open", mock_file)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json = mocker.patch("json.dump")
+    session.SetState("test_key", "test_value")
+    mock_file.assert_called_once_with(Path(STATE_PATH), "w")
+    mock_json.assert_called_once_with(
+        {"test_key": "test_value"}, mock_file(), sort_keys=True, indent=4
+    )
 
 
 def test_delete_state_file(mocker):
