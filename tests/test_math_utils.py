@@ -14,7 +14,7 @@ from invesalius.math_utils import (
 )
 
 
-# Checking the new cache method
+# Checking the new cache method once again
 def test_calculate_distance():
     assert calculate_distance((0, 0), (1, 0)) == pytest.approx(1.0)
     assert calculate_distance((0, 0), (0, 1)) == pytest.approx(1.0)
