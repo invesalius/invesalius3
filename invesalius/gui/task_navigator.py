@@ -2844,6 +2844,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self.GetRotationPosition, "Send coil position and rotation")
         Publisher.subscribe(self.CreateMarkerEfield, "Create Marker from tangential")
         Publisher.subscribe(self.UpdateCortexMarker, "Update Cortex Marker")
+        Publisher.subscribe(self.UpdateCoilTarget, "NeuroSimo to Neuronavigation: Update coil target")
 
         # Update main_coil combobox
         Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
@@ -3018,6 +3019,19 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def UpdateCortexMarker(self, CoGposition, CoGorientation):
         self.cortex_position_orientation = CoGposition + CoGorientation
+
+    def UpdateCoilTarget(self, coil_target):
+        markers = self.markers.FindLabel(coil_target)
+        if markers:
+            for marker in markers:
+                if marker.marker_type == MarkerType.COIL_TARGET:
+                    self.markers.SetTarget(marker.marker_id)
+                    return  # Exit once we find the first valid coil target
+
+            # If no marker with COIL_TARGET type was found, create a new one
+            self.markers.CreateCoilTargetFromLandmark(markers[0], markers[0].label)
+            self.markers.SetTarget(-1)
+        return
 
     def SetBrainTarget(self, brain_targets):
         marker_target = self.markers.FindTarget()
@@ -4154,8 +4168,17 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if ctrl.GetValue():
             Publisher.sendMessage("Hide markers", markers=self.markers.list)
             ctrl.SetLabel("Show all")
+
+            ##DEBUG!!
+            wx.CallAfter(Publisher.sendMessage, "NeuroSimo to Neuronavigation: Update coil target",
+                         coil_target="C4")
         else:
             Publisher.sendMessage("Show markers", markers=self.markers.list)
+
+            ##DEBUG!!
+            wx.CallAfter(Publisher.sendMessage, "NeuroSimo to Neuronavigation: Update coil target",
+                         coil_target="C3")
+
             ctrl.SetLabel("Hide all")
 
     def OnSaveMarkers(self, evt):
