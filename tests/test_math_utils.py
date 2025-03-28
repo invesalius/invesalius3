@@ -14,7 +14,7 @@ from invesalius.math_utils import (
 )
 
 
-# Checking cache on a new PR again
+# Checking cache
 def test_calculate_distance():
     assert calculate_distance((0, 0), (1, 0)) == pytest.approx(1.0)
     assert calculate_distance((0, 0), (0, 1)) == pytest.approx(1.0)
