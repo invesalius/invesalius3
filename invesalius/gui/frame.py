@@ -2280,11 +2280,11 @@ class SliceToolBar(AuiToolBar):
             state = self.GetToolToggled(item)
             if state and (item != id):
                 self.ToggleTool(item, False)
-        
+
         # self.ToggleTool(const.SLICE_STATE_SCROLL, self.GetToolToggled(const.SLICE_STATE_CROSS))
         # self.Update()
-        ##self.sst.SetToggle(self.sct.IsToggled())
-        ##print ">>>", self.sst.IsToggled()
+        # self.sst.SetToggle(self.sct.IsToggled())
+        # print ">>>", self.sst.IsToggled()
         # print ">>>", self.sst.GetState()
 
     def ToggleItem(self, _id, value):
