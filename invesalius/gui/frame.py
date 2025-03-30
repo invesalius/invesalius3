@@ -2160,7 +2160,8 @@ class ObjectToolBar(AuiToolBar):
 
 class SliceToolBar(AuiToolBar):
     """
-    Toolbar related to slice visualization tools.
+    Toolbar related to 2D slice specific operations, including: cross
+    intersection reference and scroll slices.
     """
 
     def __init__(self, parent):
@@ -2170,10 +2171,9 @@ class SliceToolBar(AuiToolBar):
         self.SetToolBitmapSize(wx.Size(32, 32))
 
         self.parent = parent
-        # Used to enable/disable menu items if project is opened or
-        # not. Eg. save should only be available if a project is open
         self.enable_items = [
-            const.SLICE_STATE_EDITOR,
+            const.SLICE_STATE_SCROLL,
+            const.SLICE_STATE_CROSS,
         ]
         self.__init_items()
         self.__bind_events()
@@ -2186,20 +2186,28 @@ class SliceToolBar(AuiToolBar):
         """
         Add tools into toolbar.
         """
-        # Load bitmaps
         d = inv_paths.ICON_DIR
 
-        path = os.path.join(d, "tool_annotation_original.png")
-        BMP_EDITOR = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "slice_original.png")
+        BMP_SLICE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-        # Add tool items to toolbar
-        self.ed_id = self.AddTool(
-            const.SLICE_STATE_EDITOR,
-            "",
-            BMP_EDITOR,
+        path = os.path.join(d, "cross_original.png")
+        BMP_CROSS = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
+        self.sst = self.AddToggleTool(
+            const.SLICE_STATE_SCROLL,
+            BMP_SLICE,  # , kind=wx.ITEM_CHECK)
             wx.NullBitmap,
-            wx.ITEM_CHECK,
-            short_help_string=_("Editor"),
+            toggle=True,
+            short_help_string=_("Scroll slices"),
+        )
+
+        self.sct = self.AddToggleTool(
+            const.SLICE_STATE_CROSS,
+            BMP_CROSS,  # , kind=wx.ITEM_CHECK)
+            wx.NullBitmap,
+            toggle=True,
+            short_help_string=_("Slices' cross intersection"),
         )
 
     def __bind_events(self):
@@ -2209,6 +2217,8 @@ class SliceToolBar(AuiToolBar):
         sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
         sub(self._UntoggleAllItems, "Untoggle slice toolbar items")
+        sub(self.OnToggle, "Toggle toolbar button")
+        sub(self.ToggleItem, "Toggle toolbar item")
 
     def __bind_events_wx(self):
         """
@@ -2225,53 +2235,66 @@ class SliceToolBar(AuiToolBar):
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
+            self._UntoggleAllItems()
         self.Refresh()
 
     def _UntoggleAllItems(self):
         """
-        Untoggle all items (if any is toggled).
+        Untoggle all items on toolbar.
         """
-        for id in self.enable_items:
-            self.ToggleTool(id, False)
+        for id in const.TOOL_SLICE_STATES:
+            state = self.GetToolToggled(id)
+            if state:
+                self.ToggleTool(id, False)
+                if id == const.SLICE_STATE_CROSS:
+                    msg = "Disable style"
+                    Publisher.sendMessage(msg, style=const.SLICE_STATE_CROSS)
         self.Refresh()
 
     def OnToggle(self, evt=None, id=None):
         """
-        Update status of toolbar item (if it is toggled).
+        Update status of other items on toolbar (only one item
+        should be toggle each time).
         """
-        if id:
-            is_toggle = self.GetToolToggled(id)
-            self.ToggleTool(id, not is_toggle)
-            state = not is_toggle
+        if id is not None:
+            if not self.GetToolToggled(id):
+                self.ToggleTool(id, True)
+                self.Refresh()
         else:
-            is_toggle = self.GetToolState(evt.GetId())
-            state = is_toggle
             id = evt.GetId()
-        try:
-            _id = id
-            if _id == const.SLICE_STATE_EDITOR:
-                if state:
-                    Publisher.sendMessage("Enable style", style=const.SLICE_STATE_EDITOR)
-                    Publisher.sendMessage("Show panel", panel_id=const.ID_MANUAL_SEGMENTATION)
-                    Publisher.sendMessage("Untoggle object toolbar items")
-                else:
-                    Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
-                    Publisher.sendMessage("Hide panel")
-                    Publisher.sendMessage("Update object info in GUI")
-        except IndexError:
-            pass
-        evt.Skip()
+            evt.Skip()
+
+        state = self.GetToolToggled(id)
+
+        if state:
+            Publisher.sendMessage("Enable style", style=id)
+            Publisher.sendMessage("Untoggle object toolbar items")
+        else:
+            Publisher.sendMessage("Disable style", style=id)
+
+        # const.STATE_REGISTRATION can be disabled with the same button as const.SLICE_STATE_CROSS
+        if id == const.SLICE_STATE_CROSS and not state:
+            Publisher.sendMessage("Stop image registration")
+
+        for item in self.enable_items:
+            state = self.GetToolToggled(item)
+            if state and (item != id):
+                self.ToggleTool(item, False)
+        
+        # self.ToggleTool(const.SLICE_STATE_SCROLL, self.GetToolToggled(const.SLICE_STATE_CROSS))
+        # self.Update()
+        ##self.sst.SetToggle(self.sct.IsToggled())
+        ##print ">>>", self.sst.IsToggled()
+        # print ">>>", self.sst.GetState()
 
     def ToggleItem(self, _id, value):
-        """
-        Toggle item (without firing event).
-        """
-        self.ToggleTool(_id, value)
-        self.Refresh()
+        if _id in self.enable_items:
+            self.ToggleTool(_id, value)
+            self.Refresh()
 
     def SetStateProjectClose(self):
         """
-        Disable menu items (e.g. save) when project is closed.
+        Disable menu items (e.g. cross) when project is closed.
         """
         for tool in self.enable_items:
             self.EnableTool(tool, False)
@@ -2279,7 +2302,7 @@ class SliceToolBar(AuiToolBar):
 
     def SetStateProjectOpen(self):
         """
-        Enable menu items (e.g. save) when project is opened.
+        Enable menu items (e.g. cross) when project is opened.
         """
         for tool in self.enable_items:
             self.EnableTool(tool, True)
