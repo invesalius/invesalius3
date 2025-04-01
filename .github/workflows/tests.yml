@@ -7,7 +7,7 @@ on:
 
 jobs:
   run-tests:
-    runs-on: ubuntu-22.04 #test
+    runs-on: ubuntu-22.04 #testing new pr
     steps:
       - uses: actions/checkout@v4
         with:
