@@ -68,7 +68,7 @@ jobs:
 
 
   combined-checks:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [run-tests]
     steps:
       - run: echo "All checks passed! Ready to merge."
