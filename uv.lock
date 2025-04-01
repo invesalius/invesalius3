@@ -308,6 +308,11 @@ dependencies = [
     { name = "wxpython" },
 ]
 
+[package.optional-dependencies]
+installer = [
+    { name = "pyinstaller" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "aioconsole" },
@@ -315,7 +320,6 @@ dev = [
     { name = "mypy" },
     { name = "nest-asyncio" },
     { name = "pre-commit" },
-    { name = "pyinstaller" },
     { name = "pytest" },
     { name = "pytest-mock" },
     { name = "python-rtmidi" },
@@ -341,6 +345,7 @@ requires-dist = [
     { name = "psutil", specifier = "==6.0.0" },
     { name = "pyacvd", specifier = "==0.2.11" },
     { name = "pyclaron", marker = "python_full_version == '3.8.*' and sys_platform == 'windows'" },
+    { name = "pyinstaller", marker = "extra == 'installer'", specifier = ">=6.12.0" },
     { name = "pypubsub", specifier = "==4.0.3" },
     { name = "pyserial", specifier = "==3.5" },
     { name = "python-gdcm", specifier = "==3.0.24" },
@@ -352,6 +357,7 @@ requires-dist = [
     { name = "vtk", specifier = "==9.3.0" },
     { name = "wxpython", specifier = "==4.2.2" },
 ]
+provides-extras = ["installer"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -360,7 +366,6 @@ dev = [
     { name = "mypy", specifier = "==1.10.1" },
     { name = "nest-asyncio", specifier = "==1.6.0" },
     { name = "pre-commit", specifier = "~=3.7.1" },
-    { name = "pyinstaller", specifier = ">=6.12.0" },
     { name = "pytest", specifier = "==8.3.5" },
     { name = "pytest-mock", specifier = "==3.14.0" },
     { name = "python-rtmidi", specifier = "==1.5.8" },
