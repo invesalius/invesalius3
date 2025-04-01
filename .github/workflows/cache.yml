@@ -1,17 +1,16 @@
-name: tests
+name: build-cache
 
 on:
-  pull_request:
+  push:
     branches:
       - master
 
 jobs:
-  run-tests:
-    runs-on: ubuntu-22.04 
+  build-pip-cache:
+    runs-on: ubuntu-22.04
+
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  
 
       - uses: actions/setup-python@v5
         with:
@@ -45,7 +44,6 @@ jobs:
                   libfreetype6-dev \
                   libxi-dev \
 
-
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: 3.12
@@ -55,15 +53,6 @@ jobs:
       - name: Syncing with UV
         run: uv sync
 
-      - name: Run tests with xvfb
-        run: xvfb-run -a bash -c "pytest"
-
       - name: Minimize uv cache
         run: uv cache prune --ci
 
-
-  combined-checks:
-    runs-on: ubuntu-22.04
-    needs: [run-tests]
-    steps:
-      - run: echo "All checks passed! Ready to merge."
