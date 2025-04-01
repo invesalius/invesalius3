@@ -33,7 +33,7 @@ jobs:
 
       - name: install venv and sync dependencies
         run: |
-          uv sync
+          uv sync --all-extras
 
       - name: Get InVesalius version
         run: |
