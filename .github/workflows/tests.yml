@@ -45,29 +45,26 @@ jobs:
                   libfreetype6-dev \
                   libxi-dev \
 
-      - name: Cache uv dependencies
-        uses: actions/cache@v3
-        with:
-          path: venv
-          key: uv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            uv-${{ runner.os }}-
 
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: 3.12
-          enable-cache: false 
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
-      - name: Install dependencies with uv
+      - name: Set up virtualenv
+        run: uv venv venv
+
+      - name: Install dependencies using uv.lock
         run: |
-          if [ ! -d "venv" ]; then
-            uv venv venv
-            source venv/bin/activate
-            uv pip install -r requirements.txt
-          fi
+          source venv/bin/activate
+          uv sync
 
       - name: Run tests with xvfb
         run: xvfb-run -a bash -c "source venv/bin/activate && pytest"
+
+      - name: Minimize uv cache
+        run: uv cache prune --ci
 
 
   combined-checks:
