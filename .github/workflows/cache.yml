@@ -50,13 +50,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Set up virtualenv
-        run: uv venv venv
-
-      - name: Install dependencies using uv.lock
-        run: |
-          source venv/bin/activate
-          uv sync
+      - name: Syncing with UV
+        run: uv sync
 
       - name: Minimize uv cache
         run: uv cache prune --ci

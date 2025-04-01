@@ -52,13 +52,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Set up virtualenv
-        run: uv venv venv
-
-      - name: Install dependencies using uv.lock
-        run: |
-          source venv/bin/activate
-          uv sync
+      - name: Syncing with UV
+        run: uv sync
 
       - name: Run tests with xvfb
         run: xvfb-run -a bash -c "source venv/bin/activate && pytest"
