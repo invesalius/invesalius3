@@ -54,6 +54,7 @@ dev = [
     "scikit-build-core",
     "pytest==8.3.5",
     "pytest-mock==3.14.0",
+    "pyinstaller>=6.12.0",
 ]
 
 
