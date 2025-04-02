@@ -10,6 +10,7 @@ import invesalius.constants as const
 from invesalius import inv_paths
 from invesalius.session import CONFIG_PATH, STATE_PATH, Session
 
+
 @pytest.fixture
 def isolated_session():
     return Session()
@@ -45,7 +46,9 @@ def test_create_config(mocker, isolated_session):
     assert isolated_session._config["rendering"] == 0
     assert isolated_session._config["slice_interpolation"] == 0
     assert isolated_session._config["auto_reload_preview"] is False
-    assert isolated_session._config["recent_projects"] == [(str(inv_paths.SAMPLE_DIR), "Cranium.inv3")]
+    assert isolated_session._config["recent_projects"] == [
+        (str(inv_paths.SAMPLE_DIR), "Cranium.inv3")
+    ]
     assert isolated_session._config["last_dicom_folder"] == ""
     assert isolated_session._config["file_logging"] == 0
     assert isolated_session._config["file_logging_level"] == 0
@@ -115,9 +118,7 @@ def test_close_project(mocker, isolated_session):
 def test_save_project(mocker, isolated_session):
     mock_set_state = mocker.patch.object(isolated_session, "SetState")
     mock_set_config = mocker.patch.object(isolated_session, "SetConfig")
-    mocker.patch.object(
-        isolated_session, "GetConfig", return_value=[["/dummy/path", "dummy.inv"]]
-    )
+    mocker.patch.object(isolated_session, "GetConfig", return_value=[["/dummy/path", "dummy.inv"]])
     project_path = ("path", "project.inv")
     isolated_session.SaveProject(project_path)
     mock_set_state.assert_called_once_with("project_path", project_path)
@@ -148,7 +149,9 @@ def test_create_project(mocker, isolated_session):
 def test_open_project(mocker, isolated_session):
     mock_set_state = mocker.patch.object(isolated_session, "SetState")
     mock_set_config = mocker.patch.object(isolated_session, "SetConfig")
-    mocker.patch.object(isolated_session, "GetConfig", return_value=[["/existing/path", "existing.inv"]])
+    mocker.patch.object(
+        isolated_session, "GetConfig", return_value=[["/existing/path", "existing.inv"]]
+    )
     project_path = "/path/dummy.inv"
     isolated_session.OpenProject(project_path)
     mock_set_state.assert_called_once_with("project_path", ("/path", "dummy.inv"))
