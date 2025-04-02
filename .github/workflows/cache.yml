@@ -1,4 +1,4 @@
-name: build-cache
+name: build-cache #total time 24m7s for first run (no cache)
 
 on:
   push:
