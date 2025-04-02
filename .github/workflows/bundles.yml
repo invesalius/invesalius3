@@ -40,11 +40,6 @@ jobs:
           $INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
           echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $env:GITHUB_ENV
 
-      - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
-        if: ${{ matrix.ai_ready == 1}}
-        run: |
-          uv pip install  torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
-
       - name: copy .pyd files to invesalius_cy
         run: |
           Copy-Item -Path invesalius_cy\Release\* -Destination invesalius_cy -Recurse -Force
