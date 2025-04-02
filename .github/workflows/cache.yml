@@ -1,4 +1,4 @@
-name: build-cache #total time 24m7s for first run (no cache)
+name: build-cache
 
 on:
   push:
@@ -57,7 +57,7 @@ jobs:
             libfreetype6-dev \
             libxi-dev
 
-      - name: Retry uv sync (only if needed)
+      - name: Retry uv sync
         if: steps.sync.outcome == 'failure'
         run: uv sync
 
