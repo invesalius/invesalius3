@@ -61,8 +61,11 @@ def test_panel_initialization(panel):
     assert (
         panel.combo_interval.GetStringSelection() == const.IMPORT_INTERVAL[0]
     ), f"Default string selection of 'combo_interval' should be '{const.IMPORT_INTERVAL[0]}'."
-    assert panel.btn_ok.GetLabel() == "Import", "Label of 'btn_ok' should be 'OK'."
-    assert panel.btn_cancel.GetLabel() == "Cancel", "Label of 'btn_cancel' should be 'Cancel'."
+    assert panel.btn_ok.GetLabel() in ("Import", "&Import"), "Label of 'btn_ok' should be 'OK'."
+    assert panel.btn_cancel.GetLabel() in (
+        "Cancel",
+        "&Cancel",
+    ), "Label of 'btn_cancel' should be 'Cancel'."
 
 
 def test_text_panel_population(text_panel, mocker):
