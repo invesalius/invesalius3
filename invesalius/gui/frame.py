@@ -2403,16 +2403,24 @@ class LayoutToolBar(AuiToolBar):
         d = inv_paths.ICON_DIR
 
         path = os.path.join(d, "layout_data_only_original.png")
-        BMP_WITH = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        self.BMP_WITH = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         path = os.path.join(d, "layout_full_original.png")
-        BMP_WITHOUT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        self.BMP_WITHOUT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
+        # Bitmaps for show/hide text item
+        path = os.path.join(d, "text_inverted_original.png")
+        self.BMP_WITHOUT_TEXT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         path = os.path.join(d, "text_original.png")
-        BMP_TEXT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        self.BMP_WITH_TEXT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
+        # Bitmaps for showing/hiding the ruler
+        path = os.path.join(d, "ruler_original_disabled.png")
+        self.BMP_WITHOUT_RULER = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         path = os.path.join(d, "ruler_original_enabled.png")
-        BMP_RULER = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        self.BMP_WITH_RULER = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         # Build toolbar items
 
@@ -2420,7 +2428,7 @@ class LayoutToolBar(AuiToolBar):
         self.AddTool(
             ID_LAYOUT,
             "",
-            BMP_WITH,
+            self.BMP_WITH,
             wx.NullBitmap,
             wx.ITEM_CHECK,
             short_help_string=_("Show task panel"),
@@ -2430,7 +2438,7 @@ class LayoutToolBar(AuiToolBar):
         self.AddTool(
             ID_TEXT,
             "",
-            BMP_TEXT,
+            self.BMP_WITH_TEXT,
             wx.NullBitmap,
             wx.ITEM_CHECK,
             short_help_string=_("Show text"),
@@ -2440,7 +2448,7 @@ class LayoutToolBar(AuiToolBar):
         self.AddTool(
             ID_RULER,
             "",
-            BMP_RULER,
+            self.BMP_WITH_RULER,
             wx.NullBitmap,
             wx.ITEM_CHECK,
             short_help_string=_("Show ruler"),
@@ -2554,8 +2562,10 @@ class LayoutToolBar(AuiToolBar):
         """
         status = self.GetToolToggled(ID_TEXT)
         if status:
+            self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITH_TEXT)
             Publisher.sendMessage("Show text actors on viewers")
         else:
+            self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITHOUT_TEXT)
             Publisher.sendMessage("Hide text actors on viewers")
 
     def ShowRulers(self):
@@ -2563,6 +2573,7 @@ class LayoutToolBar(AuiToolBar):
         Show ruler on viewer.
         """
         self.ToggleTool(ID_RULER, True)
+        self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
         Publisher.sendMessage("Show rulers on viewers")
         self.Refresh()
 
@@ -2571,6 +2582,7 @@ class LayoutToolBar(AuiToolBar):
         Hide ruler on viewer.
         """
         self.ToggleTool(ID_RULER, False)
+        self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
         Publisher.sendMessage("Hide rulers on viewers")
         self.Refresh()
 
@@ -2581,8 +2593,10 @@ class LayoutToolBar(AuiToolBar):
         """
         status = self.GetToolToggled(ID_RULER)
         if status:
+            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
             Publisher.sendMessage("Show rulers on viewers")
         else:
+            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
             Publisher.sendMessage("Hide rulers on viewers")
 
 
