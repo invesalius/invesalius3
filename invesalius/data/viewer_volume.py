@@ -2990,20 +2990,33 @@ class SlicePlane:
 
         Publisher.sendMessage("Render volume viewer")
 
-    def Enable(self, plane_label=None):
+    def Enable(self, plane_label: str | None = None):
+        """
+        Enable slice widgets (axial, coronal, sagittal) in the volume viewer.
+
+        Parameters
+        ----------
+        plane_label : str or None, optional
+            The label of the plane to enable. Accepted values are "Axial",
+            "Coronal", "Sagital". If ``None``, all planes are enabled.
+        """
         if plane_label:
             if plane_label == "Axial":
                 self.plane_z.On()
+                Publisher.sendMessage("Update slice 3D", widget=self.plane_z, orientation="AXIAL")
             elif plane_label == "Coronal":
                 self.plane_y.On()
+                Publisher.sendMessage("Update slice 3D", widget=self.plane_y, orientation="CORONAL")
             elif plane_label == "Sagital":
                 self.plane_x.On()
+                Publisher.sendMessage("Update slice 3D", widget=self.plane_x, orientation="SAGITAL")
             Publisher.sendMessage("Reposition 3D Plane", plane_label=plane_label)
         else:
             self.plane_z.On()
             self.plane_x.On()
             self.plane_y.On()
             Publisher.sendMessage("Set volume view angle", view=const.VOL_ISO)
+            Publisher.sendMessage("Update all slice")
 
         Publisher.sendMessage("Render volume viewer")
 

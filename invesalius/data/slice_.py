@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 import os
 import tempfile
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Literal, Optional, Tuple, Union
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkLookupTable
@@ -29,6 +29,7 @@ from vtkmodules.vtkImagingCore import (
     vtkImageFlip,
     vtkImageMapToColors,
 )
+from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
 from vtkmodules.vtkRenderingCore import (
     vtkColorTransferFunction,
     vtkWindowLevelLookupTable,
@@ -1331,7 +1332,9 @@ class Slice(metaclass=utils.Singleton):
 
         Publisher.sendMessage("Reload actual slice")
 
-    def UpdateSlice3D(self, widget, orientation):
+    def UpdateSlice3D(
+        self, widget: vtkImagePlaneWidget, orientation: Literal["AXIAL", "CORONAL", "SAGITAL"]
+    ):
         img = self.buffer_slices[orientation].vtk_image
         # original_orientation = Project().original_orientation
         cast = vtkImageCast()

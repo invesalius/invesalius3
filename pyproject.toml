@@ -29,7 +29,7 @@ dependencies = [
     "scikit-image==0.24.0",
     "scipy==1.14.0",
     "setuptools-scm",
-    "torch==2.3.1",
+    "torch>=2.3.1",
     "vtk==9.3.0",
     "wxpython==4.2.2",
 ]
@@ -59,6 +59,27 @@ dev = [
 
 [project.gui-scripts]
 inv = 'invesalius.app:main'
+
+[project.optional-dependencies]
+installer = [
+    "pyinstaller>=6.12.0",
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'darwin'"},
+  { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
 
 
 [build-system]

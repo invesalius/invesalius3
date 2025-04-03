@@ -523,6 +523,12 @@ class Frame(wx.Frame):
             )
             dialog.ShowCheckBox("Store session", True)
 
+        def on_close(event):
+            dialog.EndModal(wx.ID_NO)
+            event.Skip()
+
+        dialog.Bind(wx.EVT_CLOSE, on_close)
+
         answer = dialog.ShowModal()
         save = dialog.IsCheckBoxChecked()
         dialog.Destroy()
