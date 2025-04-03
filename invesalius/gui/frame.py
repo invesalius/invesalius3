@@ -446,17 +446,8 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        # Make sure the task panel is hidden
-        task_pane = self.aui_manager.GetPane("Tasks")
-        if task_pane.IsShown():
-            task_pane.Hide()
-            self.aui_manager.Update()
-
-            # Force UI refresh
-            wx.Yield()
-
-            # Ensure the layout button in the toolbar is toggled properly
-            Publisher.sendMessage("Set layout button full", status=False)
+        self.aui_manager.GetPane("Tasks").Hide()
+        self.aui_manager.Update()
 
     def _SetProjectName(self, proj_name=""):
         """
@@ -526,17 +517,8 @@ class Frame(wx.Frame):
         """
         Show task panel.
         """
-        # Make sure the task panel is shown
-        task_pane = self.aui_manager.GetPane("Tasks")
-        if not task_pane.IsShown():
-            task_pane.Show()
-            self.aui_manager.Update()
-
-            # Force UI refresh
-            wx.Yield()
-
-            # Ensure the layout button in the toolbar is toggled properly
-            Publisher.sendMessage("Set layout button full", status=True)
+        self.aui_manager.GetPane("Tasks").Show()
+        self.aui_manager.Update()
 
     def _UpdateAUI(self):
         """
