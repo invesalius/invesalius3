@@ -451,10 +451,10 @@ class Frame(wx.Frame):
         if task_pane.IsShown():
             task_pane.Hide()
             self.aui_manager.Update()
-            
+
             # Force UI refresh
             wx.Yield()
-            
+
             # Ensure the layout button in the toolbar is toggled properly
             Publisher.sendMessage("Set layout button full", status=False)
 
@@ -531,10 +531,10 @@ class Frame(wx.Frame):
         if not task_pane.IsShown():
             task_pane.Show()
             self.aui_manager.Update()
-            
+
             # Force UI refresh
             wx.Yield()
-            
+
             # Ensure the layout button in the toolbar is toggled properly
             Publisher.sendMessage("Set layout button full", status=True)
 
@@ -736,7 +736,7 @@ class Frame(wx.Frame):
 
         elif id == ID_SHOW_LOG_VIEWER:
             self.OnShowLogViewer(evt)
-            
+
         # Handle specific state IDs that were being reported as unhandled
         elif id == 1001:  # STATE_WL
             Publisher.sendMessage("Set tool state", state=const.STATE_WL)
@@ -760,7 +760,7 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_CROSS)
         elif id == 3007:  # SLICE_STATE_SCROLL
             Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_SCROLL)
-            
+
         # Handle task panel toggle
         elif id == const.ID_TASK_BAR:
             task_pane = self.aui_manager.GetPane("Tasks")
@@ -768,7 +768,7 @@ class Frame(wx.Frame):
                 self._HideTask()
             else:
                 self._ShowTask()
-                
+
             # Force focus on main window to ensure UI updates properly
             self.SetFocus()
 
@@ -788,10 +788,10 @@ class Frame(wx.Frame):
         if task_pane.IsShown():
             task_pane.Hide()
             self.aui_manager.Update()
-            
+
             # Force UI refresh
             wx.Yield()
-            
+
             # Ensure the layout button in the toolbar is toggled properly
             Publisher.sendMessage("Set layout button full", status=False)
 
@@ -2469,7 +2469,7 @@ class LayoutToolBar(AuiToolBar):
         # Set toggle button state
         self.ToggleTool(ID_LAYOUT, False)
         self.Refresh()
-        
+
         # Only when directly toggling from button, not via set layout message
         if status is None:
             # Get parent frame and call its hide method
@@ -2487,9 +2487,9 @@ class LayoutToolBar(AuiToolBar):
         else:
             # Default to showing task panel
             self.ToggleTool(ID_LAYOUT, True)
-        
+
         self.Refresh()
-        
+
         # Only when directly toggling from button, not via set layout message
         if status is None:
             # Get parent frame and call its show method
@@ -2533,10 +2533,10 @@ class LayoutToolBar(AuiToolBar):
         Based on previous layout status, show or hide task panel.
         """
         layout = self.GetToolToggled(ID_LAYOUT)
-        
+
         # Get parent frame
         parent = self.GetParent()
-        
+
         # Use the parent's existing methods instead of duplicating code
         if layout:
             # Call the parent's show task method
@@ -2544,7 +2544,7 @@ class LayoutToolBar(AuiToolBar):
         else:
             # Call the parent's hide task method
             parent._HideTask()
-        
+
         # No need to send messages since _ShowTask and _HideTask handle this
 
     def ToggleText(self):
