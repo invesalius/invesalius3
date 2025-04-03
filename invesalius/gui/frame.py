@@ -446,8 +446,17 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        self.aui_manager.GetPane("Tasks").Hide()
-        self.aui_manager.Update()
+        # Make sure the task panel is hidden
+        task_pane = self.aui_manager.GetPane("Tasks")
+        if task_pane.IsShown():
+            task_pane.Hide()
+            self.aui_manager.Update()
+            
+            # Force UI refresh
+            wx.Yield()
+            
+            # Ensure the layout button in the toolbar is toggled properly
+            Publisher.sendMessage("Set layout button full", status=False)
 
     def _SetProjectName(self, proj_name=""):
         """
@@ -517,8 +526,17 @@ class Frame(wx.Frame):
         """
         Show task panel.
         """
-        self.aui_manager.GetPane("Tasks").Show()
-        self.aui_manager.Update()
+        # Make sure the task panel is shown
+        task_pane = self.aui_manager.GetPane("Tasks")
+        if not task_pane.IsShown():
+            task_pane.Show()
+            self.aui_manager.Update()
+            
+            # Force UI refresh
+            wx.Yield()
+            
+            # Ensure the layout button in the toolbar is toggled properly
+            Publisher.sendMessage("Set layout button full", status=True)
 
     def _UpdateAUI(self):
         """
@@ -632,55 +650,26 @@ class Frame(wx.Frame):
             axis = {const.ID_FLIP_X: 2, const.ID_FLIP_Y: 1, const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
         elif id in (const.ID_SWAP_XY, const.ID_SWAP_XZ, const.ID_SWAP_YZ):
-            axes = {const.ID_SWAP_XY: (2, 1), const.ID_SWAP_XZ: (2, 0), const.ID_SWAP_YZ: (1, 0)}[
-                id
-            ]
+            axes = {
+                const.ID_SWAP_XY: (0, 1),
+                const.ID_SWAP_XZ: (0, 2),
+                const.ID_SWAP_YZ: (1, 2),
+            }[id]
             self.SwapAxes(axes)
-        elif id == wx.ID_UNDO:
-            self.OnUndo()
-        elif id == wx.ID_REDO:
-            self.OnRedo()
-        elif id == const.ID_GOTO_SLICE:
-            self.OnGotoSlice()
-        elif id == const.ID_GOTO_COORD:
-            self.GoToDialogScannerCoord()
+        elif id == const.ID_REORIENT_IMG:
+            self.OnReorientImg()
 
+        # USING MASKS
         elif id == const.ID_BOOLEAN_MASK:
             self.OnMaskBoolean()
         elif id == const.ID_CLEAN_MASK:
             self.OnCleanMask()
-
-        elif id == const.ID_REORIENT_IMG:
-            self.OnReorientImg()
-
-        elif id == const.ID_MASK_DENSITY_MEASURE:
-            ddlg = dlg.MaskDensityDialog(self)
-            ddlg.Show()
-
-        elif id == const.ID_MANUAL_WWWL:
-            wwwl_dlg = dlg.ManualWWWLDialog(self)
-            wwwl_dlg.Show()
-
-        elif id == const.ID_THRESHOLD_SEGMENTATION:
-            Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
-            Publisher.sendMessage("Disable actual style")
-            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
-
-        elif id == const.ID_MANUAL_SEGMENTATION:
-            Publisher.sendMessage("Show panel", panel_id=const.ID_MANUAL_SEGMENTATION)
-            Publisher.sendMessage("Disable actual style")
-            Publisher.sendMessage("Enable style", style=const.SLICE_STATE_EDITOR)
-
-        elif id == const.ID_WATERSHED_SEGMENTATION:
-            Publisher.sendMessage("Show panel", panel_id=const.ID_WATERSHED_SEGMENTATION)
-            Publisher.sendMessage("Disable actual style")
-            Publisher.sendMessage("Enable style", style=const.SLICE_STATE_WATERSHED)
-
-        elif id == const.ID_FLOODFILL_MASK:
-            self.OnFillHolesManually()
-
         elif id == const.ID_FILL_HOLE_AUTO:
             self.OnFillHolesAutomatically()
+        elif id == const.ID_FLOODFILL_MASK:
+            self.OnFillHolesManually()
+        elif id == const.ID_REORIENT_IMG:
+            self.OnReorientImg()
 
         elif id == const.ID_REMOVE_MASK_PART:
             self.OnRemoveMaskParts()
@@ -747,10 +736,64 @@ class Frame(wx.Frame):
 
         elif id == ID_SHOW_LOG_VIEWER:
             self.OnShowLogViewer(evt)
+            
+        # Handle specific state IDs that were being reported as unhandled
+        elif id == 1001:  # STATE_WL
+            Publisher.sendMessage("Set tool state", state=const.STATE_WL)
+        elif id == 1002:  # STATE_SPIN
+            Publisher.sendMessage("Set tool state", state=const.STATE_SPIN)
+        elif id == 1003:  # STATE_ZOOM
+            Publisher.sendMessage("Set tool state", state=const.STATE_ZOOM)
+        elif id == 1004:  # STATE_ZOOM_SL
+            Publisher.sendMessage("Set tool state", state=const.STATE_ZOOM_SL)
+        elif id == 1005:  # STATE_PAN
+            Publisher.sendMessage("Set tool state", state=const.STATE_PAN)
+        elif id == 1007:  # STATE_MEASURE_DISTANCE
+            Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DISTANCE)
+        elif id == 1008:  # STATE_MEASURE_ANGLE
+            Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_ANGLE)
+        elif id == 1010:  # STATE_MEASURE_DENSITY_ELLIPSE
+            Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DENSITY_ELLIPSE)
+        elif id == 1011:  # STATE_MEASURE_DENSITY_POLYGON
+            Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DENSITY_POLYGON)
+        elif id == 3006:  # SLICE_STATE_CROSS
+            Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_CROSS)
+        elif id == 3007:  # SLICE_STATE_SCROLL
+            Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_SCROLL)
+            
+        # Handle task panel toggle
+        elif id == const.ID_TASK_BAR:
+            task_pane = self.aui_manager.GetPane("Tasks")
+            if task_pane.IsShown():
+                self._HideTask()
+            else:
+                self._ShowTask()
+                
+            # Force focus on main window to ensure UI updates properly
+            self.SetFocus()
 
         # If none of the above matched, log unknown event ID
+        # except for standard wxWidgets negative IDs that can be ignored
         else:
-            print(f"Unhandled menu/toolbar event ID: {id}")
+            # Ignore standard wxWidgets IDs
+            if id not in (-31849, -31848, -31850):
+                print(f"Unhandled menu/toolbar event ID: {id}")
+
+    def _HideTask(self):
+        """
+        Hide task panel.
+        """
+        # Make sure the task panel is hidden
+        task_pane = self.aui_manager.GetPane("Tasks")
+        if task_pane.IsShown():
+            task_pane.Hide()
+            self.aui_manager.Update()
+            
+            # Force UI refresh
+            wx.Yield()
+            
+            # Ensure the layout button in the toolbar is toggled properly
+            Publisher.sendMessage("Set layout button full", status=False)
 
     def OnDbsMode(self):
         st = self.actived_dbs_mode.IsChecked()
@@ -2420,17 +2463,38 @@ class LayoutToolBar(AuiToolBar):
 
     def _SetLayoutWithoutTask(self, status=None):
         """
-        Set toggle related to layout with task.
+        Set toggle related to layout without task (no task panel visible).
+        If status is provided, use it to set the state.
         """
+        # Set toggle button state
         self.ToggleTool(ID_LAYOUT, False)
         self.Refresh()
+        
+        # Only when directly toggling from button, not via set layout message
+        if status is None:
+            # Get parent frame and call its hide method
+            parent = self.GetParent()
+            parent._HideTask()
 
     def _SetLayoutWithTask(self, status=None):
         """
-        Set toggle related to layout with task.
+        Set toggle related to layout with task panel visible.
+        If status is provided, use it to set the state.
         """
-        self.ToggleTool(ID_LAYOUT, True)
+        # If status is provided, use it to control the button state
+        if status is not None:
+            self.ToggleTool(ID_LAYOUT, status)
+        else:
+            # Default to showing task panel
+            self.ToggleTool(ID_LAYOUT, True)
+        
         self.Refresh()
+        
+        # Only when directly toggling from button, not via set layout message
+        if status is None:
+            # Get parent frame and call its show method
+            parent = self.GetParent()
+            parent._ShowTask()
 
     def OnToggle(self, event):
         """
@@ -2469,13 +2533,19 @@ class LayoutToolBar(AuiToolBar):
         Based on previous layout status, show or hide task panel.
         """
         layout = self.GetToolToggled(ID_LAYOUT)
-        # Show/hide task panel
+        
+        # Get parent frame
+        parent = self.GetParent()
+        
+        # Use the parent's existing methods instead of duplicating code
         if layout:
-            Publisher.sendMessage("Show task panel")
+            # Call the parent's show task method
+            parent._ShowTask()
         else:
-            Publisher.sendMessage("Hide task panel")
-        # This maintains compatibility with existing code
-        Publisher.sendMessage("Set layout button full", status=layout)
+            # Call the parent's hide task method
+            parent._HideTask()
+        
+        # No need to send messages since _ShowTask and _HideTask handle this
 
     def ToggleText(self):
         """
