@@ -1,0 +1,65 @@
+name: build-cache
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-pip-cache:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Try syncing with UV
+        id: sync
+        continue-on-error: true
+        run: uv sync
+
+      - name: Install Ubuntu dependencies (fallback)
+        if: steps.sync.outcome == 'failure'
+        run: |
+          echo "uv sync failed — installing Ubuntu dependencies..."
+          sudo apt-get update
+          sudo apt-get install -y \
+            freeglut3-dev \
+            libcurl4-openssl-dev \
+            libexpat1-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libgtk-3-dev \
+            libjpeg-dev \
+            libnotify-dev \
+            libsdl2-dev \
+            libsm-dev \
+            libtiff-dev \
+            libwebkit2gtk-4.0-dev \
+            libxtst-dev \
+            libunwind-dev \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libpng-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxcomposite-dev \
+            libfreetype6-dev \
+            libxi-dev
+
+      - name: Retry uv sync
+        if: steps.sync.outcome == 'failure'
+        run: uv sync
+
+      - name: Minimize uv cache
+        run: uv cache prune --ci

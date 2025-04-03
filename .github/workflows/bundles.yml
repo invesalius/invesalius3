@@ -25,49 +25,24 @@ jobs:
           $COMMIT=$(git rev-parse HEAD)
           echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
 
-      - name: install uv
-        run: |
-          powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/0.6.5/install.ps1 | iex"
-          $env:Path = "C:\Users\runneradmin\.local\bin;$env:Path"
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
       - name: install venv and sync dependencies
         run: |
-          uv sync
+          uv sync --all-extras
 
-      - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
-        if: ${{ matrix.ai_ready == 1}}
+      - name: Get InVesalius version
         run: |
-          uv pip install  torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
-
-      - name: Insert version and commit hash into dialog.py
-        run: |
-          .venv\Scripts\activate
-          uv run bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
-
-      - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
-        id: pyinstaller
-        name: Download pyinstaller
-        with:
-          url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
-          target: ./pyinstaller/
-
-      - name: Extract pyinstaller file
-        uses: ihiroky/extract-action@v1
-        with:
-          file_path: ./pyinstaller/v6.9.0.zip
-          extract_dir: ./pyinstaller/
+          $INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
+          echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $env:GITHUB_ENV
 
       - name: copy .pyd files to invesalius_cy
         run: |
           Copy-Item -Path invesalius_cy\Release\* -Destination invesalius_cy -Recurse -Force
-
-      - name: Compile pyinstaller bootloader
-        run: |
-          .venv\Scripts\activate
-          cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
-          python3 ./waf distclean all
-          cd ..
-          uv pip install .
 
       - name: Download mandible ai weight
         if: ${{ matrix.ai_ready == 1 }}
@@ -113,25 +88,18 @@ jobs:
         if: ${{ matrix.ai_ready == 1 }}
         run: |
           move ./ai/brain_mri_t1/weights.pt ./ai/brain_mri_t1/brain_mri_t1.pt
+
       - name: Generate InVesalius .exe file
         run: |
-          .venv\Scripts\activate
           cp ./bundle_tools/win/app.spec ./  
-          pyinstaller app.spec --clean --noconfirm
+          uv run pyinstaller app.spec --clean --noconfirm
           mkdir installer
+
       - name: Generate InVesalius installer - win64 ai-ready build
-        if: ${{ matrix.ai_ready == 1 }}
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: ./bundle_tools/win/generate_installer.iss
-          options: /F"invesalius-3.1_nightly_ai-ready_win64"
+        run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_ai-ready_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
 
       - name: Generate InVesalius installer - win64 normal build
-        if: ${{ matrix.ai_ready == 0}}
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: ./bundle_tools/win/generate_installer.iss
-          options: /F"invesalius-3.1_nightly_win64"
+        run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
 
       - name: Show files
         run: |
