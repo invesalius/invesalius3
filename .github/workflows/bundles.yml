@@ -8,13 +8,13 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        architecture: ['x64']
+        architecture: ["x64"]
         ai_ready: [0, 1]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
-        
+
       - name: Put current date into a variable
         run: |
           $DATE=& Get-Date -format yyyy-MM-dd
@@ -24,81 +24,50 @@ jobs:
         run: |
           $COMMIT=$(git rev-parse HEAD)
           echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
-            
-      - name: Setup VC++ 2022 (17.0)
-        uses: ilammy/msvc-dev-cmd@v1.13.0
+
+      - uses: astral-sh/setup-uv@v5
         with:
-          vsversion: '17.0'
-          arch: ${{ matrix.architecture }}
-    
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11.2'
-          cache: 'pip'
+          python-version: 3.12
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
-      - name: Upgrade pip and enable wheel support
-        run: python -m pip install --upgrade pip setuptools wheel 
-
-      - name: Install InVesalius requirements
-        run: pip install -r requirements.txt
-
-      - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
-        if: ${{ matrix.ai_ready == 1}}
-        run: pip install torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
-
-      - name: Compile InVesalius Cython parts
+      - name: install venv and sync dependencies
         run: |
-              python3 setup.py build_ext --inplace
-              python3 setup.py build_plugins
+          uv sync --all-extras
 
-      - name: Insert version and commit hash into dialog.py
-        run: python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
-
-      - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
-        id: pyinstaller
-        name: Download pyinstaller
-        with:
-          url: "https://github.com/pyinstaller/pyinstaller/archive/refs/tags/v6.9.0.zip"
-          target: ./pyinstaller/
-
-      - name: Extract pyinstaller file
-        uses: ihiroky/extract-action@v1
-        with:
-          file_path: ./pyinstaller/v6.9.0.zip
-          extract_dir: ./pyinstaller/
-
-      - name: Compile pyinstaller bootloader
+      - name: Get InVesalius version
         run: |
-              cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
-              python3 ./waf distclean all
-              cd ..
-              pip install .
+          $INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
+          echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $env:GITHUB_ENV
+
+      - name: copy .pyd files to invesalius_cy
+        run: |
+          Copy-Item -Path invesalius_cy\Release\* -Destination invesalius_cy -Recurse -Force
 
       - name: Download mandible ai weight
         if: ${{ matrix.ai_ready == 1 }}
-        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         with:
           url: "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
           target: ./ai/mandible_jit_ct/
 
       - name: Download cranioplasty binary ai weight
         if: ${{ matrix.ai_ready == 1 }}
-        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         with:
           url: "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_binary/cranioplasty_jit_ct_binary.pt"
           target: ./ai/cranioplasty_jit_ct_binary/
 
       - name: Download cranioplasty gray ai weight
         if: ${{ matrix.ai_ready == 1 }}
-        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         with:
           url: "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_gray/cranioplasty_jit_ct_gray.pt"
           target: ./ai/cranioplasty_jit_ct_gray/
 
       - name: Download trachea ai weight
         if: ${{ matrix.ai_ready == 1 }}
-        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         with:
           url: "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
           target: ./ai/trachea_ct/
@@ -106,11 +75,11 @@ jobs:
       - name: Fix trachea name ai weight
         if: ${{ matrix.ai_ready == 1 }}
         run: |
-              move ./ai/trachea_ct/weights.pt ./ai/trachea_ct/trachea_ct.pt
+          move ./ai/trachea_ct/weights.pt ./ai/trachea_ct/trachea_ct.pt
 
       - name: Download brain ai weight
         if: ${{ matrix.ai_ready == 1 }}
-        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9 
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         with:
           url: "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
           target: ./ai/brain_mri_t1/
@@ -118,33 +87,24 @@ jobs:
       - name: Fix brain name ai weight
         if: ${{ matrix.ai_ready == 1 }}
         run: |
-              move ./ai/brain_mri_t1/weights.pt ./ai/brain_mri_t1/brain_mri_t1.pt
+          move ./ai/brain_mri_t1/weights.pt ./ai/brain_mri_t1/brain_mri_t1.pt
 
       - name: Generate InVesalius .exe file
         run: |
-              cp ./bundle_tools/win/app.spec ./  
-              pyinstaller app.spec --clean --noconfirm
-              mkdir installer
+          cp ./bundle_tools/win/app.spec ./  
+          uv run pyinstaller app.spec --clean --noconfirm
+          mkdir installer
 
       - name: Generate InVesalius installer - win64 ai-ready build
-        if: ${{ matrix.ai_ready == 1 }}
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: ./bundle_tools/win/generate_installer.iss
-          options: /F"invesalius-3.1_nightly_ai-ready_win64"
+        run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_ai-ready_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
 
       - name: Generate InVesalius installer - win64 normal build
-        if: ${{ matrix.ai_ready == 0}}
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: ./bundle_tools/win/generate_installer.iss
-          options: /F"invesalius-3.1_nightly_win64"
+        run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
 
       - name: Show files
         run: |
           cd ./installer
           dir
-
       - name: Upload artifact of package normal file
         if: ${{ matrix.ai_ready == 0}}
         uses: actions/upload-artifact@v4
@@ -181,19 +141,18 @@ jobs:
       - name: Message
         run: |
           dir
-
       - name: Update Nightly Release
         uses: andelf/nightly-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: nightly
-          name: 'Nightly'
+          name: "Nightly"
           draft: false
-          prerelease: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.is-pre-release) || (github.event_name == 'schedule')}}
+          prerelease: true
           body: |
             This is a nightly release InVesalius.
             It's unstable compared to the official releases, **use it with caution**!
           files: |
-                  ./invesalius-3.1_nightly_ai-ready_win64.exe
-                  ./invesalius-3.1_nightly_win64.exe
+            ./invesalius-3.1_nightly_ai-ready_win64.exe
+            ./invesalius-3.1_nightly_win64.exe

@@ -12,6 +12,15 @@
 
 # CMake
 cmake-build-*/
+invesalius/version.py
+CMakeFiles/
+build.ninja
+.ninja*
+*.cxx
+cmake*
+!CMakeLists.txt
+
+
 
 # File-based project format
 *.iws
@@ -59,6 +68,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.skbuild-info.json
 
 #Sample files
 samples/

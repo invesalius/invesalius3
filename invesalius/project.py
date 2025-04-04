@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Dict, List, Union
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
+import invesalius
 import invesalius.constants as const
 from invesalius import inv_paths
 from invesalius.gui.dialogs import ErrorMessageBox
@@ -79,7 +80,7 @@ class Project(metaclass=Singleton):
 
         self.compress = False
 
-        self.invesalius_version = const.INVESALIUS_VERSION
+        self.invesalius_version = invesalius.__version__
 
         self.presets = Presets()
 
@@ -214,7 +215,7 @@ class Project(metaclass=Singleton):
         project = {
             # Format info
             "format_version": const.INVESALIUS_ACTUAL_FORMAT_VERSION,
-            "invesalius_version": const.INVESALIUS_VERSION,
+            "invesalius_version": invesalius.__version__,
             "date": datetime.datetime.now().isoformat(),
             "compress": self.compress,
             # case info
@@ -394,7 +395,7 @@ class Project(metaclass=Singleton):
         project = {
             # Format info
             "format_version": const.INVESALIUS_ACTUAL_FORMAT_VERSION,
-            "invesalius_version": const.INVESALIUS_VERSION,
+            "invesalius_version": invesalius.__version__,
             "date": datetime.datetime.now().isoformat(),
             "compress": True,
             # case info
@@ -430,7 +431,7 @@ class Project(metaclass=Singleton):
             f["image"] = s.matrix
             f["spacing"] = s.spacing
 
-            f["invesalius_version"] = const.INVESALIUS_VERSION
+            f["invesalius_version"] = invesalius.__version__
             f["date"] = datetime.datetime.now().isoformat()
             f["compress"] = self.compress
             f["name"] = self.name  # patient's name
@@ -542,7 +543,7 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
             tar.extract(t, path=folder, filter=tar_filter)
             fname = os.path.join(folder, decode(t.name, "utf-8"))
             filelist.append(fname)
-        except (TypeError, AttributeError, tarfile.OutsideDestinationError):
+        except (TypeError, AttributeError, tarfile.TarError):
             filtered = custom_tar_filter(t, folder)
             if filtered is not None:
                 tar.extract(filtered, path=folder)

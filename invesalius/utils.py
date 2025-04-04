@@ -30,6 +30,8 @@ from typing import Any, List, Optional
 import numpy as np
 from packaging.version import Version
 
+import invesalius
+
 
 def format_time(value: str) -> str:
     sp1 = value.split(".")
@@ -58,14 +60,14 @@ def format_date(value: str) -> str:
     try:
         if len(sp1) > 1:
             if len(sp1[0]) <= 2:
-                data = time.strptime(value, "%D.%M.%Y")
+                data = time.strptime(value, "%d.%m.%Y")
             else:
-                data = time.strptime(value, "%Y.%M.%d")
+                data = time.strptime(value, "%Y.%m.%d")
         elif len(value.split("//")) > 1:
-            data = time.strptime(value, "%D/%M/%Y")
+            data = time.strptime(value, "%d/%m/%Y")
         else:
-            data = time.strptime(value, "%Y%M%d")
-        return time.strftime("%d/%M/%Y", data)
+            data = time.strptime(value, "%Y%m%d")
+        return time.strftime("%d/%m/%Y", data)
 
     except ValueError:
         return ""
@@ -191,7 +193,8 @@ class TwoWaysDictionary(dict):
         """
         Find the key (first) with the given value
         """
-        return self.get_keys(value)[0]
+        keys = self.get_keys(value)
+        return keys[0] if keys else None
 
     def get_keys(self, value):
         """
@@ -202,14 +205,14 @@ class TwoWaysDictionary(dict):
     def remove(self, key):
         try:
             self.pop(key)
-        except TypeError:
-            debug("TwoWaysDictionary: no item")
+        except KeyError:
+            debug("TwoWaysDictionary: key not found")
 
     def get_value(self, key):
         """
         Find the value given a key.
         """
-        return self[key]
+        return self.get(key, None)
 
 
 # DEPRECATED
@@ -306,14 +309,7 @@ def get_system_encoding() -> Optional[str]:
 
 
 def UpdateCheck() -> None:
-    try:
-        from urllib.parse import urlencode
-        from urllib.request import Request, urlopen
-    except ImportError:
-        from urllib import urlencode
-
-        from urllib2 import Request, urlopen
-
+    import requests
     import wx
 
     import invesalius.session as ses
@@ -344,32 +340,25 @@ def UpdateCheck() -> None:
         import invesalius.constants as const
 
         url = "https://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
-        headers = {"User-Agent": "Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)"}
         data: Any = {
             "update_protocol_version": "1",
-            "invesalius_version": const.INVESALIUS_VERSION,
+            "invesalius_version": invesalius.__version__,
             "platform": sys.platform,
             "architecture": platform.architecture()[0],
             "language": lang,
             "random_id": random_id,
         }
-        data = urlencode(data).encode("utf8")
-        req = Request(url, data, headers)
-        try:
-            response = urlopen(req, timeout=10)
-        except Exception:
-            return
-        last = response.readline().rstrip().decode("utf8")
-        url = response.readline().rstrip().decode("utf8")
+        response = requests.post(url, data=data, verify=False)
+        last, url = response.text.split()
 
         try:
             last_ver = Version(last)
-            actual_ver = Version(const.INVESALIUS_VERSION)
+            actual_ver = Version(invesalius.__version__)
         except (ValueError, AttributeError):
             return
 
         if last_ver > actual_ver:
-            print("  ...New update found!!! -> version:", last)  # , ", url=",url
+            print("  ...New update found!!! -> version:", last)
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
 
