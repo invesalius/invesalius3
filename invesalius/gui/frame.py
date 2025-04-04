@@ -515,7 +515,7 @@ class Frame(wx.Frame):
         dialog = wx.RichMessageDialog(
             None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
         )
-        dialog.ShowCheckBox("Store session", True)
+        dialog.ShowCheckBox("Store session", False)
 
         def on_close(event):
             dialog.EndModal(wx.ID_NO)
