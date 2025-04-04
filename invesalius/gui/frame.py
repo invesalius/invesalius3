@@ -446,8 +446,17 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        self.aui_manager.GetPane("Tasks").Hide()
-        self.aui_manager.Update()
+        # Make sure the task panel is hidden
+        task_pane = self.aui_manager.GetPane("Tasks")
+        if task_pane.IsShown():
+            task_pane.Hide()
+            self.aui_manager.Update()
+
+            # Force UI refresh
+            wx.Yield()
+
+            # Ensure the layout button in the toolbar is toggled properly
+            Publisher.sendMessage("Set layout button full")
 
     def _SetProjectName(self, proj_name=""):
         """
@@ -632,11 +641,8 @@ class Frame(wx.Frame):
             axis = {const.ID_FLIP_X: 2, const.ID_FLIP_Y: 1, const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
         elif id in (const.ID_SWAP_XY, const.ID_SWAP_XZ, const.ID_SWAP_YZ):
-            axes = {
-                const.ID_SWAP_XY: (0, 1),
-                const.ID_SWAP_XZ: (0, 2),
-                const.ID_SWAP_YZ: (1, 2),
-            }[id]
+            axes = {const.ID_SWAP_XY: (2, 1), const.ID_SWAP_XZ: (2, 0), const.ID_SWAP_YZ: (1, 0)}
+            [id]
             self.SwapAxes(axes)
         elif id == const.ID_REORIENT_IMG:
             self.OnReorientImg()
@@ -775,7 +781,7 @@ class Frame(wx.Frame):
             wx.Yield()
 
             # Ensure the layout button in the toolbar is toggled properly
-            Publisher.sendMessage("Set layout button full", status=False)
+            Publisher.sendMessage("Set layout button full")
 
     def OnDbsMode(self):
         st = self.actived_dbs_mode.IsChecked()
@@ -2341,8 +2347,11 @@ class SliceToolBar(AuiToolBar):
 
 class LayoutToolBar(AuiToolBar):
     """
-    Toolbar related to general layout/ visualization configuration
-    e.g: show/hide task panel, show/hide text on viewers.
+    Toolbar related to general layout. Contains the following buttons:
+
+    - show/hide task panel (= the left UI panel)
+    - show/hide text (= the texts indicating the anterior, posterior, etc. directions)
+    - show/hide rulers (= the rulers showing the scale on each viewer)
     """
 
     def __init__(self, parent):
@@ -2352,12 +2361,14 @@ class LayoutToolBar(AuiToolBar):
         self.SetToolBitmapSize(wx.Size(32, 32))
 
         self.parent = parent
-        # Used to enable/disable menu items if project is opened or
-        # not. Eg. save should only be available if a project is open
         self.enable_items = [ID_LAYOUT, ID_TEXT, ID_RULER]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
+
+        self.ontool_layout = False
+        self.ontool_text = True
+        self.ontool_ruler = True
 
         self.Realize()
         self.SetStateProjectClose()
@@ -2370,6 +2381,7 @@ class LayoutToolBar(AuiToolBar):
         sub(self._EnableState, "Enable state project")
         sub(self._SetLayoutWithTask, "Set layout button data only")
         sub(self._SetLayoutWithoutTask, "Set layout button full")
+        sub(self._SendRulerVisibilityStatus, "Send ruler visibility status")
 
     def __bind_events_wx(self):
         """
@@ -2381,59 +2393,52 @@ class LayoutToolBar(AuiToolBar):
         """
         Add tools into toolbar.
         """
-        # Load bitmaps
         d = inv_paths.ICON_DIR
 
-        path = os.path.join(d, "layout_data_only_original.png")
-        self.BMP_WITH = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        # Bitmaps for show/hide task panel item
+        p = os.path.join(d, "layout_data_only_original.png")
+        self.BMP_WITH_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-        path = os.path.join(d, "layout_full_original.png")
-        self.BMP_WITHOUT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        p = os.path.join(d, "layout_full_original.png")
+        self.BMP_WITHOUT_MENU = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-        # Bitmaps for show/hide text item
-        path = os.path.join(d, "text_inverted_original.png")
-        self.BMP_WITHOUT_TEXT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        # Bitmaps for show/hide task item
+        p = os.path.join(d, "text_inverted_original.png")
+        self.BMP_WITHOUT_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-        path = os.path.join(d, "text_original.png")
-        self.BMP_WITH_TEXT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        p = os.path.join(d, "text_original.png")
+        self.BMP_WITH_TEXT = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-        # Bitmaps for showing/hiding the ruler
-        path = os.path.join(d, "ruler_original_disabled.png")
-        self.BMP_WITHOUT_RULER = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        # Bitmaps for showing/hiding the ruler.
+        p = os.path.join(d, "ruler_original_disabled.png")
+        self.BMP_WITHOUT_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-        path = os.path.join(d, "ruler_original_enabled.png")
-        self.BMP_WITH_RULER = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        p = os.path.join(d, "ruler_original_enabled.png")
+        self.BMP_WITH_RULER = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
 
-        # Build toolbar items
-
-        # Layout - task|no_task
         self.AddTool(
             ID_LAYOUT,
             "",
-            self.BMP_WITH,
+            self.BMP_WITHOUT_MENU,
             wx.NullBitmap,
-            wx.ITEM_CHECK,
-            short_help_string=_("Show task panel"),
+            wx.ITEM_NORMAL,
+            short_help_string=_("Hide task panel"),
         )
-
-        # Text on viewer
         self.AddTool(
             ID_TEXT,
             "",
             self.BMP_WITH_TEXT,
             wx.NullBitmap,
-            wx.ITEM_CHECK,
-            short_help_string=_("Show text"),
+            wx.ITEM_NORMAL,
+            short_help_string=_("Hide text"),
         )
-
-        # Ruler on viewer
         self.AddTool(
             ID_RULER,
             "",
             self.BMP_WITH_RULER,
             wx.NullBitmap,
-            wx.ITEM_CHECK,
-            short_help_string=_("Show ruler"),
+            wx.ITEM_NORMAL,
+            short_help_string=_("Hide ruler"),
         )
 
     def _EnableState(self, state):
@@ -2448,47 +2453,23 @@ class LayoutToolBar(AuiToolBar):
         self.Refresh()
 
     def _SendRulerVisibilityStatus(self):
-        status = self.GetToolToggled(ID_RULER)
-        Publisher.sendMessage("Set ruler visibility", visibility=status)
+        Publisher.sendMessage("Receive ruler visibility status", status=self.ontool_ruler)
 
-    def _SetLayoutWithoutTask(self, status=None):
+    def _SetLayoutWithoutTask(self):
         """
-        Set toggle related to layout without task (no task panel visible).
-        If status is provided, use it to set the state.
+        Set item bitmap to task panel hiden.
         """
-        # Set toggle button state
-        self.ToggleTool(ID_LAYOUT, False)
-        self.Refresh()
+        self.SetToolNormalBitmap(ID_LAYOUT, self.BMP_WITHOUT_MENU)
 
-        # Only when directly toggling from button, not via set layout message
-        if status is None:
-            # Get parent frame and call its hide method
-            parent = self.GetParent()
-            parent._HideTask()
-
-    def _SetLayoutWithTask(self, status=None):
+    def _SetLayoutWithTask(self):
         """
-        Set toggle related to layout with task panel visible.
-        If status is provided, use it to set the state.
+        Set item bitmap to task panel shown.
         """
-        # If status is provided, use it to control the button state
-        if status is not None:
-            self.ToggleTool(ID_LAYOUT, status)
-        else:
-            # Default to showing task panel
-            self.ToggleTool(ID_LAYOUT, True)
-
-        self.Refresh()
-
-        # Only when directly toggling from button, not via set layout message
-        if status is None:
-            # Get parent frame and call its show method
-            parent = self.GetParent()
-            parent._ShowTask()
+        self.SetToolNormalBitmap(ID_LAYOUT, self.BMP_WITH_MENU)
 
     def OnToggle(self, event):
         """
-        Update status of toolbar item (if it is toggled).
+        Update status of toolbar item (bitmap and help)
         """
         id = event.GetId()
         if id == ID_LAYOUT:
@@ -2497,89 +2478,101 @@ class LayoutToolBar(AuiToolBar):
             self.ToggleText()
         elif id == ID_RULER:
             self.ToggleRulers()
-        self.Refresh()
+
+        for item in VIEW_TOOLS:
+            state = self.GetToolToggled(item)
+            if state and (item != id):
+                self.ToggleTool(item, False)
+
         event.Skip()
-
-    def SetStateProjectClose(self):
-        """
-        Disable menu items (e.g. layout without task) when project is
-        closed.
-        """
-        for tool in self.enable_items:
-            self.EnableTool(tool, False)
-        self.Refresh()
-
-    def SetStateProjectOpen(self):
-        """
-        Enable menu items (e.g. layout without task) when project is
-        opened.
-        """
-        for tool in self.enable_items:
-            self.EnableTool(tool, True)
-        self.Refresh()
 
     def ToggleLayout(self):
         """
-        Based on previous layout status, show or hide task panel.
+        Based on previous layout item state, toggle it.
         """
-        layout = self.GetToolToggled(ID_LAYOUT)
-
-        # Get parent frame
-        parent = self.GetParent()
-
-        # Use the parent's existing methods instead of duplicating code
-        if layout:
-            # Call the parent's show task method
+        if self.ontool_layout:
+            self.SetToolNormalBitmap(ID_LAYOUT, self.BMP_WITHOUT_MENU)
+            # Get parent frame and call its show method
+            parent = self.GetParent()
             parent._ShowTask()
+            self.SetToolShortHelp(ID_LAYOUT, _("Hide task panel"))
+            self.ontool_layout = False
         else:
-            # Call the parent's hide task method
+            self.bitmap = self.BMP_WITH_MENU
+            self.SetToolNormalBitmap(ID_LAYOUT, self.BMP_WITH_MENU)
+            # Get parent frame and call its hide method
+            parent = self.GetParent()
             parent._HideTask()
-
-        # No need to send messages since _ShowTask and _HideTask handle this
+            self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
+            self.ontool_layout = True
 
     def ToggleText(self):
         """
-        Based on previous position value, show or hide text on
-        viewer.
+        Based on previous text item state, toggle it.
         """
-        status = self.GetToolToggled(ID_TEXT)
-        if status:
+        if self.ontool_text:
             self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITH_TEXT)
-            Publisher.sendMessage("Show text actors on viewers")
+            Publisher.sendMessage("Hide text actors on viewers")
+            self.SetToolShortHelp(ID_TEXT, _("Show text"))
+            Publisher.sendMessage("Update AUI")
+            self.ontool_text = False
         else:
             self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITHOUT_TEXT)
-            Publisher.sendMessage("Hide text actors on viewers")
+            Publisher.sendMessage("Show text actors on viewers")
+            self.SetToolShortHelp(ID_TEXT, _("Hide text"))
+            Publisher.sendMessage("Update AUI")
+            self.ontool_text = True
 
     def ShowRulers(self):
         """
-        Show ruler on viewer.
+        Show the rulers on the viewers.
         """
-        self.ToggleTool(ID_RULER, True)
         self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
         Publisher.sendMessage("Show rulers on viewers")
-        self.Refresh()
+        self.SetToolShortHelp(ID_RULER, _("Hide rulers"))
+        Publisher.sendMessage("Update AUI")
+        self.ontool_ruler = True
 
     def HideRulers(self):
         """
-        Hide ruler on viewer.
+        Hide the rulers on the viewers.
         """
-        self.ToggleTool(ID_RULER, False)
         self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
         Publisher.sendMessage("Hide rulers on viewers")
-        self.Refresh()
+        self.SetToolShortHelp(ID_RULER, _("Show rulers"))
+        Publisher.sendMessage("Update AUI")
+        self.ontool_ruler = False
 
     def ToggleRulers(self):
         """
-        Based on previous state value, show or hide ruler on
-        viewer.
+        Based on the current ruler state, either show or hide the rulers.
         """
-        status = self.GetToolToggled(ID_RULER)
-        if status:
-            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITH_RULER)
-            Publisher.sendMessage("Show rulers on viewers")
+        if self.ontool_ruler:
+            self.HideRulers()
         else:
-            self.SetToolNormalBitmap(ID_RULER, self.BMP_WITHOUT_RULER)
-            Publisher.sendMessage("Hide rulers on viewers")
+            self.ShowRulers()
+
+    def SetStateProjectClose(self):
+        """
+        Disable menu items (e.g. text) when project is closed.
+        """
+        self.ontool_text = True
+        self.ontool_ruler = True
+        self.ToggleText()
+        self.HideRulers()
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
+
+    def SetStateProjectOpen(self):
+        """
+        Disable menu items (e.g. text) when project is closed.
+        """
+        self.ontool_text = False
+        self.ontool_ruler = True
+        self.ToggleText()
+        self.HideRulers()
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
 
 
 # --------------------------------------------------------------------
