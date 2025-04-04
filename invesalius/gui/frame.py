@@ -512,16 +512,10 @@ class Frame(wx.Frame):
 
     def ExitDialog(self):
         msg = _("Are you sure you want to exit?")
-        if sys.platform == "darwin":
-            dialog = wx.RichMessageDialog(
-                None, "", msg, wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
-            )
-            dialog.ShowCheckBox("Store session", True)
-        else:
-            dialog = wx.RichMessageDialog(
-                None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
-            )
-            dialog.ShowCheckBox("Store session", True)
+        dialog = wx.RichMessageDialog(
+            None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
+        )
+        dialog.ShowCheckBox("Store session", True)
 
         def on_close(event):
             dialog.EndModal(wx.ID_NO)
