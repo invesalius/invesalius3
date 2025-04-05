@@ -330,6 +330,7 @@ class Navigation(metaclass=Singleton):
         Publisher.subscribe(self.SelectCoil, "Select coil")
         Publisher.subscribe(self.UpdateSerialPort, "Update serial port")
         Publisher.subscribe(self.TrackObject, "Track object")
+        Publisher.subscribe(self.UpdateExcessiveForceAdjust, "Update excessive force adjustment")
 
     def SaveConfig(self, key=None, value=None):
         """
@@ -398,6 +399,18 @@ class Navigation(metaclass=Singleton):
                 self.SaveConfig()
 
         self.SaveConfig()
+
+    def UpdateExcessiveForceAdjust(self):
+        session = ses.Session()
+        excessive_force_adjust = [
+            session.GetConfig("excessive_force_adjust"),
+            session.GetConfig("excessive_force_adjust_value"),
+            session.GetConfig("force_centering_on"),
+        ]
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Update excessive force adjustment",
+            data=excessive_force_adjust,
+        )
 
     def CoilAtTarget(self, state):
         self.coil_at_target = state
