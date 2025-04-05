@@ -146,7 +146,7 @@ class InnerTaskPanel(wx.Panel):
         self.btn_save.Enable(False)
 
         tooltip3 = _("Save All Efield")
-        self.btn_all_save = wx.Button(self, -1, _("Save All Efield"), size=wx.Size(80, -1))
+        self.btn_all_save = wx.Button(self, -1, _("Save All Efield"))
         self.btn_all_save.SetToolTip(tooltip3)
         self.btn_all_save.Bind(wx.EVT_BUTTON, self.OnSaveAllDataEfield)
         self.btn_all_save.Enable(False)
@@ -186,6 +186,7 @@ class InnerTaskPanel(wx.Panel):
 
         value = str(0)
         tooltip = _("dt(\u03bc s)")
+        text_dt = wx.StaticText(self, -1, _("dt(μs):"))
         self.input_dt = wx.TextCtrl(self, value=str(60), size=wx.Size(60, -1), style=wx.TE_CENTRE)
         self.input_dt.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.input_dt.SetBackgroundColour("WHITE")
@@ -232,7 +233,7 @@ class InnerTaskPanel(wx.Panel):
         self.input_coord.SetToolTip(tooltip)
 
         tooltip = _("Enter mtms coord")
-        btn_enter_mtms_coord = wx.Button(self, -1, _("Enter mtms coord"), size=wx.Size(80, -1))
+        btn_enter_mtms_coord = wx.Button(self, -1, _("Enter mtms coord"))
         btn_enter_mtms_coord.SetToolTip(tooltip)
         btn_enter_mtms_coord.Bind(wx.EVT_BUTTON, self.OnEnterMtmsCoords)
         btn_enter_mtms_coord.Enable(True)
@@ -252,97 +253,78 @@ class InnerTaskPanel(wx.Panel):
         line_checkboxes = wx.BoxSizer(wx.HORIZONTAL)
         line_checkboxes.AddMany(
             [
-                (enable_efield, 1, wx.LEFT | wx.RIGHT, 2),
-                (show_area, 1, wx.LEFT | wx.RIGHT, 2),
-                (efield_tools, 1, wx.LEFT | wx.RIGHT, 2),
+                (enable_efield, 1, wx.LEFT | wx.RIGHT, 10),
+                (show_area, 1, wx.LEFT | wx.RIGHT, 10),
+                (efield_tools, 1, wx.LEFT | wx.RIGHT, 10),
             ]
         )
 
         line_change_coil_input_coord_text = wx.BoxSizer(wx.HORIZONTAL)
         line_change_coil_input_coord_text.AddMany(
-            [(combo_surface_name_title, 0, wx.RIGHT), (text_input_coord, 0, wx.CENTER)]
+            [(combo_surface_name_title, 0, wx.RIGHT, 15), (text_input_coord, 0, wx.LEFT, 15)]
         )
 
         line_change_coil_input_coord = wx.BoxSizer(wx.HORIZONTAL)
         line_change_coil_input_coord.AddMany(
             [
-                (self.combo_change_coil, 1, wx.RIGHT, 2),
-                (self.input_coord, 1, wx.LEFT, 2),
-                (btn_enter_mtms_coord, 1, wx.LEFT, 2),
+                (self.combo_change_coil, 1, wx.RIGHT, 15),
+                (self.input_coord, 0, wx.LEFT | wx.RIGHT, 10),
+                (btn_enter_mtms_coord, 0, wx.LEFT, 5),
             ]
         )
 
         line_sleep = wx.BoxSizer(wx.HORIZONTAL)
         line_sleep.AddMany(
             [
-                (text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
-                (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW),
-                (text_threshold, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
-                (spin_threshold, 0, wx.ALL | wx.EXPAND | wx.GROW),
-                (text_ROI_size, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT),
-                (spin_ROI_size, 0, wx.ALL | wx.EXPAND | wx.GROW),
+                (text_sleep, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
+                (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, 2),
+                (text_threshold, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
+                (spin_threshold, 0, wx.ALL | wx.EXPAND | wx.GROW, 2),
+                (text_ROI_size, 1, wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 5),
+                (spin_ROI_size, 0, wx.ALL | wx.EXPAND | wx.GROW, 2),
             ]
         )
 
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns.Add(btn_act2, 1, wx.LEFT | wx.TOP | wx.RIGHT | wx.ALIGN_CENTER, 5)
 
         line_btns_save = wx.BoxSizer(wx.HORIZONTAL)
-        line_btns_save.Add(self.input_dt, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
-        line_btns_save.Add(self.btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
-        line_btns_save.Add(self.btn_all_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
+        line_btns_save.Add(text_dt, 0, wx.LEFT | wx.TOP | wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 5)
+        line_btns_save.Add(self.input_dt, 0, wx.LEFT | wx.TOP | wx.RIGHT, 5)
+        line_btns_save.Add(self.btn_save, 0, wx.LEFT | wx.TOP | wx.RIGHT, 5)
+        line_btns_save.Add(self.btn_all_save, 0, wx.LEFT | wx.TOP | wx.RIGHT, 5)
 
         line_mtms = wx.BoxSizer(wx.HORIZONTAL)
         text_mtms = wx.StaticText(self, -1, _("dI"))
-        line_mtms.Add(
-            self.input_coil1,
-            0,
-            wx.LEFT | wx.BOTTOM | wx.RIGHT,
-        )
-        line_mtms.Add(
-            self.input_coil2,
-            0,
-            wx.LEFT | wx.BOTTOM | wx.RIGHT,
-        )
-        line_mtms.Add(
-            self.input_coil3,
-            0,
-            wx.LEFT | wx.BOTTOM | wx.RIGHT,
-        )
-        line_mtms.Add(
-            self.input_coil4,
-            0,
-            wx.LEFT | wx.BOTTOM | wx.RIGHT,
-        )
-        line_mtms.Add(
-            self.input_coil5,
-            0,
-            wx.LEFT | wx.BOTTOM | wx.RIGHT,
-        )
+        line_mtms.Add(self.input_coil1, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, 5)
+        line_mtms.Add(self.input_coil2, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, 5)
+        line_mtms.Add(self.input_coil3, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, 5)
+        line_mtms.Add(self.input_coil4, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, 5)
+        line_mtms.Add(self.input_coil5, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, 5)
 
         line_mtms_buttoms = wx.BoxSizer(wx.HORIZONTAL)
         line_mtms_buttoms.AddMany(
             [
-                (btn_enter, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT),
-                (btn_reset, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT),
+                (btn_enter, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, 5),
+                (btn_reset, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT, 5),
             ]
         )
 
         line_cortex_markers = wx.BoxSizer(wx.HORIZONTAL)
-        line_cortex_markers.Add(efield_cortex_markers, 1, wx.LEFT | wx.RIGHT, 2)
-        line_cortex_markers.Add(efield_save_automatically, 1, wx.LEFT | wx.RIGHT, 2)
+        line_cortex_markers.Add(efield_cortex_markers, 1, wx.LEFT | wx.RIGHT, 10)
+        line_cortex_markers.Add(efield_save_automatically, 1, wx.LEFT | wx.RIGHT, 10)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
-        main_sizer.Add(line_checkboxes, 1, wx.LEFT | wx.RIGHT, 2)
-        main_sizer.Add(line_change_coil_input_coord_text, 0, wx.RIGHT)
-        main_sizer.Add(line_change_coil_input_coord, 0, wx.RIGHT)
-        main_sizer.Add(line_sleep, 0, wx.LEFT | wx.RIGHT | wx.TOP)
-        main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
-        main_sizer.Add(text_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT)
-        main_sizer.Add(line_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT)
-        main_sizer.Add(line_mtms_buttoms, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT)
-        main_sizer.Add(line_cortex_markers, wx.BOTTOM | wx.ALIGN_CENTER)
+        main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 15)
+        main_sizer.Add(line_checkboxes, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        main_sizer.Add(line_change_coil_input_coord_text, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        main_sizer.Add(line_change_coil_input_coord, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        main_sizer.Add(line_sleep, 0, wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 10)
+        main_sizer.Add(line_btns_save, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 10)
+        main_sizer.Add(text_mtms, 0, wx.BOTTOM | wx.LEFT, 10)
+        main_sizer.Add(line_mtms, 0, wx.BOTTOM | wx.ALIGN_LEFT | wx.LEFT, 10)
+        main_sizer.Add(line_mtms_buttoms, 0, wx.LEFT | wx.BOTTOM | wx.RIGHT | wx.ALIGN_CENTER, 10)
+        main_sizer.Add(line_cortex_markers, 0, wx.BOTTOM | wx.ALIGN_CENTER | wx.TOP, 10)
         main_sizer.SetSizeHints(self)
         self.SetSizer(main_sizer)
 
