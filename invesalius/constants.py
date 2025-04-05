@@ -574,7 +574,8 @@ ID_FRAME = wx.NewIdRef()
     ID_NIFTI_IMPORT,
     ID_PARREC_IMPORT,
     ID_MODE_DBS,
-] = [wx.NewIdRef() for number in range(23)]
+    ID_DICOM_SERVER,
+] = [wx.NewIdRef() for number in range(24)]
 ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
 
@@ -741,7 +742,10 @@ LOGGING = 4
 LOGGING_LEVEL = 5
 APPEND_LOG_FILE = 6
 LOGFILE = 7
-
+SERVER_AETITLE = 4
+SERVER_PORT = 5
+STORE_PATH = 6
+SERVER_IP = 7
 
 # ------------ Logging options key------------
 FILE_LOGGING = 4

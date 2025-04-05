@@ -80,6 +80,12 @@ class Session(metaclass=Singleton):
                 (str(inv_paths.SAMPLE_DIR), "Cranium.inv3"),
             ],
             "last_dicom_folder": "",
+            "server_aetitle": "PYNETDICOM",
+            "server_port": "11120",
+            "nodes": [],
+            "selected_node": {},
+            "store_path": str(inv_paths.USER_DICOM_DIR),
+            "server_ip": "0.0.0.0",
             "file_logging": 0,
             "file_logging_level": 0,
             "append_log_file": 0,
@@ -230,6 +236,12 @@ class Session(metaclass=Singleton):
         slice_interpolation = config.getint("session", "slice_interpolation")
         rendering = config.getint("session", "rendering")
         random_id = config.getint("session", "random_id")
+        server_aetitle = config.get("session", "server_aetitle")
+        server_port = config.get("session", "server_port")
+        nodes = config.get("session", "nodes")
+        selected_node = config.get("session", "selected_node")
+        store_path = config.get("session", "store_path")
+        server_ip = config.get("session", "server_ip")
         do_file_logging = config.getint("session", "do_file_logging")
         file_logging_level = config.getint("session", "file_logging_level")
         append_log_file = config.getint("session", "append_log_file")
@@ -250,6 +262,12 @@ class Session(metaclass=Singleton):
         self.SetConfig("rendering", rendering)
         self.SetConfig("random_id", random_id)
         self.SetConfig("recent_projects", recent_projects)
+        self.SetConfig("server_aetitle", server_aetitle)
+        self.SetConfig("server_port", server_port)
+        self.SetConfig("nodes", nodes)
+        self.SetConfig("selected_node", selected_node)
+        self.SetConfig("store_path", store_path)
+        self.SetConfig("server_ip", server_ip)
         self.SetConfig("do_file_logging", do_file_logging)
         self.SetConfig("file_logging_level", file_logging_level)
         self.SetConfig("append_log_file", append_log_file)

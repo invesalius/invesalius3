@@ -1,0 +1,12 @@
+{
+    "Name": "ORTHANC",
+    "RemoteAccessAllowed": true,
+    "AuthenticationEnabled": false,
+    "DicomModalities": {
+        "PYNETDICOM": [
+            "PYNETDICOM",
+            "0.0.0.0",
+            "11120"
+        ]
+    }
+}

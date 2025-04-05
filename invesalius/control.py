@@ -237,6 +237,33 @@ class Controller:
             Publisher.sendMessage("Set project name")
             Publisher.sendMessage("Stop Config Recording")
             Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
+        # Import project
+        dirpath = dialog.ShowImportDirDialog(self.frame)
+        if dirpath and not os.listdir(dirpath):
+            dialog.ImportEmptyDirectory(dirpath)
+        elif dirpath:
+            Publisher.sendMessage("Hide import network panel")
+            self.StartImportPanel(dirpath)
+
+    def ShowDialogImportOtherFiles(self, id_type):
+        # Offer to save current project if necessary
+        session = ses.Session()
+        project_status = session.GetConfig("project_status")
+        if (
+            project_status == const.PROJECT_STATUS_NEW
+            or project_status == const.PROJECT_STATUS_CHANGED
+        ):
+            project_path = session.GetState("project_path")
+            filename = project_path[1]
+
+            answer = dialog.SaveChangesDialog2(filename)
+            if answer:
+                self.ShowDialogSaveProject()
+            self.CloseProject()
+            # Publisher.sendMessage("Enable state project", state=False)
+            Publisher.sendMessage("Set project name")
+            Publisher.sendMessage("Stop Config Recording")
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
         filepath = dialog.ShowImportOtherFilesDialog(id_type)
         Publisher.sendMessage("Open other files", filepath=filepath)
