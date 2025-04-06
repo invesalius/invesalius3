@@ -37,7 +37,7 @@ class Preferences(wx.Dialog):
 
         self.book = wx.Notebook(self, -1)
 
-        self.have_log_tab = 1
+        self.have_log_tab = 0
 
         self.visualization_tab = VisualizationTab(self.book)
         self.language_tab = LanguageTab(self.book)
