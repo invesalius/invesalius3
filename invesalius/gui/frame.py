@@ -843,31 +843,49 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
-            file_logging = values[const.FILE_LOGGING]
-            file_logging_level = values[const.FILE_LOGGING_LEVEL]
-            append_log_file = values[const.APPEND_LOG_FILE]
-            logging_file = values[const.LOGFILE]
-            console_logging = values[const.CONSOLE_LOGGING]
-            console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
-            logging = values[const.LOGGING]
-            logging_level = values[const.LOGGING_LEVEL]
-            append_log_file = values[const.APPEND_LOG_FILE]
-            logging_file = values[const.LOGFILE]
+            
+            # Handle logging settings with safe access to avoid KeyError
+            try:
+                file_logging = values.get(const.FILE_LOGGING)
+                file_logging_level = values.get(const.FILE_LOGGING_LEVEL)
+                append_log_file = values.get(const.APPEND_LOG_FILE)
+                logging_file = values.get(const.LOGFILE)
+                console_logging = values.get(const.CONSOLE_LOGGING)
+                console_logging_level = values.get(const.CONSOLE_LOGGING_LEVEL)
+                
+                # Set config only if values are not None
+                if file_logging is not None:
+                    session.SetConfig("file_logging", file_logging)
+                if file_logging_level is not None:
+                    session.SetConfig("file_logging_level", file_logging_level)
+                if append_log_file is not None:
+                    session.SetConfig("append_log_file", append_log_file)
+                if logging_file is not None:
+                    session.SetConfig("logging_file", logging_file)
+                if console_logging is not None:
+                    session.SetConfig("console_logging", console_logging)
+                if console_logging_level is not None:
+                    session.SetConfig("console_logging_level", console_logging_level)
+            except Exception as e:
+                print(f"Error handling logging settings: {e}")
+                
+            # Handle legacy logging settings
+            try:
+                logging = values.get(const.LOGGING)
+                logging_level = values.get(const.LOGGING_LEVEL)
+                
+                # Set config only if values are not None
+                if logging is not None:
+                    session.SetConfig("do_logging", logging)
+                if logging_level is not None:
+                    session.SetConfig("logging_level", logging_level)
+            except Exception as e:
+                print(f"Error handling legacy logging settings: {e}")
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
             session.SetConfig("language", language)
             session.SetConfig("slice_interpolation", slice_interpolation)
-            session.SetConfig("file_logging", file_logging)
-            session.SetConfig("file_logging_level", file_logging_level)
-            session.SetConfig("append_log_file", append_log_file)
-            session.SetConfig("logging_file", logging_file)
-            session.SetConfig("console_logging", console_logging)
-            session.SetConfig("console_logging_level", console_logging_level)
-            session.SetConfig("do_logging", logging)
-            session.SetConfig("logging_level", logging_level)
-            session.SetConfig("append_log_file", append_log_file)
-            session.SetConfig("logging_file", logging_file)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
