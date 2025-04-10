@@ -1,45 +1,54 @@
-from invesalius.utils import *
-import pytest
-import time
-import sys
-import platform
-import psutil
-from unittest.mock import patch, MagicMock
 import locale
+import platform
+import sys
+import time
+from unittest.mock import MagicMock, patch
+
+import psutil
+import pytest
+
+from invesalius.utils import *
 
 
-@pytest.mark.parametrize("input_time,expected", [
-    ("12:30:45", "12:30:45"),                  
-    ("12.30.45", "12:30:45"),                  
-    ("12:30:45.123", "12:30:45"),              
-    ("123045", "12:30:45"),                    
-    ("3600.0", time.strftime("%H:%M:%S", time.gmtime(3600.0))),   
-    ("bad_time", "bad_time"),                  
-])
+@pytest.mark.parametrize(
+    "input_time,expected",
+    [
+        ("12:30:45", "12:30:45"),
+        ("12.30.45", "12:30:45"),
+        ("12:30:45.123", "12:30:45"),
+        ("123045", "12:30:45"),
+        ("3600.0", time.strftime("%H:%M:%S", time.gmtime(3600.0))),
+        ("bad_time", "bad_time"),
+    ],
+)
 def test_format_time(input_time, expected):
     assert format_time(input_time) == expected
 
 
-@pytest.mark.parametrize("input_date,expected", [
-    ("20230409", "09/04/2023"),
-    ("09.04.2023", "09/04/2023"),
-    ("2023.04.09", "09/04/2023"),
-    ("09/04/2023", "09/04/2023"),
-    ("invalid", ""),
-])
+@pytest.mark.parametrize(
+    "input_date,expected",
+    [
+        ("20230409", "09/04/2023"),
+        ("09.04.2023", "09/04/2023"),
+        ("2023.04.09", "09/04/2023"),
+        ("09/04/2023", "09/04/2023"),
+        ("invalid", ""),
+    ],
+)
 def test_format_date(input_date, expected):
     assert format_date(input_date) == expected
 
 
 def test_next_copy_name():
-    assert next_copy_name("Test", ["Test", "Test copy", "Test copy#1", "Test copy#2"]) == "Test copy#3"
+    assert (
+        next_copy_name("Test", ["Test", "Test copy", "Test copy#1", "Test copy#2"]) == "Test copy#3"
+    )
     assert next_copy_name("Another", ["Another"]) == "Another copy"
     assert next_copy_name("Thing copy", ["Thing copy"]) == "Thing copy#1"
     assert next_copy_name("Something copy#notanumber", []) == "Something copy"
     assert next_copy_name("Fresh", []) == "Fresh copy"
     assert next_copy_name("Z", ["Z", "Z copy#1"]) == "Z copy"
     assert next_copy_name("Alpha copy#99", ["Alpha copy", "Alpha copy#99"]) == "Alpha copy#100"
-
 
 
 def test_verify_invalid_plist_character():
@@ -59,18 +68,21 @@ def test_two_ways_dictionary(mock_session, capsys):
     d.remove("b")
     assert d.get("b") is None
 
-    d.remove("non_existent_key")  
+    d.remove("non_existent_key")
     captured = capsys.readouterr()
 
     assert "TwoWaysDictionary: key not found" in captured.out
 
 
-@pytest.mark.parametrize("args, expected", [
-    ((0.5, 2.0, 0.5), [0.5, 1.0, 1.5]),      
-    ((2.0, 0.5, -0.5), [2.0, 1.5, 1.0]),     
-    ((3,), [0.0, 1.0, 2.0]),                
-    ((0, 2, 0), [0.0, 1.0]),                
-])
+@pytest.mark.parametrize(
+    "args, expected",
+    [
+        ((0.5, 2.0, 0.5), [0.5, 1.0, 1.5]),
+        ((2.0, 0.5, -0.5), [2.0, 1.5, 1.0]),
+        ((3,), [0.0, 1.0, 2.0]),
+        ((0, 2, 0), [0.0, 1.0]),
+    ],
+)
 def test_frange_various_cases(args, expected):
     assert frange(*args) == expected
 
@@ -78,7 +90,7 @@ def test_frange_various_cases(args, expected):
 def test_touch(tmp_path):
     file_path = tmp_path / "testfile.txt"
     touch(str(file_path))
-    
+
     assert file_path.exists()
 
 
@@ -86,21 +98,21 @@ def test_encode_decode_utf8():
     original = "hello"
     encoded = encode(original, "utf-8")
     decoded = decode(encoded, "utf-8")
-    
+
     assert decoded == original
 
-    
+
 def test_decode_attribute_error():
-    input_val = "hello"  
+    input_val = "hello"
     result = decode(input_val, "utf-8")
-    
+
     assert result == input_val
 
 
 def test_encode_attribute_error():
-    input_val = 123  
+    input_val = 123
     result = encode(input_val, "utf-8")
-    
+
     assert result == input_val
 
 
@@ -108,7 +120,7 @@ def test_deep_merge_dict():
     d1 = {"a": {"b": 1}, "c": 3}
     d2 = {"a": {"d": 2}, "e": 5}
     result = deep_merge_dict(d1, d2)
-    
+
     assert result == {"a": {"b": 1, "d": 2}, "c": 3, "e": 5}
 
 
@@ -119,20 +131,20 @@ def test_timing_decorator(capsys):
         return a + b
 
     result = slow_add(2, 3)
-    
+
     assert result == 5
 
     captured = capsys.readouterr()
-    
+
     assert "slow_add elapsed time:" in captured.out
-    
+
 
 def test_log_traceback_with_traceback():
     try:
-        1 / 0  
+        1 / 0
     except ZeroDivisionError as ex:
         tb = log_traceback(ex)
-        
+
         assert "ZeroDivisionError" in tb
         assert "1 / 0" in tb
 
@@ -143,10 +155,10 @@ def test_log_traceback_without_traceback():
 
     ex = FakeException("simulated")
     tb = log_traceback(ex)
-    
+
     assert "FakeException" in tb
     assert "simulated" in tb
-    
+
 
 def test_new_name_by_pattern():
     mock_mask_item1 = MagicMock()
@@ -166,8 +178,8 @@ def test_new_name_by_pattern():
 
         result = new_name_by_pattern("Test")
         assert result == "Test_3"
-        
-        
+
+
 def test_get_system_encoding_win32(monkeypatch):
     monkeypatch.setattr("sys.platform", "win32")
     monkeypatch.setattr(locale, "getdefaultlocale", lambda: ("en_US", "cp1252"))
@@ -177,8 +189,8 @@ def test_get_system_encoding_win32(monkeypatch):
 def test_get_system_encoding_non_win32(monkeypatch):
     monkeypatch.setattr("sys.platform", "darwin")
     assert get_system_encoding() == "utf-8"
-    
-    
+
+
 @patch("platform.architecture", return_value=("64bit", ""))
 @patch("sys.platform", "darwin")
 @patch("psutil.virtual_memory")
@@ -206,6 +218,7 @@ def test_resize_win32_32bit(mock_swap, mock_virtual, *_):
     assert isinstance(result, float)
     assert 0 <= result <= 1
 
+
 @patch("platform.architecture", return_value=("32bit", ""))
 @patch("sys.platform", "linux")
 @patch("psutil.virtual_memory")
@@ -218,6 +231,7 @@ def test_resize_linux_32bit(mock_swap, mock_virtual, *_):
     result = calculate_resizing_tofitmemory(100, 100, 100, 1)
     assert isinstance(result, float)
     assert 0 <= result <= 1
+
 
 @patch("platform.architecture", return_value=("64bit", ""))
 @patch("sys.platform", "darwin")
@@ -240,9 +254,6 @@ def test_vtkarray_to_numpy():
 
     result = vtkarray_to_numpy(mock_matrix)
 
-    expected = np.array([[ 0,  1,  2,  3],
-                         [10, 11, 12, 13],
-                         [20, 21, 22, 23],
-                         [30, 31, 32, 33]])
+    expected = np.array([[0, 1, 2, 3], [10, 11, 12, 13], [20, 21, 22, 23], [30, 31, 32, 33]])
 
     np.testing.assert_array_equal(result, expected)
