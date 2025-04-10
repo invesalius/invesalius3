@@ -281,7 +281,7 @@ def calculate_resizing_tofitmemory(x_size, y_size, n_slices, byte):
     resize = float((ram_free + 0.5 * swap_free) / imagesize)
     resize = math.sqrt(resize)  # this gives the "resize" for each axis x and y
     if resize > 1:
-        resize = 1
+        resize = 1.0
     return round(resize, 2)
 
 

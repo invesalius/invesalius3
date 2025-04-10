@@ -177,3 +177,57 @@ def test_get_system_encoding_win32(monkeypatch):
 def test_get_system_encoding_non_win32(monkeypatch):
     monkeypatch.setattr("sys.platform", "darwin")
     assert get_system_encoding() == "utf-8"
+    
+    
+@patch("platform.architecture", return_value=("64bit", ""))
+@patch("sys.platform", "darwin")
+@patch("psutil.virtual_memory")
+@patch("psutil.swap_memory")
+def test_resize_modern_psutil(mock_swap, mock_virtual, *_):
+    mock_virtual.return_value.available = 800_000_000
+    mock_virtual.return_value.total = 1_600_000_000
+    mock_swap.return_value.free = 400_000_000
+
+    result = calculate_resizing_tofitmemory(100, 100, 100, 1)
+    assert isinstance(result, float)
+    assert 0 <= result <= 1
+
+
+@patch("platform.architecture", return_value=("32bit", ""))
+@patch("sys.platform", "win32")
+@patch("psutil.virtual_memory")
+@patch("psutil.swap_memory")
+def test_resize_win32_32bit(mock_swap, mock_virtual, *_):
+    mock_virtual.return_value.available = 2_000_000_000
+    mock_virtual.return_value.total = 2_000_000_000
+    mock_swap.return_value.free = 1_000_000_000
+
+    result = calculate_resizing_tofitmemory(100, 100, 100, 1)
+    assert isinstance(result, float)
+    assert 0 <= result <= 1
+
+@patch("platform.architecture", return_value=("32bit", ""))
+@patch("sys.platform", "linux")
+@patch("psutil.virtual_memory")
+@patch("psutil.swap_memory")
+def test_resize_linux_32bit(mock_swap, mock_virtual, *_):
+    mock_virtual.return_value.available = 4_000_000_000
+    mock_virtual.return_value.total = 4_000_000_000
+    mock_swap.return_value.free = 1_000_000_000
+
+    result = calculate_resizing_tofitmemory(100, 100, 100, 1)
+    assert isinstance(result, float)
+    assert 0 <= result <= 1
+
+@patch("platform.architecture", return_value=("64bit", ""))
+@patch("sys.platform", "darwin")
+@patch("psutil.virtual_memory")
+@patch("psutil.swap_memory")
+def test_swap_clamped_to_ram_total(mock_swap, mock_virtual, *_):
+    mock_virtual.return_value.available = 500_000_000
+    mock_virtual.return_value.total = 1_000_000_000
+    mock_swap.return_value.free = 2_000_000_000  # will be clamped
+
+    result = calculate_resizing_tofitmemory(100, 100, 100, 1)
+    assert isinstance(result, float)
+    assert 0 <= result <= 1
