@@ -4,7 +4,7 @@ import time
 import sys
 import platform
 import psutil
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 
 @pytest.mark.parametrize("input_time,expected", [
@@ -147,3 +147,21 @@ def test_log_traceback_without_traceback():
     assert "simulated" in tb
     
 
+def test_new_name_by_pattern():
+    mock_mask_item1 = MagicMock()
+    mock_mask_item1.name = "Test_1"
+
+    mock_mask_item2 = MagicMock()
+    mock_mask_item2.name = "Test_2"
+
+    mock_mask_dict = {
+        "a": mock_mask_item1,
+        "b": mock_mask_item2,
+    }
+
+    with patch("invesalius.project.Project") as MockProject:
+        instance = MockProject.return_value
+        instance.mask_dict = mock_mask_dict
+
+        result = new_name_by_pattern("Test")
+        assert result == "Test_3"
