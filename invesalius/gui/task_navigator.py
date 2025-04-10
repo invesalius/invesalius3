@@ -3383,6 +3383,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             return
         marker = self.__get_marker(list_index)
 
+        proj = prj.Project()
+        if not proj.surface_dict:
+            wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
+            return
         self.markers.CreateCoilTargetFromLandmark(marker)
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
