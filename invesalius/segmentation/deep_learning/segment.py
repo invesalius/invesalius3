@@ -150,7 +150,7 @@ def segment_keras(image, weights_file, overlap, probability_array, comm_array, p
         sums[iz:ez, iy:ey, ix:ex] += 1
 
     probability_array /= sums
-    comm_array[0] = np.inf
+    comm_array[0] = 100.0
 
 
 def download_callback(comm_array):
@@ -189,7 +189,7 @@ def segment_torch(
             sums[iz:ez, iy:ey, ix:ex] += 1
 
     probability_array /= sums
-    comm_array[0] = np.inf
+    comm_array[0] = 100.0
 
 
 def segment_torch_jit(
@@ -252,7 +252,7 @@ def segment_torch_jit(
             probability_array, output_shape=old_shape, preserve_range=True
         )
 
-    comm_array[0] = np.inf
+    comm_array[0] = 100.0
 
 
 ctx = multiprocessing.get_context("spawn")
