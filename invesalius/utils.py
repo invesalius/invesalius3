@@ -63,7 +63,7 @@ def format_date(value: str) -> str:
                 data = time.strptime(value, "%d.%m.%Y")
             else:
                 data = time.strptime(value, "%Y.%m.%d")
-        elif len(value.split("//")) > 1:
+        elif len(value.split("/")) > 1:
             data = time.strptime(value, "%d/%m/%Y")
         else:
             data = time.strptime(value, "%Y%m%d")
@@ -93,44 +93,28 @@ def next_copy_name(original_name: str, names_list: List[str]) -> str:
         original_name copy
         original_name copy#1
     """
-    # is there only one copy, unnumbered?
     if original_name.endswith(" copy"):
         first_copy = original_name
         last_index = -1
+
     else:
-        parts = original_name.rpartition(" copy#")
-        # is there any copy, might be numbered?
-        if parts[0] and parts[-1]:
-            # yes, lets check if it ends with a number
-            if isinstance(eval(parts[-1]), int):
-                last_index = int(parts[-1]) - 1
-                first_copy = f"{parts[0]} copy"
-            # no... well, so will build the copy name from zero
-            else:
-                last_index = -1
-                first_copy = f"{original_name} copy"
-                # apparently this isthe new copy name, check it
-                if first_copy not in names_list:
-                    return first_copy
-
+        base, sep, suffix = original_name.rpartition(" copy#")
+        if base and suffix.isdigit():
+            last_index = int(suffix) - 1
+            first_copy = f"{base} copy"
         else:
-            # no, apparently there are no copies, as
-            # separator was not found -- returned ("", " copy#", "")
-            last_index = -1
-            first_copy = f"{original_name} copy"
-
-            # apparently this isthe new copy name, check it
+            # If not a valid numbered copy, strip off ' copy#bad' if it exists
+            base_name = base if base and sep else original_name
+            first_copy = f"{base_name} copy"
             if first_copy not in names_list:
                 return first_copy
+            last_index = -1
 
-    # lets build up the new name based on last pattern value
-    got_new_name = False
-    while not got_new_name:
+    while True:
         last_index += 1
-        next_copy = "%s#%d" % (first_copy, last_index + 1)
+        next_copy = f"{first_copy}#{last_index + 1}"
         if next_copy not in names_list:
-            got_new_name = True
-    return next_copy
+            return next_copy
 
 
 def new_name_by_pattern(pattern: str) -> str:
