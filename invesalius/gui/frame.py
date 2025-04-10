@@ -57,7 +57,7 @@ except ImportError:
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range(3)]
 
 WILDCARD_EXPORT_SLICE = (
-    "HDF5 (*.hdf5)|*.hdf5|" "NIfTI 1 (*.nii)|*.nii|" "Compressed NIfTI (*.nii.gz)|*.nii.gz"
+    "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
 )
 
 IDX_EXT = {0: ".hdf5", 1: ".nii", 2: ".nii.gz"}
@@ -769,7 +769,7 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
-            
+
             # Handle logging settings with safe access to avoid KeyError
             try:
                 file_logging = values.get(const.FILE_LOGGING)
@@ -778,7 +778,7 @@ class Frame(wx.Frame):
                 logging_file = values.get(const.LOGFILE)
                 console_logging = values.get(const.CONSOLE_LOGGING)
                 console_logging_level = values.get(const.CONSOLE_LOGGING_LEVEL)
-                
+
                 # Set config only if values are not None
                 if file_logging is not None:
                     session.SetConfig("file_logging", file_logging)
@@ -794,12 +794,12 @@ class Frame(wx.Frame):
                     session.SetConfig("console_logging_level", console_logging_level)
             except Exception as e:
                 print(f"Error handling logging settings: {e}")
-                
+
             # Handle legacy logging settings
             try:
                 logging = values.get(const.LOGGING)
                 logging_level = values.get(const.LOGGING_LEVEL)
-                
+
                 # Set config only if values are not None
                 if logging is not None:
                     session.SetConfig("do_logging", logging)
