@@ -5,6 +5,7 @@ import sys
 import platform
 import psutil
 from unittest.mock import patch, MagicMock
+import locale
 
 
 @pytest.mark.parametrize("input_time,expected", [
@@ -165,3 +166,13 @@ def test_new_name_by_pattern():
 
         result = new_name_by_pattern("Test")
         assert result == "Test_3"
+        
+        
+def test_get_system_encoding_win32(monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr(locale, "getdefaultlocale", lambda: ("en_US", "cp1252"))
+    assert get_system_encoding() == "cp1252"
+
+def test_get_system_encoding_non_win32(monkeypatch):
+    monkeypatch.setattr("sys.platform", "darwin")
+    assert get_system_encoding() == "utf-8"
