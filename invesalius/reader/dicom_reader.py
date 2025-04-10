@@ -52,6 +52,7 @@ logger = get_logger("reader.dicom_reader")
 # Try to import vtkGDCMImageReader, but provide a fallback if it fails
 try:
     from vtkmodules.vtkIOImage import vtkGDCMImageReader
+
     HAS_VTK_GDCM = True
     logger.info("Successfully imported vtkGDCMImageReader")
 except ImportError:
@@ -74,7 +75,7 @@ else:
     error_message="Error selecting larger DICOM group",
     category=ErrorCategory.DICOM,
     severity=ErrorSeverity.ERROR,
-    reraise=False
+    reraise=False,
 )
 def SelectLargerDicomGroup(patient_groups):
     """
@@ -85,11 +86,11 @@ def SelectLargerDicomGroup(patient_groups):
         if not patient_groups:
             logger.error("No patient groups to select from")
             return None
-            
+
         # Find the largest group (the one with most files)
         largest_group = None
         max_files = 0
-        
+
         for patient in patient_groups:
             for study in patient.GetStudies():
                 for series in study.GetSeries():
@@ -97,14 +98,14 @@ def SelectLargerDicomGroup(patient_groups):
                     if series_files > max_files:
                         max_files = series_files
                         largest_group = series
-        
+
         if largest_group:
             logger.info(f"Selected largest DICOM group with {max_files} files")
             return largest_group
         else:
             logger.warning("No valid DICOM groups found")
             return None
-            
+
     except Exception as e:
         logger.error(f"Error selecting larger DICOM group: {str(e)}")
         return None
@@ -112,9 +113,9 @@ def SelectLargerDicomGroup(patient_groups):
 
 @handle_errors(
     error_message="Error sorting DICOM files",
-    category=ErrorCategory.GENERAL, 
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.ERROR,
-    reraise=False
+    reraise=False,
 )
 def SortFiles(filelist, dicom):
     # Sort slices
@@ -150,16 +151,16 @@ class DicomFileLoader:
 
     @handle_errors(
         error_message="Error loading DICOM file",
-        category=ErrorCategory.DICOM, 
+        category=ErrorCategory.DICOM,
         severity=ErrorSeverity.ERROR,
-        reraise=False
+        reraise=False,
     )
     def run(self):
         grouper = self.grouper
         reader = gdcm.ImageReader()
-        
+
         logger.debug(f"Loading DICOM file: {self.filepath}")
-        
+
         if _has_win32api:
             try:
                 reader.SetFileName(
@@ -172,7 +173,7 @@ class DicomFileLoader:
                 reader.SetFileName(utils.encode(self.filepath, const.FS_ENCODE))
             except TypeError:
                 reader.SetFileName(self.filepath)
-                
+
         if reader.Read():
             file = reader.GetFile()
             # Retrieve data set
@@ -330,9 +331,9 @@ class DicomFileLoader:
 
 @handle_errors(
     error_message="Error getting DICOM groups",
-    category=ErrorCategory.DICOM, 
+    category=ErrorCategory.DICOM,
     severity=ErrorSeverity.ERROR,
-    reraise=False
+    reraise=False,
 )
 def yGetDicomGroups(directory, recursive=True, gui=True):
     """
@@ -353,11 +354,11 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
         return []
 
     logger.info(f"Found {nfiles} total files in directory, starting DICOM processing")
-    
+
     counter = 0
     valid_dicom_counter = 0
     grouper = dicom_grouper.DicomPatientGrouper()
-    
+
     # Try to read all files inside directory
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
@@ -365,17 +366,17 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
                 try:
                     filepath = os.path.join(dirpath, name).encode(const.FS_ENCODE)
                     counter += 1
-                    
+
                     # Report progress
                     if gui:
                         yield (counter, nfiles)
                         # Add a SafeYield to keep the UI responsive
                         if counter % 10 == 0:  # Only yield every 10 files to improve performance
                             wx.SafeYield()
-                    
+
                     # Load the DICOM file by creating a DicomFileLoader instance
                     DicomFileLoader(grouper, filepath)
-                    
+
                 except Exception as e:
                     logger.error(f"Error processing file {name}: {str(e)}")
                     continue
@@ -386,17 +387,17 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
                 try:
                     filepath = str(os.path.join(dirpath, name)).encode(const.FS_ENCODE)
                     counter += 1
-                    
+
                     # Report progress
                     if gui:
                         yield (counter, nfiles)
                         # Add a SafeYield to keep the UI responsive
                         if counter % 10 == 0:  # Only yield every 10 files to improve performance
                             wx.SafeYield()
-                    
+
                     # Load the DICOM file by creating a DicomFileLoader instance
                     DicomFileLoader(grouper, filepath)
-                    
+
                 except Exception as e:
                     logger.error(f"Error processing file {name}: {str(e)}")
                     continue
@@ -406,7 +407,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
     # Return all groups (patients)
     if gui:
         yield (nfiles, nfiles)
-    
+
     # Return patient groups
     patient_list = grouper.GetPatientsGroups()
     logger.info(f"Found {len(patient_list)} patient groups")
@@ -418,15 +419,15 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
 
 @handle_errors(
     error_message="Error getting DICOM groups",
-    category=ErrorCategory.DICOM, 
+    category=ErrorCategory.DICOM,
     severity=ErrorSeverity.ERROR,
-    reraise=False
+    reraise=False,
 )
 def GetDicomGroups(directory, recursive=True):
     return list(yGetDicomGroups(directory, recursive, gui=False))
 
 
-class ProgressDicomReader():
+class ProgressDicomReader:
     def __init__(self):
         self.running = True
         self.dicom_series = None
@@ -436,27 +437,27 @@ class ProgressDicomReader():
         self.stoped = False
         Publisher.subscribe(self.CancelLoad, "Cancel DICOM load")
         logger.debug("ProgressDicomReader initialized")
-        
+
     def CancelLoad(self):
         self.running = False
         self.stoped = True
         logger.info("DICOM loading cancelled by user")
-        
+
     def SetWindowEvent(self, frame):
         self.frame = frame
         logger.info("Window event set for DICOM reader")
-    
+
     def SetDirectoryPath(self, path, recursive=True):
         self.directory = path
         self.recursive = recursive
         self.running = True
         self.stoped = False
         logger.info(f"Set DICOM directory path: {path}, recursive: {recursive}")
-        
+
         # Flag this as processing and then start the DICOM groups processing
         # in the same thread to ensure proper synchronization
         Publisher.sendMessage("Begin busy cursor")
-        
+
         # Process DICOM groups directly
         self.GetDicomGroups(path, recursive)
 
@@ -474,11 +475,11 @@ class ProgressDicomReader():
 
     def EndLoadFile(self, patient_series):
         Publisher.sendMessage("End dicom load", patient_series=patient_series)
-            
+
     def SetDicomSeries(self, dicom_series):
         self.dicom_series = dicom_series
         logger.info(f"Set DICOM series with {len(dicom_series)} files")
-    
+
     def GetDicomGroups(self, path=None, recursive=None):
         """
         Get DICOM groups from a directory.
@@ -501,7 +502,7 @@ class ProgressDicomReader():
             else:
                 self.EndLoadFile(value_progress)
         self.UpdateLoadFileProgress(None)
-        
+
         # End busy cursor
         Publisher.sendMessage("End busy cursor")
 
@@ -511,40 +512,44 @@ class ProgressDicomReader():
             self.UpdateLoadFileProgress(None)
             self.stoped = False
 
+
 @handle_errors(
     error_message="Error reading DICOM dir",
-    category=ErrorCategory.IO, 
+    category=ErrorCategory.IO,
     severity=ErrorSeverity.ERROR,
-    reraise=False
+    reraise=False,
 )
 def ReadDicomDir(directory):
     """
-    Read all DICOM files in directory and return a 
+    Read all DICOM files in directory and return a
     dictionary of DICOM objects.
     """
     try:
         logger.info(f"Reading DICOM directory: {directory}")
-        
+
         dict = {}
         for dirpath, dirnames, filenames in os.walk(directory):
             for file in filenames:
                 if _is_valid_dicom(os.path.join(dirpath, file)):
                     dcm_path = os.path.join(dirpath, file)
-                    dicom = dicom_module.read_file(dcm_path, defer_size="512 KB", stop_before_pixels=True)
+                    dicom = dicom_module.read_file(
+                        dcm_path, defer_size="512 KB", stop_before_pixels=True
+                    )
                     dict[dcm_path] = dicom
-                    
+
         logger.info(f"Found {len(dict)} DICOM files in {directory}")
         return dict
-        
+
     except Exception as e:
         logger.error(f"Error reading DICOM directory: {str(e)}")
         return {}
 
+
 @handle_errors(
     error_message="Error getting DICOM files",
-    category=ErrorCategory.IO, 
+    category=ErrorCategory.IO,
     severity=ErrorSeverity.ERROR,
-    reraise=False
+    reraise=False,
 )
 def GetDicomFiles(directory, min_slices=None):
     """
@@ -552,30 +557,31 @@ def GetDicomFiles(directory, min_slices=None):
     """
     try:
         logger.info(f"Getting DICOM files from: {directory}")
-        
+
         dicom_files = []
         for dirpath, dirnames, filenames in os.walk(directory):
             for name in filenames:
                 filename = os.path.join(dirpath, name)
                 if _is_valid_dicom(filename):
                     dicom_files.append(filename)
-        
+
         if min_slices and len(dicom_files) < min_slices:
             logger.warning(f"Not enough DICOM files ({len(dicom_files)}), minimum is {min_slices}")
             return False
-            
+
         logger.info(f"Found {len(dicom_files)} DICOM files in {directory}")
         return dicom_files
-        
+
     except Exception as e:
         logger.error(f"Error getting DICOM files: {str(e)}")
         return False
 
+
 @handle_errors(
     error_message="Error sorting DICOM files",
-    category=ErrorCategory.GENERAL, 
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.ERROR,
-    reraise=False
+    reraise=False,
 )
 def SortDicom(dicom_list):
     """
@@ -586,65 +592,72 @@ def SortDicom(dicom_list):
         logger.info("Sorting DICOM files")
         # Dictionary for organizing patients, studies and series.
         patients = {}
-        
+
         for dicom in dicom_list:
             # Group by patient ID
             try:
                 patient_id = dicom.PatientID
             except AttributeError:
                 patient_id = "Unknown Patient"
-                
+
             if patient_id not in patients:
                 patients[patient_id] = {}
-                
+
             # Group by study
             try:
                 study_uid = dicom.StudyInstanceUID
             except AttributeError:
                 study_uid = "Unknown Study"
-                
+
             if study_uid not in patients[patient_id]:
                 patients[patient_id][study_uid] = {}
-                
+
             # Group by series
             try:
                 series_uid = dicom.SeriesInstanceUID
             except AttributeError:
                 series_uid = "Unknown Series"
-                
+
             if series_uid not in patients[patient_id][study_uid]:
                 patients[patient_id][study_uid][series_uid] = []
-                
+
             # Add files to respective series
             patients[patient_id][study_uid][series_uid].append(dicom)
-            
+
         # Sort series
         for patient_id in patients:
             for study_uid in patients[patient_id]:
                 for series_uid in patients[patient_id][study_uid]:
                     # Sort each series
                     try:
-                        patients[patient_id][study_uid][series_uid] = _sort_series(patients[patient_id][study_uid][series_uid])
+                        patients[patient_id][study_uid][series_uid] = _sort_series(
+                            patients[patient_id][study_uid][series_uid]
+                        )
                     except Exception as e:
                         logger.warning(f"Failed to sort series {series_uid}: {str(e)}")
                         # Try our best to sort by instance number if other methods fail
                         try:
-                            patients[patient_id][study_uid][series_uid].sort(key=lambda x: getattr(x, 'InstanceNumber', 0))
+                            patients[patient_id][study_uid][series_uid].sort(
+                                key=lambda x: getattr(x, "InstanceNumber", 0)
+                            )
                         except:
-                            logger.error(f"Failed to sort series {series_uid} even by instance number")
-            
+                            logger.error(
+                                f"Failed to sort series {series_uid} even by instance number"
+                            )
+
         logger.info(f"DICOM files sorted for {len(patients)} patients")
         return patients
-        
+
     except Exception as e:
         logger.error(f"Error sorting DICOM files: {str(e)}")
         return {}
 
+
 @handle_errors(
     error_message="Error extracting acquisition date",
-    category=ErrorCategory.GENERAL, 
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.WARNING,
-    reraise=False
+    reraise=False,
 )
 def GetAcquisitionDate(dicom):
     """
@@ -654,24 +667,25 @@ def GetAcquisitionDate(dicom):
         acquisition_date = dicom.get("AcquisitionDate")
         if acquisition_date:
             return acquisition_date[:4], acquisition_date[4:6], acquisition_date[6:8]
-        
+
         # Try StudyDate as fallback
         study_date = dicom.get("StudyDate")
         if study_date:
             return study_date[:4], study_date[4:6], study_date[6:8]
-            
+
         logger.warning("No acquisition or study date found in DICOM")
-        return '', '', ''
-        
+        return "", "", ""
+
     except Exception as e:
         logger.warning(f"Error extracting acquisition date: {str(e)}")
-        return '', '', ''
+        return "", "", ""
+
 
 @handle_errors(
     error_message="Error extracting acquisition time",
-    category=ErrorCategory.GENERAL, 
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.WARNING,
-    reraise=False
+    reraise=False,
 )
 def GetAcquisitionTime(dicom):
     """
@@ -681,24 +695,25 @@ def GetAcquisitionTime(dicom):
         acquisition_time = dicom.get("AcquisitionTime")
         if acquisition_time:
             return acquisition_time[:2], acquisition_time[2:4], acquisition_time[4:6]
-        
+
         # Try StudyTime as fallback
         study_time = dicom.get("StudyTime")
         if study_time:
             return study_time[:2], study_time[2:4], study_time[4:6]
-            
+
         logger.warning("No acquisition or study time found in DICOM")
-        return '', '', ''
-        
+        return "", "", ""
+
     except Exception as e:
         logger.warning(f"Error extracting acquisition time: {str(e)}")
-        return '', '', ''
+        return "", "", ""
+
 
 @handle_errors(
     error_message="Error getting DICOM files by patient",
-    category=ErrorCategory.GENERAL, 
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.ERROR,
-    reraise=False
+    reraise=False,
 )
 def GetDicomFilesbyPatient(dicomdir):
     """
@@ -706,45 +721,46 @@ def GetDicomFilesbyPatient(dicomdir):
     """
     try:
         logger.info(f"Getting DICOM files by patient from {dicomdir}")
-        
+
         dict_file = ReadDicomDir(dicomdir)
         patients_dict = {}
-        
+
         for dicom_file in dict_file:
             dicom = dict_file[dicom_file]
-            
+
             try:
                 patient_name = dicom.PatientName
                 if isinstance(patient_name, dicom_module.valuerep.PersonName):
-                    patient_name = patient_name.encode('UTF-8', 'replace')
+                    patient_name = patient_name.encode("UTF-8", "replace")
                 patient_name = patient_name.decode("utf-8", "ignore")
             except:
                 patient_name = "Unknown"
-                
+
             try:
                 patient_id = dicom.PatientID
             except:
                 patient_id = "Unknown"
-                
+
             key = (patient_name, patient_id)
-            
+
             if key not in patients_dict:
                 patients_dict[key] = []
-                
+
             patients_dict[key].append(dicom_file)
-            
+
         logger.info(f"Found {len(patients_dict)} patients in DICOM directory")
         return patients_dict
-        
+
     except Exception as e:
         logger.error(f"Error getting DICOM files by patient: {str(e)}")
         return {}
 
+
 @handle_errors(
     error_message="Error loading DICOM group",
-    category=ErrorCategory.IO, 
+    category=ErrorCategory.IO,
     severity=ErrorSeverity.ERROR,
-    reraise=False
+    reraise=False,
 )
 def LoadDicom(directory, slice_interval=0, mode="append"):
     """
@@ -752,41 +768,41 @@ def LoadDicom(directory, slice_interval=0, mode="append"):
     """
     try:
         logger.info(f"Loading DICOM from {directory}")
-        
+
         # Get dicom files
         dicom_files = GetDicomFiles(directory)
         if not dicom_files:
             logger.error("No DICOM files found")
             return False
-        
+
         # Create a new grouper for processing these files
         grouper = dicom_grouper.DicomPatientGrouper()
-        
+
         # Process each DICOM file
         for filepath in dicom_files:
             try:
                 DicomFileLoader(grouper, filepath)
             except Exception as e:
                 logger.error(f"Error loading DICOM file {filepath}: {str(e)}")
-        
+
         # Get the patient groups
         patient_groups = grouper.GetPatientsGroups()
         if not patient_groups:
             logger.error("No valid DICOM groups found")
             return False
-            
+
         # Select the largest group
         largest_group = SelectLargerDicomGroup(patient_groups)
         if not largest_group:
             logger.error("Could not select a valid DICOM group")
             return False
-        
+
         if HAS_VTK_GDCM:
             # Load using vtkGDCMImageReader if available
             reader = vtkGDCMImageReader()
             reader.SetDirectoryName(directory)
             reader.Update()
-            
+
             # Get image data
             image = reader.GetOutput()
             if not image:
@@ -799,18 +815,18 @@ def LoadDicom(directory, slice_interval=0, mode="append"):
                 import pydicom
                 import numpy as np
                 from invesalius.data.imagedata_utils import numpy_to_vtkImageData
-                
+
                 # Load the first DICOM file to get dimensions
                 first_dicom = pydicom.dcmread(dicom_files[0])
-                
+
                 # Get dimensions
                 rows = first_dicom.Rows
                 cols = first_dicom.Columns
                 slices = len(dicom_files)
-                
+
                 # Create a numpy array to hold the image data
                 image_array = np.zeros((slices, rows, cols), dtype=np.int16)
-                
+
                 # Load each DICOM file
                 for i, file_path in enumerate(dicom_files):
                     try:
@@ -818,7 +834,7 @@ def LoadDicom(directory, slice_interval=0, mode="append"):
                         image_array[i, :, :] = ds.pixel_array
                     except Exception as e:
                         logger.error(f"Error reading DICOM file {file_path}: {str(e)}")
-                
+
                 # Create vtkImageData
                 image = numpy_to_vtkImageData(image_array)
                 if not image:
@@ -827,21 +843,22 @@ def LoadDicom(directory, slice_interval=0, mode="append"):
             except ImportError:
                 logger.error("Required modules for fallback DICOM reading are not available")
                 return False
-        
+
         logger.info("DICOM loaded successfully")
         return image
-        
+
     except Exception as e:
         logger.error(f"Error loading DICOM group: {str(e)}")
         return False
 
+
 def _is_valid_dicom(filename):
     """
     Check if a file is a valid DICOM file.
-    
+
     Args:
         filename (str): Path to the file to check.
-        
+
     Returns:
         bool: True if the file is a valid DICOM file, False otherwise.
     """
@@ -849,35 +866,35 @@ def _is_valid_dicom(filename):
         if not os.path.isfile(filename):
             logger.debug(f"Not a file: {filename}")
             return False
-            
+
         # First, check file size - DICOM files should be at least 132 bytes
         # (128 byte preamble + 4 byte magic number)
         file_size = os.path.getsize(filename)
         if file_size < 132:
             logger.debug(f"File too small to be DICOM ({file_size} bytes): {filename}")
             return False
-            
-        with open(filename, 'rb') as f:
+
+        with open(filename, "rb") as f:
             # Check for DICOM magic bytes - standard DICOM files have 'DICM' at offset 128
             f.seek(128)  # Skip preamble
             magic = f.read(4)
-            if magic == b'DICM':
+            if magic == b"DICM":
                 return True
-                
+
             # Some DICOM files don't have the standard preamble+magic
             # Try to detect these by looking for a valid DICOM tag at the beginning
             f.seek(0)
             # Try to read first 16 bytes - enough for a couple of DICOM tags
             header = f.read(16)
-            
+
             # Look for common DICOM elements that would be near the start
             # Group 0002 elements are common at the start (File Meta Information)
             # Check for a valid group number with proper endianness (0x0002 or 0x0200)
-            if (header[0:2] == b'\x02\x00' or header[0:2] == b'\x00\x02'):
+            if header[0:2] == b"\x02\x00" or header[0:2] == b"\x00\x02":
                 return True
-                
+
             # One more check: try to see if we can read it with GDCM
-            if gdcm and hasattr(gdcm, 'ImageReader'):
+            if gdcm and hasattr(gdcm, "ImageReader"):
                 try:
                     reader = gdcm.ImageReader()
                     try:
@@ -889,7 +906,7 @@ def _is_valid_dicom(filename):
                         return True
                 except Exception as e:
                     logger.debug(f"GDCM ImageReader error: {str(e)}")
-                    
+
         logger.debug(f"Not a valid DICOM file: {filename}")
         return False
     except Exception as e:

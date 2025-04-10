@@ -721,29 +721,30 @@ def get_largest_connected_component(image):
 def numpy_to_vtkImageData(numpy_array, spacing=(1.0, 1.0, 1.0), origin=(0, 0, 0)):
     """
     Convert a numpy array to VTK image data.
-    
+
     Args:
         numpy_array (numpy.ndarray): The numpy array to convert
         spacing (tuple): The spacing between pixels
         origin (tuple): The origin of the image
-        
+
     Returns:
         vtkImageData or None: The VTK image data, or None if conversion failed
     """
     try:
         import logging
+
         logger = logging.getLogger("invesalius.reader.numpy_to_vtk")
-        
+
         # Handle empty arrays
         if numpy_array is None or numpy_array.size == 0:
             logger.error("Empty numpy array provided")
             return None
-            
+
         # Make sure the array is contiguous in memory
         if not numpy_array.flags.contiguous:
             logger.info("Array not contiguous in memory, converting")
             numpy_array = np.ascontiguousarray(numpy_array)
-            
+
         # Ensure array has correct shape and data type
         if numpy_array.ndim == 2:
             # Single slice - add Z dimension
@@ -753,54 +754,54 @@ def numpy_to_vtkImageData(numpy_array, spacing=(1.0, 1.0, 1.0), origin=(0, 0, 0)
             error_msg = f"Array must be 2D or 3D, got shape {numpy_array.shape}"
             logger.error(error_msg)
             raise ValueError(error_msg)
-        
+
         # Get dimensions
         z_dim, y_dim, x_dim = numpy_array.shape
         logger.info(f"Array dimensions: {z_dim}x{y_dim}x{x_dim}")
         logger.info(f"Array data type: {numpy_array.dtype}")
-        
+
         # Create VTK image data
         vtk_image = vtkImageData()
         vtk_image.SetDimensions(x_dim, y_dim, z_dim)
         vtk_image.SetSpacing(spacing)
         vtk_image.SetOrigin(origin)
-        
+
         # Ensure the extent is set correctly
-        vtk_image.SetExtent(0, x_dim-1, 0, y_dim-1, 0, z_dim-1)
-        
+        vtk_image.SetExtent(0, x_dim - 1, 0, y_dim - 1, 0, z_dim - 1)
+
         # Convert to float32 for better compatibility
         if numpy_array.dtype != np.float32:
             logger.info(f"Converting array from {numpy_array.dtype} to float32")
             numpy_array = numpy_array.astype(np.float32)
-        
+
         # Check array order and flatten appropriately
         if numpy_array.flags.f_contiguous:
             logger.info("Array is already in F-contiguous order")
             flat_array = numpy_array.ravel()  # Will use F order if the array is F-contiguous
         else:
             logger.info("Array is in C-contiguous order, flattening in F order")
-            flat_array = numpy_array.ravel(order='F')
-        
+            flat_array = numpy_array.ravel(order="F")
+
         # Get the appropriate VTK array type
         array_type = vtk_utils.get_vtk_array_type(numpy_array.dtype)
         logger.info(f"Using VTK array type: {array_type}")
-        
+
         # Convert numpy array to VTK array
         vtk_array = numpy_support.numpy_to_vtk(
-            num_array=flat_array, 
-            deep=True,
-            array_type=array_type
+            num_array=flat_array, deep=True, array_type=array_type
         )
-        
+
         # Assign array to image data
         vtk_image.GetPointData().SetScalars(vtk_array)
-        
+
         logger.info("Successfully converted numpy array to VTK image data")
         return vtk_image
     except Exception as e:
         import logging
+
         logger = logging.getLogger("invesalius.reader.numpy_to_vtk")
         logger.error(f"Error converting numpy array to vtkImageData: {e}")
         import traceback
+
         logger.error(traceback.format_exc())
         return None

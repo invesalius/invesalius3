@@ -21,7 +21,16 @@ import sys
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, SupportsInt, Tuple, Union
 
 import wx
-from vtkmodules.vtkCommonCore import VTK_FLOAT, VTK_DOUBLE, VTK_INT, VTK_UNSIGNED_INT, VTK_UNSIGNED_CHAR, VTK_CHAR, VTK_SHORT, VTK_UNSIGNED_SHORT
+from vtkmodules.vtkCommonCore import (
+    VTK_FLOAT,
+    VTK_DOUBLE,
+    VTK_INT,
+    VTK_UNSIGNED_INT,
+    VTK_UNSIGNED_CHAR,
+    VTK_CHAR,
+    VTK_SHORT,
+    VTK_UNSIGNED_SHORT,
+)
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
 from vtkmodules.vtkIOPLY import vtkPLYReader
@@ -50,15 +59,15 @@ if TYPE_CHECKING:
 def get_vtk_array_type(numpy_dtype):
     """
     Convert numpy data type to VTK array type.
-    
+
     Args:
         numpy_dtype: Numpy data type
-    
+
     Returns:
         int: VTK array type constant
     """
     import numpy as np
-    
+
     # Map numpy types to VTK types
     type_map = {
         np.float32: VTK_FLOAT,
@@ -70,7 +79,7 @@ def get_vtk_array_type(numpy_dtype):
         np.int32: VTK_INT,
         np.uint32: VTK_UNSIGNED_INT,
     }
-    
+
     # Get the corresponding VTK type or default to VTK_FLOAT
     return type_map.get(numpy_dtype.type, VTK_FLOAT)
 

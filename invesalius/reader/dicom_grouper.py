@@ -100,8 +100,8 @@ class DicomGroup:
 
     @handle_errors(
         error_message="Error adding slice to DICOM group",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def AddSlice(self, dicom):
         if not self.dicom:
@@ -121,18 +121,22 @@ class DicomGroup:
                 logger.debug(f"Added slice to group {self.index}, now has {self.nslices} slices")
                 return True
             else:
-                logger.warning(f"Position {pos} already exists in group {self.index}, slice not added")
+                logger.warning(
+                    f"Position {pos} already exists in group {self.index}, slice not added"
+                )
                 return False
         else:
             self.slices_dict[dicom.image.number] = dicom
             self.nslices += dicom.image.number_of_frames
-            logger.debug(f"Added DERIVED slice to group {self.index}, now has {self.nslices} slices")
+            logger.debug(
+                f"Added DERIVED slice to group {self.index}, now has {self.nslices} slices"
+            )
             return True
 
     @handle_errors(
         error_message="Error getting slice list from DICOM group",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def GetList(self):
         # Should be called when user selects this group
@@ -143,8 +147,8 @@ class DicomGroup:
 
     @handle_errors(
         error_message="Error getting filename list from DICOM group",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def GetFilenameList(self):
         # Should be called when user selects this group
@@ -181,8 +185,8 @@ class DicomGroup:
 
     @handle_errors(
         error_message="Error getting hand-sorted list from DICOM group",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def GetHandSortedList(self):
         # This will be used to fix problem 1, after merging
@@ -197,8 +201,8 @@ class DicomGroup:
 
     @handle_errors(
         error_message="Error updating Z spacing in DICOM group",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def UpdateZSpacing(self):
         list_ = self.GetHandSortedList()
@@ -219,8 +223,8 @@ class DicomGroup:
 
     @handle_errors(
         error_message="Error getting DICOM sample from group",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def GetDicomSample(self):
         size = len(self.slices_dict)
@@ -242,8 +246,8 @@ class PatientGroup:
 
     @handle_errors(
         error_message="Error adding file to patient group",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def AddFile(self, dicom, index=0):
         # Given general DICOM information, we group slices according
@@ -261,13 +265,13 @@ class PatientGroup:
             dicom.image.orientation_label,
             index,
         )  # This will be used to deal with Problem 2
-        
+
         if not self.dicom:
             self.dicom = dicom
 
         self.nslices += 1
         logger.debug(f"Adding file to patient group, current slices: {self.nslices}")
-        
+
         # Does this group exist? Best case ;)
         if group_key not in self.groups_dict.keys():
             group = DicomGroup()
@@ -284,7 +288,9 @@ class PatientGroup:
             if not slice_added:
                 # If we're here, then Problem 2 occured
                 # TODO: Optimize recursion
-                logger.warning(f"Problem 2 occurred, recursively adding file with index {index + 1}")
+                logger.warning(
+                    f"Problem 2 occurred, recursively adding file with index {index + 1}"
+                )
                 self.AddFile(dicom, index + 1)
 
             # Getting the spacing in the Z axis
@@ -292,8 +298,8 @@ class PatientGroup:
 
     @handle_errors(
         error_message="Error updating patient group",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def Update(self):
         # Ideally, AddFile would be sufficient for splitting DICOM
@@ -313,13 +319,13 @@ class PatientGroup:
         if is_there_problem_1:
             logger.warning("Problem 1 detected, fixing...")
             self.groups_dict = self.FixProblem1(self.groups_dict)
-        
+
         logger.debug(f"Patient group updated, contains {len(self.groups_dict)} groups")
-    
+
     @handle_errors(
         error_message="Error getting groups from patient",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def GetGroups(self):
         groups = list(self.groups_dict.values())
@@ -328,8 +334,8 @@ class PatientGroup:
 
     @handle_errors(
         error_message="Error getting DICOM sample from patient",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def GetDicomSample(self):
         sample = list(self.groups_dict.values())[0].GetDicomSample()
@@ -338,8 +344,8 @@ class PatientGroup:
 
     @handle_errors(
         error_message="Error fixing Problem 1 in patient group",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def FixProblem1(self, dict):
         # Let's check if <dicom.acquisition.series_number> and
@@ -383,10 +389,7 @@ class PatientGroup:
                     all_same_class = True
                     for i in range(1, len(temp_list)):
                         # Compare class with first item's class
-                        if (
-                            class0
-                            != temp_list[i].GetHandSortedList()[0].acquisition.series_class
-                        ):
+                        if class0 != temp_list[i].GetHandSortedList()[0].acquisition.series_class:
                             all_same_class = False
                             break
 
@@ -455,8 +458,8 @@ class PatientGroup:
                     # than 2 series with n slices each
                     d1 = groups_by_num[n][0].GetHandSortedList()[0]
                     d2 = groups_by_num[n][1].GetHandSortedList()[0]
-                    if (d1.acquisition.series_description == d2.acquisition.series_description):
-                        if (d1.acquisition.serie_number != d2.acquisition.serie_number):
+                    if d1.acquisition.series_description == d2.acquisition.series_description:
+                        if d1.acquisition.serie_number != d2.acquisition.serie_number:
                             # Create merged group
                             for g in groups_by_num[n][1:]:
                                 # Add slices from subsequent groups to our
@@ -476,6 +479,7 @@ class PatientGroup:
 
         return groups_dict
 
+
 # This class is used by dicom_reader.py to group DICOM files
 class DicomGroups:
     def __init__(self):
@@ -484,23 +488,23 @@ class DicomGroups:
 
     @handle_errors(
         error_message="Error adding file to DICOM groups",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def AddFile(self, dicom):
         patient_key = (dicom.patient.name, dicom.patient.id)
         logger.debug(f"Adding file to DICOM groups, patient key: {patient_key}")
-        
+
         if patient_key not in self.patients:
             self.patients[patient_key] = PatientGroup()
             logger.debug(f"Created new patient group with key {patient_key}")
-        
+
         self.patients[patient_key].AddFile(dicom)
 
     @handle_errors(
         error_message="Error updating DICOM groups",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.WARNING
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.WARNING,
     )
     def Update(self):
         for patient_group in self.patients.values():
@@ -509,8 +513,8 @@ class DicomGroups:
 
     @handle_errors(
         error_message="Error getting patients groups",
-        category=ErrorCategory.DICOM, 
-        severity=ErrorSeverity.ERROR
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
     )
     def GetPatientsGroups(self):
         patients_groups = list(self.patients.values())
@@ -525,6 +529,7 @@ class DicomPatientGrouper:
     DEPRECATED: Use DicomGroups instead.
     This class is maintained for backward compatibility.
     """
+
     def __init__(self):
         self.dicom_groups = DicomGroups()
         logger.warning("DicomPatientGrouper is deprecated, use DicomGroups instead")
