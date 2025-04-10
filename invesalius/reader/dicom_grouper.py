@@ -67,10 +67,13 @@ else:
 
 import invesalius.constants as const
 import invesalius.utils as utils
-
-# Import enhanced logging and error handling
 from invesalius.enhanced_logging import get_logger
-from invesalius.error_handling import handle_errors, DicomError, ErrorCategory, ErrorSeverity
+from invesalius.error_handling import (
+    DicomError,
+    ErrorCategory,
+    ErrorSeverity,
+    handle_errors,
+)
 
 # Initialize logger
 logger = get_logger("reader.dicom_grouper")
