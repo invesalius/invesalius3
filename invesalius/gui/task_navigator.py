@@ -4224,7 +4224,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             )
         dialog.Destroy()
 
-    def AddPeeledSurface(self, flag, actor):
+    def AddPeeledSurface(self, flag, actor, peel_depth=None, peel_opacity=None):
         self.brain_actor = actor
 
     def CreateMarker(
