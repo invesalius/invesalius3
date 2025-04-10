@@ -173,6 +173,7 @@ def test_get_system_encoding_win32(monkeypatch):
     monkeypatch.setattr(locale, "getdefaultlocale", lambda: ("en_US", "cp1252"))
     assert get_system_encoding() == "cp1252"
 
+
 def test_get_system_encoding_non_win32(monkeypatch):
     monkeypatch.setattr("sys.platform", "darwin")
     assert get_system_encoding() == "utf-8"
