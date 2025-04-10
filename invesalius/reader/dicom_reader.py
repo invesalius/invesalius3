@@ -18,10 +18,10 @@
 # --------------------------------------------------------------------------
 import os
 import sys
-import wx
 import time
 
 import gdcm
+import wx
 
 # Not showing GDCM warning and debug messages
 try:
@@ -30,21 +30,23 @@ try:
 except AttributeError:
     pass
 
-
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
+import invesalius.data.imagedata_utils as iu
 import invesalius.reader.dicom as dicom
 import invesalius.reader.dicom_grouper as dicom_grouper
 import invesalius.utils as utils
-import invesalius.data.imagedata_utils as iu
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
-from invesalius.pubsub import pub as Publisher
-
-# Import enhanced logging and error handling
 from invesalius.enhanced_logging import get_logger
-from invesalius.error_handling import handle_errors, DicomError, ErrorCategory, ErrorSeverity
+from invesalius.error_handling import (
+    DicomError,
+    ErrorCategory,
+    ErrorSeverity,
+    handle_errors,
+)
+from invesalius.pubsub import pub as Publisher
 
 # Initialize logger
 logger = get_logger("reader.dicom_reader")
@@ -812,8 +814,9 @@ def LoadDicom(directory, slice_interval=0, mode="append"):
             # Fallback using pydicom and numpy to create image data
             logger.info("Using fallback DICOM reader")
             try:
-                import pydicom
                 import numpy as np
+                import pydicom
+
                 from invesalius.data.imagedata_utils import numpy_to_vtkImageData
 
                 # Load the first DICOM file to get dimensions

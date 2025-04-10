@@ -22,13 +22,13 @@ from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, Suppo
 
 import wx
 from vtkmodules.vtkCommonCore import (
-    VTK_FLOAT,
-    VTK_DOUBLE,
-    VTK_INT,
-    VTK_UNSIGNED_INT,
-    VTK_UNSIGNED_CHAR,
     VTK_CHAR,
+    VTK_DOUBLE,
+    VTK_FLOAT,
+    VTK_INT,
     VTK_SHORT,
+    VTK_UNSIGNED_CHAR,
+    VTK_UNSIGNED_INT,
     VTK_UNSIGNED_SHORT,
 )
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
