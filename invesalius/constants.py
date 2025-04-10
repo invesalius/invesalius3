@@ -753,6 +753,15 @@ CONSOLE_LOGGING = 8
 CONSOLE_LOGGING_LEVEL = 9
 LOGGING_LEVEL_TYPES = ["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"]
 
+# ------------ Navigation options key ------------
+EXCESSIVE_FORCE_ADJUST = 10
+EXCESSIVE_FORCE_MIN = 11
+EXCESSIVE_FORCE_MAX = 12
+FORCE_SENSOR_CENTERING = 13
+
+# Default value for excessive force adjust
+FORCE_ADJUST_DISTANCE = 4
+
 # Correlaction extracted from pyDicom
 DICOM_ENCODING_TO_PYTHON = {
     "None": "iso8859",

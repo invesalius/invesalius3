@@ -853,6 +853,9 @@ class Frame(wx.Frame):
             logging_level = values[const.LOGGING_LEVEL]
             append_log_file = values[const.APPEND_LOG_FILE]
             logging_file = values[const.LOGFILE]
+            excessive_force_adjust = values[const.EXCESSIVE_FORCE_ADJUST]
+            excessive_force_distance = values[const.EXCESSIVE_FORCE_MIN]
+            force_centering_on = values[const.FORCE_SENSOR_CENTERING]
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
@@ -868,6 +871,9 @@ class Frame(wx.Frame):
             session.SetConfig("logging_level", logging_level)
             session.SetConfig("append_log_file", append_log_file)
             session.SetConfig("logging_file", logging_file)
+            session.SetConfig("excessive_force_adjust", excessive_force_adjust)
+            session.SetConfig("excessive_force_distance", excessive_force_distance)
+            session.SetConfig("force_centering_on", force_centering_on)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
@@ -875,6 +881,7 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Update Slice Interpolation MenuBar")
             Publisher.sendMessage("Update Navigation Mode MenuBar")
             Publisher.sendMessage("Update Surface Interpolation")
+            Publisher.sendMessage("Update excessive force adjustment")
 
     def ShowAbout(self):
         """
