@@ -48,7 +48,14 @@ if HAS_PLAIDML:
 
 class DeepLearningSegmenterDialog(wx.Dialog):
     def __init__(
-        self, parent, title, has_torch=True, has_plaidml=True, has_theano=True, segmenter=None
+        self,
+        parent,
+        title,
+        auto_segment=False,
+        has_torch=True,
+        has_plaidml=True,
+        has_theano=True,
+        segmenter=None,
     ):
         wx.Dialog.__init__(
             self,
@@ -68,6 +75,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         #  self.pg_dialog = None
         self.torch_devices = TORCH_DEVICES
         self.plaidml_devices = PLAIDML_DEVICES
+        self.auto_segment = auto_segment
 
         self.backends = backends
 
@@ -86,6 +94,9 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
         self.OnSetBackend()
         self.HideProgress()
+
+        if self.auto_segment:
+            self.OnSegment(self)
 
     def _init_gui(self):
         self.cb_backends = wx.ComboBox(
@@ -332,6 +343,10 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.elapsed_time_timer.Stop()
         self.apply_segment_threshold()
 
+        if self.auto_segment:
+            self.OnClose(self)
+            Publisher.sendMessage("Brain segmentation completed")
+
     def SetProgress(self, progress):
         self.progress.SetValue(int(progress * 100))
         wx.GetApp().Yield()
@@ -361,8 +376,9 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             if progress == np.inf:
                 progress = 1
                 self.AfterSegment()
-            progress = max(0, min(progress, 1))
-            self.SetProgress(float(progress))
+            else:
+                progress = max(0, min(progress, 1))
+                self.SetProgress(float(progress))
 
     def OnClose(self, evt):
         #  self.segmenter.stop = True
@@ -393,7 +409,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
 
 class BrainSegmenterDialog(DeepLearningSegmenterDialog):
-    def __init__(self, parent):
+    def __init__(self, parent, auto_segment=False):
         super().__init__(
             parent=parent,
             title=_("Brain segmentation"),
@@ -401,6 +417,7 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
             has_plaidml=True,
             has_theano=True,
             segmenter=segment.BrainSegmentProcess,
+            auto_segment=auto_segment,
         )
 
 

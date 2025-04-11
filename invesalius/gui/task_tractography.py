@@ -453,13 +453,7 @@ class InnerTaskPanel(wx.Panel):
 
         if not self.affine_vtk:
             slic = sl.Slice()
-            prj_data = prj.Project()
-            matrix_shape = tuple(prj_data.matrix_shape)
-            spacing = tuple(prj_data.spacing)
-            img_shift = spacing[1] * (matrix_shape[1] - 1)
-            self.affine = slic.affine.copy()
-            self.affine[1, -1] -= img_shift
-            self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+            self.affine, self.affine_vtk, img_shift = slic.get_world_to_invesalius_vtk_affine()
 
         if filename:
             Publisher.sendMessage("Update status text in GUI", label=_("Busy"))
@@ -524,13 +518,7 @@ class InnerTaskPanel(wx.Panel):
 
             if not self.affine_vtk:
                 slic = sl.Slice()
-                prj_data = prj.Project()
-                matrix_shape = tuple(prj_data.matrix_shape)
-                spacing = tuple(prj_data.spacing)
-                img_shift = spacing[1] * (matrix_shape[1] - 1)
-                self.affine = slic.affine.copy()
-                self.affine[1, -1] -= img_shift
-                self.affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(self.affine)
+                self.affine, self.affine_vtk, img_shift = slic.get_world_to_invesalius_vtk_affine()
 
             try:
                 t_init = time.time()

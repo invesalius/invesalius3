@@ -618,17 +618,8 @@ class Navigation(metaclass=Singleton):
 
             if self.view_tracts:
                 # initialize Trekker parameters
-                # TODO: This affine and affine_vtk are created 4 times. To improve, create a new affine object inside
-                #  Slice() that contains the transformation with the img_shift. Rename it to avoid confusion to the
-                #  affine, for instance it can be: affine_world_to_invesalius_vtk
                 slic = sl.Slice()
-                prj_data = prj.Project()
-                matrix_shape = tuple(prj_data.matrix_shape)
-                spacing = tuple(prj_data.spacing)
-                img_shift = spacing[1] * (matrix_shape[1] - 1)
-                affine = slic.affine.copy()
-                affine[1, -1] -= img_shift
-                affine_vtk = vtk_utils.numpy_to_vtkMatrix4x4(affine)
+                affine, affine_vtk, img_shift = slic.get_world_to_invesalius_vtk_affine()
 
                 Publisher.sendMessage("Update marker offset state", create=True)
 
