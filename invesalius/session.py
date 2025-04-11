@@ -108,8 +108,7 @@ class Session(metaclass=Singleton):
             config_init["mode"] = const.MODE_RP
             config_init["project_status"] = const.PROJECT_STATUS_CLOSED
             config_init["robot"] = {"robot_ip_options": const.ROBOT_IPS}
-
-            self._config = deep_merge_dict(self._config.copy(), config_init)
+            self._config = deep_merge_dict(config_init, self._config.copy())
             self.WriteConfigFile()
 
     def CreateState(self) -> None:
