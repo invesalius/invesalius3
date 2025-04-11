@@ -99,7 +99,6 @@ class InVesalius(wx.App):
         self.SetAppName("InVesalius 3")
         self.splash = Inv3SplashScreen()
         self.splash.Show()
-        wx.CallLater(1000, self.Startup2)
 
         return True
 
@@ -267,6 +266,7 @@ class Inv3SplashScreen(SplashScreen):
             self.main.Raise()
         # Destroy the splash screen
         self.Destroy()
+        wx.CallAfter(wx.GetApp().Startup2)
 
 
 def non_gui_startup(args):
