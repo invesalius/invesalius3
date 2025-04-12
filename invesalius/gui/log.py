@@ -165,6 +165,9 @@ class InvesaliusLogger:  # metaclass=Singleton):
             config_file = open(json_filename)
             config_dict = json.load(config_file)
             self._config = deep_merge_dict(self._config.copy(), config_dict)
+        except FileNotFoundError:
+            self.WriteConfigFile()
+            print(f"[INFO] Config file not found at {json_filename}, created a default one.")
         except Exception as e1:
             print("Error in _read_config_from_json:", e1)
 
