@@ -23,7 +23,6 @@ import platform
 import subprocess
 import sys
 import webbrowser
-from datetime import datetime
 
 import wx
 import wx.aui
@@ -61,9 +60,7 @@ VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range
 [ID_SHOW_LOG_VIEWER] = [wx.NewIdRef() for number in range(1)]
 
 WILDCARD_EXPORT_SLICE = (
-    "HDF5 (*.hdf5)|*.hdf5|"
-    "NIfTI 1 (*.nii)|*.nii|"
-    "Compressed NIfTI (*.nii.gz)|*.nii.gz"
+    "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
 )
 
 IDX_EXT = {0: ".hdf5", 1: ".nii", 2: ".nii.gz"}
@@ -211,7 +208,7 @@ class Frame(wx.Frame):
         # Check if the focus is on a text entry field
         focused = wx.Window.FindFocus()
         is_search_field = False
-        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
+        if focused and isinstance(focused, wx.TextCtrl | wx.ComboBox):
             is_search_field = True
 
         # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
@@ -845,7 +842,7 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
-            
+
             # Handle logging settings only if they exist in the values dictionary
             if const.FILE_LOGGING in values:
                 file_logging = values[const.FILE_LOGGING]
@@ -856,7 +853,7 @@ class Frame(wx.Frame):
                 console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
                 logging = values.get(const.LOGGING, 0)  # Default to 0 if not present
                 logging_level = values.get(const.LOGGING_LEVEL, 0)  # Default to 0 if not present
-                
+
                 session.SetConfig("file_logging", file_logging)
                 session.SetConfig("file_logging_level", file_logging_level)
                 session.SetConfig("append_log_file", append_log_file)
@@ -1416,9 +1413,7 @@ class MenuBar(wx.MenuBar):
         planning_menu.Append(const.ID_PLANNING_CRANIOPLASTY, _("Cranioplasty"))
 
         analysis_menu = wx.Menu()
-        mask_density_menu = analysis_menu.Append(
-            const.ID_MASK_DENSITY_MEASURE, _("Mask density measure")
-        )
+        analysis_menu.Append(const.ID_MASK_DENSITY_MEASURE, _("Mask density measure"))
 
         reorient_menu.Enable(False)
         tools_menu.Append(-1, _("Analysis"), analysis_menu)
