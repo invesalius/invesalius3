@@ -845,31 +845,31 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values[const.SLICE_INTERPOLATION]
-            file_logging = values[const.FILE_LOGGING]
-            file_logging_level = values[const.FILE_LOGGING_LEVEL]
-            append_log_file = values[const.APPEND_LOG_FILE]
-            logging_file = values[const.LOGFILE]
-            console_logging = values[const.CONSOLE_LOGGING]
-            console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
-            logging = values[const.LOGGING]
-            logging_level = values[const.LOGGING_LEVEL]
-            append_log_file = values[const.APPEND_LOG_FILE]
-            logging_file = values[const.LOGFILE]
+            
+            # Handle logging settings only if they exist in the values dictionary
+            if const.FILE_LOGGING in values:
+                file_logging = values[const.FILE_LOGGING]
+                file_logging_level = values[const.FILE_LOGGING_LEVEL]
+                append_log_file = values[const.APPEND_LOG_FILE]
+                logging_file = values[const.LOGFILE]
+                console_logging = values[const.CONSOLE_LOGGING]
+                console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
+                logging = values.get(const.LOGGING, 0)  # Default to 0 if not present
+                logging_level = values.get(const.LOGGING_LEVEL, 0)  # Default to 0 if not present
+                
+                session.SetConfig("file_logging", file_logging)
+                session.SetConfig("file_logging_level", file_logging_level)
+                session.SetConfig("append_log_file", append_log_file)
+                session.SetConfig("logging_file", logging_file)
+                session.SetConfig("console_logging", console_logging)
+                session.SetConfig("console_logging_level", console_logging_level)
+                session.SetConfig("do_logging", logging)
+                session.SetConfig("logging_level", logging_level)
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
             session.SetConfig("language", language)
             session.SetConfig("slice_interpolation", slice_interpolation)
-            session.SetConfig("file_logging", file_logging)
-            session.SetConfig("file_logging_level", file_logging_level)
-            session.SetConfig("append_log_file", append_log_file)
-            session.SetConfig("logging_file", logging_file)
-            session.SetConfig("console_logging", console_logging)
-            session.SetConfig("console_logging_level", console_logging_level)
-            session.SetConfig("do_logging", logging)
-            session.SetConfig("logging_level", logging_level)
-            session.SetConfig("append_log_file", append_log_file)
-            session.SetConfig("logging_file", logging_file)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
