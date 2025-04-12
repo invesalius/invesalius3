@@ -61,7 +61,9 @@ VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range
 [ID_SHOW_LOG_VIEWER] = [wx.NewIdRef() for number in range(1)]
 
 WILDCARD_EXPORT_SLICE = (
-    "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
+    "HDF5 (*.hdf5)|*.hdf5|"
+    "NIfTI 1 (*.nii)|*.nii|"
+    "Compressed NIfTI (*.nii.gz)|*.nii.gz"
 )
 
 IDX_EXT = {0: ".hdf5", 1: ".nii", 2: ".nii.gz"}
