@@ -67,6 +67,16 @@ else:
 
 import invesalius.constants as const
 import invesalius.utils as utils
+from invesalius.enhanced_logging import get_logger
+from invesalius.error_handling import (
+    DicomError,
+    ErrorCategory,
+    ErrorSeverity,
+    handle_errors,
+)
+
+# Initialize logger
+logger = get_logger("reader.dicom_grouper")
 
 ORIENT_MAP = {"SAGITTAL": 0, "CORONAL": 1, "AXIAL": 2, "OBLIQUE": 2}
 
@@ -89,12 +99,19 @@ class DicomGroup:
         self.nslices = 0
         self.zspacing = 1
         self.dicom = None
+        logger.debug(f"DicomGroup initialized with index {self.index}")
 
+    @handle_errors(
+        error_message="Error adding slice to DICOM group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def AddSlice(self, dicom):
         if not self.dicom:
             self.dicom = dicom
 
         pos = tuple(dicom.image.position)
+        logger.debug(f"Adding slice with position {pos} to group {self.index}")
 
         # Case to test: \other\higroma
         # condition created, if any dicom with the same
@@ -104,24 +121,43 @@ class DicomGroup:
             if pos not in self.slices_dict.keys():
                 self.slices_dict[pos] = dicom
                 self.nslices += dicom.image.number_of_frames
+                logger.debug(f"Added slice to group {self.index}, now has {self.nslices} slices")
                 return True
             else:
+                logger.warning(
+                    f"Position {pos} already exists in group {self.index}, slice not added"
+                )
                 return False
         else:
             self.slices_dict[dicom.image.number] = dicom
             self.nslices += dicom.image.number_of_frames
+            logger.debug(
+                f"Added DERIVED slice to group {self.index}, now has {self.nslices} slices"
+            )
             return True
 
+    @handle_errors(
+        error_message="Error getting slice list from DICOM group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def GetList(self):
         # Should be called when user selects this group
         # This list will be used to create the vtkImageData
         # (interpolated)
+        logger.debug(f"Getting slice list from group {self.index} with {self.nslices} slices")
         return self.slices_dict.values()
 
+    @handle_errors(
+        error_message="Error getting filename list from DICOM group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def GetFilenameList(self):
         # Should be called when user selects this group
         # This list will be used to create the vtkImageData
         # (interpolated)
+        logger.debug(f"Getting filename list from group {self.index} with {self.nslices} slices")
 
         if _has_win32api:
             filelist = [
@@ -137,6 +173,7 @@ class DicomGroup:
         sorter.SetComputeZSpacing(True)
         sorter.SetZSpacingTolerance(1e-10)
         try:
+            logger.debug(f"Sorting {len(filelist)} files using GDCM IPPSorter")
             sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
         except TypeError:
             sorter.Sort(filelist)
@@ -144,10 +181,16 @@ class DicomGroup:
 
         # for breast-CT of koning manufacturing (KBCT)
         if list(self.slices_dict.values())[0].parser.GetManufacturerName() == "Koning":
+            logger.debug("Special sorting for Koning manufacturer")
             filelist.sort()
 
         return filelist
 
+    @handle_errors(
+        error_message="Error getting hand-sorted list from DICOM group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def GetHandSortedList(self):
         # This will be used to fix problem 1, after merging
         # single DicomGroups of same study_id and orientation
@@ -155,9 +198,15 @@ class DicomGroup:
         # dicom = list_[0]
         # axis = ORIENT_MAP[dicom.image.orientation_label]
         # list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
+        logger.debug(f"Getting hand-sorted list from group {self.index} with {len(list_)} slices")
         list_ = sorted(list_, key=lambda dicom: dicom.image.number)
         return list_
 
+    @handle_errors(
+        error_message="Error updating Z spacing in DICOM group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def UpdateZSpacing(self):
         list_ = self.GetHandSortedList()
 
@@ -170,12 +219,20 @@ class DicomGroup:
             p2 = dicom.image.position[axis]
 
             self.zspacing = abs(p1 - p2)
+            logger.debug(f"Updated Z spacing for group {self.index}: {self.zspacing}")
         else:
             self.zspacing = 1
+            logger.debug(f"Only one slice in group {self.index}, setting Z spacing to 1")
 
+    @handle_errors(
+        error_message="Error getting DICOM sample from group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def GetDicomSample(self):
         size = len(self.slices_dict)
         dicom = self.GetHandSortedList()[size // 2]
+        logger.debug(f"Getting DICOM sample from group {self.index}, sample index: {size // 2}")
         return dicom
 
 
@@ -188,7 +245,13 @@ class PatientGroup:
         self.nslices = 0
         self.ngroups = 0
         self.dicom = None
+        logger.debug("PatientGroup initialized")
 
+    @handle_errors(
+        error_message="Error adding file to patient group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def AddFile(self, dicom, index=0):
         # Given general DICOM information, we group slices according
         # to main series information (group_key)
@@ -205,10 +268,13 @@ class PatientGroup:
             dicom.image.orientation_label,
             index,
         )  # This will be used to deal with Problem 2
+
         if not self.dicom:
             self.dicom = dicom
 
         self.nslices += 1
+        logger.debug(f"Adding file to patient group, current slices: {self.nslices}")
+
         # Does this group exist? Best case ;)
         if group_key not in self.groups_dict.keys():
             group = DicomGroup()
@@ -217,6 +283,7 @@ class PatientGroup:
             group.AddSlice(dicom)
             self.ngroups += 1
             self.groups_dict[group_key] = group
+            logger.debug(f"Created new group with key {group_key}, total groups: {self.ngroups}")
         # Group exists... Lets try to add slice
         else:
             group = self.groups_dict[group_key]
@@ -224,11 +291,19 @@ class PatientGroup:
             if not slice_added:
                 # If we're here, then Problem 2 occured
                 # TODO: Optimize recursion
+                logger.warning(
+                    f"Problem 2 occurred, recursively adding file with index {index + 1}"
+                )
                 self.AddFile(dicom, index + 1)
 
             # Getting the spacing in the Z axis
             group.UpdateZSpacing()
 
+    @handle_errors(
+        error_message="Error updating patient group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def Update(self):
         # Ideally, AddFile would be sufficient for splitting DICOM
         # files into groups (series). However, this does not work for
@@ -239,145 +314,256 @@ class PatientGroup:
 
         # Check if Problem 1 occurs (n groups with 1 slice each)
         is_there_problem_1 = False
-        utils.debug("n slice %d" % self.nslices)
-        utils.debug("len %d" % len(self.groups_dict))
+        logger.debug(f"Number of slices: {self.nslices}, number of groups: {len(self.groups_dict)}")
         if (self.nslices == len(self.groups_dict)) and (self.nslices > 1):
             is_there_problem_1 = True
 
         # Fix Problem 1
         if is_there_problem_1:
-            utils.debug("Problem1")
+            logger.warning("Problem 1 detected, fixing...")
             self.groups_dict = self.FixProblem1(self.groups_dict)
 
+        logger.debug(f"Patient group updated, contains {len(self.groups_dict)} groups")
+
+    @handle_errors(
+        error_message="Error getting groups from patient",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def GetGroups(self):
-        glist = self.groups_dict.values()
-        glist = sorted(glist, key=lambda group: group.title, reverse=True)
-        return glist
+        groups = list(self.groups_dict.values())
+        logger.debug(f"Getting {len(groups)} groups from patient")
+        return groups
 
+    @handle_errors(
+        error_message="Error getting DICOM sample from patient",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def GetDicomSample(self):
-        return self.dicom
+        sample = list(self.groups_dict.values())[0].GetDicomSample()
+        logger.debug("Getting DICOM sample from patient group")
+        return sample
 
+    @handle_errors(
+        error_message="Error fixing Problem 1 in patient group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def FixProblem1(self, dict):
-        """
-        Merge multiple DICOM groups in case Problem 1 (description
-        above) occurs.
+        # Let's check if <dicom.acquisition.series_number> and
+        # <dicom.image.number> were swapped and fix it.
+        # TODO: Check if this is the optimal solution:
+        # dict_ is a dict of DicomGroup objects
+        # TODO: Optimize this algorithm to handle few groups with many slices
+        # mixed with many groups with a slice each
+        # (maybe two passes?)
+        # ---------------------------------------------------------
+        # Sort groups by series_number as well by patient orientation.
+        dict2 = {}
+        for key in dict.keys():
+            spname, idstudy, serie_number, patient_orientation, index = key
+            if not (spname, idstudy, patient_orientation) in dict2:
+                dict2[(spname, idstudy, patient_orientation)] = []
+            dict2[(spname, idstudy, patient_orientation)].append(dict[key])
 
-        WARN: We've implemented an heuristic to try to solve
-        the problem. There is no scientific background and this aims
-        to be a workaround to exams which are not in conformance with
-        the DICOM protocol.
-        """
-        # Divide existing groups into 2 groups:
-        dict_final = {}  # 1
-        # those containing "3D photos" and undefined
-        # orientation - these won't be changed (groups_lost).
+        dict3 = {}
+        # Merge groups with only one slice
+        logger.debug("Fixing Problem 1 by merging groups with only one slice")
+        for key in dict2.keys():
+            group_list = dict2[key]
 
-        dict_to_change = {}  # 2
-        # which can be re-grouped according to our heuristic
+            # Groups with several slices
+            new_list = [g for g in group_list if g.nslices > 1]
 
-        # split existing groups in these two types of group, based on
-        # orientation label
+            # Groups with a slice each
+            if len(new_list) != len(group_list):
+                temp_list = [g for g in group_list if g.nslices == 1]
+                if temp_list:
+                    # Check if all slices are from the same series
+                    # (means Problem 1 is happening)
+                    # By now, all Dicoms inside a group have the
+                    # same series_number. So we can check the first
+                    # dicom.acquisition.series_number of each group inside
+                    # temp_list.
 
-        # 1st STEP: RE-GROUP
-        for group_key in dict:
-            # values used as key of the new dictionary
-            dicom = dict[group_key].GetList()[0]
-            orientation = dicom.image.orientation_label
-            study_id = dicom.acquisition.id_study
-            # if axial, coronal or sagittal
-            if orientation in ORIENT_MAP:
-                group_key_s = (orientation, study_id)
-                # If this method was called, there is only one slice
-                # in this group (dicom)
-                dicom = dict[group_key].GetList()[0]
-                if group_key_s not in dict_to_change.keys():
-                    group = DicomGroup()
-                    group.AddSlice(dicom)
-                    dict_to_change[group_key_s] = group
-                else:
-                    group = dict_to_change[group_key_s]
-                    group.AddSlice(dicom)
-            else:
-                dict_final[group_key] = dict[group_key]
+                    # Compare first item's class
+                    class0 = temp_list[0].GetHandSortedList()[0].acquisition.series_class
+                    all_same_class = True
+                    for i in range(1, len(temp_list)):
+                        # Compare class with first item's class
+                        if class0 != temp_list[i].GetHandSortedList()[0].acquisition.series_class:
+                            all_same_class = False
+                            break
 
-        # group_counter will be used as key to DicomGroups created
-        # while checking differences
-        group_counter = 0
-        for group_key in dict_to_change:
-            # 2nd STEP: SORT
-            sorted_list = dict_to_change[group_key].GetHandSortedList()
+                    if all_same_class:
+                        # Create merged group
+                        merged_group = DicomGroup()
+                        merged_group.key = temp_list[0].key
+                        # TODO: Create a better name
+                        merged_group.title = temp_list[0].title
 
-            # 3rd STEP: CHECK DIFFERENCES
-            axis = ORIENT_MAP[group_key[0]]  # based on orientation
-            for index in range(len(sorted_list) - 1):
-                current = sorted_list[index]
-                # next = sorted_list[index + 1]
+                        for dg in temp_list:
+                            dicom = dg.GetHandSortedList()[0]
+                            merged_group.AddSlice(dicom)
 
-                pos_current = current.image.position[axis]
-                pos_next = current.image.position[axis]
-                spacing = current.image.spacing
+                        # Update Z Spacing
+                        merged_group.UpdateZSpacing()
 
-                if (pos_next - pos_current) <= (spacing[2] * 2):
-                    if group_counter in dict_final:
-                        dict_final[group_counter].AddSlice(current)
-                    else:
-                        group = DicomGroup()
-                        group.AddSlice(current)
-                        dict_final[group_counter] = group
-                        # Getting the spacing in the Z axis
-                        group.UpdateZSpacing()
-                else:
-                    group_counter += 1
-                    group = DicomGroup()
-                    group.AddSlice(current)
-                    dict_final[group_counter] = group
-                    # Getting the spacing in the Z axis
-                    group.UpdateZSpacing()
+                        # Add to new_list
+                        new_list.append(merged_group)
 
-        return dict_final
+            dict2[key] = new_list
+
+        # For each key, add back the groups (already fixed)
+        for key in dict2.keys():
+            for g in dict2[key]:
+                # Create new key with original group information
+                # and add it to the group
+                if key not in dict3:
+                    dict3[key] = {}
+                group_key = (g.key[0], g.key[1], g.key[2], g.key[3], 0)
+                dict3[key][group_key] = g
+                # Update z_spacing once more (TODO: Necessary?)
+                g.UpdateZSpacing()
+
+        # Now, for each dict3[key], check if values can be merged
+        # based on number slices (autonumber)
+        # eg.
+        # 1° slice of first series
+        # 2° slice of first series
+        # ...
+        # n° slice of first series
+        # 1° slice of second series
+        # ...
+        # dict3[key] = {group_key: dicom_group}
+        # groups_by_num = {number_of_slices: [dicom_group, ...]}
+        groups_dict = {}
+        for key in dict3.keys():
+            groups_by_num = {}
+            for gkey in dict3[key]:
+                g = dict3[key][gkey]
+                if g.nslices not in groups_by_num:
+                    groups_by_num[g.nslices] = []
+                groups_by_num[g.nslices].append(g)
+
+            # Now, if we have multiple groups with same number of slices,
+            # check if we can group them
+            for n in groups_by_num.keys():
+                if len(groups_by_num[n]) > 1:
+                    # As we have different DICOMs, we need to
+                    # know what distinguishes two series from one
+                    # another
+
+                    # 1° of 1° series - d1
+                    # 1° of 2° series - d2
+                    # TODO: Create a good rule here to differentiate more
+                    # than 2 series with n slices each
+                    d1 = groups_by_num[n][0].GetHandSortedList()[0]
+                    d2 = groups_by_num[n][1].GetHandSortedList()[0]
+                    if d1.acquisition.series_description == d2.acquisition.series_description:
+                        if d1.acquisition.serie_number != d2.acquisition.serie_number:
+                            # Create merged group
+                            for g in groups_by_num[n][1:]:
+                                # Add slices from subsequent groups to our
+                                # first group
+                                list_ = g.GetHandSortedList()
+                                for item in list_:
+                                    groups_by_num[n][0].AddSlice(item)
+                            # Update our list with only first group
+                            groups_by_num[n] = [groups_by_num[n][0]]
+
+            # Back to our original dict structure
+            for n in groups_by_num.keys():
+                for g in groups_by_num[n]:
+                    # Group key needed for reference (same as the one used in CreateDicomGroup)
+                    if g.key not in groups_dict:
+                        groups_dict[g.key] = g
+
+        return groups_dict
 
 
-class DicomPatientGrouper:
-    # read file, check if it is dicom...
-    # dicom = dicom.Dicom
-    # grouper = DicomPatientGrouper()
-    # grouper.AddFile(dicom)
-    # ... (repeat to all files on folder)
-    # grouper.Update()
-    # groups = GetPatientGroups()
-
+# This class is used by dicom_reader.py to group DICOM files
+class DicomGroups:
     def __init__(self):
-        self.patients_dict = {}
+        self.patients = {}
+        logger.debug("DicomGroups initialized")
 
+    @handle_errors(
+        error_message="Error adding file to DICOM groups",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def AddFile(self, dicom):
         patient_key = (dicom.patient.name, dicom.patient.id)
+        logger.debug(f"Adding file to DICOM groups, patient key: {patient_key}")
 
-        # Does this patient exist?
-        if patient_key not in self.patients_dict.keys():
-            patient = PatientGroup()
-            patient.key = patient_key
-            patient.AddFile(dicom)
-            self.patients_dict[patient_key] = patient
-        # Patient exists... Lets add group to it
-        else:
-            patient = self.patients_dict[patient_key]
-            patient.AddFile(dicom)
+        if patient_key not in self.patients:
+            self.patients[patient_key] = PatientGroup()
+            logger.debug(f"Created new patient group with key {patient_key}")
 
+        self.patients[patient_key].AddFile(dicom)
+
+    @handle_errors(
+        error_message="Error updating DICOM groups",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.WARNING,
+    )
     def Update(self):
-        for patient in self.patients_dict.values():
-            patient.Update()
+        for patient_group in self.patients.values():
+            patient_group.Update()
+        logger.debug("Updated all DICOM groups")
 
+    @handle_errors(
+        error_message="Error getting patients groups",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def GetPatientsGroups(self):
-        """
-        How to use:
-        patient_list = grouper.GetPatientsGroups()
-        for patient in patient_list:
-            group_list = patient.GetGroups()
-            for group in group_list:
-                group.GetList()
-                # :) you've got a list of dicom.Dicom
-                # of the same series
-        """
-        plist = self.patients_dict.values()
-        plist = sorted(plist, key=lambda patient: patient.key[0])
-        return plist
+        patients_groups = list(self.patients.values())
+        logger.info(f"Returning {len(patients_groups)} patient groups")
+        return patients_groups
+
+
+# Legacy class for backward compatibility
+# This class is being replaced by DicomGroups
+class DicomPatientGrouper:
+    """
+    DEPRECATED: Use DicomGroups instead.
+    This class is maintained for backward compatibility.
+    """
+
+    def __init__(self):
+        self.dicom_groups = DicomGroups()
+        logger.warning("DicomPatientGrouper is deprecated, use DicomGroups instead")
+        logger.debug("DicomPatientGrouper initialized")
+
+    @handle_errors(
+        error_message="Error adding file to DICOM patient grouper",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+        reraise=False,
+    )
+    def AddFile(self, dicom):
+        logger.debug(f"Adding file to DICOM patient grouper: {dicom.image.file}")
+        return self.dicom_groups.AddFile(dicom)
+
+    @handle_errors(
+        error_message="Error updating DICOM patient grouper",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+        reraise=False,
+    )
+    def Update(self):
+        logger.debug("Updating DICOM patient grouper")
+        return self.dicom_groups.Update()
+
+    @handle_errors(
+        error_message="Error getting patients groups from DICOM patient grouper",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+        reraise=False,
+    )
+    def GetPatientsGroups(self):
+        logger.debug("Getting patients groups from DICOM patient grouper")
+        return self.dicom_groups.GetPatientsGroups()
