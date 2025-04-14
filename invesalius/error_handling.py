@@ -72,9 +72,6 @@ class ErrorCategory(Enum):
     PERFORMANCE = auto()
     HARDWARE = auto()
     EXTERNAL_LIBRARY = auto()
-    IMAGE_PROCESSING = auto()
-    VTK = auto()
-    GUI = auto()
 
 
 # Define error severity levels
@@ -202,42 +199,6 @@ class RenderingError(InVesaliusException):
         super().__init__(
             message,
             category=ErrorCategory.RENDERING,
-            severity=ErrorSeverity.ERROR,
-            details=details,
-            original_exception=original_exception,
-        )
-
-
-class ImageDataError(InVesaliusException):
-    """Exception raised for image data processing errors."""
-
-    def __init__(
-        self,
-        message: str,
-        details: Optional[Dict[str, Any]] = None,
-        original_exception: Optional[Exception] = None,
-    ):
-        super().__init__(
-            message,
-            category=ErrorCategory.IMAGE_PROCESSING,
-            severity=ErrorSeverity.ERROR,
-            details=details,
-            original_exception=original_exception,
-        )
-
-
-class VTKError(InVesaliusException):
-    """Exception raised for VTK-related errors."""
-
-    def __init__(
-        self,
-        message: str,
-        details: Optional[Dict[str, Any]] = None,
-        original_exception: Optional[Exception] = None,
-    ):
-        super().__init__(
-            message,
-            category=ErrorCategory.EXTERNAL_LIBRARY,
             severity=ErrorSeverity.ERROR,
             details=details,
             original_exception=original_exception,
