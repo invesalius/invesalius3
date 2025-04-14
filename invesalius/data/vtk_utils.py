@@ -21,18 +21,7 @@ import sys
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, SupportsInt, Tuple, Union
 
 import wx
-from vtkmodules.vtkCommonCore import (
-    VTK_CHAR,
-    VTK_DOUBLE,
-    VTK_FLOAT,
-    VTK_INT,
-    VTK_SHORT,
-    VTK_UNSIGNED_CHAR,
-    VTK_UNSIGNED_INT,
-    VTK_UNSIGNED_SHORT,
-)
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
-from vtkmodules.vtkImagingCore import vtkExtractVOI
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
 from vtkmodules.vtkIOPLY import vtkPLYReader
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
@@ -47,61 +36,14 @@ from vtkmodules.vtkRenderingCore import (
 import invesalius.constants as const
 import invesalius.utils as utils
 from invesalius import inv_paths
-from invesalius.enhanced_logging import get_logger
-from invesalius.error_handling import (
-    ErrorCategory,
-    ErrorSeverity,
-    VTKError,
-    handle_errors,
-)
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-
-# Initialize logger
-logger = get_logger("data.vtk_utils")
 
 if TYPE_CHECKING:
     import numpy as np
     from vtkmodules.vtkCommonExecutionModel import vtkAlgorithm
 
     from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
-
-
-@handle_errors(
-    error_message="Error getting VTK array type",
-    category=ErrorCategory.VTK,
-    severity=ErrorSeverity.ERROR,
-    reraise=False,
-)
-def get_vtk_array_type(numpy_dtype):
-    """
-    Convert numpy data type to VTK array type.
-
-    Args:
-        numpy_dtype: Numpy data type
-
-    Returns:
-        int: VTK array type constant
-    """
-    import numpy as np
-
-    # Map numpy types to VTK types
-    type_map = {
-        np.float32: VTK_FLOAT,
-        np.float64: VTK_DOUBLE,
-        np.int8: VTK_CHAR,
-        np.uint8: VTK_UNSIGNED_CHAR,
-        np.int16: VTK_SHORT,
-        np.uint16: VTK_UNSIGNED_SHORT,
-        np.int32: VTK_INT,
-        np.uint32: VTK_UNSIGNED_INT,
-    }
-
-    logger.debug(f"Converting numpy dtype {numpy_dtype} to VTK array type")
-    # Get the corresponding VTK type or default to VTK_FLOAT
-    vtk_type = type_map.get(numpy_dtype.type, VTK_FLOAT)
-    logger.debug(f"Converted to VTK type {vtk_type}")
-    return vtk_type
 
 
 class ProgressDialog:
@@ -114,7 +56,6 @@ class ProgressDialog:
         if abort:
             self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
 
-        logger.debug(f"Creating ProgressDialog with maximum={maximum}, abort={abort}")
         self.dlg = wx.ProgressDialog(
             self.title, self.msg, maximum=self.maximum, parent=parent, style=self.style
         )
@@ -123,24 +64,20 @@ class ProgressDialog:
         self.dlg.SetSize(wx.Size(250, 150))
 
     def Cancel(self, evt: wx.CommandEvent) -> None:
-        logger.info("ProgressDialog cancel button pressed")
         Publisher.sendMessage("Cancel DICOM load")
 
     def Update(self, value: SupportsInt, message: str) -> Union[Tuple[bool, bool], bool]:
         if int(value) != self.maximum:
             try:
-                logger.debug(f"Updating progress dialog: value={value}, message={message}")
                 return self.dlg.Update(int(value), message)
             # TODO:
             # Exception in the Wtindows XP 64 Bits with wxPython 2.8.10
             except wx.PyAssertionError:
-                logger.warning("PyAssertionError in progress dialog update")
                 return True
         else:
             return False
 
     def Close(self) -> None:
-        logger.debug("Closing progress dialog")
         self.dlg.Destroy()
 
 
@@ -151,7 +88,6 @@ if sys.platform == "win32":
         _has_win32api = True
     except ImportError:
         _has_win32api = False
-        logger.warning("win32api module not found on Windows, using regular paths")
 else:
     _has_win32api = False
 
@@ -166,12 +102,6 @@ else:
 # http://jjinux.blogspot.com/2006/10/python-modifying-counter-in-closure.html
 
 
-@handle_errors(
-    error_message="Error creating progress handler",
-    category=ErrorCategory.GUI,
-    severity=ErrorSeverity.ERROR,
-    reraise=False,
-)
 def ShowProgress(
     number_of_filters: int = 1, dialog_type: str = "GaugeProgress"
 ) -> Callable[[Union[float, int, "vtkAlgorithm"], str], float]:
@@ -180,14 +110,12 @@ def ShowProgress(
         UpdateProgress = ShowProgress(NUM_FILTERS)
         UpdateProgress(vtkObject)
     """
-    logger.debug(f"Creating progress handler with {number_of_filters} filters, type={dialog_type}")
     progress: List[float] = [0]
     last_obj_progress: List[float] = [0]
     if dialog_type == "ProgressDialog":
         try:
             dlg = ProgressDialog(wx.GetApp().GetTopWindow(), 100)
-        except (wx.PyNoAppError, AttributeError) as e:
-            logger.error(f"Error creating progress dialog: {e}")
+        except (wx.PyNoAppError, AttributeError):
             return lambda obj, label: 0
 
     # when the pipeline is larger than 1, we have to consider this object
@@ -220,14 +148,12 @@ def ShowProgress(
         progress[0] = progress[0] + ratio * difference
         # Tell GUI to update progress status value
         if dialog_type == "GaugeProgress":
-            logger.debug(f"Updating gauge progress: value={progress[0]}, label={label}")
             Publisher.sendMessage("Update status in GUI", value=progress[0], label=label)
         else:
             if progress[0] >= 99.999:
                 progress[0] = 100
 
             if not (dlg.Update(progress[0], label)):
-                logger.info("Progress dialog canceled by user")
                 dlg.Close()
 
         return progress[0]
@@ -441,87 +367,27 @@ class TextZero:
 
 def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:
     """
-    Convert a numpy ndarray to a vtkMatrix4x4.
-
-    Args:
-        affine: 4x4 transformation matrix as numpy array
-
-    Returns:
-        vtkMatrix4x4: VTK matrix object with the transformation data
+    Convert a numpy 4x4 array to a vtk 4x4 matrix
+    :param affine: 4x4 array
+    :return: vtkMatrix4x4 object representing the affine
     """
-    import numpy as np
+    # test for type and shape of affine matrix
+    # assert isinstance(affine, np.ndarray)
+    assert affine.shape == (4, 4)
 
-    matrix = vtkMatrix4x4()
-    for row in range(4):
-        for col in range(4):
-            matrix.SetElement(row, col, affine[row, col])
-    return matrix
+    affine_vtk = vtkMatrix4x4()
+    for row in range(0, 4):
+        for col in range(0, 4):
+            affine_vtk.SetElement(row, col, affine[row, col])
 
-
-@handle_errors(
-    error_message="Error extracting image from VTK reader",
-    category=ErrorCategory.VTK,
-    severity=ErrorSeverity.ERROR,
-    reraise=False,
-)
-def get_image_from_reader(reader, slice_interval=0):
-    """
-    Extract the vtkImageData from a VTK reader, optionally skipping slices.
-
-    Args:
-        reader: A VTK reader object (like vtkGDCMImageReader) with loaded data
-        slice_interval: Interval to skip slices (0 means no skipping)
-
-    Returns:
-        vtkImageData: The image data extracted from the reader
-    """
-    logger.debug(f"Extracting image from reader with slice interval: {slice_interval}")
-
-    image_data = reader.GetOutput()
-
-    # If slice_interval is 0, return the original image
-    if slice_interval == 0:
-        logger.debug("No slice interval specified, returning original image")
-        return image_data
-
-    # Otherwise, extract slices with the specified interval
-    logger.debug(f"Extracting slices with interval: {slice_interval}")
-    extent = image_data.GetExtent()
-
-    # Create a VOI (Volume Of Interest) extractor to select specific slices
-    voi = vtkExtractVOI()
-    voi.SetInputData(image_data)
-
-    # Set the same X and Y extents
-    voi.SetVOI(
-        extent[0],
-        extent[1],  # X min, max
-        extent[2],
-        extent[3],  # Y min, max
-        extent[4],
-        extent[5],  # Z min, max
-    )
-
-    # Set the sample rate to skip slices according to the interval
-    voi.SetSampleRate(1, 1, slice_interval + 1)
-    voi.Update()
-
-    logger.debug("Slice extraction completed")
-    return voi.GetOutput()
+    return affine_vtk
 
 
-@handle_errors(
-    error_message="Error creating polydata from file",
-    category=ErrorCategory.IO,
-    severity=ErrorSeverity.ERROR,
-    reraise=False,
-)
+# TODO: Use the SurfaceManager >> CreateSurfaceFromFile inside surface.py method instead of duplicating code
 def CreateObjectPolyData(filename: str) -> Any:
     """
-    Reads file (STL, PLY, OBJ or VTP) and returns a vtkPolyData containing the 3D model.
+    Coil for navigation rendered in volume viewer.
     """
-    logger.debug(f"Creating polydata from file: {filename}")
-
     filename = utils.decode(filename, const.FS_ENCODE)
     if filename:
         if filename.lower().endswith(".stl"):
