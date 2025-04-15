@@ -51,8 +51,8 @@
 # <dicom.image.number> and <dicom.acquisition.series_number>
 # were swapped
 
-import sys
 import logging
+import sys
 
 import gdcm
 
