@@ -52,8 +52,12 @@
 # were swapped
 
 import sys
+import logging
 
 import gdcm
+
+# Import the missing logger
+logger = logging.getLogger(__name__)
 
 if sys.platform == "win32":
     try:
