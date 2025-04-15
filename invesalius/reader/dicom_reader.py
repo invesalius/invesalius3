@@ -83,6 +83,116 @@ main_dict = {}
 dict_file = {}
 
 
+def _is_valid_dicom(filepath):
+    """
+    Check if a file is a valid DICOM file.
+    Handles filenames with spaces and parentheses.
+    
+    Parameters:
+    -----------
+    filepath (str): Path to the file to check.
+    
+    Returns:
+    --------
+    bool: True if the file is likely a DICOM file, False otherwise.
+    """
+    try:
+        # Check if file exists
+        if not os.path.isfile(filepath):
+            print(f"File does not exist: {filepath}")
+            return False
+            
+        # Check file extension - be very permissive
+        file_extension = os.path.splitext(filepath)[1].lower()
+        valid_extensions = ('.dcm', '.dicom', '.dic', '.acr', '', '.ima', '.img')
+        
+        # For files with parentheses or special characters, be more permissive
+        if file_extension not in valid_extensions:
+            if ".dcm" in filepath.lower() or "dicom" in filepath.lower():
+                print(f"Accepting file with DCM in name: {filepath}")
+                # Continue processing
+            else:
+                # Try to open file to check basic binary signature
+                with open(filepath, "rb") as f:
+                    # Read first few bytes to check for DICOM-like patterns
+                    header = f.read(132)
+                    # Check for common DICOM patterns
+                    if b"DICM" in header or b"UI" in header or b"SQ" in header:
+                        print(f"File has DICOM patterns in header: {filepath}")
+                        # Continue processing
+                    else:
+                        print(f"Skipping file with invalid extension: {filepath} (extension: {file_extension})")
+                        return False
+                
+        # Try to read the file using GDCM, handling all possible encoding issues
+        reader = gdcm.ImageReader()
+        try:
+            # For Windows paths with spaces and special characters
+            if _has_win32api:
+                try:
+                    reader.SetFileName(utils.encode(win32api.GetShortPathName(filepath), const.FS_ENCODE))
+                except Exception as e:
+                    print(f"Win32 path error, trying alternative: {str(e)}")
+                    try:
+                        # Try direct path setting
+                        reader.SetFileName(filepath)
+                    except:
+                        # Last resort, try raw bytes
+                        if isinstance(filepath, str):
+                            reader.SetFileName(filepath.encode('utf-8'))
+                        else:
+                            reader.SetFileName(filepath)
+            else:
+                # For non-Windows systems
+                try:
+                    reader.SetFileName(utils.encode(filepath, const.FS_ENCODE) if isinstance(filepath, str) else filepath)
+                except Exception as e:
+                    print(f"Path encoding error, trying alternative: {str(e)}")
+                    # Direct path setting
+                    reader.SetFileName(filepath if isinstance(filepath, str) else filepath.decode('utf-8'))
+            
+            if reader.Read():
+                print(f"GDCM successfully read DICOM file: {filepath}")
+                return True
+            else:
+                print(f"GDCM cannot read file as DICOM: {filepath}")
+        except Exception as e:
+            print(f"GDCM error: {str(e)} - trying manual checks")
+            
+        # Manual method as fallback
+        try:
+            with open(filepath, "rb") as f:
+                # Standard DICOM files have DICM at offset 128
+                f.seek(128)
+                if f.read(4) == b"DICM":
+                    print(f"Found DICM magic bytes: {filepath}")
+                    return True
+                
+                # Some DICOMs don't have the magic bytes, check for common group numbers
+                f.seek(0)
+                header = f.read(16)
+                # Check group numbers (both endianness)
+                groups = [b"\x02\x00", b"\x00\x02", b"\x08\x00", b"\x00\x08", 
+                          b"\x10\x00", b"\x00\x10", b"\x20\x00", b"\x00\x20"]
+                if any(header.startswith(g) for g in groups):
+                    print(f"Found DICOM group at start: {filepath}")
+                    return True
+                
+                # Last try - assume it's DICOM if filename looks like it
+                filename = os.path.basename(filepath).lower()
+                if any(pattern in filename for pattern in ["dicom", "dcm", "ct", "mri", "xray", "scan"]):
+                    print(f"Assuming DICOM from filename: {filepath}")
+                    return True
+        except Exception as e:
+            print(f"Manual check error: {str(e)} for {filepath}")
+            
+        print(f"Not a recognized DICOM file: {filepath}")
+        return False
+    except Exception as e:
+        print(f"Exception in DICOM validation: {str(e)} for {filepath}")
+        return False
+
+
 class LoadDicom:
     def __init__(self, grouper, filepath):
         self.grouper = grouper
@@ -317,7 +427,19 @@ class ProgressDicomReader:
         Publisher.sendMessage("Update dicom load", data=cont_progress)
 
     def EndLoadFile(self, patient_list):
-        Publisher.sendMessage("End dicom load", patient_series=patient_list)
+        if patient_list and isinstance(patient_list, list) and len(patient_list) > 0:
+            # Set temporary project status to prevent "Please import image first" message
+            import invesalius.constants as const
+            import invesalius.session as ses
+            session = ses.Session()
+            # Only set to new when it was previously closed
+            if session.GetConfig("project_status") == const.PROJECT_STATUS_CLOSED:
+                session.SetConfig("project_status", const.PROJECT_STATUS_NEW)
+            # Send the message to load the import panel
+            Publisher.sendMessage("End dicom load", patient_series=patient_list)
+        else:
+            # Don't send a message if the patient list is empty
+            pass
 
     def GetDicomGroups(self, path, recursive):
         if not const.VTK_WARNING:

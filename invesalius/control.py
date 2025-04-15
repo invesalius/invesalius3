@@ -482,8 +482,12 @@ class Controller:
     def OnLoadImportPanel(self, patient_series: Optional[List]) -> None:
         ok = self.LoadImportPanel(patient_series)
         if ok:
+            # Make sure to show the import panel explicitly with both messages
+            # This ensures the UI properly displays the panel after loading DICOM files
             Publisher.sendMessage("Show import panel")
             Publisher.sendMessage("Show import panel in frame")
+            # Force focus on the import panel
+            wx.CallAfter(Publisher.sendMessage, "Show import panel in frame")
             self.img_type = 1
 
     def OnLoadImportBitmapPanel(
