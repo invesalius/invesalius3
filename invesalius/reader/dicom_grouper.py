@@ -93,6 +93,7 @@ class DicomGroup:
     def AddSlice(self, dicom):
         if not self.dicom:
             self.dicom = dicom
+            logger.debug(f"First slice added to group {self.index}, title: {self.title}")
 
         pos = tuple(dicom.image.position)
 
@@ -124,11 +125,18 @@ class DicomGroup:
         # (interpolated)
 
         if _has_win32api:
-            filelist = [
-                win32api.GetShortPathName(dicom.image.file) for dicom in self.slices_dict.values()
-            ]
+            try:
+                filelist = [
+                    win32api.GetShortPathName(dicom.image.file)
+                    for dicom in self.slices_dict.values()
+                ]
+                logger.debug("Using win32api GetShortPathName to get filenames")
+            except Exception as e:
+                logger.warning(f"Error using win32api: {str(e)}")
+                filelist = [dicom.image.file for dicom in self.slices_dict.values()]
         else:
             filelist = [dicom.image.file for dicom in self.slices_dict.values()]
+            logger.debug("Using standard filenames")
 
         # Sort slices using GDCM
         # if (self.dicom.image.orientation_label != "CORONAL"):
@@ -139,8 +147,23 @@ class DicomGroup:
         try:
             sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
         except TypeError:
+            logger.debug("Using unencoded filenames for sorting")
             sorter.Sort(filelist)
+        except Exception as e:
+            logger.warning(f"Error during IPPSorter.Sort: {str(e)}")
+
         filelist = sorter.GetFilenames()
+        logger.debug(f"Sorted file list contains {len(filelist)} files")
+
+        # Check if z-spacing was computed by GDCM
+        try:
+            computed_spacing = sorter.GetZSpacing()
+            if computed_spacing > 0:
+                logger.debug(f"GDCM computed Z spacing: {computed_spacing}")
+            else:
+                logger.debug("GDCM could not compute Z spacing")
+        except:
+            logger.debug("Error retrieving computed Z spacing from GDCM")
 
         # for breast-CT of koning manufacturing (KBCT)
         if list(self.slices_dict.values())[0].parser.GetManufacturerName() == "Koning":
