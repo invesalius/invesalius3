@@ -1032,11 +1032,7 @@ class Frame(wx.Frame):
     def OnBrainSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog
 
-        if (
-            deep_learning_seg_dialog.HAS_PLAIDML
-            or deep_learning_seg_dialog.HAS_THEANO
-            or deep_learning_seg_dialog.HAS_TORCH
-        ):
+        if deep_learning_seg_dialog.HAS_TORCH:
             dlg = deep_learning_seg_dialog.BrainSegmenterDialog(self)
             dlg.Show()
         else:
@@ -1045,7 +1041,7 @@ class Frame(wx.Frame):
                 _(
                     "It's not possible to run brain segmenter because your system doesn't have the following modules installed:"
                 )
-                + " Torch, PlaidML or Theano",
+                + " Torch",
                 "InVesalius 3 - Brain segmenter",
                 wx.ICON_INFORMATION | wx.OK,
             )
