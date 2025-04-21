@@ -163,3 +163,30 @@ class TestDictionaryOperations(unittest.TestCase):
         d2 = {"b": {"d": 4, "e": 5}, "f": 6}
         expected = {"a": 1, "b": {"c": 2, "d": 4, "e": 5}, "f": 6}
         self.assertEqual(deep_merge_dict(d1, d2), expected)
+
+
+class TestPerformanceAndDebugging(unittest.TestCase):
+    def test_timing_decorator(self):
+        @timing
+        def slow_function():
+            time.sleep(0.1)
+            return "done"
+
+        self.assertEqual(slow_function(), "done")
+
+    def test_log_traceback(self):
+        try:
+            raise ValueError("Test exception")
+        except ValueError as e:
+            tb = log_traceback(e)
+            self.assertIn("ValueError: Test exception", tb)
+
+
+class TestArrayConversions(unittest.TestCase):
+    def test_vtkarray_to_numpy(self):
+        class MockVTKArray:
+            def GetElement(self, i, j):
+                return i * 4 + j
+
+        expected = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15]])
+        np.testing.assert_array_equal(vtkarray_to_numpy(MockVTKArray()), expected)
