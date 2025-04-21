@@ -190,3 +190,27 @@ class TestArrayConversions(unittest.TestCase):
 
         expected = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15]])
         np.testing.assert_array_equal(vtkarray_to_numpy(MockVTKArray()), expected)
+
+
+class TestDebugFunction(unittest.TestCase):
+    @patch("invesalius.session.Session")
+    @patch("builtins.print")
+    def test_debug_enabled(self, mock_print, mock_session):
+        session_instance = mock_session.return_value
+        session_instance.GetConfig.return_value = True
+        debug("Test debug message")
+        session_instance.GetConfig.assert_called_once_with("debug")
+        mock_print.assert_called_once_with("Test debug message")
+
+    @patch("invesalius.session.Session")
+    @patch("builtins.print")
+    def test_debug_disabled(self, mock_print, mock_session):
+        session_instance = mock_session.return_value
+        session_instance.GetConfig.return_value = False
+        debug("Test debug message")
+        session_instance.GetConfig.assert_called_once_with("debug")
+        mock_print.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()
