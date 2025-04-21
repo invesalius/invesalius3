@@ -122,3 +122,26 @@ class TestNamingUtilities(unittest.TestCase):
             1: MockMask("other_1"),
         }
         self.assertEqual(new_name_by_pattern("new"), "new_1")
+
+
+class TestValidationUtils(unittest.TestCase):
+    def test_verify_invalid_plist_character(self):
+        self.assertTrue(VerifyInvalidPListCharacter("bad\x0bchar"))
+        self.assertFalse(VerifyInvalidPListCharacter("good string"))
+
+
+class TestFileAndSystemUtilities(unittest.TestCase):
+    def test_touch(self):
+        with tempfile.NamedTemporaryFile(delete=False) as temp:
+            temp_path = temp.name
+            os.unlink(temp_path)
+            touch(temp_path)
+            self.assertTrue(os.path.exists(temp_path))
+            os.unlink(temp_path)
+
+    def test_get_system_encoding(self):
+        encoding = get_system_encoding()
+        if sys.platform == "win32":
+            self.assertIsNotNone(encoding)
+        else:
+            self.assertEqual(encoding, "utf-8")
