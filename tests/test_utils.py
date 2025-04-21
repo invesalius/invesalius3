@@ -99,3 +99,26 @@ class TestNamingUtilities(unittest.TestCase):
         self.assertEqual(next_copy_name("original copy", names_list), "original copy#2")
         self.assertEqual(next_copy_name("another", names_list), "another copy")
         self.assertEqual(next_copy_name("new", names_list), "new copy")
+
+    @patch("invesalius.project.Project")
+    def test_new_name_by_pattern(self, mock_project):
+        class MockMask:
+            def __init__(self, name):
+                self.name = name
+
+        mock_project_instance = mock_project.return_value
+        mock_project_instance.mask_dict = {1: MockMask("mask_1"), 2: MockMask("mask_2")}
+
+        self.assertEqual(new_name_by_pattern("mask"), "mask_3")
+
+        mock_project_instance.mask_dict = {
+            1: MockMask("surface_1"),
+            2: MockMask("surface_2"),
+            3: MockMask("surface_3"),
+        }
+        self.assertEqual(new_name_by_pattern("surface"), "surface_4")
+
+        mock_project_instance.mask_dict = {
+            1: MockMask("other_1"),
+        }
+        self.assertEqual(new_name_by_pattern("new"), "new_1")
