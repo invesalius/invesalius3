@@ -90,3 +90,12 @@ class TestStringFormatting(unittest.TestCase):
         self.assertEqual(format_date("21//04//2025"), "")
         self.assertEqual(format_date("20250421"), "21/04/2025")
         self.assertEqual(format_date("invalid"), "")
+
+
+class TestNamingUtilities(unittest.TestCase):
+    def test_next_copy_name(self):
+        names_list = ["original", "original copy", "original copy#1", "another"]
+        self.assertEqual(next_copy_name("original", names_list), "original copy#2")
+        self.assertEqual(next_copy_name("original copy", names_list), "original copy#2")
+        self.assertEqual(next_copy_name("another", names_list), "another copy")
+        self.assertEqual(next_copy_name("new", names_list), "new copy")
