@@ -145,3 +145,21 @@ class TestFileAndSystemUtilities(unittest.TestCase):
             self.assertIsNotNone(encoding)
         else:
             self.assertEqual(encoding, "utf-8")
+
+
+class TestEncodingFunctions(unittest.TestCase):
+    def test_decode(self):
+        self.assertEqual(decode(b"test", "utf-8"), "test")
+        self.assertEqual(decode("test", "utf-8"), "test")
+
+    def test_encode(self):
+        self.assertEqual(encode("test", "utf-8"), b"test")
+        self.assertEqual(encode(b"test", "utf-8"), b"test")
+
+
+class TestDictionaryOperations(unittest.TestCase):
+    def test_deep_merge_dict(self):
+        d1 = {"a": 1, "b": {"c": 2, "d": 3}}
+        d2 = {"b": {"d": 4, "e": 5}, "f": 6}
+        expected = {"a": 1, "b": {"c": 2, "d": 4, "e": 5}, "f": 6}
+        self.assertEqual(deep_merge_dict(d1, d2), expected)
