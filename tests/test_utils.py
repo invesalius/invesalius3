@@ -72,3 +72,11 @@ class TestTwoWaysDictionary(unittest.TestCase):
         self.assertIsNone(self.twd.get_value("key1"))
         self.assertEqual(self.twd.get_key("value1"), "key3")
         self.twd.remove("no exist")
+
+
+class TestTimeFormatting(unittest.TestCase):
+    def test_format_time(self):
+        self.assertEqual(format_time("11.29.56"), "11:29:56")
+        self.assertEqual(format_time("11:29:56"), "11:29:56")
+        self.assertEqual(format_time("112956"), "11:29:56")
+        self.assertEqual(format_time("11.29"), time.strftime("%H:%M:%S", time.gmtime(11.29)))
