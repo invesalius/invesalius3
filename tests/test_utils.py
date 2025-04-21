@@ -46,3 +46,29 @@ class TestSingleton(unittest.TestCase):
         self.assertIs(instance1, instance2)
         self.assertEqual(instance1.value, "test")
         self.assertEqual(instance2.value, "test")
+
+
+class TestTwoWaysDictionary(unittest.TestCase):
+    def setUp(self):
+        self.twd = TwoWaysDictionary([("key1", "value1"), ("key2", "value2"), ("key3", "value1")])
+
+    def test_get_key(self):
+        self.assertEqual(self.twd.get_key("value1"), "key1")
+        self.assertEqual(self.twd.get_key("value2"), "key2")
+        self.assertIsNone(self.twd.get_key("no exist"))
+
+    def test_get_keys(self):
+        self.assertEqual(self.twd.get_keys("value1"), ["key1", "key3"])
+        self.assertEqual(self.twd.get_keys("value2"), ["key2"])
+        self.assertEqual(self.twd.get_keys("no exist"), [])
+
+    def test_get_value(self):
+        self.assertEqual(self.twd.get_value("key1"), "value1")
+        self.assertEqual(self.twd.get_value("key2"), "value2")
+        self.assertIsNone(self.twd.get_value("no exist"))
+
+    def test_remove(self):
+        self.twd.remove("key1")
+        self.assertIsNone(self.twd.get_value("key1"))
+        self.assertEqual(self.twd.get_key("value1"), "key3")
+        self.twd.remove("no exist")
