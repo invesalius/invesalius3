@@ -80,3 +80,13 @@ class TestTimeFormatting(unittest.TestCase):
         self.assertEqual(format_time("11:29:56"), "11:29:56")
         self.assertEqual(format_time("112956"), "11:29:56")
         self.assertEqual(format_time("11.29"), time.strftime("%H:%M:%S", time.gmtime(11.29)))
+
+
+class TestStringFormatting(unittest.TestCase):
+    def test_format_date(self):
+        self.assertEqual(format_date("21.04.2025"), "21/04/2025")
+        self.assertEqual(format_date("2025.04.21"), "21/04/2025")
+        self.assertEqual(format_date("21/04/2025"), "")
+        self.assertEqual(format_date("21//04//2025"), "")
+        self.assertEqual(format_date("20250421"), "21/04/2025")
+        self.assertEqual(format_date("invalid"), "")
