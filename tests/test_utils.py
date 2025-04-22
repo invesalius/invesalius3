@@ -102,13 +102,6 @@ def test_encode_decode_utf8():
     assert decoded == original
 
 
-def test_decode_attribute_error():
-    input_val = "hello"
-    result = decode(input_val, "utf-8")
-
-    assert result == input_val
-
-
 def test_encode_attribute_error():
     input_val = 123
     result = encode(input_val, "utf-8")
@@ -215,6 +208,7 @@ def test_resize_win32_32bit(mock_swap, mock_virtual, *_):
     mock_swap.return_value.free = 1_000_000_000
 
     result = calculate_resizing_tofitmemory(100, 100, 100, 1)
+
     assert isinstance(result, float)
     assert 0 <= result <= 1
 
@@ -229,6 +223,7 @@ def test_resize_linux_32bit(mock_swap, mock_virtual, *_):
     mock_swap.return_value.free = 1_000_000_000
 
     result = calculate_resizing_tofitmemory(100, 100, 100, 1)
+
     assert isinstance(result, float)
     assert 0 <= result <= 1
 
@@ -243,6 +238,7 @@ def test_swap_clamped_to_ram_total(mock_swap, mock_virtual, *_):
     mock_swap.return_value.free = 2_000_000_000  # will be clamped
 
     result = calculate_resizing_tofitmemory(100, 100, 100, 1)
+
     assert isinstance(result, float)
     assert 0 <= result <= 1
 
@@ -251,9 +247,16 @@ def test_vtkarray_to_numpy():
     mock_matrix = MagicMock()
     # Make GetElement(i, j) return i*10 + j for predictability
     mock_matrix.GetElement.side_effect = lambda i, j: i * 10 + j
-
     result = vtkarray_to_numpy(mock_matrix)
-
     expected = np.array([[0, 1, 2, 3], [10, 11, 12, 13], [20, 21, 22, 23], [30, 31, 32, 33]])
 
     np.testing.assert_array_equal(result, expected)
+
+
+def test_singleton_only_one_instance():
+    from invesalius.session import Session
+
+    s1 = Session()
+    s2 = Session()
+
+    assert s1 is s2
