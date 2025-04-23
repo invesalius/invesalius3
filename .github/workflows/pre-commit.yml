@@ -5,8 +5,8 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.9
     - id: file_changes
@@ -14,7 +14,7 @@ jobs:
       with:
         prNumber: ${{ github.event.number }}
         output: ' '
-    - uses: pre-commit/action@v2.0.3
+    - uses: pre-commit/action@v3.0.0
       name: ruff-pre-commit-run
       with: 
         extra_args: --files ${{ steps.file_changes.outputs.files }}

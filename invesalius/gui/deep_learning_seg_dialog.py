@@ -14,9 +14,6 @@ from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.segmentation.deep_learning import segment, utils
 
-HAS_THEANO = bool(importlib.util.find_spec("theano"))
-HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
-PLAIDML_DEVICES = {}
 TORCH_DEVICES = {}
 
 try:
@@ -36,16 +33,6 @@ if HAS_TORCH:
     TORCH_DEVICES["CPU"] = "cpu"
 
 
-if HAS_PLAIDML:
-    with multiprocessing.Pool(1) as p:
-        try:
-            PLAIDML_DEVICES = p.apply(utils.get_plaidml_devices)
-        except Exception as err:
-            print(err)
-            PLAIDML_DEVICES = {}
-            HAS_PLAIDML = False
-
-
 class DeepLearningSegmenterDialog(wx.Dialog):
     def __init__(
         self,
@@ -53,8 +40,6 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         title,
         auto_segment=False,
         has_torch=True,
-        has_plaidml=True,
-        has_theano=True,
         segmenter=None,
     ):
         wx.Dialog.__init__(
@@ -67,14 +52,9 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         backends = []
         if HAS_TORCH and has_torch:
             backends.append("Pytorch")
-        if HAS_PLAIDML and has_plaidml:
-            backends.append("PlaidML")
-        if HAS_THEANO and has_theano:
-            backends.append("Theano")
         self.segmenter = segmenter
         #  self.pg_dialog = None
         self.torch_devices = TORCH_DEVICES
-        self.plaidml_devices = PLAIDML_DEVICES
         self.auto_segment = auto_segment
 
         self.backends = backends
@@ -109,21 +89,19 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         w, h = self.CalcSizeFromTextSize("MM" * (1 + max(len(i) for i in self.backends)))
         self.cb_backends.SetMinClientSize((w, -1))
         self.chk_use_gpu = wx.CheckBox(self, wx.ID_ANY, _("Use GPU"))
-        if HAS_TORCH or HAS_PLAIDML:
-            if HAS_TORCH:
-                choices = list(self.torch_devices.keys())
-                value = choices[0]
-            else:
-                choices = list(self.plaidml_devices.keys())
-                value = choices[0]
-            self.lbl_device = wx.StaticText(self, -1, _("Device"))
-            self.cb_devices = wx.ComboBox(
-                self,
-                wx.ID_ANY,
-                choices=choices,
-                value=value,
-                style=wx.CB_DROPDOWN | wx.CB_READONLY,
-            )
+        choices = []
+        value = ""
+        if HAS_TORCH:
+            choices = list(self.torch_devices.keys())
+            value = choices[0]
+        self.lbl_device = wx.StaticText(self, -1, _("Device"))
+        self.cb_devices = wx.ComboBox(
+            self,
+            wx.ID_ANY,
+            choices=choices,
+            value=value,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
         self.sld_threshold = wx.Slider(self, wx.ID_ANY, 75, 0, 100)
         w, h = self.CalcSizeFromTextSize("M" * 20)
         self.sld_threshold.SetMinClientSize((w, -1))
@@ -162,7 +140,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         main_sizer.Add(sizer_backends, 0, wx.ALL | wx.EXPAND, 5)
         main_sizer.Add(self.chk_use_gpu, 0, wx.ALL, 5)
         sizer_devices = wx.BoxSizer(wx.HORIZONTAL)
-        if HAS_TORCH or HAS_PLAIDML:
+        if HAS_TORCH:
             sizer_devices.Add(self.lbl_device, 0, wx.ALIGN_CENTER, 0)
             sizer_devices.Add(self.cb_devices, 1, wx.LEFT, 5)
         main_sizer.Add(sizer_devices, 0, wx.ALL | wx.EXPAND, 5)
@@ -231,20 +209,8 @@ class DeepLearningSegmenterDialog(wx.Dialog):
                 self.lbl_device.Show()
                 self.cb_devices.Show()
             self.chk_use_gpu.Hide()
-        elif self.cb_backends.GetValue().lower() == "plaidml":
-            if HAS_PLAIDML:
-                choices = list(self.plaidml_devices.keys())
-                self.cb_devices.Clear()
-                self.cb_devices.SetItems(choices)
-                self.cb_devices.SetValue(choices[0])
-                self.lbl_device.Show()
-                self.cb_devices.Show()
-            self.chk_use_gpu.Hide()
         else:
-            if HAS_PLAIDML:
-                self.lbl_device.Hide()
-                self.cb_devices.Hide()
-            self.chk_use_gpu.Show()
+            raise TypeError("Wrong backend")
 
         self.main_sizer.Fit(self)
         self.main_sizer.SetSizeHints(self)
@@ -280,10 +246,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             except (KeyError, AttributeError):
                 device_id = "cpu"
         else:
-            try:
-                device_id = self.plaidml_devices[self.cb_devices.GetValue()]
-            except (KeyError, AttributeError):
-                device_id = "llvm_cpu.0"
+            raise TypeError("Wrong backend")
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
@@ -414,8 +377,6 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
             parent=parent,
             title=_("Brain segmentation"),
             has_torch=True,
-            has_plaidml=True,
-            has_theano=True,
             segmenter=segment.BrainSegmentProcess,
             auto_segment=auto_segment,
         )
@@ -427,8 +388,6 @@ class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
             parent=parent,
             title=_("Trachea segmentation"),
             has_torch=True,
-            has_plaidml=False,
-            has_theano=False,
             segmenter=segment.TracheaSegmentProcess,
         )
 
@@ -439,8 +398,6 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
             parent=parent,
             title=_("Mandible segmentation (CT)"),
             has_torch=True,
-            has_plaidml=False,
-            has_theano=False,
             segmenter=segment.MandibleCTSegmentProcess,
         )
 
@@ -493,10 +450,7 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
             except (KeyError, AttributeError):
                 device_id = "cpu"
         else:
-            try:
-                device_id = self.plaidml_devices[self.cb_devices.GetValue()]
-            except (KeyError, AttributeError):
-                device_id = "llvm_cpu.0"
+            raise TypeError("Wrong backend")
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
@@ -553,8 +507,6 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
             parent=parent,
             title=_("Implant prediction (CT)"),
             has_torch=True,
-            has_plaidml=False,
-            has_theano=False,
             segmenter=segment.ImplantCTSegmentProcess,
         )
 
@@ -618,10 +570,7 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
             except (KeyError, AttributeError):
                 device_id = "cpu"
         else:
-            try:
-                device_id = self.plaidml_devices[self.cb_devices.GetValue()]
-            except (KeyError, AttributeError):
-                device_id = "llvm_cpu.0"
+            raise TypeError("Wrong backend")
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()

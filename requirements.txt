@@ -13,7 +13,6 @@ vtk==9.3.0
 
 # Machine Learning
 torch==2.3.1
-plaidml-keras==0.7.0; python_version <= '3.8'
 
 # Utilities
 Cython==3.0.10
@@ -25,3 +24,7 @@ wxPython==4.2.2
 pyacvd==0.2.11
 optitrack ; python_version == "3.8" and sys_platform == "windows"
 pyclaron ; python_version == "3.8" and sys_platform == "windows"
+
+# Testing
+pytest==8.3.5
+pytest-mock==3.14.0

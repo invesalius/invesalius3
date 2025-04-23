@@ -1,6 +1,6 @@
 [project]
 name = "InVesalius"
-version = "3.1.99998"
+dynamic = ["version"]
 description = "3D medical imaging reconstruction software"
 keywords = [
   "medical imaging",
@@ -18,23 +18,23 @@ dependencies = [
     "numpy==1.26.4",
     "optitrack ; python_full_version == '3.8.*' and sys_platform == 'windows'",
     "pillow==10.3.0",
-    "plaidml-keras==0.7.0 ; python_full_version < '3.9'",
     "psutil==6.0.0",
     "pyacvd==0.2.11",
     "pyclaron ; python_full_version == '3.8.*' and sys_platform == 'windows'",
     "pypubsub==4.0.3",
     "pyserial==3.5",
     "python-gdcm==3.0.24",
+    "requests>=2.32.3",
     "scikit-image==0.24.0",
     "scipy==1.14.0",
     "setuptools-scm",
-    "torch==2.3.1",
+    "torch>=2.3.1",
     "vtk==9.3.0",
     "wxpython==4.2.2",
 ]
 license = { file = "LICENSE.txt" }
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = "==3.12.*"
 
 
 [dependency-groups]
@@ -51,11 +51,34 @@ dev = [
     "scikit-learn==1.5.0",
     "uvicorn[standard]==0.30.1",
     "scikit-build-core",
+    "pytest==8.3.5",
+    "pytest-mock==3.14.0",
 ]
 
 
 [project.gui-scripts]
 inv = 'invesalius.app:main'
+
+[project.optional-dependencies]
+installer = [
+    "pyinstaller>=6.12.0",
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'darwin'"},
+  { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
 
 
 [build-system]
@@ -67,10 +90,13 @@ build-backend = "scikit_build_core.build"
 experimental = true
 wheel.packages = ["invesalius","invesalius_cy"]
 editable.mode = "inplace"
-
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 
 [tool.setuptools]
 packages = ["invesalius","invesalius_cy"]
+
+[tool.setuptools_scm]
+write_to = "invesalius/__version__.py"
 
 
 [tool.mypy]
@@ -118,7 +144,6 @@ module = [
     'urllib2.*',
     'optitrack.*',
     'ordereddict.*',
-    'keras.*',
     'Image.*',
     'mido.*',
     'ConfigParser.*',
@@ -128,7 +153,6 @@ module = [
     'Trekker.*',
     'sklearn.*',
     'usb.*',
-    'plaidml.*',
     'pypolaris.*',
     'pypolarisP4.*',
     'socketio.*',
@@ -141,6 +165,7 @@ module = [
     'win32com.client.*',
     'win32com.*',
     'sigar.*',
+    'numpy.*',
 ]
 ignore_missing_imports = true
 
@@ -148,7 +173,7 @@ ignore_missing_imports = true
 [tool.ruff]
 include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py',"typings/**/*.pyi"]
 line-length = 100
-# extend-exclude = ["plugins"]
+extend-exclude = ["invesalius/__version__.py"]
 
 [tool.ruff.lint]
 extend-select = ["UP","I"] # Introduces linting rules for pyupgrade and isort

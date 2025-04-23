@@ -24,6 +24,7 @@ AppVerName=InVesalius 3.1.99998
 VersionInfoProductVersion=3.1
 VersionInfoVersion=0.0.0.1
 AppPublisher=CTI Renato Archer
+AppVersion={#MyAppVersion}
 AppPublisherURL=http://www.cti.gov.br/invesalius
 AppSupportURL=http://www.cti.gov.br/invesalius        
 AppUpdatesURL=http://www.cti.gov.br/invesalius
