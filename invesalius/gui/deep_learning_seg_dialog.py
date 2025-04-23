@@ -303,6 +303,14 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.btn_stop.Disable()
         self.btn_segment.Disable()
         self.chk_new_mask.Disable()
+        self.sld_threshold.Disable()
+        self.txt_threshold.Disable()
+        self.cb_backends.Disable()
+        self.cb_devices.Disable()
+        self.overlap.Disable()
+        self.chk_apply_wwwl.Disable()
+        self.chk_use_gpu.Disable()
+
         self.elapsed_time_timer.Stop()
         self.apply_segment_threshold()
 
@@ -337,11 +345,11 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
             progress = self.ps.get_completion()
             if progress == np.inf:
-                progress = 1
+                progress = 1.0
                 self.AfterSegment()
             else:
-                progress = max(0, min(progress, 1))
-                self.SetProgress(float(progress))
+                progress = max(0.0, min(progress, 1.0))
+            self.SetProgress(progress)
 
     def OnClose(self, evt):
         #  self.segmenter.stop = True
