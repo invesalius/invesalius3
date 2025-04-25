@@ -377,6 +377,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.lbl_time.Show()
         self.main_sizer.Fit(self)
         self.main_sizer.SetSizeHints(self)
+        self.Update()
 
 
 class BrainSegmenterDialog(DeepLearningSegmenterDialog):
