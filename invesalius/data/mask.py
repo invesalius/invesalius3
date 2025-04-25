@@ -138,7 +138,7 @@ class EditionHistory:
 
         if self.index == 0:
             Publisher.sendMessage("Enable undo", value=False)
-        
+
         # Only print debug information if there's actually an item to print
         if h and self.index >= 0 and self.index < len(h):
             print("AT", self.index, len(self.history), self.history[self.index].filename)
@@ -176,7 +176,7 @@ class EditionHistory:
 
         if self.index == len(h) - 1:
             Publisher.sendMessage("Enable redo", value=False)
-            
+
         # Only print debug information if there's actually an item to print
         if h and self.index >= 0 and self.index < len(h):
             print("AT", self.index, len(h), h[self.index].filename)
