@@ -201,7 +201,7 @@ class Frame(wx.Frame):
 
     def OnGlobalKey(self, event):
         """
-        Handle all key events at a global level.
+        Handle key press events in InVesalius.
         """
         keycode = event.GetKeyCode()
         modifiers = event.GetModifiers()
@@ -212,10 +212,19 @@ class Frame(wx.Frame):
         if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
             is_search_field = True
 
-        # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
+        # Handle CTRL+Z for undo and CTRL+Y for redo
         if modifiers & wx.MOD_CONTROL:
             unicode = event.GetUnicodeKey()
-            if unicode in (ord("s"), ord("S"), ord("q"), ord("Q")):
+            if unicode == ord("Z") or unicode == ord("z"):
+                # CTRL+Z - Undo
+                self.OnUndo()
+                return
+            elif unicode == ord("Y") or unicode == ord("y"):
+                # CTRL+Y - Redo
+                self.OnRedo()
+                return
+            # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
+            elif unicode in [ord("S"), ord("s"), ord("Q"), ord("q")]:
                 event.Skip()
                 return
 
@@ -234,7 +243,6 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Delete selected markers")
             return
 
-        # For all other keys, continue with the normal event handling (propagate the event).
         event.Skip()
 
     def __init_aui(self):
@@ -763,8 +771,27 @@ class Frame(wx.Frame):
         # If none of the above matched, log unknown event ID
         # except for standard wxWidgets negative IDs that can be ignored
         else:
+            # Handle the segmentation and density menu items that were removed
+            if id == const.ID_MASK_DENSITY_MEASURE:
+                ddlg = dlg.MaskDensityDialog(self)
+                ddlg.Show()
+            elif id == const.ID_MANUAL_WWWL:
+                wwwl_dlg = dlg.ManualWWWLDialog(self)
+                wwwl_dlg.Show()
+            elif id == const.ID_THRESHOLD_SEGMENTATION:
+                Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
+                Publisher.sendMessage("Disable actual style")
+                Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
+            elif id == const.ID_MANUAL_SEGMENTATION:
+                Publisher.sendMessage("Show panel", panel_id=const.ID_MANUAL_SEGMENTATION)
+                Publisher.sendMessage("Disable actual style")
+                Publisher.sendMessage("Enable style", style=const.SLICE_STATE_EDITOR)
+            elif id == const.ID_WATERSHED_SEGMENTATION:
+                Publisher.sendMessage("Show panel", panel_id=const.ID_WATERSHED_SEGMENTATION)
+                Publisher.sendMessage("Disable actual style")
+                Publisher.sendMessage("Enable style", style=const.SLICE_STATE_WATERSHED)
             # Ignore standard wxWidgets IDs
-            if id not in (-31849, -31848, -31850):
+            elif id not in (-31849, -31848, -31850):
                 print(f"Unhandled menu/toolbar event ID: {id}")
 
     def _HideTask(self):
