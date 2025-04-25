@@ -264,12 +264,14 @@ class SliceMenu(wx.Menu):
                 item.Check(True)
                 self._gen_event = False
         except KeyError:
-            print(f"Warning: Unrecognized menu item ID: {evt.GetId()} in slice menu")
-            # Let the event propagate to frame for handling
-            evt.Skip()
+            # Handle the event directly, without logging warnings or propagating to frame
+            # Typical wxWidgets built-in menu IDs that we can safely ignore
+            # These are internal wxWidgets IDs for things like menu separators
+            # Silently consume them instead of propagating to the frame
+            evt.Skip(False)
             return
-
-        evt.Skip()
+        # No need to Skip() here because we've handled the event completely
+        evt.Skip(False)
 
     def HideClutDialog(self) -> None:
         if self.cdialog:
