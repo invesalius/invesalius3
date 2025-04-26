@@ -1032,7 +1032,7 @@ class Frame(wx.Frame):
     def OnBrainSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog
 
-        if deep_learning_seg_dialog.HAS_TORCH or deep_learning_seg_dialog.HAS_TINYGRAD :
+        if deep_learning_seg_dialog.HAS_TORCH or deep_learning_seg_dialog.HAS_TINYGRAD:
             dlg = deep_learning_seg_dialog.BrainSegmenterDialog(self)
             dlg.Show()
 

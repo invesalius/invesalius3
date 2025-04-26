@@ -4,6 +4,7 @@
 import importlib
 import multiprocessing
 import time
+from typing import Dict
 
 import numpy as np
 import wx
@@ -14,16 +15,16 @@ from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.segmentation.deep_learning import segment, utils
 
-from typing import Dict
-
 try:
     import torch
+
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
 
 try:
     import tinygrad
+
     HAS_TINYGRAD = True
 except:
     HAS_TINYGRAD = False
@@ -43,6 +44,7 @@ if HAS_TINYGRAD:
         TINYGRAD_DEVICES[device] = device
     if "DSP" in TINYGRAD_DEVICES.keys():
         del TINYGRAD_DEVICES["DSP"]
+
 
 class DeepLearningSegmenterDialog(wx.Dialog):
     def __init__(
@@ -105,7 +107,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.chk_use_gpu = wx.CheckBox(self, wx.ID_ANY, _("Use GPU"))
         choices = []
         value = ""
-        
+
         if HAS_TORCH or HAS_TINYGRAD:
             if HAS_TORCH:
                 choices = list(self.torch_devices.keys())
@@ -238,7 +240,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
                 self.lbl_device.Show()
                 self.cb_devices.Show()
             self.chk_use_gpu.Hide()
-        
+
         else:
             raise TypeError("Wrong backend")
 

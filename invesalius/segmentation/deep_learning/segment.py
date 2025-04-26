@@ -125,22 +125,29 @@ def predict_patch_torch(sub_image, patch, nn_model, device, patch_size):
             .cpu()
             .numpy()
         )
-    return sub_mask.reshape(patch_size, patch_size, patch_size)[0 : ez - iz, 0 : ey - iy, 0 : ex - ix]
+    return sub_mask.reshape(patch_size, patch_size, patch_size)[
+        0 : ez - iz, 0 : ey - iy, 0 : ex - ix
+    ]
+
 
 def predict_patch_tinygrad(sub_image, patch, nn_model, device, patch_size):
-        from tinygrad import Tensor, dtypes
-        with Tensor.test():
-            (iz, ez), (iy, ey), (ix, ex) = patch
-            sub_mask = nn_model(
-                    Tensor(
-                        sub_image.reshape(-1, 1, SIZE, SIZE, SIZE),
-                        dtype=dtypes.float32,
-                        device=device,
-                        requires_grad=False,
-                    )
-            ).numpy()
-        
-        return sub_mask.reshape(patch_size, patch_size, patch_size)[0 : ez - iz, 0 : ey - iy, 0 : ex - ix]
+    from tinygrad import Tensor, dtypes
+
+    with Tensor.test():
+        (iz, ez), (iy, ey), (ix, ex) = patch
+        sub_mask = nn_model(
+            Tensor(
+                sub_image.reshape(-1, 1, SIZE, SIZE, SIZE),
+                dtype=dtypes.float32,
+                device=device,
+                requires_grad=False,
+            )
+        ).numpy()
+
+    return sub_mask.reshape(patch_size, patch_size, patch_size)[
+        0 : ez - iz, 0 : ey - iy, 0 : ex - ix
+    ]
+
 
 def download_callback(comm_array):
     def _download_callback(value):
@@ -171,7 +178,6 @@ def segment_torch(
     # segmenting by patches
     with torch.no_grad():
         for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
-            
             comm_array[0] = completion
             (iz, ez), (iy, ey), (ix, ex) = patch
             sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)
@@ -181,14 +187,16 @@ def segment_torch(
     probability_array /= sums
     comm_array[0] = np.inf
 
+
 def segment_tinygrad(
-        image: np.ndarray, weights_file, overlap, device_id, probability_array, comm_array, patch_size
+    image: np.ndarray, weights_file, overlap, device_id, probability_array, comm_array, patch_size
 ):
-    
-    from tinygrad.engine.jit import TinyJit
-    from tinygrad import dtypes, Tensor, Device
-    from invesalius.segmentation.tinygrad_extra.onnx import OnnxRunner
     import onnx
+    from tinygrad import Device, Tensor, dtypes
+    from tinygrad.engine.jit import TinyJit
+
+    from invesalius.segmentation.tinygrad_extra.onnx import OnnxRunner
+
     device = device_id
 
     if not weights_file.exists():
@@ -196,11 +204,11 @@ def segment_tinygrad(
 
     onnx_model = onnx.load(weights_file)
     model = OnnxRunner(onnx_model)
-    model_jit = TinyJit(lambda x: model({'input': x})['output'])
+    model_jit = TinyJit(lambda x: model({"input": x})["output"])
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
 
-    #segmenting
+    # segmenting
     with Tensor.test():
         for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
             comm_array[0] = completion
@@ -209,12 +217,8 @@ def segment_tinygrad(
             probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
             sums[iz:ez, iy:ey, ix:ex] += 1
 
-    
     probability_array /= sums
     comm_array[0] = np.inf
-
-
-
 
 
 def segment_torch_jit(
@@ -340,7 +344,7 @@ class SegmentProcess(ctx.Process):
         self.onnx_weights_hash = ""
 
         self.mask = None
-    
+
     def run(self):
         try:
             multiprocessing.current_process().name = "MainProcess"
