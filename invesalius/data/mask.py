@@ -107,11 +107,12 @@ class EditionHistory:
 
     def undo(self, mvolume, actual_slices=None):
         h = self.history
-        if self.index > 0:
+        if self.index > 0 and h:
             # if self.index > 0 and h[self.index].clean:
             ##self.index -= 1
             ##h[self.index].commit_history(mvolume)
             # self._reload_slice(self.index - 1)
+
             if h[self.index - 1].orientation == "VOLUME":
                 self.index -= 1
                 h[self.index].commit_history(mvolume)
@@ -137,11 +138,14 @@ class EditionHistory:
 
         if self.index == 0:
             Publisher.sendMessage("Enable undo", value=False)
-        print("AT", self.index, len(self.history), self.history[self.index].filename)
+        
+        # Only print debug information if there's actually an item to print
+        if h and 0 <= self.index < len(h):
+            print("AT", self.index, len(self.history), self.history[self.index].filename)
 
     def redo(self, mvolume, actual_slices=None):
         h = self.history
-        if self.index < len(h) - 1:
+        if self.index < len(h) - 1 and h:
             # if self.index < len(h) - 1 and h[self.index].clean:
             ##self.index += 1
             ##h[self.index].commit_history(mvolume)
@@ -172,9 +176,16 @@ class EditionHistory:
 
         if self.index == len(h) - 1:
             Publisher.sendMessage("Enable redo", value=False)
-        print("AT", self.index, len(h), h[self.index].filename)
+            
+        # Only print debug information if there's actually an item to print
+        if h and 0 <= self.index < len(h):
+            print("AT", self.index, len(h), h[self.index].filename)
 
     def _reload_slice(self, index):
+        if not self.history or index < 0 or index >= len(self.history):
+            # Don't attempt to reload if the history is empty or index is invalid
+            return
+            
         Publisher.sendMessage(
             ("Set scroll position", self.history[index].orientation),
             index=self.history[index].index,
