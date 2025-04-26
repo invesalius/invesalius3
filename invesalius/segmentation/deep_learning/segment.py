@@ -165,15 +165,13 @@ def segment_torch(
     model.load_state_dict(state_dict["model_state_dict"])
     model.to(device)
     model.eval()
-    print('loaded weights file')
 
     image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
     sums = np.zeros_like(image)
     # segmenting by patches
     with torch.no_grad():
         for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
-            print('sub_image.shape - ',sub_image.shape)
-            print('type(patch) - ',type(patch))
+            
             comm_array[0] = completion
             (iz, ez), (iy, ey), (ix, ex) = patch
             sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)

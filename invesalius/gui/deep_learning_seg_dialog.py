@@ -54,7 +54,6 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         has_tinygrad=True,
         segmenter=None,
     ):
-        import os 
         wx.Dialog.__init__(
             self,
             parent,
@@ -114,7 +113,6 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             else:
                 choices = list(self.tinygrad_devices.keys())
                 value = choices[0]
-                print("cb_devices",type(value), value)
 
         self.lbl_device = wx.StaticText(self, -1, _("Device"))
         self.cb_devices = wx.ComboBox(
@@ -275,13 +273,12 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         if backend.lower() == "pytorch":
             try:
                 device_id = self.torch_devices[self.cb_devices.GetValue()]
-                print((device_id))
             except (KeyError, AttributeError):
                 device_id = "cpu"
         elif backend.lower() == "tinygrad":
             try:
                 device_id = self.tinygrad_devices[self.cb_devices.GetValue()]
-            except:
+            except (KeyError, AttributeError):
                 device_id = tinygrad.Device.DEFAULT
         else:
             raise TypeError("Wrong backend")
