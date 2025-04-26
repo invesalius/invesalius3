@@ -16,6 +16,7 @@ dependencies = [
     "matplotlib==3.9.0",
     "nibabel==5.2.1",
     "numpy==1.26.4",
+    "onnx>=1.17.0",
     "optitrack ; python_full_version == '3.8.*' and sys_platform == 'windows'",
     "pillow==10.3.0",
     "psutil==6.0.0",
@@ -28,6 +29,7 @@ dependencies = [
     "scikit-image==0.24.0",
     "scipy==1.14.0",
     "setuptools-scm",
+    "tinygrad",
     "torch>=2.3.1",
     "vtk==9.3.0",
     "wxpython==4.2.2",
@@ -69,6 +71,7 @@ torch = [
   { index = "pytorch-cpu", marker = "sys_platform == 'darwin'"},
   { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
 ]
+tinygrad = { git = "https://github.com/tinygrad/tinygrad.git", rev = "v0.10.2" }
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
