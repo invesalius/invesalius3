@@ -763,8 +763,34 @@ class Frame(wx.Frame):
         # If none of the above matched, log unknown event ID
         # except for standard wxWidgets negative IDs that can be ignored
         else:
-            # Ignore standard wxWidgets IDs
-            if id not in (-31849, -31848, -31850):
+            # Handle the segmentation and density menu items that were removed
+            if id == const.ID_MASK_DENSITY_MEASURE:
+                ddlg = dlg.MaskDensityDialog(self)
+                ddlg.Show()
+            elif id == const.ID_MANUAL_WWWL:
+                wwwl_dlg = dlg.ManualWWWLDialog(self)
+                wwwl_dlg.Show()
+            elif id == const.ID_THRESHOLD_SEGMENTATION:
+                Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
+                Publisher.sendMessage("Disable actual style")
+                Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
+            elif id == const.ID_MANUAL_SEGMENTATION:
+                Publisher.sendMessage("Show panel", panel_id=const.ID_MANUAL_SEGMENTATION)
+                Publisher.sendMessage("Disable actual style")
+                Publisher.sendMessage("Enable style", style=const.SLICE_STATE_EDITOR)
+            elif id == const.ID_WATERSHED_SEGMENTATION:
+                Publisher.sendMessage("Show panel", panel_id=const.ID_WATERSHED_SEGMENTATION)
+                Publisher.sendMessage("Disable actual style")
+                Publisher.sendMessage("Enable style", style=const.SLICE_STATE_WATERSHED)
+            elif id == const.ID_GOTO_SLICE:
+                self.OnGotoSlice()
+            elif id == const.ID_GOTO_COORD:
+                self.GoToDialogScannerCoord()
+            # Ignore standard wxWidgets IDs and plugin-related IDs
+            # Standard wxWidgets IDs are typically negative values
+            # Plugin-related IDs are also often negative
+            elif id not in (-31849, -31848, -31850, -31901, -31900, -31024, -31026, -31028, 
+                           -31707, -31698, -31680, -31656, -31683, -31653, -31657, -31658) and id > -32000:
                 print(f"Unhandled menu/toolbar event ID: {id}")
 
     def _HideTask(self):
@@ -1530,7 +1556,9 @@ class MenuBar(wx.MenuBar):
                 print("Loading plugin:", plugin_name)
                 Publisher.sendMessage("Load plugin", plugin_name=plugin_name)
             except KeyError:
-                print("Invalid plugin")
+                # If the ID is not in the plugins dictionary, it might be a system menu ID
+                # Just silently ignore it instead of showing an error
+                pass
         evt.Skip()
 
     def SliceInterpolationStatus(self):
