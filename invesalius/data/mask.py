@@ -138,7 +138,7 @@ class EditionHistory:
 
         if self.index == 0:
             Publisher.sendMessage("Enable undo", value=False)
-        
+
         # Only print debug information if there's actually an item to print
         if h and 0 <= self.index < len(h):
             print("AT", self.index, len(self.history), self.history[self.index].filename)
@@ -176,7 +176,7 @@ class EditionHistory:
 
         if self.index == len(h) - 1:
             Publisher.sendMessage("Enable redo", value=False)
-            
+
         # Only print debug information if there's actually an item to print
         if h and 0 <= self.index < len(h):
             print("AT", self.index, len(h), h[self.index].filename)
@@ -185,7 +185,7 @@ class EditionHistory:
         if not self.history or index < 0 or index >= len(self.history):
             # Don't attempt to reload if the history is empty or index is invalid
             return
-            
+
         Publisher.sendMessage(
             ("Set scroll position", self.history[index].orientation),
             index=self.history[index].index,
