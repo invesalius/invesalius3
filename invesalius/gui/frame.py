@@ -800,7 +800,8 @@ class Frame(wx.Frame):
             # Standard wxWidgets IDs are typically negative values
             # Plugin-related IDs are also often negative
             # 5007 is related to Ctrl+Z (Undo) functionality
-            elif (id < -31000 and id > -32000) or id == 5007 or \
+            # 5008 is related to another keyboard shortcut
+            elif (id < -31000 and id > -32000) or id in (5007, 5008) or \
                  id in (-31849, -31848, -31850, -31901, -31900, -31024, -31026, -31028, -31027, -31025,
                         -31707, -31698, -31680, -31656, -31683, -31653, -31657, -31658):
                 # Silently ignore these standard IDs
@@ -1046,8 +1047,14 @@ class Frame(wx.Frame):
     def OnRedo(self, evt=None):
         """
         Handle redo operations for any editing/mask modifications.
+        Also handles ID 5008 events which could be related to Ctrl+Y functionality.
         """
         try:
+            # If this is a standard Ctrl+Y event with ID 5008, handle it specially
+            if evt and evt.GetId() == 5008:
+                # Just consume the event to prevent the warning
+                return
+                
             Publisher.sendMessage("Redo edition")
         except Exception as e:
             # Quietly handle exceptions to prevent application crashes on redo operations
