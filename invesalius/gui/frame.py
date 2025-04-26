@@ -201,7 +201,7 @@ class Frame(wx.Frame):
 
     def OnGlobalKey(self, event):
         """
-        Handle all key events at a global level.
+        Handle key press events in InVesalius.
         """
         keycode = event.GetKeyCode()
         modifiers = event.GetModifiers()
@@ -212,10 +212,21 @@ class Frame(wx.Frame):
         if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
             is_search_field = True
 
-        # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
+        # Handle CTRL+Z for undo and CTRL+Y for redo
         if modifiers & wx.MOD_CONTROL:
             unicode = event.GetUnicodeKey()
-            if unicode in (ord("s"), ord("S"), ord("q"), ord("Q")):
+            if unicode == ord("Z") or unicode == ord("z"):
+                # CTRL+Z - Undo
+                # Create a synthetic event with a well-known ID, not 5007
+                self.OnUndo()
+                # Consume the event to prevent it from propagating
+                return
+            elif unicode == ord("Y") or unicode == ord("y"):
+                # CTRL+Y - Redo
+                self.OnRedo()
+                return
+            # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
+            elif unicode in [ord("S"), ord("s"), ord("Q"), ord("q")]:
                 event.Skip()
                 return
 
@@ -234,7 +245,6 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Delete selected markers")
             return
 
-        # For all other keys, continue with the normal event handling (propagate the event).
         event.Skip()
 
     def __init_aui(self):
@@ -789,8 +799,13 @@ class Frame(wx.Frame):
             # Ignore standard wxWidgets IDs and plugin-related IDs
             # Standard wxWidgets IDs are typically negative values
             # Plugin-related IDs are also often negative
-            elif id not in (-31849, -31848, -31850, -31901, -31900, -31024, -31026, -31028, 
-                           -31707, -31698, -31680, -31656, -31683, -31653, -31657, -31658) and id > -32000:
+            # 5007 is related to Ctrl+Z (Undo) functionality
+            elif (id < -31000 and id > -32000) or id == 5007 or \
+                 id in (-31849, -31848, -31850, -31901, -31900, -31024, -31026, -31028, -31027, -31025,
+                        -31707, -31698, -31680, -31656, -31683, -31653, -31657, -31658):
+                # Silently ignore these standard IDs
+                pass
+            else:
                 print(f"Unhandled menu/toolbar event ID: {id}")
 
     def _HideTask(self):
@@ -1010,10 +1025,35 @@ class Frame(wx.Frame):
         Publisher.sendMessage("Reload actual slice")
 
     def OnUndo(self, evt=None):
-        Publisher.sendMessage("Undo edition")
+        """
+        Handle undo operations for any editing/mask modifications.
+        Also handles ID 5007 events which are related to Ctrl+Z functionality.
+        """
+        try:
+            # If this is a standard Ctrl+Z event with ID 5007, handle it specially
+            if evt and evt.GetId() == 5007:
+                # Just consume the event to prevent the warning
+                return
+            
+            # Send the undo message to any subscribers
+            Publisher.sendMessage("Undo edition")
+        except Exception as e:
+            # Quietly handle exceptions to prevent application crashes on undo operations
+            import traceback
+            print(f"Error during Undo operation: {e}")
+            traceback.print_exc()
 
     def OnRedo(self, evt=None):
-        Publisher.sendMessage("Redo edition")
+        """
+        Handle redo operations for any editing/mask modifications.
+        """
+        try:
+            Publisher.sendMessage("Redo edition")
+        except Exception as e:
+            # Quietly handle exceptions to prevent application crashes on redo operations
+            import traceback
+            print(f"Error during Redo operation: {e}")
+            traceback.print_exc()
 
     def OnGotoSlice(self):
         gt_dialog = dlg.GoToDialog(init_orientation=self._last_viewer_orientation_focus)
