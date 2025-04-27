@@ -538,6 +538,10 @@ class TracheaSegmentProcess(SegmentProcess):
         )
         self.torch_weights_hash = "6102d16e3c8c07a1c7b0632bc76db4d869c7467724ff7906f87d04f6dc72022e"
 
+        self.onnx_weights_file_name = "trachea_ct.onnx"
+        self.onnx_weights_url = "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights_trachea_ct.onnx"
+        self.onnx_weights_hash = "b43ab3b6ec3788a179def66af18715f57450e33ef557fafb34c49ee5e3ab8a48"
+
 
 class MandibleCTSegmentProcess(SegmentProcess):
     def __init__(
