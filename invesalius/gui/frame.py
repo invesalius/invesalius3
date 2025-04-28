@@ -61,7 +61,7 @@ VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range
 [ID_SHOW_LOG_VIEWER] = [wx.NewIdRef() for number in range(1)]
 
 WILDCARD_EXPORT_SLICE = (
-    "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
+    "HDF5 (*.hdf5)|*.hdf5|" "NIfTI 1 (*.nii)|*.nii|" "Compressed NIfTI (*.nii.gz)|*.nii.gz"
 )
 
 IDX_EXT = {0: ".hdf5", 1: ".nii", 2: ".nii.gz"}
@@ -641,21 +641,55 @@ class Frame(wx.Frame):
             axis = {const.ID_FLIP_X: 2, const.ID_FLIP_Y: 1, const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
         elif id in (const.ID_SWAP_XY, const.ID_SWAP_XZ, const.ID_SWAP_YZ):
-            axes = {const.ID_SWAP_XY: (2, 1), const.ID_SWAP_XZ: (2, 0), const.ID_SWAP_YZ: (1, 0)}
-            [id]
+            axes = {const.ID_SWAP_XY: (2, 1), const.ID_SWAP_XZ: (2, 0), const.ID_SWAP_YZ: (1, 0)}[id]
             self.SwapAxes(axes)
         elif id == const.ID_REORIENT_IMG:
             self.OnReorientImg()
+        elif id == wx.ID_UNDO:
+            self.OnUndo()
+        elif id == wx.ID_REDO:
+            self.OnRedo()
+        elif id == const.ID_GOTO_SLICE:
+            self.OnGotoSlice()
+        elif id == const.ID_GOTO_COORD:
+            self.GoToDialogScannerCoord()
 
         # USING MASKS
         elif id == const.ID_BOOLEAN_MASK:
             self.OnMaskBoolean()
+
         elif id == const.ID_CLEAN_MASK:
             self.OnCleanMask()
+
+        elif id == const.ID_MASK_DENSITY_MEASURE:
+            ddlg = dlg.MaskDensityDialog(self)
+            ddlg.Show()
+ 
+        elif id == const.ID_MANUAL_WWWL:
+            wwwl_dlg = dlg.ManualWWWLDialog(self)
+            wwwl_dlg.Show()
+ 
+        elif id == const.ID_THRESHOLD_SEGMENTATION:
+            Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
+            Publisher.sendMessage("Disable actual style")
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
+ 
+        elif id == const.ID_MANUAL_SEGMENTATION:
+            Publisher.sendMessage("Show panel", panel_id=const.ID_MANUAL_SEGMENTATION)
+            Publisher.sendMessage("Disable actual style")
+            Publisher.sendMessage("Enable style", style=const.SLICE_STATE_EDITOR)
+ 
+        elif id == const.ID_WATERSHED_SEGMENTATION:
+            Publisher.sendMessage("Show panel", panel_id=const.ID_WATERSHED_SEGMENTATION)
+            Publisher.sendMessage("Disable actual style")
+            Publisher.sendMessage("Enable style", style=const.SLICE_STATE_WATERSHED)
+ 
         elif id == const.ID_FILL_HOLE_AUTO:
             self.OnFillHolesAutomatically()
+
         elif id == const.ID_FLOODFILL_MASK:
             self.OnFillHolesManually()
+
         elif id == const.ID_REORIENT_IMG:
             self.OnReorientImg()
 
@@ -725,29 +759,29 @@ class Frame(wx.Frame):
         elif id == ID_SHOW_LOG_VIEWER:
             self.OnShowLogViewer(evt)
 
-        # Handle specific state IDs that were being reported as unhandled
-        elif id == 1001:  # STATE_WL
-            Publisher.sendMessage("Set tool state", state=const.STATE_WL)
-        elif id == 1002:  # STATE_SPIN
-            Publisher.sendMessage("Set tool state", state=const.STATE_SPIN)
-        elif id == 1003:  # STATE_ZOOM
-            Publisher.sendMessage("Set tool state", state=const.STATE_ZOOM)
-        elif id == 1004:  # STATE_ZOOM_SL
-            Publisher.sendMessage("Set tool state", state=const.STATE_ZOOM_SL)
-        elif id == 1005:  # STATE_PAN
-            Publisher.sendMessage("Set tool state", state=const.STATE_PAN)
-        elif id == 1007:  # STATE_MEASURE_DISTANCE
-            Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DISTANCE)
-        elif id == 1008:  # STATE_MEASURE_ANGLE
-            Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_ANGLE)
-        elif id == 1010:  # STATE_MEASURE_DENSITY_ELLIPSE
-            Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DENSITY_ELLIPSE)
-        elif id == 1011:  # STATE_MEASURE_DENSITY_POLYGON
-            Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DENSITY_POLYGON)
-        elif id == 3006:  # SLICE_STATE_CROSS
-            Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_CROSS)
-        elif id == 3007:  # SLICE_STATE_SCROLL
-            Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_SCROLL)
+        ## Handle specific state IDs that were being reported as unhandled
+        #elif id == const.STATE_WL:  # STATE_WL
+        #    Publisher.sendMessage("Set tool state", state=const.STATE_WL)
+        #elif id == 1002:  # STATE_SPIN
+        #    Publisher.sendMessage("Set tool state", state=const.STATE_SPIN)
+        #elif id == 1003:  # STATE_ZOOM
+        #    Publisher.sendMessage("Set tool state", state=const.STATE_ZOOM)
+        #elif id == 1004:  # STATE_ZOOM_SL
+        #    Publisher.sendMessage("Set tool state", state=const.STATE_ZOOM_SL)
+        #elif id == 1005:  # STATE_PAN
+        #    Publisher.sendMessage("Set tool state", state=const.STATE_PAN)
+        #elif id == 1007:  # STATE_MEASURE_DISTANCE
+        #    Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DISTANCE)
+        #elif id == 1008:  # STATE_MEASURE_ANGLE
+        #    Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_ANGLE)
+        #elif id == 1010:  # STATE_MEASURE_DENSITY_ELLIPSE
+        #    Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DENSITY_ELLIPSE)
+        #elif id == 1011:  # STATE_MEASURE_DENSITY_POLYGON
+        #    Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DENSITY_POLYGON)
+        #elif id == 3006:  # SLICE_STATE_CROSS
+        #    Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_CROSS)
+        #elif id == 3007:  # SLICE_STATE_SCROLL
+        #    Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_SCROLL)
 
         # Handle task panel toggle
         elif id == const.ID_TASK_BAR:
@@ -762,10 +796,11 @@ class Frame(wx.Frame):
 
         # If none of the above matched, log unknown event ID
         # except for standard wxWidgets negative IDs that can be ignored
-        else:
-            # Ignore standard wxWidgets IDs
-            if id not in (-31849, -31848, -31850):
-                print(f"Unhandled menu/toolbar event ID: {id}")
+        
+        #else:
+        #    # Ignore standard wxWidgets IDs
+        #    if id not in (-31849, -31848, -31850):
+        #        print(f"Unhandled menu/toolbar event ID: {id}")
 
     def _HideTask(self):
         """
