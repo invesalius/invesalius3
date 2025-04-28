@@ -641,7 +641,9 @@ class Frame(wx.Frame):
             axis = {const.ID_FLIP_X: 2, const.ID_FLIP_Y: 1, const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
         elif id in (const.ID_SWAP_XY, const.ID_SWAP_XZ, const.ID_SWAP_YZ):
-            axes = {const.ID_SWAP_XY: (2, 1), const.ID_SWAP_XZ: (2, 0), const.ID_SWAP_YZ: (1, 0)}[id]
+            axes = {const.ID_SWAP_XY: (2, 1), const.ID_SWAP_XZ: (2, 0), const.ID_SWAP_YZ: (1, 0)}[
+                id
+            ]
             self.SwapAxes(axes)
         elif id == const.ID_REORIENT_IMG:
             self.OnReorientImg()
@@ -664,26 +666,26 @@ class Frame(wx.Frame):
         elif id == const.ID_MASK_DENSITY_MEASURE:
             ddlg = dlg.MaskDensityDialog(self)
             ddlg.Show()
- 
+
         elif id == const.ID_MANUAL_WWWL:
             wwwl_dlg = dlg.ManualWWWLDialog(self)
             wwwl_dlg.Show()
- 
+
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
             Publisher.sendMessage("Disable actual style")
             Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
- 
+
         elif id == const.ID_MANUAL_SEGMENTATION:
             Publisher.sendMessage("Show panel", panel_id=const.ID_MANUAL_SEGMENTATION)
             Publisher.sendMessage("Disable actual style")
             Publisher.sendMessage("Enable style", style=const.SLICE_STATE_EDITOR)
- 
+
         elif id == const.ID_WATERSHED_SEGMENTATION:
             Publisher.sendMessage("Show panel", panel_id=const.ID_WATERSHED_SEGMENTATION)
             Publisher.sendMessage("Disable actual style")
             Publisher.sendMessage("Enable style", style=const.SLICE_STATE_WATERSHED)
- 
+
         elif id == const.ID_FILL_HOLE_AUTO:
             self.OnFillHolesAutomatically()
 
