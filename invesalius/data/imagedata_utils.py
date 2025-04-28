@@ -28,6 +28,7 @@ from scipy.ndimage import shift, zoom
 from skimage.color import rgb2gray
 from skimage.measure import label
 from vtkmodules.util import numpy_support
+from vtkmodules.vtkCommonDataModel import vtkImageData
 from vtkmodules.vtkFiltersCore import vtkImageAppend
 from vtkmodules.vtkImagingCore import vtkExtractVOI, vtkImageClip, vtkImageResample
 from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
@@ -40,16 +41,33 @@ import invesalius.data.slice_ as sl
 import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.data import vtk_utils as vtk_utils
+from invesalius.enhanced_logging import get_logger
+from invesalius.error_handling import (
+    ErrorCategory,
+    ErrorSeverity,
+    ImageDataError,
+    handle_errors,
+)
 from invesalius.i18n import tr as _
+
+# Initialize logger
+logger = get_logger("data.imagedata_utils")
 
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
 
 
+@handle_errors(
+    error_message="Error resampling 3D image",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorSeverity.ERROR,
+    reraise=False,
+)
 def ResampleImage3D(imagedata, value):
     """
     Resample vtkImageData matrix.
     """
+    logger.debug(f"Resampling 3D image with value: {value}")
     spacing = imagedata.GetSpacing()
     extent = imagedata.GetExtent()
     size = imagedata.GetDimensions()
@@ -64,13 +82,23 @@ def ResampleImage3D(imagedata, value):
     resample.SetAxisMagnificationFactor(0, resolution)
     resample.SetAxisMagnificationFactor(1, resolution)
 
+    logger.debug("3D image resampling completed")
     return resample.GetOutput()
 
 
+@handle_errors(
+    error_message="Error resampling 2D image",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorSeverity.ERROR,
+    reraise=False,
+)
 def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, update_progress=None):
     """
     Resample vtkImageData matrix.
     """
+    logger.debug(
+        f"Resampling 2D image with px={px}, py={py}, resolution_percentage={resolution_percentage}"
+    )
 
     extent = imagedata.GetExtent()
     # spacing = imagedata.GetSpacing()
@@ -102,6 +130,7 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, upd
         resample.AddObserver("ProgressEvent", lambda obj, evt: update_progress(resample, message))
     resample.Update()
 
+    logger.debug("2D image resampling completed")
     return resample.GetOutput()
 
 
@@ -128,22 +157,37 @@ def resize_image_array(image, resolution_percentage, as_mmap=False):
     return out
 
 
+@handle_errors(
+    error_message="Error reading DCM slice as numpy array",
+    category=ErrorCategory.DICOM,
+    severity=ErrorSeverity.ERROR,
+    reraise=False,
+)
 def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
+    logger.debug(f"Reading DCM slice as numpy array: {filename}")
     reader = gdcm.ImageReader()
     reader.SetFileName(filename)
     reader.Read()
     image = reader.GetImage()
     output = converters.gdcm_to_numpy(image)
     if resolution_percentage < 1.0:
+        logger.debug(f"Resizing slice with resolution percentage: {resolution_percentage}")
         output = zoom(output, resolution_percentage)
     return output
 
 
+@handle_errors(
+    error_message="Error fixing gantry tilt",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorSeverity.ERROR,
+    reraise=False,
+)
 def FixGantryTilt(matrix, spacing, tilt):
     """
     Fix gantry tilt given a vtkImageData and the tilt value. Return new
     vtkImageData.
     """
+    logger.debug(f"Fixing gantry tilt with value: {tilt}")
     angle = np.radians(tilt)
     spacing = spacing[0], spacing[1], spacing[2]
     gntan = math.tan(angle)
@@ -151,6 +195,8 @@ def FixGantryTilt(matrix, spacing, tilt):
     for n, slice_ in enumerate(matrix):
         offset = gntan * n * spacing[2]
         matrix[n] = shift(slice_, (-offset / spacing[1], 0), cval=matrix.min())
+
+    logger.debug("Gantry tilt correction completed")
 
 
 def BuildEditedImage(imagedata, points):
@@ -715,3 +761,92 @@ def get_largest_connected_component(image):
     assert labels.max() != 0
     largest_component = labels == np.argmax(np.bincount(labels.flat)[1:]) + 1
     return largest_component
+
+
+def numpy_to_vtkImageData(numpy_array, spacing=(1.0, 1.0, 1.0), origin=(0, 0, 0)):
+    """
+    Convert a numpy array to VTK image data.
+
+    Args:
+        numpy_array (numpy.ndarray): The numpy array to convert
+        spacing (tuple): The spacing between pixels
+        origin (tuple): The origin of the image
+
+    Returns:
+        vtkImageData or None: The VTK image data, or None if conversion failed
+    """
+    try:
+        import logging
+
+        logger = logging.getLogger("invesalius.reader.numpy_to_vtk")
+
+        # Handle empty arrays
+        if numpy_array is None or numpy_array.size == 0:
+            logger.error("Empty numpy array provided")
+            return None
+
+        # Make sure the array is contiguous in memory
+        if not numpy_array.flags.contiguous:
+            logger.info("Array not contiguous in memory, converting")
+            numpy_array = np.ascontiguousarray(numpy_array)
+
+        # Ensure array has correct shape and data type
+        if numpy_array.ndim == 2:
+            # Single slice - add Z dimension
+            logger.info(f"Converting 2D array of shape {numpy_array.shape} to 3D")
+            numpy_array = numpy_array.reshape(1, *numpy_array.shape)
+        elif numpy_array.ndim != 3:
+            error_msg = f"Array must be 2D or 3D, got shape {numpy_array.shape}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        # Get dimensions
+        z_dim, y_dim, x_dim = numpy_array.shape
+        logger.info(f"Array dimensions: {z_dim}x{y_dim}x{x_dim}")
+        logger.info(f"Array data type: {numpy_array.dtype}")
+
+        # Create VTK image data
+        vtk_image = vtkImageData()
+        vtk_image.SetDimensions(x_dim, y_dim, z_dim)
+        vtk_image.SetSpacing(spacing)
+        vtk_image.SetOrigin(origin)
+
+        # Ensure the extent is set correctly
+        vtk_image.SetExtent(0, x_dim - 1, 0, y_dim - 1, 0, z_dim - 1)
+
+        # Convert to float32 for better compatibility
+        if numpy_array.dtype != np.float32:
+            logger.info(f"Converting array from {numpy_array.dtype} to float32")
+            numpy_array = numpy_array.astype(np.float32)
+
+        # Check array order and flatten appropriately
+        if numpy_array.flags.f_contiguous:
+            logger.info("Array is already in F-contiguous order")
+            flat_array = numpy_array.ravel()  # Will use F order if the array is F-contiguous
+        else:
+            logger.info("Array is in C-contiguous order, flattening in F order")
+            flat_array = numpy_array.ravel(order="F")
+
+        # Get the appropriate VTK array type
+        array_type = vtk_utils.get_vtk_array_type(numpy_array.dtype)
+        logger.info(f"Using VTK array type: {array_type}")
+
+        # Convert numpy array to VTK array
+        vtk_array = numpy_support.numpy_to_vtk(
+            num_array=flat_array, deep=True, array_type=array_type
+        )
+
+        # Assign array to image data
+        vtk_image.GetPointData().SetScalars(vtk_array)
+
+        logger.info("Successfully converted numpy array to VTK image data")
+        return vtk_image
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger("invesalius.reader.numpy_to_vtk")
+        logger.error(f"Error converting numpy array to vtkImageData: {e}")
+        import traceback
+
+        logger.error(traceback.format_exc())
+        return None
