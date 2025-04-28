@@ -29,7 +29,7 @@ dependencies = [
     "scikit-image==0.24.0",
     "scipy==1.14.0",
     "setuptools-scm",
-    "tinygrad",
+    "tinygrad==0.10.2",
     "torch>=2.3.1",
     "vtk==9.3.0",
     "wxpython==4.2.2",
@@ -71,7 +71,6 @@ torch = [
   { index = "pytorch-cpu", marker = "sys_platform == 'darwin'"},
   { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
 ]
-tinygrad = { git = "https://github.com/tinygrad/tinygrad.git", rev = "v0.10.2" }
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

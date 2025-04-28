@@ -353,7 +353,7 @@ requires-dist = [
     { name = "scikit-image", specifier = "==0.24.0" },
     { name = "scipy", specifier = "==1.14.0" },
     { name = "setuptools-scm" },
-    { name = "tinygrad", git = "https://github.com/tinygrad/tinygrad.git?rev=v0.10.2" },
+    { name = "tinygrad", specifier = "==0.10.2" },
     { name = "torch", marker = "sys_platform != 'darwin' and sys_platform != 'linux' and sys_platform != 'win32'", specifier = ">=2.3.1" },
     { name = "torch", marker = "sys_platform == 'darwin'", specifier = ">=2.3.1", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torch", marker = "sys_platform == 'linux' or sys_platform == 'win32'", specifier = ">=2.3.1", index = "https://download.pytorch.org/whl/cu124" },
@@ -1293,7 +1293,11 @@ wheels = [
 [[package]]
 name = "tinygrad"
 version = "0.10.2"
-source = { git = "https://github.com/tinygrad/tinygrad.git?rev=v0.10.2#d3a21cced28dff608eef9c461a4898cd25e10671" }
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/35/32/a1be2284e35d3798ba78bab6bdb3874161c614e49e7b798878b8c2105027/tinygrad-0.10.2.tar.gz", hash = "sha256:53e808fcbfe540302c20045b8a53b9fc709fdb96deb669e0fff3949327ad49a7", size = 1870027 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ea/99/9beb27ae1a5cbdab12fd841d703dd0c2f9b2fea778c5f1877a97e44abf12/tinygrad-0.10.2-py3-none-any.whl", hash = "sha256:4536cbbf5c1247c10241f883b5a425583219d367437358bc00295f8a87e8133f", size = 1761398 },
+]
 
 [[package]]
 name = "torch"
