@@ -759,30 +759,6 @@ class Frame(wx.Frame):
         elif id == ID_SHOW_LOG_VIEWER:
             self.OnShowLogViewer(evt)
 
-        ## Handle specific state IDs that were being reported as unhandled
-        #elif id == const.STATE_WL:  # STATE_WL
-        #    Publisher.sendMessage("Set tool state", state=const.STATE_WL)
-        #elif id == 1002:  # STATE_SPIN
-        #    Publisher.sendMessage("Set tool state", state=const.STATE_SPIN)
-        #elif id == 1003:  # STATE_ZOOM
-        #    Publisher.sendMessage("Set tool state", state=const.STATE_ZOOM)
-        #elif id == 1004:  # STATE_ZOOM_SL
-        #    Publisher.sendMessage("Set tool state", state=const.STATE_ZOOM_SL)
-        #elif id == 1005:  # STATE_PAN
-        #    Publisher.sendMessage("Set tool state", state=const.STATE_PAN)
-        #elif id == 1007:  # STATE_MEASURE_DISTANCE
-        #    Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DISTANCE)
-        #elif id == 1008:  # STATE_MEASURE_ANGLE
-        #    Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_ANGLE)
-        #elif id == 1010:  # STATE_MEASURE_DENSITY_ELLIPSE
-        #    Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DENSITY_ELLIPSE)
-        #elif id == 1011:  # STATE_MEASURE_DENSITY_POLYGON
-        #    Publisher.sendMessage("Set tool state", state=const.STATE_MEASURE_DENSITY_POLYGON)
-        #elif id == 3006:  # SLICE_STATE_CROSS
-        #    Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_CROSS)
-        #elif id == 3007:  # SLICE_STATE_SCROLL
-        #    Publisher.sendMessage("Set slice tool state", state=const.SLICE_STATE_SCROLL)
-
         # Handle task panel toggle
         elif id == const.ID_TASK_BAR:
             task_pane = self.aui_manager.GetPane("Tasks")
@@ -793,14 +769,6 @@ class Frame(wx.Frame):
 
             # Force focus on main window to ensure UI updates properly
             self.SetFocus()
-
-        # If none of the above matched, log unknown event ID
-        # except for standard wxWidgets negative IDs that can be ignored
-        
-        #else:
-        #    # Ignore standard wxWidgets IDs
-        #    if id not in (-31849, -31848, -31850):
-        #        print(f"Unhandled menu/toolbar event ID: {id}")
 
     def _HideTask(self):
         """
