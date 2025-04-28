@@ -6346,7 +6346,7 @@ class GoToDialogScannerCoord(wx.Dialog):
         self.goto_sagital = wx.TextCtrl(self, size=(50, -1))
         self.goto_coronal = wx.TextCtrl(self, size=(50, -1))
         self.goto_axial = wx.TextCtrl(self, size=(50, -1))
-        
+
         # Initialize result attribute
         self.result = None
 
