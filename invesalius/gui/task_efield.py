@@ -584,7 +584,7 @@ class InnerTaskPanel(wx.Panel):
         self.efield_data_saved = efield_data_loaded
 
     def OnEnterdIPerdt(self, evt):
-        input_dt = 1 / (float(self.input_dt.GetValue()) * 1e-6)
+        input_dt = 1 / (float(self.input_dt.GetValue()) * 1e-6) #comment for efield-targeting to keep 1 only
         self.input_coils = [
             float(self.input_coil1.GetValue()),
             float(self.input_coil2.GetValue()),
@@ -605,7 +605,7 @@ class InnerTaskPanel(wx.Panel):
 
     def SenddI(self, dIs):
         self.OnChangeCoil(self.multilocus_coil[6], True)
-        input_dt = 1 / (float(self.input_dt.GetValue()) * 1e-6)
+        input_dt = 1 / (float(self.input_dt.GetValue()) * 1e-6) #comment for efield-targeting to keep 1 only
         #dIs[1] = -dIs[1]
         #dIs[2] = -dIs[2]
         self.input_coils = dIs
