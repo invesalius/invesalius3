@@ -26,6 +26,7 @@ import shutil
 import sys
 import traceback
 
+teste = 3
 if sys.platform == "darwin":
     try:
         import certifi
