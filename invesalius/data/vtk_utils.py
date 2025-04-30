@@ -441,13 +441,7 @@ class TextZero:
 
 def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:
     """
-    Convert a numpy ndarray to a vtkMatrix4x4.
-
-    Args:
-        affine: 4x4 transformation matrix as numpy array
-
-    Returns:
-        vtkMatrix4x4: VTK matrix object with the transformation data
+    Convert a numpy 4x4 array to a vtk 4x4 matrix
     """
     import numpy as np
 

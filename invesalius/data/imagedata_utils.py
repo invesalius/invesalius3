@@ -28,13 +28,8 @@ from scipy.ndimage import shift, zoom
 from skimage.color import rgb2gray
 from skimage.measure import label
 from vtkmodules.util import numpy_support
-from vtkmodules.vtkCommonDataModel import vtkImageData
-from vtkmodules.vtkFiltersCore import vtkImageAppend
-from vtkmodules.vtkImagingCore import vtkExtractVOI, vtkImageClip, vtkImageResample
-from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
-from vtkmodules.vtkInteractionImage import vtkImageViewer
-from vtkmodules.vtkIOXML import vtkXMLImageDataReader, vtkXMLImageDataWriter
 
+import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl

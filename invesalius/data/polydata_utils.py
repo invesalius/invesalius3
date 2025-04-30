@@ -107,6 +107,9 @@ def ApplySmoothFilter(
     filler.SetInputConnection(smoother.GetOutputPort())
     filler.SetHoleSize(1000)
     filler.Update()
+    smoother.AddObserver(
+        "ProgressEvent", lambda obj, evt: UpdateProgress(smoother, "Filling holes...")
+    )
 
     return filler.GetOutput()
 
