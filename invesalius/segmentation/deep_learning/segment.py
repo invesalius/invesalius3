@@ -130,29 +130,6 @@ def predict_patch_torch(sub_image, patch, nn_model, device, patch_size):
     ]
 
 
-def segment_keras(image, weights_file, overlap, probability_array, comm_array, patch_size):
-    import keras
-
-    # Loading model
-    with open(weights_file) as json_file:
-        model = keras.models.model_from_json(json_file.read())
-    model.load_weights(str(weights_file.parent.joinpath("model.h5")))
-    model.compile("Adam", "binary_crossentropy")
-
-    image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
-    sums = np.zeros_like(image)
-    # segmenting by patches
-    for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
-        comm_array[0] = completion
-        (iz, ez), (iy, ey), (ix, ex) = patch
-        sub_mask = predict_patch(sub_image, patch, model, patch_size)
-        probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
-        sums[iz:ez, iy:ey, ix:ex] += 1
-
-    probability_array /= sums
-    comm_array[0] = np.inf
-
-
 def download_callback(comm_array):
     def _download_callback(value):
         comm_array[0] = value
@@ -310,8 +287,6 @@ class SegmentProcess(ctx.Process):
         self.torch_weights_url = ""
         self.torch_weights_hash = ""
 
-        self.keras_weight_file = ""
-
         self.mask = None
 
     def run(self):
@@ -369,15 +344,7 @@ class SegmentProcess(ctx.Process):
                 self.patch_size,
             )
         else:
-            utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
-            segment_keras(
-                image,
-                self.keras_weight_file,
-                self.overlap,
-                probability_array,
-                comm_array,
-                self.patch_size,
-            )
+            raise TypeError("Wrong backend")
 
     @property
     def exception(self):
@@ -445,8 +412,6 @@ class BrainSegmentProcess(SegmentProcess):
             "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
         )
         self.torch_weights_hash = "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22"
-
-        self.keras_weight_file = inv_paths.MODELS_DIR.joinpath("brain_mri_t1/model.json")
 
 
 class TracheaSegmentProcess(SegmentProcess):
@@ -573,15 +538,7 @@ class MandibleCTSegmentProcess(SegmentProcess):
                 needed_spacing=self.needed_spacing,
             )
         else:
-            utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
-            segment_keras(
-                image,
-                self.keras_weight_file,
-                self.overlap,
-                probability_array,
-                comm_array,
-                self.patch_size,
-            )
+            raise TypeError("Wrong backend")
 
 
 class ImplantCTSegmentProcess(SegmentProcess):
@@ -699,12 +656,4 @@ class ImplantCTSegmentProcess(SegmentProcess):
                 flipped=True,
             )
         else:
-            utils.prepare_ambient(self.backend, self.device_id, self.use_gpu)
-            segment_keras(
-                image,
-                self.keras_weight_file,
-                self.overlap,
-                probability_array,
-                comm_array,
-                self.patch_size,
-            )
+            raise TypeError("Wrong backend")

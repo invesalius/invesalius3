@@ -339,7 +339,6 @@ requires-dist = [
     { name = "numpy", specifier = "==1.26.4" },
     { name = "optitrack", marker = "python_full_version == '3.8.*' and sys_platform == 'windows'" },
     { name = "pillow", specifier = "==10.3.0" },
-    { name = "plaidml-keras", marker = "python_full_version < '3.9'", specifier = "==0.7.0" },
     { name = "psutil", specifier = "==6.0.0" },
     { name = "pyacvd", specifier = "==0.2.11" },
     { name = "pyclaron", marker = "python_full_version == '3.8.*' and sys_platform == 'windows'" },
