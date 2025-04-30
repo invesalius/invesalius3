@@ -166,7 +166,9 @@ class InnerPanel(wx.Panel):
 
     def OnDblClickTextPanel(self, evt):
         group = evt.GetItemData()
-        self.LoadDicom(group)
+        if group:  # Only proceed if we have valid data
+            self.LoadDicom(group)
+        # If group is None, do nothing (root item was clicked)
 
     def OnClickOk(self, evt):
         group = self.text_panel.GetSelection()
@@ -177,9 +179,20 @@ class InnerPanel(wx.Panel):
         Publisher.sendMessage("Cancel DICOM load")
 
     def LoadDicom(self, group):
+        if not group:
+            return  # Return early if group is None or invalid
+
         interval = self.combo_interval.GetSelection()
         if not isinstance(group, dcm.DicomGroup):
-            group = max(group.GetGroups(), key=lambda g: g.nslices)
+            # Ensure group has GetGroups method
+            if hasattr(group, "GetGroups") and callable(group.GetGroups):
+                groups = group.GetGroups()
+                if groups:  # Check if groups list is not empty
+                    group = max(groups, key=lambda g: g.nslices)
+                else:
+                    return  # No valid groups available
+            else:
+                return  # Object doesn't have GetGroups method
 
         slice_amont = group.nslices
         if (self.first_image_selection is not None) and (
