@@ -128,6 +128,10 @@ class DicomGroup:
         # This list will be used to create the vtkImageData
         # (interpolated)
 
+        if not self.slices_dict:
+            logger.error("No DICOM files found in the selected folder")
+            return []
+
         if _has_win32api:
             try:
                 filelist = [
