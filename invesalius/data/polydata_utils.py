@@ -74,7 +74,7 @@ UpdateProgress = vu.ShowProgress()
 
 @handle_errors(
     error_message="Error applying decimation filter",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def ApplyDecimationFilter(polydata: vtkPolyData, reduction_factor: float) -> vtkPolyData:
@@ -103,7 +103,7 @@ def ApplyDecimationFilter(polydata: vtkPolyData, reduction_factor: float) -> vtk
 
 @handle_errors(
     error_message="Error applying smooth filter",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def ApplySmoothFilter(
@@ -137,7 +137,7 @@ def ApplySmoothFilter(
 
 @handle_errors(
     error_message="Error filling surface holes",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def FillSurfaceHole(polydata: vtkPolyData) -> "vtkPolyData":
@@ -158,7 +158,7 @@ def FillSurfaceHole(polydata: vtkPolyData) -> "vtkPolyData":
 
 @handle_errors(
     error_message="Error calculating surface volume",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.WARNING,
 )
 def CalculateSurfaceVolume(polydata: vtkPolyData) -> float:
@@ -178,7 +178,7 @@ def CalculateSurfaceVolume(polydata: vtkPolyData) -> float:
 
 @handle_errors(
     error_message="Error calculating surface area",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.WARNING,
 )
 def CalculateSurfaceArea(polydata: vtkPolyData) -> float:
@@ -198,7 +198,7 @@ def CalculateSurfaceArea(polydata: vtkPolyData) -> float:
 
 @handle_errors(
     error_message="Error merging polydata",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def Merge(polydata_list: Iterable[vtkPolyData]) -> vtkPolyData:
@@ -224,7 +224,7 @@ def Merge(polydata_list: Iterable[vtkPolyData]) -> vtkPolyData:
 
 @handle_errors(
     error_message="Error exporting polydata",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def Export(polydata: vtkPolyData, filename: str, bin: bool = False) -> None:
@@ -247,7 +247,7 @@ def Export(polydata: vtkPolyData, filename: str, bin: bool = False) -> None:
 
 @handle_errors(
     error_message="Error importing polydata",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def Import(filename: str) -> vtkPolyData:
@@ -266,7 +266,7 @@ def Import(filename: str) -> vtkPolyData:
 
 @handle_errors(
     error_message="Error loading polydata",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def LoadPolydata(path: str) -> vtkPolyData:
@@ -299,7 +299,7 @@ def LoadPolydata(path: str) -> vtkPolyData:
 
 @handle_errors(
     error_message="Error joining seed parts",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def JoinSeedsParts(polydata: vtkPolyData, point_id_list: List[int]) -> vtkPolyData:
@@ -333,7 +333,7 @@ def JoinSeedsParts(polydata: vtkPolyData, point_id_list: List[int]) -> vtkPolyDa
 
 @handle_errors(
     error_message="Error selecting largest part",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def SelectLargestPart(polydata: vtkPolyData) -> vtkPolyData:
@@ -358,7 +358,7 @@ def SelectLargestPart(polydata: vtkPolyData) -> vtkPolyData:
 
 @handle_errors(
     error_message="Error splitting disconnected parts",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def SplitDisconectedParts(polydata: vtkPolyData) -> List[vtkPolyData]:
@@ -396,7 +396,7 @@ def SplitDisconectedParts(polydata: vtkPolyData) -> List[vtkPolyData]:
 
 @handle_errors(
     error_message="Error removing non-visible faces",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def RemoveNonVisibleFaces(

@@ -1364,18 +1364,20 @@ class Slice(metaclass=utils.Singleton):
         logger = logging.getLogger("invesalius.data.slice_")
         
         try:
+            logger.debug(f"UpdateSlice3D: Starting update for orientation: {orientation}")
+            
             # Check if we have a valid image buffer for this orientation
             if orientation not in self.buffer_slices:
-                logger.warning(f"No buffer slice available for orientation: {orientation}")
+                logger.error(f"UpdateSlice3D: No buffer slice available for orientation: {orientation}")
                 return
                 
             if not hasattr(self.buffer_slices[orientation], 'vtk_image') or self.buffer_slices[orientation].vtk_image is None:
-                logger.warning(f"No VTK image available in buffer for orientation: {orientation}")
+                logger.error(f"UpdateSlice3D: No VTK image available in buffer for orientation: {orientation}")
                 return
             
             # Get the image from the buffer
             img = self.buffer_slices[orientation].vtk_image
-            logger.debug(f"Processing slice image for orientation: {orientation}")
+            logger.debug(f"UpdateSlice3D: Processing slice image for orientation: {orientation}")
             
             # Cast to double
             cast = vtkImageCast()
@@ -1383,6 +1385,7 @@ class Slice(metaclass=utils.Singleton):
             cast.SetOutputScalarTypeToDouble()
             cast.ClampOverflowOn()
             cast.Update()
+            logger.debug(f"UpdateSlice3D: Image cast to double completed for {orientation}")
             
             # Flip the image
             flip = vtkImageFlip()
@@ -1390,30 +1393,32 @@ class Slice(metaclass=utils.Singleton):
             flip.SetFilteredAxis(1)
             flip.FlipAboutOriginOn()
             flip.Update()
+            logger.debug(f"UpdateSlice3D: Image flip completed for {orientation}")
             
-            # Ensure plane orientation is set before setting input
+            # Always set the plane orientation before setting input
             # This prevents the "SetInput() before setting plane orientation" error
+            current_orientation = widget.GetPlaneOrientation()
+            logger.debug(f"UpdateSlice3D: Current widget plane orientation: {current_orientation}")
+            
             if orientation == "AXIAL":
-                if widget.GetPlaneOrientation() != 2:  # Z-Axis
-                    logger.debug("Setting plane orientation to Z-Axis for AXIAL view")
-                    widget.SetPlaneOrientationToZAxes()
+                logger.debug("UpdateSlice3D: Setting plane orientation to Z-Axis for AXIAL view")
+                widget.SetPlaneOrientationToZAxes()
             elif orientation == "CORONAL":
-                if widget.GetPlaneOrientation() != 1:  # Y-Axis
-                    logger.debug("Setting plane orientation to Y-Axis for CORONAL view")
-                    widget.SetPlaneOrientationToYAxes()
+                logger.debug("UpdateSlice3D: Setting plane orientation to Y-Axis for CORONAL view")
+                widget.SetPlaneOrientationToYAxes()
             elif orientation == "SAGITAL":
-                if widget.GetPlaneOrientation() != 0:  # X-Axis
-                    logger.debug("Setting plane orientation to X-Axis for SAGITAL view")
-                    widget.SetPlaneOrientationToXAxes()
+                logger.debug("UpdateSlice3D: Setting plane orientation to X-Axis for SAGITAL view")
+                widget.SetPlaneOrientationToXAxes()
             
             # Now that orientation is set, we can safely set the input
-            logger.debug(f"Setting input data to widget for orientation: {orientation}")
+            logger.debug(f"UpdateSlice3D: Setting input data to widget for orientation: {orientation}")
             widget.SetInputConnection(flip.GetOutputPort())
+            logger.debug(f"UpdateSlice3D: Successfully updated slice for orientation: {orientation}")
             
         except Exception as e:
-            logger.error(f"Error updating slice 3D for orientation {orientation}: {e}")
+            logger.error(f"UpdateSlice3D: Error updating slice 3D for orientation {orientation}: {e}")
             import traceback
-            logger.debug(traceback.format_exc())
+            logger.debug(f"UpdateSlice3D: Detailed error traceback: {traceback.format_exc()}")
 
     def create_new_mask(
         self,

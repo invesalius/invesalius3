@@ -54,7 +54,7 @@ logger = logging.getLogger("invesalius.data.imagedata_utils")
 
 @handle_errors(
     error_message="Error resampling 3D image",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def ResampleImage3D(imagedata, value):
@@ -85,7 +85,7 @@ def ResampleImage3D(imagedata, value):
 
 @handle_errors(
     error_message="Error resampling 2D image",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, update_progress=None):
@@ -133,7 +133,7 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, upd
 
 @handle_errors(
     error_message="Error resizing slice",
-    category=ErrorCategory.IMAGE_PROCESSING,
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.WARNING,
 )
 def resize_slice(im_array, resolution_percentage):
@@ -153,7 +153,7 @@ def resize_slice(im_array, resolution_percentage):
 
 @handle_errors(
     error_message="Error resizing image array",
-    category=ErrorCategory.IMAGE_PROCESSING,
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.WARNING,
 )
 def resize_image_array(image, resolution_percentage, as_mmap=False):
@@ -197,7 +197,7 @@ def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
 
 @handle_errors(
     error_message="Error fixing gantry tilt",
-    category=ErrorCategory.IMAGE_PROCESSING,
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.WARNING,
 )
 def FixGantryTilt(matrix, spacing, tilt):
@@ -221,7 +221,7 @@ def FixGantryTilt(matrix, spacing, tilt):
 
 @handle_errors(
     error_message="Error building edited image",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def BuildEditedImage(imagedata, points):
@@ -286,7 +286,7 @@ def BuildEditedImage(imagedata, points):
 
 @handle_errors(
     error_message="Error exporting image data",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def Export(imagedata, filename, bin=False):
@@ -306,7 +306,7 @@ def Export(imagedata, filename, bin=False):
 
 @handle_errors(
     error_message="Error importing image data",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def Import(filename):
@@ -324,7 +324,7 @@ def Import(filename):
 
 @handle_errors(
     error_message="Error viewing image data",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.WARNING,
 )
 def View(imagedata):
@@ -343,7 +343,7 @@ def View(imagedata):
 
 @handle_errors(
     error_message="Error extracting VOI",
-    category=ErrorCategory.VTK,
+    category=ErrorCategory.EXTERNAL_LIBRARY,
     severity=ErrorSeverity.ERROR,
 )
 def ExtractVOI(imagedata, xi, xf, yi, yf, zi, zf):
@@ -399,7 +399,7 @@ def create_dicom_thumbnails(image, window=None, level=None):
 
 @handle_errors(
     error_message="Error converting array to memory map",
-    category=ErrorCategory.IMAGE_PROCESSING,
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.WARNING,
 )
 def array2memmap(arr, filename=None):
@@ -415,7 +415,7 @@ def array2memmap(arr, filename=None):
 
 @handle_errors(
     error_message="Error converting bitmap to memory map",
-    category=ErrorCategory.IMAGE_PROCESSING,
+    category=ErrorCategory.GENERAL,
     severity=ErrorSeverity.ERROR,
 )
 def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage):
@@ -537,7 +537,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
 @handle_errors(
     error_message="Error converting DICOM to memory map",
     category=ErrorCategory.DICOM,
-    severity=ErrorCategory.ERROR,
+    severity=ErrorSeverity.ERROR,
 )
 def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     """
@@ -585,7 +585,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 @handle_errors(
     error_message="Error converting multi-frame DICOM to memory map",
     category=ErrorCategory.DICOM,
-    severity=ErrorCategory.ERROR,
+    severity=ErrorSeverity.ERROR,
 )
 def dcmmf2memmap(dcm_file, orientation):
     reader = gdcm.ImageReader()
@@ -623,8 +623,8 @@ def dcmmf2memmap(dcm_file, orientation):
 
 @handle_errors(
     error_message="Error converting image to memory map",
-    category=ErrorCategory.IMAGE_PROCESSING,
-    severity=ErrorCategory.ERROR,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.ERROR,
 )
 def img2memmap(group):
     """
@@ -669,8 +669,8 @@ def img2memmap(group):
 
 @handle_errors(
     error_message="Error computing LUT value (255)",
-    category=ErrorCategory.IMAGE_PROCESSING,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def get_LUT_value_255(data, window, level):
     shape = data.shape
@@ -688,8 +688,8 @@ def get_LUT_value_255(data, window, level):
 
 @handle_errors(
     error_message="Error computing LUT value",
-    category=ErrorCategory.IMAGE_PROCESSING,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
     shape = data.shape
@@ -704,8 +704,8 @@ def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
 
 @handle_errors(
     error_message="Error computing normalized LUT value",
-    category=ErrorCategory.IMAGE_PROCESSING,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True):
     # based on https://docs.monai.io/en/latest/_modules/monai/transforms/intensity/array.html#ScaleIntensity
@@ -721,8 +721,8 @@ def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True)
 
 @handle_errors(
     error_message="Error normalizing image",
-    category=ErrorCategory.IMAGE_PROCESSING,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
     output = np.empty(shape=image.shape, dtype=output_dtype)
@@ -737,8 +737,8 @@ def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
 #
 @handle_errors(
     error_message="Error converting world to voxel coordinates",
-    category=ErrorCategory.COORDINATES,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def convert_world_to_voxel(xyz, affine):
     """
@@ -761,8 +761,8 @@ def convert_world_to_voxel(xyz, affine):
 
 @handle_errors(
     error_message="Error converting InVesalius to voxel coordinates",
-    category=ErrorCategory.COORDINATES,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def convert_invesalius_to_voxel(position):
     """
@@ -784,8 +784,8 @@ def convert_invesalius_to_voxel(position):
 
 @handle_errors(
     error_message="Error converting InVesalius to world coordinates",
-    category=ErrorCategory.COORDINATES,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def convert_invesalius_to_world(position, orientation):
     """
@@ -830,8 +830,8 @@ def convert_invesalius_to_world(position, orientation):
 
 @handle_errors(
     error_message="Error creating grid",
-    category=ErrorCategory.COORDINATES,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def create_grid(xy_range, z_range, z_offset, spacing):
     x = np.arange(xy_range[0], xy_range[1] + 1, spacing)
@@ -851,8 +851,8 @@ def create_grid(xy_range, z_range, z_offset, spacing):
 
 @handle_errors(
     error_message="Error creating spherical grid",
-    category=ErrorCategory.COORDINATES,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def create_spherical_grid(radius=10, subdivision=1):
     x = np.linspace(-radius, radius, int(2 * radius / subdivision) + 1)
@@ -869,8 +869,8 @@ def create_spherical_grid(radius=10, subdivision=1):
 
 @handle_errors(
     error_message="Error creating random sphere samples",
-    category=ErrorCategory.COORDINATES,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def random_sample_sphere(radius=3, size=100):
     uvw = np.random.default_rng().normal(0, 1, (size, 3))
@@ -883,8 +883,8 @@ def random_sample_sphere(radius=3, size=100):
 
 @handle_errors(
     error_message="Error finding largest connected component",
-    category=ErrorCategory.IMAGE_PROCESSING,
-    severity=ErrorCategory.WARNING,
+    category=ErrorCategory.GENERAL,
+    severity=ErrorSeverity.WARNING,
 )
 def get_largest_connected_component(image):
     labels = label(image)

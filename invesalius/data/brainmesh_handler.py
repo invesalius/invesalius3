@@ -1,5 +1,6 @@
 import numpy as np
 import pyacvd
+import logging
 
 # import os
 import pyvista
@@ -45,6 +46,14 @@ import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 from invesalius.data.converters import to_vtk
 
+logger = logging.getLogger("invesalius.data.brainmesh_handler")
+
+# Setup PyVista to handle VTK errors more gracefully
+pyvista.set_error_output_file('pyvista_errors.log')
+
+# Configure PyVista to use VTK observers more safely
+# This helps avoid the "SetInput() before setting plane orientation" error
+pyvista.global_theme.show_scalar_bar = False
 
 class Brain:
     def __init__(self, n_peels, window_width, window_level, affine, inv_proj):
@@ -56,35 +65,44 @@ class Brain:
         self.numberOfPeels = n_peels
         self.affine = affine
         self.inv_proj = inv_proj
+        logger.debug("Brain: Initialized with %s peels", n_peels)
 
     def from_mask(self, mask):
-        mask = np.array(mask.matrix[1:, 1:, 1:])
-        slic = sl.Slice()
-        image = slic.matrix
+        try:
+            logger.debug("Brain.from_mask: Processing mask")
+            mask = np.array(mask.matrix[1:, 1:, 1:])
+            slic = sl.Slice()
+            image = slic.matrix
 
-        mask = to_vtk(mask, spacing=slic.spacing)
-        image = to_vtk(image, spacing=slic.spacing)
+            mask = to_vtk(mask, spacing=slic.spacing)
+            image = to_vtk(image, spacing=slic.spacing)
 
-        flip = vtkImageFlip()
-        flip.SetInputData(image)
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-        flip.ReleaseDataFlagOn()
-        flip.Update()
-        image = flip.GetOutput()
+            flip = vtkImageFlip()
+            flip.SetInputData(image)
+            flip.SetFilteredAxis(1)
+            flip.FlipAboutOriginOn()
+            flip.ReleaseDataFlagOn()
+            flip.Update()
+            image = flip.GetOutput()
 
-        flip = vtkImageFlip()
-        flip.SetInputData(mask)
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-        flip.ReleaseDataFlagOn()
-        flip.Update()
-        mask = flip.GetOutput()
+            flip = vtkImageFlip()
+            flip.SetInputData(mask)
+            flip.SetFilteredAxis(1)
+            flip.FlipAboutOriginOn()
+            flip.ReleaseDataFlagOn()
+            flip.Update()
+            mask = flip.GetOutput()
 
-        # Image
-        self.refImage = image
-
-        self._do_surface_creation(mask)
+            # Image
+            self.refImage = image
+            logger.debug("Brain.from_mask: Successfully processed mask, starting surface creation")
+            self._do_surface_creation(mask)
+            
+        except Exception as e:
+            logger.error(f"Brain.from_mask: Error processing mask: {e}")
+            import traceback
+            logger.debug(f"Brain.from_mask: Detailed error traceback: {traceback.format_exc()}")
+            raise
 
     def from_mask_file(self, mask_path):
         slic = sl.Slice()

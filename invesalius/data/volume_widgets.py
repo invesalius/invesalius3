@@ -20,6 +20,7 @@
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper
+import logging
 
 AXIAL, SAGITAL, CORONAL = 0, 1, 2
 PLANE_DATA = {AXIAL: ["z", (0, 0, 1)], SAGITAL: ["x", (1, 0, 0)], CORONAL: ["y", (0, 1, 0)]}
@@ -70,16 +71,12 @@ class Plane:
                 print("send signal - update slice info in panel and in 2d")
 
     def SetInput(self, imagedata):
+        logger = logging.getLogger("invesalius.data.volume_widgets")
+        
+        logger.debug(f"SetInput: Setting input for orientation: {self.orientation}")
         axes = PLANE_DATA[self.orientation][0]  # "x", "y" or "z"
         colour = PLANE_DATA[self.orientation][1]
-
-        # if self.orientation == SAGITAL:
-        #    spacing = min(imagedata.GetSpacing())
-        #    permute = vtk.vtkImagePermute()
-        #    permute.SetInput(imagedata)
-        #    permute.GetOutput().ReleaseDataFlagOn()
-        #    permute.SetOutputSpacing(spacing, spacing, spacing)
-        #    imagedata = permute.GetOutput()
+        logger.debug(f"SetInput: Using axes: {axes}, colour: {colour}")
 
         # Picker for enabling plane motion.
         # Allows selection of a cell by shooting a ray into graphics window
@@ -90,39 +87,65 @@ class Plane:
         # 3D widget for reslicing image data.
         # This 3D widget defines a plane that can be interactively placed in an image volume.
         widget = vtkImagePlaneWidget()
-        widget.SetInput(imagedata)
-        widget.SetSliceIndex(self.index)
-        widget.SetPicker(picker)
-        widget.SetKeyPressActivationValue(axes)
-        widget.SetInteractor(self.iren)
-        widget.TextureVisibilityOff()
-        widget.DisplayTextOff()
-        widget.RestrictPlaneToVolumeOff()
-        exec("widget.SetPlaneOrientationTo" + axes.upper() + "Axes()")
-        widget.AddObserver("InteractionEvent", self.Update)
-        self.widget = widget
+        
+        try:
+            # First set the plane orientation before setting input
+            # This prevents the "SetInput() before setting plane orientation" error
+            if self.orientation == AXIAL:
+                logger.debug("SetInput: Setting plane orientation to Z-Axes for AXIAL")
+                widget.SetPlaneOrientationToZAxes()
+            elif self.orientation == CORONAL:
+                logger.debug("SetInput: Setting plane orientation to Y-Axes for CORONAL")
+                widget.SetPlaneOrientationToYAxes()
+            elif self.orientation == SAGITAL:
+                logger.debug("SetInput: Setting plane orientation to X-Axes for SAGITAL")
+                widget.SetPlaneOrientationToXAxes()
+                
+            logger.debug(f"SetInput: Successfully set plane orientation for {self.orientation}")
+            widget.SetKeyPressActivationValue(axes)
+            
+            # Now it's safe to set the input
+            logger.debug("SetInput: Setting input data to widget")
+            widget.SetInput(imagedata)
+            logger.debug("SetInput: Successfully set input data")
+            
+            widget.SetSliceIndex(self.index)
+            widget.SetPicker(picker)
+            widget.SetInteractor(self.iren)
+            widget.TextureVisibilityOff()
+            widget.DisplayTextOff()
+            widget.RestrictPlaneToVolumeOff()
+            widget.AddObserver("InteractionEvent", self.Update)
+            self.widget = widget
 
-        prop = widget.GetPlaneProperty()
-        prop.SetColor(colour)
+            prop = widget.GetPlaneProperty()
+            prop.SetColor(colour)
 
-        # Syncronize coloured outline with texture appropriately
-        source = vtkPlaneSource()
-        source.SetOrigin(widget.GetOrigin())
-        source.SetPoint1(widget.GetPoint1())
-        source.SetPoint2(widget.GetPoint2())
-        source.SetNormal(widget.GetNormal())
-        self.source = source
+            # Syncronize coloured outline with texture appropriately
+            source = vtkPlaneSource()
+            source.SetOrigin(widget.GetOrigin())
+            source.SetPoint1(widget.GetPoint1())
+            source.SetPoint2(widget.GetPoint2())
+            source.SetNormal(widget.GetNormal())
+            self.source = source
 
-        mapper = vtkPolyDataMapper()
-        mapper.SetInput(source.GetOutput())
+            mapper = vtkPolyDataMapper()
+            mapper.SetInput(source.GetOutput())
 
-        actor = vtkActor()
-        actor.SetMapper(mapper)
-        actor.SetTexture(widget.GetTexture())
-        actor.VisibilityOff()
-        self.actor = actor
+            actor = vtkActor()
+            actor.SetMapper(mapper)
+            actor.SetTexture(widget.GetTexture())
+            actor.VisibilityOff()
+            self.actor = actor
 
-        self.render.AddActor(actor)
+            self.render.AddActor(actor)
+            logger.debug("SetInput: Successfully completed setup")
+            
+        except Exception as e:
+            logger.error(f"SetInput: Error in setting input: {e}")
+            import traceback
+            logger.debug(f"SetInput: Detailed error traceback: {traceback.format_exc()}")
+            raise
 
     def Update(self, x=None, y=None):
         source = self.source
