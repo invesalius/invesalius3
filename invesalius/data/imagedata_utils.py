@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -17,6 +18,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import math
 import os
 import tempfile
@@ -28,6 +30,7 @@ from scipy.ndimage import shift, zoom
 from skimage.color import rgb2gray
 from skimage.measure import label
 from vtkmodules.util import numpy_support
+from vtkmodules.vtkCommonDataModel import vtkImageData
 from vtkmodules.vtkFiltersCore import vtkImageAppend
 from vtkmodules.vtkImagingCore import vtkExtractVOI, vtkImageClip, vtkImageResample
 from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
@@ -40,12 +43,20 @@ import invesalius.data.slice_ as sl
 import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.data import vtk_utils as vtk_utils
+from invesalius.error_handling import ErrorCategory, ErrorSeverity, handle_errors
 from invesalius.i18n import tr as _
+
+# Initialize logger
+logger = logging.getLogger("invesalius.data.imagedata_utils")
 
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
 
-
+@handle_errors(
+    error_message="Error resampling 3D image",
+    category=ErrorCategory.VTK,
+    severity=ErrorSeverity.ERROR,
+)
 def ResampleImage3D(imagedata, value):
     """
     Resample vtkImageData matrix.
@@ -60,13 +71,23 @@ def ResampleImage3D(imagedata, value):
     resolution = (height / (extent[1] - extent[0]) + 1) * spacing[1]
 
     resample = vtkImageResample()
-    resample.SetInput(imagedata)
+    resample.SetInputData(imagedata)
     resample.SetAxisMagnificationFactor(0, resolution)
     resample.SetAxisMagnificationFactor(1, resolution)
+    
+    try:
+        resample.Update()
+        logger.debug(f"3D image resampled successfully with resolution: {resolution}")
+        return resample.GetOutput()
+    except Exception as e:
+        logger.error(f"Failed to resample 3D image: {e}")
+        raise
 
-    return resample.GetOutput()
-
-
+@handle_errors(
+    error_message="Error resampling 2D image",
+    category=ErrorCategory.VTK,
+    severity=ErrorSeverity.ERROR,
+)
 def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, update_progress=None):
     """
     Resample vtkImageData matrix.
@@ -91,6 +112,8 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, upd
 
         factor_x = px / float(f + 1)
         factor_y = py / float(f + 1)
+        
+    logger.debug(f"Resampling 2D image with factors: x={factor_x}, y={factor_y}")
 
     resample = vtkImageResample()
     resample.SetInputData(imagedata)
@@ -100,11 +123,19 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, upd
     if update_progress:
         message = _("Generating multiplanar visualization...")
         resample.AddObserver("ProgressEvent", lambda obj, evt: update_progress(resample, message))
-    resample.Update()
+    
+    try:
+        resample.Update()
+        return resample.GetOutput()
+    except Exception as e:
+        logger.error(f"Failed to resample 2D image: {e}")
+        raise
 
-    return resample.GetOutput()
-
-
+@handle_errors(
+    error_message="Error resizing slice",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorSeverity.WARNING,
+)
 def resize_slice(im_array, resolution_percentage):
     """
     Uses ndimage.zoom to resize a slice.
@@ -113,149 +144,230 @@ def resize_slice(im_array, resolution_percentage):
         im_array: slice as a numpy array.
         resolution_percentage: percentage of resize.
     """
-    out = zoom(im_array, resolution_percentage, im_array.dtype, order=2)
-    return out
+    try:
+        out = zoom(im_array, resolution_percentage, im_array.dtype, order=2)
+        return out
+    except Exception as e:
+        logger.error(f"Failed to resize slice: {e}")
+        raise
 
-
+@handle_errors(
+    error_message="Error resizing image array",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorSeverity.WARNING,
+)
 def resize_image_array(image, resolution_percentage, as_mmap=False):
-    out = zoom(image, resolution_percentage, image.dtype, order=2)
-    if as_mmap:
-        fd, fname = tempfile.mkstemp(suffix="_resized")
-        out_mmap = np.memmap(fname, shape=out.shape, dtype=out.dtype, mode="w+")
-        out_mmap[:] = out
-        os.close(fd)
-        return out_mmap
-    return out
+    try:
+        out = zoom(image, resolution_percentage, image.dtype, order=2)
+        if as_mmap:
+            fd, fname = tempfile.mkstemp(suffix="_resized")
+            out_mmap = np.memmap(fname, shape=out.shape, dtype=out.dtype, mode="w+")
+            out_mmap[:] = out
+            os.close(fd)
+            logger.debug(f"Created memory-mapped resized image at {fname}")
+            return out_mmap
+        return out
+    except Exception as e:
+        logger.error(f"Failed to resize image array: {e}")
+        raise
 
-
+@handle_errors(
+    error_message="Error reading DCM slice",
+    category=ErrorCategory.DICOM,
+    severity=ErrorSeverity.WARNING,
+)
 def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
     reader = gdcm.ImageReader()
-    reader.SetFileName(filename)
-    reader.Read()
-    image = reader.GetImage()
-    output = converters.gdcm_to_numpy(image)
-    if resolution_percentage < 1.0:
-        output = zoom(output, resolution_percentage)
-    return output
+    try:
+        reader.SetFileName(filename)
+        if not reader.Read():
+            logger.warning(f"Failed to read DICOM file: {filename}")
+            raise ValueError(f"Failed to read DICOM file: {filename}")
+            
+        image = reader.GetImage()
+        output = converters.gdcm_to_numpy(image)
+        
+        if resolution_percentage < 1.0:
+            output = zoom(output, resolution_percentage)
+            
+        return output
+    except Exception as e:
+        logger.error(f"Failed to read DCM slice as numpy array: {e}")
+        raise
 
-
+@handle_errors(
+    error_message="Error fixing gantry tilt",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorSeverity.WARNING,
+)
 def FixGantryTilt(matrix, spacing, tilt):
     """
     Fix gantry tilt given a vtkImageData and the tilt value. Return new
     vtkImageData.
     """
-    angle = np.radians(tilt)
-    spacing = spacing[0], spacing[1], spacing[2]
-    gntan = math.tan(angle)
+    try:
+        angle = np.radians(tilt)
+        spacing = spacing[0], spacing[1], spacing[2]
+        gntan = math.tan(angle)
+        
+        logger.info(f"Fixing gantry tilt of {tilt} degrees")
 
-    for n, slice_ in enumerate(matrix):
-        offset = gntan * n * spacing[2]
-        matrix[n] = shift(slice_, (-offset / spacing[1], 0), cval=matrix.min())
+        for n, slice_ in enumerate(matrix):
+            offset = gntan * n * spacing[2]
+            matrix[n] = shift(slice_, (-offset / spacing[1], 0), cval=matrix.min())
+    except Exception as e:
+        logger.error(f"Failed to fix gantry tilt: {e}")
+        raise
 
-
+@handle_errors(
+    error_message="Error building edited image",
+    category=ErrorCategory.VTK,
+    severity=ErrorSeverity.ERROR,
+)
 def BuildEditedImage(imagedata, points):
     """
     Editing the original image in accordance with the edit
     points in the editor, it is necessary to generate the
     vtkPolyData via vtkContourFilter
     """
-    init_values = None
-    for point in points:
-        x, y, z = point
-        colour = points[point]
-        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
-        imagedata.Update()
+    try:
+        init_values = None
+        for point in points:
+            x, y, z = point
+            colour = points[point]
+            imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
+            imagedata.Update()
 
-        if not (init_values):
-            xi = x
-            xf = x
-            yi = y
-            yf = y
-            zi = z
-            zf = z
-            init_values = 1
+            if not (init_values):
+                xi = x
+                xf = x
+                yi = y
+                yf = y
+                zi = z
+                zf = z
+                init_values = 1
 
-        if xi > x:
-            xi = x
-        elif xf < x:
-            xf = x
+            if xi > x:
+                xi = x
+            elif xf < x:
+                xf = x
 
-        if yi > y:
-            yi = y
-        elif yf < y:
-            yf = y
+            if yi > y:
+                yi = y
+            elif yf < y:
+                yf = y
 
-        if zi > z:
-            zi = z
-        elif zf < z:
-            zf = z
+            if zi > z:
+                zi = z
+            elif zf < z:
+                zf = z
 
-    clip = vtkImageClip()
-    clip.SetInput(imagedata)
-    clip.SetOutputWholeExtent(xi, xf, yi, yf, zi, zf)
-    clip.Update()
+        clip = vtkImageClip()
+        clip.SetInputData(imagedata)
+        clip.SetOutputWholeExtent(xi, xf, yi, yf, zi, zf)
+        clip.Update()
 
-    gauss = vtkImageGaussianSmooth()
-    gauss.SetInput(clip.GetOutput())
-    gauss.SetRadiusFactor(0.6)
-    gauss.Update()
+        gauss = vtkImageGaussianSmooth()
+        gauss.SetInputConnection(clip.GetOutputPort())
+        gauss.SetRadiusFactor(0.6)
+        gauss.Update()
 
-    app = vtkImageAppend()
-    app.PreserveExtentsOn()
-    app.SetAppendAxis(2)
-    app.SetInput(0, imagedata)
-    app.SetInput(1, gauss.GetOutput())
-    app.Update()
+        app = vtkImageAppend()
+        app.PreserveExtentsOn()
+        app.SetAppendAxis(2)
+        app.SetInputConnection(0, imagedata.GetProducerPort())
+        app.SetInputConnection(1, gauss.GetOutputPort())
+        app.Update()
 
-    return app.GetOutput()
+        return app.GetOutput()
+    except Exception as e:
+        logger.error(f"Failed to build edited image: {e}")
+        raise
 
-
+@handle_errors(
+    error_message="Error exporting image data",
+    category=ErrorCategory.VTK,
+    severity=ErrorSeverity.ERROR,
+)
 def Export(imagedata, filename, bin=False):
-    writer = vtkXMLImageDataWriter()
-    writer.SetFileName(filename)
-    if bin:
-        writer.SetDataModeToBinary()
-    else:
-        writer.SetDataModeToAscii()
-    # writer.SetInput(imagedata)
-    # writer.Write()
+    try:
+        writer = vtkXMLImageDataWriter()
+        writer.SetFileName(filename)
+        if bin:
+            writer.SetDataModeToBinary()
+        else:
+            writer.SetDataModeToAscii()
+        writer.SetInputData(imagedata)
+        writer.Write()
+        logger.info(f"Successfully exported image data to {filename}")
+    except Exception as e:
+        logger.error(f"Failed to export image data: {e}")
+        raise
 
-
+@handle_errors(
+    error_message="Error importing image data",
+    category=ErrorCategory.VTK,
+    severity=ErrorSeverity.ERROR,
+)
 def Import(filename):
-    reader = vtkXMLImageDataReader()
-    reader.SetFileName(filename)
-    # TODO: Check if the code bellow is necessary
-    reader.WholeSlicesOn()
-    reader.Update()
+    try:
+        reader = vtkXMLImageDataReader()
+        reader.SetFileName(filename)
+        # TODO: Check if the code bellow is necessary
+        reader.WholeSlicesOn()
+        reader.Update()
+        logger.info(f"Successfully imported image data from {filename}")
+        return reader.GetOutput()
+    except Exception as e:
+        logger.error(f"Failed to import image data: {e}")
+        raise
 
-    return reader.GetOutput()
-
-
+@handle_errors(
+    error_message="Error viewing image data",
+    category=ErrorCategory.VTK,
+    severity=ErrorSeverity.WARNING,
+)
 def View(imagedata):
-    viewer = vtkImageViewer()
-    viewer.SetInput(imagedata)
-    viewer.SetColorWindow(200)
-    viewer.SetColorLevel(100)
-    viewer.Render()
+    try:
+        viewer = vtkImageViewer()
+        viewer.SetInputData(imagedata)
+        viewer.SetColorWindow(200)
+        viewer.SetColorLevel(100)
+        viewer.Render()
+        
+        import time
+        time.sleep(10)
+    except Exception as e:
+        logger.error(f"Failed to view image data: {e}")
+        raise
 
-    import time
-
-    time.sleep(10)
-
-
+@handle_errors(
+    error_message="Error extracting VOI",
+    category=ErrorCategory.VTK,
+    severity=ErrorSeverity.ERROR,
+)
 def ExtractVOI(imagedata, xi, xf, yi, yf, zi, zf):
     """
     Cropping the vtkImagedata according
     with values.
     """
-    voi = vtkExtractVOI()
-    voi.SetVOI(xi, xf, yi, yf, zi, zf)
-    voi.SetInputData(imagedata)
-    voi.SetSampleRate(1, 1, 1)
-    voi.Update()
-    return voi.GetOutput()
+    try:
+        voi = vtkExtractVOI()
+        voi.SetInputData(imagedata)
+        voi.SetVOI(xi, xf, yi, yf, zi, zf)
+        voi.Update()
+        
+        logger.debug(f"Extracted VOI with dimensions ({xf-xi+1}, {yf-yi+1}, {zf-zi+1})")
+        return voi.GetOutput()
+    except Exception as e:
+        logger.error(f"Failed to extract VOI: {e}")
+        raise
 
-
+@handle_errors(
+    error_message="Error creating DICOM thumbnail",
+    category=ErrorCategory.DICOM,
+    severity=ErrorSeverity.WARNING,
+)
 def create_dicom_thumbnails(image, window=None, level=None):
     pf = image.GetPixelFormat()
     np_image = converters.gdcm_to_numpy(image, pf.GetSamplesPerPixel() == 1)
@@ -285,7 +397,11 @@ def create_dicom_thumbnails(image, window=None, level=None):
         os.close(fd)
         return thumbnail_path
 
-
+@handle_errors(
+    error_message="Error converting array to memory map",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorSeverity.WARNING,
+)
 def array2memmap(arr, filename=None):
     fd = None
     if filename is None:
@@ -297,7 +413,11 @@ def array2memmap(arr, filename=None):
         os.close(fd)
     return matrix
 
-
+@handle_errors(
+    error_message="Error converting bitmap to memory map",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorSeverity.ERROR,
+)
 def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage):
     """
     From a list of dicom files it creates memmap file in the temp folder and
@@ -414,7 +534,11 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
 
     return matrix, scalar_range, temp_file
 
-
+@handle_errors(
+    error_message="Error converting DICOM to memory map",
+    category=ErrorCategory.DICOM,
+    severity=ErrorCategory.ERROR,
+)
 def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     """
     From a list of dicom files it creates memmap file in the temp folder and
@@ -458,7 +582,11 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 
     return matrix, scalar_range, temp_file
 
-
+@handle_errors(
+    error_message="Error converting multi-frame DICOM to memory map",
+    category=ErrorCategory.DICOM,
+    severity=ErrorCategory.ERROR,
+)
 def dcmmf2memmap(dcm_file, orientation):
     reader = gdcm.ImageReader()
     reader.SetFileName(dcm_file)
@@ -493,7 +621,11 @@ def dcmmf2memmap(dcm_file, orientation):
 
     return matrix, scalar_range, spacing, temp_file
 
-
+@handle_errors(
+    error_message="Error converting image to memory map",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorCategory.ERROR,
+)
 def img2memmap(group):
     """
     From a nibabel image data creates a memmap file in the temp folder and
@@ -535,7 +667,11 @@ def img2memmap(group):
 
     return matrix, scalar_range, temp_file
 
-
+@handle_errors(
+    error_message="Error computing LUT value (255)",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorCategory.WARNING,
+)
 def get_LUT_value_255(data, window, level):
     shape = data.shape
     data_ = data.ravel()
@@ -550,7 +686,11 @@ def get_LUT_value_255(data, window, level):
     data.shape = shape
     return data
 
-
+@handle_errors(
+    error_message="Error computing LUT value",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorCategory.WARNING,
+)
 def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
     shape = data.shape
     data_ = data.ravel()
@@ -562,7 +702,11 @@ def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
     data.shape = shape
     return data
 
-
+@handle_errors(
+    error_message="Error computing normalized LUT value",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorCategory.WARNING,
+)
 def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True):
     # based on https://docs.monai.io/en/latest/_modules/monai/transforms/intensity/array.html#ScaleIntensity
 
@@ -575,19 +719,27 @@ def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True)
 
     return img
 
-
+@handle_errors(
+    error_message="Error normalizing image",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorCategory.WARNING,
+)
 def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
     output = np.empty(shape=image.shape, dtype=output_dtype)
     imin, imax = image.min(), image.max()
     output[:] = (image - imin) * ((max_ - min_) / (imax - imin)) + min_
     return output
 
-
 # TODO: Add a description of different coordinate systems, namely:
 #       - the world coordinate system,
 #       - the voxel coordinate system.
 #       - InVesalius's internal coordinate system,
 #
+@handle_errors(
+    error_message="Error converting world to voxel coordinates",
+    category=ErrorCategory.COORDINATES,
+    severity=ErrorCategory.WARNING,
+)
 def convert_world_to_voxel(xyz, affine):
     """
     Convert a coordinate from the world space ((x, y, z); scanner space; millimeters) to the
@@ -607,7 +759,11 @@ def convert_world_to_voxel(xyz, affine):
 
     return ijk
 
-
+@handle_errors(
+    error_message="Error converting InVesalius to voxel coordinates",
+    category=ErrorCategory.COORDINATES,
+    severity=ErrorCategory.WARNING,
+)
 def convert_invesalius_to_voxel(position):
     """
     Convert position from InVesalius space to the voxel space.
@@ -626,7 +782,11 @@ def convert_invesalius_to_voxel(position):
         (position[0], slice.spacing[1] * (slice.matrix.shape[1] - 1) - position[1], position[2])
     )
 
-
+@handle_errors(
+    error_message="Error converting InVesalius to world coordinates",
+    category=ErrorCategory.COORDINATES,
+    severity=ErrorCategory.WARNING,
+)
 def convert_invesalius_to_world(position, orientation):
     """
     Convert position and orientation from InVesalius space to the world space.
@@ -668,7 +828,11 @@ def convert_invesalius_to_world(position, orientation):
 
     return position_world, orientation_world
 
-
+@handle_errors(
+    error_message="Error creating grid",
+    category=ErrorCategory.COORDINATES,
+    severity=ErrorCategory.WARNING,
+)
 def create_grid(xy_range, z_range, z_offset, spacing):
     x = np.arange(xy_range[0], xy_range[1] + 1, spacing)
     y = np.arange(xy_range[0], xy_range[1] + 1, spacing)
@@ -685,7 +849,11 @@ def create_grid(xy_range, z_range, z_offset, spacing):
 
     return coord_list_w
 
-
+@handle_errors(
+    error_message="Error creating spherical grid",
+    category=ErrorCategory.COORDINATES,
+    severity=ErrorCategory.WARNING,
+)
 def create_spherical_grid(radius=10, subdivision=1):
     x = np.linspace(-radius, radius, int(2 * radius / subdivision) + 1)
     xv, yv, zv = np.meshgrid(x, x, x)
@@ -699,7 +867,11 @@ def create_spherical_grid(radius=10, subdivision=1):
 
     return sph_sort
 
-
+@handle_errors(
+    error_message="Error creating random sphere samples",
+    category=ErrorCategory.COORDINATES,
+    severity=ErrorCategory.WARNING,
+)
 def random_sample_sphere(radius=3, size=100):
     uvw = np.random.default_rng().normal(0, 1, (size, 3))
     norm = np.linalg.norm(uvw, axis=1, keepdims=True)
@@ -709,7 +881,11 @@ def random_sample_sphere(radius=3, size=100):
     xyz = scale * uvw
     return xyz
 
-
+@handle_errors(
+    error_message="Error finding largest connected component",
+    category=ErrorCategory.IMAGE_PROCESSING,
+    severity=ErrorCategory.WARNING,
+)
 def get_largest_connected_component(image):
     labels = label(image)
     assert labels.max() != 0

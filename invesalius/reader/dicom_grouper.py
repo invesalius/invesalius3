@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # ---------------------------------------------------------------------
 # Software: InVesalius Software de Reconstrucao 3D de Imagens Medicas
 
@@ -51,6 +52,7 @@
 # <dicom.image.number> and <dicom.acquisition.series_number>
 # were swapped
 
+import logging
 import sys
 
 import gdcm
@@ -67,9 +69,12 @@ else:
 
 import invesalius.constants as const
 import invesalius.utils as utils
+from invesalius.error_handling import ErrorCategory, ErrorSeverity, handle_errors
 
 ORIENT_MAP = {"SAGITTAL": 0, "CORONAL": 1, "AXIAL": 2, "OBLIQUE": 2}
 
+# Initialize logger
+logger = logging.getLogger("invesalius.reader.dicom_grouper")
 
 class DicomGroup:
     general_index = -1
@@ -90,6 +95,11 @@ class DicomGroup:
         self.zspacing = 1
         self.dicom = None
 
+    @handle_errors(
+        error_message="Error adding DICOM slice to group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.WARNING,
+    )
     def AddSlice(self, dicom):
         if not self.dicom:
             self.dicom = dicom
@@ -106,6 +116,7 @@ class DicomGroup:
                 self.nslices += dicom.image.number_of_frames
                 return True
             else:
+                logger.info(f"Skipping DICOM slice with duplicate position: {pos}")
                 return False
         else:
             self.slices_dict[dicom.image.number] = dicom
@@ -118,15 +129,24 @@ class DicomGroup:
         # (interpolated)
         return self.slices_dict.values()
 
+    @handle_errors(
+        error_message="Error getting DICOM filename list",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def GetFilenameList(self):
         # Should be called when user selects this group
         # This list will be used to create the vtkImageData
         # (interpolated)
 
         if _has_win32api:
-            filelist = [
-                win32api.GetShortPathName(dicom.image.file) for dicom in self.slices_dict.values()
-            ]
+            try:
+                filelist = [
+                    win32api.GetShortPathName(dicom.image.file) for dicom in self.slices_dict.values()
+                ]
+            except Exception as e:
+                logger.error(f"Error getting short path names: {e}")
+                filelist = [dicom.image.file for dicom in self.slices_dict.values()]
         else:
             filelist = [dicom.image.file for dicom in self.slices_dict.values()]
 
@@ -137,14 +157,23 @@ class DicomGroup:
         sorter.SetComputeZSpacing(True)
         sorter.SetZSpacingTolerance(1e-10)
         try:
+            logger.debug("Sorting DICOM files using IPPSorter")
             sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
         except TypeError:
+            logger.debug("Sorting DICOM files using IPPSorter (without encoding)")
             sorter.Sort(filelist)
+        except Exception as e:
+            logger.warning(f"Error sorting DICOM files: {e}, files may not be in correct order")
+            
         filelist = sorter.GetFilenames()
 
         # for breast-CT of koning manufacturing (KBCT)
-        if list(self.slices_dict.values())[0].parser.GetManufacturerName() == "Koning":
-            filelist.sort()
+        try:
+            if list(self.slices_dict.values())[0].parser.GetManufacturerName() == "Koning":
+                logger.info("Detected Koning KBCT, using filename sorting")
+                filelist.sort()
+        except Exception as e:
+            logger.warning(f"Error checking for Koning manufacturer: {e}")
 
         return filelist
 
@@ -158,18 +187,28 @@ class DicomGroup:
         list_ = sorted(list_, key=lambda dicom: dicom.image.number)
         return list_
 
+    @handle_errors(
+        error_message="Error updating Z spacing",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.WARNING,
+    )
     def UpdateZSpacing(self):
         list_ = self.GetHandSortedList()
 
         if len(list_) > 1:
-            dicom = list_[0]
-            axis = ORIENT_MAP[dicom.image.orientation_label]
-            p1 = dicom.image.position[axis]
+            try:
+                dicom = list_[0]
+                axis = ORIENT_MAP[dicom.image.orientation_label]
+                p1 = dicom.image.position[axis]
 
-            dicom = list_[1]
-            p2 = dicom.image.position[axis]
+                dicom = list_[1]
+                p2 = dicom.image.position[axis]
 
-            self.zspacing = abs(p1 - p2)
+                self.zspacing = abs(p1 - p2)
+                logger.debug(f"Updated Z spacing: {self.zspacing}")
+            except Exception as e:
+                logger.warning(f"Failed to calculate proper Z spacing: {e}")
+                self.zspacing = 1
         else:
             self.zspacing = 1
 
@@ -189,6 +228,11 @@ class PatientGroup:
         self.ngroups = 0
         self.dicom = None
 
+    @handle_errors(
+        error_message="Error adding DICOM file to patient group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.WARNING,
+    )
     def AddFile(self, dicom, index=0):
         # Given general DICOM information, we group slices according
         # to main series information (group_key)
@@ -205,12 +249,14 @@ class PatientGroup:
             dicom.image.orientation_label,
             index,
         )  # This will be used to deal with Problem 2
+        
         if not self.dicom:
             self.dicom = dicom
 
         self.nslices += 1
         # Does this group exist? Best case ;)
         if group_key not in self.groups_dict.keys():
+            logger.debug(f"Creating new DICOM group with key: {group_key}")
             group = DicomGroup()
             group.key = group_key
             group.title = dicom.acquisition.series_description
@@ -223,12 +269,18 @@ class PatientGroup:
             slice_added = group.AddSlice(dicom)
             if not slice_added:
                 # If we're here, then Problem 2 occured
+                logger.info(f"Detected Problem 2 (duplicate position), incrementing index for DICOM file")
                 # TODO: Optimize recursion
                 self.AddFile(dicom, index + 1)
 
             # Getting the spacing in the Z axis
             group.UpdateZSpacing()
 
+    @handle_errors(
+        error_message="Error updating patient group",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def Update(self):
         # Ideally, AddFile would be sufficient for splitting DICOM
         # files into groups (series). However, this does not work for
@@ -246,138 +298,151 @@ class PatientGroup:
 
         # Fix Problem 1
         if is_there_problem_1:
+            logger.info("Detected Problem 1 (multiple groups with single slice), fixing...")
             utils.debug("Problem1")
             self.groups_dict = self.FixProblem1(self.groups_dict)
 
     def GetGroups(self):
-        glist = self.groups_dict.values()
-        glist = sorted(glist, key=lambda group: group.title, reverse=True)
-        return glist
+        return list(self.groups_dict.values())
 
     def GetDicomSample(self):
-        return self.dicom
+        one_group = list(self.groups_dict.items())[0][1]
+        return one_group.GetDicomSample()
 
+    @handle_errors(
+        error_message="Error fixing DICOM grouping problem",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.WARNING,
+    )
     def FixProblem1(self, dict):
-        """
-        Merge multiple DICOM groups in case Problem 1 (description
-        above) occurs.
+        # Fixing Problem 1
+        # In some cases there is a different interpretation for
+        # group defining
+        # In such cases, each DICOM file has the same
+        # (series_number, orientation_label),
+        # but actually each DICOM file is a different group!
+        # However, it seems that in all these cases, DICOM files of
+        # the same group actually have different "series_description"
+        # (group_key is (name, id_study, series_number, ...)
+        #
+        # So we need to re-group, using also image.number or perhaps
+        # position values
+        #
+        # We need to merge DICOM slices inside their correct group
 
-        WARN: We've implemented an heuristic to try to solve
-        the problem. There is no scientific background and this aims
-        to be a workaround to exams which are not in conformance with
-        the DICOM protocol.
-        """
-        # Divide existing groups into 2 groups:
-        dict_final = {}  # 1
-        # those containing "3D photos" and undefined
-        # orientation - these won't be changed (groups_lost).
+        patient_name = self.key[0]
+        patient_id = self.key[1]
+        id_study = ""
 
-        dict_to_change = {}  # 2
-        # which can be re-grouped according to our heuristic
+        output = {}
 
-        # split existing groups in these two types of group, based on
-        # orientation label
+        # Create groups
+        # Now we go in reverse direction
+        dicom_dict = {}
+        for (group_key, dicom_group) in dict.items():
 
-        # 1st STEP: RE-GROUP
-        for group_key in dict:
-            # values used as key of the new dictionary
-            dicom = dict[group_key].GetList()[0]
-            orientation = dicom.image.orientation_label
-            study_id = dicom.acquisition.id_study
-            # if axial, coronal or sagittal
-            if orientation in ORIENT_MAP:
-                group_key_s = (orientation, study_id)
-                # If this method was called, there is only one slice
-                # in this group (dicom)
-                dicom = dict[group_key].GetList()[0]
-                if group_key_s not in dict_to_change.keys():
-                    group = DicomGroup()
-                    group.AddSlice(dicom)
-                    dict_to_change[group_key_s] = group
-                else:
-                    group = dict_to_change[group_key_s]
-                    group.AddSlice(dicom)
-            else:
-                dict_final[group_key] = dict[group_key]
+            # Now we go for each DICOM inside each object
+            for dicom in dicom_group.GetList():  # GetList returns a list of DICOM objects
+                # Now each DICOM will be grouped by description
+                
+                # Retrieve DICOM fields: key and object
+                patient_name, id_study, serie_number, orientation_label, index = group_key
 
-        # group_counter will be used as key to DicomGroups created
-        # while checking differences
-        group_counter = 0
-        for group_key in dict_to_change:
-            # 2nd STEP: SORT
-            sorted_list = dict_to_change[group_key].GetHandSortedList()
+                # Use slice description to compare with group (series), and check
+                # if should really create a new group
+                description = dicom.acquisition.series_description or "NoSeries"
 
-            # 3rd STEP: CHECK DIFFERENCES
-            axis = ORIENT_MAP[group_key[0]]  # based on orientation
-            for index in range(len(sorted_list) - 1):
-                current = sorted_list[index]
-                # next = sorted_list[index + 1]
+                group_key = (description, orientation_label)
 
-                pos_current = current.image.position[axis]
-                pos_next = current.image.position[axis]
-                spacing = current.image.spacing
+                # This dicom_dict will have a dict of dicts
+                # First level:
+                # key is the series_description (one for each created group),
+                # object is a dict of objects: dicom_list
+                # Inside dicom_list, key is dicom.image.number, value is dicom object
+                if group_key not in dicom_dict.keys():
+                    dicom_dict[group_key] = {}
 
-                if (pos_next - pos_current) <= (spacing[2] * 2):
-                    if group_counter in dict_final:
-                        dict_final[group_counter].AddSlice(current)
-                    else:
-                        group = DicomGroup()
-                        group.AddSlice(current)
-                        dict_final[group_counter] = group
-                        # Getting the spacing in the Z axis
-                        group.UpdateZSpacing()
-                else:
-                    group_counter += 1
-                    group = DicomGroup()
-                    group.AddSlice(current)
-                    dict_final[group_counter] = group
-                    # Getting the spacing in the Z axis
-                    group.UpdateZSpacing()
+                dicom_list = dicom_dict[group_key]
+                # dicom_list[dicom.image.position] = dicom
+                dicom_list[dicom.image.number] = dicom
 
-        return dict_final
+        # Now re-create DicomGroup, using our new group schem
+        for (group_key, dicom_dict_group) in dicom_dict.items():
+            # Create a fake DICOM group
+            # Groups already separated
+            new_group = DicomGroup()
+
+            # Based on the first slice of each group
+            first_dicom = list(dicom_dict_group.values())[0]
+
+            # Add slice by slice
+            for dicom in dicom_dict_group.values():
+                new_group.AddSlice(dicom)
+                description, orientation_label = group_key
+                new_key = (
+                    patient_name,
+                    id_study,
+                    first_dicom.acquisition.serie_number,
+                    orientation_label,
+                    0,
+                )
+                new_group.key = new_key
+                new_group.title = description
+
+            new_group.UpdateZSpacing()
+
+            # Add group to our dictionary
+            output[new_group.key] = new_group
+
+        # Return fixed dict
+        return output
 
 
 class DicomPatientGrouper:
-    # read file, check if it is dicom...
-    # dicom = dicom.Dicom
-    # grouper = DicomPatientGrouper()
-    # grouper.AddFile(dicom)
-    # ... (repeat to all files on folder)
-    # grouper.Update()
-    # groups = GetPatientGroups()
+    """
+    Responsible for manage data regarding each patient, such as personal
+    information and groups of DICOM files.
+    """
 
     def __init__(self):
-        self.patients_dict = {}
+        # Main dict. Patients that are being read.
+        # key: (dicom.patient.name, dicom.patient.id)
+        self.patients_dict = {}  # patient_key: PatientGroup
 
+    @handle_errors(
+        error_message="Error adding DICOM file to patient grouper",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.WARNING,
+    )
     def AddFile(self, dicom):
+        """
+        Add DICOM object to its corresponding patient.
+        """
         patient_key = (dicom.patient.name, dicom.patient.id)
-
-        # Does this patient exist?
+        # Is this a new patient?
+        # TODO: Consider: what if patient_id is None?
         if patient_key not in self.patients_dict.keys():
-            patient = PatientGroup()
-            patient.key = patient_key
-            patient.AddFile(dicom)
-            self.patients_dict[patient_key] = patient
-        # Patient exists... Lets add group to it
+            patient_group = PatientGroup()
+            patient_group.key = patient_key
+            patient_group.AddFile(dicom)
+            self.patients_dict[patient_key] = patient_group
+        # Patient exists... Lets add this DICOM
         else:
-            patient = self.patients_dict[patient_key]
-            patient.AddFile(dicom)
+            patient_group = self.patients_dict[patient_key]
+            patient_group.AddFile(dicom)
 
     def Update(self):
-        for patient in self.patients_dict.values():
-            patient.Update()
+        """
+        Update patient groups.
+        """
+        for patient_group in self.patients_dict.values():
+            patient_group.Update()
 
     def GetPatientsGroups(self):
         """
-        How to use:
-        patient_list = grouper.GetPatientsGroups()
-        for patient in patient_list:
-            group_list = patient.GetGroups()
-            for group in group_list:
-                group.GetList()
-                # :) you've got a list of dicom.Dicom
-                # of the same series
+        Return list of patients.
         """
-        plist = self.patients_dict.values()
-        plist = sorted(plist, key=lambda patient: patient.key[0])
-        return plist
+        patients_groups = []
+        for key in self.patients_dict:
+            patients_groups.append(self.patients_dict[key])
+        return patients_groups

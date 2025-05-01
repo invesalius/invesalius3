@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -16,6 +17,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import logging
 import os
 import sys
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, SupportsInt, Tuple, Union
@@ -36,6 +38,7 @@ from vtkmodules.vtkRenderingCore import (
 import invesalius.constants as const
 import invesalius.utils as utils
 from invesalius import inv_paths
+from invesalius.error_handling import ErrorCategory, ErrorSeverity, handle_errors
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -45,6 +48,8 @@ if TYPE_CHECKING:
 
     from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 
+# Initialize logger
+logger = logging.getLogger("invesalius.data.vtk_utils")
 
 class ProgressDialog:
     def __init__(self, parent: Optional[wx.Window], maximum: int, abort: bool = False):
@@ -127,36 +132,40 @@ def ShowProgress(
         """
         Show progress on GUI according to pipeline execution.
         """
-        # object progress is cummulative and is between 0.0 - 1.0
-        # is necessary verify in case is sending the progress
-        # represented by number in case multiprocess, not vtk object
-        if isinstance(obj, float) or isinstance(obj, int):
-            obj_progress = obj
-        else:
-            obj_progress = obj.GetProgress()
+        try:
+            # object progress is cummulative and is between 0.0 - 1.0
+            # is necessary verify in case is sending the progress
+            # represented by number in case multiprocess, not vtk object
+            if isinstance(obj, float) or isinstance(obj, int):
+                obj_progress = obj
+            else:
+                obj_progress = obj.GetProgress()
 
-        # as it is cummulative, we need to compute the diference, to be
-        # appended on the interface
-        if obj_progress < last_obj_progress[0]:  # current obj != previous obj
-            difference = obj_progress  # 0
-        else:  # current obj == previous obj
-            difference = obj_progress - last_obj_progress[0]
+            # as it is cummulative, we need to compute the diference, to be
+            # appended on the interface
+            if obj_progress < last_obj_progress[0]:  # current obj != previous obj
+                difference = obj_progress  # 0
+            else:  # current obj == previous obj
+                difference = obj_progress - last_obj_progress[0]
 
-        last_obj_progress[0] = obj_progress
+            last_obj_progress[0] = obj_progress
 
-        # final progress status value
-        progress[0] = progress[0] + ratio * difference
-        # Tell GUI to update progress status value
-        if dialog_type == "GaugeProgress":
-            Publisher.sendMessage("Update status in GUI", value=progress[0], label=label)
-        else:
-            if progress[0] >= 99.999:
-                progress[0] = 100
+            # final progress status value
+            progress[0] = progress[0] + ratio * difference
+            # Tell GUI to update progress status value
+            if dialog_type == "GaugeProgress":
+                Publisher.sendMessage("Update status in GUI", value=progress[0], label=label)
+            else:
+                if progress[0] >= 99.999:
+                    progress[0] = 100
 
-            if not (dlg.Update(progress[0], label)):
-                dlg.Close()
+                if not (dlg.Update(progress[0], label)):
+                    dlg.Close()
 
-        return progress[0]
+            return progress[0]
+        except Exception as e:
+            logger.error(f"Error updating progress: {e}")
+            return 0
 
     return UpdateProgress
 
@@ -200,42 +209,60 @@ class Text:
     def SetSize(self, size: int) -> None:
         self.property.SetFontSize(size)
 
+    @handle_errors(
+        error_message="Error setting text value",
+        category=ErrorCategory.EXTERNAL_LIBRARY,
+        severity=ErrorSeverity.WARNING,
+    )
     def SetValue(self, value: Union[int, float, str]) -> None:
-        if isinstance(value, int) or isinstance(value, float):
-            value = str(value)
+        try:
+            if isinstance(value, int) or isinstance(value, float):
+                value = str(value)
+                if sys.platform == "win32":
+                    value += ""  # Otherwise 0 is not shown under win32
+            # With some encoding in some dicom fields (like name) raises a
+            # UnicodeEncodeError because they have non-ascii characters. To avoid
+            # that we encode in utf-8.
             if sys.platform == "win32":
-                value += ""  # Otherwise 0 is not shown under win32
-        # With some encoding in some dicom fields (like name) raises a
-        # UnicodeEncodeError because they have non-ascii characters. To avoid
-        # that we encode in utf-8.
-        if sys.platform == "win32":
-            self.mapper.SetInput(value.encode("utf-8", errors="replace"))
-        else:
-            try:
-                self.mapper.SetInput(value.encode("latin-1"))
-            except UnicodeEncodeError:
                 self.mapper.SetInput(value.encode("utf-8", errors="replace"))
+            else:
+                try:
+                    self.mapper.SetInput(value.encode("latin-1"))
+                except UnicodeEncodeError:
+                    self.mapper.SetInput(value.encode("utf-8", errors="replace"))
+        except Exception as e:
+            logger.error(f"Failed to set text value: {e}")
+            raise
 
     def GetValue(self) -> str:
         return self.mapper.GetInput()
 
+    @handle_errors(
+        error_message="Error setting coil distance value",
+        category=ErrorCategory.EXTERNAL_LIBRARY,
+        severity=ErrorSeverity.WARNING,
+    )
     def SetCoilDistanceValue(self, value: Union[int, float, str]) -> None:
         # TODO: Not being used anymore. Can be deleted.
-        if isinstance(value, int) or isinstance(value, float):
-            value = "Dist: " + str(f"{value:06.2f}") + " mm"
-            if sys.platform == "win32":
-                value += ""  # Otherwise 0 is not shown under win32
-                # With some encoding in some dicom fields (like name) raises a
-                # UnicodeEncodeError because they have non-ascii characters. To avoid
-                # that we encode in utf-8.
+        try:
+            if isinstance(value, int) or isinstance(value, float):
+                value = "Dist: " + str(f"{value:06.2f}") + " mm"
+                if sys.platform == "win32":
+                    value += ""  # Otherwise 0 is not shown under win32
+                    # With some encoding in some dicom fields (like name) raises a
+                    # UnicodeEncodeError because they have non-ascii characters. To avoid
+                    # that we encode in utf-8.
 
-        if sys.platform == "win32":
-            self.mapper.SetInput(value.encode("utf-8"))
-        else:
-            try:
-                self.mapper.SetInput(value.encode("latin-1"))
-            except UnicodeEncodeError:
+            if sys.platform == "win32":
                 self.mapper.SetInput(value.encode("utf-8"))
+            else:
+                try:
+                    self.mapper.SetInput(value.encode("latin-1"))
+                except UnicodeEncodeError:
+                    self.mapper.SetInput(value.encode("utf-8"))
+        except Exception as e:
+            logger.error(f"Failed to set coil distance value: {e}")
+            raise
 
     def SetPosition(self, position: Tuple[float, float]) -> None:
         self.actor.GetPositionCoordinate().SetValue(position[0], position[1])
@@ -267,65 +294,104 @@ class Text:
 
 class TextZero:
     def __init__(self):
-        self.layer = 99
-        self.children = []
-        property = vtkTextProperty()
-        property.SetFontSize(const.TEXT_SIZE_LARGE)
-        property.SetFontFamilyToArial()
-        property.BoldOn()
-        property.ItalicOff()
+        self.layer: int = 99
+        # property = vtkTextProperty()
+        # property.SetFontSize(const.TEXT_SIZE)
+        # property.SetFontFamilyToArial()
+        # property.BoldOff()
+        # property.ItalicOff()
         # property.ShadowOn()
+        # property.SetJustificationToLeft()
+        # property.SetVerticalJustificationToTop()
+        # property.SetColor(const.TEXT_COLOUR)
+        # self.property = property
+
+        # mapper = vtkTextMapper()
+        # mapper.SetTextProperty(property)
+        # self.mapper = mapper
+
+        # actor = vtkActor2D()
+        # actor.SetMapper(mapper)
+        # actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
+        # actor.PickableOff()
+        # self.actor = actor
+
+        property = vtkTextProperty()
+        property.SetFontSize(const.TEXT_SIZE)
+        property.SetFontFamilyToArial()
+        property.BoldOff()
+        property.ItalicOff()
+        property.ShadowOn()
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
         self.property = property
 
-        actor = vtkTextActor()
-        actor.GetTextProperty().ShallowCopy(property)
+        mapper = vtkTextMapper()
+        mapper.SetTextProperty(property)
+        self.mapper = mapper
+
+        actor = vtkActor2D()
+        actor.SetMapper(mapper)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
         actor.PickableOff()
         self.actor = actor
 
-        self.text = ""
-        self.position = (0, 0)
-        self.symbolic_syze = wx.FONTSIZE_MEDIUM
-        self.bottom_pos = False
-        self.right_pos = False
+        self.text_size = const.TEXT_SIZE
+        self.text_colour = const.TEXT_COLOUR
+        self.visibility = False
+        self.value = ""
+        self.position = const.TEXT_POS_LEFT_UP
+        # self.SetPosition(const.TEXT_POS_LEFT_UP)
 
     def SetColour(self, colour: Sequence[float]) -> None:
-        self.property.SetColor(colour)
+        self.text_colour = colour
 
     def ShadowOff(self) -> None:
-        self.property.ShadowOff()
+        pass  # self.property.ShadowOff()
 
     def SetSize(self, size: int) -> None:
+        self.text_size = size
         self.property.SetFontSize(size)
-        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetSymbolicSize(self, size: int) -> None:
-        self.symbolic_syze = size
+        self.text_size = const.SYMBOLIC_SIZES[size]
+        self.property.SetFontSize(const.SYMBOLIC_SIZES[size])
 
+    @handle_errors(
+        error_message="Error setting text value",
+        category=ErrorCategory.EXTERNAL_LIBRARY,
+        severity=ErrorSeverity.WARNING,
+    )
     def SetValue(self, value: Union[int, float, str]) -> None:
-        if isinstance(value, int) or isinstance(value, float):
-            value = str(value)
-            if sys.platform == "win32":
-                value += ""  # Otherwise 0 is not shown under win32
-        # With some encoding in some dicom fields (like name) raises a
-        # UnicodeEncodeError because they have non-ascii characters. To avoid
-        # that we encode in utf-8.
         try:
-            self.actor.SetInput(value.encode("cp1252"))
-        except UnicodeEncodeError:
-            self.actor.SetInput(value.encode("utf-8", "surrogatepass"))
-
-        self.text = value
+            if isinstance(value, int) or isinstance(value, float):
+                value = str(value)
+                if sys.platform == "win32":
+                    value += ""  # Otherwise 0 is not shown under win32
+            # With some encoding in some dicom fields (like name) raises a
+            # UnicodeEncodeError because they have non-ascii characters. To avoid
+            # that we encode in utf-8.
+            self.value = value
+            
+            # Update the mapper with the value
+            try:
+                if sys.platform == "win32":
+                    self.mapper.SetInput(value.encode("latin-1"))
+                else:
+                    self.mapper.SetInput(value.encode("utf-8"))
+            except UnicodeEncodeError:
+                self.mapper.SetInput(value.encode("utf-8"))
+        except Exception as e:
+            logger.error(f"Failed to set text value: {e}")
+            raise
 
     def SetPosition(self, position: Tuple[float, float]) -> None:
         self.position = position
         self.actor.GetPositionCoordinate().SetValue(position[0], position[1])
 
     def GetPosition(self) -> Tuple[float, float, float]:
-        return self.actor.GetPositionCoordinate().GetValue()
+        return self.position
 
     def SetJustificationToRight(self) -> None:
         self.property.SetJustificationToRight()
@@ -340,84 +406,87 @@ class TextZero:
         self.property.SetVerticalJustificationToCentered()
 
     def Show(self, value: bool = True) -> None:
+        self.visibility = value
         if value:
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
 
     def Hide(self) -> None:
+        self.visibility = False
         self.actor.VisibilityOff()
 
     def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: "CanvasRendererCTX") -> None:
-        coord = vtkCoordinate()
-        coord.SetCoordinateSystemToNormalizedDisplay()
-        coord.SetValue(*self.position)
-        x, y = coord.GetComputedDisplayValue(canvas.evt_renderer)
-        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        font.SetSymbolicSize(self.symbolic_syze)
-        font.Scale(canvas.viewer.GetContentScaleFactor())
-        if self.bottom_pos or self.right_pos:
-            w, h = canvas.calc_text_size(self.text, font)
-            if self.right_pos:
-                x -= w
-            if self.bottom_pos:
-                y += h
-        canvas.draw_text(self.text, (x, y), font=font)
+        if not self.visibility:
+            return
 
+        size = canvas.GetSize()
+        text_width, text_height = gc.GetFullTextExtent(self.value)[0:2]
 
+        if hasattr(self, "GetPosition"):
+            x, y, z = self.GetPosition()
+            x, y = size[0] * x, size[1] * y
+        else:
+            x, y = size[0] * self.position[0], size[1] * self.position[1]
+
+        gc.SetTextForeground(self.text_colour)
+        gc.SetFont(
+            wx.Font(self.text_size, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        )
+
+        gc.DrawText(self.value, x, y)
+
+@handle_errors(
+    error_message="Error converting numpy array to vtkMatrix4x4",
+    category=ErrorCategory.EXTERNAL_LIBRARY,
+    severity=ErrorSeverity.ERROR,
+)
 def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:
     """
     Convert a numpy 4x4 array to a vtk 4x4 matrix
-    :param affine: 4x4 array
-    :return: vtkMatrix4x4 object representing the affine
     """
-    # test for type and shape of affine matrix
-    # assert isinstance(affine, np.ndarray)
-    assert affine.shape == (4, 4)
+    try:
+        matrix = vtkMatrix4x4()
+        for i in range(4):
+            for j in range(4):
+                matrix.SetElement(i, j, affine[i, j])
+        logger.debug("Successfully converted numpy array to vtkMatrix4x4")
+        return matrix
+    except Exception as e:
+        logger.error(f"Failed to convert numpy array to vtkMatrix4x4: {e}")
+        raise
 
-    affine_vtk = vtkMatrix4x4()
-    for row in range(0, 4):
-        for col in range(0, 4):
-            affine_vtk.SetElement(row, col, affine[row, col])
-
-    return affine_vtk
-
-
-# TODO: Use the SurfaceManager >> CreateSurfaceFromFile inside surface.py method instead of duplicating code
+@handle_errors(
+    error_message="Error creating VTK object from file",
+    category=ErrorCategory.EXTERNAL_LIBRARY,
+    severity=ErrorSeverity.ERROR,
+)
 def CreateObjectPolyData(filename: str) -> Any:
     """
-    Coil for navigation rendered in volume viewer.
+    Creates a vtkPolyData object from the given filename.
     """
-    filename = utils.decode(filename, const.FS_ENCODE)
-    if filename:
-        if filename.lower().endswith(".stl"):
+    try:
+        if filename.lower().endswith('.stl'):
             reader = vtkSTLReader()
-        elif filename.lower().endswith(".ply"):
+            logger.info(f"Loading STL file: {filename}")
+        elif filename.lower().endswith('.ply'):
             reader = vtkPLYReader()
-        elif filename.lower().endswith(".obj"):
+            logger.info(f"Loading PLY file: {filename}")
+        elif filename.lower().endswith('.obj'):
             reader = vtkOBJReader()
-        elif filename.lower().endswith(".vtp"):
+            logger.info(f"Loading OBJ file: {filename}")
+        elif filename.lower().endswith('.vtp'):
             reader = vtkXMLPolyDataReader()
+            logger.info(f"Loading VTP file: {filename}")
         else:
-            wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
-            return
-    else:
-        filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
-        reader = vtkSTLReader()
-
-    if _has_win32api:
-        obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
-    else:
-        obj_name = filename.encode(const.FS_ENCODE)
-
-    reader.SetFileName(obj_name)
-    reader.Update()
-    obj_polydata = reader.GetOutput()
-
-    if obj_polydata.GetNumberOfPoints() == 0:
-        wx.MessageBox(
-            _("InVesalius was not able to import this surface"), _("Import surface error")
-        )
-        obj_polydata = None
-
-    return obj_polydata
+            logger.error(f"Unsupported file format: {filename}")
+            raise ValueError("Unsupported file format")
+            
+        reader.SetFileName(filename)
+        reader.Update()
+        
+        logger.debug(f"Successfully loaded polydata from {filename}")
+        return reader.GetOutput()
+    except Exception as e:
+        logger.error(f"Failed to create object polydata from file {filename}: {e}")
+        raise
