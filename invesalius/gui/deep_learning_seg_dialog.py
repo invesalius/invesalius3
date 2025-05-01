@@ -4,6 +4,7 @@
 import importlib
 import multiprocessing
 import time
+from typing import Dict
 
 import numpy as np
 import wx
@@ -14,14 +15,19 @@ from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.segmentation.deep_learning import segment, utils
 
-TORCH_DEVICES = {}
-
 try:
     import torch
 
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
+
+try:
+    import tinygrad
+
+    HAS_TINYGRAD = True
+except:
+    HAS_TINYGRAD = False
 
 if HAS_TORCH:
     TORCH_DEVICES = {}
@@ -32,6 +38,13 @@ if HAS_TORCH:
             TORCH_DEVICES[name] = device_id
     TORCH_DEVICES["CPU"] = "cpu"
 
+if HAS_TINYGRAD:
+    TINYGRAD_DEVICES = {}
+    for device in list(tinygrad.Device.get_available_devices()):
+        TINYGRAD_DEVICES[device] = device
+    if "DSP" in TINYGRAD_DEVICES.keys():
+        del TINYGRAD_DEVICES["DSP"]
+
 
 class DeepLearningSegmenterDialog(wx.Dialog):
     def __init__(
@@ -40,6 +53,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         title,
         auto_segment=False,
         has_torch=True,
+        has_tinygrad=True,
         segmenter=None,
     ):
         wx.Dialog.__init__(
@@ -52,9 +66,11 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         backends = []
         if HAS_TORCH and has_torch:
             backends.append("Pytorch")
+        if HAS_TORCH and has_tinygrad:
+            backends.append("Tinygrad")
         self.segmenter = segmenter
-        #  self.pg_dialog = None
-        self.torch_devices = TORCH_DEVICES
+        self.torch_devices: Dict[str, str] = TORCH_DEVICES
+        self.tinygrad_devices: Dict[str, str] = TINYGRAD_DEVICES
         self.auto_segment = auto_segment
 
         self.backends = backends
@@ -91,9 +107,15 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.chk_use_gpu = wx.CheckBox(self, wx.ID_ANY, _("Use GPU"))
         choices = []
         value = ""
-        if HAS_TORCH:
-            choices = list(self.torch_devices.keys())
-            value = choices[0]
+
+        if HAS_TORCH or HAS_TINYGRAD:
+            if HAS_TORCH:
+                choices = list(self.torch_devices.keys())
+                value = choices[0]
+            else:
+                choices = list(self.tinygrad_devices.keys())
+                value = choices[0]
+
         self.lbl_device = wx.StaticText(self, -1, _("Device"))
         self.cb_devices = wx.ComboBox(
             self,
@@ -140,7 +162,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         main_sizer.Add(sizer_backends, 0, wx.ALL | wx.EXPAND, 5)
         main_sizer.Add(self.chk_use_gpu, 0, wx.ALL, 5)
         sizer_devices = wx.BoxSizer(wx.HORIZONTAL)
-        if HAS_TORCH:
+        if HAS_TORCH or HAS_TINYGRAD:
             sizer_devices.Add(self.lbl_device, 0, wx.ALIGN_CENTER, 0)
             sizer_devices.Add(self.cb_devices, 1, wx.LEFT, 5)
         main_sizer.Add(sizer_devices, 0, wx.ALL | wx.EXPAND, 5)
@@ -209,6 +231,16 @@ class DeepLearningSegmenterDialog(wx.Dialog):
                 self.lbl_device.Show()
                 self.cb_devices.Show()
             self.chk_use_gpu.Hide()
+        elif self.cb_backends.GetValue().lower() == "tinygrad":
+            if HAS_TINYGRAD:
+                choices = list(self.tinygrad_devices)
+                self.cb_devices.Clear()
+                self.cb_devices.SetItems(choices)
+                self.cb_devices.SetValue(choices[0])
+                self.lbl_device.Show()
+                self.cb_devices.Show()
+            self.chk_use_gpu.Hide()
+
         else:
             raise TypeError("Wrong backend")
 
@@ -245,6 +277,11 @@ class DeepLearningSegmenterDialog(wx.Dialog):
                 device_id = self.torch_devices[self.cb_devices.GetValue()]
             except (KeyError, AttributeError):
                 device_id = "cpu"
+        elif backend.lower() == "tinygrad":
+            try:
+                device_id = self.tinygrad_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = tinygrad.Device.DEFAULT
         else:
             raise TypeError("Wrong backend")
         apply_wwwl = self.chk_apply_wwwl.GetValue()
@@ -255,6 +292,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.btn_stop.Enable()
         self.btn_segment.Disable()
         self.chk_new_mask.Disable()
+        self.chk_apply_wwwl.Disable()
 
         window_width = slc.Slice().window_width
         window_level = slc.Slice().window_level
@@ -386,6 +424,7 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
             parent=parent,
             title=_("Brain segmentation"),
             has_torch=True,
+            has_tinygrad=True,
             segmenter=segment.BrainSegmentProcess,
             auto_segment=auto_segment,
         )
