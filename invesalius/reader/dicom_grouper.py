@@ -431,12 +431,32 @@ class DicomPatientGrouper:
             patient_group = self.patients_dict[patient_key]
             patient_group.AddFile(dicom)
 
+    @handle_errors(
+        error_message="Error updating patient grouper",
+        category=ErrorCategory.DICOM,
+        severity=ErrorSeverity.ERROR,
+    )
     def Update(self):
         """
         Update patient groups.
         """
+        # Process all patient groups
         for patient_group in self.patients_dict.values():
             patient_group.Update()
+            
+        # Log diagnostic information
+        total_patients = len(self.patients_dict)
+        total_groups = sum(pg.ngroups for pg in self.patients_dict.values())
+        total_slices = sum(pg.nslices for pg in self.patients_dict.values())
+        
+        logger.info(f"Updated DicomPatientGrouper with {total_patients} patient(s), {total_groups} group(s), {total_slices} slice(s)")
+        
+        # Verify we have valid data
+        if total_patients == 0 or total_groups == 0 or total_slices == 0:
+            logger.warning("No valid DICOM data found after updating patient grouper")
+            return False
+            
+        return True
 
     def GetPatientsGroups(self):
         """

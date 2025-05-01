@@ -376,13 +376,26 @@ class TextZero:
         self.property.SetVerticalJustificationToCentered()
 
     def Show(self, value: bool = True) -> None:
-        if value:
-            self.actor.VisibilityOn()
-        else:
-            self.actor.VisibilityOff()
+        try:
+            if self.actor is None:
+                logger.error("TextZero actor is None in Show method")
+                return
+                
+            if value:
+                self.actor.VisibilityOn()
+            else:
+                self.actor.VisibilityOff()
+        except Exception as e:
+            logger.error(f"Error in TextZero.Show: {e}")
 
     def Hide(self) -> None:
-        self.actor.VisibilityOff()
+        try:
+            if self.actor is None:
+                logger.error("TextZero actor is None in Hide method")
+                return
+            self.actor.VisibilityOff()
+        except Exception as e:
+            logger.error(f"Error in TextZero.Hide: {e}")
 
     def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: "CanvasRendererCTX") -> None:
         coord = vtkCoordinate()

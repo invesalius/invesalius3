@@ -284,64 +284,76 @@ class LoadDicom:
     category=ErrorCategory.DICOM,
     severity=ErrorSeverity.ERROR,
 )
-def yGetDicomGroups(directory, recursive=True, gui=True):
-    """
-    Return all full paths to DICOM files inside given directory.
-    """
-    nfiles = 0
-    # Find total number of files
-    if recursive:
-        for dirpath, dirnames, filenames in os.walk(directory):
-            nfiles += len(filenames)
-    else:
-        dirpath, dirnames, filenames = os.walk(directory)
-        nfiles = len(filenames)
-
-    counter = 0
-    grouper = dicom_grouper.DicomPatientGrouper()
-    # q = Queue.Queue()
-    # l = threading.Lock()
-    # threads = []
-    # for i in xrange(cpu_count()):
-    #    t = LoadDicom(grouper, q, l)
-    #    t.start()
-    #    threads.append(t)
-    # Retrieve only DICOM files, splited into groups
-    if recursive:
-        for dirpath, dirnames, filenames in os.walk(directory):
-            for name in filenames:
-                filepath = os.path.join(dirpath, name)
-                counter += 1
-                if gui:
-                    yield (counter, nfiles)
-                LoadDicom(grouper, filepath)
-    else:
-        dirpath, dirnames, filenames = os.walk(directory)
-        for name in filenames:
-            filepath = str(os.path.join(dirpath, name))
-            counter += 1
-            if gui:
-                yield (counter, nfiles)
-            # q.put(filepath)
-
-    # for t in threads:
-    #    q.put(0)
-
-    # for t in threads:
-    #    t.join()
-
-    # TODO: Is this commented update necessary?
-    # grouper.Update()
-    yield grouper.GetPatientsGroups()
-
-
-@handle_errors(
-    error_message="Error getting DICOM groups",
-    category=ErrorCategory.DICOM,
-    severity=ErrorSeverity.ERROR,
-)
 def GetDicomGroups(directory, recursive=True):
-    return next(yGetDicomGroups(directory, recursive, gui=False))
+    """
+    Return all DICOM groups from a directory.
+    """
+    if not os.path.isdir(directory):
+        logger.error(f"Directory does not exist: {directory}")
+        return []
+        
+    # Create a new DICOM Patient Grouper to collect the files
+    reader = dicom_grouper.DicomPatientGrouper()
+    file_list = []
+    
+    # First scan directory and collect all valid DICOM files
+    try:
+        # Iterate through directory and collect files
+        if recursive:
+            for dirpath, dirnames, filenames in os.walk(directory):
+                for name in filenames:
+                    file_list.append(os.path.join(dirpath, name))
+        else:
+            try:
+                dirpath, dirnames, filenames = next(os.walk(directory))
+                for name in filenames:
+                    file_list.append(os.path.join(dirpath, name))
+            except StopIteration:
+                logger.error(f"Failed to read directory: {directory}")
+    except Exception as e:
+        logger.error(f"Error scanning directory: {e}")
+        return []
+    
+    if not file_list:
+        logger.warning(f"No files found in directory: {directory}")
+        return []
+    
+    # Process files
+    valid_count = 0
+    
+    for filepath in file_list:
+        # Try to load as DICOM
+        try:
+            LoadDicom(reader, filepath)
+            valid_count += 1
+        except Exception as e:
+            # Just skip invalid files
+            pass
+    
+    # If no valid DICOM files were found
+    if valid_count == 0:
+        logger.warning(f"No valid DICOM files found in directory: {directory}")
+        return []
+    
+    logger.info(f"Found {valid_count} valid DICOM files in directory: {directory}")
+    
+    # Process patients and group them
+    try:
+        update_success = reader.Update()
+        if not update_success:
+            logger.warning("Failed to update DICOM groups - no valid data found")
+            return []
+            
+        patients_groups = reader.GetPatientsGroups()
+        if not patients_groups:
+            logger.warning("No patient groups found")
+            return []
+            
+        logger.info(f"Successfully processed {len(patients_groups)} patient groups from {directory}")
+        return patients_groups
+    except Exception as e:
+        logger.error(f"Failed to process DICOM groups: {e}")
+        return []
 
 
 class ProgressDicomReader:
@@ -355,6 +367,13 @@ class ProgressDicomReader:
 
     def CancelLoad(self):
         self.running = False
+        # Send message to close the progress dialog
+        Publisher.sendMessage("Update dicom load", data=None)
+        
+        if self.progress_window:
+            self.progress_window = None
+            
+        self.file_list = []
 
     def SetWindowEvent(self, frame):
         self.progress_window = frame
@@ -369,6 +388,19 @@ class ProgressDicomReader:
         severity=ErrorSeverity.ERROR,
     )
     def UpdateLoadFileProgress(self, cont_progress):
+        # Send a message to Publisher to update the progress
+        # The Publisher will forward this to the Progress method in control.py
+        total_files = len(getattr(self, 'file_list', []))
+        if total_files > 0:
+            # Convert progress value (0.0 to 1.0) to count (1 to total_files)
+            current_file = int(cont_progress * total_files)
+            if current_file < 1:
+                current_file = 1
+            
+            # Send message with current file number and total files
+            Publisher.sendMessage("Update dicom load", data=(current_file, total_files))
+            
+        # Also update the direct progress window if it exists
         if self.progress_window and hasattr(self.progress_window, "UpdateLoadFileProgress"):
             self.progress_window.UpdateLoadFileProgress(cont_progress)
 
@@ -378,10 +410,15 @@ class ProgressDicomReader:
         severity=ErrorSeverity.ERROR,
     )
     def EndLoadFile(self, patient_list):
+        # Send message to close the progress dialog
+        Publisher.sendMessage("Update dicom load", data=None)
+        
         if self.progress_window and hasattr(self.progress_window, "EndLoadFile"):
             self.progress_window.EndLoadFile()
+        
         Publisher.sendMessage("Load group reader", group_reader=patient_list)
         self.progress_window = None
+        self.file_list = []
 
     @handle_errors(
         error_message="Error getting DICOM groups",
@@ -389,53 +426,98 @@ class ProgressDicomReader:
         severity=ErrorSeverity.WARNING,
     )
     def GetDicomGroups(self, path, recursive):
+        # Verify directory exists
+        if not os.path.isdir(path):
+            logger.error(f"Directory does not exist: {path}")
+            Publisher.sendMessage("Load group reader", group_reader=None)
+            self.progress_window = None
+            return
+            
         # Retrieve directory path to DICOM files
         directory = path
-        # Retrieve DICOM files grouped by its properties
+        
+        # Create a new DICOM Patient Grouper to collect the files
         reader = dicom_grouper.DicomPatientGrouper()
+        self.file_list = []
         
-        # yGetDicomGroups is a generator that yields progress info and finally the groups
-        # Collect all values from the generator
-        dicom_files = []
-        nfiles = 0
-        generator = yGetDicomGroups(directory, recursive)
-        
-        # Process all values from generator except the last one (patient groups)
-        for value in generator:
-            if isinstance(value, tuple) and len(value) == 2:
-                # This is a progress update (counter, nfiles)
-                counter, nfiles = value
+        # First scan directory and collect all valid DICOM files
+        try:
+            # Iterate through directory and collect files
+            if recursive:
+                for dirpath, dirnames, filenames in os.walk(directory):
+                    for name in filenames:
+                        self.file_list.append(os.path.join(dirpath, name))
             else:
-                # This is the final value (patient groups)
-                dicom_files = value
-                break
-                
-        cont_total = nfiles
-        cont_progress = 0
-        # For each patient found, retrieve each group
-        for patient_file in dicom_files:
+                try:
+                    dirpath, dirnames, filenames = next(os.walk(directory))
+                    for name in filenames:
+                        self.file_list.append(os.path.join(dirpath, name))
+                except StopIteration:
+                    logger.error(f"Failed to read directory: {directory}")
+        except Exception as e:
+            logger.error(f"Error scanning directory: {e}")
+            Publisher.sendMessage("Load group reader", group_reader=None)
+            self.progress_window = None
+            return
+        
+        if not self.file_list:
+            logger.warning(f"No files found in directory: {directory}")
+            Publisher.sendMessage("Load group reader", group_reader=None)
+            self.progress_window = None
+            return
+        
+        # Process files and update progress
+        total_files = len(self.file_list)
+        valid_count = 0
+        
+        # Send initial progress message
+        Publisher.sendMessage("Update dicom load", data=(0, total_files))
+        
+        for i, filepath in enumerate(self.file_list):
             if not self.running:
                 Publisher.sendMessage("Load group reader", group_reader=None)
                 self.progress_window = None
                 return
                 
-            # Skip if patient_file is not a string (e.g., if it's already a PatientGroup object)
-            if not isinstance(patient_file, str):
-                logger.warning(f"Skipping non-file item: {type(patient_file)}")
-                continue
+            # Update progress
+            progress = (i + 1) / float(total_files)
+            self.UpdateLoadFileProgress(progress)
                 
-            # Load DICOM file
-            cont_progress += 1
-            self.UpdateLoadFileProgress(cont_progress / float(cont_total))
-            # DCMFile() – read DICOM file
-            database = LoadDicom(reader, patient_file)
-
+            # Try to load as DICOM
+            try:
+                LoadDicom(reader, filepath)
+                valid_count += 1
+            except Exception as e:
+                # Just skip invalid files
+                pass
+        
+        # If no valid DICOM files were found
+        if valid_count == 0:
+            logger.warning(f"No valid DICOM files found in directory: {directory}")
+            Publisher.sendMessage("Load group reader", group_reader=None)
+            self.progress_window = None
+            return
+        
+        logger.info(f"Found {valid_count} valid DICOM files in directory: {directory}")
+        
         # Process patients and group them
         try:
-            reader.Update()
+            update_success = reader.Update()
+            if not update_success:
+                logger.warning("Failed to update DICOM groups - no valid data found")
+                Publisher.sendMessage("Load group reader", group_reader=None)
+                self.progress_window = None
+                return
+                
             patients_groups = reader.GetPatientsGroups()
+            if not patients_groups:
+                logger.warning("No patient groups found")
+                Publisher.sendMessage("Load group reader", group_reader=None)
+                self.progress_window = None
+                return
+                
             self.EndLoadFile(patients_groups)
-            logger.info(f"Successfully processed {cont_total} DICOM files from {path}")
+            logger.info(f"Successfully processed {len(patients_groups)} patient groups from {path}")
         except Exception as e:
             logger.error(f"Failed to process DICOM groups: {e}")
             Publisher.sendMessage("Load group reader", group_reader=None)
