@@ -112,6 +112,12 @@ class LoadDicom:
     def run(self):
         grouper = self.grouper
         reader = gdcm.ImageReader()
+        
+        # Verify filepath is a valid string
+        if not isinstance(self.filepath, str):
+            logger.error(f"Invalid filepath type: {type(self.filepath)}, expected string")
+            return
+            
         logger.info(f"Reading DICOM file: {self.filepath}")
         
         try:
@@ -363,7 +369,7 @@ class ProgressDicomReader:
         severity=ErrorSeverity.ERROR,
     )
     def UpdateLoadFileProgress(self, cont_progress):
-        if (self.progress_window):
+        if self.progress_window and hasattr(self.progress_window, "UpdateLoadFileProgress"):
             self.progress_window.UpdateLoadFileProgress(cont_progress)
 
     @handle_errors(
@@ -372,7 +378,7 @@ class ProgressDicomReader:
         severity=ErrorSeverity.ERROR,
     )
     def EndLoadFile(self, patient_list):
-        if (self.progress_window):
+        if self.progress_window and hasattr(self.progress_window, "EndLoadFile"):
             self.progress_window.EndLoadFile()
         Publisher.sendMessage("Load group reader", group_reader=patient_list)
         self.progress_window = None
@@ -387,7 +393,23 @@ class ProgressDicomReader:
         directory = path
         # Retrieve DICOM files grouped by its properties
         reader = dicom_grouper.DicomPatientGrouper()
-        dicom_files, nfiles = yGetDicomGroups(directory, recursive)
+        
+        # yGetDicomGroups is a generator that yields progress info and finally the groups
+        # Collect all values from the generator
+        dicom_files = []
+        nfiles = 0
+        generator = yGetDicomGroups(directory, recursive)
+        
+        # Process all values from generator except the last one (patient groups)
+        for value in generator:
+            if isinstance(value, tuple) and len(value) == 2:
+                # This is a progress update (counter, nfiles)
+                counter, nfiles = value
+            else:
+                # This is the final value (patient groups)
+                dicom_files = value
+                break
+                
         cont_total = nfiles
         cont_progress = 0
         # For each patient found, retrieve each group
@@ -396,6 +418,12 @@ class ProgressDicomReader:
                 Publisher.sendMessage("Load group reader", group_reader=None)
                 self.progress_window = None
                 return
+                
+            # Skip if patient_file is not a string (e.g., if it's already a PatientGroup object)
+            if not isinstance(patient_file, str):
+                logger.warning(f"Skipping non-file item: {type(patient_file)}")
+                continue
+                
             # Load DICOM file
             cont_progress += 1
             self.UpdateLoadFileProgress(cont_progress / float(cont_total))

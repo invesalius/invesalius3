@@ -294,69 +294,43 @@ class Text:
 
 class TextZero:
     def __init__(self):
-        self.layer: int = 99
-        # property = vtkTextProperty()
-        # property.SetFontSize(const.TEXT_SIZE)
-        # property.SetFontFamilyToArial()
-        # property.BoldOff()
-        # property.ItalicOff()
-        # property.ShadowOn()
-        # property.SetJustificationToLeft()
-        # property.SetVerticalJustificationToTop()
-        # property.SetColor(const.TEXT_COLOUR)
-        # self.property = property
-
-        # mapper = vtkTextMapper()
-        # mapper.SetTextProperty(property)
-        # self.mapper = mapper
-
-        # actor = vtkActor2D()
-        # actor.SetMapper(mapper)
-        # actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-        # actor.PickableOff()
-        # self.actor = actor
-
+        self.layer = 99
+        self.children = []
         property = vtkTextProperty()
-        property.SetFontSize(const.TEXT_SIZE)
+        property.SetFontSize(const.TEXT_SIZE_LARGE)
         property.SetFontFamilyToArial()
-        property.BoldOff()
+        property.BoldOn()
         property.ItalicOff()
-        property.ShadowOn()
+        # property.ShadowOn()
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
         self.property = property
 
-        mapper = vtkTextMapper()
-        mapper.SetTextProperty(property)
-        self.mapper = mapper
-
-        actor = vtkActor2D()
-        actor.SetMapper(mapper)
+        actor = vtkTextActor()
+        actor.GetTextProperty().ShallowCopy(property)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
         actor.PickableOff()
         self.actor = actor
 
-        self.text_size = const.TEXT_SIZE
-        self.text_colour = const.TEXT_COLOUR
-        self.visibility = False
-        self.value = ""
-        self.position = const.TEXT_POS_LEFT_UP
-        # self.SetPosition(const.TEXT_POS_LEFT_UP)
+        self.text = ""
+        self.position = (0, 0)
+        self.symbolic_syze = wx.FONTSIZE_MEDIUM
+        self.bottom_pos = False
+        self.right_pos = False
 
     def SetColour(self, colour: Sequence[float]) -> None:
-        self.text_colour = colour
+        self.property.SetColor(colour)
 
     def ShadowOff(self) -> None:
-        pass  # self.property.ShadowOff()
+        self.property.ShadowOff()
 
     def SetSize(self, size: int) -> None:
-        self.text_size = size
         self.property.SetFontSize(size)
+        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetSymbolicSize(self, size: int) -> None:
-        self.text_size = const.SYMBOLIC_SIZES[size]
-        self.property.SetFontSize(const.SYMBOLIC_SIZES[size])
+        self.symbolic_syze = size
 
     @handle_errors(
         error_message="Error setting text value",
@@ -372,16 +346,12 @@ class TextZero:
             # With some encoding in some dicom fields (like name) raises a
             # UnicodeEncodeError because they have non-ascii characters. To avoid
             # that we encode in utf-8.
-            self.value = value
-            
-            # Update the mapper with the value
             try:
-                if sys.platform == "win32":
-                    self.mapper.SetInput(value.encode("latin-1"))
-                else:
-                    self.mapper.SetInput(value.encode("utf-8"))
+                self.actor.SetInput(value.encode("cp1252"))
             except UnicodeEncodeError:
-                self.mapper.SetInput(value.encode("utf-8"))
+                self.actor.SetInput(value.encode("utf-8", "surrogatepass"))
+
+            self.text = value
         except Exception as e:
             logger.error(f"Failed to set text value: {e}")
             raise
@@ -391,7 +361,7 @@ class TextZero:
         self.actor.GetPositionCoordinate().SetValue(position[0], position[1])
 
     def GetPosition(self) -> Tuple[float, float, float]:
-        return self.position
+        return self.actor.GetPositionCoordinate().GetValue()
 
     def SetJustificationToRight(self) -> None:
         self.property.SetJustificationToRight()
@@ -406,35 +376,29 @@ class TextZero:
         self.property.SetVerticalJustificationToCentered()
 
     def Show(self, value: bool = True) -> None:
-        self.visibility = value
         if value:
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
 
     def Hide(self) -> None:
-        self.visibility = False
         self.actor.VisibilityOff()
 
     def draw_to_canvas(self, gc: wx.GraphicsContext, canvas: "CanvasRendererCTX") -> None:
-        if not self.visibility:
-            return
-
-        size = canvas.GetSize()
-        text_width, text_height = gc.GetFullTextExtent(self.value)[0:2]
-
-        if hasattr(self, "GetPosition"):
-            x, y, z = self.GetPosition()
-            x, y = size[0] * x, size[1] * y
-        else:
-            x, y = size[0] * self.position[0], size[1] * self.position[1]
-
-        gc.SetTextForeground(self.text_colour)
-        gc.SetFont(
-            wx.Font(self.text_size, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-        )
-
-        gc.DrawText(self.value, x, y)
+        coord = vtkCoordinate()
+        coord.SetCoordinateSystemToNormalizedDisplay()
+        coord.SetValue(*self.position)
+        x, y = coord.GetComputedDisplayValue(canvas.evt_renderer)
+        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        font.SetSymbolicSize(self.symbolic_syze)
+        font.Scale(canvas.viewer.GetContentScaleFactor())
+        if self.bottom_pos or self.right_pos:
+            w, h = canvas.calc_text_size(self.text, font)
+            if self.right_pos:
+                x -= w
+            if self.bottom_pos:
+                y += h
+        canvas.draw_text(self.text, (x, y), font=font)
 
 @handle_errors(
     error_message="Error converting numpy array to vtkMatrix4x4",
@@ -444,14 +408,21 @@ class TextZero:
 def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:
     """
     Convert a numpy 4x4 array to a vtk 4x4 matrix
+    :param affine: 4x4 array
+    :return: vtkMatrix4x4 object representing the affine
     """
     try:
-        matrix = vtkMatrix4x4()
-        for i in range(4):
-            for j in range(4):
-                matrix.SetElement(i, j, affine[i, j])
+        # test for type and shape of affine matrix
+        # assert isinstance(affine, np.ndarray)
+        assert affine.shape == (4, 4)
+
+        affine_vtk = vtkMatrix4x4()
+        for row in range(0, 4):
+            for col in range(0, 4):
+                affine_vtk.SetElement(row, col, affine[row, col])
+
         logger.debug("Successfully converted numpy array to vtkMatrix4x4")
-        return matrix
+        return affine_vtk
     except Exception as e:
         logger.error(f"Failed to convert numpy array to vtkMatrix4x4: {e}")
         raise
@@ -463,30 +434,50 @@ def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:
 )
 def CreateObjectPolyData(filename: str) -> Any:
     """
-    Creates a vtkPolyData object from the given filename.
+    Coil for navigation rendered in volume viewer.
     """
     try:
-        if filename.lower().endswith('.stl'):
-            reader = vtkSTLReader()
-            logger.info(f"Loading STL file: {filename}")
-        elif filename.lower().endswith('.ply'):
-            reader = vtkPLYReader()
-            logger.info(f"Loading PLY file: {filename}")
-        elif filename.lower().endswith('.obj'):
-            reader = vtkOBJReader()
-            logger.info(f"Loading OBJ file: {filename}")
-        elif filename.lower().endswith('.vtp'):
-            reader = vtkXMLPolyDataReader()
-            logger.info(f"Loading VTP file: {filename}")
+        filename = utils.decode(filename, const.FS_ENCODE)
+        if filename:
+            if filename.lower().endswith(".stl"):
+                reader = vtkSTLReader()
+                logger.info(f"Loading STL file: {filename}")
+            elif filename.lower().endswith(".ply"):
+                reader = vtkPLYReader()
+                logger.info(f"Loading PLY file: {filename}")
+            elif filename.lower().endswith(".obj"):
+                reader = vtkOBJReader()
+                logger.info(f"Loading OBJ file: {filename}")
+            elif filename.lower().endswith(".vtp"):
+                reader = vtkXMLPolyDataReader()
+                logger.info(f"Loading VTP file: {filename}")
+            else:
+                logger.error(f"Unsupported file format: {filename}")
+                wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+                return None
         else:
-            logger.error(f"Unsupported file format: {filename}")
-            raise ValueError("Unsupported file format")
-            
-        reader.SetFileName(filename)
+            filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
+            reader = vtkSTLReader()
+            logger.info(f"Using default coil file: {filename}")
+
+        if _has_win32api:
+            obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
+        else:
+            obj_name = filename.encode(const.FS_ENCODE)
+
+        reader.SetFileName(obj_name)
         reader.Update()
-        
+        obj_polydata = reader.GetOutput()
+
+        if obj_polydata.GetNumberOfPoints() == 0:
+            logger.error(f"Failed to import surface from {filename}: No points in polydata")
+            wx.MessageBox(
+                _("InVesalius was not able to import this surface"), _("Import surface error")
+            )
+            obj_polydata = None
+
         logger.debug(f"Successfully loaded polydata from {filename}")
-        return reader.GetOutput()
+        return obj_polydata
     except Exception as e:
         logger.error(f"Failed to create object polydata from file {filename}: {e}")
         raise
