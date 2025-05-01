@@ -27,6 +27,7 @@ import sys
 import tempfile
 import time
 import traceback
+import logging
 
 import numpy as np
 import wx
@@ -177,9 +178,16 @@ class SurfaceManager:
     """
 
     def __init__(self):
+        self.surface_dict = {}
+        # Maps surface indices to actors.
         self.actors_dict = {}
-        self.last_surface_index = 0
-        self.convert_to_inv = None
+        self.aux_matrices = {}
+        
+        # Get the last_surface_index from the project, if available
+        self._sync_last_surface_index()
+        
+        self.convert_to_inv = False
+        
         self.__bind_events()
 
         self._default_parameters = {
@@ -192,12 +200,20 @@ class SurfaceManager:
 
         self._load_user_parameters()
 
+    def _sync_last_surface_index(self):
+        # Synchronize the last_surface_index with the project
+        proj = prj.Project()
+        if hasattr(proj, 'last_surface_index'):
+            self.last_surface_index = proj.last_surface_index
+        else:
+            self.last_surface_index = -1
+
     def _load_user_parameters(self):
         session = ses.Session()
 
         surface = session.GetConfig("surface")
         if surface is not None:
-            self._default_parameters.update(surface)
+            self._default_parameters = surface
         else:
             session.SetConfig("surface", self._default_parameters)
 
@@ -353,25 +369,70 @@ class SurfaceManager:
         """
         Create a new surface where non-visible faces have been removed.
         """
+        logger = logging.getLogger("invesalius.surface")
+        
+        logger.info("Starting removal of non-visible faces")
         progress_dialog = dialogs.RemoveNonVisibleFacesProgressWindow()
         progress_dialog.Update()
 
         proj = prj.Project()
-        index = self.last_surface_index
-        surface = proj.surface_dict[index]
-        new_polydata = pu.RemoveNonVisibleFaces(surface.polydata)
+        
+        # Check if there are any surfaces
+        if not proj.surface_dict:
+            error_msg = "No surfaces available to perform this operation."
+            logger.error(error_msg)
+            wx.MessageBox(_(error_msg), _("Surface not found"))
+            progress_dialog.Close()
+            return
+            
+        # Use the last_surface_index property from project
+        index = proj.last_surface_index
+        logger.debug(f"Attempting to remove non-visible faces from surface index: {index}")
+        
+        # Check if the index exists in the surface_dict
+        if index not in proj.surface_dict:
+            logger.warning(f"Surface index {index} not found in surface_dict")
+            # Try to use the highest available index if last_surface_index is invalid
+            if proj.surface_dict:
+                index = max(proj.surface_dict.keys())
+                logger.info(f"Using alternative surface index: {index}")
+            else:
+                error_msg = "Surface index not found in surface_dict."
+                logger.error(error_msg)
+                wx.MessageBox(_(error_msg), _("Surface not found"))
+                progress_dialog.Close()
+                return
+        
+        try:
+            surface = proj.surface_dict[index]
+            logger.info(f"Processing surface: {surface.name} (index: {index})")
+            
+            new_polydata = pu.RemoveNonVisibleFaces(surface.polydata)
+            if new_polydata.GetNumberOfPoints() == 0:
+                error_msg = "Could not create new surface - result has no points"
+                logger.error(error_msg)
+                wx.MessageBox(_(error_msg), _("Surface processing error"))
+                progress_dialog.Close()
+                return
 
-        name = new_name_by_pattern(f"{surface.name}_removed_nonvisible")
-        overwrite = True
+            name = new_name_by_pattern(f"{surface.name}_removed_nonvisible")
+            overwrite = True
+            logger.info(f"Creating new surface with name: {name}, overwrite: {overwrite}")
 
-        Publisher.sendMessage(
-            "Create surface from polydata",
-            polydata=new_polydata,
-            name=name,
-            overwrite=overwrite,
-        )
-        Publisher.sendMessage("Fold surface task")
-        progress_dialog.Close()
+            Publisher.sendMessage(
+                "Create surface from polydata",
+                polydata=new_polydata,
+                name=name,
+                overwrite=overwrite,
+            )
+            Publisher.sendMessage("Fold surface task")
+            logger.info("Successfully processed surface removing non-visible faces")
+        except Exception as e:
+            error_msg = f"Error removing non-visible faces: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            wx.MessageBox(_(error_msg), _("Surface processing error"))
+        finally:
+            progress_dialog.Close()
 
     def OnImportCustomBinFile(self, filename):
         import os
@@ -628,95 +689,129 @@ class SurfaceManager:
         area=None,
         scalar=False,
     ):
-        if self.convert_to_inv:
-            polydata = self.ConvertPolydataToInv(polydata)
-            self.convert_to_inv = False
+        logger = logging.getLogger("invesalius.surface")
+        logger.info(f"Creating surface from polydata: overwrite={overwrite}, name={name}")
+        
+        try:
+            if self.convert_to_inv:
+                logger.debug("Converting polydata to InVesalius coordinates")
+                polydata = self.ConvertPolydataToInv(polydata)
+                self.convert_to_inv = False
 
-        normals = vtkPolyDataNormals()
-        normals.SetInputData(polydata)
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.Update()
+            logger.debug("Computing surface normals")
+            normals = vtkPolyDataNormals()
+            normals.SetInputData(polydata)
+            normals.SetFeatureAngle(80)
+            normals.AutoOrientNormalsOn()
+            normals.Update()
 
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputData(normals.GetOutput())
-        if scalar:
-            mapper.ScalarVisibilityOn()
-        else:
-            mapper.ScalarVisibilityOff()
-        #  mapper.ImmediateModeRenderingOn() # improve performance
+            logger.debug("Creating mapper")
+            mapper = vtkPolyDataMapper()
+            mapper.SetInputData(normals.GetOutput())
+            if scalar:
+                mapper.ScalarVisibilityOn()
+            else:
+                mapper.ScalarVisibilityOff()
+            #  mapper.ImmediateModeRenderingOn() # improve performance
 
-        actor = vtkActor()
-        actor.SetMapper(mapper)
-        actor.GetProperty().SetBackfaceCulling(1)
+            logger.debug("Creating actor")
+            actor = vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetBackfaceCulling(1)
 
-        if overwrite:
-            if index is None:
-                index = self.last_surface_index
-            surface = Surface(index=index)
-        else:
-            surface = Surface()
+            if overwrite:
+                if index is None:
+                    index = self.last_surface_index
+                    logger.debug(f"Using last surface index for overwrite: {index}")
+                surface = Surface(index=index)
+                logger.info(f"Overwriting existing surface at index {index}")
+            else:
+                surface = Surface()
+                logger.info(f"Creating new surface with index {surface.index}")
 
-        if not colour:
-            surface.colour = random.choice(const.SURFACE_COLOUR)
-        else:
-            surface.colour = colour
-        surface.polydata = polydata
+            if not colour:
+                surface.colour = random.choice(const.SURFACE_COLOUR)
+                logger.debug(f"Using random color: {surface.colour}")
+            else:
+                surface.colour = colour
+                logger.debug(f"Using provided color: {colour}")
+                
+            surface.polydata = polydata
 
-        if transparency:
-            surface.transparency = transparency
+            if transparency:
+                surface.transparency = transparency
+                logger.debug(f"Setting transparency: {transparency}")
 
-        if name:
-            surface.name = name
+            if name:
+                surface.name = name
+                logger.debug(f"Setting surface name: {name}")
 
-        # Append surface into Project.surface_dict
-        proj = prj.Project()
-        if overwrite:
-            proj.ChangeSurface(surface)
-        else:
-            index = proj.AddSurface(surface)
-            surface.index = index
-            self.last_surface_index = index
+            # Append surface into Project.surface_dict
+            proj = prj.Project()
+            if overwrite:
+                logger.info(f"Changing existing surface in project at index {index}")
+                proj.ChangeSurface(surface)
+            else:
+                logger.info("Adding new surface to project")
+                index = proj.AddSurface(surface)
+                surface.index = index
+                self.last_surface_index = index
+                # Also update project's last_surface_index
+                proj.last_surface_index = index
+                logger.debug(f"New surface added with index {index}")
 
-        # Set actor colour and transparency
-        actor.GetProperty().SetColor(surface.colour[:3])
-        actor.GetProperty().SetOpacity(1 - surface.transparency)
+            # Set actor colour and transparency
+            logger.debug("Setting actor properties")
+            actor.GetProperty().SetColor(surface.colour[:3])
+            actor.GetProperty().SetOpacity(1 - surface.transparency)
 
-        if overwrite and self.actors_dict.keys():
-            try:
-                old_actor = self.actors_dict[index]
-                Publisher.sendMessage("Remove surface actor from viewer", actor=old_actor)
-            except KeyError:
-                pass
+            if overwrite and self.actors_dict.keys():
+                try:
+                    logger.debug(f"Removing old actor for surface index {index}")
+                    old_actor = self.actors_dict[index]
+                    Publisher.sendMessage("Remove surface actor from viewer", actor=old_actor)
+                except KeyError:
+                    logger.warning(f"No existing actor found for index {index}")
+                    pass
 
-        self.actors_dict[surface.index] = actor
+            self.actors_dict[surface.index] = actor
+            logger.debug(f"Actor added to actors_dict at index {surface.index}")
 
-        session = ses.Session()
-        session.ChangeProject()
+            session = ses.Session()
+            session.ChangeProject()
+            
+            # The following lines have to be here, otherwise all volumes disappear
+            logger.debug("Calculating volume and area for surface")
+            if not volume or not area:
+                triangle_filter = vtkTriangleFilter()
+                triangle_filter.SetInputData(polydata)
+                triangle_filter.Update()
 
-        # The following lines have to be here, otherwise all volumes disappear
-        if not volume or not area:
-            triangle_filter = vtkTriangleFilter()
-            triangle_filter.SetInputData(polydata)
-            triangle_filter.Update()
+                measured_polydata = vtkMassProperties()
+                measured_polydata.SetInputConnection(triangle_filter.GetOutputPort())
+                measured_polydata.Update()
+                volume = measured_polydata.GetVolume()
+                area = measured_polydata.GetSurfaceArea()
+                surface.volume = volume
+                surface.area = area
+                logger.info(f"Calculated volume: {volume}, area: {area}")
+            else:
+                surface.volume = volume
+                surface.area = area
+                logger.info(f"Using provided volume: {volume}, area: {area}")
 
-            measured_polydata = vtkMassProperties()
-            measured_polydata.SetInputConnection(triangle_filter.GetOutputPort())
-            measured_polydata.Update()
-            volume = measured_polydata.GetVolume()
-            area = measured_polydata.GetSurfaceArea()
-            surface.volume = volume
-            surface.area = area
-            print(">>>>", surface.volume)
-        else:
-            surface.volume = volume
-            surface.area = area
-
-        self.last_surface_index = surface.index
-
-        Publisher.sendMessage("Load surface actor into viewer", actor=actor)
-        Publisher.sendMessage("Update surface info in GUI", surface=surface)
-        return surface.index
+            logger.debug("Loading actor into viewer")
+            Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+            logger.debug("Updating surface info in GUI")
+            Publisher.sendMessage("Update surface info in GUI", surface=surface)
+            
+            logger.info(f"Surface creation completed successfully: index={surface.index}, name={surface.name}")
+            return surface.index
+            
+        except Exception as e:
+            error_msg = f"Error creating surface from polydata: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            raise
 
     def OnCloseProject(self):
         self.CloseProject()

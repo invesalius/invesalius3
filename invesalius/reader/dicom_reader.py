@@ -20,6 +20,7 @@
 import logging
 import os
 import sys
+import time
 
 import gdcm
 
@@ -410,15 +411,34 @@ class ProgressDicomReader:
         severity=ErrorSeverity.ERROR,
     )
     def EndLoadFile(self, patient_list):
-        # Send message to close the progress dialog
-        Publisher.sendMessage("Update dicom load", data=None)
+        # Log completion
+        total_patients = len(patient_list) if patient_list else 0
+        total_groups = sum(len(patient.GetGroups()) for patient in patient_list) if patient_list else 0
+        logger.info(f"DICOM loading complete: {total_patients} patients, {total_groups} study groups")
         
-        if self.progress_window and hasattr(self.progress_window, "EndLoadFile"):
-            self.progress_window.EndLoadFile()
-        
-        Publisher.sendMessage("Load group reader", group_reader=patient_list)
-        self.progress_window = None
-        self.file_list = []
+        try:
+            # Send message to close the progress dialog
+            logger.debug("Closing DICOM loading progress dialog")
+            Publisher.sendMessage("Update dicom load", data=None)
+            
+            # If progress window exists, call its EndLoadFile method
+            if self.progress_window and hasattr(self.progress_window, "EndLoadFile"):
+                logger.debug("Calling progress window EndLoadFile method")
+                self.progress_window.EndLoadFile()
+            
+            # This sends the patient groups to the controller to show the DICOM grouper window
+            logger.info("Sending DICOM groups to interface for user selection")
+            Publisher.sendMessage("End dicom load", patient_series=patient_list)
+            
+            # Clean up
+            logger.debug("Cleaning up progress window and file list")
+            self.progress_window = None
+            self.file_list = []
+        except Exception as e:
+            logger.error(f"Error in EndLoadFile: {e}")
+            # Try to clean up even if there was an error
+            self.progress_window = None
+            self.file_list = []
 
     @handle_errors(
         error_message="Error getting DICOM groups",
@@ -435,6 +455,7 @@ class ProgressDicomReader:
             
         # Retrieve directory path to DICOM files
         directory = path
+        logger.info(f"Starting DICOM import from directory: {directory} (recursive={recursive})")
         
         # Create a new DICOM Patient Grouper to collect the files
         reader = dicom_grouper.DicomPatientGrouper()
@@ -442,6 +463,9 @@ class ProgressDicomReader:
         
         # First scan directory and collect all valid DICOM files
         try:
+            logger.info("Scanning directory for files...")
+            start_time = time.time()
+            
             # Iterate through directory and collect files
             if recursive:
                 for dirpath, dirnames, filenames in os.walk(directory):
@@ -454,6 +478,9 @@ class ProgressDicomReader:
                         self.file_list.append(os.path.join(dirpath, name))
                 except StopIteration:
                     logger.error(f"Failed to read directory: {directory}")
+                    
+            scan_time = time.time() - start_time
+            logger.info(f"Directory scan completed in {scan_time:.2f}s, found {len(self.file_list)} files to analyze")
         except Exception as e:
             logger.error(f"Error scanning directory: {e}")
             Publisher.sendMessage("Load group reader", group_reader=None)
@@ -468,20 +495,29 @@ class ProgressDicomReader:
         
         # Process files and update progress
         total_files = len(self.file_list)
+        logger.info(f"Starting to process {total_files} files")
         valid_count = 0
+        start_time = time.time()
         
         # Send initial progress message
         Publisher.sendMessage("Update dicom load", data=(0, total_files))
         
         for i, filepath in enumerate(self.file_list):
             if not self.running:
+                logger.info("DICOM loading process was cancelled by user")
                 Publisher.sendMessage("Load group reader", group_reader=None)
                 self.progress_window = None
                 return
                 
-            # Update progress
-            progress = (i + 1) / float(total_files)
-            self.UpdateLoadFileProgress(progress)
+            # Update progress every 10 files or for the last file
+            if i % 10 == 0 or i == total_files - 1:
+                progress = (i + 1) / float(total_files)
+                self.UpdateLoadFileProgress(progress)
+                if i > 0 and i % 50 == 0:
+                    current_time = time.time()
+                    elapsed = current_time - start_time
+                    files_per_sec = i / elapsed if elapsed > 0 else 0
+                    logger.info(f"Processed {i}/{total_files} files ({files_per_sec:.1f} files/sec)")
                 
             # Try to load as DICOM
             try:
@@ -491,6 +527,9 @@ class ProgressDicomReader:
                 # Just skip invalid files
                 pass
         
+        process_time = time.time() - start_time
+        logger.info(f"File processing completed in {process_time:.2f}s")
+        
         # If no valid DICOM files were found
         if valid_count == 0:
             logger.warning(f"No valid DICOM files found in directory: {directory}")
@@ -498,23 +537,31 @@ class ProgressDicomReader:
             self.progress_window = None
             return
         
-        logger.info(f"Found {valid_count} valid DICOM files in directory: {directory}")
+        logger.info(f"Found {valid_count} valid DICOM files out of {total_files} total files")
         
         # Process patients and group them
         try:
+            logger.info("Organizing DICOM files into patient/study/series groups...")
+            start_time = time.time()
+            
             update_success = reader.Update()
             if not update_success:
                 logger.warning("Failed to update DICOM groups - no valid data found")
                 Publisher.sendMessage("Load group reader", group_reader=None)
                 self.progress_window = None
                 return
-                
+            
+            group_time = time.time() - start_time    
             patients_groups = reader.GetPatientsGroups()
             if not patients_groups:
                 logger.warning("No patient groups found")
                 Publisher.sendMessage("Load group reader", group_reader=None)
                 self.progress_window = None
                 return
+            
+            num_patients = len(patients_groups)
+            num_groups = sum(len(patient.GetGroups()) for patient in patients_groups)
+            logger.info(f"Successfully organized data into {num_patients} patients with {num_groups} groups in {group_time:.2f}s")
                 
             self.EndLoadFile(patients_groups)
             logger.info(f"Successfully processed {len(patients_groups)} patient groups from {path}")

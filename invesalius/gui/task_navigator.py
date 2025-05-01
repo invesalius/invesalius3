@@ -778,70 +778,115 @@ class HeadPage(wx.Panel):
     # Creates the head surface from a mask, and depending on the checkboxes
     # selects the largest surface, removes non-visible faces, and does brain segmentation
     def OnCreateHeadSurface(self, evt):
-        if not self.CreateSurface(evt):
-            return
+        import logging
+        logger = logging.getLogger("invesalius.surface_creation")
+        
+        logger.info("Starting head surface creation process")
+        
+        try:
+            if not self.CreateSurface(evt):
+                logger.warning("Failed to create initial surface, aborting head surface creation")
+                return
 
-        if self.select_largest_surface_checkbox.IsChecked():
-            self.SelectLargestSurface()
+            # This needs to be saved because after surface creation, it's the current surface index
+            proj = prj.Project()
+            logger.info(f"Initial surface created, project has {len(proj.surface_dict)} surfaces")
 
-        if self.remove_non_visible_checkbox.IsChecked():
-            self.RemoveNonVisibleFaces()
+            if self.select_largest_surface_checkbox.IsChecked():
+                logger.info("Processing largest surface selection")
+                self.SelectLargestSurface()
 
-        if self.smooth_surface_checkbox.IsChecked():
-            self.SmoothSurface()
+            if self.remove_non_visible_checkbox.IsChecked():
+                logger.info("Processing removal of non-visible faces")
+                self.RemoveNonVisibleFaces()
 
-        self.VisualizeScalpSurface()
+            if self.smooth_surface_checkbox.IsChecked():
+                logger.info("Processing surface smoothing")
+                self.SmoothSurface()
 
-        if self.brain_segmentation_checkbox.IsChecked():
-            self.SegmentBrain()
+            logger.info("Setting up scalp surface visualization")
+            self.VisualizeScalpSurface()
 
-        Publisher.sendMessage("Move to image page")
+            if self.brain_segmentation_checkbox.IsChecked():
+                logger.info("Starting brain segmentation process")
+                self.SegmentBrain()
+
+            logger.info("Head surface creation completed successfully")
+            Publisher.sendMessage("Move to image page")
+        except Exception as e:
+            logger.error(f"Error during head surface creation: {str(e)}", exc_info=True)
+            wx.MessageBox(_("Error during head surface creation. Check the log for details."), _("Surface Creation Error"))
 
     def CreateBrainSurface(self):
-        options = {"angle": 0.7, "max distance": 3.0, "min weight": 0.5, "steps": 10}
-        algorithm = "ca_smoothing"
-        proj = prj.Project()
-        mask_index = len(proj.mask_dict) - 1
-        brain_colour = [235, 245, 255]
+        import logging
+        logger = logging.getLogger("invesalius.surface_creation")
+        
+        try:
+            logger.info("Starting brain surface creation")
+            options = {"angle": 0.7, "max distance": 3.0, "min weight": 0.5, "steps": 10}
+            algorithm = "ca_smoothing"
+            proj = prj.Project()
+            mask_index = len(proj.mask_dict) - 1
+            brain_colour = [235, 245, 255]
 
-        if self.combo_mask.GetSelection() != -1:
-            sl = slice_.Slice()
-            for idx in proj.mask_dict:
-                if proj.mask_dict[idx] is sl.current_mask:
-                    mask_index = idx
-                    break
+            if self.combo_mask.GetSelection() != -1:
+                sl = slice_.Slice()
+                # Find the correct mask index
+                for idx in proj.mask_dict:
+                    if proj.mask_dict[idx] is sl.current_mask:
+                        mask_index = idx
+                        break
+                
+                logger.info(f"Creating brain surface from mask index: {mask_index}")
+                method = {"algorithm": algorithm, "options": options}
+                srf_options = {
+                    "index": mask_index,
+                    "name": "Brain",
+                    "quality": _("Optimal *"),
+                    "fill": False,
+                    "keep_largest": True,
+                    "overwrite": False,
+                }
+                
+                logger.debug(f"Surface creation parameters: algorithm={algorithm}, options={options}")
+                Publisher.sendMessage(
+                    "Create surface from index",
+                    surface_parameters={"method": method, "options": srf_options},
+                )
+                Publisher.sendMessage("Fold surface task")
+                logger.info("Brain surface created")
 
-            method = {"algorithm": algorithm, "options": options}
-            srf_options = {
-                "index": mask_index,
-                "name": "Brain",
-                "quality": _("Optimal *"),
-                "fill": False,
-                "keep_largest": True,
-                "overwrite": False,
-            }
-            Publisher.sendMessage(
-                "Create surface from index",
-                surface_parameters={"method": method, "options": srf_options},
-            )
-            Publisher.sendMessage("Fold surface task")
+                # Get the latest surface index
+                if not proj.surface_dict:
+                    logger.error("No brain surface was created")
+                    return
+                    
+                surface_idx = max(proj.surface_dict.keys())
+                # Update the project's last_surface_index property
+                proj.last_surface_index = surface_idx
+                logger.info(f"Brain surface index: {surface_idx}")
+                
+                brain_vtk_colour = [c / 255.0 for c in brain_colour]
 
-            surface_idx = len(proj.surface_dict) - 1
-            brain_vtk_colour = [c / 255.0 for c in brain_colour]
+                Publisher.sendMessage(
+                    "Set surface colour", surface_index=surface_idx, colour=brain_vtk_colour
+                )
+                logger.debug(f"Brain surface colour set to: {brain_vtk_colour}")
 
-            Publisher.sendMessage(
-                "Set surface colour", surface_index=surface_idx, colour=brain_vtk_colour
-            )
+                # Select the edited surface to update the color in the surface properties GUI
+                Publisher.sendMessage("Change surface selected", surface_index=surface_idx)
 
-            # Select the edited surface to update the color in the surface properties GUI
-            Publisher.sendMessage("Change surface selected", surface_index=surface_idx)
-
-            # Visualize the scalp and brain surfaces
-            last_two = list(range(len(proj.surface_dict) - 2, len(proj.surface_dict)))
-            Publisher.sendMessage("Show multiple surfaces", index_list=last_two, visibility=True)
-
-        else:
-            dlg.InexistentMask()
+                # Visualize the scalp and brain surfaces
+                if len(proj.surface_dict) >= 2:
+                    last_two = list(range(max(0, max(proj.surface_dict.keys()) - 1), max(proj.surface_dict.keys()) + 1))
+                    Publisher.sendMessage("Show multiple surfaces", index_list=last_two, visibility=True)
+                    logger.info(f"Showing multiple surfaces: {last_two}")
+            else:
+                logger.warning("No mask selected for brain surface creation")
+                dlg.InexistentMask()
+        except Exception as e:
+            logger.error(f"Error creating brain surface: {str(e)}", exc_info=True)
+            wx.MessageBox(_("Error during brain surface creation. Check the log for details."), _("Brain Surface Creation Error"))
 
     def CreateSurface(self, evt):
         algorithm = "Default"
@@ -885,33 +930,86 @@ class HeadPage(wx.Panel):
             return False
 
     def SelectLargestSurface(self):
-        Publisher.sendMessage("Create surface from largest region", overwrite=True, name="Scalp")
+        import logging
+        logger = logging.getLogger("invesalius.surface_creation")
+        
+        try:
+            # Note that this will update the project's last_surface_index
+            logger.info("Selecting largest surface region")
+            Publisher.sendMessage("Create surface from largest region", overwrite=True, name="Scalp")
+            logger.debug("Largest surface selection completed")
+        except Exception as e:
+            logger.error(f"Error selecting largest surface: {str(e)}", exc_info=True)
+            raise
 
     def RemoveNonVisibleFaces(self):
-        Publisher.sendMessage("Remove non-visible faces")
+        import logging
+        logger = logging.getLogger("invesalius.surface_creation")
+        
+        try:
+            # The updated RemoveNonVisibleFaces method will handle the last_surface_index issue
+            logger.info("Removing non-visible faces")
+            Publisher.sendMessage("Remove non-visible faces")
+            logger.debug("Non-visible faces removal completed")
+        except Exception as e:
+            logger.error(f"Error removing non-visible faces: {str(e)}", exc_info=True)
+            raise
 
     def SmoothSurface(self):
-        Publisher.sendMessage("Create smooth surface", overwrite=True, name="Scalp")
+        import logging
+        logger = logging.getLogger("invesalius.surface_creation")
+        
+        try:
+            # This will update the project's last_surface_index
+            logger.info("Smoothing surface")
+            Publisher.sendMessage("Create smooth surface", overwrite=True, name="Scalp")
+            logger.debug("Surface smoothing completed")
+        except Exception as e:
+            logger.error(f"Error smoothing surface: {str(e)}", exc_info=True)
+            raise
 
     def VisualizeScalpSurface(self):
-        proj = prj.Project()
-        surface_idx = len(proj.surface_dict) - 1
-        scalp_colour = [255, 235, 255]
-        transparency = 0.25
-        scalp_vtk_colour = [c / 255.0 for c in scalp_colour]
+        import logging
+        logger = logging.getLogger("invesalius.surface_creation")
+        
+        try:
+            proj = prj.Project()
+            
+            # Always use the most recent surface index from the project
+            if not proj.surface_dict:
+                logger.error("No surfaces found in project for visualization")
+                return
+                
+            surface_idx = max(proj.surface_dict.keys())
+            # Update the project's last_surface_index property
+            proj.last_surface_index = surface_idx
+            
+            logger.info(f"Setting visualization properties for surface index: {surface_idx}")
+            
+            scalp_colour = [255, 235, 255]
+            transparency = 0.25
+            scalp_vtk_colour = [c / 255.0 for c in scalp_colour]
 
-        Publisher.sendMessage(
-            "Set surface colour", surface_index=surface_idx, colour=scalp_vtk_colour
-        )
-        Publisher.sendMessage(
-            "Set surface transparency", surface_index=surface_idx, transparency=transparency
-        )
+            Publisher.sendMessage(
+                "Set surface colour", surface_index=surface_idx, colour=scalp_vtk_colour
+            )
+            logger.debug(f"Surface colour set to: {scalp_vtk_colour}")
+            
+            Publisher.sendMessage(
+                "Set surface transparency", surface_index=surface_idx, transparency=transparency
+            )
+            logger.debug(f"Surface transparency set to: {transparency}")
 
-        # Select the edited surface to update the color in the surface properties GUI
-        Publisher.sendMessage("Change surface selected", surface_index=surface_idx)
+            # Select the edited surface to update the color in the surface properties GUI
+            Publisher.sendMessage("Change surface selected", surface_index=surface_idx)
+            logger.debug(f"Surface {surface_idx} selected for editing")
 
-        # Hide other surfaces
-        Publisher.sendMessage("Show single surface", index=surface_idx, visibility=True)
+            # Hide other surfaces
+            Publisher.sendMessage("Show single surface", index=surface_idx, visibility=True)
+            logger.info("Scalp surface visualization completed")
+        except Exception as e:
+            logger.error(f"Error visualizing scalp surface: {str(e)}", exc_info=True)
+            raise
 
     def OnSuccessfulBrainSegmentation(self):
         self.CreateBrainSurface()
