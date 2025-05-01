@@ -141,8 +141,9 @@ class Project(metaclass=Singleton):
     def AddSurface(self, surface):
         # self.last_surface_index = surface.index
         import logging
+
         logger = logging.getLogger("invesalius.project")
-        
+
         index = len(self.surface_dict)
         logger.info(f"Adding surface '{surface.name}' with index {index} to project")
         self.surface_dict[index] = surface
@@ -152,8 +153,9 @@ class Project(metaclass=Singleton):
 
     def ChangeSurface(self, surface):
         import logging
+
         logger = logging.getLogger("invesalius.project")
-        
+
         index = surface.index
         logger.info(f"Changing surface at index {index} to '{surface.name}'")
         self.surface_dict[index] = surface
@@ -162,13 +164,14 @@ class Project(metaclass=Singleton):
 
     def RemoveSurface(self, index):
         import logging
+
         logger = logging.getLogger("invesalius.project")
-        
+
         logger.info(f"Removing surface at index {index}")
         if index not in self.surface_dict:
             logger.warning(f"Attempted to remove non-existent surface at index {index}")
             return
-            
+
         try:
             surface_name = self.surface_dict[index].name
             new_dict = {}
@@ -179,7 +182,7 @@ class Project(metaclass=Singleton):
                     new_dict[i - 1] = self.surface_dict[i]
                     new_dict[i - 1].index = i - 1
             self.surface_dict = new_dict
-            
+
             # Update last_surface_index if we removed the last surface
             if self.last_surface_index == index:
                 if self.surface_dict:
@@ -187,8 +190,10 @@ class Project(metaclass=Singleton):
                 else:
                     self.last_surface_index = -1
                 logger.debug(f"Updated last_surface_index to {self.last_surface_index}")
-                
-            logger.info(f"Surface '{surface_name}' removed. Project now has {len(self.surface_dict)} surfaces")
+
+            logger.info(
+                f"Surface '{surface_name}' removed. Project now has {len(self.surface_dict)} surfaces"
+            )
         except Exception as e:
             logger.error(f"Error removing surface at index {index}: {str(e)}", exc_info=True)
 

@@ -72,6 +72,7 @@ logger = logging.getLogger("invesalius.data.polydata_utils")
 # Update progress value in GUI
 UpdateProgress = vu.ShowProgress()
 
+
 @handle_errors(
     error_message="Error applying decimation filter",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -93,13 +94,14 @@ def ApplyDecimationFilter(polydata: vtkPolyData, reduction_factor: float) -> vtk
             "ProgressEvent",
             lambda obj, evt: UpdateProgress(decimation, "Reducing number of triangles..."),
         )
-        
+
         decimation.Update()
         logger.info(f"Applied decimation filter with reduction factor: {reduction_factor}")
         return decimation.GetOutput()
     except Exception as e:
         logger.error(f"Failed to apply decimation filter: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error applying smooth filter",
@@ -128,12 +130,15 @@ def ApplySmoothFilter(
         smoother.AddObserver(
             "ProgressEvent", lambda obj, evt: UpdateProgress(smoother, "Smoothing surface...")
         )
-        
-        logger.info(f"Applied smooth filter with iterations: {iterations}, relaxation factor: {relaxation_factor}")
+
+        logger.info(
+            f"Applied smooth filter with iterations: {iterations}, relaxation factor: {relaxation_factor}"
+        )
         return filler.GetOutput()
     except Exception as e:
         logger.error(f"Failed to apply smooth filter: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error filling surface holes",
@@ -156,6 +161,7 @@ def FillSurfaceHole(polydata: vtkPolyData) -> "vtkPolyData":
         logger.error(f"Failed to fill surface holes: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error calculating surface volume",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -176,6 +182,7 @@ def CalculateSurfaceVolume(polydata: vtkPolyData) -> float:
         logger.error(f"Failed to calculate surface volume: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error calculating surface area",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -195,6 +202,7 @@ def CalculateSurfaceArea(polydata: vtkPolyData) -> float:
     except Exception as e:
         logger.error(f"Failed to calculate surface area: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error merging polydata",
@@ -222,6 +230,7 @@ def Merge(polydata_list: Iterable[vtkPolyData]) -> vtkPolyData:
         logger.error(f"Failed to merge polydata: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error exporting polydata",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -245,6 +254,7 @@ def Export(polydata: vtkPolyData, filename: str, bin: bool = False) -> None:
         logger.error(f"Failed to export polydata to {filename}: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error importing polydata",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -263,6 +273,7 @@ def Import(filename: str) -> vtkPolyData:
     except Exception as e:
         logger.error(f"Failed to import polydata from {filename}: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error loading polydata",
@@ -296,6 +307,7 @@ def LoadPolydata(path: str) -> vtkPolyData:
     except Exception as e:
         logger.error(f"Failed to load polydata from {path}: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error joining seed parts",
@@ -331,6 +343,7 @@ def JoinSeedsParts(polydata: vtkPolyData, point_id_list: List[int]) -> vtkPolyDa
         logger.error(f"Failed to join seed parts: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error selecting largest part",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -355,6 +368,7 @@ def SelectLargestPart(polydata: vtkPolyData) -> vtkPolyData:
     except Exception as e:
         logger.error(f"Failed to select largest part: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error splitting disconnected parts",
@@ -393,6 +407,7 @@ def SplitDisconectedParts(polydata: vtkPolyData) -> List[vtkPolyData]:
             UpdateProgress(region, _("Splitting disconnected regions..."))
 
     return polydata_collection
+
 
 @handle_errors(
     error_message="Error removing non-visible faces",

@@ -147,8 +147,9 @@ class Slice(metaclass=utils.Singleton):
     @matrix.setter
     def matrix(self, value: np.ndarray) -> None:
         import logging
+
         logger = logging.getLogger("invesalius.data.slice_")
-        
+
         try:
             self._matrix = value
             # Calculate histogram - use safer calculation for the range
@@ -156,11 +157,11 @@ class Slice(metaclass=utils.Singleton):
             r = max(int(e) - int(i), 1)  # Ensure at least 1 bin
             self.histogram = np.histogram(self._matrix, r, (i, e))[0]
             self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
-            
+
             # Reset buffers
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_buffer()
-                
+
         except Exception as e:
             logger.error(f"Error setting matrix: {e}")
             # Set reasonable defaults if histogram calculation fails
@@ -1352,33 +1353,41 @@ class Slice(metaclass=utils.Singleton):
     ):
         """
         Updates the slice plane widget with the current slice image.
-        
+
         This method processes the slice image and applies it to the specified
         vtkImagePlaneWidget, ensuring proper orientation is set first.
-        
+
         Parameters:
             widget: The vtkImagePlaneWidget to update
             orientation: The orientation of the slice ("AXIAL", "CORONAL", or "SAGITAL")
         """
         import logging
+
         logger = logging.getLogger("invesalius.data.slice_")
-        
+
         try:
             logger.debug(f"UpdateSlice3D: Starting update for orientation: {orientation}")
-            
+
             # Check if we have a valid image buffer for this orientation
             if orientation not in self.buffer_slices:
-                logger.error(f"UpdateSlice3D: No buffer slice available for orientation: {orientation}")
+                logger.error(
+                    f"UpdateSlice3D: No buffer slice available for orientation: {orientation}"
+                )
                 return
-                
-            if not hasattr(self.buffer_slices[orientation], 'vtk_image') or self.buffer_slices[orientation].vtk_image is None:
-                logger.error(f"UpdateSlice3D: No VTK image available in buffer for orientation: {orientation}")
+
+            if (
+                not hasattr(self.buffer_slices[orientation], "vtk_image")
+                or self.buffer_slices[orientation].vtk_image is None
+            ):
+                logger.error(
+                    f"UpdateSlice3D: No VTK image available in buffer for orientation: {orientation}"
+                )
                 return
-            
+
             # Get the image from the buffer
             img = self.buffer_slices[orientation].vtk_image
             logger.debug(f"UpdateSlice3D: Processing slice image for orientation: {orientation}")
-            
+
             # Cast to double
             cast = vtkImageCast()
             cast.SetInputData(img)
@@ -1386,7 +1395,7 @@ class Slice(metaclass=utils.Singleton):
             cast.ClampOverflowOn()
             cast.Update()
             logger.debug(f"UpdateSlice3D: Image cast to double completed for {orientation}")
-            
+
             # Flip the image
             flip = vtkImageFlip()
             flip.SetInputConnection(cast.GetOutputPort())
@@ -1394,12 +1403,12 @@ class Slice(metaclass=utils.Singleton):
             flip.FlipAboutOriginOn()
             flip.Update()
             logger.debug(f"UpdateSlice3D: Image flip completed for {orientation}")
-            
+
             # Always set the plane orientation before setting input
             # This prevents the "SetInput() before setting plane orientation" error
             current_orientation = widget.GetPlaneOrientation()
             logger.debug(f"UpdateSlice3D: Current widget plane orientation: {current_orientation}")
-            
+
             if orientation == "AXIAL":
                 logger.debug("UpdateSlice3D: Setting plane orientation to Z-Axis for AXIAL view")
                 widget.SetPlaneOrientationToZAxes()
@@ -1409,15 +1418,22 @@ class Slice(metaclass=utils.Singleton):
             elif orientation == "SAGITAL":
                 logger.debug("UpdateSlice3D: Setting plane orientation to X-Axis for SAGITAL view")
                 widget.SetPlaneOrientationToXAxes()
-            
+
             # Now that orientation is set, we can safely set the input
-            logger.debug(f"UpdateSlice3D: Setting input data to widget for orientation: {orientation}")
+            logger.debug(
+                f"UpdateSlice3D: Setting input data to widget for orientation: {orientation}"
+            )
             widget.SetInputConnection(flip.GetOutputPort())
-            logger.debug(f"UpdateSlice3D: Successfully updated slice for orientation: {orientation}")
-            
+            logger.debug(
+                f"UpdateSlice3D: Successfully updated slice for orientation: {orientation}"
+            )
+
         except Exception as e:
-            logger.error(f"UpdateSlice3D: Error updating slice 3D for orientation {orientation}: {e}")
+            logger.error(
+                f"UpdateSlice3D: Error updating slice 3D for orientation {orientation}: {e}"
+            )
             import traceback
+
             logger.debug(f"UpdateSlice3D: Detailed error traceback: {traceback.format_exc()}")
 
     def create_new_mask(

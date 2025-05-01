@@ -16,10 +16,10 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import logging
 import os
 import plistlib
 import weakref
-import logging
 
 from packaging.version import Version
 from vtkmodules.util import numpy_support
@@ -805,21 +805,21 @@ class CutPlane:
 
     def Create(self):
         logger = logging.getLogger("invesalius.data.volume")
-        
+
         try:
             logger.debug("CutPlane.Create: Creating plane widget")
             self.plane_widget = plane_widget = vtkImagePlaneWidget()
-            
+
             # First set the plane orientation before setting input
             # This prevents the "SetInput() before setting plane orientation" error
             logger.debug("CutPlane.Create: Setting plane orientation to X-Axes")
             plane_widget.SetPlaneOrientationToXAxes()
-            
+
             # Now it's safe to set the input data
             logger.debug("CutPlane.Create: Setting input data to widget")
             plane_widget.SetInputData(self.img)
             logger.debug("CutPlane.Create: Successfully set input data")
-            
+
             # plane_widget.SetResliceInterpolateToLinear()
             plane_widget.TextureVisibilityOff()
             # Set left mouse button to move and rotate plane
@@ -830,45 +830,46 @@ class CutPlane:
             # Disable cross
             cursor_property = plane_widget.GetCursorProperty()
             cursor_property.SetOpacity(0)
-            
+
             logger.debug("CutPlane.Create: Setting up plane source")
             self.plane_source = plane_source = vtkPlaneSource()
             plane_source.SetOrigin(plane_widget.GetOrigin())
             plane_source.SetPoint1(plane_widget.GetPoint1())
             plane_source.SetPoint2(plane_widget.GetPoint2())
             plane_source.SetNormal(plane_widget.GetNormal())
-            
+
             plane_mapper = self.plane_mapper = vtkPolyDataMapper()
             plane_mapper.SetInputData(plane_source.GetOutput())
             self.plane_actor = plane_actor = vtkActor()
             plane_actor.SetMapper(plane_mapper)
             plane_actor.GetProperty().BackfaceCullingOn()
             plane_actor.GetProperty().SetOpacity(0)
-            
+
             plane_widget.AddObserver("InteractionEvent", self.Update)
             Publisher.sendMessage("AppendActor", actor=self.plane_actor)
             Publisher.sendMessage("Set Widget Interactor", widget=self.plane_widget)
-            
+
             plane_actor.SetVisibility(1)
             plane_widget.On()
-            
+
             logger.debug("CutPlane.Create: Creating vtkPlane for clipping")
             self.plane = plane = vtkPlane()
             plane.SetNormal(self.plane_source.GetNormal())
             plane.SetOrigin(self.plane_source.GetOrigin())
             self.volume_mapper.AddClippingPlane(plane)
-            
+
             # Storage First Position
             self.origin = plane_widget.GetOrigin()
             self.p1 = plane_widget.GetPoint1()
             self.p2 = plane_widget.GetPoint2()
             self.normal = plane_widget.GetNormal()
-            
+
             logger.debug("CutPlane.Create: Successfully completed setup")
-            
+
         except Exception as e:
             logger.error(f"CutPlane.Create: Error creating cut plane: {e}")
             import traceback
+
             logger.debug(f"CutPlane.Create: Detailed error traceback: {traceback.format_exc()}")
             raise
 

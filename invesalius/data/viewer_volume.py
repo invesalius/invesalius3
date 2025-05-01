@@ -2894,30 +2894,34 @@ class Viewer(wx.Panel):
 
     def SetWidgetInteractor(self, widget=None):
         import logging
+
         logger = logging.getLogger("invesalius.data.viewer_volume")
-        
+
         try:
             # Make sure plane orientation is set before other operations involving SetInput
             # Check if this is a vtkImagePlaneWidget that may cause the "SetInput() before setting plane orientation" error
-            if hasattr(widget, 'SetPlaneOrientationToXAxes'):
+            if hasattr(widget, "SetPlaneOrientationToXAxes"):
                 logger.debug("SetWidgetInteractor: Found vtkImagePlaneWidget, checking orientation")
-                
+
                 # Get current plane orientation (might be -1 if not set)
                 current_orientation = widget.GetPlaneOrientation()
-                logger.debug(f"SetWidgetInteractor: Current plane orientation: {current_orientation}")
-                
+                logger.debug(
+                    f"SetWidgetInteractor: Current plane orientation: {current_orientation}"
+                )
+
                 # Make sure orientation is set if it's not already
                 if current_orientation < 0:
                     logger.debug("SetWidgetInteractor: Setting default X-Axes orientation")
                     widget.SetPlaneOrientationToXAxes()
-            
+
             logger.debug("SetWidgetInteractor: Setting interactor")
             widget.SetInteractor(self.interactor._Iren)
             logger.debug("SetWidgetInteractor: Successfully set interactor")
-            
+
         except Exception as e:
             logger.error(f"SetWidgetInteractor: Error setting widget interactor: {e}")
             import traceback
+
             logger.debug(f"SetWidgetInteractor: Detailed error traceback: {traceback.format_exc()}")
             # Still try to set the interactor even if there was an error checking orientation
             widget.SetInteractor(self.interactor._Iren)

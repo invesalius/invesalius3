@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import functools
+import logging
 import multiprocessing
 import os
 import plistlib
@@ -27,7 +28,6 @@ import sys
 import tempfile
 import time
 import traceback
-import logging
 
 import numpy as np
 import wx
@@ -182,12 +182,12 @@ class SurfaceManager:
         # Maps surface indices to actors.
         self.actors_dict = {}
         self.aux_matrices = {}
-        
+
         # Get the last_surface_index from the project, if available
         self._sync_last_surface_index()
-        
+
         self.convert_to_inv = False
-        
+
         self.__bind_events()
 
         self._default_parameters = {
@@ -203,7 +203,7 @@ class SurfaceManager:
     def _sync_last_surface_index(self):
         # Synchronize the last_surface_index with the project
         proj = prj.Project()
-        if hasattr(proj, 'last_surface_index'):
+        if hasattr(proj, "last_surface_index"):
             self.last_surface_index = proj.last_surface_index
         else:
             self.last_surface_index = -1
@@ -370,13 +370,13 @@ class SurfaceManager:
         Create a new surface where non-visible faces have been removed.
         """
         logger = logging.getLogger("invesalius.surface")
-        
+
         logger.info("Starting removal of non-visible faces")
         progress_dialog = dialogs.RemoveNonVisibleFacesProgressWindow()
         progress_dialog.Update()
 
         proj = prj.Project()
-        
+
         # Check if there are any surfaces
         if not proj.surface_dict:
             error_msg = "No surfaces available to perform this operation."
@@ -384,11 +384,11 @@ class SurfaceManager:
             wx.MessageBox(_(error_msg), _("Surface not found"))
             progress_dialog.Close()
             return
-            
+
         # Use the last_surface_index property from project
         index = proj.last_surface_index
         logger.debug(f"Attempting to remove non-visible faces from surface index: {index}")
-        
+
         # Check if the index exists in the surface_dict
         if index not in proj.surface_dict:
             logger.warning(f"Surface index {index} not found in surface_dict")
@@ -402,11 +402,11 @@ class SurfaceManager:
                 wx.MessageBox(_(error_msg), _("Surface not found"))
                 progress_dialog.Close()
                 return
-        
+
         try:
             surface = proj.surface_dict[index]
             logger.info(f"Processing surface: {surface.name} (index: {index})")
-            
+
             new_polydata = pu.RemoveNonVisibleFaces(surface.polydata)
             if new_polydata.GetNumberOfPoints() == 0:
                 error_msg = "Could not create new surface - result has no points"
@@ -691,7 +691,7 @@ class SurfaceManager:
     ):
         logger = logging.getLogger("invesalius.surface")
         logger.info(f"Creating surface from polydata: overwrite={overwrite}, name={name}")
-        
+
         try:
             if self.convert_to_inv:
                 logger.debug("Converting polydata to InVesalius coordinates")
@@ -735,7 +735,7 @@ class SurfaceManager:
             else:
                 surface.colour = colour
                 logger.debug(f"Using provided color: {colour}")
-                
+
             surface.polydata = polydata
 
             if transparency:
@@ -779,7 +779,7 @@ class SurfaceManager:
 
             session = ses.Session()
             session.ChangeProject()
-            
+
             # The following lines have to be here, otherwise all volumes disappear
             logger.debug("Calculating volume and area for surface")
             if not volume or not area:
@@ -804,10 +804,12 @@ class SurfaceManager:
             Publisher.sendMessage("Load surface actor into viewer", actor=actor)
             logger.debug("Updating surface info in GUI")
             Publisher.sendMessage("Update surface info in GUI", surface=surface)
-            
-            logger.info(f"Surface creation completed successfully: index={surface.index}, name={surface.name}")
+
+            logger.info(
+                f"Surface creation completed successfully: index={surface.index}, name={surface.name}"
+            )
             return surface.index
-            
+
         except Exception as e:
             error_msg = f"Error creating surface from polydata: {str(e)}"
             logger.error(error_msg, exc_info=True)

@@ -52,6 +52,7 @@ logger = logging.getLogger("invesalius.data.imagedata_utils")
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
 
+
 @handle_errors(
     error_message="Error resampling 3D image",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -74,7 +75,7 @@ def ResampleImage3D(imagedata, value):
     resample.SetInputData(imagedata)
     resample.SetAxisMagnificationFactor(0, resolution)
     resample.SetAxisMagnificationFactor(1, resolution)
-    
+
     try:
         resample.Update()
         logger.debug(f"3D image resampled successfully with resolution: {resolution}")
@@ -82,6 +83,7 @@ def ResampleImage3D(imagedata, value):
     except Exception as e:
         logger.error(f"Failed to resample 3D image: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error resampling 2D image",
@@ -112,7 +114,7 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, upd
 
         factor_x = px / float(f + 1)
         factor_y = py / float(f + 1)
-        
+
     logger.debug(f"Resampling 2D image with factors: x={factor_x}, y={factor_y}")
 
     resample = vtkImageResample()
@@ -123,13 +125,14 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage=None, upd
     if update_progress:
         message = _("Generating multiplanar visualization...")
         resample.AddObserver("ProgressEvent", lambda obj, evt: update_progress(resample, message))
-    
+
     try:
         resample.Update()
         return resample.GetOutput()
     except Exception as e:
         logger.error(f"Failed to resample 2D image: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error resizing slice",
@@ -151,6 +154,7 @@ def resize_slice(im_array, resolution_percentage):
         logger.error(f"Failed to resize slice: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error resizing image array",
     category=ErrorCategory.GENERAL,
@@ -171,6 +175,7 @@ def resize_image_array(image, resolution_percentage, as_mmap=False):
         logger.error(f"Failed to resize image array: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error reading DCM slice",
     category=ErrorCategory.DICOM,
@@ -183,17 +188,18 @@ def read_dcm_slice_as_np2(filename, resolution_percentage=1.0):
         if not reader.Read():
             logger.warning(f"Failed to read DICOM file: {filename}")
             raise ValueError(f"Failed to read DICOM file: {filename}")
-            
+
         image = reader.GetImage()
         output = converters.gdcm_to_numpy(image)
-        
+
         if resolution_percentage < 1.0:
             output = zoom(output, resolution_percentage)
-            
+
         return output
     except Exception as e:
         logger.error(f"Failed to read DCM slice as numpy array: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error fixing gantry tilt",
@@ -209,7 +215,7 @@ def FixGantryTilt(matrix, spacing, tilt):
         angle = np.radians(tilt)
         spacing = spacing[0], spacing[1], spacing[2]
         gntan = math.tan(angle)
-        
+
         logger.info(f"Fixing gantry tilt of {tilt} degrees")
 
         for n, slice_ in enumerate(matrix):
@@ -218,6 +224,7 @@ def FixGantryTilt(matrix, spacing, tilt):
     except Exception as e:
         logger.error(f"Failed to fix gantry tilt: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error building edited image",
@@ -284,6 +291,7 @@ def BuildEditedImage(imagedata, points):
         logger.error(f"Failed to build edited image: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error exporting image data",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -304,6 +312,7 @@ def Export(imagedata, filename, bin=False):
         logger.error(f"Failed to export image data: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error importing image data",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -322,6 +331,7 @@ def Import(filename):
         logger.error(f"Failed to import image data: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error viewing image data",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -334,12 +344,14 @@ def View(imagedata):
         viewer.SetColorWindow(200)
         viewer.SetColorLevel(100)
         viewer.Render()
-        
+
         import time
+
         time.sleep(10)
     except Exception as e:
         logger.error(f"Failed to view image data: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error extracting VOI",
@@ -356,12 +368,13 @@ def ExtractVOI(imagedata, xi, xf, yi, yf, zi, zf):
         voi.SetInputData(imagedata)
         voi.SetVOI(xi, xf, yi, yf, zi, zf)
         voi.Update()
-        
+
         logger.debug(f"Extracted VOI with dimensions ({xf-xi+1}, {yf-yi+1}, {zf-zi+1})")
         return voi.GetOutput()
     except Exception as e:
         logger.error(f"Failed to extract VOI: {e}")
         raise
+
 
 @handle_errors(
     error_message="Error creating DICOM thumbnail",
@@ -397,6 +410,7 @@ def create_dicom_thumbnails(image, window=None, level=None):
         os.close(fd)
         return thumbnail_path
 
+
 @handle_errors(
     error_message="Error converting array to memory map",
     category=ErrorCategory.GENERAL,
@@ -412,6 +426,7 @@ def array2memmap(arr, filename=None):
     if fd:
         os.close(fd)
     return matrix
+
 
 @handle_errors(
     error_message="Error converting bitmap to memory map",
@@ -534,6 +549,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
 
     return matrix, scalar_range, temp_file
 
+
 @handle_errors(
     error_message="Error converting DICOM to memory map",
     category=ErrorCategory.DICOM,
@@ -582,6 +598,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 
     return matrix, scalar_range, temp_file
 
+
 @handle_errors(
     error_message="Error converting multi-frame DICOM to memory map",
     category=ErrorCategory.DICOM,
@@ -620,6 +637,7 @@ def dcmmf2memmap(dcm_file, orientation):
     os.close(temp_fd)
 
     return matrix, scalar_range, spacing, temp_file
+
 
 @handle_errors(
     error_message="Error converting image to memory map",
@@ -667,6 +685,7 @@ def img2memmap(group):
 
     return matrix, scalar_range, temp_file
 
+
 @handle_errors(
     error_message="Error computing LUT value (255)",
     category=ErrorCategory.GENERAL,
@@ -686,6 +705,7 @@ def get_LUT_value_255(data, window, level):
     data.shape = shape
     return data
 
+
 @handle_errors(
     error_message="Error computing LUT value",
     category=ErrorCategory.GENERAL,
@@ -701,6 +721,7 @@ def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
     )
     data.shape = shape
     return data
+
 
 @handle_errors(
     error_message="Error computing normalized LUT value",
@@ -719,6 +740,7 @@ def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True)
 
     return img
 
+
 @handle_errors(
     error_message="Error normalizing image",
     category=ErrorCategory.GENERAL,
@@ -729,6 +751,7 @@ def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
     imin, imax = image.min(), image.max()
     output[:] = (image - imin) * ((max_ - min_) / (imax - imin)) + min_
     return output
+
 
 # TODO: Add a description of different coordinate systems, namely:
 #       - the world coordinate system,
@@ -759,6 +782,7 @@ def convert_world_to_voxel(xyz, affine):
 
     return ijk
 
+
 @handle_errors(
     error_message="Error converting InVesalius to voxel coordinates",
     category=ErrorCategory.GENERAL,
@@ -781,6 +805,7 @@ def convert_invesalius_to_voxel(position):
     return np.array(
         (position[0], slice.spacing[1] * (slice.matrix.shape[1] - 1) - position[1], position[2])
     )
+
 
 @handle_errors(
     error_message="Error converting InVesalius to world coordinates",
@@ -828,6 +853,7 @@ def convert_invesalius_to_world(position, orientation):
 
     return position_world, orientation_world
 
+
 @handle_errors(
     error_message="Error creating grid",
     category=ErrorCategory.GENERAL,
@@ -849,6 +875,7 @@ def create_grid(xy_range, z_range, z_offset, spacing):
 
     return coord_list_w
 
+
 @handle_errors(
     error_message="Error creating spherical grid",
     category=ErrorCategory.GENERAL,
@@ -867,6 +894,7 @@ def create_spherical_grid(radius=10, subdivision=1):
 
     return sph_sort
 
+
 @handle_errors(
     error_message="Error creating random sphere samples",
     category=ErrorCategory.GENERAL,
@@ -880,6 +908,7 @@ def random_sample_sphere(radius=3, size=100):
     scale = radius * np.divide(r, norm)
     xyz = scale * uvw
     return xyz
+
 
 @handle_errors(
     error_message="Error finding largest connected component",

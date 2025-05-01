@@ -779,10 +779,11 @@ class HeadPage(wx.Panel):
     # selects the largest surface, removes non-visible faces, and does brain segmentation
     def OnCreateHeadSurface(self, evt):
         import logging
+
         logger = logging.getLogger("invesalius.surface_creation")
-        
+
         logger.info("Starting head surface creation process")
-        
+
         try:
             if not self.CreateSurface(evt):
                 logger.warning("Failed to create initial surface, aborting head surface creation")
@@ -815,12 +816,16 @@ class HeadPage(wx.Panel):
             Publisher.sendMessage("Move to image page")
         except Exception as e:
             logger.error(f"Error during head surface creation: {str(e)}", exc_info=True)
-            wx.MessageBox(_("Error during head surface creation. Check the log for details."), _("Surface Creation Error"))
+            wx.MessageBox(
+                _("Error during head surface creation. Check the log for details."),
+                _("Surface Creation Error"),
+            )
 
     def CreateBrainSurface(self):
         import logging
+
         logger = logging.getLogger("invesalius.surface_creation")
-        
+
         try:
             logger.info("Starting brain surface creation")
             options = {"angle": 0.7, "max distance": 3.0, "min weight": 0.5, "steps": 10}
@@ -836,7 +841,7 @@ class HeadPage(wx.Panel):
                     if proj.mask_dict[idx] is sl.current_mask:
                         mask_index = idx
                         break
-                
+
                 logger.info(f"Creating brain surface from mask index: {mask_index}")
                 method = {"algorithm": algorithm, "options": options}
                 srf_options = {
@@ -847,8 +852,10 @@ class HeadPage(wx.Panel):
                     "keep_largest": True,
                     "overwrite": False,
                 }
-                
-                logger.debug(f"Surface creation parameters: algorithm={algorithm}, options={options}")
+
+                logger.debug(
+                    f"Surface creation parameters: algorithm={algorithm}, options={options}"
+                )
                 Publisher.sendMessage(
                     "Create surface from index",
                     surface_parameters={"method": method, "options": srf_options},
@@ -860,12 +867,12 @@ class HeadPage(wx.Panel):
                 if not proj.surface_dict:
                     logger.error("No brain surface was created")
                     return
-                    
+
                 surface_idx = max(proj.surface_dict.keys())
                 # Update the project's last_surface_index property
                 proj.last_surface_index = surface_idx
                 logger.info(f"Brain surface index: {surface_idx}")
-                
+
                 brain_vtk_colour = [c / 255.0 for c in brain_colour]
 
                 Publisher.sendMessage(
@@ -878,15 +885,25 @@ class HeadPage(wx.Panel):
 
                 # Visualize the scalp and brain surfaces
                 if len(proj.surface_dict) >= 2:
-                    last_two = list(range(max(0, max(proj.surface_dict.keys()) - 1), max(proj.surface_dict.keys()) + 1))
-                    Publisher.sendMessage("Show multiple surfaces", index_list=last_two, visibility=True)
+                    last_two = list(
+                        range(
+                            max(0, max(proj.surface_dict.keys()) - 1),
+                            max(proj.surface_dict.keys()) + 1,
+                        )
+                    )
+                    Publisher.sendMessage(
+                        "Show multiple surfaces", index_list=last_two, visibility=True
+                    )
                     logger.info(f"Showing multiple surfaces: {last_two}")
             else:
                 logger.warning("No mask selected for brain surface creation")
                 dlg.InexistentMask()
         except Exception as e:
             logger.error(f"Error creating brain surface: {str(e)}", exc_info=True)
-            wx.MessageBox(_("Error during brain surface creation. Check the log for details."), _("Brain Surface Creation Error"))
+            wx.MessageBox(
+                _("Error during brain surface creation. Check the log for details."),
+                _("Brain Surface Creation Error"),
+            )
 
     def CreateSurface(self, evt):
         algorithm = "Default"
@@ -931,12 +948,15 @@ class HeadPage(wx.Panel):
 
     def SelectLargestSurface(self):
         import logging
+
         logger = logging.getLogger("invesalius.surface_creation")
-        
+
         try:
             # Note that this will update the project's last_surface_index
             logger.info("Selecting largest surface region")
-            Publisher.sendMessage("Create surface from largest region", overwrite=True, name="Scalp")
+            Publisher.sendMessage(
+                "Create surface from largest region", overwrite=True, name="Scalp"
+            )
             logger.debug("Largest surface selection completed")
         except Exception as e:
             logger.error(f"Error selecting largest surface: {str(e)}", exc_info=True)
@@ -944,8 +964,9 @@ class HeadPage(wx.Panel):
 
     def RemoveNonVisibleFaces(self):
         import logging
+
         logger = logging.getLogger("invesalius.surface_creation")
-        
+
         try:
             # The updated RemoveNonVisibleFaces method will handle the last_surface_index issue
             logger.info("Removing non-visible faces")
@@ -957,8 +978,9 @@ class HeadPage(wx.Panel):
 
     def SmoothSurface(self):
         import logging
+
         logger = logging.getLogger("invesalius.surface_creation")
-        
+
         try:
             # This will update the project's last_surface_index
             logger.info("Smoothing surface")
@@ -970,22 +992,23 @@ class HeadPage(wx.Panel):
 
     def VisualizeScalpSurface(self):
         import logging
+
         logger = logging.getLogger("invesalius.surface_creation")
-        
+
         try:
             proj = prj.Project()
-            
+
             # Always use the most recent surface index from the project
             if not proj.surface_dict:
                 logger.error("No surfaces found in project for visualization")
                 return
-                
+
             surface_idx = max(proj.surface_dict.keys())
             # Update the project's last_surface_index property
             proj.last_surface_index = surface_idx
-            
+
             logger.info(f"Setting visualization properties for surface index: {surface_idx}")
-            
+
             scalp_colour = [255, 235, 255]
             transparency = 0.25
             scalp_vtk_colour = [c / 255.0 for c in scalp_colour]
@@ -994,7 +1017,7 @@ class HeadPage(wx.Panel):
                 "Set surface colour", surface_index=surface_idx, colour=scalp_vtk_colour
             )
             logger.debug(f"Surface colour set to: {scalp_vtk_colour}")
-            
+
             Publisher.sendMessage(
                 "Set surface transparency", surface_index=surface_idx, transparency=transparency
             )

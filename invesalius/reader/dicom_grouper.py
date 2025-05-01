@@ -76,6 +76,7 @@ ORIENT_MAP = {"SAGITTAL": 0, "CORONAL": 1, "AXIAL": 2, "OBLIQUE": 2}
 # Initialize logger
 logger = logging.getLogger("invesalius.reader.dicom_grouper")
 
+
 class DicomGroup:
     general_index = -1
 
@@ -142,7 +143,8 @@ class DicomGroup:
         if _has_win32api:
             try:
                 filelist = [
-                    win32api.GetShortPathName(dicom.image.file) for dicom in self.slices_dict.values()
+                    win32api.GetShortPathName(dicom.image.file)
+                    for dicom in self.slices_dict.values()
                 ]
             except Exception as e:
                 logger.error(f"Error getting short path names: {e}")
@@ -164,7 +166,7 @@ class DicomGroup:
             sorter.Sort(filelist)
         except Exception as e:
             logger.warning(f"Error sorting DICOM files: {e}, files may not be in correct order")
-            
+
         filelist = sorter.GetFilenames()
 
         # for breast-CT of koning manufacturing (KBCT)
@@ -249,7 +251,7 @@ class PatientGroup:
             dicom.image.orientation_label,
             index,
         )  # This will be used to deal with Problem 2
-        
+
         if not self.dicom:
             self.dicom = dicom
 
@@ -269,7 +271,9 @@ class PatientGroup:
             slice_added = group.AddSlice(dicom)
             if not slice_added:
                 # If we're here, then Problem 2 occured
-                logger.info(f"Detected Problem 2 (duplicate position), incrementing index for DICOM file")
+                logger.info(
+                    f"Detected Problem 2 (duplicate position), incrementing index for DICOM file"
+                )
                 # TODO: Optimize recursion
                 self.AddFile(dicom, index + 1)
 
@@ -339,12 +343,11 @@ class PatientGroup:
         # Create groups
         # Now we go in reverse direction
         dicom_dict = {}
-        for (group_key, dicom_group) in dict.items():
-
+        for group_key, dicom_group in dict.items():
             # Now we go for each DICOM inside each object
             for dicom in dicom_group.GetList():  # GetList returns a list of DICOM objects
                 # Now each DICOM will be grouped by description
-                
+
                 # Retrieve DICOM fields: key and object
                 patient_name, id_study, serie_number, orientation_label, index = group_key
 
@@ -367,7 +370,7 @@ class PatientGroup:
                 dicom_list[dicom.image.number] = dicom
 
         # Now re-create DicomGroup, using our new group schem
-        for (group_key, dicom_dict_group) in dicom_dict.items():
+        for group_key, dicom_dict_group in dicom_dict.items():
             # Create a fake DICOM group
             # Groups already separated
             new_group = DicomGroup()
@@ -443,19 +446,21 @@ class DicomPatientGrouper:
         # Process all patient groups
         for patient_group in self.patients_dict.values():
             patient_group.Update()
-            
+
         # Log diagnostic information
         total_patients = len(self.patients_dict)
         total_groups = sum(pg.ngroups for pg in self.patients_dict.values())
         total_slices = sum(pg.nslices for pg in self.patients_dict.values())
-        
-        logger.info(f"Updated DicomPatientGrouper with {total_patients} patient(s), {total_groups} group(s), {total_slices} slice(s)")
-        
+
+        logger.info(
+            f"Updated DicomPatientGrouper with {total_patients} patient(s), {total_groups} group(s), {total_slices} slice(s)"
+        )
+
         # Verify we have valid data
         if total_patients == 0 or total_groups == 0 or total_slices == 0:
             logger.warning("No valid DICOM data found after updating patient grouper")
             return False
-            
+
         return True
 
     def GetPatientsGroups(self):

@@ -51,6 +51,7 @@ if TYPE_CHECKING:
 # Initialize logger
 logger = logging.getLogger("invesalius.data.vtk_utils")
 
+
 class ProgressDialog:
     def __init__(self, parent: Optional[wx.Window], maximum: int, abort: bool = False):
         self.title = "InVesalius 3"
@@ -380,7 +381,7 @@ class TextZero:
             if self.actor is None:
                 logger.error("TextZero actor is None in Show method")
                 return
-                
+
             if value:
                 self.actor.VisibilityOn()
             else:
@@ -413,6 +414,7 @@ class TextZero:
                 y += h
         canvas.draw_text(self.text, (x, y), font=font)
 
+
 @handle_errors(
     error_message="Error converting numpy array to vtkMatrix4x4",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -440,6 +442,7 @@ def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:
         logger.error(f"Failed to convert numpy array to vtkMatrix4x4: {e}")
         raise
 
+
 @handle_errors(
     error_message="Error creating VTK object from file",
     category=ErrorCategory.EXTERNAL_LIBRARY,
@@ -466,7 +469,9 @@ def CreateObjectPolyData(filename: str) -> Any:
                 logger.info(f"Loading VTP file: {filename}")
             else:
                 logger.error(f"Unsupported file format: {filename}")
-                wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+                wx.MessageBox(
+                    _("File format not reconized by InVesalius"), _("Import surface error")
+                )
                 return None
         else:
             filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")

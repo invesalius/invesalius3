@@ -17,10 +17,11 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
+
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper
-import logging
 
 AXIAL, SAGITAL, CORONAL = 0, 1, 2
 PLANE_DATA = {AXIAL: ["z", (0, 0, 1)], SAGITAL: ["x", (1, 0, 0)], CORONAL: ["y", (0, 1, 0)]}
@@ -72,7 +73,7 @@ class Plane:
 
     def SetInput(self, imagedata):
         logger = logging.getLogger("invesalius.data.volume_widgets")
-        
+
         logger.debug(f"SetInput: Setting input for orientation: {self.orientation}")
         axes = PLANE_DATA[self.orientation][0]  # "x", "y" or "z"
         colour = PLANE_DATA[self.orientation][1]
@@ -87,7 +88,7 @@ class Plane:
         # 3D widget for reslicing image data.
         # This 3D widget defines a plane that can be interactively placed in an image volume.
         widget = vtkImagePlaneWidget()
-        
+
         try:
             # First set the plane orientation before setting input
             # This prevents the "SetInput() before setting plane orientation" error
@@ -100,15 +101,15 @@ class Plane:
             elif self.orientation == SAGITAL:
                 logger.debug("SetInput: Setting plane orientation to X-Axes for SAGITAL")
                 widget.SetPlaneOrientationToXAxes()
-                
+
             logger.debug(f"SetInput: Successfully set plane orientation for {self.orientation}")
             widget.SetKeyPressActivationValue(axes)
-            
+
             # Now it's safe to set the input
             logger.debug("SetInput: Setting input data to widget")
             widget.SetInput(imagedata)
             logger.debug("SetInput: Successfully set input data")
-            
+
             widget.SetSliceIndex(self.index)
             widget.SetPicker(picker)
             widget.SetInteractor(self.iren)
@@ -140,10 +141,11 @@ class Plane:
 
             self.render.AddActor(actor)
             logger.debug("SetInput: Successfully completed setup")
-            
+
         except Exception as e:
             logger.error(f"SetInput: Error in setting input: {e}")
             import traceback
+
             logger.debug(f"SetInput: Detailed error traceback: {traceback.format_exc()}")
             raise
 

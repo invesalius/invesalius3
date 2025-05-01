@@ -1,6 +1,7 @@
+import logging
+
 import numpy as np
 import pyacvd
-import logging
 
 # import os
 import pyvista
@@ -49,11 +50,12 @@ from invesalius.data.converters import to_vtk
 logger = logging.getLogger("invesalius.data.brainmesh_handler")
 
 # Setup PyVista to handle VTK errors more gracefully
-pyvista.set_error_output_file('pyvista_errors.log')
+pyvista.set_error_output_file("pyvista_errors.log")
 
 # Configure PyVista to use VTK observers more safely
 # This helps avoid the "SetInput() before setting plane orientation" error
 pyvista.global_theme.show_scalar_bar = False
+
 
 class Brain:
     def __init__(self, n_peels, window_width, window_level, affine, inv_proj):
@@ -97,10 +99,11 @@ class Brain:
             self.refImage = image
             logger.debug("Brain.from_mask: Successfully processed mask, starting surface creation")
             self._do_surface_creation(mask)
-            
+
         except Exception as e:
             logger.error(f"Brain.from_mask: Error processing mask: {e}")
             import traceback
+
             logger.debug(f"Brain.from_mask: Detailed error traceback: {traceback.format_exc()}")
             raise
 
