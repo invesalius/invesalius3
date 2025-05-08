@@ -369,10 +369,11 @@ class Slice(metaclass=utils.Singleton):
         self.CloseProject()
 
     def CloseProject(self):
-        f = self._matrix.filename
-        self._matrix._mmap.close()
-        self._matrix = None
-        os.remove(f)
+        if self._matrix is not None:
+            f = self._matrix.filename
+            self._matrix._mmap.close()
+            self._matrix = None
+            os.remove(f)
         self.current_mask = None
 
         for name in self.aux_matrices:
@@ -1231,6 +1232,9 @@ class Slice(metaclass=utils.Singleton):
     def CreateSurfaceFromIndex(self, surface_parameters):
         proj = Project()
         mask = proj.mask_dict[surface_parameters["options"]["index"]]
+
+        if not hasattr(mask, "_temp_file") or not mask._temp_file:
+            mask.create_mask(self.matrix.shape)
 
         self.do_threshold_to_all_slices(mask)
         Publisher.sendMessage(
