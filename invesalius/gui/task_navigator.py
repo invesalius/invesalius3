@@ -556,7 +556,7 @@ class ImportsPage(wx.Panel):
             Publisher.sendMessage("Open recent project", filepath=path)
         else:
             Publisher.sendMessage("Show open project dialog")
-        Publisher.sendMessage("Move to head model page")
+        self.OnMoveToHeadModelPage()
 
     def OnLinkImport(self, event):
         self.ImportDicom()
@@ -564,7 +564,7 @@ class ImportsPage(wx.Panel):
 
     def ImportDicom(self):
         Publisher.sendMessage("Show import directory dialog")
-        Publisher.sendMessage("Move to head model page")
+        self.OnMoveToHeadModelPage()
 
     def OnLinkImportNifti(self, event):
         self.ImportNifti()
@@ -572,7 +572,13 @@ class ImportsPage(wx.Panel):
 
     def ImportNifti(self):
         Publisher.sendMessage("Show import other files dialog", id_type=const.ID_NIFTI_IMPORT)
-        Publisher.sendMessage("Move to head model page")
+        self.OnMoveToHeadModelPage()
+
+    def OnMoveToHeadModelPage(self):
+        session = ses.Session()
+        project_status = session.GetConfig("project_status")
+        if project_status != const.PROJECT_STATUS_CLOSED:
+            Publisher.sendMessage("Move to head model page")
 
     def OnButton(self, evt):
         id = evt.GetId()
