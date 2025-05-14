@@ -291,6 +291,9 @@ def non_gui_startup(args):
 # ------------------------------------------------------------------
 
 
+from selector_mask import create_new_mask_from_selection, get_median_axial_slice, get_center_pixel_value
+
+
 def parse_command_line():
     """
     Handle command line arguments.
@@ -351,11 +354,62 @@ def parse_command_line():
 
     parser.add_argument("--cranioplasty", help="Creates an AI-based cranioplasty implant.")
 
+    # New argument for center selection
+    parser.add_argument(
+        "-center_select",
+        action="store_true",
+        help="Create a new mask from the center axial slice and center pixel.",
+    )
+
     args = parser.parse_args()
     return args
 
 
 def use_cmd_optargs(args):
+    # If the new center_select argument is provided
+    if args.center_select:
+        try:
+            # Ensure DICOM import is completed if specified
+            if args.dicom_dir:
+                import_dir = args.dicom_dir
+                Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
+
+                # Wait for the import to complete
+                Publisher.sendMessage("Wait for import to finish")
+
+            # Check if an export path is provided
+            if not args.export:
+                raise ValueError("The export path must be provided when using the -center_select option.")
+
+            # Get the median axial slice
+            median_slice = get_median_axial_slice()
+
+            # Get the center pixel value of the median slice
+            center_pixel = (median_slice // 2, median_slice // 2, median_slice)
+
+            # Call the create_new_mask_from_selection function
+            new_mask = create_new_mask_from_selection(
+                old_mask_name="Mask 1",
+                new_mask_name="Center mask",
+                slice_number=median_slice,
+                pixel_coord=center_pixel,
+            )
+
+            # Set the new mask as the active mask
+            Publisher.sendMessage("Select mask", mask_index=new_mask.index)
+
+            # Generate the 3D surface using the new mask
+            threshold_range = (253, 255)  # Example threshold range for the new mask
+            export_path = args.export  # Use the export path provided by the user
+            export(export_path, threshold_range)
+
+            print(f"New mask '{new_mask.name}' created and used for surface generation.")
+        except Exception as e:
+            print(f"Error while creating the new mask or generating the surface: {e}")
+        finally:
+            print("done")
+            # exit(0)
+
     # If import DICOM argument...
     if args.dicom_dir:
         import_dir = args.dicom_dir

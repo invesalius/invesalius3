@@ -1,13 +1,13 @@
 # Scientific
-numpy==1.26.4
-scipy==1.14.0
-matplotlib==3.9.0
+numpy==1.24.4
+scipy>=1.10,<1.12
+matplotlib>=3.5,<3.8
 
 # Image Processing
 Pillow==10.3.0
 imageio==2.34.2
 nibabel==5.2.1
-scikit-image==0.24.0
+scikit-image>=0.20,<0.22
 python-gdcm==3.0.24
 vtk==9.3.0
 
