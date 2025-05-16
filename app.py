@@ -25,6 +25,7 @@ import re
 import shutil
 import sys
 import traceback
+from invesalius.data.slice_ import Slice
 import invesalius.data.surface_process as surface_process
 import vtk
 
@@ -293,7 +294,7 @@ def non_gui_startup(args):
 # ------------------------------------------------------------------
 
 
-from selector_mask import create_new_mask_from_selection, get_median_axial_slice, get_center_pixel_value
+from selector_mask import SelectMaskParts
 
 
 def parse_command_line():
@@ -385,18 +386,17 @@ def use_cmd_optargs(args):
                 Publisher.sendMessage("Wait for import to finish")
 
             # Create the new mask from the selection
-            new_mask = create_new_mask_from_selection(
-                old_mask_name="Mask 1",
-                new_mask_name="Center mask",
-                coord_3d=coord_3d,
-            )
-            Publisher.sendMessage("Select mask", mask_name=new_mask.name)
+            new_mask_selection = SelectMaskParts(Slice())
+            new_mask_selection.OnSelect(None, None, x, y, z)
+            new_mask_selection.CleanUp()
+            
+            
 
-            export_mask(new_mask, output_path, index=1)
+            export_mask(new_mask_selection.config.mask, output_path, index=1)
             print(f"Surface exported to {output_path}")
             # -------------------------------------------
 
-            print(f"New mask '{new_mask.name}' created and used for surface generation.")
+            print(f"New mask '{new_mask_selection.config.mask.name}' created and used for surface generation.")
         except Exception as e:
             print(f"Error while creating the new mask or generating the surface: {e}")
         finally:
