@@ -877,13 +877,13 @@ class SurfaceManager:
         """
         Create surface actor, save into project and send it to viewer.
         """
+        print("AddNewActor")
         if mask.matrix.max() < 127:
-            wx.MessageBox(
-                _(
-                    "It's not possible to create a surface because there is not any voxel selected on mask"
-                ),
-                _("Create surface warning"),
-            )
+            msg = _("It's not possible to create a surface porque there is not any voxel selected on mask")
+            if wx.GetApp() is None:
+                print(msg)
+            else:
+                wx.MessageBox(msg, _("Create surface warning"))
             return
         t_init = time.time()
         matrix = slice_.matrix
@@ -967,6 +967,7 @@ class SurfaceManager:
 
         # If InVesalius is running without GUI
         if wx.GetApp() is None:
+            print("InVesalius is running without GUI")
             for i in range(n_pieces):
                 init = i * piece_size
                 end = init + piece_size + o_piece
@@ -1048,6 +1049,7 @@ class SurfaceManager:
             surface.polydata = polydata
             surface.volume = surface_measures["volume"]
             surface.area = surface_measures["area"]
+            
 
         # With GUI
         else:
@@ -1146,6 +1148,7 @@ class SurfaceManager:
         import gc
 
         gc.collect()
+        print("New surface name:", surface_name)
 
     def GetActor(self, surface_index):
         Publisher.sendMessage("Send Actor", e_field_actor=self.actors_dict[surface_index])

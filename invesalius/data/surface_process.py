@@ -451,3 +451,21 @@ def join_process_surface(
     print("MY PID", os.getpid())
     os.close(fd)
     return filename, {"volume": volume, "area": area}
+
+
+def create_surface_from_mask(vtk_image, threshold=254):
+    """
+    Create a VTK PolyData surface from a VTK image mask using the given threshold.
+    Args:
+        vtk_image: vtkImageData, the mask as VTK image.
+        threshold: int or float, the value to use for surface extraction.
+    Returns:
+        vtkPolyData: The extracted surface.
+    """
+    from vtkmodules.vtkFiltersCore import vtkContourFilter
+
+    contour = vtkContourFilter()
+    contour.SetInputData(vtk_image)
+    contour.SetValue(0, threshold)
+    contour.Update()
+    return contour.GetOutput()

@@ -5,61 +5,50 @@ import numpy as np
 from invesalius.project import Project  # Import the Project class
 from invesalius_cy import floodfill
 
-def create_new_mask_from_selection(old_mask_name, new_mask_name, slice_number, pixel_coord):
+def create_new_mask_from_selection(old_mask_name, new_mask_name, coord_3d):
     """
-    Creates a new mask by selecting parts of an existing mask.
+    Creates a new mask by selecting parts of an existing mask using a 3D coordinate.
 
     Args:
         old_mask_name (str): The name of the existing mask to select from.
         new_mask_name (str): The name of the new mask to create.
-        slice_number (int): The slice number to operate on.
-        pixel_coord (tuple): The (x, y, z) pixel coordinate to start the selection.
+        coord_3d (tuple): The (x, y, z) coordinate in the mask array.
 
     Returns:
         Mask: The newly created mask object.
     """
-    # Get the current Slice instance
     slice_instance = Slice()
-
-    # Get the current project instance
     project = Project()
 
-    # Find the old mask by name
     old_mask_index = next(
         (index for index, mask in project.mask_dict.items() if mask.name == old_mask_name), None
     )
     if old_mask_index is None:
         raise ValueError(f"Mask with name '{old_mask_name}' not found.")
 
-    # Select the old mask
     slice_instance.SelectCurrentMask(old_mask_index)
-
-    # Get the current mask matrix
     old_mask = slice_instance.current_mask
     old_mask_matrix = old_mask.matrix[1:, 1:, 1:]
 
-    # Create a new mask
     new_mask = slice_instance.create_new_mask(name=new_mask_name, add_to_project=False)
     new_mask_matrix = new_mask.matrix[1:, 1:, 1:]
 
-    # Generate the binary structure for 3D connectivity
     bstruct = np.array(generate_binary_structure(3, 6), dtype="uint8")
 
-    # Perform flood fill to select parts of the old mask
+    # Use the provided 3D coordinate directly
+    seed = tuple(coord_3d)
+
     floodfill.floodfill_threshold(
         old_mask_matrix,
-        [pixel_coord],
-        226,  # Threshold lower bound
-        3071,  # Threshold upper bound
-        254,  # Fill value
+        [seed],
+        253,
+        255,
+        254,
         bstruct,
         new_mask_matrix,
     )
 
-    # Add the new mask to the project
     slice_instance._add_mask_into_proj(new_mask)
-
-    # Return the new mask
     return new_mask
 
 def get_median_axial_slice():
