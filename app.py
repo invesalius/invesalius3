@@ -25,6 +25,9 @@ import re
 import shutil
 import sys
 import traceback
+from invesalius.data.slice_ import Slice
+import invesalius.data.surface_process as surface_process
+import vtk
 
 if sys.platform == "darwin":
     try:
@@ -291,7 +294,7 @@ def non_gui_startup(args):
 # ------------------------------------------------------------------
 
 
-from selector_mask import create_new_mask_from_selection, get_median_axial_slice, get_center_pixel_value
+from selector_mask import SelectMaskParts
 
 
 def parse_command_line():
@@ -357,8 +360,10 @@ def parse_command_line():
     # New argument for center selection
     parser.add_argument(
         "-center_select",
-        action="store_true",
-        help="Create a new mask from the center axial slice and center pixel.",
+        nargs=4,  # Now expects X, Y, Z, OUTPUT_PATH
+        metavar=("X", "Y", "Z", "OUTPUT_PATH"),
+        help="Create a new mask from the specified 3D coordinate (x, y, z) in the mask array and export to OUTPUT_PATH.",
+        type=str,
     )
 
     args = parser.parse_args()
@@ -369,46 +374,34 @@ def use_cmd_optargs(args):
     # If the new center_select argument is provided
     if args.center_select:
         try:
-            # Ensure DICOM import is completed if specified
+            x, y, z, output_path = args.center_select  # Now expecting X, Y, Z, OUTPUT_PATH
+            x = int(x)
+            y = int(y)
+            z = int(z)
+            coord_3d = (x, y, z)
+
             if args.dicom_dir:
                 import_dir = args.dicom_dir
                 Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
-
-                # Wait for the import to complete
                 Publisher.sendMessage("Wait for import to finish")
 
-            # Check if an export path is provided
-            if not args.export:
-                raise ValueError("The export path must be provided when using the -center_select option.")
+            # Create the new mask from the selection
+            new_mask_selection = SelectMaskParts(Slice())
+            new_mask_selection.OnSelect(None, None, x, y, z)
+            new_mask_selection.CleanUp()
+            
+            
 
-            # Get the median axial slice
-            median_slice = get_median_axial_slice()
+            export_mask(new_mask_selection.config.mask, output_path, index=1)
+            print(f"Surface exported to {output_path}")
+            # -------------------------------------------
 
-            # Get the center pixel value of the median slice
-            center_pixel = (median_slice // 2, median_slice // 2, median_slice)
-
-            # Call the create_new_mask_from_selection function
-            new_mask = create_new_mask_from_selection(
-                old_mask_name="Mask 1",
-                new_mask_name="Center mask",
-                slice_number=median_slice,
-                pixel_coord=center_pixel,
-            )
-
-            # Set the new mask as the active mask
-            Publisher.sendMessage("Select mask", mask_index=new_mask.index)
-
-            # Generate the 3D surface using the new mask
-            threshold_range = (253, 255)  # Example threshold range for the new mask
-            export_path = args.export  # Use the export path provided by the user
-            export(export_path, threshold_range)
-
-            print(f"New mask '{new_mask.name}' created and used for surface generation.")
+            print(f"New mask '{new_mask_selection.config.mask.name}' created and used for surface generation.")
         except Exception as e:
             print(f"Error while creating the new mask or generating the surface: {e}")
         finally:
             print("done")
-            # exit(0)
+            exit(0)
 
     # If import DICOM argument...
     if args.dicom_dir:
@@ -551,8 +544,17 @@ def check_for_export(args, suffix="", remove_surfaces=False):
 def export(path_, threshold_range, remove_surface=False):
     import invesalius.constants as const
     from invesalius.i18n import tr as _
+    from invesalius.data.slice_ import Slice
 
-    Publisher.sendMessage("Set threshold values", threshold_range=threshold_range)
+    # Print the name of the currently selected mask
+    current_mask = Slice().current_mask
+    if current_mask is not None:
+        print(f"Exporting mask: {current_mask.name}")
+    else:
+        print("No mask selected for export.")
+    # input("Press Enter to continue...")
+
+    #Publisher.sendMessage("Set threshold values", threshold_range=threshold_range)
 
     surface_options = {
         "method": {
@@ -634,6 +636,9 @@ def main(connection=None, remote_host=None):
     init()
 
     args = parse_command_line()
+    # Set a global flag for no-gui mode
+    global NO_GUI
+    NO_GUI = args.no_gui
 
     session = ses.Session()
     session.SetConfig("debug", args.debug)
@@ -662,6 +667,51 @@ def main(connection=None, remote_host=None):
     else:
         application = InVesalius(False)
         application.MainLoop()
+
+def export_mask(mask, file_name, index=1):
+    """
+    Export a surface using a specific mask object and custom surface parameters,
+    and export the surface to a file.
+    """
+    import invesalius.constants as const
+    from invesalius.data.slice_ import Slice
+
+    surface_parameters = {
+        "method": {
+            "algorithm": "ca_smoothing",
+            "options": {
+                "angle": 0.7,
+                "max distance": 3.0,
+                "min weight": 0.5,
+                "steps": 10,
+            },
+        },
+        "options": {
+            "index": index,
+            "name": "",
+            "quality": "Optimal *",
+            "fill": False,
+            "keep_largest": False,
+            "overwrite": False,
+        },
+    }
+
+    
+    
+
+    slice_ = Slice()
+    Publisher.sendMessage("Create surface", slice_=slice_, mask=mask, surface_parameters=surface_parameters)
+
+    print(surface_parameters)
+
+    # Export the surface to file
+    print(f"Sending message in topic Export surface to file with data {{'filename': '{file_name}', 'filetype': {const.FILETYPE_STL}, 'convert_to_world': False}}")
+    Publisher.sendMessage(
+        "Export surface to file",
+        filename=file_name,
+        filetype=const.FILETYPE_STL
+    )
+
 
 
 if __name__ == "__main__":

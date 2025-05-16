@@ -46,6 +46,7 @@ from invesalius import inv_paths, plugins
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.segmentation.deep_learning import segment
+import app  # or from app import NO_GUI, if needed
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -375,7 +376,9 @@ class Controller:
         self.SaveProject(filepath)
 
     def SaveProject(self, path: Optional["str | Path"] = None, compress: bool = False) -> None:
-        dialog.ProgressBarHandler(self.frame, "Saving Project", "Initializing...", max_value=100)
+        # Only show dialog if not in no-gui mode
+        if not getattr(app, "NO_GUI", False):
+            dialog.ProgressBarHandler(self.frame, "Saving Project", "Initializing...", max_value=100)
 
         try:
             session = ses.Session()

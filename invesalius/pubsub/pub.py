@@ -71,6 +71,7 @@ def sendMessage(topicName: str, **msgdata) -> None:
     :param topicName:
     :param msgdata:
     """
+    print(f"Sending message in topic {topicName} with data {msgdata}")
     Publisher.sendMessage(topicName, **msgdata)
     if sendMessage_hook is not None:
         sendMessage_hook(topicName, msgdata)
@@ -82,6 +83,7 @@ def sendMessage_no_hook(topicName: str, **msgdata) -> None:
     :param topicName:
     :param msgdata:
     """
+    print(f"Sending message in topic {topicName} with data {msgdata}")
     Publisher.sendMessage(topicName, **msgdata)
 
 

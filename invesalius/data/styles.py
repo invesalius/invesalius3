@@ -2665,6 +2665,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         iren = self.viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+        print(x, y, z)
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
