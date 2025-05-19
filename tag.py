@@ -1,23 +1,40 @@
-import bpy
+import trimesh
+from solid import text, linear_extrude, scad_render_to_file
+from solid.utils import translate
+import os
+import subprocess
 
-bpy.ops.wm.read_factory_settings(use_empty=True)
+# === Parameters ===
+text_string = "Part123"
+text_size = 5  # mm
+text_depth = 1  # mm
+text_position = [20, 10, 3]  # mm, relative position
 
-# Ensure there is a scene and a view layer
-if not bpy.data.scenes:
-    bpy.data.scenes.new("Scene")
-if not bpy.context.view_layer:
-    bpy.context.window.view_layer = bpy.context.scene.view_layers[0]
+base_model_path = "model.stl"
+text_mesh_path = "text_tmp.stl"
+output_path = "model_with_tag.stl"
 
-# Check if the STL import operator is available
-if hasattr(bpy.ops.import_mesh, "stl"):
-    bpy.ops.import_mesh.stl(filepath=r"C:\Users\chris\Downloads\isolated.stl")
-else:
-    print("STL import operator not found. Make sure the STL add-on is enabled.")
+# === 1. Create 3D Text Using OpenSCAD-compatible SolidPython ===
+scad_code = translate(text_position)(
+    linear_extrude(height=text_depth)(
+        text(text_string, size=text_size)
+    )
+)
 
-bpy.ops.object.text_add(location=(10, 5, 3))
-text_obj = bpy.context.object
-text_obj.data.body = "Tag123"
+scad_render_to_file(scad_code, 'text.scad')
 
-bpy.ops.object.convert(target='MESH')
+# === 2. Generate STL from SCAD ===
+# You need OpenSCAD installed (CLI only, no GUI)
+subprocess.run(["openscad", "-o", text_mesh_path, "text.scad"], check=True)
 
-bpy.ops.export_mesh.stl(filepath=r"C:\Users\chris\Downloads\new_isolated.stl")
+# === 3. Load Both Meshes ===
+base = trimesh.load_mesh(base_model_path)
+text_mesh = trimesh.load_mesh(text_mesh_path)
+
+# === 4. Combine Meshes ===
+combined = base + text_mesh
+
+# === 5. Export Final STL ===
+combined.export(output_path)
+
+print(f"Saved tagged STL to {output_path}")
