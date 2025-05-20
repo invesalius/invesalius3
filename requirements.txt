@@ -1,3 +1,4 @@
+# === Existing Requirements ===
 # Scientific
 numpy==1.24.4
 scipy>=1.10,<1.12
@@ -28,3 +29,7 @@ pyclaron ; python_version == "3.8" and sys_platform == "windows"
 # Testing
 pytest==8.3.5
 pytest-mock==3.14.0
+
+# === Additional Requirements for STL Text Tagging Script ===
+trimesh==4.3.1
+solidpython==1.1.3
