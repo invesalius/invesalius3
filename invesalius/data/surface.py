@@ -335,10 +335,13 @@ class SurfaceManager:
         Create a new surface, based on largest part of the last
         selected surface.
         """
+        proj = prj.Project()
+        index = self.last_surface_index
+        if index not in proj.surface_dict:
+            print(f"[Error] Surface index {index} not found in surface_dict.")
+            return
         progress_dialog = dialogs.SelectLargestSurfaceProgressWindow()
         progress_dialog.Update()
-        index = self.last_surface_index
-        proj = prj.Project()
         surface = proj.surface_dict[index]
 
         new_polydata = pu.SelectLargestPart(surface.polydata)

@@ -1,6 +1,9 @@
 name: generate bundles
 
-on: [push]
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   build-win:
@@ -9,7 +12,7 @@ jobs:
     strategy:
       matrix:
         architecture: ["x64"]
-        ai_ready: [0, 1]
+        ai_ready: [1]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -98,21 +101,22 @@ jobs:
       - name: Generate InVesalius installer - win64 ai-ready build
         run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_ai-ready_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
 
-      - name: Generate InVesalius installer - win64 normal build
-        run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
+      # - name: Generate InVesalius installer - win64 normal build
+      #   run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
 
       - name: Show files
         run: |
           cd ./installer
           dir
-      - name: Upload artifact of package normal file
-        if: ${{ matrix.ai_ready == 0}}
-        uses: actions/upload-artifact@v4
-        with:
-          overwrite: true
-          name: invesalius_package_exe_normal
-          retention-days: 2
-          path: ./installer/*.exe
+
+      # - name: Upload artifact of package normal file
+      #   if: ${{ matrix.ai_ready == 0}}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     overwrite: true
+      #     name: invesalius_package_exe_normal
+      #     retention-days: 2
+      #     path: ./installer/*.exe
 
       - name: Upload artifact of package ai-ready file
         if: ${{ matrix.ai_ready == 1}}
@@ -123,15 +127,20 @@ jobs:
           retention-days: 2
           path: ./installer/*.exe
 
+      - name: Delete previous nightly release
+        run: gh release delete nightly --yes --cleanup-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   publish_packages:
     name: publish packages
     needs: build-win
     runs-on: windows-latest
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: invesalius_package_exe_normal
-          path: ./
+      # - uses: actions/download-artifact@v4
+      #   with:
+      #     name: invesalius_package_exe_normal
+      #     path: ./
 
       - uses: actions/download-artifact@v4
         with:
@@ -141,18 +150,19 @@ jobs:
       - name: Message
         run: |
           dir
+
+
       - name: Update Nightly Release
-        uses: andelf/nightly-release@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
-          name: "Nightly"
-          draft: false
-          prerelease: true
+          name: "Nightly Build"
           body: |
             This is a nightly release InVesalius.
             It's unstable compared to the official releases, **use it with caution**!
+          draft: false
+          prerelease: true
           files: |
-            ./invesalius-3.1_nightly_ai-ready_win64.exe
-            ./invesalius-3.1_nightly_win64.exe
+            ./*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

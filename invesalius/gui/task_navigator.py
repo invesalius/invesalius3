@@ -380,7 +380,9 @@ class CoregistrationPanel(wx.Panel):
         ):
             # Do not allow user to move to other (forward) tabs.
             self.book.SetSelection(const.IMPORTS_PAGE)
-            wx.MessageBox(_("Please import image first."), _("InVesalius 3"))
+            from invesalius.error_handling import show_warning
+
+            show_warning(_("InVesalius 3"), _("Please import image first."))
             return
 
         # old page validations
@@ -388,7 +390,9 @@ class CoregistrationPanel(wx.Panel):
             # Do not allow user to move to other (forward) tabs if image fiducials not done.
             if not self.image.AreImageFiducialsSet():
                 self.book.SetSelection(const.IMAGE_PAGE)
-                wx.MessageBox(_("Please do the image registration first."), _("InVesalius 3"))
+                from invesalius.error_handling import show_warning
+
+                show_warning(_("InVesalius 3"), _("Please do the image registration first."))
         if old_page != const.REFINE_PAGE:
             # Load data into refine tab
             Publisher.sendMessage("Update UI for refine tab")
@@ -398,7 +402,9 @@ class CoregistrationPanel(wx.Panel):
             # Do not allow user to move to other (forward) tabs if tracker fiducials not done.
             if self.image.AreImageFiducialsSet() and not self.tracker.AreTrackerFiducialsSet():
                 self.book.SetSelection(const.TRACKER_PAGE)
-                wx.MessageBox(_("Please do the tracker registration first."), _("InVesalius 3"))
+                from invesalius.error_handling import show_warning
+
+                show_warning(_("InVesalius 3"), _("Please do the tracker registration first."))
 
     # Unfold specific notebook pages
     def _FoldImports(self):
@@ -550,7 +556,7 @@ class ImportsPage(wx.Panel):
             Publisher.sendMessage("Open recent project", filepath=path)
         else:
             Publisher.sendMessage("Show open project dialog")
-        Publisher.sendMessage("Move to head model page")
+        self.OnMoveToHeadModelPage()
 
     def OnLinkImport(self, event):
         self.ImportDicom()
@@ -558,7 +564,7 @@ class ImportsPage(wx.Panel):
 
     def ImportDicom(self):
         Publisher.sendMessage("Show import directory dialog")
-        Publisher.sendMessage("Move to head model page")
+        self.OnMoveToHeadModelPage()
 
     def OnLinkImportNifti(self, event):
         self.ImportNifti()
@@ -566,7 +572,13 @@ class ImportsPage(wx.Panel):
 
     def ImportNifti(self):
         Publisher.sendMessage("Show import other files dialog", id_type=const.ID_NIFTI_IMPORT)
-        Publisher.sendMessage("Move to head model page")
+        self.OnMoveToHeadModelPage()
+
+    def OnMoveToHeadModelPage(self):
+        session = ses.Session()
+        project_status = session.GetConfig("project_status")
+        if project_status != const.PROJECT_STATUS_CLOSED:
+            Publisher.sendMessage("Move to head model page")
 
     def OnButton(self, evt):
         id = evt.GetId()
@@ -911,11 +923,7 @@ class HeadPage(wx.Panel):
         self.CreateBrainSurface()
 
     def SegmentBrain(self):
-        if (
-            deep_learning_seg_dialog.HAS_PLAIDML
-            or deep_learning_seg_dialog.HAS_THEANO
-            or deep_learning_seg_dialog.HAS_TORCH
-        ):
+        if deep_learning_seg_dialog.HAS_TORCH:
             segmentation_dlg = deep_learning_seg_dialog.BrainSegmenterDialog(
                 self, auto_segment=True
             )
@@ -927,7 +935,7 @@ class HeadPage(wx.Panel):
                 _(
                     "It's not possible to run brain segmenter because your system doesn't have the following modules installed:"
                 )
-                + " Torch, PlaidML or Theano",
+                + " Torch",
                 "InVesalius 3 - Brain segmenter",
                 wx.ICON_INFORMATION | wx.OK,
             )
@@ -3383,6 +3391,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             return
         marker = self.__get_marker(list_index)
 
+        proj = prj.Project()
+        if not proj.surface_dict:
+            wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
+            return
         self.markers.CreateCoilTargetFromLandmark(marker)
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
@@ -3444,6 +3456,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         idx = self.marker_list_ctrl.GetFocusedItem()
         if idx == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        if not self.navigation.coil_registrations:
+            wx.MessageBox(_("TMS coil not registered."), _("InVesalius 3"))
             return
 
         marker_id = self.__get_marker_id(idx)
