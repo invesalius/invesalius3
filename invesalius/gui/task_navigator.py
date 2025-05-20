@@ -3457,6 +3457,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if idx == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
+        if not self.navigation.coil_registrations:
+            wx.MessageBox(_("TMS coil not registered."), _("InVesalius 3"))
+            return
 
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)
