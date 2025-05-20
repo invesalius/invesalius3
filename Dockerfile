@@ -31,14 +31,7 @@ RUN apt-get install -y \
     python3-pip
 
 # === Install OpenSCAD via AppImage ===
-RUN apt-get update && apt-get install -y \
-    fuse \
-    libfuse2 \
-    wget
-
-RUN wget https://files.openscad.org/OpenSCAD-2021.01-x86_64.AppImage -O /usr/local/bin/openscad && \
-    chmod +x /usr/local/bin/openscad
-
+RUN apt-get update && apt-get install -y openscad
 
 # Set working directory
 WORKDIR /usr/local/app
