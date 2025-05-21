@@ -295,7 +295,7 @@ def non_gui_startup(args):
 
 
 from selector_mask import SelectMaskParts
-
+from invesalius.data.crop_mask import CropMask
 
 def parse_command_line():
     """
@@ -366,6 +366,22 @@ def parse_command_line():
         type=str,
     )
 
+    parser.add_argument(
+        "--crop-mask",
+        nargs=7,  # xi xf yi yf zi zf OUTPUT_PATH
+        metavar=("XI", "XF", "YI", "YF", "ZI", "ZF", "OUTPUT_PATH"),
+        help="Crop the current mask with voxel limits and export to OUTPUT_PATH.",
+        type=str,
+    )
+  
+    parser.add_argument(
+        "--threshold-crop-mask",
+        nargs=9,  # lower upper xi xf yi yf zi zf OUTPUT_PATH
+        metavar=("LOWER", "UPPER", "XI", "XF", "YI", "YF", "ZI", "ZF", "OUTPUT_PATH"),
+        help="Create a new mask with threshold [LOWER,UPPER], crop it with voxel limits, and export to OUTPUT_PATH.",
+        type=str,
+    )
+
     args = parser.parse_args()
     return args
 
@@ -399,6 +415,84 @@ def use_cmd_optargs(args):
             print(f"New mask '{new_mask_selection.config.mask.name}' created and used for surface generation.")
         except Exception as e:
             print(f"Error while creating the new mask or generating the surface: {e}")
+        finally:
+            print("done")
+            exit(0)
+
+    # Handle --crop-mask
+    if args.crop_mask:
+        try:
+            xi, xf, yi, yf, zi, zf, output_path = args.crop_mask
+            xi = int(xi)
+            xf = int(xf)
+            yi = int(yi)
+            yf = int(yf)
+            zi = int(zi)
+            zf = int(zf)
+
+            # Optionally import DICOM if specified
+            if args.dicom_dir:
+                import_dir = args.dicom_dir
+                Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
+                Publisher.sendMessage("Wait for import to finish")
+
+            # Create and crop the mask
+            cropper = CropMask(Slice())
+            cropper.set_limits(xi, xf, yi, yf, zi, zf)
+            cropper.crop()
+
+            # Export the cropped mask
+            export_mask(cropper.slice.current_mask, output_path, index=1)
+            print(f"Cropped mask exported to {output_path}")
+        except Exception as e:
+            print(f"Error while cropping and exporting the mask: {e}")
+        finally:
+            print("done")
+            exit(0)
+
+    # Handle --threshold-crop-mask
+    if args.threshold_crop_mask:
+        try:
+            lower, upper, xi, xf, yi, yf, zi, zf, output_path = args.threshold_crop_mask
+            lower = int(lower)
+            upper = int(upper)
+            xi = int(xi)
+            xf = int(xf)
+            yi = int(yi)
+            yf = int(yf)
+            zi = int(zi)
+            zf = int(zf)
+
+            # Optionally import DICOM if specified
+            if args.dicom_dir:
+                import_dir = args.dicom_dir
+                Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
+                Publisher.sendMessage("Wait for import to finish")
+
+            slice_ = Slice()
+            mask = slice_.current_mask
+            if mask is None:
+                raise RuntimeError("No mask available to apply threshold.")
+
+            # Set the new threshold range on the existing mask
+            mask.threshold_range = (lower, upper)
+            print(f"Set threshold range to {lower}-{upper} on mask '{mask.name}'.")
+
+            # Apply the threshold to the current mask
+            # slice_.do_threshold_to_all_slices(mask)
+            # print("Applied threshold to all slices.")
+
+            # Crop the mask
+            cropper = CropMask(slice_)
+            cropper.set_limits(xi, xf, yi, yf, zi, zf)
+            cropper.crop()
+            print(f"Mask cropped to limits: {xi}, {xf}, {yi}, {yf}, {zi}, {zf}.")
+
+            # Export the cropped mask
+            export_mask(mask, output_path, index=mask.index)
+            print(f"Thresholded and cropped mask exported to {output_path}")
+        except Exception as e:
+            print(f"Error while thresholding, cropping, and exporting the mask: {e}")
         finally:
             print("done")
             exit(0)
