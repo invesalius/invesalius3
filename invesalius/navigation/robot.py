@@ -18,8 +18,17 @@
 # --------------------------------------------------------------------------
 
 from enum import Enum
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    from invesalius.data.markers.marker import Marker
+    from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
+    from invesalius.navigation.navigation import Navigation
+    from invesalius.navigation.tracker import Tracker
+
 import wx
 
 import invesalius.data.coregistration as dcr
@@ -39,22 +48,23 @@ class RobotObjective(Enum):
 # Only one robot will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
 class Robot(metaclass=Singleton):
-    def __init__(self, tracker, navigation, icp):
-        self.tracker = tracker
-        self.navigation = navigation
-        self.icp = icp
-        self.enabled_in_gui = False
+    def __init__(
+        self, tracker: "Tracker", navigation: "Navigation", icp: "IterativeClosestPoint"
+    ) -> None:
+        self.tracker: "Tracker" = tracker
+        self.navigation: "Navigation" = navigation
+        self.icp: "IterativeClosestPoint" = icp
+        self.enabled_in_gui: bool = False
 
-        self.coil_name = None
+        self.coil_name: Union[None, str] = None
 
-        self.is_robot_connected = False
-        self.robot_ip = None
+        self.is_robot_connected: bool = False
+        self.robot_ip: Union[None, str] = None
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
-        self.target = None
+        self.target: NDArray = None
 
-        self.objective = RobotObjective.NONE
-        self.target = None
+        self.objective: RobotObjective = RobotObjective.NONE
 
         # If tracker already has fiducials set, send them to the robot; this can happen, e.g.,
         # when a pre-existing state is loaded at start-up.
@@ -68,7 +78,7 @@ class Robot(metaclass=Singleton):
 
         self.__bind_events()
 
-    def __bind_events(self):
+    def __bind_events(self) -> None:
         Publisher.subscribe(
             self.AbortRobotConfiguration, "Robot to Neuronavigation: Close robot dialog"
         )
@@ -82,7 +92,7 @@ class Robot(metaclass=Singleton):
 
         Publisher.subscribe(self.TrackerFiducialsSet, "Tracker fiducials set")
 
-    def SaveConfig(self, key=None, value=None):
+    def SaveConfig(self, key: Union[None, str] = None, value: Any = None) -> None:
         session = ses.Session()
         if key is None or value is None:
             # Save the whole state
@@ -98,7 +108,7 @@ class Robot(metaclass=Singleton):
 
         session.SetConfig("robot", state)
 
-    def LoadConfig(self):
+    def LoadConfig(self) -> bool:
         session = ses.Session()
         state = session.GetConfig("robot", {})
 
@@ -113,7 +123,7 @@ class Robot(metaclass=Singleton):
         success = self.robot_ip is not None and self.matrix_tracker_to_robot is not None
         return success
 
-    def OnRobotConnectionStatus(self, data):
+    def OnRobotConnectionStatus(self, data: bool) -> None:
         # TODO: Is this check necessary?
         if not data:
             return
@@ -123,11 +133,11 @@ class Robot(metaclass=Singleton):
             Publisher.sendMessage("Enable move away button", enabled=True)
             Publisher.sendMessage("Enable free drive button", enabled=True)
 
-    def RegisterRobot(self):
+    def RegisterRobot(self) -> Union[None, bool]:
         Publisher.sendMessage("End busy cursor")
         if not self.is_robot_connected:
             wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
-            return
+            return None
 
         self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(
             robot=self, tracker=self.tracker
@@ -148,42 +158,46 @@ class Robot(metaclass=Singleton):
         self.SaveConfig()
         self.InitializeRobot()
 
-    def AbortRobotConfiguration(self):
+        return None
+
+    def AbortRobotConfiguration(self) -> None:
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
 
-    def IsConnected(self):
+    def IsConnected(self) -> bool:
         return self.is_robot_connected
 
-    def IsReady(self):  # LUKATODO: use this check before enabling robot for navigation...
+    def IsReady(self) -> bool:  # LUKATODO: use this check before enabling robot for navigation...
         return self.IsConnected() and (self.coil_name in self.navigation.coil_registrations)
 
-    def SetRobotIP(self, data):
+    def SetRobotIP(self, data: Union[None, str]) -> None:
         if data is not None:
             self.robot_ip = data
 
-    def ConnectToRobot(self):
+    def ConnectToRobot(self) -> None:
         Publisher.sendMessage("Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip)
         print("Connected to robot")
 
-    def InitializeRobot(self):
+    def InitializeRobot(self) -> None:
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
         )
         print("Robot initialized")
 
-    def GetCoilName(self):
+    def GetCoilName(self) -> Union[None, str]:
         return self.coil_name
 
-    def SetCoilName(self, name):
+    def SetCoilName(self, name: Union[None, str]) -> None:
         self.coil_name = name
         self.SaveConfig("robot_coil", name)
 
-    def SendTargetToRobot(self):
+    def SendTargetToRobot(self) -> Union[None, bool]:
         # If the target is not set, return early.
         if self.target is None:
             return False
+
+        return None
 
         navigation = self.navigation
         # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
@@ -211,13 +225,13 @@ class Robot(metaclass=Singleton):
             target=m_target.tolist(),
         )
 
-    def TrackerFiducialsSet(self):
+    def TrackerFiducialsSet(self) -> None:
         tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set tracker fiducials", tracker_fiducials=tracker_fiducials
         )
 
-    def SetObjective(self, objective):
+    def SetObjective(self, objective: RobotObjective) -> None:
         # If the objective is already set to the same value, return early.
         # This is done to avoid sending the same objective to the robot repeatedly.
         if self.objective == objective:
@@ -226,7 +240,7 @@ class Robot(metaclass=Singleton):
         self.objective = objective
         Publisher.sendMessage("Neuronavigation to Robot: Set objective", objective=objective.value)
 
-    def SetObjectiveByRobot(self, objective):
+    def SetObjectiveByRobot(self, objective: RobotObjective) -> None:
         if objective is None:
             return
 
@@ -244,11 +258,11 @@ class Robot(metaclass=Singleton):
             Publisher.sendMessage("Press robot button", pressed=False)
             Publisher.sendMessage("Press move away button", pressed=False)
 
-    def UnsetTarget(self, marker):
+    def UnsetTarget(self, marker: "Marker") -> None:
         self.target = None
         Publisher.sendMessage("Neuronavigation to Robot: Unset target")
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker: "Marker") -> None:
         coord = marker.position + marker.orientation
 
         # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
