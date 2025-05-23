@@ -8,36 +8,63 @@ class Tag:
         self.measurement.type = const.LINEAR  # Use LINEAR for a single point
         self.measurement.location = const.SURFACE
         self.measurement.slice_number = 0
-        self.measurement.points = [(x, y, z)]
+        # Add two identical points, so it behaves like a measure
+        self.measurement.points = [(x, y, z), (x, y, z)]
         self.measurement.name = label
         self.measurement.colour = colour
         self.measurement.value = 0.0
 
-        # Representation: just a point, no line
+        # Representation: two points for measure-like behavior
         self.representation = measures.CirclePointRepresentation(colour)
-        self.point_actor = self.representation.GetRepresentation(x, y, z)
+        self.point_actor1 = self.representation.GetRepresentation(x, y, z)
+        self.point_actor2 = self.representation.GetRepresentation(x, y, z)
+        self.point_actors = [self.point_actor1, self.point_actor2]
 
         # Add to measurements
         mm = measures.MeasurementManager()
         mm.measures.append((self.measurement, self))
         self.index = self.measurement.index
 
-        # Add actor to 3D view
-        Publisher.sendMessage("Add actors " + str(self.measurement.location), actors=(self.point_actor,))
+        # Add measurement points (mimic measure tool sequence)
+        Publisher.sendMessage(
+            "Add measurement point",
+            position=(x, y, z),
+            type=const.LINEAR,
+            location=const.SURFACE,
+            radius=const.PROP_MEASURE if hasattr(const, "PROP_MEASURE") else 0.34375,
+            label=label
+        )
+        Publisher.sendMessage(
+            "Add actors " + str(self.measurement.location),
+            actors=(self.point_actor1,)
+        )
+        Publisher.sendMessage(
+            "Add measurement point",
+            position=(x, y, z),
+            type=const.LINEAR,
+            location=const.SURFACE,
+            radius=const.PROP_MEASURE if hasattr(const, "PROP_MEASURE") else 0.34375,
+            label=label
+        )
+        Publisher.sendMessage(
+            "Add actors " + str(self.measurement.location),
+            actors=(self.point_actor2,)
+        )
 
-        # Update GUI with label
+        # Update GUI with label as the "distance" field (value)
         Publisher.sendMessage(
             "Update measurement info in GUI",
             index=self.index,
             name=label,
             colour=colour,
-            location=measures.LOCATION[self.measurement.location],
-            type_="Tag",
-            value="",
+            location='3D',
+            type_="Linear",
+            value=label,  # Tag name shown in the value/distance field
         )
 
     def GetActors(self):
-        return [self.point_actor]
+        return self.point_actors
 
     def SetVisibility(self, visible):
-        self.point_actor.SetVisibility(visible)
+        for actor in self.point_actors:
+            actor.SetVisibility(visible)

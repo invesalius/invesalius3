@@ -1335,7 +1335,7 @@ class MeasuresListCtrlPanel(InvListCtrl):
         colour=None,
         location="SURFACE",
         type_="LINEAR",
-        value="0 mm",
+        value="0.00 mm",
     ):
         self.InsertItem(index, "")
         self.SetItem(index, 1, label, imageId=self._list_index[index])
