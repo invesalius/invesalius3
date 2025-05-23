@@ -203,7 +203,7 @@ class MeasurementManager:
                 self.measures.append(self.current)
                 for point in m.points:
                     x, y, z = point
-                    actors = mr.AddPoint(x, y, z)
+                    actors = mr.AddPoint(x, y, z, self.label)
 
                 if m.location == const.SURFACE:
                     Publisher.sendMessage(("Add actors " + str(m.location)), actors=actors)
@@ -217,8 +217,10 @@ class MeasurementManager:
                 else:
                     Publisher.sendMessage("Redraw canvas")
 
-    def _add_point(self, position, type, location, slice_number=0, radius=const.PROP_MEASURE):
+    def _add_point(self, position, type, location, label, slice_number=0, radius=const.PROP_MEASURE):
         to_remove = False
+        print("Label init: ", label)
+        self.label = label
         if self.current is None:
             to_create = True
         elif self.current[0].location != location:
@@ -261,7 +263,7 @@ class MeasurementManager:
         m = self.current[0]
 
         x, y, z = position
-        actors = mr.AddPoint(x, y, z)
+        actors = mr.AddPoint(x, y, z, self.label)
         m.points.append(position)
 
         if m.location == const.SURFACE:
@@ -282,17 +284,17 @@ class MeasurementManager:
                 value = f"{m.value:.3f} mm"
             else:
                 value = f"{m.value:.3f}°"
-
-            msg = ("Update measurement info in GUI",)
-            Publisher.sendMessage(
-                msg,
-                index=index,
-                name=name,
-                colour=colour,
-                location=location,
-                type_=type_,
-                value=value,
-            )
+            if self.label is None:
+                msg = ("Update measurement info in GUI",)
+                Publisher.sendMessage(
+                    msg,
+                    index=index,
+                    name=name,
+                    colour=colour,
+                    location=location,
+                    type_=type_,
+                    value=value,
+                )
             self.current = None
 
     def _change_measure_point_pos(self, index, npoint, pos):
@@ -643,6 +645,7 @@ class LinearMeasure:
         self.text_actor = None
         self.renderer = None
         self.layer = 0
+        self.label = None
         if not representation:
             representation = CirclePointRepresentation(colour)
         self.representation = representation
@@ -653,7 +656,8 @@ class LinearMeasure:
         """
         return self.point_actor2 is not None
 
-    def AddPoint(self, x, y, z):
+    def AddPoint(self, x, y, z, label=None):
+        self.label = label
         if not self.point_actor1:
             self.SetPoint1(x, y, z)
             return (self.point_actor1,)
@@ -711,7 +715,13 @@ class LinearMeasure:
 
     def _draw_text(self):
         p1, p2 = self.points
-        text = f" {math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm "
+        print("Label: ", self.label)
+        # Show label if value is 0 (tag), otherwise show distance
+        if self.label is not None:
+            text = f" {self.label} "
+            print("Label: ", text)
+        else:
+            text = f" {math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm "
         x, y, z = ((i + j) / 2 for i, j in zip(p1, p2))
         textsource = vtkTextSource()
         textsource.SetText(text)
@@ -963,8 +973,13 @@ class AngularMeasure:
         return arc
 
     def _draw_text(self):
-        text = f" {self.CalculateAngle():.3f} "
-        x, y, z = self.points[1]
+        p1, p2 = self.points
+        # Show label if value is 0 (tag), otherwise show distance
+        if hasattr(self, "value") and self.value == 0 and hasattr(self, "name"):
+            text = f" {self.name} "
+        else:
+            text = f" {math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm "
+        x, y, z = ((i + j) / 2 for i, j in zip(p1, p2))
         textsource = vtkTextSource()
         textsource.SetText(text)
         textsource.SetBackgroundColor((250 / 255.0, 247 / 255.0, 218 / 255.0))

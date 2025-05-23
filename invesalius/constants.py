@@ -110,6 +110,7 @@ LINEAR = 6
 ANGULAR = 7
 DENSITY_ELLIPSE = 8
 DENSITY_POLYGON = 9
+TAG = 10
 
 # Colour representing each orientation
 ORIENTATION_COLOUR = {

@@ -1,3 +1,8 @@
+# DEPRECATED: This file is no longer maintained or used. Please use the new implementation in <new_location>.
+
+import warnings
+warnings.warn("point_src.py is deprecated and will be removed in a future release.", DeprecationWarning)
+
 import subprocess
 import threading
 import re
