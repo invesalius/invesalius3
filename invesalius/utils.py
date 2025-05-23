@@ -356,10 +356,10 @@ def UpdateCheck() -> None:
             actual_ver = Version(invesalius.__version__)
         except (ValueError, AttributeError):
             return
-
-        if last_ver > actual_ver:
-            print("  ...New update found!!! -> version:", last)
-            wx.CallAfter(wx.CallLater, 1000, _show_update_info)
+#no update check displayed
+        # if last_ver > actual_ver:
+        #     print("  ...New update found!!! -> version:", last)
+        #     wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
 
 def vtkarray_to_numpy(m):

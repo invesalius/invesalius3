@@ -126,6 +126,11 @@ class InVesalius(wx.App):
         # Initialize the legacy logging system for backward compatibility
         log.invLogger.configureLogging()
 
+        # <-- Add this line to ensure tag_start runs after the GUI is visible
+        import wx
+        args = parse_command_line()
+        wx.CallAfter(tag_start, args.dicom_dir, args.tag)
+
 
 # ------------------------------------------------------------------
 
@@ -230,14 +235,14 @@ class Inv3SplashScreen(SplashScreen):
         self.control = Controller(self.main)
 
         self.fc = wx.CallLater(200, self.ShowMain)
-        args = parse_command_line()
-        wx.CallLater(1, use_cmd_optargs, args)
+        # args = parse_command_line() #PREVENT IN
+        # wx.CallLater(1, use_cmd_optargs, args)
 
-        # Check for updates
+        # Check for updates NOT USING
         from threading import Thread
 
-        p = Thread(target=utils.UpdateCheck, args=())
-        p.start()
+        # p = Thread(target=utils.UpdateCheck, args=())
+        # p.start()
 
         if not session.ExitedSuccessfullyLastTime():
             # Reopen project
@@ -250,6 +255,7 @@ class Inv3SplashScreen(SplashScreen):
                     utils.debug(f"File doesn't exist: {filepath}")
                     session.CloseProject()
         else:
+            
             session.CreateState()
 
     def OnClose(self, evt):
@@ -289,7 +295,20 @@ def non_gui_startup(args):
     _ = Controller(None)
 
     use_cmd_optargs(args)
+def tag_start(dicom_dir=None, files=None):
+    # Import DICOM if specified
+    if dicom_dir:
+        Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
+        Publisher.sendMessage("Wait for import to finish")
+    # Send the required messages
 
+    # Optionally hide the mask if needed
+    # Publisher.sendMessage("Show mask", index=0, value=False)
+
+    if files:
+        for file in files:
+            print(f"Sending message in topic Import surface file with data {{'filename': '{file}'}}")
+            Publisher.sendMessage("Import surface file", filename=file)
 
 # ------------------------------------------------------------------
 
@@ -382,11 +401,19 @@ def parse_command_line():
         type=str,
     )
 
+    parser.add_argument(
+        "--tag",
+        nargs="+",
+        metavar="FILE",
+        help="Import surface files and tag them after loading DICOM.",
+        type=str,
+    )
     args = parser.parse_args()
     return args
 
 
 def use_cmd_optargs(args):
+
     # If the new center_select argument is provided
     if args.center_select:
         try:

@@ -46,6 +46,7 @@ from invesalius import inv_paths
 from invesalius.gui import project_properties
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+from tag import Tag
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
@@ -141,6 +142,7 @@ class Frame(wx.Frame):
         # Initialize bind to pubsub events
         self.__bind_events()
         self.__bind_events_wx()
+        Publisher.subscribe(self.on_pointer_update, "Update volume viewer pointer")  # <-- Add this line
 
         # log.initLogger()
 
@@ -217,6 +219,10 @@ class Frame(wx.Frame):
             unicode = event.GetUnicodeKey()
             if unicode in (ord("s"), ord("S"), ord("q"), ord("Q")):
                 event.Skip()
+                return
+            # Check for Ctrl+A
+            if unicode in (ord("a"), ord("A")):
+                self.on_key_down(event)
                 return
 
         # If the key is a move marker key, publish a message to move the marker,
@@ -1156,6 +1162,25 @@ class Frame(wx.Frame):
 
             # Show error message
             wx.MessageBox(f"Error showing log viewer: {e}", "Error", wx.OK | wx.ICON_ERROR)
+
+    def on_pointer_update(self, position=None, **kwargs):
+        if position:
+            self.current_pointer_pos = position
+
+    def on_key_down(self, event):
+        if event.ControlDown() and event.GetKeyCode() == ord('A'):
+            print("Ctrl+A pressed")
+            if self.current_pointer_pos:
+                dlg = wx.TextEntryDialog(self, "Enter tag label:", "Tag Point")
+                if dlg.ShowModal() == wx.ID_OK:
+                    label = dlg.GetValue()
+                    x, y, z = self.current_pointer_pos
+                    Tag(x, y, z, label)
+                dlg.Destroy()
+            else:
+                wx.MessageBox("No pointer position available.", "Error")
+        else:
+            event.Skip()
 
 
 # ------------------------------------------------------------------
@@ -2153,9 +2178,13 @@ class ObjectToolBar(AuiToolBar):
 
         if state:
             Publisher.sendMessage("Enable style", style=id)
-            Publisher.sendMessage("Untoggle slice toolbar items")
+            Publisher.sendMessage("Untoggle object toolbar items")
         else:
             Publisher.sendMessage("Disable style", style=id)
+
+        # const.STATE_REGISTRATION can be disabled with the same button as const.SLICE_STATE_CROSS
+        if id == const.SLICE_STATE_CROSS and not state:
+            Publisher.sendMessage("Stop image registration")
 
         for item in const.TOOL_STATES:
             state = self.GetToolToggled(item)
@@ -2575,9 +2604,9 @@ class LayoutToolBar(AuiToolBar):
             self.EnableTool(tool, True)
 
 
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 
 class HistoryToolBar(AuiToolBar):
