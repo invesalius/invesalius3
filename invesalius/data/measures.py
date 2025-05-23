@@ -284,17 +284,17 @@ class MeasurementManager:
                 value = f"{m.value:.3f} mm"
             else:
                 value = f"{m.value:.3f}°"
-
-            msg = ("Update measurement info in GUI",)
-            Publisher.sendMessage(
-                msg,
-                index=index,
-                name=name,
-                colour=colour,
-                location=location,
-                type_=type_,
-                value=value,
-            )
+            if self.label is None:
+                msg = ("Update measurement info in GUI",)
+                Publisher.sendMessage(
+                    msg,
+                    index=index,
+                    name=name,
+                    colour=colour,
+                    location=location,
+                    type_=type_,
+                    value=value,
+                )
             self.current = None
 
     def _change_measure_point_pos(self, index, npoint, pos):
