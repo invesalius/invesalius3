@@ -445,6 +445,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 type=const.LINEAR,
                 location=const.SURFACE,
                 radius=self._radius,
+                label=None
             )
             self.viewer.interactor.Render()
         else:
@@ -487,6 +488,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
                 type=const.ANGULAR,
                 location=const.SURFACE,
                 radius=self._radius,
+                label=None
             )
             self.viewer.interactor.Render()
         else:

@@ -46,7 +46,7 @@ from invesalius import inv_paths
 from invesalius.gui import project_properties
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from tag import Tag
+from tag import Tag, Tag2  # Make sure Tag2 is imported
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
@@ -144,6 +144,11 @@ class Frame(wx.Frame):
         self.__bind_events_wx()
         Publisher.subscribe(self.on_pointer_update, "Update volume viewer pointer")  # <-- Add this line
 
+        self.tag2_first_point = None
+        self.tag2_waiting_for_second_point = False
+        self.stenosis_counter = 1  # for stenosis tags
+        self.pre_sample_counter = 1    # for sample tags (Ctrl+A)
+        self.post_sample_counter = 1   # for sample tags (Ctrl+L)
         # log.initLogger()
 
     def __bind_events(self):
@@ -221,7 +226,7 @@ class Frame(wx.Frame):
                 event.Skip()
                 return
             # Check for Ctrl+A
-            if unicode in (ord("a"), ord("A")):
+            if unicode in (ord("a"), ord("A"), ord("l"), ord("L")):
                 self.on_key_down(event)
                 return
 
@@ -1171,14 +1176,77 @@ class Frame(wx.Frame):
         if event.ControlDown() and event.GetKeyCode() == ord('A'):
             print("Ctrl+A pressed")
             if self.current_pointer_pos:
-                dlg = wx.TextEntryDialog(self, "Enter tag label:", "Tag Point")
+                
+                choices = [
+                    f"pre-lesion sample {self.pre_sample_counter}",
+                    f"post-lesion sample {self.post_sample_counter}"
+                ]
+                dlg = wx.Dialog(self, title="Tag Point Label")
+                vbox = wx.BoxSizer(wx.VERTICAL)
+                label_text = wx.StaticText(dlg, label="Enter or select tag label:")
+                combo = wx.ComboBox(dlg, choices=choices, value=choices[0], style=wx.CB_DROPDOWN)
+                vbox.Add(label_text, 0, wx.ALL, 5)
+                vbox.Add(combo, 0, wx.ALL | wx.EXPAND, 5)
+                hbox = wx.BoxSizer(wx.HORIZONTAL)
+                ok_btn = wx.Button(dlg, wx.ID_OK)
+                cancel_btn = wx.Button(dlg, wx.ID_CANCEL)
+                hbox.Add(ok_btn, 0, wx.ALL, 5)
+                hbox.Add(cancel_btn, 0, wx.ALL, 5)
+                vbox.Add(hbox, 0, wx.ALIGN_CENTER)
+                dlg.SetSizer(vbox)
+                dlg.Fit()
                 if dlg.ShowModal() == wx.ID_OK:
-                    label = dlg.GetValue()
+                    label = combo.GetValue()
                     x, y, z = self.current_pointer_pos
                     Tag(x, y, z, label)
+                if "pre" in label:
+                    self.pre_sample_counter += 1  # Increment after use
+                elif "post" in label:
+                    self.post_sample_counter += 1
                 dlg.Destroy()
             else:
                 wx.MessageBox("No pointer position available.", "Error")
+        elif event.ControlDown() and event.GetKeyCode() == ord('L'):
+            print("Ctrl+L pressed")
+            if not self.tag2_waiting_for_second_point:
+                if self.current_pointer_pos:
+                    self.tag2_first_point = self.current_pointer_pos
+                    self.tag2_waiting_for_second_point = True
+                    wx.MessageBox("First point stored. Move pointer and press Ctrl+L again to set the second point.", "Tag2")
+                else:
+                    wx.MessageBox("No pointer position available.", "Error")
+            else:
+                if self.current_pointer_pos:
+                    point1 = self.tag2_first_point
+                    point2 = self.current_pointer_pos
+                    n = self.stenosis_counter
+                    choices = [
+                        f"stenosis {n}; focal",
+                        f"stenosis {n}; diffuse"
+                    ]
+                    dlg = wx.Dialog(self, title="Tag2 Points Label")
+                    vbox = wx.BoxSizer(wx.VERTICAL)
+                    label_text = wx.StaticText(dlg, label="Enter or select tag label:")
+                    combo = wx.ComboBox(dlg, choices=choices, value=choices[0], style=wx.CB_DROPDOWN)
+                    vbox.Add(label_text, 0, wx.ALL, 5)
+                    vbox.Add(combo, 0, wx.ALL | wx.EXPAND, 5)
+                    hbox = wx.BoxSizer(wx.HORIZONTAL)
+                    ok_btn = wx.Button(dlg, wx.ID_OK)
+                    cancel_btn = wx.Button(dlg, wx.ID_CANCEL)
+                    hbox.Add(ok_btn, 0, wx.ALL, 5)
+                    hbox.Add(cancel_btn, 0, wx.ALL, 5)
+                    vbox.Add(hbox, 0, wx.ALIGN_CENTER)
+                    dlg.SetSizer(vbox)
+                    dlg.Fit()
+                    if dlg.ShowModal() == wx.ID_OK:
+                        label = combo.GetValue()
+                        Tag2(point1, point2, label)
+                        self.stenosis_counter += 1  # Increment after use
+                    dlg.Destroy()
+                    self.tag2_first_point = None
+                    self.tag2_waiting_for_second_point = False
+                else:
+                    wx.MessageBox("No pointer position available for second point.", "Error")
         else:
             event.Skip()
 
@@ -1464,9 +1532,9 @@ class MenuBar(wx.MenuBar):
         view_menu.Append(const.ID_VIEW_INTERPOLATED, _("Interpolated slices"), "", wx.ITEM_CHECK)
 
         v = self.SliceInterpolationStatus()
-        self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
+        view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
 
-        self.actived_interpolated_slices = self.view_menu
+        self.actived_interpolated_slices = view_menu
 
         # view_tool_menu = wx.Menu()
         # app = view_tool_menu.Append

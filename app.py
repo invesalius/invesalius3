@@ -306,10 +306,16 @@ def tag_start(dicom_dir=None, files=None):
     # Publisher.sendMessage("Show mask", index=0, value=False)
 
     if files:
+        index = 0
         for file in files:
             print(f"Sending message in topic Import surface file with data {{'filename': '{file}'}}")
             Publisher.sendMessage("Import surface file", filename=file)
-
+            if file.endswith("lvm.stl"):
+                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 1.0, 0.5019607843137255))  # Yellow
+                Publisher.sendMessage("Set surface transparency", surface_index=index, transparency=0.833)  # 83% transparent
+            elif file.endswith("cornary.stl"):
+                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 0.0, 0.0))  # Red
+            index += 1
 # ------------------------------------------------------------------
 
 
