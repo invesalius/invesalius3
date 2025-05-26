@@ -810,6 +810,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     location=ORIENTATIONS[self.orientation],
                     slice_number=slice_number,
                     radius=self.radius,
+                    label=None
                 )
                 Publisher.sendMessage(
                     "Add measurement point",
@@ -818,6 +819,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     location=ORIENTATIONS[self.orientation],
                     slice_number=slice_number,
                     radius=self.radius,
+                    label= None
                 )
 
                 n, (m, mr) = 1, self.measures.measures[self._ori][slice_number][-1]
