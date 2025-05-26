@@ -1,3 +1,4 @@
+
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -3424,8 +3425,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
             return
         #TODO: a dialog to user input the grid_resolution and spacers
-        grid_resolution = 10
-        X, Y = self.CreateGrid(grid_resolution, 15, 15)
+        grid_resolution = 5
+        X, Y = self.CreateGrid(grid_resolution, 5, 5)
 
         for i in range(grid_resolution):
             for j in range(grid_resolution):
@@ -3443,7 +3444,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
                 new_marker = center_marker.duplicate()
                 new_marker.position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
-                self.markers.CreateCoilTargetFromLandmark(new_marker)
+                self.markers.CreateCoilTargetFromCoilPose(new_marker)
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
         self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
