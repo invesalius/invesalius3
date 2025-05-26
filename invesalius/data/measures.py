@@ -724,6 +724,8 @@ class LinearMeasure:
         # Show label if value is 0 (tag), otherwise show distance
         if self.label is not None:
             text = f" {self.label} "
+            if "stenosis" in self.label.lower():
+                text = f" {self.label} ({math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm) "
             print("Label: ", text)
         else:
             text = f" {math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm "
@@ -982,6 +984,10 @@ class AngularMeasure:
         # Show label if value is 0 (tag), otherwise show distance
         if hasattr(self, "value") and self.value == 0 and hasattr(self, "name"):
             text = f" {self.name} "
+            print(self.name)
+            if "stenosis" in self.name.lower():
+                text = f" {self.name}: {math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm "
+
         else:
             text = f" {math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm "
         x, y, z = ((i + j) / 2 for i, j in zip(p1, p2))

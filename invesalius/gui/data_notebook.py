@@ -1085,6 +1085,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
         colour=None,
     ):
         # TODO: Retornar esse codigo
+        # Ensure label is a string
+        if label is None:
+            label = ""
         self.SetItem(index, 1, label, imageId=self.surface_list_index[index])
         self.SetItem(index, 2, volume)
         self.SetItem(index, 3, area)
@@ -1308,25 +1311,28 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 self.SetItemImage(i, False)
 
     def AddItem_(self, index, name, colour, location, type_, value):
-        if index not in self._list_index:
+        # Always ensure all values are strings
+        name = "" if name is None else str(name)
+        location = "" if location is None else str(location)
+        type_ = "" if type_ is None else str(type_)
+        value = "" if value is None else str(value)
+
+        if index not in self._list_index or index >= self.GetItemCount():
             image = self.CreateColourBitmap(colour)
             image_index = self.imagelist.Add(image)
-
-            index_list = self._list_index.keys()
-            self._list_index[index] = image_index
-
-            if (index in index_list) and index_list:
-                try:
-                    self.UpdateItemInfo(index, name, colour, location, type_, value)
-                except wx.wxAssertionError:
-                    self.InsertNewItem(index, name, colour, location, type_, value)
-            else:
-                self.InsertNewItem(index, name, colour, location, type_, value)
+            idx = self.GetItemCount()
+            self._list_index[idx] = image_index
+            self.InsertNewItem(idx, name, colour, location, type_, value)
         else:
             try:
                 self.UpdateItemInfo(index, name, colour, location, type_, value)
-            except wx.wxAssertionError:
-                self.InsertNewItem(index, name, colour, location, type_, value)
+            except (wx.wxAssertionError, KeyError, IndexError):
+                # Fallback: insert at end
+                image = self.CreateColourBitmap(colour)
+                image_index = self.imagelist.Add(image)
+                idx = self.GetItemCount()
+                self._list_index[idx] = image_index
+                self.InsertNewItem(idx, name, colour, location, type_, value)
 
     def InsertNewItem(
         self,
@@ -1335,14 +1341,22 @@ class MeasuresListCtrlPanel(InvListCtrl):
         colour=None,
         location="SURFACE",
         type_="LINEAR",
-        value="0.00 mm",
+        value="0 mm",
     ):
-        self.InsertItem(index, "")
-        self.SetItem(index, 1, label, imageId=self._list_index[index])
-        self.SetItem(index, 2, location)
-        self.SetItem(index, 3, type_)
-        self.SetItem(index, 4, value)
-        self.SetItemImage(index, 1)
+        # Always insert at the end to avoid index errors
+        label = "" if label is None else str(label)
+        location = "" if location is None else str(location)
+        type_ = "" if type_ is None else str(type_)
+        value = "" if value is None else str(value)
+
+        idx = self.GetItemCount()
+        self.InsertItem(idx, "")
+        self._list_index[idx] = self._list_index.get(index, idx)
+        self.SetItem(idx, 1, label, imageId=self._list_index[idx])
+        self.SetItem(idx, 2, location)
+        self.SetItem(idx, 3, type_)
+        self.SetItem(idx, 4, value)
+        self.SetItemImage(idx, 1)
         self.Refresh()
 
     def UpdateItemInfo(
@@ -1354,12 +1368,19 @@ class MeasuresListCtrlPanel(InvListCtrl):
         type_="LINEAR",
         value="0 mm",
     ):
-        self.SetItem(index, 1, label, imageId=self._list_index[index])
-        self.SetItem(index, 2, location)
-        self.SetItem(index, 3, type_)
-        self.SetItem(index, 4, value)
-        self.SetItemImage(index, 1)
-        self.Refresh()
+        # Ensure label and all fields are strings
+        label = "" if label is None else str(label)
+        location = "" if location is None else str(location)
+        type_ = "" if type_ is None else str(type_)
+        value = "" if value is None else str(value)
+
+        if 0 <= index < self.GetItemCount():
+            self.SetItem(index, 1, label, imageId=self._list_index[index])
+            self.SetItem(index, 2, location)
+            self.SetItem(index, 3, type_)
+            self.SetItem(index, 4, value)
+            self.SetItemImage(index, 1)
+            self.Refresh()
 
     def EditItemColour(self, measure_index, colour):
         """ """
