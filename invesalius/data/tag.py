@@ -1,6 +1,7 @@
 from invesalius.data import measures
 from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
+import invesalius.data.measures as measures
 
 class Tag:
     """
@@ -49,10 +50,10 @@ class Tag:
             radius=const.PROP_MEASURE if hasattr(const, "PROP_MEASURE") else 0.34375,
             label=label
         )
-        Publisher.sendMessage(
-            "Add actors " + str(self.measurement.location),
-            actors=(self.point_actor1,)
-        )
+        # Publisher.sendMessage(
+        #     "Add actors " + str(self.measurement.location),
+        #     actors=(self.point_actor1,)
+        # )
         Publisher.sendMessage(
             "Add measurement point",
             position=(x, y, z),
@@ -61,10 +62,10 @@ class Tag:
             radius=const.PROP_MEASURE if hasattr(const, "PROP_MEASURE") else 0.34375,
             label=label
         )
-        Publisher.sendMessage(
-            "Add actors " + str(self.measurement.location),
-            actors=(self.point_actor2,)
-        )
+        # Publisher.sendMessage(
+        #     "Add actors " + str(self.measurement.location),
+        #     actors=(self.point_actor2,)
+        # )
 
         
         Publisher.sendMessage(
@@ -128,10 +129,10 @@ class Tag2:
             radius=getattr(const, "PROP_MEASURE", 0.34375),
             label=label
         )
-        Publisher.sendMessage(
-            "Add actors " + str(self.measurement.location),
-            actors=(self.point_actor1,)
-        )
+        # Publisher.sendMessage(
+        #     "Add actors " + str(self.measurement.location),
+        #     actors=(self.point_actor1,)
+        # )
         Publisher.sendMessage(
             "Add measurement point",
             position=point2,
@@ -140,10 +141,10 @@ class Tag2:
             radius=getattr(const, "PROP_MEASURE", 0.34375),
             label=label
         )
-        Publisher.sendMessage(
-            "Add actors " + str(self.measurement.location),
-            actors=(self.point_actor2,)
-        )
+        # Publisher.sendMessage(
+        #     "Add actors " + str(self.measurement.location),
+        #     actors=(self.point_actor2,)
+        # )
 
         
         Publisher.sendMessage(
@@ -162,3 +163,81 @@ class Tag2:
     def SetVisibility(self, visible):
         for actor in self.point_actors:
             actor.SetVisibility(visible)
+
+class Tag2D:
+    """
+    Simulates the sequence of toolbar and measurement messages for a 2D linear measurement on the Axial slice.
+    """
+
+    def __init__(self):
+        # Constants from your prompt
+        TOOLBAR_ID = 1007
+        STYLE_ID = 1007
+        SLICE_NUMBER = 131
+        POSITION = (94.21822494971511, 104.45962712095515, 65.5)
+        RADIUS = 0.34375
+        COLOUR = [1, 0, 0]
+
+        # Toggle toolbar and set interaction style/cursor several times as per prompt
+        Publisher.sendMessage("Toggle toolbar item", _id=TOOLBAR_ID, value=True)
+        Publisher.sendMessage("Set slice interaction style", style=STYLE_ID)
+        Publisher.sendMessage("Toggle toolbar item", _id=TOOLBAR_ID, value=True)
+        Publisher.sendMessage("Set interactor default cursor")
+        Publisher.sendMessage("Toggle toolbar item", _id=TOOLBAR_ID, value=True)
+        Publisher.sendMessage("Set interactor default cursor")
+        Publisher.sendMessage("Toggle toolbar item", _id=TOOLBAR_ID, value=True)
+        Publisher.sendMessage("Set interactor default cursor")
+        Publisher.sendMessage("Untoggle object toolbar items")
+
+        # Add measurement points (twice, as in prompt)
+        Publisher.sendMessage(
+            "Add measurement point",
+            position=POSITION,
+            type=const.LINEAR,
+            location=const.AXIAL,
+            slice_number=SLICE_NUMBER,
+            radius=RADIUS,
+            label=None
+        )
+
+        Publisher.sendMessage(
+            "Add measurement point",
+            position=POSITION,
+            type=const.LINEAR,
+            location=const.AXIAL,
+            slice_number=SLICE_NUMBER,
+            radius=RADIUS,
+            label=None
+        )
+
+        # Update measurement info in GUI (tuple topic as in prompt)
+        Publisher.sendMessage(
+            ("Update measurement info in GUI",),
+            index=0,
+            name=None,
+            colour=COLOUR,
+            location="Axial",
+            type_="Linear",
+            value=None
+        )
+
+        # Change measurement point position
+        # Publisher.sendMessage(
+        #     "Change measurement point position",
+        #     index=0,
+        #     npoint=1,
+        #     pos=POSITION
+        # )
+
+        # Final update to GUI
+        Publisher.sendMessage(
+            "Update measurement info in GUI",
+            index=0,
+            name="M 1",
+            colour=COLOUR,
+            location="Axial",
+            type_="Linear",
+            value="0.000 mm"
+        )
+
+

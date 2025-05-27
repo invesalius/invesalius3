@@ -1199,6 +1199,11 @@ class Frame(wx.Frame):
                     label = combo.GetValue()
                     x, y, z = self.current_pointer_pos
                     Tag(x, y, z, label)
+                    # Add Tag2D after Tag
+                    orientation = getattr(self, "_last_viewer_orientation_focus", "AXIAL")
+                    slice_number = getattr(self, "current_slice_number", 0)
+                    from invesalius.data.tag import Tag2D
+                    Tag2D()  #((x, y, z), (x, y, z), orientation, slice_number, label)
                 if "pre" in label:
                     self.pre_sample_counter += 1  # Increment after use
                 elif "post" in label:
@@ -1241,6 +1246,11 @@ class Frame(wx.Frame):
                     if dlg.ShowModal() == wx.ID_OK:
                         label = combo.GetValue()
                         Tag2(point1, point2, label)
+                        # Add Tag2D after Tag2
+                        orientation = getattr(self, "_last_viewer_orientation_focus", "AXIAL")
+                        slice_number = getattr(self, "current_slice_number", 0)
+                        from invesalius.data.tag import Tag2D
+                        Tag2D() #(point1, point2, orientation, slice_number, label)
                         self.stenosis_counter += 1  # Increment after use
                     dlg.Destroy()
                     self.tag2_first_point = None
@@ -2102,6 +2112,7 @@ class ObjectToolBar(AuiToolBar):
         BMP_ELLIPSE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         path = os.path.join(d, "measure_density_polygon32px.png")
+
         BMP_POLYGON = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
@@ -2437,9 +2448,9 @@ class SliceToolBar(AuiToolBar):
         self.Refresh()
 
 
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 
 class LayoutToolBar(AuiToolBar):
