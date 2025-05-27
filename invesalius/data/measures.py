@@ -760,7 +760,7 @@ class LinearMeasure:
         for p in self.points:
             coord.SetValue(p)
             cx, cy = coord.GetComputedDisplayValue(canvas.evt_renderer)
-            #  canvas.draw_circle((cx, cy), 2.5)
+            
             points.append((cx, cy))
 
         if len(points) > 1:
