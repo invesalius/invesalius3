@@ -3,29 +3,44 @@ from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
 
 class Tag:
+    """
+    Represents a single-point tag (marker) in the 3D scene.
+
+    This class creates a measurement at a given (x, y, z) position, 
+    with a label and color. It manages the VTK actors for visualization,
+    registers the measurement with the MeasurementManager, and sends 
+    pubsub messages to update the GUI and scene.
+
+    Args:
+        x (float): X coordinate of the tag.
+        y (float): Y coordinate of the tag.
+        z (float): Z coordinate of the tag.
+        label (str): The label to display for the tag.
+        colour (tuple): RGB tuple for the tag color (default: (0, 255, 0)).
+    """
     def __init__(self, x, y, z, label, colour=(0, 255, 0)):
         self.measurement = measures.Measurement()
-        self.measurement.type = const.LINEAR  # Use LINEAR for a single point
+        self.measurement.type = const.LINEAR  
         self.measurement.location = const.SURFACE
         self.measurement.slice_number = 0
-        # Add two identical points, so it behaves like a measure
+        
         self.measurement.points = [(x, y, z), (x, y, z)]
         self.measurement.name = label
         self.measurement.colour = colour
         self.measurement.value = 0.0
 
-        # Representation: two points for measure-like behavior
+        
         self.representation = measures.CirclePointRepresentation(colour)
         self.point_actor1 = self.representation.GetRepresentation(x, y, z)
         self.point_actor2 = self.representation.GetRepresentation(x, y, z)
         self.point_actors = [self.point_actor1, self.point_actor2]
 
-        # Add to measurements
+        
         mm = measures.MeasurementManager()
         mm.measures.append((self.measurement, self))
         self.index = self.measurement.index
 
-        # Add measurement points (mimic measure tool sequence)
+        
         Publisher.sendMessage(
             "Add measurement point",
             position=(x, y, z),
@@ -51,7 +66,7 @@ class Tag:
             actors=(self.point_actor2,)
         )
 
-        # Update GUI with label as the "distance" field (value)
+        
         Publisher.sendMessage(
             "Update measurement info in GUI",
             index=self.index,
@@ -59,7 +74,7 @@ class Tag:
             colour=colour,
             location='3D',
             type_="Linear",
-            value=label,  # Tag name shown in the value/distance field
+            value=label,  
         )
 
     def GetActors(self):
@@ -70,12 +85,20 @@ class Tag:
             actor.SetVisibility(visible)
 
 class Tag2:
+    """
+    Represents a two-point tag (e.g., for stenosis or distance) in the 3D scene.
+
+    This class creates a measurement between two points, with a label and color.
+    It manages the VTK actors for both points, registers the measurement with 
+    the MeasurementManager, and sends pubsub messages to update the GUI and scene.
+
+    Args:
+        point1 (tuple): First point as (x, y, z).
+        point2 (tuple): Second point as (x, y, z).
+        label (str): The label to display for the tag.
+        colour (tuple): RGB tuple for the tag color (default: (0, 255, 0)).
+    """
     def __init__(self, point1, point2, label, colour=(0, 255, 0)):
-        """
-        point1, point2: tuples (x, y, z)
-        label: string
-        colour: RGB tuple
-        """
         self.measurement = measures.Measurement()
         self.measurement.type = const.LINEAR
         self.measurement.location = const.SURFACE
@@ -85,18 +108,18 @@ class Tag2:
         self.measurement.colour = colour
         self.measurement.value = 0.0
 
-        # Representation for each point
+        
         self.representation = measures.CirclePointRepresentation(colour)
         self.point_actor1 = self.representation.GetRepresentation(*point1)
         self.point_actor2 = self.representation.GetRepresentation(*point2)
         self.point_actors = [self.point_actor1, self.point_actor2]
 
-        # Add to measurements
+        
         mm = measures.MeasurementManager()
         mm.measures.append((self.measurement, self))
         self.index = self.measurement.index
 
-        # Add measurement points (mimic measure tool sequence)
+        
         Publisher.sendMessage(
             "Add measurement point",
             position=point1,
@@ -122,7 +145,7 @@ class Tag2:
             actors=(self.point_actor2,)
         )
 
-        # Update GUI with label as the "distance" field (value)
+        
         Publisher.sendMessage(
             "Update measurement info in GUI",
             index=self.index,
