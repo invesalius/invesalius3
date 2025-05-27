@@ -46,7 +46,7 @@ from invesalius import inv_paths
 from invesalius.gui import project_properties
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from tag import Tag, Tag2  # Make sure Tag2 is imported
+from invesalius.data.tag import Tag, Tag2  # Make sure Tag2 is imported
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
