@@ -172,31 +172,36 @@ class Tag2D(measures.LinearMeasure):
 
     def __init__(
         self,
-        point1=(94.21822494971511, 104.45962712095515, 65.5),
-        point2=(94.21822494971511, 104.45962712095515, 65.5),
+        point1=(0, 0, 0),
+        point2=(0, 0, 0),
         slice_number=131,
         radius=0.34375,
         colour=[1, 0, 0],
-        label=None
+        label="test tag 2D",
+        location=const.AXIAL
     ):
         # Call LinearMeasure constructor
         representation = measures.CirclePointRepresentation(colour, radius)
         super().__init__(colour=colour, representation=representation)
-
+        #Invert for 2d view
+        x1, y1, z1 = point1
+        y1=-y1
+        x2, y2, z2 = point2
+        y2 = -y2
         self.layer = 0
         self.visible = True
         self.children = []
 
         # Add points using LinearMeasure logic
-        self.AddPoint(*point1, label=label)
-        self.AddPoint(*point2, label=label)
+        self.AddPoint(x1, y1, z1, label=label)
+        self.AddPoint(x2,y2,z2, label=label)
 
         # Set up measurement object for manager
         self.measurement = measures.Measurement()
         self.measurement.type = const.LINEAR
-        self.measurement.location = const.AXIAL
+        self.measurement.location = location
         self.measurement.slice_number = slice_number
-        self.measurement.points = [point1, point2]
+        self.measurement.points = [(x1,y1,z1), (x2,y2,z2)]
         self.measurement.name = label
         self.measurement.colour = colour
         self.measurement.value = self.GetValue()
@@ -210,30 +215,35 @@ class Tag2D(measures.LinearMeasure):
         # PubSub messages (optional, as before)
         Publisher.sendMessage(
             "Add measurement point",
-            position=point1,
+            position=(x1, y1, z1),
             type=const.LINEAR,
-            location=const.AXIAL,
+            location=location,
             slice_number=slice_number,
             radius=radius,
             label=label
         )
         Publisher.sendMessage(
             "Add measurement point",
-            position=point2,
+            position=(x2, y2, z2),
             type=const.LINEAR,
-            location=const.AXIAL,
+            location=location,
             slice_number=slice_number,
             radius=radius,
             label=label
         )
+        if location == const.AXIAL:
+            loc_str = "Axial"
+        else:
+            loc_str = "Coronal"
+        
         Publisher.sendMessage(
             ("Update measurement info in GUI",),
             index=self.index,
             name=label,
             colour=colour,
-            location="Axial",
+            location=loc_str,
             type_="Linear",
-            value=f"{self.GetValue():.3f} mm"
+            value=label
         )
 
     # Optionally override SetVisibility to keep self.visible in sync
