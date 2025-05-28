@@ -19,6 +19,7 @@ from vtkmodules.vtkRenderingCore import (
     vtkPolyDataMapper,
     vtkPolyDataMapper2D,
 )
+import wx
 
 import invesalius.constants as const
 import invesalius.project as prj
@@ -726,14 +727,16 @@ class LinearMeasure:
             text = f" {self.label} "
             if "stenosis" in self.label.lower():
                 text = f" {self.label} ({math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm) "
-            print("Label: ", text)
         else:
+            print("+++++++++++++++++++++++++++++++")
             text = f" {math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm "
+
         x, y, z = ((i + j) / 2 for i, j in zip(p1, p2))
         textsource = vtkTextSource()
         textsource.SetText(text)
         textsource.SetBackgroundColor((250 / 255.0, 247 / 255.0, 218 / 255.0))
         textsource.SetForegroundColor(self.colour)
+        
 
         m = vtkPolyDataMapper2D()
         m.SetInputConnection(textsource.GetOutputPort())
@@ -768,13 +771,18 @@ class LinearMeasure:
                 r, g, b = self.colour
                 canvas.draw_line(p0, p1, colour=(r * 255, g * 255, b * 255, 255))
 
-            txt = f"{self.GetValue():.3f} mm"
+            if self.label is not None:
+                txt= f" {self.label} "
+            else:
+                txt = f"{self.GetValue():.3f} mm"
+            small_font = wx.Font(const.TD_TEXT_SIZE, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
             canvas.draw_text_box(
                 txt,
                 (
                     (points[0][0] + points[1][0]) / 2.0,
                     (points[0][1] + points[1][1]) / 2.0,
                 ),
+                font=small_font,
                 txt_colour=MEASURE_TEXT_COLOUR,
                 bg_colour=MEASURE_TEXTBOX_COLOUR,
             )

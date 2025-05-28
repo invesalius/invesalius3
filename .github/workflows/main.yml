@@ -1,14 +1,70 @@
-name: generate bundles
+name: CI, Release, and Docker
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Install Ubuntu dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            freeglut3-dev \
+            libcurl4-openssl-dev \
+            libexpat1-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libgtk-3-dev \
+            libjpeg-dev \
+            libnotify-dev \
+            libsdl2-dev \
+            libsm-dev \
+            libtiff-dev \
+            libwebkit2gtk-4.0-dev \
+            libxtst-dev \
+            libunwind-dev \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libpng-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxcomposite-dev \
+            libfreetype6-dev \
+            libxi-dev
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Syncing with UV
+        run: uv sync
+
+      - name: Run tests with xvfb
+        run: xvfb-run -a bash -c "pytest"
+
+      - name: Minimize uv cache
+        run: uv cache prune --ci
+
   build-win:
-    name: build windows packages
+    name: Build Windows Packages
     runs-on: windows-latest
+    needs: run-tests
     strategy:
       matrix:
         architecture: ["x64"]
@@ -47,6 +103,7 @@ jobs:
         run: |
           Copy-Item -Path invesalius_cy\Release\* -Destination invesalius_cy -Recurse -Force
 
+      # --- Download AI weights (same as your current workflow) ---
       - name: Download mandible ai weight
         if: ${{ matrix.ai_ready == 1 }}
         uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
@@ -92,6 +149,7 @@ jobs:
         run: |
           move ./ai/brain_mri_t1/weights.pt ./ai/brain_mri_t1/brain_mri_t1.pt
 
+      # --- Build and package ---
       - name: Generate InVesalius .exe file
         run: |
           cp ./bundle_tools/win/app.spec ./  
@@ -101,25 +159,13 @@ jobs:
       - name: Generate InVesalius installer - win64 ai-ready build
         run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_ai-ready_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
 
-      # - name: Generate InVesalius installer - win64 normal build
-      #   run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
-
       - name: Show files
         run: |
           cd ./installer
           dir
 
-      # - name: Upload artifact of package normal file
-      #   if: ${{ matrix.ai_ready == 0}}
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     overwrite: true
-      #     name: invesalius_package_exe_normal
-      #     retention-days: 2
-      #     path: ./installer/*.exe
-
       - name: Upload artifact of package ai-ready file
-        if: ${{ matrix.ai_ready == 1}}
+        if: ${{ matrix.ai_ready == 1 }}
         uses: actions/upload-artifact@v4
         with:
           overwrite: true
@@ -127,21 +173,39 @@ jobs:
           retention-days: 2
           path: ./installer/*.exe
 
-      - name: Delete previous nightly release
-        run: gh release delete nightly --yes --cleanup-tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  build-and-push-docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-22.04
+    needs: run-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract version from pyproject.toml
+        id: get_version
+        run: |
+          VERSION=$(python3 -c "import toml; print(toml.load('pyproject.toml')['project']['version'])")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build -t DOCKERHUB_USERNAME/DOCKERHUB_REPO:latest -t DOCKERHUB_USERNAME/DOCKERHUB_REPO:${{ steps.get_version.outputs.version }} .
+
+      - name: Push Docker image
+        run: |
+          docker push DOCKERHUB_USERNAME/DOCKERHUB_REPO:latest
+          docker push DOCKERHUB_USERNAME/DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
 
   publish_packages:
-    name: publish packages
-    needs: build-win
+    name: Publish Packages and Release
+    needs: [build-win, build-and-push-docker]
     runs-on: windows-latest
     steps:
-      # - uses: actions/download-artifact@v4
-      #   with:
-      #     name: invesalius_package_exe_normal
-      #     path: ./
-
       - uses: actions/download-artifact@v4
         with:
           name: invesalius_package_exe_ai-ready
@@ -151,18 +215,36 @@ jobs:
         run: |
           dir
 
+      - name: Get commit message/body for release notes
+        id: get_commit
+        run: |
+          echo "desc<<EOF" >> $GITHUB_OUTPUT
+          echo "${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Update Nightly Release
+      - name: Fetch latest tag
+        id: get_tag
+        run: |
+          git fetch --tags
+          latest_tag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+          if [ -z "$latest_tag" ]; then
+            new_tag="v0.0.1"
+          else
+            IFS='.' read -r major minor patch <<<"${latest_tag#v}"
+            patch=$((patch + 1))
+            new_tag="v${major}.${minor}.${patch}"
+          fi
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly
-          name: "Nightly Build"
-          body: |
-            This is a nightly release InVesalius.
-            It's unstable compared to the official releases, **use it with caution**!
+          tag_name: ${{ steps.get_tag.outputs.new_tag }}
+          name: "Release ${{ steps.get_tag.outputs.new_tag }}"
+          body: ${{ steps.get_commit.outputs.desc }}
           draft: false
-          prerelease: true
+          prerelease: false
           files: |
             ./*.exe
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
