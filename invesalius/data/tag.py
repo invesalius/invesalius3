@@ -1,3 +1,4 @@
+import wx
 from invesalius.data import measures
 from invesalius.pubsub import pub as Publisher
 import invesalius.constants as const
@@ -164,80 +165,82 @@ class Tag2:
         for actor in self.point_actors:
             actor.SetVisibility(visible)
 
-class Tag2D:
+class Tag2D(measures.LinearMeasure):
     """
-    Simulates the sequence of toolbar and measurement messages for a 2D linear measurement on the Axial slice.
+    A 2D linear measurement/tag for the Axial slice, compatible with MeasurementManager.
     """
 
-    def __init__(self):
-        # Constants from your prompt
-        TOOLBAR_ID = 1007
-        STYLE_ID = 1007
-        SLICE_NUMBER = 131
-        POSITION = (94.21822494971511, 104.45962712095515, 65.5)
-        RADIUS = 0.34375
-        COLOUR = [1, 0, 0]
+    def __init__(
+        self,
+        point1=(94.21822494971511, 104.45962712095515, 65.5),
+        point2=(94.21822494971511, 104.45962712095515, 65.5),
+        slice_number=131,
+        radius=0.34375,
+        colour=[1, 0, 0],
+        label=None
+    ):
+        # Call LinearMeasure constructor
+        representation = measures.CirclePointRepresentation(colour, radius)
+        super().__init__(colour=colour, representation=representation)
 
-        # Toggle toolbar and set interaction style/cursor several times as per prompt
-        Publisher.sendMessage("Toggle toolbar item", _id=TOOLBAR_ID, value=True)
-        Publisher.sendMessage("Set slice interaction style", style=STYLE_ID)
-        Publisher.sendMessage("Toggle toolbar item", _id=TOOLBAR_ID, value=True)
-        Publisher.sendMessage("Set interactor default cursor")
-        Publisher.sendMessage("Toggle toolbar item", _id=TOOLBAR_ID, value=True)
-        Publisher.sendMessage("Set interactor default cursor")
-        Publisher.sendMessage("Toggle toolbar item", _id=TOOLBAR_ID, value=True)
-        Publisher.sendMessage("Set interactor default cursor")
-        Publisher.sendMessage("Untoggle object toolbar items")
+        self.layer = 0
+        self.visible = True
+        self.children = []
 
-        # Add measurement points (twice, as in prompt)
+        # Add points using LinearMeasure logic
+        self.AddPoint(*point1, label=label)
+        self.AddPoint(*point2, label=label)
+
+        # Set up measurement object for manager
+        self.measurement = measures.Measurement()
+        self.measurement.type = const.LINEAR
+        self.measurement.location = const.AXIAL
+        self.measurement.slice_number = slice_number
+        self.measurement.points = [point1, point2]
+        self.measurement.name = label
+        self.measurement.colour = colour
+        self.measurement.value = self.GetValue()
+        self.measurement.visible = True
+
+        # Add to MeasurementManager
+        mm = measures.MeasurementManager()
+        mm.measures.append((self.measurement, self))
+        self.index = self.measurement.index
+
+        # PubSub messages (optional, as before)
         Publisher.sendMessage(
             "Add measurement point",
-            position=POSITION,
+            position=point1,
             type=const.LINEAR,
             location=const.AXIAL,
-            slice_number=SLICE_NUMBER,
-            radius=RADIUS,
-            label=None
+            slice_number=slice_number,
+            radius=radius,
+            label=label
         )
-
         Publisher.sendMessage(
             "Add measurement point",
-            position=POSITION,
+            position=point2,
             type=const.LINEAR,
             location=const.AXIAL,
-            slice_number=SLICE_NUMBER,
-            radius=RADIUS,
-            label=None
+            slice_number=slice_number,
+            radius=radius,
+            label=label
         )
-
-        # Update measurement info in GUI (tuple topic as in prompt)
         Publisher.sendMessage(
             ("Update measurement info in GUI",),
-            index=0,
-            name=None,
-            colour=COLOUR,
+            index=self.index,
+            name=label,
+            colour=colour,
             location="Axial",
             type_="Linear",
-            value=None
+            value=f"{self.GetValue():.3f} mm"
         )
 
-        # Change measurement point position
-        # Publisher.sendMessage(
-        #     "Change measurement point position",
-        #     index=0,
-        #     npoint=1,
-        #     pos=POSITION
-        # )
+    # Optionally override SetVisibility to keep self.visible in sync
+    def SetVisibility(self, visible):
+        self.visible = visible
+        super().SetVisibility(visible)
 
-        # Final update to GUI
-        Publisher.sendMessage(
-            "Update measurement info in GUI",
-            index=0,
-            name="M 1",
-            colour=COLOUR,
-            location="Axial",
-            type_="Linear",
-            value="0.000 mm"
-        )
+
 
 
