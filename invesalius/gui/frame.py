@@ -1199,6 +1199,16 @@ class Frame(wx.Frame):
                     label = combo.GetValue()
                     x, y, z = self.current_pointer_pos
                     Tag(x, y, z, label)
+                    # Add Tag2D after Tag
+                    from invesalius.data.slice_ import Slice
+                    
+                    current_axial_index = Slice().buffer_slices["AXIAL"].index
+                    print("Current axial slice index:", current_axial_index)
+                    from invesalius.data.tag import Tag2D
+                    
+                    Tag2D((x, y, z),(x,y,z),  slice_number=current_axial_index, label=label)
+                    current_axial_index = Slice().buffer_slices["CORONAL"].index
+                    Tag2D((x, y, z),(x,y,z), slice_number=current_axial_index, label=label, location=const.CORONAL) 
                 if "pre" in label:
                     self.pre_sample_counter += 1  # Increment after use
                 elif "post" in label:
@@ -1241,6 +1251,15 @@ class Frame(wx.Frame):
                     if dlg.ShowModal() == wx.ID_OK:
                         label = combo.GetValue()
                         Tag2(point1, point2, label)
+                        # Add Tag2D after Tag2
+                        from invesalius.data.slice_ import Slice
+                        current_axial_index = Slice().buffer_slices[const.AXIAL_STR].index
+                        print("Current axial slice index:", current_axial_index)
+                        from invesalius.data.tag import Tag2D
+                        #invert for 2d slice
+                        Tag2D(point1, point2, slice_number=current_axial_index, label=label)
+                        current_axial_index = Slice().buffer_slices[const.CORONAL_STR].index
+                        Tag2D(point1, point2, slice_number=current_axial_index, label=label, location=const.CORONAL)
                         self.stenosis_counter += 1  # Increment after use
                     dlg.Destroy()
                     self.tag2_first_point = None
@@ -2102,6 +2121,7 @@ class ObjectToolBar(AuiToolBar):
         BMP_ELLIPSE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         path = os.path.join(d, "measure_density_polygon32px.png")
+
         BMP_POLYGON = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
@@ -2437,9 +2457,9 @@ class SliceToolBar(AuiToolBar):
         self.Refresh()
 
 
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 
 class LayoutToolBar(AuiToolBar):

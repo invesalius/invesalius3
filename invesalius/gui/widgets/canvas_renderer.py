@@ -784,7 +784,7 @@ class CanvasRendererCTX:
         font: Optional[wx.Font] = None,
         txt_colour: Tuple[int, int, int] = (255, 255, 255),
         bg_colour: Tuple[int, int, int, int] = (128, 128, 128, 128),
-        border: int = 5,
+        border: int = 2,
     ) -> Tuple[float, float, int, int]:
         """
         Draw text inside a text box.
