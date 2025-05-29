@@ -46,7 +46,7 @@ from invesalius import inv_paths
 from invesalius.gui import project_properties
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from invesalius.data.tag import Tag, Tag2  # Make sure Tag2 is imported
+from invesalius.data.tag import Tag3D, Tag2D
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
@@ -1198,7 +1198,7 @@ class Frame(wx.Frame):
                 if dlg.ShowModal() == wx.ID_OK:
                     label = combo.GetValue()
                     x, y, z = self.current_pointer_pos
-                    Tag(x, y, z, label)
+                    Tag3D((x, y, z),(x, y, z), label)
                     # Add Tag2D after Tag
                     from invesalius.data.slice_ import Slice
                     
@@ -1250,7 +1250,7 @@ class Frame(wx.Frame):
                     dlg.Fit()
                     if dlg.ShowModal() == wx.ID_OK:
                         label = combo.GetValue()
-                        Tag2(point1, point2, label)
+                        Tag3D(point1, point2, label)
                         # Add Tag2D after Tag2
                         from invesalius.data.slice_ import Slice
                         current_axial_index = Slice().buffer_slices[const.AXIAL_STR].index
