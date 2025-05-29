@@ -2,8 +2,9 @@ name: CI, Release, and Docker
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
 jobs:
   run-tests:
