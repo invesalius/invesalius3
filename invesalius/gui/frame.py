@@ -1536,7 +1536,7 @@ class MenuBar(wx.MenuBar):
         session = ses.Session()
         slice_interpolation = session.GetConfig("slice_interpolation")
 
-        return slice_interpolation != 0
+        return slice_interpolation
 
     def NavigationModeStatus(self):
         session = ses.Session()
