@@ -22,7 +22,7 @@ jobs:
       - name: Install Ubuntu dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get install -y --fix-missing \
             freeglut3-dev \
             libcurl4-openssl-dev \
             libexpat1-dev \
