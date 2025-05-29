@@ -203,12 +203,12 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t DOCKERHUB_USERNAME/DOCKERHUB_REPO:latest -t DOCKERHUB_USERNAME/DOCKERHUB_REPO:${{ steps.get_version.outputs.version }} .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ steps.get_version.outputs.version }} .
 
       - name: Push Docker image
         run: |
-          docker push DOCKERHUB_USERNAME/DOCKERHUB_REPO:latest
-          docker push DOCKERHUB_USERNAME/DOCKERHUB_REPO:${{ steps.get_version.outputs.version }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ steps.get_version.outputs.version }}
 
   publish_packages:
     name: Publish Packages and Release
