@@ -181,6 +181,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Install toml
+        run: python3 -m pip install toml
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
