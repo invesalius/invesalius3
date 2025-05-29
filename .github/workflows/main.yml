@@ -198,7 +198,7 @@ jobs:
       - name: Extract version from pyproject.toml
         id: get_version
         run: |
-          VERSION=$(python3 -c "import toml; print(toml.load('pyproject.toml')['project']['version'])")
+          VERSION=$(python3 -c "import toml; print(toml.load('pyproject.toml').get('project', {}).get('version') or toml.load('pyproject.toml').get('tool', {}).get('poetry', {}).get('version'))")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
