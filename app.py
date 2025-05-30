@@ -25,10 +25,13 @@ import re
 import shutil
 import sys
 import traceback
+from typing import Iterable
 from invesalius.data.slice_ import Slice
 import invesalius.data.surface_process as surface_process
 import vtk
 import invesalius.constants as const
+
+
 
 if sys.platform == "darwin":
     try:
@@ -66,6 +69,11 @@ import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
+
+
+def update_crop_limits(limits: Iterable[float]):
+    print(f"===========================Crop limits: {limits}")
+Publisher.subscribe(update_crop_limits, "Update crop limits into gui")
 
 FS_ENCODE = sys.getfilesystemencoding()
 LANG = None
@@ -130,7 +138,7 @@ class InVesalius(wx.App):
         # <-- Add this line to ensure tag_start runs after the GUI is visible
         import wx
         args = parse_command_line()
-        wx.CallAfter(tag_start, args.dicom_dir, args.tag)
+        wx.CallAfter(tag_start, args.dicom_dir, args.tag, args.raycast_mode)
 
 
 # ------------------------------------------------------------------
@@ -297,10 +305,11 @@ def non_gui_startup(args):
 
     use_cmd_optargs(args)
     
-def tag_start(dicom_dir=None, tag_args=None):
+def tag_start(dicom_dir=None, tag_args=None, raycast_mode=None):
     """
     Import DICOM if specified, then import surface files and create tags (not associated with surfaces).
     Tags are created in order after all files are imported.
+    Optionally set raycasting mode after surfaces are loaded.
     """
     from invesalius.data.tag import Tag3D, Tag2D
 
@@ -324,6 +333,11 @@ def tag_start(dicom_dir=None, tag_args=None):
                 Publisher.sendMessage("Set surface transparency", surface_index=idx, transparency=0.833)
             elif file.endswith("cornary.stl"):
                 Publisher.sendMessage("Set surface colour", surface_index=idx, colour=(1.0, 0.0, 0.0))
+
+        # If raycast_mode is specified, set raycasting preset and hide surface 0
+        if raycast_mode:
+            Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
+            Publisher.sendMessage("Show surface", index=0, visibility=False)
 
         # Now, parse tags (each tag: 6 floats + optional label)
         tag_index = 0
@@ -453,6 +467,12 @@ def parse_command_line():
         ),
         type=str,
     )
+    # Add the new argument for raycast mode
+    parser.add_argument(
+        "--raycast-mode",
+        type=str,
+        help="Specify a raycasting preset to load after surfaces are loaded (e.g. 'Mid contrast')."
+    )
     parser.add_argument(
         "--print-crop-limits",
         action="store_true",
@@ -574,30 +594,6 @@ def use_cmd_optargs(args):
             print("done")
             exit(0)
 
-    # Print crop limits to stdout and exit when available
-    if getattr(args, "print_crop_limits", False):
-        import re
-
-        crop_limits = None
-        pattern = re.compile(
-            r"Sending message in topic Update crop limits into gui with data \{'limits': \[([^\]]+)\]\}"
-        )
-
-        def on_pubsub_message(topic, **data):
-            nonlocal crop_limits
-            if topic == "Update crop limits into gui" and "limits" in data:
-                crop_limits = data["limits"]
-                print(crop_limits)
-                sys.exit(0)
-
-        # Subscribe to pubsub messages
-        from invesalius.pubsub import pub as Publisher
-        Publisher.subscribe(on_pubsub_message, None)
-
-        # Wait for crop limits to be printed and exit
-        import time
-        while True:
-            time.sleep(0.1)
 
     # If import DICOM argument...
     if args.dicom_dir:

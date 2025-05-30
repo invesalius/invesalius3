@@ -3588,9 +3588,13 @@ class CropOptionsDialog(wx.Dialog):
         self.config = config
         wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
         self._init_gui()
+        self.exit_on_update = False
 
     def UpdateValues(self, limits: Iterable[float]) -> None:
         xi, xf, yi, yf, zi, zf = limits
+        if self.exit_on_update:
+            print(limits)
+            os._exit(0)
 
         self.tx_axial_i.SetValue(str(zi))
         self.tx_axial_f.SetValue(str(zf))
@@ -3681,11 +3685,14 @@ class CropOptionsDialog(wx.Dialog):
         self.Layout()
 
         Publisher.subscribe(self.UpdateValues, "Update crop limits into gui")
+        Publisher.subscribe(self.ExitOnUpdate, "Get crop limits print")
 
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
         btn_cancel.Bind(wx.EVT_BUTTON, self.OnClose)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
+    def ExitOnUpdate(self, ):
+        self.exit_on_update = True
     def OnOk(self, evt: wx.CommandEvent) -> None:
         self.config.dlg_visible = False
         Publisher.sendMessage("Crop mask")
