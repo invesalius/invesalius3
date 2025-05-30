@@ -124,7 +124,7 @@ class Preferences(wx.Dialog):
         rendering = session.GetConfig("rendering")
         surface_interpolation = session.GetConfig("surface_interpolation")
         language = session.GetConfig("language")
-        #Must invert value as GUI returns 0 for Yes and 1 for No
+        # Must invert value as GUI returns 0 for Yes and 1 for No
         slice_interpolation = not bool(session.GetConfig("slice_interpolation"))
 
         # logger = log.MyLogger()
@@ -224,7 +224,9 @@ class VisualizationTab(wx.Panel):
         options = {
             const.RENDERING: self.rb_rendering.GetSelection(),
             const.SURFACE_INTERPOLATION: self.rb_inter.GetSelection(),
-            const.SLICE_INTERPOLATION: not bool(self.rb_inter_sl.GetSelection()), #0 for Yes, 1 for No
+            const.SLICE_INTERPOLATION: not bool(
+                self.rb_inter_sl.GetSelection()
+            ),  # 0 for Yes, 1 for No
         }
         return options
 
