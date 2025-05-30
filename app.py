@@ -28,6 +28,7 @@ import traceback
 from invesalius.data.slice_ import Slice
 import invesalius.data.surface_process as surface_process
 import vtk
+import invesalius.constants as const
 
 if sys.platform == "darwin":
     try:
@@ -295,27 +296,61 @@ def non_gui_startup(args):
     _ = Controller(None)
 
     use_cmd_optargs(args)
-def tag_start(dicom_dir=None, files=None):
-    # Import DICOM if specified
+    
+def tag_start(dicom_dir=None, tag_args=None):
+    """
+    Import DICOM if specified, then import surface files and create tags (not associated with surfaces).
+    Tags are created in order after all files are imported.
+    """
+    from invesalius.data.tag import Tag3D, Tag2D
+
     if dicom_dir:
         Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
         Publisher.sendMessage("Wait for import to finish")
-    # Send the required messages
 
-    # Optionally hide the mask if needed
-    # Publisher.sendMessage("Show mask", index=0, value=False)
+    if tag_args:
+        # First, collect all files (assume .stl or similar)
+        files = []
+        i = 0
+        while i < len(tag_args) and tag_args[i].lower().endswith('.stl'):
+            files.append(tag_args[i])
+            i += 1
 
-    if files:
-        index = 0
-        for file in files:
-            print(f"Sending message in topic Import surface file with data {{'filename': '{file}'}}")
+        # Import all surface files
+        for idx, file in enumerate(files):
             Publisher.sendMessage("Import surface file", filename=file)
             if file.endswith("lvm.stl"):
-                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 1.0, 0.5019607843137255))  # Yellow
-                Publisher.sendMessage("Set surface transparency", surface_index=index, transparency=0.833)  # 83% transparent
+                Publisher.sendMessage("Set surface colour", surface_index=idx, colour=(1.0, 1.0, 0.5019607843137255))
+                Publisher.sendMessage("Set surface transparency", surface_index=idx, transparency=0.833)
             elif file.endswith("cornary.stl"):
-                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 0.0, 0.0))  # Red
-            index += 1
+                Publisher.sendMessage("Set surface colour", surface_index=idx, colour=(1.0, 0.0, 0.0))
+
+        # Now, parse tags (each tag: 6 floats + optional label)
+        tag_index = 0
+        while i < len(tag_args):
+            # Need at least 6 numbers for a tag
+            if i + 5 >= len(tag_args):
+                break
+            try:
+                coords = [float(tag_args[i + j]) for j in range(6)]
+            except ValueError:
+                break
+            i += 6
+            # Optional label
+            label = None
+            if i < len(tag_args) and not tag_args[i].lower().endswith('.stl'):
+                label = tag_args[i]
+                i += 1
+            if not label:
+                label = f"Tag {tag_index+1}"
+            point1 = tuple(coords[:3])
+            point2 = tuple(coords[3:])
+            Tag3D(point1, point2, label=label, colour=(0, 255, 0))
+            Tag2D(point1, point2, label=label, location=const.AXIAL)
+            Tag2D(point1, point2, label=label, location=const.CORONAL)
+            tag_index += 1
+       
+
 # ------------------------------------------------------------------
 
 
@@ -326,7 +361,6 @@ def parse_command_line():
     """
     Handle command line arguments.
     """
-    # Parse command line arguments
     parser = argparse.ArgumentParser()
 
     # -d or --debug: print all pubsub messages sent
@@ -410,8 +444,13 @@ def parse_command_line():
     parser.add_argument(
         "--tag",
         nargs="+",
-        metavar="FILE",
-        help="Import surface files and tag them after loading DICOM.",
+        metavar="FILE [FILE ...] [X1 Y1 Z1 X2 Y2 Z2 [LABEL]] ...",
+        help=(
+            "Import one or more surface files (e.g. .stl), then create N tags in order after all files are imported. "
+            "Usage: --tag file1.stl file2.stl ... [x1 y1 z1 x2 y2 z2 [label]] [x1 y1 z1 x2 y2 z2 [label]] ...\n"
+            "First, specify all files to import. After the last file, provide 6 numbers (coordinates for a tag) and an optional label for each tag. "
+            "Tags are not associated with specific files, but are created in order after all files are imported."
+        ),
         type=str,
     )
     args = parser.parse_args()
