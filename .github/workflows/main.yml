@@ -7,9 +7,30 @@ on:
     branches: [ "master" ]
 
 jobs:
+  get-tag:
+    runs-on: ubuntu-22.04
+    outputs:
+      new_tag: ${{ steps.get_tag.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: get_tag
+        shell: bash
+        run: |
+          git fetch --tags
+          latest_tag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+          if [ -z "$latest_tag" ]; then
+            new_tag="v0.0.1"
+          else
+            IFS='.' read -r major minor patch <<<"${latest_tag#v}"
+            patch=$((patch + 1))
+            new_tag="v${major}.${minor}.${patch}"
+          fi
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+
   run-tests:
     name: Run Tests
     runs-on: ubuntu-22.04
+    needs: get-tag
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,7 +86,7 @@ jobs:
   build-win:
     name: Build Windows Packages
     runs-on: windows-latest
-    needs: run-tests
+    needs: [run-tests, get-tag]
     strategy:
       matrix:
         architecture: ["x64"]
@@ -177,7 +198,7 @@ jobs:
   build-and-push-docker:
     name: Build and Push Docker Image
     runs-on: ubuntu-22.04
-    needs: run-tests
+    needs: [run-tests, get-tag]
     steps:
       - uses: actions/checkout@v4
 
@@ -203,16 +224,16 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ steps.get_version.outputs.version }} .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ needs.get-tag.outputs.new_tag }} .
 
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ steps.get_version.outputs.version }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO }}:${{ needs.get-tag.outputs.new_tag }}
 
   publish_packages:
     name: Publish Packages and Release
-    needs: [build-win, build-and-push-docker]
+    needs: [build-win, build-and-push-docker, get-tag]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -233,26 +254,11 @@ jobs:
           echo "${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Fetch latest tag
-        id: get_tag
-        shell: bash
-        run: |
-          git fetch --tags
-          latest_tag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
-          if [ -z "$latest_tag" ]; then
-            new_tag="v0.0.1"
-          else
-            IFS='.' read -r major minor patch <<<"${latest_tag#v}"
-            patch=$((patch + 1))
-            new_tag="v${major}.${minor}.${patch}"
-          fi
-          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.get_tag.outputs.new_tag }}
-          name: "Release ${{ steps.get_tag.outputs.new_tag }}"
+          tag_name: ${{ needs.get-tag.outputs.new_tag }}
+          name: "Release ${{ needs.get-tag.outputs.new_tag }}"
           body: ${{ steps.get_commit.outputs.desc }}
           draft: false
           prerelease: false
