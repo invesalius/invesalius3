@@ -453,6 +453,11 @@ def parse_command_line():
         ),
         type=str,
     )
+    parser.add_argument(
+        "--print-crop-limits",
+        action="store_true",
+        help="Print crop limits to stdout and exit when available.",
+    )
     args = parser.parse_args()
     return args
 
@@ -568,6 +573,31 @@ def use_cmd_optargs(args):
         finally:
             print("done")
             exit(0)
+
+    # Print crop limits to stdout and exit when available
+    if getattr(args, "print_crop_limits", False):
+        import re
+
+        crop_limits = None
+        pattern = re.compile(
+            r"Sending message in topic Update crop limits into gui with data \{'limits': \[([^\]]+)\]\}"
+        )
+
+        def on_pubsub_message(topic, **data):
+            nonlocal crop_limits
+            if topic == "Update crop limits into gui" and "limits" in data:
+                crop_limits = data["limits"]
+                print(crop_limits)
+                sys.exit(0)
+
+        # Subscribe to pubsub messages
+        from invesalius.pubsub import pub as Publisher
+        Publisher.subscribe(on_pubsub_message, None)
+
+        # Wait for crop limits to be printed and exit
+        import time
+        while True:
+            time.sleep(0.1)
 
     # If import DICOM argument...
     if args.dicom_dir:
