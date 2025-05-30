@@ -28,6 +28,7 @@ import traceback
 from invesalius.data.slice_ import Slice
 import invesalius.data.surface_process as surface_process
 import vtk
+import invesalius.constants as const
 
 if sys.platform == "darwin":
     try:
@@ -295,27 +296,51 @@ def non_gui_startup(args):
     _ = Controller(None)
 
     use_cmd_optargs(args)
-def tag_start(dicom_dir=None, files=None):
-    # Import DICOM if specified
+    
+def tag_start(dicom_dir=None, tag_args=None):
+    """
+    Import DICOM if specified, then import surface files and create tags if coordinates are provided.
+    Supports tags in both 3D and 2D (axial and coronal).
+    """
+    from invesalius.data.tag import Tag3D, Tag2D
+    import wx
+
     if dicom_dir:
         Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
         Publisher.sendMessage("Wait for import to finish")
-    # Send the required messages
 
-    # Optionally hide the mask if needed
-    # Publisher.sendMessage("Show mask", index=0, value=False)
-
-    if files:
+    if tag_args:
+        i = 0
         index = 0
-        for file in files:
-            print(f"Sending message in topic Import surface file with data {{'filename': '{file}'}}")
+        while i < len(tag_args):
+            file = tag_args[i]
             Publisher.sendMessage("Import surface file", filename=file)
+            coords = []
+            # Try to parse next 6 arguments as coordinates
+            if i + 6 < len(tag_args):
+                try:
+                    coords = [float(tag_args[i + j]) for j in range(1, 7)]
+                    i += 6
+                except ValueError:
+                    coords = []
+            if coords:
+                point1 = tuple(coords[:3])
+                point2 = tuple(coords[3:])
+                label = f"Tag {index+1}"
+                # 3D tag
+                Tag3D(point1, point2, label=label, colour=(0, 255, 0))
+                # 2D tags: Axial and Coronal
+                Tag2D(point1, point2, label=label, location=const.AXIAL)
+                Tag2D(point1, point2, label=label, location=const.CORONAL)
+            # Optionally set surface color/transparency as before
             if file.endswith("lvm.stl"):
-                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 1.0, 0.5019607843137255))  # Yellow
-                Publisher.sendMessage("Set surface transparency", surface_index=index, transparency=0.833)  # 83% transparent
+                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 1.0, 0.5019607843137255))
+                Publisher.sendMessage("Set surface transparency", surface_index=index, transparency=0.833)
             elif file.endswith("cornary.stl"):
-                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 0.0, 0.0))  # Red
+                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 0.0, 0.0))
+            i += 1
             index += 1
+
 # ------------------------------------------------------------------
 
 
@@ -326,7 +351,6 @@ def parse_command_line():
     """
     Handle command line arguments.
     """
-    # Parse command line arguments
     parser = argparse.ArgumentParser()
 
     # -d or --debug: print all pubsub messages sent
@@ -410,8 +434,13 @@ def parse_command_line():
     parser.add_argument(
         "--tag",
         nargs="+",
-        metavar="FILE",
-        help="Import surface files and tag them after loading DICOM.",
+        metavar="FILE [X1 Y1 Z1 X2 Y2 Z2 ...]",
+        help=(
+            "Import one or more surface files and optionally tag them with coordinates after loading DICOM. "
+            "Usage: --tag file1.stl [x1 y1 z1 x2 y2 z2] [file2.stl [x1 y1 z1 x2 y2 z2]] ...\n"
+            "For each file, you may provide 6 numbers (coordinates for a tag) immediately after the filename. "
+            "If no coordinates are given, only the surface is imported."
+        ),
         type=str,
     )
     args = parser.parse_args()
