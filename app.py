@@ -76,6 +76,7 @@ if sys.platform in ("linux2", "linux", "win32"):
 session = ses.Session()
 if session.ReadConfig():
     lang = session.GetConfig("language")
+    session.CheckConfig()
     if lang:
         try:
             LANG = lang
