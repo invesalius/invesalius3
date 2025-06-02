@@ -30,6 +30,7 @@ import wx.aui
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
 
 import invesalius.constants as const
+from invesalius.data.volume import CutPlane, Volume
 import invesalius.gui.default_tasks as tasks
 import invesalius.gui.default_viewers as viewers
 import invesalius.gui.dialogs as dlg
@@ -151,6 +152,10 @@ class Frame(wx.Frame):
         self.post_sample_counter = 1   # for sample tags (Ctrl+L)
         # log.initLogger()
 
+        self.ctrl_k_press_count = 0
+        self.latest_cross_focal_position = None
+        Publisher.subscribe(self.on_cross_focal_update, "Update volume viewer pointer")
+
     def __bind_events(self):
         """
         Bind events related to pubsub.
@@ -245,8 +250,51 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Delete selected markers")
             return
 
+        # Handle Ctrl+K presses
+        if modifiers & wx.MOD_CONTROL and keycode in (ord('k'), ord('K')):
+            self.ctrl_k_press_count += 1
+            if self.ctrl_k_press_count > 4:
+                self.ctrl_k_press_count = 1  # Reset after 4
+            self.handle_ctrl_k_press(self.ctrl_k_press_count)
+            return
+
         # For all other keys, continue with the normal event handling (propagate the event).
         event.Skip()
+
+    def handle_ctrl_k_press(self, press_count):
+        """
+        Call a different function for each Ctrl+K press, using the latest cross focal position.
+        """
+        if not self.latest_cross_focal_position:
+            wx.MessageBox("No cross focal position available.", "Error")
+            return
+
+        if press_count == 1:
+            self.cross_focal_action_1(self.latest_cross_focal_position)
+        elif press_count == 2:
+            self.cross_focal_action_2(self.latest_cross_focal_position)
+        elif press_count == 3:
+            self.cross_focal_action_3(self.latest_cross_focal_position)
+        elif press_count == 4:
+            self.cross_focal_action_4(self.latest_cross_focal_position)
+
+    def cross_focal_action_1(self, position):
+        CutPlane.update_crop_limits(position, (1,0,0), "x1")
+        wx.MessageBox(f"set right: {position}", " Next action, set left")
+
+
+    def cross_focal_action_2(self, position):
+        CutPlane.update_crop_limits(position, (-1,0,0), "x2")
+        wx.MessageBox(f"set left: {position}", " Next action, set top")
+
+    def cross_focal_action_3(self, position):
+        CutPlane.update_crop_limits(position, (0,1,0), "y1")
+        print("set top:", position, " Next action, set bottom")
+
+    def cross_focal_action_4(self, position):
+        CutPlane.update_crop_limits(position, (0,-1,0), "y2")
+        print("set bottom:", position)
+       
 
     def __init_aui(self):
         """
@@ -1171,6 +1219,11 @@ class Frame(wx.Frame):
     def on_pointer_update(self, position=None, **kwargs):
         if position:
             self.current_pointer_pos = position
+
+    def on_cross_focal_update(self, position=None, **kwargs):
+        # Store the latest cross focal position
+        if position:
+            self.latest_cross_focal_position = position
 
     def on_key_down(self, event):
         if event.ControlDown() and event.GetKeyCode() == ord('A'):
