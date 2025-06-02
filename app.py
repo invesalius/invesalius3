@@ -24,11 +24,15 @@ import os
 import re
 import shutil
 import sys
+import time
 import traceback
+from typing import Iterable
 from invesalius.data.slice_ import Slice
 import invesalius.data.surface_process as surface_process
 import vtk
 import invesalius.constants as const
+
+
 
 if sys.platform == "darwin":
     try:
@@ -66,6 +70,97 @@ import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
+
+
+from scripts import dicom_crop
+
+import_folder_path = os.path.abspath("G:\\My Drive\\Lawson\\FOURDIX\\FOURDIX\\RATIB1\\Cardiac 1CTA_CORONARY_ARTERIES_lowHR_TESTBOLUS (Adult)\\CorCTALow  0.6  B10f 65%")
+output_folder_path = os.path.abspath("G:\\My Drive\\Lawson\\crop")
+
+def set_import_folder_path(import_folder_path_p: str, output_folder_path_p: str):
+
+    """
+    Set the import folder path and optionally the output folder path.
+    """
+    import_folder_path = import_folder_path_p
+    output_folder_path = output_folder_path_p
+    print(f"Import folder set to: {import_folder_path}")
+    if output_folder_path:
+        print(f"Output folder set to: {output_folder_path}")
+    else:
+        print("No output folder specified.")
+Publisher.subscribe(set_import_folder_path, "Set import folder path into gui")
+
+def update_crop_limits(limits: Iterable[float]):
+    # Wait until both paths are set
+    wait_count = 0
+    while (import_folder_path is None or output_folder_path is None) and wait_count < 20:
+        print("Waiting for import_folder_path and output_folder_path to be set...")
+        time.sleep(0.1)
+        wait_count += 1
+    if import_folder_path is not None and output_folder_path is not None:
+        if len(limits) != 6:
+            raise ValueError("Crop limits must contain exactly 6 values: xi, xf, yi, yf, zi, zf")
+        xi, xf, yi, yf, zi, zf = limits
+        xi = float(xi)
+        xf = float(xf)
+        yi = float(yi)
+        yf = float(yf)
+        zi = float(zi)
+        zf = float(zf)
+
+        # Remove previous planes if needed (depends on your implementation)
+        # Example: volume.planes.clear()
+
+        # Create 6 planes at the crop boundaries
+        # Each plane is defined by a point and a normal vector
+
+        # Plane at xi (YZ plane)
+        Publisher.sendMessage(
+            "Create cut plane",
+            origin=(50.689785105501976, -123.21592241920409, 68.5),
+            normal=(1, 0, 0),
+            label="Crop X min"
+        )
+        # # Plane at xf (YZ plane)
+        Publisher.sendMessage(
+            "Create cut plane",
+            origin=(174.5108179722372, -122.48449494233766, 65.5),
+            normal=(-1, 0, 0),
+            label="Crop X max"
+        )
+        # # Plane at yi (XZ plane)
+        Publisher.sendMessage(
+            "Create cut plane",
+            origin=(107.32721972890238, -173.2818497116884, 65.5),
+            normal=(0, 1, 0),
+            label="Crop Y min"
+        )
+        # # Plane at yf (XZ plane)
+        Publisher.sendMessage(
+            "Create cut plane",
+            origin=(104.04997103410557, -64.3133306096941, 65.5),
+            normal=(0, -1, 0),
+            label="Crop Y max"
+        )
+        # # Optionally, add Z planes for full 3D cropping:
+        # Publisher.sendMessage(
+        #     "Create cut plane",
+        #     origin=(0, 0, zi),
+        #     normal=(0, 0, 1),
+        #     label="Crop Z min"
+        # )
+        # Publisher.sendMessage(
+        #     "Create cut plane",
+        #     origin=(0, 0, zf),
+        #     normal=(0, 0, -1),
+        #     label="Crop Z max"
+        # )
+
+        print("Created 6 cut planes at crop boundaries.")
+    else:
+        raise ValueError("No import folder specified. Please set the import folder path before updating crop limits.")
+Publisher.subscribe(update_crop_limits, "Update crop limits into gui")
 
 FS_ENCODE = sys.getfilesystemencoding()
 LANG = None
@@ -130,7 +225,7 @@ class InVesalius(wx.App):
         # <-- Add this line to ensure tag_start runs after the GUI is visible
         import wx
         args = parse_command_line()
-        wx.CallAfter(tag_start, args.dicom_dir, args.tag)
+        wx.CallAfter(tag_start, args.dicom_dir, args.tag, args.raycast_mode)
 
 
 # ------------------------------------------------------------------
@@ -297,10 +392,11 @@ def non_gui_startup(args):
 
     use_cmd_optargs(args)
     
-def tag_start(dicom_dir=None, tag_args=None):
+def tag_start(dicom_dir=None, tag_args=None, raycast_mode=None):
     """
     Import DICOM if specified, then import surface files and create tags (not associated with surfaces).
     Tags are created in order after all files are imported.
+    Optionally set raycasting mode after surfaces are loaded.
     """
     from invesalius.data.tag import Tag3D, Tag2D
 
@@ -324,6 +420,11 @@ def tag_start(dicom_dir=None, tag_args=None):
                 Publisher.sendMessage("Set surface transparency", surface_index=idx, transparency=0.833)
             elif file.endswith("cornary.stl"):
                 Publisher.sendMessage("Set surface colour", surface_index=idx, colour=(1.0, 0.0, 0.0))
+
+        # If raycast_mode is specified, set raycasting preset and hide surface 0
+        if raycast_mode:
+            Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
+            Publisher.sendMessage("Show surface", index=0, visibility=False)
 
         # Now, parse tags (each tag: 6 floats + optional label)
         tag_index = 0
@@ -453,11 +554,28 @@ def parse_command_line():
         ),
         type=str,
     )
+    # Add the new argument for raycast mode
+    parser.add_argument(
+        "--raycast-mode",
+        type=str,
+        help="Specify a raycasting preset to load after surfaces are loaded (e.g. 'Mid contrast')."
+    )
+    parser.add_argument(
+        "--print-crop-limits",
+        action="store_true",
+        help="Print crop limits to stdout and exit when available.",
+    )
+    parser.add_argument(
+        "--output-folder",
+        type=str,
+        help="Output folder for cropped DICOM series when using --print-crop-limits.",
+    )
     args = parser.parse_args()
     return args
 
 
 def use_cmd_optargs(args):
+    
 
     # If the new center_select argument is provided
     if args.center_select:
@@ -568,6 +686,14 @@ def use_cmd_optargs(args):
         finally:
             print("done")
             exit(0)
+
+    # Handle --print-crop-limits
+    if getattr(args, "print_crop_limits", False):
+        # Set globals for use in update_crop_limits
+        import_folder_path_p = args.import_folder
+        # Allow user to specify output folder, else use default
+        output_folder_path_p = getattr(args, "output_folder", None) or "cropped_output"
+        Publisher.sendMessage("Set import folder path into gui", import_folder_path_p, output_folder_path_p)
 
     # If import DICOM argument...
     if args.dicom_dir:
