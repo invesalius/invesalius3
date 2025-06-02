@@ -297,14 +297,14 @@ class Frame(wx.Frame):
         Set top crop limit.
         """
         CutPlane.update_crop_limits(position, (0, 1, 0), "y1")
-        print("set top:", position, " Next action, set bottom")
+        wx.MessageBox(f"set top: {position}", " Next action, set bottom")
 
     def cross_focal_action_4(self, position):
         """
         Set bottom crop limit.
         """
         CutPlane.update_crop_limits(position, (0, -1, 0), "y2")
-        print("set bottom:", position)
+        wx.MessageBox(f"set bottom: {position}")
        
 
     def __init_aui(self):
