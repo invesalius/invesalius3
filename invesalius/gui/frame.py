@@ -279,20 +279,31 @@ class Frame(wx.Frame):
             self.cross_focal_action_4(self.latest_cross_focal_position)
 
     def cross_focal_action_1(self, position):
-        CutPlane.update_crop_limits(position, (1,0,0), "x1")
+        """
+        Set right crop limit.
+        """
+        CutPlane.update_crop_limits(position, (1, 0, 0), "x1")
         wx.MessageBox(f"set right: {position}", " Next action, set left")
 
-
     def cross_focal_action_2(self, position):
-        CutPlane.update_crop_limits(position, (-1,0,0), "x2")
+        """
+        Set left crop limit.
+        """
+        CutPlane.update_crop_limits(position, (-1, 0, 0), "x2")
         wx.MessageBox(f"set left: {position}", " Next action, set top")
 
     def cross_focal_action_3(self, position):
-        CutPlane.update_crop_limits(position, (0,1,0), "y1")
+        """
+        Set top crop limit.
+        """
+        CutPlane.update_crop_limits(position, (0, 1, 0), "y1")
         print("set top:", position, " Next action, set bottom")
 
     def cross_focal_action_4(self, position):
-        CutPlane.update_crop_limits(position, (0,-1,0), "y2")
+        """
+        Set bottom crop limit.
+        """
+        CutPlane.update_crop_limits(position, (0, -1, 0), "y2")
         print("set bottom:", position)
        
 
@@ -505,16 +516,11 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        # Make sure the task panel is hidden
         task_pane = self.aui_manager.GetPane("Tasks")
         if task_pane.IsShown():
             task_pane.Hide()
             self.aui_manager.Update()
-
-            # Force UI refresh
             wx.Yield()
-
-            # Ensure the layout button in the toolbar is toggled properly
             Publisher.sendMessage("Set layout button full")
 
     def _SetProjectName(self, proj_name=""):
@@ -835,16 +841,11 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        # Make sure the task panel is hidden
         task_pane = self.aui_manager.GetPane("Tasks")
         if task_pane.IsShown():
             task_pane.Hide()
             self.aui_manager.Update()
-
-            # Force UI refresh
             wx.Yield()
-
-            # Ensure the layout button in the toolbar is toggled properly
             Publisher.sendMessage("Set layout button full")
 
     def OnDbsMode(self):
@@ -2099,6 +2100,7 @@ class ObjectToolBar(AuiToolBar):
     """
 
     def __init__(self, parent):
+
         style = AUI_TB_PLAIN_BACKGROUND
         AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, agwStyle=style)
 
