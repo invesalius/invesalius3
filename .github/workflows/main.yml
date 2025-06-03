@@ -174,7 +174,7 @@ jobs:
           mkdir installer
 
       - name: Generate InVesalius installer - win64 ai-ready build
-        run: ISCC.exe /Oinstaller /F"invesalius-3.1_nightly_ai-ready_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
+        run: ISCC.exe /Oinstaller /F"invesalius_win64" /DMyAppVersion=${{ env.INVESALIUS_VERSION }} ./bundle_tools/win/generate_installer.iss
 
       - name: Show files
         run: |
