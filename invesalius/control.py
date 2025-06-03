@@ -526,6 +526,7 @@ class Controller:
 
     def OnImportMedicalImages(self, directory: str, use_gui: bool) -> None:
         self.ImportMedicalImages(directory, use_gui)
+        Publisher.sendMessage("Import finished", )
 
     def ImportMedicalImages(self, directory: str, gui: bool = True) -> None:
         patients_groups = dcm.GetDicomGroups(directory)

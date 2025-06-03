@@ -139,6 +139,8 @@ class InVesalius(wx.App):
         import wx
         args = parse_command_line()
         # Call raycast_start instead of tag_start
+        print(f"Dicom directory: {args.dicom_dir}")
+        print(f"Raycast mode: {args.raycast_mode}")
         wx.CallAfter(raycast_start, args.dicom_dir, args.raycast_mode)
 
 
@@ -309,11 +311,16 @@ def non_gui_startup(args):
 def raycast_start(dicom_dir=None, raycast_mode=None):
     """
     Import DICOM if specified, then set raycasting mode if specified.
+    Ensures raycasting preset is loaded only after import is finished.
     """
     if dicom_dir:
-        Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
-        Publisher.sendMessage("Wait for import to finish")
-    if raycast_mode:
+        if raycast_mode:
+            print(f"Set waiting for import to finish before loading raycasting preset: {raycast_mode}")
+            def on_project_loaded():
+                Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
+            Publisher.subscribe(on_project_loaded, "Import finished")
+            Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
+    elif raycast_mode:
         Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
 
 # ------------------------------------------------------------------
@@ -709,10 +716,6 @@ def main(connection=None, remote_host=None):
         non_gui_startup(args)
     else:
         application = InVesalius(False)
-        # If --raycast-load is set, send the message from the main thread after wx is running
-        if args.raycast_load:
-            import wx
-            wx.CallAfter(Publisher.sendMessage, "Load raycasting preset", preset_name=args.raycast_load)
         application.MainLoop()
 
 def export_mask(mask, file_name, index=1):
