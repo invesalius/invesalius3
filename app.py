@@ -74,93 +74,7 @@ from invesalius.pubsub import pub as Publisher
 
 from scripts import dicom_crop
 
-import_folder_path = os.path.abspath("G:\\My Drive\\Lawson\\FOURDIX\\FOURDIX\\RATIB1\\Cardiac 1CTA_CORONARY_ARTERIES_lowHR_TESTBOLUS (Adult)\\CorCTALow  0.6  B10f 65%")
-output_folder_path = os.path.abspath("G:\\My Drive\\Lawson\\crop")
 
-def set_import_folder_path(import_folder_path_p: str, output_folder_path_p: str):
-
-    """
-    Set the import folder path and optionally the output folder path.
-    """
-    import_folder_path = import_folder_path_p
-    output_folder_path = output_folder_path_p
-    print(f"Import folder set to: {import_folder_path}")
-    if output_folder_path:
-        print(f"Output folder set to: {output_folder_path}")
-    else:
-        print("No output folder specified.")
-Publisher.subscribe(set_import_folder_path, "Set import folder path into gui")
-
-def update_crop_limits(limits: Iterable[float]):
-    # Wait until both paths are set
-    wait_count = 0
-    while (import_folder_path is None or output_folder_path is None) and wait_count < 20:
-        print("Waiting for import_folder_path and output_folder_path to be set...")
-        time.sleep(0.1)
-        wait_count += 1
-    if import_folder_path is not None and output_folder_path is not None:
-        if len(limits) != 6:
-            raise ValueError("Crop limits must contain exactly 6 values: xi, xf, yi, yf, zi, zf")
-        xi, xf, yi, yf, zi, zf = limits
-        xi = float(xi)
-        xf = float(xf)
-        yi = float(yi)
-        yf = float(yf)
-        zi = float(zi)
-        zf = float(zf)
-
-        # Remove previous planes if needed (depends on your implementation)
-        # Example: volume.planes.clear()
-
-        # Create 6 planes at the crop boundaries
-        # Each plane is defined by a point and a normal vector
-
-        # Plane at xi (YZ plane)
-        Publisher.sendMessage(
-            "Create cut plane",
-            origin=(50.689785105501976, -123.21592241920409, 68.5),
-            normal=(1, 0, 0),
-            label="Crop X min"
-        )
-        # # Plane at xf (YZ plane)
-        Publisher.sendMessage(
-            "Create cut plane",
-            origin=(174.5108179722372, -122.48449494233766, 65.5),
-            normal=(-1, 0, 0),
-            label="Crop X max"
-        )
-        # # Plane at yi (XZ plane)
-        Publisher.sendMessage(
-            "Create cut plane",
-            origin=(107.32721972890238, -173.2818497116884, 65.5),
-            normal=(0, 1, 0),
-            label="Crop Y min"
-        )
-        # # Plane at yf (XZ plane)
-        Publisher.sendMessage(
-            "Create cut plane",
-            origin=(104.04997103410557, -64.3133306096941, 65.5),
-            normal=(0, -1, 0),
-            label="Crop Y max"
-        )
-        # # Optionally, add Z planes for full 3D cropping:
-        # Publisher.sendMessage(
-        #     "Create cut plane",
-        #     origin=(0, 0, zi),
-        #     normal=(0, 0, 1),
-        #     label="Crop Z min"
-        # )
-        # Publisher.sendMessage(
-        #     "Create cut plane",
-        #     origin=(0, 0, zf),
-        #     normal=(0, 0, -1),
-        #     label="Crop Z max"
-        # )
-
-        print("Created 6 cut planes at crop boundaries.")
-    else:
-        raise ValueError("No import folder specified. Please set the import folder path before updating crop limits.")
-Publisher.subscribe(update_crop_limits, "Update crop limits into gui")
 
 FS_ENCODE = sys.getfilesystemencoding()
 LANG = None
@@ -222,10 +136,12 @@ class InVesalius(wx.App):
         # Initialize the legacy logging system for backward compatibility
         log.invLogger.configureLogging()
 
-        # <-- Add this line to ensure tag_start runs after the GUI is visible
         import wx
         args = parse_command_line()
-        wx.CallAfter(tag_start, args.dicom_dir, args.tag, args.raycast_mode)
+        # Call raycast_start instead of tag_start
+        print(f"Dicom directory: {args.dicom_dir}")
+        print(f"Raycast mode: {args.raycast_mode}")
+        wx.CallAfter(raycast_start, args.dicom_dir, args.raycast_mode)
 
 
 # ------------------------------------------------------------------
@@ -392,65 +308,20 @@ def non_gui_startup(args):
 
     use_cmd_optargs(args)
     
-def tag_start(dicom_dir=None, tag_args=None, raycast_mode=None):
+def raycast_start(dicom_dir=None, raycast_mode=None):
     """
-    Import DICOM if specified, then import surface files and create tags (not associated with surfaces).
-    Tags are created in order after all files are imported.
-    Optionally set raycasting mode after surfaces are loaded.
+    Import DICOM if specified, then set raycasting mode if specified.
+    Ensures raycasting preset is loaded only after import is finished.
     """
-    from invesalius.data.tag import Tag3D, Tag2D
-
     if dicom_dir:
-        Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
-        Publisher.sendMessage("Wait for import to finish")
-
-    if tag_args:
-        # First, collect all files (assume .stl or similar)
-        files = []
-        i = 0
-        while i < len(tag_args) and tag_args[i].lower().endswith('.stl'):
-            files.append(tag_args[i])
-            i += 1
-
-        # Import all surface files
-        for idx, file in enumerate(files):
-            Publisher.sendMessage("Import surface file", filename=file)
-            if file.endswith("lvm.stl"):
-                Publisher.sendMessage("Set surface colour", surface_index=idx, colour=(1.0, 1.0, 0.5019607843137255))
-                Publisher.sendMessage("Set surface transparency", surface_index=idx, transparency=0.833)
-            elif file.endswith("cornary.stl"):
-                Publisher.sendMessage("Set surface colour", surface_index=idx, colour=(1.0, 0.0, 0.0))
-
-        # If raycast_mode is specified, set raycasting preset and hide surface 0
         if raycast_mode:
-            Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
-            Publisher.sendMessage("Show surface", index=0, visibility=False)
-
-        # Now, parse tags (each tag: 6 floats + optional label)
-        tag_index = 0
-        while i < len(tag_args):
-            # Need at least 6 numbers for a tag
-            if i + 5 >= len(tag_args):
-                break
-            try:
-                coords = [float(tag_args[i + j]) for j in range(6)]
-            except ValueError:
-                break
-            i += 6
-            # Optional label
-            label = None
-            if i < len(tag_args) and not tag_args[i].lower().endswith('.stl'):
-                label = tag_args[i]
-                i += 1
-            if not label:
-                label = f"Tag {tag_index+1}"
-            point1 = tuple(coords[:3])
-            point2 = tuple(coords[3:])
-            Tag3D(point1, point2, label=label, colour=(0, 255, 0))
-            Tag2D(point1, point2, label=label, location=const.AXIAL)
-            Tag2D(point1, point2, label=label, location=const.CORONAL)
-            tag_index += 1
-       
+            print(f"Set waiting for import to finish before loading raycasting preset: {raycast_mode}")
+            def on_project_loaded():
+                Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
+            Publisher.subscribe(on_project_loaded, "Import finished")
+            Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
+    elif raycast_mode:
+        Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
 
 # ------------------------------------------------------------------
 
@@ -561,6 +432,11 @@ def parse_command_line():
         help="Specify a raycasting preset to load after surfaces are loaded (e.g. 'Mid contrast')."
     )
     parser.add_argument(
+        "--raycast-load",
+        type=str,
+        help="Load a raycasting preset by name at startup."
+    )
+    parser.add_argument(
         "--print-crop-limits",
         action="store_true",
         help="Print crop limits to stdout and exit when available.",
@@ -576,124 +452,6 @@ def parse_command_line():
 
 def use_cmd_optargs(args):
     
-
-    # If the new center_select argument is provided
-    if args.center_select:
-        try:
-            x, y, z, output_path = args.center_select  # Now expecting X, Y, Z, OUTPUT_PATH
-            x = int(x)
-            y = int(y)
-            z = int(z)
-            coord_3d = (x, y, z)
-
-            if args.dicom_dir:
-                import_dir = args.dicom_dir
-                Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
-                Publisher.sendMessage("Wait for import to finish")
-
-            # Create the new mask from the selection
-            new_mask_selection = SelectMaskParts(Slice())
-            new_mask_selection.OnSelect(None, None, x, y, z)
-            new_mask_selection.CleanUp()
-            
-            
-
-            export_mask(new_mask_selection.config.mask, output_path, index=1)
-            print(f"Surface exported to {output_path}")
-            # -------------------------------------------
-
-            print(f"New mask '{new_mask_selection.config.mask.name}' created and used for surface generation.")
-        except Exception as e:
-            print(f"Error while creating the new mask or generating the surface: {e}")
-        finally:
-            print("done")
-            exit(0)
-
-    # Handle --crop-mask
-    if args.crop_mask:
-        try:
-            xi, xf, yi, yf, zi, zf, output_path = args.crop_mask
-            xi = int(xi)
-            xf = int(xf)
-            yi = int(yi)
-            yf = int(yf)
-            zi = int(zi)
-            zf = int(zf)
-
-            # Optionally import DICOM if specified
-            if args.dicom_dir:
-                import_dir = args.dicom_dir
-                Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
-                Publisher.sendMessage("Wait for import to finish")
-
-            # Create and crop the mask
-            cropper = CropMask(Slice())
-            cropper.set_limits(xi, xf, yi, yf, zi, zf)
-            cropper.crop()
-
-            # Export the cropped mask
-            export_mask(cropper.slice.current_mask, output_path, index=1)
-            print(f"Cropped mask exported to {output_path}")
-        except Exception as e:
-            print(f"Error while cropping and exporting the mask: {e}")
-        finally:
-            print("done")
-            exit(0)
-
-    # Handle --threshold-crop-mask
-    if args.threshold_crop_mask:
-        try:
-            lower, upper, xi, xf, yi, yf, zi, zf, output_path = args.threshold_crop_mask
-            lower = int(lower)
-            upper = int(upper)
-            xi = int(xi)
-            xf = int(xf)
-            yi = int(yi)
-            yf = int(yf)
-            zi = int(zi)
-            zf = int(zf)
-
-            # Optionally import DICOM if specified
-            if args.dicom_dir:
-                import_dir = args.dicom_dir
-                Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
-                Publisher.sendMessage("Wait for import to finish")
-
-            slice_ = Slice()
-            mask = slice_.current_mask
-            if mask is None:
-                raise RuntimeError("No mask available to apply threshold.")
-
-            # Set the new threshold range on the existing mask
-            mask.threshold_range = (lower, upper)
-            print(f"Set threshold range to {lower}-{upper} on mask '{mask.name}'.")
-
-            # Apply the threshold to the current mask
-            # slice_.do_threshold_to_all_slices(mask)
-            # print("Applied threshold to all slices.")
-
-            # Crop the mask
-            cropper = CropMask(slice_)
-            cropper.set_limits(xi, xf, yi, yf, zi, zf)
-            cropper.crop()
-            print(f"Mask cropped to limits: {xi}, {xf}, {yi}, {yf}, {zi}, {zf}.")
-
-            # Export the cropped mask
-            export_mask(mask, output_path, index=mask.index)
-            print(f"Thresholded and cropped mask exported to {output_path}")
-        except Exception as e:
-            print(f"Error while thresholding, cropping, and exporting the mask: {e}")
-        finally:
-            print("done")
-            exit(0)
-
-    # Handle --print-crop-limits
-    if getattr(args, "print_crop_limits", False):
-        # Set globals for use in update_crop_limits
-        import_folder_path_p = args.import_folder
-        # Allow user to specify output folder, else use default
-        output_folder_path_p = getattr(args, "output_folder", None) or "cropped_output"
-        Publisher.sendMessage("Set import folder path into gui", import_folder_path_p, output_folder_path_p)
 
     # If import DICOM argument...
     if args.dicom_dir:

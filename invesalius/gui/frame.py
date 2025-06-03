@@ -258,8 +258,15 @@ class Frame(wx.Frame):
             self.handle_ctrl_k_press(self.ctrl_k_press_count)
             return
 
-        # For all other keys, continue with the normal event handling (propagate the event).
-        event.Skip()
+        # Check for Ctrl+R to remove all cut planes
+        elif event.ControlDown() and event.GetKeyCode() == ord('R'):
+            print("Ctrl+R pressed: Removing all cut planes")
+            # from invesalius.data.volume import Volume
+            # vol = Volume()
+            # vol.remove_all_cut_planes()
+            Publisher.sendMessage("Remove all cut planes")
+        else:
+            event.Skip()
 
     def handle_ctrl_k_press(self, press_count):
         """
@@ -279,21 +286,32 @@ class Frame(wx.Frame):
             self.cross_focal_action_4(self.latest_cross_focal_position)
 
     def cross_focal_action_1(self, position):
-        CutPlane.update_crop_limits(position, (1,0,0), "x1")
+        """
+        Set right crop limit.
+        """
+        CutPlane.update_crop_limits(position, (1, 0, 0), "x1")
         wx.MessageBox(f"set right: {position}", " Next action, set left")
 
-
     def cross_focal_action_2(self, position):
-        CutPlane.update_crop_limits(position, (-1,0,0), "x2")
+        """
+        Set left crop limit.
+        """
+        CutPlane.update_crop_limits(position, (-1, 0, 0), "x2")
         wx.MessageBox(f"set left: {position}", " Next action, set top")
 
     def cross_focal_action_3(self, position):
-        CutPlane.update_crop_limits(position, (0,1,0), "y1")
-        print("set top:", position, " Next action, set bottom")
+        """
+        Set top crop limit.
+        """
+        CutPlane.update_crop_limits(position, (0, 1, 0), "y1")
+        wx.MessageBox(f"set top: {position}", " Next action, set bottom")
 
     def cross_focal_action_4(self, position):
-        CutPlane.update_crop_limits(position, (0,-1,0), "y2")
-        print("set bottom:", position)
+        """
+        Set bottom crop limit.
+        """
+        CutPlane.update_crop_limits(position, (0, -1, 0), "y2")
+        wx.MessageBox(f"set bottom: {position}")
        
 
     def __init_aui(self):
@@ -505,16 +523,11 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        # Make sure the task panel is hidden
         task_pane = self.aui_manager.GetPane("Tasks")
         if task_pane.IsShown():
             task_pane.Hide()
             self.aui_manager.Update()
-
-            # Force UI refresh
             wx.Yield()
-
-            # Ensure the layout button in the toolbar is toggled properly
             Publisher.sendMessage("Set layout button full")
 
     def _SetProjectName(self, proj_name=""):
@@ -835,16 +848,11 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        # Make sure the task panel is hidden
         task_pane = self.aui_manager.GetPane("Tasks")
         if task_pane.IsShown():
             task_pane.Hide()
             self.aui_manager.Update()
-
-            # Force UI refresh
             wx.Yield()
-
-            # Ensure the layout button in the toolbar is toggled properly
             Publisher.sendMessage("Set layout button full")
 
     def OnDbsMode(self):
@@ -1161,7 +1169,7 @@ class Frame(wx.Frame):
             dlg = wx.MessageDialog(
                 self,
                 _(
-                    "It's not possible to run mandible segmenter because your system doesn't have the following modules installed:"
+                    "It's not possible to run mandible segmenter porque your system doesn't have the following modules installed:"
                 )
                 + " Torch",
                 "InVesalius 3 - Trachea segmenter",
@@ -1319,6 +1327,22 @@ class Frame(wx.Frame):
                     self.tag2_waiting_for_second_point = False
                 else:
                     wx.MessageBox("No pointer position available for second point.", "Error")
+        # Handle Ctrl+K presses
+        elif event.ControlDown() and event.GetKeyCode() == ord('k'):
+            self.ctrl_k_press_count += 1
+            if self.ctrl_k_press_count > 4:
+                self.ctrl_k_press_count = 1  # Reset after 4
+            self.handle_ctrl_k_press(self.ctrl_k_press_count)
+            return
+
+        # Check for Ctrl+R to remove all cut planes
+        elif event.ControlDown() and event.GetKeyCode() == ord('R'):
+            print("Ctrl+R pressed: Removing all cut planes")
+            from invesalius.data.volume import Volume
+            vol = Volume()
+            vol.remove_all_cut_planes()
+        
+        
         else:
             event.Skip()
 
@@ -2099,6 +2123,7 @@ class ObjectToolBar(AuiToolBar):
     """
 
     def __init__(self, parent):
+
         style = AUI_TB_PLAIN_BACKGROUND
         AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, agwStyle=style)
 

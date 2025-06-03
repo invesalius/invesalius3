@@ -2679,7 +2679,7 @@ class Viewer(wx.Panel):
             self.text.SetValue("WL: %d  WW: %d" % (wl, ww))
             #  self.canvas.modified = True
 
-    def OnShowRaycasting(self):
+    def OnShowRaycasting(self, preset_name):
         if not self.raycasting_volume:
             self.raycasting_volume = True
             # self._to_show_ball += 1
