@@ -1169,15 +1169,20 @@ class Controller:
                     path = os.path.join(
                         inv_paths.USER_RAYCASTING_PRESETS_DIRECTORY, preset_name + ".plist"
                     )
-            with open(path, "rb") as f:
-                preset = plistlib.load(f, fmt=plistlib.FMT_XML)
-            prj.Project().raycasting_preset = preset
-            # Notify volume
-            # TODO: Chamar grafico tb!
-            Publisher.sendMessage("Update raycasting preset")
+            try:
+                with open(path, "rb") as f:
+                    preset = plistlib.load(f, fmt=plistlib.FMT_XML)
+                prj.Project().raycasting_preset = preset
+                # Notify volume
+                # TODO: Chamar grafico tb!
+                Publisher.sendMessage("Update raycasting preset", preset_name=preset_name)
+            except (FileNotFoundError, plistlib.InvalidFileException, Exception) as e:
+                utils.debug(f"Failed to load raycasting preset: {e}")
+                # prj.Project().raycasting_preset = 0
+                # Publisher.sendMessage("Update raycasting preset", preset_name=const.RAYCASTING_OFF_LABEL)
         else:
             prj.Project().raycasting_preset = 0
-            Publisher.sendMessage("Update raycasting preset")
+            Publisher.sendMessage("Update raycasting preset", preset_name=preset_name)
 
     def SaveRaycastingPreset(self, preset_name):
         preset = prj.Project().raycasting_preset

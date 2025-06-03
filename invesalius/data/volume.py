@@ -128,6 +128,7 @@ class Volume:
         self.to_reload = False
         self.planes = []  # Instead of self.plane
         self.__bind_events()
+        self.preset_name = None
 
     def __bind_events(self):
         Publisher.subscribe(self.OnHideVolume, "Hide raycasting volume")
@@ -146,6 +147,7 @@ class Volume:
 
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
         Publisher.subscribe(self.on_create_cut_plane, "Create cut plane")
+        Publisher.subscribe(self.remove_all_cut_planes, "Remove all cut planes")    
 
     def ResetRayCasting(self):
         if self.exist:
@@ -214,9 +216,9 @@ class Volume:
             self.LoadVolume()
             self.exist = 1
 
-    def OnUpdatePreset(self):
+    def OnUpdatePreset(self, preset_name):
         self.__load_preset_config()
-
+        self.preset_name = preset_name
         if self.config:
             if self.to_reload:
                 self.exist = False
@@ -727,6 +729,18 @@ class Volume:
         cut_plane.Enable()
         if label:
             cut_plane.label = label
+        cut_plane.Disable()
+
+    def remove_all_cut_planes(self):
+        print("Length of planes:", len(self.planes))
+        for plane in self.planes:
+            plane.DestroyObjs()
+            print(f"Removing cut plane: {plane.label}")
+        Publisher.sendMessage("Load raycasting preset", preset_name="Off")
+        Publisher.sendMessage("Load Raycasting preset", preset_name=self.preset_name)
+
+        self.planes.clear()
+        Publisher.sendMessage("Render volume viewer")
 
 
 class VolumeMask:

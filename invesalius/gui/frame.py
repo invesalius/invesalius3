@@ -258,8 +258,15 @@ class Frame(wx.Frame):
             self.handle_ctrl_k_press(self.ctrl_k_press_count)
             return
 
-        # For all other keys, continue with the normal event handling (propagate the event).
-        event.Skip()
+        # Check for Ctrl+R to remove all cut planes
+        elif event.ControlDown() and event.GetKeyCode() == ord('R'):
+            print("Ctrl+R pressed: Removing all cut planes")
+            # from invesalius.data.volume import Volume
+            # vol = Volume()
+            # vol.remove_all_cut_planes()
+            Publisher.sendMessage("Remove all cut planes")
+        else:
+            event.Skip()
 
     def handle_ctrl_k_press(self, press_count):
         """
@@ -1162,7 +1169,7 @@ class Frame(wx.Frame):
             dlg = wx.MessageDialog(
                 self,
                 _(
-                    "It's not possible to run mandible segmenter because your system doesn't have the following modules installed:"
+                    "It's not possible to run mandible segmenter porque your system doesn't have the following modules installed:"
                 )
                 + " Torch",
                 "InVesalius 3 - Trachea segmenter",
@@ -1320,6 +1327,22 @@ class Frame(wx.Frame):
                     self.tag2_waiting_for_second_point = False
                 else:
                     wx.MessageBox("No pointer position available for second point.", "Error")
+        # Handle Ctrl+K presses
+        elif event.ControlDown() and event.GetKeyCode() == ord('k'):
+            self.ctrl_k_press_count += 1
+            if self.ctrl_k_press_count > 4:
+                self.ctrl_k_press_count = 1  # Reset after 4
+            self.handle_ctrl_k_press(self.ctrl_k_press_count)
+            return
+
+        # Check for Ctrl+R to remove all cut planes
+        elif event.ControlDown() and event.GetKeyCode() == ord('R'):
+            print("Ctrl+R pressed: Removing all cut planes")
+            from invesalius.data.volume import Volume
+            vol = Volume()
+            vol.remove_all_cut_planes()
+        
+        
         else:
             event.Skip()
 

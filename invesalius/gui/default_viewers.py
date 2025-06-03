@@ -281,7 +281,7 @@ class VolumeInteraction(wx.Panel):
         self.__update_curve_wwwl_text(curve)
         Publisher.sendMessage("Render volume viewer")
 
-    def OnSetRaycastPreset(self):
+    def OnSetRaycastPreset(self, preset_name):
         preset = project.Project().raycasting_preset
         p = self.aui_manager.GetPane(self.clut_raycasting)
         self.clut_raycasting.SetRaycastPreset(preset)
