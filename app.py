@@ -24,10 +24,15 @@ import os
 import re
 import shutil
 import sys
+import time
 import traceback
+from typing import Iterable
 from invesalius.data.slice_ import Slice
 import invesalius.data.surface_process as surface_process
 import vtk
+import invesalius.constants as const
+
+
 
 if sys.platform == "darwin":
     try:
@@ -65,6 +70,11 @@ import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
+
+
+from scripts import dicom_crop
+
+
 
 FS_ENCODE = sys.getfilesystemencoding()
 LANG = None
@@ -126,10 +136,12 @@ class InVesalius(wx.App):
         # Initialize the legacy logging system for backward compatibility
         log.invLogger.configureLogging()
 
-        # <-- Add this line to ensure tag_start runs after the GUI is visible
         import wx
         args = parse_command_line()
-        wx.CallAfter(tag_start, args.dicom_dir, args.tag)
+        # Call raycast_start instead of tag_start
+        print(f"Dicom directory: {args.dicom_dir}")
+        print(f"Raycast mode: {args.raycast_mode}")
+        wx.CallAfter(raycast_start, args.dicom_dir, args.raycast_mode)
 
 
 # ------------------------------------------------------------------
@@ -295,27 +307,22 @@ def non_gui_startup(args):
     _ = Controller(None)
 
     use_cmd_optargs(args)
-def tag_start(dicom_dir=None, files=None):
-    # Import DICOM if specified
+    
+def raycast_start(dicom_dir=None, raycast_mode=None):
+    """
+    Import DICOM if specified, then set raycasting mode if specified.
+    Ensures raycasting preset is loaded only after import is finished.
+    """
     if dicom_dir:
-        Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
-        Publisher.sendMessage("Wait for import to finish")
-    # Send the required messages
+        if raycast_mode:
+            print(f"Set waiting for import to finish before loading raycasting preset: {raycast_mode}")
+            def on_project_loaded():
+                Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
+            Publisher.subscribe(on_project_loaded, "Import finished")
+            Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
+    elif raycast_mode:
+        Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
 
-    # Optionally hide the mask if needed
-    # Publisher.sendMessage("Show mask", index=0, value=False)
-
-    if files:
-        index = 0
-        for file in files:
-            print(f"Sending message in topic Import surface file with data {{'filename': '{file}'}}")
-            Publisher.sendMessage("Import surface file", filename=file)
-            if file.endswith("lvm.stl"):
-                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 1.0, 0.5019607843137255))  # Yellow
-                Publisher.sendMessage("Set surface transparency", surface_index=index, transparency=0.833)  # 83% transparent
-            elif file.endswith("cornary.stl"):
-                Publisher.sendMessage("Set surface colour", surface_index=index, colour=(1.0, 0.0, 0.0))  # Red
-            index += 1
 # ------------------------------------------------------------------
 
 
@@ -326,7 +333,6 @@ def parse_command_line():
     """
     Handle command line arguments.
     """
-    # Parse command line arguments
     parser = argparse.ArgumentParser()
 
     # -d or --debug: print all pubsub messages sent
@@ -410,125 +416,42 @@ def parse_command_line():
     parser.add_argument(
         "--tag",
         nargs="+",
-        metavar="FILE",
-        help="Import surface files and tag them after loading DICOM.",
+        metavar="FILE [FILE ...] [X1 Y1 Z1 X2 Y2 Z2 [LABEL]] ...",
+        help=(
+            "Import one or more surface files (e.g. .stl), then create N tags in order after all files are imported. "
+            "Usage: --tag file1.stl file2.stl ... [x1 y1 z1 x2 y2 z2 [label]] [x1 y1 z1 x2 y2 z2 [label]] ...\n"
+            "First, specify all files to import. After the last file, provide 6 numbers (coordinates for a tag) and an optional label for each tag. "
+            "Tags are not associated with specific files, but are created in order after all files are imported."
+        ),
         type=str,
+    )
+    # Add the new argument for raycast mode
+    parser.add_argument(
+        "--raycast-mode",
+        type=str,
+        help="Specify a raycasting preset to load after surfaces are loaded (e.g. 'Mid contrast')."
+    )
+    parser.add_argument(
+        "--raycast-load",
+        type=str,
+        help="Load a raycasting preset by name at startup."
+    )
+    parser.add_argument(
+        "--print-crop-limits",
+        action="store_true",
+        help="Print crop limits to stdout and exit when available.",
+    )
+    parser.add_argument(
+        "--output-folder",
+        type=str,
+        help="Output folder for cropped DICOM series when using --print-crop-limits.",
     )
     args = parser.parse_args()
     return args
 
 
 def use_cmd_optargs(args):
-
-    # If the new center_select argument is provided
-    if args.center_select:
-        try:
-            x, y, z, output_path = args.center_select  # Now expecting X, Y, Z, OUTPUT_PATH
-            x = int(x)
-            y = int(y)
-            z = int(z)
-            coord_3d = (x, y, z)
-
-            if args.dicom_dir:
-                import_dir = args.dicom_dir
-                Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
-                Publisher.sendMessage("Wait for import to finish")
-
-            # Create the new mask from the selection
-            new_mask_selection = SelectMaskParts(Slice())
-            new_mask_selection.OnSelect(None, None, x, y, z)
-            new_mask_selection.CleanUp()
-            
-            
-
-            export_mask(new_mask_selection.config.mask, output_path, index=1)
-            print(f"Surface exported to {output_path}")
-            # -------------------------------------------
-
-            print(f"New mask '{new_mask_selection.config.mask.name}' created and used for surface generation.")
-        except Exception as e:
-            print(f"Error while creating the new mask or generating the surface: {e}")
-        finally:
-            print("done")
-            exit(0)
-
-    # Handle --crop-mask
-    if args.crop_mask:
-        try:
-            xi, xf, yi, yf, zi, zf, output_path = args.crop_mask
-            xi = int(xi)
-            xf = int(xf)
-            yi = int(yi)
-            yf = int(yf)
-            zi = int(zi)
-            zf = int(zf)
-
-            # Optionally import DICOM if specified
-            if args.dicom_dir:
-                import_dir = args.dicom_dir
-                Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
-                Publisher.sendMessage("Wait for import to finish")
-
-            # Create and crop the mask
-            cropper = CropMask(Slice())
-            cropper.set_limits(xi, xf, yi, yf, zi, zf)
-            cropper.crop()
-
-            # Export the cropped mask
-            export_mask(cropper.slice.current_mask, output_path, index=1)
-            print(f"Cropped mask exported to {output_path}")
-        except Exception as e:
-            print(f"Error while cropping and exporting the mask: {e}")
-        finally:
-            print("done")
-            exit(0)
-
-    # Handle --threshold-crop-mask
-    if args.threshold_crop_mask:
-        try:
-            lower, upper, xi, xf, yi, yf, zi, zf, output_path = args.threshold_crop_mask
-            lower = int(lower)
-            upper = int(upper)
-            xi = int(xi)
-            xf = int(xf)
-            yi = int(yi)
-            yf = int(yf)
-            zi = int(zi)
-            zf = int(zf)
-
-            # Optionally import DICOM if specified
-            if args.dicom_dir:
-                import_dir = args.dicom_dir
-                Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
-                Publisher.sendMessage("Wait for import to finish")
-
-            slice_ = Slice()
-            mask = slice_.current_mask
-            if mask is None:
-                raise RuntimeError("No mask available to apply threshold.")
-
-            # Set the new threshold range on the existing mask
-            mask.threshold_range = (lower, upper)
-            print(f"Set threshold range to {lower}-{upper} on mask '{mask.name}'.")
-
-            # Apply the threshold to the current mask
-            # slice_.do_threshold_to_all_slices(mask)
-            # print("Applied threshold to all slices.")
-
-            # Crop the mask
-            cropper = CropMask(slice_)
-            cropper.set_limits(xi, xf, yi, yf, zi, zf)
-            cropper.crop()
-            print(f"Mask cropped to limits: {xi}, {xf}, {yi}, {yf}, {zi}, {zf}.")
-
-            # Export the cropped mask
-            export_mask(mask, output_path, index=mask.index)
-            print(f"Thresholded and cropped mask exported to {output_path}")
-        except Exception as e:
-            print(f"Error while thresholding, cropping, and exporting the mask: {e}")
-        finally:
-            print("done")
-            exit(0)
+    
 
     # If import DICOM argument...
     if args.dicom_dir:

@@ -30,6 +30,7 @@ import wx.aui
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
 
 import invesalius.constants as const
+from invesalius.data.volume import CutPlane, Volume
 import invesalius.gui.default_tasks as tasks
 import invesalius.gui.default_viewers as viewers
 import invesalius.gui.dialogs as dlg
@@ -151,6 +152,10 @@ class Frame(wx.Frame):
         self.post_sample_counter = 1   # for sample tags (Ctrl+L)
         # log.initLogger()
 
+        self.ctrl_k_press_count = 0
+        self.latest_cross_focal_position = None
+        Publisher.subscribe(self.on_cross_focal_update, "Update volume viewer pointer")
+
     def __bind_events(self):
         """
         Bind events related to pubsub.
@@ -245,8 +250,69 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Delete selected markers")
             return
 
-        # For all other keys, continue with the normal event handling (propagate the event).
-        event.Skip()
+        # Handle Ctrl+K presses
+        if modifiers & wx.MOD_CONTROL and keycode in (ord('k'), ord('K')):
+            self.ctrl_k_press_count += 1
+            if self.ctrl_k_press_count > 4:
+                self.ctrl_k_press_count = 1  # Reset after 4
+            self.handle_ctrl_k_press(self.ctrl_k_press_count)
+            return
+
+        # Check for Ctrl+R to remove all cut planes
+        elif event.ControlDown() and event.GetKeyCode() == ord('R'):
+            print("Ctrl+R pressed: Removing all cut planes")
+            # from invesalius.data.volume import Volume
+            # vol = Volume()
+            # vol.remove_all_cut_planes()
+            Publisher.sendMessage("Remove all cut planes")
+        else:
+            event.Skip()
+
+    def handle_ctrl_k_press(self, press_count):
+        """
+        Call a different function for each Ctrl+K press, using the latest cross focal position.
+        """
+        if not self.latest_cross_focal_position:
+            wx.MessageBox("No cross focal position available.", "Error")
+            return
+
+        if press_count == 1:
+            self.cross_focal_action_1(self.latest_cross_focal_position)
+        elif press_count == 2:
+            self.cross_focal_action_2(self.latest_cross_focal_position)
+        elif press_count == 3:
+            self.cross_focal_action_3(self.latest_cross_focal_position)
+        elif press_count == 4:
+            self.cross_focal_action_4(self.latest_cross_focal_position)
+
+    def cross_focal_action_1(self, position):
+        """
+        Set right crop limit.
+        """
+        CutPlane.update_crop_limits(position, (1, 0, 0), "x1")
+        wx.MessageBox(f"set right: {position}", " Next action, set left")
+
+    def cross_focal_action_2(self, position):
+        """
+        Set left crop limit.
+        """
+        CutPlane.update_crop_limits(position, (-1, 0, 0), "x2")
+        wx.MessageBox(f"set left: {position}", " Next action, set top")
+
+    def cross_focal_action_3(self, position):
+        """
+        Set top crop limit.
+        """
+        CutPlane.update_crop_limits(position, (0, 1, 0), "y1")
+        wx.MessageBox(f"set top: {position}", " Next action, set bottom")
+
+    def cross_focal_action_4(self, position):
+        """
+        Set bottom crop limit.
+        """
+        CutPlane.update_crop_limits(position, (0, -1, 0), "y2")
+        wx.MessageBox(f"set bottom: {position}")
+       
 
     def __init_aui(self):
         """
@@ -457,16 +523,11 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        # Make sure the task panel is hidden
         task_pane = self.aui_manager.GetPane("Tasks")
         if task_pane.IsShown():
             task_pane.Hide()
             self.aui_manager.Update()
-
-            # Force UI refresh
             wx.Yield()
-
-            # Ensure the layout button in the toolbar is toggled properly
             Publisher.sendMessage("Set layout button full")
 
     def _SetProjectName(self, proj_name=""):
@@ -787,16 +848,11 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        # Make sure the task panel is hidden
         task_pane = self.aui_manager.GetPane("Tasks")
         if task_pane.IsShown():
             task_pane.Hide()
             self.aui_manager.Update()
-
-            # Force UI refresh
             wx.Yield()
-
-            # Ensure the layout button in the toolbar is toggled properly
             Publisher.sendMessage("Set layout button full")
 
     def OnDbsMode(self):
@@ -1113,7 +1169,7 @@ class Frame(wx.Frame):
             dlg = wx.MessageDialog(
                 self,
                 _(
-                    "It's not possible to run mandible segmenter because your system doesn't have the following modules installed:"
+                    "It's not possible to run mandible segmenter porque your system doesn't have the following modules installed:"
                 )
                 + " Torch",
                 "InVesalius 3 - Trachea segmenter",
@@ -1171,6 +1227,11 @@ class Frame(wx.Frame):
     def on_pointer_update(self, position=None, **kwargs):
         if position:
             self.current_pointer_pos = position
+
+    def on_cross_focal_update(self, position=None, **kwargs):
+        # Store the latest cross focal position
+        if position:
+            self.latest_cross_focal_position = position
 
     def on_key_down(self, event):
         if event.ControlDown() and event.GetKeyCode() == ord('A'):
@@ -1266,6 +1327,22 @@ class Frame(wx.Frame):
                     self.tag2_waiting_for_second_point = False
                 else:
                     wx.MessageBox("No pointer position available for second point.", "Error")
+        # Handle Ctrl+K presses
+        elif event.ControlDown() and event.GetKeyCode() == ord('k'):
+            self.ctrl_k_press_count += 1
+            if self.ctrl_k_press_count > 4:
+                self.ctrl_k_press_count = 1  # Reset after 4
+            self.handle_ctrl_k_press(self.ctrl_k_press_count)
+            return
+
+        # Check for Ctrl+R to remove all cut planes
+        elif event.ControlDown() and event.GetKeyCode() == ord('R'):
+            print("Ctrl+R pressed: Removing all cut planes")
+            from invesalius.data.volume import Volume
+            vol = Volume()
+            vol.remove_all_cut_planes()
+        
+        
         else:
             event.Skip()
 
@@ -2046,6 +2123,7 @@ class ObjectToolBar(AuiToolBar):
     """
 
     def __init__(self, parent):
+
         style = AUI_TB_PLAIN_BACKGROUND
         AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, agwStyle=style)
 

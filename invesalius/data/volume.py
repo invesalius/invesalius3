@@ -19,6 +19,7 @@
 import os
 import plistlib
 import weakref
+import functools
 
 from packaging.version import Version
 from vtkmodules.util import numpy_support
@@ -125,7 +126,9 @@ class Volume:
         self.image = None
         self.loaded_image = 0
         self.to_reload = False
+        self.planes = []  # Instead of self.plane
         self.__bind_events()
+        self.preset_name = None
 
     def __bind_events(self):
         Publisher.subscribe(self.OnHideVolume, "Hide raycasting volume")
@@ -143,6 +146,8 @@ class Volume:
         Publisher.subscribe(self.ResetRayCasting, "Reset Raycasting")
 
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
+        Publisher.subscribe(self.on_create_cut_plane, "Create cut plane")
+        Publisher.subscribe(self.remove_all_cut_planes, "Remove all cut planes")    
 
     def ResetRayCasting(self):
         if self.exist:
@@ -211,9 +216,9 @@ class Volume:
             self.LoadVolume()
             self.exist = 1
 
-    def OnUpdatePreset(self):
+    def OnUpdatePreset(self, preset_name):
         self.__load_preset_config()
-
+        self.preset_name = preset_name
         if self.config:
             if self.to_reload:
                 self.exist = False
@@ -682,6 +687,11 @@ class Volume:
                 self.plane_on = True
                 self.plane = CutPlane(self.final_imagedata, self.volume_mapper)
 
+    def add_cut_plane(self):
+        cut_plane = CutPlane(self.final_imagedata, self.volume_mapper)
+        self.planes.append(cut_plane)
+        cut_plane.Enable()
+
     def CalculateHistogram(self):
         image = self.image
         r = int(image.GetScalarRange()[1] - image.GetScalarRange()[0])
@@ -702,6 +712,35 @@ class Volume:
         # else:
         #    valor = value
         return value - scale[0]
+
+    def on_create_cut_plane(self, origin, normal, label):
+        cut_plane = CutPlane(self.final_imagedata, self.volume_mapper)
+        
+        # Set the plane's position and orientation
+        cut_plane.plane_widget.SetOrigin(*origin)
+        # cut_plane.plane_widget.SetNormal(*normal)
+        cut_plane.plane_source.SetOrigin(origin)
+        cut_plane.plane_source.SetNormal(normal)
+        cut_plane.plane.SetOrigin(origin)
+        cut_plane.plane.SetNormal(normal)
+        
+        # cut_plane.Reset()
+        self.planes.append(cut_plane)
+        cut_plane.Enable()
+        if label:
+            cut_plane.label = label
+        cut_plane.Disable()
+
+    def remove_all_cut_planes(self):
+        print("Length of planes:", len(self.planes))
+        for plane in self.planes:
+            plane.DestroyObjs()
+            print(f"Removing cut plane: {plane.label}")
+        Publisher.sendMessage("Load raycasting preset", preset_name="Off")
+        Publisher.sendMessage("Load Raycasting preset", preset_name=self.preset_name)
+
+        self.planes.clear()
+        Publisher.sendMessage("Render volume viewer")
 
 
 class VolumeMask:
@@ -741,7 +780,7 @@ class VolumeMask:
             self._flip = vtkImageFlip()
             self._flip.SetInputData(self.mask.imagedata)
             self._flip.SetFilteredAxis(1)
-            self._flip.FlipAboutOriginOn()
+            self._flip.FlipAboutOrigin()
 
             self._volume_mapper.SetInputConnection(self._flip.GetOutputPort())
             self._volume_mapper.Update()
@@ -821,6 +860,7 @@ class CutPlane:
         plane_source.SetPoint1(plane_widget.GetPoint1())
         plane_source.SetPoint2(plane_widget.GetPoint2())
         plane_source.SetNormal(plane_widget.GetNormal())
+
         plane_mapper = self.plane_mapper = vtkPolyDataMapper()
         plane_mapper.SetInputData(plane_source.GetOutput())
         self.plane_actor = plane_actor = vtkActor()
@@ -857,6 +897,8 @@ class CutPlane:
         self.plane.SetNormal(plane_source.GetNormal())
         self.plane.SetOrigin(plane_source.GetOrigin())
         Publisher.sendMessage("Render volume viewer")
+        # Print origin and normal each time the plane is moved
+        print(f"CutPlane moved: Origin={plane_widget.GetOrigin()}, Normal={plane_widget.GetNormal()}")
 
     def Enable(self):
         self.plane_widget.On()
@@ -890,3 +932,52 @@ class CutPlane:
         del self.plane_actor
         del self.normal
         del self.plane
+    def update_crop_limits(origin: tuple[int, int, int], normal: tuple[int, int, int], label: str = None):
+        
+            Publisher.sendMessage(
+                "Create cut plane",
+                origin=origin,
+                normal=normal,
+                label=label
+            )
+            # Publisher.sendMessage(
+            #     "Create cut plane",
+            #     origin=(50.689785105501976, -123.21592241920409, 68.5),
+            #     normal=(1, 0, 0),
+            #     label="Crop X min"
+            # )
+            # # # Plane at xf (YZ plane)
+            # Publisher.sendMessage(
+            #     "Create cut plane",
+            #     origin=(174.5108179722372, -122.48449494233766, 65.5),
+            #     normal=(-1, 0, 0),
+            #     label="Crop X max"
+            # )
+            # # # Plane at yi (XZ plane)
+            # Publisher.sendMessage(
+            #     "Create cut plane",
+            #     origin=(107.32721972890238, -173.2818497116884, 65.5),
+            #     normal=(0, 1, 0),
+            #     label="Crop Y min"
+            # )
+            # # # Plane at yf (XZ plane)
+            # Publisher.sendMessage(
+            #     "Create cut plane",
+            #     origin=(104.04997103410557, -64.3133306096941, 65.5),
+            #     normal=(0, -1, 0),
+            #     label="Crop Y max"
+            # )
+            # # Optionally, add Z planes for full 3D cropping:
+            # Publisher.sendMessage(
+            #     "Create cut plane",
+            #     origin=(0, 0, zi),
+            #     normal=(0, 0, 1),
+            #     label="Crop Z min"
+            # )
+            # Publisher.sendMessage(
+            #     "Create cut plane",
+            #     origin=(0, 0, zf),
+            #     normal=(0, 0, -1),
+            #     label="Crop Z max"
+            # )
+
