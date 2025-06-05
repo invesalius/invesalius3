@@ -264,7 +264,11 @@ class MeasurementManager:
         m = self.current[0]
 
         x, y, z = position
-        actors = mr.AddPoint(x, y, z, self.label)
+        # Only pass label if AddPoint supports it (LinearMeasure)
+        if isinstance(mr, LinearMeasure):
+            actors = mr.AddPoint(x, y, z, label=self.label)
+        else:
+            actors = mr.AddPoint(x, y, z)
         m.points.append(position)
 
         if m.location == const.SURFACE:
@@ -1178,6 +1182,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
         self.interactive = interactive
 
     def set_center(self, pos):
+        print("Setting center:", pos)
         self.center = pos
         self._need_calc = True
         self.ellipse.center = self.center
@@ -1186,6 +1191,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
             self._measurement.points = [self.center, self.point1, self.point2]
 
     def set_point1(self, pos):
+        print("Setting point1:", pos)
         self.point1 = pos
         self._need_calc = True
         self.ellipse.set_point1(self.point1)
@@ -1194,6 +1200,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
             self._measurement.points = [self.center, self.point1, self.point2]
 
     def set_point2(self, pos):
+        print("Setting point2:", pos)
         self.point2 = pos
         self._need_calc = True
         self.ellipse.set_point2(self.point2)
@@ -1210,6 +1217,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
         _area: float,
         _perimeter: float,
     ):
+        print("Setting density values:", _min, _max, _mean, _std, _area, _perimeter)
         self._min = _min
         self._max = _max
         self._mean = _mean

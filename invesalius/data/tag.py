@@ -156,6 +156,7 @@ class Tag2D(measures.LinearMeasure):
             type_="Linear",
             value=label
         )
+        
 
     # Optionally override SetVisibility to keep self.visible in sync
     def SetVisibility(self, visible):
@@ -163,5 +164,100 @@ class Tag2D(measures.LinearMeasure):
         super().SetVisibility(visible)
 
 
+class DensityTag:
+    """
+    Represents a density tag in the 3D or 2D scene.
 
+    Args:
+        x, y, z (float): Coordinates for the center of the density ellipse.
+        label (str): The label to display for the tag.
+        colour (tuple): RGB tuple for the tag color (default: (0, 255, 0)).
+        location (str): The location type (default: const.AXIAL).
+        slice_number (int): The slice number (default: 0).
+    """
+    def __init__(self, x, y, z, label, colour=(0, 255, 0), location=const.AXIAL, slice_number=0):
+        orientation = (
+            "AXIAL" if location == const.AXIAL else
+            "CORONAL" if location == const.CORONAL else
+            "SAGITAL" if location == const.SAGITAL else
+            "3D"
+        )
+        # Create a minimal ellipse (all points at the same location for now)
+        density_measure = measures.CircleDensityMeasure(
+            orientation=orientation,
+            slice_number=slice_number,
+            colour=colour,
+            # interactive=False
+        )
+        center = (x, -y, z)
+        density_measure.set_center(center)
+        # Set p1 to be 10 units along +x, p2 to be 10 units along +y from center
+        p1 = (x + 3, -y, z)
+        p2 = (x, -y + 3, z)
+        density_measure.set_point1(p1)
+        density_measure.set_point2(p2)
+        # Optionally set label as a property if needed'
+        # Example values for demonstration
+        _min = 12.5
+        _max = 98.7
+        _mean = 54.3
+        _std = 10.2
+        _area = 123.45
+        _perimeter = 44.2
 
+        # Call the method on your density measure instance
+        density_measure.set_density_values(
+            _min,
+            _max,
+            _mean,
+            _std,
+            _area,
+            _perimeter
+        )
+
+        # Create and set the measurement object before adding to manager
+        dm = measures.DensityMeasurement()
+        dm.location = density_measure.location
+        dm.slice_number = density_measure.slice_number
+        dm.colour = density_measure.colour
+        dm.value = density_measure._mean
+        dm.area = density_measure._area
+        dm.mean = density_measure._mean
+        dm.min = density_measure._min
+        dm.max = density_measure._max
+        dm.std = density_measure._std
+        dm.points = [density_measure.center, density_measure.point1, density_measure.point2]
+        dm.type = const.DENSITY_ELLIPSE
+        density_measure.index = dm.index
+        density_measure.set_measurement(dm)
+
+        # Register with MeasurementManager
+        mm = measures.MeasurementManager()
+        mm.measures.append((dm, density_measure))
+
+        # Register with MeasurementManager via pubsub (optional, but kept for compatibility)
+        Publisher.sendMessage(
+            "Add density measurement",
+            density_measure=density_measure
+        )
+
+        self.density_measure = density_measure
+        self.index = getattr(density_measure, "index", None)
+
+        Publisher.sendMessage(
+            ("Update measurement info in GUI",),
+            index=self.index,
+            name=label,
+            colour=colour,
+            location=orientation,
+            type_="Density",
+            value='99'
+        )
+
+    def GetActors(self):
+        if hasattr(self.density_measure, "ellipse"):
+            return [self.density_measure.ellipse]
+        return []
+
+    def SetVisibility(self, visible):
+        self.density_measure.SetVisibility(visible)

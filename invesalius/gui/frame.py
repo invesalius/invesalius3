@@ -150,6 +150,8 @@ class Frame(wx.Frame):
         self.stenosis_counter = 1  # for stenosis tags
         self.pre_sample_counter = 1    # for sample tags (Ctrl+A)
         self.post_sample_counter = 1   # for sample tags (Ctrl+L)
+        self.start_slice = None
+        self.end_slice = None
         # log.initLogger()
 
         self.ctrl_k_press_count = 0
@@ -231,7 +233,7 @@ class Frame(wx.Frame):
                 event.Skip()
                 return
             # Check for Ctrl+A
-            if unicode in (ord("a"), ord("A"), ord("l"), ord("L")):
+            if unicode in (ord("a"), ord("A"), ord("l"), ord("L"), ord("D"), ord("d"), ord("k"), ord("K"), ord("r"), ord("R")):
                 self.on_key_down(event)
                 return
 
@@ -250,21 +252,8 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Delete selected markers")
             return
 
-        # Handle Ctrl+K presses
-        if modifiers & wx.MOD_CONTROL and keycode in (ord('k'), ord('K')):
-            self.ctrl_k_press_count += 1
-            if self.ctrl_k_press_count > 4:
-                self.ctrl_k_press_count = 1  # Reset after 4
-            self.handle_ctrl_k_press(self.ctrl_k_press_count)
-            return
 
-        # Check for Ctrl+R to remove all cut planes
-        elif event.ControlDown() and event.GetKeyCode() == ord('R'):
-            print("Ctrl+R pressed: Removing all cut planes")
-            # from invesalius.data.volume import Volume
-            # vol = Volume()
-            # vol.remove_all_cut_planes()
-            Publisher.sendMessage("Remove all cut planes")
+
         else:
             event.Skip()
 
@@ -1278,8 +1267,11 @@ class Frame(wx.Frame):
             else:
                 wx.MessageBox("No pointer position available.", "Error")
         elif event.ControlDown() and event.GetKeyCode() == ord('L'):
+            from invesalius.data.slice_ import Slice
+            from invesalius.data.tag import Tag2D
             print("Ctrl+L pressed")
             if not self.tag2_waiting_for_second_point:
+                self.start_slice = current_axial_index = Slice().buffer_slices[const.AXIAL_STR].index
                 if self.current_pointer_pos:
                     self.tag2_first_point = self.current_pointer_pos
                     self.tag2_waiting_for_second_point = True
@@ -1313,22 +1305,60 @@ class Frame(wx.Frame):
                         label = combo.GetValue()
                         Tag3D(point1, point2, label)
                         # Add Tag2D after Tag2
+                        
                         from invesalius.data.slice_ import Slice
                         current_axial_index = Slice().buffer_slices[const.AXIAL_STR].index
+                        self.end_slice = current_axial_index
                         print("Current axial slice index:", current_axial_index)
                         from invesalius.data.tag import Tag2D
                         #invert for 2d slice
                         Tag2D(point1, point2, slice_number=current_axial_index, label=label)
-                        current_axial_index = Slice().buffer_slices[const.CORONAL_STR].index
                         Tag2D(point1, point2, slice_number=current_axial_index, label=label, location=const.CORONAL)
                         self.stenosis_counter += 1  # Increment after use
                     dlg.Destroy()
                     self.tag2_first_point = None
                     self.tag2_waiting_for_second_point = False
+
+                    #######################
+                    import numpy as np
+
+                    x1, y1, z1 = point1
+                    x2, y2, z2 = point2
+
+                    from invesalius.data.tag import DensityTag
+
+                    num_slices = abs(self.end_slice - self.start_slice) + 1
+
+                    # Interpolate x and y normally, but z by 0.5 per step
+                    if self.start_slice < self.end_slice:
+                        slice_range = range(self.start_slice, self.end_slice + 1)
+                        step = 1
+                    else:
+                        slice_range = range(self.end_slice, self.start_slice + 1)
+                        step = -1
+
+                    xs = np.linspace(x2, x1, num_slices)
+                    ys = np.linspace(y2, y1, num_slices)
+                    # z progresses by 0.5 per slice, starting from z2 towards z1
+                    if num_slices > 1:
+                        if z1 > z2:
+                            zs = np.arange(z2, z2 + 0.5 * num_slices, 0.5)
+                        else:
+                            zs = np.arange(z2, z2 - 0.5 * num_slices, -0.5)
+                        zs = zs[:num_slices]
+                    else:
+                        zs = np.array([z2])
+
+                    for idx, slice_num in enumerate(slice_range):
+                        print(f"Adding density tag at slice {slice_num}")
+                        DensityTag(
+                            xs[idx], ys[idx], zs[idx], label, location=const.AXIAL, slice_number=slice_num
+                        )
+                            
                 else:
                     wx.MessageBox("No pointer position available for second point.", "Error")
         # Handle Ctrl+K presses
-        elif event.ControlDown() and event.GetKeyCode() == ord('k'):
+        if event.ControlDown() and event.GetKeyCode() == ord('K'):
             self.ctrl_k_press_count += 1
             if self.ctrl_k_press_count > 4:
                 self.ctrl_k_press_count = 1  # Reset after 4
@@ -1338,11 +1368,28 @@ class Frame(wx.Frame):
         # Check for Ctrl+R to remove all cut planes
         elif event.ControlDown() and event.GetKeyCode() == ord('R'):
             print("Ctrl+R pressed: Removing all cut planes")
-            from invesalius.data.volume import Volume
-            vol = Volume()
-            vol.remove_all_cut_planes()
+            # from invesalius.data.volume import Volume
+            # vol = Volume()
+            # vol.remove_all_cut_planes()
+            Publisher.sendMessage("Remove all cut planes")
         
-        
+        # Handle Ctrl+D for density tag
+        elif event.ControlDown() and event.GetKeyCode() == ord('D'):
+            print("Ctrl+D pressed: Adding density tag")
+            if self.current_pointer_pos:
+                from invesalius.data.tag import DensityTag
+                from invesalius.data.slice_ import Slice
+                # Get current slice index for both orientations
+                current_axial_index = Slice().buffer_slices.get("AXIAL", None)
+                slice_number = current_axial_index.index if current_axial_index else 0
+                dlg = wx.TextEntryDialog(self, "Enter density tag label:", "Density Tag", f"density {slice_number}")
+                if dlg.ShowModal() == wx.ID_OK:
+                    label = dlg.GetValue()
+                    x, y, z = self.current_pointer_pos
+                    DensityTag(x, y, z, label, location=const.AXIAL, slice_number=slice_number)
+                dlg.Destroy()
+            else:
+                wx.MessageBox("No pointer position available.", "Error")
         else:
             event.Skip()
 
@@ -2067,6 +2114,7 @@ class ProjectToolBar(AuiToolBar):
         #                   BMP_PHOTO)
         # self.AddLabelTool(const.ID_PRINT_SCREENSHOT,
         #                   "Print medical image...",
+       
         #                   BMP_PRINT)
 
     def _EnableState(self, state):
@@ -2524,7 +2572,7 @@ class SliceToolBar(AuiToolBar):
         """
         for tool in self.enable_items:
             self.EnableTool(tool, False)
-        self.Refresh()
+            self._UntoggleAllItems()
 
     def SetStateProjectOpen(self):
         """
