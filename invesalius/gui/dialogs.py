@@ -7042,23 +7042,8 @@ class ConfigurePolarisDialog(wx.Dialog):
         return port_list, port_selec
 
     def _init_gui(self) -> None:
-        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN)
-        com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
-        row_com = wx.BoxSizer(wx.VERTICAL)
-        row_com.Add(wx.StaticText(self, wx.ID_ANY, "COM port or IP:"), 0, wx.TOP | wx.RIGHT, 5)
-        row_com.Add(com_ports, 0, wx.EXPAND)
-
-        port_list, port_selec = self.serial_ports()
-
-        com_ports.Append(port_list)
-        com_ports.Append(const.NDI_IP)
-        if port_selec:
-            com_ports.SetSelection(port_selec[0])
-        else:
-            com_ports.SetSelection(0)
-        self.com_ports = com_ports
-
         session = ses.Session()
+        last_ndi_com_port = session.GetConfig("last_ndi_com_port", "")
         last_ndi_probe_marker = session.GetConfig("last_ndi_probe_marker", "")
         last_ndi_ref_marker = session.GetConfig("last_ndi_ref_marker", "")
         last_ndi_obj_markers = session.GetConfig("last_ndi_obj_markers", [])
@@ -7068,6 +7053,26 @@ class ConfigurePolarisDialog(wx.Dialog):
             last_ndi_ref_marker = inv_paths.NDI_MAR_DIR_REF
         while len(last_ndi_obj_markers) < self.n_coils:
             last_ndi_obj_markers.append(inv_paths.NDI_MAR_DIR_OBJ)
+
+        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN)
+        com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
+        row_com = wx.BoxSizer(wx.VERTICAL)
+        row_com.Add(wx.StaticText(self, wx.ID_ANY, "COM port or IP:"), 0, wx.TOP | wx.RIGHT, 5)
+        row_com.Add(com_ports, 0, wx.EXPAND)
+
+        port_list, port_selec = self.serial_ports()
+
+        com_ports_list = port_list + const.NDI_IP
+        com_ports.Append(com_ports_list)
+
+        if last_ndi_com_port:
+            index_last_ndi_com_port = com_ports_list.index(last_ndi_com_port)
+            com_ports.SetSelection(index_last_ndi_com_port)
+        elif port_selec:
+            com_ports.SetSelection(port_selec[0])
+        else:
+            com_ports.SetSelection(0)
+        self.com_ports = com_ports
 
         self.dir_probe = wx.FilePickerCtrl(
             self,
@@ -7150,17 +7155,17 @@ class ConfigurePolarisDialog(wx.Dialog):
         self.btn_ok.Enable(True)
 
     def GetValue(self) -> Tuple[str, str, str, str]:
+        com_port = self.com_ports.GetValue()
         fn_probe = self.dir_probe.GetPath()
         fn_ref = self.dir_ref.GetPath()
         fn_objs = [dir_obj.GetPath() for dir_obj in self.dir_objs]
 
         if fn_probe and fn_ref and fn_objs:
             session = ses.Session()
+            session.SetConfig("last_ndi_com_port", com_port)
             session.SetConfig("last_ndi_probe_marker", fn_probe)
             session.SetConfig("last_ndi_ref_marker", fn_ref)
             session.SetConfig("last_ndi_obj_markers", fn_objs)
-
-        com_port = self.com_ports.GetValue()
 
         return com_port, fn_probe, fn_ref, fn_objs
 
