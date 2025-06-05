@@ -1496,7 +1496,7 @@ class ObjectTab(wx.Panel):
 
 class TrackerTab(wx.Panel):
     def __init__(self, parent, tracker, robot):
-        wx.Panel.__init__(self, parent)
+        super().__init__(parent)
 
         self.__bind_events()
 
@@ -1505,8 +1505,38 @@ class TrackerTab(wx.Panel):
         self.robot_ip = None
         self.matrix_tracker_to_robot = None
         self.n_coils = 1
+
         self.LoadConfig()
 
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetupTracker()
+        self.SetupRobot()
+
+        self.SetSizerAndFit(self.main_sizer)
+        self.Layout()
+
+        Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
+
+    def __bind_events(self):
+        Publisher.subscribe(self.ShowParent, "Show preferences dialog")
+        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
+        Publisher.subscribe(
+            self.OnSetRobotTransformationMatrix,
+            "Neuronavigation to Robot: Set robot transformation matrix",
+        )
+
+    def LoadConfig(self):
+        session = ses.Session()
+        self.n_coils = session.GetConfig("navigation", {}).get("n_coils", 1)
+
+        state = session.GetConfig("robot", {})
+
+        self.robot_ip = state.get("robot_ip", None)
+        self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
+        if self.matrix_tracker_to_robot is not None:
+            self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
+
+    def SetupTracker(self):
         # ComboBox for choosing the no. of coils to track
         n_coils_options = [str(n) for n in range(1, 10)]
         select_n_coils_elem = wx.ComboBox(
@@ -1546,7 +1576,6 @@ class TrackerTab(wx.Panel):
         select_tracker_label = wx.StaticText(self, -1, _("Choose the tracking device: "))
 
         # ComboBox for tracker reference mode
-        tooltip = _("Choose the navigation reference mode")
         choice_ref = wx.ComboBox(
             self,
             -1,
@@ -1556,6 +1585,7 @@ class TrackerTab(wx.Panel):
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
         choice_ref.SetSelection(const.DEFAULT_REF_MODE)
+        tooltip = _("Choose the navigation reference mode")
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(
             wx.EVT_COMBOBOX, partial(self.OnChooseReferenceMode, ctrl=select_tracker_elem)
@@ -1580,6 +1610,9 @@ class TrackerTab(wx.Panel):
         sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
+        self.main_sizer.Add(sizer, 0, wx.ALL | wx.EXPAND, 7)
+
+    def SetupRobot(self):
         lbl_rob = wx.StaticText(self, -1, _("IP for robot device: "))
 
         # ComboBox for spatial tracker device selection
@@ -1674,41 +1707,17 @@ class TrackerTab(wx.Panel):
         rob_static_sizer.Add(rob_ip_sizer, 0, wx.ALL | wx.EXPAND, 7)
         rob_static_sizer.Add(rob_status_sizer, 0, wx.ALL | wx.EXPAND, 7)
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.AddMany(
-            [(sizer, 0, wx.ALL | wx.EXPAND, 7), (rob_static_sizer, 0, wx.ALL | wx.EXPAND, 7)]
-        )
-        self.SetSizerAndFit(main_sizer)
-        self.Layout()
-
-        Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
-
-    def __bind_events(self):
-        Publisher.subscribe(self.ShowParent, "Show preferences dialog")
-        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
-        Publisher.subscribe(
-            self.OnSetRobotTransformationMatrix,
-            "Neuronavigation to Robot: Set robot transformation matrix",
-        )
-
-    def LoadConfig(self):
-        session = ses.Session()
-        self.n_coils = session.GetConfig("navigation", {}).get("n_coils", 1)
-
-        state = session.GetConfig("robot", {})
-
-        self.robot_ip = state.get("robot_ip", None)
-        self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
-        if self.matrix_tracker_to_robot is not None:
-            self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
+        self.main_sizer.Add(rob_static_sizer, 0, wx.ALL | wx.EXPAND, 7)
 
     def OnChooseNoOfCoils(self, evt, ctrl):
         old_n_coils = self.n_coils
         if hasattr(evt, "GetSelection"):
             choice = evt.GetSelection()
             self.n_coils = choice + 1
+            print(f"Selected number of coils: {self.n_coils}")
         else:
             self.n_coils = 1
+            print("Selected number of coils: 1")
 
         if self.n_coils != old_n_coils:  # if n_coils was changed reset connection
             tracker_id = self.tracker.tracker_id
