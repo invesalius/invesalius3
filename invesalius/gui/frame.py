@@ -1308,12 +1308,13 @@ class Frame(wx.Frame):
                         
                         from invesalius.data.slice_ import Slice
                         current_axial_index = Slice().buffer_slices[const.AXIAL_STR].index
+                        current_coronal_index = Slice().buffer_slices[const.CORONAL_STR].index
                         self.end_slice = current_axial_index
                         print("Current axial slice index:", current_axial_index)
                         from invesalius.data.tag import Tag2D
                         #invert for 2d slice
                         Tag2D(point1, point2, slice_number=current_axial_index, label=label)
-                        Tag2D(point1, point2, slice_number=current_axial_index, label=label, location=const.CORONAL)
+                        Tag2D(point1, point2, slice_number=current_coronal_index, label=label, location=const.CORONAL)
                         self.stenosis_counter += 1  # Increment after use
                     dlg.Destroy()
                     self.tag2_first_point = None
