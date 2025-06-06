@@ -1286,25 +1286,7 @@ class ObjectTab(wx.Panel):
                         dialog.GetValue()
                     )
 
-                    if coil_name in self.coil_registrations and coil_name != "default_coil":
-                        # Warn that we are overwriting an old registration
-                        dialog = wx.TextEntryDialog(
-                            None,
-                            _(
-                                "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
-                            ),
-                            _("Warning: Coil Name Conflict"),
-                            value=coil_name,
-                        )
-                        if dialog.ShowModal() == wx.ID_OK:
-                            coil_name = (
-                                dialog.GetValue().strip()
-                            )  # Update coil_name with user input
-                            dialog.Destroy()
-                        else:
-                            dialog.Destroy()
-                            return  # Cancel the operation if the user closes the dialog or cancels
-
+                    self.coil_registrations = self.session.GetConfig("coil_registrations", {})
                     if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
                         coil_registration = {
                             "fiducials": obj_fiducials.tolist(),
@@ -1366,22 +1348,6 @@ class ObjectTab(wx.Panel):
                 if len(data[0]) < 6:
                     coil_name = "default_coil"
                     tracker_id = self.tracker.tracker_id
-
-                if coil_name in self.coil_registrations and coil_name != "default_coil":
-                    # Warn that we are overwriting an old registration
-                    dialog = wx.TextEntryDialog(
-                        None,
-                        _(
-                            "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
-                        ),
-                        _("Warning: Coil Name Conflict"),
-                        value=coil_name,
-                    )
-                    if dialog.ShowModal() == wx.ID_OK:
-                        coil_name = dialog.GetValue().strip()  # Update coil_name with user input
-                    else:
-                        return  # Cancel the operation if the user closes the dialog or cancels
-                    dialog.Destroy()
 
                 if not os.path.exists(coil_path):
                     coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
