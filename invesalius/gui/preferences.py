@@ -1511,7 +1511,7 @@ class TrackerTab(wx.Panel):
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetupTracker()
 
-        self.setup_robot_1 = SetupRobot(self, self.robot)
+        self.setup_robot_1 = SetupRobot(self, 1, self.robot)
         self.main_sizer.Add(self.setup_robot_1, 0, wx.ALL | wx.EXPAND, 7)
 
         self.SetSizerAndFit(self.main_sizer)
@@ -1614,7 +1614,7 @@ class TrackerTab(wx.Panel):
     def OnCreateSecondRobot(self):
         if self.n_coils >= 2:
             if not hasattr(self, "setup_robot_2"):
-                self.setup_robot_2 = SetupRobot(self, self.robot)
+                self.setup_robot_2 = SetupRobot(self, 2, self.robot)
                 self.main_sizer.Add(self.setup_robot_2, 0, wx.ALL | wx.EXPAND, 7)
                 self.SetSizerAndFit(self.main_sizer)
                 self.Layout()
@@ -1682,11 +1682,12 @@ class TrackerTab(wx.Panel):
 
 
 class SetupRobot(wx.Panel):
-    def __init__(self, parent, robot):
+    def __init__(self, parent, setup_index, robot):
         super().__init__(parent)
 
         self.__bind_events()
 
+        self.setup_index = setup_index
         self.robot = robot
         self.robot_ip = robot.robot_ip
 
@@ -1763,7 +1764,9 @@ class SetupRobot(wx.Panel):
         rob_status_sizer.AddStretchSpacer(1)
         rob_status_sizer.Add(self.btn_rob_con, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL)
 
-        rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
+        rob_static_sizer = wx.StaticBoxSizer(
+            wx.VERTICAL, self, _(f"Setup Robot - {self.setup_index}")
+        )
         rob_static_sizer.Add(rob_ip_sizer, 0, wx.ALL | wx.EXPAND, 7)
         rob_static_sizer.Add(rob_status_sizer, 0, wx.ALL | wx.EXPAND, 7)
 
