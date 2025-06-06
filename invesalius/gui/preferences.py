@@ -1285,6 +1285,7 @@ class ObjectTab(wx.Panel):
             )
             try:
                 if dialog.ShowModal() == wx.ID_OK:
+                    dialog.OnRenameCoil()
                     (coil_name, coil_path, obj_fiducials, obj_orients, obj_id, tracker_id) = (
                         dialog.GetValue()
                     )
