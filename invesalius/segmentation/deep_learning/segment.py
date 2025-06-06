@@ -130,6 +130,25 @@ def predict_patch_torch(sub_image, patch, nn_model, device, patch_size):
     ]
 
 
+def predict_patch_tinygrad(sub_image, patch, nn_model, device, patch_size):
+    from tinygrad import Tensor, dtypes
+
+    with Tensor.test():
+        (iz, ez), (iy, ey), (ix, ex) = patch
+        sub_mask = nn_model(
+            Tensor(
+                sub_image.reshape(-1, 1, SIZE, SIZE, SIZE),
+                dtype=dtypes.float32,
+                device=device,
+                requires_grad=False,
+            )
+        ).numpy()
+
+    return sub_mask.reshape(patch_size, patch_size, patch_size)[
+        0 : ez - iz, 0 : ey - iy, 0 : ex - ix
+    ]
+
+
 def download_callback(comm_array):
     def _download_callback(value):
         comm_array[0] = value
@@ -162,6 +181,39 @@ def segment_torch(
             comm_array[0] = completion
             (iz, ez), (iy, ey), (ix, ex) = patch
             sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)
+            probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
+            sums[iz:ez, iy:ey, ix:ex] += 1
+
+    probability_array /= sums
+    comm_array[0] = np.inf
+
+
+def segment_tinygrad(
+    image: np.ndarray, weights_file, overlap, device_id, probability_array, comm_array, patch_size
+):
+    import onnx
+    from tinygrad import Device, Tensor, dtypes
+    from tinygrad.engine.jit import TinyJit
+
+    from invesalius.segmentation.tinygrad_extra.onnx import OnnxRunner
+
+    device = device_id
+
+    if not weights_file.exists():
+        raise FileNotFoundError("Weights file not found")
+
+    onnx_model = onnx.load(weights_file)
+    model = OnnxRunner(onnx_model)
+    model_jit = TinyJit(lambda x: model({"input": x})["output"])
+    image = imagedata_utils.image_normalize(image, 0.0, 1.0, output_dtype=np.float32)
+    sums = np.zeros_like(image)
+
+    # segmenting
+    with Tensor.test():
+        for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
+            comm_array[0] = completion
+            (iz, ez), (iy, ey), (ix, ex) = patch
+            sub_mask = predict_patch_tinygrad(sub_image, patch, model_jit, device, patch_size)
             probability_array[iz:ez, iy:ey, ix:ex] += sub_mask
             sums[iz:ez, iy:ey, ix:ex] += 1
 
@@ -287,10 +339,16 @@ class SegmentProcess(ctx.Process):
         self.torch_weights_url = ""
         self.torch_weights_hash = ""
 
+        self.onnx_weights_file_name = ""
+        self.onnx_weights_url = ""
+        self.onnx_weights_hash = ""
+
         self.mask = None
 
     def run(self):
         try:
+            multiprocessing.current_process().name = "MainProcess"
+            os.environ[self.device_id] = "1"
             self._run_segmentation()
             self._cconn.send(None)
         except Exception as e:
@@ -335,6 +393,34 @@ class SegmentProcess(ctx.Process):
                 )
                 weights_file = user_state_dict_file
             segment_torch(
+                image,
+                weights_file,
+                self.overlap,
+                self.device_id,
+                probability_array,
+                comm_array,
+                self.patch_size,
+            )
+        elif self.backend.lower() == "tinygrad":
+            if not self.onnx_weights_file_name:
+                raise FileNotFoundError("Weights file not specified.")
+            folder = inv_paths.MODELS_DIR.joinpath(self.onnx_weights_file_name.split(".")[0])
+            system_state_dict_file = folder.joinpath(self.onnx_weights_file_name)
+            user_state_dict_file = inv_paths.USER_DL_WEIGHTS.joinpath(self.onnx_weights_file_name)
+            if system_state_dict_file.exists():
+                weights_file = system_state_dict_file
+            elif user_state_dict_file.exists():
+                weights_file = user_state_dict_file
+
+            else:
+                download_url_to_file(
+                    self.onnx_weights_url,
+                    user_state_dict_file,
+                    self.onnx_weights_hash,
+                    download_callback(comm_array),
+                )
+                weights_file = user_state_dict_file
+            segment_tinygrad(
                 image,
                 weights_file,
                 self.overlap,
@@ -413,6 +499,12 @@ class BrainSegmentProcess(SegmentProcess):
         )
         self.torch_weights_hash = "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22"
 
+        self.onnx_weights_file_name = "brain_mri_t1.onnx"
+        self.onnx_weights_url = (
+            "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.onnx"
+        )
+        self.onnx_weights_hash = "3e506ae448150ca2c7eb9a8a6b31075ffff38e8db0fc6e25cb58c320aea79d21"
+
 
 class TracheaSegmentProcess(SegmentProcess):
     def __init__(
@@ -445,6 +537,10 @@ class TracheaSegmentProcess(SegmentProcess):
             "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
         )
         self.torch_weights_hash = "6102d16e3c8c07a1c7b0632bc76db4d869c7467724ff7906f87d04f6dc72022e"
+
+        self.onnx_weights_file_name = "trachea_ct.onnx"
+        self.onnx_weights_url = "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights_trachea_ct.onnx"
+        self.onnx_weights_hash = "b43ab3b6ec3788a179def66af18715f57450e33ef557fafb34c49ee5e3ab8a48"
 
 
 class MandibleCTSegmentProcess(SegmentProcess):
