@@ -6412,6 +6412,9 @@ class GoToDialogScannerCoord(wx.Dialog):
         self.goto_coronal = wx.TextCtrl(self, size=(50, -1))
         self.goto_axial = wx.TextCtrl(self, size=(50, -1))
 
+        # Initialize result attribute
+        self.result = None
+
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
         btn_ok.SetDefault()
@@ -6457,7 +6460,8 @@ class GoToDialogScannerCoord(wx.Dialog):
         Publisher.subscribe(self.SetNewFocalPoint, "Cross focal point")
 
     def SetNewFocalPoint(self, coord, spacing):
-        Publisher.sendMessage("Update cross pos", coord=self.result * spacing)
+        if self.result is not None:
+            Publisher.sendMessage("Update cross pos", coord=self.result * spacing)
 
     def OnOk(self, evt: wx.CommandEvent) -> None:
         import invesalius.data.slice_ as slc
