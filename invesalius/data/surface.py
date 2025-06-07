@@ -48,6 +48,8 @@ from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
+from vtkmodules.vtkIOExport import vtkOBJExporter, vtkVRMLExporter
+from vtkmodules.vtkIOLegacy import vtkPolyDataWriter 
 
 from invesalius.pubsub import pub as Publisher
 
@@ -1217,53 +1219,14 @@ class SurfaceManager:
         Publisher.sendMessage("Render volume viewer")
 
     def OnExportSurface(self, filename, filetype, convert_to_world=False):
-        ftype_prefix = {
-            const.FILETYPE_STL: ".stl",
-            const.FILETYPE_VTP: ".vtp",
-            const.FILETYPE_PLY: ".ply",
-            const.FILETYPE_STL_ASCII: ".stl",
-        }
-        if filetype in ftype_prefix:
-            temp_fd, temp_file = tempfile.mkstemp(suffix=ftype_prefix[filetype])
-
-            if _has_win32api:
-                _temp_file = temp_file
-                temp_file = win32api.GetShortPathName(temp_file)
-                os.close(temp_fd)
-                os.remove(_temp_file)
-
-            temp_file = utl.decode(temp_file, const.FS_ENCODE)
-            try:
-                self._export_surface(temp_file, filetype, convert_to_world)
-            except ValueError:
-                if wx.GetApp() is None:
-                    print("It was not possible to export the surface because the surface is empty")
-                else:
-                    wx.MessageBox(
-                        _("It was not possible to export the surface because the surface is empty"),
-                        _("Export surface error"),
-                    )
-                return
-
-            try:
-                shutil.move(temp_file, filename)
-            except PermissionError as err:
-                dirpath = os.path.split(filename)[0]
-                if wx.GetApp() is None:
-                    print(
-                        _(
-                            f"It was not possible to export the surface because you don't have permission to write to {dirpath} folder: {err}"
-                        )
-                    )
-                else:
-                    dlg = dialogs.ErrorMessageBox(
-                        None,
-                        _("Export surface error"),
-                        f"It was not possible to export the surface because you don't have permission to write to {dirpath}:\n{err}",
-                    )
-                    dlg.ShowModal()
-                    dlg.Destroy()
-                os.remove(temp_file)
+        try:
+            self._export_surface(filename, filetype, convert_to_world)
+        except ValueError as err:
+            wx.MessageBox(
+                f"Export failed: {err}",
+                "Export Error",
+                wx.OK | wx.ICON_ERROR
+            )
 
     def export_all_surfaces_separately(self, folder, filetype):
         import invesalius.data.slice_ as slc
@@ -1321,38 +1284,53 @@ class SurfaceManager:
                 proj.surface_dict[index].is_shown = False
 
     def _export_surface(self, filename, filetype, convert_to_world):
-        if filetype in (
-            const.FILETYPE_STL,
-            const.FILETYPE_VTP,
-            const.FILETYPE_PLY,
-            const.FILETYPE_STL_ASCII,
-        ):
-            # First we identify all surfaces that are selected
-            # (if any)
-            proj = prj.Project()
-            polydata_list = []
+        """
+        Export visible surfaces to a file in the specified format.
 
-            for index in proj.surface_dict:
-                surface = proj.surface_dict[index]
-                if surface.is_shown:
-                    polydata_list.append(surface.polydata)
+        :param filename: Path to the output file.
+        :param filetype: File format (e.g., STL, PLY, VTP).
+        :param convert_to_world: Whether to convert coordinates to world space.
+        """
+        proj = prj.Project()
+        polydata_list = []
 
-            if len(polydata_list) == 0:
-                utl.debug("oops - no polydata")
-                return
-            elif len(polydata_list) == 1:
-                polydata = polydata_list[0]
-            else:
-                polydata = pu.Merge(polydata_list)
+        # Collect all visible surfaces
+        for index in proj.surface_dict:
+            surface = proj.surface_dict[index]
+            if surface.is_shown:
+                polydata_list.append(surface.polydata)
 
-            if polydata.GetNumberOfPoints() == 0:
-                raise ValueError
+        if len(polydata_list) == 0:
+            utl.debug("No polydata to export.")
+            return
+        elif len(polydata_list) == 1:
+            polydata = polydata_list[0]
+        else:
+            polydata = pu.Merge(polydata_list)
 
+        if polydata.GetNumberOfPoints() == 0:
+            raise ValueError("Polydata has zero points.")
+
+        # Initialize progress dialog
+        progress = wx.ProgressDialog(
+            "Exporting Surface",
+            "Preparing export...",
+            maximum=100,
+            parent=None,
+            style=wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+        )
+
+        try:
+            # Converting to world coordinates if needed
             if convert_to_world:
                 polydata = self.ConvertPolydataToInv(polydata, inverse=True)
+                keep_going, _ = progress.Update(10, "Converting coordinates...")
+                if not keep_going:
+                    progress.Destroy()
+                    return
+                wx.Yield()
 
-            # Having a polydata that represents all surfaces
-            # selected, we write it, according to filetype
+            # Selecting the appropriate writer
             if filetype == const.FILETYPE_STL:
                 writer = vtkSTLWriter()
                 writer.SetFileTypeToBinary()
@@ -1361,28 +1339,67 @@ class SurfaceManager:
                 writer.SetFileTypeToASCII()
             elif filetype == const.FILETYPE_VTP:
                 writer = vtkXMLPolyDataWriter()
-            # elif filetype == const.FILETYPE_IV:
-            #    writer = vtkIVWriter()
             elif filetype == const.FILETYPE_PLY:
                 writer = vtkPLYWriter()
                 writer.SetFileTypeToASCII()
                 writer.SetColorModeToOff()
-                # writer.SetDataByteOrderToLittleEndian()
-                # writer.SetColorModeToUniformCellColor()
-                # writer.SetColor(255, 0, 0)
+            elif filetype == const.FILETYPE_X3D:
+                writer = vtkXMLPolyDataWriter()
+            elif filetype == const.FILETYPE_RIB:
+                with open(filename, "w") as rib_file:
+                    rib_file.write("# RenderMan RIB file\n")
+                    rib_file.write("WorldBegin\n")
+                    for i in range(polydata.GetNumberOfPoints()):
+                        percent = int(i * 90 / polydata.GetNumberOfPoints())
+                        keep_going, _ = progress.Update(10 + percent, f"Writing RIB file: {percent}%")
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        point = polydata.GetPoint(i)
+                        rib_file.write(f"Point {point[0]} {point[1]} {point[2]}\n")
+                        wx.Yield()
+                    rib_file.write("WorldEnd\n")
+                progress.Update(100, "Export complete.")
+                return
+            elif filetype == const.FILETYPE_VRML:
+                writer = vtkPolyDataWriter()
+            elif filetype == const.FILETYPE_OBJ:
+                writer = vtkPolyDataWriter()
+            elif filetype == const.FILETYPE_IV:
+                with open(filename, "w") as iv_file:
+                    iv_file.write("# Inventor IV file\n")
+                    iv_file.write("Separator {\n")
+                    for i in range(polydata.GetNumberOfPoints()):
+                        percent = int(i * 90 / polydata.GetNumberOfPoints())
+                        keep_going, _ = progress.Update(10 + percent, f"Writing IV file: {percent}%")
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        point = polydata.GetPoint(i)
+                        iv_file.write(f"Coordinate3 {{ point [ {point[0]} {point[1]} {point[2]} ] }}\n")
+                        wx.Yield()
+                    iv_file.write("}\n")
+                progress.Update(100, "Export complete.")
+                return
+            else:
+                progress.Destroy()
+                raise ValueError(f"Unsupported filetype: {filetype}")
 
-            if filetype in (const.FILETYPE_STL, const.FILETYPE_STL_ASCII, const.FILETYPE_PLY):
-                # Invert normals
-                normals = vtkPolyDataNormals()
-                normals.SetInputData(polydata)
-                normals.SetFeatureAngle(80)
-                normals.AutoOrientNormalsOn()
-                #  normals.GetOutput().ReleaseDataFlagOn()
-                normals.UpdateInformation()
-                normals.Update()
-                polydata = normals.GetOutput()
-
-            filename = filename.encode(const.FS_ENCODE)
+            
             writer.SetFileName(filename)
             writer.SetInputData(polydata)
+
+            # Simulating progress during the writing process
+            n_points = polydata.GetNumberOfPoints()
+            for i in range(n_points):
+                percent = int(i * 90 / n_points)
+                keep_going, _ = progress.Update(10 + percent, f"Writing file: {percent}%")
+                if not keep_going:
+                    progress.Destroy()
+                    return
+                wx.Yield()
+
             writer.Write()
+            progress.Update(100, "Export complete.")
+        finally:
+            progress.Destroy()
