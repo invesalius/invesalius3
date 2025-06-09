@@ -7704,3 +7704,137 @@ class ProgressBarHandler(wx.ProgressDialog):
             super().Pulse()
         else:
             super().Pulse(msg)
+
+
+
+class GUI_Grid(wx.Dialog):
+    """
+    A dialog window for configuring grid parameters.
+    It allows the user to define the grid's resolution, X and Y sizes, and Z offset.
+    """
+
+    def __init__(
+            self,
+            parent,
+            title="Grid Parameters",
+            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP,
+    ):
+        wx.Dialog.__init__(self, parent, -1)
+
+        # Initialize grid parameters with default values
+        self.resolution = 5
+        self.x_size = 5.0
+        self.y_size = 5.0
+
+        # Build the graphical user interface
+        self._init_gui()
+
+        # Set the initial values in the text fields
+        self.set_grid_parameters(
+            self.resolution, self.x_size, self.y_size
+        )
+
+        # Bind events to their handlers
+        self._bind_events()
+
+        # Center the dialog on the screen or parent
+        self.CenterOnParent()
+
+    def _init_gui(self):
+        """Creates and lays out all the GUI widgets."""
+        # --- Widgets ---
+        # Create the text controls for each parameter
+        self.txt_resolution = wx.TextCtrl(self, -1)
+        self.txt_x_size = wx.TextCtrl(self, -1)
+        self.txt_y_size = wx.TextCtrl(self, -1)
+
+        # Create the standard OK and Cancel buttons
+        self.button_ok = wx.Button(self, wx.ID_OK)
+        self.button_cancel = wx.Button(self, wx.ID_CANCEL)
+        self.button_ok.SetDefault()  # Make the OK button the default
+
+        # --- Sizers ---
+        # Sizer for the buttons
+        button_sizer = wx.StdDialogButtonSizer()
+        button_sizer.AddButton(self.button_ok)
+        button_sizer.AddButton(self.button_cancel)
+        button_sizer.Realize()
+
+        # Flexible grid sizer for the parameters
+        # 4 rows, 2 columns, with 5px spacing between elements
+        sizer_params = wx.FlexGridSizer(4, 2, 5, 5)
+        sizer_params.AddGrowableCol(1, 1)  # Allow the second column (text controls) to grow
+        sizer_params.AddMany(
+            [
+                (wx.StaticText(self, -1, "Resolution:"), 0, wx.ALIGN_CENTER_VERTICAL),
+                (self.txt_resolution, 1, wx.EXPAND),
+                (wx.StaticText(self, -1, "Grid X Size:"), 0, wx.ALIGN_CENTER_VERTICAL),
+                (self.txt_x_size, 1, wx.EXPAND),
+                (wx.StaticText(self, -1, "Grid Y Size:"), 0, wx.ALIGN_CENTER_VERTICAL),
+                (self.txt_y_size, 1, wx.EXPAND),
+                
+            ]
+        )
+
+        # StaticBoxSizer to visually group the parameters
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(sizer_params, 1, wx.EXPAND | wx.ALL, 10)
+        main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+        self.Layout()
+
+    def _bind_events(self):
+        """Binds the button click events."""
+        self.button_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+        self.button_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
+
+    def set_grid_parameters(self, resolution, x_size, y_size, offset_z):
+        """Updates the internal values and the text controls in the GUI."""
+        self.resolution = resolution
+        self.x_size = x_size
+        self.y_size = y_size
+
+        self.txt_resolution.SetValue(str(resolution))
+        self.txt_x_size.SetValue(str(x_size))
+        self.txt_y_size.SetValue(str(y_size))
+
+    def get_grid_parameters(self):
+        """
+        Returns the current grid parameters in a dictionary.
+        This method should be called after the dialog is closed with 'OK'.
+        """
+        return {
+            "resolution": self.resolution,
+            "x_size": self.x_size,
+            "y_size": self.y_size,
+        }
+
+    def OnOk(self, event):
+        """
+        Called when OK is clicked. Validates the data and, if correct, closes the dialog.
+        """
+        try:
+            # Try to convert each text field to a float
+            self.resolution = int(self.txt_resolution.GetValue())
+            self.x_size = float(self.txt_x_size.GetValue())
+            self.y_size = float(self.txt_y_size.GetValue())
+
+            # If all values are valid, end the modal dialog with ID_OK
+            self.EndModal(wx.ID_OK)
+
+        except ValueError:
+            # If the conversion fails, display an error message
+            wx.MessageBox(
+                "Please enter valid numeric values in all fields.",
+                "Input Error",
+                wx.OK | wx.ICON_ERROR,
+            )
+            # The dialog is not closed, allowing the user to correct the values
+
+    def OnCancel(self, event):
+        """Called when Cancel is clicked. Closes the dialog."""
+        self.EndModal(wx.ID_CANCEL)
+
+

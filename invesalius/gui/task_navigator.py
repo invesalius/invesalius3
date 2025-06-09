@@ -3123,7 +3123,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
                 # 'Create a grid of targets around the coil target' menu item.
                 create_grid_coil_target_menu_item = menu_id.Append(
-                    unique_menu_id + 6, _("Create grid coil target")
+                    unique_menu_id + 6, _("Create Grid Coil")
                 )
                 menu_id.Bind(
                     wx.EVT_MENU, self.OnCreateGridCoilTargetFromLandmark, create_grid_coil_target_menu_item
@@ -3414,37 +3414,46 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         return np.meshgrid(x, y)
 
     def OnCreateGridCoilTargetFromLandmark(self, evt):
-        list_index = self.marker_list_ctrl.GetFocusedItem()
-        if list_index == -1:
-            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
-            return
-        center_marker = self.__get_marker(list_index)
+        grid_parameter_dlg = dlg.GUI_Grid(self)
 
-        proj = prj.Project()
-        if not proj.surface_dict:
-            wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
-            return
-        #TODO: a dialog to user input the grid_resolution and spacers
-        grid_resolution = 5
-        X, Y = self.CreateGrid(grid_resolution, 5, 5)
+        if grid_parameter_dlg.ShowModal() == wx.ID_OK:
+            # Remove trailing commas to avoid creating tuples
+            grid_resol = int(grid_parameter_dlg.resolution)  # Removed comma
+            x_size = float(grid_parameter_dlg.x_size)
+            y_size = float(grid_parameter_dlg.y_size)
 
-        for i in range(grid_resolution):
-            for j in range(grid_resolution):
-                m_offset_target = dco.coordinates_to_transformation_matrix(
-                    position=[X[i][j], Y[i][j], 0],
-                    orientation=center_marker.orientation,
-                    axes="sxyz",
-                )
-                m_origin_coil = dco.coordinates_to_transformation_matrix(
-                    position=center_marker.position,
-                    orientation=[0, 0, 0],
-                    axes="sxyz",
-                )
-                m_target = m_origin_coil @ m_offset_target
+            grid_parameter_dlg.Destroy()
 
-                new_marker = center_marker.duplicate()
-                new_marker.position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
-                self.markers.CreateCoilTargetFromCoilPose(new_marker)
+            list_index = self.marker_list_ctrl.GetFocusedItem()
+            if list_index == -1:
+                wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+                return
+            center_marker = self.__get_marker(list_index)
+
+            proj = prj.Project()
+            if not proj.surface_dict:
+                wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
+                return
+
+            X, Y = self.CreateGrid(grid_resol, x_size, y_size)
+
+            for i in range(grid_resol):
+                for j in range(grid_resol):
+                    m_offset_target = dco.coordinates_to_transformation_matrix(
+                        position=[X[i][j], Y[i][j], 0],
+                        orientation=center_marker.orientation,
+                        axes="sxyz",
+                    )
+                    m_origin_coil = dco.coordinates_to_transformation_matrix(
+                        position=center_marker.position,
+                        orientation=[0, 0, 0],
+                        axes="sxyz",
+                    )
+                    m_target = m_origin_coil @ m_offset_target
+
+                    new_marker = center_marker.duplicate()
+                    new_marker.position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
+                    self.markers.CreateCoilTargetFromLandmark(new_marker)
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
         self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
