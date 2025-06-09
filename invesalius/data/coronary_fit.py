@@ -11,8 +11,8 @@ class CoronaryFit:
         self.label = label
 
     def add_density_tags(self):
-        x1, y1, z1 = self.point1
-        x2, y2, z2 = self.point2
+        x1, y1, z1 = self.point2
+        x2, y2, z2 = self.point1
 
         num_slices = abs(self.end_slice - self.start_slice) + 1
 
@@ -39,62 +39,65 @@ class CoronaryFit:
             tag = DensityTag(
                 xs[idx], ys[idx], zs[idx], self.label, location=const.AXIAL, slice_number=slice_num
             )
-            # min, max = tag.GetMinMax()
-            # center = tag.GetCenter()
-            # delta = max - min
+            min, max = tag.GetMinMax()
+            center = tag.GetCenter()
+            delta = max - min
 
-            # # Store original perimeter
-            # min_perimeter = 5
+            # Store original perimeter
+            min_perimeter = 5
 
-            # # Try to maximize delta by moving center in x, y (within 10 units)
-            # best_center = center
-            # best_delta = delta
+            # Try to maximize delta by moving center in x, y (within 10 units)
+            best_center = center
+            best_delta = delta
 
-            # # Integrate shrinkage and center movement together
-            # cx, cy, cz = tag.GetCenter()
-            # best_center = center
-            # best_delta = delta
-            # best_max = max
+            # Integrate shrinkage and center movement together
+            cx, cy, cz = tag.GetCenter()
+            best_center = center
+            best_delta = delta
+            best_max = max
             
             
 
-            # improved = True
-            # while improved:
-            #     improved = False
-            #     # Try shrinking
-            #     if delta > 200 and tag.GetPerimeter() > min_perimeter:
-            #         tag.Update(-0.1)
-            #         min_tmp, max_tmp = tag.GetMinMax()
-            #         delta_tmp = max_tmp - min_tmp
-            #         if delta_tmp < best_delta and tag.GetPerimeter() > min_perimeter:
-            #             best_delta = delta_tmp
-            #             best_max = max_tmp
-                        
-            #             improved = True
-            #             continue  # Try shrinking again before moving center
+            improved = True
+            while improved:
+                improved = False
 
-            #     # Try moving center radially in x, y
-            #     cx, cy, cz = tag.GetCenter()
-            #     best_mean = tag.GetMean()
-            #     for r in np.linspace(0, 5, 6):  # radii from 0 to 5
-            #         for theta in np.linspace(0, 2 * np.pi, 24, endpoint=False):  # 24 directions
-            #             dx = r * np.cos(theta)
-            #             dy = r * np.sin(theta)
-            #             if r == 0:
-            #                 continue  # skip the original center, already checked
-            #             tag.UpdateCenter((cx + dx, cy + dy, cz))
-            #             min_tmp, max_tmp = tag.GetMinMax()
-            #             mean_tmp = tag.GetMean()
-            #             delta_tmp = max_tmp - min_tmp
-            #             # Only consider if delta is below 200, max density above 400, and min above 226
-            #             if delta_tmp < 200 and max_tmp > 400 and min_tmp > 226:
-            #                 if mean_tmp > best_mean:
-            #                     best_mean = mean_tmp
-            #                     best_center = (cx + dx, cy + dy, cz)
-            #                     improved = True
+                # Try moving center radially in x, y
+                cx, cy, cz = tag.GetCenter()
+                best_mean = tag.GetMean()
+                for r in np.linspace(0, 50, 51):  # radii from 0 to 50
+                    for theta in np.linspace(0, 2 * np.pi, 24, endpoint=False):  # 24 directions
+                        dx = r * np.cos(theta)
+                        dy = r * np.sin(theta)
+                        if r == 0:
+                            continue  # skip the original center, already checked
+                        # Shift p1 and p2 by the same dx, dy as the center
+                        p1 = tag.GetPoint1()
+                        p2 = tag.GetPoint2()
+                        new_p1 = (p1[0] + dx, p1[1] + dy, p1[2])
+                        new_p2 = (p2[0] + dx, p2[1] + dy, p2[2])
+                        tag.SetPoint1(new_p1)
+                        tag.SetPoint2(new_p2)
+                        tag.UpdateCenter((cx + dx, cy + dy, cz))
+                        min_tmp, max_tmp = tag.GetMinMax()
+                        mean_tmp = tag.GetMean()
+                        delta_tmp = max_tmp - min_tmp
+                        # Only consider if delta is below 200, max density above 400, and min above 226
+                        if delta_tmp < 200 and max_tmp > 400 and min_tmp > 226:
+                            if mean_tmp > best_mean:
+                                best_mean = mean_tmp
+                                best_center = (cx + dx, cy + dy, cz)
+                                improved = True
 
-            #     tag.UpdateCenter(best_center)
-            #     min, max = tag.GetMinMax()
-            #     delta = max - min
+                tag.UpdateCenter(best_center)
+                min, max = tag.GetMinMax()
+                delta = max - min
 
-            # center = tag.GetCenter()
+            # Separate loop: shrink the tag while mean is less than 200
+            shrink_step = 0.1
+            mean = tag.GetMean()
+            while mean < 200:
+                tag.Update(-shrink_step)
+                mean = tag.GetMean()
+
+            center = tag.GetCenter()

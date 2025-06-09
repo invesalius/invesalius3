@@ -286,6 +286,23 @@ class DensityTag:
             tuple: (x, y, z) coordinates of the center.
         """
         return self.density_measure.center
+    def GetPoint1(self):
+        """
+        Get the first point of the density tag.
+        
+        Returns:
+            tuple: (x, y, z) coordinates of point1.
+        """
+        return self.density_measure.point1
+    def GetPoint2(self):
+        """
+        Get the second point of the density tag.
+        
+        Returns:
+            tuple: (x, y, z) coordinates of point2.
+        """
+        return self.density_measure.point2
+    
     def UpdateCenter(self, point):
         """
         Update the center coordinates of the density tag.
@@ -317,6 +334,24 @@ class DensityTag:
         """
         self.density_measure.calc_density()
         return self.density_measure._mean
+    def SetPoint1(self, point):
+        """
+        Set the first point of the density tag.
+        
+        Args:
+            point (tuple): New coordinates for point1 as (x, y, z).
+        """
+        self.density_measure.set_point1(point)
+        self.density_measure._update_gui_info()
+    def SetPoint2(self, point):
+        """
+        Set the second point of the density tag.
+        Args:
+            point (tuple): New coordinates for point2 as (x, y, z).
+        """
+        self.density_measure.set_point2(point)
+        self.density_measure._update_gui_info()
 
     def SetVisibility(self, visible):
         self.density_measure.SetVisibility(visible)
+        
