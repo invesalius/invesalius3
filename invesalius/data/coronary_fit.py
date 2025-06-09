@@ -11,12 +11,17 @@ class CoronaryFit:
         self.label = label
 
     def add_density_tags(self):
-        x1, y1, z1 = self.point2
-        x2, y2, z2 = self.point1
+        #invert the points
+        #if slice is decreasing, don't invert the points
+        if self.point1[2] > self.point2[2]:
+            x1, y1, z1 = self.point1
+            x2, y2, z2 = self.point2
+        else:
+            x1, y1, z1 = self.point2
+            x2, y2, z2 = self.point1
 
         num_slices = abs(self.end_slice - self.start_slice) + 1
 
-        # Interpolate x and y normally, but z by 0.5 per step
         if self.start_slice < self.end_slice:
             slice_range = range(self.start_slice, self.end_slice + 1)
         else:
@@ -24,15 +29,15 @@ class CoronaryFit:
 
         xs = np.linspace(x2, x1, num_slices)
         ys = np.linspace(y2, y1, num_slices)
-        # z progresses by 0.5 per slice, starting from z2 towards z1
+
         if num_slices > 1:
-            # if z1 > z2:
             zs = np.arange(z2, z2 + 0.5 * num_slices, 0.5)
-            # else:
-            #     zs = np.arange(z2, z2 - 0.5 * num_slices, -0.5)
             zs = zs[:num_slices]
         else:
             zs = np.array([z2])
+        all_means = []
+        all_mins = []
+        all_maxs = []
 
         for idx, slice_num in enumerate(slice_range):
             print(f"Adding density tag at slice {slice_num}")
@@ -41,37 +46,23 @@ class CoronaryFit:
             )
             min, max = tag.GetMinMax()
             center = tag.GetCenter()
-            delta = max - min
 
-            # Store original perimeter
-            min_perimeter = 5
-
-            # Try to maximize delta by moving center in x, y (within 10 units)
             best_center = center
-            best_delta = delta
 
-            # Integrate shrinkage and center movement together
             cx, cy, cz = tag.GetCenter()
             best_center = center
-            best_delta = delta
-            best_max = max
             
-            
-
             improved = True
             while improved:
                 improved = False
-
-                # Try moving center radially in x, y
                 cx, cy, cz = tag.GetCenter()
                 best_mean = tag.GetMean()
-                for r in np.linspace(0, 50, 51):  # radii from 0 to 50
+                for r in np.linspace(0, const.LINE_SPACE, const.LINE_SPACE+1):  # radii from 0 to 50
                     for theta in np.linspace(0, 2 * np.pi, 24, endpoint=False):  # 24 directions
                         dx = r * np.cos(theta)
                         dy = r * np.sin(theta)
                         if r == 0:
-                            continue  # skip the original center, already checked
-                        # Shift p1 and p2 by the same dx, dy as the center
+                            continue
                         p1 = tag.GetPoint1()
                         p2 = tag.GetPoint2()
                         new_p1 = (p1[0] + dx, p1[1] + dy, p1[2])
@@ -82,8 +73,7 @@ class CoronaryFit:
                         min_tmp, max_tmp = tag.GetMinMax()
                         mean_tmp = tag.GetMean()
                         delta_tmp = max_tmp - min_tmp
-                        # Only consider if delta is below 200, max density above 400, and min above 226
-                        if delta_tmp < 200 and max_tmp > 400 and min_tmp > 226:
+                        if delta_tmp < const.MIN_DELTA and max_tmp > const.MAX_TH and min_tmp > const.MIN_TH:
                             if mean_tmp > best_mean:
                                 best_mean = mean_tmp
                                 best_center = (cx + dx, cy + dy, cz)
@@ -93,11 +83,23 @@ class CoronaryFit:
                 min, max = tag.GetMinMax()
                 delta = max - min
 
-            # Separate loop: shrink the tag while mean is less than 200
             shrink_step = 0.1
             mean = tag.GetMean()
-            while mean < 200:
+            while mean < const.MIN_MEAN:
                 tag.Update(-shrink_step)
                 mean = tag.GetMean()
 
             center = tag.GetCenter()
+
+
+            all_means.append(mean)
+            all_mins.append(min)
+            all_maxs.append(max)
+
+        overall_mean = np.mean(all_means)
+        overall_min = np.min(all_mins)
+        overall_max = np.max(all_maxs)
+
+        print(f"Stenosis stats: mean={overall_mean:.2f}, min={overall_min:.2f}, max={overall_max:.2f}")
+        return f"Stenosis stats: mean={overall_mean:.2f}, min={overall_min:.2f}, max={overall_max:.2f}"
+        
