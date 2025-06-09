@@ -7790,7 +7790,7 @@ class GUI_Grid(wx.Dialog):
         self.button_ok.Bind(wx.EVT_BUTTON, self.OnOk)
         self.button_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
 
-    def set_grid_parameters(self, resolution, x_size, y_size, offset_z):
+    def set_grid_parameters(self, resolution, x_size, y_size):
         """Updates the internal values and the text controls in the GUI."""
         self.resolution = resolution
         self.x_size = x_size
