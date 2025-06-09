@@ -7706,7 +7706,6 @@ class ProgressBarHandler(wx.ProgressDialog):
             super().Pulse(msg)
 
 
-
 class GUI_Grid(wx.Dialog):
     """
     A dialog window for configuring grid parameters.
@@ -7714,10 +7713,10 @@ class GUI_Grid(wx.Dialog):
     """
 
     def __init__(
-            self,
-            parent,
-            title="Grid Parameters",
-            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP,
+        self,
+        parent,
+        title="Grid Parameters",
+        style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP,
     ):
         wx.Dialog.__init__(self, parent, -1)
 
@@ -7730,9 +7729,7 @@ class GUI_Grid(wx.Dialog):
         self._init_gui()
 
         # Set the initial values in the text fields
-        self.set_grid_parameters(
-            self.resolution, self.x_size, self.y_size
-        )
+        self.set_grid_parameters(self.resolution, self.x_size, self.y_size)
 
         # Bind events to their handlers
         self._bind_events()
@@ -7772,7 +7769,6 @@ class GUI_Grid(wx.Dialog):
                 (self.txt_x_size, 1, wx.EXPAND),
                 (wx.StaticText(self, -1, "Grid Y Size:"), 0, wx.ALIGN_CENTER_VERTICAL),
                 (self.txt_y_size, 1, wx.EXPAND),
-                
             ]
         )
 
@@ -7836,5 +7832,3 @@ class GUI_Grid(wx.Dialog):
     def OnCancel(self, event):
         """Called when Cancel is clicked. Closes the dialog."""
         self.EndModal(wx.ID_CANCEL)
-
-

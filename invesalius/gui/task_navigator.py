@@ -1,4 +1,3 @@
-
 # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -3126,7 +3125,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     unique_menu_id + 6, _("Create Grid Coil")
                 )
                 menu_id.Bind(
-                    wx.EVT_MENU, self.OnCreateGridCoilTargetFromLandmark, create_grid_coil_target_menu_item
+                    wx.EVT_MENU,
+                    self.OnCreateGridCoilTargetFromLandmark,
+                    create_grid_coil_target_menu_item,
                 )
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
