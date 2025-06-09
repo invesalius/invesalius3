@@ -1319,42 +1319,11 @@ class Frame(wx.Frame):
                     dlg.Destroy()
                     self.tag2_first_point = None
                     self.tag2_waiting_for_second_point = False
-
-                    #######################
-                    import numpy as np
-
-                    x1, y1, z1 = point1
-                    x2, y2, z2 = point2
-
-                    from invesalius.data.tag import DensityTag
-
-                    num_slices = abs(self.end_slice - self.start_slice) + 1
-
-                    # Interpolate x and y normally, but z by 0.5 per step
-                    if self.start_slice < self.end_slice:
-                        slice_range = range(self.start_slice, self.end_slice + 1)
-                        step = 1
-                    else:
-                        slice_range = range(self.end_slice, self.start_slice + 1)
-                        step = -1
-
-                    xs = np.linspace(x2, x1, num_slices)
-                    ys = np.linspace(y2, y1, num_slices)
-                    # z progresses by 0.5 per slice, starting from z2 towards z1
-                    if num_slices > 1:
-                        if z1 > z2:
-                            zs = np.arange(z2, z2 + 0.5 * num_slices, 0.5)
-                        else:
-                            zs = np.arange(z2, z2 - 0.5 * num_slices, -0.5)
-                        zs = zs[:num_slices]
-                    else:
-                        zs = np.array([z2])
-
-                    for idx, slice_num in enumerate(slice_range):
-                        print(f"Adding density tag at slice {slice_num}")
-                        DensityTag(
-                            xs[idx], ys[idx], zs[idx], label, location=const.AXIAL, slice_number=slice_num
-                        )
+                    
+                    import invesalius.data.coronary_fit as coronary_fit
+                    fit = coronary_fit.CoronaryFit(point1, point2, self.start_slice, self.end_slice, label)
+                    fit.add_density_tags()
+                    
                             
                 else:
                     wx.MessageBox("No pointer position available for second point.", "Error")
