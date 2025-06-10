@@ -3127,7 +3127,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             menu_id.AppendSeparator()
             menu_id.Bind(
                 wx.EVT_MENU,
-                self.OnCreateGridCoilTargetFromLandmark,
+                self.OnCreateGridCoilTargetFromCoilTarget,
                 create_grid_coil_target_menu_item,
             )
 
@@ -3415,7 +3415,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         return np.meshgrid(x, y)
 
-    def OnCreateGridCoilTargetFromLandmark(self, evt):
+    def OnCreateGridCoilTargetFromCoilTarget(self, evt):
         grid_parameter_dlg = dlg.GUI_Grid_Target(self)
 
         if grid_parameter_dlg.ShowModal() == wx.ID_OK:
