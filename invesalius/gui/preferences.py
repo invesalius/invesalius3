@@ -18,7 +18,7 @@ from invesalius import inv_paths, utils
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import Navigation
-from invesalius.navigation.robot import Robot
+from invesalius.navigation.robot import Robots
 from invesalius.navigation.tracker import Tracker
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
@@ -51,7 +51,7 @@ class Preferences(wx.Dialog):
         mode = session.GetConfig("mode")
         if mode == const.MODE_NAVIGATOR:
             tracker = Tracker()
-            robot = Robot()
+            robot = Robots()
             neuronavigation_api = NeuronavigationApi()
             pedal_connector = PedalConnector(neuronavigation_api, self)
             navigation = Navigation(
@@ -61,7 +61,7 @@ class Preferences(wx.Dialog):
 
             self.navigation_tab = NavigationTab(self.book, navigation)
             self.tracker_tab = TrackerTab(self.book, tracker, robot)
-            self.object_tab = ObjectTab(self.book, navigation, tracker, pedal_connector)
+            self.object_tab = ObjectTab(self.book, navigation, tracker, robot, pedal_connector)
 
             self.book.AddPage(self.navigation_tab, _("Navigation"))
             self.book.AddPage(self.tracker_tab, _("Tracker"))
@@ -870,7 +870,7 @@ class NavigationTab(wx.Panel):
 
 
 class ObjectTab(wx.Panel):
-    def __init__(self, parent, navigation, tracker, pedal_connector):
+    def __init__(self, parent, navigation, tracker, robot, pedal_connector):
         wx.Panel.__init__(self, parent)
 
         self.session = ses.Session()
@@ -880,7 +880,7 @@ class ObjectTab(wx.Panel):
         self.tracker = tracker
         self.pedal_connector = pedal_connector
         self.navigation = navigation
-        self.robot = Robot()
+        self.robot = robot
         self.coil_registrations = {}
         self.__bind_events()
 
@@ -1017,7 +1017,7 @@ class ObjectTab(wx.Panel):
         self.choice_robot_coil = choice_robot_coil = wx.ComboBox(
             self,
             -1,
-            f"{self.robot.GetCoilName() or ''}",
+            f"{self.robot.GetActive().GetCoilName() or ''}",
             size=wx.Size(90, 23),
             choices=list(
                 self.navigation.coil_registrations
@@ -1031,7 +1031,7 @@ class ObjectTab(wx.Panel):
 
         choice_robot_coil.Bind(wx.EVT_COMBOBOX, self.OnChoiceRobotCoil)
 
-        if not self.robot.IsConnected():
+        if not self.robot.GetActive().IsConnected():
             self.robot_lbl.SetLabel("Robot is not connected")
             choice_robot_coil.Show(False)  # Hide the combobox
 
@@ -1077,7 +1077,7 @@ class ObjectTab(wx.Panel):
 
     def OnChoiceRobotCoil(self, event):
         robot_coil_name = event.GetEventObject().GetStringSelection()
-        self.robot.SetCoilName(robot_coil_name)
+        self.robot.GetActive().SetCoilName(robot_coil_name)
 
     def AddCoilButton(self, coil_name, show_button=True):
         if self.no_coils_lbl is not None:
@@ -1112,7 +1112,7 @@ class ObjectTab(wx.Panel):
         self.robot_sizer.ShowItems(show_multicoil)
 
         # Show the robot coil combobox only if the robot is connected
-        self.choice_robot_coil.Show(show_multicoil and self.robot.IsConnected())
+        self.choice_robot_coil.Show(show_multicoil and self.robot.GetActive().IsConnected())
 
         self.Layout()
 
@@ -1161,7 +1161,7 @@ class ObjectTab(wx.Panel):
 
     def CoilSelectionDone(self):
         if self.navigation.n_coils == 1:  # Tell the robot the coil name
-            self.robot.SetCoilName(next(iter(self.navigation.coil_registrations)))
+            self.robot.GetActive().SetCoilName(next(iter(self.navigation.coil_registrations)))
 
         Publisher.sendMessage("Coil selection done", done=True)
         Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
@@ -1236,7 +1236,7 @@ class ObjectTab(wx.Panel):
         # Update robot coil combobox
         if self.choice_robot_coil is not None:
             self.choice_robot_coil.Set(list(navigation.coil_registrations))
-            self.choice_robot_coil.SetStringSelection(self.robot.GetCoilName() or "")
+            self.choice_robot_coil.SetStringSelection(self.robot.GetActive().GetCoilName() or "")
 
         if n_coils_selected == n_coils:
             self.CoilSelectionDone()
@@ -1514,7 +1514,8 @@ class TrackerTab(wx.Panel):
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetupTracker()
 
-        self.setup_robot_1 = SetupRobot(self, 1, self.robot)
+        robot_index = list(self.robot.robots.values())[0]
+        self.setup_robot_1 = SetupRobot(self, robot_index)
         self.main_sizer.Add(self.setup_robot_1, 0, wx.ALL | wx.EXPAND, 7)
 
         self.SetSizerAndFit(self.main_sizer)
@@ -1617,7 +1618,8 @@ class TrackerTab(wx.Panel):
     def OnCreateSecondRobot(self):
         if self.n_coils >= 2:
             if not hasattr(self, "setup_robot_2"):
-                self.setup_robot_2 = SetupRobot(self, 2, self.robot)
+                robot_index = list(self.robot.robots.values())[1]
+                self.setup_robot_2 = SetupRobot(self, robot_index)
                 self.main_sizer.Add(self.setup_robot_2, 0, wx.ALL | wx.EXPAND, 7)
                 self.SetSizerAndFit(self.main_sizer)
                 self.Layout()
@@ -1685,13 +1687,13 @@ class TrackerTab(wx.Panel):
 
 
 class SetupRobot(wx.Panel):
-    def __init__(self, parent, setup_index, robot):
+    def __init__(self, parent, robot):
         super().__init__(parent)
 
         self.__bind_events()
 
-        self.setup_index = setup_index
         self.robot = robot
+        self.robot_name = self.robot.robot_name
         self.robot_ip = robot.robot_ip
 
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1768,7 +1770,7 @@ class SetupRobot(wx.Panel):
         rob_status_sizer.Add(self.btn_rob_con, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL)
 
         rob_static_sizer = wx.StaticBoxSizer(
-            wx.VERTICAL, self, _(f"Setup Robot - {self.setup_index}")
+            wx.VERTICAL, self, _(f"Setup Robot - {self.robot_name}")
         )
         rob_static_sizer.Add(rob_ip_sizer, 0, wx.ALL | wx.EXPAND, 7)
         rob_static_sizer.Add(rob_status_sizer, 0, wx.ALL | wx.EXPAND, 7)

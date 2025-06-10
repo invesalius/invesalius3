@@ -38,8 +38,8 @@ class RobotObjective(Enum):
 
 # Only one robot will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
-class Robot(metaclass=Singleton):
-    def __init__(self, tracker, navigation, icp):
+class Robot:
+    def __init__(self, name, tracker, navigation, icp):
         self.tracker = tracker
         self.navigation = navigation
         self.icp = icp
@@ -48,6 +48,7 @@ class Robot(metaclass=Singleton):
         self.coil_name = None
 
         self.is_robot_connected = False
+        self.robot_name = name
         self.robot_ip = None
         self.robot_ip_options = []
         self.matrix_tracker_to_robot = None
@@ -263,3 +264,41 @@ class Robot(metaclass=Singleton):
 
         self.target = coord
         self.SendTargetToRobot()
+
+
+class Robots(metaclass=Singleton):
+    def __init__(self, tracker, navigation, icp):
+        self.robots = {
+            "robot_1": Robot("robot_1", tracker, navigation, icp),
+            "robot_2": Robot("robot_2", tracker, navigation, icp),
+        }
+        self.active = "robot_1"  # Default active robot
+
+    def GetRobot(self, name: str):
+        return self.robots.get(name)
+
+    def GetActive(self):
+        return self.GetRobot(self.active)
+
+    def SetActive(self, name: str):
+        if name in self.robots:
+            self.active = name
+        else:
+            raise ValueError(f"Robot '{name}' does not exist.")
+
+    def GetInactive(self):
+        robot_name = [name for name in self.robots if name != self.active]
+        print(robot_name)
+        return self.GetRobot(robot_name[0])
+
+    # Future usage: to rename robots in the GUI
+    def RenameRobot(self, old_name: str, new_name: str):
+        if old_name in self.robots:
+            if new_name not in self.robots:
+                self.robots[new_name] = self.robots.pop(old_name)
+                if self.active == old_name:
+                    self.active = new_name
+            else:
+                raise ValueError(f"Robot '{new_name}' already exists.")
+        else:
+            raise ValueError(f"Robot '{old_name}' does not exist.")

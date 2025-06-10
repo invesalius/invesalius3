@@ -23,13 +23,13 @@ from typing import List, Union
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.marker_transformator import MarkerTransformator
-from invesalius.navigation.robot import Robot, RobotObjective
+from invesalius.navigation.robot import RobotObjective, Robots
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
 
 class MarkersControl(metaclass=Singleton):
-    def __init__(self, robot: Robot) -> None:
+    def __init__(self, robot: Robots) -> None:
         self.list: List[Marker] = []
         self.nav_status = False
         self.transformator = MarkerTransformator()
@@ -127,7 +127,7 @@ class MarkersControl(metaclass=Singleton):
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
-        self.robot.SetObjective(RobotObjective.NONE)
+        self.robot.GetActive().SetObjective(RobotObjective.NONE)
 
         if check_for_previous:
             prev_target = self.FindTarget()

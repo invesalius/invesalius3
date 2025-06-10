@@ -42,7 +42,7 @@ from invesalius.i18n import tr as _
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.markers import MarkersControl
-from invesalius.navigation.robot import Robot
+from invesalius.navigation.robot import Robots
 from invesalius.navigation.tracker import Tracker
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
@@ -64,7 +64,7 @@ class NavigationHub(metaclass=Singleton):
         self.navigation = Navigation(
             pedal_connector=self.pedal_connector, neuronavigation_api=self.neuronavigation_api
         )
-        self.robot = Robot(
+        self.robot = Robots(
             tracker=self.tracker,
             navigation=self.navigation,
             icp=self.icp,
@@ -573,12 +573,12 @@ class Navigation(metaclass=Singleton):
 
             coreg_data = [self.m_change, self.r_stylus]
 
-            robot = Robot()
-            if robot.IsReady():
+            robot = Robots()
+            if robot.GetActive().IsReady():
                 # Tell robot at which index (obj_id) to find its coil in (relevant when there are multiple coils)
                 Publisher.sendMessage(
                     "Neuronavigation to Robot: Set coil index",
-                    data=self.coil_registrations[robot.GetCoilName()]["obj_id"],
+                    data=self.coil_registrations[robot.GetActive().GetCoilName()]["obj_id"],
                 )
 
             queues = [

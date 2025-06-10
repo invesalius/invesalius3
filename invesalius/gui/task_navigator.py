@@ -2221,7 +2221,7 @@ class ControlPanel(wx.Panel):
             self.navigation.StartNavigation(self.tracker, self.icp)
 
             # Ensure that the target is sent to robot when navigation starts.
-            self.robot.SendTargetToRobot()
+            self.robot.GetActive().SendTargetToRobot()
 
     def OnStartNavigationButton(self, evt, btn_nav):
         nav_id = btn_nav.GetValue()
@@ -2243,7 +2243,7 @@ class ControlPanel(wx.Panel):
         Publisher.sendMessage("Disable style", style=const.STATE_NAVIGATION)
 
         # Set robot objective to NONE when stopping navigation.
-        self.robot.SetObjective(RobotObjective.NONE)
+        self.robot.GetActive().SetObjective(RobotObjective.NONE)
 
         self.navigation.StopNavigation()
 
@@ -2308,16 +2308,16 @@ class ControlPanel(wx.Panel):
             self.nav_status
             and self.target_selected
             and self.target_mode
-            and self.robot.IsConnected()
+            and self.robot.GetActive().IsConnected()
         )
         self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
 
         # Enable 'move away' robot button if robot is connected.
-        move_away_button_enabled = self.robot.IsConnected()
+        move_away_button_enabled = self.robot.GetActive().IsConnected()
         self.EnableRobotMoveAwayButton(enabled=move_away_button_enabled)
 
         # Enable 'free drive' robot button if robot is connected.
-        free_drive_button_enabled = self.robot.IsConnected()
+        free_drive_button_enabled = self.robot.GetActive().IsConnected()
         self.EnableRobotFreeDriveButton(enabled=free_drive_button_enabled)
 
     def SetTargetMode(self, enabled=False):
@@ -2328,7 +2328,7 @@ class ControlPanel(wx.Panel):
 
         # Set robot objective to NONE when target mode is off.
         if not enabled:
-            self.robot.SetObjective(RobotObjective.NONE)
+            self.robot.GetActive().SetObjective(RobotObjective.NONE)
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
@@ -2495,7 +2495,7 @@ class ControlPanel(wx.Panel):
         Publisher.sendMessage("Set target mode", enabled=pressed)
         if pressed:
             # Set robot objective to NONE when target mode is enabled.
-            self.robot.SetObjective(RobotObjective.NONE)
+            self.robot.GetActive().SetObjective(RobotObjective.NONE)
 
     # Robot-related buttons
 
@@ -2512,12 +2512,12 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.robot_track_target_button)
         pressed = self.robot_track_target_button.GetValue()
         if pressed:
-            self.robot.SetObjective(RobotObjective.TRACK_TARGET)
+            self.robot.GetActive().SetObjective(RobotObjective.TRACK_TARGET)
         else:
             # If 'Robot' button is unpressed, set robot objective to NONE, but do not override
             # objective set by another button; hence this check.
-            if self.robot.objective == RobotObjective.TRACK_TARGET:
-                self.robot.SetObjective(RobotObjective.NONE)
+            if self.robot.GetActive().objective == RobotObjective.TRACK_TARGET:
+                self.robot.GetActive().SetObjective(RobotObjective.NONE)
             Publisher.sendMessage(
                 "Robot to Neuronavigation: Update robot warning", robot_warning=""
             )
@@ -2535,12 +2535,12 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.robot_move_away_button)
         pressed = self.robot_move_away_button.GetValue()
         if pressed:
-            self.robot.SetObjective(RobotObjective.MOVE_AWAY_FROM_HEAD)
+            self.robot.GetActive().SetObjective(RobotObjective.MOVE_AWAY_FROM_HEAD)
         else:
             # If 'Move away' button is unpressed, set robot objective to NONE, but do not override
             # objective set by another button; hence this check.
-            if self.robot.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
-                self.robot.SetObjective(RobotObjective.NONE)
+            if self.robot.GetActive().objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
+                self.robot.GetActive().SetObjective(RobotObjective.NONE)
             Publisher.sendMessage(
                 "Robot to Neuronavigation: Update robot warning", robot_warning=""
             )
