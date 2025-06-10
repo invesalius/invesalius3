@@ -189,6 +189,8 @@ jobs:
           name: invesalius_package_exe_ai-ready
           retention-days: 2
           path: ./installer/*.exe
+      - name: Wait for file system sync
+        run: timeout 5
 
   # build-and-push-docker:
   #   name: Build and Push Docker Image
