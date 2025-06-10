@@ -190,7 +190,7 @@ jobs:
           retention-days: 2
           path: ./installer/*.exe
       - name: Wait for file system sync
-        run: timeout 5
+        run: Start-Sleep -Seconds 5
 
   # build-and-push-docker:
   #   name: Build and Push Docker Image
