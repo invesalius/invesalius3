@@ -229,7 +229,7 @@ jobs:
 
   publish_packages:
     name: Publish Packages and Release
-    needs: [build-win, build-and-push-docker, get-tag]
+    needs: [build-win, get-tag]
     runs-on: windows-latest
     if: github.event_name == 'push'
     steps:
