@@ -7229,13 +7229,6 @@ class ConfigurePolarisDialog(wx.Dialog):
         fn_ref = self.dir_ref.GetPath()
         fn_objs = [dir_obj.GetPath() for dir_obj in self.dir_objs]
 
-        if fn_probe and fn_ref and fn_objs:
-            session = ses.Session()
-            session.SetConfig("last_ndi_com_port", com_port)
-            session.SetConfig("last_ndi_probe_marker", fn_probe)
-            session.SetConfig("last_ndi_ref_marker", fn_ref)
-            session.SetConfig("last_ndi_obj_markers", fn_objs)
-
         return com_port, fn_probe, fn_ref, fn_objs
 
 

@@ -59,18 +59,19 @@ class Tracker(metaclass=Singleton):
         except:  # noqa: E722
             ses.Session().DeleteStateFile()
 
-    def SetConfigCoilRegistrations(self):
-        configuration: Optional[Dict[str, object]] = (
-            self.tracker_connection.GetConfiguration() if self.tracker_connection else None
-        )
-        if configuration:
-            obj_dirs = configuration.get("obj_dirs", [])
-            coil_names_files = [Path(p).stem for p in obj_dirs]
-            coil_registrations = {}
-            for idx, coil_name in enumerate(coil_names_files):
-                coil_registrations[coil_name] = {"obj_id": idx + 2}
-            session = ses.Session()
-            session.SetConfig("coil_registrations", coil_registrations)
+    def SaveConfig(self):
+        tracker_configuration = self.tracker_connection.configuration
+        if tracker_configuration:
+            com_port = tracker_configuration.get("com_port", "")
+            fn_probe = tracker_configuration.get("probe_dir", "")
+            fn_ref = tracker_configuration.get("ref_dir", "")
+            fn_objs = tracker_configuration.get("obj_dirs", [])
+            if fn_probe and fn_ref and fn_objs:
+                session = ses.Session()
+                session.SetConfig("last_ndi_com_port", com_port)
+                session.SetConfig("last_ndi_probe_marker", fn_probe)
+                session.SetConfig("last_ndi_ref_marker", fn_ref)
+                session.SetConfig("last_ndi_obj_markers", fn_objs)
 
     def SaveState(self) -> None:
         tracker_id: int = self.tracker_id
@@ -161,8 +162,10 @@ class Tracker(metaclass=Singleton):
                 if self.thread_coord is not None:
                     self.thread_coord.start()
 
+            self.CheckSaveCoils()
+            # Save last ndi configuration
+            self.SaveConfig()
             self.SaveState()
-            self.SetConfigCoilRegistrations()
 
     def DisconnectTracker(self) -> None:
         if self.tracker_connected:
@@ -295,3 +298,45 @@ class Tracker(metaclass=Singleton):
 
     def get_trackers(self) -> List[str]:
         return cast(List[str], const.TRACKERS)
+
+    def CheckSaveCoils(self):
+        session = ses.Session()
+
+        # 1) Read the old and new marker lists
+        old_dirs = session.GetConfig("last_ndi_obj_markers", [])
+        new_conf = self.tracker_connection.GetConfiguration() if self.tracker_connection else {}
+        new_dirs = new_conf.get("obj_dirs", [])
+
+        # If nothing changed, do nothing
+        if new_dirs == old_dirs:
+            return
+
+        # 2) Load current registration
+        regs = session.GetConfig("coil_registrations", {})
+
+        # 3) Build a new registrations dict
+        new_regs: Dict[str, Dict] = {}
+
+        for new_idx, path_str in enumerate(new_dirs):
+            base_name = Path(path_str).stem
+            new_obj_id = new_idx + 2
+
+            # If it existed before, find the old registration
+            if path_str in old_dirs:
+                old_idx = old_dirs.index(path_str)
+                old_obj_id = old_idx + 2
+
+                # Find the key with the old obj_id
+                old_key = next((k for k, v in regs.items() if v.get("obj_id") == old_obj_id), None)
+                if old_key:
+                    # Copy the entire data block and only update obj_id
+                    entry = regs[old_key].copy()
+                    entry["obj_id"] = new_obj_id
+                    new_regs[old_key] = entry
+                    continue
+
+            # If it didn't exist before, create a basic entry
+            new_regs[base_name] = {"obj_id": new_obj_id}
+
+        # 4) Save back to session
+        session.SetConfig("coil_registrations", new_regs)

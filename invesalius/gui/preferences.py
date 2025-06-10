@@ -1123,10 +1123,8 @@ class ObjectTab(wx.Panel):
             # Update multicoil GUI elements
             self.sel_sizer.GetStaticBox().SetLabel(f"TMS coil selection (0 out of {n_coils})")
 
-            # Reset (enable and unpress) all coil-buttons
-            for btn, *junk in self.coil_btns.values():
-                btn.Enable()
-                btn.SetValue(False)
+            # Remove all coil-buttons
+            self.coil_btns = {}
 
         self.ShowMulticoilGUI(multicoil_mode)
 
@@ -1137,14 +1135,14 @@ class ObjectTab(wx.Panel):
         self.ShowMulticoilGUI(multicoil_mode)
 
         self.coil_registrations = self.session.GetConfig("coil_registrations", {})
-        # Add a button for each coil
-        for coil_name in self.coil_registrations:
-            self.AddCoilButton(coil_name, show_button=multicoil_mode)
-
-        # Press the buttons for coils that were selected in config file
         selected_coils = state.get("selected_coils", [])
-        for coil_name in selected_coils:
-            self.coil_btns[coil_name][0].SetValue(True)
+        # Add a button for each coil
+        for coil_name, value in self.coil_registrations.items():
+            if "fiducials" in value and "orientations" in value:
+                self.AddCoilButton(coil_name, show_button=multicoil_mode)
+                # Press the buttons for coils that were selected in config file
+                if coil_name in selected_coils:
+                    self.coil_btns[coil_name][0].SetValue(True)
 
         # Update labels
         self.config_txt.SetLabel(
@@ -1301,6 +1299,7 @@ class ObjectTab(wx.Panel):
                         }
                         self.coil_registrations[coil_name] = coil_registration
                         self.session.SetConfig("coil_registrations", self.coil_registrations)
+
                         self.AddCoilButton(coil_name)  # Add a button for this coil to GUI
 
                         # if we just edited a currently selected coil_name, unselect it (to avoid possible conflicts caused by new registration)
@@ -1369,6 +1368,7 @@ class ObjectTab(wx.Panel):
                         "path": coil_path.decode(const.FS_ENCODE),
                     }
                     self.coil_registrations[coil_name] = coil_registration
+
                     self.session.SetConfig("coil_registrations", self.coil_registrations)
                     self.AddCoilButton(coil_name)  # Add a button for this coil to GUI
 
