@@ -7706,7 +7706,7 @@ class ProgressBarHandler(wx.ProgressDialog):
             super().Pulse(msg)
 
 
-class GUI_Grid(wx.Dialog):
+class GUI_Grid_Target(wx.Dialog):
     """
     A dialog window for configuring grid parameters.
     It allows the user to define the grid's resolution, X and Y sizes, and Z offset.
