@@ -3156,7 +3156,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 unique_menu_id + 6, _("Create coil target")
             )
             menu_id.Bind(
-                wx.EVT_MENU, self.OnCreateCoilTargetFromLandmark, create_coil_target_menu_item
+                wx.EVT_MENU, self.OnCreateGridCoilTargetFromCoilTarget, create_coil_target_menu_item
             )
 
         is_brain_target = focused_marker.marker_type == MarkerType.BRAIN_TARGET
@@ -3415,7 +3415,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         return np.meshgrid(x, y)
 
-    def OnCreateGridCoilTargetFromLandmark(self, evt):
+    def OnCreateGridCoilTargetFromCoilTarget(self, evt):
         grid_parameter_dlg = dlg.GUI_Grid_Target(self)
 
         if grid_parameter_dlg.ShowModal() == wx.ID_OK:
