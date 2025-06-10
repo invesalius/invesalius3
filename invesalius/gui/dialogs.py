@@ -7718,7 +7718,7 @@ class GUI_Grid_Target(wx.Dialog):
         title="Grid Parameters",
         style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP,
     ):
-        wx.Dialog.__init__(self, parent, -1)
+        wx.Dialog.__init__(self, parent, -1, title=title, style=style)
 
         # Initialize grid parameters with default values
         self.resolution = 5

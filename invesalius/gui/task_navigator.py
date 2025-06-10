@@ -3415,7 +3415,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         return np.meshgrid(x, y)
 
     def OnCreateGridCoilTargetFromLandmark(self, evt):
-        grid_parameter_dlg = dlg.GUI_Grid(self)
+        grid_parameter_dlg = dlg.GUI_Grid_Target(self)
 
         if grid_parameter_dlg.ShowModal() == wx.ID_OK:
             # Remove trailing commas to avoid creating tuples
