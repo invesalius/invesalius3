@@ -114,6 +114,12 @@ DENSITY_ELLIPSE = 8
 DENSITY_POLYGON = 9
 TAG = 10
 
+MIN_MEAN = 200
+MIN_TH=226
+MAX_TH=400
+MIN_DELTA = 200
+LINE_SPACE = 10
+
 # Colour representing each orientation
 ORIENTATION_COLOUR = {
     "AXIAL": (1, 0, 0),  # Red

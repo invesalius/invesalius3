@@ -1322,7 +1322,22 @@ class Frame(wx.Frame):
                     
                     import invesalius.data.coronary_fit as coronary_fit
                     fit = coronary_fit.CoronaryFit(point1, point2, self.start_slice, self.end_slice, label)
-                    fit.add_density_tags()
+                    # Show a progress dialog before starting the long operation
+                    progress = wx.BusyInfo("Calculating density tags, please wait...", parent=self)
+                    try:
+                        stats = fit.add_density_tags()
+                    finally:
+                        # Ensure the dialog is closed even if an error occurs
+                        del progress
+
+                    # Show a dialog with the stats info
+                    info_str = ""
+                    if isinstance(stats, dict):
+                        for k, v in stats.items():
+                            info_str += f"{k}: {v}\n"
+                    else:
+                        info_str = str(stats)
+                    wx.MessageBox(info_str, "Density Tag Statistics", wx.OK | wx.ICON_INFORMATION)
                     
                             
                 else:
@@ -1338,9 +1353,7 @@ class Frame(wx.Frame):
         # Check for Ctrl+R to remove all cut planes
         elif event.ControlDown() and event.GetKeyCode() == ord('R'):
             print("Ctrl+R pressed: Removing all cut planes")
-            # from invesalius.data.volume import Volume
-            # vol = Volume()
-            # vol.remove_all_cut_planes()
+            self.ctrl_k_press_count = 1
             Publisher.sendMessage("Remove all cut planes")
         
         # Handle Ctrl+D for density tag
