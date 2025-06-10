@@ -156,7 +156,6 @@ celerybeat.pid
 .venv
 env/
 venv/
-invesalius_ambiente/
 ENV/
 env.bak/
 venv.bak/
