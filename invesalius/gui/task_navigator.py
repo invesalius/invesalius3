@@ -3121,14 +3121,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 target_menu_item = menu_id.Append(unique_menu_id + 5, _("Set as target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
                 # 'Create a grid of targets around the coil target' menu item.
-                create_grid_coil_target_menu_item = menu_id.Append(
-                    unique_menu_id + 6, _("Create Grid Coil")
-                )
-                menu_id.Bind(
-                    wx.EVT_MENU,
-                    self.OnCreateGridCoilTargetFromLandmark,
-                    create_grid_coil_target_menu_item,
-                )
+            create_grid_coil_target_menu_item = menu_id.Append(
+                unique_menu_id + 6, _("Create target coil grid")
+            )
+            menu_id.AppendSeparator()
+            menu_id.Bind(
+                wx.EVT_MENU,
+                self.OnCreateGridCoilTargetFromLandmark,
+                create_grid_coil_target_menu_item,
+            )
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
         if is_coil_pose:
