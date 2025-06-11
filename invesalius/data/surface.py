@@ -47,7 +47,7 @@ from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
-from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
+from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper, vtkWindowLevelLookupTable
 
 from invesalius.pubsub import pub as Publisher
 
@@ -85,7 +85,7 @@ class Surface:
 
     general_index = -1
 
-    def __init__(self, index=None, name=""):
+    def __init__(self, index=None, name="", peel_depth=None, peel_opacity=None):
         Surface.general_index += 1
         if index is None:
             self.index = Surface.general_index
@@ -98,6 +98,9 @@ class Surface:
         self.volume = 0.0
         self.area = 0.0
         self.is_shown = 1
+        self.peel = False
+        self.peel_depth = peel_depth
+        self.peel_opacity = peel_opacity
         if not name:
             self.name = const.SURFACE_NAME_PATTERN % (self.index + 1)
         else:
@@ -129,7 +132,14 @@ class Surface:
             "visible": bool(self.is_shown),
             "volume": self.volume,
             "area": self.area,
+            "peel": self.peel,
         }
+        if self.peel:
+            if self.peel_depth is not None:
+                surface["peel_depth"] = self.peel_depth
+            if self.peel_opacity is not None:
+                surface["peel_opacity"] = self.peel_opacity
+
         plist_filename = filename + ".plist"
         # plist_filepath = os.path.join(dir_temp, filename + '.plist')
         temp_fd, temp_plist = tempfile.mkstemp()
@@ -151,6 +161,9 @@ class Surface:
         self.transparency = sp["transparency"]
         self.is_shown = sp["visible"]
         self.volume = sp["volume"]
+        self.peel = sp.get("peel", False)
+        self.peel_depth = sp.get("peel_depth", None)
+        self.peel_opacity = sp.get("peel_opacity", None)
         try:
             self.area = sp["area"]
         except KeyError:
@@ -179,6 +192,9 @@ class SurfaceManager:
     def __init__(self):
         self.actors_dict = {}
         self.last_surface_index = 0
+        self.peel_surface_index = None
+        self.peel_depth = None
+        self.peel_opacity = None
         self.convert_to_inv = None
         self.__bind_events()
 
@@ -245,6 +261,9 @@ class SurfaceManager:
             names_list = [surface_dict[i].name for i in surface_dict.keys()]
             new_name = utl.next_copy_name(name, names_list)
             # create new mask
+            # do not duplicate if it is a peel
+            if original_surface.peel:
+                continue
             self.CreateSurfaceFromPolydata(
                 polydata=original_surface.polydata,
                 overwrite=False,
@@ -253,6 +272,7 @@ class SurfaceManager:
                 transparency=original_surface.transparency,
                 volume=original_surface.volume,
                 area=original_surface.area,
+                peeled_brain=original_surface.peel,
             )
 
     def OnRemove(self, surface_indexes):
@@ -262,6 +282,7 @@ class SurfaceManager:
         new_dict = {}
         if surface_indexes:
             for index in surface_indexes:
+                is_peel = proj.surface_dict[index].peel
                 proj.RemoveSurface(index)
                 if index in old_dict:
                     actor = old_dict[index]
@@ -271,7 +292,9 @@ class SurfaceManager:
                         if i > index:
                             new_dict[i - 1] = old_dict[i]
                     old_dict = new_dict
-                    Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
+                    Publisher.sendMessage(
+                        "Remove surface actor from viewer", actor=actor, peeled_brain=is_peel
+                    )
             self.actors_dict = new_dict
 
         if self.last_surface_index in surface_indexes:
@@ -627,10 +650,18 @@ class SurfaceManager:
         volume=None,
         area=None,
         scalar=False,
+        peeled_brain=False,
+        peel_actor=None,
+        peel_depth=None,
+        peel_opacity=None,
     ):
         if self.convert_to_inv:
             polydata = self.ConvertPolydataToInv(polydata)
             self.convert_to_inv = False
+
+        if peeled_brain and self.peel_surface_index is not None:
+            overwrite = True
+            index = self.peel_surface_index
 
         normals = vtkPolyDataNormals()
         normals.SetInputData(polydata)
@@ -648,23 +679,46 @@ class SurfaceManager:
 
         actor = vtkActor()
         actor.SetMapper(mapper)
+
         actor.GetProperty().SetBackfaceCulling(1)
+
+        if peel_actor is not None:
+            peel_mapper = vtkPolyDataMapper()
+            peel_mapper.ShallowCopy(peel_actor.GetMapper())
+            actor.SetMapper(peel_mapper)
 
         if overwrite:
             if index is None:
                 index = self.last_surface_index
-            surface = Surface(index=index)
+            surface = Surface(
+                index=index, peel_opacity=self.peel_opacity, peel_depth=self.peel_depth
+            )
         else:
             surface = Surface()
-
-        if not colour:
-            surface.colour = random.choice(const.SURFACE_COLOUR)
-        else:
-            surface.colour = colour
         surface.polydata = polydata
 
-        if transparency:
-            surface.transparency = transparency
+        # Handle peeled brain separately to restrict color changes
+        if peeled_brain:
+            # actor.GetProperty().SetColor(1.0, 1.0, 1.0)  # Fixed white color
+            # if transparency is not None:
+            #     actor.GetProperty().SetOpacity(1 - transparency)
+            surface.colour = (1.0, 1.0, 1.0)  # White color
+            surface.transparency = transparency if transparency is not None else 0
+            surface.peel = True
+            if peel_depth is not None:
+                surface.peel_depth = peel_depth
+                self.peel_depth = peel_depth
+            if peel_opacity is not None:
+                surface.peel_opacity = peel_opacity
+                self.peel_opacity = peel_opacity
+        else:
+            if not colour:
+                surface.colour = random.choice(const.SURFACE_COLOUR)
+            else:
+                surface.colour = colour
+
+            if transparency:
+                surface.transparency = transparency
 
         if name:
             surface.name = name
@@ -677,6 +731,7 @@ class SurfaceManager:
             index = proj.AddSurface(surface)
             surface.index = index
             self.last_surface_index = index
+            self.peel_surface_index = index
 
         # Set actor colour and transparency
         actor.GetProperty().SetColor(surface.colour[:3])
@@ -714,7 +769,9 @@ class SurfaceManager:
 
         self.last_surface_index = surface.index
 
-        Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+        Publisher.sendMessage(
+            "Load surface actor into viewer", actor=actor, peeled_brain=peeled_brain
+        )
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
         return surface.index
 
@@ -744,8 +801,12 @@ class SurfaceManager:
         self.ShowActor(surface_index, True)
 
     def OnLoadSurfaceDict(self, surface_dict):
+        slic = sl.Slice()
+        ww = slic.window_width
+        wl = slic.window_level
         for key in surface_dict:
             surface = surface_dict[key]
+            is_peel = surface.peel
 
             # Map polygonal data (vtkPolyData) to graphics primitives.
             normals = vtkPolyDataNormals()
@@ -762,8 +823,29 @@ class SurfaceManager:
 
             mapper = vtkPolyDataMapper()
             mapper.SetInputConnection(stripper.GetOutputPort())
-            mapper.ScalarVisibilityOff()
+            # mapper.ScalarVisibilityOff()
             #  mapper.ImmediateModeRenderingOn() # improve performance
+            if is_peel:
+                self.peel_surface_index = surface.index
+                self.peel_depth = surface.peel_depth
+                self.peel_opacity = surface.peel_opacity
+                Publisher.sendMessage(
+                    "Initialize peel depth and opacity",
+                    peel_depth=surface.peel_depth,
+                    peel_opacity=surface.peel_opacity,
+                )
+                # Use window-level LUT for peeled surfaces
+                lut = vtkWindowLevelLookupTable()
+                lut.SetWindow(ww)
+                lut.SetLevel(wl)
+                lut.Build()
+
+                mapper.SetLookupTable(lut)
+                mapper.SetScalarRange(wl - ww / 2, wl + ww / 2)
+                mapper.InterpolateScalarsBeforeMappingOn()
+                mapper.ScalarVisibilityOn()
+            else:
+                mapper.ScalarVisibilityOff()
 
             # Represent an object (geometry & properties) in the rendered scene
             actor = vtkActor()
@@ -777,7 +859,9 @@ class SurfaceManager:
             self.actors_dict[surface.index] = actor
 
             # Send actor by pubsub to viewer's render
-            Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+            Publisher.sendMessage(
+                "Load surface actor into viewer", actor=actor, peeled_brain=is_peel
+            )
 
             Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
 
