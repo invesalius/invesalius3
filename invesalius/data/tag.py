@@ -19,7 +19,7 @@ class Tag3D:
         label (str): The label to display for the tag.
         colour (tuple): RGB tuple for the tag color (default: (0, 255, 0)).
     """
-    def __init__(self, point1, point2, label, colour=(0, 255, 0)):
+    def __init__(self, point1, point2, label, colour=(0, 255, 0), offset=0):
         self.measurement = measures.Measurement()
         self.measurement.type = const.LINEAR
         self.measurement.location = const.SURFACE
@@ -47,7 +47,9 @@ class Tag3D:
             type=const.LINEAR,
             location=const.SURFACE,
             radius=getattr(const, "PROP_MEASURE", 0.34375),
-            label=label
+            label=label,
+            offset=offset
+
         )
 
         Publisher.sendMessage(
@@ -56,7 +58,9 @@ class Tag3D:
             type=const.LINEAR,
             location=const.SURFACE,
             radius=getattr(const, "PROP_MEASURE", 0.34375),
-            label=label
+            label=label,
+            offset=offset
+            
         )
       
         Publisher.sendMessage(

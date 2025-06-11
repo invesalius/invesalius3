@@ -1322,10 +1322,16 @@ class Frame(wx.Frame):
                     
                     import invesalius.data.coronary_fit as coronary_fit
                     fit = coronary_fit.CoronaryFit(point1, point2, self.start_slice, self.end_slice, label)
+                    
                     # Show a progress dialog before starting the long operation
                     progress = wx.BusyInfo("Calculating density tags, please wait...", parent=self)
                     try:
                         stats = fit.add_density_tags()
+                        stats = stats.split("\n")
+                        Tag3D(point1, point2, stats[0], offset=10)
+                        Tag3D(point1, point2, stats[1], offset=20)
+                        Tag3D(point1, point2, stats[2], offset=30)
+
                     finally:
                         # Ensure the dialog is closed even if an error occurs
                         del progress
