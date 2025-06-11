@@ -1123,8 +1123,10 @@ class ObjectTab(wx.Panel):
             # Update multicoil GUI elements
             self.sel_sizer.GetStaticBox().SetLabel(f"TMS coil selection (0 out of {n_coils})")
 
-            # Remove all coil-buttons
-            self.coil_btns = {}
+            # Reset (enable and unpress) all coil-buttons
+            for btn, *junk in self.coil_btns.values():
+                btn.Enable()
+                btn.SetValue(False)
 
         self.ShowMulticoilGUI(multicoil_mode)
 
