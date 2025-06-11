@@ -7832,3 +7832,4 @@ class CoilTargetGridParametersDialog(wx.Dialog):
     def OnCancel(self, event):
         """Called when Cancel is clicked. Closes the dialog."""
         self.EndModal(wx.ID_CANCEL)
+        self.Destroy()

@@ -3455,8 +3455,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     new_marker = center_marker.duplicate()
                     new_marker.position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
                     self.markers.CreateCoilTargetFromLandmark(new_marker)
-        if grid_parameter_dlg.ShowModal() == wx.ID_CANCEL:
-            grid_parameter_dlg.Destroy()
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
         self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
