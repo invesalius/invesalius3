@@ -3416,7 +3416,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         return np.meshgrid(x, y)
 
     def OnCreateGridCoilTargetFromCoilTarget(self, evt):
-        grid_parameter_dlg = dlg.GridParametersDialog(self)
+        grid_parameter_dlg = dlg.CoilTargetGridParametersDialog(self)
 
         if grid_parameter_dlg.ShowModal() == wx.ID_OK:
             grid_resol = int(grid_parameter_dlg.resolution)

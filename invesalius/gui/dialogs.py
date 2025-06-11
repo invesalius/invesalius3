@@ -7706,10 +7706,10 @@ class ProgressBarHandler(wx.ProgressDialog):
             super().Pulse(msg)
 
 
-class GridParametersDialog(wx.Dialog):
+class CoilTargetGridParametersDialog(wx.Dialog):
     """
-    A dialog window for configuring grid parameters.
-    It allows the user to define the grid's resolution, X and Y sizes, and Z offset.
+    A dialog window for configuring grid targets parameters.
+    It allows the user to define the grid's resolution, X and Y sizes.
     """
 
     def __init__(
