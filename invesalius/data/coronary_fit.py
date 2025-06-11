@@ -100,6 +100,13 @@ class CoronaryFit:
         overall_min = np.min(all_mins)
         overall_max = np.max(all_maxs)
 
-        print(f"Stenosis stats: mean={overall_mean:.2f}, min={overall_min:.2f}, max={overall_max:.2f}")
-        return f"Stenosis stats: mean={overall_mean:.2f}, min={overall_min:.2f}, max={overall_max:.2f}"
+        from invesalius.i18n import tr as _
+        stats_str = _(
+            f"mean_density={overall_mean:.2f}\n"
+            f"min_density={overall_min:.2f}\n"
+            f"max_density={overall_max:.2f}"
+
+        )
+        print(stats_str)
+        return stats_str
         

@@ -197,7 +197,7 @@ class MeasurementManager:
 
                 representation = CirclePointRepresentation(m.colour, radius)
                 if m.type == const.LINEAR:
-                    mr = LinearMeasure(m.colour, representation)
+                    mr = LinearMeasure(m.colour, representation, offset = self.offset)
                 else:
                     mr = AngularMeasure(m.colour, representation)
                 self.current = (m, mr)
@@ -218,7 +218,8 @@ class MeasurementManager:
                 else:
                     Publisher.sendMessage("Redraw canvas")
 
-    def _add_point(self, position, type, location, label, slice_number=0, radius=const.PROP_MEASURE):
+    def _add_point(self, position, type, location, label, slice_number=0, radius=const.PROP_MEASURE, offset=0):
+        self.offset = offset
         to_remove = False
         print("Label init: ", label)
         self.label = label
@@ -241,7 +242,7 @@ class MeasurementManager:
             m.type = type
             representation = CirclePointRepresentation(m.colour, radius)
             if type == const.LINEAR:
-                mr = LinearMeasure(m.colour, representation)
+                mr = LinearMeasure(m.colour, representation, offset=self.offset)
             else:
                 mr = AngularMeasure(m.colour, representation)
             if to_remove:
@@ -646,7 +647,7 @@ class CrossPointRepresentation:
 
 
 class LinearMeasure:
-    def __init__(self, colour=(1, 0, 0), representation=None):
+    def __init__(self, colour=(1, 0, 0), representation=None, offset=0):
         self.colour = colour
         self.points = []
         self.point_actor1 = None
@@ -656,6 +657,7 @@ class LinearMeasure:
         self.renderer = None
         self.layer = 0
         self.label = None
+        self.offset = offset  # offset to apply to the text position
         if not representation:
             representation = CirclePointRepresentation(colour)
         self.representation = representation
@@ -727,15 +729,20 @@ class LinearMeasure:
         p1, p2 = self.points
         print("Label: ", self.label)
         # Show label if value is 0 (tag), otherwise show distance
+        # 3d label
         if self.label is not None:
             text = f" {self.label} "
             if "stenosis" in self.label.lower():
-                text = f" {self.label} ({math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm) "
+                text = f"{self.label} ({math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm) "
+            else:
+                text = f"{self.label}"
         else:
-            print("+++++++++++++++++++++++++++++++")
             text = f" {math.sqrt(vtkMath.Distance2BetweenPoints(p1, p2)):.3f} mm "
 
         x, y, z = ((i + j) / 2 for i, j in zip(p1, p2))
+        z-=self.offset
+        print(self.offset, x, y, z)
+        # input("Press Enter to continue...")
         textsource = vtkTextSource()
         textsource.SetText(text)
         textsource.SetBackgroundColor((250 / 255.0, 247 / 255.0, 218 / 255.0))
@@ -774,9 +781,9 @@ class LinearMeasure:
             for p0, p1 in zip(points[:-1:], points[1::]):
                 r, g, b = self.colour
                 canvas.draw_line(p0, p1, colour=(r * 255, g * 255, b * 255, 255))
-
+            #AXIAL LABEL
             if self.label is not None:
-                txt= f" {self.label} "
+                txt= f"{self.label} "
             else:
                 txt = f"{self.GetValue():.3f} mm"
             small_font = wx.Font(const.TD_TEXT_SIZE, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
