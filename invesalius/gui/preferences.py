@@ -1506,7 +1506,6 @@ class TrackerTab(wx.Panel):
         self.tracker = tracker
         self.robot = robot
         self.robot_ip = None
-        self.matrix_tracker_to_robot = None
         self.n_coils = 1
 
         self.LoadConfig()
@@ -1531,13 +1530,6 @@ class TrackerTab(wx.Panel):
     def LoadConfig(self):
         session = ses.Session()
         self.n_coils = session.GetConfig("navigation", {}).get("n_coils", 1)
-
-        state = session.GetConfig("robot", {})
-
-        self.robot_ip = state.get("robot_ip", None)
-        self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
-        if self.matrix_tracker_to_robot is not None:
-            self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
 
     def SetupTracker(self):
         # ComboBox for choosing the no. of coils to track
@@ -1696,6 +1688,8 @@ class SetupRobot(wx.Panel):
         self.robot_name = self.robot.robot_name
         self.robot_ip = robot.robot_ip
 
+        self.LoadConfig()
+
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.__build_ui()
         self.SetSizerAndFit(self.main_sizer)
@@ -1784,6 +1778,17 @@ class SetupRobot(wx.Panel):
             "Neuronavigation to Robot: Set robot transformation matrix",
         )
 
+    def LoadConfig(self):
+        session = ses.Session()
+
+        robots = session.GetConfig("robots", {})
+        state = robots.get(self.robot_name, {})
+
+        self.robot_ip = state.get("robot_ip", None)
+        self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
+        if self.matrix_tracker_to_robot is not None:
+            self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
+
     def verifyFormatIP(self, ip):
         ip = ip.strip()
         pattern = re.compile(
@@ -1817,7 +1822,7 @@ class SetupRobot(wx.Panel):
             if ip not in self.robot.robot_ip_options:
                 self.choice_IP.Append(ip)
                 self.robot.robot_ip_options.append(ip)
-                self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+                self.robot.SaveIpConfig()
             else:
                 self.choice_IP.SetSelection(self.robot.robot_ip_options.index(ip))
         else:
@@ -1836,7 +1841,7 @@ class SetupRobot(wx.Panel):
                 index = self.choice_IP.FindString(ip)
                 self.choice_IP.Delete(index)
                 self.robot.robot_ip_options.remove(ip)
-                self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+                self.robot.SaveIpConfig()
                 if self.choice_IP.GetCount() > 0:
                     self.choice_IP.SetSelection(0)
                 else:
@@ -1854,9 +1859,12 @@ class SetupRobot(wx.Panel):
             Publisher.sendMessage(
                 "Neuronavigation to Robot: Connect to robot",
                 robot_IP=self.robot_ip,
+                robot_ID=self.robot.robot_name,
             )
         else:
             self.status_text.SetLabelText(_("Please select or enter valid IP before connecting!"))
+        # Move this for another place later
+        self.robot.SaveConfig()
 
     def OnRobotRegister(self, evt):
         if sys.platform == "darwin":

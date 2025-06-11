@@ -84,35 +84,41 @@ class Robot:
 
         Publisher.subscribe(self.TrackerFiducialsSet, "Tracker fiducials set")
 
+    def SaveIpConfig(self):
+        session = ses.Session()
+        session.SetConfig("robot_ip_options", self.robot_ip_options)
+
     def SaveConfig(self, key=None, value=None):
         session = ses.Session()
+        robots = session.GetConfig("robots", {})
         if key is None or value is None:
             # Save the whole state
             state = {
                 "robot_ip": self.robot_ip,
-                "robot_ip_options": self.robot_ip_options,
-                "tracker_to_robot": self.matrix_tracker_to_robot.tolist(),
             }
             if self.coil_name is not None:
                 state["robot_coil"] = self.coil_name
         else:
-            state = session.GetConfig("robot", {})
+            state = robots.get(self.robot_name, {})
             state[key] = value
 
-        session.SetConfig("robot", state)
+        robots[self.robot_name] = state
+        session.SetConfig("robots", robots)
 
     def LoadConfig(self):
         session = ses.Session()
-        state = session.GetConfig("robot", {})
+
+        robots = session.GetConfig("robots", {})
+        state = robots.get(self.robot_name, {})
 
         self.coil_name = state.get("robot_coil", None)
-
         self.robot_ip = state.get("robot_ip", None)
-        self.robot_ip_options = state.get("robot_ip_options", [])
 
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
         if self.matrix_tracker_to_robot is not None:
             self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
+
+        self.robot_ip_options = session.GetConfig("robot_ip_options", [])
 
         success = self.robot_ip is not None and self.matrix_tracker_to_robot is not None
         return success
@@ -152,7 +158,7 @@ class Robot:
             return False
 
         self.matrix_tracker_to_robot = matrix_tracker_to_robot
-        self.SaveConfig()
+        self.SaveConfig("tracker_to_robot", self.matrix_tracker_to_robot.tolist())
         self.InitializeRobot()
 
     def AbortRobotConfiguration(self):
@@ -186,6 +192,7 @@ class Robot:
     def SetCoilName(self, name):
         self.coil_name = name
         self.SaveConfig("robot_coil", name)
+        self.LoadConfig()
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
