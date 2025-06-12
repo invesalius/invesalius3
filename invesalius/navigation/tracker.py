@@ -147,6 +147,8 @@ class Tracker(metaclass=Singleton):
                 if self.thread_coord is not None:
                     self.thread_coord.start()
 
+                self.ResetCoilRegistrations()
+
             self.SaveState()
 
     def DisconnectTracker(self) -> None:
@@ -280,3 +282,7 @@ class Tracker(metaclass=Singleton):
 
     def get_trackers(self) -> List[str]:
         return cast(List[str], const.TRACKERS)
+
+    def ResetCoilRegistrations(self) -> None:
+        session = ses.Session()
+        session.SetConfig("coil_registrations", {})
