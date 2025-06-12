@@ -1088,12 +1088,8 @@ class ObjectTab(wx.Panel):
         if coil_name not in self.coil_btns:
             coil_btn = wx.ToggleButton(self, -1, coil_name[:8], size=wx.Size(88, 17))
             coil_btn.SetToolTip(coil_name)
-            coil_btn.Bind(
-                wx.EVT_TOGGLEBUTTON, lambda event, name=coil_name: self.OnSelectCoil(event, name)
-            )
-            coil_btn.Bind(
-                wx.EVT_RIGHT_DOWN, lambda event, name=coil_name: self.OnRightClickCoil(event, name)
-            )
+            coil_btn.Bind(wx.EVT_TOGGLEBUTTON, lambda event: self.OnSelectCoil(event))
+            coil_btn.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.OnRightClickCoil(event))
             coil_btn.Show(show_button)
             self.coil_btns[coil_name] = (coil_btn, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
 
@@ -1170,7 +1166,10 @@ class ObjectTab(wx.Panel):
         for btn, *junk in self.coil_btns.values():
             btn.Enable(btn.GetValue())
 
-    def OnSelectCoil(self, event=None, name=None, select=False):
+    def OnSelectCoil(self, event=None, select=False):
+        button = event.GetEventObject() if event is not None else None
+        name = button.GetLabel() if button is not None else None
+
         if name is None:
             if not select:  # Unselect all coils
                 Publisher.sendMessage("Reset coil selection", n_coils=self.navigation.n_coils)
@@ -1245,7 +1244,10 @@ class ObjectTab(wx.Panel):
             for btn, *junk in self.coil_btns.values():
                 btn.Enable(True)
 
-    def OnRightClickCoil(self, event, name):
+    def OnRightClickCoil(self, event):
+        button = event.GetEventObject()
+        name = button.GetLabel()
+
         def DeleteCoil(event, name):
             # Unselect the coil first
             self.OnSelectCoil(name, select=False)
@@ -1261,15 +1263,44 @@ class ObjectTab(wx.Panel):
             # Remove coil from navigation and CoilVisualizer
             Publisher.sendMessage("Select coil", coil_name=name, coil_registration=None)
 
+        def RenameCoil(event, name):
+            dialog = wx.TextEntryDialog(
+                None,
+                _("Type the new name for this coil registration"),
+                _("Change Coil Name"),
+                value=name,
+            )
+            if dialog.ShowModal() == wx.ID_OK:
+                new_coil_name = dialog.GetValue().strip()  # Update coil_name with user input
+
+                # TODO Check if coil name already exists
+
+                dialog.Destroy()
+
+                self.coil_registrations[new_coil_name] = self.coil_registrations.pop(name)
+                self.session.SetConfig("coil_registrations", self.coil_registrations)
+                self.coil_btns[name][0].SetLabel(new_coil_name)
+                self.coil_btns[new_coil_name] = self.coil_btns.pop(name)
+
+            else:
+                dialog.Destroy()
+                return
+
         menu = wx.Menu()
         delete_coil = menu.Append(wx.ID_ANY, "Delete coil")
         save_coil = menu.Append(wx.ID_ANY, "Save coil to OBR file")
-
+        change_coil_name = menu.Append(wx.ID_ANY, "Change coil name")
+        print(name)
         self.Bind(wx.EVT_MENU, (lambda event, name=name: DeleteCoil(event, name)), delete_coil)
         self.Bind(
             wx.EVT_MENU,
             (lambda event, name=name: self.OnSaveCoilToOBR(event, coil_name=name)),
             save_coil,
+        )
+        self.Bind(
+            wx.EVT_MENU,
+            (lambda event, name=name: RenameCoil(event, name)),
+            change_coil_name,
         )
         self.PopupMenu(menu)
         menu.Destroy()
