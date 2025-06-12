@@ -8,7 +8,8 @@ on:
 
 jobs:
   get-tag:
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
+    # runs-on: self-hosted
     outputs:
       new_tag: ${{ steps.get_tag.outputs.new_tag }}
     steps:
