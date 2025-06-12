@@ -158,6 +158,8 @@ class Frame(wx.Frame):
         self.latest_cross_focal_position = None
         Publisher.subscribe(self.on_cross_focal_update, "Update volume viewer pointer")
 
+        self.midpoints = []  # Add this line to store midpoints
+
     def __bind_events(self):
         """
         Bind events related to pubsub.
@@ -233,7 +235,7 @@ class Frame(wx.Frame):
                 event.Skip()
                 return
             # Check for Ctrl+A
-            if unicode in (ord("a"), ord("A"), ord("l"), ord("L"), ord("D"), ord("d"), ord("k"), ord("K"), ord("r"), ord("R")):
+            if unicode in (ord("a"), ord("A"), ord("l"), ord("L"), ord("D"), ord("d"), ord("k"), ord("K"), ord("r"), ord("R"), ord("n"), ord("N")):
                 self.on_key_down(event)
                 return
 
@@ -1321,7 +1323,8 @@ class Frame(wx.Frame):
                     self.tag2_waiting_for_second_point = False
                     
                     import invesalius.data.coronary_fit as coronary_fit
-                    fit = coronary_fit.CoronaryFit(point1, point2, self.start_slice, self.end_slice, label)
+                    fit = coronary_fit.CoronaryFit(point1, point2, self.start_slice, self.end_slice, label, self.midpoints)
+                    self.midpoints = []  # Reset midpoints after use
                     
                     # Show a progress dialog before starting the long operation
                     progress = wx.BusyInfo("Calculating density tags, please wait...", parent=self)
@@ -1379,6 +1382,15 @@ class Frame(wx.Frame):
                 dlg.Destroy()
             else:
                 wx.MessageBox("No pointer position available.", "Error")
+        # Handle Ctrl+N to append current pointer position to midpoints
+        elif event.ControlDown() and event.GetKeyCode() == ord('N'):
+            if self.current_pointer_pos:
+                print("Ctrl+N pressed: Adding midpoint")
+                self.midpoints.append(self.current_pointer_pos)
+                wx.MessageBox(f"Midpoint added: {self.current_pointer_pos}", "Info")
+            else:
+                wx.MessageBox("No pointer position available.", "Error")
+            return
         else:
             event.Skip()
 
