@@ -59,19 +59,6 @@ class Tracker(metaclass=Singleton):
         except:  # noqa: E722
             ses.Session().DeleteStateFile()
 
-    def SetConfigCoilRegistrations(self):
-        configuration: Optional[Dict[str, object]] = (
-            self.tracker_connection.GetConfiguration() if self.tracker_connection else None
-        )
-        if configuration:
-            obj_dirs = configuration.get("obj_dirs", [])
-            coil_names_files = [Path(p).stem for p in obj_dirs]
-            coil_registrations = {}
-            for idx, coil_name in enumerate(coil_names_files):
-                coil_registrations[coil_name] = {"obj_id": idx + 2}
-            session = ses.Session()
-            session.SetConfig("coil_registrations", coil_registrations)
-
     def SaveState(self) -> None:
         tracker_id: int = self.tracker_id
         tracker_fiducials = self.tracker_fiducials.tolist()
@@ -113,7 +100,6 @@ class Tracker(metaclass=Singleton):
         self.tracker_fiducials = tracker_fiducials
         self.tracker_fiducials_raw = tracker_fiducials_raw
         self.m_tracker_fiducials_raw = m_tracker_fiducials_raw
-
         self.SetTracker(tracker_id=self.tracker_id, configuration=configuration)
 
     def SetTracker(
@@ -162,7 +148,6 @@ class Tracker(metaclass=Singleton):
                     self.thread_coord.start()
 
             self.SaveState()
-            self.SetConfigCoilRegistrations()
 
     def DisconnectTracker(self) -> None:
         if self.tracker_connected:

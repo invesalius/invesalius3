@@ -3981,13 +3981,16 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.txt_coord = [list(), list(), list(), list()]
 
         session = ses.Session()
-        coil_registrations_config = session.GetConfig("coil_registrations", "")
+        coil_registrations_config = session.GetConfig("coil_registrations", {})
 
-        # Sort coil names from config to respect the relation between index_list in comboBox and obj IDs list
-        coil_names = sorted(
-            coil_registrations_config,
-            key=lambda k: coil_registrations_config[k].get("obj_id", float("inf")),
-        )
+        if coil_registrations_config and len(coil_registrations_config) == self.n_coils:
+            # Sort coil names from config to respect the relation between index_list in comboBox and obj IDs list
+            coil_names = sorted(
+                coil_registrations_config,
+                key=lambda k: coil_registrations_config[k].get("obj_id", float("inf")),
+            )
+        else:
+            coil_names = [f"coil_{i}" for i in range(1, self.n_coils + 1)]
 
         tooltip = _("Choose the respective coil for calibration")
 
