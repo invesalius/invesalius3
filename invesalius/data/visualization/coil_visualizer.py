@@ -205,9 +205,12 @@ class CoilVisualizer:
         self.target_coil_actor = None
 
     # Called when a coil is (un)selected for navigation
-    def SelectCoil(self, coil_name, coil_registration):
-        if coil_registration is not None:  # coil is selected
+    def SelectCoil(self, coil_name, coil_registration, new_coil_name):
+        if coil_registration is not None and coil_name is None:  # coil is selected
             self.AddCoil(coil_name, coil_registration["path"])
+        elif new_coil_name is not None:  # coil is replaced
+            self.RemoveCoil(coil_name)
+            self.AddCoil(new_coil_name, coil_registration["path"])
         else:  # coil is unselected
             self.RemoveCoil(coil_name)
 

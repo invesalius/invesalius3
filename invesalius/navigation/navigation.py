@@ -386,16 +386,19 @@ class Navigation(metaclass=Singleton):
     def CoilSelectionDone(self):
         return len(self.coil_registrations) == self.n_coils
 
-    def SelectCoil(self, coil_name, coil_registration):
-        if coil_registration is not None:  # Add the coil to selection
+    def SelectCoil(self, coil_name, coil_registration, new_coil_name):
+        if coil_registration is not None and new_coil_name is None:  # Add the coil to selection
             self.coil_registrations[coil_name] = coil_registration
             if self.main_coil is None:
                 self.main_coil = coil_name
+        elif new_coil_name is not None:
+            self.coil_registrations[new_coil_name] = self.coil_registrations.pop(coil_name)
+            if self.main_coil is None:
+                self.main_coil = new_coil_name
         else:  # Remove the coil from selection
             self.coil_registrations.pop(coil_name, None)
             if self.main_coil == coil_name:
                 self.main_coil = None
-                self.SaveConfig()
 
         self.SaveConfig()
 
