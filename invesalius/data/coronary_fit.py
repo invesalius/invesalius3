@@ -12,45 +12,40 @@ class CoronaryFit:
         self.midpoints = midpoints  
 
     def add_density_tags(self):
-        #invert the points
-        #if slice is decreasing, don't invert the points
+        # Prepare the ordered list of points for the path
         if self.point1[2] > self.point2[2]:
-            x1, y1, z1 = self.point1
-            self.midpoints.append(self.point2)
+            points = [self.point1] + self.midpoints + [self.point2]
         else:
-            x1, y1, z1 = self.point2
-            self.midpoints = self.midpoints[::-1]
-            self.midpoints.append(self.point1)
+            points = [self.point2] + self.midpoints[::-1] + [self.point1]
 
-        print(x1, y1, z1)
-        print(self.midpoints)
-        input("Press Enter to continue...")
+        # print("Ordered points:", points)
+        # input("Press Enter to continue...")
 
-        for midpoint in self.midpoints:
-            x2, y2, z2 = midpoint
-            if self.start_slice < self.end_slice:
-                self.end_slice = int(self.start_slice + abs(z2-z1)/0.5)+1
+        all_means = []
+        all_mins = []
+        all_maxs = []
+
+        for i in range(len(points) - 1):
+            x1, y1, z1 = points[i]
+            x2, y2, z2 = points[i + 1]
+
+            # Calculate local start and end slices for this segment
+            if z1 < z2:
+                local_start_slice = int(round(z1 / 0.5))
+                local_end_slice = int(round(z2 / 0.5)) + 1
+                slice_range = range(local_start_slice, local_end_slice)
             else:
-                self.end_slice = int(self.start_slice - abs(z2-z1)/0.5)-1
-            num_slices = int((abs(z2 - z1)/0.5) + 1)
+                local_start_slice = int(round(z1 / 0.5))
+                local_end_slice = int(round(z2 / 0.5)) - 1
+                slice_range = range(local_start_slice, local_end_slice, -1)
 
-            if self.start_slice < self.end_slice:
-                slice_range = range(self.start_slice, self.end_slice)
-            else:
-                slice_range = range(self.end_slice, self.start_slice)
-            print("Slice range:", list(slice_range))
-            input("Press Enter to continue...")
-            xs = np.linspace(x2, x1, num_slices)
-            ys = np.linspace(y2, y1, num_slices)
+            num_slices = abs(local_end_slice - local_start_slice)
+            # print(f"Slice range for segment {i}: {list(slice_range)}")
+            # input("Press Enter to continue...")
 
-            if num_slices > 1:
-                zs = np.arange(z2, z2 + 0.5 * num_slices, 0.5)
-                zs = zs[:num_slices]
-            else:
-                zs = np.array([z2])
-            all_means = []
-            all_mins = []
-            all_maxs = []
+            xs = np.linspace(x1, x2, num_slices)
+            ys = np.linspace(y1, y2, num_slices)
+            zs = np.linspace(z1, z2, num_slices)
 
             for idx, slice_num in enumerate(slice_range):
                 print(f"Adding density tag at slice {slice_num}")
@@ -108,8 +103,8 @@ class CoronaryFit:
                 all_means.append(mean)
                 all_mins.append(min)
                 all_maxs.append(max)
-            x1, y1, z1 = midpoint
-            self.start_slice = self.end_slice + 1
+            # x1, y1, z1 = midpoint
+            # self.start_slice = self.end_slice + 1
 
         overall_mean = np.mean(all_means)
         overall_min = np.min(all_mins)
@@ -124,4 +119,4 @@ class CoronaryFit:
         )
         print(stats_str)
         return stats_str
-        
+
