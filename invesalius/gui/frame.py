@@ -1326,7 +1326,7 @@ class Frame(wx.Frame):
                     fit = coronary_fit.CoronaryFit(point1, point2, self.start_slice, self.end_slice, label, self.midpoints)
                     self.midpoints = []  # Reset midpoints after use
                     
-                    # Show a progress dialog before starting the long operation
+
                     progress = wx.BusyInfo("Calculating density tags, please wait...", parent=self)
                     try:
                         stats = fit.add_density_tags()
@@ -1394,10 +1394,6 @@ class Frame(wx.Frame):
         else:
             event.Skip()
 
-
-# ------------------------------------------------------------------
-# ------------------------------------------------------------------
-# ------------------------------------------------------------------
 
 
 class MenuBar(wx.MenuBar):

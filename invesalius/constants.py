@@ -119,6 +119,7 @@ MIN_TH=226
 MAX_TH=400
 MIN_DELTA = 200
 LINE_SPACE = 10
+SLICE_THICKNESS = 0.5 # in mm
 
 # Colour representing each orientation
 ORIENTATION_COLOUR = {

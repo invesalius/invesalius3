@@ -18,8 +18,7 @@ class CoronaryFit:
         else:
             points = [self.point2] + self.midpoints[::-1] + [self.point1]
 
-        # print("Ordered points:", points)
-        # input("Press Enter to continue...")
+
 
         all_means = []
         all_mins = []
@@ -31,17 +30,16 @@ class CoronaryFit:
 
             # Calculate local start and end slices for this segment
             if z1 < z2:
-                local_start_slice = int(round(z1 / 0.5))
-                local_end_slice = int(round(z2 / 0.5)) + 1
+                local_start_slice = int(round(z1 / const.SLICE_THICKNESS))
+                local_end_slice = int(round(z2 / const.SLICE_THICKNESS)) + 1
                 slice_range = range(local_start_slice, local_end_slice)
             else:
-                local_start_slice = int(round(z1 / 0.5))
-                local_end_slice = int(round(z2 / 0.5)) - 1
+                local_start_slice = int(round(z1 / const.SLICE_THICKNESS))
+                local_end_slice = int(round(z2 / const.SLICE_THICKNESS)) - 1
                 slice_range = range(local_start_slice, local_end_slice, -1)
 
             num_slices = abs(local_end_slice - local_start_slice)
-            # print(f"Slice range for segment {i}: {list(slice_range)}")
-            # input("Press Enter to continue...")
+
 
             xs = np.linspace(x1, x2, num_slices)
             ys = np.linspace(y1, y2, num_slices)
@@ -103,8 +101,6 @@ class CoronaryFit:
                 all_means.append(mean)
                 all_mins.append(min)
                 all_maxs.append(max)
-            # x1, y1, z1 = midpoint
-            # self.start_slice = self.end_slice + 1
 
         overall_mean = np.mean(all_means)
         overall_min = np.min(all_mins)
