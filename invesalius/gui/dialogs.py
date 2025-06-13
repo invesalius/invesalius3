@@ -3989,6 +3989,31 @@ class ObjectCalibrationDialog(wx.Dialog):
                 coil_registrations_config,
                 key=lambda k: coil_registrations_config[k].get("obj_id", float("inf")),
             )
+        elif coil_registrations_config:
+            # 1. Create a map of obj_id -> name for quick lookups.
+            # This inverts your dictionary, making it easy to find a name by its ID.
+            id_to_name_map = {
+                data.get("obj_id"): name
+                for name, data in coil_registrations_config.items()
+                if data.get("obj_id") is not None
+            }
+
+            # 2. Create the final list with n_coils size.
+            coil_names = []
+
+            # 3. Iterate from 1 to n_coils to ensure the correct number of items.
+            for i in range(1, self.n_coils + 1):
+                # The obj_id starts at 2, so the obj_id for the i-th coil is i + 1.
+                # E.g.: The first coil (i=1) has obj_id=2, the second (i=2) has obj_id=3, etc.
+                current_obj_id = i + 1
+
+                if current_obj_id in id_to_name_map:
+                    # If the obj_id exists in the map, use the real name.
+                    coil_names.append(id_to_name_map[current_obj_id])
+                else:
+                    # If it doesn't exist, create a generic name.
+                    # We use the loop's 'i' to maintain consistency with your 'else' block (coil_1, coil_2...).
+                    coil_names.append(f"coil_{i}")
         else:
             coil_names = [f"coil_{i}" for i in range(1, self.n_coils + 1)]
 
