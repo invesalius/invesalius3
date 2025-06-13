@@ -993,11 +993,10 @@ class ObjectTab(wx.Panel):
 
         # Coils are selected by toggling coil-buttons
         self.coil_btns = {}
-        self.no_coils_lbl = None
+        self.no_coils_lbl = wx.StaticText(
+            self, -1, _("No coils found in config.json. Create or load new coils below.")
+        )
         if len(self.coil_registrations) == 0 or not self.tracker.tracker_connected:
-            self.no_coils_lbl = wx.StaticText(
-                self, -1, _("No coils found in config.json. Create or load new coils below.")
-            )
             inner_sel_sizer.Add(self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
 
         else:
@@ -1085,15 +1084,14 @@ class ObjectTab(wx.Panel):
 
     def AddCoilButton(self, coil_name, show_button=True):
         if self.no_coils_lbl is not None:
-            self.no_coils_lbl.Destroy()  # Remove obsolete message
-            self.no_coils_lbl = None
+            self.no_coils_lbl.Hide()  # Remove obsolete message
 
         # Create a new button with coil_name if it doesn't already exist
         if coil_name not in self.coil_btns:
             coil_btn = wx.ToggleButton(self, -1, coil_name, size=wx.Size(88, 17))
             coil_btn.SetToolTip(coil_name)
-            coil_btn.Bind(wx.EVT_TOGGLEBUTTON, lambda event: self.OnSelectCoil(event))
-            coil_btn.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.OnRightClickCoil(event))
+            coil_btn.Bind(wx.EVT_TOGGLEBUTTON, lambda event: self.OnSelectCoil(event=event))
+            coil_btn.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.OnRightClickCoil(event=event))
             coil_btn.Show(show_button)
             self.coil_btns[coil_name] = (coil_btn, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
 
@@ -1123,10 +1121,20 @@ class ObjectTab(wx.Panel):
             # Update multicoil GUI elements
             self.sel_sizer.GetStaticBox().SetLabel(f"TMS coil selection (0 out of {n_coils})")
 
-            # Reset (enable and unpress) all coil-buttons
-            for btn, *junk in self.coil_btns.values():
-                btn.Enable()
-                btn.SetValue(False)
+            # Remove all coil-buttons
+            for name in list(self.coil_btns.keys()):
+                self.coil_btns[name][0].Destroy()
+            self.coil_btns.clear()
+
+            self.inner_sel_sizer.Clear(delete_windows=True)
+            self.no_coils_lbl = wx.StaticText(
+                self, -1, _("No coils found in config.json. Create or load new coils below.")
+            )
+            self.inner_sel_sizer.Add(self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
+
+            session = ses.Session()
+            self.coil_registrations = {}
+            session.SetConfig("coil_registrations", self.coil_registrations)
 
         self.ShowMulticoilGUI(multicoil_mode)
 
@@ -1176,14 +1184,11 @@ class ObjectTab(wx.Panel):
         if name is None:
             button = event.GetEventObject() if event is not None else None
             name = button.GetLabel() if button is not None else None
-            if not select:  # Unselect all coils
-                Publisher.sendMessage("Reset coil selection", n_coils=self.navigation.n_coils)
-                return
 
         coil_registration = None
         navigation = self.navigation
 
-        if select or (event is not None and event.GetSelection()):  # If coil is selected
+        if select or (event is not None and event.GetSelection()):
             coil_registration = self.coil_registrations[name]
 
             # Check that the index of the chosen coil does not conflict with other selected coils
@@ -1222,7 +1227,6 @@ class ObjectTab(wx.Panel):
 
             # Press the coil button here in case selection was done via code without pressing button
             self.coil_btns[name][0].SetValue(True)
-
         # Select/Unselect coil
         Publisher.sendMessage(
             "Select coil", coil_name=name, coil_registration=coil_registration, new_coil_name=None
@@ -1257,7 +1261,7 @@ class ObjectTab(wx.Panel):
 
         def DeleteCoil(event, name):
             # Unselect the coil first
-            self.OnSelectCoil(name, select=False)
+            self.OnSelectCoil(name=name, select=False)
             del self.coil_registrations[name]
 
             # Remove the coil-button
@@ -1293,7 +1297,7 @@ class ObjectTab(wx.Panel):
                 Publisher.sendMessage(
                     "Select coil",
                     coil_name=name,
-                    coil_registration=self.coil_registrations[new_coil_name],
+                    coil_registration=None,
                     new_coil_name=new_coil_name,
                 )
 
