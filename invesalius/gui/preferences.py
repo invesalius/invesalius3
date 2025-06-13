@@ -1285,10 +1285,30 @@ class ObjectTab(wx.Panel):
             )
             if dialog.ShowModal() == wx.ID_OK:
                 new_coil_name = dialog.GetValue().strip()  # Update coil_name with user input
-
-                # TODO Check if coil name already exists
-                # TODO Send modification to navigation class
                 dialog.Destroy()
+
+                while new_coil_name == name or new_coil_name in self.coil_registrations:
+                    if not new_coil_name:
+                        wx.MessageBox("Coil name cannot be empty.", "Error", wx.OK | wx.ICON_ERROR)
+                        return
+
+                    else:
+                        dialog = wx.TextEntryDialog(
+                            None,
+                            _(
+                                "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
+                            ),
+                            _("Warning: Coil Name Conflict"),
+                            value=name,
+                        )
+                        if dialog.ShowModal() == wx.ID_OK:
+                            new_coil_name = (
+                                dialog.GetValue().strip()
+                            )  # Update coil_name with user input
+                            dialog.Destroy()
+                        else:
+                            dialog.Destroy()
+                            return
 
                 self.coil_registrations[new_coil_name] = self.coil_registrations.pop(name)
                 self.session.SetConfig("coil_registrations", self.coil_registrations)
