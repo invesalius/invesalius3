@@ -504,24 +504,24 @@ MODE_SLICE_CROSS = -3
 ############
 
 
-FILETYPE_IV = "iv"
-FILETYPE_RIB = "rib"
-FILETYPE_STL = "stl"
-FILETYPE_STL_ASCII = "stl_ascii"
-FILETYPE_VRML = "vrml"
-FILETYPE_OBJ = "obj"
-FILETYPE_VTP = "vtp"
-FILETYPE_PLY = "ply"
-FILETYPE_X3D = "x3d"
+FILETYPE_IV = wx.NewIdRef()
+FILETYPE_RIB = wx.NewIdRef()
+FILETYPE_STL = wx.NewIdRef()
+FILETYPE_STL_ASCII = wx.NewIdRef()
+FILETYPE_VRML = wx.NewIdRef()
+FILETYPE_OBJ = wx.NewIdRef()
+FILETYPE_VTP = wx.NewIdRef()
+FILETYPE_PLY = wx.NewIdRef()
+FILETYPE_X3D = wx.NewIdRef()
 
-FILETYPE_IMAGEDATA = "imagedata"
+FILETYPE_IMAGEDATA = wx.NewIdRef()
 
-FILETYPE_BMP = "bmp"
-FILETYPE_JPG = "jpg"
-FILETYPE_PNG = "png"
-FILETYPE_PS = "ps"
-FILETYPE_POV = "pov"
-FILETYPE_TIF = "tif"
+FILETYPE_BMP = wx.NewIdRef()
+FILETYPE_JPG = wx.NewIdRef()
+FILETYPE_PNG = wx.NewIdRef()
+FILETYPE_PS = wx.NewIdRef()
+FILETYPE_POV = wx.NewIdRef()
+FILETYPE_TIF = wx.NewIdRef()
 
 IMAGE_TILING = {
     "1 x 1": (1, 1),
