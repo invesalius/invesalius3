@@ -41,23 +41,30 @@ class TrackerCoordinates:
         self.marker_visibilities = [False, False, False]
         self.previous_marker_visibilities = self.marker_visibilities
         self.nav_status = False
+        self.robot = None
         self.__bind_events()
 
     def __bind_events(self) -> None:
         Publisher.subscribe(self.OnUpdateNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.OnGetActiveRobot, "Get active robot")
 
     def OnUpdateNavigationStatus(self, nav_status: bool, vis_status) -> None:
         self.nav_status = nav_status
+
+    def OnGetActiveRobot(self, robot) -> None:
+        self.robot = robot
 
     def SetCoordinates(self, coord, marker_visibilities: List[bool]) -> None:
         self.coord = coord
         self.marker_visibilities = marker_visibilities
         if not self.nav_status:
+            wx.CallAfter(Publisher.sendMessage, "Send active robot")
             wx.CallAfter(
                 Publisher.sendMessage,
                 "From Neuronavigation: Update tracker poses",
                 poses=self.coord.tolist(),
                 visibilities=self.marker_visibilities,
+                robot_ID=self.robot.robot_name if self.robot else None,
             )
             if self.previous_marker_visibilities != self.marker_visibilities:
                 wx.CallAfter(
@@ -70,11 +77,13 @@ class TrackerCoordinates:
 
     def GetCoordinates(self) -> Tuple[Optional[np.ndarray], List[bool]]:
         if self.nav_status:
+            wx.CallAfter(Publisher.sendMessage, "Send active robot")
             wx.CallAfter(
                 Publisher.sendMessage,
                 "From Neuronavigation: Update tracker poses",
                 poses=self.coord.tolist(),
                 visibilities=self.marker_visibilities,
+                robot_ID=self.robot.robot_name if self.robot else None,
             )
             if self.previous_marker_visibilities != self.marker_visibilities:
                 wx.CallAfter(

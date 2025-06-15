@@ -136,6 +136,7 @@ class UpdateNavigationScene(threading.Thread):
         self.event = event
         self.neuronavigation_api = neuronavigation_api
         self.navigation = Navigation()
+        self.robot = Robots()
 
     def run(self):
         while not self.event.is_set():
@@ -207,6 +208,7 @@ class UpdateNavigationScene(threading.Thread):
                         "Update coil pose",
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
+                        robot_ID=self.robot.GetActive().robot_name,
                     )
                     wx.CallAfter(
                         Publisher.sendMessage,

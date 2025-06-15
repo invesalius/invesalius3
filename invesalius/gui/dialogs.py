@@ -6907,6 +6907,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Collect coordinates for the robot transformation matrix",
             data=None,
+            robot_ID=self.robot.robot_name,
         )
 
     def GetAcquiredPoints(self) -> int:
@@ -6915,7 +6916,7 @@ class RobotCoregistrationDialog(wx.Dialog):
     def SetAcquiredPoints(self, num_points: int) -> None:
         self.txt_number.SetLabel(str(num_points))
 
-    def PointRegisteredByRobot(self) -> None:
+    def PointRegisteredByRobot(self, robot_ID) -> None:
         # Increment the number of acquired points.
         num_points = self.GetAcquiredPoints()
         num_points += 1
@@ -6929,6 +6930,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Reset coordinates collection for the robot transformation matrix",
             data=None,
+            robot_ID=self.robot.robot_name,
         )
 
         self.StopContinuousAcquisition()
@@ -6944,7 +6946,9 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.StopContinuousAcquisition()
 
         Publisher.sendMessage(
-            "Neuronavigation to Robot: Estimate robot transformation matrix", data=None
+            "Neuronavigation to Robot: Estimate robot transformation matrix",
+            data=None,
+            robot_ID=self.robot.robot_name,
         )
 
         self.btn_save.Enable(True)
@@ -6952,7 +6956,7 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         # TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
 
-    def UpdateRobotTransformationMatrix(self, data: Any) -> None:
+    def UpdateRobotTransformationMatrix(self, data: Any, robot_ID) -> None:
         self.matrix_tracker_to_robot = np.array(data)
 
     def SaveRegistration(self, evt: wx.CommandEvent) -> None:
@@ -6995,6 +6999,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
+            robot_ID=self.robot.robot_name,
         )
 
         # Enable 'Ok' button if connection to robot is ok.

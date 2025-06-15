@@ -2247,12 +2247,12 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def UnsetTarget(self, marker):
+    def UnsetTarget(self, marker, robot_ID):
         self.navigation.target = None
         self.target_selected = False
         self.UpdateTargetButton()
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker, robot_ID):
         coord = marker.position + marker.orientation
 
         # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
@@ -2292,7 +2292,7 @@ class ControlPanel(wx.Panel):
         self.PressShowCoilButton(pressed=done)
 
     # Robot
-    def OnRobotStatus(self, data):
+    def OnRobotStatus(self, data, robot_ID):
         if data:
             self.Layout()
 
@@ -2519,7 +2519,7 @@ class ControlPanel(wx.Panel):
             if self.robot.GetActive().objective == RobotObjective.TRACK_TARGET:
                 self.robot.GetActive().SetObjective(RobotObjective.NONE)
             Publisher.sendMessage(
-                "Robot to Neuronavigation: Update robot warning", robot_warning=""
+                "Robot to Neuronavigation: Update robot warning", robot_warning="", robot_ID=None
             )
 
     # 'Move away' button
@@ -2542,7 +2542,7 @@ class ControlPanel(wx.Panel):
             if self.robot.GetActive().objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
                 self.robot.GetActive().SetObjective(RobotObjective.NONE)
             Publisher.sendMessage(
-                "Robot to Neuronavigation: Update robot warning", robot_warning=""
+                "Robot to Neuronavigation: Update robot warning", robot_warning="", robot_ID=None
             )
 
     # 'Free drive' button
@@ -2554,9 +2554,17 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.robot_free_drive_button)
         pressed = self.robot_free_drive_button.GetValue()
         if pressed:
-            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=True)
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Set free drive",
+                set=True,
+                robot_ID=self.robot.GetActive().robot_name,
+            )
         else:
-            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Set free drive",
+                set=False,
+                robot_ID=self.robot.GetActive().robot_name,
+            )
 
     # TMS Motor Mapping related
     # 'Motor Map' button
@@ -3464,7 +3472,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)
 
-    def _SetTarget(self, marker):
+    def _SetTarget(self, marker, robot_ID):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, "RED")
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
@@ -3742,7 +3750,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
         Publisher.sendMessage("Redraw MEP mapping from brain targets")
 
-    def _UnsetTarget(self, marker):
+    def _UnsetTarget(self, marker, robot_ID):
         idx = self.__find_marker_index(marker.marker_id)
 
         # When unsetting a target, automatically unpress the target mode button.

@@ -275,7 +275,7 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker, robot_ID):
         """
         When setting a marker as the target, change the arrow to an aim highlight
         that it is the target.
@@ -312,7 +312,7 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def UnsetTarget(self, marker):
+    def UnsetTarget(self, marker, robot_ID):
         """
         When unsetting a marker as the target, change the aim back to an arrow.
         """

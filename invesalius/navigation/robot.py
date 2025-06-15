@@ -123,7 +123,10 @@ class Robot:
         success = self.robot_ip is not None and self.matrix_tracker_to_robot is not None
         return success
 
-    def OnRobotConnectionStatus(self, data):
+    def OnRobotConnectionStatus(self, data, robot_ID):
+        if robot_ID != self.robot_name:
+            # Ignore messages for other robots.
+            return
         # TODO: Is this check necessary?
         if not data:
             return
@@ -161,7 +164,7 @@ class Robot:
         self.SaveConfig("tracker_to_robot", self.matrix_tracker_to_robot.tolist())
         self.InitializeRobot()
 
-    def AbortRobotConfiguration(self):
+    def AbortRobotConfiguration(self, robot_ID):
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
 
@@ -176,13 +179,18 @@ class Robot:
             self.robot_ip = data
 
     def ConnectToRobot(self):
-        Publisher.sendMessage("Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Connect to robot",
+            robot_IP=self.robot_ip,
+            robot_ID=self.robot_name,
+        )
         print("Connected to robot")
 
     def InitializeRobot(self):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
+            robot_ID=self.robot_name,
         )
         print("Robot initialized")
 
@@ -223,12 +231,15 @@ class Robot:
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set target",
             target=m_target.tolist(),
+            robot_ID=self.robot_name,
         )
 
     def TrackerFiducialsSet(self):
         tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
         Publisher.sendMessage(
-            "Neuronavigation to Robot: Set tracker fiducials", tracker_fiducials=tracker_fiducials
+            "Neuronavigation to Robot: Set tracker fiducials",
+            tracker_fiducials=tracker_fiducials,
+            robot_ID=self.robot_name,
         )
 
     def SetObjective(self, objective):
@@ -238,9 +249,13 @@ class Robot:
             return
 
         self.objective = objective
-        Publisher.sendMessage("Neuronavigation to Robot: Set objective", objective=objective.value)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Set objective",
+            objective=objective.value,
+            robot_ID=self.robot_name,
+        )
 
-    def SetObjectiveByRobot(self, objective):
+    def SetObjectiveByRobot(self, objective, robot_ID):
         if objective is None:
             return
 
@@ -258,11 +273,15 @@ class Robot:
             Publisher.sendMessage("Press robot button", pressed=False)
             Publisher.sendMessage("Press move away button", pressed=False)
 
-    def UnsetTarget(self, marker):
+    def UnsetTarget(self, marker, robot_ID):
+        if robot_ID != self.robot_name:
+            return
         self.target = None
-        Publisher.sendMessage("Neuronavigation to Robot: Unset target")
+        Publisher.sendMessage("Neuronavigation to Robot: Unset target", robot_ID=self.robot_name)
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker, robot_ID):
+        if robot_ID != self.robot_name:
+            return
         coord = marker.position + marker.orientation
 
         # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
@@ -281,6 +300,11 @@ class Robots(metaclass=Singleton):
         }
         self.active = "robot_1"  # Default active robot
 
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.SendActive, "Send active robot")
+
     def GetRobot(self, name: str):
         return self.robots.get(name)
 
@@ -292,6 +316,9 @@ class Robots(metaclass=Singleton):
             self.active = name
         else:
             raise ValueError(f"Robot '{name}' does not exist.")
+
+    def SendActive(self):
+        Publisher.sendMessage("Get active robot", robot=self.GetActive())
 
     def GetInactive(self):
         robot_name = [name for name in self.robots if name != self.active]

@@ -863,7 +863,7 @@ class Viewer(wx.Panel):
         print("updated to ", dist_threshold)
         self.distance_threshold = dist_threshold
 
-    def OnUpdateRobotWarning(self, robot_warning):
+    def OnUpdateRobotWarning(self, robot_warning, robot_ID):
         if self.robot_warnings_text is not None:
             self.robot_warnings_text.SetValue(robot_warning)
 
@@ -1064,7 +1064,7 @@ class Viewer(wx.Panel):
         else:
             self.DisableTargetMode()
 
-    def OnUpdateCoilPose(self, m_img, coord):
+    def OnUpdateCoilPose(self, m_img, coord, robot_ID):
         # vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
             distance_to_target = distance.euclidean(
@@ -1099,6 +1099,7 @@ class Viewer(wx.Panel):
                 Publisher.sendMessage,
                 "Neuronavigation to Robot: Update displacement to target",
                 displacement=displacement_to_target_robot,
+                robot_ID=robot_ID,
             )
 
             distance_to_target = displacement_to_target_robot.copy()
@@ -1217,7 +1218,10 @@ class Viewer(wx.Panel):
 
             wx.CallAfter(Publisher.sendMessage, "Coil at target", state=coil_at_target)
             wx.CallAfter(
-                Publisher.sendMessage, "From Neuronavigation: Coil at target", state=coil_at_target
+                Publisher.sendMessage,
+                "From Neuronavigation: Coil at target",
+                state=coil_at_target,
+                robot_ID=robot_ID,
             )
 
             self.guide_arrow_actors = (
@@ -1232,13 +1236,13 @@ class Viewer(wx.Panel):
             for ind in self.guide_arrow_actors:
                 self.target_guide_renderer.AddActor(ind)
 
-    def OnUnsetTarget(self, marker):
+    def OnUnsetTarget(self, marker, robot_ID):
         self.DisableTargetMode()
 
         self.target_mode = False
         self.target_coord = None
 
-    def OnSetTarget(self, marker):
+    def OnSetTarget(self, marker, robot_ID):
         coord = marker.position + marker.orientation
 
         # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
@@ -2510,7 +2514,7 @@ class Viewer(wx.Panel):
             self.actor_tracts = None
             self.Refresh()
 
-    def OnUpdateRobotStatus(self, robot_status):
+    def OnUpdateRobotStatus(self, robot_status, robot_ID):
         if self.dummy_robot_actor:
             if robot_status:
                 self.dummy_robot_actor.GetProperty().SetColor(0, 1, 0)

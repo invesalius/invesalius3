@@ -144,7 +144,9 @@ class MarkersControl(metaclass=Singleton):
         marker = self.list[marker_id]
         marker.is_target = True
 
-        Publisher.sendMessage("Set target", marker=marker)
+        Publisher.sendMessage(
+            "Set target", marker=marker, robot_ID=self.robot.GetActive().robot_name
+        )
         Publisher.sendMessage("Set target transparency", marker=marker, transparent=True)
 
         # When setting a new target, automatically switch into target mode. Note that the order is important here:
@@ -178,7 +180,9 @@ class MarkersControl(metaclass=Singleton):
         marker.is_target = False
 
         Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
-        Publisher.sendMessage("Unset target", marker=marker)
+        Publisher.sendMessage(
+            "Unset target", marker=marker, robot_ID=self.robot.GetActive().robot_name
+        )
 
         self.SaveState()
 

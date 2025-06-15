@@ -1065,7 +1065,7 @@ class ObjectTab(wx.Panel):
             self.OnRobotConnectionStatus, "Robot to Neuronavigation: Robot connection status"
         )
 
-    def OnRobotConnectionStatus(self, data):
+    def OnRobotConnectionStatus(self, data, robot_ID):
         if data is None:
             return
         if data == "Connected":
@@ -1521,7 +1521,6 @@ class TrackerTab(wx.Panel):
         self.Layout()
 
         Publisher.sendMessage("Create second robot")
-        Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
@@ -1616,7 +1615,6 @@ class TrackerTab(wx.Panel):
                 self.SetSizerAndFit(self.main_sizer)
                 self.Layout()
                 print("Second robot setup panel created")
-                Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
         else:
             if hasattr(self, "setup_robot_2"):
                 self.setup_robot_2.Destroy()
@@ -1692,6 +1690,11 @@ class SetupRobot(wx.Panel):
 
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.__build_ui()
+
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Check connection robot", robot_ID=self.robot_name
+        )
+
         self.SetSizerAndFit(self.main_sizer)
         self.Layout()
 
@@ -1877,7 +1880,9 @@ class SetupRobot(wx.Panel):
         else:
             self.GetParent().Show()
 
-    def OnRobotStatus(self, data):
+    def OnRobotStatus(self, data, robot_ID):
+        if robot_ID != self.robot.robot_name:
+            return
         if data == "Connected":
             self.robot.is_robot_connected = True
             self.status_text.SetLabelText(_("Setup robot transformation matrix:"))
@@ -1897,7 +1902,9 @@ class SetupRobot(wx.Panel):
                 self.status_text.SetLabelText(_(f"{data} to robot"))
                 self.btn_rob_con.Hide()
 
-    def OnSetRobotTransformationMatrix(self, data):
+    def OnSetRobotTransformationMatrix(self, data, robot_ID):
+        if robot_ID != self.robot.robot_name:
+            return
         if self.robot.matrix_tracker_to_robot is not None:
             self.status_text.SetLabelText("Robot is fully setup!")
             self.btn_rob_con.SetLabel("Register Again")

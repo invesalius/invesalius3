@@ -39,10 +39,10 @@ class MarkerTransformator:
     def UpdateSelectedMarker(self, marker):
         self.selected_marker = marker
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker, robot_ID):
         self.target = marker
 
-    def UnsetTarget(self, marker):
+    def UnsetTarget(self, marker, robot_ID):
         self.target = None
 
     def SetTargetMode(self, enabled=False):
@@ -340,4 +340,4 @@ class MarkerTransformator:
 
         # Update the target if the marker is the active target.
         if marker.is_target:
-            Publisher.sendMessage("Set target", marker=marker)
+            Publisher.sendMessage("Set target", marker=marker, robot_ID=None)
