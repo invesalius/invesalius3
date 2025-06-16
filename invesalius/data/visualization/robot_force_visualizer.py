@@ -17,8 +17,8 @@ class RobotForceVisualizer:
         self.thickness = thickness
         self.segments = []
 
-        self.threshold_low = 2.0
-        self.threshold_high = 5.0
+        self.threshold_low = 3.0
+        self.threshold_high = 6.0
         self.max_force = 8.0
 
         for i in range(num_segments):
@@ -28,9 +28,10 @@ class RobotForceVisualizer:
             actor.SetVisibility(False)
 
         self.text = vtk.vtkTextActor()
-        self.text.GetTextProperty().SetFontSize(22)
+        self.text.GetTextProperty().SetFontSize(18)
         self.text.GetTextProperty().SetColor(1, 1, 1)
-        self.text.SetPosition(65, 35)
+        self.text.GetTextProperty().ShadowOn()
+        self.text.SetPosition(0, 10)
         self.ren_force.AddActor2D(self.text)
         self.text.SetVisibility(False)
         self.ren_force.GetActiveCamera().Zoom(0.4)
