@@ -320,7 +320,7 @@ class Viewer(wx.Panel):
         )
 
         self.probe_visualizer = ProbeVisualizer(self.ren)
-        self.robot_force_visualizer = RobotForceVisualizer(self.ren, self.interactor)
+        self.robot_force_visualizer = RobotForceVisualizer(self.interactor)
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()

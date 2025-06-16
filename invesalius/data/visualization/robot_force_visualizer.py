@@ -1,13 +1,23 @@
 import math
 
-import vtk
+from vtkmodules.vtkCommonCore import vtkPoints
+from vtkmodules.vtkCommonDataModel import (
+    vtkCellArray,
+    vtkPolyData,
+)
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkPolyDataMapper,
+    vtkRenderer,
+    vtkTextActor,
+)
 
 from invesalius.pubsub import pub as Publisher
 
 
 class RobotForceVisualizer:
-    def __init__(self, renderer, interactor, num_segments=30, radius=0.5, thickness=0.1):
-        self.ren_force = vtk.vtkRenderer()
+    def __init__(self, interactor, num_segments=30, radius=0.5, thickness=0.1):
+        self.ren_force = vtkRenderer()
         self.ren_force.SetLayer(1)
 
         interactor.GetRenderWindow().AddRenderer(self.ren_force)
@@ -27,7 +37,7 @@ class RobotForceVisualizer:
             self.segments.append(actor)
             actor.SetVisibility(False)
 
-        self.text = vtk.vtkTextActor()
+        self.text = vtkTextActor()
         self.text.GetTextProperty().SetFontSize(18)
         self.text.GetTextProperty().SetColor(1, 1, 1)
         self.text.GetTextProperty().ShadowOn()
@@ -50,8 +60,8 @@ class RobotForceVisualizer:
 
         r1, r2 = self.radius, self.radius + self.thickness
 
-        points = vtk.vtkPoints()
-        polys = vtk.vtkCellArray()
+        points = vtkPoints()
+        polys = vtkCellArray()
 
         coords = [
             [r1 * math.cos(theta_start), r1 * math.sin(theta_start), 0],
@@ -65,14 +75,14 @@ class RobotForceVisualizer:
         for pid in ids:
             polys.InsertCellPoint(pid)
 
-        poly_data = vtk.vtkPolyData()
+        poly_data = vtkPolyData()
         poly_data.SetPoints(points)
         poly_data.SetPolys(polys)
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = vtkPolyDataMapper()
         mapper.SetInputData(poly_data)
 
-        actor = vtk.vtkActor()
+        actor = vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetColor(0.9, 0.9, 0.9)
         return actor
