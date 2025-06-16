@@ -2,7 +2,6 @@ import math
 
 import vtk
 
-from invesalius.navigation.robot import Robot
 from invesalius.pubsub import pub as Publisher
 
 
