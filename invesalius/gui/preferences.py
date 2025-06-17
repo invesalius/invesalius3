@@ -1096,19 +1096,6 @@ class ObjectTab(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnSetCoilCount, "Reset coil selection")
-        Publisher.subscribe(
-            self.OnRobotConnectionStatus, "Robot to Neuronavigation: Robot connection status"
-        )
-
-    def OnRobotConnectionStatus(self, data, robot_ID):
-        if data is None:
-            return
-        if data == "Connected":
-            self.choice_robot_coil.Show(True)
-
-            self.robot_lbl.SetLabel("Robot is connected. Coil attached to robot: ")
-        else:
-            self.robot_lbl.SetLabel("Robot is not connected.")
 
     def OnChoiceRobotCoil(self, event, robot):
         robot_coil_name = event.GetEventObject().GetStringSelection()
