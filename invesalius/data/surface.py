@@ -27,6 +27,7 @@ import sys
 import tempfile
 import time
 import traceback
+import gc
 
 import numpy as np
 import wx
@@ -49,7 +50,7 @@ from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 from vtkmodules.vtkIOExport import vtkOBJExporter, vtkVRMLExporter
-from vtkmodules.vtkIOLegacy import vtkPolyDataWriter 
+from vtkmodules.vtkIOLegacy import vtkPolyDataWriter
 
 from invesalius.pubsub import pub as Publisher
 
@@ -1219,14 +1220,90 @@ class SurfaceManager:
         Publisher.sendMessage("Render volume viewer")
 
     def OnExportSurface(self, filename, filetype, convert_to_world=False):
+        ftype_prefix = {
+            const.FILETYPE_STL: ".stl",
+            const.FILETYPE_VTP: ".vtp",
+            const.FILETYPE_PLY: ".ply",
+            const.FILETYPE_STL_ASCII: ".stl",
+            const.FILETYPE_X3D: ".x3d",
+            const.FILETYPE_RIB: ".rib",
+            const.FILETYPE_VRML: ".wrl",
+            const.FILETYPE_OBJ: ".obj",
+            const.FILETYPE_IV: ".iv",
+        }
+
+        if filetype in ftype_prefix:
+            temp_fd, temp_file = tempfile.mkstemp(suffix=ftype_prefix[filetype])
+
+            if _has_win32api:
+                _temp_file = temp_file
+                temp_file = win32api.GetShortPathName(temp_file)
+                os.close(temp_fd)
+            else:
+                os.close(temp_fd)
+
+            temp_file = utl.decode(temp_file, const.FS_ENCODE)
+
+            try:
+                self._export_surface(temp_file, filetype, convert_to_world)
+            except ValueError:
+                if wx.GetApp() is None:
+                    print("It was not possible to export the surface because the surface is empty")
+                else:
+                    wx.MessageBox(
+                        _("It was not possible to export the surface because the surface is empty"),
+                        _("Export surface error"),
+                    )
+                return
+
+            # Cleans up any unused memory
+            gc.collect()
+
+        # Checks if file exists and is not empty
+        if not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0:
+            if wx.GetApp() is None:
+                print("Export cancelled or resulted in empty file.")
+            else:
+                wx.MessageBox(
+                _("Export cancelled by user"),
+                _("Export surface error"),
+                )
+            return
+
         try:
-            self._export_surface(filename, filetype, convert_to_world)
-        except ValueError as err:
+            shutil.move(temp_file, filename)
+        except PermissionError as err:
+            dirpath = os.path.split(filename)[0]
+            if wx.GetApp() is None:
+                print(
+                    _(
+                        f"It was not possible to export the surface because you don't have permission to write to {dirpath} folder: {err}"
+                    )
+                    )
+            else:
+                dlg = dialogs.ErrorMessageBox(
+                    None,
+                    _("Export surface error"),
+                    f"It was not possible to export the surface because you don't have permission to write to {dirpath}:\n{err}",
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+            return
+
+        # If export was flagged successful, show success message and reset the flag
+        if getattr(self, "export_successful", False):
+            self.export_successful = False  # resets the flag
             wx.MessageBox(
-                f"Export failed: {err}",
-                "Export Error",
-                wx.OK | wx.ICON_ERROR
-            )
+            _("Export completed successfully."),
+            _("Export success"),
+            wx.OK | wx.ICON_INFORMATION
+        )
+
+        try:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+        except PermissionError:
+            utl.debug(f"Warning: Temporary file {temp_file} could not be deleted.")
 
     def export_all_surfaces_separately(self, folder, filetype):
         import invesalius.data.slice_ as slc
@@ -1284,17 +1361,10 @@ class SurfaceManager:
                 proj.surface_dict[index].is_shown = False
 
     def _export_surface(self, filename, filetype, convert_to_world):
-        """
-        Export visible surfaces to a file in the specified format.
-
-        :param filename: Path to the output file.
-        :param filetype: File format (e.g., STL, PLY, VTP).
-        :param convert_to_world: Whether to convert coordinates to world space.
-        """
         proj = prj.Project()
         polydata_list = []
 
-        # Collect all visible surfaces
+        # Collects all visible surfaces
         for index in proj.surface_dict:
             surface = proj.surface_dict[index]
             if surface.is_shown:
@@ -1311,7 +1381,7 @@ class SurfaceManager:
         if polydata.GetNumberOfPoints() == 0:
             raise ValueError("Polydata has zero points.")
 
-        # Initialize progress dialog
+        # Initializing progress dialog
         progress = wx.ProgressDialog(
             "Exporting Surface",
             "Preparing export...",
@@ -1321,7 +1391,6 @@ class SurfaceManager:
         )
 
         try:
-            # Converting to world coordinates if needed
             if convert_to_world:
                 polydata = self.ConvertPolydataToInv(polydata, inverse=True)
                 keep_going, _ = progress.Update(10, "Converting coordinates...")
@@ -1343,63 +1412,130 @@ class SurfaceManager:
                 writer = vtkPLYWriter()
                 writer.SetFileTypeToASCII()
                 writer.SetColorModeToOff()
-            elif filetype == const.FILETYPE_X3D:
-                writer = vtkXMLPolyDataWriter()
+            #elif filetype == const.FILETYPE_X3D:
+            #    writer = vtkXMLPolyDataWriter()
             elif filetype == const.FILETYPE_RIB:
-                with open(filename, "w") as rib_file:
+
+                n_points = polydata.GetNumberOfPoints()
+                update_interval = max(1, min(1000, n_points // 100))
+
+                cancelled = False
+                rib_file = None
+                try:
+                    rib_file = open(filename, "w")
                     rib_file.write("# RenderMan RIB file\n")
                     rib_file.write("WorldBegin\n")
-                    for i in range(polydata.GetNumberOfPoints()):
-                        percent = int(i * 90 / polydata.GetNumberOfPoints())
-                        keep_going, _ = progress.Update(10 + percent, f"Writing RIB file: {percent}%")
-                        if not keep_going:
-                            progress.Destroy()
-                            return
+
+                    for i in range(n_points):
+                        if i % update_interval == 0 or i == n_points - 1:
+                            percent = int(i * 90 / n_points)
+                            keep_going, _ = progress.Update(10 + percent, f"Writing RIB file: {percent}%")
+                            if not keep_going:
+                                cancelled = True
+                                break
+                            wx.Yield()
+
                         point = polydata.GetPoint(i)
                         rib_file.write(f"Point {point[0]} {point[1]} {point[2]}\n")
-                        wx.Yield()
-                    rib_file.write("WorldEnd\n")
+
+                    if not cancelled:
+                        rib_file.write("WorldEnd\n")
+
+                finally:
+                    if rib_file:
+                        rib_file.close()
+
+                    if cancelled:
+                        try:
+                            os.remove(filename)
+                        except:
+                            pass
+                        progress.Destroy()
+                        return
+
                 progress.Update(100, "Export complete.")
                 return
-            elif filetype == const.FILETYPE_VRML:
-                writer = vtkPolyDataWriter()
-            elif filetype == const.FILETYPE_OBJ:
-                writer = vtkPolyDataWriter()
+
+            # elif filetype == const.FILETYPE_VRML:
+            #   writer = vtkPolyDataWriter()
+            # elif filetype == const.FILETYPE_OBJ:
+            #   writer = vtkPolyDataWriter()
             elif filetype == const.FILETYPE_IV:
-                with open(filename, "w") as iv_file:
+                n_points = polydata.GetNumberOfPoints()
+                update_interval = max(1, min(1000, n_points // 100))
+
+                cancelled = False
+                iv_file = None
+                try:
+                    iv_file = open(filename, "w")
                     iv_file.write("# Inventor IV file\n")
                     iv_file.write("Separator {\n")
-                    for i in range(polydata.GetNumberOfPoints()):
-                        percent = int(i * 90 / polydata.GetNumberOfPoints())
-                        keep_going, _ = progress.Update(10 + percent, f"Writing IV file: {percent}%")
-                        if not keep_going:
-                            progress.Destroy()
-                            return
+
+                    for i in range(n_points):
+                        if i % update_interval == 0 or i == n_points - 1:
+                            percent = int(i * 90 / n_points)
+                            keep_going, _ = progress.Update(10 + percent, f"Writing IV file: {percent}%")
+                            if not keep_going:
+                                cancelled = True
+                                break
+                            wx.Yield()
+
                         point = polydata.GetPoint(i)
                         iv_file.write(f"Coordinate3 {{ point [ {point[0]} {point[1]} {point[2]} ] }}\n")
-                        wx.Yield()
-                    iv_file.write("}\n")
+
+                    if not cancelled:
+                        iv_file.write("}\n")
+
+                finally:
+                    if iv_file:
+                        iv_file.close()
+
+                    if cancelled:
+                        try:
+                            os.remove(filename)
+                        except:
+                            pass
+                        progress.Destroy()
+                        return
+
                 progress.Update(100, "Export complete.")
                 return
+
             else:
                 progress.Destroy()
                 raise ValueError(f"Unsupported filetype: {filetype}")
 
-            
+            if filetype in (const.FILETYPE_STL, const.FILETYPE_STL_ASCII, const.FILETYPE_PLY):
+                normals = vtkPolyDataNormals()
+                normals.SetInputData(polydata)
+                normals.SetFeatureAngle(80)
+                normals.AutoOrientNormalsOn()
+                normals.UpdateInformation()
+                normals.Update()
+                polydata = normals.GetOutput()
+
+            filename = filename.encode(const.FS_ENCODE)
+
             writer.SetFileName(filename)
             writer.SetInputData(polydata)
 
-            # Simulating progress during the writing process
+            # For VTK writers, we can't easily track actual progress, so simulate with fewer updates
             n_points = polydata.GetNumberOfPoints()
-            for i in range(n_points):
-                percent = int(i * 90 / n_points)
+            num_updates = min(50, max(10, n_points // 10000))
+
+            for i in range(num_updates):
+                percent = int(i * 90 / num_updates)
                 keep_going, _ = progress.Update(10 + percent, f"Writing file: {percent}%")
                 if not keep_going:
                     progress.Destroy()
                     return
+                if i < num_updates - 1:
+                    wx.MilliSleep(50)
                 wx.Yield()
 
             writer.Write()
             progress.Update(100, "Export complete.")
+            self.export_successful = True
+            progress.Close(True)
         finally:
             progress.Destroy()
