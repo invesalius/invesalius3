@@ -346,6 +346,7 @@ class Robots(metaclass=Singleton):
         return None
 
     def SetActiveByCoil(self, coil_name):
+        Publisher.sendMessage("Press robot button", pressed=False)
         robot = self.GetRobotByCoil(coil_name)
         if robot:
             self.SetActive(robot.robot_name)
