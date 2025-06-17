@@ -2981,7 +2981,7 @@ class SlicePlane:
 
         Publisher.sendMessage("Render volume viewer")
 
-    def Enable(self, plane_label: str | None = None):
+    def Enable(self, plane_label):
         """
         Enable slice widgets (axial, coronal, sagittal) in the volume viewer.
 

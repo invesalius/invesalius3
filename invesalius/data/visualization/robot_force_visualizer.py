@@ -89,7 +89,7 @@ class RobotForceVisualizer:
 
     def OnUpdateRobotForceData(self, force_feedback):
         self.update_visibility(1)
-        self.update_force(force_feedback)
+        self.update_force(-force_feedback)
 
     def update_visibility(self, robot_status):
         visibility = 1 if robot_status else 0

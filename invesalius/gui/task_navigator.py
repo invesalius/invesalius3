@@ -2511,6 +2511,9 @@ class ControlPanel(wx.Panel):
     def OnRobotTrackTargetButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.robot_track_target_button)
         pressed = self.robot_track_target_button.GetValue()
+        Publisher.sendMessage(
+            "Robot tracking status", status=pressed
+        )
         if pressed:
             self.robot.SetObjective(RobotObjective.TRACK_TARGET)
         else:
