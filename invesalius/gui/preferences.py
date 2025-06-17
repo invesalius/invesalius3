@@ -1006,6 +1006,9 @@ class ObjectTab(wx.Panel):
         sel_sizer.Add(inner_sel_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         ### Sizer for choosing which coil is attached to the robot (multicoil) ###
+        self.robot_index_1 = list(self.robot.robots.values())[0]
+        self.robot_index_2 = list(self.robot.robots.values())[1]
+
         self.robot_sizer = robot_sizer = wx.StaticBoxSizer(
             wx.VERTICAL,
             self,
@@ -1013,11 +1016,13 @@ class ObjectTab(wx.Panel):
         )
         self.inner_robot_sizer = inner_robot_sizer = wx.FlexGridSizer(2, 1, 1)
 
-        self.robot_lbl = wx.StaticText(self, -1, _("Robot is connected. Coil attached to robot: "))
+        self.robot_lbl = wx.StaticText(
+            self, -1, _(f"{self.robot_index_1.robot_name} is connected. Coil attached to robot: ")
+        )
         self.choice_robot_coil = choice_robot_coil = wx.ComboBox(
             self,
             -1,
-            f"{self.robot.GetActive().GetCoilName() or ''}",
+            f"{self.robot_index_1.GetCoilName() or ''}",
             size=wx.Size(90, 23),
             choices=list(
                 self.navigation.coil_registrations
@@ -1026,19 +1031,49 @@ class ObjectTab(wx.Panel):
         )
 
         choice_robot_coil.SetToolTip(
-            "Specify which coil is attached to the robot",
+            f"Specify which coil is attached to the {self.robot_index_1.robot_name}",
         )
 
-        choice_robot_coil.Bind(wx.EVT_COMBOBOX, self.OnChoiceRobotCoil)
+        choice_robot_coil.Bind(
+            wx.EVT_COMBOBOX, lambda x: self.OnChoiceRobotCoil(robot=self.robot_index_1, event=x)
+        )
 
-        if not self.robot.GetActive().IsConnected():
-            self.robot_lbl.SetLabel("Robot is not connected")
+        if not self.robot_index_1.IsConnected():
+            self.robot_lbl.SetLabel(f"{self.robot_index_1.robot_name} is not connected")
             choice_robot_coil.Show(False)  # Hide the combobox
+
+        self.robot_lbl2 = wx.StaticText(
+            self, -1, _(f"{self.robot_index_2.robot_name} is connected. Coil attached to robot: ")
+        )
+        self.choice_robot_coil2 = choice_robot_coil2 = wx.ComboBox(
+            self,
+            -1,
+            f"{self.robot_index_2.GetCoilName() or ''}",
+            size=wx.Size(90, 23),
+            choices=list(
+                self.navigation.coil_registrations
+            ),  # List of coils selected for navigation
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+
+        choice_robot_coil2.SetToolTip(
+            f"Specify which coil is attached to the {self.robot_index_2.robot_name}",
+        )
+
+        choice_robot_coil2.Bind(
+            wx.EVT_COMBOBOX, lambda x: self.OnChoiceRobotCoil(robot=self.robot_index_2, event=x)
+        )
+
+        if not self.robot_index_2.IsConnected():
+            self.robot_lbl2.SetLabel(f"{self.robot_index_2.robot_name} is not connected")
+            choice_robot_coil2.Show(False)  # Hide the combobox
 
         inner_robot_sizer.AddMany(
             [
                 (self.robot_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
                 (choice_robot_coil, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (self.robot_lbl2, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                (choice_robot_coil2, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
             ]
         )
 
@@ -1075,9 +1110,9 @@ class ObjectTab(wx.Panel):
         else:
             self.robot_lbl.SetLabel("Robot is not connected.")
 
-    def OnChoiceRobotCoil(self, event):
+    def OnChoiceRobotCoil(self, event, robot):
         robot_coil_name = event.GetEventObject().GetStringSelection()
-        self.robot.GetActive().SetCoilName(robot_coil_name)
+        robot.SetCoilName(robot_coil_name)
 
     def AddCoilButton(self, coil_name, show_button=True):
         if self.no_coils_lbl is not None:
@@ -1112,7 +1147,8 @@ class ObjectTab(wx.Panel):
         self.robot_sizer.ShowItems(show_multicoil)
 
         # Show the robot coil combobox only if the robot is connected
-        self.choice_robot_coil.Show(show_multicoil and self.robot.GetActive().IsConnected())
+        self.choice_robot_coil.Show(show_multicoil and self.robot_index_1.IsConnected())
+        self.choice_robot_coil2.Show(show_multicoil and self.robot_index_2.IsConnected())
 
         self.Layout()
 
@@ -1237,6 +1273,10 @@ class ObjectTab(wx.Panel):
         if self.choice_robot_coil is not None:
             self.choice_robot_coil.Set(list(navigation.coil_registrations))
             self.choice_robot_coil.SetStringSelection(self.robot.GetActive().GetCoilName() or "")
+
+        if self.choice_robot_coil2 is not None:
+            self.choice_robot_coil2.Set(list(navigation.coil_registrations))
+            self.choice_robot_coil2.SetStringSelection(self.robot_index_2.GetCoilName() or "")
 
         if n_coils_selected == n_coils:
             self.CoilSelectionDone()
