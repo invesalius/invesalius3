@@ -32,12 +32,36 @@ class MarkerTransformator:
         Publisher.subscribe(self.SetTarget, "Set target")
         Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
+        Publisher.subscribe(
+            self.UpdateZOffsetTargetByRobot, "Robot to Neuronavigation: Update z_offset target"
+        )
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
 
     def UpdateSelectedMarker(self, marker):
         self.selected_marker = marker
+
+    def UpdateZOffsetTargetByRobot(self, z_offset):
+        marker = self.target
+        if not marker:
+            return
+        if not z_offset or not np.isfinite(z_offset):
+            return
+
+        marker.z_offset += z_offset
+        displacement = np.array([0, 0, z_offset, 0, 0, 0])
+        self.MoveMarker(marker=marker, displacement=displacement)
+        # Notify the volume viewer about the updated marker
+        Publisher.sendMessage(
+            "Update marker",
+            marker=marker,
+            new_position=marker.position,
+            new_orientation=marker.orientation,
+        )
+        # If this is the active target, update it globally
+        if marker.is_target:
+            Publisher.sendMessage("Set target", marker=marker)
 
     def SetTarget(self, marker):
         self.target = marker
