@@ -1997,6 +1997,9 @@ class ControlPanel(wx.Panel):
         self.target_mode_button = target_mode_button
         self.UpdateTargetButton()
 
+        robot_name_lbl = wx.StaticText(self, -1, _(f"{self.robot.GetActive().robot_name}"))
+        self.robot_name_lbl = robot_name_lbl
+
         # Toggle button for tracking target with robot during navigation
         tooltip = _("Track target with robot")
         BMP_TRACK_TARGET = wx.Bitmap(
@@ -2096,7 +2099,14 @@ class ControlPanel(wx.Panel):
             ]
         )
 
-        robot_buttons_sizer = wx.FlexGridSizer(4, 5, 5)
+        robot_buttons_sizer = wx.FlexGridSizer(2, 3, 5, 5)
+        robot_buttons_sizer.AddMany(
+            [
+                (self.robot_name_lbl),
+                (wx.StaticText(self, -1, label="")),
+                (wx.StaticText(self, -1, label="")),
+            ]
+        )
         robot_buttons_sizer.AddMany(
             [
                 (robot_track_target_button),
@@ -2145,6 +2155,8 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.PressTrackObjectButton, "Press track object button")
         Publisher.subscribe(self.EnableTrackObjectButton, "Enable track object button")
 
+        Publisher.subscribe(self.UpdateLabelName, "Update robot name label")
+
         Publisher.subscribe(self.PressRobotTrackTargetButton, "Press robot button")
         Publisher.subscribe(self.EnableRobotTrackTargetButton, "Enable robot button")
 
@@ -2180,6 +2192,9 @@ class ControlPanel(wx.Panel):
         state = session.GetConfig("navigation", {})
         track_coil = state.get("track_coil", False)
         self.PressTrackObjectButton(track_coil)
+
+    def UpdateLabelName(self, label):
+        self.robot_name_lbl.SetLabel(label)
 
     # Toggle Button Helpers
     def UpdateToggleButton(self, ctrl, state=None):
@@ -2698,6 +2713,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if (main_coil := nav_state.get("main_coil", None)) is not None:
             main_coil_index = select_main_coil.FindString(main_coil)
             select_main_coil.SetSelection(main_coil_index)
+            Publisher.sendMessage("Set active robot by coil name", coil_name=main_coil)
 
         # Hide main_coil combobox if single coil mode
         select_main_coil.Show(nav_state.get("n_coils", 1) != 1)
@@ -3438,6 +3454,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         main_coil = ctrl.GetString(choice)
         self.navigation.SetMainCoil(main_coil)
         ctrl.SetSelection(choice)
+        Publisher.sendMessage("Set active robot by coil name", coil_name=main_coil)
 
     def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()

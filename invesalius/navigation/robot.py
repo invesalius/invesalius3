@@ -304,6 +304,7 @@ class Robots(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.SendActive, "Send active robot")
+        Publisher.subscribe(self.SetActiveByCoil, "Set active robot by coil name")
 
     def GetRobot(self, name: str):
         return self.robots.get(name)
@@ -316,6 +317,7 @@ class Robots(metaclass=Singleton):
             self.active = name
         else:
             raise ValueError(f"Robot '{name}' does not exist.")
+        print(f"Active robot set to: {self.active}")
 
     def SendActive(self):
         Publisher.sendMessage("Get active robot", robot=self.GetActive())
@@ -336,3 +338,17 @@ class Robots(metaclass=Singleton):
                 raise ValueError(f"Robot '{new_name}' already exists.")
         else:
             raise ValueError(f"Robot '{old_name}' does not exist.")
+
+    def GetRobotByCoil(self, coil_name):
+        for robot in self.robots.values():
+            if robot.GetCoilName() == coil_name:
+                return robot
+        return None
+
+    def SetActiveByCoil(self, coil_name):
+        robot = self.GetRobotByCoil(coil_name)
+        if robot:
+            self.SetActive(robot.robot_name)
+            Publisher.sendMessage("Update robot name label", label=robot.robot_name)
+        else:
+            raise ValueError(f"No robot found with coil name '{coil_name}'.")
