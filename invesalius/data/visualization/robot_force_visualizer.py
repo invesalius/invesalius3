@@ -20,7 +20,9 @@ class RobotForceVisualizer:
         self.ren_force = vtkRenderer()
         self.ren_force.SetLayer(1)
 
-        interactor.GetRenderWindow().AddRenderer(self.ren_force)
+        render_window = interactor.GetRenderWindow()
+        render_window.AddRenderer(self.ren_force)
+
         self.ren_force.SetViewport(0.01, 0.23, 0.15, 0.35)
         self.num_segments = num_segments
         self.radius = radius
@@ -87,6 +89,27 @@ class RobotForceVisualizer:
         actor.GetProperty().SetColor(0.9, 0.9, 0.9)
         return actor
 
+    def _update_text_position(self):
+        render_window = self.ren_force.GetRenderWindow()
+        if not render_window:
+            return
+
+        width, height = render_window.GetSize()
+        x0, y0, x1, y1 = self.ren_force.GetViewport()
+
+        # Compute viewport size in pixels
+        vp_x = int((x1 - x0) * width)
+        vp_y = int((y1 - y0) * height)
+        vp_left = int(x0 * width)
+        vp_bottom = int(y0 * height)
+
+        # Center point in the viewport
+        text_x = vp_left + vp_x // 2
+        text_y = vp_bottom + vp_y // 2
+
+        # Approximate text width adjustment for centering
+        self.text.SetDisplayPosition(text_x - 25, text_y - 10)
+
     def OnUpdateRobotForceData(self, force_feedback):
         self.update_visibility(1)
         self.update_force(-force_feedback)
@@ -112,3 +135,4 @@ class RobotForceVisualizer:
                 seg.GetProperty().SetColor(0.9, 0.9, 0.9)
 
         self.text.SetInput(f"{force:.1f} N")
+        self._update_text_position()
