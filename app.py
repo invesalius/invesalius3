@@ -388,30 +388,31 @@ def parse_command_line():
 
     parser.add_argument("--cranioplasty", help="Creates an AI-based cranioplasty implant.")
 
-    # New argument for center selection
-    parser.add_argument(
-        "-center_select",
-        nargs=4,  # Now expects X, Y, Z, OUTPUT_PATH
-        metavar=("X", "Y", "Z", "OUTPUT_PATH"),
-        help="Create a new mask from the specified 3D coordinate (x, y, z) in the mask array and export to OUTPUT_PATH.",
-        type=str,
-    )
+#depricated
+    # # New argument for center selection
+    # parser.add_argument(
+    #     "-center_select",
+    #     nargs=4,  # Now expects X, Y, Z, OUTPUT_PATH
+    #     metavar=("X", "Y", "Z", "OUTPUT_PATH"),
+    #     help="Create a new mask from the specified 3D coordinate (x, y, z) in the mask array and export to OUTPUT_PATH.",
+    #     type=str,
+    # )
 
-    parser.add_argument(
-        "--crop-mask",
-        nargs=7,  # xi xf yi yf zi zf OUTPUT_PATH
-        metavar=("XI", "XF", "YI", "YF", "ZI", "ZF", "OUTPUT_PATH"),
-        help="Crop the current mask with voxel limits and export to OUTPUT_PATH.",
-        type=str,
-    )
+    # parser.add_argument(
+    #     "--crop-mask",
+    #     nargs=7,  # xi xf yi yf zi zf OUTPUT_PATH
+    #     metavar=("XI", "XF", "YI", "YF", "ZI", "ZF", "OUTPUT_PATH"),
+    #     help="Crop the current mask with voxel limits and export to OUTPUT_PATH.",
+    #     type=str,
+    # )
   
-    parser.add_argument(
-        "--threshold-crop-mask",
-        nargs=9,  # lower upper xi xf yi yf zi zf OUTPUT_PATH
-        metavar=("LOWER", "UPPER", "XI", "XF", "YI", "YF", "ZI", "ZF", "OUTPUT_PATH"),
-        help="Create a new mask with threshold [LOWER,UPPER], crop it with voxel limits, and export to OUTPUT_PATH.",
-        type=str,
-    )
+    # parser.add_argument(
+    #     "--threshold-crop-mask",
+    #     nargs=9,  # lower upper xi xf yi yf zi zf OUTPUT_PATH
+    #     metavar=("LOWER", "UPPER", "XI", "XF", "YI", "YF", "ZI", "ZF", "OUTPUT_PATH"),
+    #     help="Create a new mask with threshold [LOWER,UPPER], crop it with voxel limits, and export to OUTPUT_PATH.",
+    #     type=str,
+    # )
 
     parser.add_argument(
         "--tag",
