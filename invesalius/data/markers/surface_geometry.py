@@ -225,7 +225,7 @@ class SurfaceGeometry(metaclass=Singleton):
         # Extract the z-coordinates of all points and return the highest one.
         points = polydata.GetPoints()
         if not points or points.GetNumberOfPoints() == 0:
-            return None
+            return float("-inf")
 
         highest_z = max([points.GetPoint(i)[2] for i in range(points.GetNumberOfPoints())])
         return highest_z
