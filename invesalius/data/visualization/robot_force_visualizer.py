@@ -29,9 +29,9 @@ class RobotForceVisualizer:
         self.thickness = thickness
         self.segments = []
 
-        self.threshold_low = 3.0
-        self.threshold_high = 6.0
-        self.max_force = 8.0
+        self.threshold_low = 5.0
+        self.threshold_high = 7.0
+        self.max_force = 10.0
 
         for i in range(num_segments):
             actor = self._create_segment(i)
