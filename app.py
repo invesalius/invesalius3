@@ -141,7 +141,7 @@ class InVesalius(wx.App):
         # Call raycast_start instead of tag_start
         print(f"Dicom directory: {args.dicom_dir}")
         print(f"Raycast mode: {args.raycast_mode}")
-        wx.CallAfter(raycast_start, args.dicom_dir, args.raycast_mode)
+        wx.CallAfter(raycast_start, args.dicom_dir, args.raycast_mode, args.array1, args.array2)
 
 
 # ------------------------------------------------------------------
@@ -308,7 +308,7 @@ def non_gui_startup(args):
 
     use_cmd_optargs(args)
     
-def raycast_start(dicom_dir=None, raycast_mode=None):
+def raycast_start(dicom_dir=None, raycast_mode=None, preleasion_points=None, postlesion_points=None):
     """
     Import DICOM if specified, then set raycasting mode if specified.
     Ensures raycasting preset is loaded only after import is finished.
@@ -320,6 +320,25 @@ def raycast_start(dicom_dir=None, raycast_mode=None):
                 Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
             Publisher.subscribe(on_project_loaded, "Import finished")
             Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
+            if( preleasion_points and postlesion_points):
+                import invesalius.data.tag as tag
+                # Convert string coordinates to lists of integers
+                preleasion_points = eval(preleasion_points)
+                postlesion_points = eval(postlesion_points)
+                i = 0
+                for pre in preleasion_points:
+                    
+                    tag.Tag3D(pre, pre, "Pre-lesion point " + str(i))
+                    pre[1] = -pre[1]  # Invert Y coordinate for 2D tag
+                    tag.Tag2D(point1=pre, point2=pre, slice_number=int(pre[2]/const.SLICE_THICKNESS), label="Pre-lesion point " + str(i))
+                    i += 1
+                i = 0
+                for post in postlesion_points:
+                    tag.Tag3D(post, post, "Post-lesion point " + str(i))
+                    post[1] = -post[1]  # Invert Y coordinate for 2D tag
+                    tag.Tag2D(point1=post, point2=post, slice_number=int(post[2]/const.SLICE_THICKNESS), label="Post-lesion point " + str(i))
+                    i += 1
+                
     elif raycast_mode:
         Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
 
@@ -414,38 +433,49 @@ def parse_command_line():
     #     type=str,
     # )
 
-    parser.add_argument(
-        "--tag",
-        nargs="+",
-        metavar="FILE [FILE ...] [X1 Y1 Z1 X2 Y2 Z2 [LABEL]] ...",
-        help=(
-            "Import one or more surface files (e.g. .stl), then create N tags in order after all files are imported. "
-            "Usage: --tag file1.stl file2.stl ... [x1 y1 z1 x2 y2 z2 [label]] [x1 y1 z1 x2 y2 z2 [label]] ...\n"
-            "First, specify all files to import. After the last file, provide 6 numbers (coordinates for a tag) and an optional label for each tag. "
-            "Tags are not associated with specific files, but are created in order after all files are imported."
-        ),
-        type=str,
-    )
+    # parser.add_argument(
+    #     "--tag",
+    #     nargs="+",
+    #     metavar="FILE [FILE ...] [X1 Y1 Z1 X2 Y2 Z2 [LABEL]] ...",
+    #     help=(
+    #         "Import one or more surface files (e.g. .stl), then create N tags in order after all files are imported. "
+    #         "Usage: --tag file1.stl file2.stl ... [x1 y1 z1 x2 y2 z2 [label]] [x1 y1 z1 x2 y2 z2 [label]] ...\n"
+    #         "First, specify all files to import. After the last file, provide 6 numbers (coordinates for a tag) and an optional label for each tag. "
+    #         "Tags are not associated with specific files, but are created in order after all files are imported."
+    #     ),
+    #     type=str,
+    # )
     # Add the new argument for raycast mode
     parser.add_argument(
         "--raycast-mode",
         type=str,
         help="Specify a raycasting preset to load after surfaces are loaded (e.g. 'Mid contrast')."
     )
+    # parser.add_argument(
+    #     "--raycast-load",
+    #     type=str,
+    #     help="Load a raycasting preset by name at startup."
+    # )
+    # parser.add_argument(
+    #     "--print-crop-limits",
+    #     action="store_true",
+    #     help="Print crop limits to stdout and exit when available.",
+    # )
+    # parser.add_argument(
+    #     "--output-folder",
+    #     type=str,
+    #     help="Output folder for cropped DICOM series when using --print-crop-limits.",
+    # )
+        # Add new arguments for the arrays
     parser.add_argument(
-        "--raycast-load",
+        "--array1",
         type=str,
-        help="Load a raycasting preset by name at startup."
+        help="First array of coordinates as a JSON string, e.g. '[[1,2,3],[4,5,6]]'"
     )
     parser.add_argument(
-        "--print-crop-limits",
-        action="store_true",
-        help="Print crop limits to stdout and exit when available.",
-    )
-    parser.add_argument(
-        "--output-folder",
+        "--array2",
         type=str,
-        help="Output folder for cropped DICOM series when using --print-crop-limits.",
+        help="Second array of coordinates as a JSON string, e.g. '[[7,8,9],[10,11,12]]'"
     )
     args = parser.parse_args()
     return args
