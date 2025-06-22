@@ -436,6 +436,240 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
         )
 
 
+class FastSurferSegmenterDialog(DeepLearningSegmenterDialog):
+    def __init__(self, parent, auto_segment=False):
+        self.mask_types = {
+            "cortical_dkt": _("Cortical (DKT)"),
+            "subcortical_gm": _("Subcortical GM"),
+            "white_matter": _("White Matter"),
+            "csf": _("CSF"),
+        }
+
+        self.selected_mask_types = []
+
+        # Initialize with all backends available (don't restrict)
+        super().__init__(
+            parent=parent,
+            title=_("Subpart Segmentation"),
+            has_torch=True,
+            has_tinygrad=True,
+            segmenter=segment.FastSurferProcess,
+            auto_segment=auto_segment,
+        )
+
+    def _init_gui(self):
+        """Override _init_gui to add
+        specific UI elements"""
+        super()._init_gui()
+
+        mask_types_box = wx.StaticBox(self, -1, _("Mask Types to Generate"))
+        self.mask_types_sizer = wx.StaticBoxSizer(mask_types_box, wx.VERTICAL)
+
+        self.chk_whole_brain = wx.CheckBox(self, wx.ID_ANY, _("Whole Brain"))
+        self.chk_whole_brain.SetValue(True)
+        self.chk_whole_brain.Disable()
+
+        self.separator = wx.StaticLine(self)
+        self.mask_checkboxes = {}
+        for mask_id, mask_label in self.mask_types.items():
+            self.mask_checkboxes[mask_id] = wx.CheckBox(self, wx.ID_ANY, mask_label)
+            self.mask_checkboxes[mask_id].SetValue(True)
+
+        self._check_model_availability()
+
+    def _check_model_availability(self):
+        """Check if required models and dependencies are available"""
+        try:
+            # Try to create a dummy process to check model availability
+            # This is safer than calling slc.Slice().matrix which might not be ready
+            self.models_missing = False
+            self.missing_reason = ""
+
+            # We could add specific checks here, but for now we'll do it lazily
+            # during segmentation start to avoid initialization issues
+
+        except Exception as e:
+            self.models_missing = True
+            self.missing_reason = str(e)
+
+        if self.models_missing:
+            self.lbl_models_missing = wx.StaticText(
+                self, -1, _("FastSurfer models not found. Please check installation.")
+            )
+
+    def _do_layout(self):
+        """Override _do_layout to arrange FastSurferCNN specific UI elements"""
+        super()._do_layout()
+
+        # if hasattr(self, "cb_backends"):
+        #     sizer_item = self.main_sizer.GetItem(0)
+        #     if sizer_item:
+        #         self.main_sizer.Detach(sizer_item)
+        #         self.cb_backends.Hide()
+
+        # if hasattr(self, "lbl_device") and hasattr(self, "cb_devices"):
+        #     try:
+        #         for i, item in enumerate(self.main_sizer.GetChildren()):
+        #             if item.GetWindow() == self.lbl_device:
+        #                 self.main_sizer.Detach(item)
+        #                 self.lbl_device.Hide()
+        #             elif item.GetWindow() == self.cb_devices:
+        #                 self.main_sizer.Detach(item)
+        #                 self.cb_devices.Hide()
+        #     except:
+        #         self.lbl_device.Hide()
+        #         self.cb_devices.Hide()
+
+        #
+
+        if hasattr(self, "overlap"):
+            overlap_index = -1
+            for i, item in enumerate(self.main_sizer.GetChildren()):
+                if item.GetWindow() == self.overlap:
+                    overlap_index = i
+                    break
+
+            if overlap_index >= 0:
+                self.mask_types_sizer.Add(self.chk_whole_brain, 0, wx.ALL, 5)
+                self.mask_types_sizer.Add(self.separator, 0, wx.EXPAND | wx.ALL, 5)
+
+                for checkbox in self.mask_checkboxes.values():
+                    self.mask_types_sizer.Add(checkbox, 0, wx.ALL, 5)
+
+                self.main_sizer.Insert(
+                    overlap_index + 1, self.mask_types_sizer, 0, wx.ALL | wx.EXPAND, 5
+                )
+            else:
+                # Fallback - just add to the main sizer
+                self.main_sizer.Add(self.mask_types_sizer, 0, wx.ALL | wx.EXPAND, 5)
+
+        if self.models_missing:
+            error_sizer = wx.BoxSizer(wx.VERTICAL)
+            error_sizer.Add(self.lbl_models_missing, 0, wx.ALL, 5)
+
+            index = self.main_sizer.GetItemCount() - 1
+            self.main_sizer.Insert(index, error_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+            self.btn_segment.Enable(False)
+
+        self.main_sizer.Fit(self)
+        self.Layout()
+
+    def OnSegment(self, evt):
+        self.selected_mask_types = [
+            mask_id for mask_id, checkbox in self.mask_checkboxes.items() if checkbox.GetValue()
+        ]
+
+        if not self.selected_mask_types:
+            wx.MessageBox(
+                _("Please select at least one mask type to generate."),
+                _("Warning"),
+                wx.OK | wx.ICON_WARNING,
+            )
+            return
+
+        self.ShowProgress()
+        self.t0 = time.time()
+        self.elapsed_time_timer.Start(1000)
+
+        image = slc.Slice().matrix
+        backend = self.cb_backends.GetValue()
+        create_new_mask = self.chk_new_mask.GetValue()
+
+        if backend.lower() == "pytorch":
+            try:
+                device_id = self.torch_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = "cpu"
+        elif backend.lower() == "tinygrad":
+            try:
+                device_id = self.tinygrad_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = "cpu"
+        else:
+            device_id = "cpu"
+        use_gpu = self.chk_use_gpu.GetValue() if hasattr(self, "chk_use_gpu") else False
+        overlap = self.overlap_options[self.overlap.GetSelection()]
+        apply_wwwl = self.chk_apply_wwwl.GetValue()
+        window_width = slc.Slice().window_width
+        window_level = slc.Slice().window_level
+
+        self.btn_close.Disable()
+        self.btn_stop.Enable()
+        self.btn_segment.Disable()
+        self.chk_new_mask.Disable()
+        self.chk_use_gpu.Disable()
+        self.overlap.Disable()
+        self.cb_backends.Disable()
+        self.cb_devices.Disable()
+
+        for checkbox in self.mask_checkboxes.values():
+            checkbox.Disable()
+
+        # Start segmentation
+        try:
+            self.ps = self.segmenter(
+                image,
+                create_new_mask,
+                backend,
+                device_id,
+                use_gpu,
+                overlap,
+                apply_wwwl,
+                window_width,
+                window_level,
+                selected_mask_types=self.selected_mask_types,
+            )
+            self.ps.start()
+        except (multiprocessing.ProcessError, OSError, ValueError) as err:
+            self.OnStop(None)
+            self.HideProgress()
+            dlg = dialogs.ErrorMessageBox(
+                None,
+                _("It was not possible to start Subpart segmentation because:") + "\n" + str(err),
+                _("FastSurfer segmentation error"),
+            )
+            dlg.ShowModal()
+
+    def AfterSegment(self):
+        """Actions to take after segmentation is complete."""
+
+        if self.ps:
+            # Apply the segmentation threshold to generate the masks
+            self.ps.process_outputs()
+            self.segmented = True
+
+            # Update views
+            slc.Slice().discard_all_buffers()
+            Publisher.sendMessage("Reload actual slice")
+
+        super().AfterSegment()
+
+        for checkbox in self.mask_checkboxes.values():
+            checkbox.Enable()
+
+        # if self.auto_segment:
+        #     self.OnClose(None)
+        #     Publisher.sendMessage("FastSurfer segmentation completed")
+
+    # def process_outputs(self):
+    #     if self.ps is not None:
+    #         threshold = self.sld_threshold.GetValue() / 100.0
+    #         self.ps.process_outputs(threshold)
+    #         slc.Slice().discard_all_buffers()
+    #         Publisher.sendMessage("Reload actual slice")
+
+    def OnStop(self, evt):
+        super().OnStop(evt)
+
+        for checkbox in self.mask_checkboxes.values():
+            checkbox.Enable()
+
+        # self.cb_backends.Enable()
+        # self.cb_devices.Enable()
+        # self.HideProgress()
+
+
 class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
     def __init__(self, parent):
         super().__init__(

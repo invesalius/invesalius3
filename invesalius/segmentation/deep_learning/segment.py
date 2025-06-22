@@ -506,6 +506,45 @@ class BrainSegmentProcess(SegmentProcess):
         self.onnx_weights_hash = "3e506ae448150ca2c7eb9a8a6b31075ffff38e8db0fc6e25cb58c320aea79d21"
 
 
+class FastSurferProcess(SegmentProcess):
+    def __init__(
+        self,
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap=50,
+        apply_wwwl=False,
+        window_width=255,
+        window_level=127,
+        patch_size=SIZE,
+    ):
+        super().__init__(
+            image,
+            create_new_mask,
+            backend,
+            device_id,
+            use_gpu,
+            overlap=overlap,
+            apply_wwwl=apply_wwwl,
+            window_width=window_width,
+            window_level=window_level,
+            patch_size=patch_size,
+        )
+        self.torch_weights_file_name = "brain_mri_t1.pt"
+        self.torch_weights_url = (
+            "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
+        )
+        self.torch_weights_hash = "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22"
+
+        self.onnx_weights_file_name = "brain_mri_t1.onnx"
+        self.onnx_weights_url = (
+            "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.onnx"
+        )
+        self.onnx_weights_hash = "3e506ae448150ca2c7eb9a8a6b31075ffff38e8db0fc6e25cb58c320aea79d21"
+
+
 class TracheaSegmentProcess(SegmentProcess):
     def __init__(
         self,
