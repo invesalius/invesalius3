@@ -72,7 +72,7 @@ from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 
 
-from scripts import dicom_crop
+# from scripts import dicom_crop
 
 
 
