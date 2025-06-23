@@ -327,15 +327,16 @@ def raycast_start(dicom_dir=None, raycast_mode=None, preleasion_points=None, pos
                 postlesion_points = eval(postlesion_points)
                 i = 0
                 for pre in preleasion_points:
-                    
+                    pre[1] = -pre[1]  # Invert Y coordinate for 3D tag
                     tag.Tag3D(pre, pre, "Pre-lesion point " + str(i))
-                    pre[1] = -pre[1]  # Invert Y coordinate for 2D tag
+                    # pre[1] = -pre[1]  # Invert Y coordinate for 2D tag
                     tag.Tag2D(point1=pre, point2=pre, slice_number=int(pre[2]/const.SLICE_THICKNESS), label="Pre-lesion point " + str(i))
                     i += 1
                 i = 0
                 for post in postlesion_points:
+                    post[1] = -post[1]  # Invert Y coordinate for 3D tag
                     tag.Tag3D(post, post, "Post-lesion point " + str(i))
-                    post[1] = -post[1]  # Invert Y coordinate for 2D tag
+                    # post[1] = -post[1]  # Invert Y coordinate for 2D tag
                     tag.Tag2D(point1=post, point2=post, slice_number=int(post[2]/const.SLICE_THICKNESS), label="Post-lesion point " + str(i))
                     i += 1
                 
