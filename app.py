@@ -141,7 +141,7 @@ class InVesalius(wx.App):
         # Call raycast_start instead of tag_start
         print(f"Dicom directory: {args.dicom_dir}")
         print(f"Raycast mode: {args.raycast_mode}")
-        wx.CallAfter(raycast_start, args.dicom_dir, args.raycast_mode, args.array1, args.array2)
+        wx.CallAfter(raycast_start, args.dicom_dir, args.raycast_mode, args.pre, args.post, args.top, args.bottom)
 
 
 # ------------------------------------------------------------------
@@ -308,7 +308,7 @@ def non_gui_startup(args):
 
     use_cmd_optargs(args)
     
-def raycast_start(dicom_dir=None, raycast_mode=None, preleasion_points=None, postlesion_points=None):
+def raycast_start(dicom_dir=None, raycast_mode=None, preleasion_points=None, postlesion_points=None, top_points=None, bottom_points=None):
     """
     Import DICOM if specified, then set raycasting mode if specified.
     Ensures raycasting preset is loaded only after import is finished.
@@ -320,7 +320,7 @@ def raycast_start(dicom_dir=None, raycast_mode=None, preleasion_points=None, pos
                 Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
             Publisher.subscribe(on_project_loaded, "Import finished")
             Publisher.sendMessage("Import directory", directory=dicom_dir, use_gui=True)
-            if( preleasion_points and postlesion_points):
+            if( preleasion_points and postlesion_points and top_points and bottom_points):
                 import invesalius.data.tag as tag
                 # Convert string coordinates to lists of integers
                 preleasion_points = eval(preleasion_points)
@@ -339,6 +339,36 @@ def raycast_start(dicom_dir=None, raycast_mode=None, preleasion_points=None, pos
                     # post[1] = -post[1]  # Invert Y coordinate for 2D tag
                     tag.Tag2D(point1=post, point2=post, slice_number=int(post[2]/const.SLICE_THICKNESS), label="Post-lesion point " + str(i))
                     i += 1
+                for top, bottom in zip(top_points, bottom_points):
+                    top[1] = -top[1]
+                    bottom[1] = -bottom[1]
+                    tag.Tag3D(top, bottom, "Stenosis " + str(i))
+                    # post[1] = -post[1]  # Invert Y coordinate for 2D tag
+                    tag.Tag2D(point1=top, point2=bottom, slice_number=int(bottom[2]/const.SLICE_THICKNESS), label="Stenosis " + str(i))
+                    import invesalius.data.coronary_fit as coronary_fit
+                    fit = coronary_fit.CoronaryFit(top, bottom, int(top[2]/const.SLICE_THICKNESS), int(bottom[2]/const.SLICE_THICKNESS), "Stenosis", [])
+                    
+
+                    progress = wx.BusyInfo("Calculating density tags, please wait...", parent=self)
+                    try:
+                        stats = fit.add_density_tags()
+                        stats = stats.split("\n")
+                        tag.Tag3D(top, bottom, stats[0], offset=10)
+                        tag.Tag3D(top, bottom, stats[1], offset=20)
+                        tag.Tag3D(top, bottom, stats[2], offset=30)
+
+                    finally:
+                        # Ensure the dialog is closed even if an error occurs
+                        del progress
+
+                    # Show a dialog with the stats info
+                    info_str = ""
+                    if isinstance(stats, dict):
+                        for k, v in stats.items():
+                            info_str += f"{k}: {v}\n"
+                    else:
+                        info_str = str(stats)
+                    wx.MessageBox(info_str, "Density Tag Statistics", wx.OK | wx.ICON_INFORMATION)
                 
     elif raycast_mode:
         Publisher.sendMessage("Load raycasting preset", preset_name=raycast_mode)
@@ -469,14 +499,24 @@ def parse_command_line():
     # )
         # Add new arguments for the arrays
     parser.add_argument(
-        "--array1",
+        "--pre",
         type=str,
         help="First array of coordinates as a JSON string, e.g. '[[1,2,3],[4,5,6]]'"
     )
     parser.add_argument(
-        "--array2",
+        "--post",
         type=str,
         help="Second array of coordinates as a JSON string, e.g. '[[7,8,9],[10,11,12]]'"
+    )
+    parser.add_argument(
+        "--top",
+        type=str,
+        help="Third array of coordinates as a JSON string, e.g. '[[13,14,15],[16,17,18]]'"
+    )
+    parser.add_argument(
+        "--bottom",
+        type=str,
+        help="Fourth array of coordinates as a JSON string, e.g. '[[19,20,21],[22,23,24]]'"
     )
     args = parser.parse_args()
     return args
