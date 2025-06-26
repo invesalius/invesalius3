@@ -100,6 +100,7 @@ from invesalius.data.ruler_volume import GenericLeftRulerVolume
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
+from invesalius.data.visualization.robot_force_visualizer import RobotForceVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.i18n import tr as _
@@ -270,7 +271,6 @@ class Viewer(wx.Panel):
 
         self.target_coord = None
 
-        self.dummy_robot_actor = None
         self.dummy_probe_actor = None
         self.dummy_ref_actor = None
         self.dummy_obj_actor = None
@@ -320,6 +320,7 @@ class Viewer(wx.Panel):
         )
 
         self.probe_visualizer = ProbeVisualizer(self.ren)
+        self.robot_force_visualizer = RobotForceVisualizer(self.interactor)
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
@@ -469,9 +470,6 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUnsetTarget, "Unset target")
         Publisher.subscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
         Publisher.subscribe(self.OnUpdateDistanceThreshold, "Update distance threshold")
-        Publisher.subscribe(
-            self.OnUpdateRobotWarning, "Robot to Neuronavigation: Update robot warning"
-        )
         Publisher.subscribe(self.OnUpdateTracts, "Update tracts")
         Publisher.subscribe(self.OnUpdateEfieldvis, "Update efield vis")
         Publisher.subscribe(self.InitializeColorArray, "Initialize color array")
@@ -505,7 +503,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetScalpEfield, "Send scalp index")
         # Related to robot tracking during neuronavigation
         Publisher.subscribe(
-            self.OnUpdateRobotStatus, "Robot to Neuronavigation: Update robot status"
+            self.OnUpdateRobotWarning, "Robot to Neuronavigation: Update robot warning"
         )
         Publisher.subscribe(self.GetCoilPosition, "Calculate position and rotation")
         Publisher.subscribe(
@@ -2514,13 +2512,6 @@ class Viewer(wx.Panel):
             self.actor_tracts = None
             self.Refresh()
 
-    def OnUpdateRobotStatus(self, robot_status, robot_ID):
-        if self.dummy_robot_actor:
-            if robot_status:
-                self.dummy_robot_actor.GetProperty().SetColor(0, 1, 0)
-            else:
-                self.dummy_robot_actor.GetProperty().SetColor(1, 0, 0)
-
     def __bind_events_wx(self):
         # self.Bind(wx.EVT_SIZE, self.OnSize)
         #  self.canvas.subscribe_event('LeftButtonPressEvent', self.on_insert_point)
@@ -2994,7 +2985,7 @@ class SlicePlane:
 
         Publisher.sendMessage("Render volume viewer")
 
-    def Enable(self, plane_label: str | None = None):
+    def Enable(self, plane_label=None):
         """
         Enable slice widgets (axial, coronal, sagittal) in the volume viewer.
 
