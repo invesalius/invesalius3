@@ -29,7 +29,7 @@ class SurfaceGeometry(metaclass=Singleton):
             "highest_z": highest_z,
         }
 
-    def LoadActor(self, actor):
+    def LoadActor(self, actor, peeled_brain=False):
         # Maintain a list of surfaces and their smoothed versions. However,
         # do not compute the smoothed surface until it is needed.
         #
