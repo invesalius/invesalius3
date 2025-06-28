@@ -25,27 +25,55 @@ import psutil
 import wx
 
 from invesalius import inv_paths
-from invesalius.i18n import tr as _
 
-# from invesalius.project import Project
+PROJECT_STATUS_NEW = 0
+PROJECT_STATUS_OPENED = 1
+PROJECT_STATUS_CHANGED = 2
+PROJECT_STATUS_CLOSED = 3
+
+RECENT_PROJECTS_MAXIMUM = 4
+
+MODE_RP = 0
+MODE_NAVIGATOR = 1
+MODE_RADIOLOGY = 2
+MODE_ODONTOLOGY = 3
+
 INVESALIUS_VERSION = "3.1.99998"
-
 INVESALIUS_ACTUAL_FORMAT_VERSION = 1.1
 
-# ---------------
-
 # Measurements
-MEASURE_NAME_PATTERN = _("M %d")
 MEASURE_LINEAR = 101
 MEASURE_ANGULAR = 102
-
 DEFAULT_MEASURE_COLOUR = (1, 0, 0)
 DEFAULT_MEASURE_BG_COLOUR = (250 / 255.0, 247 / 255.0, 218 / 255.0)
 DEFAULT_MEASURE_RADIUS = 1
 DEFAULT_MEASURE_TYPE = MEASURE_LINEAR
-
 PROP_MEASURE = 0.8
 
+_tr = None
+
+
+def init_translations():
+    """Initialize translations after i18n is ready"""
+    global _tr
+    from invesalius.i18n import tr
+
+    _tr = tr
+
+
+def _(text):
+    """Translate text if translations are initialized, otherwise return as is"""
+    global _tr
+    if _tr is None:
+        return text
+    return _tr(text)
+
+
+MEASURE_NAME_PATTERN = "M %d"  # Will be translated when used via _()
+
+# from invesalius.project import Project
+
+# ---------------
 
 STEREO_OFF = _(" Off")
 STEREO_RED_BLUE = _("Red-blue")
