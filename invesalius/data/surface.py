@@ -1243,7 +1243,6 @@ class SurfaceManager:
                 os.close(temp_fd)
 
             temp_file = utl.decode(temp_file, const.FS_ENCODE)
-
             try:
                 self._export_surface(temp_file, filetype, convert_to_world)
             except ValueError:
@@ -1361,6 +1360,8 @@ class SurfaceManager:
                 proj.surface_dict[index].is_shown = False
 
     def _export_surface(self, filename, filetype, convert_to_world):
+        # First we identify all surfaces that are selected
+        # (if any)
         proj = prj.Project()
         polydata_list = []
 
@@ -1371,7 +1372,7 @@ class SurfaceManager:
                 polydata_list.append(surface.polydata)
 
         if len(polydata_list) == 0:
-            utl.debug("No polydata to export.")
+            utl.debug("oops - no polydata")
             return
         elif len(polydata_list) == 1:
             polydata = polydata_list[0]
@@ -1410,10 +1411,15 @@ class SurfaceManager:
                 writer.SetFileTypeToASCII()
             elif filetype == const.FILETYPE_VTP:
                 writer = vtkXMLPolyDataWriter()
+            # elif filetype == const.FILETYPE_IV:
+            #    writer = vtkIVWriter()
             elif filetype == const.FILETYPE_PLY:
                 writer = vtkPLYWriter()
                 writer.SetFileTypeToASCII()
                 writer.SetColorModeToOff()
+                # writer.SetDataByteOrderToLittleEndian()
+                # writer.SetColorModeToUniformCellColor()
+                # writer.SetColor(255, 0, 0)
             # elif filetype == const.FILETYPE_X3D:
             #    writer = vtkXMLPolyDataWriter()
             elif filetype == const.FILETYPE_RIB:
@@ -1519,7 +1525,6 @@ class SurfaceManager:
                 polydata = normals.GetOutput()
 
             filename = filename.encode(const.FS_ENCODE)
-
             writer.SetFileName(filename)
             writer.SetInputData(polydata)
 
