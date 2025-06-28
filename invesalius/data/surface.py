@@ -1399,6 +1399,8 @@ class SurfaceManager:
                     return
                 wx.Yield()
 
+            # Having a polydata that represents all surfaces
+            # selected, we write it, according to filetype
             # Selecting the appropriate writer
             if filetype == const.FILETYPE_STL:
                 writer = vtkSTLWriter()
@@ -1412,7 +1414,7 @@ class SurfaceManager:
                 writer = vtkPLYWriter()
                 writer.SetFileTypeToASCII()
                 writer.SetColorModeToOff()
-            #elif filetype == const.FILETYPE_X3D:
+            # elif filetype == const.FILETYPE_X3D:
             #    writer = vtkXMLPolyDataWriter()
             elif filetype == const.FILETYPE_RIB:
 
@@ -1506,10 +1508,12 @@ class SurfaceManager:
                 raise ValueError(f"Unsupported filetype: {filetype}")
 
             if filetype in (const.FILETYPE_STL, const.FILETYPE_STL_ASCII, const.FILETYPE_PLY):
+                # Invert normals
                 normals = vtkPolyDataNormals()
                 normals.SetInputData(polydata)
                 normals.SetFeatureAngle(80)
                 normals.AutoOrientNormalsOn()
+                #  normals.GetOutput().ReleaseDataFlagOn()
                 normals.UpdateInformation()
                 normals.Update()
                 polydata = normals.GetOutput()
