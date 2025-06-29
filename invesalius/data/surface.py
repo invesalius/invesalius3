@@ -78,6 +78,7 @@ from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.utils import new_name_by_pattern
 
+
 # TODO: Verificar ReleaseDataFlagOn and SetSource
 
 
@@ -1220,6 +1221,31 @@ class SurfaceManager:
         Publisher.sendMessage("Render volume viewer")
 
     def OnExportSurface(self, filename, filetype, convert_to_world=False):
+
+        if filetype in (const.FILETYPE_X3D, const.FILETYPE_VRML, const.FILETYPE_OBJ):
+            dlg = wx.Dialog(None, title=_("Exporting (not supported yet)"))
+            panel = dialogs.PanelFFillProgress(dlg)
+
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            sizer.Add(panel, 1, wx.EXPAND | wx.ALL, 10)
+            dlg.SetSizerAndFit(sizer)
+            dlg.Layout()
+            dlg.CentreOnScreen()
+            dlg.Show()
+
+            panel.StartTimer()  # Start time counter
+
+            for i in range(20):
+                wx.MilliSleep(100)
+                panel.Pulse()  # This updates the gauge and time
+                wx.Yield()
+
+            panel.StopTimer()  # Optional: stop the timer
+            dlg.Destroy()
+
+            wx.MessageBox(_("Export for this format is not supported yet."), _("Export"), wx.OK | wx.ICON_INFORMATION)
+            return
+
         ftype_prefix = {
             const.FILETYPE_STL: ".stl",
             const.FILETYPE_VTP: ".vtp",
@@ -1250,7 +1276,7 @@ class SurfaceManager:
                     print("It was not possible to export the surface because the surface is empty")
                 else:
                     wx.MessageBox(
-                        _("It was not possible to export the surface because the surface is empty"),
+                        _("It was not possible to export the surface porque a superficie esta vazia"),
                         _("Export surface error"),
                     )
                 return
@@ -1388,8 +1414,9 @@ class SurfaceManager:
             "Preparing export...",
             maximum=100,
             parent=None,
-            style=wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+            style=wx.PD_APP_MODAL |wx.PD_AUTO_HIDE| wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
         )
+        progress_destroyed = False
 
         try:
             if convert_to_world:
@@ -1411,8 +1438,6 @@ class SurfaceManager:
                 writer.SetFileTypeToASCII()
             elif filetype == const.FILETYPE_VTP:
                 writer = vtkXMLPolyDataWriter()
-            # elif filetype == const.FILETYPE_IV:
-            #    writer = vtkIVWriter()
             elif filetype == const.FILETYPE_PLY:
                 writer = vtkPLYWriter()
                 writer.SetFileTypeToASCII()
@@ -1422,6 +1447,7 @@ class SurfaceManager:
                 # writer.SetColor(255, 0, 0)
             # elif filetype == const.FILETYPE_X3D:
             #    writer = vtkXMLPolyDataWriter()
+
             elif filetype == const.FILETYPE_RIB:
 
                 n_points = polydata.GetNumberOfPoints()
@@ -1448,6 +1474,7 @@ class SurfaceManager:
 
                     if not cancelled:
                         rib_file.write("WorldEnd\n")
+                        self.export_successful = True
 
                 finally:
                     if rib_file:
@@ -1462,6 +1489,7 @@ class SurfaceManager:
                         return
 
                 progress.Update(100, "Export complete.")
+                wx.Yield()
                 return
 
             # elif filetype == const.FILETYPE_VRML:
@@ -1493,6 +1521,7 @@ class SurfaceManager:
 
                     if not cancelled:
                         iv_file.write("}\n")
+                        self.export_successful = True
 
                 finally:
                     if iv_file:
@@ -1507,6 +1536,7 @@ class SurfaceManager:
                         return
 
                 progress.Update(100, "Export complete.")
+                wx.Yield()
                 return
 
             else:
@@ -1545,6 +1575,13 @@ class SurfaceManager:
             writer.Write()
             progress.Update(100, "Export complete.")
             self.export_successful = True
-            progress.Close(True)
+            wx.Yield()
+
+
         finally:
-            progress.Destroy()
+            if progress and not progress_destroyed:
+                try:
+                    progress.Destroy()
+                    progress_destroyed = True
+                except Exception as e:
+                    print(f"Could not destroy progress dialog: {e}")
