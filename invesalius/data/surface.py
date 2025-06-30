@@ -1231,7 +1231,6 @@ class SurfaceManager:
             label = wx.StaticText(dlg, label=_("Exporting file..."))
             font = label.GetFont()
             font.SetPointSize(9)
-            # font.SetWeight(wx.FONTWEIGHT_BOLD)
             label.SetFont(font)
 
             wrapper.Add(label, 0, wx.ALIGN_CENTER | wx.TOP | wx.LEFT | wx.RIGHT, 10)
@@ -1242,7 +1241,7 @@ class SurfaceManager:
             wrapper.Add(btn_cancel, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.BOTTOM, 10)
 
             dlg.SetSizerAndFit(wrapper)
-            dlg.SetMinSize((400, 150))
+            dlg.SetMinSize((300, 150))
             dlg.Layout()
             dlg.CentreOnScreen()
             dlg.Show()
@@ -1290,7 +1289,9 @@ class SurfaceManager:
                     print("It was not possible to export the surface because the surface is empty")
                 else:
                     wx.MessageBox(
-                        _("It was not possible to export the surface porque a superficie esta vazia"),
+                        _(
+                            "It was not possible to export the surface because the surface is empty"
+                        ),
                         _("Export surface error"),
                     )
                 return
