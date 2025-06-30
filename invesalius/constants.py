@@ -854,7 +854,7 @@ DEBUGTRACKAPPROACH = 10
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b"COM1"
-NDI_IP = ["P9-13715.local", "P9-13719.local", "P9-25026.local"]
+NDI_IP = ["P9-13715.local", "P9-13719.local", "P9-25026.local", "P9-13835.local"]
 
 TRACKERS = [
     _("Claron MicronTracker"),
