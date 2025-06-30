@@ -1223,12 +1223,26 @@ class SurfaceManager:
     def OnExportSurface(self, filename, filetype, convert_to_world=False):
 
         if filetype in (const.FILETYPE_X3D, const.FILETYPE_VRML, const.FILETYPE_OBJ):
-            dlg = wx.Dialog(None, title=_("Exporting (not supported yet)"))
+            dlg = wx.Dialog(None, title=_("Exporting file"))
             panel = dialogs.PanelFFillProgress(dlg)
 
-            sizer = wx.BoxSizer(wx.VERTICAL)
-            sizer.Add(panel, 1, wx.EXPAND | wx.ALL, 10)
-            dlg.SetSizerAndFit(sizer)
+            wrapper = wx.BoxSizer(wx.VERTICAL)
+
+            label = wx.StaticText(dlg, label=_("Exporting file..."))
+            font = label.GetFont()
+            font.SetPointSize(9)
+            # font.SetWeight(wx.FONTWEIGHT_BOLD)
+            label.SetFont(font)
+
+            wrapper.Add(label, 0, wx.ALIGN_CENTER | wx.TOP | wx.LEFT | wx.RIGHT, 10)
+            panel.SetMinSize((320, 50))
+            wrapper.Add(panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+            btn_cancel = wx.Button(dlg, wx.ID_CANCEL, label=_("Cancel"))
+            wrapper.Add(btn_cancel, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.BOTTOM, 10)
+
+            dlg.SetSizerAndFit(wrapper)
+            dlg.SetMinSize((400, 150))
             dlg.Layout()
             dlg.CentreOnScreen()
             dlg.Show()
@@ -1410,7 +1424,7 @@ class SurfaceManager:
 
         # Initializing progress dialog
         progress = wx.ProgressDialog(
-            "Exporting Surface",
+            "Exporting File",
             "Preparing export...",
             maximum=100,
             parent=None,
@@ -1576,7 +1590,6 @@ class SurfaceManager:
             progress.Update(100, "Export complete.")
             self.export_successful = True
             wx.Yield()
-
 
         finally:
             if progress and not progress_destroyed:
