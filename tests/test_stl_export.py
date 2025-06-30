@@ -1,5 +1,6 @@
 import os
-import sys
+from pathlib import Path
+from typing import Any, Tuple
 
 import numpy as np
 import pytest
@@ -15,7 +16,7 @@ from invesalius.data.converters import to_vtk
 from invesalius.data.surface import Surface, SurfaceManager
 
 
-def make_test_polydata(shape, region, value=255):
+def make_test_polydata(shape: Tuple[int, int, int], region: Any, value: int = 255) -> vtkPolyData:
     """Method to create a test polydata mesh with a filled region."""
     mask_array = np.zeros(shape, dtype=np.uint8)
     mask_array[region] = value
@@ -28,14 +29,14 @@ def make_test_polydata(shape, region, value=255):
 
 
 @pytest.fixture
-def raw_contour_mesh():
+def raw_contour_mesh() -> vtkPolyData:
     shape = (20, 20, 20)
     region = (slice(5, 15), slice(5, 15), slice(5, 15))
     return make_test_polydata(shape, region, value=255)
 
 
 @pytest.fixture
-def clean_project():
+def clean_project() -> prj.Project:
     """Creating a clean project for testing."""
     # Create a new project and clear any existing surfaces
     project = prj.Project()
@@ -44,7 +45,7 @@ def clean_project():
 
 
 @pytest.fixture
-def surface_manager_with_surfaces(clean_project):
+def surface_manager_with_surfaces(clean_project: prj.Project) -> Tuple[SurfaceManager, prj.Project]:
     project = clean_project
     shape = (10, 10, 10)
     region = (slice(3, 7), slice(3, 7), slice(3, 7))
@@ -69,7 +70,9 @@ def surface_manager_with_surfaces(clean_project):
 
 
 @pytest.mark.parametrize("filetype", ["binary", "ascii"])
-def test_stl_export_and_import_consistency(raw_contour_mesh, filetype, tmp_path):
+def test_stl_export_and_import_consistency(
+    raw_contour_mesh: vtkPolyData, filetype: str, tmp_path: Path
+) -> None:
     """Test exporting a mesh to STL (binary/ascii) and reading it back, checking geometry and consistency."""
     filename = tmp_path / "test.stl"
     writer = vtkSTLWriter()
@@ -105,13 +108,9 @@ def test_stl_export_and_import_consistency(raw_contour_mesh, filetype, tmp_path)
     assert points_match_setwise(orig_points, new_points, tol=1e-2)
 
 
-def test_stl_export_empty_mesh(tmp_path):
+def test_stl_export_empty_mesh(tmp_path: Path) -> None:
     """Test exporting an empty mesh to STL and reading it back"""
     # Suppress VTK error popups by redirecting output to a file or null device as it will show a popup otherwise
-    if sys.platform == "win32":
-        nullfile = "NUL"
-    else:
-        nullfile = "/dev/null"
     fow = vtkFileOutputWindow()
     fow.SetFileName(str(tmp_path / "vtkoutput.txt"))
     ow = vtkOutputWindow()
@@ -131,7 +130,9 @@ def test_stl_export_empty_mesh(tmp_path):
     assert not os.path.exists(filename)
 
 
-def test_export_surface_to_stl(surface_manager_with_surfaces, tmp_path):
+def test_export_surface_to_stl(
+    surface_manager_with_surfaces: Tuple[SurfaceManager, prj.Project], tmp_path: Path
+) -> None:
     """Test the core functionality of OnExportSurface without relying on temp file mechanism."""
     surface_manager, project = surface_manager_with_surfaces
 
@@ -156,7 +157,7 @@ def test_export_surface_to_stl(surface_manager_with_surfaces, tmp_path):
     assert mesh.GetNumberOfCells() > 0, "Exported mesh has no cells"
 
 
-def test_on_export_surface_empty_project(clean_project, tmp_path):
+def test_on_export_surface_empty_project(clean_project: prj.Project, tmp_path: Path) -> None:
     """Test OnExportSurface when no surfaces are visible."""
     surface_manager = SurfaceManager()
 
@@ -169,7 +170,9 @@ def test_on_export_surface_empty_project(clean_project, tmp_path):
     assert not os.path.exists(filename), "File should not be created when no surfaces are visible"
 
 
-def test_export_surface_multiple_visible(surface_manager_with_surfaces, tmp_path):
+def test_export_surface_multiple_visible(
+    surface_manager_with_surfaces: Tuple[SurfaceManager, prj.Project], tmp_path: Path
+) -> None:
     """Test OnExportSurface with multiple visible surfaces."""
     surface_manager, project = surface_manager_with_surfaces
 
@@ -196,7 +199,9 @@ def test_export_surface_multiple_visible(surface_manager_with_surfaces, tmp_path
     assert mesh.GetNumberOfCells() > 0, "Exported mesh has no cells"
 
 
-def test_on_export_surface_ascii_format(surface_manager_with_surfaces, tmp_path):
+def test_on_export_surface_ascii_format(
+    surface_manager_with_surfaces: Tuple[SurfaceManager, prj.Project], tmp_path: Path
+) -> None:
     """Test OnExportSurface with ASCII STL format."""
     surface_manager, project = surface_manager_with_surfaces
 
@@ -220,7 +225,9 @@ def test_on_export_surface_ascii_format(surface_manager_with_surfaces, tmp_path)
     assert mesh.GetNumberOfCells() > 0, "Exported ASCII mesh has no cells"
 
 
-def test_on_export_surface_file_formats(surface_manager_with_surfaces, tmp_path):
+def test_on_export_surface_file_formats(
+    surface_manager_with_surfaces: Tuple[SurfaceManager, prj.Project], tmp_path: Path
+) -> None:
     """Test different file formats supported by OnExportSurface."""
     surface_manager, project = surface_manager_with_surfaces
 
@@ -249,7 +256,7 @@ def test_on_export_surface_file_formats(surface_manager_with_surfaces, tmp_path)
     assert os.path.exists(ply_file), "PLY file was not created"
 
 
-def points_match_setwise(points1, points2, tol=1e-3):
+def points_match_setwise(points1: np.ndarray, points2: np.ndarray, tol: float = 1e-3) -> bool:
     points1_sorted = np.array(sorted(points1.tolist()))
     points2_sorted = np.array(sorted(points2.tolist()))
     return np.allclose(points1_sorted, points2_sorted, atol=tol)

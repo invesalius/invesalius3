@@ -1,20 +1,18 @@
-import os
+from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
-from invesalius.data import slice_
+from invesalius.data.slice_ import Slice
 from invesalius.presets import Presets
 from invesalius.project import Project
 
 
 @pytest.fixture
-def mock_slice():
+def mock_slice() -> Generator[Slice, None, None]:
     """Create a mock Slice instance with necessary attributes."""
-    from invesalius.data.slice_ import Slice, SliceBuffer
-
-    slice_ = Slice()
+    slice_: Slice = Slice()
     slice_.matrix = np.random.randint(1, 1000, (10, 10, 10), dtype=np.int16)
     slice_.spacing = (1.0, 1.0, 1.0)
     yield slice_
@@ -23,13 +21,13 @@ def mock_slice():
 
 
 @pytest.fixture
-def mock_presets():
+def mock_presets() -> Presets:
     presets = Presets()
     return presets
 
 
 @pytest.fixture
-def mock_project():
+def mock_project() -> Project:
     project = Project()
     project.threshold_modes = {
         "Bone": (226, 3071),
@@ -41,7 +39,7 @@ def mock_project():
     return project
 
 
-def test_bone_threshold_presets(mock_presets):
+def test_bone_threshold_presets(mock_presets: Presets) -> None:
     # Test adult bone thresholds
     assert mock_presets.thresh_ct["Bone"] == (226, 3071)
     assert mock_presets.thresh_ct["Compact Bone (Adult)"] == (662, 1988)
@@ -50,7 +48,7 @@ def test_bone_threshold_presets(mock_presets):
     assert mock_presets.thresh_ct["Spongial Bone (Child)"] == (156, 585)
 
 
-def test_set_mask_threshold(mock_slice, mock_presets, mocker):
+def test_set_mask_threshold(mock_slice: Slice, mock_presets: Presets, mocker) -> None:
     """Test setting mask threshold for bone segmentation."""
     # Get bone threshold range from presets
     bone_min, bone_max = mock_presets.thresh_ct["Bone"]
@@ -91,7 +89,7 @@ def test_set_mask_threshold(mock_slice, mock_presets, mocker):
     assert send_message_mock.called, "Publisher.sendMessage should have been called."
 
 
-def test_do_threshold_to_a_slice(mock_slice, mock_presets):
+def test_do_threshold_to_a_slice(mock_slice: Slice, mock_presets: Presets) -> None:
     """Test thresholding a single slice."""
     bone_min, bone_max = mock_presets.thresh_ct["Bone"]
 
@@ -120,7 +118,7 @@ def test_do_threshold_to_a_slice(mock_slice, mock_presets):
     assert np.array_equal(result, expected)
 
 
-def test_do_threshold_to_all_slices(mock_slice, mock_presets, mocker):
+def test_do_threshold_to_all_slices(mock_slice: Slice, mock_presets: Presets, mocker) -> None:
     """Test applying bone threshold to all slices."""
     # Get bone threshold range from presets
     bone_min, bone_max = mock_presets.thresh_ct["Bone"]
@@ -155,7 +153,7 @@ def test_do_threshold_to_all_slices(mock_slice, mock_presets, mocker):
             del mask.matrix
 
 
-def test_bone_threshold_edge_cases(mock_slice, mock_project, mocker):
+def test_bone_threshold_edge_cases(mock_slice: Slice, mock_project: Project, mocker) -> None:
     test_image = np.zeros((10, 10), dtype=np.int16)
     test_image[0, 0] = 226  # Lower bone threshold
     test_image[0, 1] = 3071  # Upper bone threshold

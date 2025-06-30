@@ -1,8 +1,9 @@
+from typing import Generator
+
 import numpy as np
 import pytest
 from vtkmodules.util import numpy_support
-from vtkmodules.vtkCommonCore import vtkFloatArray, vtkPoints
-from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkTriangle
+from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkFiltersCore import vtkContourFilter
 
 import invesalius.data.slice_ as sl
@@ -18,7 +19,7 @@ from invesalius.data.mask import Mask
 
 
 @pytest.fixture
-def raw_contour_mesh():
+def raw_contour_mesh() -> vtkPolyData:
     """Create a raw, unsmoothed mesh from a contour filter."""
     mask_array = np.zeros((20, 20, 20), dtype=np.uint8)
     mask_array[5:15, 5:15, 5:15] = 255  # A simple cube
@@ -34,14 +35,14 @@ def raw_contour_mesh():
     return mc.GetOutput()
 
 
-def test_do_surface_creation_generates_mesh():
+def test_do_surface_creation_generates_mesh() -> None:
     # Real Mask object with the correct shape
     mask = Mask()
     shape = (10, 10, 10)
     mask.create_mask(shape)
     mask.matrix[4:7, 4:7, 4:7] = 1  # [1:, 1:, 1:] is the active region
 
-    slic = sl.Slice()
+    slic: sl.Slice = sl.Slice()
     image = np.ones(shape, dtype=np.uint8)
     image.flat[0] = 2
     slic.matrix = image  # dummy image matrix
@@ -59,7 +60,7 @@ def test_do_surface_creation_generates_mesh():
 
     # Check that a mesh was generated
     assert len(brain.peel) > 0
-    mesh = brain.peel[0]
+    mesh: vtkPolyData = brain.peel[0]
     assert isinstance(mesh, vtkPolyData)
     assert mesh.GetNumberOfPoints() > 0
     assert mesh.GetNumberOfCells() > 0
@@ -82,49 +83,49 @@ def test_do_surface_creation_generates_mesh():
     assert -8.0 < ymin < ymax < -2.0
 
 
-def test_clean_mesh(raw_contour_mesh):
+def test_clean_mesh(raw_contour_mesh: vtkPolyData) -> None:
     """Test mesh cleaning returns a valid mesh."""
-    result = cleanMesh(raw_contour_mesh)
+    result: vtkPolyData = cleanMesh(raw_contour_mesh)
     assert isinstance(result, vtkPolyData)
     assert result.GetNumberOfPoints() > 0
     assert result.GetNumberOfCells() > 0
 
 
-def test_fix_mesh(raw_contour_mesh):
+def test_fix_mesh(raw_contour_mesh: vtkPolyData) -> None:
     """Test mesh fixing returns a valid mesh."""
-    result = fixMesh(raw_contour_mesh)
+    result: vtkPolyData = fixMesh(raw_contour_mesh)
     assert isinstance(result, vtkPolyData)
     assert result.GetNumberOfPoints() > 0
     assert result.GetNumberOfCells() > 0
 
 
-def test_upsample_mesh(raw_contour_mesh):
+def test_upsample_mesh(raw_contour_mesh: vtkPolyData) -> None:
     """Test that upsampling increases the number of points and cells."""
     original_points = raw_contour_mesh.GetNumberOfPoints()
     original_cells = raw_contour_mesh.GetNumberOfCells()
-    result = upsample(raw_contour_mesh)
+    result: vtkPolyData = upsample(raw_contour_mesh)
     assert isinstance(result, vtkPolyData)
     assert result.GetNumberOfPoints() > original_points
     assert result.GetNumberOfCells() > original_cells
 
 
-def test_smooth_mesh(raw_contour_mesh):
+def test_smooth_mesh(raw_contour_mesh: vtkPolyData) -> None:
     """Test that smoothing changes the point coordinates."""
     original_points_arr = numpy_support.vtk_to_numpy(raw_contour_mesh.GetPoints().GetData())
-    result = smooth(raw_contour_mesh)
+    result: vtkPolyData = smooth(raw_contour_mesh)
     smoothed_points_arr = numpy_support.vtk_to_numpy(result.GetPoints().GetData())
     assert isinstance(result, vtkPolyData)
     assert not np.array_equal(original_points_arr, smoothed_points_arr)
 
 
-def test_downsample_mesh(raw_contour_mesh):
+def test_downsample_mesh(raw_contour_mesh: vtkPolyData) -> None:
     """Test that downsampling reduces the number of points and cells."""
     # First, upsample to ensure there's something to downsample
-    upsampled_mesh = upsample(raw_contour_mesh)
+    upsampled_mesh: vtkPolyData = upsample(raw_contour_mesh)
     original_points = upsampled_mesh.GetNumberOfPoints()
     original_cells = upsampled_mesh.GetNumberOfCells()
 
-    result = downsample(upsampled_mesh)
+    result: vtkPolyData = downsample(upsampled_mesh)
     assert isinstance(result, vtkPolyData)
     assert result.GetNumberOfPoints() < original_points
     assert result.GetNumberOfCells() < original_cells
