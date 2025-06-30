@@ -1231,7 +1231,6 @@ class SurfaceManager:
             label = wx.StaticText(dlg, label=_("Exporting file..."))
             font = label.GetFont()
             font.SetPointSize(9)
-            # font.SetWeight(wx.FONTWEIGHT_BOLD)
             label.SetFont(font)
 
             wrapper.Add(label, 0, wx.ALIGN_CENTER | wx.TOP | wx.LEFT | wx.RIGHT, 10)
