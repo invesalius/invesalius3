@@ -50,6 +50,8 @@ class CoilVisualizer:
 
         self.coil_at_target = False
 
+        self.show_coil_button = True
+
         self.is_navigating = False
 
         self.LoadConfig()
@@ -110,6 +112,8 @@ class CoilVisualizer:
         # Set the color of both target coil (representing the target) and the coil center (representing the actual coil).
         self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
 
+        self.vector_field_assembly.SetVisibility(state)  # mTMS targets
+
         # Multicoil mode will have a different GUI for targeting, so this is irrelevant for multicoil
         # In single coil mode, just get the single coil
         coil = next(iter(self.coils.values()), None)
@@ -136,10 +140,11 @@ class CoilVisualizer:
                 Publisher.sendMessage("Press show-coil button", pressed=False)
             elif all(coils_visible):  # all coils are shown
                 Publisher.sendMessage("Press show-coil button", pressed=True)
+        
+        self.show_coil_button = state
 
         if self.target_coil_actor is not None:
             self.target_coil_actor.SetVisibility(state)
-        self.vector_field_assembly.SetVisibility(state)  # LUKATODO: Keep this hidden for now
 
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
@@ -189,7 +194,7 @@ class CoilVisualizer:
         self.target_coil_actor.GetProperty().SetSpecular(0.5)
         self.target_coil_actor.GetProperty().SetSpecularPower(10)
         self.target_coil_actor.GetProperty().SetOpacity(0.3)
-        self.target_coil_actor.SetVisibility(True)
+        self.target_coil_actor.SetVisibility(self.show_coil_button)
         self.target_coil_actor.SetUserMatrix(m_target)
 
         self.renderer.AddActor(self.target_coil_actor)
