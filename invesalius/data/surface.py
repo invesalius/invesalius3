@@ -1478,7 +1478,7 @@ class SurfaceManager:
                     for i in range(n_points):
                         if i % update_interval == 0 or i == n_points - 1:
                             percent = int(i * 90 / n_points)
-                            keep_going, _ = progress.Update(10 + percent, f"Writing RIB file: {percent}%")
+                            keep_going, _ = progress.Update(10 + percent, f"Exporting file: {percent}%")
                             if not keep_going:
                                 cancelled = True
                                 break
@@ -1525,7 +1525,7 @@ class SurfaceManager:
                     for i in range(n_points):
                         if i % update_interval == 0 or i == n_points - 1:
                             percent = int(i * 90 / n_points)
-                            keep_going, _ = progress.Update(10 + percent, f"Writing IV file: {percent}%")
+                            keep_going, _ = progress.Update(10 + percent, f"Exporting file: {percent}%")
                             if not keep_going:
                                 cancelled = True
                                 break
@@ -1579,7 +1579,7 @@ class SurfaceManager:
 
             for i in range(num_updates):
                 percent = int(i * 90 / num_updates)
-                keep_going, _ = progress.Update(10 + percent, f"Writing file: {percent}%")
+                keep_going, _ = progress.Update(10 + percent, f"Exporting file: {percent}%")
                 if not keep_going:
                     progress.Destroy()
                     return
