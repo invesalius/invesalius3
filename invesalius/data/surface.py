@@ -1233,7 +1233,7 @@ class SurfaceManager:
             font.SetPointSize(9)
             label.SetFont(font)
 
-            wrapper.Add(label, 0, wx.ALIGN_CENTER | wx.TOP | wx.LEFT | wx.RIGHT, 10)
+            wrapper.Add(label, 0, wx.ALIGN_LEFT | wx.TOP | wx.LEFT | wx.RIGHT, 10)
             panel.SetMinSize((320, 50))
             wrapper.Add(panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
