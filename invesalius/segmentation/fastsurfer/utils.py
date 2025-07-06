@@ -8,17 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 class Validator:
-    """Validates images against FastSurfer's basic input requirements."""
+    """Validates images against FastSurfer's basic input requirements"""
 
     @staticmethod
     def validate(img: nib.analyze.SpatialImage) -> Tuple[bool, list[str]]:
         issues = []
         img_shape = img.shape
 
-        if img.ndim not in (3, 4):
-            issues.append(f"Image must be 3D or 4D, but has {img.ndim} dimensions.")
-        elif img.ndim == 4 and img_shape[3] != 1:
-            issues.append(f"4D images must have a single frame, but have {img_shape[3]}.")
+        if img.ndim != 3:
+            issues.append(f"Image must be 3D, but has {img.ndim} dimensions.")
 
         if not np.issubdtype(img.get_data_dtype(), np.number):
             issues.append(f"Non-numeric data type found: {img.get_data_dtype()}.")
@@ -27,9 +25,7 @@ class Validator:
 
 
 class Conformer:
-    """
-    Handles image conforming to FastSurfer's standard format.
-    """
+    """Handles image conforming to models' standard format"""
 
     def __init__(
         self,
@@ -188,3 +184,57 @@ class Conformer:
         scaled_data[background_mask] = 0
 
         return scaled_data
+
+
+class PreparePlaneView:
+    """Prepares image data for planewise inference"""
+
+    def __init__(self, num_channels: int = 7):
+        if num_channels % 2 == 0:
+            raise ValueError("Number of channels must be odd.")
+        self.num_channels = num_channels
+        self.slice_thickness = num_channels // 2
+
+    def transform_planewise(self, conformed_data: np.ndarray, plane: str) -> np.ndarray:
+        """Transposes the data array to match the model's expected plane view"""
+        if plane == "sagittal":
+            return np.transpose(conformed_data, (2, 0, 1))  # (X, Y, Z) -> (Z, Y, X)
+        elif plane == "axial":
+            return np.transpose(conformed_data, (1, 2, 0))  # (X, Y, Z) -> (Y, Z, X)
+        # since coronal is the default, no transpose needed
+        return conformed_data
+
+    def get_thick_slices(self, plane_view_data: np.ndarray) -> np.ndarray:
+        """Creates thick slices of 7 from the plane-specific view data"""
+        num_slices = plane_view_data.shape[2]
+        # pad the array to ensure enough slices are available at the edge cases
+        padded_data = np.pad(
+            plane_view_data,
+            ((0, 0), (0, 0), (self.slice_thickness, self.slice_thickness)),
+            mode="edge",
+        )
+
+        thick_slices = np.stack(
+            [padded_data[:, :, i : i + self.num_channels] for i in range(num_slices)],
+            axis=0,
+        )
+        return np.transpose(thick_slices, (0, 2, 1, 3))
+
+    def get_scale_factor(
+        self,
+        original_zoom: Tuple[float, float, float],
+        plane: str,
+        base_resolution: float = 0.7,
+    ) -> np.ndarray:
+        """Gets the scaling factor for a specific plane-view"""
+        zoom_array = np.asarray(original_zoom)
+        x_zoom, y_zoom, z_zoom = zoom_array[0], zoom_array[1], zoom_array[2]
+
+        if plane == "axial":
+            plane_zoom = np.array([x_zoom, y_zoom])
+        elif plane == "coronal":
+            plane_zoom = np.array([x_zoom, z_zoom])
+        else:  # "sagittal"
+            plane_zoom = np.array([y_zoom, z_zoom])
+
+        return base_resolution / plane_zoom
