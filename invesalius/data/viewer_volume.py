@@ -349,6 +349,18 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
+        # self.renderers = (self.target_guide_renderer, ren, canvas_renderer)
+
+        renwin = interactor.GetRenderWindow().GetRenderers()
+        renwin.InitTraversal()
+
+        self.renderers = []
+        for i in range(renwin.GetNumberOfItems()):
+            renderer = renwin.GetNextItem()
+            self.renderers.append(renderer)
+
+        print(len(self.renderers))
+
         Publisher.sendMessage("Press target mode button", pressed=False)
 
     def UpdateCanvas(self):
@@ -2622,9 +2634,48 @@ class Viewer(wx.Panel):
             else:
                 self._export_surface(filename, filetype)
 
+    def ChangeRenderOrderToExportFile(self):
+        """
+        Due to the need for self.target_guide_renderer, which is the neuronavigation renderer,
+        to be added first, it is necessary to change the order of the renderers in order to
+        correctly export the files in obj, vrml, etc. formats. So that only ren and
+        canvas_renderer are kept.
+
+        TODO: It is recommended to improve the order in which renderers work in the future.
+        """
+        renwin = self.interactor.GetRenderWindow()
+        for r in self.renderers:
+            renwin.RemoveRenderer(r)
+
+        renwin.SetNumberOfLayers(2)
+        renwin.AddRenderer(self.renderers[1])
+        renwin.AddRenderer(self.renderers[2])
+        renwin.AddRenderer(self.renderers[3])
+
+        self.interactor.Render()
+
+    def RestoreRenderOrderAfterExportFile(self):
+        """
+        Restores renderer order after export, keeping self.target_guide_renderer,
+        ren and canvas_renderer
+        """
+        renwin = self.interactor.GetRenderWindow()
+        renwin.RemoveRenderer(self.renderers[1])
+        renwin.RemoveRenderer(self.renderers[2])
+
+        renwin.AddRenderer(self.renderers[0])
+        renwin.SetNumberOfLayers(2)
+        renwin.AddRenderer(self.renderers[1])
+        renwin.AddRenderer(self.renderers[2])
+        renwin.AddRenderer(self.renderers[3])
+
+        self.interactor.Render()
+
     def _export_surface(self, filename, filetype):
         fileprefix = filename.split(".")[-2]
         renwin = self.interactor.GetRenderWindow()
+
+        self.ChangeRenderOrderToExportFile()
 
         if filetype == const.FILETYPE_RIB:
             writer = vtkRIBExporter()
@@ -2653,6 +2704,8 @@ class Viewer(wx.Panel):
             writer.SetFileName(filename)
             writer.SetInput(renwin)
             writer.Write()
+
+        self.RestoreRenderOrderAfterExportFile()
 
     def OnEnableBrightContrast(self):
         style = self.style
