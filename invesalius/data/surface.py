@@ -1222,42 +1222,42 @@ class SurfaceManager:
 
     def OnExportSurface(self, filename, filetype, convert_to_world=False):
 
-        if filetype in (const.FILETYPE_X3D, const.FILETYPE_VRML, const.FILETYPE_OBJ):
-            dlg = wx.Dialog(None, title=_("Exporting file"))
-            panel = dialogs.PanelFFillProgress(dlg)
+        #if filetype in (const.FILETYPE_X3D, const.FILETYPE_VRML, const.FILETYPE_OBJ):
+            #dlg = wx.Dialog(None, title=_("Exporting file"))
+            #panel = dialogs.PanelFFillProgress(dlg)
 
-            wrapper = wx.BoxSizer(wx.VERTICAL)
+            #wrapper = wx.BoxSizer(wx.VERTICAL)
 
-            label = wx.StaticText(dlg, label=_("Exporting file..."))
-            font = label.GetFont()
-            font.SetPointSize(9)
-            label.SetFont(font)
+            #label = wx.StaticText(dlg, label=_("Exporting file..."))
+            #font = label.GetFont()
+            #font.SetPointSize(9)
+            #label.SetFont(font)
 
-            wrapper.Add(label, 0, wx.ALIGN_LEFT | wx.TOP | wx.LEFT | wx.RIGHT, 10)
-            panel.SetMinSize((320, 50))
-            wrapper.Add(panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+            #wrapper.Add(label, 0, wx.ALIGN_LEFT | wx.TOP | wx.LEFT | wx.RIGHT, 10)
+            #panel.SetMinSize((320, 50))
+            #wrapper.Add(panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-            btn_cancel = wx.Button(dlg, wx.ID_CANCEL, label=_("Cancel"))
-            wrapper.Add(btn_cancel, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.BOTTOM, 10)
+            #btn_cancel = wx.Button(dlg, wx.ID_CANCEL, label=_("Cancel"))
+            #wrapper.Add(btn_cancel, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.BOTTOM, 10)
 
-            dlg.SetSizerAndFit(wrapper)
-            dlg.SetMinSize((300, 150))
-            dlg.Layout()
-            dlg.CentreOnScreen()
-            dlg.Show()
+            #dlg.SetSizerAndFit(wrapper)
+            #dlg.SetMinSize((300, 150))
+            #dlg.Layout()
+            #dlg.CentreOnScreen()
+            #dlg.Show()
 
-            panel.StartTimer()  # Start time counter
+            #panel.StartTimer()  # Start time counter
 
-            for i in range(20):
-                wx.MilliSleep(100)
-                panel.Pulse()  # This updates the gauge and time
-                wx.Yield()
+            #for i in range(20):
+                #wx.MilliSleep(100)
+                #panel.Pulse()  # This updates the gauge and time
+                #wx.Yield()
 
-            panel.StopTimer()  # Optional: stop the timer
-            dlg.Destroy()
+            #panel.StopTimer()  # Optional: stop the timer
+            #dlg.Destroy()
 
-            wx.MessageBox(_("Export for this format is not supported yet."), _("Export"), wx.OK | wx.ICON_INFORMATION)
-            return
+            #wx.MessageBox(_("Export for this format is not supported yet."), _("Export"), wx.OK | wx.ICON_INFORMATION)
+            #return
 
         ftype_prefix = {
             const.FILETYPE_STL: ".stl",
@@ -1463,7 +1463,7 @@ class SurfaceManager:
             # elif filetype == const.FILETYPE_X3D:
             #    writer = vtkXMLPolyDataWriter()
 
-            elif filetype == const.FILETYPE_RIB:
+           # elif filetype == const.FILETYPE_RIB:
 
                 n_points = polydata.GetNumberOfPoints()
                 update_interval = max(1, min(1000, n_points // 100))
