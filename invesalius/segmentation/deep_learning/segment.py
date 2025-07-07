@@ -17,6 +17,7 @@ from invesalius.data import imagedata_utils
 from invesalius.data.converters import to_vtk
 from invesalius.net.utils import download_url_to_file
 from invesalius.pubsub import pub as Publisher
+from invesalius.segmentation.fastsurfer.pipeline import Pipeline
 from invesalius.utils import new_name_by_pattern
 
 from . import utils
@@ -506,7 +507,7 @@ class BrainSegmentProcess(SegmentProcess):
         self.onnx_weights_hash = "3e506ae448150ca2c7eb9a8a6b31075ffff38e8db0fc6e25cb58c320aea79d21"
 
 
-class FastSurferProcess(SegmentProcess):
+class SubpartSegementProcess(SegmentProcess):
     def __init__(
         self,
         image,
@@ -519,6 +520,7 @@ class FastSurferProcess(SegmentProcess):
         window_width=255,
         window_level=127,
         patch_size=SIZE,
+        selected_mask_types=None,
     ):
         super().__init__(
             image,
@@ -532,17 +534,84 @@ class FastSurferProcess(SegmentProcess):
             window_level=window_level,
             patch_size=patch_size,
         )
-        self.torch_weights_file_name = "brain_mri_t1.pt"
-        self.torch_weights_url = (
-            "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
-        )
-        self.torch_weights_hash = "194b0305947c9326eeee9da34ada728435a13c7b24015cbd95971097fc178f22"
+        self.selected_mask_types = selected_mask_types or []
 
-        self.onnx_weights_file_name = "brain_mri_t1.onnx"
-        self.onnx_weights_url = (
-            "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.onnx"
+    def _run_segmentation(self):
+        import nibabel as nib
+
+        image = np.memmap(
+            self._image_filename,
+            dtype=self._image_dtype,
+            shape=self._image_shape,
+            mode="r",
         )
-        self.onnx_weights_hash = "3e506ae448150ca2c7eb9a8a6b31075ffff38e8db0fc6e25cb58c320aea79d21"
+
+        if self.apply_wwwl:
+            image = imagedata_utils.get_LUT_value(image, self.window_width, self.window_level)
+
+        temp_dir = tempfile.gettempdir()
+        temp_img_file = pathlib.Path(temp_dir) / "input_image.nii.gz"
+
+        # create simple affine matrix (identity for now)
+        affine = np.eye(4)
+        img = nib.Nifti1Image(image, affine)
+        nib.save(img, str(temp_img_file))
+
+        pipeline = Pipeline()
+
+        try:
+            final_segmentation = pipeline.run_pipeline(
+                str(temp_img_file), self.backend, self.use_gpu, self.device_id
+            )
+
+            probability_array = np.memmap(
+                self._prob_array_filename,
+                dtype=np.float32,
+                shape=self._image_shape,
+                mode="r+",
+            )
+
+            if final_segmentation.shape != self._image_shape:
+                from skimage.transform import resize
+
+                final_segmentation = resize(
+                    final_segmentation, self._image_shape, order=0, preserve_range=True
+                )
+
+            probability_array[:] = final_segmentation.astype(np.float32)
+
+            comm_array = np.memmap(
+                self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
+            )
+            comm_array[0] = 1.0
+
+        finally:
+            if temp_img_file.exists():
+                temp_img_file.unlink()
+
+    def process_outputs(self, threshold=0.5):
+        """Process the segmentation outputs and create masks for selected regions"""
+        if not self.selected_mask_types:
+            self.apply_segment_threshold(threshold)
+            return
+
+        probability_array = np.memmap(
+            self._prob_array_filename,
+            dtype=np.float32,
+            shape=self._image_shape,
+            mode="r",
+        )
+
+        for mask_type in self.selected_mask_types:
+            mask_name = f"subpart_{mask_type}"
+            mask = slc.Slice().create_new_mask(name=mask_name)
+
+            # apply threshold to create binary mask, for now, simple threshold approach, will do later, specific label mapping for each mask type
+            binary_mask = (probability_array >= threshold).astype(np.uint8) * 255
+
+            mask.was_edited = True
+            mask.matrix[1:, 1:, 1:] = binary_mask
+            mask.modified(True)
 
 
 class TracheaSegmentProcess(SegmentProcess):
