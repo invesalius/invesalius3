@@ -987,22 +987,25 @@ class ObjectTab(wx.Panel):
 
         ### Sizer for choosing which coils to use in navigation (multicoil)
         self.sel_sizer = sel_sizer = wx.StaticBoxSizer(
-            wx.VERTICAL,
-            self,
-            _(
-                f"TMS coil selection ({len(navigation.coil_registrations)} out of {navigation.n_coils})"
-            ),
+            wx.VERTICAL, self, _("TMS coil selection (0 out of 0)")
         )
         self.inner_sel_sizer = inner_sel_sizer = wx.FlexGridSizer(10, 1, 1)
 
         # Coils are selected by toggling coil-buttons
         self.coil_btns = {}
-        self.no_coils_lbl = None
-        if len(self.coil_registrations) == 0:
-            self.no_coils_lbl = wx.StaticText(
-                self, -1, _("No coils found in config.json. Create or load new coils below.")
-            )
+        self.no_coils_lbl = wx.StaticText(
+            self, -1, _("No coils found in config.json. Create or load new coils below.")
+        )
+        if len(self.coil_registrations) == 0 or not self.tracker.tracker_connected:
             inner_sel_sizer.Add(self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
+
+        else:
+            sel_sizer.GetStaticBox().SetLabel(
+                _(
+                    f"TMS coil selection ({len(navigation.coil_registrations)} out of {navigation.n_coils})"
+                )
+            )
+
         sel_sizer.Add(inner_sel_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         ### Sizer for choosing which coil is attached to the robot (multicoil) ###
@@ -1103,19 +1106,14 @@ class ObjectTab(wx.Panel):
 
     def AddCoilButton(self, coil_name, show_button=True):
         if self.no_coils_lbl is not None:
-            self.no_coils_lbl.Destroy()  # Remove obsolete message
-            self.no_coils_lbl = None
+            self.no_coils_lbl.Hide()  # Remove obsolete message
 
         # Create a new button with coil_name if it doesn't already exist
         if coil_name not in self.coil_btns:
-            coil_btn = wx.ToggleButton(self, -1, coil_name[:8], size=wx.Size(88, 17))
+            coil_btn = wx.ToggleButton(self, -1, coil_name, size=wx.Size(88, 17))
             coil_btn.SetToolTip(coil_name)
-            coil_btn.Bind(
-                wx.EVT_TOGGLEBUTTON, lambda event, name=coil_name: self.OnSelectCoil(event, name)
-            )
-            coil_btn.Bind(
-                wx.EVT_RIGHT_DOWN, lambda event, name=coil_name: self.OnRightClickCoil(event, name)
-            )
+            coil_btn.Bind(wx.EVT_TOGGLEBUTTON, lambda event: self.OnSelectCoil(event=event))
+            coil_btn.Bind(wx.EVT_RIGHT_DOWN, lambda event: self.OnRightClickCoil(event=event))
             coil_btn.Show(show_button)
             self.coil_btns[coil_name] = (coil_btn, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
 
@@ -1146,41 +1144,53 @@ class ObjectTab(wx.Panel):
             # Update multicoil GUI elements
             self.sel_sizer.GetStaticBox().SetLabel(f"TMS coil selection (0 out of {n_coils})")
 
-            # Reset (enable and unpress) all coil-buttons
-            for btn, *junk in self.coil_btns.values():
-                btn.Enable()
-                btn.SetValue(False)
+            # Remove all coil-buttons
+            for name in list(self.coil_btns.keys()):
+                self.coil_btns[name][0].Destroy()
+            self.coil_btns.clear()
+
+            self.inner_sel_sizer.Clear(delete_windows=True)
+            self.no_coils_lbl = wx.StaticText(
+                self, -1, _("No coils found in config.json. Create or load new coils below.")
+            )
+            self.inner_sel_sizer.Add(self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
+
+            session = ses.Session()
+            self.coil_registrations = {}
+            session.SetConfig("coil_registrations", self.coil_registrations)
 
         self.ShowMulticoilGUI(multicoil_mode)
 
     def LoadConfig(self):
-        state = self.session.GetConfig("navigation", {})
-        n_coils = state.get("n_coils", 1)
-        multicoil_mode = n_coils > 1
-        self.ShowMulticoilGUI(multicoil_mode)
+        # Check tracker connection to set coils
+        if self.tracker.tracker_connected:
+            state = self.session.GetConfig("navigation", {})
+            n_coils = state.get("n_coils", 1)
+            multicoil_mode = n_coils > 1
+            self.ShowMulticoilGUI(multicoil_mode)
 
-        self.coil_registrations = self.session.GetConfig("coil_registrations", {})
-        # Add a button for each coil
-        for coil_name in self.coil_registrations:
-            self.AddCoilButton(coil_name, show_button=multicoil_mode)
+            self.coil_registrations = self.session.GetConfig("coil_registrations", {})
+            selected_coils = state.get("selected_coils", [])
+            # Add a button for each coil
+            for coil_name, value in self.coil_registrations.items():
+                if "fiducials" in value and "orientations" in value:
+                    self.AddCoilButton(coil_name, show_button=multicoil_mode)
+                    # Press the buttons for coils that were selected in config file
+                    if coil_name in selected_coils:
+                        self.coil_btns[coil_name][0].SetValue(True)
 
-        # Press the buttons for coils that were selected in config file
-        selected_coils = state.get("selected_coils", [])
-        for coil_name in selected_coils:
-            self.coil_btns[coil_name][0].SetValue(True)
+            # Update labels
+            self.config_txt.SetLabel(
+                f"{os.path.basename(self.coil_registrations.get('default_coil', {}).get('path', 'None'))}"
+            )
 
-        # Update labels
-        self.config_txt.SetLabel(
-            f"{os.path.basename(self.coil_registrations.get('default_coil', {}).get('path', 'None'))}"
-        )
+            n_coils_selected = len(selected_coils)
+            self.sel_sizer.GetStaticBox().SetLabel(
+                f"TMS coil selection ({n_coils_selected} out of {n_coils})"
+            )
 
-        n_coils_selected = len(selected_coils)
-        self.sel_sizer.GetStaticBox().SetLabel(
-            f"TMS coil selection ({n_coils_selected} out of {n_coils})"
-        )
-
-        if n_coils_selected == n_coils:
-            self.CoilSelectionDone()
+            if n_coils_selected == n_coils:
+                self.CoilSelectionDone()
 
     def CoilSelectionDone(self):
         if self.navigation.n_coils == 1:  # Tell the robot the coil name
@@ -1193,16 +1203,15 @@ class ObjectTab(wx.Panel):
         for btn, *junk in self.coil_btns.values():
             btn.Enable(btn.GetValue())
 
-    def OnSelectCoil(self, event=None, name=None, select=False):
+    def OnSelectCoil(self, name=None, event=None, select=False):
         if name is None:
-            if not select:  # Unselect all coils
-                Publisher.sendMessage("Reset coil selection", n_coils=self.navigation.n_coils)
-            return
+            button = event.GetEventObject() if event is not None else None
+            name = button.GetLabel() if button is not None else None
 
         coil_registration = None
         navigation = self.navigation
 
-        if select or (event is not None and event.GetSelection()):  # If coil is selected
+        if select or (event is not None and event.GetSelection()):
             coil_registration = self.coil_registrations[name]
 
             # Check that the index of the chosen coil does not conflict with other selected coils
@@ -1241,9 +1250,10 @@ class ObjectTab(wx.Panel):
 
             # Press the coil button here in case selection was done via code without pressing button
             self.coil_btns[name][0].SetValue(True)
-
         # Select/Unselect coil
-        Publisher.sendMessage("Select coil", coil_name=name, coil_registration=coil_registration)
+        Publisher.sendMessage(
+            "Select coil", coil_name=name, coil_registration=coil_registration, new_coil_name=None
+        )
 
         n_coils_selected = len(navigation.coil_registrations)
         n_coils = navigation.n_coils
@@ -1272,10 +1282,13 @@ class ObjectTab(wx.Panel):
             for btn, *junk in self.coil_btns.values():
                 btn.Enable(True)
 
-    def OnRightClickCoil(self, event, name):
+    def OnRightClickCoil(self, event):
+        button = event.GetEventObject()
+        name = button.GetLabel()
+
         def DeleteCoil(event, name):
             # Unselect the coil first
-            self.OnSelectCoil(name, select=False)
+            self.OnSelectCoil(name=name, select=False)
             del self.coil_registrations[name]
 
             # Remove the coil-button
@@ -1286,17 +1299,74 @@ class ObjectTab(wx.Panel):
             self.session.SetConfig("coil_registrations", self.coil_registrations)
 
             # Remove coil from navigation and CoilVisualizer
-            Publisher.sendMessage("Select coil", coil_name=name, coil_registration=None)
+            Publisher.sendMessage(
+                "Select coil", coil_name=name, coil_registration=None, new_coil_name=None
+            )
+
+        def RenameCoil(event, name):
+            dialog = wx.TextEntryDialog(
+                None,
+                _("Type the new name for this coil registration"),
+                _("Change Coil Name"),
+                value=name,
+            )
+            if dialog.ShowModal() == wx.ID_OK:
+                new_coil_name = dialog.GetValue().strip()  # Update coil_name with user input
+                dialog.Destroy()
+
+                while new_coil_name == name or new_coil_name in self.coil_registrations:
+                    if not new_coil_name:
+                        wx.MessageBox("Coil name cannot be empty.", "Error", wx.OK | wx.ICON_ERROR)
+                        return
+
+                    else:
+                        dialog = wx.TextEntryDialog(
+                            None,
+                            _(
+                                "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
+                            ),
+                            _("Warning: Coil Name Conflict"),
+                            value=name,
+                        )
+                        if dialog.ShowModal() == wx.ID_OK:
+                            new_coil_name = (
+                                dialog.GetValue().strip()
+                            )  # Update coil_name with user input
+                            dialog.Destroy()
+                        else:
+                            dialog.Destroy()
+                            return
+
+                self.coil_registrations[new_coil_name] = self.coil_registrations.pop(name)
+                self.session.SetConfig("coil_registrations", self.coil_registrations)
+                self.coil_btns[name][0].SetLabel(new_coil_name)
+                self.coil_btns[new_coil_name] = self.coil_btns.pop(name)
+                Publisher.sendMessage(
+                    "Select coil",
+                    coil_name=name,
+                    coil_registration=None,
+                    new_coil_name=new_coil_name,
+                )
+
+            else:
+                dialog.Destroy()
+                return
 
         menu = wx.Menu()
         delete_coil = menu.Append(wx.ID_ANY, "Delete coil")
         save_coil = menu.Append(wx.ID_ANY, "Save coil to OBR file")
+        change_coil_name = menu.Append(wx.ID_ANY, "Change coil name")
 
         self.Bind(wx.EVT_MENU, (lambda event, name=name: DeleteCoil(event, name)), delete_coil)
         self.Bind(
             wx.EVT_MENU,
             (lambda event, name=name: self.OnSaveCoilToOBR(event, coil_name=name)),
             save_coil,
+        )
+        self.Bind(
+            wx.EVT_MENU,
+            (lambda event, name=name: RenameCoil(event, name)),
+            change_coil_name,
         )
         self.PopupMenu(menu)
         menu.Destroy()
@@ -1312,29 +1382,12 @@ class ObjectTab(wx.Panel):
             )
             try:
                 if dialog.ShowModal() == wx.ID_OK:
+                    dialog.OnRenameCoil()
                     (coil_name, coil_path, obj_fiducials, obj_orients, obj_id, tracker_id) = (
                         dialog.GetValue()
                     )
 
-                    if coil_name in self.coil_registrations and coil_name != "default_coil":
-                        # Warn that we are overwriting an old registration
-                        dialog = wx.TextEntryDialog(
-                            None,
-                            _(
-                                "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
-                            ),
-                            _("Warning: Coil Name Conflict"),
-                            value=coil_name,
-                        )
-                        if dialog.ShowModal() == wx.ID_OK:
-                            coil_name = (
-                                dialog.GetValue().strip()
-                            )  # Update coil_name with user input
-                            dialog.Destroy()
-                        else:
-                            dialog.Destroy()
-                            return  # Cancel the operation if the user closes the dialog or cancels
-
+                    self.coil_registrations = self.session.GetConfig("coil_registrations", {})
                     if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
                         coil_registration = {
                             "fiducials": obj_fiducials.tolist(),
@@ -1343,8 +1396,10 @@ class ObjectTab(wx.Panel):
                             "tracker_id": tracker_id,
                             "path": coil_path.decode(const.FS_ENCODE),
                         }
+
                         self.coil_registrations[coil_name] = coil_registration
                         self.session.SetConfig("coil_registrations", self.coil_registrations)
+
                         self.AddCoilButton(coil_name)  # Add a button for this coil to GUI
 
                         # if we just edited a currently selected coil_name, unselect it (to avoid possible conflicts caused by new registration)
@@ -1397,22 +1452,6 @@ class ObjectTab(wx.Panel):
                     coil_name = "default_coil"
                     tracker_id = self.tracker.tracker_id
 
-                if coil_name in self.coil_registrations and coil_name != "default_coil":
-                    # Warn that we are overwriting an old registration
-                    dialog = wx.TextEntryDialog(
-                        None,
-                        _(
-                            "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
-                        ),
-                        _("Warning: Coil Name Conflict"),
-                        value=coil_name,
-                    )
-                    if dialog.ShowModal() == wx.ID_OK:
-                        coil_name = dialog.GetValue().strip()  # Update coil_name with user input
-                    else:
-                        return  # Cancel the operation if the user closes the dialog or cancels
-                    dialog.Destroy()
-
                 if not os.path.exists(coil_path):
                     coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
@@ -1429,6 +1468,7 @@ class ObjectTab(wx.Panel):
                         "path": coil_path.decode(const.FS_ENCODE),
                     }
                     self.coil_registrations[coil_name] = coil_registration
+
                     self.session.SetConfig("coil_registrations", self.coil_registrations)
                     self.AddCoilButton(coil_name)  # Add a button for this coil to GUI
 
