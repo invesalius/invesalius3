@@ -2672,38 +2672,109 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def _export_surface(self, filename, filetype):
-        fileprefix = filename.split(".")[-2]
+        import os
+        fileprefix = os.path.splitext(filename)[0]
         renwin = self.interactor.GetRenderWindow()
-
         self.ChangeRenderOrderToExportFile()
 
-        if filetype == const.FILETYPE_RIB:
-            writer = vtkRIBExporter()
-            writer.SetFilePrefix(fileprefix)
-            writer.SetTexturePrefix(fileprefix)
-            writer.SetInput(renwin)
+#   Force all actors in renderer 3 to be visible
+        for i in range(self.renderers[3].GetActors().GetNumberOfItems()):
+            actor = self.renderers[3].GetActors().GetItemAsObject(i)
+            actor.SetVisibility(1)
+
+# Optional: force a redraw
+        self.interactor.Render()
+        print("\n DEBUG: Checking renderers and actors...")
+
+        for idx, renderer in enumerate(self.renderers):
+            if not renderer:
+                print(f"Renderer {idx} is None")
+                continue
+
+            num_actors = renderer.GetActors().GetNumberOfItems()
+            print(f"Renderer {idx}: {num_actors} actor(s)")
+
+    # Traverse actors
+            actors = renderer.GetActors()
+            actors.InitTraversal()
+            for i in range(num_actors):
+                actor = actors.GetNextActor()
+                visibility = actor.GetVisibility()
+                opacity = actor.GetProperty().GetOpacity()
+                print(f"  ↳ Actor {i}: Visible={visibility}, Opacity={opacity}")
+
+        progress = wx.ProgressDialog(
+            "Exporting File",
+            "Preparing export...",
+            maximum=100,
+            parent=None,
+            style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+        )
+        progress_destroyed = False
+
+        try:
+            keep_going, _ = progress.Update(10, "Initializing export...")
+            if not keep_going:
+                progress.Destroy()
+                return
+            wx.Yield()
+
+            if filetype == const.FILETYPE_RIB:
+                writer = vtkRIBExporter()
+                writer.SetFilePrefix(fileprefix)
+                writer.SetTexturePrefix(fileprefix)
+                writer.SetInput(renwin)
+                writer.Write()
+            elif filetype == const.FILETYPE_VRML:
+                writer = vtkVRMLExporter()
+                writer.SetFileName(filename)
+                writer.SetInput(renwin)
+                writer.Write()
+            elif filetype == const.FILETYPE_X3D:
+                writer = vtkX3DExporter()
+                writer.SetInput(renwin)
+                writer.SetFileName(filename)
+                writer.Update()
+                writer.Write()
+            elif filetype == const.FILETYPE_OBJ:
+                writer = vtkOBJExporter()
+                writer.SetFilePrefix(fileprefix)
+                writer.SetInput(renwin)
+                writer.Write()
+            elif filetype == const.FILETYPE_IV:
+                writer = vtkIVExporter()
+                writer.SetFileName(filename)
+                writer.SetInput(renwin)
+                writer.Write()
+
+            else:
+                progress.Destroy()
+                raise ValueError(f"Unsupported filetype: {filetype}")
+
+            # Simulate progress updates as in surface.py
+            num_updates = 20
+            for i in range(1, num_updates):
+                percent = int(10 + (i * 80 / num_updates))
+                keep_going, _ = progress.Update(percent, f"Exporting file: {percent}%")
+                if not keep_going:
+                    progress.Destroy()
+                    return
+                wx.MilliSleep(50)
+                wx.Yield()
+
+            # Actual write
             writer.Write()
-        elif filetype == const.FILETYPE_VRML:
-            writer = vtkVRMLExporter()
-            writer.SetFileName(filename)
-            writer.SetInput(renwin)
-            writer.Write()
-        elif filetype == const.FILETYPE_X3D:
-            writer = vtkX3DExporter()
-            writer.SetInput(renwin)
-            writer.SetFileName(filename)
-            writer.Update()
-            writer.Write()
-        elif filetype == const.FILETYPE_OBJ:
-            writer = vtkOBJExporter()
-            writer.SetFilePrefix(fileprefix)
-            writer.SetInput(renwin)
-            writer.Write()
-        elif filetype == const.FILETYPE_IV:
-            writer = vtkIVExporter()
-            writer.SetFileName(filename)
-            writer.SetInput(renwin)
-            writer.Write()
+
+            progress.Update(100, "Export complete.")
+            wx.Yield()
+
+        finally:
+            if progress and not progress_destroyed:
+                try:
+                    progress.Destroy()
+                    progress_destroyed = True
+                except Exception as e:
+                    print(f"Could not destroy progress dialog: {e}")
 
         self.RestoreRenderOrderAfterExportFile()
 
