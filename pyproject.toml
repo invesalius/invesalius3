@@ -1,6 +1,6 @@
 [project]
 name = "InVesalius"
-version = "3.1.99998"
+dynamic = ["version"]
 description = "3D medical imaging reconstruction software"
 keywords = [
   "medical imaging",
@@ -9,12 +9,97 @@ keywords = [
   "3D printing",
   "neuronavigation",
 ]
+dependencies = [
+    "cython==3.0.10",
+    "h5py==3.11.0",
+    "imageio==2.34.2",
+    "matplotlib==3.9.0",
+    "nibabel==5.2.1",
+    "numpy==1.26.4",
+    "onnx>=1.17.0",
+    "optitrack ; python_full_version == '3.8.*' and sys_platform == 'windows'",
+    "pillow==10.3.0",
+    "psutil==6.0.0",
+    "pyacvd==0.2.11",
+    "pyclaron ; python_full_version == '3.8.*' and sys_platform == 'windows'",
+    "pypubsub==4.0.3",
+    "pyserial==3.5",
+    "python-gdcm==3.0.24",
+    "requests>=2.32.3",
+    "scikit-image==0.24.0",
+    "scipy==1.14.0",
+    "setuptools-scm",
+    "tinygrad==0.10.2",
+    "torch>=2.3.1",
+    "vtk==9.3.0",
+    "wxpython==4.2.2",
+]
 license = { file = "LICENSE.txt" }
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = "==3.12.*"
+
+
+[dependency-groups]
+dev = [
+    "aioconsole==0.7.1",
+    "mido==1.2.10",
+    "mypy==1.10.1",
+    "nest-asyncio==1.6.0",
+    "pre-commit~=3.7.1",
+    "python-rtmidi==1.5.8",
+    "python-socketio[client]==5.11.3",
+    "requests==2.32.3",
+    "ruff~=0.5.0",
+    "scikit-learn==1.5.0",
+    "uvicorn[standard]==0.30.1",
+    "scikit-build-core",
+    "pytest==8.3.5",
+    "pytest-mock==3.14.0",
+]
+
+
+[project.gui-scripts]
+inv = 'invesalius.app:main'
+
+[project.optional-dependencies]
+installer = [
+    "pyinstaller>=6.12.0",
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'darwin'"},
+  { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+
+[build-system]
+requires = ["scikit-build-core", "cython >= 3.0.2", "numpy >= 1.26.4"]
+build-backend = "scikit_build_core.build"
+
+
+[tool.scikit-build]
+experimental = true
+wheel.packages = ["invesalius","invesalius_cy"]
+editable.mode = "inplace"
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 
 [tool.setuptools]
-packages = ["invesalius", "invesalius_cy"]
+packages = ["invesalius","invesalius_cy"]
+
+[tool.setuptools_scm]
+write_to = "invesalius/__version__.py"
+
 
 [tool.mypy]
 mypy_path = "typings"
@@ -34,6 +119,7 @@ no_implicit_reexport = false
 follow_imports = "skip" # change to normal later
 explicit_package_bases = true
 disable_error_code =  ["attr-defined", "no-redef"]
+
 
 [[tool.mypy.overrides]]
 module = 'wx.*'
@@ -60,7 +146,6 @@ module = [
     'urllib2.*',
     'optitrack.*',
     'ordereddict.*',
-    'keras.*',
     'Image.*',
     'mido.*',
     'ConfigParser.*',
@@ -70,7 +155,6 @@ module = [
     'Trekker.*',
     'sklearn.*',
     'usb.*',
-    'plaidml.*',
     'pypolaris.*',
     'pypolarisP4.*',
     'socketio.*',
@@ -83,13 +167,15 @@ module = [
     'win32com.client.*',
     'win32com.*',
     'sigar.*',
+    'numpy.*',
 ]
 ignore_missing_imports = true
+
 
 [tool.ruff]
 include = ["pyproject.toml", "invesalius/**/*.py",'setup.py','app.py',"typings/**/*.pyi"]
 line-length = 100
-# extend-exclude = ["plugins"]
+extend-exclude = ["invesalius/__version__.py"]
 
 [tool.ruff.lint]
 extend-select = ["UP","I"] # Introduces linting rules for pyupgrade and isort
@@ -97,3 +183,4 @@ extend-ignore = ["E731"]
 
 [tool.ruff.format]
 line-ending = "lf"
+

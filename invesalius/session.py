@@ -23,6 +23,7 @@ import configparser as ConfigParser
 import json
 import os
 from json.decoder import JSONDecodeError
+from pathlib import Path
 from random import randint
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
@@ -30,15 +31,38 @@ from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, deep_merge_dict
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
 CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.json")
 OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.cfg")
 
 STATE_PATH = os.path.join(inv_paths.USER_INV_DIR, "state.json")
 
 SESSION_ENCODING = "utf8"
+
+CONFIG_INIT = {
+    "mode": "",
+    "project_status": "",
+    "debug": False,
+    "debug_efield": False,
+    "language": "",
+    "random_id": randint(0, pow(10, 16)),
+    "surface_interpolation": 1,
+    "rendering": 0,
+    "slice_interpolation": 0,
+    "auto_reload_preview": False,
+    "recent_projects": [
+        (str(inv_paths.SAMPLE_DIR), "Cranium.inv3"),
+    ],
+    "last_dicom_folder": "",
+    "file_logging": 0,
+    "file_logging_level": 0,
+    "append_log_file": 0,
+    "logging_file": "",
+    "console_logging": 0,
+    "console_logging_level": 0,
+    "robot": {
+        "robot_ip_options": "",
+    },
+}
 
 
 # Only one session will be initialized per time. Therefore, we use
@@ -67,29 +91,23 @@ class Session(metaclass=Singleton):
     def CreateConfig(self) -> None:
         import invesalius.constants as const
 
-        self._config = {
-            "mode": const.MODE_RP,
-            "project_status": const.PROJECT_STATUS_CLOSED,
-            "debug": False,
-            "debug_efield": False,
-            "language": "",
-            "random_id": randint(0, pow(10, 16)),
-            "surface_interpolation": 1,
-            "rendering": 0,
-            "slice_interpolation": 0,
-            "auto_reload_preview": False,
-            "recent_projects": [
-                (str(inv_paths.SAMPLE_DIR), "Cranium.inv3"),
-            ],
-            "last_dicom_folder": "",
-            "file_logging": 0,
-            "file_logging_level": 0,
-            "append_log_file": 0,
-            "logging_file": "",
-            "console_logging": 0,
-            "console_logging_level": 0,
-        }
+        self._config = CONFIG_INIT
+        self._config["mode"] = const.MODE_RP
+        self._config["project_status"] = const.PROJECT_STATUS_CLOSED
+        self._config["robot"] = {"robot_ip_options": const.ROBOT_IPS}
+
         self.WriteConfigFile()
+
+    def CheckConfig(self) -> None:
+        if self._config["language"] != "":
+            import invesalius.constants as const
+
+            config_init = CONFIG_INIT
+            config_init["mode"] = const.MODE_RP
+            config_init["project_status"] = const.PROJECT_STATUS_CLOSED
+            config_init["robot"] = {"robot_ip_options": const.ROBOT_IPS}
+            self._config = deep_merge_dict(config_init, self._config.copy())
+            self.WriteConfigFile()
 
     def CreateState(self) -> None:
         self._state: Dict[str, Any] = {}
@@ -187,7 +205,9 @@ class Session(metaclass=Singleton):
         self._write_to_json(self._state, STATE_PATH)
 
     def _write_to_json(self, config_dict: dict, config_filename: "str | Path") -> None:
-        with open(config_filename, "w") as config_file:
+        config_path = Path(config_filename)
+        config_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure parent dir exists
+        with open(config_path, "w") as config_file:
             json.dump(config_dict, config_file, sort_keys=True, indent=4)
 
     def _add_to_recent_projects(self, item: Tuple[str, str]) -> None:

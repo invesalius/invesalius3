@@ -603,6 +603,7 @@ ID_CLEAN_MASK = wx.NewIdRef()
 ID_REORIENT_IMG = wx.NewIdRef()
 ID_FLOODFILL_MASK = wx.NewIdRef()
 ID_FILL_HOLE_AUTO = wx.NewIdRef()
+ID_FILL_HOLE_MANUALLY = wx.NewIdRef()
 ID_REMOVE_MASK_PART = wx.NewIdRef()
 ID_SELECT_MASK_PART = wx.NewIdRef()
 ID_MANUAL_SEGMENTATION = wx.NewIdRef()
@@ -618,6 +619,7 @@ ID_CROP_MASK = wx.NewIdRef()
 ID_DENSITY_MEASURE = wx.NewIdRef()
 ID_MASK_DENSITY_MEASURE = wx.NewIdRef()
 ID_CREATE_SURFACE = wx.NewIdRef()
+ID_REMOVE_NON_VISIBLE_FACES = wx.NewIdRef()
 ID_CREATE_MASK = wx.NewIdRef()
 ID_MASK_3D_PREVIEW = wx.NewIdRef()
 ID_MASK_3D_RELOAD = wx.NewIdRef()
@@ -820,6 +822,16 @@ BRAIN_R_MTMS = 7
 BRAIN_INTENSITY_MTMS = 8
 BRAIN_UUID = 9
 
+# Page order in the coregistration panel
+
+IMPORTS_PAGE = 0
+HEAD_PAGE = 1
+IMAGE_PAGE = 2
+TRACKER_PAGE = 3
+REFINE_PAGE = 4
+STYLUS_PAGE = 5
+STIMULATOR_PAGE = 6
+
 # ------------ Navigation defaults -------------------
 
 MARKER_COLOUR = (1.0, 1.0, 0.0)
@@ -842,7 +854,7 @@ DEBUGTRACKAPPROACH = 10
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b"COM1"
-NDI_IP = ["P9-13715.local", "P9-13719.local", "P9-25026.local"]
+NDI_IP = ["P9-13715.local", "P9-13719.local", "P9-25026.local", "P9-13835.local"]
 
 TRACKERS = [
     _("Claron MicronTracker"),

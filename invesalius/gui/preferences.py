@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from functools import partial
 
@@ -37,7 +38,7 @@ class Preferences(wx.Dialog):
 
         self.book = wx.Notebook(self, -1)
 
-        self.have_log_tab = 1
+        self.have_log_tab = 0
 
         self.visualization_tab = VisualizationTab(self.book)
         self.language_tab = LanguageTab(self.book)
@@ -124,7 +125,8 @@ class Preferences(wx.Dialog):
         rendering = session.GetConfig("rendering")
         surface_interpolation = session.GetConfig("surface_interpolation")
         language = session.GetConfig("language")
-        slice_interpolation = session.GetConfig("slice_interpolation")
+        # Must invert value as GUI returns 0 for Yes and 1 for No
+        slice_interpolation = not bool(session.GetConfig("slice_interpolation"))
 
         # logger = log.MyLogger()
         file_logging = log.invLogger.GetConfig("file_logging")
@@ -163,7 +165,11 @@ class VisualizationTab(wx.Panel):
         self.number_colors = 4
         self.cluster_volume = None
 
-        self.conf = dict(self.session.GetConfig("mep_configuration"))
+        self.conf = self.session.GetConfig("mep_configuration")
+        try:
+            self.conf = dict(self.conf)
+        except TypeError:
+            self.conf = {}
         self.conf["mep_colormap"] = self.conf.get("mep_colormap", "Viridis")
 
         bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
@@ -219,7 +225,9 @@ class VisualizationTab(wx.Panel):
         options = {
             const.RENDERING: self.rb_rendering.GetSelection(),
             const.SURFACE_INTERPOLATION: self.rb_inter.GetSelection(),
-            const.SLICE_INTERPOLATION: self.rb_inter_sl.GetSelection(),
+            const.SLICE_INTERPOLATION: not bool(
+                self.rb_inter_sl.GetSelection()
+            ),  # 0 for Yes, 1 for No
         }
         return options
 
@@ -1060,9 +1068,9 @@ class ObjectTab(wx.Panel):
     def OnRobotConnectionStatus(self, data):
         if data is None:
             return
+        if data == "Connected":
+            self.choice_robot_coil.Show(True)
 
-        self.choice_robot_coil.Show(data)
-        if data:
             self.robot_lbl.SetLabel("Robot is connected. Coil attached to robot: ")
         else:
             self.robot_lbl.SetLabel("Robot is not connected.")
@@ -1575,73 +1583,108 @@ class TrackerTab(wx.Panel):
         sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
-        lbl_rob = wx.StaticText(self, -1, _("Select IP for robot device: "))
+        lbl_rob = wx.StaticText(self, -1, _("IP for robot device: "))
 
         # ComboBox for spatial tracker device selection
         tooltip = _("Choose or type the robot IP")
-        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_IPS
+        robot_ip_options = self.robot.robot_ip_options
         choice_IP = wx.ComboBox(
             self, -1, "", choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER
         )
         choice_IP.SetToolTip(tooltip)
-        if self.robot.robot_ip is not None:
+
+        if self.robot.robot_ip in self.robot.robot_ip_options:
             choice_IP.SetSelection(robot_ip_options.index(self.robot.robot_ip))
-        else:
+            self.robot_ip = choice_IP.GetValue()
+
+        elif self.robot.robot_ip is not None:
+            choice_IP.SetValue(self.robot.robot_ip)
+            self.robot_ip = choice_IP.GetValue()
+
+        elif choice_IP.IsTextEmpty() and choice_IP.IsListEmpty():
+            choice_IP.ChangeValue(_("Select or type robot IP"))
+
+        elif choice_IP.IsTextEmpty():
             choice_IP.SetSelection(0)
+            self.robot_ip = choice_IP.GetValue()
+
         choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
         choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
         self.choice_IP = choice_IP
 
+        # ADD ip Robot
+        btn_rob_add_ip = wx.BitmapButton(self, -1, wx.ArtProvider.GetBitmap(wx.ART_PLUS))
+        btn_rob_add_ip.SetToolTip("Add a new IP to the list")
+        btn_rob_add_ip.Enable(1)
+        btn_rob_add_ip.Bind(wx.EVT_BUTTON, self.OnAddIP)
+        self.btn_rob_add_ip = btn_rob_add_ip
+
+        # Remove ip Robot
+        btn_rob_rem_ip = wx.BitmapButton(self, -1, wx.ArtProvider.GetBitmap(wx.ART_MINUS))
+        btn_rob_rem_ip.SetToolTip("Remove the selected IP from the list")
+        btn_rob_rem_ip.Enable(1)
+        btn_rob_rem_ip.Bind(wx.EVT_BUTTON, self.OnRemoveIP)
+        self.btn_rob_rem_ip = btn_rob_rem_ip
+
+        # Connect Robot button
         btn_rob = wx.Button(self, -1, _("Connect"))
-        btn_rob.SetToolTip("Connect to IP")
+        btn_rob.SetToolTip("Connect to the selected IP")
         btn_rob.Enable(1)
         btn_rob.Bind(wx.EVT_BUTTON, self.OnRobotConnect)
         self.btn_rob = btn_rob
 
         status_text = wx.StaticText(self, -1, "Status")
-        if self.robot.IsConnected():
-            status_text.SetLabelText("Robot is connected!")
-            if self.robot.matrix_tracker_to_robot is not None:
-                status_text.SetLabelText("Robot is fully setup!")
-        else:
-            status_text.SetLabelText("Robot is not connected!")
         self.status_text = status_text
 
         btn_rob_con = wx.Button(self, -1, _("Register"))
         btn_rob_con.SetToolTip("Register robot tracking")
         btn_rob_con.Enable(1)
         btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotRegister)
+
         if self.robot.IsConnected():
+            self.status_text.SetLabelText(_("Robot is connected!"))
+
             if self.matrix_tracker_to_robot is None:
                 btn_rob_con.Show()
             else:
                 btn_rob_con.SetLabel("Register Again")
                 btn_rob_con.Show()
+
         else:
+            self.status_text.SetLabelText(_("Robot is not connected!"))
             btn_rob_con.Hide()
+
         self.btn_rob_con = btn_rob_con
 
-        rob_sizer = wx.FlexGridSizer(rows=2, cols=3, hgap=5, vgap=5)
-        rob_sizer.AddMany(
+        rob_ip_sizer = wx.FlexGridSizer(rows=1, cols=5, hgap=3, vgap=3)
+        rob_ip_sizer.AddGrowableCol(3, 1)
+        rob_ip_sizer.AddMany(
             [
-                (lbl_rob, 0, wx.LEFT),
-                (choice_IP, 1, wx.EXPAND),
-                (btn_rob, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
-                (status_text, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
-                (0, 0),
-                (btn_rob_con, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
+                (lbl_rob, 0, wx.ALIGN_CENTER_VERTICAL),
+                (btn_rob_add_ip, 0, wx.ALIGN_CENTER_VERTICAL),
+                (btn_rob_rem_ip, 0, wx.ALIGN_CENTER_VERTICAL),
+                (choice_IP, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND),
+                (btn_rob, 0, wx.ALIGN_CENTER_VERTICAL),
             ]
         )
 
+        rob_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        rob_status_sizer.Add(status_text, 1, wx.LEFT | wx.ALIGN_CENTER_VERTICAL)
+        rob_status_sizer.AddStretchSpacer(1)
+        rob_status_sizer.Add(btn_rob_con, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL)
+
         rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
-        rob_static_sizer.Add(rob_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
+        rob_static_sizer.Add(rob_ip_sizer, 0, wx.ALL | wx.EXPAND, 7)
+        rob_static_sizer.Add(rob_status_sizer, 0, wx.ALL | wx.EXPAND, 7)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
-            [(sizer, 0, wx.ALL | wx.EXPAND, 10), (rob_static_sizer, 0, wx.ALL | wx.EXPAND, 10)]
+            [(sizer, 0, wx.ALL | wx.EXPAND, 7), (rob_static_sizer, 0, wx.ALL | wx.EXPAND, 7)]
         )
         self.SetSizerAndFit(main_sizer)
         self.Layout()
+
+        Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
@@ -1714,20 +1757,97 @@ class TrackerTab(wx.Panel):
     def ShowParent(self):  # show preferences dialog box
         self.GetGrandParent().Show()
 
+    def verifyFormatIP(self, robot_ip):
+        robot_ip_strip = robot_ip.strip()
+        full_ip_pattern = re.compile(
+            r"^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
+            r"\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
+            r"\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
+            r"\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)$"
+        )
+
+        if full_ip_pattern.match(robot_ip_strip):
+            return True
+        else:
+            self.status_text.SetLabelText(_("Robot is not connected and invalid IP!"))
+            return False
+
     def OnTxt_Ent(self, evt, ctrl):
-        self.robot_ip = str(ctrl.GetValue())
+        robot_ip_input = ctrl.GetValue()
+        robot_ip_input = re.sub(r"[^0-9.]", "", robot_ip_input)
+        ctrl.ChangeValue(robot_ip_input)
+
+        msg_box = _("Select or type robot IP:")
+
+        if robot_ip_input == "":
+            ctrl.ChangeValue(msg_box)
+        else:
+            self.btn_rob_con.Hide()
+            self.robot_ip = robot_ip_input
+            if self.verifyFormatIP(self.robot_ip):
+                self.status_text.SetLabelText(_("Robot is not connected!"))
 
     def OnChoiceIP(self, evt, ctrl):
         self.robot_ip = ctrl.GetStringSelection()
 
-    def OnRobotConnect(self, evt):
+    def OnAddIP(self, evt):
         if self.robot_ip is not None:
-            self.status_text.SetLabelText("Trying to connect to robot...")
+            new_ip = self.choice_IP.GetValue()
+
+            if new_ip is not None and self.verifyFormatIP(new_ip):
+                if new_ip not in self.robot.robot_ip_options:
+                    self.choice_IP.Append(new_ip)
+                    self.robot.robot_ip_options.append(new_ip)
+                    self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+                else:
+                    self.choice_IP.SetSelection(self.robot.robot_ip_options.index(new_ip))
+            else:
+                self.status_text.SetLabelText(_("Please select or enter valid IP!"))
+
+    def OnRemoveIP(self, evt):
+        if self.robot_ip is not None:
+            current_ip = self.choice_IP.GetValue()
+
+            confirm_dlg = wx.MessageDialog(
+                self,
+                _(f"Do you really want to remove the IP '{current_ip}' from the list?"),
+                _("Confirmation"),
+                wx.YES_NO | wx.ICON_QUESTION,
+            )
+
+            if confirm_dlg.ShowModal() == wx.ID_YES:
+                try:
+                    index = self.choice_IP.FindString(current_ip)
+                    self.choice_IP.Delete(index)
+
+                    self.robot.robot_ip_options.remove(current_ip)
+                    self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+
+                    if self.choice_IP.GetCount() > 0:
+                        self.choice_IP.SetSelection(0)
+                    else:
+                        self.choice_IP.SetValue("")
+
+                except Exception as e:
+                    wx.MessageBox(
+                        _(f"An error occurred while removing the IP:\n{e}"),
+                        "Erro",
+                        wx.OK | wx.ICON_ERROR,
+                    )
+
+            confirm_dlg.Destroy()
+
+    def OnRobotConnect(self, evt):
+        if self.robot_ip is not None and self.verifyFormatIP(self.robot_ip):
+            self.robot.is_robot_connected = False
+            self.status_text.SetLabelText(_("Trying to connect to robot..."))
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
             Publisher.sendMessage(
                 "Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip
             )
+        else:
+            self.status_text.SetLabelText(_("Please select or enter valid IP before connecting!"))
 
     def OnRobotRegister(self, evt):
         if sys.platform == "darwin":
@@ -1741,9 +1861,24 @@ class TrackerTab(wx.Panel):
             self.ShowParent()
 
     def OnRobotStatus(self, data):
-        if data:
-            self.status_text.SetLabelText("Setup robot transformation matrix:")
+        if data == "Connected":
+            self.robot.is_robot_connected = True
+            self.status_text.SetLabelText(_("Setup robot transformation matrix:"))
             self.btn_rob_con.Show()
+            self.Layout()
+
+            if (
+                self.robot.robot_ip not in self.robot.robot_ip_options
+                and self.robot.robot_ip is not None
+            ):
+                self.robot.robot_ip_options.append(self.robot.robot_ip)
+        else:
+            if self.robot.robot_ip is not None:
+                self.status_text.SetLabelText(_(f"{data} to robot on {self.robot.robot_ip}"))
+                self.btn_rob_con.Hide()
+            else:
+                self.status_text.SetLabelText(_(f"{data} to robot"))
+                self.btn_rob_con.Hide()
 
     def OnSetRobotTransformationMatrix(self, data):
         if self.robot.matrix_tracker_to_robot is not None:

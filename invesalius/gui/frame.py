@@ -23,6 +23,7 @@ import platform
 import subprocess
 import sys
 import webbrowser
+from datetime import datetime
 
 import wx
 import wx.aui
@@ -56,8 +57,11 @@ except ImportError:
 # need to be defined in constants.py
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range(3)]
 
+# Custom IDs for our new menu items
+[ID_SHOW_LOG_VIEWER] = [wx.NewIdRef() for number in range(1)]
+
 WILDCARD_EXPORT_SLICE = (
-    "HDF5 (*.hdf5)|*.hdf5|" "NIfTI 1 (*.nii)|*.nii|" "Compressed NIfTI (*.nii.gz)|*.nii.gz"
+    "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
 )
 
 IDX_EXT = {0: ".hdf5", 1: ".nii", 2: ".nii.gz"}
@@ -151,6 +155,7 @@ class Frame(wx.Frame):
         sub(self._HideContentPanel, "Hide content panel")
         sub(self._HideImportPanel, "Hide import panel")
         sub(self._HideTask, "Hide task panel")
+        sub(self._ShowTask, "Show task panel")
         sub(self._SetProjectName, "Set project name")
         sub(self._ShowContentPanel, "Show content panel")
         sub(self._ShowImportPanel, "Show import panel in frame")
@@ -169,7 +174,14 @@ class Frame(wx.Frame):
         """
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_IDLE, self.OnIdle)
+
+        # Bind all menu events to the OnMenuClick handler
+        # Main menu items
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
+
+        # Specific bindings for undo/redo
+        self.Bind(wx.EVT_MENU, self.OnUndo, id=const.ID_EDIT_UNDO)
+        self.Bind(wx.EVT_MENU, self.OnRedo, id=const.ID_EDIT_REDO)
 
         # Close InVesalius main window, hence exit the software.
         self.Bind(wx.EVT_CLOSE, self.OnExit)
@@ -192,14 +204,33 @@ class Frame(wx.Frame):
         Handle all key events at a global level.
         """
         keycode = event.GetKeyCode()
+        modifiers = event.GetModifiers()
 
-        # If the key is a move marker key, publish a message to move the marker.
-        if keycode in const.MOVEMENT_KEYCODES and not self.edit_data_notebook_label:
+        # Check if the focus is on a text entry field
+        focused = wx.Window.FindFocus()
+        is_search_field = False
+        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
+            is_search_field = True
+
+        # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
+        if modifiers & wx.MOD_CONTROL:
+            unicode = event.GetUnicodeKey()
+            if unicode in (ord("s"), ord("S"), ord("q"), ord("Q")):
+                event.Skip()
+                return
+
+        # If the key is a move marker key, publish a message to move the marker,
+        # but only if we're not in a search field
+        if (
+            keycode in const.MOVEMENT_KEYCODES
+            and not self.edit_data_notebook_label
+            and not is_search_field
+        ):
             Publisher.sendMessage("Move marker by keyboard", keycode=keycode)
             return
 
         # Similarly with 'Del' key; publish a message to delete selected markers.
-        if keycode == wx.WXK_DELETE and not self.edit_data_notebook_label:
+        if keycode == wx.WXK_DELETE and not self.edit_data_notebook_label and not is_search_field:
             Publisher.sendMessage("Delete selected markers")
             return
 
@@ -415,8 +446,17 @@ class Frame(wx.Frame):
         """
         Hide task panel.
         """
-        self.aui_manager.GetPane("Tasks").Hide()
-        self.aui_manager.Update()
+        # Make sure the task panel is hidden
+        task_pane = self.aui_manager.GetPane("Tasks")
+        if task_pane.IsShown():
+            task_pane.Hide()
+            self.aui_manager.Update()
+
+            # Force UI refresh
+            wx.Yield()
+
+            # Ensure the layout button in the toolbar is toggled properly
+            Publisher.sendMessage("Set layout button full")
 
     def _SetProjectName(self, proj_name=""):
         """
@@ -504,16 +544,16 @@ class Frame(wx.Frame):
 
     def ExitDialog(self):
         msg = _("Are you sure you want to exit?")
-        if sys.platform == "darwin":
-            dialog = wx.RichMessageDialog(
-                None, "", msg, wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
-            )
-            dialog.ShowCheckBox("Store session", True)
-        else:
-            dialog = wx.RichMessageDialog(
-                None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
-            )
-            dialog.ShowCheckBox("Store session", True)
+        dialog = wx.RichMessageDialog(
+            None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
+        )
+        dialog.ShowCheckBox("Store session", False)
+
+        def on_close(event):
+            dialog.EndModal(wx.ID_NO)
+            event.Skip()
+
+        dialog.Bind(wx.EVT_CLOSE, on_close)
 
         answer = dialog.ShowModal()
         save = dialog.IsCheckBoxChecked()
@@ -538,8 +578,21 @@ class Frame(wx.Frame):
         if status:
             Publisher.sendMessage("Disconnect tracker")
             Publisher.sendMessage("Exit")
+
+            # Clean up any open log viewer
+            try:
+                from invesalius import enhanced_logging
+
+                enhanced_logging.enhanced_logger.cleanup()
+            except Exception as e:
+                import traceback
+
+                traceback.print_exc()
+                print(f"Error cleaning up log viewer: {e}")
+
             if status == 1:
                 Publisher.sendMessage("Exit session")
+            self.Destroy()
 
     def OnMenuClick(self, evt):
         """
@@ -592,6 +645,8 @@ class Frame(wx.Frame):
                 id
             ]
             self.SwapAxes(axes)
+        elif id == const.ID_REORIENT_IMG:
+            self.OnReorientImg()
         elif id == wx.ID_UNDO:
             self.OnUndo()
         elif id == wx.ID_REDO:
@@ -601,13 +656,12 @@ class Frame(wx.Frame):
         elif id == const.ID_GOTO_COORD:
             self.GoToDialogScannerCoord()
 
+        # USING MASKS
         elif id == const.ID_BOOLEAN_MASK:
             self.OnMaskBoolean()
+
         elif id == const.ID_CLEAN_MASK:
             self.OnCleanMask()
-
-        elif id == const.ID_REORIENT_IMG:
-            self.OnReorientImg()
 
         elif id == const.ID_MASK_DENSITY_MEASURE:
             ddlg = dlg.MaskDensityDialog(self)
@@ -632,11 +686,14 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Disable actual style")
             Publisher.sendMessage("Enable style", style=const.SLICE_STATE_WATERSHED)
 
+        elif id == const.ID_FILL_HOLE_AUTO:
+            self.OnFillHolesAutomatically()
+
         elif id == const.ID_FLOODFILL_MASK:
             self.OnFillHolesManually()
 
-        elif id == const.ID_FILL_HOLE_AUTO:
-            self.OnFillHolesAutomatically()
+        elif id == const.ID_REORIENT_IMG:
+            self.OnReorientImg()
 
         elif id == const.ID_REMOVE_MASK_PART:
             self.OnRemoveMaskParts()
@@ -691,11 +748,45 @@ class Frame(wx.Frame):
         elif id == const.ID_CREATE_SURFACE:
             Publisher.sendMessage("Open create surface dialog")
 
+        elif id == const.ID_REMOVE_NON_VISIBLE_FACES:
+            dialog = dlg.RemoveNonVisibleFacesDialog(self)
+            dialog.Show()
+
         elif id == const.ID_CREATE_MASK:
             Publisher.sendMessage("New mask from shortcut")
 
         elif id == const.ID_PLUGINS_SHOW_PATH:
             self.ShowPluginsFolder()
+
+        elif id == ID_SHOW_LOG_VIEWER:
+            self.OnShowLogViewer(evt)
+
+        # Handle task panel toggle
+        elif id == const.ID_TASK_BAR:
+            task_pane = self.aui_manager.GetPane("Tasks")
+            if task_pane.IsShown():
+                self._HideTask()
+            else:
+                self._ShowTask()
+
+            # Force focus on main window to ensure UI updates properly
+            self.SetFocus()
+
+    def _HideTask(self):
+        """
+        Hide task panel.
+        """
+        # Make sure the task panel is hidden
+        task_pane = self.aui_manager.GetPane("Tasks")
+        if task_pane.IsShown():
+            task_pane.Hide()
+            self.aui_manager.Update()
+
+            # Force UI refresh
+            wx.Yield()
+
+            # Ensure the layout button in the toolbar is toggled properly
+            Publisher.sendMessage("Set layout button full")
 
     def OnDbsMode(self):
         st = self.actived_dbs_mode.IsChecked()
@@ -756,17 +847,15 @@ class Frame(wx.Frame):
             rendering = values[const.RENDERING]
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
-            slice_interpolation = values[const.SLICE_INTERPOLATION]
-            file_logging = values[const.FILE_LOGGING]
-            file_logging_level = values[const.FILE_LOGGING_LEVEL]
-            append_log_file = values[const.APPEND_LOG_FILE]
-            logging_file = values[const.LOGFILE]
-            console_logging = values[const.CONSOLE_LOGGING]
-            console_logging_level = values[const.CONSOLE_LOGGING_LEVEL]
-            logging = values[const.LOGGING]
-            logging_level = values[const.LOGGING_LEVEL]
-            append_log_file = values[const.APPEND_LOG_FILE]
-            logging_file = values[const.LOGFILE]
+            slice_interpolation = values.get(const.SLICE_INTERPOLATION, 0)
+            file_logging = values.get(const.FILE_LOGGING, 0)
+            file_logging_level = values.get(const.FILE_LOGGING_LEVEL, 0)
+            append_log_file = values.get(const.APPEND_LOG_FILE, 0)
+            logging_file = values.get(const.LOGFILE, "")
+            console_logging = values.get(const.CONSOLE_LOGGING, 0)
+            console_logging_level = values.get(const.CONSOLE_LOGGING_LEVEL, 0)
+            logging = values.get(const.LOGGING, 0)
+            logging_level = values.get(const.LOGGING_LEVEL, 0)
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
@@ -899,10 +988,10 @@ class Frame(wx.Frame):
         Publisher.sendMessage("Update scroll")
         Publisher.sendMessage("Reload actual slice")
 
-    def OnUndo(self):
+    def OnUndo(self, evt=None):
         Publisher.sendMessage("Undo edition")
 
-    def OnRedo(self):
+    def OnRedo(self, evt=None):
         Publisher.sendMessage("Redo edition")
 
     def OnGotoSlice(self):
@@ -948,20 +1037,17 @@ class Frame(wx.Frame):
     def OnBrainSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog
 
-        if (
-            deep_learning_seg_dialog.HAS_PLAIDML
-            or deep_learning_seg_dialog.HAS_THEANO
-            or deep_learning_seg_dialog.HAS_TORCH
-        ):
+        if deep_learning_seg_dialog.HAS_TORCH or deep_learning_seg_dialog.HAS_TINYGRAD:
             dlg = deep_learning_seg_dialog.BrainSegmenterDialog(self)
             dlg.Show()
+
         else:
             dlg = wx.MessageDialog(
                 self,
                 _(
                     "It's not possible to run brain segmenter because your system doesn't have the following modules installed:"
                 )
-                + " Torch, PlaidML or Theano",
+                + " Torch",
                 "InVesalius 3 - Brain segmenter",
                 wx.ICON_INFORMATION | wx.OK,
             )
@@ -1052,6 +1138,24 @@ class Frame(wx.Frame):
             subprocess.Popen(["open", path])
         else:
             subprocess.Popen(["xdg-open", path])
+
+    def OnShowLogViewer(self, evt):
+        """Show the log viewer."""
+        try:
+            # Import the enhanced_logging module
+            from invesalius import enhanced_logging
+
+            # Show the log viewer
+            enhanced_logging.show_log_viewer(self)
+
+        except Exception as e:
+            print(f"Error showing log viewer: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+            # Show error message
+            wx.MessageBox(f"Error showing log viewer: {e}", "Error", wx.OK | wx.ICON_ERROR)
 
 
 # ------------------------------------------------------------------
@@ -1278,6 +1382,10 @@ class MenuBar(wx.MenuBar):
         self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, ("New\tCtrl+Shift+C"))
         self.create_surface.Enable(False)
 
+        self.remove_non_visible = surface_menu.Append(
+            const.ID_REMOVE_NON_VISIBLE_FACES, _("Remove non-visible faces")
+        )
+
         # Image menu
         image_menu = wx.Menu()
 
@@ -1317,6 +1425,13 @@ class MenuBar(wx.MenuBar):
         tools_menu.Append(-1, _("Planning"), planning_menu)
         tools_menu.Append(-1, _("Segmentation"), segmentation_menu)
         tools_menu.Append(-1, _("Surface"), surface_menu)
+
+        # Add separator before debug tools
+        tools_menu.AppendSeparator()
+
+        # Add log viewer and error handling test menu items
+        tools_menu.Append(ID_SHOW_LOG_VIEWER, _("Show Log Viewer"))
+
         self.tools_menu = tools_menu
 
         # View
@@ -1424,7 +1539,7 @@ class MenuBar(wx.MenuBar):
         session = ses.Session()
         slice_interpolation = session.GetConfig("slice_interpolation")
 
-        return slice_interpolation != 0
+        return slice_interpolation
 
     def NavigationModeStatus(self):
         session = ses.Session()
@@ -1700,6 +1815,9 @@ class ProjectToolBar(AuiToolBar):
         sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
 
+        # Bind events for toolbar buttons
+        self.Bind(wx.EVT_TOOL, self.OnToolClick)
+
     def __init_items(self):
         """
         Add tools into toolbar.
@@ -1718,12 +1836,6 @@ class ProjectToolBar(AuiToolBar):
 
         path = d.joinpath("preferences.png")
         BMP_PREFERENCES = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-        # path = d.joinpath("print_original.png")
-        # BMP_PRINT = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-
-        # path = d.joinpath("tool_photo_original.png")
-        # BMP_PHOTO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
         self.AddTool(
@@ -1794,6 +1906,20 @@ class ProjectToolBar(AuiToolBar):
         for tool in self.enable_items:
             self.EnableTool(tool, True)
         self.Refresh()
+
+    def OnToolClick(self, evt):
+        """
+        Handle clicks on toolbar buttons by forwarding the event to the parent frame.
+        This ensures toolbar buttons trigger the same actions as menu items.
+        """
+        try:
+            # Forward to parent's menu click handler
+            wx.PostEvent(self.parent, evt)
+        except Exception as e:
+            print(f"Error handling toolbar click: {e}")
+            import traceback
+
+            traceback.print_exc()
 
 
 # ------------------------------------------------------------------
@@ -2185,10 +2311,11 @@ class SliceToolBar(AuiToolBar):
             state = self.GetToolToggled(item)
             if state and (item != id):
                 self.ToggleTool(item, False)
+
         # self.ToggleTool(const.SLICE_STATE_SCROLL, self.GetToolToggled(const.SLICE_STATE_CROSS))
         # self.Update()
-        ##self.sst.SetToggle(self.sct.IsToggled())
-        ##print ">>>", self.sst.IsToggled()
+        # self.sst.SetToggle(self.sct.IsToggled())
+        # print ">>>", self.sst.IsToggled()
         # print ">>>", self.sst.GetState()
 
     def ToggleItem(self, _id, value):
@@ -2213,6 +2340,11 @@ class SliceToolBar(AuiToolBar):
         self.Refresh()
 
 
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
+
+
 class LayoutToolBar(AuiToolBar):
     """
     Toolbar related to general layout. Contains the following buttons:
@@ -2229,6 +2361,7 @@ class LayoutToolBar(AuiToolBar):
         self.SetToolBitmapSize(wx.Size(32, 32))
 
         self.parent = parent
+        self.enable_items = [ID_LAYOUT, ID_TEXT, ID_RULER]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
@@ -2236,7 +2369,6 @@ class LayoutToolBar(AuiToolBar):
         self.ontool_layout = False
         self.ontool_text = True
         self.ontool_ruler = True
-        self.enable_items = [ID_TEXT]
 
         self.Realize()
         self.SetStateProjectClose()
@@ -2352,27 +2484,7 @@ class LayoutToolBar(AuiToolBar):
             if state and (item != id):
                 self.ToggleTool(item, False)
 
-    def SetStateProjectClose(self):
-        """
-        Disable menu items (e.g. text) when project is closed.
-        """
-        self.ontool_text = True
-        self.ontool_ruler = True
-        self.ToggleText()
-        self.HideRulers()
-        for tool in self.enable_items:
-            self.EnableTool(tool, False)
-
-    def SetStateProjectOpen(self):
-        """
-        Disable menu items (e.g. text) when project is closed.
-        """
-        self.ontool_text = False
-        self.ontool_ruler = True
-        self.ToggleText()
-        self.HideRulers()
-        for tool in self.enable_items:
-            self.EnableTool(tool, True)
+        event.Skip()
 
     def ToggleLayout(self):
         """
@@ -2380,13 +2492,17 @@ class LayoutToolBar(AuiToolBar):
         """
         if self.ontool_layout:
             self.SetToolNormalBitmap(ID_LAYOUT, self.BMP_WITHOUT_MENU)
-            Publisher.sendMessage("Show task panel")
+            # Get parent frame and call its show method
+            parent = self.GetParent()
+            parent._ShowTask()
             self.SetToolShortHelp(ID_LAYOUT, _("Hide task panel"))
             self.ontool_layout = False
         else:
             self.bitmap = self.BMP_WITH_MENU
             self.SetToolNormalBitmap(ID_LAYOUT, self.BMP_WITH_MENU)
-            Publisher.sendMessage("Hide task panel")
+            # Get parent frame and call its hide method
+            parent = self.GetParent()
+            parent._HideTask()
             self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
             self.ontool_layout = True
 
@@ -2436,10 +2552,37 @@ class LayoutToolBar(AuiToolBar):
         else:
             self.ShowRulers()
 
+    def SetStateProjectClose(self):
+        """
+        Disable menu items (e.g. text) when project is closed.
+        """
+        self.ontool_text = True
+        self.ontool_ruler = True
+        self.ToggleText()
+        self.HideRulers()
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
+
+    def SetStateProjectOpen(self):
+        """
+        Disable menu items (e.g. text) when project is closed.
+        """
+        self.ontool_text = False
+        self.ontool_ruler = True
+        self.ToggleText()
+        self.HideRulers()
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
+
 
 class HistoryToolBar(AuiToolBar):
     """
-    Toolbar related to project history. Contains undo and redo buttons.
+    Toolbar related to general undo and redo operations.
     """
 
     def __init__(self, parent):
@@ -2449,11 +2592,14 @@ class HistoryToolBar(AuiToolBar):
         self.SetToolBitmapSize(wx.Size(32, 32))
 
         self.parent = parent
+        self.enable_items = [wx.ID_UNDO, wx.ID_REDO]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
 
         self.Realize()
+        self.EnableTool(wx.ID_UNDO, False)
+        self.EnableTool(wx.ID_REDO, False)
 
     def __bind_events(self):
         """
@@ -2474,19 +2620,20 @@ class HistoryToolBar(AuiToolBar):
         """
         Add tools into toolbar.
         """
+        # Load bitmaps
         d = inv_paths.ICON_DIR
 
-        # Bitmaps for undo/redo buttons
-        p = os.path.join(d, "undo_original.png")
-        self.BMP_UNDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "undo_original.png")
+        BMP_UNDO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
-        p = os.path.join(d, "redo_original.png")
-        self.BMP_REDO = wx.Bitmap(str(p), wx.BITMAP_TYPE_PNG)
+        path = os.path.join(d, "redo_original.png")
+        BMP_REDO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
+        # Add tool items to toolbar
         self.AddTool(
             wx.ID_UNDO,
             "",
-            self.BMP_UNDO,
+            BMP_UNDO,
             wx.NullBitmap,
             wx.ITEM_NORMAL,
             short_help_string=_("Undo"),
@@ -2495,14 +2642,11 @@ class HistoryToolBar(AuiToolBar):
         self.AddTool(
             wx.ID_REDO,
             "",
-            self.BMP_REDO,
+            BMP_REDO,
             wx.NullBitmap,
             wx.ITEM_NORMAL,
             short_help_string=_("Redo"),
         )
-
-        self.EnableTool(wx.ID_UNDO, False)
-        self.EnableTool(wx.ID_REDO, False)
 
     def OnUndo(self, event):
         Publisher.sendMessage("Undo edition")
@@ -2511,15 +2655,15 @@ class HistoryToolBar(AuiToolBar):
         Publisher.sendMessage("Redo edition")
 
     def OnEnableUndo(self, value):
-        if value:
-            self.EnableTool(wx.ID_UNDO, True)
-        else:
-            self.EnableTool(wx.ID_UNDO, False)
+        """
+        Enable or disable undo tool, according to given value.
+        """
+        self.EnableTool(wx.ID_UNDO, value)
         self.Refresh()
 
     def OnEnableRedo(self, value):
-        if value:
-            self.EnableTool(wx.ID_REDO, True)
-        else:
-            self.EnableTool(wx.ID_REDO, False)
+        """
+        Enable or disable redo tool, according to given value.
+        """
+        self.EnableTool(wx.ID_REDO, value)
         self.Refresh()
