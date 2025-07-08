@@ -1420,8 +1420,8 @@ class SurfaceManager:
                 # writer.SetColorModeToUniformCellColor()
                 # writer.SetColor(255, 0, 0)
 
-            # The following filetypes are handled in viewer_voulme.py
-            
+            # The following filetypes are handled in viewer_volume.py
+
             # elif filetype == const.FILETYPE_IV:
             #   writer = vtkIVWriter()
             # elif filetype == const.FILETYPE_X3D:
