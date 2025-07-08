@@ -29,7 +29,6 @@ import time
 import traceback
 import gc
 
-
 import numpy as np
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
@@ -50,8 +49,6 @@ from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
-from vtkmodules.vtkIOExport import vtkOBJExporter, vtkVRMLExporter
-from vtkmodules.vtkIOLegacy import vtkPolyDataWriter
 
 from invesalius.pubsub import pub as Publisher
 
@@ -78,7 +75,6 @@ from invesalius.data.converters import convert_custom_bin_to_vtk
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.utils import new_name_by_pattern
-
 
 # TODO: Verificar ReleaseDataFlagOn and SetSource
 
