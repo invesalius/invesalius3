@@ -58,7 +58,7 @@ except ImportError:
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range(3)]
 
 # Custom IDs for our new menu items
-[ID_SHOW_LOG_VIEWER] = [wx.NewIdRef() for number in range(1)]
+[ID_SHOW_LOG_VIEWER, ID_INTERACTIVE_SHELL] = [wx.NewIdRef() for number in range(2)]
 
 WILDCARD_EXPORT_SLICE = (
     "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
@@ -206,11 +206,22 @@ class Frame(wx.Frame):
         keycode = event.GetKeyCode()
         modifiers = event.GetModifiers()
 
-        # Check if the focus is on a text entry field
+        # Check if the focus is on a text entry field or interactive shell
         focused = wx.Window.FindFocus()
         is_search_field = False
+        is_shell_focused = False
         if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
             is_search_field = True
+
+        # Check if the shell is focused by looking for shell-related windows
+        if focused:
+            # Check if we're in the interactive shell
+            parent = focused.GetParent()
+            while parent:
+                if hasattr(parent, "__class__") and "Shell" in parent.__class__.__name__:
+                    is_shell_focused = True
+                    break
+                parent = parent.GetParent()
 
         # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
         if modifiers & wx.MOD_CONTROL:
@@ -220,17 +231,23 @@ class Frame(wx.Frame):
                 return
 
         # If the key is a move marker key, publish a message to move the marker,
-        # but only if we're not in a search field
+        # but only if we're not in a search field or shell
         if (
             keycode in const.MOVEMENT_KEYCODES
             and not self.edit_data_notebook_label
             and not is_search_field
+            and not is_shell_focused
         ):
             Publisher.sendMessage("Move marker by keyboard", keycode=keycode)
             return
 
         # Similarly with 'Del' key; publish a message to delete selected markers.
-        if keycode == wx.WXK_DELETE and not self.edit_data_notebook_label and not is_search_field:
+        if (
+            keycode == wx.WXK_DELETE
+            and not self.edit_data_notebook_label
+            and not is_search_field
+            and not is_shell_focused
+        ):
             Publisher.sendMessage("Delete selected markers")
             return
 
@@ -760,6 +777,8 @@ class Frame(wx.Frame):
 
         elif id == ID_SHOW_LOG_VIEWER:
             self.OnShowLogViewer(evt)
+        elif id == ID_INTERACTIVE_SHELL:
+            self.OnInteractiveShell(evt)
 
         # Handle task panel toggle
         elif id == const.ID_TASK_BAR:
@@ -1157,6 +1176,51 @@ class Frame(wx.Frame):
             # Show error message
             wx.MessageBox(f"Error showing log viewer: {e}", "Error", wx.OK | wx.ICON_ERROR)
 
+    def OnInteractiveShell(self, evt):
+        """Show the interactive Python shell."""
+        try:
+            # Import the interactive shell module
+            from invesalius.data.slice_ import Slice
+            from invesalius.gui.interactive_shell import InteractiveShellFrame
+            from invesalius.project import Project
+
+            # Get current project and slice singleton if available
+            project = Project()
+            slice_singleton = Slice()
+
+            # Create context dictionary with useful objects
+            app_context = {
+                "project": project,
+                "slice": slice_singleton,
+                "frame": self,
+                "Publisher": None,  # Will be set below
+            }
+
+            # Import Publisher for shell access
+            try:
+                from invesalius.pubsub import pub as Publisher
+
+                app_context["Publisher"] = Publisher
+            except ImportError:
+                pass
+
+            # Check if shell window already exists
+            if not hasattr(self, "_shell_window") or not self._shell_window:
+                self._shell_window = InteractiveShellFrame(self, app_context)
+
+            # Show the shell window
+            self._shell_window.Show()
+            self._shell_window.Raise()
+
+        except Exception as e:
+            print(f"Error showing interactive shell: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+            # Show error message
+            wx.MessageBox(f"Error showing interactive shell: {e}", "Error", wx.OK | wx.ICON_ERROR)
+
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -1431,6 +1495,7 @@ class MenuBar(wx.MenuBar):
 
         # Add log viewer and error handling test menu items
         tools_menu.Append(ID_SHOW_LOG_VIEWER, _("Show Log Viewer"))
+        tools_menu.Append(ID_INTERACTIVE_SHELL, _("Interactive Shell"))
 
         self.tools_menu = tools_menu
 
