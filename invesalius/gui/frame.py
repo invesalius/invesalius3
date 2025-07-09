@@ -208,6 +208,7 @@ class Frame(wx.Frame):
         keycode = event.GetKeyCode()
         modifiers = event.GetModifiers()
 
+        # Check if the focus is on a text entry field or interactive shell
         focused = wx.Window.FindFocus()
         is_search_field = False
         is_shell_focused = False
