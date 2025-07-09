@@ -3026,11 +3026,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.cortex_position_orientation = CoGposition + CoGorientation
 
     def UpdateCoilTarget(self, coil_target):
+        # Find markers associated with the given coil_target label
         markers = self.markers.FindLabel(coil_target)
         if markers:
             wx.CallAfter(Publisher.sendMessage, "Press robot button", pressed=False)
+            # Look for an existing marker that is a COIL_TARGET
             for marker in markers:
                 if marker.marker_type == MarkerType.COIL_TARGET:
+                    # Set the found marker as the current target
                     self.markers.SetTarget(marker.marker_id)
                     wx.CallAfter(Publisher.sendMessage, "Press robot button", pressed=True)
                     return  # Exit once we find the first valid coil target
@@ -4176,23 +4179,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if ctrl.GetValue():
             Publisher.sendMessage("Hide markers", markers=self.markers.list)
             ctrl.SetLabel("Show all")
-
-            ##DEBUG!!
-            wx.CallAfter(
-                Publisher.sendMessage,
-                "NeuroSimo to Neuronavigation: Update coil target",
-                coil_target="C4",
-            )
         else:
             Publisher.sendMessage("Show markers", markers=self.markers.list)
-
-            ##DEBUG!!
-            wx.CallAfter(
-                Publisher.sendMessage,
-                "NeuroSimo to Neuronavigation: Update coil target",
-                coil_target="C3",
-            )
-
             ctrl.SetLabel("Hide all")
 
     def OnSaveMarkers(self, evt):
