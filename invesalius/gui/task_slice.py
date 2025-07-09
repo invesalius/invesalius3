@@ -824,7 +824,7 @@ class EditionTools(wx.Panel):
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnGradientChanged, self.gradient_thresh)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
         self.cbox_mask_edit_3d.Bind(wx.EVT_CHECKBOX, self.OnCheckMaskEdit3D)
-        self.btn_do_3d_edit.Bind(wx.EVT_BUTTON, self.OnApplyMaskEdit3D)
+        self.btn_do_3d_edit.Bind(wx.EVT_BUTTON, self.OnCutMaskFrom3D)
         self.combo_mask_edit_3d_op.Bind(wx.EVT_COMBOBOX, self.OnComboMaskEdit3DMode)
         self.cbox_mask_edit_3d_depth.Bind(wx.EVT_CHECKBOX, self.OnUseDepthMaskEdit3D)
         self.spin_mask_edit_3d_depth.Bind(wx.EVT_SPINCTRLDOUBLE, self.OnSpinDepthMaskEdit3D)
@@ -941,8 +941,8 @@ class EditionTools(wx.Panel):
         else:
             Publisher.sendMessage("Disable style", style=style_id)
 
-    def OnApplyMaskEdit3D(self, evt: wx.CommandEvent):
-        Publisher.sendMessage("M3E apply edit")
+    def OnCutMaskFrom3D(self, evt: wx.CommandEvent):
+        Publisher.sendMessage("M3E cut mask from 3D")
 
     def OnComboMaskEdit3DMode(self, evt: wx.CommandEvent):
         op_id = evt.GetSelection()
