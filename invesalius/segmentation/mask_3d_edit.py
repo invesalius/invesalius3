@@ -193,6 +193,7 @@ class Mask3DEditor:
             mask_cut(_mat, sx, sy, sz, _filter, self.model_to_screen, _mat)
 
         _cur_mask.matrix[1:, 1:, 1:] = _mat
+        _cur_mask.was_edited = True
         _cur_mask.modified(all_volume=True)
 
         # Discard all buffers to reupdate view
