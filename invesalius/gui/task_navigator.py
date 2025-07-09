@@ -3028,16 +3028,17 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def UpdateCoilTarget(self, coil_target):
         markers = self.markers.FindLabel(coil_target)
         if markers:
+            wx.CallAfter(Publisher.sendMessage, "Press robot button", pressed=False)
             for marker in markers:
                 if marker.marker_type == MarkerType.COIL_TARGET:
                     self.markers.SetTarget(marker.marker_id)
-                    Publisher.sendMessage("Press robot button", pressed=True)
+                    wx.CallAfter(Publisher.sendMessage, "Press robot button", pressed=True)
                     return  # Exit once we find the first valid coil target
 
             # If no marker with COIL_TARGET type was found, create a new one
             self.markers.CreateCoilTargetFromLandmark(markers[0], markers[0].label)
             self.markers.SetTarget(-1)
-            Publisher.sendMessage("Press robot button", pressed=True)
+            wx.CallAfter(Publisher.sendMessage, "Press robot button", pressed=True)
         return
 
     def SetBrainTarget(self, brain_targets):
