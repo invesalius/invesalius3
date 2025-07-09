@@ -2505,6 +2505,9 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.robot_track_target_button)
 
     def PressRobotTrackTargetButton(self, pressed):
+        if pressed:
+            if not self.robot_track_target_button.IsEnabled():
+                return
         self.UpdateToggleButton(self.robot_track_target_button, pressed)
         self.OnRobotTrackTargetButton()
 
@@ -2844,7 +2847,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self.GetRotationPosition, "Send coil position and rotation")
         Publisher.subscribe(self.CreateMarkerEfield, "Create Marker from tangential")
         Publisher.subscribe(self.UpdateCortexMarker, "Update Cortex Marker")
-        Publisher.subscribe(self.UpdateCoilTarget, "NeuroSimo to Neuronavigation: Update coil target")
+        Publisher.subscribe(
+            self.UpdateCoilTarget, "NeuroSimo to Neuronavigation: Update coil target"
+        )
 
         # Update main_coil combobox
         Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
@@ -3026,11 +3031,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             for marker in markers:
                 if marker.marker_type == MarkerType.COIL_TARGET:
                     self.markers.SetTarget(marker.marker_id)
+                    Publisher.sendMessage("Press robot button", pressed=True)
                     return  # Exit once we find the first valid coil target
 
             # If no marker with COIL_TARGET type was found, create a new one
             self.markers.CreateCoilTargetFromLandmark(markers[0], markers[0].label)
             self.markers.SetTarget(-1)
+            Publisher.sendMessage("Press robot button", pressed=True)
         return
 
     def SetBrainTarget(self, brain_targets):
@@ -4170,14 +4177,20 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             ctrl.SetLabel("Show all")
 
             ##DEBUG!!
-            wx.CallAfter(Publisher.sendMessage, "NeuroSimo to Neuronavigation: Update coil target",
-                         coil_target="C4")
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "NeuroSimo to Neuronavigation: Update coil target",
+                coil_target="C4",
+            )
         else:
             Publisher.sendMessage("Show markers", markers=self.markers.list)
 
             ##DEBUG!!
-            wx.CallAfter(Publisher.sendMessage, "NeuroSimo to Neuronavigation: Update coil target",
-                         coil_target="C3")
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "NeuroSimo to Neuronavigation: Update coil target",
+                coil_target="C3",
+            )
 
             ctrl.SetLabel("Hide all")
 
