@@ -2635,6 +2635,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.arrow_marker_size = const.ARROW_MARKER_SIZE
         self.current_session = 1
 
+        self.robotCoilAssociation = {}
+
         """ 
         Stores all the marker data that is visible in the GUI, as well as the marker UUID.
         Sorting the marker list in the GUI by column is based on values stored here. 
@@ -2700,9 +2702,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             -1,
             "",
             size=(145, -1),
-            choices=list(self.navigation.coil_registrations),
+            choices=[],
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
+        coil_items = self.__GenerateCoilOptions()
+
+        for display_text, data in coil_items:
+            self.select_main_coil.Append(display_text, data)
+
         maincoil_tooltip = "Select which coil to record markers with"
         select_main_coil.SetToolTip(maincoil_tooltip)
         select_main_coil.Bind(
@@ -2712,9 +2719,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # If main coil is defined, select this in the combobox
         nav_state = self.session.GetConfig("navigation", {})
         if (main_coil := nav_state.get("main_coil", None)) is not None:
-            main_coil_index = select_main_coil.FindString(main_coil)
-            select_main_coil.SetSelection(main_coil_index)
-            Publisher.sendMessage("Set active robot by coil name", coil_name=main_coil)
+            main_coil_index = next(
+                (i for i in range(select_main_coil.GetCount()) if select_main_coil.GetClientData(i) == main_coil),
+                wx.NOT_FOUND
+            )
+
+            if main_coil_index != wx.NOT_FOUND:
+                select_main_coil.SetSelection(main_coil_index)
+                Publisher.sendMessage("Set active robot by coil name", coil_name=main_coil)
 
         # Hide main_coil combobox if single coil mode
         select_main_coil.Show(nav_state.get("n_coils", 1) != 1)
@@ -2871,6 +2883,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Update main_coil combobox
         Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
+        Publisher.subscribe(self.OnUpdateRobotCoilAssociation, "Update Robot Coil Association")
 
         # Update marker_list_ctrl
         Publisher.subscribe(self._AddMarker, "Add marker")
@@ -3433,13 +3446,27 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(list_index)
 
         self.markers.CreateCoilTargetFromCoilPose(marker)
+    
+    def OnUpdateRobotCoilAssociation(self, robotCoilAssociation):
+        self.robotCoilAssociation = robotCoilAssociation
 
     def UpdateMainCoilCombobox(self, done):
         select_main_coil = self.select_main_coil
         if done:
             select_main_coil.Clear()
-            select_main_coil.AppendItems(list(self.navigation.coil_registrations))
-            main_coil_index = select_main_coil.FindString(self.navigation.main_coil)
+
+            coil_items = self.__GenerateCoilOptions()
+
+            for display, data in coil_items:
+                select_main_coil.Append(display, data)
+
+            main_coil_index = 0
+            if self.navigation.main_coil:
+                for i in range(select_main_coil.GetCount()):
+                    if select_main_coil.GetClientData(i) == self.navigation.main_coil:
+                        main_coil_index = i
+                        break
+
             select_main_coil.SetSelection(main_coil_index)
         else:
             select_main_coil.Clear()
@@ -3449,10 +3476,25 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         else:
             select_main_coil.Show()
         self.Layout()
+    
+    def __GenerateCoilOptions(self):
+        Publisher.sendMessage("Request update Robot Coil Association")
+
+        coil_to_robot_map = {coil: robot for robot, coil in self.robotCoilAssociation.items()}
+        
+        items_to_add = []
+        for coil_name in self.navigation.coil_registrations:
+            if coil_name in coil_to_robot_map:
+                display_text = f"{coil_name} ({coil_to_robot_map[coil_name]})"
+                items_to_add.append((display_text, coil_name))
+            else:
+                items_to_add.append((coil_name, coil_name))
+        
+        return items_to_add
 
     def OnChooseMainCoil(self, evt, ctrl):
         choice = evt.GetSelection()
-        main_coil = ctrl.GetString(choice)
+        main_coil = ctrl.GetClientData(choice)
         self.navigation.SetMainCoil(main_coil)
         ctrl.SetSelection(choice)
         Publisher.sendMessage("Set active robot by coil name", coil_name=main_coil)

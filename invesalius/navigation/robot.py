@@ -306,12 +306,22 @@ class Robots(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.SendActive, "Send active robot")
         Publisher.subscribe(self.SetActiveByCoil, "Set active robot by coil name")
+        Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
 
     def GetRobot(self, name: str):
         return self.robots.get(name)
 
     def GetActive(self):
         return self.GetRobot(self.active)
+
+    def GetAllCoilsRobots(self):
+        robotCoilAssociation = {}
+        for robot_id in self.robots:
+            robot_obj = self.robots[robot_id]
+            if robot_obj.robot_name and robot_obj.coil_name:
+                robotCoilAssociation[robot_obj.robot_name] = robot_obj.coil_name
+        
+        Publisher.sendMessage("Update Robot Coil Association", robotCoilAssociation = robotCoilAssociation)
 
     def SetActive(self, name: str):
         if name in self.robots:
@@ -325,7 +335,6 @@ class Robots(metaclass=Singleton):
 
     def GetInactive(self):
         robot_name = [name for name in self.robots if name != self.active]
-        print(robot_name)
         return self.GetRobot(robot_name[0])
 
     # Future usage: to rename robots in the GUI
