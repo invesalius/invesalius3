@@ -45,7 +45,7 @@ class Mask3DEditor:
 
     def __bind_events(self):
         Publisher.subscribe(self.AddPolygon, "M3E add polygon")
-        Publisher.subscribe(self.DoMaskEdit, "M3E apply edit")
+        Publisher.subscribe(self.CutMaskFrom3D, "M3E cut mask from 3D")
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
         Publisher.subscribe(self.SetCamParameters, "M3E set camera")
         Publisher.subscribe(self.SetEditMode, "M3E set edit mode")
@@ -159,7 +159,7 @@ class Mask3DEditor:
                             ):  # NOTE: The lack of round here might be a problem
                                 mask_data[z, y, x] = 0
 
-    def DoMaskEdit(self):
+    def CutMaskFrom3D(self):
         if len(self.polygons_to_operate) == 0:
             return
 
