@@ -744,7 +744,6 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.has_open_poly = False
 
         self.viewer.UpdateCanvas()
-        self.viewer.ren.Render()
 
         Publisher.sendMessage("M3E add polygon", points=self.poly.polygon.points)
         Publisher.sendMessage("M3E set camera", params=self.__get_cam_parameters())
