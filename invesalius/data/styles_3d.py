@@ -700,7 +700,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         interactor = self.viewer.interactor
         interactor.Render()
 
-        mouse_x, mouse_y = self.viewer.interactor.GetEventPosition()
+        mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
 
         if not self.has_open_poly:
             self.init_new_polygon()
