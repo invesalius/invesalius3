@@ -676,29 +676,48 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         self.init_new_polygon()
 
-        self.RemoveObservers("LeftButtonPressEvent")
-        self.AddObserver("LeftButtonPressEvent", self.OnInsertPolygonPoint)
-        self.AddObserver("RightButtonPressEvent", self.OnInsertPolygon)
-
+        self._bind_events()
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
+
+    def _bind_events(self):
+        ## Remove observers and bindings from super
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.SetCameraFocus)
+        ## Bind events for this style
+        self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
+        self.viewer.canvas.subscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+
     def init_new_polygon(self):
         """Initialize a new polygon for the mask editor."""
         self.poly = PolygonSelectCanvas()
         self.has_open_poly = True
         self.viewer.canvas.draw_list.append(self.poly)
 
+    def SetUp(self):
+        """Set up is called just before the style is set in the interactor.
+
+        This is called by the volume ``Viewer.SetInteractorStyle`` method.
+        """
+        Publisher.sendMessage(
+            "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
+        )
+
     def CleanUp(self):
-        self.RemoveObservers("LeftButtonPressEvent")
-        self.RemoveObservers("RightButtonPressEvent")
+        """Clean up is called when the interactor style is removed or changed.
+
+        This is called by the volume ``Viewer.SetInteractorStyle`` method.
+        """
+        super().CleanUp()
+        Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
+        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
+        self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
 
     def ClearPolygons(self):
         """Clear all polygons from the viewer."""
         self.viewer.canvas.draw_list.clear()
         self.viewer.UpdateCanvas()
 
-    def OnInsertPolygonPoint(self, obj, evt):
-        interactor = self.viewer.interactor
-        interactor.Render()
+    def OnInsertPolygonPoint(self, _evt):
 
         mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
 
@@ -739,7 +758,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         return params
 
-    def OnInsertPolygon(self, obj, evt):
+    def OnInsertPolygon(self, _evt):
         self.poly.complete_polygon()
         self.has_open_poly = False
 
