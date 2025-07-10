@@ -674,14 +674,18 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.picker = vtkCellPicker()
         self.picker.PickFromListOn()
 
-        self.has_open_poly = False
-        self.poly = None
+        self.init_new_polygon()
 
         self.RemoveObservers("LeftButtonPressEvent")
         self.AddObserver("LeftButtonPressEvent", self.OnInsertPolygonPoint)
         self.AddObserver("RightButtonPressEvent", self.OnInsertPolygon)
 
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
+    def init_new_polygon(self):
+        """Initialize a new polygon for the mask editor."""
+        self.poly = PolygonSelectCanvas()
+        self.has_open_poly = True
+        self.viewer.canvas.draw_list.append(self.poly)
 
     def CleanUp(self):
         self.RemoveObservers("LeftButtonPressEvent")
@@ -699,9 +703,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = self.viewer.interactor.GetEventPosition()
 
         if not self.has_open_poly:
-            self.poly = PolygonSelectCanvas()
-            self.has_open_poly = True
-            self.viewer.canvas.draw_list.append(self.poly)
+            self.init_new_polygon()
 
         self.poly.insert_point((mouse_x, mouse_y))
         self.viewer.UpdateCanvas()
