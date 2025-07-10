@@ -17,22 +17,30 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+
+from typing import TYPE_CHECKING
+
 import invesalius.constants as const
 from invesalius.gui.widgets.canvas_renderer import CanvasHandlerBase, Polygon
 
-# import invesalius.session as ses
+if TYPE_CHECKING:
+    import wx
+
+    from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 
 
 class PolygonSelectCanvas(CanvasHandlerBase):
-    """
-    Inspired on PolygonDensityMeasure, stores and renders a polygon for a canvas
+    """Tool for selecting a polygon on a wx-based canvas.
+
+    Inspired on PolygonDensityMeasure, stores and renders a polygon for a canvas.
+
+    Args:
+        colour (tuple): RGBA tuple for the polygon line color.
+        interactive (bool): Whether the polygon is interactive.
     """
 
     def __init__(self, colour=(255, 0, 0, 255), interactive=True):
-        super(PolygonSelectCanvas, self).__init__(None)
-        self.parent = None
-        self.children = []
-        self.layer = 0
+        super().__init__(None)
 
         self.colour = colour
         self.points = []
@@ -46,13 +54,14 @@ class PolygonSelectCanvas(CanvasHandlerBase):
         self.polygon.layer = 1
         self.add_child(self.polygon)
 
-        self.text_box = None
         self.interactive = interactive
 
-    def draw_to_canvas(self, gc, canvas):
-        pass
+    def draw_to_canvas(self, gc: "wx.GraphicsContext", canvas: "CanvasRendererCTX") -> None:
+        ## abstract method from super class. needs implementation but does nothing here
+        super().draw_to_canvas(gc, canvas)
 
-    def insert_point(self, point):
+    def insert_point(self, point: tuple[int, int]):
+        """Insert a new point to the polygon."""
         self.polygon.append_point(point)
 
     def complete_polygon(self):
