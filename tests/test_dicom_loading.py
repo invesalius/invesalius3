@@ -1,4 +1,5 @@
 import os
+import tempfile
 import zipfile
 
 import requests
@@ -11,7 +12,6 @@ DICOM_FOLDER_NAME = "0051"
 
 
 def download_and_extract_dicom_zip(dest_folder):
-    os.makedirs(dest_folder, exist_ok=True)
     zip_path = os.path.join(dest_folder, DICOM_ZIP_FILENAME)
     extract_path = os.path.join(dest_folder, DICOM_FOLDER_NAME)
     response = requests.get(DICOM_ZIP_URL)
@@ -24,24 +24,9 @@ def download_and_extract_dicom_zip(dest_folder):
     return zip_path, extract_path
 
 
-def cleanup_dicom_files(zip_path, extract_path, dest_folder):
-    if os.path.exists(zip_path):
-        os.remove(zip_path)
-    if os.path.exists(extract_path):
-        # Remove all files in the directory
-        for filename in os.listdir(extract_path):
-            file_path = os.path.join(extract_path, filename)
-            os.remove(file_path)
-        # Remove the now-empty directory
-        os.rmdir(extract_path)
-    if os.path.exists(dest_folder) and not os.listdir(dest_folder):
-        os.rmdir(dest_folder)
-
-
 def test_dicom_loading():
-    dicom_dir = os.path.join(os.path.dirname(__file__), "temp_data")
-    zip_path, dicom_data_dir = download_and_extract_dicom_zip(dicom_dir)
-    try:
+    with tempfile.TemporaryDirectory() as dicom_dir:
+        zip_path, dicom_data_dir = download_and_extract_dicom_zip(dicom_dir)
         patients = dicom_reader.GetDicomGroups(dicom_data_dir, recursive=True)
         groups = patients[0].GetGroups()
         group = groups[0]
@@ -67,5 +52,3 @@ def test_dicom_loading():
             dicom.image.orientation_label == "AXIAL"
         ), f"Expected orientation label 'AXIAL', got '{dicom.image.orientation_label}'"
         assert os.path.exists(dicom.image.file)
-    finally:
-        cleanup_dicom_files(zip_path, dicom_data_dir, dicom_dir)
