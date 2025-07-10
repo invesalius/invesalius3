@@ -718,7 +718,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygonPoint(self, _evt):
+        """Insert a point in the polygon.
 
+        If no polygon is open, it initializes a new one.
+        """
         mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
 
         if not self.has_open_poly:
@@ -759,6 +762,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         return params
 
     def OnInsertPolygon(self, _evt):
+        """Complete the polygon by connecting the last point to the first one."""
         self.poly.complete_polygon()
         self.has_open_poly = False
 
