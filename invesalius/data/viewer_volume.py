@@ -1788,6 +1788,7 @@ class Viewer(wx.Panel):
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         wx.CallAfter(Publisher.sendMessage, "Initialize color array")
         wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
+    
 
     def CreateLUTTableForEfield(self, min, max):
         lut = vtkLookupTable()
@@ -1796,6 +1797,13 @@ class Viewer(wx.Panel):
         seriesEnum = colorSeries.BREWER_SEQUENTIAL_BLUE_PURPLE_9
         colorSeries.SetColorScheme(seriesEnum)
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+        n = lut.GetNumberOfTableValues()
+        threshold = self.efield_threshold
+        highlight_rgb = (255, 165, 0)
+        for i in range(n):
+            norm_val = i / (n - 1)
+        if norm_val >= threshold:
+            lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0) # Set to orange
         return lut
 
     def GetEfieldMaxMin(self, e_field_norms):
