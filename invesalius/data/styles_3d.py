@@ -18,6 +18,8 @@
 # --------------------------------------------------------------------------
 
 
+from typing import TYPE_CHECKING
+
 import wx
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
@@ -34,6 +36,8 @@ from invesalius.pubsub import pub as Publisher
 PROP_MEASURE = 0.8
 
 import numpy as np
+if TYPE_CHECKING:
+    from invesalius.data.viewer_volume import Viewer
 
 
 # TODO: find a better place
@@ -91,7 +95,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     * Focus camera by double clicking right button.
     """
 
-    def __init__(self, viewer):
+    def __init__(self, viewer: "Viewer"):
         super().__init__(viewer)
         self.state_code = const.STATE_DEFAULT
 
@@ -634,14 +638,19 @@ class NavigationInteractorStyle(DefaultInteractorStyle):
 
 
 class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
-    """
-    Interactor style for selecting a polygon of interest and performing a mesh edit based on that.
+    """Interactor style for selecting a polygon in the volume viewer.
+
+    The polygon, once completed, is used to cut the mask volume using the projection of
+    the polygon in the volume viewer.
+
+    Bind events:
+        * Left button press: inserts a point in the polygon.
+        * Left button double click: completes the polygon connecting the last point to the
+          first one.
     """
 
-    def __init__(self, viewer):
+    def __init__(self, viewer: "Viewer"):
         super().__init__(viewer)
-        self.viewer = viewer
-
         # Manages the mask operations
         self.mask3deditor = m3e.Mask3DEditor()
 
@@ -662,6 +671,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.RemoveObservers("RightButtonPressEvent")
 
     def ClearPolygons(self):
+        """Clear all polygons from the viewer."""
         self.viewer.canvas.draw_list.clear()
         self.viewer.UpdateCanvas()
 
