@@ -1632,7 +1632,7 @@ class Viewer(wx.Panel):
         glyphFilter = vtkGlyph3D()
         glyphFilter.SetSourceConnection(arrowSource.GetOutputPort())
         glyphFilter.SetInputData(dataset)
-        glyphFilter.SetScaleFactor(1)
+        glyphFilter.SetScaleFactor(2)
         glyphFilter.Update()
 
         mapper = vtkPolyDataMapper()
