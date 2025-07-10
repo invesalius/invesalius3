@@ -20,6 +20,7 @@
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 import wx
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
@@ -31,11 +32,11 @@ import invesalius.constants as const
 import invesalius.project as prj
 import invesalius.segmentation.mask_3d_edit as m3e
 from invesalius.data.polygon_select import PolygonSelectCanvas
+from invesalius.gui.widgets.canvas_renderer import CanvasEvent
 from invesalius.pubsub import pub as Publisher
 
 PROP_MEASURE = 0.8
 
-import numpy as np
 if TYPE_CHECKING:
     from invesalius.data.viewer_volume import Viewer
 
@@ -220,6 +221,14 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         renderer.ResetCameraClippingRange()
         interactor.Render()
 
+    def CleanUp(self):
+        """Clean up the interactor style."""
+        # Note: when bind events in the viewer, they are not automatically removed when
+        # the style is cleaned up! if the bind is in the style (i.e. self.AddObserver),
+        # then it is ok.
+        self.viewer.interactor.Unbind(wx.EVT_RIGHT_DCLICK, handler=self.ResetCamera)
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.SetCameraFocus)
+
 
 class ZoomInteractorStyle(DefaultInteractorStyle):
     """
@@ -249,7 +258,8 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        super().CleanUp()
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.ResetCamera)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnMouseMoveZoom(self, evt, obj):
@@ -289,7 +299,7 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.ResetCamera)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def ResetCamera(self, evt):
@@ -322,7 +332,8 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        super().CleanUp()
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.OnUnspan)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnPressLeftButton(self, evt, obj):
@@ -357,6 +368,7 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnPressLeftButton(self, evt, obj):
@@ -402,6 +414,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             self.viewer.interactor.Render()
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         self.viewer.on_wl = True
         self.viewer.text.Hide()
@@ -448,6 +461,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
 
@@ -490,6 +504,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
 
@@ -552,6 +567,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.viewer.CreatePointer()
 
     def CleanUp(self):
+        super().CleanUp()
         self.viewer.DeletePointer()
 
     def UpdatePointer(self, obj, evt):
@@ -588,6 +604,7 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
         self.viewer.CreatePointer()
 
     def CleanUp(self):
+        super().CleanUp()
         self.viewer.DeletePointer()
 
     def UpdatePointer(self, obj, evt):
