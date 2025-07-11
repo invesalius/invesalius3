@@ -18,6 +18,9 @@
 # --------------------------------------------------------------------------
 
 
+from typing import TYPE_CHECKING
+
+import numpy as np
 import wx
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
@@ -27,9 +30,15 @@ from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPi
 
 import invesalius.constants as const
 import invesalius.project as prj
+import invesalius.segmentation.mask_3d_edit as m3e
+from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import vtkarray_to_numpy
 
 PROP_MEASURE = 0.8
+
+if TYPE_CHECKING:
+    from invesalius.data.viewer_volume import Viewer
 
 
 class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
@@ -77,7 +86,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     * Focus camera by double clicking right button.
     """
 
-    def __init__(self, viewer):
+    def __init__(self, viewer: "Viewer"):
         super().__init__(viewer)
         self.state_code = const.STATE_DEFAULT
 
@@ -202,6 +211,14 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         renderer.ResetCameraClippingRange()
         interactor.Render()
 
+    def CleanUp(self):
+        """Clean up the interactor style."""
+        # Note: when bind events in the viewer, they are not automatically removed when
+        # the style is cleaned up! if the bind is in the style (i.e. self.AddObserver),
+        # then it is ok.
+        self.viewer.interactor.Unbind(wx.EVT_RIGHT_DCLICK, handler=self.ResetCamera)
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.SetCameraFocus)
+
 
 class ZoomInteractorStyle(DefaultInteractorStyle):
     """
@@ -231,7 +248,8 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        super().CleanUp()
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.ResetCamera)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnMouseMoveZoom(self, evt, obj):
@@ -271,7 +289,7 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.ResetCamera)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def ResetCamera(self, evt):
@@ -304,7 +322,8 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        super().CleanUp()
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.OnUnspan)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnPressLeftButton(self, evt, obj):
@@ -339,6 +358,7 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnPressLeftButton(self, evt, obj):
@@ -384,6 +404,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             self.viewer.interactor.Render()
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         self.viewer.on_wl = True
         self.viewer.text.Hide()
@@ -430,6 +451,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
 
@@ -472,6 +494,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
 
@@ -534,6 +557,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.viewer.CreatePointer()
 
     def CleanUp(self):
+        super().CleanUp()
         self.viewer.DeletePointer()
 
     def UpdatePointer(self, obj, evt):
@@ -570,6 +594,7 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
         self.viewer.CreatePointer()
 
     def CleanUp(self):
+        super().CleanUp()
         self.viewer.DeletePointer()
 
     def UpdatePointer(self, obj, evt):
@@ -619,6 +644,87 @@ class NavigationInteractorStyle(DefaultInteractorStyle):
         super().OnScrollBackward(evt, obj)
 
 
+class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
+    """Interactor style for selecting a polygon in the volume viewer.
+
+    The polygon, once completed, is used to cut the mask volume using the projection of
+    the polygon in the volume viewer.
+
+    Bind events:
+        * Left button press: inserts a point in the polygon.
+        * Left button double click: completes the polygon connecting the last point to the
+          first one.
+    """
+
+    def __init__(self, viewer: "Viewer"):
+        super().__init__(viewer)
+        # Manages the mask operations
+        self.mask3deditor = m3e.Mask3DEditor()
+
+        self.picker = vtkCellPicker()
+        self.picker.PickFromListOn()
+
+        self.init_new_polygon()
+
+        self._bind_events()
+        Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
+
+    def _bind_events(self):
+        ## Remove observers and bindings from super
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.SetCameraFocus)
+        ## Bind events for this style
+        self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
+        self.viewer.canvas.subscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+
+    def init_new_polygon(self):
+        """Initialize a new polygon for the mask editor."""
+        self.mask3deditor.init_new_polygon()
+        self.viewer.canvas.draw_list.append(self.mask3deditor.poly)
+
+    def SetUp(self):
+        """Set up is called just before the style is set in the interactor.
+
+        This is called by the volume ``Viewer.SetInteractorStyle`` method.
+        """
+        Publisher.sendMessage(
+            "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
+        )
+
+    def CleanUp(self):
+        """Clean up is called when the interactor style is removed or changed.
+
+        This is called by the volume ``Viewer.SetInteractorStyle`` method.
+        """
+        super().CleanUp()
+        Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
+        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
+        self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+
+    def ClearPolygons(self):
+        """Clear all polygons from the viewer."""
+        self.viewer.canvas.draw_list.clear()
+        self.viewer.UpdateCanvas()
+
+    def OnInsertPolygonPoint(self, _evt):
+        """Insert a point in the polygon.
+
+        If no polygon is open, it initializes a new one.
+        """
+        mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
+
+        if not self.mask3deditor.has_open_poly:
+            self.init_new_polygon()
+
+        self.mask3deditor.poly.insert_point((mouse_x, mouse_y))
+        self.viewer.UpdateCanvas()
+
+    def OnInsertPolygon(self, _evt):
+        """Complete the polygon by connecting the last point to the first one."""
+        self.mask3deditor.complete_polygon()
+        self.viewer.UpdateCanvas()
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -633,6 +739,7 @@ class Styles:
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_REGISTRATION: RegistrationInteractorStyle,
+        const.STATE_MASK_3D_EDIT: Mask3DEditorInteractorStyle,
     }
 
     @classmethod

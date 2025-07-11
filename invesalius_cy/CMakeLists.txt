@@ -5,7 +5,7 @@ find_package(
 find_package(OpenMP REQUIRED)
 
 set(cython_modules mips interpolation transforms)
-set(cython_modules_cpp cy_mesh floodfill)
+set(cython_modules_cpp cy_mesh floodfill mask_cut)
 
 foreach(cython_module ${cython_modules})
   add_custom_command(
