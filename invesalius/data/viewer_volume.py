@@ -430,6 +430,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.LoadSlicePlane, "Load slice plane")
 
         Publisher.subscribe(self.ResetCamClippingRange, "Reset cam clipping range")
+        Publisher.subscribe(self.SendActiveCamera, "Send volume viewer active camera")
+        Publisher.subscribe(self.SendViewerSize, "Send volume viewer size")
 
         Publisher.subscribe(self.enable_style, "Enable style")
         Publisher.subscribe(self.OnDisableStyle, "Disable style")
@@ -2590,6 +2592,14 @@ class Viewer(wx.Panel):
     def ResetCamClippingRange(self):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
+
+    def SendActiveCamera(self):
+        cam = self.ren.GetActiveCamera()
+        Publisher.sendMessage("Receive volume viewer active camera", cam=cam)
+
+    def SendViewerSize(self):
+        width, height = self.GetSize()
+        Publisher.sendMessage("Receive volume viewer size", size=(width, height))
 
     # Note: Not in use currently, this method is not called from anywhere.
     def SetVolumetricCamera(self, enabled):
