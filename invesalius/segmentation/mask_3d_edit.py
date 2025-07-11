@@ -17,13 +17,18 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+from typing import TYPE_CHECKING
+
 import numpy as np
-from skimage.draw import polygon
+from skimage.draw import polygon2mask
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
 from invesalius.pubsub import pub as Publisher
 from invesalius_cy.mask_cut import mask_cut, mask_cut_with_depth
+
+if TYPE_CHECKING:
+    from vtkmodules.vtkRenderingCore import vtkCamera
 
 
 class Mask3DEditException(Exception):
@@ -31,17 +36,17 @@ class Mask3DEditException(Exception):
 
 
 class Mask3DEditor:
+    resolution: tuple[int, int]
+    clipping_range: tuple[float, float]
+
     def __init__(self):
         self.__bind_events()
         self.polygons_to_operate = []
-        self.spacing = None
         self.edit_mode = const.MASK_3D_EDIT_INCLUDE
         self.use_depth = False
         self.depth_val = None
         self.model_to_screen = None
         self.model_view = None
-        self.resolution = None  # (w, h)
-        self.clipping_range = None  # (near, far)
 
     def __bind_events(self):
         Publisher.subscribe(self.AddPolygon, "M3E add polygon")
@@ -112,28 +117,28 @@ class Mask3DEditor:
     def SetDepthValue(self, value):
         self.depth_val = value
 
-    def __create_filter(self):
+    def _create_filter(self):
         """
         Based on the polygons and screen resolution,
         create a filter for the edit.
         """
         w, h = self.resolution
-        _filter = np.zeros((h, w), dtype="uint8")
+        # gets the mask of each polygon in the shape of the screen resolution
+        polygon_masks = [
+            polygon2mask((w, h), poly.polygon.points) for poly in self.polygons_to_operate
+        ]
 
-        # Include all selected polygons to create the cut
-        for poly_points in self.polygons_to_operate:
-            print(f"Poly Points: {poly_points}")
-            poly = np.array(poly_points)
-            rr, cc = polygon(poly[:, 1], poly[:, 0], _filter.shape)
-            _filter[rr, cc] = 1
+        # OR operation in all masks to create a single filter mask
+        _filter = np.logical_or.reduce(polygon_masks)
 
+        # If the edit mode is to include, we invert the filter
         if self.edit_mode == const.MASK_3D_EDIT_INCLUDE:
-            _filter = 1 - _filter
+            np.logical_not(_filter, out=_filter)
 
         return _filter
 
     # Unoptimized implementation
-    def __cut_mask(self, mask_data, spacing, _filter):
+    def _cut_mask(self, mask_data, spacing, _filter):
         """
         Cuts an Invesalius Mask with a filter (pixel-wise filter)
         mask_data: matrix data without metadata ([1:])
@@ -191,12 +196,12 @@ class Mask3DEditor:
         if _cur_mask is None:
             raise Mask3DEditException("Attempted editing a non-existent mask")
 
-        _filter = self.__create_filter()
+        _filter = self._create_filter().T
 
         _prev_mat = _cur_mask.matrix.copy()
 
-        # Unoptimized implementation
-        # self.__cut_mask(_cur_mask.matrix[1:, 1:, 1:], s.spacing, _filter)
+        # # Unoptimized implementation
+        # self._cut_mask(_cur_mask.matrix[1:, 1:, 1:], s.spacing, _filter)
 
         # Optimized implementation
         _mat = _cur_mask.matrix[1:, 1:, 1:].copy()
