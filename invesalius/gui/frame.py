@@ -1233,7 +1233,6 @@ class Frame(wx.Frame):
             "  >>> Publisher.sendMessage('Set threshold values', threshold_range=(100, 500))\n"
             "\n"
         )
-
         # Check if shell window already exists
         if not hasattr(self, "_shell_window") or not self._shell_window:
             self._shell_window = InteractiveShellFrame(self, app_context, introText=intro_text)
