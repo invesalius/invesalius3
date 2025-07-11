@@ -730,37 +730,6 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.poly.insert_point((mouse_x, mouse_y))
         self.viewer.UpdateCanvas()
 
-    def __get_cam_parameters(self):
-        w, h = self.viewer.GetSize()
-        self.viewer.ren.Render()
-        cam = self.viewer.ren.GetActiveCamera()
-        near, far = cam.GetClippingRange()
-
-        # This flip around the Y axis was done to countereffect the flip that vtk performs
-        # in volume.py:780. If we do not flip back, what is being displayed is flipped,
-        # although the actual coordinates are the initial ones, so the cutting gets wrong
-        # after rotations around y or x.
-        inv_Y_matrix = np.eye(4)
-        inv_Y_matrix[1, 1] = -1
-
-        # Composite transform world to viewport (projection * view)
-        M = cam.GetCompositeProjectionTransformMatrix(w / float(h), near, far)
-        M = vtkarray_to_numpy(M)
-        M = M @ inv_Y_matrix
-
-        MV = cam.GetViewTransformMatrix()
-        MV = vtkarray_to_numpy(MV)
-        MV = MV @ inv_Y_matrix
-
-        params = {
-            "model_to_screen": M,
-            "model_view": MV,
-            "resolution": (w, h),
-            "clipping_range": (near, far),
-        }
-
-        return params
-
     def OnInsertPolygon(self, _evt):
         """Complete the polygon by connecting the last point to the first one."""
         self.poly.complete_polygon()
@@ -769,8 +738,6 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
 
         Publisher.sendMessage("M3E add polygon", points=self.poly.polygon.points)
-        Publisher.sendMessage("M3E set camera", params=self.__get_cam_parameters())
-
 
 class Styles:
     styles = {

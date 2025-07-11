@@ -47,7 +47,10 @@ class Mask3DEditor:
         Publisher.subscribe(self.AddPolygon, "M3E add polygon")
         Publisher.subscribe(self.CutMaskFrom3D, "M3E cut mask from 3D")
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
-        Publisher.subscribe(self.SetCamParameters, "M3E set camera")
+        Publisher.subscribe(
+            self.ReceiveVolumeViewerActiveCamera, "Receive volume viewer active camera"
+        )
+        Publisher.subscribe(self.ReceiveVolumeViewerSize, "Receive volume viewer size")
         Publisher.subscribe(self.SetEditMode, "M3E set edit mode")
         Publisher.subscribe(self.SetUseDepthForEdit, "M3E use depth")
         Publisher.subscribe(self.SetDepthValue, "M3E depth value")
@@ -64,18 +67,34 @@ class Mask3DEditor:
         """
         self.polygons_to_operate = []
 
-    def SetCamParameters(self, params):
-        """
-        Sets the model-view-projection matrix used by the viewer
-        """
-        if "model_to_screen" in params:
-            self.model_to_screen = params["model_to_screen"]
-        if "model_view" in params:
-            self.model_view = params["model_view"]
-        if "resolution" in params:
-            self.resolution = params["resolution"]
-        if "clipping_range" in params:
-            self.clipping_range = params["clipping_range"]
+    def ReceiveVolumeViewerActiveCamera(self, cam: "vtkCamera"):
+        width, height = self.resolution
+
+        near, far = cam.GetClippingRange()
+
+        # This flip around the Y axis was done to countereffect the flip that vtk performs
+        # in volume.py:780. If we do not flip back, what is being displayed is flipped,
+        # although the actual coordinates are the initial ones, so the cutting gets wrong
+        # after rotations around y or x.
+        inv_Y_matrix = np.eye(4)
+        inv_Y_matrix[1, 1] = -1
+
+        # Composite transform world coordinates to viewport coordinates
+        # This is a concatenation of the view transform (world coordinates to camera
+        # coordinates) and the projection transform (camera coordinates to viewport
+        # coordinates).
+        M = cam.GetCompositeProjectionTransformMatrix(width / float(height), near, far)
+        M = vtkarray_to_numpy(M)
+        self.world_to_screen = M @ inv_Y_matrix
+
+        # Get the model view matrix, which transforms world coordinates to camera
+        # coordinates.
+        MV = cam.GetViewTransformMatrix()
+        MV = vtkarray_to_numpy(MV)
+        self.world_to_camera_coordinates = MV @ inv_Y_matrix
+
+    def ReceiveVolumeViewerSize(self, size: tuple[int, int]):
+        self.resolution = size
 
     def SetEditMode(self, mode):
         """
@@ -166,6 +185,9 @@ class Mask3DEditor:
         s = slc.Slice()
         _cur_mask = s.current_mask
 
+        Publisher.sendMessage("Send volume viewer size")
+        Publisher.sendMessage("Send volume viewer active camera")
+
         if _cur_mask is None:
             raise Mask3DEditException("Attempted editing a non-existent mask")
 
@@ -187,10 +209,18 @@ class Mask3DEditor:
             near, far = self.clipping_range
             depth = near + (far - near) * self.depth_val
             mask_cut_with_depth(
-                _mat, sx, sy, sz, depth, _filter, self.model_to_screen, self.model_view, _mat
+                _mat,
+                sx,
+                sy,
+                sz,
+                depth,
+                _filter,
+                self.world_to_screen,
+                self.world_to_camera_coordinates,
+                _mat,
             )
         else:
-            mask_cut(_mat, sx, sy, sz, _filter, self.model_to_screen, _mat)
+            mask_cut(_mat, sx, sy, sz, _filter, self.world_to_screen, _mat)
 
         _cur_mask.matrix[1:, 1:, 1:] = _mat
         _cur_mask.was_edited = True
