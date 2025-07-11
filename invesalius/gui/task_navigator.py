@@ -2781,8 +2781,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
             marker_list_ctrl.InsertColumn(const.Z_COLUMN, "Z")
             marker_list_ctrl.SetColumnWidth(const.Z_COLUMN, 45)
-        
-
+            
         marker_list_ctrl.InsertColumn(const.COIL_NAME_COLUMN, "Coil")
         marker_list_ctrl.SetColumnWidth(const.COIL_NAME_COLUMN, 50)
 
@@ -3488,6 +3487,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         coil_to_robot_map = {coil: robot for robot, coil in self.robotCoilAssociation.items()}
         
+        print(self.robotCoilAssociation)
+
         items_to_add = []
         for coil_name in self.navigation.coil_registrations:
             if coil_name in coil_to_robot_map:
