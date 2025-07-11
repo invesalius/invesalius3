@@ -43,7 +43,6 @@ class PolygonSelectCanvas(CanvasHandlerBase):
         super().__init__(None)
 
         self.colour = colour
-        self.points = []
 
         self.complete = False
 
