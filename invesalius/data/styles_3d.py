@@ -32,23 +32,13 @@ import invesalius.constants as const
 import invesalius.project as prj
 import invesalius.segmentation.mask_3d_edit as m3e
 from invesalius.data.polygon_select import PolygonSelectCanvas
-from invesalius.gui.widgets.canvas_renderer import CanvasEvent
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import vtkarray_to_numpy
 
 PROP_MEASURE = 0.8
 
 if TYPE_CHECKING:
     from invesalius.data.viewer_volume import Viewer
-
-
-# TODO: find a better place
-def vtkarray_to_numpy(m):
-    nm = np.zeros((4, 4))
-    for i in range(4):
-        for j in range(4):
-            nm[i, j] = m.GetElement(i, j)
-
-    return nm
 
 
 class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
@@ -689,9 +679,8 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
     def init_new_polygon(self):
         """Initialize a new polygon for the mask editor."""
-        self.poly = PolygonSelectCanvas()
-        self.has_open_poly = True
-        self.viewer.canvas.draw_list.append(self.poly)
+        self.mask3deditor.init_new_polygon()
+        self.viewer.canvas.draw_list.append(self.mask3deditor.poly)
 
     def SetUp(self):
         """Set up is called just before the style is set in the interactor.
@@ -724,20 +713,17 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         """
         mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
 
-        if not self.has_open_poly:
+        if not self.mask3deditor.has_open_poly:
             self.init_new_polygon()
 
-        self.poly.insert_point((mouse_x, mouse_y))
+        self.mask3deditor.poly.insert_point((mouse_x, mouse_y))
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygon(self, _evt):
         """Complete the polygon by connecting the last point to the first one."""
-        self.poly.complete_polygon()
-        self.has_open_poly = False
-
+        self.mask3deditor.complete_polygon()
         self.viewer.UpdateCanvas()
 
-        Publisher.sendMessage("M3E add polygon", points=self.poly.polygon.points)
 
 class Styles:
     styles = {

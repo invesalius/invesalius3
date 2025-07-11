@@ -24,7 +24,9 @@ from skimage.draw import polygon2mask
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
+from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import vtkarray_to_numpy
 from invesalius_cy.mask_cut import mask_cut, mask_cut_with_depth
 
 if TYPE_CHECKING:
@@ -49,7 +51,6 @@ class Mask3DEditor:
         self.model_view = None
 
     def __bind_events(self):
-        Publisher.subscribe(self.AddPolygon, "M3E add polygon")
         Publisher.subscribe(self.CutMaskFrom3D, "M3E cut mask from 3D")
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
         Publisher.subscribe(
@@ -60,11 +61,17 @@ class Mask3DEditor:
         Publisher.subscribe(self.SetUseDepthForEdit, "M3E use depth")
         Publisher.subscribe(self.SetDepthValue, "M3E depth value")
 
-    def AddPolygon(self, points):
-        """
-        Adds polygon to be used in the edit
-        """
-        self.polygons_to_operate.append(points)
+    def init_new_polygon(self):
+        """Initialize a new polygon for the mask editor."""
+        self.poly = PolygonSelectCanvas()
+        self.has_open_poly = True
+
+    def complete_polygon(self):
+        """Complete the current polygon."""
+        self.poly.complete_polygon()
+        self.has_open_poly = False
+
+        self.polygons_to_operate.append(self.poly)
 
     def ClearPolygons(self):
         """
