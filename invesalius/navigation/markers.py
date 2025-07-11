@@ -143,6 +143,8 @@ class MarkersControl(metaclass=Singleton):
         # Set new target
         marker = self.list[marker_id]
         marker.is_target = True
+        coil_name = marker.coil
+        Publisher.sendMessage("Update main coil by target", coil_name = coil_name)
 
         Publisher.sendMessage(
             "Set target", marker=marker, robot_ID=self.robot.GetActive().robot_name

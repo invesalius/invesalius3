@@ -2781,6 +2781,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
             marker_list_ctrl.InsertColumn(const.Z_COLUMN, "Z")
             marker_list_ctrl.SetColumnWidth(const.Z_COLUMN, 45)
+        
+
+        marker_list_ctrl.InsertColumn(const.COIL_NAME_COLUMN, "Coil")
+        marker_list_ctrl.SetColumnWidth(const.COIL_NAME_COLUMN, 50)
 
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
@@ -2884,6 +2888,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Update main_coil combobox
         Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
         Publisher.subscribe(self.OnUpdateRobotCoilAssociation, "Update Robot Coil Association")
+        Publisher.subscribe(self.OnChangeMainCoilbySetTarget, "Update main coil by target")
 
         # Update marker_list_ctrl
         Publisher.subscribe(self._AddMarker, "Add marker")
@@ -3475,6 +3480,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             select_main_coil.Hide()
         else:
             select_main_coil.Show()
+
         self.Layout()
     
     def __GenerateCoilOptions(self):
@@ -3498,6 +3504,17 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.navigation.SetMainCoil(main_coil)
         ctrl.SetSelection(choice)
         Publisher.sendMessage("Set active robot by coil name", coil_name=main_coil)
+
+    def OnChangeMainCoilbySetTarget(self, coil_name):
+        index_to_select = next(
+        (i for i in range(self.select_main_coil.GetCount()) if self.select_main_coil.GetClientData(i) == coil_name),
+        wx.NOT_FOUND # Valor padrão se não encontrar
+        )
+
+        if index_to_select != wx.NOT_FOUND:
+            self.select_main_coil.SetSelection(index_to_select)
+            self.navigation.SetMainCoil(coil_name)
+            Publisher.sendMessage("Set active robot by coil name", coil_name=coil_name)
 
     def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -4061,6 +4078,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 else MarkerType.LANDMARK
             )
 
+        main_coil = self.navigation.main_coil
+  
         marker = self.CreateMarker(
             position=position,
             orientation=orientation,
@@ -4073,6 +4092,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
             mep_value=mep_value,
+            coil=main_coil
         )
         self.markers.AddMarker(marker, render=True, focus=True)
 
@@ -4315,6 +4335,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         z_offset=0.0,
         z_rotation=0.0,
         mep_value=None,
+        coil=None
     ):
         """
         Create a new marker object.
@@ -4340,6 +4361,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker.z_offset = z_offset
         marker.z_rotation = z_rotation
         marker.mep_value = mep_value
+        marker.coil = coil
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers.list)
@@ -4367,6 +4389,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             "Yes" if marker.is_point_of_interest else ""
         )
         list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
+        list_entry[const.COIL_NAME_COLUMN] = str(marker.coil) if marker.coil else ""
         list_entry[const.UUID] = str(marker.marker_uuid) if marker.marker_uuid else ""
 
         if self.session.GetConfig("debug"):
