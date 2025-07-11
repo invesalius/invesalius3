@@ -28,7 +28,7 @@ class InteractiveShellPanel(wx.Panel):
     Interactive Python shell panel for debugging and development.
     """
 
-    def __init__(self, parent, app_context=None):
+    def __init__(self, parent, app_context=None, introText=""):
         """
         Initialize the shell panel.
 
@@ -50,7 +50,7 @@ class InteractiveShellPanel(wx.Panel):
             locals_dict.update(app_context)
 
         # Create shell widget
-        self.shell = wx.py.shell.Shell(self, locals=locals_dict, introText=self._get_intro_text())
+        self.shell = wx.py.shell.Shell(self, locals=locals_dict, introText=introText)
 
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -92,7 +92,7 @@ class InteractiveShellFrame(wx.Frame):
     Standalone frame for the interactive shell.
     """
 
-    def __init__(self, parent, app_context=None):
+    def __init__(self, parent, app_context=None, introText=""):
         """
         Initialize the shell frame.
 
@@ -108,7 +108,7 @@ class InteractiveShellFrame(wx.Frame):
         )
 
         # Create shell panel
-        self.shell_panel = InteractiveShellPanel(self, app_context)
+        self.shell_panel = InteractiveShellPanel(self, app_context, introText)
 
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)

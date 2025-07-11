@@ -1182,10 +1182,9 @@ class Frame(wx.Frame):
             # Import the interactive shell module
             from invesalius.data.slice_ import Slice
             from invesalius.gui.interactive_shell import InteractiveShellFrame
-            from invesalius.project import Project
 
             # Get current project and slice singleton if available
-            project = Project()
+            project = prj.Project()
             slice_singleton = Slice()
 
             # Create context dictionary with useful objects
@@ -1193,20 +1192,42 @@ class Frame(wx.Frame):
                 "project": project,
                 "slice": slice_singleton,
                 "frame": self,
-                "Publisher": None,  # Will be set below
+                "Publisher": Publisher,  # Will be set below
+                "volume_viewer": self.aui_manager.GetPane("Data")
+                .window.aui_manager.GetPane("Volume")
+                .window.GetSizer()
+                .GetItem(0)
+                .GetWindow()
+                .aui_manager.GetAllPanes()[0]
+                .window,
             }
 
-            # Import Publisher for shell access
-            try:
-                from invesalius.pubsub import pub as Publisher
-
-                app_context["Publisher"] = Publisher
-            except ImportError:
-                pass
+            intro_text = (
+                "InVesalius Interactive Shell\n"
+                "===========================\n"
+                "Available objects:\n"
+                "  app           - Main application instance\n"
+                "  frame         - Main frame window\n"
+                "  project       - Current project data\n"
+                "  slice         - Slice singleton for image data\n"
+                "  Publisher     - PubSub publisher for messaging\n"
+                "  volume_viewer - Volume viewer pane\n"
+                "  wx            - wxPython module\n"
+                "\nUseful commands:\n"
+                "  dir(obj)      - List object attributes\n"
+                "  help(obj)     - Get help on object\n"
+                "  Publisher.sendMessage('topic', **kwargs) - Send messages\n"
+                "\nExample usage:\n"
+                "  >>> frame.GetTitle()\n"
+                "  >>> project.name\n"
+                "  >>> slice.current_mask\n"
+                "  >>> Publisher.sendMessage('Set threshold values', threshold_range=(100, 500))\n"
+                "\n"
+            )
 
             # Check if shell window already exists
             if not hasattr(self, "_shell_window") or not self._shell_window:
-                self._shell_window = InteractiveShellFrame(self, app_context)
+                self._shell_window = InteractiveShellFrame(self, app_context, introText=intro_text)
 
             # Show the shell window
             self._shell_window.Show()
