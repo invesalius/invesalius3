@@ -161,16 +161,13 @@ class UpdateNavigationScene(threading.Thread):
                     bundle, affine_vtk, coord_offset, coord_offset_w = (
                         self.tracts_queue.get_nowait()
                     )
-                    # TODO: Check if possible to combine the Remove tracts with Update tracts in a single command
-                    wx.CallAfter(Publisher.sendMessage, "Remove tracts")
-                    wx.CallAfter(
-                        Publisher.sendMessage,
-                        "Update tracts",
-                        root=bundle,
-                        affine_vtk=affine_vtk,
-                        coord_offset=coord_offset,
-                        coord_offset_w=coord_offset_w,
-                    )
+                    # Combined removal and update of tracts into a single function call (from Issue #931)
+                    def remove_and_update_tracts(bundle, affine_vtk, coord_offset, coord_offset_w):
+                        Publisher.sendMessage("Remove tracts")
+                        Publisher.sendMessage("Update tracts", root=bundle, affine_vtk=affine_vtk, coord_offset=coord_offset, coord_offset_w=coord_offset_w)
+                    
+                    wx.CallAfter(remove_and_update_tracts, bundle, affine_vtk, coord_offset, coord_offset_w)
+                    
                     self.tracts_queue.task_done()
 
                 if self.serial_port_enabled:
