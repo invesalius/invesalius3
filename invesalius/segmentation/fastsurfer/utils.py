@@ -238,3 +238,29 @@ class PreparePlaneView:
             plane_zoom = np.array([y_zoom, z_zoom])
 
         return base_resolution / plane_zoom
+
+
+def apply_sagittal_mapping(self, prediction: np.ndarray) -> np.ndarray:
+    """Apply sagittal mapping"""
+    sagittal_num_classes = prediction.shape[1]
+
+    r = range
+    _idx = []
+
+    if sagittal_num_classes == 96:
+        _idx = [[0], r(5, 14), r(1, 4), [14, 15, 4], r(16, 19), r(5, 51), r(20, 51)]
+    elif sagittal_num_classes == 51:
+        _idx = [[0], r(5, 14), r(1, 4), [14, 15, 4], r(16, 19), r(5, 51)]
+        _idx.extend([[20, 22, 27], r(29, 32), [33, 34], r(38, 43), [45]])
+    elif sagittal_num_classes == 21:
+        _idx = [[0], r(5, 15), r(1, 4), [15, 16, 4], r(17, 20), r(5, 21)]
+    else:
+        self.logger.warning(f"No predefined sagittal mapping for {sagittal_num_classes} classes")
+        if sagittal_num_classes <= self.num_classes:
+            idx_list = list(range(sagittal_num_classes))
+            mapped_prediction = prediction[:, idx_list, :, :]
+            return mapped_prediction
+        else:
+            idx_list = list(range(self.num_classes))
+            mapped_prediction = prediction[:, idx_list, :, :]
+            return mapped_prediction
