@@ -688,6 +688,11 @@ class Viewer(wx.Panel):
         elif self.orientation == "SAGITAL":
             mx = round((y - yi) / self.slice_.spacing[1], 0)
             my = round((z - zi) / self.slice_.spacing[2], 0)
+        
+        # Check NaN values
+        if mx != mx or my != my:
+            return 0, 0
+
         return int(mx), int(my)
 
     def get_vtk_mouse_position(self):
