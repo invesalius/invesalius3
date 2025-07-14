@@ -43,7 +43,9 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import inv_paths
+from invesalius.data.slice_ import Slice
 from invesalius.gui import project_properties
+from invesalius.gui.interactive_shell import InteractiveShellFrame
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -1178,69 +1180,66 @@ class Frame(wx.Frame):
 
     def OnInteractiveShell(self, evt):
         """Show the interactive Python shell."""
-        try:
-            # Import the interactive shell module
-            from invesalius.data.slice_ import Slice
-            from invesalius.gui.interactive_shell import InteractiveShellFrame
+        # Create context dictionary with useful objects
+        import numpy as np
 
-            # Get current project and slice singleton if available
-            project = prj.Project()
-            slice_singleton = Slice()
+        app_context = {
+            "project": prj.Project(),  # singleton
+            "slice": Slice(),  # singletion
+            "session": ses.Session(),  # singleton
+            "frame": self,
+            "Publisher": Publisher,  # Will be set below
+            "volume_viewer": self.aui_manager.GetPane("Data")
+            .window.aui_manager.GetPane("Volume")
+            .window.GetSizer()
+            .GetItem(0)
+            .GetWindow()
+            .aui_manager.GetAllPanes()[0]
+            .window,
+            "axial_viewer": self.aui_manager.GetPane("Data")
+            .window.aui_manager.GetPane("Axial Slice")
+            .window,
+            "coronal_viewer": self.aui_manager.GetPane("Data")
+            .window.aui_manager.GetPane("Coronal Slice")
+            .window,
+            "sagittal_viewer": self.aui_manager.GetPane("Data")
+            .window.aui_manager.GetPane("Sagittal Slice")
+            .window,
+            "np": np,
+            "wx": wx,
+            "app": wx.GetApp(),
+        }
 
-            # Create context dictionary with useful objects
-            app_context = {
-                "project": project,
-                "slice": slice_singleton,
-                "frame": self,
-                "Publisher": Publisher,  # Will be set below
-                "volume_viewer": self.aui_manager.GetPane("Data")
-                .window.aui_manager.GetPane("Volume")
-                .window.GetSizer()
-                .GetItem(0)
-                .GetWindow()
-                .aui_manager.GetAllPanes()[0]
-                .window,
-            }
+        intro_text = (
+            "InVesalius Interactive Python Shell\n"
+            "===========================\n"
+            "Available objects:\n"
+            "  app             - Main application instance\n"
+            "  frame           - Main frame window\n"
+            "  project         - Current project data\n"
+            "  slice           - Slice singleton for image data\n"
+            "  Publisher       - PubSub publisher for messaging\n"
+            "  volume_viewer   - Volume viewer pane\n"
+            "  axial_viewer    - Axial slice viewer pane\n"
+            "  coronal_viewer  - Coronal slice viewer pane\n"
+            "  sagittal_viewer - Sagittal slice viewer pane\n"
+            "  wx              - wxPython module\n"
+            "  np              - NumPy module\n"
+            "\nExample usage:\n"
+            "  >>> frame.GetTitle()\n"
+            "  >>> project.name\n"
+            "  >>> slice.current_mask\n"
+            "  >>> Publisher.sendMessage('Set threshold values', threshold_range=(100, 500))\n"
+            "\n"
+        )
 
-            intro_text = (
-                "InVesalius Interactive Shell\n"
-                "===========================\n"
-                "Available objects:\n"
-                "  app           - Main application instance\n"
-                "  frame         - Main frame window\n"
-                "  project       - Current project data\n"
-                "  slice         - Slice singleton for image data\n"
-                "  Publisher     - PubSub publisher for messaging\n"
-                "  volume_viewer - Volume viewer pane\n"
-                "  wx            - wxPython module\n"
-                "\nUseful commands:\n"
-                "  dir(obj)      - List object attributes\n"
-                "  help(obj)     - Get help on object\n"
-                "  Publisher.sendMessage('topic', **kwargs) - Send messages\n"
-                "\nExample usage:\n"
-                "  >>> frame.GetTitle()\n"
-                "  >>> project.name\n"
-                "  >>> slice.current_mask\n"
-                "  >>> Publisher.sendMessage('Set threshold values', threshold_range=(100, 500))\n"
-                "\n"
-            )
+        # Check if shell window already exists
+        if not hasattr(self, "_shell_window") or not self._shell_window:
+            self._shell_window = InteractiveShellFrame(self, app_context, introText=intro_text)
 
-            # Check if shell window already exists
-            if not hasattr(self, "_shell_window") or not self._shell_window:
-                self._shell_window = InteractiveShellFrame(self, app_context, introText=intro_text)
-
-            # Show the shell window
-            self._shell_window.Show()
-            self._shell_window.Raise()
-
-        except Exception as e:
-            print(f"Error showing interactive shell: {e}")
-            import traceback
-
-            traceback.print_exc()
-
-            # Show error message
-            wx.MessageBox(f"Error showing interactive shell: {e}", "Error", wx.OK | wx.ICON_ERROR)
+        # Show the shell window
+        self._shell_window.Show()
+        self._shell_window.Raise()
 
 
 # ------------------------------------------------------------------

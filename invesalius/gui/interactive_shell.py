@@ -28,7 +28,7 @@ class InteractiveShellPanel(wx.Panel):
     Interactive Python shell panel for debugging and development.
     """
 
-    def __init__(self, parent, app_context=None, introText=""):
+    def __init__(self, parent, app_context={}, introText=""):
         """
         Initialize the shell panel.
 
@@ -38,48 +38,13 @@ class InteractiveShellPanel(wx.Panel):
         """
         super().__init__(parent)
 
-        # Create the shell with local namespace
-        locals_dict = {
-            "wx": wx,
-            "app": wx.GetApp(),
-            "frame": parent,
-        }
-
-        # Add application context if provided
-        if app_context:
-            locals_dict.update(app_context)
-
         # Create shell widget
-        self.shell = wx.py.shell.Shell(self, locals=locals_dict, introText=introText)
+        self.shell = wx.py.shell.Shell(self, locals=app_context, introText=introText)
 
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.shell, 1, wx.EXPAND)
         self.SetSizer(sizer)
-
-    def _get_intro_text(self):
-        """Get introductory text for the shell."""
-        return _(
-            "InVesalius Interactive Shell\n"
-            "===========================\n"
-            "Available objects:\n"
-            "  app       - Main application instance\n"
-            "  frame     - Main frame window\n"
-            "  project   - Current project data\n"
-            "  slice     - Slice singleton for image data\n"
-            "  Publisher - PubSub publisher for messaging\n"
-            "  wx        - wxPython module\n"
-            "\nUseful commands:\n"
-            "  dir(obj)  - List object attributes\n"
-            "  help(obj) - Get help on object\n"
-            "  Publisher.sendMessage('topic', **kwargs) - Send messages\n"
-            "\nExample usage:\n"
-            "  >>> frame.GetTitle()\n"
-            "  >>> project.name\n"
-            "  >>> slice.current_mask\n"
-            "  >>> Publisher.sendMessage('Set threshold values', threshold_range=(100, 500))\n"
-            "\n"
-        )
 
     def update_context(self, new_context):
         """Update the shell's local namespace with new objects."""
@@ -102,8 +67,8 @@ class InteractiveShellFrame(wx.Frame):
         """
         super().__init__(
             parent,
-            title=_("InVesalius Interactive Shell"),
-            size=(600, 400),
+            title=_("InVesalius Interactive Python Shell"),
+            size=(800, 600),
             style=wx.DEFAULT_FRAME_STYLE | wx.FRAME_FLOAT_ON_PARENT,
         )
 
