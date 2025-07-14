@@ -2908,6 +2908,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UnsetPointOfInterest, "Unset point of interest")
         Publisher.subscribe(self._UpdateMarkerLabel, "Update marker label")
         Publisher.subscribe(self._UpdateMEP, "Update marker mep")
+        Publisher.subscribe(self._UpdateCoil, "Update marker associate coil")
 
         Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
         # Publisher.subscribe(self.SetVectorField, "Set vector field")
@@ -3041,6 +3042,20 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Trigger redraw MEP mapping
         Publisher.sendMessage("Redraw MEP mapping")
+    
+    def _UpdateCoil(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
+        self.marker_list_ctrl.SetItem(idx, const.COIL_NAME_COLUMN, str(marker.coil))
+
+        # Update the marker coil in self.itemDataMap so that sorting works
+        uuid = marker.marker_uuid
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.COIL_NAME_COLUMN] = marker.coil
+        
+        if marker.is_target:
+            self.markers.SetTarget(marker.marker_id, False)
 
     @staticmethod
     def __list_fiducial_labels():
@@ -3161,8 +3176,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if is_coil_target:
             mep_menu_item = menu_id.Append(unique_menu_id + 4, _("Change MEP value"))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP, mep_menu_item)
+
+            coil_item = menu_id.Append(unique_menu_id + 5, _("Change coil associate"))
+            menu_id.Bind(wx.EVT_MENU, self.ChangeCoilFromCoilTarget, coil_item)
+
             if is_active_target:
-                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Unset target"))
+                target_menu_item = menu_id.Append(unique_menu_id + 6, _("Unset target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
                 if has_mTMS:
                     brain_target_menu_item = menu_id.Append(
@@ -3170,7 +3189,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     )
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
-                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Set as target"))
+                target_menu_item = menu_id.Append(unique_menu_id + 6, _("Set as target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
@@ -4446,6 +4465,26 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
             #Disable target
             self.markers.UnsetTarget(marker.marker_id)
+
+    def ChangeCoilFromCoilTarget(self, evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.__get_marker(idx)
+
+        #Select coil in dialog window
+        dialog = wx.SingleChoiceDialog(
+            None,
+            _("Select which coil to associate"),
+            _("Select coil"),
+            choices=list(self.navigation.coil_registrations),
+        )
+        if dialog.ShowModal() == wx.ID_OK:
+            coil_name = dialog.GetStringSelection()
+        else:
+            return  # Cancel the operation if the user closes the dialog or cancels
+        
+        dialog.Destroy()
+
+        self.markers.ChangeCoilAssociate(marker, coil_name)
 
     def OnLockMainCoil(self):
         marker = self.markers.FindTarget()

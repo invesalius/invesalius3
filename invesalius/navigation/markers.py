@@ -223,7 +223,11 @@ class MarkersControl(metaclass=Singleton):
     def ChangeMEP(self, marker: Marker, new_mep: float) -> None:
         marker.mep_value = new_mep
         Publisher.sendMessage("Update marker mep", marker=marker)
-
+        self.SaveState()
+    
+    def ChangeCoilAssociate(self, marker: Marker, new_coil) -> None:
+        marker.coil = new_coil
+        Publisher.sendMessage("Update marker associate coil", marker=marker)
         self.SaveState()
 
     def ChangeColor(self, marker: Marker, new_color: List[float]) -> None:
@@ -293,7 +297,7 @@ class MarkersControl(metaclass=Singleton):
         new_marker.marker_type = MarkerType.COIL_TARGET
         new_marker.label = self.GetNextMarkerLabel()
         new_marker.coil = coil
-        
+
         self.AddMarker(new_marker)
 
     def CreateCoilTargetFromBrainTarget(self, marker: Marker) -> None:
