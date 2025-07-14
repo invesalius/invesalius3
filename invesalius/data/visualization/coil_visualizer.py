@@ -294,17 +294,19 @@ class CoilVisualizer:
 
         - Update actor positions for coil, coil center, and coil orientation axes.
         """
-
+        
         for name, m_img in m_imgs.items():
-            m_img_flip = m_img.copy()
-            m_img_flip[1, -1] = -m_img_flip[1, -1]
+            
+            if name in self.coils:
+                m_img_flip = m_img.copy()
+                m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-            m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
+                m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
 
-            # Update actor positions for coil, coil center, and coil orientation axes.
-            self.coils[name]["actor"].SetUserMatrix(m_img_vtk)
-            self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
+                # Update actor positions for coil, coil center, and coil orientation axes.
+                self.coils[name]["actor"].SetUserMatrix(m_img_vtk)
+                self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
 
-            # LUKATODO
+                # LUKATODO
 
-            self.vector_field_assembly.SetUserMatrix(m_img_vtk)
+                self.vector_field_assembly.SetUserMatrix(m_img_vtk)

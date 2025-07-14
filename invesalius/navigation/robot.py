@@ -318,7 +318,6 @@ class Robots(metaclass=Singleton):
         robotCoilAssociation = {}
         for robot_id in self.robots:
             robot_obj = self.robots[robot_id]
-            print(robot_obj.IsConnected())
             if robot_obj.IsConnected():
                 robotCoilAssociation[robot_obj.robot_name] = robot_obj.coil_name
         

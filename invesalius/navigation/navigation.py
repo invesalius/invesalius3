@@ -147,7 +147,6 @@ class UpdateNavigationScene(threading.Thread):
 
                 probe_visible = marker_visibilities[0]
                 coil_visible = any(marker_visibilities[2:])  # is any coil visible?
-
                 main_coil = self.navigation.main_coil
                 track_this = main_coil if self.navigation.track_coil else "probe"
                 # choose which object to track in slices and viewer_volume pointer
@@ -198,7 +197,7 @@ class UpdateNavigationScene(threading.Thread):
                     position=[coord[0], -coord[1], coord[2]],
                 )
 
-                if coil_visible:
+                if coil_visible and self.navigation.track_coil:
                     # Check pubsub "Update coil pose" dependencies
                     wx.CallAfter(
                         Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
@@ -433,6 +432,7 @@ class Navigation(metaclass=Singleton):
 
         # Reset coil selection
         self.coil_registrations = {}
+        self.track_coil = False
         self.main_coil = None
         self.SaveConfig()
 

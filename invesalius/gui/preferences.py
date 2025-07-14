@@ -1156,9 +1156,9 @@ class ObjectTab(wx.Panel):
             )
             self.inner_sel_sizer.Add(self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
 
-            session = ses.Session()
-            self.coil_registrations = {}
-            session.SetConfig("coil_registrations", self.coil_registrations)
+        session = ses.Session()
+        self.coil_registrations = {}
+        session.SetConfig("coil_registrations", self.coil_registrations)
 
         self.ShowMulticoilGUI(multicoil_mode)
 

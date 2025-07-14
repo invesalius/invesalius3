@@ -2172,6 +2172,8 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.PressMotorMapButton, "Press motor map button")
         Publisher.subscribe(self.EnableMotorMapButton, "Enable motor map button")
 
+        Publisher.subscribe(self.PressNavigationButton, "Press navigation button")
+
         # Conditions for enabling 'target mode' button:
         Publisher.subscribe(self.TrackObject, "Track object")
 
@@ -2241,18 +2243,9 @@ class ControlPanel(wx.Panel):
     def OnStartNavigationButton(self, evt, btn_nav):
         nav_id = btn_nav.GetValue()
         if not nav_id:
-            wx.CallAfter(Publisher.sendMessage, "Stop navigation")
-            tooltip = _("Start navigation")
-            btn_nav.SetToolTip(tooltip)
-            btn_nav.SetLabelText(_("Start navigation"))
+            self.PressNavigationButton(False)
         else:
-            Publisher.sendMessage("Start navigation")
-            if self.nav_status:
-                tooltip = _("Stop navigation")
-                btn_nav.SetToolTip(tooltip)
-                btn_nav.SetLabelText(_("Stop navigation"))
-            else:
-                btn_nav.SetValue(False)
+            self.PressNavigationButton(True)
 
     def OnStopNavigation(self):
         Publisher.sendMessage("Disable style", style=const.STATE_NAVIGATION)
@@ -2262,7 +2255,7 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def UnsetTarget(self, marker, robot_ID):
+    def UnsetTarget(self, marker = None, robot_ID = None):
         self.navigation.target = None
         self.target_selected = False
         self.UpdateTargetButton()
@@ -2596,7 +2589,21 @@ class ControlPanel(wx.Panel):
         pressed = self.show_motor_map_button.GetValue()
         if self.mep_visualizer.DisplayMotorMap(show=pressed):
             self.UpdateToggleButton(self.show_motor_map_button)
-
+    
+    def PressNavigationButton(self, cond):
+        if cond:
+            Publisher.sendMessage("Start navigation")
+            if self.nav_status:
+                tooltip = _("Stop navigation")
+                self.btn_nav.SetToolTip(tooltip)
+                self.btn_nav.SetLabelText(_("Stop navigation"))
+            else:
+                self.btn_nav.SetValue(False)
+        else:
+            wx.CallAfter(Publisher.sendMessage, "Stop navigation")
+            tooltip = _("Start navigation")
+            self.btn_nav.SetToolTip(tooltip)
+            self.btn_nav.SetLabelText(_("Start navigation"))
 
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def __init__(self, parent, nav_hub):
@@ -2864,10 +2871,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, "Set cross focal point")
+        Publisher.subscribe(self.OnLockMainCoil, "Start navigation")
+        Publisher.subscribe(self.OnUnLockMainCoil, "Stop navigation")
 
         # Called when selecting a marker in the volume viewer.
         Publisher.subscribe(self.OnSelectMarkerByActor, "Select marker by actor")
-
+        
         Publisher.subscribe(self.OnDeleteFiducialMarker, "Delete fiducial marker")
         Publisher.subscribe(self.OnDeleteSelectedMarkers, "Delete selected markers")
         Publisher.subscribe(self.OnDeleteAllMarkers, "Delete all markers")
@@ -2902,6 +2911,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
         # Publisher.subscribe(self.SetVectorField, "Set vector field")
+        Publisher.subscribe(self.ResetTargets, "Reset coil selection")
 
     def __get_selected_items(self):
         """
@@ -3437,7 +3447,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if not proj.surface_dict:
             wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
             return
-        self.markers.CreateCoilTargetFromLandmark(marker)
+        
+        coil = self.navigation.main_coil
+        self.markers.CreateCoilTargetFromLandmark(marker, coil)
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
         self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
@@ -3486,8 +3498,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.sendMessage("Request update Robot Coil Association")
 
         coil_to_robot_map = {coil: robot for robot, coil in self.robotCoilAssociation.items()}
-        
-        print(self.robotCoilAssociation)
 
         items_to_add = []
         for coil_name in self.navigation.coil_registrations:
@@ -3547,8 +3557,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             wx.MessageBox(_("TMS coil not registered."), _("InVesalius 3"))
             return
 
+        marker = self.__get_marker(idx)
+
+        if marker.coil not in self.navigation.coil_registrations:
+            wx.MessageBox(_("""This marker cannot be targeted because its coil is not available, please change the associated coil or add the correct coil"""), _("InVesalius 3"))
+            return
+
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)
+        self.select_main_coil.Disable()
 
     def _SetTarget(self, marker, robot_ID):
         idx = self.__find_marker_index(marker.marker_id)
@@ -3806,6 +3823,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker_id = self.__get_marker_id(idx)
         self.markers.UnsetTarget(marker_id)
+        self.select_main_coil.Enable()
 
     def OnMenuChangeMEP(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -4079,7 +4097,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 else MarkerType.LANDMARK
             )
 
-        main_coil = self.navigation.main_coil
+        main_coil = self.navigation.main_coil if marker_type == MarkerType.COIL_TARGET else ""
   
         marker = self.CreateMarker(
             position=position,
@@ -4419,3 +4437,22 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Focus on the added marker.
         if focus:
             self.FocusOnMarker(num_items)
+
+    def ResetTargets(self, n_coils = None):
+        marker = self.markers.FindTarget()
+        if marker:
+            #Stop navigation
+            Publisher.sendMessage("Press navigation button", cond = False)
+
+            #Disable target
+            self.markers.UnsetTarget(marker.marker_id)
+
+    def OnLockMainCoil(self):
+        marker = self.markers.FindTarget()
+        if marker:
+            self.select_main_coil.Disable()
+        pass
+
+    def OnUnLockMainCoil(self):
+        self.select_main_coil.Enable()
+        pass
