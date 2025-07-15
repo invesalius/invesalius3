@@ -624,6 +624,7 @@ class Viewer(wx.Panel):
 
         green_color = const.GREEN_COLOR_FLOAT
         red_color = const.RED_COLOR_FLOAT
+        orange_color = const.ORANGE_COLOR_FLOAT
 
         if probe_id:
             colour1 = green_color
@@ -633,10 +634,10 @@ class Viewer(wx.Panel):
             colour2 = green_color
         else:
             colour2 = red_color
-        if any(
-            coil_ids
-        ):  # LUKATODO: add subscript to show how many coils are visible (green when all visible, orange when some not)
+        if all(coil_ids):
             colour3 = green_color
+        elif any(coil_ids):
+            colour3 = orange_color
         else:
             colour3 = red_color
 
