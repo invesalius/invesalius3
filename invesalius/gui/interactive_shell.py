@@ -20,7 +20,14 @@
 import wx
 import wx.py.shell
 
+import invesalius.constants as const
+import invesalius.session as ses
 from invesalius.i18n import tr as _
+from invesalius.navigation.markers import MarkersControl
+from invesalius.navigation.navigation import Navigation
+from invesalius.navigation.robot import Robot
+from invesalius.navigation.tracker import Tracker
+from invesalius.pubsub import pub as Publisher
 
 
 class InteractiveShellPanel(wx.Panel):
@@ -83,6 +90,22 @@ class InteractiveShellFrame(wx.Frame):
         # Center on parent
         self.CenterOnParent()
 
+        Publisher.subscribe(self.update_context, "Update shell context")
+        Publisher.subscribe(
+            self.add_navigation_context, "Add navigation context to interactive shell"
+        )
+
     def update_context(self, new_context):
         """Update the shell's context."""
         self.shell_panel.update_context(new_context)
+
+    def add_navigation_context(self):
+        mode = ses.Session().GetConfig("mode")
+        navigation_context = {}
+        if mode == const.MODE_NAVIGATOR:
+            navigation_context["markers"] = MarkersControl()
+            navigation_context["navigation"] = Navigation()
+            navigation_context["robot"] = Robot()
+            navigation_context["tracker"] = Tracker()
+
+        Publisher.sendMessage("Update shell context", new_context=navigation_context)

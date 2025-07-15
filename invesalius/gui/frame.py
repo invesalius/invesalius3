@@ -23,7 +23,6 @@ import platform
 import subprocess
 import sys
 import webbrowser
-from datetime import datetime
 
 import wx
 import wx.aui
@@ -1225,6 +1224,11 @@ class Frame(wx.Frame):
             "  sagittal_viewer - Sagittal slice viewer pane\n"
             "  wx              - wxPython module\n"
             "  np              - NumPy module\n"
+            "\nIf Navigation mode is active the following objects are also available:\n"
+            "  markers         - MarkersControl instance for navigation markers\n"
+            "  navigation      - Navigation instance for controlling navigation\n"
+            "  robot           - Robot instance for robotic control\n"
+            "  tracker         - Tracker instance for tracking data\n"
             "\nExample usage:\n"
             "  >>> frame.GetTitle()\n"
             "  >>> project.name\n"
@@ -1240,6 +1244,8 @@ class Frame(wx.Frame):
         # Show the shell window
         self._shell_window.Show()
         self._shell_window.Raise()
+
+        Publisher.sendMessage("Add navigation context to interactive shell")
 
 
 # ------------------------------------------------------------------
