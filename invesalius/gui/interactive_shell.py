@@ -95,11 +95,16 @@ class InteractiveShellFrame(wx.Frame):
             self.add_navigation_context, "Add navigation context to interactive shell"
         )
 
-    def update_context(self, new_context):
-        """Update the shell's context."""
+    def update_context(self, new_context: dict):
+        """Update the shell's context.
+
+        Args:
+            new_context: Dictionary of new objects to add to the shell context
+        """
         self.shell_panel.update_context(new_context)
 
     def add_navigation_context(self):
+        """Add navigation-related objects to the shell context."""
         mode = ses.Session().GetConfig("mode")
         navigation_context = {}
         if mode == const.MODE_NAVIGATOR:
