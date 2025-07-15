@@ -70,7 +70,7 @@ class TrackerCoordinates:
                 wx.CallAfter(
                     Publisher.sendMessage,
                     "Sensors ID",
-                    marker_visibilities=self.marker_visibilities,
+                    marker_visibilities="Sensors ID",
                 )
                 wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
                 self.previous_marker_visibilities = self.marker_visibilities
@@ -264,14 +264,14 @@ def PolarisCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_m
     coord2 = np.hstack((trans_ref, angles_ref))
 
     obj_coords = []
-    for i in range(trck.objs.size()):
+    for i in range(trck.objs.size()-1): #TODO: Fix the polaris wrapper, it is sending one more object
         obj = trck.objs[i].decode(const.FS_ENCODE).split(",")
         angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
         trans_obj = np.array(obj[6:9]).astype(float)
         obj_coords.append(np.hstack((trans_obj, angles_obj)))
 
     coord = np.vstack([coord1, coord2, *obj_coords])
-    marker_visibilities = [trck.probeID, trck.refID] + list(trck.objIDs)
+    marker_visibilities = [trck.probeID, trck.refID] + list(trck.objIDs)[:-1] #TODO: Fix the polaris wrapper, it is sending one more object
 
     return coord, marker_visibilities
 
