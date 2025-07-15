@@ -70,7 +70,7 @@ class TrackerCoordinates:
                 wx.CallAfter(
                     Publisher.sendMessage,
                     "Sensors ID",
-                    marker_visibilities="Sensors ID",
+                    marker_visibilities=self.marker_visibilities,
                 )
                 wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
                 self.previous_marker_visibilities = self.marker_visibilities

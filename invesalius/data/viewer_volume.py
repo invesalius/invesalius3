@@ -274,6 +274,7 @@ class Viewer(wx.Panel):
         self.dummy_probe_actor = None
         self.dummy_ref_actor = None
         self.dummy_obj_actor = None
+        self.coil_sensor_spheres = []
         self.target_mode = False
 
         # Set the angle and distance thresholds.
@@ -620,32 +621,32 @@ class Viewer(wx.Panel):
 
         if not self.probe:
             self.probe = True
-            self.CreateSensorID()
+            self.CreateSensorID(len(coil_ids)) # Pass the number of coils to CreateSensorID
 
         green_color = const.GREEN_COLOR_FLOAT
         red_color = const.RED_COLOR_FLOAT
-        orange_color = const.ORANGE_COLOR_FLOAT
+        yellow_color = const.YELLOW_COLOR_FLOAT
 
-        if probe_id:
-            colour1 = green_color
+        # Update probe and ref colors
+        self.dummy_probe_actor.GetProperty().SetColor(green_color if probe_id else red_color)
+        self.dummy_ref_actor.GetProperty().SetColor(green_color if ref_id else red_color)
+        
+        # Update main coil icon color
+        num_visible = sum(coil_ids)
+        if num_visible == 0:
+            coil_color = red_color
+        elif num_visible < len(coil_ids):
+            coil_color = yellow_color
         else:
-            colour1 = red_color
-        if ref_id:
-            colour2 = green_color
-        else:
-            colour2 = red_color
-        if all(coil_ids):
-            colour3 = green_color
-        elif any(coil_ids):
-            colour3 = orange_color
-        else:
-            colour3 = red_color
+            coil_color = green_color
+        self.dummy_obj_actor.GetProperty().SetColor(coil_color)
 
-        self.dummy_probe_actor.GetProperty().SetColor(colour1)
-        self.dummy_ref_actor.GetProperty().SetColor(colour2)
-        self.dummy_obj_actor.GetProperty().SetColor(colour3)
+        # Update sphere colors
+        for i, sphere_actor in enumerate(self.coil_sensor_spheres):
+            color = green_color if coil_ids[i] else red_color
+            sphere_actor.GetProperty().SetColor(color)
 
-    def CreateSensorID(self):
+    def CreateSensorID(self, num_coils=0):
         self.ren_probe = vtkRenderer()
         self.ren_probe.SetLayer(1)
 
@@ -712,6 +713,23 @@ class Viewer(wx.Panel):
         self.ren_obj.AddActor(dummy_obj_actor)
         self.ren_obj.InteractiveOff()
 
+        # Create spheres for coils
+        total_width = (num_coils - 1) * 15  # Total width the spheres will occupy
+        start_x = -total_width / 2.0
+
+        for i in range(num_coils):
+            sphere_source = vtkSphereSource()
+            sphere_source.SetRadius(6)
+            sphere_source.SetCenter(start_x + i * 15, -40, 0)  # Positioned below the coil icon
+            
+            mapper = vtkPolyDataMapper()
+            mapper.SetInputConnection(sphere_source.GetOutputPort())
+            
+            actor = vtkActor()
+            actor.SetMapper(mapper)
+            self.ren_obj.AddActor(actor)
+            self.coil_sensor_spheres.append(actor)
+
     def OnRemoveSensorsID(self):
         if self.probe:
             self.ren_probe.RemoveActor(self.dummy_probe_actor)
@@ -719,6 +737,9 @@ class Viewer(wx.Panel):
             self.ren_ref.RemoveActor(self.dummy_ref_actor)
             self.interactor.GetRenderWindow().RemoveRenderer(self.ren_ref)
             self.ren_obj.RemoveActor(self.dummy_obj_actor)
+            for sphere_actor in self.coil_sensor_spheres:
+                self.ren_obj.RemoveActor(sphere_actor)
+            self.coil_sensor_spheres = []
             self.interactor.GetRenderWindow().RemoveRenderer(self.ren_obj)
             self.probe = self.ref = self.obj = False
             self.UpdateRender()
