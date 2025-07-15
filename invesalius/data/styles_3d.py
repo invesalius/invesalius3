@@ -29,8 +29,8 @@ from vtkmodules.vtkInteractionStyle import (
 from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPicker
 
 import invesalius.constants as const
-import invesalius.project as prj
 import invesalius.data.mask_3d_edit as m3e
+import invesalius.project as prj
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
