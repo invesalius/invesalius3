@@ -1342,12 +1342,16 @@ class ObjectTab(wx.Panel):
                 self.session.SetConfig("coil_registrations", self.coil_registrations)
                 self.coil_btns[name][0].SetLabel(new_coil_name)
                 self.coil_btns[new_coil_name] = self.coil_btns.pop(name)
+
+                Publisher.sendMessage("Stop navigation")
+                Publisher.sendMessage("Reset targets")
                 Publisher.sendMessage(
                     "Select coil",
                     coil_name=name,
                     coil_registration=None,
                     new_coil_name=new_coil_name,
                 )
+                Publisher.sendMessage("Coil selection done", done = True)
 
             else:
                 dialog.Destroy()
@@ -1707,6 +1711,8 @@ class TrackerTab(wx.Panel):
         Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils)
         Publisher.sendMessage("Coil selection done", done=False)
         Publisher.sendMessage("Create second robot")
+        Publisher.sendMessage("Reset targets")
+
 
     def OnChooseTracker(self, evt, ctrl):
         if sys.platform == "darwin":
@@ -1727,6 +1733,7 @@ class TrackerTab(wx.Panel):
         Publisher.sendMessage("Tracker changed")
         Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils)
         Publisher.sendMessage("Coil selection done", done=False)
+        Publisher.sendMessage("Reset targets")
         ctrl.SetSelection(self.tracker.tracker_id)
         Publisher.sendMessage("End busy cursor")
         if sys.platform == "darwin":

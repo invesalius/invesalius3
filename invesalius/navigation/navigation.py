@@ -398,7 +398,7 @@ class Navigation(metaclass=Singleton):
         elif coil_name in self.coil_registrations:
             if coil_registration is None and new_coil_name is not None:  # Rename the coil
                 self.coil_registrations[new_coil_name] = self.coil_registrations.pop(coil_name)
-                if self.main_coil is None:
+                if self.main_coil == coil_name:
                     self.main_coil = new_coil_name
             else:  # Remove the coil from selection
                 self.coil_registrations.pop(coil_name, None)

@@ -2912,7 +2912,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
         # Publisher.subscribe(self.SetVectorField, "Set vector field")
-        Publisher.subscribe(self.ResetTargets, "Reset coil selection")
+        Publisher.subscribe(self.ResetTargets, "Reset targets")
 
     def __get_selected_items(self):
         """
@@ -4457,7 +4457,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if focus:
             self.FocusOnMarker(num_items)
 
-    def ResetTargets(self, n_coils = None):
+    def ResetTargets(self):
         marker = self.markers.FindTarget()
         if marker:
             #Stop navigation
