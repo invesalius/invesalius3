@@ -2000,6 +2000,21 @@ class ControlPanel(wx.Panel):
         robot_name_lbl = wx.StaticText(self, -1, _(f"{self.robot.GetActive().robot_name}"))
         self.robot_name_lbl = robot_name_lbl
 
+        # Toggle button for simultaneous multicoil
+        tooltip = _("Simultaneous multicoil mode")
+        BMP_SIMULTANEOUS = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("multi_target.png")), wx.BITMAP_TYPE_PNG)
+        simultaneous_mode_button = wx.ToggleButton(
+            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        simultaneous_mode_button.SetBackgroundColour(RED_COLOR)
+        simultaneous_mode_button.SetBitmap(BMP_SIMULTANEOUS)
+        simultaneous_mode_button.SetValue(False)
+        simultaneous_mode_button.Enable(True)
+        # TODO: Create function bind
+        simultaneous_mode_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnSimultaneousButton, ctrl =simultaneous_mode_button))
+        simultaneous_mode_button.SetToolTip(tooltip)
+        self.simultaneous_mode_button = simultaneous_mode_button
+
         # Toggle button for tracking target with robot during navigation
         tooltip = _("Track target with robot")
         BMP_TRACK_TARGET = wx.Bitmap(
@@ -2096,6 +2111,7 @@ class ControlPanel(wx.Panel):
                 (show_coil_button),
                 (show_probe_button),
                 (show_motor_map_button),
+                (simultaneous_mode_button),
             ]
         )
 
@@ -2505,6 +2521,13 @@ class ControlPanel(wx.Panel):
             # Set robot objective to NONE when target mode is enabled.
             self.robot.GetActive().SetObjective(RobotObjective.NONE)
 
+    def OnSimultaneousButton(self, evt, ctrl):
+        enabled = ctrl.GetValue()
+        Publisher.sendMessage("Set simultaneous multicoil mode", enabled=enabled)
+        if enabled:
+            ctrl.SetBackgroundColour(self.GREEN_COLOR)
+        else:
+            ctrl.SetBackgroundColour(self.RED_COLOR)
     # Robot-related buttons
 
     # 'Track target with robot' button
@@ -3533,7 +3556,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         main_coil = ctrl.GetClientData(choice)
         self.navigation.SetMainCoil(main_coil)
         ctrl.SetSelection(choice)
-        Publisher.sendMessage("Set active robot by coil name", coil_name=main_coil)
 
     def OnChangeMainCoilbySetTarget(self, coil_name):
         index_to_select = next(
@@ -3584,7 +3606,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)
-        self.select_main_coil.Disable()
+        # self.select_main_coil.Disable()
+
+        self.navigation.UpdateCoilMesh(marker.coil)
+        Publisher.sendMessage("Set active robot by coil name", coil_name=marker.coil)
 
     def _SetTarget(self, marker, robot_ID):
         idx = self.__find_marker_index(marker.marker_id)
@@ -3842,7 +3867,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker_id = self.__get_marker_id(idx)
         self.markers.UnsetTarget(marker_id)
-        self.select_main_coil.Enable()
+        # self.select_main_coil.Enable()
 
     def OnMenuChangeMEP(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -4488,10 +4513,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def OnLockMainCoil(self):
         marker = self.markers.FindTarget()
-        if marker:
-            self.select_main_coil.Disable()
+        # if marker:
+        #     self.select_main_coil.Disable()
         pass
 
     def OnUnLockMainCoil(self):
-        self.select_main_coil.Enable()
+        # self.select_main_coil.Enable()
         pass

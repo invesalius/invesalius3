@@ -137,6 +137,7 @@ class UpdateNavigationScene(threading.Thread):
         self.neuronavigation_api = neuronavigation_api
         self.navigation = Navigation()
         self.robot = Robots()
+        self.markers = MarkersControl()
 
     def run(self):
         while not self.event.is_set():
@@ -147,8 +148,9 @@ class UpdateNavigationScene(threading.Thread):
 
                 probe_visible = marker_visibilities[0]
                 coil_visible = any(marker_visibilities[2:])  # is any coil visible?
-                main_coil = self.navigation.main_coil
-                track_this = main_coil if self.navigation.track_coil else "probe"
+                track_this = self.navigation.main_coil if self.navigation.track_coil else "probe"
+                marker_target = self.markers.FindTarget()
+                coil = marker_target.coil if marker_target else self.navigation.main_coil
                 # choose which object to track in slices and viewer_volume pointer
                 coord = coords[track_this]
 
@@ -205,15 +207,15 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(  # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
                         Publisher.sendMessage,
                         "Update coil pose",
-                        m_img=m_imgs[main_coil],
-                        coord=coords[main_coil],
+                        m_img=m_imgs[coil],
+                        coord=coords[coil],
                         robot_ID=self.robot.GetActive().robot_name,
                     )
                     wx.CallAfter(
                         Publisher.sendMessage,
                         "Update object arrow matrix",
-                        m_img=m_imgs[main_coil],
-                        coord=coords[main_coil],
+                        m_img=m_imgs[coil],
+                        coord=coords[coil],
                         flag=self.peel_loaded,
                     )
 
@@ -221,8 +223,8 @@ class UpdateNavigationScene(threading.Thread):
                         wx.CallAfter(
                             Publisher.sendMessage,
                             "Update point location for e-field calculation",
-                            m_img=m_imgs[main_coil],
-                            coord=coords[main_coil],
+                            m_img=m_imgs[coil],
+                            coord=coords[coil],
                             queue_IDs=self.e_field_IDs_queue,
                         )
                         try:
@@ -440,8 +442,9 @@ class Navigation(metaclass=Singleton):
         self.main_coil = main_coil
         self.SaveConfig("main_coil", main_coil)
 
+    def UpdateCoilMesh(self, coil):
         # Send the polydata of the main coil to the connection
-        polydata = pu.LoadPolydata(self.coil_registrations[main_coil]["path"])
+        polydata = pu.LoadPolydata(self.coil_registrations[coil]["path"])
         self.neuronavigation_api.update_coil_mesh(polydata)
 
     def SetReferenceMode(self, value):
