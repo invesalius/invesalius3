@@ -3600,13 +3600,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         if marker.coil not in self.navigation.coil_registrations:
             wx.MessageBox(_("""This marker cannot be targeted because its coil is not available, please change the associated coil or add the correct coil"""), _("InVesalius 3"))
-            return
-
-        marker_id = self.__get_marker_id(idx)
-        self.markers.SetTarget(marker_id)
+            return  
 
         self.navigation.UpdateCoilMesh(marker.coil)
         Publisher.sendMessage("Set active robot by coil name", coil_name=marker.coil)
+
+        marker_id = self.__get_marker_id(idx)
+        self.markers.SetTarget(marker_id)
 
     def _SetTarget(self, marker, robot_ID):
         idx = self.__find_marker_index(marker.marker_id)
