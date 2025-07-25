@@ -2894,8 +2894,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, "Set cross focal point")
-        Publisher.subscribe(self.OnLockMainCoil, "Start navigation")
-        Publisher.subscribe(self.OnUnLockMainCoil, "Stop navigation")
 
         # Called when selecting a marker in the volume viewer.
         Publisher.subscribe(self.OnSelectMarkerByActor, "Select marker by actor")
@@ -3606,7 +3604,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)
-        # self.select_main_coil.Disable()
 
         self.navigation.UpdateCoilMesh(marker.coil)
         Publisher.sendMessage("Set active robot by coil name", coil_name=marker.coil)
@@ -3867,7 +3864,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker_id = self.__get_marker_id(idx)
         self.markers.UnsetTarget(marker_id)
-        # self.select_main_coil.Enable()
 
     def OnMenuChangeMEP(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -4510,13 +4506,3 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         dialog.Destroy()
 
         self.markers.ChangeCoilAssociate(marker, coil_name)
-
-    def OnLockMainCoil(self):
-        marker = self.markers.FindTarget()
-        # if marker:
-        #     self.select_main_coil.Disable()
-        pass
-
-    def OnUnLockMainCoil(self):
-        # self.select_main_coil.Enable()
-        pass
