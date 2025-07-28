@@ -2010,7 +2010,8 @@ class ControlPanel(wx.Panel):
         simultaneous_mode_button.SetBitmap(BMP_SIMULTANEOUS)
         simultaneous_mode_button.SetValue(False)
         simultaneous_mode_button.Enable(True)
-        # TODO: Create function bind
+        self.UpdateToggleButton(simultaneous_mode_button, self.navigation.multitarget)
+        self.OnSimultaneousButton(ctrl=simultaneous_mode_button)
         simultaneous_mode_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnSimultaneousButton, ctrl =simultaneous_mode_button))
         simultaneous_mode_button.SetToolTip(tooltip)
         self.simultaneous_mode_button = simultaneous_mode_button
@@ -2521,9 +2522,9 @@ class ControlPanel(wx.Panel):
             # Set robot objective to NONE when target mode is enabled.
             self.robot.GetActive().SetObjective(RobotObjective.NONE)
 
-    def OnSimultaneousButton(self, evt, ctrl):
+    def OnSimultaneousButton(self, evt = None, ctrl = None):
         enabled = ctrl.GetValue()
-        Publisher.sendMessage("Set simultaneous multicoil mode", enabled=enabled)
+        Publisher.sendMessage("Set simultaneous multicoil mode", state=enabled)
         if enabled:
             ctrl.SetBackgroundColour(self.GREEN_COLOR)
         else:
@@ -2933,7 +2934,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
         # Publisher.subscribe(self.SetVectorField, "Set vector field")
-        Publisher.subscribe(self.ResetTargets, "Reset targets")
 
     def __get_selected_items(self):
         """
@@ -3536,7 +3536,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     
     def __GenerateCoilOptions(self):
         Publisher.sendMessage("Request update Robot Coil Association")
-        
+
         items_to_add = []
         for coil_name in self.navigation.coil_registrations:
             if coil_name in self.robotCoilAssociation:
@@ -4475,15 +4475,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Focus on the added marker.
         if focus:
             self.FocusOnMarker(num_items)
-
-    def ResetTargets(self):
-        marker = self.markers.FindTarget()
-        if marker:
-            #Stop navigation
-            Publisher.sendMessage("Press navigation button", cond = False)
-
-            #Disable target
-            self.markers.UnsetTarget(marker.marker_id)
 
     def ChangeCoilFromCoilTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()

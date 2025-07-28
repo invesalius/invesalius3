@@ -35,6 +35,7 @@ class MarkersControl(metaclass=Singleton):
         self.transformator = MarkerTransformator()
         self.robot = robot
         self.TargetCoilAssociation: Dict[str, Marker] = {}
+        self.multitarget = False
 
         self.__bind_events()
 
@@ -42,6 +43,13 @@ class MarkersControl(metaclass=Singleton):
         Publisher.subscribe(self.ADDSelectCoil, "ADD select coil")
         Publisher.subscribe(self.DeleteSelectCoil, "Delete select coil")
         Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
+        Publisher.subscribe(self.OnSetMultiTargetMode, "Set simultaneous multicoil mode")
+        Publisher.subscribe(self.ResetTargets, "Reset targets")
+    
+    def OnSetMultiTargetMode(self, state):
+        self.multitarget = state
+        if not state:
+            self.ResetTargets()
 
     def ADDSelectCoil(self, coil_name, coil_registration):
         self.TargetCoilAssociation[coil_name] = None
@@ -51,7 +59,6 @@ class MarkersControl(metaclass=Singleton):
 
     def RenameSelectCoil(self, coil_name, new_coil_name):
         self.TargetCoilAssociation[new_coil_name] = self.TargetCoilAssociation.pop(coil_name)
-        print(self.TargetCoilAssociation)
 
     def SaveState(self) -> None:
         state = [marker.to_dict() for marker in self.list]
@@ -148,7 +155,12 @@ class MarkersControl(metaclass=Singleton):
         self.robot.GetActive().SetObjective(RobotObjective.NONE)
 
         if check_for_previous:
-            prev_target = self.FindTarget()
+            marker = self.list[marker_id]
+            # Check multitarget mode
+            if self.multitarget:
+                prev_target = self.FindTarget(marker.coil)
+            else:
+                prev_target = self.FindTarget()
 
             # If the new target is same as the previous do nothing.
             if prev_target and prev_target.marker_id == marker_id:
@@ -159,9 +171,9 @@ class MarkersControl(metaclass=Singleton):
                 self.UnsetTarget(prev_target.marker_id)
 
         # Set new target
-        marker = self.list[marker_id]
         marker.is_target = True
         coil_name = marker.coil
+        self.TargetCoilAssociation[coil_name] = marker
         Publisher.sendMessage("Update main coil by target", coil_name = coil_name)
 
         Publisher.sendMessage(
@@ -198,6 +210,7 @@ class MarkersControl(metaclass=Singleton):
     def UnsetTarget(self, marker_id: int) -> None:
         marker = self.list[marker_id]
         marker.is_target = False
+        self.TargetCoilAssociation[marker.coil] = None
 
         Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
         Publisher.sendMessage(
@@ -215,16 +228,21 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def FindTarget(self) -> Union[None, Marker]:
+    def FindTarget(self, coil_name = None) -> Union[None, Marker]:
         """
         Return the marker currently selected as target (there
         should be at most one).
         """
-        for marker in self.list:
-            if marker.is_target:
-                return marker
+        marker = None
+        if coil_name:
+            marker = self.TargetCoilAssociation.get(coil_name, None)
+        elif not self.multitarget:
+            for m in self.list:
+                if m.is_target:
+                    marker = m
+                    break
 
-        return None
+        return marker
 
     def FindPointOfInterest(self) -> Union[None, Marker]:
         for marker in self.list:
@@ -350,3 +368,13 @@ class MarkersControl(metaclass=Singleton):
         new_marker.marker_type = MarkerType.COIL_TARGET
 
         self.AddMarker(new_marker)
+    
+    def ResetTargets(self):
+        for coil in self.TargetCoilAssociation.keys():
+            marker = self.TargetCoilAssociation.get(coil, None)
+            if marker:
+                #Disable target
+                self.UnsetTarget(marker.marker_id)
+        
+        #Stop navigation
+        Publisher.sendMessage("Press navigation button", cond = False)

@@ -274,6 +274,7 @@ class Navigation(metaclass=Singleton):
         self.m_change = None
         self.r_stylus = None
         self.obj_datas = None  # This is accessed by the robot, gets value at StartNavigation
+        self.multitarget = False
 
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
@@ -335,6 +336,7 @@ class Navigation(metaclass=Singleton):
         Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
         Publisher.subscribe(self.UpdateSerialPort, "Update serial port")
         Publisher.subscribe(self.TrackObject, "Track object")
+        Publisher.subscribe(self.MultiTargetMode, "Set simultaneous multicoil mode")
 
     def SaveConfig(self, key=None, value=None):
         """
@@ -346,6 +348,7 @@ class Navigation(metaclass=Singleton):
                 "selected_coils": list(self.coil_registrations),
                 "n_coils": self.n_coils,
                 "track_coil": self.track_coil,
+                "multitarget mode": self.multitarget,
             }
             if self.main_coil is not None:
                 state["main_coil"] = self.main_coil
@@ -372,6 +375,7 @@ class Navigation(metaclass=Singleton):
                 self.main_coil = "default_coil"
 
             self.track_coil = state.get("track_coil", False)
+            self.multitarget = state.get("multitarget mode", False)
 
             # Try to load selected_coils (the list of names of coils to use for navigation)
             if ("selected_coils" in state) and (saved_coil_registrations is not None):
@@ -727,3 +731,7 @@ class Navigation(metaclass=Singleton):
             self.plot_efield_vectors,
         ]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
+    
+    def MultiTargetMode(self, state):
+        self.multitarget = state
+        self.SaveConfig()
