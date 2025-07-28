@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 
 import uuid
-from typing import List, Union
+from typing import List, Union, Dict
 
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
@@ -34,6 +34,24 @@ class MarkersControl(metaclass=Singleton):
         self.nav_status = False
         self.transformator = MarkerTransformator()
         self.robot = robot
+        self.TargetCoilAssociation: Dict[str, Marker] = {}
+
+        self.__bind_events()
+
+    def __bind_events(self) -> None:
+        Publisher.subscribe(self.ADDSelectCoil, "ADD select coil")
+        Publisher.subscribe(self.DeleteSelectCoil, "Delete select coil")
+        Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
+
+    def ADDSelectCoil(self, coil_name, coil_registration):
+        self.TargetCoilAssociation[coil_name] = None
+    
+    def DeleteSelectCoil(self, coil_name):
+        self.TargetCoilAssociation.pop(coil_name, None)
+
+    def RenameSelectCoil(self, coil_name, new_coil_name):
+        self.TargetCoilAssociation[new_coil_name] = self.TargetCoilAssociation.pop(coil_name)
+        print(self.TargetCoilAssociation)
 
     def SaveState(self) -> None:
         state = [marker.to_dict() for marker in self.list]

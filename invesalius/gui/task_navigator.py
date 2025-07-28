@@ -3536,13 +3536,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     
     def __GenerateCoilOptions(self):
         Publisher.sendMessage("Request update Robot Coil Association")
-
-        coil_to_robot_map = {coil: robot for robot, coil in self.robotCoilAssociation.items()}
-
+        
         items_to_add = []
         for coil_name in self.navigation.coil_registrations:
-            if coil_name in coil_to_robot_map:
-                display_text = f"{coil_name} ({coil_to_robot_map[coil_name]})"
+            if coil_name in self.robotCoilAssociation:
+                display_text = f"{coil_name} ({self.robotCoilAssociation[coil_name]})"
                 items_to_add.append((display_text, coil_name))
             else:
                 items_to_add.append((coil_name, coil_name))

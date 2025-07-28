@@ -315,13 +315,13 @@ class Robots(metaclass=Singleton):
         return self.GetRobot(self.active)
 
     def GetAllCoilsRobots(self):
-        robotCoilAssociation = {}
+        RobotCoilAssociation = {}
         for robot_id in self.robots:
             robot_obj = self.robots[robot_id]
             if robot_obj.IsConnected():
-                robotCoilAssociation[robot_obj.robot_name] = robot_obj.coil_name
+                RobotCoilAssociation[robot_obj.coil_name] = robot_obj.robot_name
         
-        Publisher.sendMessage("Update Robot Coil Association", robotCoilAssociation = robotCoilAssociation)
+        Publisher.sendMessage("Update Robot Coil Association", robotCoilAssociation = RobotCoilAssociation)
 
     def SetActive(self, name: str):
         if name in self.robots:

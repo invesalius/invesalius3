@@ -63,7 +63,9 @@ class CoilVisualizer:
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.ShowCoil, "Show coil in viewer volume")
         Publisher.subscribe(self.ResetCoilVisualizer, "Reset coil selection")
-        Publisher.subscribe(self.SelectCoil, "Select coil")
+        Publisher.subscribe(self.ADDSelectCoil, "ADD select coil")
+        Publisher.subscribe(self.DeleteSelectCoil, "Delete select coil")
+        Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
         Publisher.subscribe(self.UpdateCoilPoses, "Update coil poses")
         Publisher.subscribe(self.UpdateVectorField, "Update vector field")
 
@@ -204,17 +206,15 @@ class CoilVisualizer:
         self.renderer.RemoveActor(self.target_coil_actor)
         self.target_coil_actor = None
 
-    # Called when a coil is (un)selected for navigation
-    def SelectCoil(self, coil_name, coil_registration, new_coil_name):
-        if (
-            coil_registration is not None and coil_name is not None and new_coil_name is None
-        ):  # coil is selected
-            self.AddCoil(coil_name, coil_registration["path"])
-        elif coil_name in self.coils:
-            if new_coil_name is not None:  # coil is renamed
-                self.coils[new_coil_name] = self.coils.pop(coil_name)
-            else:  # coil is unselected
-                self.RemoveCoil(coil_name)
+
+    def ADDSelectCoil(self, coil_name, coil_registration):
+        self.AddCoil(coil_name, coil_registration["path"])
+    
+    def DeleteSelectCoil(self, coil_name):
+        self.RemoveCoil(coil_name)
+    
+    def RenameSelectCoil(self, coil_name, new_coil_name):
+        self.coils[new_coil_name] = self.coils.pop(coil_name)
 
     def AddCoil(self, coil_name, coil_path):
         """

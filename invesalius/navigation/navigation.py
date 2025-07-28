@@ -330,7 +330,9 @@ class Navigation(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.CoilAtTarget, "Coil at target")
         Publisher.subscribe(self.SetNoOfCoils, "Reset coil selection")
-        Publisher.subscribe(self.SelectCoil, "Select coil")
+        Publisher.subscribe(self.ADDSelectCoil, "ADD select coil")
+        Publisher.subscribe(self.DeleteSelectCoil, "Delete select coil")
+        Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
         Publisher.subscribe(self.UpdateSerialPort, "Update serial port")
         Publisher.subscribe(self.TrackObject, "Track object")
 
@@ -388,25 +390,23 @@ class Navigation(metaclass=Singleton):
 
     def CoilSelectionDone(self):
         return len(self.coil_registrations) == self.n_coils
+    
+    def ADDSelectCoil(self, coil_name, coil_registration):
+        self.coil_registrations[coil_name] = coil_registration
+        if self.main_coil is None:
+            self.main_coil = coil_name
+        self.SaveConfig()
+    
+    def DeleteSelectCoil(self, coil_name):
+        self.coil_registrations.pop(coil_name, None)
+        if self.main_coil == coil_name:
+            self.main_coil = None
+        self.SaveConfig()
 
-    def SelectCoil(self, coil_name=None, coil_registration=None, new_coil_name=None):
-        if (
-            coil_registration is not None and coil_name is not None and new_coil_name is None
-        ):  # Add the coil to selection
-            self.coil_registrations[coil_name] = coil_registration
-            if self.main_coil is None:
-                self.main_coil = coil_name
-
-        elif coil_name in self.coil_registrations:
-            if coil_registration is None and new_coil_name is not None:  # Rename the coil
-                self.coil_registrations[new_coil_name] = self.coil_registrations.pop(coil_name)
-                if self.main_coil == coil_name:
-                    self.main_coil = new_coil_name
-            else:  # Remove the coil from selection
-                self.coil_registrations.pop(coil_name, None)
-                if self.main_coil == coil_name:
-                    self.main_coil = None
-
+    def RenameSelectCoil(self, coil_name, new_coil_name):
+        self.coil_registrations[new_coil_name] = self.coil_registrations.pop(coil_name)
+        if self.main_coil == coil_name:
+            self.main_coil = new_coil_name
         self.SaveConfig()
 
     def CoilAtTarget(self, state):

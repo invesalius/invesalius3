@@ -1251,11 +1251,17 @@ class ObjectTab(wx.Panel):
 
             # Press the coil button here in case selection was done via code without pressing button
             self.coil_btns[name][0].SetValue(True)
-        # Select/Unselect coil
-        Publisher.sendMessage(
-            "Select coil", coil_name=name, coil_registration=coil_registration, new_coil_name=None
-        )
-
+            
+            # Select coil
+            Publisher.sendMessage(
+                "ADD select coil", coil_name=name, coil_registration=coil_registration
+            )
+        else:
+            # Unselect coil
+            Publisher.sendMessage(
+                "Delete select coil", coil_name=name
+            )
+        print(navigation.coil_registrations)
         n_coils_selected = len(navigation.coil_registrations)
         n_coils = navigation.n_coils
 
@@ -1301,7 +1307,7 @@ class ObjectTab(wx.Panel):
 
             # Remove coil from navigation and CoilVisualizer
             Publisher.sendMessage(
-                "Select coil", coil_name=name, coil_registration=None, new_coil_name=None
+                "Delete select coil", coil_name=name
             )
 
         def RenameCoil(event, name):
@@ -1346,9 +1352,8 @@ class ObjectTab(wx.Panel):
                 Publisher.sendMessage("Stop navigation")
                 Publisher.sendMessage("Reset targets")
                 Publisher.sendMessage(
-                    "Select coil",
+                    "Rename select coil",
                     coil_name=name,
-                    coil_registration=None,
                     new_coil_name=new_coil_name,
                 )
                 Publisher.sendMessage("Coil selection done", done = True)
