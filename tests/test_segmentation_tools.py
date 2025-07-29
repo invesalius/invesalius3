@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from scipy import ndimage
+from scipy.ndimage import generate_binary_structure
 
 from invesalius.data.mask import Mask
 from invesalius.data.slice_ import Slice
@@ -11,23 +12,23 @@ def test_region_growing_threshold():
     # Dummy Image
     image = np.array(
         [
-            [1, 1, 1, 5, 5],
-            [1, 2, 2, 5, 5],
-            [1, 2, 3, 5, 5],
-            [1, 2, 2, 5, 5],
-            [1, 1, 1, 5, 5],
+            [
+                [1, 1, 1, 5, 5],
+                [1, 2, 2, 5, 5],
+                [1, 2, 3, 5, 5],
+                [1, 2, 2, 5, 5],
+                [1, 1, 1, 5, 5],
+            ]
         ],
         dtype=np.int16,
     )
-
     # single starting point for the region growing.
     seed = [[2, 2, 0]]
     t0 = 2
     t1 = 3
-    bstruct = np.ones((1, 3, 3), dtype=np.uint8)
+    bstruct = generate_binary_structure(3, 1)
     out_mask = np.zeros((1, 5, 5), dtype=np.uint8)
-    image_3d = image[np.newaxis, ...]  # Simulating a 3D array with one slice.
-    floodfill.floodfill_threshold(image_3d, seed, t0, t1, 1, bstruct, out_mask)
+    floodfill.floodfill_threshold(image, seed, t0, t1, 1, bstruct, out_mask)
     # The 2s and 3s are made 1
     expected = np.array(
         [
@@ -48,51 +49,48 @@ def test_region_growing_strct_disconnected():
     # Dummy image
     image = np.array(
         [
-            [2, 2, 0],
-            [0, 2, 0],
-            [0, 0, 2],
+            [
+                [2, 2, 0],
+                [0, 2, 0],
+                [0, 0, 2],
+            ]
         ],
         dtype=np.int16,
     )
-
     seed = [[0, 0, 0]]
     t0 = 2
     t1 = 2
-
     # All are connected including the diagonal
-    bstruct8 = np.ones((1, 3, 3), dtype=np.uint8)
+    bstruct8 = generate_binary_structure(3, 2)
     out_mask8 = np.zeros((1, 3, 3), dtype=np.uint8)
-    image_3d = image[np.newaxis, ...]
-    floodfill.floodfill_threshold(image_3d, seed, t0, t1, 1, bstruct8, out_mask8)
+    floodfill.floodfill_threshold(image, seed, t0, t1, 1, bstruct8, out_mask8)
     expected8 = np.array(
         [
-            [1, 1, 0],
-            [0, 1, 0],
-            [0, 0, 1],
+            [
+                [1, 1, 0],
+                [0, 1, 0],
+                [0, 0, 1],
+            ]
         ],
         dtype=np.uint8,
-    )[np.newaxis, ...]
+    )
     assert np.array_equal(
         out_mask8, expected8
     ), f" Both diagonals filled.\nExpected:\n{expected8}\nGot:\n{out_mask8}"
-
-    # diagonals are NOT connected(only neighbours connected), so only the starting 2 and its neighbours is filled as the rest 2 are not connected
-    bstruct4 = np.zeros((1, 3, 3), dtype=np.uint8)
-    bstruct4[0, 1, 0] = 1
-    bstruct4[0, 0, 1] = 1
-    bstruct4[0, 1, 2] = 1
-    bstruct4[0, 2, 1] = 1
-    bstruct4[0, 1, 1] = 1
+    # diagonals are NOT connected (only neighbours connected), so only the starting 2 and its neighbours is filled as the rest 2 are not connected
+    bstruct4 = generate_binary_structure(3, 1)
     out_mask4 = np.zeros((1, 3, 3), dtype=np.uint8)
-    floodfill.floodfill_threshold(image_3d, seed, t0, t1, 1, bstruct4, out_mask4)
+    floodfill.floodfill_threshold(image, seed, t0, t1, 1, bstruct4, out_mask4)
     expected4 = np.array(
         [
-            [1, 1, 0],
-            [0, 1, 0],
-            [0, 0, 0],
+            [
+                [1, 1, 0],
+                [0, 1, 0],
+                [0, 0, 0],
+            ]
         ],
         dtype=np.uint8,
-    )[np.newaxis, ...]
+    )
     assert np.array_equal(
         out_mask4, expected4
     ), f"only neighbour regions are filled\nExpected:\n{expected4}\nGot:\n{out_mask4}"
