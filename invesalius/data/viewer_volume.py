@@ -2681,7 +2681,7 @@ class Viewer(wx.Panel):
             "Exporting",
             "Preparing export...",
             maximum=100,
-            style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+            style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME,
         )
         progress_destroyed = False
 
@@ -2694,9 +2694,7 @@ class Viewer(wx.Panel):
                     progress.Destroy()
                     progress_destroyed = True
                     wx.MessageBox(
-                       "Export cancelled by user.",
-                       "Export Cancelled",
-                    wx.OK | wx.ICON_INFORMATION
+                        "Export cancelled by user.", "Export Cancelled", wx.OK | wx.ICON_INFORMATION
                     )
                     return  # If User cancels
                 wx.MilliSleep(30)
@@ -2736,16 +2734,14 @@ class Viewer(wx.Panel):
             else:
                 raise ValueError("Unsupported filetype")
 
-            progress.Update(100,"Export Complete")
+            progress.Update(100, "Export Complete")
             wx.MilliSleep(100)
             # Used by surface.py if needed
             wx.Yield()
             self.export_successful = True
 
             wx.MessageBox(
-               "Export completed successfully.",
-               "Export success",
-                wx.OK | wx.ICON_INFORMATION
+                "Export completed successfully.", "Export success", wx.OK | wx.ICON_INFORMATION
             )
 
         except Exception as e:
