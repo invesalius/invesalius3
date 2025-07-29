@@ -1239,14 +1239,10 @@ class SurfaceManager:
                 self._export_surface(temp_file, filetype, convert_to_world)
             except ValueError:
                 if wx.GetApp() is None:
-                    print(
-                        "It was not possible to export the surface because the surface is empty"
-                    )
+                    print("It was not possible to export the surface because the surface is empty")
                 else:
                     wx.MessageBox(
-                        _(
-                            "It was not possible to export the surface because the surface is empty"
-                        ),
+                        _("It was not possible to export the surface because the surface is empty"),
                         _("Export surface error"),
                     )
                 return
@@ -1384,7 +1380,7 @@ class SurfaceManager:
             "Preparing export...",
             maximum=100,
             parent=None,
-            style=wx.PD_APP_MODAL |wx.PD_AUTO_HIDE| wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+            style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME,
         )
         progress_destroyed = False
 
