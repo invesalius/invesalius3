@@ -1251,7 +1251,7 @@ class ObjectTab(wx.Panel):
 
             # Press the coil button here in case selection was done via code without pressing button
             self.coil_btns[name][0].SetValue(True)
-            
+
             # Select coil
             Publisher.sendMessage(
                 "ADD select coil", coil_name=name, coil_registration=coil_registration
@@ -1261,7 +1261,7 @@ class ObjectTab(wx.Panel):
             Publisher.sendMessage(
                 "Delete select coil", coil_name=name
             )
-        print(navigation.coil_registrations)
+        
         n_coils_selected = len(navigation.coil_registrations)
         n_coils = navigation.n_coils
 

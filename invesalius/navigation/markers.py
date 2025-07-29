@@ -53,16 +53,18 @@ class MarkersControl(metaclass=Singleton):
 
     def ADDSelectCoil(self, coil_name, coil_registration):
         self.TargetCoilAssociation[coil_name] = None
+        self.SaveState()
     
     def DeleteSelectCoil(self, coil_name):
         self.TargetCoilAssociation.pop(coil_name, None)
+        self.SaveState()
 
     def RenameSelectCoil(self, coil_name, new_coil_name):
         self.TargetCoilAssociation[new_coil_name] = self.TargetCoilAssociation.pop(coil_name)
+        self.SaveState()
 
     def SaveState(self) -> None:
         state = [marker.to_dict() for marker in self.list]
-
         session = ses.Session()
         session.SetState("markers", state)
 
@@ -92,7 +94,7 @@ class MarkersControl(metaclass=Singleton):
         Publisher.sendMessage("Add marker", marker=marker, render=render, focus=focus)
 
         if marker.is_target:
-            self.SetTarget(marker.marker_id, check_for_previous=False)
+            self.SetTarget(marker.marker_id, check_for_previous=False, render=render)
 
         if marker.is_point_of_interest:
             self.SetPointOfInterest(marker.marker_id)
@@ -148,14 +150,13 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def SetTarget(self, marker_id: int, check_for_previous: bool = True) -> None:
+    def SetTarget(self, marker_id: int, check_for_previous: bool = True, render: bool = True) -> None:
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
         self.robot.GetActive().SetObjective(RobotObjective.NONE)
-
+        marker = self.list[marker_id]
         if check_for_previous:
-            marker = self.list[marker_id]
             # Check multitarget mode
             if self.multitarget:
                 prev_target = self.FindTarget(marker.coil)
@@ -173,7 +174,7 @@ class MarkersControl(metaclass=Singleton):
         # Set new target
         marker.is_target = True
         coil_name = marker.coil
-        self.TargetCoilAssociation[coil_name] = marker
+        self.TargetCoilAssociation[coil_name] = marker_id
         Publisher.sendMessage("Update main coil by target", coil_name = coil_name)
 
         Publisher.sendMessage(
@@ -185,7 +186,8 @@ class MarkersControl(metaclass=Singleton):
         # first set the target, then move into target mode.
         Publisher.sendMessage("Press target mode button", pressed=True)
 
-        self.SaveState()
+        if render:
+            self.SaveState()
 
     def SetPointOfInterest(self, marker_id: int) -> None:
         # Find the previous point of interest
@@ -230,19 +232,20 @@ class MarkersControl(metaclass=Singleton):
 
     def FindTarget(self, coil_name = None) -> Union[None, Marker]:
         """
-        Return the marker currently selected as target (there
-        should be at most one).
+        Return the markers currently selected as target.
         """
-        marker = None
-        if coil_name:
-            marker = self.TargetCoilAssociation.get(coil_name, None)
-        elif not self.multitarget:
-            for m in self.list:
-                if m.is_target:
-                    marker = m
-                    break
 
-        return marker
+        marker_id = None
+        if coil_name:
+            marker_id = self.TargetCoilAssociation.get(coil_name, None)
+        elif not self.multitarget:
+            for id in list(self.TargetCoilAssociation.values()):
+                if id is not None:
+                    marker_id = id
+                    break
+        if marker_id is not None and 0 <= marker_id < len(self.list):
+            return self.list[marker_id]
+        return None
 
     def FindPointOfInterest(self) -> Union[None, Marker]:
         for marker in self.list:
@@ -370,11 +373,10 @@ class MarkersControl(metaclass=Singleton):
         self.AddMarker(new_marker)
     
     def ResetTargets(self):
-        for coil in self.TargetCoilAssociation.keys():
-            marker = self.TargetCoilAssociation.get(coil, None)
-            if marker:
+        for marker_id in list(self.TargetCoilAssociation.values()):
+            if marker_id:
                 #Disable target
-                self.UnsetTarget(marker.marker_id)
+                self.UnsetTarget(marker_id)
         
         #Stop navigation
         Publisher.sendMessage("Press navigation button", cond = False)
