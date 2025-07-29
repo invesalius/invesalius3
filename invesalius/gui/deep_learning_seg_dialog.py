@@ -72,8 +72,8 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
         if HAS_TORCH:
             self.torch_devices: Dict[str, str] = TORCH_DEVICES
-        
-        if HAS_TINYGRAD: 
+
+        if HAS_TINYGRAD:
             self.tinygrad_devices: Dict[str, str] = TINYGRAD_DEVICES
 
         self.auto_segment = auto_segment

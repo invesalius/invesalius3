@@ -2002,7 +2002,9 @@ class ControlPanel(wx.Panel):
 
         # Toggle button for simultaneous multicoil
         tooltip = _("Simultaneous multicoil mode")
-        BMP_SIMULTANEOUS = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("multi_target.png")), wx.BITMAP_TYPE_PNG)
+        BMP_SIMULTANEOUS = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("multi_target.png")), wx.BITMAP_TYPE_PNG
+        )
         simultaneous_mode_button = wx.ToggleButton(
             self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
@@ -2012,7 +2014,9 @@ class ControlPanel(wx.Panel):
         simultaneous_mode_button.Enable(True)
         self.UpdateToggleButton(simultaneous_mode_button, self.navigation.multitarget)
         self.OnSimultaneousButton(ctrl=simultaneous_mode_button)
-        simultaneous_mode_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnSimultaneousButton, ctrl =simultaneous_mode_button))
+        simultaneous_mode_button.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnSimultaneousButton, ctrl=simultaneous_mode_button)
+        )
         simultaneous_mode_button.SetToolTip(tooltip)
         self.simultaneous_mode_button = simultaneous_mode_button
 
@@ -2272,7 +2276,7 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def UnsetTarget(self, marker = None, robot_ID = None):
+    def UnsetTarget(self, marker=None, robot_ID=None):
         self.navigation.target = None
         self.target_selected = False
         self.UpdateTargetButton()
@@ -2522,13 +2526,14 @@ class ControlPanel(wx.Panel):
             # Set robot objective to NONE when target mode is enabled.
             self.robot.GetActive().SetObjective(RobotObjective.NONE)
 
-    def OnSimultaneousButton(self, evt = None, ctrl = None):
+    def OnSimultaneousButton(self, evt=None, ctrl=None):
         enabled = ctrl.GetValue()
         Publisher.sendMessage("Set simultaneous multicoil mode", state=enabled)
         if enabled:
             ctrl.SetBackgroundColour(self.GREEN_COLOR)
         else:
             ctrl.SetBackgroundColour(self.RED_COLOR)
+
     # Robot-related buttons
 
     # 'Track target with robot' button
@@ -2613,7 +2618,7 @@ class ControlPanel(wx.Panel):
         pressed = self.show_motor_map_button.GetValue()
         if self.mep_visualizer.DisplayMotorMap(show=pressed):
             self.UpdateToggleButton(self.show_motor_map_button)
-    
+
     def PressNavigationButton(self, cond):
         if cond:
             Publisher.sendMessage("Start navigation")
@@ -2628,6 +2633,7 @@ class ControlPanel(wx.Panel):
             tooltip = _("Start navigation")
             self.btn_nav.SetToolTip(tooltip)
             self.btn_nav.SetLabelText(_("Start navigation"))
+
 
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def __init__(self, parent, nav_hub):
@@ -2751,8 +2757,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         nav_state = self.session.GetConfig("navigation", {})
         if (main_coil := nav_state.get("main_coil", None)) is not None:
             main_coil_index = next(
-                (i for i in range(select_main_coil.GetCount()) if select_main_coil.GetClientData(i) == main_coil),
-                wx.NOT_FOUND
+                (
+                    i
+                    for i in range(select_main_coil.GetCount())
+                    if select_main_coil.GetClientData(i) == main_coil
+                ),
+                wx.NOT_FOUND,
             )
 
             if main_coil_index != wx.NOT_FOUND:
@@ -2812,7 +2822,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
             marker_list_ctrl.InsertColumn(const.Z_COLUMN, "Z")
             marker_list_ctrl.SetColumnWidth(const.Z_COLUMN, 45)
-            
+
         marker_list_ctrl.InsertColumn(const.COIL_NAME_COLUMN, "Coil")
         marker_list_ctrl.SetColumnWidth(const.COIL_NAME_COLUMN, 50)
 
@@ -2898,7 +2908,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Called when selecting a marker in the volume viewer.
         Publisher.subscribe(self.OnSelectMarkerByActor, "Select marker by actor")
-        
+
         Publisher.subscribe(self.OnDeleteFiducialMarker, "Delete fiducial marker")
         Publisher.subscribe(self.OnDeleteSelectedMarkers, "Delete selected markers")
         Publisher.subscribe(self.OnDeleteAllMarkers, "Delete all markers")
@@ -3063,7 +3073,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Trigger redraw MEP mapping
         Publisher.sendMessage("Redraw MEP mapping")
-    
+
     def _UpdateCoil(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItem(idx, const.COIL_NAME_COLUMN, str(marker.coil))
@@ -3074,7 +3084,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             current_uuid = data[-1]
             if current_uuid == uuid:
                 self.itemDataMap[key][const.COIL_NAME_COLUMN] = marker.coil
-        
+
         if marker.is_target:
             self.markers.SetTarget(marker.marker_id, False)
 
@@ -3487,7 +3497,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if not proj.surface_dict:
             wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
             return
-        
+
         coil = self.navigation.main_coil
         self.markers.CreateCoilTargetFromLandmark(marker, coil)
 
@@ -3502,7 +3512,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(list_index)
 
         self.markers.CreateCoilTargetFromCoilPose(marker)
-    
+
     def OnUpdateRobotCoilAssociation(self, robotCoilAssociation):
         self.robotCoilAssociation = robotCoilAssociation
 
@@ -3533,7 +3543,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             select_main_coil.Show()
 
         self.Layout()
-    
+
     def __GenerateCoilOptions(self):
         Publisher.sendMessage("Request update Robot Coil Association")
 
@@ -3544,7 +3554,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 items_to_add.append((display_text, coil_name))
             else:
                 items_to_add.append((coil_name, coil_name))
-        
+
         return items_to_add
 
     def OnChooseMainCoil(self, evt, ctrl):
@@ -3555,8 +3565,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def OnChangeMainCoilbySetTarget(self, coil_name):
         index_to_select = next(
-        (i for i in range(self.select_main_coil.GetCount()) if self.select_main_coil.GetClientData(i) == coil_name),
-        wx.NOT_FOUND # Valor padrão se não encontrar
+            (
+                i
+                for i in range(self.select_main_coil.GetCount())
+                if self.select_main_coil.GetClientData(i) == coil_name
+            ),
+            wx.NOT_FOUND,  # Valor padrão se não encontrar
         )
 
         if index_to_select != wx.NOT_FOUND:
@@ -3597,8 +3611,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(idx)
 
         if marker.coil not in self.navigation.coil_registrations:
-            wx.MessageBox(_("""This marker cannot be targeted because its coil is not available, please change the associated coil or add the correct coil"""), _("InVesalius 3"))
-            return  
+            wx.MessageBox(
+                _(
+                    """This marker cannot be targeted because its coil is not available, please change the associated coil or add the correct coil"""
+                ),
+                _("InVesalius 3"),
+            )
+            return
 
         self.navigation.UpdateCoilMesh(marker.coil)
         Publisher.sendMessage("Set active robot by coil name", coil_name=marker.coil)
@@ -4136,7 +4155,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             )
 
         main_coil = self.navigation.main_coil if marker_type == MarkerType.COIL_TARGET else ""
-  
+
         marker = self.CreateMarker(
             position=position,
             orientation=orientation,
@@ -4149,7 +4168,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
             mep_value=mep_value,
-            coil=main_coil
+            coil=main_coil,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
 
@@ -4392,7 +4411,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         z_offset=0.0,
         z_rotation=0.0,
         mep_value=None,
-        coil=None
+        coil=None,
     ):
         """
         Create a new marker object.
@@ -4480,7 +4499,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.__get_marker(idx)
 
-        #Select coil in dialog window
+        # Select coil in dialog window
         dialog = wx.SingleChoiceDialog(
             None,
             _("Select which coil to associate"),
@@ -4491,7 +4510,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             coil_name = dialog.GetStringSelection()
         else:
             return  # Cancel the operation if the user closes the dialog or cancels
-        
+
         dialog.Destroy()
 
         self.markers.ChangeCoilAssociate(marker, coil_name)

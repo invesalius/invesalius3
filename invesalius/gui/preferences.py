@@ -1258,10 +1258,8 @@ class ObjectTab(wx.Panel):
             )
         else:
             # Unselect coil
-            Publisher.sendMessage(
-                "Delete select coil", coil_name=name
-            )
-        
+            Publisher.sendMessage("Delete select coil", coil_name=name)
+
         n_coils_selected = len(navigation.coil_registrations)
         n_coils = navigation.n_coils
 
@@ -1306,9 +1304,7 @@ class ObjectTab(wx.Panel):
             self.session.SetConfig("coil_registrations", self.coil_registrations)
 
             # Remove coil from navigation and CoilVisualizer
-            Publisher.sendMessage(
-                "Delete select coil", coil_name=name
-            )
+            Publisher.sendMessage("Delete select coil", coil_name=name)
 
         def RenameCoil(event, name):
             dialog = wx.TextEntryDialog(
@@ -1356,7 +1352,7 @@ class ObjectTab(wx.Panel):
                     coil_name=name,
                     new_coil_name=new_coil_name,
                 )
-                Publisher.sendMessage("Coil selection done", done = True)
+                Publisher.sendMessage("Coil selection done", done=True)
 
             else:
                 dialog.Destroy()
@@ -1717,7 +1713,6 @@ class TrackerTab(wx.Panel):
         Publisher.sendMessage("Coil selection done", done=False)
         Publisher.sendMessage("Create second robot")
         Publisher.sendMessage("Reset targets")
-
 
     def OnChooseTracker(self, evt, ctrl):
         if sys.platform == "darwin":

@@ -280,7 +280,6 @@ class Robot:
         Publisher.sendMessage("Neuronavigation to Robot: Unset target", robot_ID=self.robot_name)
 
     def SetTarget(self, marker, robot_ID):
-
         if robot_ID != self.robot_name or not self.IsConnected():
             return
         coord = marker.position + marker.orientation
@@ -320,8 +319,10 @@ class Robots(metaclass=Singleton):
             robot_obj = self.robots[robot_id]
             if robot_obj.IsConnected():
                 RobotCoilAssociation[robot_obj.coil_name] = robot_obj.robot_name
-        
-        Publisher.sendMessage("Update Robot Coil Association", robotCoilAssociation = RobotCoilAssociation)
+
+        Publisher.sendMessage(
+            "Update Robot Coil Association", robotCoilAssociation=RobotCoilAssociation
+        )
 
     def SetActive(self, name: str):
         if name in self.robots:

@@ -206,13 +206,12 @@ class CoilVisualizer:
         self.renderer.RemoveActor(self.target_coil_actor)
         self.target_coil_actor = None
 
-
     def ADDSelectCoil(self, coil_name, coil_registration):
         self.AddCoil(coil_name, coil_registration["path"])
-    
+
     def DeleteSelectCoil(self, coil_name):
         self.RemoveCoil(coil_name)
-    
+
     def RenameSelectCoil(self, coil_name, new_coil_name):
         self.coils[new_coil_name] = self.coils.pop(coil_name)
 
@@ -294,9 +293,8 @@ class CoilVisualizer:
 
         - Update actor positions for coil, coil center, and coil orientation axes.
         """
-        
+
         for name, m_img in m_imgs.items():
-            
             if name in self.coils:
                 m_img_flip = m_img.copy()
                 m_img_flip[1, -1] = -m_img_flip[1, -1]

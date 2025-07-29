@@ -621,7 +621,7 @@ class Viewer(wx.Panel):
 
         if not self.probe:
             self.probe = True
-            self.CreateSensorID(len(coil_ids)) # Pass the number of coils to CreateSensorID
+            self.CreateSensorID(len(coil_ids))  # Pass the number of coils to CreateSensorID
 
         green_color = const.GREEN_COLOR_FLOAT
         red_color = const.RED_COLOR_FLOAT
@@ -630,7 +630,7 @@ class Viewer(wx.Panel):
         # Update probe and ref colors
         self.dummy_probe_actor.GetProperty().SetColor(green_color if probe_id else red_color)
         self.dummy_ref_actor.GetProperty().SetColor(green_color if ref_id else red_color)
-        
+
         # Update main coil icon color
         num_visible = sum(coil_ids)
         if num_visible == 0:
@@ -721,10 +721,10 @@ class Viewer(wx.Panel):
             sphere_source = vtkSphereSource()
             sphere_source.SetRadius(6)
             sphere_source.SetCenter(start_x + i * 15, -40, 0)  # Positioned below the coil icon
-            
+
             mapper = vtkPolyDataMapper()
             mapper.SetInputConnection(sphere_source.GetOutputPort())
-            
+
             actor = vtkActor()
             actor.SetMapper(mapper)
             self.ren_obj.AddActor(actor)

@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 
 import uuid
-from typing import List, Union, Dict
+from typing import Dict, List, Union
 
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
@@ -45,7 +45,7 @@ class MarkersControl(metaclass=Singleton):
         Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
         Publisher.subscribe(self.OnSetMultiTargetMode, "Set simultaneous multicoil mode")
         Publisher.subscribe(self.ResetTargets, "Reset targets")
-    
+
     def OnSetMultiTargetMode(self, state):
         self.multitarget = state
         if not state:
@@ -54,7 +54,7 @@ class MarkersControl(metaclass=Singleton):
     def ADDSelectCoil(self, coil_name, coil_registration):
         self.TargetCoilAssociation[coil_name] = None
         self.SaveState()
-    
+
     def DeleteSelectCoil(self, coil_name):
         self.TargetCoilAssociation.pop(coil_name, None)
         self.SaveState()
@@ -150,7 +150,9 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def SetTarget(self, marker_id: int, check_for_previous: bool = True, render: bool = True) -> None:
+    def SetTarget(
+        self, marker_id: int, check_for_previous: bool = True, render: bool = True
+    ) -> None:
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
@@ -175,7 +177,7 @@ class MarkersControl(metaclass=Singleton):
         marker.is_target = True
         coil_name = marker.coil
         self.TargetCoilAssociation[coil_name] = marker_id
-        Publisher.sendMessage("Update main coil by target", coil_name = coil_name)
+        Publisher.sendMessage("Update main coil by target", coil_name=coil_name)
 
         Publisher.sendMessage(
             "Set target", marker=marker, robot_ID=self.robot.GetActive().robot_name
@@ -230,7 +232,7 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def FindTarget(self, coil_name = None) -> Union[None, Marker]:
+    def FindTarget(self, coil_name=None) -> Union[None, Marker]:
         """
         Return the markers currently selected as target.
         """
@@ -263,7 +265,7 @@ class MarkersControl(metaclass=Singleton):
         marker.mep_value = new_mep
         Publisher.sendMessage("Update marker mep", marker=marker)
         self.SaveState()
-    
+
     def ChangeCoilAssociate(self, marker: Marker, new_coil) -> None:
         marker.coil = new_coil
         Publisher.sendMessage("Update marker associate coil", marker=marker)
@@ -324,7 +326,7 @@ class MarkersControl(metaclass=Singleton):
         # keyboard events.
         self.transformator.UpdateSelectedMarker(None)
 
-    def CreateCoilTargetFromLandmark(self, marker: Marker, coil = "") -> None:
+    def CreateCoilTargetFromLandmark(self, marker: Marker, coil="") -> None:
         new_marker = marker.duplicate()
 
         self.transformator.ProjectToScalp(
@@ -371,12 +373,12 @@ class MarkersControl(metaclass=Singleton):
         new_marker.marker_type = MarkerType.COIL_TARGET
 
         self.AddMarker(new_marker)
-    
+
     def ResetTargets(self):
         for marker_id in list(self.TargetCoilAssociation.values()):
             if marker_id:
-                #Disable target
+                # Disable target
                 self.UnsetTarget(marker_id)
-        
-        #Stop navigation
-        Publisher.sendMessage("Press navigation button", cond = False)
+
+        # Stop navigation
+        Publisher.sendMessage("Press navigation button", cond=False)

@@ -394,13 +394,13 @@ class Navigation(metaclass=Singleton):
 
     def CoilSelectionDone(self):
         return len(self.coil_registrations) == self.n_coils
-    
+
     def ADDSelectCoil(self, coil_name, coil_registration):
         self.coil_registrations[coil_name] = coil_registration
         if self.main_coil is None:
             self.main_coil = coil_name
         self.SaveConfig()
-    
+
     def DeleteSelectCoil(self, coil_name):
         self.coil_registrations.pop(coil_name, None)
         if self.main_coil == coil_name:
@@ -731,7 +731,7 @@ class Navigation(metaclass=Singleton):
             self.plot_efield_vectors,
         ]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
-    
+
     def MultiTargetMode(self, state):
         self.multitarget = state
         self.SaveConfig()
