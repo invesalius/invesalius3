@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import functools
+import gc
 import multiprocessing
 import os
 import plistlib
@@ -27,7 +28,6 @@ import sys
 import tempfile
 import time
 import traceback
-import gc
 
 import numpy as np
 import wx
