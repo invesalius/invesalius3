@@ -2677,35 +2677,82 @@ class Viewer(wx.Panel):
 
         self.ChangeRenderOrderToExportFile()
 
-        if filetype == const.FILETYPE_RIB:
-            writer = vtkRIBExporter()
-            writer.SetFilePrefix(fileprefix)
-            writer.SetTexturePrefix(fileprefix)
-            writer.SetInput(renwin)
-            writer.Write()
-        elif filetype == const.FILETYPE_VRML:
-            writer = vtkVRMLExporter()
-            writer.SetFileName(filename)
-            writer.SetInput(renwin)
-            writer.Write()
-        elif filetype == const.FILETYPE_X3D:
-            writer = vtkX3DExporter()
-            writer.SetInput(renwin)
-            writer.SetFileName(filename)
-            writer.Update()
-            writer.Write()
-        elif filetype == const.FILETYPE_OBJ:
-            writer = vtkOBJExporter()
-            writer.SetFilePrefix(fileprefix)
-            writer.SetInput(renwin)
-            writer.Write()
-        elif filetype == const.FILETYPE_IV:
-            writer = vtkIVExporter()
-            writer.SetFileName(filename)
-            writer.SetInput(renwin)
-            writer.Write()
+        progress = wx.ProgressDialog(
+            "Exporting",
+            "Preparing export...",
+            maximum=100,
+            style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME,
+        )
+        progress_destroyed = False
 
-        self.RestoreRenderOrderAfterExportFile()
+        try:
+            num_updates = 20
+            for i in range(num_updates):
+                percent = int(i * 89 / num_updates)
+                keep_going, _ = progress.Update(percent, f"Exporting file: {percent}%")
+                if not keep_going:
+                    progress.Destroy()
+                    progress_destroyed = True
+                    wx.MessageBox(
+                        "Export cancelled by user.", "Export Cancelled", wx.OK | wx.ICON_INFORMATION
+                    )
+                    return  # If User cancels
+                wx.MilliSleep(30)
+                wx.Yield()
+
+            progress.Update(90, "Finalizing export...")
+            wx.MilliSleep(100)
+            wx.Yield()
+
+            if filetype == const.FILETYPE_RIB:
+                writer = vtkRIBExporter()
+                writer.SetFilePrefix(fileprefix)
+                writer.SetTexturePrefix(fileprefix)
+                writer.SetInput(renwin)
+                writer.Write()
+            elif filetype == const.FILETYPE_VRML:
+                writer = vtkVRMLExporter()
+                writer.SetFileName(filename)
+                writer.SetInput(renwin)
+                writer.Write()
+            elif filetype == const.FILETYPE_X3D:
+                writer = vtkX3DExporter()
+                writer.SetInput(renwin)
+                writer.SetFileName(filename)
+                writer.Update()
+                writer.Write()
+            elif filetype == const.FILETYPE_OBJ:
+                writer = vtkOBJExporter()
+                writer.SetFilePrefix(fileprefix)
+                writer.SetInput(renwin)
+                writer.Write()
+            elif filetype == const.FILETYPE_IV:
+                writer = vtkIVExporter()
+                writer.SetFileName(filename)
+                writer.SetInput(renwin)
+                writer.Write()
+            else:
+                raise ValueError("Unsupported filetype")
+
+            progress.Update(100, "Export Complete")
+            wx.MilliSleep(100)
+            # Used by surface.py if needed
+            wx.Yield()
+            self.export_successful = True
+
+            wx.MessageBox(
+                "Export completed successfully.", "Export success", wx.OK | wx.ICON_INFORMATION
+            )
+
+        except Exception as e:
+            wx.MessageBox(f"Export failed: {e}", "Export Error", wx.OK | wx.ICON_ERROR)
+        finally:
+            self.RestoreRenderOrderAfterExportFile()
+            if progress and not progress_destroyed:
+                try:
+                    progress.Destroy()
+                except Exception:
+                    pass
 
     def OnEnableBrightContrast(self):
         style = self.style
