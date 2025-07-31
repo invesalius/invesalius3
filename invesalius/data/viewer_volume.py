@@ -20,8 +20,6 @@
 import os
 import queue
 import sys
-import time
-import timeit
 import numpy as np
 import wx
 from imageio import imsave
@@ -2951,12 +2949,6 @@ class Viewer(wx.Panel):
 
     def UpdateRender(self):
         self.interactor.Render()
-        #t = time.process_time()
-        #t1 = time.perf_counter()
-        #t2 = timeit.default_timer()
-        #print('process time', t)
-        #print('performance counter', t1)
-        #print('time it', t2)
 
     def SetWidgetInteractor(self, widget=None):
         widget.SetInteractor(self.interactor._Iren)
