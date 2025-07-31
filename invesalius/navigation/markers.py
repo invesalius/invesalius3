@@ -46,7 +46,7 @@ class MarkersControl(metaclass=Singleton):
         Publisher.subscribe(self.OnSetMultiTargetMode, "Set simultaneous multicoil mode")
         Publisher.subscribe(self.ResetTargets, "Reset targets")
 
-    def OnSetMultiTargetMode(self, state):
+    def OnSetMultiTargetMode(self, state=False):
         self.multitarget = state
         if not state:
             self.ResetTargets()

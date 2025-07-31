@@ -732,6 +732,6 @@ class Navigation(metaclass=Singleton):
         ]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
 
-    def MultiTargetMode(self, state):
+    def MultiTargetMode(self, state=False):
         self.multitarget = state
         self.SaveConfig()

@@ -2011,7 +2011,7 @@ class ControlPanel(wx.Panel):
         simultaneous_mode_button.SetBackgroundColour(RED_COLOR)
         simultaneous_mode_button.SetBitmap(BMP_SIMULTANEOUS)
         simultaneous_mode_button.SetValue(False)
-        simultaneous_mode_button.Enable(True)
+        simultaneous_mode_button.Enable(self.navigation.n_coils > 1)
         self.UpdateToggleButton(simultaneous_mode_button, self.navigation.multitarget)
         self.OnSimultaneousButton(ctrl=simultaneous_mode_button)
         simultaneous_mode_button.Bind(
@@ -2319,6 +2319,10 @@ class ControlPanel(wx.Panel):
     def OnCoilSelectionDone(self, done):
         self.PressTrackObjectButton(done)
         self.PressShowCoilButton(pressed=done)
+        if self.navigation.n_coils > 1 and done:
+            self.simultaneous_mode_button.Enable(True)
+        else:
+            self.simultaneous_mode_button.Enable(False)
 
     # Robot
     def OnRobotStatus(self, data, robot_ID):
