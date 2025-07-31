@@ -97,6 +97,7 @@ import invesalius
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
+import invesalius.data.imagedata_utils as img_utils
 import invesalius.data.polydata_utils as pu
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
@@ -6387,16 +6388,7 @@ class GoToDialogScannerCoord(wx.Dialog):
         self.orientation = None
         self.affine = np.identity(4)
 
-        self.__bind_events()
-
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
-
-    def __bind_events(self) -> None:
-        Publisher.subscribe(self.SetNewFocalPoint, "Cross focal point")
-
-    def SetNewFocalPoint(self, coord, spacing):
-        if self.result is not None:
-            Publisher.sendMessage("Update cross pos", coord=self.result * spacing)
 
     def OnOk(self, evt: wx.CommandEvent) -> None:
         import invesalius.data.slice_ as slc
@@ -6409,18 +6401,22 @@ class GoToDialogScannerCoord(wx.Dialog):
             ]
 
             # transformation from scanner coordinates to inv coord system
-            affine_inverse = np.linalg.inv(slc.Slice().affine)
-            self.result = (
-                np.dot(affine_inverse[:3, :3], np.transpose(point[0:3])) + affine_inverse[:3, 3]
-            )
-            self.result[1] = slc.Slice().GetMaxSliceNumber(const.CORONAL_STR) - self.result[1]
+            self.result = img_utils.convert_world_to_voxel(
+                point[0:3], np.linalg.inv(slc.Slice().affine)
+            )[0]
 
             Publisher.sendMessage(
                 "Update status text in GUI", label=_("Calculating the transformation ...")
             )
 
-            Publisher.sendMessage("Set Update cross pos")
-            Publisher.sendMessage("Toggle toolbar button", id=const.SLICE_STATE_CROSS)
+            wx.CallAfter(Publisher.sendMessage, "Toggle toolbar button", id=const.SLICE_STATE_CROSS)
+            wx.CallAfter(Publisher.sendMessage, "Update slices position", position=self.result)
+            wx.CallAfter(Publisher.sendMessage, "Set cross focal point", position=self.result)
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "Update volume viewer pointer",
+                position=[self.result[0], -self.result[1], self.result[2]],
+            )
 
             Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
         except ValueError:
