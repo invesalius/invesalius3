@@ -20,6 +20,7 @@
 import os
 import queue
 import sys
+
 import numpy as np
 import wx
 from imageio import imsave
@@ -1786,7 +1787,6 @@ class Viewer(wx.Panel):
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         wx.CallAfter(Publisher.sendMessage, "Initialize color array")
         wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
-    
 
     def CreateLUTTableForEfield(self, min, max):
         lut = vtkLookupTable()
@@ -1801,7 +1801,7 @@ class Viewer(wx.Panel):
         for i in range(n):
             norm_val = i / (n - 1)
         if norm_val >= threshold:
-            lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0) # Set to orange
+            lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)  # Set to orange
         return lut
 
     def GetEfieldMaxMin(self, e_field_norms):
@@ -1963,11 +1963,13 @@ class Viewer(wx.Panel):
             + "% percent: "
             + str(n_clusters)
             + "\n"
-            + "Distance: " + str(f"{distances_between_representatives:04.2f}") 
+            + "Distance: "
+            + str(f"{distances_between_representatives:04.2f}")
             + "\n"
-            + "Focal Factor: " + str(f"{focal_factor:04.2f}")            
+            + "Focal Factor: "
+            + str(f"{focal_factor:04.2f}")
         )
-         
+
         self.focal_factor_members = [
             n_clusters,
             n_clusters / len(self.Id_list),
@@ -2244,7 +2246,7 @@ class Viewer(wx.Panel):
             else:
                 self.e_field_norms_to_save = enorm_data[3].enorm
                 self.e_field_norms = enorm_data[3].enorm
-                self.e_field_norms =[self.e_field_norms[i] for i in self.Id_list]
+                self.e_field_norms = [self.e_field_norms[i] for i in self.Id_list]
                 self.e_field_col1 = enorm_data[3].column1
                 self.e_field_col2 = enorm_data[3].column2
                 self.e_field_col3 = enorm_data[3].column3
@@ -2257,7 +2259,7 @@ class Viewer(wx.Panel):
                     self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
 
                 self.max_efield_array = enorm_data[3].mvector
-                self.Idmax = enorm_data[3].maxindex #self.Id_list[enorm_data[3].maxindex]
+                self.Idmax = enorm_data[3].maxindex  # self.Id_list[enorm_data[3].maxindex]
                 if self.save_automatically and self.plot_no_connection:
                     import time
 
@@ -2336,9 +2338,11 @@ class Viewer(wx.Panel):
             efield_coords_position = [list(position_world), list(orientation_world)]
         if plot_efield_vectors:
             if self.plot_no_connection:
-                e_field_vectors = [[list(self.e_field_col1_to_save)],
-                                   [list(self.e_field_col2_to_save)], 
-                                   [list(self.e_field_col3_to_save)]] 
+                e_field_vectors = [
+                    [list(self.e_field_col1_to_save)],
+                    [list(self.e_field_col2_to_save)],
+                    [list(self.e_field_col3_to_save)],
+                ]
             else:
                 e_field_vectors = list(self.max_efield_array)
             all_data.append(
