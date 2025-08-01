@@ -67,6 +67,7 @@ class NeuronavigationApi(metaclass=Singleton):
         assert self._hasmethod(connection, "update_focus")
         assert self._hasmethod(connection, "set_callback__stimulation_pulse_received")
         assert self._hasmethod(connection, "set_callback__set_vector_field")
+        assert self._hasmethod(connection, "set_callback__update_coil_target")
 
     def __bind_events(self):
         Publisher.subscribe(self.start_navigation, "Start navigation")
@@ -317,6 +318,7 @@ class NeuronavigationApi(metaclass=Singleton):
         # connection.set_callback__update_robot_transformation_matrix(
         #     self.update_robot_transformation_matrix
         # )
+        connection.set_callback__update_coil_target(self.update_coil_target)
         connection.set_callback__set_vector_field(self.set_vector_field)
 
     def add_pedal_callback(self, name, callback, remove_when_released=False):
@@ -398,4 +400,11 @@ class NeuronavigationApi(metaclass=Singleton):
             Publisher.sendMessage,
             "Robot to Neuronavigation: Update robot transformation matrix",
             data=matrix,
+        )
+
+    def update_coil_target(self, coil_target):
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "NeuroSimo to Neuronavigation: Update coil target",
+            coil_target=coil_target,
         )
