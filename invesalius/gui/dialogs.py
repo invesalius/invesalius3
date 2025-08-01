@@ -6348,9 +6348,6 @@ class GoToDialogScannerCoord(wx.Dialog):
         self.goto_coronal = wx.TextCtrl(self, size=(50, -1))
         self.goto_axial = wx.TextCtrl(self, size=(50, -1))
 
-        # Initialize result attribute
-        self.result = None
-
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
         btn_ok.SetDefault()
@@ -6401,21 +6398,21 @@ class GoToDialogScannerCoord(wx.Dialog):
             ]
 
             # transformation from scanner coordinates to inv coord system
-            self.result = img_utils.convert_world_to_voxel(
-                point[0:3], np.linalg.inv(slc.Slice().affine)
-            )[0]
+            voxel = img_utils.convert_world_to_voxel(point[0:3], np.linalg.inv(slc.Slice().affine))[
+                0
+            ]
 
             Publisher.sendMessage(
                 "Update status text in GUI", label=_("Calculating the transformation ...")
             )
 
             wx.CallAfter(Publisher.sendMessage, "Toggle toolbar button", id=const.SLICE_STATE_CROSS)
-            wx.CallAfter(Publisher.sendMessage, "Update slices position", position=self.result)
-            wx.CallAfter(Publisher.sendMessage, "Set cross focal point", position=self.result)
+            wx.CallAfter(Publisher.sendMessage, "Update slices position", position=voxel)
+            wx.CallAfter(Publisher.sendMessage, "Set cross focal point", position=voxel)
             wx.CallAfter(
                 Publisher.sendMessage,
                 "Update volume viewer pointer",
-                position=[self.result[0], -self.result[1], self.result[2]],
+                position=[voxel[0], -voxel[1], voxel[2]],
             )
 
             Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
