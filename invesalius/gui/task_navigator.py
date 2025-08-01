@@ -2845,6 +2845,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self.CreateMarkerEfield, "Create Marker from tangential")
         Publisher.subscribe(self.UpdateCortexMarker, "Update Cortex Marker")
 
+        Publisher.subscribe(self.CreateCoilTargetFromLandmark, "Create coil target from landmark")
+
         # Update main_coil combobox
         Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
 
@@ -3379,7 +3381,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(idx)
         Publisher.sendMessage("Set camera to focus on marker", marker=marker)
 
-    def OnCreateCoilTargetFromLandmark(self, evt):
+    def CreateCoilTargetFromLandmark(self, index=None):
+        if index:
+            self.FocusOnMarker(index)
+        self.OnCreateCoilTargetFromLandmark()
+
+    def OnCreateCoilTargetFromLandmark(self, evt=None):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
