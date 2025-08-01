@@ -20,6 +20,7 @@
 import queue
 import threading
 from time import sleep
+
 import numpy as np
 import wx
 
