@@ -6081,7 +6081,7 @@ class BrainSurfaceLoadingProgressWindow:
 
 class SurfaceSmoothingProgressWindow:
     def __init__(self):
-        title = "InVesalius 3"
+        title = "InVesalius 3 – Creating TMS Coil Target"
         message = _("Smoothing the surface...")
         style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
         parent = wx.GetApp().GetTopWindow()
