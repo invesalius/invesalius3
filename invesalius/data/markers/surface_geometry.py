@@ -272,7 +272,10 @@ class SurfaceGeometry(metaclass=Singleton):
             actor = highest_surface["original"]["actor"]
 
             # Create a smoothed version of the actor.
-            smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
+            if polydata.GetNumberOfCells() > 10000:
+                smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
+            else:
+                smoothed_actor = actor
             progress_window.Update()
             highest_surface["smoothed"] = self.PrecalculateSurfaceData(smoothed_actor)
 
