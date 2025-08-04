@@ -3381,12 +3381,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(idx)
         Publisher.sendMessage("Set camera to focus on marker", marker=marker)
 
-    def CreateCoilTargetFromLandmark(self, index=None):
+    def CreateCoilTargetFromLandmark(self, index=None, label=None):
         if index:
             self.FocusOnMarker(index)
-        self.OnCreateCoilTargetFromLandmark()
+        self.OnCreateCoilTargetFromLandmark(label=label)
 
-    def OnCreateCoilTargetFromLandmark(self, evt=None):
+    def OnCreateCoilTargetFromLandmark(self, evt=None, label=None):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
@@ -3397,7 +3397,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if not proj.surface_dict:
             wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
             return
-        self.markers.CreateCoilTargetFromLandmark(marker)
+        self.markers.CreateCoilTargetFromLandmark(marker, label)
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
         self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
