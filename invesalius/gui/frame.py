@@ -26,6 +26,7 @@ import webbrowser
 
 import wx
 import wx.aui
+import wx.py.shell
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
 
 import invesalius.constants as const
@@ -207,22 +208,17 @@ class Frame(wx.Frame):
         keycode = event.GetKeyCode()
         modifiers = event.GetModifiers()
 
-        # Check if the focus is on a text entry field or interactive shell
         focused = wx.Window.FindFocus()
         is_search_field = False
         is_shell_focused = False
+
+        # Check if the focus is on a text entry field
         if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
             is_search_field = True
 
-        # Check if the shell is focused by looking for shell-related windows
-        if focused:
-            # Check if we're in the interactive shell
-            parent = focused.GetParent()
-            while parent:
-                if hasattr(parent, "__class__") and "Shell" in parent.__class__.__name__:
-                    is_shell_focused = True
-                    break
-                parent = parent.GetParent()
+        # Check if the shell is focused
+        if focused and isinstance(focused, wx.py.shell.Shell):
+            is_shell_focused = True
 
         # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
         if modifiers & wx.MOD_CONTROL:
