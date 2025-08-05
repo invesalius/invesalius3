@@ -17,6 +17,8 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+from typing import Any
+
 import wx
 import wx.py.shell
 
@@ -35,13 +37,14 @@ class InteractiveShellPanel(wx.Panel):
     Interactive Python shell panel for debugging and development.
     """
 
-    def __init__(self, parent, app_context={}, introText=""):
+    def __init__(self, parent: wx.Window, app_context: dict[str, Any] = {}, introText: str = ""):
         """
         Initialize the shell panel.
 
         Args:
             parent: Parent window
             app_context: Dictionary of objects to expose in shell namespace
+            introText: Introductory text for the shell
         """
         super().__init__(parent)
 
@@ -64,13 +67,14 @@ class InteractiveShellFrame(wx.Frame):
     Standalone frame for the interactive shell.
     """
 
-    def __init__(self, parent, app_context=None, introText=""):
+    def __init__(self, parent: wx.Window, app_context: dict[str, Any] = {}, introText: str = ""):
         """
         Initialize the shell frame.
 
         Args:
             parent: Parent window
             app_context: Dictionary of objects to expose in shell namespace
+            introText: Introductory text for the shell
         """
         super().__init__(
             parent,
