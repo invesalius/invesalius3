@@ -53,15 +53,14 @@ class Mask3DEditor:
         self.mask_data = slc.Slice().current_mask.matrix.copy()
 
     def __bind_events(self):
-        Publisher.subscribe(self.CutMaskFrom3D, "M3E cut mask from 3D")
-        Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
-        Publisher.subscribe(
-            self.ReceiveVolumeViewerActiveCamera, "Receive volume viewer active camera"
-        )
-        Publisher.subscribe(self.ReceiveVolumeViewerSize, "Receive volume viewer size")
-        Publisher.subscribe(self.SetEditMode, "M3E set edit mode")
-        Publisher.subscribe(self.SetUseDepthForEdit, "M3E use depth")
-        Publisher.subscribe(self.SetDepthValue, "M3E depth value")
+        sub = Publisher.subscribe
+        sub(self.CutMaskFrom3D, "M3E cut mask from 3D")
+        sub(self.ClearPolygons, "M3E clear polygons")
+        sub(self.ReceiveVolumeViewerActiveCamera, "Receive volume viewer active camera")
+        sub(self.ReceiveVolumeViewerSize, "Receive volume viewer size")
+        sub(self.SetEditMode, "M3E set edit mode")
+        sub(self.SetUseDepthForEdit, "M3E use depth")
+        sub(self.SetDepthValue, "M3E depth value")
 
     def init_new_polygon(self):
         """Initialize a new polygon for the mask editor."""
