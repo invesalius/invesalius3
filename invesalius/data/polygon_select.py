@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING
 
 import invesalius.constants as const
 from invesalius.gui.widgets.canvas_renderer import CanvasHandlerBase, Polygon
+from invesalius.pubsub import pub as Publisher
 
 if TYPE_CHECKING:
     import wx
@@ -57,6 +58,12 @@ class PolygonSelectCanvas(CanvasHandlerBase):
     def draw_to_canvas(self, gc: "wx.GraphicsContext", canvas: "CanvasRendererCTX") -> None:
         ## abstract method from super class. needs implementation but does nothing here
         super().draw_to_canvas(gc, canvas)
+
+    def on_mouse_move(self, _evt: "CanvasEvent"):
+        pass
+
+    def on_drag_end(self, _evt):
+        Publisher.sendMessage("M3E cut mask from 3D")
 
     def insert_point(self, point: tuple[int, int]):
         """Insert a new point to the polygon."""
