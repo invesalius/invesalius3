@@ -21,7 +21,9 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
+import numpy.typing as npt
 import wx
+from skimage.draw import polygon2mask
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
@@ -29,20 +31,23 @@ from vtkmodules.vtkInteractionStyle import (
 from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPicker
 
 import invesalius.constants as const
-import invesalius.data.mask_3d_edit as m3e
+import invesalius.data.slice_ as slc
 import invesalius.project as prj
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
+from invesalius_cy.mask_cut import mask_cut, mask_cut_with_depth
 
 PROP_MEASURE = 0.8
 
 if TYPE_CHECKING:
+    from vtkmodules.vtkRenderingCore import vtkCamera
+
     from invesalius.data.viewer_volume import Viewer
 
 
 class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
-    def __init__(self, viewer):
+    def __init__(self, viewer: "Viewer"):
         self.right_pressed = False
         self.left_pressed = False
         self.middle_pressed = False
@@ -658,11 +663,17 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
     def __init__(self, viewer: "Viewer"):
         super().__init__(viewer)
-        # Manages the mask operations
-        self.mask3deditor = m3e.Mask3DEditor()
+
+        self.mask_data = slc.Slice().current_mask.matrix.copy()
+
+        self.m3e_list: list[PolygonSelectCanvas] = []
 
         self.picker = vtkCellPicker()
         self.picker.PickFromListOn()
+
+        self.edit_mode = const.MASK_3D_EDIT_INCLUDE
+        self.use_depth = False
+        self.depth_val = 1.0
 
         self.init_new_polygon()
 
@@ -677,19 +688,49 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
         self.viewer.canvas.subscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
 
-    def init_new_polygon(self):
-        """Initialize a new polygon for the mask editor."""
-        self.mask3deditor.init_new_polygon()
-        self.viewer.canvas.draw_list.append(self.mask3deditor.poly)
+        sub = Publisher.subscribe
+        sub(self.ReceiveVolumeViewerActiveCamera, "Receive volume viewer active camera")
+        sub(self.ReceiveVolumeViewerSize, "Receive volume viewer size")
+        sub(self.CutMaskFromPolygons, "M3E cut mask from 3D")
+        sub(self.SetEditMode, "M3E set edit mode")
+        sub(self.SetUseDepthForEdit, "M3E use depth")
+        sub(self.SetDepthValue, "M3E depth value")
 
     def SetUp(self):
         """Set up is called just before the style is set in the interactor.
 
         This is called by the volume ``Viewer.SetInteractorStyle`` method.
         """
+        for drawn_polygon in self.viewer.canvas.draw_list:
+            if isinstance(drawn_polygon, PolygonSelectCanvas):
+                drawn_polygon.visible = True
+                drawn_polygon.set_interactive(True)
+                self.m3e_list.append(drawn_polygon)
+
         Publisher.sendMessage(
             "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
         )
+
+    def SetEditMode(self, mode):
+        """
+        Sets edit mode to either discard points within or outside
+        the polygon.
+        """
+        self.edit_mode = mode
+
+    def SetUseDepthForEdit(self, use):
+        """
+        Sets whether to perform a mask cut using depth or through all
+        """
+        self.use_depth = use
+
+    def SetDepthValue(self, value):
+        self.depth_val = value
+
+    def init_new_polygon(self):
+        """Initialize a new polygon for the mask editor."""
+        self.m3e_list.append(PolygonSelectCanvas())
+        self.viewer.canvas.draw_list.append(self.m3e_list[-1])
 
     def CleanUp(self):
         """Clean up is called when the interactor style is removed or changed.
@@ -697,13 +738,19 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         This is called by the volume ``Viewer.SetInteractorStyle`` method.
         """
         super().CleanUp()
-        Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
         self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
         self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+        for drawn_polygon in self.m3e_list:
+            drawn_polygon.visible = False
+            drawn_polygon.set_interactive(False)
+
+        Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
 
     def ClearPolygons(self):
-        """Clear all polygons from the viewer."""
-        self.viewer.canvas.draw_list.clear()
+        """Clear all polygons from the viewer and clear masker list in the style."""
+        for masker in self.m3e_list:
+            self.viewer.canvas.draw_list.remove(masker)
+        self.m3e_list.clear()
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygonPoint(self, _evt):
@@ -713,16 +760,111 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         """
         mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
 
-        if not self.mask3deditor.has_open_poly:
+        if self.m3e_list[-1].complete:
             self.init_new_polygon()
 
-        self.mask3deditor.poly.insert_point((mouse_x, mouse_y))
+        current_masker = self.m3e_list[-1]
+        current_masker.insert_point((mouse_x, mouse_y))
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygon(self, _evt):
         """Complete the polygon by connecting the last point to the first one."""
-        self.mask3deditor.complete_polygon()
+        self.m3e_list[-1].complete_polygon()
+        Publisher.sendMessage("M3E cut mask from 3D")
         self.viewer.UpdateCanvas()
+
+    def ReceiveVolumeViewerActiveCamera(self, cam: "vtkCamera"):
+        width, height = self.resolution
+
+        near, far = self.clipping_range = cam.GetClippingRange()
+
+        # This flip around the Y axis was done to countereffect the flip that vtk performs
+        # in volume.py:780. If we do not flip back, what is being displayed is flipped,
+        # although the actual coordinates are the initial ones, so the cutting gets wrong
+        # after rotations around y or x.
+        inv_Y_matrix = np.eye(4)
+        inv_Y_matrix[1, 1] = -1
+
+        # Composite transform world coordinates to viewport coordinates
+        # This is a concatenation of the view transform (world coordinates to camera
+        # coordinates) and the projection transform (camera coordinates to viewport
+        # coordinates).
+        M = cam.GetCompositeProjectionTransformMatrix(width / float(height), near, far)
+        M = vtkarray_to_numpy(M)
+        self.world_to_screen = M @ inv_Y_matrix
+
+        # Get the model view matrix, which transforms world coordinates to camera
+        # coordinates.
+        MV = cam.GetViewTransformMatrix()
+        MV = vtkarray_to_numpy(MV)
+        self.world_to_camera_coordinates = MV @ inv_Y_matrix
+
+    def ReceiveVolumeViewerSize(self, size: tuple[int, int]):
+        self.resolution = size
+
+    def get_filters(self) -> list[npt.NDArray]:
+        """Create a boolean mask filter based on the polygon points and viewer size."""
+        w, h = self.resolution
+        # get the mask of the polygon in the shape of the screen resolution
+        filters = [
+            polygon2mask((w, h), poly_canvas.polygon.points) for poly_canvas in self.m3e_list
+        ]
+        return filters
+
+    def CutMaskFromPolygons(self):
+        completed_polygons = [m3e for m3e in self.m3e_list if m3e.complete]
+        if len(completed_polygons) == 0:
+            return
+
+        # All m3e will be updated with correct viewer settings
+        Publisher.sendMessage("Send volume viewer size")
+        Publisher.sendMessage("Send volume viewer active camera")
+
+        filters = self.get_filters()
+
+        # OR operation in all masks to create a single filter mask
+        filter = np.logical_or.reduce(filters).T
+
+        # If the edit mode is to include, we invert the filter
+        if self.edit_mode == const.MASK_3D_EDIT_INCLUDE:
+            np.logical_not(filter, out=filter)
+
+        _mat = self.mask_data[1:, 1:, 1:].copy()
+
+        slice = slc.Slice()
+        sx, sy, sz = slice.spacing
+
+        if self.use_depth:
+            near, far = self.clipping_range
+            depth = near + (far - near) * self.depth_val
+            mask_cut_with_depth(
+                _mat,
+                sx,
+                sy,
+                sz,
+                depth,
+                filter,
+                self.world_to_screen,
+                self.world_to_camera_coordinates,
+                _mat,
+            )
+        else:
+            mask_cut(_mat, sx, sy, sz, filter, self.world_to_screen, _mat)
+
+        _cur_mask = slice.current_mask
+        _cur_mask.matrix[1:, 1:, 1:] = _mat
+        _cur_mask.was_edited = True
+        _cur_mask.modified(all_volume=True)
+
+        # Discard all buffers to reupdate view
+        for ori in ["AXIAL", "CORONAL", "SAGITAL"]:
+            slice.buffer_slices[ori].discard_buffer()
+
+        # Save modification in the history
+        _cur_mask.save_history(0, "VOLUME", _cur_mask.matrix.copy(), self.mask_data)
+
+        Publisher.sendMessage("Update mask 3D preview")
+        Publisher.sendMessage("Reload actual slice")
 
 
 class Styles:

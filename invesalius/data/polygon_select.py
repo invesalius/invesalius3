@@ -26,7 +26,7 @@ from invesalius.gui.widgets.canvas_renderer import CanvasHandlerBase, Polygon
 if TYPE_CHECKING:
     import wx
 
-    from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
+    from invesalius.gui.widgets.canvas_renderer import CanvasEvent, CanvasRendererCTX
 
 
 class PolygonSelectCanvas(CanvasHandlerBase):
@@ -35,23 +35,22 @@ class PolygonSelectCanvas(CanvasHandlerBase):
     Inspired on PolygonDensityMeasure, stores and renders a polygon for a canvas.
 
     Args:
-        colour (tuple): RGBA tuple for the polygon line color.
+        colour (tuple[int, int, int, int]): RGBA tuple for the polygon line color.
         interactive (bool): Whether the polygon is interactive.
     """
 
-    def __init__(self, colour=(255, 0, 0, 255), interactive=True):
+    def __init__(
+        self, colour: tuple[int, int, int, int] = (255, 0, 0, 255), interactive: bool = True
+    ):
         super().__init__(None)
-
-        self.colour = colour
-
-        self.complete = False
 
         self.location = const.SURFACE
         self.index = 0
 
-        self.polygon = Polygon(self, fill=False, closed=False, line_colour=self.colour, is_3d=False)
+        self.polygon = Polygon(self, fill=False, closed=False, line_colour=colour, is_3d=False)
         self.polygon.layer = 1
         self.add_child(self.polygon)
+        self.complete = False
 
         self.interactive = interactive
 
@@ -71,9 +70,9 @@ class PolygonSelectCanvas(CanvasHandlerBase):
     def IsComplete(self):
         return self.complete
 
-    def SetVisibility(self, value):
+    def SetVisibility(self, value: bool):
         self.polygon.visible = value
 
-    def set_interactive(self, value):
+    def set_interactive(self, value: bool):
         self.interactive = bool(value)
         self.polygon.interactive = self.interactive

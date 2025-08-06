@@ -37,283 +37,184 @@ class Mask3DEditException(Exception):
     pass
 
 
-class Mask3DEditor:
-    resolution: tuple[int, int]
-    clipping_range: tuple[float, float]
+class Mask3DEditor(PolygonSelectCanvas):
+    # def get_filter(self, resolution: tuple[int, int]) -> npt.NDArray:
+    #     """Create a boolean mask filter based on the polygon points and viewer size."""
+    #     w, h = resolution
+    #     # get the mask of the polygon in the shape of the screen resolution
+    #     filter = polygon2mask((w, h), self.polygon.points)
+    #
+    #     return filter
 
-    def __init__(self):
-        self.__bind_events()
-        self.polygons_to_operate = []
-        self.edit_mode = const.MASK_3D_EDIT_INCLUDE
-        self.use_depth = False
-        self.depth_val = None
-        self.model_to_screen = None
-        self.model_view = None
+    # def CutMaskFrom3D(self):
+    #     if not self.complete:
+    #         return
+    #
+    #     Publisher.sendMessage("Send volume viewer size")
+    #     Publisher.sendMessage("Send volume viewer active camera")
+    #
+    #     _filter = self._create_filter().T
+    #
+    #     # # Unoptimized implementation
+    #     # self._cut_mask(self.mask_data[1:, 1:, 1:], s.spacing, _filter)
+    #
+    #     # Optimized implementation
+    #     _mat = self.mask_data[1:, 1:, 1:].copy()
+    #
+    #     slice = slc.Slice()
+    #     sx, sy, sz = slice.spacing
+    #
+    #     if self.use_depth:
+    #         near, far = self.clipping_range
+    #         depth = near + (far - near) * self.depth_val
+    #         mask_cut_with_depth(
+    #             _mat,
+    #             sx,
+    #             sy,
+    #             sz,
+    #             depth,
+    #             _filter,
+    #             self.world_to_screen,
+    #             self.world_to_camera_coordinates,
+    #             _mat,
+    #         )
+    #     else:
+    #         mask_cut(_mat, sx, sy, sz, _filter, self.world_to_screen, _mat)
+    #
+    #     _cur_mask = slice.current_mask
+    #     _cur_mask.matrix[1:, 1:, 1:] = _mat
+    #     _cur_mask.was_edited = True
+    #     _cur_mask.modified(all_volume=True)
+    #
+    #     # Discard all buffers to reupdate view
+    #     for ori in ["AXIAL", "CORONAL", "SAGITAL"]:
+    #         slice.buffer_slices[ori].discard_buffer()
+    #
+    #     # Save modification in the history
+    #     _cur_mask.save_history(0, "VOLUME", _cur_mask.matrix.copy(), self.mask_data)
+    #
+    #     Publisher.sendMessage("Update mask 3D preview")
+    #     Publisher.sendMessage("Reload actual slice")
+    #
+    # # Unoptimized implementation
+    # def _cut_mask(self, mask_data, spacing, _filter):
+    #     """
+    #     Cuts an Invesalius Mask with a filter (pixel-wise filter)
+    #     mask_data: matrix data without metadata ([1:])
+    #     spacing: the spacing used in the mask matrix
+    #     _filter: matrix the same size as the viewer that rasterizes
+    #     points to be edited
+    #     """
+    #
+    #     def coord_transform(x, y, z, affine):
+    #         squeeze = not hasattr(x, "__iter__")
+    #         x = np.asanyarray(x)
+    #         shape = x.shape
+    #         coords = np.c_[
+    #             np.atleast_1d(x).flat,
+    #             np.atleast_1d(y).flat,
+    #             np.atleast_1d(z).flat,
+    #             np.ones_like(np.atleast_1d(z).flat),
+    #         ].T
+    #         x, y, z, _ = np.dot(affine, coords)
+    #         if squeeze:
+    #             return x.squeeze(), y.squeeze(), z.squeeze()
+    #         return np.reshape(x, shape), np.reshape(y, shape), np.reshape(z, shape)
+    #
+    #     true_indices = np.where(mask_data)
+    #     if len(true_indices[0]) == 0:
+    #         # No True voxels in mask
+    #         return np.zeros_like(mask_data, dtype=bool)
+    #
+    #     # Get coordinates of True voxels only
+    #     x_coords, y_coords, z_coords = true_indices
+    #     voxel_coordinates = np.column_stack((z_coords, y_coords, x_coords)).T
+    #
+    #     # Voxel to world is voxel * spacing (i.e. scale matrix)
+    #     scale_matrix = np.eye(4)
+    #     scale_matrix[:3, :3] *= spacing
+    #
+    #     # We want check for each voxel if it is inside the polygon projection (i.e. the
+    #     # filter mask)
+    #     affine = self.world_to_screen @ scale_matrix
+    #
+    #     # we don't care about the depth, only if it is within the width x height values
+    #     # inside the polygon
+    #     width_coords, height_coords, _ = coord_transform(*voxel_coordinates, affine)
+    #
+    #     # The vtk matrix for the viewport is in the range [-1, 1] for both width and
+    #     # height. Transforming to width and height coordinates.
+    #     width_coords_within_resolution = np.round(
+    #         (width_coords / 2.0 + 0.5) * (self.resolution[0] - 1)
+    #     ).astype(int)
+    #     height_coords_within_resolution = np.round(
+    #         (height_coords / 2.0 + 0.5) * (self.resolution[1] - 1)
+    #     ).astype(int)
+    #
+    #     # Check which coordinates are within screen bounds
+    #     valid_screen_coords = (
+    #         (width_coords_within_resolution >= 0)
+    #         & (width_coords_within_resolution < self.resolution[0])
+    #         & (height_coords_within_resolution >= 0)
+    #         & (height_coords_within_resolution < self.resolution[1])
+    #     )
+    #
+    #     valid_indices = np.where(valid_screen_coords)[0]
+    #
+    #     valid_w = width_coords_within_resolution[valid_screen_coords]
+    #     valid_h = height_coords_within_resolution[valid_screen_coords]
+    #
+    #     # Check filter values at these coordinates
+    #     filter_values = _filter.T[valid_h, valid_w]
+    #     # Set corresponding voxels to True in result
+    #     valid_voxel_indices = valid_indices[filter_values]
+    #     if len(valid_voxel_indices) > 0:
+    #         mask_data[
+    #             x_coords[valid_voxel_indices],
+    #             y_coords[valid_voxel_indices],
+    #             z_coords[valid_voxel_indices],
+    #         ] = 0
 
-        self.mask_data = slc.Slice().current_mask.matrix.copy()
-
-    def __bind_events(self):
-        sub = Publisher.subscribe
-        sub(self.CutMaskFrom3D, "M3E cut mask from 3D")
-        sub(self.ClearPolygons, "M3E clear polygons")
-        sub(self.ReceiveVolumeViewerActiveCamera, "Receive volume viewer active camera")
-        sub(self.ReceiveVolumeViewerSize, "Receive volume viewer size")
-        sub(self.SetEditMode, "M3E set edit mode")
-        sub(self.SetUseDepthForEdit, "M3E use depth")
-        sub(self.SetDepthValue, "M3E depth value")
-
-    def init_new_polygon(self):
-        """Initialize a new polygon for the mask editor."""
-        self.poly = PolygonSelectCanvas()
-        self.has_open_poly = True
-
-    def complete_polygon(self):
-        """Complete the current polygon."""
-        self.poly.complete_polygon()
-        self.has_open_poly = False
-
-        self.polygons_to_operate.append(self.poly)
-
-    def ClearPolygons(self):
-        """
-        Discards all added polygons
-        """
-        self.polygons_to_operate = []
-
-    def ReceiveVolumeViewerActiveCamera(self, cam: "vtkCamera"):
-        width, height = self.resolution
-
-        near, far = self.clipping_range = cam.GetClippingRange()
-
-        # This flip around the Y axis was done to countereffect the flip that vtk performs
-        # in volume.py:780. If we do not flip back, what is being displayed is flipped,
-        # although the actual coordinates are the initial ones, so the cutting gets wrong
-        # after rotations around y or x.
-        inv_Y_matrix = np.eye(4)
-        inv_Y_matrix[1, 1] = -1
-
-        # Composite transform world coordinates to viewport coordinates
-        # This is a concatenation of the view transform (world coordinates to camera
-        # coordinates) and the projection transform (camera coordinates to viewport
-        # coordinates).
-        M = cam.GetCompositeProjectionTransformMatrix(width / float(height), near, far)
-        M = vtkarray_to_numpy(M)
-        self.world_to_screen = M @ inv_Y_matrix
-
-        # Get the model view matrix, which transforms world coordinates to camera
-        # coordinates.
-        MV = cam.GetViewTransformMatrix()
-        MV = vtkarray_to_numpy(MV)
-        self.world_to_camera_coordinates = MV @ inv_Y_matrix
-
-    def ReceiveVolumeViewerSize(self, size: tuple[int, int]):
-        self.resolution = size
-
-    def SetEditMode(self, mode):
-        """
-        Sets edit mode to either discard points within or outside
-        the polygon.
-        """
-        self.edit_mode = mode
-
-    def SetUseDepthForEdit(self, use):
-        """
-        Sets whether to perform a mask cut using depth or through all
-        """
-        self.use_depth = use
-
-    def SetDepthValue(self, value):
-        self.depth_val = value
-
-    def _create_filter(self):
-        """
-        Based on the polygons and screen resolution,
-        create a filter for the edit.
-        """
-        w, h = self.resolution
-        # gets the mask of each polygon in the shape of the screen resolution
-        polygon_masks = [
-            polygon2mask((w, h), poly.polygon.points) for poly in self.polygons_to_operate
-        ]
-
-        # OR operation in all masks to create a single filter mask
-        _filter = np.logical_or.reduce(polygon_masks)
-
-        # If the edit mode is to include, we invert the filter
-        if self.edit_mode == const.MASK_3D_EDIT_INCLUDE:
-            np.logical_not(_filter, out=_filter)
-
-        return _filter
-
-    # Unoptimized implementation
-    def _cut_mask(self, mask_data, spacing, _filter):
-        """
-        Cuts an Invesalius Mask with a filter (pixel-wise filter)
-        mask_data: matrix data without metadata ([1:])
-        spacing: the spacing used in the mask matrix
-        _filter: matrix the same size as the viewer that rasterizes
-        points to be edited
-        """
-
-        def coord_transform(x, y, z, affine):
-            squeeze = not hasattr(x, "__iter__")
-            x = np.asanyarray(x)
-            shape = x.shape
-            coords = np.c_[
-                np.atleast_1d(x).flat,
-                np.atleast_1d(y).flat,
-                np.atleast_1d(z).flat,
-                np.ones_like(np.atleast_1d(z).flat),
-            ].T
-            x, y, z, _ = np.dot(affine, coords)
-            if squeeze:
-                return x.squeeze(), y.squeeze(), z.squeeze()
-            return np.reshape(x, shape), np.reshape(y, shape), np.reshape(z, shape)
-
-        true_indices = np.where(mask_data)
-        if len(true_indices[0]) == 0:
-            # No True voxels in mask
-            return np.zeros_like(mask_data, dtype=bool)
-
-        # Get coordinates of True voxels only
-        x_coords, y_coords, z_coords = true_indices
-        voxel_coordinates = np.column_stack((z_coords, y_coords, x_coords)).T
-
-        # Voxel to world is voxel * spacing (i.e. scale matrix)
-        scale_matrix = np.eye(4)
-        scale_matrix[:3, :3] *= spacing
-
-        # We want check for each voxel if it is inside the polygon projection (i.e. the
-        # filter mask)
-        affine = self.world_to_screen @ scale_matrix
-
-        # we don't care about the depth, only if it is within the width x height values
-        # inside the polygon
-        width_coords, height_coords, _ = coord_transform(*voxel_coordinates, affine)
-
-        # The vtk matrix for the viewport is in the range [-1, 1] for both width and
-        # height. Transforming to width and height coordinates.
-        width_coords_within_resolution = np.round(
-            (width_coords / 2.0 + 0.5) * (self.resolution[0] - 1)
-        ).astype(int)
-        height_coords_within_resolution = np.round(
-            (height_coords / 2.0 + 0.5) * (self.resolution[1] - 1)
-        ).astype(int)
-
-        # Check which coordinates are within screen bounds
-        valid_screen_coords = (
-            (width_coords_within_resolution >= 0)
-            & (width_coords_within_resolution < self.resolution[0])
-            & (height_coords_within_resolution >= 0)
-            & (height_coords_within_resolution < self.resolution[1])
-        )
-
-        valid_indices = np.where(valid_screen_coords)[0]
-
-        valid_w = width_coords_within_resolution[valid_screen_coords]
-        valid_h = height_coords_within_resolution[valid_screen_coords]
-
-        # Check filter values at these coordinates
-        filter_values = _filter.T[valid_h, valid_w]
-        # Set corresponding voxels to True in result
-        valid_voxel_indices = valid_indices[filter_values]
-        if len(valid_voxel_indices) > 0:
-            mask_data[
-                x_coords[valid_voxel_indices],
-                y_coords[valid_voxel_indices],
-                z_coords[valid_voxel_indices],
-            ] = 0
-
-        # dz, dy, dx = mask_data.shape
-        # sx, sy, sz = spacing
-        # # Only get coordinates where mask is True
-        # true_indices = np.where(mask_data)
-        # if len(true_indices[0]) == 0:
-        #     # No True voxels in mask
-        #     return np.zeros_like(mask_data, dtype=bool)
-        #
-        # # Get coordinates of True voxels only
-        # x_coords = true_indices[2]  # x coordinates
-        # y_coords = true_indices[1]  # y coordinates
-        # z_coords = true_indices[0]  # z coordinates
-        #
-        # M = self.world_to_screen
-        # h, w = _filter.T.shape
-        #
-        # for z, y, x in zip(z_coords, y_coords, x_coords):
-        #     # Voxel to world space
-        #     p0 = x * sx
-        #     p1 = y * sy
-        #     p2 = z * sz
-        #     p3 = 1.0
-        #
-        #     # _q = M * _p
-        #     _q0 = p0 * M[0, 0] + p1 * M[0, 1] + p2 * M[0, 2] + p3 * M[0, 3]
-        #     _q1 = p0 * M[1, 0] + p1 * M[1, 1] + p2 * M[1, 2] + p3 * M[1, 3]
-        #     _q2 = p0 * M[2, 0] + p1 * M[2, 1] + p2 * M[2, 2] + p3 * M[2, 3]
-        #     _q3 = p0 * M[3, 0] + p1 * M[3, 1] + p2 * M[3, 2] + p3 * M[3, 3]
-        #
-        #     if _q3 > 0:
-        #         q0 = _q0 / _q3
-        #         q1 = _q1 / _q3
-        #         q2 = _q2 / _q3
-        #
-        #         # Normalized coordinates back to pixels
-        #         px = (q0 / 2.0 + 0.5) * (w - 1)
-        #         py = (q1 / 2.0 + 0.5) * (h - 1)
-        #
-        #         if 0 <= px < w and 0 <= py < h:
-        #             if (
-        #                 _filter.T[int(py), int(px)] == 1
-        #             ):  # NOTE: The lack of round here might be a problem
-        #                 mask_data[z, y, x] = 0
-
-    def CutMaskFrom3D(self):
-        if len(self.polygons_to_operate) == 0:
-            return
-
-        Publisher.sendMessage("Send volume viewer size")
-        Publisher.sendMessage("Send volume viewer active camera")
-
-        _filter = self._create_filter().T
-
-        # # Unoptimized implementation
-        # self._cut_mask(self.mask_data[1:, 1:, 1:], s.spacing, _filter)
-
-        # Optimized implementation
-        _mat = self.mask_data[1:, 1:, 1:].copy()
-
-        slice = slc.Slice()
-        sx, sy, sz = slice.spacing
-
-        if self.use_depth:
-            near, far = self.clipping_range
-            depth = near + (far - near) * self.depth_val
-            mask_cut_with_depth(
-                _mat,
-                sx,
-                sy,
-                sz,
-                depth,
-                _filter,
-                self.world_to_screen,
-                self.world_to_camera_coordinates,
-                _mat,
-            )
-        else:
-            mask_cut(_mat, sx, sy, sz, _filter, self.world_to_screen, _mat)
-
-        _cur_mask = slice.current_mask
-        _cur_mask.matrix[1:, 1:, 1:] = _mat
-        _cur_mask.was_edited = True
-        _cur_mask.modified(all_volume=True)
-
-        # Discard all buffers to reupdate view
-        for ori in ["AXIAL", "CORONAL", "SAGITAL"]:
-            slice.buffer_slices[ori].discard_buffer()
-
-        # Save modification in the history
-        _cur_mask.save_history(0, "VOLUME", _cur_mask.matrix.copy(), self.mask_data)
-
-        Publisher.sendMessage("Update mask 3D preview")
-        Publisher.sendMessage("Reload actual slice")
+    # dz, dy, dx = mask_data.shape
+    # sx, sy, sz = spacing
+    # # Only get coordinates where mask is True
+    # true_indices = np.where(mask_data)
+    # if len(true_indices[0]) == 0:
+    #     # No True voxels in mask
+    #     return np.zeros_like(mask_data, dtype=bool)
+    #
+    # # Get coordinates of True voxels only
+    # x_coords = true_indices[2]  # x coordinates
+    # y_coords = true_indices[1]  # y coordinates
+    # z_coords = true_indices[0]  # z coordinates
+    #
+    # M = self.world_to_screen
+    # h, w = _filter.T.shape
+    #
+    # for z, y, x in zip(z_coords, y_coords, x_coords):
+    #     # Voxel to world space
+    #     p0 = x * sx
+    #     p1 = y * sy
+    #     p2 = z * sz
+    #     p3 = 1.0
+    #
+    #     # _q = M * _p
+    #     _q0 = p0 * M[0, 0] + p1 * M[0, 1] + p2 * M[0, 2] + p3 * M[0, 3]
+    #     _q1 = p0 * M[1, 0] + p1 * M[1, 1] + p2 * M[1, 2] + p3 * M[1, 3]
+    #     _q2 = p0 * M[2, 0] + p1 * M[2, 1] + p2 * M[2, 2] + p3 * M[2, 3]
+    #     _q3 = p0 * M[3, 0] + p1 * M[3, 1] + p2 * M[3, 2] + p3 * M[3, 3]
+    #
+    #     if _q3 > 0:
+    #         q0 = _q0 / _q3
+    #         q1 = _q1 / _q3
+    #         q2 = _q2 / _q3
+    #
+    #         # Normalized coordinates back to pixels
+    #         px = (q0 / 2.0 + 0.5) * (w - 1)
+    #         py = (q1 / 2.0 + 0.5) * (h - 1)
+    #
+    #         if 0 <= px < w and 0 <= py < h:
+    #             if (
+    #                 _filter.T[int(py), int(px)] == 1
+    #             ):  # NOTE: The lack of round here might be a problem
+    #                 mask_data[z, y, x] = 0
