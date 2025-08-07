@@ -38,6 +38,7 @@ class Mask3DEditException(Exception):
 
 
 class Mask3DEditor(PolygonSelectCanvas):
+    pass
     # def get_filter(self, resolution: tuple[int, int]) -> npt.NDArray:
     #     """Create a boolean mask filter based on the polygon points and viewer size."""
     #     w, h = resolution
