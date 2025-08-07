@@ -830,6 +830,12 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             np.logical_not(filter, out=filter)
 
         _mat = self.mask_data[1:, 1:, 1:].copy()
+        true_indices = np.where(_mat)
+
+        # Get coordinates of True voxels only
+        true_x_coords = true_indices[2].astype(np.int32)  # x coordinates
+        true_y_coords = true_indices[1].astype(np.int32)  # y coordinates
+        true_z_coords = true_indices[0].astype(np.int32)  # z coordinates
 
         slice = slc.Slice()
         sx, sy, sz = slice.spacing
@@ -839,6 +845,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             depth = near + (far - near) * self.depth_val
             mask_cut_with_depth(
                 _mat,
+                true_x_coords,
+                true_y_coords,
+                true_z_coords,
                 sx,
                 sy,
                 sz,
@@ -849,7 +858,18 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
                 _mat,
             )
         else:
-            mask_cut(_mat, sx, sy, sz, filter, self.world_to_screen, _mat)
+            mask_cut(
+                _mat,
+                true_x_coords,
+                true_y_coords,
+                true_z_coords,
+                sx,
+                sy,
+                sz,
+                filter,
+                self.world_to_screen,
+                _mat,
+            )
 
         _cur_mask = slice.current_mask
         _cur_mask.matrix[1:, 1:, 1:] = _mat
