@@ -72,8 +72,8 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
         if HAS_TORCH:
             self.torch_devices: Dict[str, str] = TORCH_DEVICES
-        
-        if HAS_TINYGRAD: 
+
+        if HAS_TINYGRAD:
             self.tinygrad_devices: Dict[str, str] = TINYGRAD_DEVICES
 
         self.auto_segment = auto_segment
@@ -362,8 +362,9 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             Publisher.sendMessage("Brain segmentation completed")
 
     def SetProgress(self, progress):
-        self.progress.SetValue(int(progress * 100))
-        wx.GetApp().Yield()
+        if self.progress and self.progress.IsBeingDeleted() is False:
+            self.progress.SetValue(int(progress * 100))
+            wx.GetApp().Yield()
 
     def OnTickTimer(self, evt):
         fmt = "%H:%M:%S"
