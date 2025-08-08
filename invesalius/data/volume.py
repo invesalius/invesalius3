@@ -20,9 +20,7 @@ import os
 import plistlib
 import weakref
 
-from packaging.version import Version
 from vtkmodules.util import numpy_support
-from vtkmodules.vtkCommonCore import vtkVersion
 from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction, vtkPlane
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkImagingCore import vtkImageFlip, vtkImageShiftScale
@@ -38,7 +36,6 @@ from vtkmodules.vtkRenderingCore import (
 )
 from vtkmodules.vtkRenderingVolume import (
     vtkFixedPointVolumeRayCastMapper,
-    vtkGPUVolumeRayCastMapper,
 )
 from vtkmodules.vtkRenderingVolumeOpenGL2 import vtkOpenGLGPUVolumeRayCastMapper
 
