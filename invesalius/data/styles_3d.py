@@ -709,6 +709,20 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
         )
 
+    def CleanUp(self):
+        """Clean up is called when the interactor style is removed or changed.
+
+        This is called by the volume ``Viewer.SetInteractorStyle`` method.
+        """
+        super().CleanUp()
+        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
+        self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+        for drawn_polygon in self.m3e_list:
+            drawn_polygon.visible = False
+            drawn_polygon.set_interactive(False)
+
+        Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
+
     def SetEditMode(self, mode):
         """
         Sets edit mode to either discard points within or outside
@@ -730,25 +744,12 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.m3e_list.append(PolygonSelectCanvas())
         self.viewer.canvas.draw_list.append(self.m3e_list[-1])
 
-    def CleanUp(self):
-        """Clean up is called when the interactor style is removed or changed.
-
-        This is called by the volume ``Viewer.SetInteractorStyle`` method.
-        """
-        super().CleanUp()
-        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
-        self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
-        for drawn_polygon in self.m3e_list:
-            drawn_polygon.visible = False
-            drawn_polygon.set_interactive(False)
-
-        Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
-
     def ClearPolygons(self):
         """Clear all polygons from the viewer and clear masker list in the style."""
         for masker in self.m3e_list:
             self.viewer.canvas.draw_list.remove(masker)
         self.m3e_list.clear()
+        self.OnRestoreInitMask()
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygonPoint(self, _evt):
@@ -798,7 +799,13 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.world_to_camera_coordinates = MV @ inv_Y_matrix
 
     def ReceiveVolumeViewerSize(self, size: tuple[int, int]):
+        """Receive the size of the volume viewer through pubsub."""
         self.resolution = size
+
+    def OnRestoreInitMask(self):
+        """Restore the initial mask data from when the style was setup."""
+        _mat = self.mask_data[1:, 1:, 1:].copy()
+        self.update_views(_mat)
 
     def get_filters(self) -> list[npt.NDArray]:
         """Create a boolean mask filter based on the polygon points and viewer size."""
@@ -869,6 +876,11 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
                 _mat,
             )
 
+        self.update_views(_mat)
+
+    def update_views(self, _mat: npt.NDArray):
+        """Update the views with the given mask data."""
+        slice = slc.Slice()
         _cur_mask = slice.current_mask
         _cur_mask.matrix[1:, 1:, 1:] = _mat
         _cur_mask.was_edited = True
