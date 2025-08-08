@@ -64,32 +64,34 @@ def mask_cut(np.ndarray[image_t, ndim=3] mask_data,
     cdef DTYPEF64_t _q0, _q1, _q2, _q3
     cdef DTYPEF64_t q0, q1, q2
 
-    for i in range(N):
-        z = z_coords[i]
-        y = y_coords[i]
-        x = x_coords[i]
+    # Parallel processing with nogil
+    with nogil:
+        for i in prange(N, schedule='static'):
+            z = z_coords[i]
+            y = y_coords[i]
+            x = x_coords[i]
 
-        p0 = <float>(x*sx)
-        p1 = <float>(y*sy)
-        p2 = <float>(z*sz)
-        p3 = 1.0
+            p0 = <float>(x*sx)
+            p1 = <float>(y*sy)
+            p2 = <float>(z*sz)
+            p3 = 1.0
 
-        _q0 = p0 * M[0, 0] + p1 * M[0, 1] + p2 * M[0, 2] + p3 * M[0, 3]
-        _q1 = p0 * M[1, 0] + p1 * M[1, 1] + p2 * M[1, 2] + p3 * M[1, 3]
-        _q2 = p0 * M[2, 0] + p1 * M[2, 1] + p2 * M[2, 2] + p3 * M[2, 3]
-        _q3 = p0 * M[3, 0] + p1 * M[3, 1] + p2 * M[3, 2] + p3 * M[3, 3]
+            _q0 = p0 * M[0, 0] + p1 * M[0, 1] + p2 * M[0, 2] + p3 * M[0, 3]
+            _q1 = p0 * M[1, 0] + p1 * M[1, 1] + p2 * M[1, 2] + p3 * M[1, 3]
+            _q2 = p0 * M[2, 0] + p1 * M[2, 1] + p2 * M[2, 2] + p3 * M[2, 3]
+            _q3 = p0 * M[3, 0] + p1 * M[3, 1] + p2 * M[3, 2] + p3 * M[3, 3]
 
-        if _q3 > 0:
-            q0 = _q0/_q3
-            q1 = _q1/_q3
-            q2 = _q2/_q3
+            if _q3 > 0:
+                q0 = _q0/_q3
+                q1 = _q1/_q3
+                q2 = _q2/_q3
 
-            px = (q0/2.0 + 0.5) * (w - 1)
-            py = (q1/2.0 + 0.5) * (h - 1)
+                px = (q0/2.0 + 0.5) * (w - 1)
+                py = (q1/2.0 + 0.5) * (h - 1)
 
-            if 0 <= px <= w and 0 <= py <= h:
-                if filter[<int>(py), <int>(px)]:
-                    out[z, y, x] = 0
+                if 0 <= px <= w and 0 <= py <= h:
+                    if filter[<int>(py), <int>(px)]:
+                        out[z, y, x] = 0
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
