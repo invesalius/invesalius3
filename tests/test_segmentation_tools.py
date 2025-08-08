@@ -1,10 +1,16 @@
+import multiprocessing
+import os
+import tempfile
+
 import numpy as np
 import pytest
 from scipy import ndimage
 from scipy.ndimage import generate_binary_structure
 
+from invesalius.data import watershed_process
 from invesalius.data.mask import Mask
 from invesalius.data.slice_ import Slice
+from invesalius.data.styles import WaterShedInteractorStyle
 from invesalius_cy import floodfill
 
 
@@ -159,3 +165,146 @@ def test_threshold_and_density_measure():
     assert _max == 200
     assert _mean == 150
     assert _std == 50
+
+
+def test_do_watershed():
+    image = np.zeros((5, 5, 5), dtype=np.int16)
+    image[1:4, 1:4, 1:4] = 100
+
+    markers = np.zeros((5, 5, 5), dtype=np.int16)
+    markers[2, 2, 2] = 1
+    markers[0, 0, 0] = 2
+
+    bstruct = generate_binary_structure(3, 1)
+
+    # queue to check if communication is working
+    q = multiprocessing.Queue()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        tfile = os.path.join(temp_dir, "watershed_mask.tmp")
+
+        tmp_mask = np.memmap(tfile, shape=(5, 5, 5), dtype="uint8", mode="w+")
+
+        watershed_process.do_watershed(
+            image=image,
+            markers=markers,
+            tfile=tfile,
+            shape=(5, 5, 5),
+            bstruct=bstruct,
+            algorithm="Watershed",
+            mg_size=(3, 3, 3),
+            use_ww_wl=False,
+            wl=0,
+            ww=0,
+            q=q,
+        )
+
+        result = tmp_mask.copy()
+        tmp_mask._mmap.close()
+        del tmp_mask
+
+        assert np.any(result > 0), "Watershed should produce segmentation"
+
+        # Check that the queue received a completion signal
+        assert not q.empty(), "Queue should contain completion signal"
+        completion_signal = q.get()
+        assert completion_signal == 1, "Completion signal should be 1"
+
+
+class MockSliceData:
+    def __init__(self):
+        self.number = 0
+        self.cursor = None
+
+    def SetCursor(self, cursor):
+        self.cursor = cursor
+
+
+class MockViewer:
+    def __init__(self):
+        self.slice_ = MockSlice()
+        self.orientation = "AXIAL"
+        self.slice_data = MockSliceData()
+        self._brush_cursor_colour = (1.0, 1.0, 1.0)
+
+
+class MockSlice:
+    def __init__(self):
+        self.spacing = [1.0, 1.0, 1.0]
+
+
+class TestStyle(WaterShedInteractorStyle):
+    def __init__(self):
+        super().__init__(MockViewer())
+        self.matrix = np.zeros((5, 5, 5), dtype=np.uint8)
+
+
+@pytest.mark.parametrize(
+    "orientation,slice_idx,position,brush_shape,expected_positions",
+    [
+        ("AXIAL", 2, (2, 2), (2, 2), [(2, 2), (2, 3), (3, 2), (3, 3)]),
+        ("CORONAL", 2, (2, 2), (2, 2), [(2, 2), (2, 3), (3, 2), (3, 3)]),
+        ("SAGITAL", 2, (2, 2), (2, 2), [(2, 2), (2, 3), (3, 2), (3, 3)]),
+    ],
+)
+def test_edit_mask_pixel_orientations(
+    orientation, slice_idx, position, brush_shape, expected_positions
+):
+    style = TestStyle()
+    brush = np.ones(brush_shape, dtype=bool)
+
+    style.edit_mask_pixel(255, slice_idx, brush, position, 1, orientation)
+
+    if orientation == "AXIAL":
+        mask = style.matrix[slice_idx, :, :]
+    elif orientation == "CORONAL":
+        mask = style.matrix[:, slice_idx, :]
+    else:  # SAGITAL
+        mask = style.matrix[:, :, slice_idx]
+
+    # Verify brush was applied at expected positions
+    for y, x in expected_positions:
+        assert mask[y, x] == 255, f"Brush should be applied at position ({y}, {x})"
+
+    # Verify if the expected number of pixels were changed
+    total_modified = np.sum(mask == 255)
+    expected_count = len(expected_positions)
+    assert (
+        total_modified == expected_count
+    ), f"Expected {expected_count} modified pixels, got {total_modified}"
+
+
+@pytest.mark.parametrize("operation_value", [0, 128, 255])
+def test_edit_mask_pixel_operation_values(operation_value):
+    style = TestStyle()
+    brush = np.ones((2, 2), dtype=bool)
+
+    style.edit_mask_pixel(operation_value, 2, brush, (2, 2), 1, "AXIAL")
+
+    if operation_value > 0:
+        assert (
+            style.matrix[2, 2, 2] == operation_value
+        ), f"Operation value should be {operation_value}, got {style.matrix[2, 2, 2]}"
+    else:
+        assert not np.any(style.matrix > 0), "Operation value 0 should not modify matrix"
+
+
+@pytest.mark.parametrize(
+    "position,should_modify",
+    [
+        ((2, 2), True),
+        ((0, 0), True),
+        ((10, 10), False),
+        ((-5, -5), False),
+    ],
+)
+def test_edit_mask_pixel_boundaries(position, should_modify):
+    style = TestStyle()
+    brush = np.ones((3, 3), dtype=bool)
+
+    style.edit_mask_pixel(255, 2, brush, position, 1, "AXIAL")
+
+    if should_modify:
+        assert np.any(style.matrix > 0), f"Brush at {position} should modify matrix"
+    else:
+        assert not np.any(style.matrix > 0), f"Brush at {position} should not modify matrix"
