@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+from packaging.version import Version
+from vtkmodules.vtkCommonCore import vtkVersion
 from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
 from vtkmodules.vtkImagingCore import vtkImageFlip
 from vtkmodules.vtkRenderingCore import (
