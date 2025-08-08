@@ -756,8 +756,11 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
     def ClearPolygons(self):
         """Clear all polygons from the viewer and clear masker list in the style."""
-        for masker in self.m3e_list:
-            self.viewer.canvas.draw_list.remove(masker)
+        self.viewer.canvas.draw_list = [
+            drawn_item
+            for drawn_item in self.viewer.canvas.draw_list
+            if not isinstance(drawn_item, PolygonSelectCanvas)
+        ]
         self.m3e_list.clear()
         self.OnRestoreInitMask()
         self.viewer.UpdateCanvas()
