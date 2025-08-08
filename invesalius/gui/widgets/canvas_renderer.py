@@ -355,6 +355,24 @@ class CanvasRendererCTX:
         evt.Skip()
 
     def OnLeftButtonRelease(self, evt: wx.KeyEvent) -> None:
+        try:
+            x, y = self.viewer.get_vtk_mouse_position()
+        except AttributeError:
+            evt.Skip()
+            return
+
+        if self._drag_obj and hasattr(self._drag_obj, "on_drag_end"):
+            evt_obj = CanvasEvent(
+                "drag_end",
+                self._drag_obj,
+                (x, y),
+                self.viewer,
+                self.evt_renderer,
+                control_down=evt.ControlDown(),
+                alt_down=evt.AltDown(),
+                shift_down=evt.ShiftDown(),
+            )
+            self.propagate_event(self._drag_obj, evt_obj)
         self._over_obj = None
         self._drag_obj = None
         evt.Skip()
@@ -1076,6 +1094,12 @@ class CircleHandler(CanvasHandlerBase):
             self._on_move_function()(self, evt)
 
         return True
+
+    def on_drag_end(self, evt: CanvasEvent) -> Literal[True]:
+        """Called when the mouse drag ends.
+
+        This is here to allow parents to handle the event through propagation."""
+        pass
 
 
 class Polygon(CanvasHandlerBase):
