@@ -675,8 +675,6 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.use_depth = False
         self.depth_val = 1.0
 
-        self.init_new_polygon()
-
         self._bind_events()
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
 
@@ -760,7 +758,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         """
         mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
 
-        if self.m3e_list[-1].complete:
+        if len(self.m3e_list) == 0 or self.m3e_list[-1].complete:
             self.init_new_polygon()
 
         current_masker = self.m3e_list[-1]
