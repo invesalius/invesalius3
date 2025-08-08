@@ -36,7 +36,7 @@ import invesalius.project as prj
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
-from invesalius_cy.mask_cut import mask_cut, mask_cut_with_depth
+from invesalius_cy.mask_cut import mask_cut
 
 PROP_MEASURE = 0.8
 
@@ -672,7 +672,6 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.picker.PickFromListOn()
 
         self.edit_mode = const.MASK_3D_EDIT_INCLUDE
-        self.use_depth = False
         self.depth_val = 1.0
 
         self._bind_events()
@@ -691,7 +690,6 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         sub(self.ReceiveVolumeViewerSize, "Receive volume viewer size")
         sub(self.CutMaskFromPolygons, "M3E cut mask from 3D")
         sub(self.SetEditMode, "M3E set edit mode")
-        sub(self.SetUseDepthForEdit, "M3E use depth")
         sub(self.SetDepthValue, "M3E depth value")
 
     def SetUp(self):
@@ -845,37 +843,22 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         slice = slc.Slice()
         sx, sy, sz = slice.spacing
 
-        if self.use_depth:
-            near, far = self.clipping_range
-            depth = near + (far - near) * self.depth_val
-            mask_cut_with_depth(
-                _mat,
-                true_x_coords,
-                true_y_coords,
-                true_z_coords,
-                sx,
-                sy,
-                sz,
-                depth,
-                filter,
-                self.world_to_screen,
-                self.world_to_camera_coordinates,
-                _mat,
-            )
-        else:
-            mask_cut(
-                _mat,
-                true_x_coords,
-                true_y_coords,
-                true_z_coords,
-                sx,
-                sy,
-                sz,
-                filter,
-                self.world_to_screen,
-                _mat,
-            )
-
+        near, far = self.clipping_range
+        depth = near + (far - near) * self.depth_val
+        mask_cut(
+            _mat,
+            true_x_coords,
+            true_y_coords,
+            true_z_coords,
+            sx,
+            sy,
+            sz,
+            depth,
+            filter,
+            self.world_to_screen,
+            self.world_to_camera_coordinates,
+            _mat,
+        )
         self.update_views(_mat)
 
     def update_views(self, _mat: npt.NDArray):
