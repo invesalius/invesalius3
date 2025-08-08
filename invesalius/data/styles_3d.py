@@ -33,6 +33,7 @@ from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPi
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
 import invesalius.project as prj
+import invesalius.session as ses
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
@@ -674,6 +675,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.edit_mode = const.MASK_3D_EDIT_INCLUDE
         self.depth_val = 1.0
 
+        # keep track if we set preview here or not for UX
+        self.has_set_mask_preview = False
+
         self._bind_events()
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
 
@@ -703,6 +707,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
                 drawn_polygon.set_interactive(True)
                 self.m3e_list.append(drawn_polygon)
 
+        if not ses.Session().mask_3d_preview:
+            self.has_set_mask_preview = True
+            Publisher.sendMessage("Enable mask 3D preview")
+
         Publisher.sendMessage(
             "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
         )
@@ -719,7 +727,11 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             drawn_polygon.visible = False
             drawn_polygon.set_interactive(False)
 
+        if self.has_set_mask_preview:
+            Publisher.sendMessage("Disable mask 3D preview")
+
         Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
+        self.viewer.UpdateCanvas()
 
     def SetEditMode(self, mode):
         """
