@@ -756,6 +756,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             depth, ``1.0`` means full depth.
         """
         self.depth_val = value
+        Publisher.sendMessage("M3E cut mask from 3D")
 
     def init_new_polygon(self):
         """Initialize a new polygon for the mask editor."""
