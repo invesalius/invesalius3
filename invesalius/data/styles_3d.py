@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -733,20 +733,28 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
         self.viewer.UpdateCanvas()
 
-    def SetEditMode(self, mode):
-        """
-        Sets edit mode to either discard points within or outside
-        the polygon.
+    def SetEditMode(self, mode: Literal[0, 1]):
+        """Set edit mode for the style.
+
+        The edit mode can be either include (0) or exclude (1). In include mode, the
+        mask keeps what is inside the polygon, while in exclude mode, it keeps
+        what is outside the polygon.
+
+        Args:
+            mode (Literal[0, 1]): The edit mode to set. ``0`` to keep inside polygons, ``1`` to keep outside polygon.
         """
         self.edit_mode = mode
 
-    def SetUseDepthForEdit(self, use):
-        """
-        Sets whether to perform a mask cut using depth or through all
-        """
-        self.use_depth = use
+    def SetDepthValue(self, value: float):
+        """Set the depth value for the mask editor (between 0 and 1).
 
-    def SetDepthValue(self, value):
+        The depth value is used to determine how deep the mask will be edit in the
+        volume. If ``value = 1.0``, the mask will be edited through the entire volume.
+
+        Args:
+            value (float): The depth value to set, between 0 and 1. ``0.0`` means no
+            depth, ``1.0`` means full depth.
+        """
         self.depth_val = value
 
     def init_new_polygon(self):
