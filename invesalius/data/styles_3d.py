@@ -694,7 +694,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         sub(self.ReceiveVolumeViewerSize, "Receive volume viewer size")
         sub(self.CutMaskFromPolygons, "M3E cut mask from 3D")
         sub(self.SetEditMode, "M3E set edit mode")
-        sub(self.SetDepthValue, "M3E depth value")
+        sub(self.SetDepthValue, "M3E set depth value")
 
     def SetUp(self):
         """Set up is called just before the style is set in the interactor.
@@ -733,15 +733,15 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
         self.viewer.UpdateCanvas()
 
-    def SetEditMode(self, mode: Literal[0, 1]):
+    def SetEditMode(self, mode: int):
         """Set edit mode for the style.
 
-        The edit mode can be either include (0) or exclude (1). In include mode, the
+        For now, the edit mode can only be include (0) or exclude (1). In include mode, the
         mask keeps what is inside the polygon, while in exclude mode, it keeps
         what is outside the polygon.
 
         Args:
-            mode (Literal[0, 1]): The edit mode to set. ``0`` to keep inside polygons, ``1`` to keep outside polygon.
+            mode (int): The edit mode to set. ``0`` to keep inside polygons, ``1`` to keep outside polygon.
         """
         self.edit_mode = mode
 
@@ -795,6 +795,11 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
 
     def ReceiveVolumeViewerActiveCamera(self, cam: "vtkCamera"):
+        """Receive the active camera from the volume viewer through pubsub.
+
+        Args:
+            cam (vtkCamera): The active camera from the volume viewer.
+        """
         width, height = self.resolution
 
         near, far = self.clipping_range = cam.GetClippingRange()
@@ -821,7 +826,12 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.world_to_camera_coordinates = MV @ inv_Y_matrix
 
     def ReceiveVolumeViewerSize(self, size: tuple[int, int]):
-        """Receive the size of the volume viewer through pubsub."""
+        """Receive the size of the volume viewer through pubsub.
+
+        Args:
+            size (tuple[int, int]): The size of the volume viewer in pixels (width,
+            height).
+        """
         self.resolution = size
 
     def OnRestoreInitMask(self):
@@ -839,6 +849,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         return filters
 
     def CutMaskFromPolygons(self):
+        """Edit mask data based on the polygons drawn in the 3D viewer."""
         completed_polygons = [m3e for m3e in self.m3e_list if m3e.complete]
         if len(completed_polygons) == 0:
             return

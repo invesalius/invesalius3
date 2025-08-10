@@ -931,13 +931,13 @@ class EditionTools(wx.Panel):
         self.unit = self.txt_unit.GetLabel()
         Publisher.sendMessage("Set edition brush unit", unit=self.unit)
 
-    def OnCheckboxMaskEdit3D(self, evt: wx.CommandEvent):
+    def OnCheckboxMaskEdit3D(self, _evt: wx.CommandEvent):
         style_id = const.STATE_MASK_3D_EDIT
         spin_val = self.spin_mask_edit_3d_depth.GetValue()
 
         if self.cbox_mask_edit_3d.GetValue():
             Publisher.sendMessage("Enable style", style=style_id)
-            Publisher.sendMessage("M3E depth value", value=spin_val)
+            Publisher.sendMessage("M3E set depth value", value=spin_val)
         else:
             Publisher.sendMessage("Disable style", style=style_id)
 
@@ -945,11 +945,11 @@ class EditionTools(wx.Panel):
         op_id = evt.GetSelection()
         Publisher.sendMessage("M3E set edit mode", mode=op_id)
 
-    def OnSpinDepthMaskEdit3D(self, evt):
+    def OnSpinDepthMaskEdit3D(self, _evt):
         spin_val = self.spin_mask_edit_3d_depth.GetValue()
-        Publisher.sendMessage("M3E depth value", value=spin_val)
+        Publisher.sendMessage("M3E set depth value", value=spin_val)
 
-    def OnClearPolyMaskEdit3D(self, evt):
+    def OnClearPolyMaskEdit3D(self, _evt):
         Publisher.sendMessage("M3E clear polygons")
 
 

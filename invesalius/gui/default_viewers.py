@@ -165,6 +165,12 @@ class Panel(wx.Panel):
         Publisher.subscribe(self._Exit, "Exit")
 
     def UpdateViewerCaption(self, viewer_name: str, caption: str):
+        """Update the caption of a viewer pane.
+
+        Args:
+            viewer_name (str): The name of the viewer pane to update.
+            caption (str): The new caption to set for the viewer pane.
+        """
         self.aui_manager.GetPane(viewer_name).Caption(caption)
         self.Refresh()
 
