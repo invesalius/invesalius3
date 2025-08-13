@@ -248,8 +248,12 @@ class TestStyle(WaterShedInteractorStyle):
     ],
 )
 def test_edit_mask_pixel_orientations(
-    orientation, slice_idx, position, brush_shape, expected_positions
-):
+    orientation: str,
+    slice_idx: int,
+    position: tuple[int, int],
+    brush_shape: tuple[int, int],
+    expected_positions: list[tuple[int, int]],
+) -> None:
     style = TestStyle()
     brush = np.ones(brush_shape, dtype=bool)
 
@@ -267,7 +271,7 @@ def test_edit_mask_pixel_orientations(
         assert mask[y, x] == 255, f"Brush should be applied at position ({y}, {x})"
 
     # Verify if the expected number of pixels were changed
-    total_modified = np.sum(mask == 255)
+    total_modified: int = int(np.sum(mask == 255))
     expected_count = len(expected_positions)
     assert (
         total_modified == expected_count
@@ -275,7 +279,7 @@ def test_edit_mask_pixel_orientations(
 
 
 @pytest.mark.parametrize("operation_value", [0, 128, 255])
-def test_edit_mask_pixel_operation_values(operation_value):
+def test_edit_mask_pixel_operation_values(operation_value: int):
     style = TestStyle()
     brush = np.ones((2, 2), dtype=bool)
 
@@ -298,7 +302,7 @@ def test_edit_mask_pixel_operation_values(operation_value):
         ((-5, -5), False),
     ],
 )
-def test_edit_mask_pixel_boundaries(position, should_modify):
+def test_edit_mask_pixel_boundaries(position: tuple[int, int], should_modify: bool) -> None:
     style = TestStyle()
     brush = np.ones((3, 3), dtype=bool)
 
