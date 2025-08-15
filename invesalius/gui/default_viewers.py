@@ -32,6 +32,7 @@ import invesalius.project as project
 import invesalius.session as ses
 from invesalius import inv_paths
 from invesalius.constants import ID_TO_BMP
+from invesalius.gui.navigation_manager import NavigationWindowManager
 from invesalius.gui.widgets.clut_raycasting import (
     EVT_CLUT_CURVE_SELECT,
     EVT_CLUT_CURVE_WL_CHANGE,
@@ -56,7 +57,7 @@ class Panel(wx.Panel):
         self.aui_manager = wx.aui.AuiManager()
         self.aui_manager.SetManagedWindow(self)
 
-        # TODO: Testar mais e verificar melhor opcao
+        self.nav_manager = NavigationWindowManager(self, self.aui_manager)
 
         # Position
         # volume          | pos = 0
@@ -82,8 +83,8 @@ class Panel(wx.Panel):
         # problema: sash control soh aparece no sentido ertical
         # tentativa de solucionar problema seria utilizar Fixed, mas qdo se aciona maximizar nao maximiza inteiro
 
-        p1 = slice_viewer.Viewer(self, "AXIAL")
-        s1 = (
+        self.p1 = slice_viewer.Viewer(self, "AXIAL")
+        self.s1 = (
             wx.aui.AuiPaneInfo()
             .Centre()
             .Row(0)
@@ -93,8 +94,8 @@ class Panel(wx.Panel):
             .CloseButton(False)
         )
 
-        p2 = slice_viewer.Viewer(self, "CORONAL")
-        s2 = (
+        self.p2 = slice_viewer.Viewer(self, "CORONAL")
+        self.s2 = (
             wx.aui.AuiPaneInfo()
             .Centre()
             .Row(0)
@@ -104,8 +105,8 @@ class Panel(wx.Panel):
             .CloseButton(False)
         )
 
-        p3 = slice_viewer.Viewer(self, "SAGITAL")
-        s3 = (
+        self.p3 = slice_viewer.Viewer(self, "SAGITAL")
+        self.s3 = (
             wx.aui.AuiPaneInfo()
             .Centre()
             .Row(1)
@@ -115,37 +116,19 @@ class Panel(wx.Panel):
             .CloseButton(False)
         )
 
-        p4 = VolumeViewerCover(self)
-        # p4 = volume_viewer.Viewer(self)
-        s4 = (
-            wx.aui.AuiPaneInfo()
-            .Row(1)
-            .Name("Volume")
-            .Bottom()
-            .Centre()
-            .Caption(_("Volume"))
-            .MaximizeButton(True)
-            .CloseButton(False)
-        )
-
-        self.s4 = s4
-        self.p4 = p4
-
         menu = slice_menu_.SliceMenu()
-        p1.SetPopupMenu(menu)
-        p2.SetPopupMenu(menu)
-        p3.SetPopupMenu(menu)
+        self.p1.SetPopupMenu(menu)
+        self.p2.SetPopupMenu(menu)
+        self.p3.SetPopupMenu(menu)
 
         if sys.platform == "win32" or wx.VERSION >= (4, 1):
-            self.aui_manager.AddPane(p1, s1)
-            self.aui_manager.AddPane(p2, s2)
-            self.aui_manager.AddPane(p3, s3)
-            self.aui_manager.AddPane(p4, s4)
+            self.aui_manager.AddPane(self.p1, self.s1)
+            self.aui_manager.AddPane(self.p2, self.s2)
+            self.aui_manager.AddPane(self.p3, self.s3)
         else:
-            self.aui_manager.AddPane(p4, s4)
-            self.aui_manager.AddPane(p3, s3)
-            self.aui_manager.AddPane(p2, s2)
-            self.aui_manager.AddPane(p1, s1)
+            self.aui_manager.AddPane(self.p3, self.s3)
+            self.aui_manager.AddPane(self.p2, self.s2)
+            self.aui_manager.AddPane(self.p1, self.s1)
 
         self.aui_manager.Update()
 
@@ -158,9 +141,28 @@ class Panel(wx.Panel):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self.OnRestore)
 
     def __bind_events(self):
+        Publisher.subscribe(self.OnSetSimultaneousMode, "Set simultaneous multicoil mode")
         Publisher.subscribe(self.OnSetTargetMode, "Set target mode")
         Publisher.subscribe(self.OnStartNavigation, "Start navigation")
         Publisher.subscribe(self._Exit, "Exit")
+
+    def OnSetSimultaneousMode(self, state=True):
+        print(f"OnSetSimultaneousMode called with enabled={state}")
+        if state:
+            self.nav_manager.SetDualMode(True)
+            # Hide slice viewers
+            self.aui_manager.GetPane(self.p1).Hide()
+            self.aui_manager.GetPane(self.p2).Hide()
+            self.aui_manager.GetPane(self.p3).Hide()
+        else:
+            # Destroy the last created window
+            if len(self.nav_manager.nav_windows) > 1:
+                self.nav_manager.SetDualMode(False)
+            # Show slice viewers
+            self.aui_manager.GetPane(self.p1).Show()
+            self.aui_manager.GetPane(self.p2).Show()
+            self.aui_manager.GetPane(self.p3).Show()
+        self.aui_manager.Update()
 
     def OnSetTargetMode(self, enabled=True):
         if enabled:
@@ -180,22 +182,44 @@ class Panel(wx.Panel):
         # Restore volume viewer to make sure it is not already maximized before attempting to maximize it
         # to fix the issue with panes locking into the maximized state where they cannot be restored
         self.RestoreViewerVolume()
-        self.aui_manager.MaximizePane(
-            self.aui_manager.GetAllPanes()[-1]
-        )  # Viewer volume is the last pane
+        self.aui_manager.MaximizePane(self.aui_manager.GetPane(self.main_volume_viewer))
+        Publisher.sendMessage("Show raycasting widget")
+        self.aui_manager.Update()
+
+    def RestoreViewerVolume(self):
+        self.aui_manager.RestoreMaximizedPane()
+        Publisher.sendMessage("Hide raycasting widget")
+        self.aui_manager.Update()
+
+    def MaximizeViewerVolume(self):
+        # Restore volume viewer to make sure it is not already maximized before attempting to maximize it
+        # to fix the issue with panes locking into the maximized state where they cannot be restored
+        self.RestoreViewerVolume()
+        self.aui_manager.MaximizePane(self.aui_manager.GetPane(self.main_volume_viewer))
         Publisher.sendMessage("Show raycasting widget")
         self.aui_manager.Update()
 
     def OnMaximize(self, evt):
-        if evt.GetPane().name == self.s4.name:
+        if evt.GetPane().name.startswith("Volume_"):
             Publisher.sendMessage("Show raycasting widget")
 
     def OnRestore(self, evt):
-        if evt.GetPane().name == self.s4.name:
+        if evt.GetPane().name.startswith("Volume_"):
             Publisher.sendMessage("Hide raycasting widget")
 
     def _Exit(self):
         self.aui_manager.UnInit()
+
+    def Cleanup(self):
+        Publisher.unsubscribe(self.ShowRaycastingWidget, "Show raycasting widget")
+        Publisher.unsubscribe(self.HideRaycastingWidget, "Hide raycasting widget")
+        Publisher.unsubscribe(self.OnSetRaycastPreset, "Update raycasting preset")
+        Publisher.unsubscribe(self.RefreshPoints, "Refresh raycasting widget points")
+        Publisher.unsubscribe(self.LoadHistogram, "Load histogram")
+        Publisher.unsubscribe(self._Exit, "Exit")
+
+        if self.volume_viewer_instance:
+            self.volume_viewer_instance.Cleanup()
 
 
 class VolumeInteraction(wx.Panel):
@@ -215,6 +239,7 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager.SetManagedWindow(self)
 
         p1 = volume_viewer.Viewer(self)
+        self.volume_viewer_instance = p1
         s1 = (
             wx.aui.AuiPaneInfo().Centre().CloseButton(False).MaximizeButton(False).CaptionVisible(0)
         )
@@ -302,6 +327,17 @@ class VolumeInteraction(wx.Panel):
     def _Exit(self):
         self.aui_manager.UnInit()
 
+    def Cleanup(self):
+        Publisher.unsubscribe(self.ShowRaycastingWidget, "Show raycasting widget")
+        Publisher.unsubscribe(self.HideRaycastingWidget, "Hide raycasting widget")
+        Publisher.unsubscribe(self.OnSetRaycastPreset, "Update raycasting preset")
+        Publisher.unsubscribe(self.RefreshPoints, "Refresh raycasting widget points")
+        Publisher.unsubscribe(self.LoadHistogram, "Load histogram")
+        Publisher.unsubscribe(self._Exit, "Exit")
+
+        if self.volume_viewer_instance:
+            self.volume_viewer_instance.Cleanup()
+
 
 RAYCASTING_TOOLS = wx.NewIdRef()
 
@@ -320,14 +356,22 @@ class VolumeViewerCover(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
+        self.volume_interaction = VolumeInteraction(self, -1)
+        self.volume_tool_panel = VolumeToolPanel(self)
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(VolumeInteraction(self, -1), 1, wx.EXPAND | wx.GROW)
-        sizer.Add(VolumeToolPanel(self), 0, wx.EXPAND | wx.GROW)
+        sizer.Add(self.volume_interaction, 1, wx.EXPAND | wx.GROW)
+        sizer.Add(self.volume_tool_panel, 0, wx.EXPAND | wx.GROW)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
+
+    def CleanupAndDestroy(self):
+        self.volume_interaction.Cleanup()
+        self.volume_tool_panel.Cleanup()
+        self.Destroy()
 
 
 class VolumeToolPanel(wx.Panel):
@@ -605,3 +649,8 @@ class VolumeToolPanel(wx.Panel):
     def OnSelectColour(self, evt):
         colour = [i / 255.0 for i in evt.GetValue()]
         Publisher.sendMessage("Change volume viewer background colour", colour=colour)
+
+    def Cleanup(self):
+        Publisher.unsubscribe(self.ChangeButtonColour, "Change volume viewer gui colour")
+        Publisher.unsubscribe(self.DisablePreset, "Close project data")
+        Publisher.unsubscribe(self.Uncheck, "Uncheck image plane menu")

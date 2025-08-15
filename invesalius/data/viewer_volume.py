@@ -538,6 +538,196 @@ class Viewer(wx.Panel):
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
 
+    def Cleanup(self):
+        # Unsubscribe all pubsub listeners
+        Publisher.unsubscribe(self.AddSurface, "Load surface actor into viewer")
+        Publisher.unsubscribe(self.RemoveSurface, "Remove surface actor from viewer")
+        Publisher.unsubscribe(self.UpdateRender, "Render volume viewer")
+        Publisher.unsubscribe(self.ChangeBackgroundColour, "Change volume viewer background colour")
+        Publisher.unsubscribe(self.LoadVolume, "Load volume into viewer")
+        Publisher.unsubscribe(self.UnloadVolume, "Unload volume")
+        Publisher.unsubscribe(self.OnSetWindowLevelText, "Set volume window and level text")
+        Publisher.unsubscribe(self.OnHideRaycasting, "Hide raycasting volume")
+        Publisher.unsubscribe(self.OnShowRaycasting, "Update raycasting preset")
+        Publisher.unsubscribe(self.AppendActor, "AppendActor")
+        Publisher.unsubscribe(self.SetWidgetInteractor, "Set Widget Interactor")
+        Publisher.unsubscribe(self.OnSetViewAngle, "Set volume view angle")
+        Publisher.unsubscribe(
+            self.OnDisableBrightContrast, "Set interaction mode " + str(const.MODE_SLICE_EDITOR)
+        )
+        Publisher.unsubscribe(self.OnExportSurface, "Export surface to file")
+        Publisher.unsubscribe(self.LoadSlicePlane, "Load slice plane")
+        Publisher.unsubscribe(self.ResetCamClippingRange, "Reset cam clipping range")
+        Publisher.unsubscribe(self.enable_style, "Enable style")
+        Publisher.unsubscribe(self.OnDisableStyle, "Disable style")
+        Publisher.unsubscribe(self.OnHideText, "Hide text actors on viewers")
+        Publisher.unsubscribe(self.AddActors, "Add actors " + str(const.SURFACE))
+        Publisher.unsubscribe(self.RemoveActors, "Remove actors " + str(const.SURFACE))
+        Publisher.unsubscribe(self.OnShowText, "Show text actors on viewers")
+        Publisher.unsubscribe(self.OnShowRuler, "Show rulers on viewers")
+        Publisher.unsubscribe(self.OnHideRuler, "Hide rulers on viewers")
+        Publisher.unsubscribe(self.OnRulerVisibilityStatus, "Receive ruler visibility status")
+        Publisher.unsubscribe(self.OnCloseProject, "Close project data")
+        Publisher.unsubscribe(self.RemoveAllActors, "Remove all volume actors")
+        Publisher.unsubscribe(self.OnExportPicture, "Export picture to file")
+        Publisher.unsubscribe(self.OnStartSeed, "Create surface by seeding - start")
+        Publisher.unsubscribe(self.OnEndSeed, "Create surface by seeding - end")
+        Publisher.unsubscribe(self.SetStereoMode, "Set stereo mode")
+        Publisher.unsubscribe(self.Reposition3DPlane, "Reposition 3D Plane")
+        Publisher.unsubscribe(self.UpdatePointer, "Update volume viewer pointer")
+        Publisher.unsubscribe(self.RemoveVolume, "Remove Volume")
+        Publisher.unsubscribe(self.OnSensors, "Sensors ID")
+        Publisher.unsubscribe(self.OnRemoveSensorsID, "Remove sensors ID")
+        Publisher.unsubscribe(self.DeleteEFieldMarkers, "Delete markers")
+        Publisher.unsubscribe(self.OnNavigationStatus, "Navigation status")
+        Publisher.unsubscribe(self.UpdateArrowPose, "Update object arrow matrix")
+        Publisher.unsubscribe(
+            self.UpdateEfieldPointLocation, "Update point location for e-field calculation"
+        )
+        Publisher.unsubscribe(self.GetEnorm, "Get enorm")
+        Publisher.unsubscribe(self.TrackObject, "Track object")
+        Publisher.unsubscribe(self.SetTargetMode, "Set target mode")
+        Publisher.unsubscribe(self.OnUpdateCoilPose, "Update coil pose")
+        Publisher.unsubscribe(self.OnSetTarget, "Set target")
+        Publisher.unsubscribe(self.OnUnsetTarget, "Unset target")
+        Publisher.unsubscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
+        Publisher.unsubscribe(self.OnUpdateDistanceThreshold, "Update distance threshold")
+        Publisher.unsubscribe(self.OnUpdateTracts, "Update tracts")
+        Publisher.unsubscribe(self.OnUpdateEfieldvis, "Update efield vis")
+        Publisher.unsubscribe(self.InitializeColorArray, "Initialize color array")
+        Publisher.unsubscribe(self.OnRemoveTracts, "Remove tracts")
+        Publisher.unsubscribe(self.UpdateSeedOffset, "Update seed offset")
+        Publisher.unsubscribe(self.UpdateMarkerOffsetState, "Update marker offset state")
+        Publisher.unsubscribe(self.AddPeeledSurface, "Update peel")
+        Publisher.unsubscribe(self.InitEfield, "Initialize E-field brain")
+        Publisher.unsubscribe(self.GetPeelCenters, "Get peel centers and normals")
+        Publisher.unsubscribe(self.InitLocatorViewer, "Get init locator")
+        Publisher.unsubscribe(self.GetPeelCenters, "Get peel centers and normals")
+        Publisher.unsubscribe(self.InitLocatorViewer, "Get init locator")
+        Publisher.unsubscribe(self.load_mask_preview, "Load mask preview")
+        Publisher.unsubscribe(self.remove_mask_preview, "Remove mask preview")
+        Publisher.unsubscribe(self.GetEfieldActor, "Send Actor")
+        Publisher.unsubscribe(self.ReturnToDefaultColorActor, "Recolor again")
+        Publisher.unsubscribe(self.SaveEfieldData, "Save Efield data")
+        Publisher.unsubscribe(self.SavedAllEfieldData, "Save all Efield data")
+        Publisher.unsubscribe(self.SaveEfieldTargetData, "Save target data")
+        Publisher.unsubscribe(self.GetTargetSavedEfieldData, "Get target index efield")
+        Publisher.unsubscribe(self.CheckStatusSavedEfieldData, "Check efield data")
+        Publisher.unsubscribe(self.GetNeuronavigationApi, "Get Neuronavigation Api")
+        Publisher.unsubscribe(self.UpdateEfieldPointLocationOffline, "Update interseccion offline")
+        Publisher.unsubscribe(self.MaxEfieldActor, "Show max Efield actor")
+        Publisher.unsubscribe(self.CoGEfieldActor, "Show CoG Efield actor")
+        Publisher.unsubscribe(
+            self.CalculateDistanceMaxEfieldCoGE, "Show distance between Max and CoG Efield"
+        )
+        Publisher.unsubscribe(self.EfieldVectors, "Show Efield vectors")
+        Publisher.unsubscribe(self.RecolorEfieldActor, "Recolor efield actor")
+        Publisher.unsubscribe(self.GetScalpEfield, "Send scalp index")
+        Publisher.unsubscribe(
+            self.OnUpdateRobotWarning, "Robot to Neuronavigation: Update robot warning"
+        )
+        Publisher.unsubscribe(self.GetCoilPosition, "Calculate position and rotation")
+        Publisher.unsubscribe(
+            self.CreateCortexProjectionOnScalp, "Send efield target position on brain"
+        )
+        Publisher.unsubscribe(self.UpdateEfieldThreshold, "Update Efield Threshold")
+        Publisher.unsubscribe(self.UpdateEfieldROISize, "Update Efield ROI size")
+        Publisher.unsubscribe(self.SetEfieldTargetAtCortex, "Set as Efield target at cortex")
+        Publisher.unsubscribe(self.EnableShowEfieldAboveThreshold, "Show area above threshold")
+        Publisher.unsubscribe(self.EnableEfieldTools, "Enable Efield tools")
+        Publisher.unsubscribe(self.ClearTargetAtCortex, "Clear efield target at cortex")
+        Publisher.unsubscribe(self.CoGEforCortexMarker, "Get Cortex position")
+        Publisher.unsubscribe(self.AddCortexMarkerActor, "Add cortex marker actor")
+        Publisher.unsubscribe(self.CortexMarkersVisualization, "Display efield markers at cortex")
+        Publisher.unsubscribe(self.GetTargetPositions, "Get targets Ids for mtms")
+        Publisher.unsubscribe(self.GetTargetPathmTMS, "Send targeting file path")
+        Publisher.unsubscribe(self.GetdIsfromCoord, "Send mtms coords")
+        Publisher.unsubscribe(
+            self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
+        )
+
+        # Clean up VTK objects
+        if self.interactor:
+            self.interactor.RemoveAllObservers()
+            self.interactor.SetRenderWindow(None)
+            self.interactor.Enable(0)
+            self.interactor.Destroy()
+            self.interactor = None
+
+        if self.ren:
+            self.ren.RemoveAllViewProps()
+            self.ren.SetRenderWindow(None)
+            self.ren = None
+
+        if self.target_guide_renderer:
+            self.target_guide_renderer.RemoveAllViewProps()
+            self.target_guide_renderer.SetRenderWindow(None)
+            self.target_guide_renderer = None
+
+        if self.canvas_renderer:
+            self.canvas_renderer.RemoveAllViewProps()
+            self.canvas_renderer.SetRenderWindow(None)
+            self.canvas_renderer = None
+
+        # Clean up other VTK objects if they exist
+        if self.pointer_actor:
+            self.pointer_actor = None
+        if self.distance_text:
+            self.distance_text = None
+        if self.robot_warnings_text:
+            self.robot_warnings_text = None
+        if self.ruler:
+            self.ruler = None
+        if self.slice_plane:
+            self.slice_plane = None
+        if self.actor_peel:
+            self.actor_peel = None
+        if self.object_orientation_torus_actor:
+            self.object_orientation_torus_actor = None
+        if self.obj_projection_arrow_actor:
+            self.obj_projection_arrow_actor = None
+        if self.vectorfield_actor:
+            self.vectorfield_actor = None
+        if self.efield_scalar_bar:
+            self.efield_scalar_bar = None
+        if self.edge_actor:
+            self.edge_actor = None
+        if self.SpreadEfieldFactorTextActor:
+            self.SpreadEfieldFactorTextActor = None
+        if self.mTMSCoordTextActor:
+            self.mTMSCoordTextActor = None
+        if self.ClusterEfieldTextActor:
+            self.ClusterEfieldTextActor = None
+        if self.EfieldAtTargetLegend:
+            self.EfieldAtTargetLegend = None
+        if self.max_efield_vector:
+            self.max_efield_vector = None
+        if self.ball_max_vector:
+            self.ball_max_vector = None
+        if self.GoGEfieldVector:
+            self.GoGEfieldVector = None
+        if self.ball_GoGEfieldVector:
+            self.ball_GoGEfieldVector = None
+        if self.dummy_probe_actor:
+            self.dummy_probe_actor = None
+        if self.dummy_ref_actor:
+            self.dummy_ref_actor = None
+        if self.dummy_obj_actor:
+            self.dummy_obj_actor = None
+        for actor in self.coil_sensor_spheres:
+            actor = None
+        self.coil_sensor_spheres = []
+        for actor, _ in self.static_markers_efield:
+            actor = None
+        self.static_markers_efield = []
+
+        # Call UnInit on the interactor's render window
+        if self.interactor and self.interactor.GetRenderWindow():
+            self.interactor.GetRenderWindow().Finalize()
+
+        # Call the base class's cleanup if it exists
+        # super().Cleanup()
+
     def get_vtk_mouse_position(self):
         """
         Get Mouse position inside a wxVTKRenderWindowInteractorself. Return a
