@@ -1,13 +1,24 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+
+# files in which the hooks will be applied
+files: |
+    (?x)^(
+        invesalius/.*/.*py
+        | setup.py
+        | app.py
+        | typings/.*/.*pyi
+    )$
+
 repos:
--   repo: https://github.com/astral-sh/ruff-pre-commit
+  - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.4.5
+    rev: v0.11.9
     hooks:
-        # Run the linter.
-        - id: ruff
-          name: sort-imports
-          args: ["check", "--select", "I", "--fix"]
-        # Run the formatter.
-        - id: ruff-format
+      - id: ruff
+        args: [ --fix ]
+        types_or: [python, pyi, jupyter]
+      - id: ruff-format
+        types_or: [ python, pyi, jupyter ]
+
+
