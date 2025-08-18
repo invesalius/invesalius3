@@ -956,8 +956,6 @@ class Viewer(wx.Panel):
         if not self.probe:
             return
 
-        print(scale_factor)
-
         if self.dummy_probe_actor:
             self.dummy_probe_actor.SetScale(scale_factor, scale_factor, scale_factor)
         if self.dummy_ref_actor:
