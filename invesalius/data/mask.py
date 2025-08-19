@@ -33,6 +33,7 @@ import invesalius.data.converters as converters
 import invesalius.session as ses
 from invesalius.data.volume_mask import VolumeMask
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import TempFileManager
 from invesalius_cy import floodfill
 
 
@@ -42,7 +43,8 @@ class EditionHistoryNode:
         self.orientation = orientation
         self.fd, self.filename = tempfile.mkstemp(suffix=".npy")
         self.clean = clean
-
+        self._temp_manager = TempFileManager()
+        self._temp_manager.register_temp_file(self.filename)
         self._save_array(array)
 
     def _save_array(self, array):
@@ -71,7 +73,7 @@ class EditionHistoryNode:
     def __del__(self):
         print("Removing", self.filename)
         os.close(self.fd)
-        os.remove(self.filename)
+        self._temp_manager.decrement_refs(self.filename)
 
 
 class EditionHistory:
@@ -205,9 +207,13 @@ class EditionHistory:
 class Mask:
     general_index = -1
 
-    def __init__(self):
+    def __init__(self, index=None):
         Mask.general_index += 1
-        self.index = Mask.general_index
+        if index is None:
+            self.index = Mask.general_index
+        else:
+            self.index = index
+            Mask.general_index -= 1
         self.matrix = None
         self.spacing = (1.0, 1.0, 1.0)
         self.imagedata = None
@@ -217,13 +223,15 @@ class Mask:
         self.name = const.MASK_NAME_PATTERN % (Mask.general_index + 1)
         self.edition_threshold_range = [const.THRESHOLD_OUTVALUE, const.THRESHOLD_INVALUE]
         self.is_shown = 1
-        self.edited_points = {}
         self.was_edited = False
         self.volume = None
         self.auto_update_mask = True
+        self._modified_callbacks = []
         self.modified_time = 0
         self.__bind_events()
-        self._modified_callbacks = []
+        self._temp_manager = TempFileManager()
+        self._temp_file = None
+        self._temp_fd = None
 
         self.history = EditionHistory()
 
@@ -296,7 +304,7 @@ class Mask:
         filename = "mask_%d" % self.index
         mask_filename = f"{filename}.dat"
         # mask_filepath = os.path.join(dir_temp, mask_filename)
-        filelist[self.temp_file] = mask_filename
+        filelist[self._temp_file] = mask_filename
         # self._save_mask(mask_filepath)
 
         mask["index"] = self.index
@@ -363,10 +371,10 @@ class Mask:
         self.modified()
 
     def _save_mask(self, filename):
-        shutil.copyfile(self.temp_file, filename)
+        shutil.copyfile(self._temp_file, filename)
 
     def _open_mask(self, filename, shape, dtype="uint8"):
-        self.temp_file = filename
+        self._temp_file = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
     def _set_class_index(self, index):
@@ -395,9 +403,10 @@ class Mask:
         Parameters:
             shape(int, int, int): The shape of the new mask.
         """
-        self.temp_fd, self.temp_file = tempfile.mkstemp()
+        self._temp_fd, self._temp_file = tempfile.mkstemp()
+        self._temp_manager.register_temp_file(self._temp_file)
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
-        self.matrix = np.memmap(self.temp_file, mode="w+", dtype="uint8", shape=shape)
+        self.matrix = np.memmap(self._temp_file, mode="w+", dtype="uint8", shape=shape)
 
     def modified(self, all_volume=False):
         if all_volume:
@@ -422,6 +431,7 @@ class Mask:
         self.modified(all_volume=True)
 
     def cleanup(self):
+        """Clean up resources when mask is no longer needed."""
         if self.is_shown:
             self.history._config_undo_redo(False)
         if self.volume:
@@ -429,7 +439,21 @@ class Mask:
             Publisher.sendMessage("Render volume viewer")
             self.imagedata = None
             self.volume = None
-        del self.matrix
+        try:
+            del self.matrix
+        except AttributeError:
+            pass
+
+        if self._temp_file:
+            self._temp_manager.decrement_refs(self._temp_file)
+            self._temp_file = None
+
+        if self._temp_fd is not None:
+            try:
+                os.close(self._temp_fd)
+            except (OSError, IOError):
+                pass
+            self._temp_fd = None
 
     def copy(self, copy_name):
         """
@@ -500,16 +524,10 @@ class Mask:
                 self.save_history(index, orientation, matrix.copy(), cp_mask)
 
     def __del__(self):
-        # On Linux self.matrix is already removed so it gives an error
-        try:
-            del self.matrix
-        except AttributeError:
-            pass
+        self.cleanup()
 
-        # Used for masks not loaded from plist project.
-        try:
-            os.close(self.temp_fd)
-        except AttributeError:
-            pass
-
-        os.remove(self.temp_file)
+    def CloseProject(self):
+        """Clean up resources when project is closed."""
+        self.cleanup()
+        self.matrix = None
+        self.filename = None
