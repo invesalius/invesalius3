@@ -151,11 +151,7 @@ class InnerFoldPanel(wx.Panel):
         gbs.AddGrowableCol(0, 1)
         self.gbs = gbs
 
-        # Initialize Navigation, Tracker, Robot, Image, and PedalConnection objects here to make them
-        # available to several panels.
         nav_hub = NavigationHub(window=self)
-
-        self.nav_hub = nav_hub
         self.tracker = nav_hub.tracker
         self.image = nav_hub.image
         self.navigation = nav_hub.navigation
@@ -2323,6 +2319,8 @@ class ControlPanel(wx.Panel):
             self.simultaneous_mode_button.Enable(True)
         else:
             self.simultaneous_mode_button.Enable(False)
+            self.simultaneous_mode_button.SetValue(False)
+            self.OnSimultaneousButton(ctrl=self.simultaneous_mode_button)
 
     # Robot
     def OnRobotStatus(self, data, robot_ID):
@@ -2532,14 +2530,54 @@ class ControlPanel(wx.Panel):
 
     def OnSimultaneousButton(self, evt=None, ctrl=None):
         enabled = ctrl.GetValue()
-        Publisher.sendMessage("Set simultaneous multicoil mode", state=enabled)
+
         if enabled:
+            coil_names_options = (
+                list(self.navigation.coil_registrations)
+                if self.navigation.selected_coils_to_navigation is None
+                else self.navigation.selected_coils_to_navigation
+            )
+
+            if len(coil_names_options) != 2 and len(coil_names_options) > 1:
+                # Choice coils to navigation with dialog
+                dialog = wx.MultiChoiceDialog(
+                    self,
+                    _("Choice 2 coils to navigation simultaneous"),
+                    _("Choice coil options"),
+                    choices=coil_names_options,
+                )
+
+                if dialog.ShowModal() == wx.ID_OK:
+                    selections = dialog.GetSelections()
+                    dialog.Destroy()
+                    if len(selections) == 2:
+                        self.selected_coils_to_navigation = [
+                            coil_names_options[i] for i in selections
+                        ]
+                    else:
+                        wx.MessageBox(
+                            _("You must choose exactly 2 coils."),
+                            _("Invalid Selection"),
+                            wx.OK | wx.ICON_WARNING,
+                        )
+                        self.simultaneous_mode_button.SetValue(False)
+                        enabled = False
+                        return
+            else:
+                self.selected_coils_to_navigation = coil_names_options
+
             ctrl.SetBackgroundColour(self.GREEN_COLOR)
         else:
+            self.selected_coils_to_navigation = None
             ctrl.SetBackgroundColour(self.RED_COLOR)
 
-    # Robot-related buttons
+        Publisher.sendMessage(
+            "Set simultaneous multicoil mode",
+            state=enabled,
+            coils_list=self.selected_coils_to_navigation,
+        )
 
+    # Robot-related buttons
     # 'Track target with robot' button
     def EnableRobotTrackTargetButton(self, enabled=False):
         self.EnableToggleButton(self.robot_track_target_button, enabled)

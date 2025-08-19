@@ -214,9 +214,6 @@ class Viewer(wx.Panel):
 
         self.view_angle = None
 
-        self.__bind_events()
-        self.__bind_events_wx()
-
         self.mouse_pressed = 0
         self.on_wl = False
 
@@ -351,6 +348,9 @@ class Viewer(wx.Panel):
         self.save_automatically = False
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
+
+        self.__bind_events()
+        self.__bind_events_wx()
 
         # self.renderers = (self.target_guide_renderer, ren, canvas_renderer)
 

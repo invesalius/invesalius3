@@ -20,6 +20,7 @@ from invesalius.gui.widgets.clut_raycasting import (
 )
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import Singleton
 
 RAYCASTING_TOOLS = wx.NewIdRef()
 
@@ -34,16 +35,32 @@ ID_TO_STEREO_NAME = {}
 ICON_SIZE = (32, 32)
 
 
-class NavigationWindowManager:
+class NavigationWindowManager(metaclass=Singleton):
     def __init__(self, parent_wx_window, aui_manager):
         self.parent = parent_wx_window
         self.aui_manager = aui_manager
         self.nav_windows = {}
+        self.CoilAssociation = []
         self.multitargetMode = False
 
         # Init DualNavigation mode, It is a provisional way to navigate with two simultaneous targets.
         self.create_navigation_window()
         self.create_navigation_window(False, False)
+
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnSetSimultaneousMode, "Set simultaneous multicoil mode")
+
+    def OnSetSimultaneousMode(self, state, coils_list):
+        self.CoilAssociation = coils_list
+        if state:
+            for i, coil in enumerate(self.CoilAssociation):
+                pane_info = self.aui_manager.GetPane(self.nav_windows[i])
+                pane_info.Caption(_("Volume") + f" - {coil}")
+        else:
+            pane_info = self.aui_manager.GetPane(self.nav_windows[0])
+            pane_info.Caption(_("Volume"))
 
     def create_navigation_window(self, show=True, showSensors=True):
         new_window = VolumeViewerCover(self.parent, showSensors)

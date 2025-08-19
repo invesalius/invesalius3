@@ -349,6 +349,7 @@ class Navigation(metaclass=Singleton):
                 "n_coils": self.n_coils,
                 "track_coil": self.track_coil,
                 "multitarget mode": self.multitarget,
+                "selected_coils_to_navigation": self.selected_coils_to_navigation,
             }
             if self.main_coil is not None:
                 state["main_coil"] = self.main_coil
@@ -376,6 +377,7 @@ class Navigation(metaclass=Singleton):
 
             self.track_coil = state.get("track_coil", False)
             self.multitarget = state.get("multitarget mode", False)
+            self.selected_coils_to_navigation = state.get("selected_coils_to_navigation", None)
 
             # Try to load selected_coils (the list of names of coils to use for navigation)
             if ("selected_coils" in state) and (saved_coil_registrations is not None):
@@ -732,6 +734,7 @@ class Navigation(metaclass=Singleton):
         ]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
 
-    def MultiTargetMode(self, state=False):
+    def MultiTargetMode(self, state=False, coils_list=None):
+        self.selected_coils_to_navigation = coils_list
         self.multitarget = state
         self.SaveConfig()

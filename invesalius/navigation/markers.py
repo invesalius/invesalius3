@@ -35,6 +35,7 @@ class MarkersControl(metaclass=Singleton):
         self.transformator = MarkerTransformator()
         self.robot = robot
         self.TargetCoilAssociation: Dict[str, Marker] = {}
+        self.accepted_coils = None
         self.multitarget = False
 
         self.__bind_events()
@@ -46,7 +47,8 @@ class MarkersControl(metaclass=Singleton):
         Publisher.subscribe(self.OnSetMultiTargetMode, "Set simultaneous multicoil mode")
         Publisher.subscribe(self.ResetTargets, "Reset targets")
 
-    def OnSetMultiTargetMode(self, state=False):
+    def OnSetMultiTargetMode(self, state=False, coils_list=None):
+        self.accepted_coils = coils_list
         self.multitarget = state
         if not state:
             self.ResetTargets()

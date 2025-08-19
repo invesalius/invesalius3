@@ -24,8 +24,8 @@ import invesalius.constants as const
 import invesalius.data.viewer_slice as slice_viewer
 import invesalius.gui.widgets.slice_menu as slice_menu_
 import invesalius.session as ses
-from invesalius.gui.navigation_manager import NavigationWindowManager
 from invesalius.i18n import tr as _
+from invesalius.navigation.navigation_views_manager import NavigationWindowManager
 from invesalius.pubsub import pub as Publisher
 
 
@@ -141,7 +141,7 @@ class Panel(wx.Panel):
         Publisher.subscribe(self.OnStartNavigation, "Start navigation")
         Publisher.subscribe(self._Exit, "Exit")
 
-    def OnSetSimultaneousMode(self, state=True):
+    def OnSetSimultaneousMode(self, state=True, coils_list=None):
         if state:
             self.nav_manager.SetDualMode(True)
             # Hide slice viewers
