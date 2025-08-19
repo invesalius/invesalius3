@@ -163,6 +163,8 @@ class MarkersControl(metaclass=Singleton):
         if check_for_previous:
             # Check multitarget mode
             if self.multitarget:
+                if marker.coil not in self.accepted_coils:
+                    return
                 prev_target = self.FindTarget(marker.coil)
             else:
                 prev_target = self.FindTarget()
