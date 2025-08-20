@@ -362,8 +362,6 @@ class Viewer(wx.Panel):
             renderer = renwin.GetNextItem()
             self.renderers.append(renderer)
 
-        print(len(self.renderers))
-
         Publisher.sendMessage("Press target mode button", pressed=False)
 
     def UpdateCanvas(self):
@@ -475,16 +473,8 @@ class Viewer(wx.Panel):
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
-        Publisher.subscribe(self.UpdateArrowPose, "Update object arrow matrix")
-        Publisher.subscribe(
-            self.UpdateEfieldPointLocation, "Update point location for e-field calculation"
-        )
-        Publisher.subscribe(self.GetEnorm, "Get enorm")
         Publisher.subscribe(self.TrackObject, "Track object")
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
-        Publisher.subscribe(self.OnUpdateCoilPose, "Update coil pose")
-        Publisher.subscribe(self.OnSetTarget, "Set target")
-        Publisher.subscribe(self.OnUnsetTarget, "Unset target")
         Publisher.subscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
         Publisher.subscribe(self.OnUpdateDistanceThreshold, "Update distance threshold")
         Publisher.subscribe(self.OnUpdateTracts, "Update tracts")
@@ -585,16 +575,8 @@ class Viewer(wx.Panel):
         Publisher.unsubscribe(self.OnRemoveSensorsID, "Remove sensors ID")
         Publisher.unsubscribe(self.DeleteEFieldMarkers, "Delete markers")
         Publisher.unsubscribe(self.OnNavigationStatus, "Navigation status")
-        Publisher.unsubscribe(self.UpdateArrowPose, "Update object arrow matrix")
-        Publisher.unsubscribe(
-            self.UpdateEfieldPointLocation, "Update point location for e-field calculation"
-        )
-        Publisher.unsubscribe(self.GetEnorm, "Get enorm")
         Publisher.unsubscribe(self.TrackObject, "Track object")
         Publisher.unsubscribe(self.SetTargetMode, "Set target mode")
-        Publisher.unsubscribe(self.OnUpdateCoilPose, "Update coil pose")
-        Publisher.unsubscribe(self.OnSetTarget, "Set target")
-        Publisher.unsubscribe(self.OnUnsetTarget, "Unset target")
         Publisher.unsubscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
         Publisher.unsubscribe(self.OnUpdateDistanceThreshold, "Update distance threshold")
         Publisher.unsubscribe(self.OnUpdateTracts, "Update tracts")
@@ -1331,6 +1313,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateCoilPose(self, m_img, coord, robot_ID):
         # vtk_colors = vtkNamedColors()
+
         if self.target_coord and self.target_mode:
             distance_to_target = distance.euclidean(
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
@@ -1481,6 +1464,7 @@ class Viewer(wx.Panel):
                 and is_under_z_angle_threshold
             )
 
+            self.coil_visualizer.SetCoilAtTarget(coil_at_target)
             wx.CallAfter(Publisher.sendMessage, "Coil at target", state=coil_at_target)
             wx.CallAfter(
                 Publisher.sendMessage,
@@ -1507,6 +1491,8 @@ class Viewer(wx.Panel):
         self.target_mode = False
         self.target_coord = None
 
+        self.marker_visualizer.UnsetTarget(marker, robot_ID)
+
     def OnSetTarget(self, marker, robot_ID):
         coord = marker.position + marker.orientation
 
@@ -1521,6 +1507,8 @@ class Viewer(wx.Panel):
         self.coil_visualizer.AddTargetCoil(self.m_target)
 
         print(f"Target updated to coordinates {coord}")
+
+        self.marker_visualizer.SetTarget(marker, robot_ID)
 
     def CreateVTKObjectMatrix(self, direction, orientation):
         m_img = dco.coordinates_to_transformation_matrix(

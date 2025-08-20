@@ -21,7 +21,7 @@ class MarkerTransformator:
         self.is_navigating = False
 
         # Keep track of the current target and whether the target mode is on.
-        self.target = None
+        self.targets = []
         self.is_target_mode = False
 
         self.robot_track_status = False
@@ -35,9 +35,6 @@ class MarkerTransformator:
         Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
         Publisher.subscribe(self.UpdateRobotTrackStatus, "Robot tracking status")
-        Publisher.subscribe(
-            self.UpdateZOffsetTargetByRobot, "Robot to Neuronavigation: Update z_offset target"
-        )
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -45,36 +42,15 @@ class MarkerTransformator:
     def UpdateSelectedMarker(self, marker):
         self.selected_marker = marker
 
-    def UpdateZOffsetTargetByRobot(self, z_offset):
-        marker = self.target
-        if not marker or not self.robot_track_status:
-            return
-        if not z_offset or not np.isfinite(z_offset):
-            return
-        z_offset = round(z_offset, 2)
-
-        marker.z_offset = z_offset
-        displacement = np.array([0, 0, z_offset, 0, 0, 0])
-        self.MoveMarker(marker=marker, displacement=displacement)
-        # Notify the volume viewer about the updated marker
-        Publisher.sendMessage(
-            "Update marker",
-            marker=marker,
-            new_position=marker.position,
-            new_orientation=marker.orientation,
-        )
-        # If this is the active target, update it globally
-        if marker.is_target:
-            Publisher.sendMessage("Set target", marker=marker)
-
     def UpdateRobotTrackStatus(self, status):
         self.robot_track_status = status
 
     def SetTarget(self, marker, robot_ID):
-        self.target = marker
+        if marker not in self.targets:
+            self.targets.append(marker)
 
     def UnsetTarget(self, marker, robot_ID):
-        self.target = None
+        self.targets.remove(marker)
 
     def SetTargetMode(self, enabled=False):
         self.is_target_mode = enabled
@@ -275,7 +251,9 @@ class MarkerTransformator:
         The marker can only be moved if the navigation is off, except for the '+' and '-' keys.
         """
         marker = (
-            self.target if self.is_target_mode and self.target is not None else self.selected_marker
+            self.targets[0]
+            if self.is_target_mode and len(self.targets) == 1
+            else self.selected_marker
         )
 
         # Return early if no marker is selected.
@@ -372,3 +350,12 @@ class MarkerTransformator:
         # Update the target if the marker is the active target.
         if marker.is_target:
             Publisher.sendMessage("Set target", marker=marker, robot_ID=None)
+
+    def DisplacementOffset(self, z_offset):
+        if not z_offset or not np.isfinite(z_offset):
+            return None
+        z_offset = round(z_offset, 2)
+
+        displacement = np.array([0, 0, z_offset, 0, 0, 0])
+
+        return displacement

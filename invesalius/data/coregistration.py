@@ -341,7 +341,7 @@ class CoordinateCorregistrate(threading.Thread):
         event,
         sle,
         tracker_id,
-        target,
+        targets,
         icp,
         e_field_loaded,
     ):
@@ -360,19 +360,10 @@ class CoordinateCorregistrate(threading.Thread):
         self.sle = sle
         self.use_icp = icp.use_icp
         self.m_icp = icp.m_icp
-        self.last_coord = None
         self.tracker_id = tracker_id
-        self.target = target
+        self.targets = targets
+        self.last_coord = [[0]] * len(self.targets)
         self.target_flag = False
-
-        if self.target is not None:
-            self.target = np.array(self.target)
-
-            # XXX: Not sure why this is done, but a similar thing is done in OnUpdateTargetCoordinates
-            #      in viewer_volume.py, so this makes them match. A better solution would probably be to
-            #      do this transformation only once, and doing it in the correct place.
-            #
-            self.target[1] = -self.target[1]
 
     def run(self):
         m_change, r_stylus = self.coreg_data
@@ -404,39 +395,41 @@ class CoordinateCorregistrate(threading.Thread):
                     coords[coil_name] = coord_coil
                     m_imgs[coil_name] = m_img_coil
 
-                # LUKATODO: this is an arbitrary coil, so efields/tracts work correctly with 1 coil but may bug out when using multiple
-                main_coil = next(iter(obj_datas))
-                coord = coords[main_coil]
-                m_img = m_imgs[main_coil]
+                for i, target in enumerate(self.targets):
+                    coord_target = target.position + target.orientation
 
-                # XXX: This is not the best place to do the logic related to approaching the target when the
-                #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
-                #      the tracker space where it is hard to make the tracker approach the target in the image space.
-                #      Ideally, the transformation from the tracker space to the image space (the function
-                #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
-                #      tracker, and then the whole class would be mocked when using the debug tracker.
-                if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
-                    if self.last_coord is None:
-                        self.last_coord = np.array(coord)
-                    else:
-                        coord = self.last_coord + (self.target - self.last_coord) * 0.05
-                        coords[main_coil] = coord
-                        self.last_coord = coord
+                    main_coil = target.coil if target else next(iter(obj_datas))
+                    coord = coords[main_coil]
+                    m_img = m_imgs[main_coil]
 
-                    angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
-                    translate = coord[0:3]
-                    m_imgs[main_coil] = tr.compose_matrix(angles=angles, translate=translate)
+                    # XXX: This is not the best place to do the logic related to approaching the target when the
+                    #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
+                    #      the tracker space where it is hard to make the tracker approach the target in the image space.
+                    #      Ideally, the transformation from the tracker space to the image space (the function
+                    #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
+                    #      tracker, and then the whole class would be mocked when using the debug tracker.
+                    if self.tracker_id == const.DEBUGTRACKAPPROACH and target is not None:
+                        if len(self.last_coord[i]) == 1:
+                            self.last_coord[i] = np.array(coord)
+                        else:
+                            coord = self.last_coord[i] + (coord_target - self.last_coord[i]) * 0.05
+                            coords[main_coil] = coord
+                            self.last_coord[i] = coord
 
-                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
+                        angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
+                        translate = coord[0:3]
+                        m_imgs[main_coil] = tr.compose_matrix(angles=angles, translate=translate)
 
-                # Compute data for efield/tracts
-                m_img_flip = m_img.copy()
-                m_img_flip[1, -1] = -m_img_flip[1, -1]
+                    self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
 
-                if self.view_tracts:
-                    self.coord_tracts_queue.put_nowait(m_img_flip)
-                if self.e_field_loaded:
-                    self.efield_queue.put_nowait([m_img, coord])
+                    # Compute data for efield/tracts
+                    m_img_flip = m_img.copy()
+                    m_img_flip[1, -1] = -m_img_flip[1, -1]
+
+                    if self.view_tracts:
+                        self.coord_tracts_queue.put_nowait(m_img_flip)
+                    if self.e_field_loaded:
+                        self.efield_queue.put_nowait([m_img, coord])
             except queue.Full:
                 pass
 

@@ -71,8 +71,6 @@ class MarkerVisualizer:
         Publisher.subscribe(self.HighlightMarker, "Highlight marker")
         Publisher.subscribe(self.UnhighlightMarker, "Unhighlight marker")
         Publisher.subscribe(self.SetNewColor, "Set new color")
-        Publisher.subscribe(self.SetTarget, "Set target")
-        Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.SetTargetTransparency, "Set target transparency")
         Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
         Publisher.subscribe(self.UpdateBrainTargets, "Update brain targets")

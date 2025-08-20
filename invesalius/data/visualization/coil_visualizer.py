@@ -59,7 +59,6 @@ class CoilVisualizer:
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.ShowCoil, "Show coil in viewer volume")
         Publisher.subscribe(self.ResetCoilVisualizer, "Reset coil selection")

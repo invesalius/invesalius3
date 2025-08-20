@@ -2272,8 +2272,8 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def UnsetTarget(self, marker=None, robot_ID=None):
-        self.navigation.target = None
+    def UnsetTarget(self, marker, robot_ID=None):
+        self.navigation.targets.remove(marker)
         self.target_selected = False
         self.UpdateTargetButton()
 
@@ -2284,7 +2284,7 @@ class ControlPanel(wx.Panel):
         #   flip wouldn't be needed.
         coord[1] = -coord[1]
 
-        self.navigation.target = coord
+        self.navigation.targets.append(marker)
 
         self.EnableToggleButton(self.lock_to_target_button, 1)
         self.UpdateToggleButton(self.lock_to_target_button, True)
@@ -2549,7 +2549,6 @@ class ControlPanel(wx.Panel):
 
                 if dialog.ShowModal() == wx.ID_OK:
                     selections = dialog.GetSelections()
-                    dialog.Destroy()
                     if len(selections) == 2:
                         self.selected_coils_to_navigation = [
                             coil_names_options[i] for i in selections
@@ -2563,6 +2562,9 @@ class ControlPanel(wx.Panel):
                         self.simultaneous_mode_button.SetValue(False)
                         enabled = False
                         return
+                else:
+                    return
+                dialog.Destroy()
             else:
                 self.selected_coils_to_navigation = coil_names_options
 
@@ -3948,8 +3950,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def _UnsetTarget(self, marker, robot_ID):
         idx = self.__find_marker_index(marker.marker_id)
 
-        # When unsetting a target, automatically unpress the target mode button.
-        Publisher.sendMessage("Press target mode button", pressed=False)
+        if self.markers.FindTarget() is None:
+            # When unsetting a target, automatically unpress the target mode button.
+            Publisher.sendMessage("Press target mode button", pressed=False)
 
         # Update the marker list control.
         self.marker_list_ctrl.SetItemBackgroundColour(idx, "white")

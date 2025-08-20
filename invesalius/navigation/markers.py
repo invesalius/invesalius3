@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 
 import uuid
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
@@ -46,6 +46,30 @@ class MarkersControl(metaclass=Singleton):
         Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
         Publisher.subscribe(self.OnSetMultiTargetMode, "Set simultaneous multicoil mode")
         Publisher.subscribe(self.ResetTargets, "Reset targets")
+        Publisher.subscribe(
+            self.UpdateZOffsetTargetByRobot, "Robot to Neuronavigation: Update z_offset target"
+        )
+
+    def UpdateZOffsetTargetByRobot(self, z_offset, robot_ID):
+        coil_name = self.robot.robots[robot_ID].coil_name
+        marker = self.FindTarget(coil_name)
+
+        if not marker or not self.transformator.robot_track_status:
+            return
+        displacement = self.transformator.DisplacementOffset(z_offset)
+        if displacement is None:
+            return
+        self.transformator.MoveMarker(marker=marker, displacement=displacement)
+        # Notify the volume viewer about the updated marker
+        Publisher.sendMessage(
+            "Update marker",
+            marker=marker,
+            new_position=marker.position,
+            new_orientation=marker.orientation,
+        )
+        # If this is the active target, update it globally
+        if marker.is_target:
+            Publisher.sendMessage("Set target", marker=marker)
 
     def OnSetMultiTargetMode(self, state=False, coils_list=None):
         self.accepted_coils = coils_list
@@ -236,22 +260,31 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def FindTarget(self, coil_name=None) -> Union[None, Marker]:
+    def FindTarget(
+        self, coil_name: Optional[str] = None, multiple: bool = False
+    ) -> Union[None, List[Marker], Marker]:
         """
         Return the markers currently selected as target.
         """
 
-        marker_id = None
+        markers_id = []
         if coil_name:
             marker_id = self.TargetCoilAssociation.get(coil_name, None)
-        elif not self.multitarget:
+
+            if marker_id is not None:
+                markers_id.append(marker_id)
+        else:
             for id in list(self.TargetCoilAssociation.values()):
                 if id is not None:
-                    marker_id = id
-                    break
-        if marker_id is not None and 0 <= marker_id < len(self.list):
-            return self.list[marker_id]
-        return None
+                    markers_id.append(id)
+
+        if 0 <= len(markers_id) < len(self.list):
+            if len(markers_id) == 0:
+                return None
+            elif multiple:
+                return [self.list[id] for id in markers_id]
+            else:
+                return self.list[markers_id[0]]
 
     def FindPointOfInterest(self) -> Union[None, Marker]:
         for marker in self.list:

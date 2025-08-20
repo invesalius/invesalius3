@@ -149,8 +149,15 @@ class UpdateNavigationScene(threading.Thread):
                 probe_visible = marker_visibilities[0]
                 coil_visible = any(marker_visibilities[2:])  # is any coil visible?
                 track_this = self.navigation.main_coil if self.navigation.track_coil else "probe"
-                marker_target = self.markers.FindTarget()
-                coil = marker_target.coil if marker_target else self.navigation.main_coil
+                markers_target = self.markers.FindTarget(multiple=True)
+
+                if markers_target is None:
+                    coils = [self.navigation.main_coil]
+                elif len(markers_target) > 1:
+                    coils = [marker.coil for marker in markers_target]
+                else:
+                    coils = [markers_target[0].coil]
+
                 # choose which object to track in slices and viewer_volume pointer
                 coord = coords[track_this]
 
@@ -204,41 +211,46 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(
                         Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
                     )
-                    wx.CallAfter(  # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
-                        Publisher.sendMessage,
-                        "Update coil pose",
-                        m_img=m_imgs[coil],
-                        coord=coords[coil],
-                        robot_ID=self.robot.GetActive().robot_name,
-                    )
-                    wx.CallAfter(
-                        Publisher.sendMessage,
-                        "Update object arrow matrix",
-                        m_img=m_imgs[coil],
-                        coord=coords[coil],
-                        flag=self.peel_loaded,
-                    )
 
-                    if self.e_field_loaded:
-                        wx.CallAfter(
+                    for coil in coils:
+                        wx.CallAfter(  # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
                             Publisher.sendMessage,
-                            "Update point location for e-field calculation",
+                            "Update coil pose",
                             m_img=m_imgs[coil],
                             coord=coords[coil],
-                            queue_IDs=self.e_field_IDs_queue,
+                            robot_ID=self.robot.GetActive().robot_name,
+                            coil_name=coil,
                         )
-                        try:
-                            enorm_data = self.e_field_norms_queue.get_nowait()
+                        wx.CallAfter(
+                            Publisher.sendMessage,
+                            "Update object arrow matrix",
+                            m_img=m_imgs[coil],
+                            coord=coords[coil],
+                            flag=self.peel_loaded,
+                            coil_name=coil,
+                        )
+
+                        if self.e_field_loaded:
                             wx.CallAfter(
                                 Publisher.sendMessage,
-                                "Get enorm",
-                                enorm_data=enorm_data,
-                                plot_vector=self.plot_efield_vectors,
+                                "Update point location for e-field calculation",
+                                m_img=m_imgs[coil],
+                                coord=coords[coil],
+                                queue_IDs=self.e_field_IDs_queue,
+                                coil_name=coil,
                             )
-                        except queue.Empty:
-                            pass
-                        else:
-                            self.e_field_norms_queue.task_done()
+                            try:
+                                enorm_data = self.e_field_norms_queue.get_nowait()
+                                wx.CallAfter(
+                                    Publisher.sendMessage,
+                                    "Get enorm",
+                                    enorm_data=enorm_data,
+                                    plot_vector=self.plot_efield_vectors,
+                                )
+                            except queue.Empty:
+                                pass
+                            else:
+                                self.e_field_norms_queue.task_done()
 
                 if probe_visible:
                     wx.CallAfter(
@@ -266,7 +278,7 @@ class Navigation(metaclass=Singleton):
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
-        self.target = None
+        self.targets = []
         self.n_coils = 1
         self.coil_registrations = {}
         self.track_coil = False
@@ -616,7 +628,7 @@ class Navigation(metaclass=Singleton):
                     self.event,
                     self.sleep_nav,
                     tracker.tracker_id,
-                    self.target,
+                    self.targets,
                     icp,
                     self.e_field_loaded,
                 )

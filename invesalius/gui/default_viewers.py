@@ -115,7 +115,7 @@ class Panel(wx.Panel):
 
             nav_windows = self.nav_manager.nav_windows
             for i, window in enumerate(nav_windows.values()):
-                self.nav_manager.add_window_to_layout(window=window, row=i + 1)
+                self.nav_manager.add_window_to_layout(window=window["window"], row=i + 1)
         else:
             self.aui_manager.AddPane(self.p3, self.s3)
             self.aui_manager.AddPane(self.p2, self.s2)
@@ -123,7 +123,7 @@ class Panel(wx.Panel):
 
             nav_windows = self.nav_manager.nav_windows
             for i, window in enumerate(nav_windows.values()):
-                self.nav_manager.add_window_to_layout(window=window, row=i + 1)
+                self.nav_manager.add_window_to_layout(window=window["window"], row=i + 1)
 
         self.aui_manager.Update()
 

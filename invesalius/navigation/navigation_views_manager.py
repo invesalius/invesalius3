@@ -51,21 +51,76 @@ class NavigationWindowManager(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnSetSimultaneousMode, "Set simultaneous multicoil mode")
+        Publisher.subscribe(self.UpdateArrowPose, "Update object arrow matrix")
+        Publisher.subscribe(
+            self.UpdateEfieldPointLocation, "Update point location for e-field calculation"
+        )
+        Publisher.subscribe(self.GetEnorm, "Get enorm")
+        Publisher.subscribe(self.SetTarget, "Set target")
+        Publisher.subscribe(self.UnsetTarget, "Unset target")
+        Publisher.subscribe(self.OnUpdateCoilPose, "Update coil pose")
+
+    def GetEnorm(self, enorm_data, plot_vector, coil_name):
+        window = self.getWindowByCoil(coil_name)
+        if window:
+            window.volume_interaction.volume_viewer_instance.GetEnorm(enorm_data, plot_vector)
+
+    def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs, coil_name):
+        window = self.getWindowByCoil(coil_name)
+        if window:
+            window.volume_interaction.volume_viewer_instance.UpdateEfieldPointLocation(
+                m_img, coord, queue_IDs
+            )
+
+    def UpdateArrowPose(self, m_img, coord, flag, coil_name):
+        window = self.getWindowByCoil(coil_name)
+        if window:
+            window.volume_interaction.volume_viewer_instance.UpdateArrowPose(m_img, coord, flag)
+
+    def getWindowByCoil(self, coil_name):
+        if self.multitargetMode:
+            window = None
+            for reg_window in self.nav_windows.values():
+                if reg_window["coil"] == coil_name:
+                    window = reg_window["window"]
+                    break
+        else:
+            window = self.nav_windows[0]["window"]
+
+        return window
+
+    def OnUpdateCoilPose(self, m_img, coord, robot_ID, coil_name):
+        window = self.getWindowByCoil(coil_name)
+        if window:
+            window.volume_interaction.volume_viewer_instance.OnUpdateCoilPose(
+                m_img, coord, robot_ID
+            )
+
+    def SetTarget(self, marker, robot_ID):
+        window = self.getWindowByCoil(marker.coil)
+        if window:
+            window.volume_interaction.volume_viewer_instance.OnSetTarget(marker, robot_ID)
+
+    def UnsetTarget(self, marker, robot_ID):
+        window = self.getWindowByCoil(marker.coil)
+        if window:
+            window.volume_interaction.volume_viewer_instance.OnUnsetTarget(marker, robot_ID)
 
     def OnSetSimultaneousMode(self, state, coils_list):
         self.CoilAssociation = coils_list
         if state:
             for i, coil in enumerate(self.CoilAssociation):
-                pane_info = self.aui_manager.GetPane(self.nav_windows[i])
+                self.nav_windows[i]["coil"] = coil
+                pane_info = self.aui_manager.GetPane(self.nav_windows[i]["window"])
                 pane_info.Caption(_("Volume") + f" - {coil}")
         else:
-            pane_info = self.aui_manager.GetPane(self.nav_windows[0])
+            pane_info = self.aui_manager.GetPane(self.nav_windows[0]["window"])
             pane_info.Caption(_("Volume"))
 
     def create_navigation_window(self, show=True, showSensors=True):
         new_window = VolumeViewerCover(self.parent, showSensors)
 
-        self.nav_windows[len(self.nav_windows)] = new_window
+        self.nav_windows[len(self.nav_windows)] = {"window": new_window, "coil": None}
 
         if not show:
             new_window.Hide()
@@ -98,7 +153,7 @@ class NavigationWindowManager(metaclass=Singleton):
             return
 
         for i, window in enumerate(self.nav_windows.values()):
-            pane_info = self.aui_manager.GetPane(window)
+            pane_info = self.aui_manager.GetPane(window["window"])
             pane_info.Row(1).Layer(i)
 
         self.aui_manager.Update()
@@ -109,7 +164,7 @@ class NavigationWindowManager(metaclass=Singleton):
         Publisher.sendMessage("Render raycasting")
 
     def SetDualMode(self, state):
-        window = self.nav_windows[len(self.nav_windows) - 1]
+        window = self.nav_windows[len(self.nav_windows) - 1]["window"]
         self.multitargetMode = state
         if state:
             self.aui_manager.GetPane(window).Show()
@@ -121,7 +176,7 @@ class NavigationWindowManager(metaclass=Singleton):
         if self.multitargetMode:
             return None
         else:
-            return self.nav_windows[0]
+            return self.nav_windows[0]["window"]
 
 
 class VolumeViewerCover(wx.Panel):

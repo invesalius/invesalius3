@@ -324,6 +324,8 @@ class Robots(metaclass=Singleton):
             "Update Robot Coil Association", robotCoilAssociation=RobotCoilAssociation
         )
 
+        return RobotCoilAssociation
+
     def SetActive(self, name: str):
         if name in self.robots:
             self.active = name
