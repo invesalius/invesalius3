@@ -4,9 +4,10 @@ import time
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkIdList
+import invesalius.data.transformations as tr
+import imagedata_utils
 
-
-def Get_coil_position(m_img):
+def Get_coil_position(coords):
     # coil position cp : the center point at the bottom of the coil casing,
     # corresponds to the origin of the coil template.
     # coil normal cn: outer normal of the coil, i.e. away from the head
@@ -14,6 +15,14 @@ def Get_coil_position(m_img):
     # coil tangent 2 ct2: short axis ~ direction of primary E under the coil
     # % rotation matrix for the coil coordinates
     # T = [ct1;ct2;cn];
+
+    #TODO: check if orientation should be converted to radians or back to degrees
+    position, orientation = imagedata_utils.convert_invesalius_to_world(
+        position=[coords[0], coords[1], coords[2]],
+        orientation=[coords[3], coords[4], coords[5]],
+    )
+    #efield_coords_position = [list(position), list(orientation)]
+    m_img = tr.compose_matrix(angles=orientation, translate=position)
 
     m_img_flip = m_img.copy()
     m_img_flip[1, -1] = -m_img_flip[1, -1]
