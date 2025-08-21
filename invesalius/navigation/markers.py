@@ -413,7 +413,7 @@ class MarkersControl(metaclass=Singleton):
 
     def ResetTargets(self):
         for marker_id in list(self.TargetCoilAssociation.values()):
-            if marker_id:
+            if marker_id is not None:
                 # Disable target
                 self.UnsetTarget(marker_id)
 

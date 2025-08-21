@@ -2553,6 +2553,8 @@ class ControlPanel(wx.Panel):
                         self.selected_coils_to_navigation = [
                             coil_names_options[i] for i in selections
                         ]
+
+                        Publisher.sendMessage("Reset targets")
                     else:
                         wx.MessageBox(
                             _("You must choose exactly 2 coils."),

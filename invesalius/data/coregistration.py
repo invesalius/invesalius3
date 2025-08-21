@@ -20,6 +20,7 @@
 import queue
 import threading
 from time import sleep
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -394,6 +395,15 @@ class CoordinateCorregistrate(threading.Thread):
                     )
                     coords[coil_name] = coord_coil
                     m_imgs[coil_name] = m_img_coil
+
+                if len(self.targets) == 0:
+                    coil = next(iter(obj_datas))
+                    prov_target = SimpleNamespace(
+                        position=coords[coil][:3], orientation=coords[coil][3:], coil=coil
+                    )
+                    self.targets = [prov_target]
+
+                    self.last_coord = [[0]] * len(self.targets)
 
                 for i, target in enumerate(self.targets):
                     coord_target = target.position + target.orientation

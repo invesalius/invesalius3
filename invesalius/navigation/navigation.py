@@ -162,8 +162,9 @@ class UpdateNavigationScene(threading.Thread):
                 coord = coords[track_this]
 
                 # Remove probe, so that coords/m_imgs only contain coils
-                probe_coord = coords.pop("probe")
-                probe_m_img = m_imgs.pop("probe")
+                if "probe" in coords:
+                    probe_coord = coords.pop("probe")
+                    probe_m_img = m_imgs.pop("probe")
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
