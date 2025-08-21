@@ -365,6 +365,7 @@ class CoordinateCorregistrate(threading.Thread):
         self.targets = targets
         self.last_coord = [[0]] * len(self.targets)
         self.target_flag = False
+        self.has_target = True if len(self.targets) > 0 else False
 
     def run(self):
         m_change, r_stylus = self.coreg_data
@@ -389,6 +390,7 @@ class CoordinateCorregistrate(threading.Thread):
                 coords = {"probe": coord_probe}
                 m_imgs = {"probe": m_img_probe}
 
+                prov_targets = []
                 for coil_name in obj_datas:
                     coord_coil, m_img_coil = corregistrate_object(
                         m_change, obj_datas[coil_name], coord_raw, icp
@@ -396,14 +398,16 @@ class CoordinateCorregistrate(threading.Thread):
                     coords[coil_name] = coord_coil
                     m_imgs[coil_name] = m_img_coil
 
-                if len(self.targets) == 0:
-                    coil = next(iter(obj_datas))
-                    prov_target = SimpleNamespace(
-                        position=coords[coil][:3], orientation=coords[coil][3:], coil=coil
-                    )
-                    self.targets = [prov_target]
+                    if not self.has_target:
+                        prov_target = SimpleNamespace(
+                            position=coords[coil_name][:3],
+                            orientation=coords[coil_name][3:],
+                            coil=coil_name,
+                        )
+                        prov_targets.append(prov_target)
 
-                    self.last_coord = [[0]] * len(self.targets)
+                        self.last_coord = [[0]] * len(prov_targets)
+                        self.targets = prov_targets
 
                 for i, target in enumerate(self.targets):
                     coord_target = target.position + target.orientation
