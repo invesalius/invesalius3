@@ -422,7 +422,7 @@ class CoordinateCorregistrate(threading.Thread):
                     #      Ideally, the transformation from the tracker space to the image space (the function
                     #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
                     #      tracker, and then the whole class would be mocked when using the debug tracker.
-                    if self.tracker_id == const.DEBUGTRACKAPPROACH and target is not None:
+                    if self.tracker_id == const.DEBUGTRACKAPPROACH:
                         if len(self.last_coord[i]) == 1:
                             self.last_coord[i] = np.array(coord)
                         else:
