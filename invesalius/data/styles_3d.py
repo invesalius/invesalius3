@@ -744,6 +744,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             mode (int): The edit mode to set. ``0`` to keep inside polygons, ``1`` to keep outside polygon.
         """
         self.edit_mode = mode
+        Publisher.sendMessage("M3E cut mask from 3D")
 
     def SetDepthValue(self, value: float):
         """Set the depth value for the mask editor (between 0 and 1).
