@@ -283,7 +283,7 @@ class Pipeline:
         if subject.can_resolve_attribute("copy_orig_name"):
             self.pool.submit(self.save_img, subject.copy_orig_name, orig_data, orig)
 
-        if not dp.is_conform(
+        if not dp.is_conformed(
             orig,
             conform_vox_size=self.vox_size,
             check_dtype=True,
@@ -347,7 +347,7 @@ class Pipeline:
         # Get hard predictions
         pred_classes = torch.argmax(pred_prob, 3)
         del pred_prob
-        pred_classes = dp.map_label2aparc_aseg(pred_classes, self.labels)
+        pred_classes = dp.aparc_aseg_to_label(pred_classes, self.labels)
         pred_classes = dp.split_cortex_labels(pred_classes.cpu().numpy())
         return pred_classes
 
