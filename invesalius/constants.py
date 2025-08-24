@@ -998,7 +998,7 @@ SEED_RADIUS = 1.5
 
 # Efield Visualization
 EFIELD_MAX_RANGE_SCALE = 0.90
-CORTEX_COLOR = 190
+CORTEX_COLOR = (190, 190, 190)
 EFIELD_ROI_SIZE = 40
 
 # Note that the sleep parameters can be set in the preferences dialog in the UI. The values here are default values,

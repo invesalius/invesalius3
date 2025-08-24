@@ -2854,6 +2854,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._AddMarker, "Add marker")
         Publisher.subscribe(self._DeleteMarker, "Delete marker")
         Publisher.subscribe(self._DeleteMultiple, "Delete markers")
+        Publisher.subscribe(self._DuplicateMarker, "Duplicate marker")
         Publisher.subscribe(self._SetPointOfInterest, "Set point of interest")
         Publisher.subscribe(self._SetTarget, "Set target")
         Publisher.subscribe(self._UnsetTarget, "Unset target")
@@ -3054,10 +3055,17 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker.r_mtms = target["mtms"][2]
             marker.intensity_mtms = target["mtms"][3]
             # TODO: MEP
-            marker.mep_value = 0
+            marker.mep_value = target["mep_value"] or None
             marker_target.brain_target_list.append(marker.to_brain_targets_dict())
 
-        Publisher.sendMessage("Redraw MEP mapping from brain targets")
+        self.marker_list_ctrl.SetItemBackgroundColour(
+            self.__find_marker_index(marker_target.marker_id), wx.Colour(246, 226, 182)
+        )
+        Publisher.sendMessage(
+            "Redraw MEP mapping from brain targets",
+            marker_target=marker_target,
+            brain_target_list=marker_target.brain_target_list,
+        )
         self.markers.SaveState()
 
     def OnMouseRightDown(self, evt):
@@ -3362,6 +3370,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.populate_sub_list(marker.brain_target_list)
             self.brain_targets_list_ctrl.Show()
             width = self.marker_list_height / 2
+            Publisher.sendMessage(
+                "Redraw MEP mapping from brain targets",
+                marker_target=marker,
+                brain_target_list=marker.brain_target_list,
+            )
         else:
             Publisher.sendMessage("Set vector field assembly visibility", enabled=False)
             self.brain_targets_list_ctrl.Hide()
@@ -3468,7 +3481,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def _SetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
-        self.marker_list_ctrl.SetItemBackgroundColour(idx, "RED")
+        self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(255, 220, 209))
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
 
         target_uuid = marker.marker_uuid
@@ -3479,19 +3492,54 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             if current_uuid == target_uuid:
                 self.itemDataMap[key][const.TARGET_COLUMN] = "Yes"
 
-    def OnMenuDuplicateMarker(self, evt):
-        idx = self.marker_list_ctrl.GetFocusedItem()
-        if idx == -1:
-            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+    def _DuplicateMarker(
+        self, marker_idx: int | None = None, duplicate_brain_target_list: bool = True
+    ) -> None:
+        """
+        Duplicate a marker by index or by the current target if no index is provided.
+        Args:
+            marker_idx: Index of the marker to duplicate. If None, uses the current target.
+            duplicate_brain_target_list: Whether to copy the marker's brain_target_list.
+        """
+        set_target = False
+        # Use target marker if no index is given
+        if marker_idx is None:
+            target = self.markers.FindTarget()
+            if target:
+                marker_idx = self.__find_marker_index(target.marker_id)
+                set_target = marker_idx is not None
+
+        # Validate marker index
+        item_count = self.marker_list_ctrl.GetItemCount()
+        if marker_idx is None or not (0 <= marker_idx < item_count):
+            wx.MessageBox(_("Marker index not valid."), _("InVesalius 3"))
             return
 
-        # Create a duplicate of the selected marker.
-        new_marker = self.__get_marker(idx).duplicate()
+        # Duplicate the marker
+        marker = self.__get_marker(marker_idx)
+        new_marker = marker.duplicate()
 
-        # Add suffix to marker name.
-        new_marker.label = str(new_marker.label) + " (copy)"
+        # Update duplicate attributes
+        new_marker.label = f"{new_marker.label} (copy)"
+        if not duplicate_brain_target_list:
+            new_marker.brain_target_list = []
 
+        # Add the new marker
         self.markers.AddMarker(new_marker, render=True, focus=True)
+
+        # Update target if necessary
+        if set_target:
+            current_target = self.markers.FindTarget()
+            if current_target:
+                self.markers.UnsetTarget(current_target.marker_id)
+            self.markers.SetTarget(new_marker.marker_id)
+
+    def OnMenuDuplicateMarker(self, evt):
+        marker_idx = self.marker_list_ctrl.GetFocusedItem()
+        if marker_idx == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        self._DuplicateMarker(marker_idx)
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.indexes_saved_lists = []
@@ -3695,7 +3743,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
 
         if marker_coil.brain_target_list:
-            self.marker_list_ctrl.SetItemBackgroundColour(list_index, wx.Colour(102, 178, 255))
+            self.marker_list_ctrl.SetItemBackgroundColour(list_index, wx.Colour(246, 226, 182))
         self.OnMarkerFocused(evt=None)
         self.markers.SaveState()
         dialog.Destroy()
@@ -3742,7 +3790,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.brain_targets_list_ctrl.SetItem(
             list_index, const.BRAIN_MEP_COLUMN, str(marker["mep_value"])
         )
-        Publisher.sendMessage("Redraw MEP mapping from brain targets")
+        Publisher.sendMessage(
+            "Redraw MEP mapping from brain targets",
+            marker_target=marker,
+            brain_target_list=self.currently_focused_marker.brain_target_list,
+        )
 
     def _UnsetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
@@ -3751,7 +3803,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.sendMessage("Press target mode button", pressed=False)
 
         # Update the marker list control.
-        self.marker_list_ctrl.SetItemBackgroundColour(idx, "white")
+        if marker.brain_target_list:
+            self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(246, 226, 182))
+        else:
+            self.marker_list_ctrl.SetItemBackgroundColour(idx, "white")
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
 
         # Unset the target in itemDataMap
@@ -4278,8 +4333,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Create an uuid for the marker
         marker.marker_uuid = str(uuid.uuid4())
 
-        if marker.marker_type == MarkerType.BRAIN_TARGET:
-            marker.colour = [0, 0, 1]
+        # if marker.marker_type == MarkerType.BRAIN_TARGET:
+        #    marker.colour = [0, 0, 1]
 
         return marker
 
@@ -4319,7 +4374,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.itemDataMap[key] = data_map_entry
 
         if marker.brain_target_list:
-            self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(102, 178, 255))
+            self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(246, 226, 182))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 
