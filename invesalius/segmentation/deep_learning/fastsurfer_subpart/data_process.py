@@ -24,24 +24,19 @@ from typing import Optional, Union, cast
 import nibabel as nib
 import numpy as np
 import pandas as pd
+import scipy.ndimage
 import torch
 from nibabel.filebasedimages import FileBasedHeader as _Header
 from numpy import typing as npt
+from skimage.filters import gaussian
 from skimage.measure import label, regionprops
 from torch.utils.data import Dataset
 
 from . import misc
-from .misc import FastSurferConfig
+from .misc import Config
 
-##
-# Global Variables
-##
 SUPPORTED_OUTPUT_FILE_FORMATS = ("mgz", "nii", "nii.gz")
 LOGGER = logging.getLogger(__name__)
-
-##
-# Essential Image I/O Functions
-##
 
 
 def load_image(
@@ -51,20 +46,6 @@ def load_image(
 ) -> tuple[nib.analyze.SpatialImage, np.ndarray]:
     """
     Load file 'file' with nibabel, including all data.
-
-    Parameters
-    ----------
-    file : Path, str
-        Path to the file to load.
-    name : str, default="image"
-        Name of the file (optional), only effects error messages.
-    **kwargs :
-        Additional keyword arguments.
-
-    Returns
-    -------
-    Tuple[nib.analyze.SpatialImage, np.ndarray]
-        The nibabel image object and a numpy array of the data.
     """
     img = cast(nib.analyze.SpatialImage, nib.load(file, **kwargs))
     data = np.asarray(img.dataobj)
@@ -80,9 +61,6 @@ def save_image(
 ) -> None:
     """
     Save an image (nibabel MGHImage), according to the desired output file format.
-
-    Supported formats are defined in supported_output_file_formats. Saves predictions to
-    save_as.
 
     Parameters
     ----------
@@ -424,7 +402,7 @@ class ProcessDataThickSlices(Dataset):
         self,
         orig_data: npt.NDArray,
         orig_zoom: npt.NDArray,
-        cfg: FastSurferConfig,
+        cfg: Config,
         transforms: Optional = None,
     ):
         assert orig_data.max() > 0.8, f"Multi Dataset - orig fail, max removed {orig_data.max()}"
@@ -1010,3 +988,91 @@ def conform(
         )
 
     return new_img
+
+
+def reduce_to_aseg(data_inseg: np.ndarray) -> np.ndarray:
+    """
+    Reduce the input segmentation to a simpler segmentation.
+    """
+    print("Reducing to aseg ...")
+    # replace 2000... with 42
+    data_inseg[data_inseg >= 2000] = 42
+    # replace 1000... with 3
+    data_inseg[data_inseg >= 1000] = 3
+    return data_inseg
+
+
+def create_mask(aseg_data, dnum, enum):
+    """
+    Create dilated mask.
+    """
+    print("Creating dilated mask ...")
+
+    # treat lateral orbital frontal and parsorbitalis special to avoid capturing too much of eye nerve
+    lat_orb_front_mask = np.logical_or(aseg_data == 2012, aseg_data == 1012)
+    parsorbitalis_mask = np.logical_or(aseg_data == 2019, aseg_data == 1019)
+    frontal_mask = np.logical_or(lat_orb_front_mask, parsorbitalis_mask)
+    print("Frontal region special treatment: ", format(np.sum(frontal_mask)))
+
+    # reduce to binary
+    datab = aseg_data > 0
+    datab[frontal_mask] = 0
+    datab = scipy.ndimage.binary_dilation(datab, np.ones((3, 3, 3)), iterations=dnum)
+    datab = scipy.ndimage.binary_erosion(datab, np.ones((3, 3, 3)), iterations=enum)
+
+    labels = label(datab)
+    assert labels.max() != 0
+    print(f"  Found {labels.max()} connected component(s)!")
+
+    if labels.max() > 1:
+        print("  Selecting largest component!")
+        datab = labels == np.argmax(np.bincount(labels.flat)[1:]) + 1
+
+    # add frontal regions back to mask
+    datab[frontal_mask] = 1
+
+    aseg_data[~datab] = 0
+    aseg_data[datab] = 1
+    return aseg_data
+
+
+def flip_wm_islands(aseg_data: np.ndarray) -> np.ndarray:
+    """
+    Flip labels of disconnected white matter islands to the other hemisphere.
+    """
+
+    lh_wm = 2
+    lh_gm = 3
+    rh_wm = 41
+    rh_gm = 42
+
+    # for lh get largest component and islands
+    mask = aseg_data == lh_wm
+    labels = label(mask, background=0)
+    assert labels.max() != 0
+    bc = np.bincount(labels.flat)[1:]
+    largestID = np.argmax(bc) + 1
+    largestCC = labels == largestID
+    lh_islands = (~largestCC) & (labels > 0)
+
+    # same for rh
+    mask = aseg_data == rh_wm
+    labels = label(mask, background=0)
+    assert labels.max() != 0
+    bc = np.bincount(labels.flat)[1:]
+    largestID = np.argmax(bc) + 1
+    largestCC = labels == largestID
+    rh_islands = (labels != largestID) & (labels > 0)
+
+    lhmask = (aseg_data == lh_wm) | (aseg_data == lh_gm)
+    rhmask = (aseg_data == rh_wm) | (aseg_data == rh_gm)
+    ii = gaussian(lhmask.astype(float) * (-1) + rhmask.astype(float), sigma=1.5)
+
+    rhswap = rh_islands & (ii < 0.0)
+    lhswap = lh_islands & (ii > 0.0)
+    flip_data = aseg_data.copy()
+    flip_data[rhswap] = lh_wm
+    flip_data[lhswap] = rh_wm
+    print(f"FlipWM: rh {rhswap.sum()} and lh {lhswap.sum()} flipped.")
+
+    return flip_data

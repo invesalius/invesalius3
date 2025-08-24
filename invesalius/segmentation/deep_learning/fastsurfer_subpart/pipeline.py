@@ -32,69 +32,13 @@ import numpy as np
 import torch
 import yacs.config
 
-from . import data_processing as dp
+from . import data_process as dp
 from . import misc
-from . import reduce_to_aseg as rta
 from .inference import CreateInference, PytorchInference, TinyGradInference
-from .misc import FastSurferConfig, create_config, handle_cuda_memory_exception
+from .misc import Config, create_config, handle_cuda_memory_exception
 from .quick_qc import check_volume
 
 LOGGER = logging.getLogger(__name__)
-
-
-##
-# Processing
-##
-# Simple config classes to replace YAML config dependency
-@dataclass
-class ModelConfig:
-    """Model configuration"""
-
-    NUM_CLASSES: int = 79
-    MODEL_NAME: str = "FastSurferVINN"
-    HEIGHT: int = 256
-    WIDTH: int = 256
-    OUT_TENSOR_WIDTH: int = 256
-    OUT_TENSOR_HEIGHT: int = 256
-    NUM_CHANNELS: int = 7
-    BASE_RES: float = 1.0
-
-
-@dataclass
-class DataConfig:
-    """Data configuration"""
-
-    PLANE: str = ""
-    PADDED_SIZE: int = 320
-    SIZES: list[int] = None
-
-    def __post_init__(self):
-        if self.SIZES is None:
-            self.SIZES = [256, 311, 320]
-
-
-@dataclass
-class TestConfig:
-    """Test configuration"""
-
-    BATCH_SIZE: int = 1
-
-
-@dataclass
-class FastSurferConfig:
-    """Main configuration object"""
-
-    MODEL: ModelConfig
-    DATA: DataConfig
-    TEST: TestConfig
-    RNG_SEED: int = 42
-
-
-def create_config(plane: str, batch_size: int = 1) -> FastSurferConfig:
-    """Factory function to create a configuration object."""
-    return FastSurferConfig(
-        MODEL=ModelConfig(), DATA=DataConfig(PLANE=plane), TEST=TestConfig(BATCH_SIZE=batch_size)
-    )
 
 
 class Pipeline:
@@ -531,7 +475,7 @@ def run_pipeline(
             store_aseg = subject.can_resolve_filename(aseg_name)
             if store_brainmask or store_aseg:
                 LOGGER.info("Creating brainmask based on segmentation...")
-                bm = rta.create_mask(copy.deepcopy(pred_data), 5, 4)
+                bm = dp.create_mask(copy.deepcopy(pred_data), 5, 4)
             if store_brainmask:
                 # get mask
                 mask_name = subject.filename_in_subject_folder(brainmask_name)
@@ -548,9 +492,9 @@ def run_pipeline(
             if store_aseg:
                 # reduce aparc to aseg and mask regions
                 LOGGER.info("Creating aseg based on segmentation...")
-                aseg = rta.reduce_to_aseg(pred_data)
+                aseg = dp.reduce_to_aseg(pred_data)
                 aseg[bm == 0] = 0
-                aseg = rta.flip_wm_islands(aseg)
+                aseg = dp.flip_wm_islands(aseg)
                 aseg_name = subject.filename_in_subject_folder(aseg_name)
                 futures.append(pipeline.async_save_img(aseg_name, aseg, orig_img, dtype=np.uint8))
             else:
