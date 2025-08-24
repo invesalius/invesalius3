@@ -50,9 +50,9 @@ except ImportError:
 import logging
 
 from .data_processing import (
-    MultiScaleOrigDataThickSlices,
+    ProcessDataThickSlices,
     ToTensorTest,
-    map_prediction_sagittal2full,
+    apply_sagittal_mapping,
 )
 from .misc import Config
 
@@ -301,7 +301,7 @@ class TinyGradInference:
 
                     # check if we need a special mapping (e.g. as for sagittal)
                     if plane == "sagittal":
-                        pred = map_prediction_sagittal2full(
+                        pred = apply_sagittal_mapping(
                             pred, num_classes=self.cfg.MODEL.NUM_CLASSES, lut=self.lut
                         )
 
@@ -338,7 +338,7 @@ class TinyGradInference:
         Run ONNX inference on the data
         """
         # Set up DataLoader
-        test_dataset = MultiScaleOrigDataThickSlices(
+        test_dataset = ProcessDataThickSlices(
             orig_data,
             orig_zoom,
             self.cfg,
@@ -516,7 +516,7 @@ class PytorchInference:
 
                     # check if we need a special mapping (e.g. as for sagittal)
                     if plane == "sagittal":
-                        pred = map_prediction_sagittal2full(
+                        pred = apply_sagittal_mapping(
                             pred, num_classes=self.cfg.MODEL.NUM_CLASSES, lut=self.lut
                         )
 
@@ -552,7 +552,7 @@ class PytorchInference:
     ) -> torch.Tensor:
         """Run the loaded model on the data"""
         # Set up DataLoader
-        test_dataset = MultiScaleOrigDataThickSlices(
+        test_dataset = ProcessDataThickSlices(
             orig_data,
             orig_zoom,
             self.cfg,
