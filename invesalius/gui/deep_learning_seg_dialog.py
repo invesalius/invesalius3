@@ -341,6 +341,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.Close()
 
     def AfterSegment(self):
+        print("Segmentation completed, starting post-processing...")
         self.segmented = True
         self.btn_close.Enable()
         self.btn_stop.Disable()
@@ -388,7 +389,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
                 return
 
             progress = self.ps.get_completion()
-            if progress == np.inf:
+            if progress == np.inf or progress >= 1.0:
                 progress = 1.0
                 self.AfterSegment()
             else:
@@ -436,24 +437,26 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
         )
 
 
-class FastSurferSegmenterDialog(DeepLearningSegmenterDialog):
+class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
     def __init__(self, parent, auto_segment=False):
         self.mask_types = {
-            "cortical_dkt": _("Cortical (DKT)"),
-            "subcortical_gm": _("Subcortical GM"),
-            "white_matter": _("White Matter"),
-            "csf": _("CSF"),
+            "Cortical": _("Cortical"),
+            "Subcortical": _("Subcortical"),
+            "White_matter": _("White Matter"),
+            "Cerebellum": _("Cerebellum"),
+            "Ventricles": _("Ventricles"),
+            "Brain_stem": _("Brain Stem"),
+            "Choroid_Plexus": _("Choroid Plexus"),
         }
 
         self.selected_mask_types = []
 
-        # Initialize with all backends available (don't restrict)
         super().__init__(
             parent=parent,
             title=_("Subpart Segmentation"),
             has_torch=True,
             has_tinygrad=True,
-            segmenter=segment.FastSurferProcess,
+            segmenter=segment.SubpartSegementProcess,
             auto_segment=auto_segment,
         )
 
@@ -473,7 +476,7 @@ class FastSurferSegmenterDialog(DeepLearningSegmenterDialog):
         self.mask_checkboxes = {}
         for mask_id, mask_label in self.mask_types.items():
             self.mask_checkboxes[mask_id] = wx.CheckBox(self, wx.ID_ANY, mask_label)
-            self.mask_checkboxes[mask_id].SetValue(True)
+            self.mask_checkboxes[mask_id].SetValue(False)
 
         self._check_model_availability()
 
@@ -560,14 +563,6 @@ class FastSurferSegmenterDialog(DeepLearningSegmenterDialog):
             mask_id for mask_id, checkbox in self.mask_checkboxes.items() if checkbox.GetValue()
         ]
 
-        if not self.selected_mask_types:
-            wx.MessageBox(
-                _("Please select at least one mask type to generate."),
-                _("Warning"),
-                wx.OK | wx.ICON_WARNING,
-            )
-            return
-
         self.ShowProgress()
         self.t0 = time.time()
         self.elapsed_time_timer.Start(1000)
@@ -581,14 +576,19 @@ class FastSurferSegmenterDialog(DeepLearningSegmenterDialog):
                 device_id = self.torch_devices[self.cb_devices.GetValue()]
             except (KeyError, AttributeError):
                 device_id = "cpu"
+            use_gpu = True if not "cpu" in device_id.lower() else False
         elif backend.lower() == "tinygrad":
             try:
                 device_id = self.tinygrad_devices[self.cb_devices.GetValue()]
+                if device_id == "GPU":
+                    device_id = "cuda"
             except (KeyError, AttributeError):
                 device_id = "cpu"
+            use_gpu = "cuda" in device_id.lower()
         else:
+            # Fallback for unknown backends
             device_id = "cpu"
-        use_gpu = self.chk_use_gpu.GetValue() if hasattr(self, "chk_use_gpu") else False
+            use_gpu = False
         overlap = self.overlap_options[self.overlap.GetSelection()]
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         window_width = slc.Slice().window_width
@@ -632,32 +632,24 @@ class FastSurferSegmenterDialog(DeepLearningSegmenterDialog):
             dlg.ShowModal()
 
     def AfterSegment(self):
-        """Actions to take after segmentation is complete."""
-
-        if self.ps:
-            # Apply the segmentation threshold to generate the masks
-            self.ps.process_outputs()
-            self.segmented = True
-
-            # Update views
-            slc.Slice().discard_all_buffers()
-            Publisher.sendMessage("Reload actual slice")
-
         super().AfterSegment()
 
         for checkbox in self.mask_checkboxes.values():
             checkbox.Enable()
 
-        # if self.auto_segment:
-        #     self.OnClose(None)
-        #     Publisher.sendMessage("FastSurfer segmentation completed")
+    def apply_segment_threshold(self):
+        print("apply_segment_threshold: Starting...")
+        threshold = self.sld_threshold.GetValue() / 100.0
+        print(f"apply_segment_threshold: Threshold value: {threshold}")
 
-    # def process_outputs(self):
-    #     if self.ps is not None:
-    #         threshold = self.sld_threshold.GetValue() / 100.0
-    #         self.ps.process_outputs(threshold)
-    #         slc.Slice().discard_all_buffers()
-    #         Publisher.sendMessage("Reload actual slice")
+        print("apply_segment_threshold: Calling apply_segment_threshold...")
+        self.ps.apply_segment_threshold(threshold)
+        print("apply_segment_threshold: apply_segment_threshold completed")
+
+        print("apply_segment_threshold: Discarding buffers and reloading slice...")
+        slc.Slice().discard_all_buffers()
+        Publisher.sendMessage("Reload actual slice")
+        print("apply_segment_threshold: Completed successfully")
 
     def OnStop(self, evt):
         super().OnStop(evt)
@@ -819,10 +811,6 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
         ]
 
         self.patch_cmb = wx.ComboBox(self, choices=patch_size, value="480")
-
-        self.path_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5)
-        self.path_sizer.Add(self.patch_cmb, 2, wx.EXPAND | wx.ALL, 5)
 
         self.method = wx.RadioBox(
             self,
