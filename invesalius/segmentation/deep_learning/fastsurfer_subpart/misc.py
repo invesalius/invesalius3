@@ -70,7 +70,7 @@ class TestConfig:
 
 
 @dataclass
-class FastSurferConfig:
+class Config:
     """Main configuration object"""
 
     MODEL: ModelConfig
@@ -79,9 +79,9 @@ class FastSurferConfig:
     RNG_SEED: int = 42
 
 
-def create_config(plane: str, batch_size: int = 1) -> FastSurferConfig:
+def create_config(plane: str, batch_size: int = 1) -> Config:
     """create a configuration object."""
-    return FastSurferConfig(
+    return Config(
         MODEL=ModelConfig(), DATA=DataConfig(PLANE=plane), TEST=TestConfig(BATCH_SIZE=batch_size)
     )
 

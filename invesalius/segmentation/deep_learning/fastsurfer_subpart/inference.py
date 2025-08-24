@@ -49,7 +49,7 @@ except ImportError:
 
 import logging
 
-from .data_processing import (
+from .data_process import (
     ProcessDataThickSlices,
     ToTensorTest,
     apply_sagittal_mapping,
