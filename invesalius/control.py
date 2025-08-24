@@ -670,6 +670,12 @@ class Controller:
         else:
             Publisher.sendMessage("Enable Go-to-Coord", status=False)
 
+        from pathlib import Path
+
+        outdir = tempfile.gettempdir()
+        img_file = Path(outdir) / "proj_image.nii.gz"
+        proj.export_project_to_nifti(img_file, save_masks=False)
+
         Publisher.sendMessage("End busy cursor")
         Publisher.sendMessage("Project loaded successfully")
 
