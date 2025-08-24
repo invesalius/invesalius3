@@ -1,3 +1,4 @@
+import csv
 import itertools
 import multiprocessing
 import os
@@ -5,6 +6,7 @@ import pathlib
 import sys
 import tempfile
 import traceback
+from pathlib import Path
 from typing import Generator, Tuple
 
 import numpy as np
@@ -17,7 +19,10 @@ from invesalius.data import imagedata_utils
 from invesalius.data.converters import to_vtk
 from invesalius.net.utils import download_url_to_file
 from invesalius.pubsub import pub as Publisher
-from invesalius.segmentation.fastsurfer.pipeline import Pipeline
+from invesalius.segmentation.deep_learning.fastsurfer_subpart.data_process import (
+    read_classes_from_lut,
+)
+from invesalius.segmentation.deep_learning.fastsurfer_subpart.pipeline import run_pipeline
 from invesalius.utils import new_name_by_pattern
 
 from . import utils
@@ -310,7 +315,7 @@ class SegmentProcess(ctx.Process):
 
         fd, fname = tempfile.mkstemp()
         self._probability_array = np.memmap(
-            filename=fname, shape=image.shape, dtype=np.float32, mode="w+"
+            filename=fname, shape=self._image_shape, dtype=np.float32, mode="w+"
         )
         self._prob_array_filename = self._probability_array.filename
         self._prob_array_fd = fd
@@ -536,6 +541,60 @@ class SubpartSegementProcess(SegmentProcess):
         )
         self.selected_mask_types = selected_mask_types or []
 
+    model_info = {
+        "axial": {
+            "pytorch": {
+                "filename": "model_axial.pt",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_axial.pt",
+                "hash": "3387b311aa985dc200941277013760ba67ca8f9fb43612e86c065b922619c1bf",
+            },
+            "tinygrad": {
+                "filename": "model_axial.onnx",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_axial.onnx",
+                "hash": "fcf8bd9af831f9eb3e836c868fee6434d41cdbeb76d38337f54bd4f6acc32624",
+            },
+        },
+        "coronal": {
+            "pytorch": {
+                "filename": "model_coronal.pt",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_coronal.pt",
+                "hash": "da64d4735053b72fb8c76713ab0273d1543a9fd8887453b141e8fe5813dd0faa",
+            },
+            "tinygrad": {
+                "filename": "model_coronal.onnx",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_coronal.onnx",
+                "hash": "45fb8b495d77de7787a0cb6759c2a8b18cc7972495275e19a3c0a7f7e1f8ba4c",
+            },
+        },
+        "sagittal": {
+            "pytorch": {
+                "filename": "model_sagittal.pt",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_sagittal.pt",
+                "hash": "91e523b9ba6cd463187654118a800eca55c76b3b0c9b3cc1a69310152a912731",
+            },
+            "tinygrad": {
+                "filename": "model_sagittal.onnx",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_sagittal.onnx",
+                "hash": "7781066a49de688e127945f17209d6136dbee44fb163ea3b16387058b77856ce",
+            },
+        },
+    }
+
+    def get_model_path(self, plane):
+        backend = self.backend.lower()
+        info = self.model_info[plane][backend]
+        sys_path = inv_paths.MODELS_DIR / "fastsurfer" / plane / info["filename"]
+        user_path = inv_paths.USER_DL_WEIGHTS / info["filename"]
+        if sys_path.exists():
+            return str(sys_path)
+        elif user_path.exists():
+            return str(user_path)
+        else:
+            download_url_to_file(
+                info["url"], user_path, info["hash"], download_callback(self._comm_array)
+            )
+            return str(user_path)
+
     def _run_segmentation(self):
         import nibabel as nib
 
@@ -552,66 +611,141 @@ class SubpartSegementProcess(SegmentProcess):
         temp_dir = tempfile.gettempdir()
         temp_img_file = pathlib.Path(temp_dir) / "input_image.nii.gz"
 
-        # create simple affine matrix (identity for now)
-        affine = np.eye(4)
-        img = nib.Nifti1Image(image, affine)
+        img = nib.load(f"{temp_dir}/proj_image.nii.gz")
         nib.save(img, str(temp_img_file))
 
-        pipeline = Pipeline()
+        # get backend specific model paths
+        model_paths = {
+            plane: self.get_model_path(plane) for plane in ["axial", "coronal", "sagittal"]
+        }
 
-        try:
-            final_segmentation = pipeline.run_pipeline(
-                str(temp_img_file), self.backend, self.use_gpu, self.device_id
-            )
+        fastsurfer_dir = Path(__file__).parent / "fastsurfer_subpart"
+        lut_file = fastsurfer_dir / "LUT.tsv"
 
-            probability_array = np.memmap(
-                self._prob_array_filename,
-                dtype=np.float32,
-                shape=self._image_shape,
-                mode="r+",
-            )
+        # create temporary directory for output
+        with tempfile.TemporaryDirectory() as temp_output_dir:
+            try:
+                print("Starting subpart prediction pipeline...")
 
-            if final_segmentation.shape != self._image_shape:
-                from skimage.transform import resize
+                sid = "subject"
+                pred_name = "mri/aparc.DKTatlas+aseg.deep.mgz"
 
-                final_segmentation = resize(
-                    final_segmentation, self._image_shape, order=0, preserve_range=True
+                args = {
+                    "orig_name": temp_img_file,
+                    "out_dir": Path(temp_output_dir),
+                    "sid": sid,
+                    "pred_name": pred_name,
+                    "ckpt_ax": model_paths["axial"],
+                    "ckpt_cor": model_paths["coronal"],
+                    "ckpt_sag": model_paths["sagittal"],
+                    "lut": lut_file,
+                    "device": self.device_id if self.use_gpu else "cpu",
+                    "viewagg_device": self.device_id if self.use_gpu else "cpu",
+                    "batch_size": 6,
+                    "threads": 4,
+                    "backend": self.backend.lower(),
+                }
+                return_code = run_pipeline(**args)
+
+                if return_code != 0:
+                    raise RuntimeError(
+                        f"FastSurfer's pipeline.py failed with exit code {return_code}"
+                    )
+
+                segmentation_file = Path(temp_output_dir) / sid / pred_name
+                if not segmentation_file.exists():
+                    raise FileNotFoundError(
+                        f"Final segmentation file not found at {segmentation_file}"
+                    )
+
+                print("Loading original image and final segmentation for resampling...")
+                original_nifti_img = nib.load(str(temp_img_file))
+                conformed_segmentation_img = nib.load(str(segmentation_file))
+
+                print(
+                    f"Original image shape: {original_nifti_img.shape}, affine:\n{original_nifti_img.affine}"
+                )
+                print(
+                    f"Conformed segmentation shape: {conformed_segmentation_img.shape}, affine:\n{conformed_segmentation_img.affine}"
                 )
 
-            probability_array[:] = final_segmentation.astype(np.float32)
+                resampled_segmentation_img = nib.processing.resample_from_to(
+                    conformed_segmentation_img, original_nifti_img, order=0
+                )
+                print("Resampling done")
 
-            comm_array = np.memmap(
-                self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
-            )
-            comm_array[0] = 1.0
+                final_segmentation = np.asarray(resampled_segmentation_img.dataobj)
+                final_segmentation = np.fliplr(np.swapaxes(final_segmentation, 0, 2))
 
-        finally:
-            if temp_img_file.exists():
-                temp_img_file.unlink()
+                print(
+                    f"Segmentation data range: [{final_segmentation.min()}, {final_segmentation.max()}]"
+                )
+                print(f"Segmentation unique values: {len(np.unique(final_segmentation))}")
+                print(f"Non-zero segmentation pixels: {np.count_nonzero(final_segmentation)}")
 
-    def process_outputs(self, threshold=0.5):
-        """Process the segmentation outputs and create masks for selected regions"""
+                probability_array = np.memmap(
+                    self._prob_array_filename,
+                    dtype=np.float32,
+                    shape=self._image_shape,
+                    mode="r+",
+                )
+
+                probability_array[:] = final_segmentation.astype(np.float32)
+
+                comm_array = np.memmap(
+                    self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
+                )
+                comm_array[0] = 1.0
+
+            finally:
+                import shutil
+
+                if os.path.exists(temp_output_dir):
+                    shutil.rmtree(temp_output_dir)
+
+    def apply_segment_threshold(self, threshold):
+        segmentation_array = self._probability_array
+
+        # If no specific mask types selected, create a single whole brain mask
         if not self.selected_mask_types:
-            self.apply_segment_threshold(threshold)
+            print("apply_segment_threshold: No specific masks selected, creating whole brain mask")
+            mask_name = new_name_by_pattern("whole_brain")
+            mask = slc.Slice().create_new_mask(name=mask_name, add_to_project=True)
+            mask.was_edited = True
+            mask.matrix[1:, 1:, 1:] = (segmentation_array > 0).astype(np.uint8) * 255
+            mask.modified(True)
             return
 
-        probability_array = np.memmap(
-            self._prob_array_filename,
-            dtype=np.float32,
-            shape=self._image_shape,
-            mode="r",
-        )
+        lut_classes = read_classes_from_lut()
 
-        for mask_type in self.selected_mask_types:
-            mask_name = f"subpart_{mask_type}"
-            mask = slc.Slice().create_new_mask(name=mask_name)
+        # Create masks for each region within the selected categories
+        for category in self.selected_mask_types:
+            regions_in_category = [cls for cls in lut_classes if cls["category"] == category]
 
-            # apply threshold to create binary mask, for now, simple threshold approach, will do later, specific label mapping for each mask type
-            binary_mask = (probability_array >= threshold).astype(np.uint8) * 255
+            if not regions_in_category:
+                print(f"No regions found for category '{category}'. Skipping.")
+                continue
 
-            mask.was_edited = True
-            mask.matrix[1:, 1:, 1:] = binary_mask
-            mask.modified(True)
+            for region in regions_in_category:
+                label_id = region["id"]
+                region_name = region["name"]
+                color = (region["R"] / 255.0, region["G"] / 255.0, region["B"] / 255.0)
+
+                region_name = region_name.replace("-", "_").replace(" ", "_")
+                mask_name = new_name_by_pattern(f"{category}_{region_name}")
+                binary_mask = (segmentation_array == label_id).astype(np.uint8) * 255
+
+                if not np.any(binary_mask):
+                    print(
+                        f"No voxels found for label ID {label_id} ('{region_name}'). Skipping mask creation."
+                    )
+                    continue
+
+                mask = slc.Slice().create_new_mask(name=mask_name, add_to_project=True)
+                mask.color = color
+                mask.was_edited = True
+                mask.matrix[1:, 1:, 1:] = binary_mask
+                mask.modified(True)
 
 
 class TracheaSegmentProcess(SegmentProcess):
