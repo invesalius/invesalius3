@@ -720,8 +720,8 @@ class Frame(wx.Frame):
 
         elif id == const.ID_SEGMENTATION_BRAIN:
             self.OnBrainSegmentation()
-        elif id == const.ID_SEGMENTATION_FASTSURFER:
-            self.OnFastSurferSegmentation()
+        elif id == const.ID_SEGMENTATION_SUBPART:
+            self.OnSubpartSegmentation()
         elif id == const.ID_SEGMENTATION_TRACHEA:
             self.OnTracheSegmentation()
         elif id == const.ID_SEGMENTATION_MANDIBLE_CT:
@@ -1072,17 +1072,17 @@ class Frame(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
 
-    def OnFastSurferSegmentation(self):
+    def OnSubpartSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog
 
         if deep_learning_seg_dialog.HAS_TORCH or deep_learning_seg_dialog.HAS_TINYGRAD:
-            dlg = deep_learning_seg_dialog.FastSurferSegmenterDialog(self)
+            dlg = deep_learning_seg_dialog.SubpartSegmenterDialog(self)
             dlg.Show()
         else:
             dlg = wx.MessageDialog(
                 self,
                 _(
-                    "It's not possible to run Subpart segmentation because your system doesn't have the following modules installed:"
+                    "It's not possible to run subpart segmentation because your system doesn't have the following modules installed:"
                 )
                 + " Torch",
                 "InVesalius 3 - Subpart Segmentation",
@@ -1308,7 +1308,7 @@ class MenuBar(wx.MenuBar):
             const.ID_THRESHOLD_SEGMENTATION,
             const.ID_FLOODFILL_SEGMENTATION,
             const.ID_SEGMENTATION_BRAIN,
-            const.ID_SEGMENTATION_FASTSURFER,
+            const.ID_SEGMENTATION_SUBPART,
             const.ID_SEGMENTATION_TRACHEA,
             const.ID_SEGMENTATION_MANDIBLE_CT,
             const.ID_PLANNING_CRANIOPLASTY,
@@ -1482,9 +1482,7 @@ class MenuBar(wx.MenuBar):
         self.ffill_segmentation.Enable(False)
         segmentation_menu.AppendSeparator()
         segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
-        segmentation_menu.Append(
-            const.ID_SEGMENTATION_FASTSURFER, _("Subpart segmentation (MRI T1)")
-        )
+        segmentation_menu.Append(const.ID_SEGMENTATION_SUBPART, _("Subpart segmentation (MRI T1)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
 
