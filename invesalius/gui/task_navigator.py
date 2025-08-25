@@ -3743,7 +3743,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 marker_coil.brain_target_list.append(marker.to_brain_targets_dict())
 
         if marker_coil.brain_target_list:
-            self.marker_list_ctrl.SetItemBackgroundColour(list_index, wx.Colour(246, 226, 182))
+            self.marker_list_ctrl.SetItemBackgroundColour(list_index, wx.Colour(251, 243, 226))
         self.OnMarkerFocused(evt=None)
         self.markers.SaveState()
         dialog.Destroy()
@@ -3804,7 +3804,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Update the marker list control.
         if marker.brain_target_list:
-            self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(246, 226, 182))
+            self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(251, 243, 226))
         else:
             self.marker_list_ctrl.SetItemBackgroundColour(idx, "white")
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
@@ -4374,7 +4374,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.itemDataMap[key] = data_map_entry
 
         if marker.brain_target_list:
-            self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(246, 226, 182))
+            self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(251, 243, 226))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 

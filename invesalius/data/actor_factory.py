@@ -171,8 +171,11 @@ class ActorFactory:
         arrow.SetArrowOriginToDefault()
         arrow.SetTipResolution(40)
         arrow.SetShaftResolution(40)
-        arrow.SetShaftRadius(0.05)
-        arrow.SetTipRadius(0.15)
+        shaft_radius, tip_radius = (0.05, 0.15)
+        if length_multiplier < 1:
+            shaft_radius, tip_radius = (0.01, 0.03)
+        arrow.SetShaftRadius(shaft_radius)
+        arrow.SetTipRadius(tip_radius)
         arrow.SetTipLength(0.35)
 
         mapper = vtk.vtkPolyDataMapper()
@@ -205,6 +208,9 @@ class ActorFactory:
 
         # Apply the transform to the actor.
         actor.SetUserTransform(transform)
+
+        # Set transparency (opacity) for the arrow actor
+        actor.GetProperty().SetOpacity(0.3)
 
         return actor
 

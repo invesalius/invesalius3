@@ -443,7 +443,7 @@ class MEPVisualizer:
         self.colorBarActor = self.CreateColorbarActor()
 
         Publisher.sendMessage("AppendActor", actor=self.colored_surface_actor)
-        Publisher.sendMessage("AppendActor", actor=self.point_actor)
+        #Publisher.sendMessage("AppendActor", actor=self.point_actor)
         Publisher.sendMessage("AppendActor", actor=self.colorBarActor)
 
         if not self.is_navigating:
