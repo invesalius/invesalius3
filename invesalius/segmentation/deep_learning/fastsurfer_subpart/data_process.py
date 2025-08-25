@@ -19,7 +19,7 @@
 
 import logging
 from pathlib import Path
-from typing import Optional, Union, cast
+from typing import Optional, cast
 
 import nibabel as nib
 import numpy as np

@@ -3,7 +3,6 @@
 
 import multiprocessing
 import time
-from typing import Dict
 
 import numpy as np
 import wx
@@ -12,7 +11,7 @@ import invesalius.data.slice_ as slc
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from invesalius.segmentation.deep_learning import segment, utils
+from invesalius.segmentation.deep_learning import segment
 
 try:
     import torch
@@ -25,7 +24,7 @@ try:
     import tinygrad
 
     HAS_TINYGRAD = True
-except:
+except ImportError:
     HAS_TINYGRAD = False
 
 if HAS_TORCH:
@@ -70,10 +69,10 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.segmenter = segmenter
 
         if HAS_TORCH:
-            self.torch_devices: Dict[str, str] = TORCH_DEVICES
+            self.torch_devices: dict[str, str] = TORCH_DEVICES
 
         if HAS_TINYGRAD:
-            self.tinygrad_devices: Dict[str, str] = TINYGRAD_DEVICES
+            self.tinygrad_devices: dict[str, str] = TINYGRAD_DEVICES
 
         self.auto_segment = auto_segment
 

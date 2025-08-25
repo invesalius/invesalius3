@@ -23,9 +23,8 @@ import copy
 import logging
 from collections.abc import Iterator, Sequence
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, Union
+from typing import Any, Literal
 
 import nibabel as nib
 import numpy as np
@@ -35,7 +34,7 @@ import yacs.config
 from . import data_process as dp
 from . import misc
 from .inference import CreateInference, PytorchInference, TinyGradInference
-from .misc import Config, create_config, handle_cuda_memory_exception
+from .misc import create_config, handle_cuda_memory_exception
 from .quick_qc import check_volume
 
 LOGGER = logging.getLogger(__name__)
@@ -78,7 +77,7 @@ class Pipeline:
 
     vox_size: float | Literal["min"]
     current_plane: misc.Plane
-    models: dict[misc.Plane, Union[PytorchInference, TinyGradInference]]
+    models: dict[misc.Plane, PytorchInference | TinyGradInference]
     view_ops: dict[misc.Plane, dict[str, Any]]
     conform_to_1mm_threshold: float | None
     device: torch.device
@@ -169,7 +168,7 @@ class Pipeline:
         LOGGER.info(f"Running view aggregation on {va_device}")
         return main_device, va_device
 
-    def _initialize_models(self) -> dict[misc.Plane, Union[PytorchInference, TinyGradInference]]:
+    def _initialize_models(self) -> dict[misc.Plane, PytorchInference | TinyGradInference]:
         """
         Initialize models for all available planes.
 

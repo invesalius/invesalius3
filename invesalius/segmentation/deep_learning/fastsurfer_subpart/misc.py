@@ -32,8 +32,6 @@ from typing import (
     overload,
 )
 
-import torch
-
 
 @dataclass
 class ModelConfig:

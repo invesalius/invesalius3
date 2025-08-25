@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 import os
 import tempfile
-from typing import TYPE_CHECKING, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkLookupTable
@@ -50,6 +50,7 @@ from invesalius_cy import mips, transforms
 
 if TYPE_CHECKING:
     from vtkmodules.vtkCommonDataModel import vtkImageData
+    from vtkmodules.vtkCommonMath import vtkMatrix4x4
 
 OTHER = 0
 PLIST = 1

@@ -740,7 +740,7 @@ class MasksListCtrlPanel(InvListCtrl):
         if hasattr(self, "category"):
             Publisher.sendMessage("Update mask select all checkbox", category=self.category)
         else:
-            print(f"Selection changed but 'category' attribute not found on self.")
+            print("Selection changed but 'category' attribute not found on self.")
         if evt:
             evt.Skip()
 
@@ -915,7 +915,7 @@ class MasksListCtrlPanel(InvListCtrl):
         Publisher.sendMessage("Show mask", index=global_idx, value=flag)
 
         # Also trigger selection update since this affects the overall selection state
-        print(f" OnCheckItem: triggering selection update")
+        print(" OnCheckItem: triggering selection update")
         self.on_selection_changed(None)
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
@@ -1635,7 +1635,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         colour = surface.colour
         volume = f"{surface.volume:.3f}"
         area = f"{surface.area:.3f}"
-        transparency = "%d%%" % (int(100 * surface.transparency))
+        transparency = f"{int(100 * surface.transparency)}%"
 
         if index not in self.surface_list_index:
             image = self.CreateColourBitmap(colour)
@@ -1688,7 +1688,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
     def EditSurfaceTransparency(self, surface_index, transparency):
         if surface_index in self.surface_list_index:
             local_pos = self.surface_list_index[surface_index]
-            self.SetItem(local_pos, 5, "%d%%" % (int(transparency * 100)))
+            self.SetItem(local_pos, 5, f"{int(transparency * 100)}%")
 
     def EditSurfaceColour(self, surface_index, colour):
         if surface_index in self.surface_list_index:

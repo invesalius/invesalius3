@@ -17,13 +17,11 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-import concurrent.futures
 import logging
 import os
 import threading
 import time
-from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Optional
 
 import numpy as np
 from numpy import typing as npt
@@ -47,7 +45,6 @@ except ImportError:
     ort = None
     ONNX_AVAILABLE = False
 
-import logging
 
 from .data_process import (
     ProcessDataThickSlices,
@@ -157,9 +154,9 @@ class TinyGradInference:
     def __init__(
         self,
         cfg: Config,
-        device: Optional[Union[torch.device, str]] = None,
+        device: torch.device | str | None = None,
         ckpt: str = "",
-        lut: Optional[Union[str, np.ndarray, DataFrame]] = None,
+        lut: str | np.ndarray | DataFrame | None = None,
         parallel_batches: int = 2,
         use_gpu: bool = False,
     ):
@@ -316,7 +313,7 @@ class TinyGradInference:
                     out[tuple(ii)].add_(pred, alpha=self.alpha.get(plane, 0.4))
                     start_index = end_index
 
-            except Exception as e:
+            except Exception:
                 logger.exception(f"Exception in batch {log_batch_idx} of {plane} inference.")
                 raise
             else:
@@ -331,8 +328,8 @@ class TinyGradInference:
         orig_data: npt.NDArray,
         orig_zoom: npt.NDArray,
         out: Optional = None,
-        out_res: Optional[int] = None,
-        batch_size: Optional[int] = None,
+        out_res: int | None = None,
+        batch_size: int | None = None,
     ):
         """
         Run ONNX inference on the data
@@ -373,7 +370,7 @@ class PytorchInference:
         cfg: Config,
         device: torch.device,
         ckpt: str = "",
-        lut: Optional[Union[str, np.ndarray, DataFrame]] = None,
+        lut: str | np.ndarray | DataFrame | None = None,
     ):
         self.cfg = cfg
         self.device = device
@@ -424,7 +421,7 @@ class PytorchInference:
         self._model_not_init = None
         self.device = None
 
-    def to(self, device: Optional[torch.device] = None):
+    def to(self, device: torch.device | None = None):
         """Move and/or cast the parameters and buffers"""
         if self.model_parallel:
             raise RuntimeError(
@@ -469,7 +466,7 @@ class PytorchInference:
         val_loader: DataLoader,
         *,
         out_scale: Optional = None,
-        out: Optional[torch.Tensor] = None,
+        out: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Perform prediction and inplace-aggregate views into pred_prob"""
         self.model.eval()
@@ -531,7 +528,7 @@ class PytorchInference:
                     out[tuple(ii)].add_(pred, alpha=self.alpha.get(plane, 0.4))
                     start_index = end_index
 
-            except Exception as e:
+            except Exception:
                 logger.exception(f"Exception in batch {log_batch_idx} of {plane} inference.")
                 raise
             else:
@@ -546,9 +543,9 @@ class PytorchInference:
         img_filename: str,
         orig_data: npt.NDArray,
         orig_zoom: npt.NDArray,
-        out: Optional[torch.Tensor] = None,
-        out_res: Optional[int] = None,
-        batch_size: Optional[int] = None,
+        out: torch.Tensor | None = None,
+        out_res: int | None = None,
+        batch_size: int | None = None,
     ) -> torch.Tensor:
         """Run the loaded model on the data"""
         # Set up DataLoader
@@ -580,12 +577,12 @@ class PytorchInference:
 def CreateInference(
     backend: str,
     cfg: Config,
-    device: Optional[Union[torch.device, str]] = None,
+    device: torch.device | str | None = None,
     ckpt: str = "",
-    lut: Optional[Union[str, np.ndarray, DataFrame]] = None,
+    lut: str | np.ndarray | DataFrame | None = None,
     use_gpu: bool = False,
     **kwargs,
-) -> Union[PytorchInference, TinyGradInference]:
+) -> PytorchInference | TinyGradInference:
     """
     Creates inference instances based on backend
     """
