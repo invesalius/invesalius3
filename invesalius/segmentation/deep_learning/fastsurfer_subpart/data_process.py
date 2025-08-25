@@ -125,6 +125,7 @@ def read_classes_from_lut(lut_file: str | Path):
     names = {
         "ID": "int",
         "LabelName": "str",
+        "Category": "str",
         "Red": "int",
         "Green": "int",
         "Blue": "int",
@@ -147,6 +148,7 @@ def read_classes_from_lut(lut_file: str | Path):
         dtype=names,
         **kwargs,
     )
+    return lut
 
 
 def aparc_aseg_to_label(

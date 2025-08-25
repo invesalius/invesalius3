@@ -9,6 +9,7 @@ import traceback
 from pathlib import Path
 from typing import Generator, Tuple
 
+import nibabel.processing
 import numpy as np
 from skimage.transform import resize
 from vtkmodules.vtkIOXML import vtkXMLImageDataWriter
@@ -540,6 +541,8 @@ class SubpartSegementProcess(SegmentProcess):
             patch_size=patch_size,
         )
         self.selected_mask_types = selected_mask_types or []
+        fastsurfer_dir = Path(__file__).parent / "fastsurfer_subpart"
+        self.lut_file = fastsurfer_dir / "LUT.tsv"
 
     model_info = {
         "axial": {
@@ -619,9 +622,6 @@ class SubpartSegementProcess(SegmentProcess):
             plane: self.get_model_path(plane) for plane in ["axial", "coronal", "sagittal"]
         }
 
-        fastsurfer_dir = Path(__file__).parent / "fastsurfer_subpart"
-        lut_file = fastsurfer_dir / "LUT.tsv"
-
         # create temporary directory for output
         with tempfile.TemporaryDirectory() as temp_output_dir:
             try:
@@ -638,7 +638,7 @@ class SubpartSegementProcess(SegmentProcess):
                     "ckpt_ax": model_paths["axial"],
                     "ckpt_cor": model_paths["coronal"],
                     "ckpt_sag": model_paths["sagittal"],
-                    "lut": lut_file,
+                    "lut": self.lut_file,
                     "device": self.device_id if self.use_gpu else "cpu",
                     "viewagg_device": self.device_id if self.use_gpu else "cpu",
                     "batch_size": 6,
@@ -669,7 +669,7 @@ class SubpartSegementProcess(SegmentProcess):
                     f"Conformed segmentation shape: {conformed_segmentation_img.shape}, affine:\n{conformed_segmentation_img.affine}"
                 )
 
-                resampled_segmentation_img = nib.processing.resample_from_to(
+                resampled_segmentation_img = nibabel.processing.resample_from_to(
                     conformed_segmentation_img, original_nifti_img, order=0
                 )
                 print("Resampling done")
@@ -716,19 +716,20 @@ class SubpartSegementProcess(SegmentProcess):
             mask.modified(True)
             return
 
-        lut_classes = read_classes_from_lut()
+        lut_df = read_classes_from_lut(self.lut_file)
+        lut_classes = lut_df.to_dict("records")
 
         # Create masks for each region within the selected categories
         for category in self.selected_mask_types:
-            regions_in_category = [cls for cls in lut_classes if cls["category"] == category]
+            regions_in_category = [cls for cls in lut_classes if cls["Category"] == category]
 
             if not regions_in_category:
                 print(f"No regions found for category '{category}'. Skipping.")
                 continue
 
             for region in regions_in_category:
-                label_id = region["id"]
-                region_name = region["name"]
+                label_id = region["ID"]
+                region_name = region["LabelName"]
                 color = (region["R"] / 255.0, region["G"] / 255.0, region["B"] / 255.0)
 
                 region_name = region_name.replace("-", "_").replace(" ", "_")
