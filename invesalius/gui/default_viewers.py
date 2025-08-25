@@ -125,7 +125,7 @@ class Panel(wx.Panel):
             for i, window in enumerate(nav_windows.values()):
                 self.nav_manager.add_window_to_layout(window=window["window"], row=i + 1)
 
-        self.aui_manager.Update()
+        self.nav_manager.update_layout()
 
         session = ses.Session()
         if session.GetConfig("mode") != const.MODE_NAVIGATOR:
@@ -156,7 +156,7 @@ class Panel(wx.Panel):
             self.aui_manager.GetPane(self.p1).Show()
             self.aui_manager.GetPane(self.p2).Show()
             self.aui_manager.GetPane(self.p3).Show()
-        self.aui_manager.Update()
+        self.nav_manager.update_layout()
 
     def OnSetTargetMode(self, enabled=True):
         if enabled:
@@ -170,7 +170,7 @@ class Panel(wx.Panel):
     def RestoreViewerVolume(self):
         self.aui_manager.RestoreMaximizedPane()
         Publisher.sendMessage("Hide raycasting widget")
-        self.aui_manager.Update()
+        self.nav_manager.update_layout()
 
     def MaximizeViewerVolume(self):
         # Restore volume viewer to make sure it is not already maximized before attempting to maximize it
@@ -180,7 +180,7 @@ class Panel(wx.Panel):
         if view is not None:
             self.aui_manager.MaximizePane(self.aui_manager.GetPane(view))
         Publisher.sendMessage("Show raycasting widget")
-        self.aui_manager.Update()
+        self.nav_manager.update_layout()
 
     def OnMaximize(self, evt):
         if evt.GetPane().name.startswith("Volume_"):

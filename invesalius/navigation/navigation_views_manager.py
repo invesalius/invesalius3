@@ -159,9 +159,11 @@ class NavigationWindowManager(metaclass=Singleton):
         self.aui_manager.Update()
 
         scale_factor = 0.84 if self.multitargetMode else 1
+        zoom_raycasting = 1.8 if self.multitargetMode else 2
 
         Publisher.sendMessage("Update size sensors", scale_factor=scale_factor)
-        Publisher.sendMessage("Render raycasting")
+        Publisher.sendMessage("Render volume viewer")
+        Publisher.sendMessage("Render raycasting", zoom_raycasting=zoom_raycasting)
 
     def SetDualMode(self, state):
         window = self.nav_windows[len(self.nav_windows) - 1]["window"]
@@ -273,8 +275,15 @@ class VolumeInteraction(wx.Panel):
         p.Hide()
         self.aui_manager.Update()
 
-    def OnRenderRaycasting(self):
+    def OnRenderRaycasting(self, zoom_raycasting):
+        self.clut_raycasting.Refresh()
         self.aui_manager.Update()
+        if self.volume_viewer_instance.target_coord is None:
+            return
+        self.volume_viewer_instance.ren.ResetCamera()
+        self.volume_viewer_instance.target_guide_renderer.ResetCamera()
+        self.volume_viewer_instance.target_guide_renderer.GetActiveCamera().Zoom(zoom_raycasting)
+        self.volume_viewer_instance.UpdateRender()
 
     def OnPointChanged(self, evt):
         Publisher.sendMessage("Set raycasting refresh")

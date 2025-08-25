@@ -1256,11 +1256,13 @@ class Viewer(wx.Panel):
         self.SetCameraTarget()
         # self.ren.GetActiveCamera().Zoom(4)
 
-        self.target_guide_renderer.ResetCamera()
-        self.target_guide_renderer.GetActiveCamera().Zoom(2)
-        self.target_guide_renderer.InteractiveOff()
-        if not self.nav_status:
+        def update_camera():
+            self.target_guide_renderer.ResetCamera()
+            self.target_guide_renderer.GetActiveCamera().Zoom(2)
+            self.target_guide_renderer.InteractiveOff()
             self.UpdateRender()
+
+        wx.CallAfter(update_camera)
 
     def DisableTargetMode(self):
         # Restore the camera settings that were stored when the target mode was enabled.
@@ -1486,6 +1488,7 @@ class Viewer(wx.Panel):
                 self.target_guide_renderer.AddActor(ind)
 
     def OnUnsetTarget(self, marker, robot_ID):
+        self.marker_visualizer.SetTargetTransparency(marker=marker, transparent=False)
         self.DisableTargetMode()
 
         self.target_mode = False
@@ -1494,6 +1497,8 @@ class Viewer(wx.Panel):
         self.marker_visualizer.UnsetTarget(marker, robot_ID)
 
     def OnSetTarget(self, marker, robot_ID):
+        self.marker_visualizer.SetTargetTransparency(marker=marker, transparent=True)
+
         coord = marker.position + marker.orientation
 
         # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate

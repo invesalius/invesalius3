@@ -3664,7 +3664,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 _("InVesalius 3"),
             )
             return
-
         self.navigation.UpdateCoilMesh(marker.coil)
         Publisher.sendMessage("Set active robot by coil name", coil_name=marker.coil)
 
