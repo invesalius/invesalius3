@@ -71,6 +71,7 @@ class NavigationHub(metaclass=Singleton):
         )
         self.markers = MarkersControl(robot=self.robot)
         self.mep_visualizer = MEPVisualizer()
+        Publisher.sendMessage("Add navigation context to interactive shell")
 
 
 class QueueCustom(queue.Queue):

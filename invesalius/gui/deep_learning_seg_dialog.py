@@ -362,8 +362,9 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             Publisher.sendMessage("Brain segmentation completed")
 
     def SetProgress(self, progress):
-        self.progress.SetValue(int(progress * 100))
-        wx.GetApp().Yield()
+        if self.progress and self.progress.IsBeingDeleted() is False:
+            self.progress.SetValue(int(progress * 100))
+            wx.GetApp().Yield()
 
     def OnTickTimer(self, evt):
         fmt = "%H:%M:%S"
