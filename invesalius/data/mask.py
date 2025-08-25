@@ -227,6 +227,25 @@ class Mask:
 
         self.history = EditionHistory()
 
+    @property
+    def category(self):
+        if self.name.lower().startswith("cortical"):
+            return "cortical"
+        elif self.name.lower().startswith("subcortical"):
+            return "subcortical"
+        elif self.name.lower().startswith("ventricles"):
+            return "ventricles"
+        elif self.name.lower().startswith("white_matter"):
+            return "white_matter"
+        elif self.name.lower().startswith("cerebellum"):
+            return "cerebellum"
+        elif self.name.lower().startswith("brain_stem"):
+            return "brain_stem"
+        elif self.name.lower().startswith("choroid_Plexus"):
+            return "choroid_plexus"
+        else:
+            return "General"
+
     def __bind_events(self):
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
         Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
