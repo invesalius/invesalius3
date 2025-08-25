@@ -94,10 +94,12 @@ class SliceBuffer:
 # Therefore, we use Singleton design pattern for implementing it.
 class Slice(metaclass=utils.Singleton):
     def __init__(self):
+        self.selected_mask_indices = []
+        self._matrix = None
+        self._matrix_filename = ""
         self.current_mask: Optional[Mask] = None
         self.blend_filter = None
         self.histogram: Optional[np.ndarray] = None
-        self._matrix: Optional[np.ndarray] = None
         self._affine: np.ndarray = np.identity(4)
         self._n_tracts: int = 0
         self._tracker = None
@@ -245,6 +247,10 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.OnRemoveMasks, "Remove masks")
         Publisher.subscribe(self.OnDuplicateMasks, "Duplicate masks")
         Publisher.subscribe(self.UpdateSlice3D, "Update slice 3D")
+
+        Publisher.subscribe(self.on_select_all_masks_changed, "Select all masks changed")
+        Publisher.subscribe(self.create_surfaces_for_all_masks, "Create surfaces for all masks")
+        Publisher.subscribe(self.update_selected_masks, "Update selected masks list")
 
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
         Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
@@ -1240,6 +1246,59 @@ class Slice(metaclass=utils.Singleton):
             surface_parameters=surface_parameters,
         )
 
+    def on_select_all_masks_changed(self, select_all_active):
+        """
+        Handle when select all masks checkbox is toggled
+        """
+        # Notify the UI to update the button text
+        Publisher.sendMessage("Update create surface button", select_all_active=select_all_active)
+
+    def create_surfaces_for_all_masks(self, surface_parameters_template):
+        """
+        Create surfaces for all masks that have content (voxels > threshold)
+
+        Args:
+            surface_parameters_template: Template parameters to use for all surface creations
+        """
+        proj = Project()
+        created_surfaces = []
+
+        # Get all masks from the project
+        mask_dict = proj.mask_dict
+
+        for mask_index in self.selected_mask_indices:
+            if mask_index not in mask_dict:
+                continue
+            mask = mask_dict[mask_index]
+            # Check if mask has content (similar to the check in AddNewActor)
+            if mask.matrix.max() < 127:
+                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels selected")
+                continue
+
+            # Create a copy of the template parameters for this specific mask
+            surface_parameters = surface_parameters_template.copy()
+            surface_parameters["options"] = surface_parameters_template["options"].copy()
+
+            # Update the parameters for this specific mask
+            surface_parameters["options"]["index"] = mask_index
+            surface_parameters["options"]["name"] = f"{mask.name}"
+            surface_parameters["options"]["overwrite"] = False  # Always create new surfaces
+
+            print(f"Creating surface for mask '{mask.name}' (index {mask_index})")
+
+            # Create the surface for this mask
+            try:
+                self.do_threshold_to_all_slices(mask)
+                Publisher.sendMessage(
+                    "Create surface", slice_=self, mask=mask, surface_parameters=surface_parameters
+                )
+                created_surfaces.append(mask_index)
+            except Exception as e:
+                print(f"Failed to create surface for mask '{mask.name}': {str(e)}")
+
+        print(f"Successfully created surfaces for {len(created_surfaces)} masks")
+        Publisher.sendMessage("Surfaces creation completed", created_count=len(created_surfaces))
+
     def GetOutput(self):
         return self.blend_filter.GetOutput()
 
@@ -1893,6 +1952,9 @@ class Slice(metaclass=utils.Singleton):
 
     def has_affine(self) -> bool:
         return not np.allclose(self.affine, np.eye(4))
+
+    def update_selected_masks(self, indices):
+        self.selected_mask_indices = indices
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:

@@ -30,6 +30,7 @@ except ImportError:
 
 import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
+from wx.lib import scrolledpanel as scrolled
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
@@ -73,9 +74,12 @@ class TaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
 
-class InnerTaskPanel(wx.Panel):
+class InnerTaskPanel(scrolled.ScrolledPanel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        scrolled.ScrolledPanel.__init__(self, parent)
+        self.select_all_active = False
+        Publisher.subscribe(self.update_create_surface_button, "Update create surface button")
+
         backgroud_colour = wx.Colour(255, 255, 255)
         self.SetBackgroundColour(backgroud_colour)
         self.SetAutoLayout(1)
@@ -128,16 +132,16 @@ class InnerTaskPanel(wx.Panel):
         self.fold_panel = fold_panel
 
         # Button to fold to select region task
-        button_next = wx.Button(self, -1, _("Create surface"))
+        self.button_next = wx.Button(self, -1, _("Create surface"))
         check_box = wx.CheckBox(self, -1, _("Overwrite last surface"))
         self.check_box = check_box
         if sys.platform != "win32":
-            button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+            self.button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
             check_box.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
+        self.button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
 
         next_btn_sizer = wx.BoxSizer(wx.VERTICAL)
-        next_btn_sizer.Add(button_next, 1, wx.ALIGN_RIGHT)
+        next_btn_sizer.Add(self.button_next, 1, wx.ALIGN_RIGHT)
 
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(check_box, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
@@ -163,7 +167,45 @@ class InnerTaskPanel(wx.Panel):
         if id == BTN_NEW:
             self.OnLinkNewMask()
 
+    def update_create_surface_button(self, select_all_active):
+        """Update the create surface button text based on select all state"""
+        self.select_all_active = select_all_active
+
+        if select_all_active:
+            self.button_next.SetLabel("Create All Surfaces")
+            self.button_next.SetToolTip("Create surfaces for all selected masks")
+        else:
+            self.button_next.SetLabel("Create Surface")
+            self.button_next.SetToolTip("Create surface from selected mask")
+
+    def get_current_surface_parameters(self):
+        """Get current surface creation parameters from the UI"""
+        overwrite = self.check_box.IsChecked()
+        # a template that be used for each mask
+        return {
+            "method": {
+                "algorithm": "Default",
+                "options": {},
+            },
+            "options": {
+                "index": None,  # will be set for each mask
+                "name": "",  # will be set for each mask
+                "quality": _("Optimal *"),
+                "fill": False,
+                "keep_largest": False,
+                "overwrite": overwrite,
+            },
+        }
+
     def OnButtonNextTask(self, evt):
+        if self.select_all_active:
+            surface_parameters_template = self.get_current_surface_parameters()
+            Publisher.sendMessage(
+                "Create surfaces for all masks",
+                surface_parameters_template=surface_parameters_template,
+            )
+            return
+
         overwrite = self.check_box.IsChecked()
         algorithm = "Default"
         options = {}
@@ -189,10 +231,20 @@ class InnerTaskPanel(wx.Panel):
                 else:
                     return
 
+                mask_name = ""
+                if hasattr(self.fold_panel, "inner_panel") and hasattr(
+                    self.fold_panel.inner_panel, "mask_prop_panel"
+                ):
+                    mask_prop_panel = self.fold_panel.inner_panel.mask_prop_panel
+                    if hasattr(mask_prop_panel, "combo_mask_name"):
+                        mask_selection = mask_prop_panel.combo_mask_name.GetSelection()
+                        if mask_selection >= 0:
+                            mask_name = mask_prop_panel.combo_mask_name.GetString(mask_selection)
+
                 method = {"algorithm": algorithm, "options": options}
                 srf_options = {
                     "index": mask_index,
-                    "name": "",
+                    "name": mask_name,  # Use the mask name instead of empty string
                     "quality": _("Optimal *"),
                     "fill": False,
                     "keep_largest": False,
