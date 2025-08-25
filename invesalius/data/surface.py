@@ -86,7 +86,7 @@ class Surface:
 
     general_index = -1
 
-    def __init__(self, index=None, name=""):
+    def __init__(self, index=None, name="", category="General"):
         Surface.general_index += 1
         if index is None:
             self.index = Surface.general_index
@@ -105,6 +105,7 @@ class Surface:
             self.name = name
 
         self.filename = None
+        self.category = category
 
     def SavePlist(self, dir_temp, filelist):
         if self.filename and os.path.exists(self.filename):
@@ -130,6 +131,7 @@ class Surface:
             "visible": bool(self.is_shown),
             "volume": self.volume,
             "area": self.area,
+            "category": self.category,
         }
         plist_filename = filename + ".plist"
         # plist_filepath = os.path.join(dir_temp, filename + '.plist')
@@ -236,6 +238,22 @@ class SurfaceManager:
         Publisher.subscribe(self.CreateSurfaceFromPolydata, "Create surface from polydata")
         Publisher.subscribe(self.export_all_surfaces_separately, "Export all surfaces separately")
 
+        Publisher.subscribe(self.on_surfaces_creation_completed, "Surfaces creation completed")
+        Publisher.subscribe(self.on_no_surfaces_created, "No surfaces created")
+
+    def on_surfaces_creation_completed(self, created_count):
+        """
+        Handle completion of batch surface creation
+        """
+        if created_count == 0:
+            wx.MessageBox("No valid masks", "No Surfaces Created", wx.OK | wx.ICON_WARNING)
+            return
+        wx.MessageBox(
+            f"Successfully created {created_count} surfaces.",
+            "Batch Surface Creation Complete",
+            wx.OK | wx.ICON_INFORMATION,
+        )
+
     def OnDuplicate(self, surface_indexes):
         proj = prj.Project()
         surface_dict = proj.surface_dict
@@ -254,6 +272,7 @@ class SurfaceManager:
                 transparency=original_surface.transparency,
                 volume=original_surface.volume,
                 area=original_surface.area,
+                category=original_surface.category,
             )
 
     def OnRemove(self, surface_indexes):
@@ -628,6 +647,7 @@ class SurfaceManager:
         volume=None,
         area=None,
         scalar=False,
+        category="General",
     ):
         if self.convert_to_inv:
             polydata = self.ConvertPolydataToInv(polydata)
@@ -654,9 +674,9 @@ class SurfaceManager:
         if overwrite:
             if index is None:
                 index = self.last_surface_index
-            surface = Surface(index=index)
+            surface = Surface(index=index, name=name, category=category)
         else:
-            surface = Surface()
+            surface = Surface(name=name, category=category)
 
         if not colour:
             surface.colour = random.choice(const.SURFACE_COLOUR)
@@ -667,8 +687,8 @@ class SurfaceManager:
         if transparency:
             surface.transparency = transparency
 
-        if name:
-            surface.name = name
+        # if name:
+        #     surface.name = name
 
         # Append surface into Project.surface_dict
         proj = prj.Project()
@@ -790,7 +810,9 @@ class SurfaceManager:
     ####
     # (mask_index, surface_name, quality, fill_holes, keep_largest)
 
-    def _on_complete_surface_creation(self, args, overwrite, surface_name, colour, dialog):
+    def _on_complete_surface_creation(
+        self, args, overwrite, surface_name, colour, category, dialog
+    ):
         surface_filename, surface_measures = args
         wx.CallAfter(
             self._show_surface,
@@ -799,11 +821,12 @@ class SurfaceManager:
             overwrite,
             surface_name,
             colour,
+            category,
             dialog,
         )
 
     def _show_surface(
-        self, surface_filename, surface_measures, overwrite, surface_name, colour, dialog
+        self, surface_filename, surface_measures, overwrite, surface_name, colour, category, dialog
     ):
         print(surface_filename, surface_measures)
         reader = vtkXMLPolyDataReader()
@@ -825,9 +848,9 @@ class SurfaceManager:
         del mapper
         # Create Surface instance
         if overwrite:
-            surface = Surface(index=self.last_surface_index)
+            surface = Surface(index=self.last_surface_index, name=surface_name, category=category)
         else:
-            surface = Surface(name=surface_name)
+            surface = Surface(name=surface_name, category=category)
         surface.colour = colour
         surface.polydata = polydata
         surface.volume = surface_measures["volume"]
@@ -910,6 +933,7 @@ class SurfaceManager:
         mode = "CONTOUR"  # 'GRAYSCALE'
         min_value, max_value = mask.threshold_range
         colour = mask.colour[:3]
+        category = mask.category
 
         try:
             overwrite = surface_parameters["options"]["overwrite"]
@@ -1037,10 +1061,12 @@ class SurfaceManager:
             proj = prj.Project()
             # Create Surface instance
             if overwrite:
-                surface = Surface(index=self.last_surface_index)
+                surface = Surface(
+                    index=self.last_surface_index, name=surface_name, category=category
+                )
                 proj.ChangeSurface(surface)
             else:
-                surface = Surface(name=surface_name)
+                surface = Surface(name=surface_name, category=category)
                 index = proj.AddSurface(surface)
                 surface.index = index
                 self.last_surface_index = index
@@ -1112,6 +1138,7 @@ class SurfaceManager:
                         overwrite=overwrite,
                         surface_name=surface_name,
                         colour=colour,
+                        category=category,
                         dialog=sp,
                     ),
                     error_callback=functools.partial(self._on_callback_error, dialog=sp),
