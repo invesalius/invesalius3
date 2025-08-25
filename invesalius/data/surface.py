@@ -108,11 +108,11 @@ class Surface:
 
     def SavePlist(self, dir_temp, filelist):
         if self.filename and os.path.exists(self.filename):
-            filename = "surface_%d" % self.index
+            filename = f"surface_{self.index}"
             vtp_filename = filename + ".vtp"
             vtp_filepath = self.filename
         else:
-            filename = "surface_%d" % self.index
+            filename = f"surface_{self.index}"
             vtp_filename = filename + ".vtp"
             vtp_fd, vtp_filepath = tempfile.mkstemp()
             pu.Export(self.polydata, vtp_filepath, bin=True)
