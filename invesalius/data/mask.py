@@ -230,19 +230,19 @@ class Mask:
     @property
     def category(self):
         if self.name.lower().startswith("cortical"):
-            return "Cortical"
+            return "cortical"
         elif self.name.lower().startswith("subcortical"):
-            return "Subcortical"
+            return "subcortical"
         elif self.name.lower().startswith("ventricles"):
-            return "Ventricles"
+            return "ventricles"
         elif self.name.lower().startswith("white_matter"):
-            return "White_matter"
+            return "white_matter"
         elif self.name.lower().startswith("cerebellum"):
-            return "Cerebellum"
+            return "cerebellum"
         elif self.name.lower().startswith("brain_stem"):
-            return "Brain_stem"
+            return "brain_stem"
         elif self.name.lower().startswith("choroid_Plexus"):
-            return "Choroid_Plexus"
+            return "choroid_plexus"
         else:
             return "General"
 

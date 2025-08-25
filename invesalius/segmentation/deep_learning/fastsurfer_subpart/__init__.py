@@ -13,8 +13,10 @@
 # limitations under the License.
 
 __all__ = [
-    "misc" "models",
-    "data_process" "inference",
+    "misc",
+    "models",
+    "data_process",
+    "inference",
     "quick_qc",
     "reduce_to_aseg",
     "pipeline",
