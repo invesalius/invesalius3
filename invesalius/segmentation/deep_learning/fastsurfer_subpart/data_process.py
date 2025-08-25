@@ -148,7 +148,6 @@ def read_classes_from_lut(lut_file: str | Path):
         dtype=names,
         **kwargs,
     )
-    return lut
 
 
 def aparc_aseg_to_label(

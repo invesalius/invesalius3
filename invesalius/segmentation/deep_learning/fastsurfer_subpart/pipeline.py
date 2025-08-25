@@ -144,7 +144,7 @@ class Pipeline:
             self.vox_size = float(vox_size)
         else:
             raise ValueError(
-                f"Invalid value for vox_size, must be between 0 and 1 or 'min', was " f"{vox_size}."
+                f"Invalid value for vox_size, must be between 0 and 1 or 'min', was {vox_size}."
             )
         self.conform_to_1mm_threshold = conform_to_1mm_threshold
 
@@ -247,8 +247,7 @@ class Pipeline:
             self.pool.submit(self.save_img, subject.conf_name, orig_data, orig, dtype=np.uint8)
         else:
             raise RuntimeError(
-                "Cannot resolve the name to the conformed image, please specify an "
-                "absolute path."
+                "Cannot resolve the name to the conformed image, please specify an absolute path."
             )
 
         return orig, orig_data
@@ -320,7 +319,7 @@ class Pipeline:
 
         if not save_as.parent.exists():
             LOGGER.info(
-                f"Output image directory {save_as.parent} does not exist. " f"Creating it now..."
+                f"Output image directory {save_as.parent} does not exist. Creating it now..."
             )
             save_as.parent.mkdir(parents=True)
 
@@ -511,7 +510,7 @@ def run_pipeline(
             seg_voxvol = np.prod(orig_img.header.get_zooms())
             if not check_volume(pred_data, seg_voxvol):
                 LOGGER.warning(
-                    "Total segmentation volume is too small. Segmentation may be " "corrupted."
+                    "Total segmentation volume is too small. Segmentation may be corrupted."
                 )
                 if qc_file_handle is not None:
                     qc_file_handle.write(subject.id + "\n")

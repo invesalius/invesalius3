@@ -42,7 +42,7 @@ def run_cranioplasty_implant():
     apply_wwwl = False
     create_new_mask = True
     use_gpu = True
-    resize_by_spacing = True
+    # resize_by_spacing = True
     window_width = slc.Slice().window_width
     window_level = slc.Slice().window_level
     overlap = 50
@@ -513,7 +513,7 @@ class BrainSegmentProcess(SegmentProcess):
         self.onnx_weights_hash = "3e506ae448150ca2c7eb9a8a6b31075ffff38e8db0fc6e25cb58c320aea79d21"
 
 
-class SubpartSegementProcess(SegmentProcess):
+class SubpartSegmentProcess(SegmentProcess):
     def __init__(
         self,
         image,
@@ -721,7 +721,9 @@ class SubpartSegementProcess(SegmentProcess):
 
         # Create masks for each region within the selected categories
         for category in self.selected_mask_types:
-            regions_in_category = [cls for cls in lut_classes if cls["Category"] == category]
+            regions_in_category = [
+                cls for cls in lut_classes if cls["Category"].lower() == category
+            ]
 
             if not regions_in_category:
                 print(f"No regions found for category '{category}'. Skipping.")

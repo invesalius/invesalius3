@@ -831,9 +831,7 @@ class SubjectList:
         Try to create the subject directory.
         """
         if self.config.out_dir is None:
-            LOGGER.info(
-                "No Subjects directory found, absolute paths for filenames are " "required."
-            )
+            LOGGER.info("No Subjects directory found, absolute paths for filenames are required.")
             return
 
         LOGGER.info(f"Output will be stored in Subjects Directory: {self.config.out_dir}")

@@ -740,7 +740,7 @@ class MasksListCtrlPanel(InvListCtrl):
         if hasattr(self, "category"):
             Publisher.sendMessage("Update mask select all checkbox", category=self.category)
         else:
-            print(f"[DEBUG] Selection changed but 'category' attribute not found on self.")
+            print(f"Selection changed but 'category' attribute not found on self.")
         if evt:
             evt.Skip()
 
@@ -894,7 +894,7 @@ class MasksListCtrlPanel(InvListCtrl):
         evt.Skip()
 
     def OnCheckItem(self, index, flag):
-        print(f"[DEBUG] OnCheckItem called with index: {index}, flag: {flag}")
+        print(f" OnCheckItem called with index: {index}, flag: {flag}")
 
         global_idx = -1
         for g_id, l_id in self.mask_list_index.items():
@@ -903,10 +903,10 @@ class MasksListCtrlPanel(InvListCtrl):
                 break
 
         if global_idx == -1:
-            print(f"[DEBUG] OnCheckItem: global_idx not found for local index {index}")
+            print(f" OnCheckItem: global_idx not found for local index {index}")
             return
 
-        print(f"[DEBUG] OnCheckItem: global_idx = {global_idx}")
+        print(f" OnCheckItem: global_idx = {global_idx}")
 
         if flag:
             Publisher.sendMessage("Change mask selected", index=global_idx)
@@ -915,7 +915,7 @@ class MasksListCtrlPanel(InvListCtrl):
         Publisher.sendMessage("Show mask", index=global_idx, value=flag)
 
         # Also trigger selection update since this affects the overall selection state
-        print(f"[DEBUG] OnCheckItem: triggering selection update")
+        print(f" OnCheckItem: triggering selection update")
         self.on_selection_changed(None)
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):

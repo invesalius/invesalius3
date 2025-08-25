@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
-import importlib
 import multiprocessing
 import time
 from typing import Dict
@@ -440,13 +439,13 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
 class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
     def __init__(self, parent, auto_segment=False):
         self.mask_types = {
-            "Cortical": _("Cortical"),
-            "Subcortical": _("Subcortical"),
-            "White_matter": _("White Matter"),
-            "Cerebellum": _("Cerebellum"),
-            "Ventricles": _("Ventricles"),
-            "Brain_stem": _("Brain Stem"),
-            "Choroid_Plexus": _("Choroid Plexus"),
+            "cortical": _("Cortical"),
+            "subcortical": _("Subcortical"),
+            "white_matter": _("White Matter"),
+            "cerebellum": _("Cerebellum"),
+            "ventricles": _("Ventricles"),
+            "brain_stem": _("Brain Stem"),
+            "choroid_plexus": _("Choroid Plexus"),
         }
 
         self.selected_mask_types = []
@@ -456,7 +455,7 @@ class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
             title=_("Subpart Segmentation"),
             has_torch=True,
             has_tinygrad=True,
-            segmenter=segment.SubpartSegementProcess,
+            segmenter=segment.SubpartSegmentProcess,
             auto_segment=auto_segment,
         )
 
@@ -477,28 +476,6 @@ class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
         for mask_id, mask_label in self.mask_types.items():
             self.mask_checkboxes[mask_id] = wx.CheckBox(self, wx.ID_ANY, mask_label)
             self.mask_checkboxes[mask_id].SetValue(False)
-
-        self._check_model_availability()
-
-    def _check_model_availability(self):
-        """Check if required models and dependencies are available"""
-        try:
-            # Try to create a dummy process to check model availability
-            # This is safer than calling slc.Slice().matrix which might not be ready
-            self.models_missing = False
-            self.missing_reason = ""
-
-            # We could add specific checks here, but for now we'll do it lazily
-            # during segmentation start to avoid initialization issues
-
-        except Exception as e:
-            self.models_missing = True
-            self.missing_reason = str(e)
-
-        if self.models_missing:
-            self.lbl_models_missing = wx.StaticText(
-                self, -1, _("FastSurfer models not found. Please check installation.")
-            )
 
     def _do_layout(self):
         """Override _do_layout to arrange FastSurferCNN specific UI elements"""
@@ -546,15 +523,6 @@ class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
                 # Fallback - just add to the main sizer
                 self.main_sizer.Add(self.mask_types_sizer, 0, wx.ALL | wx.EXPAND, 5)
 
-        if self.models_missing:
-            error_sizer = wx.BoxSizer(wx.VERTICAL)
-            error_sizer.Add(self.lbl_models_missing, 0, wx.ALL, 5)
-
-            index = self.main_sizer.GetItemCount() - 1
-            self.main_sizer.Insert(index, error_sizer, 0, wx.EXPAND | wx.ALL, 5)
-
-            self.btn_segment.Enable(False)
-
         self.main_sizer.Fit(self)
         self.Layout()
 
@@ -576,7 +544,7 @@ class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
                 device_id = self.torch_devices[self.cb_devices.GetValue()]
             except (KeyError, AttributeError):
                 device_id = "cpu"
-            use_gpu = True if not "cpu" in device_id.lower() else False
+            use_gpu = True if "cpu" not in device_id.lower() else False
         elif backend.lower() == "tinygrad":
             try:
                 device_id = self.tinygrad_devices[self.cb_devices.GetValue()]
@@ -638,18 +606,10 @@ class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
             checkbox.Enable()
 
     def apply_segment_threshold(self):
-        print("apply_segment_threshold: Starting...")
         threshold = self.sld_threshold.GetValue() / 100.0
-        print(f"apply_segment_threshold: Threshold value: {threshold}")
-
-        print("apply_segment_threshold: Calling apply_segment_threshold...")
         self.ps.apply_segment_threshold(threshold)
-        print("apply_segment_threshold: apply_segment_threshold completed")
-
-        print("apply_segment_threshold: Discarding buffers and reloading slice...")
         slc.Slice().discard_all_buffers()
         Publisher.sendMessage("Reload actual slice")
-        print("apply_segment_threshold: Completed successfully")
 
     def OnStop(self, evt):
         super().OnStop(evt)
@@ -812,6 +772,10 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
 
         self.patch_cmb = wx.ComboBox(self, choices=patch_size, value="480")
 
+        self.path_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5)
+        self.path_sizer.Add(self.patch_cmb, 2, wx.EXPAND | wx.ALL, 5)
+
         self.method = wx.RadioBox(
             self,
             -1,
@@ -850,7 +814,7 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
-        prob_threshold = self.sld_threshold.GetValue() / 100.0
+        # prob_threshold = self.sld_threshold.GetValue() / 100.0
         method = self.method.GetSelection()
 
         self.btn_close.Disable()

@@ -67,7 +67,6 @@ import invesalius.data.imagedata_utils as iu
 import invesalius.data.polydata_utils as pu
 import invesalius.data.slice_ as sl
 import invesalius.data.surface_process as surface_process
-import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utl
@@ -239,7 +238,6 @@ class SurfaceManager:
         Publisher.subscribe(self.export_all_surfaces_separately, "Export all surfaces separately")
 
         Publisher.subscribe(self.on_surfaces_creation_completed, "Surfaces creation completed")
-        Publisher.subscribe(self.on_no_surfaces_created, "No surfaces created")
 
     def on_surfaces_creation_completed(self, created_count):
         """

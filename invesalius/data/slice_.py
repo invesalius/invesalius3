@@ -64,10 +64,10 @@ class SliceBuffer:
 
     def __init__(self):
         self.index: int = -1
-        self.image: Optional[np.ndarray] = None
-        self.mask: Optional[np.ndarray] = None
-        self.vtk_image: Optional[vtkImageData] = None
-        self.vtk_mask: Optional[vtkImageData] = None
+        self.image: np.ndarray | None = None
+        self.mask: np.ndarray | None = None
+        self.vtk_image: vtkImageData | None = None
+        self.vtk_mask: vtkImageData | None = None
 
     def discard_vtk_mask(self) -> None:
         self.vtk_mask = None
@@ -95,18 +95,16 @@ class SliceBuffer:
 class Slice(metaclass=utils.Singleton):
     def __init__(self):
         self.selected_mask_indices = []
-        self._matrix = None
         self._matrix_filename = ""
-        self.current_mask: Optional[Mask] = None
+        self.current_mask: Mask | None = None
         self.blend_filter = None
-        self.histogram: Optional[np.ndarray] = None
+        self.histogram: np.ndarray | None = None
+        self._matrix: np.ndarray | None = None
         self._affine: np.ndarray = np.identity(4)
         self._n_tracts: int = 0
         self._tracker = None
         self.aux_matrices: dict[str, np.ndarray] = {}
-        self.aux_matrices_colours: dict[
-            str, dict[Union[int, float], Tuple[float, float, float]]
-        ] = {}
+        self.aux_matrices_colours: dict[str, dict[int | float, tuple[float, float, float]]] = {}
         self.state = const.STATE_DEFAULT
 
         self.to_show_aux = ""
@@ -143,7 +141,7 @@ class Slice(metaclass=utils.Singleton):
         self.opacity: float = 0.8
 
     @property
-    def matrix(self) -> Optional[np.ndarray]:
+    def matrix(self) -> np.ndarray | None:
         return self._matrix
 
     @matrix.setter
@@ -155,11 +153,11 @@ class Slice(metaclass=utils.Singleton):
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
     @property
-    def spacing(self) -> Tuple[float, float, float]:
+    def spacing(self) -> tuple[float, float, float]:
         return self._spacing
 
     @spacing.setter
-    def spacing(self, value: Tuple[float, float, float]) -> None:
+    def spacing(self, value: tuple[float, float, float]) -> None:
         self._spacing = value
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
@@ -264,7 +262,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.do_threshold_to_all_slices, "Appy threshold all slices")
 
     def GetMaxSliceNumber(self, orientation: str) -> int:
-        shape: Tuple[int, int, int] = self.matrix.shape
+        shape: tuple[int, int, int] = self.matrix.shape
 
         # Because matrix indexing starts with 0 so the last slice is the shape
         # minu 1.
@@ -283,7 +281,7 @@ class Slice(metaclass=utils.Singleton):
 
     def get_world_to_invesalius_vtk_affine(
         self, inverse: bool = False
-    ) -> Tuple[np.ndarray, "vtkMatrix4x4", float]:
+    ) -> tuple[np.ndarray, "vtkMatrix4x4", float]:
         """
         Creates an affine matrix with img_shift adjustment and returns both the NumPy
         and VTK versions of the matrix, along with the img_shift value.
@@ -1247,46 +1245,30 @@ class Slice(metaclass=utils.Singleton):
         )
 
     def on_select_all_masks_changed(self, select_all_active):
-        """
-        Handle when select all masks checkbox is toggled
-        """
-        # Notify the UI to update the button text
         Publisher.sendMessage("Update create surface button", select_all_active=select_all_active)
 
-    def create_surfaces_for_all_masks(self, surface_parameters_template):
-        """
-        Create surfaces for all masks that have content (voxels > threshold)
-
-        Args:
-            surface_parameters_template: Template parameters to use for all surface creations
-        """
+    def create_surfaces_for_all_masks(self, surface_template):
         proj = Project()
         created_surfaces = []
-
-        # Get all masks from the project
         mask_dict = proj.mask_dict
 
         for mask_index in self.selected_mask_indices:
             if mask_index not in mask_dict:
                 continue
             mask = mask_dict[mask_index]
-            # Check if mask has content (similar to the check in AddNewActor)
             if mask.matrix.max() < 127:
-                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels selected")
+                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels available")
                 continue
 
-            # Create a copy of the template parameters for this specific mask
-            surface_parameters = surface_parameters_template.copy()
-            surface_parameters["options"] = surface_parameters_template["options"].copy()
+            surface_parameters = surface_template.copy()
+            surface_parameters["options"] = surface_template["options"].copy()
 
-            # Update the parameters for this specific mask
             surface_parameters["options"]["index"] = mask_index
             surface_parameters["options"]["name"] = f"{mask.name}"
-            surface_parameters["options"]["overwrite"] = False  # Always create new surfaces
+            surface_parameters["options"]["overwrite"] = False  # always create new surfaces
 
             print(f"Creating surface for mask '{mask.name}' (index {mask_index})")
 
-            # Create the surface for this mask
             try:
                 self.do_threshold_to_all_slices(mask)
                 Publisher.sendMessage(
