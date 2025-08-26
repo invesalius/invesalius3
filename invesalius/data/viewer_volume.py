@@ -1306,7 +1306,6 @@ class Viewer(wx.Panel):
         # If target is not set before attempting to enable target mode, return without enabling it.
         if self.target_coord is None:
             return
-
         self.target_mode = enabled
 
         if enabled:

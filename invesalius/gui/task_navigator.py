@@ -2278,12 +2278,6 @@ class ControlPanel(wx.Panel):
         self.UpdateTargetButton()
 
     def SetTarget(self, marker, robot_ID):
-        coord = marker.position + marker.orientation
-
-        # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
-        #   flip wouldn't be needed.
-        coord[1] = -coord[1]
-
         self.navigation.targets.append(marker)
 
         self.EnableToggleButton(self.lock_to_target_button, 1)
@@ -2573,6 +2567,7 @@ class ControlPanel(wx.Panel):
             self.selected_coils_to_navigation = None
             ctrl.SetBackgroundColour(self.RED_COLOR)
 
+        Publisher.sendMessage("Reset targets")
         Publisher.sendMessage(
             "Set simultaneous multicoil mode",
             state=enabled,

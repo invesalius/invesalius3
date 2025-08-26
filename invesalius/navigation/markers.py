@@ -74,7 +74,6 @@ class MarkersControl(metaclass=Singleton):
     def OnSetMultiTargetMode(self, state=False, coils_list=None):
         self.accepted_coils = coils_list
         self.multitarget = state
-        self.ResetTargets()
 
     def ADDSelectCoil(self, coil_name, coil_registration):
         self.TargetCoilAssociation[coil_name] = None
