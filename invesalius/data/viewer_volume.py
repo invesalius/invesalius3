@@ -1262,7 +1262,8 @@ class Viewer(wx.Panel):
             self.target_guide_renderer.InteractiveOff()
             self.UpdateRender()
 
-        wx.CallAfter(update_camera)
+        if not self.nav_status:
+            wx.CallAfter(update_camera)
 
     def DisableTargetMode(self):
         # Restore the camera settings that were stored when the target mode was enabled.

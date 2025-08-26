@@ -74,8 +74,7 @@ class MarkersControl(metaclass=Singleton):
     def OnSetMultiTargetMode(self, state=False, coils_list=None):
         self.accepted_coils = coils_list
         self.multitarget = state
-        if not state:
-            self.ResetTargets()
+        self.ResetTargets()
 
     def ADDSelectCoil(self, coil_name, coil_registration):
         self.TargetCoilAssociation[coil_name] = None
@@ -302,7 +301,9 @@ class MarkersControl(metaclass=Singleton):
         self.SaveState()
 
     def ChangeCoilAssociate(self, marker: Marker, new_coil) -> None:
+        self.UnsetTarget(marker_id=Marker.marker_id)
         marker.coil = new_coil
+        self.SetTarget(marker_id=Marker.marker_id)
         Publisher.sendMessage("Update marker associate coil", marker=marker)
         self.SaveState()
 

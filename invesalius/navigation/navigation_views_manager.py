@@ -100,11 +100,13 @@ class NavigationWindowManager(metaclass=Singleton):
         window = self.getWindowByCoil(marker.coil)
         if window:
             window.volume_interaction.volume_viewer_instance.OnSetTarget(marker, robot_ID)
+            self.update_layout()
 
     def UnsetTarget(self, marker, robot_ID):
         window = self.getWindowByCoil(marker.coil)
         if window:
             window.volume_interaction.volume_viewer_instance.OnUnsetTarget(marker, robot_ID)
+            self.update_layout()
 
     def OnSetSimultaneousMode(self, state, coils_list):
         self.CoilAssociation = coils_list

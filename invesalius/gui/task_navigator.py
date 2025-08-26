@@ -2553,8 +2553,6 @@ class ControlPanel(wx.Panel):
                         self.selected_coils_to_navigation = [
                             coil_names_options[i] for i in selections
                         ]
-
-                        Publisher.sendMessage("Reset targets")
                     else:
                         wx.MessageBox(
                             _("You must choose exactly 2 coils."),
@@ -3130,9 +3128,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             current_uuid = data[-1]
             if current_uuid == uuid:
                 self.itemDataMap[key][const.COIL_NAME_COLUMN] = marker.coil
-
-        if marker.is_target:
-            self.markers.SetTarget(marker.marker_id, False)
 
     @staticmethod
     def __list_fiducial_labels():

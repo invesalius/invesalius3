@@ -168,16 +168,17 @@ class Panel(wx.Panel):
         self.MaximizeViewerVolume()
 
     def RestoreViewerVolume(self):
-        self.aui_manager.RestoreMaximizedPane()
+        if not self.nav_manager.multitargetMode:
+            self.aui_manager.RestoreMaximizedPane()
         Publisher.sendMessage("Hide raycasting widget")
         self.nav_manager.update_layout()
 
     def MaximizeViewerVolume(self):
-        # Restore volume viewer to make sure it is not already maximized before attempting to maximize it
-        # to fix the issue with panes locking into the maximized state where they cannot be restored
-        self.RestoreViewerVolume()
         view = self.nav_manager.GetMainView()
         if view is not None:
+            # Restore volume viewer to make sure it is not already maximized before attempting to maximize it
+            # to fix the issue with panes locking into the maximized state where they cannot be restored
+            self.RestoreViewerVolume()
             self.aui_manager.MaximizePane(self.aui_manager.GetPane(view))
         Publisher.sendMessage("Show raycasting widget")
         self.nav_manager.update_layout()
