@@ -1523,9 +1523,9 @@ class MenuBar(wx.MenuBar):
         planning_menu.Append(const.ID_PLANNING_CRANIOPLASTY, _("Cranioplasty"))
 
         analysis_menu = wx.Menu()
-        # mask_density_menu = analysis_menu.Append(
-        #     const.ID_MASK_DENSITY_MEASURE, _("Mask density measure")
-        # )
+        analysis_menu.Append(
+             const.ID_MASK_DENSITY_MEASURE, _("Mask density measure")
+        )
 
         reorient_menu.Enable(False)
         tools_menu.Append(-1, _("Analysis"), analysis_menu)
