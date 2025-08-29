@@ -257,47 +257,80 @@ class MaskPage(wx.Panel):
 
         self.create_category("General")
 
+    def create_category_header(self, parent, category):
+        """Create header panel with category controls"""
+        header_panel = wx.Panel(parent)
+        header_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        expand_btn = wx.Button(header_panel, size=(20, 20), label="▼")
+        expand_btn.Bind(wx.EVT_BUTTON, lambda evt: self.toggle_category_expansion(category))
+
+        category_label = wx.StaticText(header_panel, label=category)
+        category_label.SetFont(category_label.GetFont().Bold())
+
+        header_sizer.Add(expand_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 2)
+        header_sizer.Add(category_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
+
+        header_panel.SetSizer(header_sizer)
+
+        return header_panel, expand_btn
+
     def create_category(self, category):
-        # Create CollapsiblePane with built-in category label
-        collapsible_pane = wx.CollapsiblePane(
-            self.scroll_panel,
-            label=category,  # Use the built-in label functionality
-            style=wx.CP_DEFAULT_STYLE | wx.CP_NO_TLW_RESIZE,
-        )
-        collapsible_pane.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.OnPaneChanged)
+        header_panel, expand_btn = self.create_category_header(self.scroll_panel, category)
 
-        # Get the pane window for the list
-        pane_window = collapsible_pane.GetPane()
-
-        listctrl = MasksListCtrlPanel(pane_window, size=wx.Size(256, 100))
+        # content panel that will be shown/hidden manually
+        content_panel = wx.Panel(self.scroll_panel)
+        listctrl = MasksListCtrlPanel(content_panel, size=wx.Size(256, 100))
         listctrl.category = category
-        pane_sizer = wx.BoxSizer(wx.VERTICAL)
-        pane_sizer.Add(listctrl, 1, wx.EXPAND)
-        pane_window.SetSizer(pane_sizer)
+        content_sizer = wx.BoxSizer(wx.VERTICAL)
+        content_sizer.Add(listctrl, 1, wx.EXPAND)
+        content_panel.SetSizer(content_sizer)
 
         self.categories[category] = {
-            "pane": collapsible_pane,
+            "header": header_panel,
+            "content": content_panel,
+            "expand_btn": expand_btn,
             "list": listctrl,
+            "expanded": True,
         }
 
-        self.scroll_sizer.Add(collapsible_pane, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 2)
-        collapsible_pane.Expand()
+        self.scroll_sizer.Add(header_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 2)
+        self.scroll_sizer.Add(content_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 2)
 
         return listctrl
 
+    def toggle_category_expansion(self, category):
+        if category not in self.categories:
+            return
+
+        category_info = self.categories[category]
+        content_panel = category_info["content"]
+        expand_btn = category_info["expand_btn"]
+        is_expanded = category_info["expanded"]
+
+        if is_expanded:
+            content_panel.Hide()
+            expand_btn.SetLabel("▶")
+            self.categories[category]["expanded"] = False
+        else:
+            content_panel.Show()
+            expand_btn.SetLabel("▼")
+            self.categories[category]["expanded"] = True
+
+        self.update_scroll_layout()
+
     def update_selection_state(self, category=None):
         """Update the global selection state and notify other components"""
-        # Collect all selected indices across all categories
         all_selected_indices = []
         for category_info in self.categories.values():
             listctrl = category_info["list"]
             selected = listctrl.GetSelected()
             all_selected_indices.extend(selected)
 
-        # Notify slice controller about selection changes
+        # notify slice controller about selection changes
         Publisher.sendMessage("Update selected masks list", indices=all_selected_indices)
 
-        # Notify task panel about batch mode state for "Create All Surfaces" button
+        # notify task panel about batch mode state for "Create All Surfaces" button
         is_batch_mode = len(all_selected_indices) > 1
         Publisher.sendMessage("Select all masks changed", select_all_active=is_batch_mode)
 
@@ -908,12 +941,12 @@ class SurfacePage(wx.Panel):
         header_panel = wx.Panel(parent)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        expand_btn = wx.Button(header_panel, size=(20, 20), label="▼")
+        expand_btn.Bind(wx.EVT_BUTTON, lambda evt: self.toggle_category_expansion(category))
+
         # Category label
         category_label = wx.StaticText(header_panel, label=category)
         category_label.SetFont(category_label.GetFont().Bold())
-
-        # Spacer to push controls to the right
-        header_sizer.Add(category_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
 
         # Create image list for visibility icons
         visibility_imagelist = wx.ImageList(16, 16)
@@ -937,53 +970,75 @@ class SurfacePage(wx.Panel):
             wx.EVT_CHECKBOX, lambda evt: self.on_category_select_all(category, evt.IsChecked())
         )
 
-        # Add controls to header
+        header_sizer.Add(expand_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 2)
+        header_sizer.Add(category_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
         header_sizer.Add(visibility_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
         header_sizer.Add(select_all_cb, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
 
         header_panel.SetSizer(header_sizer)
 
-        return header_panel, visibility_btn, select_all_cb, invisible_bitmap, visible_bitmap
+        return (
+            header_panel,
+            expand_btn,
+            visibility_btn,
+            select_all_cb,
+            invisible_bitmap,
+            visible_bitmap,
+        )
 
     def create_category(self, category):
-        # Create CollapsiblePane
-        collapsible_pane = wx.CollapsiblePane(
-            self.scroll_panel,
-            label="",  # We'll use custom header
-            style=wx.CP_DEFAULT_STYLE | wx.CP_NO_TLW_RESIZE,
-        )
-        collapsible_pane.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.OnPaneChanged)
+        (
+            header_panel,
+            expand_btn,
+            visibility_btn,
+            select_all_cb,
+            invisible_bitmap,
+            visible_bitmap,
+        ) = self.create_category_header(self.scroll_panel, category)
 
-        # Create custom header with controls
-        header_panel, visibility_btn, select_all_cb, invisible_bitmap, visible_bitmap = (
-            self.create_category_header(self.scroll_panel, category)
-        )
+        content_panel = wx.Panel(self.scroll_panel)
+        listctrl = SurfacesListCtrlPanel(content_panel, size=wx.Size(256, 100), category=category)
+        content_sizer = wx.BoxSizer(wx.VERTICAL)
+        content_sizer.Add(listctrl, 1, wx.EXPAND)
+        content_panel.SetSizer(content_sizer)
 
-        # Get the pane window for the list
-        pane_window = collapsible_pane.GetPane()
-
-        listctrl = SurfacesListCtrlPanel(pane_window, size=wx.Size(256, 100), category=category)
-        pane_sizer = wx.BoxSizer(wx.VERTICAL)
-        pane_sizer.Add(listctrl, 1, wx.EXPAND)
-        pane_window.SetSizer(pane_sizer)
-
-        # Store references including the new controls
+        # Store references
         self.categories[category] = {
-            "pane": collapsible_pane,
             "header": header_panel,
+            "content": content_panel,
+            "expand_btn": expand_btn,
             "visibility_btn": visibility_btn,
             "select_all_cb": select_all_cb,
             "list": listctrl,
             "invisible_bitmap": invisible_bitmap,
             "visible_bitmap": visible_bitmap,
+            "expanded": True,
         }
 
-        # Add header and collapsible pane to scroll sizer
         self.scroll_sizer.Add(header_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 2)
-        self.scroll_sizer.Add(collapsible_pane, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 2)
-        collapsible_pane.Expand()
+        self.scroll_sizer.Add(content_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 2)
 
         return listctrl
+
+    def toggle_category_expansion(self, category):
+        if category not in self.categories:
+            return
+
+        category_info = self.categories[category]
+        content_panel = category_info["content"]
+        expand_btn = category_info["expand_btn"]
+        is_expanded = category_info["expanded"]
+
+        if is_expanded:
+            content_panel.Hide()
+            expand_btn.SetLabel("▶")
+            self.categories[category]["expanded"] = False
+        else:
+            content_panel.Show()
+            expand_btn.SetLabel("▼")
+            self.categories[category]["expanded"] = True
+
+        self.update_scroll_layout()
 
     def on_category_visibility_toggle(self, category):
         """Toggle visibility for all surfaces in the given category"""
