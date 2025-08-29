@@ -599,16 +599,23 @@ class ButtonControlPanel(wx.Panel):
         dialog.Destroy()
 
     def OnRemove(self):
-        focused_list = self.FindFocus()
-        if isinstance(focused_list, MasksListCtrlPanel):
-            focused_list.RemoveMasks()
+        all_selected_indices = []
+        for category_info in self.parent.categories.values():
+            listctrl = category_info["list"]
+            selected = listctrl.GetSelected()
+            all_selected_indices.extend(selected)
+            if selected:
+                listctrl.RemoveMasks(selected)
 
     def OnDuplicate(self):
-        focused_list = self.FindFocus()
-        if isinstance(focused_list, MasksListCtrlPanel):
-            selected_items = focused_list.GetSelected()
-        if selected_items:
-            Publisher.sendMessage("Duplicate masks", mask_indexes=selected_items)
+        all_selected_indices = []
+        for category_info in self.parent.categories.values():
+            listctrl = category_info["list"]
+            selected = listctrl.GetSelected()
+            all_selected_indices.extend(selected)
+
+        if all_selected_indices:
+            Publisher.sendMessage("Duplicate masks", mask_indexes=all_selected_indices)
         else:
             dlg.MaskSelectionRequiredForDuplication()
 
@@ -817,11 +824,12 @@ class MasksListCtrlPanel(InvListCtrl):
         elif keycode == wx.WXK_DELETE:
             self.RemoveMasks()
 
-    def RemoveMasks(self):
+    def RemoveMasks(self, selected_items=None):
         """
         Remove selected items.
         """
-        selected_items = self.GetSelected()
+        if not selected_items:
+            selected_items = self.GetSelected()
 
         if selected_items:
             Publisher.sendMessage("Remove masks", mask_indexes=selected_items)
@@ -1360,16 +1368,23 @@ class SurfaceButtonControlPanel(wx.Panel):
         dialog.Destroy()
 
     def OnRemove(self):
-        focused_list = self.FindFocus()
-        if isinstance(focused_list, SurfacesListCtrlPanel):
-            focused_list.RemoveSurfaces()
+        all_selected_indices = []
+        for category_info in self.parent.categories.values():
+            listctrl = category_info["list"]
+            selected = listctrl.GetSelected()
+            all_selected_indices.extend(selected)
+            if selected:
+                listctrl.RemoveSurfaces(selected)
 
     def OnDuplicate(self):
-        focused_list = self.FindFocus()
-        if isinstance(focused_list, SurfacesListCtrlPanel):
-            selected_items = focused_list.GetSelected()
-        if selected_items:
-            Publisher.sendMessage("Duplicate surfaces", surface_indexes=selected_items)
+        all_selected_indices = []
+        for category_info in self.parent.categories.values():
+            listctrl = category_info["list"]
+            selected = listctrl.GetSelected()
+            all_selected_indices.extend(selected)
+
+        if all_selected_indices:
+            Publisher.sendMessage("Duplicate surfaces", surface_indexes=all_selected_indices)
         else:
             dlg.SurfaceSelectionRequiredForDuplication()
 
@@ -1534,11 +1549,13 @@ class SurfacesListCtrlPanel(InvListCtrl):
         elif keycode == wx.WXK_DELETE:
             self.RemoveSurfaces()
 
-    def RemoveSurfaces(self):
+    def RemoveSurfaces(self, selected_items=None):
         """
         Remove item given its index.
         """
-        selected_items = self.GetSelected()
+        if not selected_items:
+            selected_items = self.GetSelected()
+
         if selected_items:
             Publisher.sendMessage("Remove surfaces", surface_indexes=selected_items)
             Publisher.sendMessage("Repopulate surfaces")
