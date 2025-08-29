@@ -239,7 +239,7 @@ class MaskPage(wx.Panel):
         Publisher.subscribe(self.__hide_current_mask, "Hide current mask")
         Publisher.subscribe(self.__show_current_mask, "Show current mask")
         Publisher.subscribe(self.update_current_colour, "Set GUI items colour")
-        Publisher.subscribe(self.update_select_all_checkbox, "Update mask select all checkbox")
+        Publisher.subscribe(self.update_selection_state, "Update mask selection state")
 
     def __init_gui(self):
         # button control with tools (eg. remove, add new, etc)
@@ -257,61 +257,14 @@ class MaskPage(wx.Panel):
 
         self.create_category("General")
 
-    def create_category_header(self, parent, category):
-        """Create header panel with category controls"""
-        header_panel = wx.Panel(parent)
-        header_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        # Category label
-        category_label = wx.StaticText(header_panel, label=category)
-        category_label.SetFont(category_label.GetFont().Bold())
-
-        # Spacer to push controls to the right
-        header_sizer.Add(category_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
-
-        # Create image list for visibility icons
-        visibility_imagelist = wx.ImageList(16, 16)
-        invisible_image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
-        invisible_bitmap = wx.Bitmap(invisible_image.Scale(16, 16))
-        visible_image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
-        visible_bitmap = wx.Bitmap(visible_image.Scale(16, 16))
-        visibility_imagelist.Add(invisible_bitmap)
-        visibility_imagelist.Add(visible_bitmap)
-
-        # Visibility toggle button with icon
-        visibility_btn = wx.BitmapButton(header_panel, size=(24, 24))
-        visibility_btn.SetBitmap(visible_bitmap)
-        visibility_btn.SetToolTip("Toggle visibility for all masks in this category")
-        visibility_btn.Bind(wx.EVT_BUTTON, lambda evt: self.on_category_visibility_toggle(category))
-
-        # Select all checkbox
-        select_all_cb = wx.CheckBox(header_panel, label="", style=wx.CHK_3STATE)
-        select_all_cb.SetToolTip("Select/Unselect all masks in this category")
-        select_all_cb.Bind(
-            wx.EVT_CHECKBOX, lambda evt: self.on_category_select_all(category, evt.IsChecked())
-        )
-
-        # Add controls to header
-        header_sizer.Add(visibility_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
-        header_sizer.Add(select_all_cb, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-
-        header_panel.SetSizer(header_sizer)
-
-        return header_panel, visibility_btn, select_all_cb, invisible_bitmap, visible_bitmap
-
     def create_category(self, category):
-        # Create CollapsiblePane
+        # Create CollapsiblePane with built-in category label
         collapsible_pane = wx.CollapsiblePane(
             self.scroll_panel,
-            label="",  # We'll use custom header
+            label=category,  # Use the built-in label functionality
             style=wx.CP_DEFAULT_STYLE | wx.CP_NO_TLW_RESIZE,
         )
         collapsible_pane.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.OnPaneChanged)
-
-        # Create custom header with controls
-        header_panel, visibility_btn, select_all_cb, invisible_bitmap, visible_bitmap = (
-            self.create_category_header(self.scroll_panel, category)
-        )
 
         # Get the pane window for the list
         pane_window = collapsible_pane.GetPane()
@@ -324,97 +277,27 @@ class MaskPage(wx.Panel):
 
         self.categories[category] = {
             "pane": collapsible_pane,
-            "header": header_panel,
-            "visibility_btn": visibility_btn,
-            "select_all_cb": select_all_cb,
             "list": listctrl,
-            "invisible_bitmap": invisible_bitmap,
-            "visible_bitmap": visible_bitmap,
         }
 
-        self.scroll_sizer.Add(header_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 2)
         self.scroll_sizer.Add(collapsible_pane, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 2)
         collapsible_pane.Expand()
 
         return listctrl
 
-    def on_category_visibility_toggle(self, category):
-        """Toggle visibility for all masks in the given category"""
-        if category not in self.categories:
-            return
-
-        listctrl = self.categories[category]["list"]
-        visibility_btn = self.categories[category]["visibility_btn"]
-        invisible_bitmap = self.categories[category]["invisible_bitmap"]
-        visible_bitmap = self.categories[category]["visible_bitmap"]
-
-        is_visible = False
-        for local_pos in listctrl.mask_list_index.values():
-            try:
-                item = listctrl.GetItem(local_pos, 0)
-                if item.GetImage() == 1:  # 1 = visible
-                    is_visible = True
-                    break
-            except wx.wxAssertionError:
-                continue
-
-        # toggle visibility for all masks in this category, if any is visible, hide all, otherwise show all
-        for global_mask_id, local_pos in listctrl.mask_list_index.items():
-            new_visibility = not is_visible
-            listctrl.SetItemImage(local_pos, int(new_visibility))
-            Publisher.sendMessage("Show mask", index=global_mask_id, value=new_visibility)
-
-        if new_visibility:
-            visibility_btn.SetBitmap(visible_bitmap)
-        else:
-            visibility_btn.SetBitmap(invisible_bitmap)
-
-    def on_category_select_all(self, category, select_all):
-        """Select or unselect all masks in the given category"""
-        if category not in self.categories:
-            return
-
-        listctrl = self.categories[category]["list"]
-
-        for global_mask_id, local_pos in listctrl.mask_list_index.items():
-            if select_all:
-                listctrl.SetItemState(local_pos, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
-            else:
-                listctrl.SetItemState(local_pos, 0, wx.LIST_STATE_SELECTED)
-
-        self.update_select_all_checkbox(category)
-
-    def update_select_all_checkbox(self, category):
-        """Update the select all checkbox state based on current selection"""
-        if category not in self.categories:
-            return
-
-        listctrl = self.categories[category]["list"]
-        select_all_cb = self.categories[category]["select_all_cb"]
-
-        total_items = listctrl.GetItemCount()
-
-        if total_items == 0:
-            select_all_cb.Set3StateValue(wx.CHK_UNCHECKED)
-        else:
-            selected_items = len(listctrl.GetSelected())
-
-            if selected_items == 0:
-                select_all_cb.Set3StateValue(wx.CHK_UNCHECKED)
-            elif selected_items == total_items:
-                select_all_cb.Set3StateValue(wx.CHK_CHECKED)
-            else:
-                select_all_cb.Set3StateValue(wx.CHK_UNDETERMINED)
-
-        # check across all categories to determine the global state
+    def update_selection_state(self, category=None):
+        """Update the global selection state and notify other components"""
+        # Collect all selected indices across all categories
         all_selected_indices = []
         for category_info in self.categories.values():
             listctrl = category_info["list"]
             selected = listctrl.GetSelected()
             all_selected_indices.extend(selected)
 
+        # Notify slice controller about selection changes
         Publisher.sendMessage("Update selected masks list", indices=all_selected_indices)
 
+        # Notify task panel about batch mode state for "Create All Surfaces" button
         is_batch_mode = len(all_selected_indices) > 1
         Publisher.sendMessage("Select all masks changed", select_all_active=is_batch_mode)
 
@@ -426,7 +309,7 @@ class MaskPage(wx.Panel):
         self.categories[category]["list"].AddMask(mask)
         self.update_scroll_layout()
 
-        self.update_select_all_checkbox(category)
+        self.update_selection_state(category)
 
     def RefreshMasks(self, clear_project=False):
         """Destroy all components and clear sizer"""
@@ -499,7 +382,7 @@ class MaskPage(wx.Panel):
             selected_listctrl.OnChangeCurrentMask(local_idx_to_select)
 
             if selected_category:
-                self.update_select_all_checkbox(selected_category)
+                self.update_selection_state(selected_category)
 
     def EditMaskThreshold(self, index, threshold_range):
         """Edit mask threshold in the appropriate category list"""
@@ -745,7 +628,7 @@ class MasksListCtrlPanel(InvListCtrl):
     def on_selection_changed(self, evt):
         """Handle selection changes in the mask list"""
         if hasattr(self, "category"):
-            Publisher.sendMessage("Update mask select all checkbox", category=self.category)
+            Publisher.sendMessage("Update mask selection state", category=self.category)
         else:
             print("Selection changed but 'category' attribute not found on self.")
         if evt:
