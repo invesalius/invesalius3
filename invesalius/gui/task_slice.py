@@ -199,11 +199,19 @@ class InnerTaskPanel(scrolled.ScrolledPanel):
 
     def OnButtonNextTask(self, evt):
         if self.select_all_active:
-            surface_parameters_template = self.get_current_surface_parameters()
-            Publisher.sendMessage(
-                "Create surfaces for all masks",
-                surface_parameters_template=surface_parameters_template,
-            )
+            dlgs = dlg.SurfaceDialog()
+            if dlgs.ShowModal() == wx.ID_OK:
+                algorithm = dlgs.GetAlgorithmSelected()
+                options = dlgs.GetOptions()
+                surface_parameters_template = self.get_current_surface_parameters()
+                surface_parameters_template["method"]["algorithm"] = algorithm
+                surface_parameters_template["method"]["options"] = options
+
+                Publisher.sendMessage(
+                    "Create surfaces for all masks",
+                    surface_template=surface_parameters_template,
+                )
+            dlgs.Destroy()
             return
 
         overwrite = self.check_box.IsChecked()
