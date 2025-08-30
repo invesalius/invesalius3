@@ -29,7 +29,6 @@ from typing import Any, Literal
 import nibabel as nib
 import numpy as np
 import torch
-import yacs.config
 
 from . import data_process as dp
 from . import misc
@@ -346,7 +345,7 @@ class Pipeline:
     def set_up_model_params(
         self,
         plane: misc.Plane,
-        cfg: "yacs.config.CfgNode",
+        cfg: misc.Config,
         ckpt: "torch.Tensor",
     ) -> None:
         """

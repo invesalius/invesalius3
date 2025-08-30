@@ -27,7 +27,6 @@ import numpy as np
 from numpy import typing as npt
 from pandas import DataFrame
 from torch.utils.data import DataLoader
-from torchvision import transforms
 
 try:
     import torch
@@ -52,6 +51,17 @@ from .data_process import (
     apply_sagittal_mapping,
 )
 from .misc import Config
+
+
+class Compose:
+    def __init__(self, transforms_list):
+        self.transforms = transforms_list
+
+    def __call__(self, img):
+        for transform in self.transforms:
+            img = transform(img)
+        return img
+
 
 logger = logging.getLogger(__name__)
 
@@ -339,7 +349,7 @@ class TinyGradInference:
             orig_data,
             orig_zoom,
             self.cfg,
-            transforms=transforms.Compose([ToTensorTest()]),
+            transforms=Compose([ToTensorTest()]),
         )
 
         test_data_loader = DataLoader(
@@ -553,7 +563,7 @@ class PytorchInference:
             orig_data,
             orig_zoom,
             self.cfg,
-            transforms=transforms.Compose([ToTensorTest()]),
+            transforms=Compose([ToTensorTest()]),
         )
 
         test_data_loader = DataLoader(
