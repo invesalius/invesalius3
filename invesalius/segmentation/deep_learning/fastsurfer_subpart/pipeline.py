@@ -255,6 +255,7 @@ class Pipeline:
         image_name: str,
         orig_data: np.ndarray,
         zoom: np.ndarray | Sequence[int],
+        progress_callback: callable = None,
     ) -> np.ndarray:
         """
         Run and get prediction.
@@ -267,6 +268,8 @@ class Pipeline:
             Original image data.
         zoom : np.ndarray, tuple
             Original zoom.
+        progress_callback : callable, optional
+            Callback function to report progress. Should accept (current_step, total_steps).
 
         """
         shape = orig_data.shape + (self.num_classes,)
@@ -279,17 +282,27 @@ class Pipeline:
         pred_prob = torch.zeros(shape, **kwargs)
 
         # inference and view aggregation
-        for plane, model in self.models.items():
+        for i, (plane, model) in enumerate(self.models.items()):
             LOGGER.info(f"Run {plane} prediction")
             self.current_plane = plane
             # pred_prob is updated inplace to conserve memory
             pred_prob = model.run(pred_prob, image_name, orig_data, zoom, out=pred_prob)
+            if progress_callback:
+                progress_callback(i + 1, 3 + 2)
 
         # Get hard predictions
         pred_classes = torch.argmax(pred_prob, 3)
         del pred_prob
+
+        if progress_callback:
+            progress_callback(3 + 1, 3 + 2)
+
         pred_classes = dp.aparc_aseg_to_label(pred_classes, self.labels)
         pred_classes = dp.split_cortex_labels(pred_classes.cpu().numpy())
+
+        if progress_callback:
+            progress_callback(3 + 2, 3 + 2)
+
         return pred_classes
 
     def save_img(
@@ -402,6 +415,7 @@ def run_pipeline(
     threads: int = -1,
     conform_to_1mm_threshold: float = 0.95,
     backend: str = "pytorch",
+    progress_callback: callable = None,
     **kwargs,
 ) -> Literal[0] | str:
     if len(kwargs) > 0:
@@ -462,7 +476,7 @@ def run_pipeline(
         # Run model
         try:
             pred_data = pipeline.get_prediction(
-                subject.orig_name, data_array, orig_img.header.get_zooms()
+                subject.orig_name, data_array, orig_img.header.get_zooms(), progress_callback
             )
             futures.append(
                 pipeline.async_save_img(subject.segfile, pred_data, orig_img, dtype=np.int16)

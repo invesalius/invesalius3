@@ -623,6 +623,14 @@ class SubpartSegmentProcess(SegmentProcess):
             try:
                 print("Starting subpart prediction pipeline...")
 
+                comm_array = np.memmap(
+                    self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
+                )
+
+                def progress_callback(current_step, total_steps):
+                    progress = current_step / total_steps
+                    comm_array[0] = progress * 0.9
+
                 sid = "subject"
                 pred_name = "mri/aparc.DKTatlas+aseg.deep.mgz"
 
@@ -640,6 +648,7 @@ class SubpartSegmentProcess(SegmentProcess):
                     "batch_size": 6,
                     "threads": 4,
                     "backend": self.backend.lower(),
+                    "progress_callback": progress_callback,
                 }
                 return_code = run_pipeline(**args)
 
@@ -654,22 +663,16 @@ class SubpartSegmentProcess(SegmentProcess):
                         f"Final segmentation file not found at {segmentation_file}"
                     )
 
-                print("Loading original image and final segmentation for resampling...")
+                comm_array[0] = 0.92
                 original_nifti_img = nib.load(str(temp_img_file))
                 conformed_segmentation_img = nib.load(str(segmentation_file))
 
-                print(
-                    f"Original image shape: {original_nifti_img.shape}, affine:\n{original_nifti_img.affine}"
-                )
-                print(
-                    f"Conformed segmentation shape: {conformed_segmentation_img.shape}, affine:\n{conformed_segmentation_img.affine}"
-                )
-
+                comm_array[0] = 0.95
                 resampled_segmentation_img = nibabel.processing.resample_from_to(
                     conformed_segmentation_img, original_nifti_img, order=0
                 )
-                print("Resampling done")
 
+                comm_array[0] = 0.98
                 final_segmentation = np.asarray(resampled_segmentation_img.dataobj)
                 final_segmentation = np.fliplr(np.swapaxes(final_segmentation, 0, 2))
 
@@ -688,9 +691,6 @@ class SubpartSegmentProcess(SegmentProcess):
 
                 probability_array[:] = final_segmentation.astype(np.float32)
 
-                comm_array = np.memmap(
-                    self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
-                )
                 comm_array[0] = 1.0
 
             finally:
