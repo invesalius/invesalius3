@@ -12,7 +12,8 @@ python-gdcm==3.0.26
 vtk==9.3.0
 
 # Machine Learning
-pytorch-cuda==12.4
+torch>=2.3.1
+pytorch-cuda==12.4 ; sys_platform == "windows" or sys_platform == "linux"
 
 # Utilities
 Cython==3.0.10
