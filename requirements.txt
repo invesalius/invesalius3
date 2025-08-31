@@ -8,7 +8,7 @@ Pillow==10.3.0
 imageio==2.34.2
 nibabel==5.2.1
 scikit-image==0.24.0
-python-gdcm==3.0.24
+python-gdcm==3.0.26
 vtk==9.3.0
 
 # Machine Learning
