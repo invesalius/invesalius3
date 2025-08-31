@@ -236,8 +236,8 @@ class MaskPage(wx.Panel):
         Publisher.subscribe(self.EditMaskThreshold, "Set mask threshold in notebook")
         Publisher.subscribe(self.EditMaskColour, "Change mask colour in notebook")
         Publisher.subscribe(self.OnChangeCurrentMask, "Change mask selected")
-        Publisher.subscribe(self.__hide_current_mask, "Hide current mask")
-        Publisher.subscribe(self.__show_current_mask, "Show current mask")
+        Publisher.subscribe(self.hide_current_mask, "Hide current mask")
+        Publisher.subscribe(self.show_current_mask, "Show current mask")
         Publisher.subscribe(self.update_current_colour, "Set GUI items colour")
         Publisher.subscribe(self.update_selection_state, "Update mask selection state")
 
@@ -377,19 +377,19 @@ class MaskPage(wx.Panel):
             if hasattr(listctrl, "current_index") and listctrl.current_index >= 0:
                 listctrl.update_current_colour(colour)
 
-    def __hide_current_mask(self):
+    def hide_current_mask(self):
         """Handle hiding the current mask in the respective category list"""
         for category_info in self.categories.values():
             listctrl = category_info["list"]
             if hasattr(listctrl, "current_index") and listctrl.current_index >= 0:
-                listctrl.__hide_current_mask()
+                listctrl.hide_current_mask()
 
-    def __show_current_mask(self):
+    def show_current_mask(self):
         """Handle showing the current mask in the respective category list"""
         for category_info in self.categories.values():
             listctrl = category_info["list"]
             if hasattr(listctrl, "current_index") and listctrl.current_index >= 0:
-                listctrl.__show_current_mask()
+                listctrl.show_current_mask()
 
     def OnChangeCurrentMask(self, index):
         """Handle mask selection change in the appropriate category list"""
@@ -768,11 +768,11 @@ class MasksListCtrlPanel(InvListCtrl):
             if local_idx != index:
                 self.SetItemImage(local_idx, 0)
 
-    def __hide_current_mask(self):
+    def hide_current_mask(self):
         if self.mask_list_index:
             self.SetItemImage(self.current_index, 0)
 
-    def __show_current_mask(self):
+    def show_current_mask(self):
         if self.mask_list_index:
             self.SetItemImage(self.current_index, 1)
 
@@ -818,8 +818,6 @@ class MasksListCtrlPanel(InvListCtrl):
         evt.Skip()
 
     def OnCheckItem(self, index, flag):
-        print(f" OnCheckItem called with index: {index}, flag: {flag}")
-
         global_idx = -1
         for g_id, l_id in self.mask_list_index.items():
             if l_id == index:
@@ -839,7 +837,6 @@ class MasksListCtrlPanel(InvListCtrl):
         Publisher.sendMessage("Show mask", index=global_idx, value=flag)
 
         # Also trigger selection update since this affects the overall selection state
-        print(" OnCheckItem: triggering selection update")
         self.on_selection_changed(None)
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
