@@ -32,7 +32,6 @@ dependencies = [
     "tinygrad==0.10.2",
     "pytorch-cuda>=12.4",
     "vtk==9.3.0",
-    "tdqm==4.65.0",
     "wxpython==4.2.2",
 ]
 license = { file = "LICENSE.txt" }

@@ -18,7 +18,6 @@ dependencies:
   - mido==1.2.10
   - nest-asyncio==1.6.0
   - pytorch-cuda==12.4
-  - tdqm
   - pip
   - pip:
     - matplotlib==3.9.0

@@ -274,9 +274,6 @@ class TinyGradInference:
         if not TORCH_AVAILABLE:
             raise ImportError("PyTorch is required for sagittal mapping, even in the ONNX backend.")
 
-        from tqdm import tqdm
-        from tqdm.contrib.logging import logging_redirect_tqdm
-
         start_index = 0
         plane = self.cfg.DATA.PLANE
         index_of_current_plane = self.permute_order[plane].index(0)
@@ -287,47 +284,38 @@ class TinyGradInference:
         if out is None:
             out = init_pred.detach().clone()
 
-        log_batch_idx = None
-        with logging_redirect_tqdm():
-            try:
-                for batch_idx, batch in tqdm(
-                    enumerate(val_loader), total=len(val_loader), unit="batch"
-                ):
-                    log_batch_idx = batch_idx
-                    images = batch["image"]
-                    if hasattr(images, "numpy"):
-                        images = images.numpy()
+        try:
+            for batch_idx, batch in enumerate(val_loader):
+                images = batch["image"]
+                if hasattr(images, "numpy"):
+                    images = images.numpy()
 
-                    # predict the current batch, outputs numpy array
-                    pred = self.predict_batch(images)
-                    batch_size = pred.shape[0]
-                    end_index = start_index + batch_size
+                # predict the current batch, outputs numpy array
+                pred = self.predict_batch(images)
+                batch_size = pred.shape[0]
+                end_index = start_index + batch_size
 
-                    # convert to tensor for mapping and aggregation
-                    pred = torch.from_numpy(pred)
+                # convert to tensor for mapping and aggregation
+                pred = torch.from_numpy(pred)
 
-                    # check if we need a special mapping (e.g. as for sagittal)
-                    if plane == "sagittal":
-                        pred = apply_sagittal_mapping(
-                            pred, num_classes=self.cfg.MODEL.NUM_CLASSES, lut=self.lut
-                        )
+                # check if we need a special mapping (e.g. as for sagittal)
+                if plane == "sagittal":
+                    pred = apply_sagittal_mapping(
+                        pred, num_classes=self.cfg.MODEL.NUM_CLASSES, lut=self.lut
+                    )
 
-                    # permute the prediction into the out slice order
-                    pred = pred.permute(*self.permute_order[plane]).to(out.device)
+                # permute the prediction into the out slice order
+                pred = pred.permute(*self.permute_order[plane]).to(out.device)
 
-                    # cut prediction to the image size
-                    pred = pred[pred_ii]
+                # cut prediction to the image size
+                pred = pred[pred_ii]
 
-                    # add prediction logits into the output
-                    ii[index_of_current_plane] = slice(start_index, end_index)
-                    out[tuple(ii)].add_(pred, alpha=self.alpha.get(plane, 0.4))
-                    start_index = end_index
-
-            except Exception:
-                logger.exception(f"Exception in batch {log_batch_idx} of {plane} inference.")
-                raise
-            else:
-                logger.info(f"Inference on {batch_idx + 1} batches for {plane} successful")
+                # add prediction logits into the output
+                ii[index_of_current_plane] = slice(start_index, end_index)
+                out[tuple(ii)].add_(pred, alpha=self.alpha.get(plane, 0.4))
+                start_index = end_index
+        except Exception:
+            raise
 
         return out
 
@@ -494,55 +482,43 @@ class PytorchInference:
         ii = [slice(None) for _ in range(4)]
         pred_ii = tuple(slice(i) for i in target_shape[:3])
 
-        from tqdm import tqdm
-        from tqdm.contrib.logging import logging_redirect_tqdm
-
         if out is None:
             out = init_pred.detach().clone()
 
-        log_batch_idx = None
-        with logging_redirect_tqdm():
-            try:
-                for batch_idx, batch in tqdm(
-                    enumerate(val_loader), total=len(val_loader), unit="batch"
-                ):
-                    log_batch_idx = batch_idx
-                    # move data to the model device
-                    images, scale_factors = (
-                        batch["image"].to(self.device),
-                        batch["scale_factor"].to(self.device),
+        try:
+            for batch_idx, batch in enumerate(val_loader):
+                # move data to the model device
+                images, scale_factors = (
+                    batch["image"].to(self.device),
+                    batch["scale_factor"].to(self.device),
+                )
+
+                # predict the current batch, outputs logits
+                if self.is_jit_model:
+                    pred = self.model(images, scale_factors)
+                else:
+                    pred = self.model(images, scale_factors, out_scale)
+                batch_size = pred.shape[0]
+                end_index = start_index + batch_size
+
+                # check if we need a special mapping (e.g. as for sagittal)
+                if plane == "sagittal":
+                    pred = apply_sagittal_mapping(
+                        pred, num_classes=self.cfg.MODEL.NUM_CLASSES, lut=self.lut
                     )
 
-                    # predict the current batch, outputs logits
-                    if self.is_jit_model:
-                        pred = self.model(images, scale_factors)
-                    else:
-                        pred = self.model(images, scale_factors, out_scale)
-                    batch_size = pred.shape[0]
-                    end_index = start_index + batch_size
+                # permute the prediction into the out slice order
+                pred = pred.permute(*self.permute_order[plane]).to(out.device)
 
-                    # check if we need a special mapping (e.g. as for sagittal)
-                    if plane == "sagittal":
-                        pred = apply_sagittal_mapping(
-                            pred, num_classes=self.cfg.MODEL.NUM_CLASSES, lut=self.lut
-                        )
+                # cut prediction to the image size
+                pred = pred[pred_ii]
 
-                    # permute the prediction into the out slice order
-                    pred = pred.permute(*self.permute_order[plane]).to(out.device)
-
-                    # cut prediction to the image size
-                    pred = pred[pred_ii]
-
-                    # add prediction logits into the output
-                    ii[index_of_current_plane] = slice(start_index, end_index)
-                    out[tuple(ii)].add_(pred, alpha=self.alpha.get(plane, 0.4))
-                    start_index = end_index
-
-            except Exception:
-                logger.exception(f"Exception in batch {log_batch_idx} of {plane} inference.")
-                raise
-            else:
-                logger.info(f"Inference on {batch_idx + 1} batches for {plane} successful")
+                # add prediction logits into the output
+                ii[index_of_current_plane] = slice(start_index, end_index)
+                out[tuple(ii)].add_(pred, alpha=self.alpha.get(plane, 0.4))
+                start_index = end_index
+        except Exception:
+            raise
 
         return out
 

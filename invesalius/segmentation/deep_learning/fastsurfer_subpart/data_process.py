@@ -414,16 +414,13 @@ class ProcessDataThickSlices(Dataset):
         if self.plane == "sagittal":
             orig_data = transform_sagittal(orig_data)
             self.zoom = orig_zoom[::-1][:2]
-            LOGGER.info(f"Loading Sagittal with input voxelsize {self.zoom}")
 
         elif self.plane == "axial":
             orig_data = transform_axial(orig_data)
             self.zoom = orig_zoom[::-1][:2]
-            LOGGER.info(f"Loading Axial with input voxelsize {self.zoom}")
 
         else:
             self.zoom = orig_zoom[:2]
-            LOGGER.info(f"Loading Coronal with input voxelsize {self.zoom}")
 
         # Create thick slices
         orig_thick = get_thick_slices(orig_data, self.slice_thickness)

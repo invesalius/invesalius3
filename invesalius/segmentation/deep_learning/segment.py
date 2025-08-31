@@ -704,7 +704,7 @@ class SubpartSegmentProcess(SegmentProcess):
 
         # If no specific mask types selected, create a single whole brain mask
         if not self.selected_mask_types:
-            print("apply_segment_threshold: No specific masks selected, creating whole brain mask")
+            print("No specific masks selected, creating whole brain mask")
             mask_name = new_name_by_pattern("whole_brain")
             mask = slc.Slice().create_new_mask(name=mask_name, add_to_project=True)
             mask.was_edited = True

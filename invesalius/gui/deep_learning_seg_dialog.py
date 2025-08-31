@@ -339,7 +339,6 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.Close()
 
     def AfterSegment(self):
-        print("Segmentation completed, starting post-processing...")
         self.segmented = True
         self.btn_close.Enable()
         self.btn_stop.Disable()
