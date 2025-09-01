@@ -134,8 +134,9 @@ class Robot:
             self.is_robot_connected = True
 
         if self.is_robot_connected:
-            Publisher.sendMessage("Enable move away button", enabled=True)
-            Publisher.sendMessage("Enable free drive button", enabled=True)
+            Publisher.sendMessage("Enable move away button", enabled=True, robot_ID=robot_ID)
+            Publisher.sendMessage("Enable free drive button", enabled=True, robot_ID=robot_ID)
+            Publisher.sendMessage("Enable clean errors button", enabled=True, robot_ID=robot_ID)
         else:
             self.is_robot_connected = False
 

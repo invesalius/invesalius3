@@ -1835,6 +1835,7 @@ class ControlPanel(wx.Panel):
     def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
 
+        # deps
         self.navigation = nav_hub.navigation
         self.tracker = nav_hub.tracker
         self.robot = nav_hub.robot
@@ -1842,6 +1843,7 @@ class ControlPanel(wx.Panel):
         self.image = nav_hub.image
         self.mep_visualizer = nav_hub.mep_visualizer
 
+        # state
         self.nav_status = False
         self.target_mode = False
 
@@ -1993,9 +1995,6 @@ class ControlPanel(wx.Panel):
         self.target_mode_button = target_mode_button
         self.UpdateTargetButton()
 
-        robot_name_lbl = wx.StaticText(self, -1, _(f"{self.robot.GetActive().robot_name}"))
-        self.robot_name_lbl = robot_name_lbl
-
         # Toggle button for simultaneous multicoil
         tooltip = _("Simultaneous multicoil mode")
         BMP_SIMULTANEOUS = wx.Bitmap(
@@ -2073,6 +2072,25 @@ class ControlPanel(wx.Panel):
         )
         self.robot_free_drive_button = robot_free_drive_button
 
+        # Toggle button for enable/disable free drive robot mode
+        tooltip = _("Reset robot errors")
+        BMP_FREE_DRIVE = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("robot_free_drive.png")), wx.BITMAP_TYPE_PNG
+        )
+        robot_clean_error_button = wx.ToggleButton(
+            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        robot_clean_error_button.SetBackgroundColour(GREY_COLOR)
+        robot_clean_error_button.SetBitmap(BMP_FREE_DRIVE)
+        robot_clean_error_button.SetToolTip(tooltip)
+        robot_clean_error_button.SetValue(False)
+        robot_clean_error_button.Enable(False)
+        robot_clean_error_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnRobotCollisionErrorButton, ctrl=robot_clean_error_button),
+        )
+        self.robot_clean_error_button = robot_clean_error_button
+
         # Toggle button for displaying TMS motor mapping on brain
         tooltip = _("Show TMS motor mapping on brain")
         BMP_MOTOR_MAP = wx.Bitmap(
@@ -2092,43 +2110,51 @@ class ControlPanel(wx.Panel):
         )
         self.show_motor_map_button = show_motor_map_button
 
-        # Sizers
+        # sizers
         start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
-        start_navigation_button_sizer.AddMany(
-            [
-                (btn_nav, 0, wx.EXPAND | wx.GROW),
-            ]
-        )
+        start_navigation_button_sizer.AddMany([(btn_nav, 0, wx.EXPAND | wx.GROW)])
 
-        navigation_buttons_sizer = wx.FlexGridSizer(4, 5, 5)
+        navigation_buttons_sizer = wx.FlexGridSizer(3, 3, 3)
         navigation_buttons_sizer.AddMany(
             [
-                (tractography_checkbox),
-                (target_mode_button),
-                (track_object_button),
-                (checkbox_serial_port),
-                (efield_checkbox),
-                (lock_to_target_button),
-                (show_coil_button),
-                (show_probe_button),
-                (show_motor_map_button),
-                (simultaneous_mode_button),
+                (self.tractography_checkbox),
+                (self.target_mode_button),
+                (self.track_object_button),
+                (self.checkbox_serial_port),
+                (self.efield_checkbox),
+                (self.lock_to_target_button),
+                (self.show_coil_button),
+                (self.show_probe_button),
+                (self.show_motor_map_button),
+                (self.simultaneous_mode_button),
             ]
         )
 
-        robot_buttons_sizer = wx.FlexGridSizer(2, 3, 5, 5)
+        robot_buttons_sizer = wx.FlexGridSizer(rows=4, cols=1, vgap=3, hgap=3)
         robot_buttons_sizer.AddMany(
             [
-                (self.robot_name_lbl),
-                (wx.StaticText(self, -1, label="")),
-                (wx.StaticText(self, -1, label="")),
+                (self.robot_track_target_button),
+                (self.robot_move_away_button),
+                (self.robot_free_drive_button),
+                (self.robot_clean_error_button),
             ]
         )
-        robot_buttons_sizer.AddMany(
+        # robot_buttons_sizer_2 = wx.FlexGridSizer(rows=4, cols=1, vgap=3, hgap=3)
+        # robot_buttons_sizer_2.AddMany([
+        #     (self.robot_track_target_button),
+        #     (self.robot_move_away_button),
+        #     (self.robot_free_drive_button),
+        #     (self.robot_clean_error_button),
+        # ])
+
+        buttons_size = wx.BoxSizer(wx.HORIZONTAL)
+        buttons_size.AddMany(
             [
-                (robot_track_target_button),
-                (robot_move_away_button),
-                (robot_free_drive_button),
+                (navigation_buttons_sizer, 0, wx.TOP | wx.BOTTOM, 10),
+                (robot_buttons_sizer, 0, wx.TOP | wx.BOTTOM | wx.LEFT, 10),
+                (robot_buttons_sizer, 0, wx.TOP | wx.BOTTOM, 10)
+                if self.navigation.multitarget
+                else (wx.StaticText(self, -1, label="")),
             ]
         )
 
@@ -2136,14 +2162,14 @@ class ControlPanel(wx.Panel):
         main_sizer.AddMany(
             [
                 (start_navigation_button_sizer, 0, wx.EXPAND | wx.ALL, 10),
-                (navigation_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, 10),
-                (robot_buttons_sizer, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 5),
+                (buttons_size, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, 10),
             ]
         )
 
         self.sizer = main_sizer
         self.SetSizerAndFit(main_sizer)
 
+        # subs, finalize
         self.__bind_events()
         self.Update()
         self.LoadConfig()
@@ -2179,8 +2205,8 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.PressRobotMoveAwayButton, "Press move away button")
         Publisher.subscribe(self.EnableRobotMoveAwayButton, "Enable move away button")
-
         Publisher.subscribe(self.EnableRobotFreeDriveButton, "Enable free drive button")
+        Publisher.subscribe(self.EnableRobotCollisionErrorButton, "Enable clean errors button")
 
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
@@ -2337,13 +2363,15 @@ class ControlPanel(wx.Panel):
         )
         self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
 
+        robot_is_connected = self.robot.GetActive().IsConnected()
         # Enable 'move away' robot button if robot is connected.
-        move_away_button_enabled = self.robot.GetActive().IsConnected()
-        self.EnableRobotMoveAwayButton(enabled=move_away_button_enabled)
+        self.EnableRobotMoveAwayButton(enabled=robot_is_connected)
 
         # Enable 'free drive' robot button if robot is connected.
-        free_drive_button_enabled = self.robot.GetActive().IsConnected()
-        self.EnableRobotFreeDriveButton(enabled=free_drive_button_enabled)
+        self.EnableRobotFreeDriveButton(enabled=robot_is_connected)
+
+        # Enable 'collision error' robot button if robot is connected.
+        self.EnableRobotCollisionErrorButton(enabled=robot_is_connected)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
@@ -2576,7 +2604,7 @@ class ControlPanel(wx.Panel):
 
     # Robot-related buttons
     # 'Track target with robot' button
-    def EnableRobotTrackTargetButton(self, enabled=False):
+    def EnableRobotTrackTargetButton(self, enabled=False, robot_ID=""):
         self.EnableToggleButton(self.robot_track_target_button, enabled)
         self.UpdateToggleButton(self.robot_track_target_button)
 
@@ -2600,7 +2628,7 @@ class ControlPanel(wx.Panel):
             )
 
     # 'Move away' button
-    def EnableRobotMoveAwayButton(self, enabled=False):
+    def EnableRobotMoveAwayButton(self, enabled=False, robot_ID=""):
         self.EnableToggleButton(self.robot_move_away_button, enabled)
         self.UpdateToggleButton(self.robot_move_away_button)
 
@@ -2623,9 +2651,13 @@ class ControlPanel(wx.Panel):
             )
 
     # 'Free drive' button
-    def EnableRobotFreeDriveButton(self, enabled=False):
+    def EnableRobotFreeDriveButton(self, enabled=False, robot_ID=""):
         self.EnableToggleButton(self.robot_free_drive_button, enabled)
         self.UpdateToggleButton(self.robot_free_drive_button)
+
+    def EnableRobotCollisionErrorButton(self, enabled=False, robot_ID=""):
+        self.EnableToggleButton(self.robot_clean_error_button, enabled)
+        self.UpdateToggleButton(self.robot_clean_error_button)
 
     def OnRobotFreeDriveButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.robot_free_drive_button)
@@ -2642,6 +2674,18 @@ class ControlPanel(wx.Panel):
                 set=False,
                 robot_ID=self.robot.GetActive().robot_name,
             )
+
+    def OnRobotCollisionErrorButton(self, evt=None, ctrl=None):
+        self.UpdateToggleButton(self.robot_clean_error_button)
+        pressed = self.robot_clean_error_button.GetValue()
+        if pressed:
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Reset collision error",
+                robot_ID=self.robot.GetActive().robot_name,
+            )
+            # todo: Disable
+        self.robot_clean_error_button.SetValue(False)
+        self.UpdateToggleButton(self.robot_clean_error_button)
 
     # TMS Motor Mapping related
     # 'Motor Map' button
@@ -2672,6 +2716,9 @@ class ControlPanel(wx.Panel):
             tooltip = _("Start navigation")
             self.btn_nav.SetToolTip(tooltip)
             self.btn_nav.SetLabelText(_("Start navigation"))
+
+    def DisableRobotButtons(self):
+        pass
 
 
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
