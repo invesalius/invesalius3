@@ -244,7 +244,7 @@ class MarkersControl(metaclass=Singleton):
         Publisher.sendMessage(
             "Unset target",
             marker=marker,
-            robot_ID=self.self.robot.GetRobotByCoil(marker.coil).robot_name,
+            robot_ID=self.robot.GetRobotByCoil(marker.coil).robot_name,
         )
 
         self.SaveState()
