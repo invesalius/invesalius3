@@ -44,7 +44,6 @@ class Robot:
         self.navigation = navigation
         self.icp = icp
         self.enabled_in_gui = False
-
         self.coil_name = None
 
         self.is_robot_connected = False
@@ -263,16 +262,16 @@ class Robot:
         self.objective = RobotObjective(objective)
         if self.objective == RobotObjective.TRACK_TARGET:
             # Unpress 'Move away from robot' button when the robot is tracking the target.
-            Publisher.sendMessage("Press move away button", pressed=False)
+            Publisher.sendMessage("Press move away button", pressed=False, robot_ID=robot_ID)
 
         elif self.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
             # Unpress 'Track target' button when the robot is moving away from head.
-            Publisher.sendMessage("Press robot button", pressed=False)
+            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=robot_ID)
 
         elif self.objective == RobotObjective.NONE:
             # Unpress 'Track target' and 'Move away from robot' buttons when the robot has no objective.
-            Publisher.sendMessage("Press robot button", pressed=False)
-            Publisher.sendMessage("Press move away button", pressed=False)
+            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=robot_ID)
+            Publisher.sendMessage("Press move away button", pressed=False, robot_ID=robot_ID)
 
     def UnsetTarget(self, marker, robot_ID):
         if robot_ID != self.robot_name:
@@ -295,11 +294,16 @@ class Robot:
 
 class Robots(metaclass=Singleton):
     def __init__(self, tracker, navigation, icp):
+        self.tracker = tracker
+        self.navigation = navigation
+        self.icp = icp
         self.robots = {
             "robot_1": Robot("robot_1", tracker, navigation, icp),
-            "robot_2": Robot("robot_2", tracker, navigation, icp),
         }
         self.active = "robot_1"  # Default active robot
+
+        if self.navigation.n_coils > 1:
+            self.CreateSecondRobot()
 
         self.__bind_events()
 
@@ -307,6 +311,10 @@ class Robots(metaclass=Singleton):
         Publisher.subscribe(self.SendActive, "Send active robot")
         Publisher.subscribe(self.SetActiveByCoil, "Set active robot by coil name")
         Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
+
+    def CreateSecondRobot(self):
+        if "robot_2" not in self.robots:
+            self.robots["robot_2"] = Robot("robot_2", self.tracker, self.navigation, self.icp)
 
     def GetRobot(self, name: str):
         return self.robots.get(name)
@@ -360,10 +368,18 @@ class Robots(metaclass=Singleton):
         return None
 
     def SetActiveByCoil(self, coil_name):
-        Publisher.sendMessage("Press robot button", pressed=False)
         robot = self.GetRobotByCoil(coil_name)
         if robot:
             self.SetActive(robot.robot_name)
+            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=robot.robot_name)
             Publisher.sendMessage("Update robot name label", label=robot.robot_name)
         else:
             print(f"No robot found with coil name '{coil_name}'.")
+
+    def SendTargetToAllRobots(self):
+        for robot_name, robot in self.robots.items():
+            robot.SendTargetToRobot()
+
+    def SetAllRobotsNoObjective(self):
+        for robot_name, robot in self.robots.items():
+            robot.SetObjective(RobotObjective.NONE)

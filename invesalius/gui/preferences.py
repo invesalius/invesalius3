@@ -1010,7 +1010,6 @@ class ObjectTab(wx.Panel):
 
         ### Sizer for choosing which coil is attached to the robot (multicoil) ###
         self.robot_index_1 = list(self.robot.robots.values())[0]
-        self.robot_index_2 = list(self.robot.robots.values())[1]
 
         self.robot_sizer = robot_sizer = wx.StaticBoxSizer(
             wx.VERTICAL,
@@ -1037,6 +1036,8 @@ class ObjectTab(wx.Panel):
             f"Specify which coil is attached to the {self.robot_index_1.robot_name}",
         )
 
+        self.OnShowSecondRobot(state=len(self.robot.robots.values()) > 1)
+
         choice_robot_coil.Bind(
             wx.EVT_COMBOBOX, lambda x: self.OnChoiceRobotCoil(robot=self.robot_index_1, event=x)
         )
@@ -1045,38 +1046,10 @@ class ObjectTab(wx.Panel):
             self.robot_lbl.SetLabel(f"{self.robot_index_1.robot_name} is not connected")
             choice_robot_coil.Show(False)  # Hide the combobox
 
-        self.robot_lbl2 = wx.StaticText(
-            self, -1, _(f"{self.robot_index_2.robot_name} is connected. Coil attached to robot: ")
-        )
-        self.choice_robot_coil2 = choice_robot_coil2 = wx.ComboBox(
-            self,
-            -1,
-            f"{self.robot_index_2.GetCoilName() or ''}",
-            size=wx.Size(90, 23),
-            choices=list(
-                self.navigation.coil_registrations
-            ),  # List of coils selected for navigation
-            style=wx.CB_DROPDOWN | wx.CB_READONLY,
-        )
-
-        choice_robot_coil2.SetToolTip(
-            f"Specify which coil is attached to the {self.robot_index_2.robot_name}",
-        )
-
-        choice_robot_coil2.Bind(
-            wx.EVT_COMBOBOX, lambda x: self.OnChoiceRobotCoil(robot=self.robot_index_2, event=x)
-        )
-
-        if not self.robot_index_2.IsConnected():
-            self.robot_lbl2.SetLabel(f"{self.robot_index_2.robot_name} is not connected")
-            choice_robot_coil2.Show(False)  # Hide the combobox
-
-        inner_robot_sizer.AddMany(
+        self.inner_robot_sizer.AddMany(
             [
                 (self.robot_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
                 (choice_robot_coil, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (self.robot_lbl2, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
-                (choice_robot_coil2, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
             ]
         )
 
@@ -1099,6 +1072,58 @@ class ObjectTab(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnSetCoilCount, "Reset coil selection")
+        Publisher.subscribe(self.OnShowSecondRobot, "Show second robot")
+
+    def OnShowSecondRobot(self, state=True):
+        if state:
+            self.robot_index_2 = list(self.robot.robots.values())[1]
+
+            self.robot_lbl2 = wx.StaticText(
+                self,
+                -1,
+                _(f"{self.robot_index_2.robot_name} is connected. Coil attached to robot: "),
+            )
+            self.choice_robot_coil2 = wx.ComboBox(
+                self,
+                -1,
+                f"{self.robot_index_2.GetCoilName() or ''}",
+                size=wx.Size(90, 23),
+                choices=list(
+                    self.navigation.coil_registrations
+                ),  # List of coils selected for navigation
+                style=wx.CB_DROPDOWN | wx.CB_READONLY,
+            )
+
+            self.choice_robot_coil2.SetToolTip(
+                f"Specify which coil is attached to the {self.robot_index_2.robot_name}",
+            )
+
+            self.choice_robot_coil2.Bind(
+                wx.EVT_COMBOBOX, lambda x: self.OnChoiceRobotCoil(robot=self.robot_index_2, event=x)
+            )
+
+            if not self.robot_index_2.IsConnected():
+                self.robot_lbl2.SetLabel(f"{self.robot_index_2.robot_name} is not connected")
+                self.choice_robot_coil2.Show(False)  # Hide the combobox
+
+            self.inner_robot_sizer.AddMany(
+                [
+                    (self.robot_lbl2, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                    (self.choice_robot_coil2, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5),
+                ]
+            )
+        else:
+            self.robot_index_2 = None
+            if hasattr(self, "robot_lbl2"):
+                self.robot_lbl2.Destroy()
+                del self.robot_lbl2
+            if hasattr(self, "choice_robot_coil2"):
+                self.choice_robot_coil2.Destroy()
+                del self.choice_robot_coil2
+
+        self.Fit()
+        self.Layout()
+        self.Update()
 
     def OnChoiceRobotCoil(self, event, robot):
         robot_coil_name = event.GetEventObject().GetStringSelection()
@@ -1134,7 +1159,8 @@ class ObjectTab(wx.Panel):
 
         # Show the robot coil combobox only if the robot is connected
         self.choice_robot_coil.Show(show_multicoil and self.robot_index_1.IsConnected())
-        self.choice_robot_coil2.Show(show_multicoil and self.robot_index_2.IsConnected())
+        if self.robot_index_2:
+            self.choice_robot_coil2.Show(show_multicoil and self.robot_index_2.IsConnected())
 
         self.Layout()
 
@@ -1593,8 +1619,6 @@ class TrackerTab(wx.Panel):
         self.SetSizerAndFit(self.main_sizer)
         self.Layout()
 
-        Publisher.sendMessage("Create second robot")
-
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
         Publisher.subscribe(self.OnCreateSecondRobot, "Create second robot")
@@ -1678,20 +1702,27 @@ class TrackerTab(wx.Panel):
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
         self.main_sizer.Add(sizer, 0, wx.ALL | wx.EXPAND, 7)
+        self.SetSizerAndFit(self.main_sizer)
+        self.OnCreateSecondRobot()
 
     def OnCreateSecondRobot(self):
         if self.n_coils >= 2:
             if not hasattr(self, "setup_robot_2"):
+                self.robot.CreateSecondRobot()
                 robot_index = list(self.robot.robots.values())[1]
                 self.setup_robot_2 = SetupRobot(self, robot_index)
                 self.main_sizer.Add(self.setup_robot_2, 0, wx.ALL | wx.EXPAND, 7)
-                self.SetSizerAndFit(self.main_sizer)
-                self.Layout()
                 print("Second robot setup panel created")
         else:
+            if "robot_2" in self.robot.robots:
+                self.robot.robots.pop("robot_2")
             if hasattr(self, "setup_robot_2"):
                 self.setup_robot_2.Destroy()
                 del self.setup_robot_2
+
+        self.Layout()
+        self.Update()
+        Publisher.sendMessage("Show second robot", state=(self.n_coils >= 2))
 
     def OnChooseNoOfCoils(self, evt, ctrl):
         old_n_coils = self.n_coils
@@ -1709,9 +1740,9 @@ class TrackerTab(wx.Panel):
             self.tracker.SetTracker(tracker_id, n_coils=self.n_coils)
 
         ctrl.SetSelection(self.n_coils - 1)
+        self.OnCreateSecondRobot()
         Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils)
         Publisher.sendMessage("Coil selection done", done=False)
-        Publisher.sendMessage("Create second robot")
         Publisher.sendMessage("Reset targets")
 
     def OnChooseTracker(self, evt, ctrl):
