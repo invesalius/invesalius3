@@ -213,7 +213,9 @@ class Robot:
             return False
 
         # Compute the target in tracker coordinate system.
-        coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
+        coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates(
+            robot_ID=self.robot_name
+        )
 
         # TODO: This is done here for now because the robot code expects the y-coordinate to be flipped. When this
         #   is removed, the robot code should be updated similarly, and vice versa. Create a copy of self.target by
@@ -301,6 +303,7 @@ class Robots(metaclass=Singleton):
             "robot_1": Robot("robot_1", tracker, navigation, icp),
         }
         self.active = "robot_1"  # Default active robot
+        self.SendIDs()
 
         if self.navigation.n_coils > 1:
             self.CreateSecondRobot()
@@ -312,9 +315,14 @@ class Robots(metaclass=Singleton):
         Publisher.subscribe(self.SetActiveByCoil, "Set active robot by coil name")
         Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
 
+    def SendIDs(self):
+        RobotIds = list(self.robots.keys())
+        Publisher.sendMessage("Set robot IDs", robotIDs=RobotIds)
+
     def CreateSecondRobot(self):
         if "robot_2" not in self.robots:
             self.robots["robot_2"] = Robot("robot_2", self.tracker, self.navigation, self.icp)
+        self.SendIDs()
 
     def GetRobot(self, name: str):
         return self.robots.get(name)
@@ -341,9 +349,6 @@ class Robots(metaclass=Singleton):
         else:
             raise ValueError(f"Robot '{name}' does not exist.")
         print(f"Active robot set to: {self.active}")
-
-    def SendActive(self):
-        Publisher.sendMessage("Get active robot", robot=self.GetActive())
 
     def GetInactive(self):
         robot_name = [name for name in self.robots if name != self.active]
@@ -383,3 +388,10 @@ class Robots(metaclass=Singleton):
     def SetAllRobotsNoObjective(self):
         for robot_name, robot in self.robots.items():
             robot.SetObjective(RobotObjective.NONE)
+
+    def AllIsReady(self):
+        allReady = []
+        for robot_name, robot in self.robots.items():
+            allReady.append(robot.IsReady())
+
+        return all(allReady)

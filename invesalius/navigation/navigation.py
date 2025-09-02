@@ -219,7 +219,7 @@ class UpdateNavigationScene(threading.Thread):
                             "Update coil pose",
                             m_img=m_imgs[coil],
                             coord=coords[coil],
-                            robot_ID=self.robot.GetActive().robot_name,
+                            robot_ID=self.robot.GetRobotByCoil(coil).robot_name,
                             coil_name=coil,
                         )
                         wx.CallAfter(
@@ -603,14 +603,6 @@ class Navigation(metaclass=Singleton):
             self.obj_datas = obj_datas
 
             coreg_data = [self.m_change, self.r_stylus]
-
-            robot = Robots()
-            if robot.GetActive().IsReady():
-                # Tell robot at which index (obj_id) to find its coil in (relevant when there are multiple coils)
-                Publisher.sendMessage(
-                    "Neuronavigation to Robot: Set coil index",
-                    data=self.coil_registrations[robot.GetActive().GetCoilName()]["obj_id"],
-                )
 
             queues = [
                 self.coord_queue,

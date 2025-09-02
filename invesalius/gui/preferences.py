@@ -1300,7 +1300,7 @@ class ObjectTab(wx.Panel):
         # Update robot coil combobox
         if self.choice_robot_coil is not None:
             self.choice_robot_coil.Set(list(navigation.coil_registrations))
-            self.choice_robot_coil.SetStringSelection(self.robot.GetActive().GetCoilName() or "")
+            self.choice_robot_coil.SetStringSelection(self.robot_index_1.GetCoilName() or "")
 
         if self.choice_robot_coil2 is not None:
             self.choice_robot_coil2.Set(list(navigation.coil_registrations))
