@@ -2782,7 +2782,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
             if main_coil_index != wx.NOT_FOUND:
                 select_main_coil.SetSelection(main_coil_index)
-                Publisher.sendMessage("Set active robot by coil name", coil_name=main_coil)
 
         # Hide main_coil combobox if single coil mode
         select_main_coil.Show(nav_state.get("n_coils", 1) != 1)
@@ -3588,7 +3587,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if index_to_select != wx.NOT_FOUND:
             self.select_main_coil.SetSelection(index_to_select)
             self.navigation.SetMainCoil(coil_name)
-            Publisher.sendMessage("Set active robot by coil name", coil_name=coil_name)
 
     def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -3631,7 +3629,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             )
             return
         self.navigation.UpdateCoilMesh(marker.coil)
-        Publisher.sendMessage("Set active robot by coil name", coil_name=marker.coil)
 
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)

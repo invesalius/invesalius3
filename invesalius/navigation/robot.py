@@ -311,7 +311,6 @@ class Robots(metaclass=Singleton):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.SetActiveByCoil, "Set active robot by coil name")
         Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
 
     def SendIDs(self):
