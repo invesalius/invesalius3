@@ -303,9 +303,10 @@ class MarkersControl(metaclass=Singleton):
         self.SaveState()
 
     def ChangeCoilAssociate(self, marker: Marker, new_coil) -> None:
-        self.UnsetTarget(marker_id=Marker.marker_id)
+        if marker.is_target:
+            self.UnsetTarget(marker_id=marker.marker_id)
+            self.SetTarget(marker_id=marker.marker_id)
         marker.coil = new_coil
-        self.SetTarget(marker_id=Marker.marker_id)
         Publisher.sendMessage("Update marker associate coil", marker=marker)
         self.SaveState()
 
