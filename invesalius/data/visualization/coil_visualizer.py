@@ -303,7 +303,4 @@ class CoilVisualizer:
                 # Update actor positions for coil, coil center, and coil orientation axes.
                 self.coils[name]["actor"].SetUserMatrix(m_img_vtk)
                 self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
-
-                # LUKATODO
-
                 self.vector_field_assembly.SetUserMatrix(m_img_vtk)

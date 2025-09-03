@@ -155,6 +155,7 @@ class Robot:
 
         # Destroy the dialog.
         self.robot_coregistration_dialog.Destroy()
+        self.robot_coregistration_dialog = None
 
         if status != wx.ID_OK:
             wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
@@ -165,8 +166,11 @@ class Robot:
         self.InitializeRobot()
 
     def AbortRobotConfiguration(self, robot_ID):
+        if robot_ID != self.robot_name:
+            return
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
+            self.robot_coregistration_dialog = None
 
     def IsConnected(self):
         return self.is_robot_connected
