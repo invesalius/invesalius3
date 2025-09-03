@@ -335,7 +335,8 @@ class Navigation(metaclass=Singleton):
 
         # During navigation
         self.lock_to_target = False
-        self.coil_at_target = False
+        self.coils_at_target = {}
+        self.all_coils_at_target = False
 
         self.LoadConfig()
 
@@ -428,8 +429,14 @@ class Navigation(metaclass=Singleton):
             self.main_coil = new_coil_name
         self.SaveConfig()
 
-    def CoilAtTarget(self, state):
-        self.coil_at_target = state
+    def CoilAtTarget(self, state, coil_name):
+        self.coils_at_target[coil_name] = state
+        if not self.multitarget:
+            self.coil_at_target = state
+        elif all(self.coils_at_target.values()) and self.multitarget:
+            self.coil_at_target = True
+        else:
+            self.coil_at_target = False
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep

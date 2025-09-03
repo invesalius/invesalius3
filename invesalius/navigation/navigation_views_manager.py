@@ -59,6 +59,14 @@ class NavigationWindowManager(metaclass=Singleton):
         Publisher.subscribe(self.SetTarget, "Set target")
         Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.OnUpdateCoilPose, "Update coil pose")
+        Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
+
+    def SetCoilAtTarget(self, state, coil_name):
+        window = self.getWindowByCoil(coil_name)
+        if window:
+            window.volume_interaction.volume_viewer_instance.marker_visualizer.SetCoilAtTarget(
+                state
+            )
 
     def GetEnorm(self, enorm_data, plot_vector, coil_name):
         window = self.getWindowByCoil(coil_name)
@@ -93,7 +101,7 @@ class NavigationWindowManager(metaclass=Singleton):
         window = self.getWindowByCoil(coil_name)
         if window:
             window.volume_interaction.volume_viewer_instance.OnUpdateCoilPose(
-                m_img, coord, robot_ID
+                m_img, coord, robot_ID, coil_name
             )
 
     def SetTarget(self, marker, robot_ID):

@@ -372,7 +372,7 @@ class Robots(metaclass=Singleton):
         for robot in self.robots.values():
             if robot.GetCoilName() == coil_name:
                 return robot
-        return None
+        return self.GetActive()
 
     def SetActiveByCoil(self, coil_name):
         robot = self.GetRobotByCoil(coil_name)

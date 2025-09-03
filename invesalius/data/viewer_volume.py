@@ -1313,7 +1313,7 @@ class Viewer(wx.Panel):
         else:
             self.DisableTargetMode()
 
-    def OnUpdateCoilPose(self, m_img, coord, robot_ID):
+    def OnUpdateCoilPose(self, m_img, coord, robot_ID, coil_name):
         # vtk_colors = vtkNamedColors()
 
         if self.target_coord and self.target_mode:
@@ -1467,7 +1467,9 @@ class Viewer(wx.Panel):
             )
 
             self.coil_visualizer.SetCoilAtTarget(coil_at_target)
-            wx.CallAfter(Publisher.sendMessage, "Coil at target", state=coil_at_target)
+            wx.CallAfter(
+                Publisher.sendMessage, "Coil at target", state=coil_at_target, coil_name=coil_name
+            )
             wx.CallAfter(
                 Publisher.sendMessage,
                 "From Neuronavigation: Coil at target",
