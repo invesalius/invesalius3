@@ -1302,7 +1302,7 @@ class ObjectTab(wx.Panel):
             self.choice_robot_coil.Set(list(navigation.coil_registrations))
             self.choice_robot_coil.SetStringSelection(self.robot_index_1.GetCoilName() or "")
 
-        if self.choice_robot_coil2 is not None:
+        if hasattr(self, "choice_robot_coil2"):
             self.choice_robot_coil2.Set(list(navigation.coil_registrations))
             self.choice_robot_coil2.SetStringSelection(self.robot_index_2.GetCoilName() or "")
 

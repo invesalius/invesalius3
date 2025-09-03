@@ -54,7 +54,7 @@ class CoilVisualizer:
 
         self.LoadConfig()
 
-        self.ShowCoil(False)
+        self.ShowCoil(True)
 
         self.__bind_events()
 
@@ -206,7 +206,8 @@ class CoilVisualizer:
         self.target_coil_actor = None
 
     def ADDSelectCoil(self, coil_name, coil_registration):
-        self.AddCoil(coil_name, coil_registration["path"])
+        if coil_name not in self.coils:
+            self.AddCoil(coil_name, coil_registration["path"])
 
     def DeleteSelectCoil(self, coil_name):
         self.RemoveCoil(coil_name)

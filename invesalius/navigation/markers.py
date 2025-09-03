@@ -76,8 +76,9 @@ class MarkersControl(metaclass=Singleton):
         self.multitarget = state
 
     def ADDSelectCoil(self, coil_name, coil_registration):
-        self.TargetCoilAssociation[coil_name] = None
-        self.SaveState()
+        if coil_name not in self.TargetCoilAssociation:
+            self.TargetCoilAssociation[coil_name] = None
+            self.SaveState()
 
     def DeleteSelectCoil(self, coil_name):
         self.TargetCoilAssociation.pop(coil_name, None)

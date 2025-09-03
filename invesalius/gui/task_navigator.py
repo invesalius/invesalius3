@@ -2001,14 +2001,17 @@ class ControlPanel(wx.Panel):
                 (self.simultaneous_mode_button),
             ]
         )
+        static_box_navigation_buttons = wx.StaticBox(self, label=_("Navigation"))
+        static_box_sizer = wx.StaticBoxSizer(static_box_navigation_buttons, wx.VERTICAL)
+        static_box_sizer.Add(navigation_buttons_sizer, 1, wx.EXPAND, 10)
 
         self.buttons_size = wx.BoxSizer(wx.HORIZONTAL)
-        self.buttons_size.Add(navigation_buttons_sizer, 0, wx.EXPAND, 10)
+        self.buttons_size.Add(static_box_sizer, 0, wx.EXPAND, 10)
         self.robot_buttons_sizers = wx.BoxSizer(wx.HORIZONTAL)
         self.robot_buttons_panel = {}
         self.robot_buttons = {}
         self._create_toggle_robot_button()
-        self.buttons_size.Add(self.robot_buttons_sizers, 0, wx.EXPAND, 10)
+        self.buttons_size.Add(self.robot_buttons_sizers, 0, wx.EXPAND | wx.LEFT, 5)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
             [
@@ -2110,6 +2113,9 @@ class ControlPanel(wx.Panel):
             if robot_ID not in self.robot_buttons_panel:
                 robot_panel = wx.Panel(self)
                 self.robot_buttons_panel[robot_ID] = robot_panel
+                static_box = wx.StaticBox(robot_panel, label=_(robot_ID))
+                static_box_sizer = wx.StaticBoxSizer(static_box, wx.VERTICAL)
+
                 robot_button_configs = {
                     "move_away_" + robot_ID: {
                         "tooltip": _("Move robot away from patient's head"),
@@ -2145,7 +2151,12 @@ class ControlPanel(wx.Panel):
                         wx.EVT_TOGGLEBUTTON, partial(config["function_bind"], robot_ID=robot_ID)
                     )
                     self.robot_buttons[name] = btn
-                robot_grid_sizer = wx.FlexGridSizer(rows=4, cols=1, vgap=3, hgap=3)
+                robot_grid_sizer = wx.FlexGridSizer(
+                    rows=4,
+                    cols=1,
+                    vgap=3,
+                    hgap=3,
+                )
                 robot_grid_sizer.AddMany(
                     [
                         self.robot_buttons["move_away_" + robot_ID],
@@ -2154,10 +2165,11 @@ class ControlPanel(wx.Panel):
                         self.robot_buttons["clean_errors_" + robot_ID],
                     ]
                 )
-                # robot_box_sizer = wx.BoxSizer(wx.VERTICAL)
-                # robot_box_sizer.Add(robot_grid_sizer)
-                self.robot_buttons_panel[robot_ID].SetSizer(robot_grid_sizer)
-                self.robot_buttons_sizers.Add(self.robot_buttons_panel[robot_ID], 0, wx.EXPAND, 10)
+                static_box_sizer.Add(robot_grid_sizer)
+                self.robot_buttons_panel[robot_ID].SetSizerAndFit(static_box_sizer)
+                self.robot_buttons_sizers.Add(
+                    self.robot_buttons_panel[robot_ID], 0, wx.EXPAND | wx.LEFT, 5
+                )
 
     def ShowSecondRobotButtons(self, state=True):
         self._create_toggle_robot_button()
