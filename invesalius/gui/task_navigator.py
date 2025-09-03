@@ -1842,12 +1842,12 @@ class ControlPanel(wx.Panel):
         self.icp = nav_hub.icp
         self.image = nav_hub.image
         self.mep_visualizer = nav_hub.mep_visualizer
+        self.markers = nav_hub.markers
 
         # state
         self.nav_status = False
         self.target_mode = False
         self.navigation_status = False
-        self.target_selected = False
 
         # Toggle button for neuronavigation
         tooltip = _("Start navigation")
@@ -2022,6 +2022,7 @@ class ControlPanel(wx.Panel):
 
         self.sizer = main_sizer
         self.SetSizerAndFit(main_sizer)
+
         self.LoadConfig()
         self.__bind_events()
 
@@ -2170,6 +2171,7 @@ class ControlPanel(wx.Panel):
                 self.robot_buttons_sizers.Add(
                     self.robot_buttons_panel[robot_ID], 0, wx.EXPAND | wx.LEFT, 5
                 )
+                self.UpdateRobotButtons(robot_ID)
 
     def ShowSecondRobotButtons(self, state=True):
         self._create_toggle_robot_button()
@@ -2239,7 +2241,6 @@ class ControlPanel(wx.Panel):
 
     def UnsetTarget(self, marker, robot_ID=None):
         self.navigation.targets.remove(marker)
-        self.target_selected = False
         self.UpdateTargetButton()
 
     def SetTarget(self, marker, robot_ID):
@@ -2249,7 +2250,6 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.lock_to_target_button, True)
         self.navigation.SetLockToTarget(True)
 
-        self.target_selected = True
         self.UpdateTargetButton()
         self.UpdateRobotButtons(robot_ID)
 
@@ -2295,15 +2295,17 @@ class ControlPanel(wx.Panel):
         #   - Target mode is on
         #   - Robot is connected
         #   - The name of the coil attached to robot is being tracked
+
+        robot_is_connected = self.robot.GetRobot(robot_ID).IsConnected()
+        coil_name_target = self.robot.GetRobot(robot_ID).GetCoilName()
+        target_selected = True if coil_name_target in self.markers.TargetCoilAssociation else False
+
         track_target_button_enabled = (
-            self.nav_status
-            and self.target_selected
-            and self.target_mode
-            and self.robot.robots[robot_ID].IsConnected()
+            self.nav_status and target_selected and self.target_mode and robot_is_connected
         )
+
         self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled, robot_ID=robot_ID)
 
-        robot_is_connected = self.robot.robots[robot_ID].IsConnected()
         # Enable 'move away' robot button if robot is connected.
         self.EnableRobotMoveAwayButton(enabled=robot_is_connected, robot_ID=robot_ID)
 
@@ -2470,8 +2472,8 @@ class ControlPanel(wx.Panel):
 
     def UpdateTargetButton(self):
         # Enable or disable 'Target mode' button based on if target is selected and if 'Track object' button is pressed.
-        enabled = self.target_selected and self.navigation.track_coil
-        self.EnableToggleButton(self.target_mode_button, enabled)
+        enabled = len(self.navigation.targets) > 0 and self.navigation.track_coil
+        self.EnableToggleButton(self.target_mode_button, state=enabled)
 
     def PressTargetModeButton(self, pressed):
         # If pressed, ensure that the button is also enabled.
