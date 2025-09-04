@@ -2242,6 +2242,7 @@ class ControlPanel(wx.Panel):
     def UnsetTarget(self, marker, robot_ID=None):
         self.navigation.targets.remove(marker)
         self.UpdateTargetButton()
+        self.UpdateRobotButtons(robot_ID)
 
     def SetTarget(self, marker, robot_ID):
         self.navigation.targets.append(marker)
