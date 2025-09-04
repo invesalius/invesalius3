@@ -181,9 +181,9 @@ class MarkersControl(metaclass=Singleton):
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
+        marker = self.list[marker_id]
         robot = self.robot.GetRobotByCoil(marker.coil)
         robot.SetObjective(RobotObjective.NONE)
-        marker = self.list[marker_id]
         if check_for_previous:
             # Check multitarget mode
             if self.multitarget:
