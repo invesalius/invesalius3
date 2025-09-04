@@ -181,7 +181,8 @@ class MarkersControl(metaclass=Singleton):
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
-        self.robot.SetAllRobotsNoObjective()
+        robot = self.robot.GetRobotByCoil(marker.coil)
+        robot.SetObjective(RobotObjective.NONE)
         marker = self.list[marker_id]
         if check_for_previous:
             # Check multitarget mode
@@ -206,14 +207,10 @@ class MarkersControl(metaclass=Singleton):
         self.TargetCoilAssociation[coil_name] = marker_id
         Publisher.sendMessage("Update main coil by target", coil_name=coil_name)
 
-        Publisher.sendMessage(
-            "Set target", marker=marker, robot_ID=self.robot.GetRobotByCoil(marker.coil).robot_name
-        )
-
         # When setting a new target, automatically switch into target mode. Note that the order is important here:
         # first set the target, then move into target mode.
         Publisher.sendMessage("Press target mode button", pressed=True)
-
+        Publisher.sendMessage("Set target", marker=marker, robot_ID=robot.robot_name)
         if render:
             self.SaveState()
 

@@ -2298,7 +2298,7 @@ class ControlPanel(wx.Panel):
 
         robot_is_connected = self.robot.GetRobot(robot_ID).IsConnected()
         coil_name_target = self.robot.GetRobot(robot_ID).GetCoilName()
-        target_selected = True if coil_name_target in self.markers.TargetCoilAssociation else False
+        target_selected = True if self.markers.FindTarget(coil_name_target) is not None else False
 
         track_target_button_enabled = (
             self.nav_status and target_selected and self.target_mode and robot_is_connected
@@ -2319,7 +2319,8 @@ class ControlPanel(wx.Panel):
         self.target_mode = enabled
 
         # Update robot button state when target mode is changed.
-        (self.UpdateRobotButtons(robot_ID) for robot_ID in self.robot.robots.keys())
+        for robot_ID in self.robot.robots.keys():
+            self.UpdateRobotButtons(robot_ID)
 
         # Set robot objective to NONE when target mode is off.
         if not enabled:
