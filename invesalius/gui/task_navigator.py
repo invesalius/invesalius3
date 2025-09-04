@@ -618,11 +618,17 @@ class ImportsPage(wx.Panel):
             proj_link.SetBackgroundColour(self.GetBackgroundColour())
             proj_link.AutoBrowse(False)
             proj_link.UpdateLink()
-            proj_link.Bind(hl.EVT_HYPERLINK_LEFT, lambda e: self.OpenProject(proj_path))
+            proj_link.Bind(hl.EVT_HYPERLINK_LEFT, lambda e: self.OpenProjectLoaded(proj_path))
 
             # Add the link to the sizer and to the hyperlinks list
             self.top_sizer.Add(proj_link, 1, wx.GROW | wx.EXPAND | wx.ALL, 2)
             self.Update()
+
+    def OpenProjectLoaded(self, proj_path):
+        # Disable simultaneous multicoil mode
+        Publisher.sendMessage("Press simultaneous multicoil button", state=False)
+
+        self.OpenProject(proj_path)
 
 
 class HeadPage(wx.Panel):
@@ -2058,6 +2064,10 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.EnableRobotFreeDriveButton, "Enable free drive button")
         Publisher.subscribe(self.EnableRobotCollisionErrorButton, "Enable clean errors button")
 
+        Publisher.subscribe(
+            self.PressSimultaneousMulticoilButton, "Press simultaneous multicoil button"
+        )
+
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
         Publisher.subscribe(self.PressTargetModeButton, "Press target mode button")
@@ -2546,6 +2556,10 @@ class ControlPanel(wx.Panel):
             state=enabled,
             coils_list=self.selected_coils_to_navigation,
         )
+
+    def PressSimultaneousMulticoilButton(self, state):
+        self.simultaneous_mode_button.SetValue(state)
+        self.OnSimultaneousButton(ctrl=self.simultaneous_mode_button)
 
     # Robot-related buttons
     # 'Track target with robot' button
