@@ -1961,7 +1961,7 @@ class ControlPanel(wx.Panel):
             tooltip=_("Simultaneous multicoil mode"),
             bitmap_name="multi_target.png",
             initial_value=False,
-            initial_enabled=False,
+            initial_enabled=True if self.navigation.n_coils > 1 else False,
             initial_bg_color=self.GREY_COLOR,
         )
         self.simultaneous_mode_button.Bind(
@@ -2485,7 +2485,7 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.target_mode_button, pressed)
         self.OnTargetButton()
 
-    def OnTargetButton(self, evt=None):
+    def OnTargetButton(self, evt=None, ctrl=None):
         pressed = self.target_mode_button.GetValue()
         self.UpdateToggleButton(self.target_mode_button, pressed)
 
@@ -2498,6 +2498,7 @@ class ControlPanel(wx.Panel):
         enabled = ctrl.GetValue()
 
         if enabled:
+            self.simultaneous_mode_button.Enable(True)
             coil_names_options = (
                 list(self.navigation.coil_registrations)
                 if self.navigation.selected_coils_to_navigation is None

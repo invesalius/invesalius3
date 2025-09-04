@@ -576,7 +576,6 @@ class Viewer(wx.Panel):
         Publisher.unsubscribe(self.DeleteEFieldMarkers, "Delete markers")
         Publisher.unsubscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.unsubscribe(self.TrackObject, "Track object")
-        Publisher.unsubscribe(self.SetTargetMode, "Set target mode")
         Publisher.unsubscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
         Publisher.unsubscribe(self.OnUpdateDistanceThreshold, "Update distance threshold")
         Publisher.unsubscribe(self.OnUpdateTracts, "Update tracts")
@@ -1467,6 +1466,8 @@ class Viewer(wx.Panel):
             )
 
             self.coil_visualizer.SetCoilAtTarget(coil_at_target)
+            self.marker_visualizer.SetCoilAtTarget(coil_at_target)
+
             wx.CallAfter(
                 Publisher.sendMessage, "Coil at target", state=coil_at_target, coil_name=coil_name
             )
