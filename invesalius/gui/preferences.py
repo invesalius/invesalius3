@@ -1095,7 +1095,7 @@ class ObjectTab(wx.Panel):
             )
 
             self.choice_robot_coil2.SetToolTip(
-                f"Specify which coil is attached to the {self.robot_index_2.robot_name}",
+                _(f"Specify which coil is attached to the {self.robot_index_2.robot_name}"),
             )
 
             self.choice_robot_coil2.Bind(
@@ -1103,7 +1103,7 @@ class ObjectTab(wx.Panel):
             )
 
             if not self.robot_index_2.IsConnected():
-                self.robot_lbl2.SetLabel(f"{self.robot_index_2.robot_name} is not connected")
+                self.robot_lbl2.SetLabel(_(f"{self.robot_index_2.robot_name} is not connected"))
                 self.choice_robot_coil2.Show(False)  # Hide the combobox
 
             self.inner_robot_sizer.AddMany(
@@ -1616,6 +1616,8 @@ class TrackerTab(wx.Panel):
         self.setup_robot_1 = SetupRobot(self, robot_index)
         self.main_sizer.Add(self.setup_robot_1, 0, wx.ALL | wx.EXPAND, 7)
 
+        self.OnCreateSecondRobot()
+
         self.SetSizerAndFit(self.main_sizer)
         self.Layout()
 
@@ -1703,7 +1705,6 @@ class TrackerTab(wx.Panel):
 
         self.main_sizer.Add(sizer, 0, wx.ALL | wx.EXPAND, 7)
         self.SetSizerAndFit(self.main_sizer)
-        self.OnCreateSecondRobot()
 
     def OnCreateSecondRobot(self):
         if self.n_coils >= 2:
@@ -1712,14 +1713,13 @@ class TrackerTab(wx.Panel):
                 robot_index = list(self.robot.robots.values())[1]
                 self.setup_robot_2 = SetupRobot(self, robot_index)
                 self.main_sizer.Add(self.setup_robot_2, 0, wx.ALL | wx.EXPAND, 7)
-                print("Second robot setup panel created")
         else:
             if "robot_2" in self.robot.robots:
                 self.robot.robots.pop("robot_2")
             if hasattr(self, "setup_robot_2"):
                 self.setup_robot_2.Destroy()
                 del self.setup_robot_2
-
+        self.Fit()
         self.Layout()
         self.Update()
         Publisher.sendMessage("Show second robot", state=(self.n_coils >= 2))
