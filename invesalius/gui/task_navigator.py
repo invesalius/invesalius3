@@ -198,7 +198,7 @@ class InnerFoldPanel(wx.Panel):
         # Publisher.subscribe(self.OnHideDbs, "Hide dbs folder")
         Publisher.subscribe(self.OpenNavigation, "Open navigation menu")
         Publisher.subscribe(self.OnEnableState, "Enable state project")
-        Publisher.subscribe(self.CollapseNavigation, "Coil selection done")
+        # Publisher.subscribe(self.CollapseNavigation, "Coil selection done")
 
     def __calc_best_size(self, panel):
         parent = panel.GetParent()
