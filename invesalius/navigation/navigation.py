@@ -214,12 +214,13 @@ class UpdateNavigationScene(threading.Thread):
                     )
 
                     for coil in coils:
+                        robot_ID = self.robot.GetRobotByCoil(coil).robot_name
                         wx.CallAfter(  # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
                             Publisher.sendMessage,
                             "Update coil pose",
                             m_img=m_imgs[coil],
                             coord=coords[coil],
-                            robot_ID=self.robot.GetRobotByCoil(coil).robot_name,
+                            robot_ID=robot_ID,
                             coil_name=coil,
                         )
                         wx.CallAfter(
