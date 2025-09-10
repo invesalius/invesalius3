@@ -21,6 +21,7 @@ from enum import Enum
 
 import numpy as np
 import wx
+from scipy.spatial import distance
 
 import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
@@ -303,10 +304,10 @@ class Robots(metaclass=Singleton):
         self.tracker = tracker
         self.navigation = navigation
         self.icp = icp
-        self.robots = {
-            "robot_1": Robot("robot_1", tracker, navigation, icp),
-        }
+        self._robots = {"robot_1": Robot("robot_1", tracker, navigation, icp), "robot_2": None}
         self.active = "robot_1"  # Default active robot
+        self.RobotCoilAssociation = {}
+        self.GetAllCoilsRobots()
         self.SendIDs()
 
         if self.navigation.n_coils > 1:
@@ -318,50 +319,63 @@ class Robots(metaclass=Singleton):
         Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
 
     def SendIDs(self):
-        RobotIds = list(self.robots.keys())
+        RobotIds = list(self.GetAllRobots().keys())
         Publisher.sendMessage("Set robot IDs", robotIDs=RobotIds)
 
     def CreateSecondRobot(self):
-        if "robot_2" not in self.robots:
-            self.robots["robot_2"] = Robot("robot_2", self.tracker, self.navigation, self.icp)
-            print("Second robot setup panel created")
+        if self._robots["robot_2"] is None:
+            self._robots["robot_2"] = Robot("robot_2", self.tracker, self.navigation, self.icp)
+            print("Second robot created")
+        self.SendIDs()
+        return self._robots["robot_2"]
+
+    def DeleteSecondRobot(self):
+        if self._robots["robot_2"] is not None:
+            del self._robots["robot_2"]
+            self._robots["robot_2"] = None
         self.SendIDs()
 
     def GetRobot(self, name: str):
-        return self.robots.get(name)
+        return self._robots.get(name) if self._robots.get(name) is not None else None
+
+    def GetAllRobots(self, actives=True):
+        robots = {}
+        for robot_id, robot in self._robots.items():
+            if robot is not None or not actives:
+                robots[robot_id] = robot
+        return robots
 
     def GetActive(self):
         return self.GetRobot(self.active)
 
     def GetAllCoilsRobots(self):
-        RobotCoilAssociation = {}
-        for robot_id in self.robots:
-            robot_obj = self.robots[robot_id]
-            if robot_obj.IsConnected():
-                RobotCoilAssociation[robot_obj.coil_name] = robot_obj.robot_name
+        for robot_id in self.GetAllRobots().keys():
+            robot_obj = self._robots[robot_id]
+            if robot_obj is not None and robot_obj.IsConnected():
+                self.RobotCoilAssociation[robot_obj.coil_name] = robot_obj.robot_name
 
         Publisher.sendMessage(
-            "Update Robot Coil Association", robotCoilAssociation=RobotCoilAssociation
+            "Update Robot Coil Association", robotCoilAssociation=self.RobotCoilAssociation
         )
 
-        return RobotCoilAssociation
+        return self.RobotCoilAssociation
 
     def SetActive(self, name: str):
-        if name in self.robots:
+        if name in self.GetAllRobots():
             self.active = name
         else:
             raise ValueError(f"Robot '{name}' does not exist.")
         print(f"Active robot set to: {self.active}")
 
     def GetInactive(self):
-        robot_name = [name for name in self.robots if name != self.active]
+        robot_name = [name for name in self.GetAllRobots() if name != self.active]
         return self.GetRobot(robot_name[0])
 
     # Future usage: to rename robots in the GUI
     def RenameRobot(self, old_name: str, new_name: str):
-        if old_name in self.robots:
-            if new_name not in self.robots:
-                self.robots[new_name] = self.robots.pop(old_name)
+        if old_name in self.GetAllRobots():
+            if new_name not in self.GetAllRobots():
+                self._robots[new_name] = self.GetAllRobots().pop(old_name)
                 if self.active == old_name:
                     self.active = new_name
             else:
@@ -370,7 +384,7 @@ class Robots(metaclass=Singleton):
             raise ValueError(f"Robot '{old_name}' does not exist.")
 
     def GetRobotByCoil(self, coil_name):
-        for robot in self.robots.values():
+        for robot in self.GetAllRobots().values():
             if robot.GetCoilName() == coil_name:
                 return robot
         return self.GetActive()
@@ -385,16 +399,26 @@ class Robots(metaclass=Singleton):
             print(f"No robot found with coil name '{coil_name}'.")
 
     def SendTargetToAllRobots(self):
-        for robot_name, robot in self.robots.items():
+        for robot in self.GetAllRobots().values():
             robot.SendTargetToRobot()
 
     def SetAllRobotsNoObjective(self):
-        for robot_name, robot in self.robots.items():
+        for robot in self.GetAllRobots().values():
             robot.SetObjective(RobotObjective.NONE)
 
     def AllIsReady(self):
         allReady = []
-        for robot_name, robot in self.robots.items():
+        for robot in self.GetAllRobots().values():
             allReady.append(robot.IsReady())
 
         return all(allReady)
+
+    def UpdateCoilsDistance(self, coords):
+        if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1:
+            list_coils = list(self.RobotCoilAssociation.keys())
+            coord_coil_1 = coords[list_coils[0]]
+            coord_coil_2 = coords[list_coils[1]]
+
+            distance_coils = distance.euclidean(coord_coil_1[0:3], coord_coil_2[0:3])
+
+            print(distance_coils)
