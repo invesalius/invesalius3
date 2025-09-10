@@ -424,5 +424,10 @@ class Robots(metaclass=Singleton):
             coord_coil_2 = coords[list_coils[1]]
 
             distance_coils = distance.euclidean(coord_coil_1[0:3], coord_coil_2[0:3])
-
+            for robot_ID in self._robots.keys():
+                Publisher.sendMessage(
+                    "Neuronavigation to Robot: Dynamically update pid constants",
+                    distance=distance_coils,
+                    robot_ID=robot_ID,
+                )
             print(distance_coils)
