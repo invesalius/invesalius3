@@ -1992,7 +1992,7 @@ class ControlPanel(wx.Panel):
         start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
         start_navigation_button_sizer.AddMany([(btn_nav, 0, wx.EXPAND | wx.GROW)])
 
-        navigation_buttons_sizer = wx.FlexGridSizer(rows=4, cols=3, vgap=3, hgap=3)
+        navigation_buttons_sizer = wx.FlexGridSizer(rows=3, cols=4, vgap=3, hgap=3)
         navigation_buttons_sizer.AddMany(
             [
                 (self.tractography_checkbox),
@@ -2011,18 +2011,18 @@ class ControlPanel(wx.Panel):
         static_box_sizer = wx.StaticBoxSizer(static_box_navigation_buttons, wx.VERTICAL)
         static_box_sizer.Add(navigation_buttons_sizer, 1, wx.EXPAND, 10)
 
-        self.buttons_size = wx.BoxSizer(wx.HORIZONTAL)
+        self.buttons_size = wx.BoxSizer(wx.VERTICAL)
         self.buttons_size.Add(static_box_sizer, 0, wx.EXPAND, 10)
-        self.robot_buttons_sizers = wx.BoxSizer(wx.HORIZONTAL)
+        self.robot_buttons_sizers = wx.BoxSizer(wx.VERTICAL)
         self.robot_buttons_panel = {}
         self.robot_buttons = {}
         self._create_toggle_robot_button()
-        self.buttons_size.Add(self.robot_buttons_sizers, 0, wx.EXPAND | wx.LEFT, 5)
+        self.buttons_size.Add(self.robot_buttons_sizers, 0, wx.EXPAND, 10)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
             [
-                (start_navigation_button_sizer, 0, wx.EXPAND | wx.ALL, 10),
-                (self.buttons_size, 0, wx.EXPAND, 10),
+                (start_navigation_button_sizer, 0, wx.EXPAND | wx.TOP, 5),
+                (self.buttons_size, 0, wx.EXPAND | wx.TOP, 5),
             ]
         )
 
@@ -2030,6 +2030,7 @@ class ControlPanel(wx.Panel):
         self.SetSizerAndFit(main_sizer)
 
         self.LoadConfig()
+        self.ShowSecondRobotButtons(self.navigation.n_coils > 1)
         self.__bind_events()
 
     def __bind_events(self):
@@ -2119,8 +2120,7 @@ class ControlPanel(wx.Panel):
         return button
 
     def _create_toggle_robot_button(self):
-        list_robot_ID = list(self.robot.robots.keys())
-        for robot_ID in list_robot_ID:
+        for idx, robot_ID in enumerate(self.robot.GetAllRobots().keys()):
             if robot_ID not in self.robot_buttons_panel:
                 robot_panel = wx.Panel(self)
                 self.robot_buttons_panel[robot_ID] = robot_panel
@@ -2163,8 +2163,8 @@ class ControlPanel(wx.Panel):
                     )
                     self.robot_buttons[name] = btn
                 robot_grid_sizer = wx.FlexGridSizer(
-                    rows=4,
-                    cols=1,
+                    rows=1,
+                    cols=4,
                     vgap=3,
                     hgap=3,
                 )
@@ -2178,19 +2178,17 @@ class ControlPanel(wx.Panel):
                 )
                 static_box_sizer.Add(robot_grid_sizer)
                 self.robot_buttons_panel[robot_ID].SetSizerAndFit(static_box_sizer)
-                self.robot_buttons_sizers.Add(
-                    self.robot_buttons_panel[robot_ID], 0, wx.EXPAND | wx.LEFT, 5
-                )
+                self.robot_buttons_sizers.Add(self.robot_buttons_panel[robot_ID], 0, wx.EXPAND, 10)
                 self.UpdateRobotButtons(robot_ID)
 
     def ShowSecondRobotButtons(self, state=True):
-        self._create_toggle_robot_button()
+        # self._create_toggle_robot_button()
         list_robot_id = list(self.robot_buttons_panel.keys())
-        if len(list_robot_id) > 1:
-            robot_panel = self.robot_buttons_panel[list_robot_id[1]]
-            robot_panel.Show(state)
-            self.Layout()
-            self.SetSizerAndFit(self.sizer)
+        # if len(list_robot_id) > 1:
+        robot_panel = self.robot_buttons_panel[list_robot_id[1]]
+        robot_panel.Show(state)
+        self.Layout()
+        # self.SetSizerAndFit(self.sizer)
 
     # Toggle Button Helpers
     def UpdateToggleButton(self, ctrl, state=None):
@@ -2272,7 +2270,7 @@ class ControlPanel(wx.Panel):
             self.nav_status = True
 
         # Update robot button when navigation status is changed.
-        for robot_name in self.robot.robots.keys():
+        for robot_name in self.robot.GetAllRobots().keys():
             self.UpdateRobotButtons(robot_ID=robot_name)
 
     def OnCheckStatus(self, nav_status, vis_status):
@@ -2306,31 +2304,36 @@ class ControlPanel(wx.Panel):
         #   - Target mode is on
         #   - Robot is connected
         #   - The name of the coil attached to robot is being tracked
+        robot = self.robot.GetRobot(robot_ID)
+        if robot is not None:
+            robot_is_connected = robot.IsConnected()
+            coil_name_target = robot.GetCoilName()
+            target_selected = (
+                True if self.markers.FindTarget(coil_name_target) is not None else False
+            )
 
-        robot_is_connected = self.robot.GetRobot(robot_ID).IsConnected()
-        coil_name_target = self.robot.GetRobot(robot_ID).GetCoilName()
-        target_selected = True if self.markers.FindTarget(coil_name_target) is not None else False
+            track_target_button_enabled = (
+                self.nav_status and target_selected and self.target_mode and robot_is_connected
+            )
 
-        track_target_button_enabled = (
-            self.nav_status and target_selected and self.target_mode and robot_is_connected
-        )
+            self.EnableRobotTrackTargetButton(
+                enabled=track_target_button_enabled, robot_ID=robot_ID
+            )
 
-        self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled, robot_ID=robot_ID)
+            # Enable 'move away' robot button if robot is connected.
+            self.EnableRobotMoveAwayButton(enabled=robot_is_connected, robot_ID=robot_ID)
 
-        # Enable 'move away' robot button if robot is connected.
-        self.EnableRobotMoveAwayButton(enabled=robot_is_connected, robot_ID=robot_ID)
+            # Enable 'free drive' robot button if robot is connected.
+            self.EnableRobotFreeDriveButton(enabled=robot_is_connected, robot_ID=robot_ID)
 
-        # Enable 'free drive' robot button if robot is connected.
-        self.EnableRobotFreeDriveButton(enabled=robot_is_connected, robot_ID=robot_ID)
-
-        # Enable 'collision error' robot button if robot is connected.
-        self.EnableRobotCollisionErrorButton(enabled=robot_is_connected, robot_ID=robot_ID)
+            # Enable 'collision error' robot button if robot is connected.
+            self.EnableRobotCollisionErrorButton(enabled=robot_is_connected, robot_ID=robot_ID)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
 
         # Update robot button state when target mode is changed.
-        for robot_ID in self.robot.robots.keys():
+        for robot_ID in self.robot.GetAllRobots().keys():
             self.UpdateRobotButtons(robot_ID)
 
         # Set robot objective to NONE when target mode is off.
@@ -2576,12 +2579,12 @@ class ControlPanel(wx.Panel):
         pressed = self.robot_buttons["track_target_" + robot_ID].GetValue()
         Publisher.sendMessage("Robot tracking status", status=pressed)
         if pressed:
-            self.robot.robots[robot_ID].SetObjective(RobotObjective.TRACK_TARGET)
+            self.robot.GetRobot(robot_ID).SetObjective(RobotObjective.TRACK_TARGET)
         else:
             # If 'Robot' button is unpressed, set robot objective to NONE, but do not override
             # objective set by another button; hence this check.
-            if self.robot.robots[robot_ID].objective == RobotObjective.TRACK_TARGET:
-                self.robot.robots[robot_ID].SetObjective(RobotObjective.NONE)
+            if self.robot.GetRobot(robot_ID).objective == RobotObjective.TRACK_TARGET:
+                self.robot.GetRobot(robot_ID).SetObjective(RobotObjective.NONE)
             Publisher.sendMessage(
                 "Robot to Neuronavigation: Update robot warning",
                 robot_warning="",
@@ -2601,12 +2604,12 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.robot_buttons["move_away_" + robot_ID])
         pressed = self.robot_buttons["move_away_" + robot_ID].GetValue()
         if pressed:
-            self.robot.robots[robot_ID].SetObjective(RobotObjective.MOVE_AWAY_FROM_HEAD)
+            self.robot.GetRobot(robot_ID).SetObjective(RobotObjective.MOVE_AWAY_FROM_HEAD)
         else:
             # If 'Move away' button is unpressed, set robot objective to NONE, but do not override
-            # objective set by another button; hence this check.
-            if self.robot.robots[robot_ID].objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
-                self.robot.robots[robot_ID].SetObjective(RobotObjective.NONE)
+            # objective set by another button; hence this check..robotsGetAllRobots
+            if self.robot.GetRobot(robot_ID).objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
+                self.robot.GetRobot(robot_ID).SetObjective(RobotObjective.NONE)
             Publisher.sendMessage(
                 "Robot to Neuronavigation: Update robot warning",
                 robot_warning="",
@@ -2727,6 +2730,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.itemDataMap = {}
 
         self.brain_actor = None
+        nav_state = self.session.GetConfig("navigation", {})
         # Change session
         spin_session = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
         spin_session.SetRange(1, 99)
@@ -2742,49 +2746,20 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         select_colour.SetToolTip("Set colour")
         select_colour.Bind(csel.EVT_COLOURSELECT, partial(self.OnSelectColour, ctrl=select_colour))
 
-        btn_create = wx.Button(self, -1, label=_("Create marker"), size=wx.Size(135, 23))
+        self.btn_create = btn_create = wx.Button(
+            self,
+            -1,
+            label=_("Create marker"),
+            size=wx.Size(160 if nav_state.get("n_coils", 1) == 1 else 95, 23),
+        )
         btn_create.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
-
-        sizer_create = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
-        sizer_create.AddMany([(spin_session, 1), (select_colour, 0), (btn_create, 0)])
-
-        # Buttons to save and load markers and to change its visibility as well
-        btn_save = wx.Button(self, -1, label=_("Save"), size=wx.Size(65, 23))
-        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveMarkers)
-
-        btn_load = wx.Button(self, -1, label=_("Load"), size=wx.Size(65, 23))
-        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
-
-        btn_show_hide_all = wx.ToggleButton(self, -1, _("Hide all"), size=wx.Size(65, 23))
-        btn_show_hide_all.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnShowHideAllMarkers, ctrl=btn_show_hide_all)
-        )
-
-        sizer_btns = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
-        sizer_btns.AddMany(
-            [
-                (btn_save, 1, wx.RIGHT),
-                (btn_load, 0, wx.LEFT | wx.RIGHT),
-                (btn_show_hide_all, 0, wx.LEFT),
-            ]
-        )
-
-        # Buttons to delete markers
-        btn_delete_single = wx.Button(self, -1, label=_("Delete"), size=wx.Size(65, 23))
-        btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteSelectedMarkers)
-
-        btn_delete_all = wx.Button(self, -1, label=_("Delete all"), size=wx.Size(135, 23))
-        btn_delete_all.Bind(wx.EVT_BUTTON, self.OnDeleteAllMarkers)
-
-        sizer_delete = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        sizer_delete.AddMany([(btn_delete_single, 1, wx.RIGHT), (btn_delete_all, 0, wx.LEFT)])
 
         # Combobox for choosing the main coil (ie. the coil which to track with pointer and to use for marker creation)
         self.select_main_coil = select_main_coil = wx.ComboBox(
             self,
             -1,
             "",
-            size=(145, -1),
+            size=(65, 23),
             choices=[],
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
@@ -2800,7 +2775,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
 
         # If main coil is defined, select this in the combobox
-        nav_state = self.session.GetConfig("navigation", {})
         if (main_coil := nav_state.get("main_coil", None)) is not None:
             main_coil_index = next(
                 (
@@ -2817,8 +2791,41 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Hide main_coil combobox if single coil mode
         select_main_coil.Show(nav_state.get("n_coils", 1) != 1)
 
-        sizer_main_coil = wx.FlexGridSizer(rows=1, cols=1, hgap=5, vgap=5)
-        sizer_main_coil.Add(select_main_coil)
+        sizer_create = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        sizer_create.AddMany(
+            [(spin_session, 0), (select_colour, 0), (select_main_coil, 0), (btn_create, 0)]
+        )
+
+        # Buttons to save and load markers and to change its visibility as well
+        btn_save = wx.Button(self, -1, label=_("Save"), size=wx.Size(75, 23))
+        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveMarkers)
+
+        btn_load = wx.Button(self, -1, label=_("Load"), size=wx.Size(75, 23))
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
+
+        btn_show_hide_all = wx.ToggleButton(self, -1, _("Hide all"), size=wx.Size(75, 23))
+        btn_show_hide_all.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnShowHideAllMarkers, ctrl=btn_show_hide_all)
+        )
+
+        sizer_btns = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
+        sizer_btns.AddMany(
+            [
+                (btn_save, 1, wx.RIGHT),
+                (btn_load, 0, wx.LEFT | wx.RIGHT),
+                (btn_show_hide_all, 0, wx.LEFT),
+            ]
+        )
+
+        # Buttons to delete markers
+        btn_delete_single = wx.Button(self, -1, label=_("Delete"), size=wx.Size(90, 23))
+        btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteSelectedMarkers)
+
+        btn_delete_all = wx.Button(self, -1, label=_("Delete all"), size=wx.Size(140, 23))
+        btn_delete_all.Bind(wx.EVT_BUTTON, self.OnDeleteAllMarkers)
+
+        sizer_delete = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        sizer_delete.AddMany([(btn_delete_single, 1, wx.RIGHT), (btn_delete_all, 0, wx.LEFT)])
 
         screen_width, screen_height = wx.DisplaySize()
 
@@ -2931,7 +2938,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        group_sizer.Add(sizer_main_coil, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Add(brain_targets_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Fit(self)
@@ -3581,9 +3587,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         if self.navigation.n_coils == 1:  # Single coil: hide main coil combobox
             select_main_coil.Hide()
+            self.btn_create.SetMinSize((160, 23))
         else:
             select_main_coil.Show()
-
+            self.btn_create.SetMinSize((95, 23))
         self.Layout()
 
     def __GenerateCoilOptions(self):

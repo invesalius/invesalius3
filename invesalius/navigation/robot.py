@@ -304,7 +304,11 @@ class Robots(metaclass=Singleton):
         self.tracker = tracker
         self.navigation = navigation
         self.icp = icp
-        self._robots = {"robot_1": Robot("robot_1", tracker, navigation, icp), "robot_2": None}
+        # TODO: optimize the dynamic creation of second robot
+        self._robots = {
+            "robot_1": Robot("robot_1", tracker, navigation, icp),
+            "robot_2": Robot("robot_2", tracker, navigation, icp),
+        }
         self.active = "robot_1"  # Default active robot
         self.RobotCoilAssociation = {}
         self.GetAllCoilsRobots()

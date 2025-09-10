@@ -51,7 +51,7 @@ class MarkersControl(metaclass=Singleton):
         )
 
     def UpdateZOffsetTargetByRobot(self, z_offset, robot_ID):
-        coil_name = self.robot.robots[robot_ID].coil_name
+        coil_name = self.robot.GetRobot(robot_ID).coil_name
         marker = self.FindTarget(coil_name)
 
         if not marker or not self.transformator.robot_track_status:

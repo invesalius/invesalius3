@@ -1009,7 +1009,7 @@ class ObjectTab(wx.Panel):
         sel_sizer.Add(inner_sel_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         ### Sizer for choosing which coil is attached to the robot (multicoil) ###
-        self.robot_index_1 = list(self.robot.robots.values())[0]
+        self.robot_index_1 = list(self.robot.GetAllRobots().values())[0]
 
         self.robot_sizer = robot_sizer = wx.StaticBoxSizer(
             wx.VERTICAL,
@@ -1036,7 +1036,7 @@ class ObjectTab(wx.Panel):
             f"Specify which coil is attached to the {self.robot_index_1.robot_name}",
         )
 
-        self.OnShowSecondRobot(state=len(self.robot.robots.values()) > 1)
+        self.OnShowSecondRobot(state=len(self.robot.GetAllRobots().keys()) > 1)
 
         choice_robot_coil.Bind(
             wx.EVT_COMBOBOX, lambda x: self.OnChoiceRobotCoil(robot=self.robot_index_1, event=x)
@@ -1076,7 +1076,7 @@ class ObjectTab(wx.Panel):
 
     def OnShowSecondRobot(self, state=True):
         if state:
-            self.robot_index_2 = list(self.robot.robots.values())[1]
+            self.robot_index_2 = list(self.robot.GetAllRobots().values())[1]
 
             self.robot_lbl2 = wx.StaticText(
                 self,
@@ -1612,7 +1612,7 @@ class TrackerTab(wx.Panel):
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetupTracker()
 
-        robot_index = list(self.robot.robots.values())[0]
+        robot_index = list(self.robot.GetAllRobots().values())[0]
         self.setup_robot_1 = SetupRobot(self, robot_index)
         self.main_sizer.Add(self.setup_robot_1, 0, wx.ALL | wx.EXPAND, 7)
 
@@ -1709,20 +1709,22 @@ class TrackerTab(wx.Panel):
     def OnCreateSecondRobot(self):
         if self.n_coils >= 2:
             if not hasattr(self, "setup_robot_2"):
-                self.robot.CreateSecondRobot()
-                robot_index = list(self.robot.robots.values())[1]
+                # self.robot.CreateSecondRobot()
+                robot_index = list(self.robot.GetAllRobots().values())[1]
                 self.setup_robot_2 = SetupRobot(self, robot_index)
                 self.main_sizer.Add(self.setup_robot_2, 0, wx.ALL | wx.EXPAND, 7)
+                Publisher.sendMessage("Show second robot", state=True)
         else:
-            if "robot_2" in self.robot.robots:
-                self.robot.robots.pop("robot_2")
+            # if "robot_2" in self.robot.robots:
+            #    self.robot.robots.pop("robot_2")
             if hasattr(self, "setup_robot_2"):
                 self.setup_robot_2.Destroy()
                 del self.setup_robot_2
+            Publisher.sendMessage("Show second robot", state=False)
         self.Fit()
         self.Layout()
         self.Update()
-        Publisher.sendMessage("Show second robot", state=(self.n_coils >= 2))
+        # Publisher.sendMessage("Show second robot", state=(self.n_coils >= 2))
 
     def OnChooseNoOfCoils(self, evt, ctrl):
         old_n_coils = self.n_coils
@@ -1740,10 +1742,10 @@ class TrackerTab(wx.Panel):
             self.tracker.SetTracker(tracker_id, n_coils=self.n_coils)
 
         ctrl.SetSelection(self.n_coils - 1)
-        self.OnCreateSecondRobot()
         Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils)
         Publisher.sendMessage("Coil selection done", done=False)
         Publisher.sendMessage("Reset targets")
+        self.OnCreateSecondRobot()
 
     def OnChooseTracker(self, evt, ctrl):
         if sys.platform == "darwin":
