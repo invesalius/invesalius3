@@ -1879,10 +1879,6 @@ class ControlPanel(wx.Panel):
             initial_enabled=False,
             initial_bg_color=self.GREY_COLOR,
         )
-        self.tractography_checkbox.Bind(
-            wx.EVT_TOGGLEBUTTON,
-            partial(self.OnTractographyCheckbox, ctrl=self.tractography_checkbox),
-        )
 
         self.track_object_button = self._create_toggle_button(
             tooltip=_("Track coil"),
@@ -1890,10 +1886,6 @@ class ControlPanel(wx.Panel):
             initial_value=False,
             initial_enabled=True,
             initial_bg_color=self.GREY_COLOR,
-        )
-        self.track_object_button.Bind(
-            wx.EVT_TOGGLEBUTTON,
-            partial(self.OnTrackObjectButton, ctrl=self.track_object_button),
         )
 
         self.lock_to_target_button = self._create_toggle_button(
@@ -1903,10 +1895,6 @@ class ControlPanel(wx.Panel):
             initial_enabled=False,
             initial_bg_color=self.GREY_COLOR,
         )
-        self.lock_to_target_button.Bind(
-            wx.EVT_TOGGLEBUTTON,
-            partial(self.OnLockToTargetButton, ctrl=self.lock_to_target_button),
-        )
 
         self.show_coil_button = self._create_toggle_button(
             tooltip=_("Show coil"),
@@ -1915,8 +1903,6 @@ class ControlPanel(wx.Panel):
             initial_enabled=True,
             initial_bg_color=self.GREY_COLOR,
         )
-        self.show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
-        self.show_coil_button.Bind(wx.EVT_RIGHT_DOWN, self.ShowCoilChoice)
 
         self.show_probe_button = self._create_toggle_button(
             tooltip=_("Show probe"),
@@ -1925,8 +1911,6 @@ class ControlPanel(wx.Panel):
             initial_enabled=True,
             initial_bg_color=self.GREY_COLOR,
         )
-        self.UpdateToggleButton(self.show_probe_button, False)  # the probe is hidden at start
-        self.show_probe_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowProbe)
 
         self.checkbox_serial_port = self._create_toggle_button(
             tooltip=_("Enable serial port communication to trigger pulse and create markers"),
@@ -1934,10 +1918,6 @@ class ControlPanel(wx.Panel):
             initial_value=False,
             initial_enabled=True,  # Default is enabled
             initial_bg_color=self.RED_COLOR,
-        )
-        self.checkbox_serial_port.Bind(
-            wx.EVT_TOGGLEBUTTON,
-            partial(self.OnEnableSerialPort, ctrl=self.checkbox_serial_port),
         )
 
         self.efield_checkbox = self._create_toggle_button(
@@ -1947,9 +1927,6 @@ class ControlPanel(wx.Panel):
             initial_enabled=False,
             initial_bg_color=self.GREY_COLOR,
         )
-        self.efield_checkbox.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnEfieldCheckbox, ctrl=self.efield_checkbox)
-        )
 
         self.target_mode_button = self._create_toggle_button(
             tooltip=_("Target mode"),
@@ -1958,10 +1935,6 @@ class ControlPanel(wx.Panel):
             initial_enabled=False,
             initial_bg_color=self.GREY_COLOR,
         )
-        self.target_mode_button.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnTargetButton, ctrl=self.target_mode_button)
-        )
-        self.UpdateTargetButton()
 
         self.simultaneous_mode_button = self._create_toggle_button(
             tooltip=_("Simultaneous multicoil mode"),
@@ -1970,12 +1943,6 @@ class ControlPanel(wx.Panel):
             initial_enabled=True if self.navigation.n_coils > 1 else False,
             initial_bg_color=self.GREY_COLOR,
         )
-        self.simultaneous_mode_button.Bind(
-            wx.EVT_TOGGLEBUTTON,
-            partial(self.OnSimultaneousButton, ctrl=self.simultaneous_mode_button),
-        )
-        self.UpdateToggleButton(self.simultaneous_mode_button, self.navigation.multitarget)
-        self.OnSimultaneousButton(ctrl=self.simultaneous_mode_button)
 
         self.show_motor_map_button = self._create_toggle_button(
             tooltip=_("Show TMS motor mapping on brain"),
@@ -1983,9 +1950,6 @@ class ControlPanel(wx.Panel):
             initial_value=False,
             initial_enabled=True,
             initial_bg_color=self.GREY_COLOR,
-        )
-        self.show_motor_map_button.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnShowMotorMapButton, ctrl=self.show_motor_map_button)
         )
 
         # sizers
@@ -2028,6 +1992,56 @@ class ControlPanel(wx.Panel):
 
         self.sizer = main_sizer
         self.SetSizerAndFit(main_sizer)
+
+        # Binding buttons
+        self.tractography_checkbox.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnTractographyCheckbox, ctrl=self.tractography_checkbox),
+        )
+
+        self.track_object_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnTrackObjectButton, ctrl=self.track_object_button),
+        )
+
+        self.lock_to_target_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnLockToTargetButton, ctrl=self.lock_to_target_button),
+        )
+
+        self.show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
+        self.show_coil_button.Bind(wx.EVT_RIGHT_DOWN, self.ShowCoilChoice)
+
+        self.UpdateToggleButton(self.show_probe_button, False)  # the probe is hidden at start
+
+        self.show_probe_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowProbe)
+
+        self.checkbox_serial_port.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnEnableSerialPort, ctrl=self.checkbox_serial_port),
+        )
+
+        self.efield_checkbox.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnEfieldCheckbox, ctrl=self.efield_checkbox)
+        )
+
+        self.target_mode_button.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnTargetButton, ctrl=self.target_mode_button)
+        )
+
+        self.UpdateTargetButton()
+
+        self.simultaneous_mode_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnSimultaneousButton, ctrl=self.simultaneous_mode_button),
+        )
+
+        self.UpdateToggleButton(self.simultaneous_mode_button, self.navigation.multitarget)
+        self.OnSimultaneousButton(ctrl=self.simultaneous_mode_button)
+
+        self.show_motor_map_button.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnShowMotorMapButton, ctrl=self.show_motor_map_button)
+        )
 
         self.LoadConfig()
         self.ShowSecondRobotButtons(self.navigation.n_coils > 1)
@@ -2549,9 +2563,15 @@ class ControlPanel(wx.Panel):
                 self.selected_coils_to_navigation = coil_names_options
 
             ctrl.SetBackgroundColour(self.GREEN_COLOR)
+            self.checkbox_serial_port.Show(False)
+            self.lock_to_target_button.Show(False)
+            self.Layout()
         else:
             self.selected_coils_to_navigation = None
             ctrl.SetBackgroundColour(self.RED_COLOR)
+            self.checkbox_serial_port.Show(True)
+            self.lock_to_target_button.Show(True)
+            self.Layout()
 
         Publisher.sendMessage("Reset targets")
         Publisher.sendMessage(
