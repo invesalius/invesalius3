@@ -789,8 +789,10 @@ class NavigationTab(wx.Panel):
         self.navigation = navigation
         self.sleep_nav = self.navigation.sleep_nav
         self.sleep_coord = const.SLEEP_COORDINATES
+        self.with_target = False
 
         self.LoadConfig()
+        self.__bind_events()
 
         text_note = wx.StaticText(
             self, -1, _("Note: Using too low sleep times can result in Invesalius crashing!")
@@ -841,10 +843,87 @@ class NavigationTab(wx.Panel):
             ]
         )
 
+        btn_serial_port = wx.Button(self, -1, _("Serial Port"))
+        btn_serial_port.SetToolTip(_("Select your COM port to connect"))
+        btn_serial_port.Bind(wx.EVT_BUTTON, self.SetSerialPort)
+
+        # ComboBox
+        options = ["yes", "no"]
+        select_options = wx.ComboBox(
+            self,
+            -1,
+            "",
+            size=(145, -1),
+            choices=options,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        tooltip = _("Choose if you want to allow trigger when coil at target:")
+        select_options.SetToolTip(tooltip)
+        select_options.SetSelection(-1)
+        select_options.Bind(wx.EVT_COMBOBOX, partial(self.SetAllow, ctrl=select_options))
+
+        op_label = wx.StaticText(self, -1, _("Choose the number of coils to track:"))
+
+        trigger_conf_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Serial port configuration"))
+        trigger_conf_sizer.AddMany(
+            [
+                # (line_nav_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+                # (line_coord_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+                (btn_serial_port, 0, wx.CENTER, 5),
+                # (op_label, 0, wx.CENTER, 5),
+                # (select_options, 0, wx.CENTER, 5),
+            ]
+        )
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(conf_sizer, 0, wx.ALL | wx.EXPAND, 10)
+        main_sizer.AddMany(
+            [
+                (conf_sizer, 0, wx.ALL | wx.EXPAND, 10),
+                (trigger_conf_sizer, 0, wx.EXPAND | wx.LEFT, 10),
+            ]
+        )
         self.SetSizerAndFit(main_sizer)
         self.Layout()
+
+    def SetAllow(self, evt, ctrl):
+        print(self.with_target)
+        if not self.with_target:
+            ctrl.SetSelection(-1)
+            print(f"No target associated")
+            return
+
+        choice = evt.GetSelection()
+
+        if choice == 1:
+            print(f"Selected mode: {choice}")
+            self.navigation.SetLockToTarget(True)
+        elif choice == 0:
+            print(f"Selected mode: {choice}")
+            self.navigation.SetLockToTarget(False)
+        else:
+            print(f"Selected mode: None")
+
+        ctrl.SetSelection(choice)
+
+    def SetSerialPort(self, evt):
+        from wx import ID_OK
+
+        dlg_port = dlg.SetCOMPort(select_baud_rate=False)
+
+        if dlg_port.ShowModal() != ID_OK:
+            return
+
+        com_port = dlg_port.GetCOMPort()
+        baud_rate = 115200
+
+        Publisher.sendMessage(
+            "Update serial port",
+            serial_port_in_use=True,
+            com_port=com_port,
+            baud_rate=baud_rate,
+        )
+        # else:
+        #    Publisher.sendMessage("Update serial port", serial_port_in_use=False)
 
     def OnSelectNavSleep(self, evt, ctrl):
         self.sleep_nav = ctrl.GetValue()
@@ -867,6 +946,18 @@ class NavigationTab(wx.Panel):
 
         if sleep_coord is not None:
             self.sleep_coord = sleep_coord
+
+    def TakeTarget(self, marker, robot_ID):
+        self.with_target = True
+        print("setou")
+
+    def ReleaseTarget(self, marker, robot_ID):
+        self.with_target = False
+        print("desetou")
+
+    def __bind_events(self):
+        Publisher.subscribe(self.TakeTarget, "Set target")
+        Publisher.subscribe(self.ReleaseTarget, "Unset target")
 
 
 class ObjectTab(wx.Panel):
