@@ -1995,16 +1995,16 @@ class ControlPanel(wx.Panel):
         navigation_buttons_sizer = wx.FlexGridSizer(rows=3, cols=4, vgap=3, hgap=3)
         navigation_buttons_sizer.AddMany(
             [
-                (self.tractography_checkbox),
                 (self.target_mode_button),
                 (self.track_object_button),
-                (self.checkbox_serial_port),
-                (self.efield_checkbox),
-                (self.lock_to_target_button),
                 (self.show_coil_button),
                 (self.show_probe_button),
+                (self.efield_checkbox),
+                (self.tractography_checkbox),
                 (self.show_motor_map_button),
                 (self.simultaneous_mode_button),
+                (self.checkbox_serial_port),
+                (self.lock_to_target_button),
             ]
         )
         static_box_navigation_buttons = wx.StaticBox(self, label=_("Navigation"))
