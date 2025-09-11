@@ -139,7 +139,6 @@ class CoilVisualizer:
 
         if self.target_coil_actor is not None:
             self.target_coil_actor.SetVisibility(state)
-        self.vector_field_assembly.SetVisibility(state)  # LUKATODO: Keep this hidden for now
 
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
