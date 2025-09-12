@@ -870,8 +870,8 @@ class NavigationTab(wx.Panel):
                 # (line_nav_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
                 # (line_coord_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
                 (btn_serial_port, 0, wx.CENTER, 5),
-                # (op_label, 0, wx.CENTER, 5),
-                # (select_options, 0, wx.CENTER, 5),
+                (op_label, 0, wx.CENTER, 5),
+                (select_options, 0, wx.CENTER, 5),
             ]
         )
 
@@ -949,11 +949,9 @@ class NavigationTab(wx.Panel):
 
     def TakeTarget(self, marker, robot_ID):
         self.with_target = True
-        print("setou")
 
     def ReleaseTarget(self, marker, robot_ID):
         self.with_target = False
-        print("desetou")
 
     def __bind_events(self):
         Publisher.subscribe(self.TakeTarget, "Set target")

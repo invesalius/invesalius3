@@ -214,7 +214,8 @@ class UpdateNavigationScene(threading.Thread):
                         Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
                     )
 
-                    self.robot.UpdateCoilsDistance(coords)
+                    # needs to be checked
+                    # self.robot.UpdateCoilsDistance(coords)
 
                     for coil in coils:
                         robot_ID = self.robot.GetRobotByCoil(coil).robot_name
