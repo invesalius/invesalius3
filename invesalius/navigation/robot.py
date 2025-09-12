@@ -311,7 +311,7 @@ class Robots(metaclass=Singleton):
         }
         self.active = "robot_1"  # Default active robot
         self.RobotCoilAssociation = {}
-        self.GetAllCoilsRobots()
+        # self.GetAllCoilsRobots()
         self.SendIDs()
 
         if self.navigation.n_coils > 1:
@@ -355,8 +355,8 @@ class Robots(metaclass=Singleton):
     def GetAllCoilsRobots(self):
         for robot_id in self.GetAllRobots().keys():
             robot_obj = self._robots[robot_id]
-            if robot_obj is not None and robot_obj.IsConnected():
-                self.RobotCoilAssociation[robot_obj.coil_name] = robot_obj.robot_name
+            # if robot_obj is not None and robot_obj.IsConnected():
+            self.RobotCoilAssociation[robot_obj.coil_name] = robot_obj.robot_name
 
         Publisher.sendMessage(
             "Update Robot Coil Association", robotCoilAssociation=self.RobotCoilAssociation
