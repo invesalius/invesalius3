@@ -431,6 +431,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.LoadSlicePlane, "Load slice plane")
 
         Publisher.subscribe(self.ResetCamClippingRange, "Reset cam clipping range")
+        Publisher.subscribe(self.SendActiveCamera, "Send volume viewer active camera")
+        Publisher.subscribe(self.SendViewerSize, "Send volume viewer size")
 
         Publisher.subscribe(self.enable_style, "Enable style")
         Publisher.subscribe(self.OnDisableStyle, "Disable style")
@@ -1886,7 +1888,7 @@ class Viewer(wx.Panel):
         glyphFilter = vtkGlyph3D()
         glyphFilter.SetSourceConnection(arrowSource.GetOutputPort())
         glyphFilter.SetInputData(dataset)
-        glyphFilter.SetScaleFactor(1)
+        glyphFilter.SetScaleFactor(2)
         glyphFilter.Update()
 
         mapper = vtkPolyDataMapper()
@@ -1913,7 +1915,7 @@ class Viewer(wx.Panel):
                     ],
                 )
                 efield_coords_position = [list(position_world), list(orientation_world)]
-            enorms_list = list(self.e_field_norms)
+            enorms_list = list(self.e_field_norms_to_save)
             if plot_efield_vectors:
                 e_field_vectors = list(self.max_efield_array)
                 self.target_radius_list.append(
@@ -2050,6 +2052,13 @@ class Viewer(wx.Panel):
         seriesEnum = colorSeries.BREWER_SEQUENTIAL_BLUE_PURPLE_9
         colorSeries.SetColorScheme(seriesEnum)
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+        n = lut.GetNumberOfTableValues()
+        threshold = self.efield_threshold
+        highlight_rgb = (255, 165, 0)
+        for i in range(n):
+            norm_val = i / (n - 1)
+        if norm_val >= threshold:
+            lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)  # Set to orange
         return lut
 
     def GetEfieldMaxMin(self, e_field_norms):
@@ -2211,13 +2220,13 @@ class Viewer(wx.Panel):
             + "% percent: "
             + str(n_clusters)
             + "\n"
-            + " distance:"
-            + str(distances_between_representatives)
+            + "Distance: "
+            + str(f"{distances_between_representatives:04.2f}")
             + "\n"
             + "Focal Factor: "
-            + "  "
-            + str(focal_factor)
+            + str(f"{focal_factor:04.2f}")
         )
+
         self.focal_factor_members = [
             n_clusters,
             n_clusters / len(self.Id_list),
@@ -2230,7 +2239,7 @@ class Viewer(wx.Panel):
 
     def CreateClustersEfieldLegend(self):
         self.ClusterEfieldTextActor = self.CreateTextLegend(
-            const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION, (0.03, 0.99)
+            const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION, (0.12, 0.99)
         )
         self.ren.AddActor(self.ClusterEfieldTextActor.actor)
 
@@ -2327,6 +2336,7 @@ class Viewer(wx.Panel):
         self.coil_position = None
         self.coil_position_Trot = None
         self.e_field_norms = None
+        self.e_field_norms_to_save = None
         self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
         self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.target_radius_list = []
@@ -2382,7 +2392,7 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            self.efield_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
+            self.efield_lut = self.CreateLUTTableForEfield(0, self.efield_max)
             self.CalculateEdgesEfield()
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(const.CORTEX_COLOR)
@@ -2462,7 +2472,7 @@ class Viewer(wx.Panel):
         coil_dir = m_img_flip[:-1, 0]
         coil_face = m_img_flip[:-1, 1]
         cn = np.cross(coil_dir, coil_face)
-        T_rot = np.append(ct1, ct2, axis=0)
+        T_rot = np.append(-ct1, ct2, axis=0)
         T_rot = np.append(T_rot, cn, axis=0)  # append
         T_rot = T_rot.tolist()  # to list
         Publisher.sendMessage("Send coil position and rotation", T_rot=T_rot, cp=cp, m_img=m_img)
@@ -2481,7 +2491,7 @@ class Viewer(wx.Panel):
             if session.GetConfig("debug_efield"):
                 self.e_field_norms = enorm_data[3][self.Id_list, 0]
                 self.e_field_col1 = enorm_data[3][self.Id_list, 1]
-                self.e_field_col2 = enorm_data[3][self.Id_list, 1]  # LUKATODO: is this a typo?
+                self.e_field_col2 = enorm_data[3][self.Id_list, 2]  # LUKATODO: is this a typo?
                 self.e_field_col3 = enorm_data[3][self.Id_list, 3]
                 self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
                 max = np.array(self.e_field_norms).argmax()
@@ -2491,12 +2501,22 @@ class Viewer(wx.Panel):
                     self.e_field_col3[max],
                 ]
             else:
+                self.e_field_norms_to_save = enorm_data[3].enorm
                 self.e_field_norms = enorm_data[3].enorm
+                self.e_field_norms = [self.e_field_norms[i] for i in self.Id_list]
                 self.e_field_col1 = enorm_data[3].column1
                 self.e_field_col2 = enorm_data[3].column2
                 self.e_field_col3 = enorm_data[3].column3
+                self.e_field_col1_to_save = enorm_data[3].column1
+                self.e_field_col2_to_save = enorm_data[3].column2
+                self.e_field_col3_to_save = enorm_data[3].column3
+                if len(self.e_field_col1) > 1:
+                    self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
+                    self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
+                    self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
+
                 self.max_efield_array = enorm_data[3].mvector
-                self.Idmax = self.Id_list[enorm_data[3].maxindex]
+                self.Idmax = enorm_data[3].maxindex  # self.Id_list[enorm_data[3].maxindex]
                 if self.save_automatically and self.plot_no_connection:
                     import time
 
@@ -2576,9 +2596,9 @@ class Viewer(wx.Panel):
         if plot_efield_vectors:
             if self.plot_no_connection:
                 e_field_vectors = [
-                    list(self.e_field_col1),
-                    list(self.e_field_col2),
-                    list(self.e_field_col3),
+                    [list(self.e_field_col1_to_save)],
+                    [list(self.e_field_col2_to_save)],
+                    [list(self.e_field_col3_to_save)],
                 ]
             else:
                 e_field_vectors = list(self.max_efield_array)
@@ -2589,7 +2609,7 @@ class Viewer(wx.Panel):
                     self.coil_position,
                     efield_coords_position,
                     self.efield_coords,
-                    list(self.e_field_norms),
+                    list(self.e_field_norms_to_save),
                     self.Idmax,
                     e_field_vectors,
                     self.Id_list,
@@ -2609,7 +2629,7 @@ class Viewer(wx.Panel):
                     self.coil_position,
                     efield_coords_position,
                     self.efield_coords,
-                    list(self.e_field_norms),
+                    list(self.e_field_norms_to_save),
                 ]
             )
 
@@ -2829,6 +2849,14 @@ class Viewer(wx.Panel):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
+    def SendActiveCamera(self):
+        cam = self.ren.GetActiveCamera()
+        Publisher.sendMessage("Receive volume viewer active camera", cam=cam)
+
+    def SendViewerSize(self):
+        width, height = self.GetSize()
+        Publisher.sendMessage("Receive volume viewer size", size=(width, height))
+
     # Note: Not in use currently, this method is not called from anywhere.
     def SetVolumetricCamera(self, enabled):
         self.use_volumetric_camera = enabled
@@ -2933,35 +2961,82 @@ class Viewer(wx.Panel):
 
         self.ChangeRenderOrderToExportFile()
 
-        if filetype == const.FILETYPE_RIB:
-            writer = vtkRIBExporter()
-            writer.SetFilePrefix(fileprefix)
-            writer.SetTexturePrefix(fileprefix)
-            writer.SetInput(renwin)
-            writer.Write()
-        elif filetype == const.FILETYPE_VRML:
-            writer = vtkVRMLExporter()
-            writer.SetFileName(filename)
-            writer.SetInput(renwin)
-            writer.Write()
-        elif filetype == const.FILETYPE_X3D:
-            writer = vtkX3DExporter()
-            writer.SetInput(renwin)
-            writer.SetFileName(filename)
-            writer.Update()
-            writer.Write()
-        elif filetype == const.FILETYPE_OBJ:
-            writer = vtkOBJExporter()
-            writer.SetFilePrefix(fileprefix)
-            writer.SetInput(renwin)
-            writer.Write()
-        elif filetype == const.FILETYPE_IV:
-            writer = vtkIVExporter()
-            writer.SetFileName(filename)
-            writer.SetInput(renwin)
-            writer.Write()
+        progress = wx.ProgressDialog(
+            "Exporting",
+            "Preparing export...",
+            maximum=100,
+            style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME,
+        )
+        progress_destroyed = False
 
-        self.RestoreRenderOrderAfterExportFile()
+        try:
+            num_updates = 20
+            for i in range(num_updates):
+                percent = int(i * 89 / num_updates)
+                keep_going, _ = progress.Update(percent, f"Exporting file: {percent}%")
+                if not keep_going:
+                    progress.Destroy()
+                    progress_destroyed = True
+                    wx.MessageBox(
+                        "Export cancelled by user.", "Export Cancelled", wx.OK | wx.ICON_INFORMATION
+                    )
+                    return  # If User cancels
+                wx.MilliSleep(30)
+                wx.Yield()
+
+            progress.Update(90, "Finalizing export...")
+            wx.MilliSleep(100)
+            wx.Yield()
+
+            if filetype == const.FILETYPE_RIB:
+                writer = vtkRIBExporter()
+                writer.SetFilePrefix(fileprefix)
+                writer.SetTexturePrefix(fileprefix)
+                writer.SetInput(renwin)
+                writer.Write()
+            elif filetype == const.FILETYPE_VRML:
+                writer = vtkVRMLExporter()
+                writer.SetFileName(filename)
+                writer.SetInput(renwin)
+                writer.Write()
+            elif filetype == const.FILETYPE_X3D:
+                writer = vtkX3DExporter()
+                writer.SetInput(renwin)
+                writer.SetFileName(filename)
+                writer.Update()
+                writer.Write()
+            elif filetype == const.FILETYPE_OBJ:
+                writer = vtkOBJExporter()
+                writer.SetFilePrefix(fileprefix)
+                writer.SetInput(renwin)
+                writer.Write()
+            elif filetype == const.FILETYPE_IV:
+                writer = vtkIVExporter()
+                writer.SetFileName(filename)
+                writer.SetInput(renwin)
+                writer.Write()
+            else:
+                raise ValueError("Unsupported filetype")
+
+            progress.Update(100, "Export Complete")
+            wx.MilliSleep(100)
+            # Used by surface.py if needed
+            wx.Yield()
+            self.export_successful = True
+
+            wx.MessageBox(
+                "Export completed successfully.", "Export success", wx.OK | wx.ICON_INFORMATION
+            )
+
+        except Exception as e:
+            wx.MessageBox(f"Export failed: {e}", "Export Error", wx.OK | wx.ICON_ERROR)
+        finally:
+            self.RestoreRenderOrderAfterExportFile()
+            if progress and not progress_destroyed:
+                try:
+                    progress.Destroy()
+                except Exception:
+                    pass
 
     def OnEnableBrightContrast(self):
         style = self.style

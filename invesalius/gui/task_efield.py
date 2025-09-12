@@ -100,6 +100,13 @@ class InnerTaskPanel(wx.Panel):
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
 
+        efield_for_targeting = wx.CheckBox(self, -1, _("E-fields for targeting"))
+        efield_for_targeting.SetValue(False)
+        efield_for_targeting.Enable(True)
+        efield_for_targeting.Bind(
+            wx.EVT_CHECKBOX, partial(self.OnEfieldsForTargeting, ctrl=efield_for_targeting)
+        )
+
         # plot_vectors = wx.CheckBox(self, -1, _('Plot Efield vectors'))
         # plot_vectors.SetValue(False)
         # plot_vectors.Enable(1)
@@ -186,7 +193,7 @@ class InnerTaskPanel(wx.Panel):
 
         value = str(0)
         tooltip = _("dt(\u03bc s)")
-        self.input_dt = wx.TextCtrl(self, value=str(60), size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_dt = wx.TextCtrl(self, value=str(1), size=wx.Size(60, -1), style=wx.TE_CENTRE)
         self.input_dt.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.input_dt.SetBackgroundColour("WHITE")
         self.input_dt.SetEditable(1)
@@ -331,6 +338,7 @@ class InnerTaskPanel(wx.Panel):
         line_cortex_markers = wx.BoxSizer(wx.HORIZONTAL)
         line_cortex_markers.Add(efield_cortex_markers, 1, wx.LEFT | wx.RIGHT, 2)
         line_cortex_markers.Add(efield_save_automatically, 1, wx.LEFT | wx.RIGHT, 2)
+        line_cortex_markers.Add(efield_for_targeting, 1, wx.LEFT | wx.RIGHT, 2)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
@@ -606,8 +614,8 @@ class InnerTaskPanel(wx.Panel):
     def SenddI(self, dIs):
         self.OnChangeCoil(self.multilocus_coil[6], True)
         input_dt = 1 / (float(self.input_dt.GetValue()) * 1e-6)
-        dIs[1] = -dIs[1]
-        dIs[2] = -dIs[2]
+        # dIs[1] = -dIs[1]
+        # dIs[2] = -dIs[2]
         self.input_coils = dIs
         self.input_coils = np.array(self.input_coils) * input_dt
         self.input_coil1.SetValue(str(dIs[0]))
@@ -619,6 +627,12 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+
+    def OnEfieldsForTargeting(self, evt, ctrl):
+        if ctrl.GetValue():
+            self.navigation.neuronavigation_api.set_dIperdt(
+                dIperdt=[1, 1, 1, 1, 1],
+            )
 
     def GetIds(self, dIs):
         self.SenddI(dIs)

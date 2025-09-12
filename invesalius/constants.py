@@ -625,6 +625,7 @@ ID_CREATE_MASK = wx.NewIdRef()
 ID_MASK_3D_PREVIEW = wx.NewIdRef()
 ID_MASK_3D_RELOAD = wx.NewIdRef()
 ID_MASK_3D_AUTO_RELOAD = wx.NewIdRef()
+ID_MASK_3D_EDIT = wx.NewIdRef()
 
 ID_GOTO_SLICE = wx.NewIdRef()
 ID_GOTO_COORD = wx.NewIdRef()
@@ -652,6 +653,7 @@ STATE_MEASURE_DENSITY_ELLIPSE = 1010
 STATE_MEASURE_DENSITY_POLYGON = 1011
 STATE_NAVIGATION = 1012
 STATE_REGISTRATION = 1013
+STATE_MASK_3D_EDIT = 1014
 
 SLICE_STATE_CROSS = 3006
 SLICE_STATE_SCROLL = 3007
@@ -731,6 +733,8 @@ STYLE_LEVEL = {
     STATE_REGISTRATION: 3,
     # Override all other states when in navigation mode.
     STATE_NAVIGATION: 4,
+    # TODO(Henrique): check whether we need to override the previous states
+    STATE_MASK_3D_EDIT: 3,
 }
 
 # ------------ Prefereces options key ------------
@@ -1002,7 +1006,7 @@ SEED_RADIUS = 1.5
 # Efield Visualization
 EFIELD_MAX_RANGE_SCALE = 0.90
 CORTEX_COLOR = 190
-EFIELD_ROI_SIZE = 20
+EFIELD_ROI_SIZE = 40
 
 # Note that the sleep parameters can be set in the preferences dialog in the UI. The values here are default values,
 # selected to be a conservative compromise between frame rate and responsiveness, leaning towards responsiveness even
@@ -1169,3 +1173,9 @@ MTMS_RADIUS = 15
 # Pedal
 KEYSTROKE_PEDAL_ENABLED = True
 KEYSTROKE_PEDAL_KEY = wx.WXK_F21
+
+# Mask 3D Edit modes
+
+MASK_3D_EDIT_INCLUDE = 0
+MASK_3D_EDIT_EXCLUDE = 1
+MASK_3D_EDIT_OP_NAME = [_("Include Inside"), _("Exclude Inside")]

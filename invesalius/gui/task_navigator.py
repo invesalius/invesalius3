@@ -2996,6 +2996,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self.CreateMarkerEfield, "Create Marker from tangential")
         Publisher.subscribe(self.UpdateCortexMarker, "Update Cortex Marker")
 
+        Publisher.subscribe(self.CreateCoilTargetFromLandmark, "Create coil target from landmark")
+
         # Update main_coil combobox
         Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
         Publisher.subscribe(self.OnUpdateRobotCoilAssociation, "Update Robot Coil Association")
@@ -3084,14 +3086,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             except KeyError:
                 print("Invalid itemDataMap key:", key)
 
-        num_items = self.marker_list_ctrl.GetItemCount()
-        for n in range(num_items):
-            m_id = self.__get_marker_id(n)
-            reduction_in_m_id = 0
-            for d_id in deleted_ids:
-                if m_id > d_id:
-                    reduction_in_m_id += 1
-            self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - reduction_in_m_id))
+        for idx in range(self.marker_list_ctrl.GetItemCount()):
+            self.marker_list_ctrl.SetItem(idx, const.ID_COLUMN, str(idx))
 
         self.marker_list_ctrl.Show()
 
@@ -3554,7 +3550,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(idx)
         Publisher.sendMessage("Set camera to focus on marker", marker=marker)
 
-    def OnCreateCoilTargetFromLandmark(self, evt):
+    def CreateCoilTargetFromLandmark(self, index=None, label=None):
+        if index:
+            self.FocusOnMarker(index)
+        self.OnCreateCoilTargetFromLandmark(label=label)
+
+    def OnCreateCoilTargetFromLandmark(self, evt=None, label=None):
         list_index = self.marker_list_ctrl.GetFocusedItem()
         if list_index == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
@@ -3567,7 +3568,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             return
 
         coil = self.navigation.main_coil
-        self.markers.CreateCoilTargetFromLandmark(marker, coil)
+        self.markers.CreateCoilTargetFromLandmark(marker, coil, label)
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
         self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
@@ -4156,16 +4157,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.__delete_multiple_markers(indexes)
 
-        # Re-focus on the marker with the same index as the first marker that was selected before deletion.
-        if self.currently_focused_marker is not None:
-            first_deleted_index = indexes[0]
-            first_existing_index = (
-                first_deleted_index
-                if first_deleted_index < self.marker_list_ctrl.GetItemCount()
-                else self.marker_list_ctrl.GetItemCount() - 1
-            )
-
-            self.FocusOnMarker(first_existing_index)
+        # Re-focus on a reasonable marker after deletion
+        remaining_count = self.marker_list_ctrl.GetItemCount()
+        if remaining_count > 0:
+            focus_index = min(indexes[0], remaining_count - 1)
+            self.FocusOnMarker(focus_index)
+        else:
+            self.currently_focused_marker = None  # disable focus if no markers left
 
     def OnDeleteSelectedBrainTarget(self, evt):
         list_index = self.brain_targets_list_ctrl.GetFocusedItem()

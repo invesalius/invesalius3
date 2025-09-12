@@ -97,6 +97,7 @@ import invesalius
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
+import invesalius.data.imagedata_utils as img_utils
 import invesalius.data.polydata_utils as pu
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
@@ -288,13 +289,13 @@ WILDCARD_INV_SAVE = (
     + _("InVesalius project compressed (*.inv3)|*.inv3")
 )
 
-WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" "All files (*.*)|*.*"
+WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|All files (*.*)|*.*"
 
-WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" "All files (*.*)|*.*"
+WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|All files (*.*)|*.*"
 
-WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|" "All files (*.*)|*.*"
+WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|All files (*.*)|*.*"
 # ".[jJ][pP][gG]"
-WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" "All files (*.*)|*.*"
+WILDCARD_PARREC = "PAR/REC (*.par)|*.par|All files (*.*)|*.*"
 
 WILDCARD_MESH_FILES = (
     "STL File format (*.stl)|*.stl|"
@@ -303,7 +304,7 @@ WILDCARD_MESH_FILES = (
     "VTK Polydata File Format (*.vtp)|*.vtp|"
     "All files (*.*)|*.*"
 )
-WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|" "All files (*.*)|*.*"
+WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|All files (*.*)|*.*"
 
 
 def ShowOpenProjectDialog() -> Union[str, None]:
@@ -6173,7 +6174,7 @@ class BrainSurfaceLoadingProgressWindow:
 
 class SurfaceSmoothingProgressWindow:
     def __init__(self):
-        title = "InVesalius 3"
+        title = "InVesalius 3 – Creating TMS Coil Target"
         message = _("Smoothing the surface...")
         style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
         parent = wx.GetApp().GetTopWindow()
@@ -6440,9 +6441,6 @@ class GoToDialogScannerCoord(wx.Dialog):
         self.goto_coronal = wx.TextCtrl(self, size=(50, -1))
         self.goto_axial = wx.TextCtrl(self, size=(50, -1))
 
-        # Initialize result attribute
-        self.result = None
-
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText("")
         btn_ok.SetDefault()
@@ -6480,16 +6478,7 @@ class GoToDialogScannerCoord(wx.Dialog):
         self.orientation = None
         self.affine = np.identity(4)
 
-        self.__bind_events()
-
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
-
-    def __bind_events(self) -> None:
-        Publisher.subscribe(self.SetNewFocalPoint, "Cross focal point")
-
-    def SetNewFocalPoint(self, coord, spacing):
-        if self.result is not None:
-            Publisher.sendMessage("Update cross pos", coord=self.result * spacing)
 
     def OnOk(self, evt: wx.CommandEvent) -> None:
         import invesalius.data.slice_ as slc
@@ -6502,18 +6491,22 @@ class GoToDialogScannerCoord(wx.Dialog):
             ]
 
             # transformation from scanner coordinates to inv coord system
-            affine_inverse = np.linalg.inv(slc.Slice().affine)
-            self.result = (
-                np.dot(affine_inverse[:3, :3], np.transpose(point[0:3])) + affine_inverse[:3, 3]
-            )
-            self.result[1] = slc.Slice().GetMaxSliceNumber(const.CORONAL_STR) - self.result[1]
+            voxel = img_utils.convert_world_to_voxel(point[0:3], np.linalg.inv(slc.Slice().affine))[
+                0
+            ]
 
             Publisher.sendMessage(
                 "Update status text in GUI", label=_("Calculating the transformation ...")
             )
 
-            Publisher.sendMessage("Set Update cross pos")
-            Publisher.sendMessage("Toggle toolbar button", id=const.SLICE_STATE_CROSS)
+            wx.CallAfter(Publisher.sendMessage, "Toggle toolbar button", id=const.SLICE_STATE_CROSS)
+            wx.CallAfter(Publisher.sendMessage, "Update slices position", position=voxel)
+            wx.CallAfter(Publisher.sendMessage, "Set cross focal point", position=voxel)
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "Update volume viewer pointer",
+                position=[voxel[0], -voxel[1], voxel[2]],
+            )
 
             Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
         except ValueError:
@@ -7208,14 +7201,14 @@ class ConfigurePolarisDialog(wx.Dialog):
                 path=last_ndi_obj_markers[i],
                 style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
                 wildcard="Rom files (*.rom)|*.rom",
-                message=f"Select the ROM file of coil {i+1}",
+                message=f"Select the ROM file of coil {i + 1}",
                 size=(700, -1),
             )
             self.dir_objs.append(dir_obj)
 
             row_obj = wx.BoxSizer(wx.VERTICAL)
             row_obj.Add(
-                wx.StaticText(self, wx.ID_ANY, f"Coil {i+1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5
+                wx.StaticText(self, wx.ID_ANY, f"Coil {i + 1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5
             )
             row_obj.Add(dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
             row_objs.append(row_obj)

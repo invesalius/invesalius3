@@ -16,9 +16,14 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import os
 import sys
 
 import wx
+import wx.aui
+import wx.lib.agw.fourwaysplitter as fws
+import wx.lib.colourselect as csel
+import wx.lib.platebtn as pbtn
 
 import invesalius.constants as const
 import invesalius.data.viewer_slice as slice_viewer
@@ -139,7 +144,18 @@ class Panel(wx.Panel):
         Publisher.subscribe(self.OnSetSimultaneousMode, "Set simultaneous multicoil mode")
         Publisher.subscribe(self.OnSetTargetMode, "Set target mode")
         Publisher.subscribe(self.OnStartNavigation, "Start navigation")
+        Publisher.subscribe(self.UpdateViewerCaption, "Update viewer caption")
         Publisher.subscribe(self._Exit, "Exit")
+
+    def UpdateViewerCaption(self, viewer_name: str, caption: str):
+        """Update the caption of a viewer pane.
+
+        Args:
+            viewer_name (str): The name of the viewer pane to update.
+            caption (str): The new caption to set for the viewer pane.
+        """
+        self.aui_manager.GetPane(viewer_name).Caption(caption)
+        self.Refresh()
 
     def OnSetSimultaneousMode(self, state=True, coils_list=None):
         if state:
