@@ -71,7 +71,7 @@ MANIFEST
 .skbuild-info.json
 
 #Sample files
-samples/
+# samples/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
