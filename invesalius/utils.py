@@ -16,21 +16,38 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import atexit
 import collections.abc
 import locale
+import logging
 import math
+import os
 import platform
+import queue
 import re
+import shutil
 import sys
+import tempfile
+import threading
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 from packaging.version import Version
 
 import invesalius
+
+# Configure logger for tempfile management
+logger = logging.getLogger("invesalius.temp_manager")
+logger.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 
 def format_time(value: str) -> str:
@@ -419,3 +436,185 @@ def deep_merge_dict(d, u):
         else:
             d[k] = v
     return d
+
+
+class TempFileManager(metaclass=Singleton):
+    """
+    A singleton class that manages temporary files in the application.
+    Handles safe cleanup of temporary files and directories that are no longer in use.
+    """
+
+    # Constants
+    CLEANUP_TIMEOUT = 5
+    MAX_WORKERS = 4
+    OLD_FILE_THRESHOLD = 3600
+
+    def __init__(self):
+        self._temp_files: Dict[str, Dict[str, Any]] = {}
+        self._lock = threading.Lock()
+        self._executor = ThreadPoolExecutor(max_workers=self.MAX_WORKERS)
+        self._cleanup_queue = queue.Queue()
+        self._shutdown_event = threading.Event()
+        self._cleanup_thread = threading.Thread(target=self._cleanup_worker, daemon=True)
+        self._cleanup_thread.start()
+        self._is_shutting_down = False
+        self._ignored_files = set()  # Files we've tried to delete but failed
+        atexit.register(self.shutdown)
+
+        self._startup_background_cleanup()
+
+        logger.info("TempFileManager initialized")
+
+    def _startup_background_cleanup(self) -> None:
+        def cleanup_thread():
+            self._cleanup_old_files()
+
+        cleanup_thread = threading.Thread(target=cleanup_thread, daemon=True)
+        cleanup_thread.start()
+
+    def _cleanup_old_files(self) -> None:
+        temp_dir = tempfile.gettempdir()
+        patterns = [
+            os.path.join(temp_dir, "tmp*_full.vtp"),
+            os.path.join(temp_dir, "tmp*_*_*.vtp"),
+            os.path.join(temp_dir, "tmp[a-z0-9_]*"),
+            os.path.join(temp_dir, "tmp*[0-9]"),
+        ]
+
+        try:
+            import glob
+
+            old_files = []
+            for pattern in patterns:
+                old_files.extend(glob.glob(pattern))
+
+            if old_files:
+                logger.info(f"Found {len(old_files)} leftover files from previous sessions")
+                for file in old_files:
+                    if time.time() - os.path.getmtime(file) > self.OLD_FILE_THRESHOLD:
+                        self.register_temp_file(file, ref_count=0)
+                        self._cleanup_queue.put(file)
+                        # logger.debug(f"Queued old temp file for cleanup: {file}")
+
+        except (OSError, IOError) as e:
+            logger.error(f"Error during old file cleanup: {str(e)}")
+
+    def register_temp_file(self, file_path: str, ref_count: int = 1) -> None:
+        """Register a temporary file or directory with the manager"""
+        if not file_path:
+            return
+
+        with self._lock:
+            if file_path in self._temp_files:
+                self._temp_files[file_path]["refs"] += ref_count
+                # logger.debug(f"Increased ref count for {file_path} by {ref_count} (total: {self._temp_files[file_path]['refs']})")
+            else:
+                self._temp_files[file_path] = {
+                    "refs": ref_count,
+                    "last_access": time.monotonic(),
+                    "is_dir": os.path.isdir(file_path),
+                }
+                logger.info(
+                    f"Registered new temp {'directory' if os.path.isdir(file_path) else 'file'}: {file_path} ref count {ref_count}"
+                )
+
+    #    def increment_refs(self, file_path: str) -> None:
+    #        """Increment reference count for a temporary file or directory"""
+    #        if not file_path:
+    #            return
+    #        with self._lock:
+    #            if file_path in self._temp_files:
+    #                self._temp_files[file_path]["refs"] += 1
+    #                self._temp_files[file_path]["last_access"] = time.monotonic()
+    #                logger.debug(f"Incremented ref count for {file_path} (total: {self._temp_files[file_path]['refs']})")
+
+    def decrement_refs(self, file_path: str) -> None:
+        """Decrement reference count for a temporary file or directory"""
+        if not file_path:
+            return
+
+        with self._lock:
+            if file_path in self._temp_files:
+                self._temp_files[file_path]["refs"] -= 1
+                # logger.debug(f"Decremented ref count for {file_path} (remaining: {self._temp_files[file_path]['refs']})")
+                # Only queue for cleanup if refs reached 0 and file is still in our tracking
+                if self._temp_files[file_path]["refs"] <= 0:
+                    logger.info(f"Queuing {file_path} for cleanup (ref count reached 0)")
+                    self._cleanup_queue.put(file_path)
+                    self._temp_files.pop(file_path, None)
+
+    def _cleanup_worker(self) -> None:
+        """Background worker that handles file cleanup"""
+        # logger.info(f"Cleanup worker started")
+        while not self._shutdown_event.is_set():
+            #            try:
+            try:
+                file_path = self._cleanup_queue.get()
+            except queue.Empty:
+                continue
+
+            if file_path is None:
+                # logger.info("Cleanup worker received shutdown signal")
+                break
+            # logger.debug(f"Submitting cleanup task for {file_path}")
+            self._executor.submit(self._safe_remove_file, file_path)
+            self._cleanup_queue.task_done()
+
+    #            except Exception as e:
+    #                logger.error(f"Error in cleanup worker: {str(e)}")
+
+    def _safe_remove_file(self, file_path: str) -> None:
+        if not file_path or file_path in self._ignored_files:
+            return
+        try:
+            if os.path.exists(file_path):
+                # logger.debug(f"Attempting to remove {file_path}")
+                if sys.platform == "win32":
+                    import gc
+
+                    gc.collect()  # Force garbage collection
+                if os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+                    # logger.info(f"Successfully removed temp directory: {file_path}")
+                else:
+                    os.remove(file_path)
+                    # logger.info(f"Successfully removed temp file: {file_path}")
+                with self._lock:
+                    self._temp_files.pop(file_path, None)
+            else:
+                with self._lock:
+                    self._temp_files.pop(file_path, None)
+
+        except (OSError, IOError) as e:
+            # logger.warning(f"Could not remove temp {'directory' if os.path.isdir(file_path) else 'file'} {file_path}, will be cleaned up by OS: {str(e)}")
+            with self._lock:
+                self._ignored_files.add(file_path)
+                self._temp_files.pop(file_path, None)
+
+    def cleanup_all(self) -> None:
+        with self._lock:
+            files_to_remove = list(self._temp_files.keys())
+
+        logger.info(
+            f"Cleaning up all temp files/directories ({len(files_to_remove)} items, {len(self._ignored_files)} ignored)"
+        )
+
+        for file_path in files_to_remove:
+            if file_path not in self._ignored_files:
+                self._cleanup_queue.put(file_path)
+
+        self._cleanup_queue.join()
+        # logger.info("Completed cleanup of all temp files and directories")
+
+    def shutdown(self) -> None:
+        with self._lock:
+            if self._is_shutting_down:
+                return
+            self._is_shutting_down = True
+            # logger.info("Initiating TempFileManager shutdown")
+            self._shutdown_event.set()
+            self._cleanup_queue.put(None)
+            self._cleanup_thread.join(timeout=self.CLEANUP_TIMEOUT)
+            self._executor.shutdown(wait=True)
+            self.cleanup_all()
+            # logger.info("TempFileManager shutdown completed successfully")
