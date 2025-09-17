@@ -59,9 +59,8 @@ CONFIG_INIT = {
     "logging_file": "",
     "console_logging": 0,
     "console_logging_level": 0,
-    "robot": {
-        "robot_ip_options": "",
-    },
+    "robots": {},
+    "robot_ip_options": "",
 }
 
 
@@ -94,7 +93,8 @@ class Session(metaclass=Singleton):
         self._config = CONFIG_INIT
         self._config["mode"] = const.MODE_RP
         self._config["project_status"] = const.PROJECT_STATUS_CLOSED
-        self._config["robot"] = {"robot_ip_options": const.ROBOT_IPS}
+        self._config["robots"] = {}
+        self._config["robot_ip_options"] = const.ROBOT_IPS
 
         self.WriteConfigFile()
 
@@ -105,7 +105,8 @@ class Session(metaclass=Singleton):
             config_init = CONFIG_INIT
             config_init["mode"] = const.MODE_RP
             config_init["project_status"] = const.PROJECT_STATUS_CLOSED
-            config_init["robot"] = {"robot_ip_options": const.ROBOT_IPS}
+            config_init["robots"] = {}
+            config_init["robot_ip_options"] = const.ROBOT_IPS
             self._config = deep_merge_dict(config_init, self._config.copy())
             self.WriteConfigFile()
 

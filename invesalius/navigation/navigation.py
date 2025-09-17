@@ -42,7 +42,7 @@ from invesalius.i18n import tr as _
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.markers import MarkersControl
-from invesalius.navigation.robot import Robot
+from invesalius.navigation.robot import Robots
 from invesalius.navigation.tracker import Tracker
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
@@ -64,7 +64,7 @@ class NavigationHub(metaclass=Singleton):
         self.navigation = Navigation(
             pedal_connector=self.pedal_connector, neuronavigation_api=self.neuronavigation_api
         )
-        self.robot = Robot(
+        self.robot = Robots(
             tracker=self.tracker,
             navigation=self.navigation,
             icp=self.icp,
@@ -137,6 +137,8 @@ class UpdateNavigationScene(threading.Thread):
         self.event = event
         self.neuronavigation_api = neuronavigation_api
         self.navigation = Navigation()
+        self.robot = Robots()
+        self.markers = MarkersControl()
 
     def run(self):
         while not self.event.is_set():
@@ -147,15 +149,23 @@ class UpdateNavigationScene(threading.Thread):
 
                 probe_visible = marker_visibilities[0]
                 coil_visible = any(marker_visibilities[2:])  # is any coil visible?
+                track_this = self.navigation.main_coil if self.navigation.track_coil else "probe"
+                markers_target = self.markers.FindTarget(multiple=True)
 
-                main_coil = self.navigation.main_coil
-                track_this = main_coil if self.navigation.track_coil else "probe"
+                if markers_target is None:
+                    coils = [self.navigation.main_coil]
+                elif len(markers_target) > 1:
+                    coils = [marker.coil for marker in markers_target]
+                else:
+                    coils = [markers_target[0].coil]
+
                 # choose which object to track in slices and viewer_volume pointer
                 coord = coords[track_this]
 
                 # Remove probe, so that coords/m_imgs only contain coils
-                probe_coord = coords.pop("probe")
-                probe_m_img = m_imgs.pop("probe")
+                if "probe" in coords:
+                    probe_coord = coords.pop("probe")
+                    probe_m_img = m_imgs.pop("probe")
 
                 # use of CallAfter is mandatory otherwise crashes the wx interface
                 if self.view_tracts:
@@ -198,45 +208,55 @@ class UpdateNavigationScene(threading.Thread):
                     position=[coord[0], -coord[1], coord[2]],
                 )
 
-                if coil_visible:
+                if coil_visible and self.navigation.track_coil:
                     # Check pubsub "Update coil pose" dependencies
                     wx.CallAfter(
                         Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
                     )
-                    wx.CallAfter(  # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
-                        Publisher.sendMessage,
-                        "Update coil pose",
-                        m_img=m_imgs[main_coil],
-                        coord=coords[main_coil],
-                    )
-                    wx.CallAfter(
-                        Publisher.sendMessage,
-                        "Update object arrow matrix",
-                        m_img=m_imgs[main_coil],
-                        coord=coords[main_coil],
-                        flag=self.peel_loaded,
-                    )
 
-                    if self.e_field_loaded:
+                    # needs to be checked
+                    # self.robot.UpdateCoilsDistance(coords)
+
+                    for coil in coils:
+                        robot_ID = self.robot.GetRobotByCoil(coil).robot_name
+                        wx.CallAfter(  # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
+                            Publisher.sendMessage,
+                            "Update coil pose",
+                            m_img=m_imgs[coil],
+                            coord=coords[coil],
+                            robot_ID=robot_ID,
+                            coil_name=coil,
+                        )
                         wx.CallAfter(
                             Publisher.sendMessage,
-                            "Update point location for e-field calculation",
-                            m_img=m_imgs[main_coil],
-                            coord=coords[main_coil],
-                            queue_IDs=self.e_field_IDs_queue,
+                            "Update object arrow matrix",
+                            m_img=m_imgs[coil],
+                            coord=coords[coil],
+                            flag=self.peel_loaded,
+                            coil_name=coil,
                         )
-                        try:
-                            enorm_data = self.e_field_norms_queue.get_nowait()
+
+                        if self.e_field_loaded:
                             wx.CallAfter(
                                 Publisher.sendMessage,
-                                "Get enorm",
-                                enorm_data=enorm_data,
-                                plot_vector=self.plot_efield_vectors,
+                                "Update point location for e-field calculation",
+                                m_img=m_imgs[coil],
+                                coord=coords[coil],
+                                queue_IDs=self.e_field_IDs_queue,
+                                coil_name=coil,
                             )
-                        except queue.Empty:
-                            pass
-                        else:
-                            self.e_field_norms_queue.task_done()
+                            try:
+                                enorm_data = self.e_field_norms_queue.get_nowait()
+                                wx.CallAfter(
+                                    Publisher.sendMessage,
+                                    "Get enorm",
+                                    enorm_data=enorm_data,
+                                    plot_vector=self.plot_efield_vectors,
+                                )
+                            except queue.Empty:
+                                pass
+                            else:
+                                self.e_field_norms_queue.task_done()
 
                 if probe_visible:
                     wx.CallAfter(
@@ -264,7 +284,7 @@ class Navigation(metaclass=Singleton):
         self.pedal_connector = pedal_connector
         self.neuronavigation_api = neuronavigation_api
 
-        self.target = None
+        self.targets = []
         self.n_coils = 1
         self.coil_registrations = {}
         self.track_coil = False
@@ -272,6 +292,7 @@ class Navigation(metaclass=Singleton):
         self.m_change = None
         self.r_stylus = None
         self.obj_datas = None  # This is accessed by the robot, gets value at StartNavigation
+        self.multitarget = False
 
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
@@ -319,7 +340,8 @@ class Navigation(metaclass=Singleton):
 
         # During navigation
         self.lock_to_target = False
-        self.coil_at_target = False
+        self.coils_at_target = {}
+        self.all_coils_at_target = False
 
         self.LoadConfig()
 
@@ -328,9 +350,12 @@ class Navigation(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.CoilAtTarget, "Coil at target")
         Publisher.subscribe(self.SetNoOfCoils, "Reset coil selection")
-        Publisher.subscribe(self.SelectCoil, "Select coil")
+        Publisher.subscribe(self.ADDSelectCoil, "ADD select coil")
+        Publisher.subscribe(self.DeleteSelectCoil, "Delete select coil")
+        Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
         Publisher.subscribe(self.UpdateSerialPort, "Update serial port")
         Publisher.subscribe(self.TrackObject, "Track object")
+        Publisher.subscribe(self.MultiTargetMode, "Set simultaneous multicoil mode")
 
     def SaveConfig(self, key=None, value=None):
         """
@@ -342,6 +367,8 @@ class Navigation(metaclass=Singleton):
                 "selected_coils": list(self.coil_registrations),
                 "n_coils": self.n_coils,
                 "track_coil": self.track_coil,
+                "multitarget mode": self.multitarget,
+                "selected_coils_to_navigation": self.selected_coils_to_navigation,
             }
             if self.main_coil is not None:
                 state["main_coil"] = self.main_coil
@@ -368,6 +395,8 @@ class Navigation(metaclass=Singleton):
                 self.main_coil = "default_coil"
 
             self.track_coil = state.get("track_coil", False)
+            self.multitarget = state.get("multitarget mode", False)
+            self.selected_coils_to_navigation = state.get("selected_coils_to_navigation", None)
 
             # Try to load selected_coils (the list of names of coils to use for navigation)
             if ("selected_coils" in state) and (saved_coil_registrations is not None):
@@ -387,21 +416,32 @@ class Navigation(metaclass=Singleton):
     def CoilSelectionDone(self):
         return len(self.coil_registrations) == self.n_coils
 
-    def SelectCoil(self, coil_name, coil_registration):
-        if coil_registration is not None:  # Add the coil to selection
-            self.coil_registrations[coil_name] = coil_registration
-            if self.main_coil is None:
-                self.main_coil = coil_name
-        else:  # Remove the coil from selection
-            self.coil_registrations.pop(coil_name, None)
-            if self.main_coil == coil_name:
-                self.main_coil = None
-                self.SaveConfig()
-
+    def ADDSelectCoil(self, coil_name, coil_registration):
+        self.coil_registrations[coil_name] = coil_registration
+        if self.main_coil is None:
+            self.main_coil = coil_name
         self.SaveConfig()
 
-    def CoilAtTarget(self, state):
-        self.coil_at_target = state
+    def DeleteSelectCoil(self, coil_name):
+        self.coil_registrations.pop(coil_name, None)
+        if self.main_coil == coil_name:
+            self.main_coil = None
+        self.SaveConfig()
+
+    def RenameSelectCoil(self, coil_name, new_coil_name):
+        self.coil_registrations[new_coil_name] = self.coil_registrations.pop(coil_name)
+        if self.main_coil == coil_name:
+            self.main_coil = new_coil_name
+        self.SaveConfig()
+
+    def CoilAtTarget(self, state, coil_name):
+        self.coils_at_target[coil_name] = state
+        if not self.multitarget:
+            self.coil_at_target = state
+        elif all(self.coils_at_target.values()) and self.multitarget:
+            self.coil_at_target = True
+        else:
+            self.coil_at_target = False
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
@@ -425,6 +465,7 @@ class Navigation(metaclass=Singleton):
 
         # Reset coil selection
         self.coil_registrations = {}
+        self.track_coil = False
         self.main_coil = None
         self.SaveConfig()
 
@@ -432,8 +473,9 @@ class Navigation(metaclass=Singleton):
         self.main_coil = main_coil
         self.SaveConfig("main_coil", main_coil)
 
+    def UpdateCoilMesh(self, coil):
         # Send the polydata of the main coil to the connection
-        polydata = pu.LoadPolydata(self.coil_registrations[main_coil]["path"])
+        polydata = pu.LoadPolydata(self.coil_registrations[coil]["path"])
         self.neuronavigation_api.update_coil_mesh(polydata)
 
     def SetReferenceMode(self, value):
@@ -574,14 +616,6 @@ class Navigation(metaclass=Singleton):
 
             coreg_data = [self.m_change, self.r_stylus]
 
-            robot = Robot()
-            if robot.IsReady():
-                # Tell robot at which index (obj_id) to find its coil in (relevant when there are multiple coils)
-                Publisher.sendMessage(
-                    "Neuronavigation to Robot: Set coil index",
-                    data=self.coil_registrations[robot.GetCoilName()]["obj_id"],
-                )
-
             queues = [
                 self.coord_queue,
                 self.coord_tracts_queue,
@@ -599,7 +633,7 @@ class Navigation(metaclass=Singleton):
                     self.event,
                     self.sleep_nav,
                     tracker.tracker_id,
-                    self.target,
+                    self.targets,
                     icp,
                     self.e_field_loaded,
                 )
@@ -716,3 +750,8 @@ class Navigation(metaclass=Singleton):
             self.plot_efield_vectors,
         ]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
+
+    def MultiTargetMode(self, state=False, coils_list=None):
+        self.selected_coils_to_navigation = coils_list
+        self.multitarget = state
+        self.SaveConfig()

@@ -21,6 +21,7 @@ from enum import Enum
 
 import numpy as np
 import wx
+from scipy.spatial import distance
 
 import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
@@ -38,16 +39,17 @@ class RobotObjective(Enum):
 
 # Only one robot will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
-class Robot(metaclass=Singleton):
-    def __init__(self, tracker, navigation, icp):
+class Robot:
+    def __init__(self, name, tracker, navigation, icp):
         self.tracker = tracker
         self.navigation = navigation
         self.icp = icp
         self.enabled_in_gui = False
-
         self.coil_name = None
+        self.coil_radius = None
 
         self.is_robot_connected = False
+        self.robot_name = name
         self.robot_ip = None
         self.robot_ip_options = []
         self.matrix_tracker_to_robot = None
@@ -83,40 +85,50 @@ class Robot(metaclass=Singleton):
 
         Publisher.subscribe(self.TrackerFiducialsSet, "Tracker fiducials set")
 
+    def SaveIpConfig(self):
+        session = ses.Session()
+        session.SetConfig("robot_ip_options", self.robot_ip_options)
+
     def SaveConfig(self, key=None, value=None):
         session = ses.Session()
+        robots = session.GetConfig("robots", {})
         if key is None or value is None:
             # Save the whole state
             state = {
                 "robot_ip": self.robot_ip,
-                "robot_ip_options": self.robot_ip_options,
-                "tracker_to_robot": self.matrix_tracker_to_robot.tolist(),
             }
             if self.coil_name is not None:
                 state["robot_coil"] = self.coil_name
         else:
-            state = session.GetConfig("robot", {})
+            state = robots.get(self.robot_name, {})
             state[key] = value
 
-        session.SetConfig("robot", state)
+        robots[self.robot_name] = state
+        session.SetConfig("robots", robots)
 
     def LoadConfig(self):
         session = ses.Session()
-        state = session.GetConfig("robot", {})
+
+        robots = session.GetConfig("robots", {})
+        state = robots.get(self.robot_name, {})
 
         self.coil_name = state.get("robot_coil", None)
-
+        self.coil_radius = state.get("coil_radius", None)
         self.robot_ip = state.get("robot_ip", None)
-        self.robot_ip_options = state.get("robot_ip_options", [])
 
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
         if self.matrix_tracker_to_robot is not None:
             self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
 
+        self.robot_ip_options = session.GetConfig("robot_ip_options", [])
+
         success = self.robot_ip is not None and self.matrix_tracker_to_robot is not None
         return success
 
-    def OnRobotConnectionStatus(self, data):
+    def OnRobotConnectionStatus(self, data, robot_ID):
+        if robot_ID != self.robot_name:
+            # Ignore messages for other robots.
+            return
         # TODO: Is this check necessary?
         if not data:
             return
@@ -124,8 +136,9 @@ class Robot(metaclass=Singleton):
             self.is_robot_connected = True
 
         if self.is_robot_connected:
-            Publisher.sendMessage("Enable move away button", enabled=True)
-            Publisher.sendMessage("Enable free drive button", enabled=True)
+            Publisher.sendMessage("Enable move away button", enabled=True, robot_ID=robot_ID)
+            Publisher.sendMessage("Enable free drive button", enabled=True, robot_ID=robot_ID)
+            Publisher.sendMessage("Enable clean errors button", enabled=True, robot_ID=robot_ID)
         else:
             self.is_robot_connected = False
 
@@ -145,18 +158,22 @@ class Robot(metaclass=Singleton):
 
         # Destroy the dialog.
         self.robot_coregistration_dialog.Destroy()
+        self.robot_coregistration_dialog = None
 
         if status != wx.ID_OK:
             wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
             return False
 
         self.matrix_tracker_to_robot = matrix_tracker_to_robot
-        self.SaveConfig()
+        self.SaveConfig("tracker_to_robot", self.matrix_tracker_to_robot.tolist())
         self.InitializeRobot()
 
-    def AbortRobotConfiguration(self):
+    def AbortRobotConfiguration(self, robot_ID):
+        if robot_ID != self.robot_name:
+            return
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
+            self.robot_coregistration_dialog = None
 
     def IsConnected(self):
         return self.is_robot_connected
@@ -169,13 +186,18 @@ class Robot(metaclass=Singleton):
             self.robot_ip = data
 
     def ConnectToRobot(self):
-        Publisher.sendMessage("Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Connect to robot",
+            robot_IP=self.robot_ip,
+            robot_ID=self.robot_name,
+        )
         print("Connected to robot")
 
     def InitializeRobot(self):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
+            robot_ID=self.robot_name,
         )
         print("Robot initialized")
 
@@ -185,6 +207,13 @@ class Robot(metaclass=Singleton):
     def SetCoilName(self, name):
         self.coil_name = name
         self.SaveConfig("robot_coil", name)
+        self.LoadConfig()
+
+    def SetCoilRadius(self, left=None, right=None):
+        if left and right:
+            radius = distance.euclidean(left, right) / 2
+            self.coil_radius = radius
+            self.SaveConfig("coil_radius", radius)
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -197,7 +226,9 @@ class Robot(metaclass=Singleton):
             return False
 
         # Compute the target in tracker coordinate system.
-        coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
+        coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates(
+            robot_ID=self.robot_name
+        )
 
         # TODO: This is done here for now because the robot code expects the y-coordinate to be flipped. When this
         #   is removed, the robot code should be updated similarly, and vice versa. Create a copy of self.target by
@@ -215,12 +246,15 @@ class Robot(metaclass=Singleton):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set target",
             target=m_target.tolist(),
+            robot_ID=self.robot_name,
         )
 
     def TrackerFiducialsSet(self):
         tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
         Publisher.sendMessage(
-            "Neuronavigation to Robot: Set tracker fiducials", tracker_fiducials=tracker_fiducials
+            "Neuronavigation to Robot: Set tracker fiducials",
+            tracker_fiducials=tracker_fiducials,
+            robot_ID=self.robot_name,
         )
 
     def SetObjective(self, objective):
@@ -230,31 +264,39 @@ class Robot(metaclass=Singleton):
             return
 
         self.objective = objective
-        Publisher.sendMessage("Neuronavigation to Robot: Set objective", objective=objective.value)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Set objective",
+            objective=objective.value,
+            robot_ID=self.robot_name,
+        )
 
-    def SetObjectiveByRobot(self, objective):
+    def SetObjectiveByRobot(self, objective, robot_ID):
         if objective is None:
             return
 
         self.objective = RobotObjective(objective)
         if self.objective == RobotObjective.TRACK_TARGET:
             # Unpress 'Move away from robot' button when the robot is tracking the target.
-            Publisher.sendMessage("Press move away button", pressed=False)
+            Publisher.sendMessage("Press move away button", pressed=False, robot_ID=robot_ID)
 
         elif self.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
             # Unpress 'Track target' button when the robot is moving away from head.
-            Publisher.sendMessage("Press robot button", pressed=False)
+            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=robot_ID)
 
         elif self.objective == RobotObjective.NONE:
             # Unpress 'Track target' and 'Move away from robot' buttons when the robot has no objective.
-            Publisher.sendMessage("Press robot button", pressed=False)
-            Publisher.sendMessage("Press move away button", pressed=False)
+            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=robot_ID)
+            Publisher.sendMessage("Press move away button", pressed=False, robot_ID=robot_ID)
 
-    def UnsetTarget(self, marker):
+    def UnsetTarget(self, marker, robot_ID):
+        if robot_ID != self.robot_name:
+            return
         self.target = None
-        Publisher.sendMessage("Neuronavigation to Robot: Unset target")
+        Publisher.sendMessage("Neuronavigation to Robot: Unset target", robot_ID=self.robot_name)
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker, robot_ID):
+        if robot_ID != self.robot_name or not self.IsConnected():
+            return
         coord = marker.position + marker.orientation
 
         # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
@@ -263,3 +305,156 @@ class Robot(metaclass=Singleton):
 
         self.target = coord
         self.SendTargetToRobot()
+
+
+class Robots(metaclass=Singleton):
+    def __init__(self, tracker, navigation, icp):
+        self.tracker = tracker
+        self.navigation = navigation
+        self.icp = icp
+        # TODO: optimize the dynamic creation of second robot
+        self._robots = {
+            "robot_1": Robot("robot_1", tracker, navigation, icp),
+            "robot_2": Robot("robot_2", tracker, navigation, icp),
+        }
+        self.active = "robot_1"  # Default active robot
+        self.RobotCoilAssociation = {}
+        self.coil_distance_threshold = 0
+        self.SendIDs()
+
+        if self.navigation.n_coils > 1:
+            self.CreateSecondRobot()
+
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
+        Publisher.subscribe(self.SetCoilDistanceThershold, "Coil selection done")
+
+    def SetCoilDistanceThershold(self, done):
+        self.coil_distance_threshold = 0
+        robots = self.GetAllRobots()
+        for robot_ID in robots.keys():
+            robot = robots[robot_ID]
+            radius = robot.coil_radius
+            if robot.coil_radius is not None or robot.coil_radius != 0:
+                self.coil_distance_threshold += radius
+            else:
+                self.coil_distance_threshold = 0
+                break
+        print(self.coil_distance_threshold)
+
+    def SendIDs(self):
+        RobotIds = list(self.GetAllRobots().keys())
+        Publisher.sendMessage("Set robot IDs", robotIDs=RobotIds)
+
+    def CreateSecondRobot(self):
+        if self._robots["robot_2"] is None:
+            self._robots["robot_2"] = Robot("robot_2", self.tracker, self.navigation, self.icp)
+            print("Second robot created")
+        self.SendIDs()
+        return self._robots["robot_2"]
+
+    def DeleteSecondRobot(self):
+        if self._robots["robot_2"] is not None:
+            del self._robots["robot_2"]
+            self._robots["robot_2"] = None
+        self.SendIDs()
+
+    def GetRobot(self, name: str):
+        return self._robots.get(name) if self._robots.get(name) is not None else None
+
+    def GetAllRobots(self, actives=True):
+        robots = {}
+        for robot_id, robot in self._robots.items():
+            if robot is not None or not actives:
+                robots[robot_id] = robot
+        return robots
+
+    def GetActive(self):
+        return self.GetRobot(self.active)
+
+    def GetAllCoilsRobots(self):
+        for robot_id in self.GetAllRobots().keys():
+            robot_obj = self._robots[robot_id]
+            # if robot_obj is not None and robot_obj.IsConnected():
+            self.RobotCoilAssociation[robot_obj.coil_name] = robot_obj.robot_name
+
+        Publisher.sendMessage(
+            "Update Robot Coil Association", robotCoilAssociation=self.RobotCoilAssociation
+        )
+
+        return self.RobotCoilAssociation
+
+    def SetActive(self, name: str):
+        if name in self.GetAllRobots():
+            self.active = name
+        else:
+            raise ValueError(f"Robot '{name}' does not exist.")
+        print(f"Active robot set to: {self.active}")
+
+    def GetInactive(self):
+        robot_name = [name for name in self.GetAllRobots() if name != self.active]
+        return self.GetRobot(robot_name[0])
+
+    # Future usage: to rename robots in the GUI
+    def RenameRobot(self, old_name: str, new_name: str):
+        if old_name in self.GetAllRobots():
+            if new_name not in self.GetAllRobots():
+                self._robots[new_name] = self.GetAllRobots().pop(old_name)
+                if self.active == old_name:
+                    self.active = new_name
+            else:
+                raise ValueError(f"Robot '{new_name}' already exists.")
+        else:
+            raise ValueError(f"Robot '{old_name}' does not exist.")
+
+    def GetRobotByCoil(self, coil_name):
+        for robot in self.GetAllRobots().values():
+            if robot.GetCoilName() == coil_name:
+                return robot
+        return self.GetActive()
+
+    def SetActiveByCoil(self, coil_name):
+        robot = self.GetRobotByCoil(coil_name)
+        if robot:
+            self.SetActive(robot.robot_name)
+            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=robot.robot_name)
+            Publisher.sendMessage("Update robot name label", label=robot.robot_name)
+        else:
+            print(f"No robot found with coil name '{coil_name}'.")
+
+    def SendTargetToAllRobots(self):
+        for robot in self.GetAllRobots().values():
+            robot.SendTargetToRobot()
+
+    def SetAllRobotsNoObjective(self):
+        for robot in self.GetAllRobots().values():
+            robot.SetObjective(RobotObjective.NONE)
+
+    def AllIsReady(self):
+        allReady = []
+        for robot in self.GetAllRobots().values():
+            allReady.append(robot.IsReady())
+
+        return all(allReady)
+
+    def UpdateCoilsDistance(self, coords):
+        if (
+            self.RobotCoilAssociation
+            and len(self.RobotCoilAssociation) > 1
+            and self.coil_distance_threshold != 0
+        ):
+            list_coils = list(self.RobotCoilAssociation.keys())
+            coord_coil_1 = coords[list_coils[0]]
+            coord_coil_2 = coords[list_coils[1]]
+
+            distance_coils = distance.euclidean(coord_coil_1[0:3], coord_coil_2[0:3])
+            robots = self.GetAllRobots()
+            for robot_ID in robots.keys():
+                Publisher.sendMessage(
+                    "Neuronavigation to Robot: Dynamically update pid constants",
+                    distance=distance_coils,
+                    distance_threshold=self.coil_distance_threshold,
+                    robot_ID=robot_ID,
+                )

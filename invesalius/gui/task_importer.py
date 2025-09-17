@@ -218,7 +218,7 @@ class InnerTaskPanel(wx.Panel):
             proj_link.SetBackgroundColour(self.GetBackgroundColour())
             proj_link.AutoBrowse(False)
             proj_link.UpdateLink()
-            proj_link.Bind(hl.EVT_HYPERLINK_LEFT, lambda e: self.OpenProject(proj_path))
+            proj_link.Bind(hl.EVT_HYPERLINK_LEFT, lambda e: self.OpenProjectLoaded(proj_path))
 
             # Add to existing frame
             self.sizer.Add(proj_link, 1, wx.GROW | wx.EXPAND | wx.ALL, 2)
@@ -226,6 +226,12 @@ class InnerTaskPanel(wx.Panel):
 
             # Add hyperlink to floating hyperlinks list
             self.float_hyper_list.append(proj_link)
+
+    def OpenProjectLoaded(self, proj_path):
+        # Disable simultaneous multicoil mode
+        Publisher.sendMessage("Press simultaneous multicoil button", state=False)
+
+        self.OpenProject(proj_path)
 
     def OnLinkImport(self, event):
         self.ImportDicom()

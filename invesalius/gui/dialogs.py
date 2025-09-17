@@ -289,13 +289,13 @@ WILDCARD_INV_SAVE = (
     + _("InVesalius project compressed (*.inv3)|*.inv3")
 )
 
-WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" "All files (*.*)|*.*"
+WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|All files (*.*)|*.*"
 
-WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" "All files (*.*)|*.*"
+WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|All files (*.*)|*.*"
 
-WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|" "All files (*.*)|*.*"
+WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|All files (*.*)|*.*"
 # ".[jJ][pP][gG]"
-WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" "All files (*.*)|*.*"
+WILDCARD_PARREC = "PAR/REC (*.par)|*.par|All files (*.*)|*.*"
 
 WILDCARD_MESH_FILES = (
     "STL File format (*.stl)|*.stl|"
@@ -304,7 +304,7 @@ WILDCARD_MESH_FILES = (
     "VTK Polydata File Format (*.vtp)|*.vtp|"
     "All files (*.*)|*.*"
 )
-WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|" "All files (*.*)|*.*"
+WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|All files (*.*)|*.*"
 
 
 def ShowOpenProjectDialog() -> Union[str, None]:
@@ -3981,34 +3981,69 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ball_actors: List[Optional[vtkActor]] = [None] * 4
         self.txt_coord = [list(), list(), list(), list()]
 
-        # ComboBox for object index in coord_raw (0 for static, 2 for dynamic, 3, 4, ... for multiple coils)
-        # Check how many coords the tracker gives, ie. coord_raw.shape[0]
-        max_obj_id = self.tracker.GetTrackerCoordinates(ref_mode_id=0)[2].shape[0]
-        tooltip = _(
-            "Choose the coil index in coord_raw. Choose 0 for static mode, 2 for dynamic mode and 3 onwards for multiple coils."
-        )
+        session = ses.Session()
+        coil_registrations_config = session.GetConfig("coil_registrations", {})
 
-        # Static mode obj_id=0 (case where stylus is attached to coil) is only feasible for single coil-mode, so hide it in multicoil mode
-        choices = ["0"] if self.n_coils == 1 else []
-        choices += [str(i) for i in range(2, max_obj_id)]
+        if coil_registrations_config and len(coil_registrations_config) == self.n_coils:
+            # Sort coil names from config to respect the relation between index_list in comboBox and obj IDs list
+            coil_names = sorted(
+                coil_registrations_config,
+                key=lambda k: coil_registrations_config[k].get("obj_id", float("inf")),
+            )
+        elif coil_registrations_config:
+            # 1. Create a map of obj_id -> name for quick lookups.
+            # This inverts your dictionary, making it easy to find a name by its ID.
+            id_to_name_map = {
+                data.get("obj_id"): name
+                for name, data in coil_registrations_config.items()
+                if data.get("obj_id") is not None
+            }
+
+            # 2. Create the final list with n_coils size.
+            coil_names = []
+
+            # 3. Iterate from 1 to n_coils to ensure the correct number of items.
+            for i in range(1, self.n_coils + 1):
+                # The obj_id starts at 2, so the obj_id for the i-th coil is i + 1.
+                # E.g.: The first coil (i=1) has obj_id=2, the second (i=2) has obj_id=3, etc.
+                current_obj_id = i + 1
+
+                if current_obj_id in id_to_name_map:
+                    # If the obj_id exists in the map, use the real name.
+                    coil_names.append(id_to_name_map[current_obj_id])
+                else:
+                    # If it doesn't exist, create a generic name.
+                    # We use the loop's 'i' to maintain consistency with your 'else' block (coil_1, coil_2...).
+                    coil_names.append(f"coil_{i}")
+        else:
+            coil_names = [f"coil_{i}" for i in range(1, self.n_coils + 1)]
+
+        tooltip = _("Choose the respective coil for calibration")
 
         choice_obj_id = wx.ComboBox(
             self,
             -1,
             "",
             size=wx.Size(90, 23),
-            choices=choices,
-            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+            choices=coil_names,
+            style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER,
         )
+
+        self.last_coil_index = 0
+        self.coil_name = coil_names[self.last_coil_index]
+
         choice_obj_id.SetToolTip(tooltip)
-        choice_obj_id.Bind(wx.EVT_COMBOBOX, self.OnChooseObjID)
-        choice_obj_id.SetStringSelection(str(self.obj_id))
+        choice_obj_id.Bind(wx.EVT_COMBOBOX, self.OnChooseCoilName)
+        choice_obj_id.Bind(wx.EVT_TEXT_ENTER, self.OnRenameCoil)
+        choice_obj_id.SetSelection(self.last_coil_index)
         choice_obj_id.Enable(True)
 
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
             self.obj_id = 0
             choice_obj_id.SetSelection(0)
             choice_obj_id.Enable(False)
+
+        self.choice_obj_id = choice_obj_id
 
         # ComboBox for sensor selection for FASTRAK
         tooltip = _("Choose the FASTRAK sensor port")
@@ -4042,7 +4077,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         btn_ok.SetToolTip(tooltip)
 
         extra_sizer = wx.FlexGridSizer(cols=1, hgap=5, vgap=10)
-        extra_sizer.AddMany([choice_obj_id, btn_reset, btn_ok, choice_sensor])
+        extra_sizer.AddMany([self.choice_obj_id, btn_reset, btn_ok, choice_sensor])
 
         # Buttons for object fiducials
         self.buttons = OrderedFiducialButtons(
@@ -4079,29 +4114,19 @@ class ObjectCalibrationDialog(wx.Dialog):
         group_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=50, vgap=5)
         group_sizer.AddMany([(coord_sizer, 0, wx.LEFT, 20), (extra_sizer, 0, wx.LEFT, 10)])
 
-        name_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        lbl_name = wx.StaticText(self, -1, _("Name the coil:"))
-        self.name_box = name_box = wx.TextCtrl(self, -1, _("coil1"))
-        name_sizer.AddMany(
-            [(lbl_name, 1, wx.ALIGN_CENTER_VERTICAL), (name_box, 1, wx.ALIGN_CENTER_VERTICAL)]
-        )
-
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
         main_sizer.Add(
             group_sizer, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP | wx.RIGHT | wx.BOTTOM, 10
         )
-        if self.n_coils > 1:  # Multicoil
-            main_sizer.Add(name_sizer, 0, wx.EXPAND)
-        else:  # Single coil mode
-            # Hide obj_id combobox
+        if self.n_coils == 1:  # Multicoil
             choice_obj_id.Enable(False)
             choice_obj_id.Show(False)
-            name_sizer.Show(False)
-            name_sizer.ShowItems(False)
 
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
+
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnPanelClick)
 
     def _init_pedal(self) -> None:
         def set_fiducial_callback(state):
@@ -4324,8 +4349,12 @@ class ObjectCalibrationDialog(wx.Dialog):
     def OnReset(self, evt: wx.CommandEvent) -> None:
         self.ResetObjectFiducials()
 
-    def OnChooseObjID(self, evt: wx.CommandEvent) -> None:
-        self.obj_id = int(evt.GetEventObject().GetStringSelection())
+    def OnChooseCoilName(self, evt: wx.CommandEvent) -> None:
+        self.coil_name = evt.GetString()
+        self.last_coil_index = evt.GetSelection()
+
+        # update tracker object id in relation to coil list index
+        self.obj_id = self.last_coil_index + 2
 
         # choice_sensor is only shown for relevant trackers like Polhemus FASTRAK
         # If obj_id=0, (ie. the stylus is attached to the coil), the sensor is not used, so hide this
@@ -4333,9 +4362,59 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_id == 0 and self.tracker_id in const.TRACKERS_WITH_SENSOR_OPTIONS
         )
 
-        # When obj_id is changed the object fiducials are reset
-        self.ResetObjectFiducials()
         self.Layout()
+
+    def OnRenameCoil(self, evt: wx.CommandEvent = None) -> None:
+        new_coil_name = self.choice_obj_id.GetValue().strip()
+
+        if self.last_coil_index == wx.NOT_FOUND:
+            return
+
+        # Retrieve the previous name using the stored index
+        previous_name = self.choice_obj_id.GetString(self.last_coil_index)
+
+        if previous_name != new_coil_name:
+            if not new_coil_name:
+                wx.MessageBox("Coil name cannot be empty.", "Error", wx.OK | wx.ICON_ERROR)
+                # Restore the previous name
+                self.choice_obj_id.SetValue(previous_name)
+                return
+
+            # Remove the previous name from the list of options
+            other_options_coil_name = self.choice_obj_id.GetItems()
+            other_options_coil_name.remove(previous_name)
+            if new_coil_name in other_options_coil_name and new_coil_name != "default_coil":
+                # Warn that we are overwriting an old registration
+                dialog = wx.TextEntryDialog(
+                    None,
+                    _(
+                        "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
+                    ),
+                    _("Warning: Coil Name Conflict"),
+                    value=previous_name,
+                )
+                if dialog.ShowModal() == wx.ID_OK:
+                    new_coil_name = dialog.GetValue().strip()  # Update coil_name with user input
+                    dialog.Destroy()
+                else:
+                    dialog.Destroy()
+                    self.choice_obj_id.SetValue(previous_name)
+                    return
+
+            # Update the ComboBox item and the internal list
+            self.choice_obj_id.SetString(self.last_coil_index, new_coil_name)
+            self.choice_obj_id.SetValue(new_coil_name)
+            self.coil_name = new_coil_name
+
+            # Update config with the new name coil registration
+            self.update_coil_registration(new_coil_name)
+
+    def OnPanelClick(self, evt: wx.CommandEvent) -> None:
+        # If the ComboBox has focus, simulate loss of focus
+        if self.choice_obj_id.HasFocus():
+            self.OnRenameCoil()
+            # Move focus away from the ComboBox
+            self.SetFocus()
 
     def OnChoiceFTSensor(self, evt: wx.CommandEvent) -> None:
         if evt.GetSelection():
@@ -4347,7 +4426,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         self,
     ) -> Tuple[np.ndarray, np.ndarray, int, Optional[bytes], Optional[vtkPolyData]]:
         if self.n_coils > 1:
-            coil_name = self.name_box.GetValue().strip()
+            coil_name = self.coil_name
         else:
             coil_name = "default_coil"
 
@@ -4366,6 +4445,20 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.pedal_connector.remove_callback("fiducial", panel=self)
 
         evt.Skip()
+
+    def update_coil_registration(self, new_name):
+        session = ses.Session()
+        coil_registrations = session.GetConfig("coil_registrations")
+        if not isinstance(coil_registrations, dict):
+            wx.MessageBox("Failed to retrieve coil registrations.", "Error", wx.OK | wx.ICON_ERROR)
+            return
+
+        for key, value in coil_registrations.items():
+            if value.get("obj_id") == self.last_coil_index + 2:
+                coil_registrations[new_name] = value
+                del coil_registrations[key]
+                break
+        session.SetConfig("coil_registrations", coil_registrations)
 
 
 class ICPCorregistrationDialog(wx.Dialog):
@@ -6900,6 +6993,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Collect coordinates for the robot transformation matrix",
             data=None,
+            robot_ID=self.robot.robot_name,
         )
 
     def GetAcquiredPoints(self) -> int:
@@ -6908,7 +7002,7 @@ class RobotCoregistrationDialog(wx.Dialog):
     def SetAcquiredPoints(self, num_points: int) -> None:
         self.txt_number.SetLabel(str(num_points))
 
-    def PointRegisteredByRobot(self) -> None:
+    def PointRegisteredByRobot(self, robot_ID) -> None:
         # Increment the number of acquired points.
         num_points = self.GetAcquiredPoints()
         num_points += 1
@@ -6922,6 +7016,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Reset coordinates collection for the robot transformation matrix",
             data=None,
+            robot_ID=self.robot.robot_name,
         )
 
         self.StopContinuousAcquisition()
@@ -6937,7 +7032,9 @@ class RobotCoregistrationDialog(wx.Dialog):
         self.StopContinuousAcquisition()
 
         Publisher.sendMessage(
-            "Neuronavigation to Robot: Estimate robot transformation matrix", data=None
+            "Neuronavigation to Robot: Estimate robot transformation matrix",
+            data=None,
+            robot_ID=self.robot.robot_name,
         )
 
         self.btn_save.Enable(True)
@@ -6945,7 +7042,7 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         # TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
 
-    def UpdateRobotTransformationMatrix(self, data: Any) -> None:
+    def UpdateRobotTransformationMatrix(self, data: Any, robot_ID) -> None:
         self.matrix_tracker_to_robot = np.array(data)
 
     def SaveRegistration(self, evt: wx.CommandEvent) -> None:
@@ -6988,6 +7085,7 @@ class RobotCoregistrationDialog(wx.Dialog):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
+            robot_ID=self.robot.robot_name,
         )
 
         # Enable 'Ok' button if connection to robot is ok.
@@ -7039,23 +7137,8 @@ class ConfigurePolarisDialog(wx.Dialog):
         return port_list, port_selec
 
     def _init_gui(self) -> None:
-        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN)
-        com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
-        row_com = wx.BoxSizer(wx.VERTICAL)
-        row_com.Add(wx.StaticText(self, wx.ID_ANY, "COM port or IP:"), 0, wx.TOP | wx.RIGHT, 5)
-        row_com.Add(com_ports, 0, wx.EXPAND)
-
-        port_list, port_selec = self.serial_ports()
-
-        com_ports.Append(port_list)
-        com_ports.Append(const.NDI_IP)
-        if port_selec:
-            com_ports.SetSelection(port_selec[0])
-        else:
-            com_ports.SetSelection(0)
-        self.com_ports = com_ports
-
         session = ses.Session()
+        last_ndi_com_port = session.GetConfig("last_ndi_com_port", "")
         last_ndi_probe_marker = session.GetConfig("last_ndi_probe_marker", "")
         last_ndi_ref_marker = session.GetConfig("last_ndi_ref_marker", "")
         last_ndi_obj_markers = session.GetConfig("last_ndi_obj_markers", [])
@@ -7065,6 +7148,26 @@ class ConfigurePolarisDialog(wx.Dialog):
             last_ndi_ref_marker = inv_paths.NDI_MAR_DIR_REF
         while len(last_ndi_obj_markers) < self.n_coils:
             last_ndi_obj_markers.append(inv_paths.NDI_MAR_DIR_OBJ)
+
+        com_ports = wx.ComboBox(self, -1, style=wx.CB_DROPDOWN)
+        com_ports.Bind(wx.EVT_COMBOBOX, partial(self.OnChoicePort, ctrl=com_ports))
+        row_com = wx.BoxSizer(wx.VERTICAL)
+        row_com.Add(wx.StaticText(self, wx.ID_ANY, "COM port or IP:"), 0, wx.TOP | wx.RIGHT, 5)
+        row_com.Add(com_ports, 0, wx.EXPAND)
+
+        port_list, port_selec = self.serial_ports()
+
+        com_ports_list = port_list + const.NDI_IP
+        com_ports.Append(com_ports_list)
+
+        if last_ndi_com_port:
+            index_last_ndi_com_port = com_ports_list.index(last_ndi_com_port)
+            com_ports.SetSelection(index_last_ndi_com_port)
+        elif port_selec:
+            com_ports.SetSelection(port_selec[0])
+        else:
+            com_ports.SetSelection(0)
+        self.com_ports = com_ports
 
         self.dir_probe = wx.FilePickerCtrl(
             self,
@@ -7098,14 +7201,14 @@ class ConfigurePolarisDialog(wx.Dialog):
                 path=last_ndi_obj_markers[i],
                 style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
                 wildcard="Rom files (*.rom)|*.rom",
-                message=f"Select the ROM file of coil {i+1}",
+                message=f"Select the ROM file of coil {i + 1}",
                 size=(700, -1),
             )
             self.dir_objs.append(dir_obj)
 
             row_obj = wx.BoxSizer(wx.VERTICAL)
             row_obj.Add(
-                wx.StaticText(self, wx.ID_ANY, f"Coil {i+1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5
+                wx.StaticText(self, wx.ID_ANY, f"Coil {i + 1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5
             )
             row_obj.Add(dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
             row_objs.append(row_obj)
@@ -7147,17 +7250,17 @@ class ConfigurePolarisDialog(wx.Dialog):
         self.btn_ok.Enable(True)
 
     def GetValue(self) -> Tuple[str, str, str, str]:
+        com_port = self.com_ports.GetValue()
         fn_probe = self.dir_probe.GetPath()
         fn_ref = self.dir_ref.GetPath()
         fn_objs = [dir_obj.GetPath() for dir_obj in self.dir_objs]
 
         if fn_probe and fn_ref and fn_objs:
             session = ses.Session()
+            session.SetConfig("last_ndi_com_port", com_port)
             session.SetConfig("last_ndi_probe_marker", fn_probe)
             session.SetConfig("last_ndi_ref_marker", fn_ref)
             session.SetConfig("last_ndi_obj_markers", fn_objs)
-
-        com_port = self.com_ports.GetValue()
 
         return com_port, fn_probe, fn_ref, fn_objs
 

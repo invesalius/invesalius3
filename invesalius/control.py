@@ -263,6 +263,9 @@ class Controller:
                 self.CloseProject()
             self.OpenProject(filepath)
 
+            # Disable simultaneous multicoil mode
+            Publisher.sendMessage("Press simultaneous multicoil button", state=False)
+
     def ShowDialogSaveProject(self, saveas: bool = False) -> None:
         session = ses.Session()
         if saveas or session.temp_item:

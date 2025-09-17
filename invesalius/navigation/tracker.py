@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import threading
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, cast
 
 import numpy as np
@@ -99,7 +100,6 @@ class Tracker(metaclass=Singleton):
         self.tracker_fiducials = tracker_fiducials
         self.tracker_fiducials_raw = tracker_fiducials_raw
         self.m_tracker_fiducials_raw = m_tracker_fiducials_raw
-
         self.SetTracker(tracker_id=self.tracker_id, configuration=configuration)
 
     def SetTracker(
