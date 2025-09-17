@@ -46,6 +46,7 @@ class Robot:
         self.icp = icp
         self.enabled_in_gui = False
         self.coil_name = None
+        self.coil_radius = None
 
         self.is_robot_connected = False
         self.robot_name = name
@@ -112,6 +113,7 @@ class Robot:
         state = robots.get(self.robot_name, {})
 
         self.coil_name = state.get("robot_coil", None)
+        self.coil_radius = state.get("coil_radius", None)
         self.robot_ip = state.get("robot_ip", None)
 
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
@@ -206,6 +208,12 @@ class Robot:
         self.coil_name = name
         self.SaveConfig("robot_coil", name)
         self.LoadConfig()
+
+    def SetCoilRadius(self, left=None, right=None):
+        if left and right:
+            radius = distance.euclidean(left, right) / 2
+            self.coil_radius = radius
+            self.SaveConfig("coil_radius", radius)
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -311,7 +319,7 @@ class Robots(metaclass=Singleton):
         }
         self.active = "robot_1"  # Default active robot
         self.RobotCoilAssociation = {}
-        # self.GetAllCoilsRobots()
+        self.coil_distance_threshold = 0
         self.SendIDs()
 
         if self.navigation.n_coils > 1:
@@ -321,6 +329,20 @@ class Robots(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
+        Publisher.subscribe(self.SetCoilDistanceThershold, "Coil selection done")
+
+    def SetCoilDistanceThershold(self, done):
+        self.coil_distance_threshold = 0
+        robots = self.GetAllRobots()
+        for robot_ID in robots.keys():
+            robot = robots[robot_ID]
+            radius = robot.coil_radius
+            if robot.coil_radius is not None or robot.coil_radius != 0:
+                self.coil_distance_threshold += radius
+            else:
+                self.coil_distance_threshold = 0
+                break
+        print(self.coil_distance_threshold)
 
     def SendIDs(self):
         RobotIds = list(self.GetAllRobots().keys())
@@ -418,16 +440,21 @@ class Robots(metaclass=Singleton):
         return all(allReady)
 
     def UpdateCoilsDistance(self, coords):
-        if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1:
+        if (
+            self.RobotCoilAssociation
+            and len(self.RobotCoilAssociation) > 1
+            and self.coil_distance_threshold != 0
+        ):
             list_coils = list(self.RobotCoilAssociation.keys())
             coord_coil_1 = coords[list_coils[0]]
             coord_coil_2 = coords[list_coils[1]]
 
             distance_coils = distance.euclidean(coord_coil_1[0:3], coord_coil_2[0:3])
-            for robot_ID in self._robots.keys():
+            robots = self.GetAllRobots()
+            for robot_ID in robots.keys():
                 Publisher.sendMessage(
                     "Neuronavigation to Robot: Dynamically update pid constants",
                     distance=distance_coils,
+                    distance_threshold=self.coil_distance_threshold,
                     robot_ID=robot_ID,
                 )
-            print(distance_coils)

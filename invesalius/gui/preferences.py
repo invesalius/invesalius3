@@ -1217,6 +1217,13 @@ class ObjectTab(wx.Panel):
     def OnChoiceRobotCoil(self, event, robot):
         robot_coil_name = event.GetEventObject().GetStringSelection()
         robot.SetCoilName(robot_coil_name)
+
+        # Calculate coil radius with lateral fiducials
+        coil_registration = self.coil_registrations.get(robot_coil_name, None)
+        if coil_registration:
+            right_fiducual = coil_registration.get("fiducials")[0]
+            left_fiducual = coil_registration.get("fiducials")[1]
+            robot.SetCoilRadius(left=left_fiducual, right=right_fiducual)
         Publisher.sendMessage("Coil selection done", done=True)
 
     def AddCoilButton(self, coil_name, show_button=True):
