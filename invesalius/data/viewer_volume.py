@@ -608,8 +608,8 @@ class Viewer(wx.Panel):
 
             # Add the actor to the renderer.
             self.ren.AddActor(actor)
-
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def DeletePointer(self):
         if self.pointer_actor:
@@ -1396,7 +1396,10 @@ class Viewer(wx.Panel):
             self.CreatePointer()
 
         # Hide the pointer during targeting, as it would cover the coil center donut
-        self.pointer_actor.SetVisibility(not self.target_mode)
+        if self.nav_status:
+            self.pointer_actor.SetVisibility(not self.target_mode)
+        else:
+            self.pointer_actor.SetVisibility(True)
 
         self.pointer_actor.SetPosition(position)
         # Update the render window manually, as it is not updated automatically when not navigating.

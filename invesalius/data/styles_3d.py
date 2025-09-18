@@ -99,6 +99,8 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.last_click_time = 0
         self.double_click_max_interval = 1.0  # in seconds
 
+        self.nav_status = False
+
         self.viewer = viewer
 
         self.picker = vtkCellPicker()
@@ -130,6 +132,14 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
         # Reset camera using right double-click.
         self.viewer.interactor.Bind(wx.EVT_RIGHT_DCLICK, self.ResetCamera)
+
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+
+    def OnNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
 
     def OnMouseMove(self, evt, obj):
         if self.left_pressed:
@@ -163,6 +173,8 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.OnMouseWheelBackward()
 
     def PickMarker(self, evt, obj):
+        if self.nav_status:
+            return
         # Get the mouse position in the viewer.
         x, y = self.viewer.get_vtk_mouse_position()
 
@@ -184,6 +196,8 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     def SetCameraFocus(self, evt):
         # If an actor was already found by PickMarker, use its center as the camera focus, otherwise
         # pick the actor under the mouse cursor, this time without hiding the surfaces.
+        if self.nav_status:
+            return
         if self.marker_found:
             actor = self.marker_found
         else:
@@ -210,6 +224,8 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.viewer.interactor.GetRenderWindow().Render()
 
     def ResetCamera(self, evt):
+        if self.nav_status:
+            return
         renderer = self.viewer.ren
         interactor = self.viewer.interactor
 
@@ -558,6 +574,13 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         super().__init__(viewer)
         self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+
+    def OnNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
 
     def SetUp(self):
         self.viewer.CreatePointer()
@@ -567,6 +590,9 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.viewer.DeletePointer()
 
     def UpdatePointer(self, obj, evt):
+        if self.nav_status:
+            return
+        self.viewer.CreatePointer()
         x, y = self.viewer.get_vtk_mouse_position()
 
         self.picker.Pick(x, y, 0, self.viewer.ren)
