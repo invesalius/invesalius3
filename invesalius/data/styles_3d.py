@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Tuple, List
 
 import numpy as np
 import numpy.typing as npt
@@ -852,7 +852,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         MV = vtkarray_to_numpy(MV)
         self.world_to_camera_coordinates = MV @ inv_Y_matrix
 
-    def ReceiveVolumeViewerSize(self, size: tuple[int, int]):
+    def ReceiveVolumeViewerSize(self, size: Tuple[int, int]):
         """Receive the size of the volume viewer through pubsub.
 
         Args:
@@ -866,7 +866,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         _mat = self.mask_data[1:, 1:, 1:].copy()
         self.update_views(_mat)
 
-    def get_filters(self) -> list[npt.NDArray]:
+    def get_filters(self) -> List[npt.NDArray]:
         """Create a boolean mask filter based on the polygon points and viewer size."""
         w, h = self.resolution
         # get the mask of the polygon in the shape of the screen resolution

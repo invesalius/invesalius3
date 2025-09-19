@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 import invesalius.constants as const
 from invesalius.gui.widgets.canvas_renderer import CanvasHandlerBase, Polygon
@@ -41,7 +41,7 @@ class PolygonSelectCanvas(CanvasHandlerBase):
     """
 
     def __init__(
-        self, colour: tuple[int, int, int, int] = (255, 0, 0, 255), interactive: bool = True
+        self, colour: Tuple[int, int, int, int] = (255, 0, 0, 255), interactive: bool = True
     ):
         super().__init__(None)
 
@@ -65,7 +65,7 @@ class PolygonSelectCanvas(CanvasHandlerBase):
     def on_drag_end(self, _evt):
         Publisher.sendMessage("M3E cut mask from 3D")
 
-    def insert_point(self, point: tuple[int, int]):
+    def insert_point(self, point: Tuple[int, int]):
         """Insert a new point to the polygon."""
         self.polygon.append_point(point)
 
