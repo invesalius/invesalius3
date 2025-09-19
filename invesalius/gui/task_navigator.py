@@ -1599,7 +1599,7 @@ class StylusPage(wx.Panel):
         self.help_img = wx.Image(os.path.join(inv_paths.ICON_DIR, "align.png"), wx.BITMAP_TYPE_ANY)
 
         # first show help in grayscale. when record successful: make it green to show success
-        self.help = wx.GenericStaticBitmap(
+        self.help = wx.StaticBitmap(
             self,
             -1,
             self.help_img.ConvertToGreyscale(),
@@ -1664,7 +1664,7 @@ class StylusPage(wx.Panel):
                 # if successfully created r_stylus in navigation for the first time: make the illustration green to show success
                 self.done = True
                 self.help.Destroy()  # show a colored (green) bitmap as opposed to grayscale
-                self.help = wx.GenericStaticBitmap(
+                self.help = wx.StaticBitmap(
                     self,
                     -1,
                     self.help_img.ConvertToBitmap(),
