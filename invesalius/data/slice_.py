@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 import os
 import tempfile
-from typing import TYPE_CHECKING, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkLookupTable
@@ -50,6 +50,7 @@ from invesalius_cy import mips, transforms
 
 if TYPE_CHECKING:
     from vtkmodules.vtkCommonDataModel import vtkImageData
+    from vtkmodules.vtkCommonMath import vtkMatrix4x4
 
 OTHER = 0
 PLIST = 1
@@ -64,10 +65,10 @@ class SliceBuffer:
 
     def __init__(self):
         self.index: int = -1
-        self.image: Optional[np.ndarray] = None
-        self.mask: Optional[np.ndarray] = None
-        self.vtk_image: Optional[vtkImageData] = None
-        self.vtk_mask: Optional[vtkImageData] = None
+        self.image: np.ndarray | None = None
+        self.mask: np.ndarray | None = None
+        self.vtk_image: vtkImageData | None = None
+        self.vtk_mask: vtkImageData | None = None
 
     def discard_vtk_mask(self) -> None:
         self.vtk_mask = None
@@ -94,17 +95,17 @@ class SliceBuffer:
 # Therefore, we use Singleton design pattern for implementing it.
 class Slice(metaclass=utils.Singleton):
     def __init__(self):
-        self.current_mask: Optional[Mask] = None
+        self.selected_mask_indices = []
+        self._matrix_filename = ""
+        self.current_mask: Mask | None = None
         self.blend_filter = None
-        self.histogram: Optional[np.ndarray] = None
-        self._matrix: Optional[np.ndarray] = None
+        self.histogram: np.ndarray | None = None
+        self._matrix: np.ndarray | None = None
         self._affine: np.ndarray = np.identity(4)
         self._n_tracts: int = 0
         self._tracker = None
         self.aux_matrices: dict[str, np.ndarray] = {}
-        self.aux_matrices_colours: dict[
-            str, dict[Union[int, float], Tuple[float, float, float]]
-        ] = {}
+        self.aux_matrices_colours: dict[str, dict[int | float, tuple[float, float, float]]] = {}
         self.state = const.STATE_DEFAULT
 
         self.to_show_aux = ""
@@ -141,7 +142,7 @@ class Slice(metaclass=utils.Singleton):
         self.opacity: float = 0.8
 
     @property
-    def matrix(self) -> Optional[np.ndarray]:
+    def matrix(self) -> np.ndarray | None:
         return self._matrix
 
     @matrix.setter
@@ -153,11 +154,11 @@ class Slice(metaclass=utils.Singleton):
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
     @property
-    def spacing(self) -> Tuple[float, float, float]:
+    def spacing(self) -> tuple[float, float, float]:
         return self._spacing
 
     @spacing.setter
-    def spacing(self, value: Tuple[float, float, float]) -> None:
+    def spacing(self, value: tuple[float, float, float]) -> None:
         self._spacing = value
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
@@ -246,6 +247,10 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.OnDuplicateMasks, "Duplicate masks")
         Publisher.subscribe(self.UpdateSlice3D, "Update slice 3D")
 
+        Publisher.subscribe(self.on_select_all_masks_changed, "Select all masks changed")
+        Publisher.subscribe(self.create_surfaces_for_all_masks, "Create surfaces for all masks")
+        Publisher.subscribe(self.update_selected_masks, "Update selected masks list")
+
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
         Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
 
@@ -258,7 +263,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.do_threshold_to_all_slices, "Appy threshold all slices")
 
     def GetMaxSliceNumber(self, orientation: str) -> int:
-        shape: Tuple[int, int, int] = self.matrix.shape
+        shape: tuple[int, int, int] = self.matrix.shape
 
         # Because matrix indexing starts with 0 so the last slice is the shape
         # minu 1.
@@ -277,7 +282,7 @@ class Slice(metaclass=utils.Singleton):
 
     def get_world_to_invesalius_vtk_affine(
         self, inverse: bool = False
-    ) -> Tuple[np.ndarray, "vtkMatrix4x4", float]:
+    ) -> tuple[np.ndarray, "vtkMatrix4x4", float]:
         """
         Creates an affine matrix with img_shift adjustment and returns both the NumPy
         and VTK versions of the matrix, along with the img_shift value.
@@ -1240,6 +1245,43 @@ class Slice(metaclass=utils.Singleton):
             surface_parameters=surface_parameters,
         )
 
+    def on_select_all_masks_changed(self, select_all_active):
+        Publisher.sendMessage("Update create surface button", select_all_active=select_all_active)
+
+    def create_surfaces_for_all_masks(self, surface_template):
+        proj = Project()
+        created_surfaces = []
+        mask_dict = proj.mask_dict
+
+        for mask_index in self.selected_mask_indices:
+            if mask_index not in mask_dict:
+                continue
+            mask = mask_dict[mask_index]
+            if mask.matrix.max() < 127:
+                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels available")
+                continue
+
+            surface_parameters = surface_template.copy()
+            surface_parameters["options"] = surface_template["options"].copy()
+
+            surface_parameters["options"]["index"] = mask_index
+            surface_parameters["options"]["name"] = f"{mask.name}"
+            surface_parameters["options"]["overwrite"] = False  # always create new surfaces
+
+            print(f"Creating surface for mask '{mask.name}' (index {mask_index})")
+
+            try:
+                self.do_threshold_to_all_slices(mask)
+                Publisher.sendMessage(
+                    "Create surface", slice_=self, mask=mask, surface_parameters=surface_parameters
+                )
+                created_surfaces.append(mask_index)
+            except Exception as e:
+                print(f"Failed to create surface for mask '{mask.name}': {str(e)}")
+
+        print(f"Successfully created surfaces for {len(created_surfaces)} masks")
+        Publisher.sendMessage("Surfaces creation completed", created_count=len(created_surfaces))
+
     def GetOutput(self):
         return self.blend_filter.GetOutput()
 
@@ -1893,6 +1935,9 @@ class Slice(metaclass=utils.Singleton):
 
     def has_affine(self) -> bool:
         return not np.allclose(self.affine, np.eye(4))
+
+    def update_selected_masks(self, indices):
+        self.selected_mask_indices = indices
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:
