@@ -21,7 +21,7 @@ import logging
 import os
 import threading
 import time
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 from numpy import typing as npt
@@ -164,9 +164,9 @@ class TinyGradInference:
     def __init__(
         self,
         cfg: Config,
-        device: torch.device | str | None = None,
+        device: Union[torch.device, str, None] = None,
         ckpt: str = "",
-        lut: str | np.ndarray | DataFrame | None = None,
+        lut: Union[str, np.ndarray, DataFrame, None] = None,
         parallel_batches: int = 2,
         use_gpu: bool = False,
     ):

@@ -19,7 +19,7 @@
 
 import logging
 from pathlib import Path
-from typing import Optional, cast
+from typing import Optional, cast, Tuple, Union, Set, Dict
 
 import nibabel as nib
 import numpy as np
@@ -43,7 +43,7 @@ def load_image(
     file: str | Path,
     name: str = "image",
     **kwargs,
-) -> tuple[nib.analyze.SpatialImage, np.ndarray]:
+) -> Tuple[nib.analyze.SpatialImage, np.ndarray]:
     """
     Load file 'file' with nibabel, including all data.
     """
@@ -103,7 +103,7 @@ def save_image(
         nib.nifti1.save(mgh_img, str(save_as))
 
 
-def read_classes_from_lut(lut_file: str | Path):
+def read_classes_from_lut(lut_file: Union[Path] = str):
     """
     Read in **FreeSurfer-like** LUT table.
 
@@ -151,7 +151,7 @@ def read_classes_from_lut(lut_file: str | Path):
 
 
 def aparc_aseg_to_label(
-    mapped_aseg: torch.Tensor, labels: torch.Tensor | npt.NDArray
+    mapped_aseg: torch.Tensor, labels: Union[torch.Tensor] = npt.NDArray
 ) -> torch.Tensor:
     """
     Perform look-up table mapping from sequential label space to LUT space.
@@ -291,8 +291,8 @@ def get_thick_slices(img_data: npt.NDArray, slice_thickness: int = 3) -> np.ndar
 
 
 def get_labels_from_lut(
-    lut: str | pd.DataFrame, label_extract: tuple[str, str] = ("Left-", "ctx-rh")
-) -> tuple[np.ndarray, np.ndarray]:
+    lut: str | pd.DataFrame, label_extract: Tuple[str, str] = ("Left-", "ctx-rh")
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Extract labels from the lookup tables.
     """
@@ -322,7 +322,9 @@ def infer_mapping_from_lut(num_classes_full: int, lut: str | pd.DataFrame) -> np
 
 
 def apply_sagittal_mapping(
-    prediction_sag: npt.NDArray, num_classes: int = 51, lut: str | None = None
+    prediction_sag: npt.NDArray,
+    num_classes: int = 51,
+    lut: Union[str, None] = None
 ) -> np.ndarray:
     """
     Remap the prediction on the sagittal network to full label space used by coronal and axial networks.
@@ -440,7 +442,7 @@ class ProcessDataThickSlices(Dataset):
 
         return scale
 
-    def __getitem__(self, index: int) -> dict:
+    def __getitem__(self, index: int) -> Dict:
         """
         Return a single image and its scale factor.
         """
@@ -515,7 +517,7 @@ DEFAULT_CRITERIA_DICT = {
     "iso_vox": Criteria.FORCE_ISO_VOX,
     "img_size": Criteria.FORCE_IMG_SIZE,
 }
-DEFAULT_CRITERIA = frozenset(DEFAULT_CRITERIA_DICT.values())
+DEFAULT_CRITERIA = set(DEFAULT_CRITERIA_DICT.values())
 
 
 def is_resampling_vox2vox(
@@ -632,12 +634,11 @@ def find_img_size_by_fov(img: nib.analyze.SpatialImage, vox_size: float, min_dim
     )  # compute number of voxels needed to cover field of view
     return max(min_dim, conform_dim)
 
-
 def get_conformed_vox_img_size(
     img: nib.analyze.SpatialImage,
     conform_vox_size: misc.VoxSizeOption,
-    conform_to_1mm_threshold: float | None = None,
-) -> tuple[float, int]:
+    conform_to_1mm_threshold: Union[float, None] = None
+) -> Tuple[float, int]:
     """
     Extract the voxel size and the image size.
     """
@@ -658,7 +659,7 @@ def get_conformed_vox_img_size(
 
 def getscale(
     data: np.ndarray, dst_min: float, dst_max: float, f_low: float = 0.0, f_high: float = 0.999
-) -> tuple[float, float]:
+) -> Tuple[float, float]:
     """
     Get offset and scale of image intensities to robustly rescale to dst_min..dst_max.
 
@@ -715,10 +716,10 @@ def scalecrop(
 def map_image(
     img: nib.analyze.SpatialImage,
     out_affine: np.ndarray,
-    out_shape: tuple[int, ...] | np.ndarray,
-    ras2ras: np.ndarray | None = None,
+    out_shape: Union[Tuple[int, ...], np.ndarray],
+    ras2ras: Union[np.ndarray, None] = None,
     order: int = 1,
-    dtype: type | None = None,
+    dtype: Union[type, None] = None
 ) -> np.ndarray:
     """
     Map image to new voxel space (RAS orientation).
@@ -790,10 +791,10 @@ def is_conformed(
     conform_vox_size: misc.VoxSizeOption = 1.0,
     eps: float = 1e-06,
     check_dtype: bool = True,
-    dtype: type | None = None,
+    dtype: Union[type, None] = None,
     verbose: bool = True,
-    conform_to_1mm_threshold: float | None = None,
-    criteria: set = DEFAULT_CRITERIA,
+    conform_to_1mm_threshold: Union[float, None] = None,
+    criteria: Set = DEFAULT_CRITERIA,
 ) -> bool:
     """
     Check if an image is already conformed or not.
@@ -884,9 +885,9 @@ def conform(
     img: nib.analyze.SpatialImage,
     order: int = 1,
     conform_vox_size: misc.VoxSizeOption = 1.0,
-    dtype: type | None = None,
-    conform_to_1mm_threshold: float | None = None,
-    criteria: set = DEFAULT_CRITERIA,
+    dtype: Union[type, None] = None,
+    conform_to_1mm_threshold: Union[float, None] = None,
+    criteria: Set = DEFAULT_CRITERIA,
 ) -> nib.MGHImage:
     conformed_vox_size, conformed_img_size = get_conformed_vox_img_size(
         img,

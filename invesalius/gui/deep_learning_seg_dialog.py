@@ -3,6 +3,7 @@
 
 import multiprocessing
 import time
+from typing import Dict
 
 import numpy as np
 import wx
@@ -69,10 +70,10 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.segmenter = segmenter
 
         if HAS_TORCH:
-            self.torch_devices: dict[str, str] = TORCH_DEVICES
+            self.torch_devices: Dict[str, str] = TORCH_DEVICES
 
         if HAS_TINYGRAD:
-            self.tinygrad_devices: dict[str, str] = TINYGRAD_DEVICES
+            self.tinygrad_devices: Dict[str, str] = TINYGRAD_DEVICES
 
         self.auto_segment = auto_segment
 
