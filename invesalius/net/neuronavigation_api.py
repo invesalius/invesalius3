@@ -350,7 +350,7 @@ class NeuronavigationApi(metaclass=Singleton):
                         target.rotation_angle,
                         target.intensity,
                     ],
-                    "mep":mep,
+                    "mep": mep,
                 }
             )
         wx.CallAfter(Publisher.sendMessage, "Set brain targets", brain_targets=brain_targets)
