@@ -17,7 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-from typing import Any
+from typing import Any, Dict
 
 import wx
 import wx.py.shell
@@ -37,7 +37,7 @@ class InteractiveShellPanel(wx.Panel):
     Interactive Python shell panel for debugging and development.
     """
 
-    def __init__(self, parent: wx.Window, app_context: dict[str, Any] = {}, introText: str = ""):
+    def __init__(self, parent: wx.Window, app_context: Dict[str, Any] = {}, introText: str = ""):
         """
         Initialize the shell panel.
 
@@ -67,7 +67,7 @@ class InteractiveShellFrame(wx.Frame):
     Standalone frame for the interactive shell.
     """
 
-    def __init__(self, parent: wx.Window, app_context: dict[str, Any] = {}, introText: str = ""):
+    def __init__(self, parent: wx.Window, app_context: Dict[str, Any] = {}, introText: str = ""):
         """
         Initialize the shell frame.
 

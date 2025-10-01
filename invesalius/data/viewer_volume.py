@@ -430,6 +430,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.LoadSlicePlane, "Load slice plane")
 
         Publisher.subscribe(self.ResetCamClippingRange, "Reset cam clipping range")
+        Publisher.subscribe(self.SendActiveCamera, "Send volume viewer active camera")
+        Publisher.subscribe(self.SendViewerSize, "Send volume viewer size")
 
         Publisher.subscribe(self.enable_style, "Enable style")
         Publisher.subscribe(self.OnDisableStyle, "Disable style")
@@ -606,8 +608,8 @@ class Viewer(wx.Panel):
 
             # Add the actor to the renderer.
             self.ren.AddActor(actor)
-
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def DeletePointer(self):
         if self.pointer_actor:
@@ -1394,7 +1396,10 @@ class Viewer(wx.Panel):
             self.CreatePointer()
 
         # Hide the pointer during targeting, as it would cover the coil center donut
-        self.pointer_actor.SetVisibility(not self.target_mode)
+        if self.nav_status:
+            self.pointer_actor.SetVisibility(not self.target_mode)
+        else:
+            self.pointer_actor.SetVisibility(True)
 
         self.pointer_actor.SetPosition(position)
         # Update the render window manually, as it is not updated automatically when not navigating.
@@ -2590,6 +2595,14 @@ class Viewer(wx.Panel):
     def ResetCamClippingRange(self):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
+
+    def SendActiveCamera(self):
+        cam = self.ren.GetActiveCamera()
+        Publisher.sendMessage("Receive volume viewer active camera", cam=cam)
+
+    def SendViewerSize(self):
+        width, height = self.GetSize()
+        Publisher.sendMessage("Receive volume viewer size", size=(width, height))
 
     # Note: Not in use currently, this method is not called from anywhere.
     def SetVolumetricCamera(self, enabled):
