@@ -477,7 +477,7 @@ class MarkerVisualizer:
         self.actor_factory.ScaleActor(actor, self.HIGHLIGHTED_MARKER_SCALING_FACTOR)
 
         # Set the marker visible when highlighted even if it's hidden.
-        #if marker.visualization["hidden"]:
+        # if marker.visualization["hidden"]:
         #    actor.SetVisibility(1)
 
         # If the marker is a coil target, create a perpendicular line from the coil to the brain surface.
