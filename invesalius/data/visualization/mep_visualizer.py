@@ -418,7 +418,7 @@ class MEPVisualizer:
                 brain_marker["position"], marker_target.orientation
             )
             points.InsertNextPoint(projected_point[0], projected_point[1], projected_point[2])
-            mep_value = brain_marker["mep_value"] or None
+            mep_value = brain_marker["mep_value"] or 0
             mep_array.InsertNextValue(mep_value)
         MarkersControl().SaveState()
 

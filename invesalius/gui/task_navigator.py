@@ -22,6 +22,7 @@ import time
 from functools import partial
 
 import numpy as np
+from typing import Optional
 
 try:
     # TODO: the try-except could be done inside the mTMS() method call
@@ -2916,6 +2917,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         deleted_keys = []
         for marker in markers:
             idx = self.__find_marker_index(marker.marker_id)
+            if idx is None:
+                continue
             deleted_uuid = marker.marker_uuid
             for key, data in self.itemDataMap.items():
                 current_uuid = data[-1]
@@ -3492,7 +3495,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 self.itemDataMap[key][const.TARGET_COLUMN] = "Yes"
 
     def _DuplicateMarker(
-        self, marker_idx: int | None = None, duplicate_brain_target_list: bool = True
+        self, marker_idx: Optional[int] = None, duplicate_brain_target_list: bool = True
     ) -> None:
         """
         Duplicate a marker by index or by the current target if no index is provided.
@@ -3932,7 +3935,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             if visualization is None:
                 continue
 
-            if visualization["actor"] == actor:
+            if visualization.get("actor") == actor:
                 # Unselect the previously selected item.
                 idx_old = self.marker_list_ctrl.GetFocusedItem()
                 if idx_old != -1 and idx_old != idx:
@@ -4045,6 +4048,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 if self.nav_status and self.navigation.track_coil
                 else MarkerType.LANDMARK
             )
+        # Ensure LANDMARK is used when navigation is off
+        if not self.nav_status:
+            marker_type = MarkerType.LANDMARK
 
         marker = self.CreateMarker(
             position=position,
