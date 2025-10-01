@@ -73,7 +73,7 @@ class NeuronavigationApi(metaclass=Singleton):
         Publisher.subscribe(self.stop_navigation, "Stop navigation")
         Publisher.subscribe(self.update_target_mode, "Set target mode")
         Publisher.subscribe(self.update_coil_at_target, "Coil at target")
-        #Publisher.subscribe(self.update_tracker_poses, "From Neuronavigation: Update tracker poses")
+        # Publisher.subscribe(self.update_tracker_poses, "From Neuronavigation: Update tracker poses")
         Publisher.subscribe(self.update_target_orientation, "Update target orientation")
         # Publisher.subscribe(self.connect_to_robot, "Neuronavigation to Robot: Connect to robot")
         # Publisher.subscribe(self.set_target, "Neuronavigation to Robot: Set target")
@@ -334,7 +334,7 @@ class NeuronavigationApi(metaclass=Singleton):
     def open_orientation_dialog(self, target_id):
         wx.CallAfter(Publisher.sendMessage, "Open marker orientation dialog", marker_id=target_id)
 
-    def stimulation_pulse_received(self, targets):
+    def stimulation_pulse_received(self, targets, mep):
         # TODO: If marker should not be created always when receiving a stimulation pulse, add the logic here.
         brain_targets = []
         for target in targets:
@@ -350,6 +350,7 @@ class NeuronavigationApi(metaclass=Singleton):
                         target.rotation_angle,
                         target.intensity,
                     ],
+                    "mep": mep,
                 }
             )
         wx.CallAfter(Publisher.sendMessage, "Set brain targets", brain_targets=brain_targets)
