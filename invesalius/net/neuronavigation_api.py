@@ -404,4 +404,8 @@ class NeuronavigationApi(metaclass=Singleton):
         )
 
     def update_coil_target(self, coil_target):
-        wx.CallAfter(Publisher.sendMessage, "NeuroSimo to Neuronavigation: Update coil target", coil_target=coil_target)
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "NeuroSimo to Neuronavigation: Update coil target",
+            coil_target=coil_target,
+        )

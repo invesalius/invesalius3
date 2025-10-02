@@ -20,9 +20,9 @@ import itertools
 import os
 import time
 from functools import partial
+from typing import Optional
 
 import numpy as np
-from typing import Optional
 
 try:
     # TODO: the try-except could be done inside the mTMS() method call
