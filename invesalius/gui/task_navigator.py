@@ -152,11 +152,7 @@ class InnerFoldPanel(wx.Panel):
         gbs.AddGrowableCol(0, 1)
         self.gbs = gbs
 
-        # Initialize Navigation, Tracker, Robot, Image, and PedalConnection objects here to make them
-        # available to several panels.
         nav_hub = NavigationHub(window=self)
-
-        self.nav_hub = nav_hub
         self.tracker = nav_hub.tracker
         self.image = nav_hub.image
         self.navigation = nav_hub.navigation
@@ -203,7 +199,7 @@ class InnerFoldPanel(wx.Panel):
         # Publisher.subscribe(self.OnHideDbs, "Hide dbs folder")
         Publisher.subscribe(self.OpenNavigation, "Open navigation menu")
         Publisher.subscribe(self.OnEnableState, "Enable state project")
-        Publisher.subscribe(self.CollapseNavigation, "Coil selection done")
+        # Publisher.subscribe(self.CollapseNavigation, "Coil selection done")
 
     def __calc_best_size(self, panel):
         parent = panel.GetParent()
@@ -623,11 +619,17 @@ class ImportsPage(wx.Panel):
             proj_link.SetBackgroundColour(self.GetBackgroundColour())
             proj_link.AutoBrowse(False)
             proj_link.UpdateLink()
-            proj_link.Bind(hl.EVT_HYPERLINK_LEFT, lambda e: self.OpenProject(proj_path))
+            proj_link.Bind(hl.EVT_HYPERLINK_LEFT, lambda e: self.OpenProjectLoaded(proj_path))
 
             # Add the link to the sizer and to the hyperlinks list
             self.top_sizer.Add(proj_link, 1, wx.GROW | wx.EXPAND | wx.ALL, 2)
             self.Update()
+
+    def OpenProjectLoaded(self, proj_path):
+        # Disable simultaneous multicoil mode
+        Publisher.sendMessage("Press simultaneous multicoil button", state=False)
+
+        self.OpenProject(proj_path)
 
 
 class HeadPage(wx.Panel):
@@ -1840,19 +1842,19 @@ class ControlPanel(wx.Panel):
     def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
 
+        # deps
         self.navigation = nav_hub.navigation
         self.tracker = nav_hub.tracker
         self.robot = nav_hub.robot
         self.icp = nav_hub.icp
         self.image = nav_hub.image
         self.mep_visualizer = nav_hub.mep_visualizer
+        self.markers = nav_hub.markers
 
+        # state
         self.nav_status = False
         self.target_mode = False
-
         self.navigation_status = False
-
-        self.target_selected = False
 
         # Toggle button for neuronavigation
         tooltip = _("Start navigation")
@@ -1865,262 +1867,186 @@ class ControlPanel(wx.Panel):
         )
 
         # Constants for bitmap parent toggle button
-        ICON_SIZE = (48, 48)
-        RED_COLOR = const.RED_COLOR_RGB
-        self.RED_COLOR = RED_COLOR
-        GREEN_COLOR = const.GREEN_COLOR_RGB
-        self.GREEN_COLOR = GREEN_COLOR
-        GREY_COLOR = (217, 217, 217)
-        self.GREY_COLOR = GREY_COLOR
+        self.ICON_SIZE = (48, 48)
+        self.RED_COLOR = const.RED_COLOR_RGB
+        self.GREEN_COLOR = const.GREEN_COLOR_RGB
+        self.GREY_COLOR = (217, 217, 217)
 
-        # Toggle Button for Tractography
-        tooltip = _("Control Tractography")
-        BMP_TRACT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("tract.png")), wx.BITMAP_TYPE_PNG)
-        tractography_checkbox = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        # Create buttons using helper
+        self.tractography_checkbox = self._create_toggle_button(
+            tooltip=_("Control Tractography"),
+            bitmap_name="tract.png",
+            initial_value=False,
+            initial_enabled=False,
+            initial_bg_color=self.GREY_COLOR,
         )
-        tractography_checkbox.SetBackgroundColour(GREY_COLOR)
-        tractography_checkbox.SetBitmap(BMP_TRACT)
-        tractography_checkbox.SetValue(False)
-        tractography_checkbox.Enable(False)
-        tractography_checkbox.SetToolTip(tooltip)
-        tractography_checkbox.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnTractographyCheckbox, ctrl=tractography_checkbox)
-        )
-        self.tractography_checkbox = tractography_checkbox
 
-        # Toggle button to track the coil
-        tooltip = _("Track coil")
-        BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
-        track_object_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        self.track_object_button = self._create_toggle_button(
+            tooltip=_("Track coil"),
+            bitmap_name="coil.png",
+            initial_value=False,
+            initial_enabled=True,
+            initial_bg_color=self.GREY_COLOR,
         )
-        track_object_button.SetBackgroundColour(GREY_COLOR)
-        track_object_button.SetBitmap(BMP_TRACK)
-        track_object_button.Enable(True)
-        track_object_button.SetValue(False)
-        track_object_button.SetToolTip(tooltip)
-        track_object_button.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectButton, ctrl=track_object_button)
-        )
-        self.track_object_button = track_object_button
 
-        # Toggle button for allowing triggering only if coil is at target
-        tooltip = _("Allow triggering only if the coil is at the target")
-        BMP_LOCK = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("lock_to_target.png")), wx.BITMAP_TYPE_PNG
+        self.lock_to_target_button = self._create_toggle_button(
+            tooltip=_("Allow triggering only if the coil is at the target"),
+            bitmap_name="lock_to_target.png",
+            initial_value=False,
+            initial_enabled=False,
+            initial_bg_color=self.GREY_COLOR,
         )
-        lock_to_target_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
-        )
-        lock_to_target_button.SetBackgroundColour(GREY_COLOR)
-        lock_to_target_button.SetBitmap(BMP_LOCK)
-        lock_to_target_button.SetValue(False)
-        lock_to_target_button.Enable(False)
-        lock_to_target_button.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnLockToTargetButton, ctrl=lock_to_target_button)
-        )
-        lock_to_target_button.SetToolTip(tooltip)
-        self.lock_to_target_button = lock_to_target_button
 
-        # Toggle button for showing coil during navigation
-        tooltip = _("Show coil")
-        BMP_SHOW_COIL = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG
+        self.show_coil_button = self._create_toggle_button(
+            tooltip=_("Show coil"),
+            bitmap_name="coil_eye.png",
+            initial_value=False,
+            initial_enabled=True,
+            initial_bg_color=self.GREY_COLOR,
         )
-        show_coil_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        show_coil_button.SetBackgroundColour(GREY_COLOR)
-        show_coil_button.SetBitmap(BMP_SHOW_COIL)
-        show_coil_button.SetToolTip(tooltip)
-        show_coil_button.SetValue(False)
-        show_coil_button.Enable(True)
-        show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
-        show_coil_button.Bind(wx.EVT_RIGHT_DOWN, self.ShowCoilChoice)
-        self.show_coil_button = show_coil_button
 
-        # Toggle button for showing probe during navigation
-        tooltip = _("Show probe")
-        BMP_SHOW_PROBE = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("stylus_eye.png")), wx.BITMAP_TYPE_PNG
+        self.show_probe_button = self._create_toggle_button(
+            tooltip=_("Show probe"),
+            bitmap_name="stylus_eye.png",
+            initial_value=False,
+            initial_enabled=True,
+            initial_bg_color=self.GREY_COLOR,
         )
-        show_probe_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
-        )
-        show_probe_button.SetBackgroundColour(GREY_COLOR)
-        show_probe_button.SetBitmap(BMP_SHOW_PROBE)
-        show_probe_button.SetToolTip(tooltip)
-        show_probe_button.Enable(True)
-        self.UpdateToggleButton(show_probe_button, False)  # the probe is hidden at start
-        show_probe_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowProbe)
-        self.show_probe_button = show_probe_button
 
-        # Toggle Button to use serial port to trigger pulse signal and create markers
-        tooltip = _("Enable serial port communication to trigger pulse and create markers")
-        BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("wave.png")), wx.BITMAP_TYPE_PNG)
-        checkbox_serial_port = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        self.checkbox_serial_port = self._create_toggle_button(
+            tooltip=_("Enable serial port communication to trigger pulse and create markers"),
+            bitmap_name="wave.png",
+            initial_value=False,
+            initial_enabled=True,  # Default is enabled
+            initial_bg_color=self.RED_COLOR,
         )
-        checkbox_serial_port.SetBackgroundColour(RED_COLOR)
-        checkbox_serial_port.SetBitmap(BMP_PORT)
-        checkbox_serial_port.SetToolTip(tooltip)
-        checkbox_serial_port.SetValue(False)
-        checkbox_serial_port.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnEnableSerialPort, ctrl=checkbox_serial_port)
-        )
-        self.checkbox_serial_port = checkbox_serial_port
 
-        # Toggle Button for Efield
-        tooltip = _("Control E-Field")
-        BMP_FIELD = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("field.png")), wx.BITMAP_TYPE_PNG)
-        efield_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        efield_checkbox.SetBackgroundColour(GREY_COLOR)
-        efield_checkbox.SetBitmap(BMP_FIELD)
-        efield_checkbox.SetValue(False)
-        efield_checkbox.Enable(False)
-        efield_checkbox.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnEfieldCheckbox, ctrl=efield_checkbox)
+        self.efield_checkbox = self._create_toggle_button(
+            tooltip=_("Control E-Field"),
+            bitmap_name="field.png",
+            initial_value=False,
+            initial_enabled=False,
+            initial_bg_color=self.GREY_COLOR,
         )
-        efield_checkbox.SetToolTip(tooltip)
-        self.efield_checkbox = efield_checkbox
 
-        # Toggle Button for Target Mode
-        tooltip = _("Target mode")
-        BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
-        target_mode_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        self.target_mode_button = self._create_toggle_button(
+            tooltip=_("Target mode"),
+            bitmap_name="target.png",
+            initial_value=False,
+            initial_enabled=False,
+            initial_bg_color=self.GREY_COLOR,
         )
-        target_mode_button.SetBackgroundColour(GREY_COLOR)
-        target_mode_button.SetBitmap(BMP_TARGET)
-        target_mode_button.SetValue(False)
-        target_mode_button.Enable(False)
-        target_mode_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTargetButton))
-        target_mode_button.SetToolTip(tooltip)
-        self.target_mode_button = target_mode_button
-        self.UpdateTargetButton()
 
-        # Toggle button for tracking target with robot during navigation
-        tooltip = _("Track target with robot")
-        BMP_TRACK_TARGET = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("robot_track_target.png")), wx.BITMAP_TYPE_PNG
+        self.simultaneous_mode_button = self._create_toggle_button(
+            tooltip=_("Simultaneous multicoil mode"),
+            bitmap_name="multi_target.png",
+            initial_value=False,
+            initial_enabled=True if self.navigation.n_coils > 1 else False,
+            initial_bg_color=self.GREY_COLOR,
         )
-        robot_track_target_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
-        )
-        robot_track_target_button.SetBackgroundColour(GREY_COLOR)
-        robot_track_target_button.SetBitmap(BMP_TRACK_TARGET)
-        robot_track_target_button.SetToolTip(tooltip)
-        robot_track_target_button.SetValue(False)
-        robot_track_target_button.Enable(False)
-        robot_track_target_button.Bind(
-            wx.EVT_TOGGLEBUTTON,
-            partial(self.OnRobotTrackTargetButton, ctrl=robot_track_target_button),
-        )
-        self.robot_track_target_button = robot_track_target_button
 
-        # Toggle button for moving robot away from head
-        tooltip = _("Move robot away from head")
-        BMP_ENABLE_MOVE_AWAY = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("robot_move_away.png")), wx.BITMAP_TYPE_PNG
+        self.show_motor_map_button = self._create_toggle_button(
+            tooltip=_("Show TMS motor mapping on brain"),
+            bitmap_name="brain_eye.png",
+            initial_value=False,
+            initial_enabled=True,
+            initial_bg_color=self.GREY_COLOR,
         )
-        robot_move_away_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
-        )
-        robot_move_away_button.SetBackgroundColour(GREY_COLOR)
-        robot_move_away_button.SetBitmap(BMP_ENABLE_MOVE_AWAY)
-        robot_move_away_button.SetToolTip(tooltip)
-        robot_move_away_button.SetValue(False)
-        robot_move_away_button.Enable(False)
 
-        robot_move_away_button.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnRobotMoveAwayButton, ctrl=robot_move_away_button)
-        )
-        self.robot_move_away_button = robot_move_away_button
-
-        # Toggle button for enable/disable free drive robot mode
-        tooltip = _("Free drive robot")
-        BMP_FREE_DRIVE = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("robot_free_drive.png")), wx.BITMAP_TYPE_PNG
-        )
-        robot_free_drive_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
-        )
-        robot_free_drive_button.SetBackgroundColour(GREY_COLOR)
-        robot_free_drive_button.SetBitmap(BMP_FREE_DRIVE)
-        robot_free_drive_button.SetToolTip(tooltip)
-        robot_free_drive_button.SetValue(False)
-        robot_free_drive_button.Enable(False)
-        robot_free_drive_button.Bind(
-            wx.EVT_TOGGLEBUTTON,
-            partial(self.OnRobotFreeDriveButton, ctrl=robot_free_drive_button),
-        )
-        self.robot_free_drive_button = robot_free_drive_button
-
-        # Toggle button for displaying TMS motor mapping on brain
-        tooltip = _("Show TMS motor mapping on brain")
-        BMP_MOTOR_MAP = wx.Bitmap(
-            str(inv_paths.ICON_DIR.joinpath("brain_eye.png")), wx.BITMAP_TYPE_PNG
-        )
-        show_motor_map_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
-        )
-        show_motor_map_button.SetBackgroundColour(GREY_COLOR)
-        show_motor_map_button.SetBitmap(BMP_MOTOR_MAP)
-        show_motor_map_button.SetToolTip(tooltip)
-        show_motor_map_button.SetValue(False)
-        show_motor_map_button.Enable(True)
-
-        show_motor_map_button.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnShowMotorMapButton, ctrl=show_motor_map_button)
-        )
-        self.show_motor_map_button = show_motor_map_button
-
-        # Sizers
+        # sizers
         start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
-        start_navigation_button_sizer.AddMany(
-            [
-                (btn_nav, 0, wx.EXPAND | wx.GROW),
-            ]
-        )
+        start_navigation_button_sizer.AddMany([(btn_nav, 0, wx.EXPAND | wx.GROW)])
 
-        navigation_buttons_sizer = wx.FlexGridSizer(4, 5, 5)
+        navigation_buttons_sizer = wx.FlexGridSizer(rows=3, cols=4, vgap=3, hgap=3)
         navigation_buttons_sizer.AddMany(
             [
-                (tractography_checkbox),
-                (target_mode_button),
-                (track_object_button),
-                (checkbox_serial_port),
-                (efield_checkbox),
-                (lock_to_target_button),
-                (show_coil_button),
-                (show_probe_button),
-                (show_motor_map_button),
+                (self.target_mode_button),
+                (self.track_object_button),
+                (self.show_coil_button),
+                (self.show_probe_button),
+                (self.efield_checkbox),
+                (self.tractography_checkbox),
+                (self.show_motor_map_button),
+                (self.simultaneous_mode_button),
+                (self.checkbox_serial_port),
+                (self.lock_to_target_button),
             ]
         )
+        static_box_navigation_buttons = wx.StaticBox(self, label=_("Navigation"))
+        static_box_sizer = wx.StaticBoxSizer(static_box_navigation_buttons, wx.VERTICAL)
+        static_box_sizer.Add(navigation_buttons_sizer, 1, wx.EXPAND, 10)
 
-        robot_buttons_sizer = wx.FlexGridSizer(4, 5, 5)
-        robot_buttons_sizer.AddMany(
-            [
-                (robot_track_target_button),
-                (robot_move_away_button),
-                (robot_free_drive_button),
-            ]
-        )
-
+        self.buttons_size = wx.BoxSizer(wx.VERTICAL)
+        self.buttons_size.Add(static_box_sizer, 0, wx.EXPAND, 10)
+        self.robot_buttons_sizers = wx.BoxSizer(wx.VERTICAL)
+        self.robot_buttons_panel = {}
+        self.robot_buttons = {}
+        self._create_toggle_robot_button()
+        self.buttons_size.Add(self.robot_buttons_sizers, 0, wx.EXPAND, 10)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
             [
-                (start_navigation_button_sizer, 0, wx.EXPAND | wx.ALL, 10),
-                (navigation_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, 10),
-                (robot_buttons_sizer, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 5),
+                (start_navigation_button_sizer, 0, wx.EXPAND | wx.TOP, 5),
+                (self.buttons_size, 0, wx.EXPAND | wx.TOP, 5),
             ]
         )
 
         self.sizer = main_sizer
         self.SetSizerAndFit(main_sizer)
 
-        self.__bind_events()
-        self.Update()
+        # Binding buttons
+        self.tractography_checkbox.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnTractographyCheckbox, ctrl=self.tractography_checkbox),
+        )
+
+        self.track_object_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnTrackObjectButton, ctrl=self.track_object_button),
+        )
+
+        self.lock_to_target_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnLockToTargetButton, ctrl=self.lock_to_target_button),
+        )
+
+        self.show_coil_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowCoil)
+        self.show_coil_button.Bind(wx.EVT_RIGHT_DOWN, self.ShowCoilChoice)
+
+        self.UpdateToggleButton(self.show_probe_button, False)  # the probe is hidden at start
+
+        self.show_probe_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowProbe)
+
+        self.checkbox_serial_port.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnEnableSerialPort, ctrl=self.checkbox_serial_port),
+        )
+
+        self.efield_checkbox.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnEfieldCheckbox, ctrl=self.efield_checkbox)
+        )
+
+        self.target_mode_button.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnTargetButton, ctrl=self.target_mode_button)
+        )
+
+        self.UpdateTargetButton()
+
+        self.simultaneous_mode_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnSimultaneousButton, ctrl=self.simultaneous_mode_button),
+        )
+
+        self.UpdateToggleButton(self.simultaneous_mode_button, self.navigation.multitarget)
+        self.OnSimultaneousButton(ctrl=self.simultaneous_mode_button)
+
+        self.show_motor_map_button.Bind(
+            wx.EVT_TOGGLEBUTTON, partial(self.OnShowMotorMapButton, ctrl=self.show_motor_map_button)
+        )
+
         self.LoadConfig()
+        self.ShowSecondRobotButtons(self.navigation.n_coils > 1)
+        self.__bind_events()
 
     def __bind_events(self):
         Publisher.subscribe(self.OnStartNavigation, "Start navigation")
@@ -2129,12 +2055,12 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.SetTarget, "Set target")
         Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.ShowSecondRobotButtons, "Show second robot")
 
         Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
 
         Publisher.subscribe(self.UpdateTractsVisualization, "Update tracts visualization")
-
         # Externally press/unpress and enable/disable buttons.
         Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
 
@@ -2151,8 +2077,12 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.PressRobotMoveAwayButton, "Press move away button")
         Publisher.subscribe(self.EnableRobotMoveAwayButton, "Enable move away button")
-
         Publisher.subscribe(self.EnableRobotFreeDriveButton, "Enable free drive button")
+        Publisher.subscribe(self.EnableRobotCollisionErrorButton, "Enable clean errors button")
+
+        Publisher.subscribe(
+            self.PressSimultaneousMulticoilButton, "Press simultaneous multicoil button"
+        )
 
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
@@ -2160,6 +2090,8 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.PressMotorMapButton, "Press motor map button")
         Publisher.subscribe(self.EnableMotorMapButton, "Enable motor map button")
+
+        Publisher.subscribe(self.PressNavigationButton, "Press navigation button")
 
         # Conditions for enabling 'target mode' button:
         Publisher.subscribe(self.TrackObject, "Track object")
@@ -2181,6 +2113,97 @@ class ControlPanel(wx.Panel):
         state = session.GetConfig("navigation", {})
         track_coil = state.get("track_coil", False)
         self.PressTrackObjectButton(track_coil)
+
+    def _create_toggle_button(
+        self,
+        tooltip,
+        bitmap_name,
+        initial_value,
+        initial_enabled,
+        initial_bg_color,
+        parent=None,
+    ):
+        if parent is None:
+            parent = self
+        bmp = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath(bitmap_name)), wx.BITMAP_TYPE_PNG)
+        button = wx.ToggleButton(parent, -1, "", style=pbtn.PB_STYLE_SQUARE, size=self.ICON_SIZE)
+        button.SetBackgroundColour(initial_bg_color)
+        button.SetBitmap(bmp)
+        button.SetValue(initial_value)
+        button.Enable(initial_enabled)
+        button.SetToolTip(tooltip)
+        return button
+
+    def _create_toggle_robot_button(self):
+        for idx, robot_ID in enumerate(self.robot.GetAllRobots().keys()):
+            if robot_ID not in self.robot_buttons_panel:
+                robot_panel = wx.Panel(self)
+                self.robot_buttons_panel[robot_ID] = robot_panel
+                static_box = wx.StaticBox(robot_panel, label=_(robot_ID))
+                static_box_sizer = wx.StaticBoxSizer(static_box, wx.VERTICAL)
+
+                robot_button_configs = {
+                    "move_away_" + robot_ID: {
+                        "tooltip": _("Move robot away from patient's head"),
+                        "bitmap": "robot_move_away.png",
+                        "function_bind": self.OnRobotMoveAwayButton,
+                    },
+                    "track_target_" + robot_ID: {
+                        "tooltip": _("Let robot track the current target with the coil"),
+                        "bitmap": "robot_track_target.png",
+                        "function_bind": self.OnRobotTrackTargetButton,
+                    },
+                    "free_drive_" + robot_ID: {
+                        "tooltip": _("Move the robot freely with the keyboard"),
+                        "bitmap": "robot_free_drive.png",
+                        "function_bind": self.OnRobotFreeDriveButton,
+                    },
+                    "clean_errors_" + robot_ID: {
+                        "tooltip": _("Reset robot errors"),
+                        "bitmap": "robot_clear_errors.png",
+                        "function_bind": self.OnRobotCollisionErrorButton,
+                    },
+                }
+                for name, config in robot_button_configs.items():
+                    btn = self._create_toggle_button(
+                        tooltip=config["tooltip"],
+                        bitmap_name=config["bitmap"],
+                        initial_value=False,
+                        initial_enabled=False,
+                        initial_bg_color=self.GREY_COLOR,
+                        parent=robot_panel,
+                    )
+                    btn.Bind(
+                        wx.EVT_TOGGLEBUTTON, partial(config["function_bind"], robot_ID=robot_ID)
+                    )
+                    self.robot_buttons[name] = btn
+                robot_grid_sizer = wx.FlexGridSizer(
+                    rows=1,
+                    cols=4,
+                    vgap=3,
+                    hgap=3,
+                )
+                robot_grid_sizer.AddMany(
+                    [
+                        self.robot_buttons["move_away_" + robot_ID],
+                        self.robot_buttons["track_target_" + robot_ID],
+                        self.robot_buttons["free_drive_" + robot_ID],
+                        self.robot_buttons["clean_errors_" + robot_ID],
+                    ]
+                )
+                static_box_sizer.Add(robot_grid_sizer)
+                self.robot_buttons_panel[robot_ID].SetSizerAndFit(static_box_sizer)
+                self.robot_buttons_sizers.Add(self.robot_buttons_panel[robot_ID], 0, wx.EXPAND, 10)
+                self.UpdateRobotButtons(robot_ID)
+
+    def ShowSecondRobotButtons(self, state=True):
+        # self._create_toggle_robot_button()
+        list_robot_id = list(self.robot_buttons_panel.keys())
+        # if len(list_robot_id) > 1:
+        robot_panel = self.robot_buttons_panel[list_robot_id[1]]
+        robot_panel.Show(state)
+        self.Layout()
+        # self.SetSizerAndFit(self.sizer)
 
     # Toggle Button Helpers
     def UpdateToggleButton(self, ctrl, state=None):
@@ -2222,53 +2245,37 @@ class ControlPanel(wx.Panel):
             self.navigation.StartNavigation(self.tracker, self.icp)
 
             # Ensure that the target is sent to robot when navigation starts.
-            self.robot.SendTargetToRobot()
+            self.robot.SendTargetToAllRobots()
 
     def OnStartNavigationButton(self, evt, btn_nav):
         nav_id = btn_nav.GetValue()
         if not nav_id:
-            wx.CallAfter(Publisher.sendMessage, "Stop navigation")
-            tooltip = _("Start navigation")
-            btn_nav.SetToolTip(tooltip)
-            btn_nav.SetLabelText(_("Start navigation"))
+            self.PressNavigationButton(False)
         else:
-            Publisher.sendMessage("Start navigation")
-            if self.nav_status:
-                tooltip = _("Stop navigation")
-                btn_nav.SetToolTip(tooltip)
-                btn_nav.SetLabelText(_("Stop navigation"))
-            else:
-                btn_nav.SetValue(False)
+            self.PressNavigationButton(True)
 
     def OnStopNavigation(self):
         Publisher.sendMessage("Disable style", style=const.STATE_NAVIGATION)
 
         # Set robot objective to NONE when stopping navigation.
-        self.robot.SetObjective(RobotObjective.NONE)
+        self.robot.SetAllRobotsNoObjective()
 
         self.navigation.StopNavigation()
 
-    def UnsetTarget(self, marker):
-        self.navigation.target = None
-        self.target_selected = False
+    def UnsetTarget(self, marker, robot_ID=None):
+        self.navigation.targets.remove(marker)
         self.UpdateTargetButton()
+        self.UpdateRobotButtons(robot_ID)
 
-    def SetTarget(self, marker):
-        coord = marker.position + marker.orientation
-
-        # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
-        #   flip wouldn't be needed.
-        coord[1] = -coord[1]
-
-        self.navigation.target = coord
+    def SetTarget(self, marker, robot_ID):
+        self.navigation.targets.append(marker)
 
         self.EnableToggleButton(self.lock_to_target_button, 1)
         self.UpdateToggleButton(self.lock_to_target_button, True)
         self.navigation.SetLockToTarget(True)
 
-        self.target_selected = True
         self.UpdateTargetButton()
-        self.UpdateRobotButtons()
+        self.UpdateRobotButtons(robot_ID)
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if not nav_status:
@@ -2278,7 +2285,8 @@ class ControlPanel(wx.Panel):
             self.nav_status = True
 
         # Update robot button when navigation status is changed.
-        self.UpdateRobotButtons()
+        for robot_name in self.robot.GetAllRobots().keys():
+            self.UpdateRobotButtons(robot_ID=robot_name)
 
     def OnCheckStatus(self, nav_status, vis_status):
         if nav_status:
@@ -2291,13 +2299,19 @@ class ControlPanel(wx.Panel):
     def OnCoilSelectionDone(self, done):
         self.PressTrackObjectButton(done)
         self.PressShowCoilButton(pressed=done)
+        if self.navigation.n_coils > 1 and done:
+            self.simultaneous_mode_button.Enable(True)
+        else:
+            self.simultaneous_mode_button.Enable(False)
+            self.simultaneous_mode_button.SetValue(False)
+            self.OnSimultaneousButton(ctrl=self.simultaneous_mode_button)
 
     # Robot
-    def OnRobotStatus(self, data):
+    def OnRobotStatus(self, data, robot_ID):
         if data:
             self.Layout()
 
-    def UpdateRobotButtons(self):
+    def UpdateRobotButtons(self, robot_ID):
         # Enable 'track target' robot button if:
         #
         #   - Navigation is on
@@ -2305,31 +2319,41 @@ class ControlPanel(wx.Panel):
         #   - Target mode is on
         #   - Robot is connected
         #   - The name of the coil attached to robot is being tracked
-        track_target_button_enabled = (
-            self.nav_status
-            and self.target_selected
-            and self.target_mode
-            and self.robot.IsConnected()
-        )
-        self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
+        robot = self.robot.GetRobot(robot_ID)
+        if robot is not None:
+            robot_is_connected = robot.IsConnected()
+            coil_name_target = robot.GetCoilName()
+            target_selected = (
+                True if self.markers.FindTarget(coil_name_target) is not None else False
+            )
 
-        # Enable 'move away' robot button if robot is connected.
-        move_away_button_enabled = self.robot.IsConnected()
-        self.EnableRobotMoveAwayButton(enabled=move_away_button_enabled)
+            track_target_button_enabled = (
+                self.nav_status and target_selected and self.target_mode and robot_is_connected
+            )
 
-        # Enable 'free drive' robot button if robot is connected.
-        free_drive_button_enabled = self.robot.IsConnected()
-        self.EnableRobotFreeDriveButton(enabled=free_drive_button_enabled)
+            self.EnableRobotTrackTargetButton(
+                enabled=track_target_button_enabled, robot_ID=robot_ID
+            )
+
+            # Enable 'move away' robot button if robot is connected.
+            self.EnableRobotMoveAwayButton(enabled=robot_is_connected, robot_ID=robot_ID)
+
+            # Enable 'free drive' robot button if robot is connected.
+            self.EnableRobotFreeDriveButton(enabled=robot_is_connected, robot_ID=robot_ID)
+
+            # Enable 'collision error' robot button if robot is connected.
+            self.EnableRobotCollisionErrorButton(enabled=robot_is_connected, robot_ID=robot_ID)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
 
         # Update robot button state when target mode is changed.
-        self.UpdateRobotButtons()
+        for robot_ID in self.robot.GetAllRobots().keys():
+            self.UpdateRobotButtons(robot_ID)
 
         # Set robot objective to NONE when target mode is off.
         if not enabled:
-            self.robot.SetObjective(RobotObjective.NONE)
+            self.robot.SetAllRobotsNoObjective()
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
@@ -2478,8 +2502,8 @@ class ControlPanel(wx.Panel):
 
     def UpdateTargetButton(self):
         # Enable or disable 'Target mode' button based on if target is selected and if 'Track object' button is pressed.
-        enabled = self.target_selected and self.navigation.track_coil
-        self.EnableToggleButton(self.target_mode_button, enabled)
+        enabled = len(self.navigation.targets) > 0 and self.navigation.track_coil
+        self.EnableToggleButton(self.target_mode_button, state=enabled)
 
     def PressTargetModeButton(self, pressed):
         # If pressed, ensure that the button is also enabled.
@@ -2489,76 +2513,166 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.target_mode_button, pressed)
         self.OnTargetButton()
 
-    def OnTargetButton(self, evt=None):
+    def OnTargetButton(self, evt=None, ctrl=None):
         pressed = self.target_mode_button.GetValue()
         self.UpdateToggleButton(self.target_mode_button, pressed)
 
         Publisher.sendMessage("Set target mode", enabled=pressed)
         if pressed:
             # Set robot objective to NONE when target mode is enabled.
-            self.robot.SetObjective(RobotObjective.NONE)
+            self.robot.SetAllRobotsNoObjective()
+
+    def OnSimultaneousButton(self, evt=None, ctrl=None):
+        enabled = ctrl.GetValue()
+
+        if enabled:
+            self.simultaneous_mode_button.Enable(True)
+            coil_names_options = (
+                list(self.navigation.coil_registrations)
+                if self.navigation.selected_coils_to_navigation is None
+                else self.navigation.selected_coils_to_navigation
+            )
+
+            if len(coil_names_options) != 2 and len(coil_names_options) > 1:
+                # Choice coils to navigation with dialog
+                dialog = wx.MultiChoiceDialog(
+                    self,
+                    _("Choice 2 coils to navigation simultaneous"),
+                    _("Choice coil options"),
+                    choices=coil_names_options,
+                )
+
+                if dialog.ShowModal() == wx.ID_OK:
+                    selections = dialog.GetSelections()
+                    if len(selections) == 2:
+                        self.selected_coils_to_navigation = [
+                            coil_names_options[i] for i in selections
+                        ]
+                    else:
+                        wx.MessageBox(
+                            _("You must choose exactly 2 coils."),
+                            _("Invalid Selection"),
+                            wx.OK | wx.ICON_WARNING,
+                        )
+                        self.simultaneous_mode_button.SetValue(False)
+                        enabled = False
+                        return
+                else:
+                    return
+                dialog.Destroy()
+            else:
+                self.selected_coils_to_navigation = coil_names_options
+
+            ctrl.SetBackgroundColour(self.GREEN_COLOR)
+            self.checkbox_serial_port.Show(False)
+            self.lock_to_target_button.Show(False)
+            self.Layout()
+        else:
+            self.selected_coils_to_navigation = None
+            ctrl.SetBackgroundColour(self.RED_COLOR)
+            self.checkbox_serial_port.Show(True)
+            self.lock_to_target_button.Show(True)
+            self.Layout()
+
+        Publisher.sendMessage("Reset targets")
+        Publisher.sendMessage(
+            "Set simultaneous multicoil mode",
+            state=enabled,
+            coils_list=self.selected_coils_to_navigation,
+        )
+
+    def PressSimultaneousMulticoilButton(self, state):
+        self.simultaneous_mode_button.SetValue(state)
+        self.OnSimultaneousButton(ctrl=self.simultaneous_mode_button)
 
     # Robot-related buttons
-
     # 'Track target with robot' button
-    def EnableRobotTrackTargetButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_track_target_button, enabled)
-        self.UpdateToggleButton(self.robot_track_target_button)
+    def EnableRobotTrackTargetButton(self, enabled=False, robot_ID=""):
+        self.EnableToggleButton(self.robot_buttons["track_target_" + robot_ID], enabled)
+        self.UpdateToggleButton(self.robot_buttons["track_target_" + robot_ID])
 
-    def PressRobotTrackTargetButton(self, pressed):
-        self.UpdateToggleButton(self.robot_track_target_button, pressed)
-        self.OnRobotTrackTargetButton()
+    def PressRobotTrackTargetButton(self, pressed, robot_ID=""):
+        self.UpdateToggleButton(self.robot_buttons["track_target_" + robot_ID], pressed)
+        self.OnRobotTrackTargetButton(robot_ID=robot_ID)
 
-    def OnRobotTrackTargetButton(self, evt=None, ctrl=None):
-        self.UpdateToggleButton(self.robot_track_target_button)
-        pressed = self.robot_track_target_button.GetValue()
+    def OnRobotTrackTargetButton(self, evt=None, ctrl=None, robot_ID=""):
+        self.UpdateToggleButton(self.robot_buttons["track_target_" + robot_ID])
+        pressed = self.robot_buttons["track_target_" + robot_ID].GetValue()
         Publisher.sendMessage("Robot tracking status", status=pressed)
         if pressed:
-            self.robot.SetObjective(RobotObjective.TRACK_TARGET)
+            self.robot.GetRobot(robot_ID).SetObjective(RobotObjective.TRACK_TARGET)
         else:
             # If 'Robot' button is unpressed, set robot objective to NONE, but do not override
             # objective set by another button; hence this check.
-            if self.robot.objective == RobotObjective.TRACK_TARGET:
-                self.robot.SetObjective(RobotObjective.NONE)
+            if self.robot.GetRobot(robot_ID).objective == RobotObjective.TRACK_TARGET:
+                self.robot.GetRobot(robot_ID).SetObjective(RobotObjective.NONE)
             Publisher.sendMessage(
-                "Robot to Neuronavigation: Update robot warning", robot_warning=""
+                "Robot to Neuronavigation: Update robot warning",
+                robot_warning="",
+                robot_ID=robot_ID,
             )
 
     # 'Move away' button
-    def EnableRobotMoveAwayButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_move_away_button, enabled)
-        self.UpdateToggleButton(self.robot_move_away_button)
+    def EnableRobotMoveAwayButton(self, enabled=False, robot_ID=""):
+        self.EnableToggleButton(self.robot_buttons["move_away_" + robot_ID], enabled)
+        self.UpdateToggleButton(self.robot_buttons["move_away_" + robot_ID])
 
-    def PressRobotMoveAwayButton(self, pressed):
-        self.UpdateToggleButton(self.robot_move_away_button, pressed)
-        self.OnRobotMoveAwayButton()
+    def PressRobotMoveAwayButton(self, pressed, robot_ID):
+        self.UpdateToggleButton(self.robot_buttons["move_away_" + robot_ID], pressed)
+        self.OnRobotMoveAwayButton(robot_ID=robot_ID)
 
-    def OnRobotMoveAwayButton(self, evt=None, ctrl=None):
-        self.UpdateToggleButton(self.robot_move_away_button)
-        pressed = self.robot_move_away_button.GetValue()
+    def OnRobotMoveAwayButton(self, evt=None, ctrl=None, robot_ID=""):
+        self.UpdateToggleButton(self.robot_buttons["move_away_" + robot_ID])
+        pressed = self.robot_buttons["move_away_" + robot_ID].GetValue()
         if pressed:
-            self.robot.SetObjective(RobotObjective.MOVE_AWAY_FROM_HEAD)
+            self.robot.GetRobot(robot_ID).SetObjective(RobotObjective.MOVE_AWAY_FROM_HEAD)
         else:
             # If 'Move away' button is unpressed, set robot objective to NONE, but do not override
-            # objective set by another button; hence this check.
-            if self.robot.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
-                self.robot.SetObjective(RobotObjective.NONE)
+            # objective set by another button; hence this check..robotsGetAllRobots
+            if self.robot.GetRobot(robot_ID).objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
+                self.robot.GetRobot(robot_ID).SetObjective(RobotObjective.NONE)
             Publisher.sendMessage(
-                "Robot to Neuronavigation: Update robot warning", robot_warning=""
+                "Robot to Neuronavigation: Update robot warning",
+                robot_warning="",
+                robot_ID=robot_ID,
             )
 
     # 'Free drive' button
-    def EnableRobotFreeDriveButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_free_drive_button, enabled)
-        self.UpdateToggleButton(self.robot_free_drive_button)
+    def EnableRobotFreeDriveButton(self, enabled=False, robot_ID=""):
+        self.EnableToggleButton(self.robot_buttons["free_drive_" + robot_ID], enabled)
+        self.UpdateToggleButton(self.robot_buttons["free_drive_" + robot_ID])
 
-    def OnRobotFreeDriveButton(self, evt=None, ctrl=None):
-        self.UpdateToggleButton(self.robot_free_drive_button)
-        pressed = self.robot_free_drive_button.GetValue()
+    def EnableRobotCollisionErrorButton(self, enabled=False, robot_ID=""):
+        self.EnableToggleButton(self.robot_buttons["clean_errors_" + robot_ID], enabled)
+        self.UpdateToggleButton(self.robot_buttons["clean_errors_" + robot_ID])
+
+    def OnRobotFreeDriveButton(self, evt=None, ctrl=None, robot_ID=""):
+        self.UpdateToggleButton(self.robot_buttons["free_drive_" + robot_ID])
+        pressed = self.robot_buttons["free_drive_" + robot_ID].GetValue()
         if pressed:
-            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=True)
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Set free drive",
+                set=True,
+                robot_ID=robot_ID,
+            )
         else:
-            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Set free drive",
+                set=False,
+                robot_ID=robot_ID,
+            )
+
+    def OnRobotCollisionErrorButton(self, evt=None, ctrl=None, robot_ID=""):
+        self.UpdateToggleButton(self.robot_buttons["clean_errors_" + robot_ID])
+        pressed = self.robot_buttons["clean_errors_" + robot_ID].GetValue()
+        if pressed:
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Reset collision error",
+                robot_ID=robot_ID,
+            )
+            # todo: Disable
+        self.robot_buttons["clean_errors_" + robot_ID].SetValue(False)
+        self.UpdateToggleButton(self.robot_buttons["clean_errors_" + robot_ID])
 
     # TMS Motor Mapping related
     # 'Motor Map' button
@@ -2574,6 +2688,21 @@ class ControlPanel(wx.Panel):
         pressed = self.show_motor_map_button.GetValue()
         if self.mep_visualizer.DisplayMotorMap(show=pressed):
             self.UpdateToggleButton(self.show_motor_map_button)
+
+    def PressNavigationButton(self, cond):
+        if cond:
+            Publisher.sendMessage("Start navigation")
+            if self.nav_status:
+                tooltip = _("Stop navigation")
+                self.btn_nav.SetToolTip(tooltip)
+                self.btn_nav.SetLabelText(_("Stop navigation"))
+            else:
+                self.btn_nav.SetValue(False)
+        else:
+            wx.CallAfter(Publisher.sendMessage, "Stop navigation")
+            tooltip = _("Start navigation")
+            self.btn_nav.SetToolTip(tooltip)
+            self.btn_nav.SetLabelText(_("Start navigation"))
 
 
 class MarkersPanel(wx.Panel, ColumnSorterMixin):
@@ -2613,6 +2742,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.arrow_marker_size = const.ARROW_MARKER_SIZE
         self.current_session = 1
 
+        self.robotCoilAssociation = {}
+
         """ 
         Stores all the marker data that is visible in the GUI, as well as the marker UUID.
         Sorting the marker list in the GUI by column is based on values stored here. 
@@ -2620,6 +2751,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.itemDataMap = {}
 
         self.brain_actor = None
+        nav_state = self.session.GetConfig("navigation", {})
         # Change session
         spin_session = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
         spin_session.SetRange(1, 99)
@@ -2635,20 +2767,64 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         select_colour.SetToolTip("Set colour")
         select_colour.Bind(csel.EVT_COLOURSELECT, partial(self.OnSelectColour, ctrl=select_colour))
 
-        btn_create = wx.Button(self, -1, label=_("Create marker"), size=wx.Size(135, 23))
+        self.btn_create = btn_create = wx.Button(
+            self,
+            -1,
+            label=_("Create marker"),
+            size=wx.Size(160 if nav_state.get("n_coils", 1) == 1 else 95, 23),
+        )
         btn_create.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
 
-        sizer_create = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
-        sizer_create.AddMany([(spin_session, 1), (select_colour, 0), (btn_create, 0)])
+        # Combobox for choosing the main coil (ie. the coil which to track with pointer and to use for marker creation)
+        self.select_main_coil = select_main_coil = wx.ComboBox(
+            self,
+            -1,
+            "",
+            size=(65, 23),
+            choices=[],
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        coil_items = self.__GenerateCoilOptions()
+
+        for display_text, data in coil_items:
+            self.select_main_coil.Append(display_text, data)
+
+        maincoil_tooltip = "Select which coil to record markers with"
+        select_main_coil.SetToolTip(maincoil_tooltip)
+        select_main_coil.Bind(
+            wx.EVT_COMBOBOX, partial(self.OnChooseMainCoil, ctrl=select_main_coil)
+        )
+
+        # If main coil is defined, select this in the combobox
+        if (main_coil := nav_state.get("main_coil", None)) is not None:
+            main_coil_index = next(
+                (
+                    i
+                    for i in range(select_main_coil.GetCount())
+                    if select_main_coil.GetClientData(i) == main_coil
+                ),
+                wx.NOT_FOUND,
+            )
+
+            if main_coil_index != wx.NOT_FOUND:
+                select_main_coil.SetSelection(main_coil_index)
+
+        # Hide main_coil combobox if single coil mode
+        select_main_coil.Show(nav_state.get("n_coils", 1) != 1)
+
+        sizer_create = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        sizer_create.AddMany(
+            [(spin_session, 0), (select_colour, 0), (select_main_coil, 0), (btn_create, 0)]
+        )
 
         # Buttons to save and load markers and to change its visibility as well
-        btn_save = wx.Button(self, -1, label=_("Save"), size=wx.Size(65, 23))
+        btn_save = wx.Button(self, -1, label=_("Save"), size=wx.Size(75, 23))
         btn_save.Bind(wx.EVT_BUTTON, self.OnSaveMarkers)
 
-        btn_load = wx.Button(self, -1, label=_("Load"), size=wx.Size(65, 23))
+        btn_load = wx.Button(self, -1, label=_("Load"), size=wx.Size(75, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
 
-        btn_show_hide_all = wx.ToggleButton(self, -1, _("Hide all"), size=wx.Size(65, 23))
+        btn_show_hide_all = wx.ToggleButton(self, -1, _("Hide all"), size=wx.Size(75, 23))
         btn_show_hide_all.Bind(
             wx.EVT_TOGGLEBUTTON, partial(self.OnShowHideAllMarkers, ctrl=btn_show_hide_all)
         )
@@ -2663,48 +2839,21 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
 
         # Buttons to delete markers
-        btn_delete_single = wx.Button(self, -1, label=_("Delete"), size=wx.Size(65, 23))
+        btn_delete_single = wx.Button(self, -1, label=_("Delete"), size=wx.Size(90, 23))
         btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteSelectedMarkers)
 
-        btn_delete_all = wx.Button(self, -1, label=_("Delete all"), size=wx.Size(135, 23))
+        btn_delete_all = wx.Button(self, -1, label=_("Delete all"), size=wx.Size(140, 23))
         btn_delete_all.Bind(wx.EVT_BUTTON, self.OnDeleteAllMarkers)
 
         sizer_delete = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         sizer_delete.AddMany([(btn_delete_single, 1, wx.RIGHT), (btn_delete_all, 0, wx.LEFT)])
-
-        # Combobox for choosing the main coil (ie. the coil which to track with pointer and to use for marker creation)
-        self.select_main_coil = select_main_coil = wx.ComboBox(
-            self,
-            -1,
-            "",
-            size=(145, -1),
-            choices=list(self.navigation.coil_registrations),
-            style=wx.CB_DROPDOWN | wx.CB_READONLY,
-        )
-        maincoil_tooltip = "Select which coil to record markers with"
-        select_main_coil.SetToolTip(maincoil_tooltip)
-        select_main_coil.Bind(
-            wx.EVT_COMBOBOX, partial(self.OnChooseMainCoil, ctrl=select_main_coil)
-        )
-
-        # If main coil is defined, select this in the combobox
-        nav_state = self.session.GetConfig("navigation", {})
-        if (main_coil := nav_state.get("main_coil", None)) is not None:
-            main_coil_index = select_main_coil.FindString(main_coil)
-            select_main_coil.SetSelection(main_coil_index)
-
-        # Hide main_coil combobox if single coil mode
-        select_main_coil.Show(nav_state.get("n_coils", 1) != 1)
-
-        sizer_main_coil = wx.FlexGridSizer(rows=1, cols=1, hgap=5, vgap=5)
-        sizer_main_coil.Add(select_main_coil)
 
         screen_width, screen_height = wx.DisplaySize()
 
         # The marker list height is set to 120 pixels (accommodating 4 markers) if the screen height is
         # at most 1080 pixels (a commonly used height in laptops). Otherwise, the height grows linearly with
         # the screen height.
-        marker_list_height = max(120, int(screen_height / 4))
+        marker_list_height = max(120, int(screen_height / 5))
         self.marker_list_height = marker_list_height
 
         marker_list_ctrl = wx.ListCtrl(
@@ -2717,7 +2866,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.SetColumnWidth(const.SESSION_COLUMN, 51)
 
         marker_list_ctrl.InsertColumn(const.MARKER_TYPE_COLUMN, "Type")
-        marker_list_ctrl.SetColumnWidth(const.MARKER_TYPE_COLUMN, 77)
+        marker_list_ctrl.SetColumnWidth(const.MARKER_TYPE_COLUMN, 70)
 
         marker_list_ctrl.InsertColumn(const.LABEL_COLUMN, "Label")
         marker_list_ctrl.SetColumnWidth(const.LABEL_COLUMN, 95)
@@ -2746,6 +2895,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
             marker_list_ctrl.InsertColumn(const.Z_COLUMN, "Z")
             marker_list_ctrl.SetColumnWidth(const.Z_COLUMN, 45)
+
+        marker_list_ctrl.InsertColumn(const.COIL_NAME_COLUMN, "Coil")
+        marker_list_ctrl.SetColumnWidth(const.COIL_NAME_COLUMN, 50)
 
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
@@ -2807,7 +2959,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        group_sizer.Add(sizer_main_coil, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Add(brain_targets_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Fit(self)
@@ -2850,6 +3001,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Update main_coil combobox
         Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
+        Publisher.subscribe(self.OnUpdateRobotCoilAssociation, "Update Robot Coil Association")
+        Publisher.subscribe(self.OnChangeMainCoilbySetTarget, "Update main coil by target")
 
         # Update marker_list_ctrl
         Publisher.subscribe(self._AddMarker, "Add marker")
@@ -2862,6 +3015,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UnsetPointOfInterest, "Unset point of interest")
         Publisher.subscribe(self._UpdateMarkerLabel, "Update marker label")
         Publisher.subscribe(self._UpdateMEP, "Update marker mep")
+        Publisher.subscribe(self._UpdateCoil, "Update marker associate coil")
 
         Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
         # Publisher.subscribe(self.SetVectorField, "Set vector field")
@@ -2991,6 +3145,17 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Trigger redraw MEP mapping
         Publisher.sendMessage("Redraw MEP mapping")
 
+    def _UpdateCoil(self, marker):
+        idx = self.__find_marker_index(marker.marker_id)
+        self.marker_list_ctrl.SetItem(idx, const.COIL_NAME_COLUMN, str(marker.coil))
+
+        # Update the marker coil in self.itemDataMap so that sorting works
+        uuid = marker.marker_uuid
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.COIL_NAME_COLUMN] = marker.coil
+
     @staticmethod
     def __list_fiducial_labels():
         """Return the list of marker labels denoting fiducials."""
@@ -3116,8 +3281,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if is_coil_target:
             mep_menu_item = menu_id.Append(unique_menu_id + 4, _("Change MEP value"))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP, mep_menu_item)
+
+            coil_item = menu_id.Append(unique_menu_id + 5, _("Change coil associate"))
+            menu_id.Bind(wx.EVT_MENU, self.ChangeCoilFromCoilTarget, coil_item)
+
             if is_active_target:
-                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Unset target"))
+                target_menu_item = menu_id.Append(unique_menu_id + 6, _("Unset target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
                 if has_mTMS:
                     brain_target_menu_item = menu_id.Append(
@@ -3125,7 +3294,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     )
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
-                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Set as target"))
+                target_menu_item = menu_id.Append(unique_menu_id + 6, _("Set as target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
@@ -3412,7 +3581,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if not proj.surface_dict:
             wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
             return
-        self.markers.CreateCoilTargetFromLandmark(marker, label)
+
+        coil = self.navigation.main_coil
+        self.markers.CreateCoilTargetFromLandmark(marker, coil, label)
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
         self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
@@ -3426,27 +3597,70 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.markers.CreateCoilTargetFromCoilPose(marker)
 
+    def OnUpdateRobotCoilAssociation(self, robotCoilAssociation):
+        self.robotCoilAssociation = robotCoilAssociation
+
     def UpdateMainCoilCombobox(self, done):
         select_main_coil = self.select_main_coil
         if done:
             select_main_coil.Clear()
-            select_main_coil.AppendItems(list(self.navigation.coil_registrations))
-            main_coil_index = select_main_coil.FindString(self.navigation.main_coil)
+
+            coil_items = self.__GenerateCoilOptions()
+
+            for display, data in coil_items:
+                select_main_coil.Append(display, data)
+
+            main_coil_index = 0
+            if self.navigation.main_coil:
+                for i in range(select_main_coil.GetCount()):
+                    if select_main_coil.GetClientData(i) == self.navigation.main_coil:
+                        main_coil_index = i
+                        break
+
             select_main_coil.SetSelection(main_coil_index)
         else:
             select_main_coil.Clear()
 
         if self.navigation.n_coils == 1:  # Single coil: hide main coil combobox
             select_main_coil.Hide()
+            self.btn_create.SetMinSize((160, 23))
         else:
             select_main_coil.Show()
+            self.btn_create.SetMinSize((95, 23))
         self.Layout()
+
+    def __GenerateCoilOptions(self):
+        Publisher.sendMessage("Request update Robot Coil Association")
+
+        items_to_add = []
+        for coil_name in self.navigation.coil_registrations:
+            if coil_name in self.robotCoilAssociation:
+                display_text = f"{coil_name} ({self.robotCoilAssociation[coil_name]})"
+                items_to_add.append((display_text, coil_name))
+            else:
+                items_to_add.append((coil_name, coil_name))
+
+        return items_to_add
 
     def OnChooseMainCoil(self, evt, ctrl):
         choice = evt.GetSelection()
-        main_coil = ctrl.GetString(choice)
+        main_coil = ctrl.GetClientData(choice)
         self.navigation.SetMainCoil(main_coil)
         ctrl.SetSelection(choice)
+
+    def OnChangeMainCoilbySetTarget(self, coil_name):
+        index_to_select = next(
+            (
+                i
+                for i in range(self.select_main_coil.GetCount())
+                if self.select_main_coil.GetClientData(i) == coil_name
+            ),
+            wx.NOT_FOUND,  # Valor padrão se não encontrar
+        )
+
+        if index_to_select != wx.NOT_FOUND:
+            self.select_main_coil.SetSelection(index_to_select)
+            self.navigation.SetMainCoil(coil_name)
 
     def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
@@ -3478,10 +3692,22 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             wx.MessageBox(_("TMS coil not registered."), _("InVesalius 3"))
             return
 
+        marker = self.__get_marker(idx)
+
+        if marker.coil not in self.navigation.coil_registrations:
+            wx.MessageBox(
+                _(
+                    """This marker cannot be targeted because its coil is not available, please change the associated coil or add the correct coil"""
+                ),
+                _("InVesalius 3"),
+            )
+            return
+        self.navigation.UpdateCoilMesh(marker.coil)
+
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)
 
-    def _SetTarget(self, marker):
+    def _SetTarget(self, marker, robot_ID):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(255, 220, 209))
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
@@ -3798,11 +4024,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             brain_target_list=self.currently_focused_marker.brain_target_list,
         )
 
-    def _UnsetTarget(self, marker):
+    def _UnsetTarget(self, marker, robot_ID):
         idx = self.__find_marker_index(marker.marker_id)
 
-        # When unsetting a target, automatically unpress the target mode button.
-        Publisher.sendMessage("Press target mode button", pressed=False)
+        if self.markers.FindTarget() is None:
+            # When unsetting a target, automatically unpress the target mode button.
+            Publisher.sendMessage("Press target mode button", pressed=False)
 
         # Update the marker list control.
         if marker.brain_target_list:
@@ -4052,6 +4279,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if not self.nav_status:
             marker_type = MarkerType.LANDMARK
 
+        main_coil = self.navigation.main_coil if marker_type == MarkerType.COIL_TARGET else ""
+
         marker = self.CreateMarker(
             position=position,
             orientation=orientation,
@@ -4064,6 +4293,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
             mep_value=mep_value,
+            coil=main_coil,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
 
@@ -4306,6 +4536,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         z_offset=0.0,
         z_rotation=0.0,
         mep_value=None,
+        coil=None,
     ):
         """
         Create a new marker object.
@@ -4331,6 +4562,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker.z_offset = z_offset
         marker.z_rotation = z_rotation
         marker.mep_value = mep_value
+        marker.coil = coil
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers.list)
@@ -4358,6 +4590,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             "Yes" if marker.is_point_of_interest else ""
         )
         list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
+        list_entry[const.COIL_NAME_COLUMN] = str(marker.coil) if marker.coil else ""
         list_entry[const.UUID] = str(marker.marker_uuid) if marker.marker_uuid else ""
 
         if self.session.GetConfig("debug"):
@@ -4386,3 +4619,23 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Focus on the added marker.
         if focus:
             self.FocusOnMarker(num_items)
+
+    def ChangeCoilFromCoilTarget(self, evt):
+        idx = self.marker_list_ctrl.GetFocusedItem()
+        marker = self.__get_marker(idx)
+
+        # Select coil in dialog window
+        dialog = wx.SingleChoiceDialog(
+            None,
+            _("Select which coil to associate"),
+            _("Select coil"),
+            choices=list(self.navigation.coil_registrations),
+        )
+        if dialog.ShowModal() == wx.ID_OK:
+            coil_name = dialog.GetStringSelection()
+        else:
+            return  # Cancel the operation if the user closes the dialog or cancels
+
+        dialog.Destroy()
+
+        self.markers.ChangeCoilAssociate(marker, coil_name)

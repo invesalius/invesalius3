@@ -79,6 +79,7 @@ class Marker:
     # in micro Volts (but scale in milli Volts for display)
     mep_value: float = dataclasses.field(default=None)
     brain_target_list: list = dataclasses.field(default_factory=list)
+    coil: str = ""
 
     # x, y, z can be jointly accessed as position
     @property
@@ -246,6 +247,7 @@ class Marker:
             "mep_value": self.mep_value,
             "brain_target_list": self.brain_target_list,
             "marker_uuid": self.marker_uuid,
+            "coil": self.coil,
         }
 
     def from_dict(self, d):
@@ -293,6 +295,7 @@ class Marker:
         mep_value = d.get("mep_value", None)
         brain_target_list = d.get("brain_target_list", [])
         marker_uuid = d.get("marker_uuid", "")
+        coil = d.get("coil", "")
 
         self.size = d["size"]
         self.label = d["label"]
@@ -311,6 +314,7 @@ class Marker:
         self.mep_value = mep_value
         self.brain_target_list = brain_target_list
         self.marker_uuid = marker_uuid
+        self.coil = coil
 
         return self
 

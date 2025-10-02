@@ -71,10 +71,7 @@ class MarkerVisualizer:
         Publisher.subscribe(self.HighlightMarker, "Highlight marker")
         Publisher.subscribe(self.UnhighlightMarker, "Unhighlight marker")
         Publisher.subscribe(self.SetNewColor, "Set new color")
-        Publisher.subscribe(self.SetTarget, "Set target")
-        Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.SetTargetTransparency, "Set target transparency")
-        Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
         Publisher.subscribe(self.UpdateBrainTargets, "Update brain targets")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.UpdateTargetMode, "Set target mode")
@@ -275,7 +272,7 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker, robot_ID):
         """
         When setting a marker as the target, change the arrow to an aim highlight
         that it is the target.
@@ -312,7 +309,7 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def UnsetTarget(self, marker):
+    def UnsetTarget(self, marker, robot_ID):
         """
         When unsetting a marker as the target, change the aim back to an arrow.
         """

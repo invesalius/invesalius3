@@ -54,16 +54,17 @@ class CoilVisualizer:
 
         self.LoadConfig()
 
-        self.ShowCoil(False)
+        self.ShowCoil(True)
 
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.ShowCoil, "Show coil in viewer volume")
         Publisher.subscribe(self.ResetCoilVisualizer, "Reset coil selection")
-        Publisher.subscribe(self.SelectCoil, "Select coil")
+        Publisher.subscribe(self.ADDSelectCoil, "ADD select coil")
+        Publisher.subscribe(self.DeleteSelectCoil, "Delete select coil")
+        Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
         Publisher.subscribe(self.UpdateCoilPoses, "Update coil poses")
         Publisher.subscribe(self.UpdateVectorField, "Update vector field")
 
@@ -203,12 +204,15 @@ class CoilVisualizer:
         self.renderer.RemoveActor(self.target_coil_actor)
         self.target_coil_actor = None
 
-    # Called when a coil is (un)selected for navigation
-    def SelectCoil(self, coil_name, coil_registration):
-        if coil_registration is not None:  # coil is selected
+    def ADDSelectCoil(self, coil_name, coil_registration):
+        if coil_name not in self.coils:
             self.AddCoil(coil_name, coil_registration["path"])
-        else:  # coil is unselected
-            self.RemoveCoil(coil_name)
+
+    def DeleteSelectCoil(self, coil_name):
+        self.RemoveCoil(coil_name)
+
+    def RenameSelectCoil(self, coil_name, new_coil_name):
+        self.coils[new_coil_name] = self.coils.pop(coil_name)
 
     def AddCoil(self, coil_name, coil_path):
         """
@@ -290,15 +294,13 @@ class CoilVisualizer:
         """
 
         for name, m_img in m_imgs.items():
-            m_img_flip = m_img.copy()
-            m_img_flip[1, -1] = -m_img_flip[1, -1]
+            if name in self.coils:
+                m_img_flip = m_img.copy()
+                m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-            m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
+                m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
 
-            # Update actor positions for coil, coil center, and coil orientation axes.
-            self.coils[name]["actor"].SetUserMatrix(m_img_vtk)
-            self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
-
-            # LUKATODO
-
-            self.vector_field_assembly.SetUserMatrix(m_img_vtk)
+                # Update actor positions for coil, coil center, and coil orientation axes.
+                self.coils[name]["actor"].SetUserMatrix(m_img_vtk)
+                self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
+                self.vector_field_assembly.SetUserMatrix(m_img_vtk)

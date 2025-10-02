@@ -18,26 +18,78 @@
 # --------------------------------------------------------------------------
 
 import uuid
-from typing import List, Union
+from typing import Dict, List, Optional, Union
 
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.marker_transformator import MarkerTransformator
-from invesalius.navigation.robot import Robot, RobotObjective
+from invesalius.navigation.robot import RobotObjective, Robots
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
 
 class MarkersControl(metaclass=Singleton):
-    def __init__(self, robot: Robot) -> None:
+    def __init__(self, robot: Robots) -> None:
         self.list: List[Marker] = []
         self.nav_status = False
         self.transformator = MarkerTransformator()
         self.robot = robot
+        self.TargetCoilAssociation: Dict[str, Marker] = {}
+        self.accepted_coils = None
+        self.multitarget = False
+
+        self.__bind_events()
+
+    def __bind_events(self) -> None:
+        Publisher.subscribe(self.ADDSelectCoil, "ADD select coil")
+        Publisher.subscribe(self.DeleteSelectCoil, "Delete select coil")
+        Publisher.subscribe(self.RenameSelectCoil, "Rename select coil")
+        Publisher.subscribe(self.OnSetMultiTargetMode, "Set simultaneous multicoil mode")
+        Publisher.subscribe(self.ResetTargets, "Reset targets")
+        Publisher.subscribe(
+            self.UpdateZOffsetTargetByRobot, "Robot to Neuronavigation: Update z_offset target"
+        )
+
+    def UpdateZOffsetTargetByRobot(self, z_offset, robot_ID):
+        coil_name = self.robot.GetRobot(robot_ID).coil_name
+        marker = self.FindTarget(coil_name)
+
+        if not marker or not self.transformator.robot_track_status:
+            return
+        displacement = self.transformator.DisplacementOffset(z_offset)
+        if displacement is None:
+            return
+        self.transformator.MoveMarker(marker=marker, displacement=displacement)
+        # Notify the volume viewer about the updated marker
+        Publisher.sendMessage(
+            "Update marker",
+            marker=marker,
+            new_position=marker.position,
+            new_orientation=marker.orientation,
+        )
+        # If this is the active target, update it globally
+        if marker.is_target:
+            Publisher.sendMessage("Set target", marker=marker)
+
+    def OnSetMultiTargetMode(self, state=False, coils_list=None):
+        self.accepted_coils = coils_list
+        self.multitarget = state
+
+    def ADDSelectCoil(self, coil_name, coil_registration):
+        if coil_name not in self.TargetCoilAssociation:
+            self.TargetCoilAssociation[coil_name] = None
+            self.SaveState()
+
+    def DeleteSelectCoil(self, coil_name):
+        self.TargetCoilAssociation.pop(coil_name, None)
+        self.SaveState()
+
+    def RenameSelectCoil(self, coil_name, new_coil_name):
+        self.TargetCoilAssociation[new_coil_name] = self.TargetCoilAssociation.pop(coil_name)
+        self.SaveState()
 
     def SaveState(self) -> None:
         state = [marker.to_dict() for marker in self.list]
-
         session = ses.Session()
         session.SetState("markers", state)
 
@@ -67,7 +119,7 @@ class MarkersControl(metaclass=Singleton):
         Publisher.sendMessage("Add marker", marker=marker, render=render, focus=focus)
 
         if marker.is_target:
-            self.SetTarget(marker.marker_id, check_for_previous=False)
+            self.SetTarget(marker.marker_id, check_for_previous=False, render=render)
 
         if marker.is_point_of_interest:
             self.SetPointOfInterest(marker.marker_id)
@@ -123,14 +175,23 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def SetTarget(self, marker_id: int, check_for_previous: bool = True) -> None:
+    def SetTarget(
+        self, marker_id: int, check_for_previous: bool = True, render: bool = True
+    ) -> None:
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
-        self.robot.SetObjective(RobotObjective.NONE)
-
+        marker = self.list[marker_id]
+        robot = self.robot.GetRobotByCoil(marker.coil)
+        robot.SetObjective(RobotObjective.NONE)
         if check_for_previous:
-            prev_target = self.FindTarget()
+            # Check multitarget mode
+            if self.multitarget:
+                if marker.coil not in self.accepted_coils:
+                    return
+                prev_target = self.FindTarget(marker.coil)
+            else:
+                prev_target = self.FindTarget()
 
             # If the new target is same as the previous do nothing.
             if prev_target and prev_target.marker_id == marker_id:
@@ -141,17 +202,17 @@ class MarkersControl(metaclass=Singleton):
                 self.UnsetTarget(prev_target.marker_id)
 
         # Set new target
-        marker = self.list[marker_id]
         marker.is_target = True
-
-        Publisher.sendMessage("Set target", marker=marker)
-        Publisher.sendMessage("Set target transparency", marker=marker, transparent=True)
+        coil_name = marker.coil
+        self.TargetCoilAssociation[coil_name] = marker_id
+        Publisher.sendMessage("Update main coil by target", coil_name=coil_name)
 
         # When setting a new target, automatically switch into target mode. Note that the order is important here:
         # first set the target, then move into target mode.
         Publisher.sendMessage("Press target mode button", pressed=True)
-
-        self.SaveState()
+        Publisher.sendMessage("Set target", marker=marker, robot_ID=robot.robot_name)
+        if render:
+            self.SaveState()
 
     def SetPointOfInterest(self, marker_id: int) -> None:
         # Find the previous point of interest
@@ -176,9 +237,13 @@ class MarkersControl(metaclass=Singleton):
     def UnsetTarget(self, marker_id: int) -> None:
         marker = self.list[marker_id]
         marker.is_target = False
+        self.TargetCoilAssociation[marker.coil] = None
 
-        Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
-        Publisher.sendMessage("Unset target", marker=marker)
+        Publisher.sendMessage(
+            "Unset target",
+            marker=marker,
+            robot_ID=self.robot.GetRobotByCoil(marker.coil).robot_name,
+        )
 
         self.SaveState()
 
@@ -191,16 +256,31 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def FindTarget(self) -> Union[None, Marker]:
+    def FindTarget(
+        self, coil_name: Optional[str] = None, multiple: bool = False
+    ) -> Union[None, List[Marker], Marker]:
         """
-        Return the marker currently selected as target (there
-        should be at most one).
+        Return the markers currently selected as target.
         """
-        for marker in self.list:
-            if marker.is_target:
-                return marker
 
-        return None
+        markers_id = []
+        if coil_name:
+            marker_id = self.TargetCoilAssociation.get(coil_name, None)
+
+            if marker_id is not None:
+                markers_id.append(marker_id)
+        else:
+            for id in list(self.TargetCoilAssociation.values()):
+                if id is not None:
+                    markers_id.append(id)
+
+        if 0 <= len(markers_id) < len(self.list):
+            if len(markers_id) == 0:
+                return None
+            elif multiple:
+                return [self.list[id] for id in markers_id]
+            else:
+                return self.list[markers_id[0]]
 
     def FindPointOfInterest(self) -> Union[None, Marker]:
         for marker in self.list:
@@ -217,7 +297,14 @@ class MarkersControl(metaclass=Singleton):
     def ChangeMEP(self, marker: Marker, new_mep: float) -> None:
         marker.mep_value = new_mep
         Publisher.sendMessage("Update marker mep", marker=marker)
+        self.SaveState()
 
+    def ChangeCoilAssociate(self, marker: Marker, new_coil) -> None:
+        if marker.is_target:
+            self.UnsetTarget(marker_id=marker.marker_id)
+            self.SetTarget(marker_id=marker.marker_id)
+        marker.coil = new_coil
+        Publisher.sendMessage("Update marker associate coil", marker=marker)
         self.SaveState()
 
     def ChangeColor(self, marker: Marker, new_color: List[float]) -> None:
@@ -275,7 +362,7 @@ class MarkersControl(metaclass=Singleton):
         # keyboard events.
         self.transformator.UpdateSelectedMarker(None)
 
-    def CreateCoilTargetFromLandmark(self, marker: Marker, label: str = None) -> None:
+    def CreateCoilTargetFromLandmark(self, marker: Marker, coil="", label: str = None) -> None:
         new_marker = marker.duplicate()
 
         self.transformator.ProjectToScalp(
@@ -289,6 +376,7 @@ class MarkersControl(metaclass=Singleton):
             new_marker.label = self.GetNextMarkerLabel()
         else:
             new_marker.label = label
+        new_marker.coil = coil
 
         self.AddMarker(new_marker)
 
@@ -324,3 +412,12 @@ class MarkersControl(metaclass=Singleton):
         new_marker.marker_type = MarkerType.COIL_TARGET
 
         self.AddMarker(new_marker)
+
+    def ResetTargets(self):
+        for marker_id in list(self.TargetCoilAssociation.values()):
+            if marker_id is not None:
+                # Disable target
+                self.UnsetTarget(marker_id)
+
+        # Stop navigation
+        Publisher.sendMessage("Press navigation button", cond=False)
