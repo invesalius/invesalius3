@@ -20,9 +20,9 @@ import itertools
 import os
 import time
 from functools import partial
+from typing import Optional
 
 import numpy as np
-from typing import Optional
 
 try:
     # TODO: the try-except could be done inside the mTMS() method call
@@ -2506,6 +2506,9 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.robot_track_target_button)
 
     def PressRobotTrackTargetButton(self, pressed):
+        if pressed:
+            if not self.robot_track_target_button.IsEnabled():
+                return
         self.UpdateToggleButton(self.robot_track_target_button, pressed)
         self.OnRobotTrackTargetButton()
 
@@ -2845,6 +2848,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self.GetRotationPosition, "Send coil position and rotation")
         Publisher.subscribe(self.CreateMarkerEfield, "Create Marker from tangential")
         Publisher.subscribe(self.UpdateCortexMarker, "Update Cortex Marker")
+        Publisher.subscribe(
+            self.UpdateCoilTarget, "NeuroSimo to Neuronavigation: Update coil target"
+        )
 
         Publisher.subscribe(self.CreateCoilTargetFromLandmark, "Create coil target from landmark")
 
@@ -3018,6 +3024,25 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def UpdateCortexMarker(self, CoGposition, CoGorientation):
         self.cortex_position_orientation = CoGposition + CoGorientation
+
+    def UpdateCoilTarget(self, coil_target):
+        # Find markers associated with the given coil_target label
+        markers = self.markers.FindLabel(coil_target)
+        if markers:
+            wx.CallAfter(Publisher.sendMessage, "Press robot button", pressed=False)
+            # Look for an existing marker that is a COIL_TARGET
+            for marker in markers:
+                if marker.marker_type == MarkerType.COIL_TARGET:
+                    # Set the found marker as the current target
+                    self.markers.SetTarget(marker.marker_id)
+                    wx.CallAfter(Publisher.sendMessage, "Press robot button", pressed=True)
+                    return  # Exit once we find the first valid coil target
+
+            # If no marker with COIL_TARGET type was found, create a new one
+            self.markers.CreateCoilTargetFromLandmark(markers[0], markers[0].label)
+            self.markers.SetTarget(-1)
+            wx.CallAfter(Publisher.sendMessage, "Press robot button", pressed=True)
+        return
 
     def SetBrainTarget(self, brain_targets):
         marker_target = self.markers.FindTarget()

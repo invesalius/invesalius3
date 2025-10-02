@@ -202,6 +202,15 @@ class MarkersControl(metaclass=Singleton):
 
         return None
 
+    def FindLabel(self, label) -> Union[None, Marker]:
+        """
+        Return a list of markers with the given label.
+        If no markers are found, return None.
+        """
+        matching_markers = [marker for marker in self.list if marker.label == label]
+
+        return matching_markers if matching_markers else None
+
     def FindPointOfInterest(self) -> Union[None, Marker]:
         for marker in self.list:
             if marker.is_point_of_interest:
