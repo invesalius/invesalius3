@@ -20,6 +20,7 @@ from copy import deepcopy
 
 import numpy as np
 import wx
+from scipy.spatial import cKDTree
 from vtk import vtkColorTransferFunction
 from vtkmodules.vtkCommonCore import (
     vtkDoubleArray,
@@ -31,7 +32,6 @@ from vtkmodules.vtkCommonDataModel import (
 )
 from vtkmodules.vtkFiltersCore import (
     vtkDecimatePro,
-    vtkImplicitPolyDataDistance,
     vtkPolyDataNormals,
     vtkResampleWithDataSet,
     vtkTriangleFilter,
@@ -51,14 +51,14 @@ import invesalius.constants as const
 import invesalius.data.transformations as transformations
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
-from invesalius.data.markers.marker import Marker, MarkerType
+from invesalius.data.markers.marker import MarkerType
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 
 
 class MEPVisualizer:
     def __init__(self):
-        self.points = vtkPolyData()
+        self.points_polydata = vtkPolyData()
         self.surface = None
         self.surface_index = None
         self.decimate_surface = None
@@ -134,7 +134,7 @@ class MEPVisualizer:
             self.UpdateVisualization()
             progress_dialog.Update(value=50, msg="Preparing brain surface...")
             self.UpdateMEPPoints()
-            self.UpdateMEPPointsFromBrainTargets()
+            # self.UpdateMEPPointsFromBrainTargets()
             progress_dialog.Close()
         else:
             self._config_params["mep_enabled"] = False
@@ -153,9 +153,9 @@ class MEPVisualizer:
     # --- Data Interpolation and Visualization ---
 
     def InterpolateData(self):
-        surface = self.decimate_surface
-        points = self.points
-        if not surface:
+        polydata = self.decimate_surface
+        points = self.points_polydata
+        if not polydata:
             # TODO: Show modal dialog to select a surface from project
             return
         if not points:
@@ -182,7 +182,6 @@ class MEPVisualizer:
 
         resample = vtkResampleWithDataSet()
 
-        polydata = surface.GetOutput()
         resample.SetInputData(polydata)
         resample.SetSourceConnection(interpolator.GetOutputPort())
         resample.SetPassPointArrays(1)
@@ -204,7 +203,7 @@ class MEPVisualizer:
         choice = choice or self._config_params["mep_colormap"]
 
         color_maps = const.MEP_COLORMAP_DEFINITIONS
-
+        color_function.AddRGBPoint(0, *(np.array(const.CORTEX_COLOR) / 255.0))
         if choice in color_maps:
             for value, color in color_maps[choice].items():
                 color_function.AddRGBPoint(self._config_params["colormap_range_uv"][value], *color)
@@ -229,12 +228,20 @@ class MEPVisualizer:
         decimate_filter.SetTargetReduction(0.6)  # Reduce the number of triangles by 60%
         decimate_filter.PreserveTopologyOn()  # Preserve the topology
         decimate_filter.Update()
-        return decimate_filter
+        return decimate_filter.GetOutput()
 
     def SetBrainSurface(self, actor: vtkActor, index: int):
         self.surface = actor
         self.surface_index = index
-        self.decimate_surface = self.DecimateBrainSurface()
+        self.decimate_surface = self.surface.GetMapper().GetInput()
+        # self.decimate_surface = self.DecimateBrainSurface()
+        self.surface_points = np.array(
+            [
+                self.decimate_surface.GetPoint(i)
+                for i in range(self.decimate_surface.GetNumberOfPoints())
+            ]
+        )
+        self.kdtree = cKDTree(self.surface_points)
         self.bounds = np.array(actor.GetBounds())
         self.marker_storage = []
         if self._config_params["mep_enabled"]:
@@ -248,9 +255,8 @@ class MEPVisualizer:
         if not markers_list:
             return [], False
 
-        markers = []
-        for marker in markers_list:
-            markers.append(marker.to_dict())
+        # Convert to dicts for stable comparison
+        markers = [m.to_dict() for m in markers_list]
 
         # TODO: use modified markers list to make projection_on_surface
         # Find objects in the new list that are not in the old list (added)
@@ -281,30 +287,52 @@ class MEPVisualizer:
 
         return coil_markers, False
 
-    def collision_detection(self, m_point):
-        distance_function = vtkImplicitPolyDataDistance()
-        distance_function.SetInput(self.decimate_surface.GetOutput())
-        distance = distance_function.EvaluateFunction(m_point[:3, -1])
-        if distance > 30 or distance < 1:
-            print("no collision")
-            return m_point[:3, -1]
+    def projection_on_surface(self, position, orientation, step_size=5.0, max_steps=100):
+        """
+        Project a point along its orientation until it hits the brain surface.
+        Then snap to nearest surface point via KDTree query.
 
-        t_translation = transformations.translation_matrix([0, 0, -distance])
-        m_point_t = m_point @ t_translation
-        return m_point_t[:3, -1]
-
-    def projection_on_surface(self, marker):
-        print("projecting target on brain surface")
-        a, b, g = np.radians(marker.orientation[:3])
+        Parameters
+        ----------
+        position : (3,) array-like
+            Initial 3D position of the point.
+        orientation : (3,) array-like
+            Euler angles (degrees).
+        step_size : float
+            Step size along orientation direction in mm.
+        max_steps : int
+            Maximum steps to take downward.
+        """
+        # === Build transform matrix ===
+        a, b, g = np.radians(orientation[:3])
         r_ref = transformations.euler_matrix(a, b, g, axes="sxyz")
-        t_ref = transformations.translation_matrix(
-            [marker.position[0], marker.position[1], marker.position[2]]
-        )
+        t_ref = transformations.translation_matrix(position)
         m_point = transformations.concatenate_matrices(t_ref, r_ref)
-        m_point[1, -1] = -m_point[1, -1]
-        new_coord = self.collision_detection(m_point)
 
-        return new_coord
+        # Fix coordinate system
+        m_point[1, -1] = -m_point[1, -1]
+
+        # === Step 1: move downwards ===
+        # Normal vector (coil z-axis in world coords)
+        coil_normal = m_point[:3, 2]
+        p = np.array(m_point[:3, -1])
+
+        hit_point = None
+        for _ in range(max_steps):
+            # step down
+            p = p - coil_normal * step_size
+            # query distance to surface (cheap check)
+            dist, idx = self.kdtree.query(p)
+            if dist < step_size:  # close enough to surface
+                hit_point = self.surface_points[idx]  # snap to surface vertex
+                break
+
+        if hit_point is None:
+            # fallback: just return closest surface point
+            dist, idx = self.kdtree.query(p)
+            hit_point = self.surface_points[idx]
+
+        return hit_point
 
     def UpdateMEPPoints(self):
         """
@@ -321,7 +349,7 @@ class MEPVisualizer:
 
         markers, skip = self._FilterMarkers(MarkersControl().list)
         if not markers:
-            self.points = vtkPolyData()
+            self.points_polydata = vtkPolyData()
             self.UpdateVisualization()
             return
         if skip:  # Saves computation if the markers are not updated or irrelevant
@@ -329,14 +357,14 @@ class MEPVisualizer:
 
         points = vtkPoints()
 
-        point_data = self.points.GetPointData()
+        point_data = self.points_polydata.GetPointData()
         mep_array = vtkDoubleArray()
         mep_array.SetName("MEP")
         point_data.AddArray(mep_array)
 
         for marker in markers:
             if not marker.x_cortex and not marker.y_cortex and not marker.z_cortex:
-                projected_point = self.projection_on_surface(marker)
+                projected_point = self.projection_on_surface(marker.position, marker.orientation)
                 marker.cortex_position_orientation = [
                     projected_point[0],
                     -projected_point[1],
@@ -351,13 +379,13 @@ class MEPVisualizer:
             mep_array.InsertNextValue(mep_value)
         MarkersControl().SaveState()
 
-        self.points.SetPoints(points)
-        self.points.GetPointData().SetActiveScalars("MEP")
-        self.points.Modified()
+        self.points_polydata.SetPoints(points)
+        self.points_polydata.GetPointData().SetActiveScalars("MEP")
+        self.points_polydata.Modified()
         if self._config_params["mep_enabled"]:
             self.UpdateVisualization()
 
-    def UpdateMEPPointsFromBrainTargets(self):
+    def UpdateMEPPointsFromBrainTargets(self, marker_target, brain_target_list):
         """
         Updates or creates the point data with MEP values from a list of markers.
 
@@ -370,34 +398,33 @@ class MEPVisualizer:
         if not self.surface:
             return
         brain_markers = []
-        for marker in MarkersControl().list:
-            if marker.brain_target_list:
-                for m in marker.brain_target_list:
-                    brain_markers.append(m)
+        for m in brain_target_list:
+            brain_markers.append(m)
 
         if not brain_markers:
-            self.points = vtkPolyData()
+            self.points_polydata = vtkPolyData()
             self.UpdateVisualization()
             return
 
         points = vtkPoints()
 
-        point_data = self.points.GetPointData()
+        point_data = self.points_polydata.GetPointData()
         mep_array = vtkDoubleArray()
         mep_array.SetName("MEP")
         point_data.AddArray(mep_array)
 
-        for marker in brain_markers:
-            points.InsertNextPoint(
-                marker["position"][0], -marker["position"][1], marker["position"][2]
+        for brain_marker in brain_markers:
+            projected_point = self.projection_on_surface(
+                brain_marker["position"], marker_target.orientation
             )
-            mep_value = marker["mep_value"] or 0
+            points.InsertNextPoint(projected_point[0], projected_point[1], projected_point[2])
+            mep_value = brain_marker["mep_value"] or 0
             mep_array.InsertNextValue(mep_value)
         MarkersControl().SaveState()
 
-        self.points.SetPoints(points)
-        self.points.GetPointData().SetActiveScalars("MEP")
-        self.points.Modified()
+        self.points_polydata.SetPoints(points)
+        self.points_polydata.GetPointData().SetActiveScalars("MEP")
+        self.points_polydata.Modified()
         if self._config_params["mep_enabled"]:
             self.UpdateVisualization()
 
@@ -410,12 +437,13 @@ class MEPVisualizer:
         interpolated_data = self.InterpolateData()
         self.colored_surface_actor = self.CreateColoredSurface(interpolated_data)
         self.point_actor = self.CreatePointActor(
-            self.points, (self._config_params["threshold_down"], self._config_params["range_up"])
+            self.points_polydata,
+            (self._config_params["threshold_down"], self._config_params["range_up"]),
         )
         self.colorBarActor = self.CreateColorbarActor()
 
         Publisher.sendMessage("AppendActor", actor=self.colored_surface_actor)
-        Publisher.sendMessage("AppendActor", actor=self.point_actor)
+        # Publisher.sendMessage("AppendActor", actor=self.point_actor)
         Publisher.sendMessage("AppendActor", actor=self.colorBarActor)
 
         if not self.is_navigating:
@@ -485,7 +513,7 @@ class MEPVisualizer:
         point_mapper = vtkPointGaussianMapper()
         point_mapper.SetInputData(points)
         point_mapper.SetScalarRange(data_range)
-        point_mapper.SetScaleFactor(0.5)
+        point_mapper.SetScaleFactor(0.1)
         point_mapper.EmissiveOff()
         point_mapper.SetSplatShaderCode(
             "//VTK::Color::Impl\n"
@@ -534,7 +562,7 @@ class MEPVisualizer:
         """Cleanup the visualization when the project is closed."""
         self.DisplayMotorMap(False)
         self._config_params["mep_enabled"] = False
-        self.points = vtkPolyData()
+        self.points_polydata = vtkPolyData()
         self.surface = None
         self.surface_index = None
         self.decimate_surface = None

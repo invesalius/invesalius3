@@ -291,7 +291,7 @@ class OnnxRunner:
             return real_fxn(*inps, **opts)
         raise NotImplementedError(f"{op=} not supported")
 
-    def __call__(self, inputs: dict[str, Any], debug=debug):
+    def __call__(self, inputs, debug=debug):
         for name, input_spec in self.graph_inputs.items():
             if name not in inputs:
                 raise RuntimeError(f"Please provide input data for {name}")

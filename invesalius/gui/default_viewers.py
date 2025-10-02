@@ -20,6 +20,7 @@ import os
 import sys
 
 import wx
+import wx.aui
 import wx.lib.agw.fourwaysplitter as fws
 import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
@@ -160,7 +161,18 @@ class Panel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.OnSetTargetMode, "Set target mode")
         Publisher.subscribe(self.OnStartNavigation, "Start navigation")
+        Publisher.subscribe(self.UpdateViewerCaption, "Update viewer caption")
         Publisher.subscribe(self._Exit, "Exit")
+
+    def UpdateViewerCaption(self, viewer_name: str, caption: str):
+        """Update the caption of a viewer pane.
+
+        Args:
+            viewer_name (str): The name of the viewer pane to update.
+            caption (str): The new caption to set for the viewer pane.
+        """
+        self.aui_manager.GetPane(viewer_name).Caption(caption)
+        self.Refresh()
 
     def OnSetTargetMode(self, enabled=True):
         if enabled:

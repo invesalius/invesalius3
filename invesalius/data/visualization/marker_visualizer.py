@@ -256,20 +256,20 @@ class MarkerVisualizer:
 
     def DeleteMarkers(self, markers):
         for marker in markers:
-            actor = marker.visualization["actor"]
+            actor = marker.visualization.get("actor")
             self.renderer.RemoveActor(actor)
 
         if not self.is_navigating:
             self.interactor.Render()
 
     def DeleteMarker(self, marker):
-        actor = marker.visualization["actor"]
+        actor = marker.visualization.get("actor")
         self.renderer.RemoveActor(actor)
         if not self.is_navigating:
             self.interactor.Render()
 
     def SetNewColor(self, marker, new_color):
-        actor = marker.visualization["actor"]
+        actor = marker.visualization.get("actor")
         actor.GetProperty().SetColor([round(s / 255.0, 3) for s in new_color])
 
         if not self.is_navigating:
@@ -287,7 +287,7 @@ class MarkerVisualizer:
         orientation = marker.orientation
         colour = marker.colour
 
-        actor = marker.visualization["actor"]
+        actor = marker.visualization.get("actor")
         highlighted = marker.visualization["highlighted"]
 
         position_flipped = list(position)
@@ -477,8 +477,8 @@ class MarkerVisualizer:
         self.actor_factory.ScaleActor(actor, self.HIGHLIGHTED_MARKER_SCALING_FACTOR)
 
         # Set the marker visible when highlighted even if it's hidden.
-        if marker.visualization["hidden"]:
-            actor.SetVisibility(1)
+        # if marker.visualization["hidden"]:
+        #    actor.SetVisibility(1)
 
         # If the marker is a coil target, create a perpendicular line from the coil to the brain surface.
         if marker_type == MarkerType.COIL_TARGET:

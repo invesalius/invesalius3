@@ -18,7 +18,12 @@
 # --------------------------------------------------------------------------
 
 
+from typing import TYPE_CHECKING, Literal, Tuple, List
+
+import numpy as np
+import numpy.typing as npt
 import wx
+from skimage.draw import polygon2mask
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
@@ -26,14 +31,24 @@ from vtkmodules.vtkInteractionStyle import (
 from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPicker
 
 import invesalius.constants as const
+import invesalius.data.slice_ as slc
 import invesalius.project as prj
+import invesalius.session as ses
+from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
+from invesalius.utils import vtkarray_to_numpy
+from invesalius_cy.mask_cut import mask_cut
 
 PROP_MEASURE = 0.8
 
+if TYPE_CHECKING:
+    from vtkmodules.vtkRenderingCore import vtkCamera
+
+    from invesalius.data.viewer_volume import Viewer
+
 
 class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
-    def __init__(self, viewer):
+    def __init__(self, viewer: "Viewer"):
         self.right_pressed = False
         self.left_pressed = False
         self.middle_pressed = False
@@ -77,12 +92,14 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     * Focus camera by double clicking right button.
     """
 
-    def __init__(self, viewer):
+    def __init__(self, viewer: "Viewer"):
         super().__init__(viewer)
         self.state_code = const.STATE_DEFAULT
 
         self.last_click_time = 0
         self.double_click_max_interval = 1.0  # in seconds
+
+        self.nav_status = False
 
         self.viewer = viewer
 
@@ -116,6 +133,14 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         # Reset camera using right double-click.
         self.viewer.interactor.Bind(wx.EVT_RIGHT_DCLICK, self.ResetCamera)
 
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+
+    def OnNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
+
     def OnMouseMove(self, evt, obj):
         if self.left_pressed:
             evt.Rotate()
@@ -148,6 +173,8 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.OnMouseWheelBackward()
 
     def PickMarker(self, evt, obj):
+        if self.nav_status:
+            return
         # Get the mouse position in the viewer.
         x, y = self.viewer.get_vtk_mouse_position()
 
@@ -169,6 +196,8 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     def SetCameraFocus(self, evt):
         # If an actor was already found by PickMarker, use its center as the camera focus, otherwise
         # pick the actor under the mouse cursor, this time without hiding the surfaces.
+        if self.nav_status:
+            return
         if self.marker_found:
             actor = self.marker_found
         else:
@@ -195,12 +224,22 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.viewer.interactor.GetRenderWindow().Render()
 
     def ResetCamera(self, evt):
+        if self.nav_status:
+            return
         renderer = self.viewer.ren
         interactor = self.viewer.interactor
 
         renderer.ResetCamera()
         renderer.ResetCameraClippingRange()
         interactor.Render()
+
+    def CleanUp(self):
+        """Clean up the interactor style."""
+        # Note: when bind events in the viewer, they are not automatically removed when
+        # the style is cleaned up! if the bind is in the style (i.e. self.AddObserver),
+        # then it is ok.
+        self.viewer.interactor.Unbind(wx.EVT_RIGHT_DCLICK, handler=self.ResetCamera)
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.SetCameraFocus)
 
 
 class ZoomInteractorStyle(DefaultInteractorStyle):
@@ -231,7 +270,8 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        super().CleanUp()
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.ResetCamera)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnMouseMoveZoom(self, evt, obj):
@@ -271,7 +311,7 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.ResetCamera)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def ResetCamera(self, evt):
@@ -304,7 +344,8 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
-        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        super().CleanUp()
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.OnUnspan)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnPressLeftButton(self, evt, obj):
@@ -339,6 +380,7 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
     def OnPressLeftButton(self, evt, obj):
@@ -384,6 +426,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             self.viewer.interactor.Render()
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         self.viewer.on_wl = True
         self.viewer.text.Hide()
@@ -430,6 +473,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
 
@@ -472,6 +516,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
 
@@ -529,14 +574,25 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         super().__init__(viewer)
         self.AddObserver("RightButtonPressEvent", self.UpdatePointer)
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+
+    def OnNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
 
     def SetUp(self):
         self.viewer.CreatePointer()
 
     def CleanUp(self):
+        super().CleanUp()
         self.viewer.DeletePointer()
 
     def UpdatePointer(self, obj, evt):
+        if self.nav_status:
+            return
+        self.viewer.CreatePointer()
         x, y = self.viewer.get_vtk_mouse_position()
 
         self.picker.Pick(x, y, 0, self.viewer.ren)
@@ -570,6 +626,7 @@ class RegistrationInteractorStyle(DefaultInteractorStyle):
         self.viewer.CreatePointer()
 
     def CleanUp(self):
+        super().CleanUp()
         self.viewer.DeletePointer()
 
     def UpdatePointer(self, obj, evt):
@@ -619,6 +676,272 @@ class NavigationInteractorStyle(DefaultInteractorStyle):
         super().OnScrollBackward(evt, obj)
 
 
+class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
+    """Interactor style for selecting a polygon in the volume viewer.
+
+    The polygon, once completed, is used to cut the mask volume using the projection of
+    the polygon in the volume viewer.
+
+    Bind events:
+        * Left button press: inserts a point in the polygon.
+        * Left button double click: completes the polygon connecting the last point to the
+          first one.
+    """
+
+    def __init__(self, viewer: "Viewer"):
+        super().__init__(viewer)
+
+        self.mask_data = slc.Slice().current_mask.matrix.copy()
+
+        self.m3e_list: list[PolygonSelectCanvas] = []
+
+        self.picker = vtkCellPicker()
+        self.picker.PickFromListOn()
+
+        self.edit_mode = const.MASK_3D_EDIT_INCLUDE
+        self.depth_val = 1.0
+
+        # keep track if we set preview here or not for UX
+        self.has_set_mask_preview = False
+
+        self._bind_events()
+        Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
+
+    def _bind_events(self):
+        ## Remove observers and bindings from super
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.SetCameraFocus)
+        ## Bind events for this style
+        self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
+        self.viewer.canvas.subscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+
+        sub = Publisher.subscribe
+        sub(self.ReceiveVolumeViewerActiveCamera, "Receive volume viewer active camera")
+        sub(self.ReceiveVolumeViewerSize, "Receive volume viewer size")
+        sub(self.CutMaskFromPolygons, "M3E cut mask from 3D")
+        sub(self.SetEditMode, "M3E set edit mode")
+        sub(self.SetDepthValue, "M3E set depth value")
+
+    def SetUp(self):
+        """Set up is called just before the style is set in the interactor.
+
+        This is called by the volume ``Viewer.SetInteractorStyle`` method.
+        """
+        for drawn_polygon in self.viewer.canvas.draw_list:
+            if isinstance(drawn_polygon, PolygonSelectCanvas):
+                drawn_polygon.visible = True
+                drawn_polygon.set_interactive(True)
+                self.m3e_list.append(drawn_polygon)
+
+        if not ses.Session().mask_3d_preview:
+            self.has_set_mask_preview = True
+            Publisher.sendMessage("Enable mask 3D preview")
+
+        Publisher.sendMessage(
+            "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
+        )
+
+    def CleanUp(self):
+        """Clean up is called when the interactor style is removed or changed.
+
+        This is called by the volume ``Viewer.SetInteractorStyle`` method.
+        """
+        super().CleanUp()
+        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
+        self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+        for drawn_polygon in self.m3e_list:
+            drawn_polygon.visible = False
+            drawn_polygon.set_interactive(False)
+
+        if self.has_set_mask_preview:
+            Publisher.sendMessage("Disable mask 3D preview")
+
+        Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
+        self.viewer.UpdateCanvas()
+
+    def SetEditMode(self, mode: int):
+        """Set edit mode for the style.
+
+        For now, the edit mode can only be include (0) or exclude (1). In include mode, the
+        mask keeps what is inside the polygon, while in exclude mode, it keeps
+        what is outside the polygon.
+
+        Args:
+            mode (int): The edit mode to set. ``0`` to keep inside polygons, ``1`` to keep outside polygon.
+        """
+        self.edit_mode = mode
+        Publisher.sendMessage("M3E cut mask from 3D")
+
+    def SetDepthValue(self, value: float):
+        """Set the depth value for the mask editor (between 0 and 1).
+
+        The depth value is used to determine how deep the mask will be edit in the
+        volume. If ``value = 1.0``, the mask will be edited through the entire volume.
+
+        Args:
+            value (float): The depth value to set, between 0 and 1. ``0.0`` means no
+            depth, ``1.0`` means full depth.
+        """
+        self.depth_val = value
+        Publisher.sendMessage("M3E cut mask from 3D")
+
+    def init_new_polygon(self):
+        """Initialize a new polygon for the mask editor."""
+        self.m3e_list.append(PolygonSelectCanvas())
+        self.viewer.canvas.draw_list.append(self.m3e_list[-1])
+
+    def ClearPolygons(self):
+        """Clear all polygons from the viewer and clear masker list in the style."""
+        self.viewer.canvas.draw_list = [
+            drawn_item
+            for drawn_item in self.viewer.canvas.draw_list
+            if not isinstance(drawn_item, PolygonSelectCanvas)
+        ]
+        self.m3e_list.clear()
+        self.OnRestoreInitMask()
+        self.viewer.UpdateCanvas()
+
+    def OnInsertPolygonPoint(self, _evt):
+        """Insert a point in the polygon.
+
+        If no polygon is open, it initializes a new one.
+        """
+        mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
+
+        if len(self.m3e_list) == 0 or self.m3e_list[-1].complete:
+            self.init_new_polygon()
+
+        current_masker = self.m3e_list[-1]
+        current_masker.insert_point((mouse_x, mouse_y))
+        self.viewer.UpdateCanvas()
+
+    def OnInsertPolygon(self, _evt):
+        """Complete the polygon by connecting the last point to the first one."""
+        self.m3e_list[-1].complete_polygon()
+        Publisher.sendMessage("M3E cut mask from 3D")
+        self.viewer.UpdateCanvas()
+
+    def ReceiveVolumeViewerActiveCamera(self, cam: "vtkCamera"):
+        """Receive the active camera from the volume viewer through pubsub.
+
+        Args:
+            cam (vtkCamera): The active camera from the volume viewer.
+        """
+        width, height = self.resolution
+
+        near, far = self.clipping_range = cam.GetClippingRange()
+
+        # This flip around the Y axis was done to countereffect the flip that vtk performs
+        # in volume.py:780. If we do not flip back, what is being displayed is flipped,
+        # although the actual coordinates are the initial ones, so the cutting gets wrong
+        # after rotations around y or x.
+        inv_Y_matrix = np.eye(4)
+        inv_Y_matrix[1, 1] = -1
+
+        # Composite transform world coordinates to viewport coordinates
+        # This is a concatenation of the view transform (world coordinates to camera
+        # coordinates) and the projection transform (camera coordinates to viewport
+        # coordinates).
+        M = cam.GetCompositeProjectionTransformMatrix(width / float(height), near, far)
+        M = vtkarray_to_numpy(M)
+        self.world_to_screen = M @ inv_Y_matrix
+
+        # Get the model view matrix, which transforms world coordinates to camera
+        # coordinates.
+        MV = cam.GetViewTransformMatrix()
+        MV = vtkarray_to_numpy(MV)
+        self.world_to_camera_coordinates = MV @ inv_Y_matrix
+
+    def ReceiveVolumeViewerSize(self, size: Tuple[int, int]):
+        """Receive the size of the volume viewer through pubsub.
+
+        Args:
+            size (tuple[int, int]): The size of the volume viewer in pixels (width,
+            height).
+        """
+        self.resolution = size
+
+    def OnRestoreInitMask(self):
+        """Restore the initial mask data from when the style was setup."""
+        _mat = self.mask_data[1:, 1:, 1:].copy()
+        self.update_views(_mat)
+
+    def get_filters(self) -> List[npt.NDArray]:
+        """Create a boolean mask filter based on the polygon points and viewer size."""
+        w, h = self.resolution
+        # get the mask of the polygon in the shape of the screen resolution
+        filters = [
+            polygon2mask((w, h), poly_canvas.polygon.points) for poly_canvas in self.m3e_list
+        ]
+        return filters
+
+    def CutMaskFromPolygons(self):
+        """Edit mask data based on the polygons drawn in the 3D viewer."""
+        completed_polygons = [m3e for m3e in self.m3e_list if m3e.complete]
+        if len(completed_polygons) == 0:
+            return
+
+        # All m3e will be updated with correct viewer settings
+        Publisher.sendMessage("Send volume viewer size")
+        Publisher.sendMessage("Send volume viewer active camera")
+
+        filters = self.get_filters()
+
+        # OR operation in all masks to create a single filter mask
+        filter = np.logical_or.reduce(filters).T
+
+        # If the edit mode is to include, we invert the filter
+        if self.edit_mode == const.MASK_3D_EDIT_INCLUDE:
+            np.logical_not(filter, out=filter)
+
+        _mat = self.mask_data[1:, 1:, 1:].copy()
+        true_indices = np.where(_mat)
+
+        # Get coordinates of True voxels only
+        true_x_coords = true_indices[2].astype(np.int32)  # x coordinates
+        true_y_coords = true_indices[1].astype(np.int32)  # y coordinates
+        true_z_coords = true_indices[0].astype(np.int32)  # z coordinates
+
+        slice = slc.Slice()
+        sx, sy, sz = slice.spacing
+
+        near, far = self.clipping_range
+        depth = near + (far - near) * self.depth_val
+        mask_cut(
+            _mat,
+            true_x_coords,
+            true_y_coords,
+            true_z_coords,
+            sx,
+            sy,
+            sz,
+            depth,
+            filter,
+            self.world_to_screen,
+            self.world_to_camera_coordinates,
+            _mat,
+        )
+        self.update_views(_mat)
+
+    def update_views(self, _mat: npt.NDArray):
+        """Update the views with the given mask data."""
+        slice = slc.Slice()
+        _cur_mask = slice.current_mask
+        _cur_mask.matrix[1:, 1:, 1:] = _mat
+        _cur_mask.was_edited = True
+        _cur_mask.modified(all_volume=True)
+
+        # Discard all buffers to reupdate view
+        for ori in ["AXIAL", "CORONAL", "SAGITAL"]:
+            slice.buffer_slices[ori].discard_buffer()
+
+        # Save modification in the history
+        _cur_mask.save_history(0, "VOLUME", _cur_mask.matrix.copy(), self.mask_data)
+
+        Publisher.sendMessage("Update mask 3D preview")
+        Publisher.sendMessage("Reload actual slice")
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -633,6 +956,7 @@ class Styles:
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_REGISTRATION: RegistrationInteractorStyle,
+        const.STATE_MASK_3D_EDIT: Mask3DEditorInteractorStyle,
     }
 
     @classmethod

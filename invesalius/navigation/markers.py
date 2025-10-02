@@ -284,7 +284,7 @@ class MarkersControl(metaclass=Singleton):
         # keyboard events.
         self.transformator.UpdateSelectedMarker(None)
 
-    def CreateCoilTargetFromLandmark(self, marker: Marker, label=None) -> None:
+    def CreateCoilTargetFromLandmark(self, marker: Marker, label: str = None) -> None:
         new_marker = marker.duplicate()
 
         self.transformator.ProjectToScalp(

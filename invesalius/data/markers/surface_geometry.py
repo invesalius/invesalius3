@@ -1,4 +1,5 @@
 import vtk
+import wx
 
 from invesalius.gui import dialogs
 from invesalius.pubsub import pub as Publisher
@@ -14,6 +15,7 @@ class SurfaceGeometry(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor, "Load surface actor into viewer")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.RemoveSurface, "Remove surface actor from viewer")
 
     def OnCloseProject(self):
         self.surfaces = []
@@ -41,6 +43,14 @@ class SurfaceGeometry(metaclass=Singleton):
                 "smoothed": None,
             }
         )
+
+    def RemoveSurface(self, actor):
+        """
+        Removes a surface by its actor from internal storage.
+        """
+        for index, surface in enumerate(self.surfaces):
+            if surface["original"]["actor"] == actor:
+                self.surfaces.pop(index)
 
     def SmoothSurface(
         self,
@@ -235,18 +245,37 @@ class SurfaceGeometry(metaclass=Singleton):
         if not self.surfaces:
             return None
 
-        # Find the (non-smoothed) surface with the highest z-coordinate, corresponding to the scalp.
+        # Find the surface with the highest z-coordinate
         highest_surface = max(self.surfaces, key=lambda surface: surface["original"]["highest_z"])
 
-        # Compute smoothed surface if it has not been computed yet.
-        if highest_surface["smoothed"] is None:
+        # Track if a new highest surface was detected
+        current_id = id(highest_surface)
+        previous_id = getattr(self, "_last_highest_surface_id", None)
+        self._last_highest_surface_id = current_id
+        has_changed = current_id != previous_id
+
+        # If the highest surface has changed, ask the user if they want to update
+        if has_changed and highest_surface["smoothed"] is not None:
+            result = dialogs.ShowConfirmationDialog(
+                _(
+                    "A new highest scalp surface was identified. Do you want to update the smoothed surface?"
+                )
+            )
+            if result != wx.ID_OK:
+                return highest_surface["smoothed"]
+
+        # Reprocess if user agreed OR if no smoothed version exists yet
+        if has_changed or highest_surface["smoothed"] is None:
             progress_window = dialogs.SurfaceSmoothingProgressWindow()
             progress_window.Update()
             polydata = highest_surface["original"]["polydata"]
             actor = highest_surface["original"]["actor"]
 
             # Create a smoothed version of the actor.
-            smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
+            if polydata.GetNumberOfCells() > 10000:
+                smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
+            else:
+                smoothed_actor = actor
             progress_window.Update()
             highest_surface["smoothed"] = self.PrecalculateSurfaceData(smoothed_actor)
 

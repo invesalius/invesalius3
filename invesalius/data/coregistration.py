@@ -426,6 +426,7 @@ class CoordinateCorregistrate(threading.Thread):
                     angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
                     translate = coord[0:3]
                     m_imgs[main_coil] = tr.compose_matrix(angles=angles, translate=translate)
+                    m_img = m_imgs[main_coil]
 
                 self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
 
