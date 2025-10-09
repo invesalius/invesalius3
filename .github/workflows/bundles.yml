@@ -35,7 +35,9 @@ jobs:
             cache-dependency-glob: "uv.lock"
   
         - name: install venv and sync dependencies
-          run: uv sync --all-extras
+          run: |
+            rm __init__.py
+            uv sync --all-extras
   
         - name: Get InVesalius version
           run: |
