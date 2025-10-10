@@ -8,7 +8,7 @@ on:
 jobs:
   build-win:
       name: build windows packages
-      runs-on: windows-latest
+      runs-on: windows-2022
       strategy:
         matrix:
           architecture: ["x64"]
