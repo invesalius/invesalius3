@@ -36,7 +36,6 @@ jobs:
   
         - name: install venv and sync dependencies
           run: |
-            rm __init__.py
             uv sync --all-extras
   
         - name: Get InVesalius version
@@ -136,7 +135,6 @@ jobs:
           export CFLAGS="-I$(brew --prefix libomp)/include"
           export CPPFLAGS="-I$(brew --prefix libomp)/include"
           export LDFLAGS="-L$(brew --prefix libomp)/lib"
-          rm __init__.py
           OpenMP_ROOT=$(brew --prefix)/opt/libomp uv sync --all-extras
 
       - name: Get InVesalius version
