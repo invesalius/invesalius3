@@ -605,6 +605,7 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+        self.Send_dI_per_dt_to_report(self.input_coils)
 
     def OnEnterMtmsCoords(self, evt):
         input_coord_str = self.input_coord.GetValue()
@@ -627,6 +628,14 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+        self.Send_dI_per_dt_to_report(self.input_coils)
+
+    def OnEfieldsForTargeting(self, evt, ctrl):
+        if ctrl.GetValue():
+            self.navigation.neuronavigation_api.set_dIperdt(
+                dIperdt=[1, 1, 1, 1, 1],
+            )
+            self.Send_dI_per_dt_to_report([1, 1, 1, 1, 1])
 
     def OnEfieldsForTargeting(self, evt, ctrl):
         if ctrl.GetValue():
@@ -639,3 +648,6 @@ class InnerTaskPanel(wx.Panel):
 
     def OnReset(self, evt):
         Publisher.sendMessage("Get targets Ids for mtms", target1_origin=[0, 0], target2=[0, 0])
+
+    def Send_dI_per_dt_to_report(self,diperdt):
+        Publisher.sendMessage('Get diperdt used in efield calculation', diperdt = diperdt)

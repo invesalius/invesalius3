@@ -538,6 +538,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
+        Publisher.subscribe(self.Getdiperdtforreport, 'Get diperdt used in efield calculation')
 
     def get_vtk_mouse_position(self):
         """
@@ -2091,6 +2092,7 @@ class Viewer(wx.Panel):
         self.focal_factor_members = []
         self.distance_efield = None
         self.mtms_coord = None
+        self.diperdt = None
 
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
@@ -2333,6 +2335,7 @@ class Viewer(wx.Panel):
             "Efield threshold",
             "Efield ROI size",
             "Mtms_coord",
+            "diperdt"
         ]
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
@@ -2364,6 +2367,7 @@ class Viewer(wx.Panel):
                     self.efield_threshold,
                     self.efield_ROISize,
                     self.mtms_coord,
+                    self.diperdt
                 ]
             )
             # REMOVE THIS
@@ -2408,6 +2412,9 @@ class Viewer(wx.Panel):
             writer = csv.writer(f)
             writer.writerow(header)
             writer.writerows(all_data)
+
+    def Getdiperdtforreport(self,diperdt):
+        self.diperdt = diperdt
 
     def GetCellIntersection(self, p1, p2, locator):
         # vtk_colors = vtkNamedColors()
