@@ -1682,6 +1682,7 @@ class Viewer(wx.Panel):
                         self.efield_threshold,
                         self.efield_ROISize,
                         self.mtms_coord,
+                        self.diperdt
                     ]
                 )
                 self.mtms_coord = None
@@ -2406,6 +2407,7 @@ class Viewer(wx.Panel):
             "Efield threshold",
             "Efield ROI size",
             "Mtms_coord",
+            "diperdt"
         ]
         all_data = list(self.target_radius_list)
         with open(filename, "w", newline="") as f:
