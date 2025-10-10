@@ -2210,7 +2210,7 @@ class Viewer(wx.Panel):
     def GetCoilPosition(self, position, orientation):
         m_img = tr.compose_matrix(angles=orientation, translate=position)
         m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
+        #m_img_flip[1, -1] = -m_img_flip[1, -1]
         cp = m_img_flip[:-1, -1]  # coil center
         cp = cp * 0.001  # convert to meters
         cp = cp.tolist()
@@ -2310,7 +2310,6 @@ class Viewer(wx.Panel):
         else:
             self.e_field_norms = enorm_data[3]
             self.Idmax = np.array(self.e_field_norms).argmax()
-
         self.GetEfieldMaxMin(self.e_field_norms)
 
     def SaveEfieldData(self, filename, plot_efield_vectors, marker_id):
