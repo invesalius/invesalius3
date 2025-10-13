@@ -1685,10 +1685,6 @@ class Viewer(wx.Panel):
                         self.diperdt
                     ]
                 )
-                print('enorm len', len(enorms_list))
-                print('cells', len(self.Id_list))
-                print('vectors', len(e_field_vectors))
-
             else:
                 self.target_radius_list.append(
                     [
