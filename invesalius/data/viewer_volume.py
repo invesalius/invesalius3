@@ -1670,14 +1670,14 @@ class Viewer(wx.Panel):
                 self.target_radius_list.append(
                     [
                         target_list_index,
-                        self.Id_list,
-                        enorms_list,
-                        self.Idmax,
+                        self.coil_position_Trot,
                         self.coil_position,
                         efield_coords_position,
                         self.efield_coords,
-                        self.coil_position_Trot,
+                        enorms_list,
                         e_field_vectors,
+                        self.Id_list,                        
+                        self.Idmax,      
                         self.focal_factor_members,
                         self.efield_threshold,
                         self.efield_ROISize,
@@ -1685,7 +1685,10 @@ class Viewer(wx.Panel):
                         self.diperdt
                     ]
                 )
-                self.mtms_coord = None
+                print('enorm len', len(enorms_list))
+                print('cells', len(self.Id_list))
+                print('vectors', len(e_field_vectors))
+
             else:
                 self.target_radius_list.append(
                     [
@@ -2092,7 +2095,7 @@ class Viewer(wx.Panel):
         self.target_radius_list = []
         self.focal_factor_members = []
         self.distance_efield = None
-        self.mtms_coord = None
+        self.mtms_coord = []
         self.diperdt = None
 
         if self.max_efield_vector and self.ball_max_vector is not None:
@@ -2324,18 +2327,18 @@ class Viewer(wx.Panel):
 
         header = [
             "Marker ID",
-            "T_rot",
+            "Rotation matrix for coil coordinates",
             "Coil center",
             "Coil position in world coordinates",
             "InVesalius coordinates",
-            "Enorm",
-            "ID cell max",
+            "Enorm",            
             "Efield vectors",
-            "Enorm cell indexes",
+            "Enorm cell indexes (ROI)",
+            "ID cell max",
             "Focal factors",
             "Efield threshold",
             "Efield ROI size",
-            "Mtms_coord",
+            "mTMS coordinates",
             "diperdt"
         ]
         if self.efield_coords is not None:
@@ -2360,10 +2363,10 @@ class Viewer(wx.Panel):
                     self.coil_position,
                     efield_coords_position,
                     self.efield_coords,
-                    list(self.e_field_norms_to_save),
-                    self.Idmax,
+                    list(self.e_field_norms_to_save),                    
                     e_field_vectors,
                     self.Id_list,
+                    self.Idmax,
                     self.focal_factor_members,
                     self.efield_threshold,
                     self.efield_ROISize,
@@ -2371,8 +2374,7 @@ class Viewer(wx.Panel):
                     self.diperdt
                 ]
             )
-            # REMOVE THIS
-            self.mtms_coord = None
+
         else:
             all_data.append(
                 [
@@ -2395,18 +2397,18 @@ class Viewer(wx.Panel):
 
         header = [
             "Marker ID",
-            "Enorm cell indexes",
-            "Enorm",
-            "ID cell Max",
+            "Rotation matrix for coil coordinates",
             "Coil center",
-            "Coil position world coordinates",
+            "Coil position in world coordinates",
             "InVesalius coordinates",
-            "T_rot",
+            "Enorm",        
             "Efield vectors",
+            "Enorm cell indexes (ROI)",
+            "ID cell Max",   
             "Focal factors",
             "Efield threshold",
             "Efield ROI size",
-            "Mtms_coord",
+            "mTMS coordinates",
             "diperdt"
         ]
         all_data = list(self.target_radius_list)
