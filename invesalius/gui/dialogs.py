@@ -6398,9 +6398,10 @@ class GoToDialogScannerCoord(wx.Dialog):
             ]
 
             # transformation from scanner coordinates to inv coord system
-            voxel = img_utils.convert_world_to_voxel(point[0:3], np.linalg.inv(slc.Slice().affine))[
+            position_voxel = img_utils.convert_world_to_voxel(point[0:3], np.linalg.inv(slc.Slice().affine))[
                 0
             ]
+            voxel = img_utils.convert_invesalius_to_voxel(position_voxel)
 
             Publisher.sendMessage(
                 "Update status text in GUI", label=_("Calculating the transformation ...")
