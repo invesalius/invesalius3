@@ -221,9 +221,14 @@ class Marker:
                 position=self.position,
                 orientation=[0, 0, 0],
             )
-        position_world = position_world.tolist() if hasattr(position_world, 'tolist') else list(position_world)
-        orientation_world = orientation_world.tolist() if hasattr(orientation_world, 'tolist') else list(
-            orientation_world)
+        position_world = (
+            position_world.tolist() if hasattr(position_world, "tolist") else list(position_world)
+        )
+        orientation_world = (
+            orientation_world.tolist()
+            if hasattr(orientation_world, "tolist")
+            else list(orientation_world)
+        )
 
         return {
             "position": self.position,
@@ -241,7 +246,7 @@ class Marker:
             "r_mtms": self.r_mtms,
             "intensity_mtms": self.intensity_mtms,
             "position_world": position_world,
-            "orientation_world": orientation_world
+            "orientation_world": orientation_world,
         }
 
     def to_dict(self):

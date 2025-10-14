@@ -289,13 +289,13 @@ WILDCARD_INV_SAVE = (
     + _("InVesalius project compressed (*.inv3)|*.inv3")
 )
 
-WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" "All files (*.*)|*.*"
+WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|All files (*.*)|*.*"
 
-WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" "All files (*.*)|*.*"
+WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|All files (*.*)|*.*"
 
-WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|" "All files (*.*)|*.*"
+WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|All files (*.*)|*.*"
 # ".[jJ][pP][gG]"
-WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" "All files (*.*)|*.*"
+WILDCARD_PARREC = "PAR/REC (*.par)|*.par|All files (*.*)|*.*"
 
 WILDCARD_MESH_FILES = (
     "STL File format (*.stl)|*.stl|"
@@ -304,7 +304,7 @@ WILDCARD_MESH_FILES = (
     "VTK Polydata File Format (*.vtp)|*.vtp|"
     "All files (*.*)|*.*"
 )
-WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|" "All files (*.*)|*.*"
+WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|All files (*.*)|*.*"
 
 
 def ShowOpenProjectDialog() -> Union[str, None]:
@@ -6398,9 +6398,9 @@ class GoToDialogScannerCoord(wx.Dialog):
             ]
 
             # transformation from scanner coordinates to inv coord system
-            position_voxel = img_utils.convert_world_to_voxel(point[0:3], np.linalg.inv(slc.Slice().affine))[
-                0
-            ]
+            position_voxel = img_utils.convert_world_to_voxel(
+                point[0:3], np.linalg.inv(slc.Slice().affine)
+            )[0]
             voxel = img_utils.convert_invesalius_to_voxel(position_voxel)
 
             Publisher.sendMessage(
@@ -7099,14 +7099,14 @@ class ConfigurePolarisDialog(wx.Dialog):
                 path=last_ndi_obj_markers[i],
                 style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
                 wildcard="Rom files (*.rom)|*.rom",
-                message=f"Select the ROM file of coil {i+1}",
+                message=f"Select the ROM file of coil {i + 1}",
                 size=(700, -1),
             )
             self.dir_objs.append(dir_obj)
 
             row_obj = wx.BoxSizer(wx.VERTICAL)
             row_obj.Add(
-                wx.StaticText(self, wx.ID_ANY, f"Coil {i+1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5
+                wx.StaticText(self, wx.ID_ANY, f"Coil {i + 1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5
             )
             row_obj.Add(dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
             row_objs.append(row_obj)
