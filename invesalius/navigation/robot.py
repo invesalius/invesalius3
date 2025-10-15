@@ -170,6 +170,10 @@ class Robot(metaclass=Singleton):
 
     def ConnectToRobot(self):
         Publisher.sendMessage("Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip)
+        pressure_setpoint = ses.Session().GetConfig("pressure_setpoint", 5.0)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Pressure set point", pressure=pressure_setpoint
+        )
         print("Connected to robot")
 
     def InitializeRobot(self):
@@ -263,3 +267,6 @@ class Robot(metaclass=Singleton):
 
         self.target = coord
         self.SendTargetToRobot()
+
+    def SetPressureSetpoint(self, pressure):
+        Publisher.sendMessage("Neuronavigation to Robot: Pressure set point", pressure=pressure)
