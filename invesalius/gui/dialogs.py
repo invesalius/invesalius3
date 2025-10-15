@@ -6398,9 +6398,10 @@ class GoToDialogScannerCoord(wx.Dialog):
             ]
 
             # transformation from scanner coordinates to inv coord system
-            voxel = img_utils.convert_world_to_voxel(point[0:3], np.linalg.inv(slc.Slice().affine))[
-                0
-            ]
+            position_voxel = img_utils.convert_world_to_voxel(
+                point[0:3], np.linalg.inv(slc.Slice().affine)
+            )[0]
+            voxel = img_utils.convert_invesalius_to_voxel(position_voxel)
 
             Publisher.sendMessage(
                 "Update status text in GUI", label=_("Calculating the transformation ...")
@@ -7098,14 +7099,14 @@ class ConfigurePolarisDialog(wx.Dialog):
                 path=last_ndi_obj_markers[i],
                 style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL,
                 wildcard="Rom files (*.rom)|*.rom",
-                message=f"Select the ROM file of coil {i+1}",
+                message=f"Select the ROM file of coil {i + 1}",
                 size=(700, -1),
             )
             self.dir_objs.append(dir_obj)
 
             row_obj = wx.BoxSizer(wx.VERTICAL)
             row_obj.Add(
-                wx.StaticText(self, wx.ID_ANY, f"Coil {i+1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5
+                wx.StaticText(self, wx.ID_ANY, f"Coil {i + 1} ROM file:"), 0, wx.TOP | wx.RIGHT, 5
             )
             row_obj.Add(dir_obj, 0, wx.ALL | wx.CENTER | wx.EXPAND)
             row_objs.append(row_obj)
