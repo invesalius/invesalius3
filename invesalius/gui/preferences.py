@@ -1501,6 +1501,8 @@ class TrackerTab(wx.Panel):
     def __init__(self, parent, tracker, robot):
         wx.Panel.__init__(self, parent)
 
+        self.session = ses.Session()
+
         self.__bind_events()
 
         self.tracker = tracker
@@ -1673,9 +1675,92 @@ class TrackerTab(wx.Panel):
         rob_status_sizer.AddStretchSpacer(1)
         rob_status_sizer.Add(btn_rob_con, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL)
 
+        # --- Pressure force setpoint (slider) ---
+        # Config and scaling (slider is integer)
+        # Recommended value
+        self.pressure_recommended = 5.0
+        self.pressure_match_tol = 0.1  # within 0.1 N counts as "at recommended"
+
+        self.pressure_min = 0.0
+        self.pressure_max = 20.0
+        self.pressure_step = 1
+        self.pressure_scale = int(1 / self.pressure_step)  # 10 for 0.1 resolution
+
+        self.pressure_setpoint = self.session.GetConfig(
+            "pressure_setpoint", self.pressure_recommended
+        )
+        # Clamp to range in case config has out-of-range value
+        self.pressure_setpoint = max(
+            self.pressure_min, min(self.pressure_max, float(self.pressure_setpoint))
+        )
+
+        self.pressure_lbl = wx.StaticText(self, -1, _("Pressure setpoint (N):"))
+        self.pressure_val_lbl = wx.StaticText(self, -1, f"{self.pressure_setpoint:.1f} N")
+
+        # Color logic: turn red above threshold
+        self.pressure_warn_threshold = 10.0
+        self._pressure_lbl_default_fg = self.pressure_lbl.GetForegroundColour()
+        self._pressure_val_default_fg = self.pressure_val_lbl.GetForegroundColour()
+
+        # Recommended hint label (small/italic)
+        self.pressure_rec_lbl = wx.StaticText(
+            self, -1, _("Recommended: {value} N").format(value=f"{self.pressure_recommended:.1f}")
+        )
+        try:
+            f = self.pressure_rec_lbl.GetFont()
+            f.MakeSmaller()
+            f.MakeItalic()
+            self.pressure_rec_lbl.SetFont(f)
+        except Exception:
+            pass
+        self.pressure_rec_lbl.SetForegroundColour(wx.Colour(90, 90, 90))  # subtle grey
+
+        # Apply initial color based on loaded value
+        self._apply_pressure_color(self.pressure_setpoint)
+
+        self.pressure_slider = wx.Slider(
+            self,
+            -1,
+            value=int(self.pressure_setpoint * self.pressure_scale),
+            minValue=int(self.pressure_min * self.pressure_scale),
+            maxValue=int(self.pressure_max * self.pressure_scale),
+            style=wx.SL_HORIZONTAL | wx.SL_AUTOTICKS,
+            size=wx.Size(-1, 23),
+        )
+        self.pressure_slider.SetToolTip(_("Set the desired pressure/force setpoint"))
+        # Tick frequency every 1.0 N
+        try:
+            self.pressure_slider.SetTickFreq(self.pressure_scale, 1)
+        except Exception:
+            pass
+
+        self.pressure_slider.Bind(wx.EVT_SLIDER, self.OnPressureSlider)
+
+        # quick-set button
+        self.btn_set_rec = wx.Button(self, -1, _("Set 5 N"), size=wx.Size(70, 23))
+        self.btn_set_rec.SetToolTip(_("Set pressure to the recommended 5.0 N"))
+        self.btn_set_rec.Bind(wx.EVT_BUTTON, self.OnSetRecommendedPressure)
+
+        # Row with label, slider, numeric value
+        pressure_row = wx.BoxSizer(wx.HORIZONTAL)
+        pressure_row.Add(self.pressure_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        pressure_row.Add(self.pressure_slider, 1, wx.EXPAND | wx.RIGHT, 8)
+        pressure_row.Add(self.pressure_val_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        pressure_row.Add(self.btn_set_rec, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        # Hint below
+        pressure_hint_row = wx.BoxSizer(wx.HORIZONTAL)
+        pressure_hint_row.Add((self.pressure_lbl.GetSize().Width, -1), 0)  # indent under label
+        pressure_hint_row.Add(self.pressure_rec_lbl, 0, wx.TOP, 2)
+
+        pressure_sizer = wx.BoxSizer(wx.VERTICAL)
+        pressure_sizer.Add(pressure_row, 0, wx.EXPAND)
+        pressure_sizer.Add(pressure_hint_row, 0, wx.TOP, 4)
+
         rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
         rob_static_sizer.Add(rob_ip_sizer, 0, wx.ALL | wx.EXPAND, 7)
         rob_static_sizer.Add(rob_status_sizer, 0, wx.ALL | wx.EXPAND, 7)
+        rob_static_sizer.Add(pressure_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
@@ -1887,6 +1972,82 @@ class TrackerTab(wx.Panel):
             self.btn_rob_con.Show()
             self.btn_rob_con.Layout()
             self.Parent.Update()
+
+    def OnPressureSlider(self, evt):
+        # Convert integer slider value back to float with desired resolution
+        val_i = self.pressure_slider.GetValue()
+        value = val_i / self.pressure_scale
+
+        # Update label
+        self.pressure_val_lbl.SetLabel(f"{value:.1f} N")
+        # Update color based on threshold
+        self._apply_pressure_color(value)
+        self.pressure_setpoint = value
+
+        # Persist in session
+        try:
+            self.session.SetConfig("pressure_setpoint", value)
+        except Exception:
+            pass
+
+        try:
+            if hasattr(self.robot, "SetPressureSetpoint"):
+                self.robot.SetPressureSetpoint(value)
+        except Exception as e:
+            pass
+
+    def OnSetRecommendedPressure(self, event):
+        # Set slider to recommended value
+        val_i = int(round(self.pressure_recommended * self.pressure_scale))
+        self.pressure_slider.SetValue(val_i)
+
+        # Trigger same updates as moving the slider
+        value = val_i / self.pressure_scale
+        self.pressure_val_lbl.SetLabel(f"{value:.1f} N")
+        self._apply_pressure_color(value)
+        self.pressure_setpoint = value
+        try:
+            self.session.SetConfig("pressure_setpoint", value)
+        except Exception:
+            pass
+        try:
+            if hasattr(self.robot, "SetPressureSetpoint"):
+                self.robot.SetPressureSetpoint(value)
+        except Exception as e:
+            pass
+
+    def _apply_pressure_color(self, value: float):
+        # Red above threshold
+        if value > self.pressure_warn_threshold:
+            warn_color = wx.RED
+            self.pressure_lbl.SetForegroundColour(warn_color)
+            self.pressure_val_lbl.SetForegroundColour(warn_color)
+        else:
+            # Default
+            self.pressure_lbl.SetForegroundColour(self._pressure_lbl_default_fg)
+            self.pressure_val_lbl.SetForegroundColour(self._pressure_val_default_fg)
+
+        # Recommended hint styling: green if near 5.0 N, grey otherwise
+        if abs(value - self.pressure_recommended) <= self.pressure_match_tol:
+            self.pressure_rec_lbl.SetForegroundColour(wx.Colour(0, 140, 0))  # green
+            try:
+                f = self.pressure_rec_lbl.GetFont()
+                f.SetWeight(wx.FONTWEIGHT_BOLD)
+                self.pressure_rec_lbl.SetFont(f)
+            except Exception:
+                pass
+        else:
+            self.pressure_rec_lbl.SetForegroundColour(wx.Colour(90, 90, 90))
+            try:
+                f = self.pressure_rec_lbl.GetFont()
+                f.SetWeight(wx.FONTWEIGHT_NORMAL)
+                self.pressure_rec_lbl.SetFont(f)
+            except Exception:
+                pass
+
+        self.pressure_lbl.Refresh()
+        self.pressure_val_lbl.Refresh()
+        self.pressure_rec_lbl.Refresh()
 
 
 class LanguageTab(wx.Panel):
