@@ -3590,21 +3590,32 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.markers.AddMarker(marker, render=True, focus=True)
 
     def OnMenuShowVectorField(self, evt):
+        import invesalius.data.imagedata_utils as imagedata_utils
+        import invesalius.data.transformations as tr
+
         session = ses.Session()
         idx = self.marker_list_ctrl.GetFocusedItem()
         marker = self.__get_marker(idx)
         position = marker.position
-        orientation = np.radians(marker.orientation)
+        orientation = marker.orientation
+        coord = [position, np.radians(orientation)]
+        coord = np.array(coord).flatten()
+        # Calculate m_img because the e-field is calculated using the world coordinates
+        m_img = tr.compose_matrix(angles=np.radians(orientation), translate=position)
+
+        position, orientation = imagedata_utils.convert_invesalius_to_world(
+            position=position,
+            orientation=orientation,
+        )
+        orientation = np.radians(orientation)
         Publisher.sendMessage(
             "Calculate position and rotation", position=position, orientation=orientation
         )
-        coord = [position, orientation]
-        coord = np.array(coord).flatten()
 
         # Check here, it resets the radious list
         Publisher.sendMessage(
             "Update interseccion offline",
-            m_img=self.m_img_offline,
+            m_img=m_img,
             coord=coord,
             list_index=marker.marker_id,
         )
