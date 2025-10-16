@@ -538,7 +538,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
-        Publisher.subscribe(self.Getdiperdtforreport, 'Get diperdt used in efield calculation')
+        Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
 
     def get_vtk_mouse_position(self):
         """
@@ -1676,13 +1676,13 @@ class Viewer(wx.Panel):
                         self.efield_coords,
                         enorms_list,
                         e_field_vectors,
-                        self.Id_list,                        
-                        self.Idmax,      
+                        self.Id_list,
+                        self.Idmax,
                         self.focal_factor_members,
                         self.efield_threshold,
                         self.efield_ROISize,
                         self.mtms_coord,
-                        self.diperdt
+                        self.diperdt,
                     ]
                 )
             else:
@@ -2212,7 +2212,7 @@ class Viewer(wx.Panel):
     def GetCoilPosition(self, position, orientation):
         m_img = tr.compose_matrix(angles=orientation, translate=position)
         m_img_flip = m_img.copy()
-        #m_img_flip[1, -1] = -m_img_flip[1, -1]
+        # m_img_flip[1, -1] = -m_img_flip[1, -1]
         cp = m_img_flip[:-1, -1]  # coil center
         cp = cp * 0.001  # convert to meters
         cp = cp.tolist()
@@ -2327,7 +2327,7 @@ class Viewer(wx.Panel):
             "Coil center",
             "Coil position in world coordinates",
             "InVesalius coordinates",
-            "Enorm",            
+            "Enorm",
             "Efield vectors",
             "Enorm cell indexes (ROI)",
             "ID cell max",
@@ -2335,7 +2335,7 @@ class Viewer(wx.Panel):
             "Efield threshold",
             "Efield ROI size",
             "mTMS coordinates",
-            "diperdt"
+            "diperdt",
         ]
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
@@ -2359,7 +2359,7 @@ class Viewer(wx.Panel):
                     self.coil_position,
                     efield_coords_position,
                     self.efield_coords,
-                    list(self.e_field_norms_to_save),                    
+                    list(self.e_field_norms_to_save),
                     e_field_vectors,
                     self.Id_list,
                     self.Idmax,
@@ -2367,7 +2367,7 @@ class Viewer(wx.Panel):
                     self.efield_threshold,
                     self.efield_ROISize,
                     self.mtms_coord,
-                    self.diperdt
+                    self.diperdt,
                 ]
             )
 
@@ -2397,15 +2397,15 @@ class Viewer(wx.Panel):
             "Coil center",
             "Coil position in world coordinates",
             "InVesalius coordinates",
-            "Enorm",        
+            "Enorm",
             "Efield vectors",
             "Enorm cell indexes (ROI)",
-            "ID cell Max",   
+            "ID cell Max",
             "Focal factors",
             "Efield threshold",
             "Efield ROI size",
             "mTMS coordinates",
-            "diperdt"
+            "diperdt",
         ]
         all_data = list(self.target_radius_list)
         with open(filename, "w", newline="") as f:
@@ -2413,7 +2413,7 @@ class Viewer(wx.Panel):
             writer.writerow(header)
             writer.writerows(all_data)
 
-    def Getdiperdtforreport(self,diperdt):
+    def Getdiperdtforreport(self, diperdt):
         self.diperdt = diperdt
 
     def GetCellIntersection(self, p1, p2, locator):

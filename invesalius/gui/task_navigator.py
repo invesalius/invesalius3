@@ -3601,12 +3601,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         coord = [position, np.radians(orientation)]
         coord = np.array(coord).flatten()
         # Calculate m_img because the e-field is calculated using the world coordinates
-        m_img = tr.compose_matrix(angles = np.radians(orientation), translate = position)
+        m_img = tr.compose_matrix(angles=np.radians(orientation), translate=position)
 
         position, orientation = imagedata_utils.convert_invesalius_to_world(
             position=position,
             orientation=orientation,
-            )
+        )
         orientation = np.radians(orientation)
         Publisher.sendMessage(
             "Calculate position and rotation", position=position, orientation=orientation
@@ -3615,7 +3615,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Check here, it resets the radious list
         Publisher.sendMessage(
             "Update interseccion offline",
-            m_img= m_img,
+            m_img=m_img,
             coord=coord,
             list_index=marker.marker_id,
         )

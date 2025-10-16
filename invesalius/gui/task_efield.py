@@ -644,5 +644,5 @@ class InnerTaskPanel(wx.Panel):
     def OnReset(self, evt):
         Publisher.sendMessage("Get targets Ids for mtms", target1_origin=[0, 0], target2=[0, 0])
 
-    def Send_dI_per_dt_to_report(self,diperdt):
-        Publisher.sendMessage('Get diperdt used in efield calculation', diperdt = diperdt)
+    def Send_dI_per_dt_to_report(self, diperdt):
+        Publisher.sendMessage("Get diperdt used in efield calculation", diperdt=diperdt)

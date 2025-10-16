@@ -4,8 +4,10 @@ import time
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkIdList
-import invesalius.data.transformations as tr
+
 import invesalius.data.imagedata_utils as imagedata_utils
+import invesalius.data.transformations as tr
+
 
 def Get_coil_position(coords):
     # coil position cp : the center point at the bottom of the coil casing,
