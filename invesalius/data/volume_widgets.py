@@ -20,7 +20,9 @@
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper
-
+from gui.dialogs import ProgressBarHandler
+import time
+from wx.lib.pubsub import Publisher
 AXIAL, SAGITAL, CORONAL = 0, 1, 2
 PLANE_DATA = {AXIAL: ["z", (0, 0, 1)], SAGITAL: ["x", (1, 0, 0)], CORONAL: ["y", (0, 1, 0)]}
 
@@ -80,6 +82,12 @@ class Plane:
         #    permute.GetOutput().ReleaseDataFlagOn()
         #    permute.SetOutputSpacing(spacing, spacing, spacing)
         #    imagedata = permute.GetOutput()
+        progress_dialog = ProgressBarHandler(self.iren.GetParent(), title="Loading Image Data", msg="Processing...", max_value=100)
+        for i in range(101):  
+            time.sleep(0.05) 
+            Publisher.sendMessage("Update Progress bar", i, f"Loading slice {i}...")
+            if progress_dialog.was_cancelled():
+                break
 
         # Picker for enabling plane motion.
         # Allows selection of a cell by shooting a ray into graphics window
@@ -123,6 +131,8 @@ class Plane:
         self.actor = actor
 
         self.render.AddActor(actor)
+
+        
 
     def Update(self, x=None, y=None):
         source = self.source
