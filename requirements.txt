@@ -8,11 +8,12 @@ Pillow==10.3.0
 imageio==2.34.2
 nibabel==5.2.1
 scikit-image==0.24.0
-python-gdcm==3.0.24
+python-gdcm==3.0.26
 vtk==9.3.0
 
 # Machine Learning
-torch==2.3.1
+torch>=2.3.1
+pytorch-cuda==12.4 ; sys_platform == "windows" or sys_platform == "linux"
 
 # Utilities
 Cython==3.0.10
