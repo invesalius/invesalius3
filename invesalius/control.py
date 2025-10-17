@@ -250,11 +250,11 @@ class Controller:
             or project_status == const.PROJECT_STATUS_CHANGED
         ):
             project_path = session.GetState("project_path")
-            filename = project_path[1]
-
-            answer = dialog.SaveChangesDialog2(filename)
-            if answer:
-                self.ShowDialogSaveProject()
+            if project_path is not None:
+                filename = project_path[1]
+                answer = dialog.SaveChangesDialog2(filename)
+                if answer:
+                    self.ShowDialogSaveProject()
 
         # Open project
         filepath = dialog.ShowOpenProjectDialog()
@@ -444,6 +444,9 @@ class Controller:
         session.CloseProject()
 
         Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
+
+    def OnCloseProject(self) -> None:
+        self.CloseProject()
 
     ###########################
 
