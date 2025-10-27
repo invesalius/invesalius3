@@ -4087,6 +4087,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Ensure LANDMARK is used when navigation is off
         if not self.nav_status and orientation is None:
             marker_type = MarkerType.LANDMARK
+            orientation = None, None, None
 
         marker = self.CreateMarker(
             position=position,
