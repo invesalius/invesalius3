@@ -12,7 +12,7 @@ python-gdcm==3.0.24
 vtk==9.3.0
 
 # Machine Learning
-torch==2.3.1
+torch==2.8.0
 
 # Utilities
 Cython==3.0.10
