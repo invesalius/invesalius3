@@ -8,7 +8,7 @@ on:
 jobs:
   build-win:
       name: build windows packages
-      runs-on: windows-latest
+      runs-on: windows-2022
       strategy:
         matrix:
           architecture: ["x64"]
@@ -35,7 +35,8 @@ jobs:
             cache-dependency-glob: "uv.lock"
   
         - name: install venv and sync dependencies
-          run: uv sync --all-extras
+          run: |
+            uv sync --all-extras
   
         - name: Get InVesalius version
           run: |
@@ -134,7 +135,6 @@ jobs:
           export CFLAGS="-I$(brew --prefix libomp)/include"
           export CPPFLAGS="-I$(brew --prefix libomp)/include"
           export LDFLAGS="-L$(brew --prefix libomp)/lib"
-          rm __init__.py
           OpenMP_ROOT=$(brew --prefix)/opt/libomp uv sync --all-extras
 
       - name: Get InVesalius version

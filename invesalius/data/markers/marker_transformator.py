@@ -358,6 +358,9 @@ class MarkerTransformator:
                 displacement=displacement,
             )
 
+        marker.cortex_position_orientation = 6 * [None]
+        # TODO: message box to delete the MEP
+        marker.mep_value = None
         # Update the marker in the volume viewer.
         Publisher.sendMessage(
             "Update marker",
@@ -368,6 +371,8 @@ class MarkerTransformator:
 
         # Update the camera to focus on the marker.
         Publisher.sendMessage("Set camera to focus on marker", marker=marker)
+        # Trigger redraw MEP mapping
+        Publisher.sendMessage("Redraw MEP mapping")
 
         # Update the target if the marker is the active target.
         if marker.is_target:

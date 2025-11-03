@@ -430,6 +430,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.LoadSlicePlane, "Load slice plane")
 
         Publisher.subscribe(self.ResetCamClippingRange, "Reset cam clipping range")
+        Publisher.subscribe(self.SendActiveCamera, "Send volume viewer active camera")
+        Publisher.subscribe(self.SendViewerSize, "Send volume viewer size")
 
         Publisher.subscribe(self.enable_style, "Enable style")
         Publisher.subscribe(self.OnDisableStyle, "Disable style")
@@ -536,6 +538,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
+        Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
 
     def get_vtk_mouse_position(self):
         """
@@ -606,8 +609,8 @@ class Viewer(wx.Panel):
 
             # Add the actor to the renderer.
             self.ren.AddActor(actor)
-
-        self.UpdateRender()
+        if not self.nav_status:
+            self.UpdateRender()
 
     def DeletePointer(self):
         if self.pointer_actor:
@@ -1394,7 +1397,10 @@ class Viewer(wx.Panel):
             self.CreatePointer()
 
         # Hide the pointer during targeting, as it would cover the coil center donut
-        self.pointer_actor.SetVisibility(not self.target_mode)
+        if self.nav_status:
+            self.pointer_actor.SetVisibility(not self.target_mode)
+        else:
+            self.pointer_actor.SetVisibility(True)
 
         self.pointer_actor.SetPosition(position)
         # Update the render window manually, as it is not updated automatically when not navigating.
@@ -1664,21 +1670,21 @@ class Viewer(wx.Panel):
                 self.target_radius_list.append(
                     [
                         target_list_index,
-                        self.Id_list,
-                        enorms_list,
-                        self.Idmax,
+                        self.coil_position_Trot,
                         self.coil_position,
                         efield_coords_position,
                         self.efield_coords,
-                        self.coil_position_Trot,
+                        enorms_list,
                         e_field_vectors,
+                        self.Id_list,
+                        self.Idmax,
                         self.focal_factor_members,
                         self.efield_threshold,
                         self.efield_ROISize,
                         self.mtms_coord,
+                        self.diperdt,
                     ]
                 )
-                self.mtms_coord = None
             else:
                 self.target_radius_list.append(
                     [
@@ -1779,7 +1785,7 @@ class Viewer(wx.Panel):
     def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName("Colors")
-        color = 3 * [const.CORTEX_COLOR]
+        color = const.CORTEX_COLOR
         for i in range(self.efield_mesh.GetNumberOfCells()):
             self.colors_init.InsertTuple(i, color)
 
@@ -2085,7 +2091,8 @@ class Viewer(wx.Panel):
         self.target_radius_list = []
         self.focal_factor_members = []
         self.distance_efield = None
-        self.mtms_coord = None
+        self.mtms_coord = []
+        self.diperdt = None
 
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
@@ -2138,7 +2145,7 @@ class Viewer(wx.Panel):
             self.efield_lut = self.CreateLUTTableForEfield(0, self.efield_max)
             self.CalculateEdgesEfield()
             self.colors_init.SetNumberOfComponents(3)
-            self.colors_init.Fill(const.CORTEX_COLOR)
+            self.colors_init.Fill(const.CORTEX_COLOR[0])
             for h in range(len(self.Id_list)):
                 dcolor = 3 * [0.0]
                 index_id = self.Id_list[h]
@@ -2205,7 +2212,7 @@ class Viewer(wx.Panel):
     def GetCoilPosition(self, position, orientation):
         m_img = tr.compose_matrix(angles=orientation, translate=position)
         m_img_flip = m_img.copy()
-        m_img_flip[1, -1] = -m_img_flip[1, -1]
+        # m_img_flip[1, -1] = -m_img_flip[1, -1]
         cp = m_img_flip[:-1, -1]  # coil center
         cp = cp * 0.001  # convert to meters
         cp = cp.tolist()
@@ -2305,7 +2312,6 @@ class Viewer(wx.Panel):
         else:
             self.e_field_norms = enorm_data[3]
             self.Idmax = np.array(self.e_field_norms).argmax()
-
         self.GetEfieldMaxMin(self.e_field_norms)
 
     def SaveEfieldData(self, filename, plot_efield_vectors, marker_id):
@@ -2317,18 +2323,19 @@ class Viewer(wx.Panel):
 
         header = [
             "Marker ID",
-            "T_rot",
+            "Rotation matrix for coil coordinates",
             "Coil center",
             "Coil position in world coordinates",
             "InVesalius coordinates",
             "Enorm",
-            "ID cell max",
             "Efield vectors",
-            "Enorm cell indexes",
+            "Enorm cell indexes (ROI)",
+            "ID cell max",
             "Focal factors",
             "Efield threshold",
             "Efield ROI size",
-            "Mtms_coord",
+            "mTMS coordinates",
+            "diperdt",
         ]
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
@@ -2353,17 +2360,17 @@ class Viewer(wx.Panel):
                     efield_coords_position,
                     self.efield_coords,
                     list(self.e_field_norms_to_save),
-                    self.Idmax,
                     e_field_vectors,
                     self.Id_list,
+                    self.Idmax,
                     self.focal_factor_members,
                     self.efield_threshold,
                     self.efield_ROISize,
                     self.mtms_coord,
+                    self.diperdt,
                 ]
             )
-            # REMOVE THIS
-            self.mtms_coord = None
+
         else:
             all_data.append(
                 [
@@ -2386,24 +2393,28 @@ class Viewer(wx.Panel):
 
         header = [
             "Marker ID",
-            "Enorm cell indexes",
-            "Enorm",
-            "ID cell Max",
+            "Rotation matrix for coil coordinates",
             "Coil center",
-            "Coil position world coordinates",
+            "Coil position in world coordinates",
             "InVesalius coordinates",
-            "T_rot",
+            "Enorm",
             "Efield vectors",
+            "Enorm cell indexes (ROI)",
+            "ID cell Max",
             "Focal factors",
             "Efield threshold",
             "Efield ROI size",
-            "Mtms_coord",
+            "mTMS coordinates",
+            "diperdt",
         ]
         all_data = list(self.target_radius_list)
         with open(filename, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(header)
             writer.writerows(all_data)
+
+    def Getdiperdtforreport(self, diperdt):
+        self.diperdt = diperdt
 
     def GetCellIntersection(self, p1, p2, locator):
         # vtk_colors = vtkNamedColors()
@@ -2590,6 +2601,14 @@ class Viewer(wx.Panel):
     def ResetCamClippingRange(self):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
+
+    def SendActiveCamera(self):
+        cam = self.ren.GetActiveCamera()
+        Publisher.sendMessage("Receive volume viewer active camera", cam=cam)
+
+    def SendViewerSize(self):
+        width, height = self.GetSize()
+        Publisher.sendMessage("Receive volume viewer size", size=(width, height))
 
     # Note: Not in use currently, this method is not called from anywhere.
     def SetVolumetricCamera(self, enabled):

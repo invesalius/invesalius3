@@ -208,6 +208,7 @@ class Frame(wx.Frame):
         keycode = event.GetKeyCode()
         modifiers = event.GetModifiers()
 
+        # Check if the focus is on a text entry field or interactive shell
         focused = wx.Window.FindFocus()
         is_search_field = False
         is_shell_focused = False
@@ -1253,7 +1254,6 @@ class Frame(wx.Frame):
             "  >>> Publisher.sendMessage('Set threshold values', threshold_range=(100, 500))\n"
             "\n"
         )
-
         # Check if shell window already exists
         if not hasattr(self, "_shell_window") or not self._shell_window:
             self._shell_window = InteractiveShellFrame(self, app_context, introText=intro_text)

@@ -516,7 +516,7 @@ class SurfaceManager:
         if surface_index_cortex is not None:
             self.convert_to_inv = convert_to_inv
             proj = prj.Project()
-            cortex_save_file = path_meshes + "export_inv/" + config_dict["cortex"]
+            cortex_save_file = path_meshes + config_dict["cortex"]
             polydata = proj.surface_dict[surface_index_cortex].polydata
             file_extension = cortex_save_file.split(".")[-1]
             if file_extension == "stl":
@@ -540,7 +540,7 @@ class SurfaceManager:
                 if surface_index_bmesh is not None:
                     if elements["file"] == "sc.stl":
                         scalp_index = surface_index_bmesh
-                    bmeshes_save_file = path_meshes + "export_inv/" + elements["file"]
+                    bmeshes_save_file = path_meshes + elements["file"]
                     polydata = proj.surface_dict[surface_index_bmesh].polydata
                     file_extension = bmeshes_save_file.split(".")[-1]
                     if file_extension == "stl":
