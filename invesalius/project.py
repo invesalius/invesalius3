@@ -33,12 +33,11 @@ import invesalius
 import invesalius.constants as const
 from invesalius import inv_paths
 from invesalius.gui.dialogs import ErrorMessageBox
-
-# from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import Singleton, TwoWaysDictionary, debug, decode
+from invesalius.utils import Singleton, TempFileManager, TwoWaysDictionary, debug, decode
 
+# from invesalius.data import imagedata_utils
 if TYPE_CHECKING:
     from invesalius.data.mask import Mask
 
@@ -99,6 +98,8 @@ class Project(metaclass=Singleton):
         # values set as decimate / smooth
         # TODO: Future +
         # Allow insertion of new surface quality modes
+
+        self._temp_manager = TempFileManager()
 
     def Close(self) -> None:
         for name in self.__dict__:
@@ -291,7 +292,9 @@ class Project(metaclass=Singleton):
             ow = vtkOutputWindow()
             ow.SetInstance(fow)
 
-        filelist = Extract(filename, tempfile.mkdtemp())
+        temp_dir = tempfile.mkdtemp()
+        self._temp_manager.register_temp_file(temp_dir)
+        filelist = Extract(filename, temp_dir)
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
         self.load_from_folder(dirpath)
 
@@ -481,6 +484,10 @@ class Project(metaclass=Singleton):
                     ext = ".nii"
                     basename = filename
                 nib.save(mask_nifti, f"{basename}_mask_{mask.index}_{mask.name}{ext}")
+
+    def cleanup(self):
+        # Clean up all project-related temporary files.
+        self._temp_manager.cleanup_all()
 
 
 def Compress(

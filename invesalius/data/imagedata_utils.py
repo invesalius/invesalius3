@@ -41,6 +41,7 @@ import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.data import vtk_utils as vtk_utils
 from invesalius.i18n import tr as _
+from invesalius.utils import TempFileManager
 
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
@@ -288,8 +289,12 @@ def create_dicom_thumbnails(image, window=None, level=None):
 
 def array2memmap(arr, filename=None):
     fd = None
+    temp_manager = TempFileManager()
+
     if filename is None:
         fd, filename = tempfile.mkstemp(prefix="inv3_", suffix=".dat")
+        temp_manager.register_temp_file(filename)
+
     matrix = np.memmap(filename, mode="w+", dtype=arr.dtype, shape=arr.shape)
     matrix[:] = arr[:]
     matrix.flush()
