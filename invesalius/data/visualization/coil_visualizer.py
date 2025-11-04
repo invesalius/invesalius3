@@ -132,11 +132,14 @@ class CoilVisualizer:
             coil["center_actor"].SetVisibility(True)  # Always show the center donut actor
 
             # If all coils are hidden/shown, update the color of Show-coil button
-            coils_visible = [coil["actor"].GetVisibility() for coil in self.coils.values()]
-            if not any(coils_visible):  # all coils are hidden
+            if self.coils:  # Only check visibility if there are coils
+                coils_visible = [coil["actor"].GetVisibility() for coil in self.coils.values()]
+                if not any(coils_visible):  # all coils are hidden
+                    Publisher.sendMessage("Press show-coil button", pressed=False)
+                elif all(coils_visible):  # all coils are shown
+                    Publisher.sendMessage("Press show-coil button", pressed=True)
+            else:  # no coils
                 Publisher.sendMessage("Press show-coil button", pressed=False)
-            elif all(coils_visible):  # all coils are shown
-                Publisher.sendMessage("Press show-coil button", pressed=True)
 
         if self.target_coil_actor is not None:
             self.last_target_coil_visibility = state
