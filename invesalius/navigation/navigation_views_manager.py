@@ -168,7 +168,6 @@ class NavigationWindowManager(metaclass=Singleton):
     def SetDualMode(self, state):
         window = self.nav_windows[len(self.nav_windows) - 1]["window"]
         self.multitargetMode = state
-        print("Set dual mode:", state)
         if state:
             self.aui_manager.GetPane(window).Show()
         else:

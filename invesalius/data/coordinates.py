@@ -58,7 +58,6 @@ class TrackerCoordinates:
                 "From Neuronavigation: Update tracker poses",
                 poses=self.coord.tolist(),
                 visibilities=self.marker_visibilities,
-                robot_ID=robot_ID,
             )
             if self.previous_marker_visibilities != self.marker_visibilities:
                 wx.CallAfter(
@@ -76,7 +75,6 @@ class TrackerCoordinates:
                 "From Neuronavigation: Update tracker poses",
                 poses=self.coord.tolist(),
                 visibilities=self.marker_visibilities,
-                robot_ID=robot_ID,
             )
             if self.previous_marker_visibilities != self.marker_visibilities:
                 wx.CallAfter(
@@ -772,10 +770,6 @@ class ReceiveCoordinates(threading.Thread):
 
     def __bind_events(self) -> None:
         Publisher.subscribe(self.UpdateCoordSleep, "Update coord sleep")
-        Publisher.subscribe(self.SetRobotIDs, "Set robot IDs")
-
-    def SetRobotIDs(self, robotIDs):
-        self.RobotIDs = robotIDs
 
     def UpdateCoordSleep(self, data) -> None:
         self.sleep_coord = data
@@ -785,8 +779,7 @@ class ReceiveCoordinates(threading.Thread):
             coord_raw, marker_visibilities = GetCoordinatesForThread(
                 self.tracker_connection, self.tracker_id, const.DEFAULT_REF_MODE
             )
-            for robotID in self.RobotIDs:
-                self.TrackerCoordinates.SetCoordinates(
-                    coord_raw, marker_visibilities, robot_ID=robotID
-                )
+            self.TrackerCoordinates.SetCoordinates(
+                coord_raw, marker_visibilities
+            )
             sleep(self.sleep_coord)

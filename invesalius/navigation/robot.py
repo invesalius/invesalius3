@@ -320,7 +320,6 @@ class Robots(metaclass=Singleton):
         self.active = "robot_1"  # Default active robot
         self.RobotCoilAssociation = {}
         self.coil_distance_threshold = 0
-        self.SendIDs()
 
         if self.navigation.n_coils > 1:
             self.CreateSecondRobot()
@@ -330,6 +329,7 @@ class Robots(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
         Publisher.subscribe(self.SetCoilDistanceThershold, "Coil selection done")
+        Publisher.subscribe(self.SendTrackerPoses, "From Neuronavigation: Update tracker poses")
 
     def SetCoilDistanceThershold(self, done):
         self.coil_distance_threshold = 0
@@ -343,23 +343,28 @@ class Robots(metaclass=Singleton):
                 self.coil_distance_threshold = 0
                 break
         print(self.coil_distance_threshold)
-
-    def SendIDs(self):
-        RobotIds = list(self.GetAllRobots().keys())
-        Publisher.sendMessage("Set robot IDs", robotIDs=RobotIds)
+    
+    def SendTrackerPoses(self, poses, visibilities):
+        robots = self.GetAllRobots()
+        for robot_ID in robots.keys():
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "From Neuronavigation to robot: Update tracker poses",
+                poses=poses,
+                visibilities=visibilities,
+                robot_ID=robot_ID,
+            )
 
     def CreateSecondRobot(self):
         if self._robots["robot_2"] is None:
             self._robots["robot_2"] = Robot("robot_2", self.tracker, self.navigation, self.icp)
             print("Second robot created")
-        self.SendIDs()
         return self._robots["robot_2"]
 
     def DeleteSecondRobot(self):
         if self._robots["robot_2"] is not None:
             del self._robots["robot_2"]
             self._robots["robot_2"] = None
-        self.SendIDs()
 
     def GetRobot(self, name: str):
         return self._robots.get(name) if self._robots.get(name) is not None else None
