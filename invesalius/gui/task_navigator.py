@@ -2523,7 +2523,7 @@ class ControlPanel(wx.Panel):
 
     def OnSimultaneousButton(self, evt=None, ctrl=None):
         enabled = ctrl.GetValue()
-
+        print("Botao de navegacao dupla", enabled)
         if enabled:
             self.simultaneous_mode_button.Enable(True)
             coil_names_options = (

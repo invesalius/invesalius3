@@ -337,7 +337,7 @@ class Robots(metaclass=Singleton):
         for robot_ID in robots.keys():
             robot = robots[robot_ID]
             radius = robot.coil_radius
-            if robot.coil_radius is not None or robot.coil_radius != 0:
+            if robot.coil_radius is not None and robot.coil_radius != 0:
                 self.coil_distance_threshold += radius
             else:
                 self.coil_distance_threshold = 0

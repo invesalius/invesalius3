@@ -45,7 +45,7 @@ class NavigationWindowManager(metaclass=Singleton):
 
         # Init DualNavigation mode, It is a provisional way to navigate with two simultaneous targets.
         self.create_navigation_window()
-        self.create_navigation_window(False, False)
+        self.create_navigation_window(False)
 
         self.__bind_events()
 
@@ -121,14 +121,9 @@ class NavigationWindowManager(metaclass=Singleton):
             pane_info = self.aui_manager.GetPane(self.nav_windows[0]["window"])
             pane_info.Caption(_("Volume"))
 
-    def create_navigation_window(self, show=True, showSensors=True):
+    def create_navigation_window(self, showSensors=True):
         new_window = VolumeViewerCover(self.parent, showSensors)
-
         self.nav_windows[len(self.nav_windows)] = {"window": new_window, "coil": None}
-
-        if not show:
-            new_window.Hide()
-
         return new_window
 
     def add_window_to_layout(self, window, row):
@@ -141,6 +136,7 @@ class NavigationWindowManager(metaclass=Singleton):
             .MaximizeButton(True)
             .CloseButton(False)
         )
+        info.Hide() if row > 1 else None
         self.aui_manager.AddPane(window, info)
 
     def destroy_navigation_window(self, window_id):
@@ -172,6 +168,7 @@ class NavigationWindowManager(metaclass=Singleton):
     def SetDualMode(self, state):
         window = self.nav_windows[len(self.nav_windows) - 1]["window"]
         self.multitargetMode = state
+        print("Set dual mode:", state)
         if state:
             self.aui_manager.GetPane(window).Show()
         else:
