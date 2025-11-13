@@ -46,7 +46,9 @@ class Robot:
         self.icp = icp
         self.enabled_in_gui = False
         self.coil_name = None
-        self.coil_radius = None
+        self.shifts_center_coil = {}
+        self.init_coil_angle = []
+        self.init_center_coord = []
 
         self.is_robot_connected = False
         self.robot_name = name
@@ -209,11 +211,24 @@ class Robot:
         self.SaveConfig("robot_coil", name)
         self.LoadConfig()
 
-    def SetCoilRadius(self, left=None, right=None):
-        if left and right:
-            radius = distance.euclidean(left, right) / 2
-            self.coil_radius = radius
-            self.SaveConfig("coil_radius", radius)
+    def SetInitCoilCoords(self, left=None, right=None, anterior=None, init_coil_angle=None):
+        if left and right and anterior and init_coil_angle:
+            self.init_center_coord = np.mean(np.array([left, right, anterior]), axis=0)
+
+            depth_vector = anterior - self.init_center_coord
+            quintet_left, quintet_right = left + depth_vector, right + depth_vector
+
+            points_of_interesting = [quintet_left, left, anterior, quintet_right, right]
+
+            self.shifts_center_coil = {
+                "quintet_left": quintet_left - self.init_center_coord,
+                "left": left - self.init_center_coord,
+                "anterior": anterior - self.init_center_coord,
+                "quintet_right": quintet_right - self.init_center_coord,
+                "right": right - self.init_center_coord,
+            }
+
+            self.init_coil_angle = init_coil_angle
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -319,7 +334,6 @@ class Robots(metaclass=Singleton):
         }
         self.active = "robot_1"  # Default active robot
         self.RobotCoilAssociation = {}
-        self.coil_distance_threshold = 0
 
         if self.navigation.n_coils > 1:
             self.CreateSecondRobot()
@@ -328,22 +342,47 @@ class Robots(metaclass=Singleton):
 
     def __bind_events(self):
         Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
-        Publisher.subscribe(self.SetCoilDistanceThershold, "Coil selection done")
         Publisher.subscribe(self.SendTrackerPoses, "From Neuronavigation: Update tracker poses")
 
-    def SetCoilDistanceThershold(self, done):
-        self.coil_distance_threshold = 0
+    def CalculateCoilDistance(self, coords):
         robots = self.GetAllRobots()
-        for robot_ID in robots.keys():
-            robot = robots[robot_ID]
-            radius = robot.coil_radius
-            if robot.coil_radius is not None and robot.coil_radius != 0:
-                self.coil_distance_threshold += radius
-            else:
-                self.coil_distance_threshold = 0
-                break
-        print(self.coil_distance_threshold)
-    
+        shifts_coil = []
+        coils_name = []
+        init_angle = []
+        init_center = []
+        for robot in robots.values():
+            shifts_coil.append(robot.shifts_center_coil)
+            init_angle.append(robot.init_coil_angle)
+            coils_name.append(robot.coil_name)
+            init_center.append(robot.init_coil_center)
+
+        points_of_interesting = []
+        for idx, coil_name in enumerate(coils_name):
+            coord_coil = coords.get(coil_name, None)
+            pos_coil = coord_coil[:3]
+            angles_coil = coord_coil[3:]
+            points_of_interesting_coil = []
+            if coord_coil:
+                matrix_angle_correction = self.CalculateAngleCorrection(
+                    angles_coil, init_angle[idx]
+                )
+                for shift_point in shifts_coil[idx].values():
+                    points_of_interesting_coil.append(
+                        np.dot(matrix_angle_correction, shift_point) + pos_coil
+                    )
+                points_of_interesting.append(points_of_interesting_coil)
+
+        distance_coils = float("inf")
+        for points_of_interesting_1 in points_of_interesting[0]:
+            for points_of_interesting_2 in points_of_interesting[1]:
+                distance_coils_ = distance.euclidean(
+                    points_of_interesting_1, points_of_interesting_2
+                )
+                if distance_coils_ < distance_coils:
+                    distance_coils = distance_coils_
+
+            return distance_coils
+
     def SendTrackerPoses(self, poses, visibilities):
         robots = self.GetAllRobots()
         for robot_ID in robots.keys():
@@ -444,22 +483,43 @@ class Robots(metaclass=Singleton):
 
         return all(allReady)
 
-    def UpdateCoilsDistance(self, coords):
-        if (
-            self.RobotCoilAssociation
-            and len(self.RobotCoilAssociation) > 1
-            and self.coil_distance_threshold != 0
-        ):
-            list_coils = list(self.RobotCoilAssociation.keys())
-            coord_coil_1 = coords[list_coils[0]]
-            coord_coil_2 = coords[list_coils[1]]
+    def angle_diff_sin_cos(self, list_a, list_b):
+        """
+        Subtrai ângulos (em graus) de duas listas, normaliza o resultado para [-180, 180],
+        e retorna arrays com seno e cosseno das diferenças.
+        """
+        a = np.array(list_a, dtype=float)
+        b = np.array(list_b, dtype=float)
 
-            distance_coils = distance.euclidean(coord_coil_1[0:3], coord_coil_2[0:3])
+        # Subtrai e normaliza para [-180, 180]
+        diff = (a - b + 180) % 360 - 180
+
+        # Converte para radianos
+        diff_rad = np.radians(diff)
+
+        return diff_rad
+
+    def CalculateAngleCorrection(self, angles_coil, init_angles):
+        angles = self.angle_diff_sin_cos(angles_coil, init_angles)
+        alpha, beta, gamma = angles
+        ca, cb, cg = np.cos([alpha, beta, gamma])
+        sa, sb, sg = np.sin([alpha, beta, gamma])
+        R = np.array(
+            [
+                [cb * cg, -cb * sg, sb],
+                [sa * sb * cg + ca * sg, -sa * sb * sg + ca * cg, -sa * cb],
+                [-ca * sb * cg + sa * sg, ca * sb * sg + sa * cg, ca * cb],
+            ]
+        )
+        return R
+
+    def UpdateCoilsDistance(self, coords):
+        if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1:
+            distance_coils = self.CalculateCoilDistance(coords)
             robots = self.GetAllRobots()
             for robot_ID in robots.keys():
                 Publisher.sendMessage(
-                    "Neuronavigation to Robot: Dynamically update pid constants",
+                    "Neuronavigation to Robot: Dynamically update distance coils",
                     distance=distance_coils,
-                    distance_threshold=self.coil_distance_threshold,
                     robot_ID=robot_ID,
                 )
