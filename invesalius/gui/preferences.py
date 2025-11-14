@@ -1223,11 +1223,14 @@ class ObjectTab(wx.Panel):
             right_fiducial = coil_registration.get("fiducials")[0]
             left_fiducial = coil_registration.get("fiducials")[1]
             anterior_fiducial = coil_registration.get("fiducials")[2]
+            init_coord_coil = coil_registration.get("fiducials")[3]
+            init_coil_angle = coil_registration.get("orientations")[3]
             robot.SetInitCoilCoords(
                 left=left_fiducial,
                 right=right_fiducial,
                 anterior=anterior_fiducial,
-                init_coil_angle=[0, 0, 0],
+                init_coord_coil= init_coord_coil,
+                init_coil_angle=init_coil_angle,
             )
 
     def AddCoilButton(self, coil_name, show_button=True):

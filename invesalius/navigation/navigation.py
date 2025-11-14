@@ -148,6 +148,7 @@ class UpdateNavigationScene(threading.Thread):
                 got_coords = True
 
                 probe_visible = marker_visibilities[0]
+                ref_visible = marker_visibilities[1]
                 coil_visible = any(marker_visibilities[2:])  # is any coil visible?
                 track_this = self.navigation.main_coil if self.navigation.track_coil else "probe"
                 markers_target = self.markers.FindTarget(multiple=True)
@@ -214,8 +215,7 @@ class UpdateNavigationScene(threading.Thread):
                         Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
                     )
 
-                    # needs to be checked
-                    # self.robot.UpdateCoilsDistance(coords)
+                    self.robot.UpdateCoilsDistance(coords)
 
                     for coil in coils:
                         robot_ID = self.robot.GetRobotByCoil(coil).robot_name

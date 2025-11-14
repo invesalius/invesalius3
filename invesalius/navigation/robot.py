@@ -211,21 +211,22 @@ class Robot:
         self.SaveConfig("robot_coil", name)
         self.LoadConfig()
 
-    def SetInitCoilCoords(self, left=None, right=None, anterior=None, init_coil_angle=None):
-        if left and right and anterior and init_coil_angle:
-            self.init_center_coord = np.mean(np.array([left, right, anterior]), axis=0)
+    def SetInitCoilCoords(self, left=None, right=None, anterior=None, init_coord_coil = None, init_coil_angle=None):
+        if left and right and anterior and init_coord_coil and init_coil_angle:
+            init_center_coord = np.mean(np.array([left, right, anterior]), axis=0)
 
-            depth_vector = anterior - self.init_center_coord
+            depth_vector = anterior - init_center_coord
             quintet_left, quintet_right = left + depth_vector, right + depth_vector
 
             points_of_interesting = [quintet_left, left, anterior, quintet_right, right]
-
+            init_coord_coil = np.array(init_coord_coil)
             self.shifts_center_coil = {
-                "quintet_left": quintet_left - self.init_center_coord,
-                "left": left - self.init_center_coord,
-                "anterior": anterior - self.init_center_coord,
-                "quintet_right": quintet_right - self.init_center_coord,
-                "right": right - self.init_center_coord,
+                "quintet_left": quintet_left - init_coord_coil,
+                "left": left - init_coord_coil,
+                "anterior": anterior - init_coord_coil,
+                "quintet_right": quintet_right - init_coord_coil,
+                "right": right - init_coord_coil,
+                "center": init_center_coord - init_coord_coil
             }
 
             self.init_coil_angle = init_coil_angle
@@ -349,39 +350,41 @@ class Robots(metaclass=Singleton):
         shifts_coil = []
         coils_name = []
         init_angle = []
-        init_center = []
         for robot in robots.values():
             shifts_coil.append(robot.shifts_center_coil)
             init_angle.append(robot.init_coil_angle)
             coils_name.append(robot.coil_name)
-            init_center.append(robot.init_coil_center)
-
-        points_of_interesting = []
-        for idx, coil_name in enumerate(coils_name):
-            coord_coil = coords.get(coil_name, None)
-            pos_coil = coord_coil[:3]
-            angles_coil = coord_coil[3:]
-            points_of_interesting_coil = []
-            if coord_coil:
-                matrix_angle_correction = self.CalculateAngleCorrection(
-                    angles_coil, init_angle[idx]
-                )
-                for shift_point in shifts_coil[idx].values():
-                    points_of_interesting_coil.append(
-                        np.dot(matrix_angle_correction, shift_point) + pos_coil
+        if all(shifts_coil) and all(init_angle) and all(coils_name):
+            points_of_interesting = []
+            for idx, coil_name in enumerate(coils_name):
+                coord_coil = coords.get(coil_name, None)
+                pos_coil = coord_coil[:3]
+                angles_coil = coord_coil[3:]
+                points_of_interesting_coil = []
+                if coord_coil:
+                    matrix_angle_correction = self.CalculateAngleCorrection(
+                        angles_coil, init_angle[idx]
                     )
-                points_of_interesting.append(points_of_interesting_coil)
+                    for shift_point in shifts_coil[idx].values():
+                        points_of_interesting_coil.append(
+                            np.dot(matrix_angle_correction, shift_point) + pos_coil
+                        )
+                    points_of_interesting.append(points_of_interesting_coil)
 
-        distance_coils = float("inf")
-        for points_of_interesting_1 in points_of_interesting[0]:
-            for points_of_interesting_2 in points_of_interesting[1]:
-                distance_coils_ = distance.euclidean(
-                    points_of_interesting_1, points_of_interesting_2
-                )
-                if distance_coils_ < distance_coils:
-                    distance_coils = distance_coils_
+            distance_coils = float("inf")
+            distance_coils_ = []
+            for idx, points_of_interesting_1 in enumerate(points_of_interesting[0]):
+                for idy, points_of_interesting_2 in enumerate(points_of_interesting[1]):
+                    distance_coils_.append(distance.euclidean(
+                        points_of_interesting_1, points_of_interesting_2
+                    ))
+                    print(idx, idy, distance_coils_[-1])
+                    # if distance_coils_ < distance_coils:
+                    #     distance_coils = distance_coils_
 
+            distance_coils = min(distance_coils_)
             return distance_coils
+        return None
 
     def SendTrackerPoses(self, poses, visibilities):
         robots = self.GetAllRobots()
@@ -516,10 +519,11 @@ class Robots(metaclass=Singleton):
     def UpdateCoilsDistance(self, coords):
         if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1:
             distance_coils = self.CalculateCoilDistance(coords)
-            robots = self.GetAllRobots()
-            for robot_ID in robots.keys():
-                Publisher.sendMessage(
-                    "Neuronavigation to Robot: Dynamically update distance coils",
-                    distance=distance_coils,
-                    robot_ID=robot_ID,
-                )
+            if distance_coils:
+                robots = self.GetAllRobots()
+                for robot_ID in robots.keys():
+                    Publisher.sendMessage(
+                        "Neuronavigation to Robot: Dynamically update distance coils",
+                        distance=distance_coils,
+                        robot_ID=robot_ID,
+                    )
