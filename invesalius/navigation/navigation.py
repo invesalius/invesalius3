@@ -214,8 +214,7 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(
                         Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
                     )
-                    print("m_change",self.navigation.m_change)
-                    self.robot.UpdateCoilsDistance(coords, self.navigation.m_change, m_imgs)
+                    self.robot.UpdateCoilsDistance(self.navigation.coord_raw)
 
                     for coil in coils:
                         robot_ID = self.robot.GetRobotByCoil(coil).robot_name
@@ -293,6 +292,7 @@ class Navigation(metaclass=Singleton):
         self.r_stylus = None
         self.obj_datas = None  # This is accessed by the robot, gets value at StartNavigation
         self.multitarget = False
+        self.coord_raw = np.zeros((6, 6))
 
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
