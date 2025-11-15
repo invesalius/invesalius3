@@ -348,6 +348,7 @@ class Viewer(wx.Panel):
         self.save_automatically = False
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
+        self.balls = []
 
         self.__bind_events()
         self.__bind_events_wx()
@@ -534,6 +535,8 @@ class Viewer(wx.Panel):
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
         Publisher.subscribe(self.UpdateSensorIDSize, "Update size sensors")
+        Publisher.subscribe(self.UpdateDynamicBalls, "Update dynamic Balls")
+        Publisher.subscribe(self.AddDynamicBalls, "Create dynamic Balls")
 
     def Cleanup(self):
         # Unsubscribe all pubsub listeners
@@ -1641,10 +1644,45 @@ class Viewer(wx.Panel):
         cam.SetFocalPoint(cam_focus)
         cam.SetPosition(cam_pos)
 
+    def AddDynamicBalls(self, positions, m_change):
+        # The incoming 'positions' are now correctly calculated in VTK space.
+        # We just need to apply the Y-flip for final visualization and create the balls.
+        
+        if not positions or not (isinstance(positions, list) and isinstance(positions[0], list)):
+            return # Exit if the structure is not as expected
+
+        coil_colors = [[1.0, 1.0, 0.0], [0.0, 1.0, 1.0]] # Yellow for coil 1, Cyan for coil 2
+
+        for i, point_list_for_coil in enumerate(positions):
+            if not point_list_for_coil:
+                continue
+
+            color = coil_colors[i % len(coil_colors)]
+
+            for point_vtk in point_list_for_coil:
+                # Apply the Y-flip consistently used for visualization in the volume viewer.
+                display_point = [point_vtk[0], -point_vtk[1], point_vtk[2]]
+                
+                actor = self.actor_factory.CreateBall(display_point, colour=color, size=1.5)
+                self.ren.AddActor(actor)
+                self.balls.append(actor)
+
+        if not self.nav_status:
+            self.UpdateRender()
+
+    def UpdateDynamicBalls(self, positions):
+        # for idx, ball in enumerate(self.balls):
+        #     transform = vtk.vtkTransform()
+        #     transform.Translate(positions[idx])
+        #     ball.SetPosition(transform)
+        # if not self.nav_status:
+        #     self.UpdateRender()
+        pass
+
     def UpdatePointer(self, position):
         """
         Update the position of the pointer sphere. It is done when the navigation without object is on,
-        slice planes are moved or a new point is selected from the volume viewer.
+        slice planes are moved or a new po'int is selected from the volume viewer.
         """
         # Update the pointer sphere.
         if self.pointer_actor is None:

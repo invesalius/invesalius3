@@ -261,7 +261,7 @@ class ActorFactory:
     def CreateBall(self, position, colour=[0.0, 0.0, 1.0], size=2):
         ball_ref = vtk.vtkSphereSource()
         ball_ref.SetRadius(size)
-        ball_ref.SetCenter(0, 0, 0)
+        ball_ref.SetCenter(position)
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
@@ -272,10 +272,6 @@ class ActorFactory:
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.SetProperty(prop)
-
-        transform = vtk.vtkTransform()
-        transform.Translate(position)
-        actor.SetUserTransform(transform)
 
         return actor
 

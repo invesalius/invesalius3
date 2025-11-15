@@ -1220,8 +1220,8 @@ class ObjectTab(wx.Panel):
 
         coil_registration = self.coil_registrations.get(robot_coil_name, None)
         if coil_registration:
-            right_fiducial = coil_registration.get("fiducials")[0]
-            left_fiducial = coil_registration.get("fiducials")[1]
+            left_fiducial = coil_registration.get("fiducials")[0]
+            right_fiducial = coil_registration.get("fiducials")[1]
             anterior_fiducial = coil_registration.get("fiducials")[2]
             init_coord_coil = coil_registration.get("fiducials")[3]
             init_coil_angle = coil_registration.get("orientations")[3]

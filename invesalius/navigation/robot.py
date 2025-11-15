@@ -30,6 +30,8 @@ from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
+import invesalius.data.coordinates as dco
+
 
 class RobotObjective(Enum):
     NONE = 0
@@ -211,25 +213,70 @@ class Robot:
         self.SaveConfig("robot_coil", name)
         self.LoadConfig()
 
-    def SetInitCoilCoords(self, left=None, right=None, anterior=None, init_coord_coil = None, init_coil_angle=None):
-        if left and right and anterior and init_coord_coil and init_coil_angle:
-            init_center_coord = np.mean(np.array([left, right, anterior]), axis=0)
+    def SetInitCoilCoords(self, left=None, right=None, anterior=None, init_coord_coil=None, init_coil_angle=None):
+        """
+        Calcula e armazena os offsets dos pontos de interesse da bobina
+        em relação ao referencial local {P} da própria bobina.
+        """
+        
+        # 1. Validar se todos os dados de registro iniciais foram fornecidos
+        if not all([v is not None for v in [left, right, anterior, init_coord_coil, init_coil_angle]]):
+            print("Erro: Dados de registro inicial incompletos.")
+            return
 
-            depth_vector = anterior - init_center_coord
-            quintet_left, quintet_right = left + depth_vector, right + depth_vector
+        # --- PASSO 1: Calcular a Matriz de Transformação Inicial (s0_raw) ---
+        # Isso define o referencial local da bobina {P} em relação ao 
+        # referencial de tracking {S} no momento do registro. M_{S <- P}
+        try:
+            s0_raw_at_registration = dco.coordinates_to_transformation_matrix(
+                position=np.array(init_coord_coil),
+                orientation=np.array(init_coil_angle),
+                axes="rzyx",
+            )
+        except Exception as e:
+            print(f"Erro ao calcular s0_raw: {e}")
+            return
 
-            points_of_interesting = [quintet_left, left, anterior, quintet_right, right]
-            init_coord_coil = np.array(init_coord_coil)
-            self.shifts_center_coil = {
-                "quintet_left": quintet_left - init_coord_coil,
-                "left": left - init_coord_coil,
-                "anterior": anterior - init_coord_coil,
-                "quintet_right": quintet_right - init_coord_coil,
-                "right": right - init_coord_coil,
-                "center": init_center_coord - init_coord_coil
-            }
+        # --- PASSO 2: Obter a Rotação Inversa ---
+        # Rotação de {P} para {S}
+        R_S_from_P = s0_raw_at_registration[:3, :3]
+        
+        # Rotação de {S} para {P} (Inversa = Transposta, pois é matriz de rotação)
+        R_P_from_S = R_S_from_P.T
 
-            self.init_coil_angle = init_coil_angle
+        # --- PASSO 3: Calcular Posições e Offsets no Espaço {S} ---
+        # Coordenadas dos pontos de interesse no espaço de tracking {S}
+        left_S = np.array(left)
+        right_S = np.array(right)
+        anterior_S = np.array(anterior)
+        init_coord_coil_S = np.array(init_coord_coil) # Posição da origem de {P} em {S}
+
+        init_center_coord_S = (left_S + right_S) / 2.0
+        depth_vector_S = anterior_S - init_center_coord_S
+        quintet_left_S = left_S + depth_vector_S
+        quintet_right_S = right_S + depth_vector_S
+
+        # Vetores de offset (deslocamento) no espaço {S}
+        # (Vetor = Ponto de Interesse - Posição da Bobina)
+        shifts_S = {
+            "quintet_left": quintet_left_S - init_center_coord_S,
+            "left": left_S - init_center_coord_S,
+            "anterior": anterior_S - init_center_coord_S,
+            "quintet_right": quintet_right_S - init_center_coord_S,
+            "right": right_S - init_center_coord_S,
+            "center": init_center_coord_S - init_center_coord_S
+        }
+
+        # --- PASSO 4: Transformar Offsets para o Espaço Local {P} ---
+        # Armazena os vetores de offset no referencial {P}
+        self.shifts_center_coil = {}
+        for name, shift_vec_S in shifts_S.items():
+            # Aplicar a rotação R_{P <- S} para obter o vetor no frame local {P}
+            shift_vec_P = R_P_from_S @ shift_vec_S
+            self.shifts_center_coil[name] = shift_vec_P
+            
+        # Armazena o ângulo inicial apenas para referência, se necessário
+        self.init_coil_angle = np.array(init_coil_angle)
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -335,6 +382,7 @@ class Robots(metaclass=Singleton):
         }
         self.active = "robot_1"  # Default active robot
         self.RobotCoilAssociation = {}
+        self.BallCreated = False
 
         if self.navigation.n_coils > 1:
             self.CreateSecondRobot()
@@ -345,46 +393,65 @@ class Robots(metaclass=Singleton):
         Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
         Publisher.subscribe(self.SendTrackerPoses, "From Neuronavigation: Update tracker poses")
 
-    def CalculateCoilDistance(self, coords):
+    def CalculateCoilDistance(self, coords, m_change, m_imgs):
         robots = self.GetAllRobots()
         shifts_coil = []
         coils_name = []
-        init_angle = []
+        # init_coil_angle não é mais necessário aqui
+        # init_coil_angle = [] 
+
         for robot in robots.values():
-            shifts_coil.append(robot.shifts_center_coil)
-            init_angle.append(robot.init_coil_angle)
+            shifts_coil.append(robot.shifts_center_coil) # Contém pontos limpos em {P}
             coils_name.append(robot.coil_name)
-        if all(shifts_coil) and all(init_angle) and all(coils_name):
+            # init_coil_angle.append(robot.init_coil_angle)
+            
+        if all(shifts_coil) and all(coils_name):
             points_of_interesting = []
             for idx, coil_name in enumerate(coils_name):
-                coord_coil = coords.get(coil_name, None)
-                pos_coil = coord_coil[:3]
-                angles_coil = coord_coil[3:]
-                points_of_interesting_coil = []
-                if coord_coil:
-                    matrix_angle_correction = self.CalculateAngleCorrection(
-                        angles_coil, init_angle[idx]
-                    )
-                    for shift_point in shifts_coil[idx].values():
-                        points_of_interesting_coil.append(
-                            np.dot(matrix_angle_correction, shift_point) + pos_coil
-                        )
-                    points_of_interesting.append(points_of_interesting_coil)
+                
+                # m_img_coil é a matriz dinâmica M_{V <- P}
+                m_img_coil = m_imgs.get(coil_name, None)
+                if m_img_coil is None:
+                    continue
+                    
+                rotation_coil_to_vtk = m_img_coil[:3, :3]  # Rotação R_{V <- P}
+                pos_coil_vtk = m_img_coil[:3, 3]         # Translação (posição da origem de {P} em {V})
 
+                points_of_interesting_coil = []
+                for shift_point_local in shifts_coil[idx].values(): # Este é p_P
+                    
+                    # 1. Rotaciona o vetor de offset local para o espaço VTK
+                    offset_vtk = rotation_coil_to_vtk @ shift_point_local
+                    
+                    # 2. Adiciona o offset rotacionado à posição atual da bobina no VTK
+                    final_point_vtk = pos_coil_vtk + offset_vtk
+                    
+                    points_of_interesting_coil.append(final_point_vtk)
+                
+                points_of_interesting.append(points_of_interesting_coil)
+  
             distance_coils = float("inf")
             distance_coils_ = []
-            for idx, points_of_interesting_1 in enumerate(points_of_interesting[0]):
-                for idy, points_of_interesting_2 in enumerate(points_of_interesting[1]):
-                    distance_coils_.append(distance.euclidean(
-                        points_of_interesting_1, points_of_interesting_2
-                    ))
-                    print(idx, idy, distance_coils_[-1])
-                    # if distance_coils_ < distance_coils:
-                    #     distance_coils = distance_coils_
+            if len(points_of_interesting) > 1 and points_of_interesting[0] and points_of_interesting[1]:
+                for idx, points_of_interesting_1 in enumerate(points_of_interesting[0]):
+                    for idy, points_of_interesting_2 in enumerate(points_of_interesting[1]):
+                        distance_coils_.append(distance.euclidean(
+                            points_of_interesting_1, points_of_interesting_2
+                        ))
+                        print(idx, idy, distance_coils_[-1])
+                if distance_coils_:
+                    distance_coils = min(distance_coils_)
 
-            distance_coils = min(distance_coils_)
+            # self.UpdaeCoilsPosesView(points_of_interesting)
+            if not self.BallCreated:
+                # The points are now in the correct VTK space, so no more transformation is needed.
+                Publisher.sendMessage("Create dynamic Balls", positions = points_of_interesting, m_change = None)
+                # self.BallCreated = True
             return distance_coils
         return None
+    
+    def UpdaeCoilsPosesView(self, points_of_interesting):
+        Publisher.sendMessage("Update dynamic Balls", positions = points_of_interesting)
 
     def SendTrackerPoses(self, poses, visibilities):
         robots = self.GetAllRobots()
@@ -516,9 +583,9 @@ class Robots(metaclass=Singleton):
         )
         return R
 
-    def UpdateCoilsDistance(self, coords):
+    def UpdateCoilsDistance(self, coords, m_change, m_imgs):
         if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1:
-            distance_coils = self.CalculateCoilDistance(coords)
+            distance_coils = self.CalculateCoilDistance(coords, m_change, m_imgs)
             if distance_coils:
                 robots = self.GetAllRobots()
                 for robot_ID in robots.keys():
