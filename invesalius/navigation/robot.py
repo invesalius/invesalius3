@@ -22,6 +22,7 @@ from enum import Enum
 import numpy as np
 import wx
 from scipy.spatial import distance
+from scipy.spatial.transform import Rotation
 
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
@@ -238,27 +239,33 @@ class Robot:
         z_base = np.cross(x_base, y_base)
         y_base = np.cross(x_base, z_base)
         base_vector_right = (x_base, y_base, z_base)
-        T = self.CalculateAngleCorrection(init_coil_angle, [0, 0, 0])
-        base_vector_marker = (T @ init_coord_coil) / np.linalg.norm(T @ init_coord_coil)
+        r = Rotation.from_euler('zyx', init_coil_angle, degrees=True)
+        base_vector_marker = r.apply(np.eye(3))
 
         angles = []
         for idx, vector in enumerate(base_vector_marker):
+            print("vector", vector)
+            print(base_vector_right[idx])
             dot = np.dot(base_vector_right[idx], vector)
-            cos_theta = dot / (base_vector_right[idx] * vector)
+            cos_theta = dot / (np.linalg.norm(base_vector_right[idx]) * np.linalg.norm(vector))
             cos_theta = np.clip(cos_theta, -1.0, 1.0)
-            angles.append(cos_theta)
+            theta = np.arccos(cos_theta)
+            angles.append(np.degrees(theta))
 
         self.shifts_center_coil = {
-            "quintet_left": quintet_left_P - center_P_clean,
-            "left": left - center_P_clean,
-            "anterior": anterior - center_P_clean,
-            "quintet_right": quintet_right_P - center_P_clean,
-            "right": right - center_P_clean,
-            "center": center_P_clean - center_P_clean,
+            "quintet_left": quintet_left_P - init_coord_coil,
+            "left": left - init_coord_coil,
+            "anterior": anterior - init_coord_coil,
+            "quintet_right": quintet_right_P - init_coord_coil,
+            "right": right - init_coord_coil,
+            "center": center_P_clean - init_coord_coil,
         }
 
         self.init_coil_angle = init_coil_angle
         self.R_maker = self.CalculateAngleCorrection(angles, [0, 0, 0])
+
+        print("angles", angles)
+        print("R_maker", self.R_maker)
 
     def CalculateAngleCorrection(self, angles_coil, init_angles):
         angles = self.angle_diff_sin_cos(angles_coil, init_angles)
@@ -273,6 +280,23 @@ class Robot:
             ]
         )
         return R
+    
+    
+    def angle_diff_sin_cos(self, list_a, list_b):
+        """
+        Subtrai ângulos (em graus) de duas listas, normaliza o resultado para [-180, 180],
+        e retorna arrays com seno e cosseno das diferenças.
+        """
+        a = np.array(list_a, dtype=float)
+        b = np.array(list_b, dtype=float)
+
+        # Subtrai e normaliza para [-180, 180]
+        diff = (a - b + 180) % 360 - 180
+
+        # Converte para radianos
+        diff_rad = np.radians(diff)
+
+        return diff_rad
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -406,10 +430,9 @@ class Robots(metaclass=Singleton):
                 pose_coil = coords[2 + idx]
                 R = self.CalculateAngleCorrection(pose_coil[3:], init_coil_angle)
                 for shifts_coil_ in shifts_coil.values():
-                    point = robot.R_maker @ R @ shifts_coil_ + robot.R_maker @ pose_coil[:3]
+                    point = robot.R_maker @ (R @ shifts_coil_ +  pose_coil[:3])
                     points_of_interesting.append(point)
                 points_of_interesting_all.append(points_of_interesting)
-
             distance_coils = float("inf")
             distance_coils_ = []
             if len(points_of_interesting_all) > 1:
@@ -418,6 +441,7 @@ class Robots(metaclass=Singleton):
                         distance_coils_.append(
                             distance.euclidean(points_of_interesting_1, points_of_interesting_2)
                         )
+                        print(idx, idy, distance_coils_[:-1])
                 if distance_coils_:
                     distance_coils = min(distance_coils_)
 
