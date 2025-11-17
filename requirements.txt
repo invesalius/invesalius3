@@ -2,6 +2,7 @@
 numpy==1.26.4
 scipy==1.14.0
 matplotlib==3.9.0
+pandas==2.0.3
 
 # Image Processing
 Pillow==10.3.0
