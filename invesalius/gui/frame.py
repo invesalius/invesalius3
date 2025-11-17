@@ -1086,7 +1086,7 @@ class Frame(wx.Frame):
                     "It's not possible to run subpart segmentation because your system doesn't have the following modules installed:"
                 )
                 + " Torch",
-                "InVesalius 3 - Subpart Segmentation",
+                "InVesalius 3 - Brain subpart Segmentation",
                 wx.ICON_INFORMATION | wx.OK,
             )
             dlg.ShowModal()
@@ -1482,7 +1482,7 @@ class MenuBar(wx.MenuBar):
         self.ffill_segmentation.Enable(False)
         segmentation_menu.AppendSeparator()
         segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
-        segmentation_menu.Append(const.ID_SEGMENTATION_SUBPART, _("Subpart segmentation (MRI T1)"))
+        segmentation_menu.Append(const.ID_SEGMENTATION_SUBPART, _("Brain subpart segmentation (MRI T1)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
 

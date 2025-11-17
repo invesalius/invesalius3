@@ -451,7 +451,7 @@ class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
 
         super().__init__(
             parent=parent,
-            title=_("Subpart Segmentation"),
+            title=_("Brain subpart Segmentation"),
             has_torch=True,
             has_tinygrad=True,
             segmenter=segment.SubpartSegmentProcess,
