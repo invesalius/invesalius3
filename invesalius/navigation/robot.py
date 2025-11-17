@@ -23,14 +23,13 @@ import numpy as np
 import wx
 from scipy.spatial import distance
 
+import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
-
-import invesalius.data.coordinates as dco
 
 
 class RobotObjective(Enum):
@@ -213,14 +212,16 @@ class Robot:
         self.SaveConfig("robot_coil", name)
         self.LoadConfig()
 
-    def SetInitCoilCoords(self, left=None, right=None, anterior=None, 
-                          init_coord_coil=None, init_coil_angle=None):
-        
+    def SetInitCoilCoords(
+        self, left=None, right=None, anterior=None, init_coord_coil=None, init_coil_angle=None
+    ):
         # 1. Validar dados
-        if not all([v is not None for v in [left, right, anterior, init_coord_coil, init_coil_angle]]):
+        if not all(
+            [v is not None for v in [left, right, anterior, init_coord_coil, init_coil_angle]]
+        ):
             print("Erro: Dados de registro inicial incompletos.")
             return
-        
+
         left = np.array(left, dtype=float)
         right = np.array(right, dtype=float)
         anterior = np.array(anterior, dtype=float)
@@ -231,17 +232,47 @@ class Robot:
         depth_vector_P = anterior - center_P_clean
         quintet_left_P = left + depth_vector_P
         quintet_right_P = right + depth_vector_P
-        
+
+        x_base = depth_vector_P / np.linalg.norm(depth_vector_P)
+        y_base = (left - center_P_clean) / np.linalg.norm((left - center_P_clean))
+        z_base = np.cross(x_base, y_base)
+        y_base = np.cross(x_base, z_base)
+        base_vector_right = (x_base, y_base, z_base)
+        T = self.CalculateAngleCorrection(init_coil_angle, [0, 0, 0])
+        base_vector_marker = (T @ init_coord_coil) / np.linalg.norm(T @ init_coord_coil)
+
+        angles = []
+        for idx, vector in enumerate(base_vector_marker):
+            dot = np.dot(base_vector_right[idx], vector)
+            cos_theta = dot / (base_vector_right[idx] * vector)
+            cos_theta = np.clip(cos_theta, -1.0, 1.0)
+            angles.append(cos_theta)
+
         self.shifts_center_coil = {
-            "quintet_left": quintet_left_P - init_coord_coil,
-            "left": left- init_coord_coil,
-            "anterior": anterior- init_coord_coil,
-            "quintet_right": quintet_right_P- init_coord_coil,
-            "right": right- init_coord_coil,
-            "center": center_P_clean- init_coord_coil
+            "quintet_left": quintet_left_P - center_P_clean,
+            "left": left - center_P_clean,
+            "anterior": anterior - center_P_clean,
+            "quintet_right": quintet_right_P - center_P_clean,
+            "right": right - center_P_clean,
+            "center": center_P_clean - center_P_clean,
         }
-    
+
         self.init_coil_angle = init_coil_angle
+        self.R_maker = self.CalculateAngleCorrection(angles, [0, 0, 0])
+
+    def CalculateAngleCorrection(self, angles_coil, init_angles):
+        angles = self.angle_diff_sin_cos(angles_coil, init_angles)
+        alpha, beta, gamma = angles
+        ca, cb, cg = np.cos([alpha, beta, gamma])
+        sa, sb, sg = np.sin([alpha, beta, gamma])
+        R = np.array(
+            [
+                [cb * cg, -cb * sg, sb],
+                [sa * sb * cg + ca * sg, -sa * sb * sg + ca * cg, -sa * cb],
+                [-ca * sb * cg + sa * sg, ca * sb * sg + sa * cg, ca * cb],
+            ]
+        )
+        return R
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -359,43 +390,42 @@ class Robots(metaclass=Singleton):
         Publisher.subscribe(self.SendTrackerPoses, "From Neuronavigation: Update tracker poses")
 
     def CalculateCoilDistance(self):
-        coils_name = ['robot_1','robot_2']
-            
+        coils_name = ["robot_1", "robot_2"]
+
         if all(coils_name):
             points_of_interesting_all = []
-            
+
             for idx, coil_name in enumerate(coils_name):
                 robot = self.GetRobotByCoil(coil_name=coil_name)
                 coords, marker_visibilities = robot.tracker.TrackerCoordinates.GetCoordinates(
-                robot_ID=robot.robot_name
-                    )
+                    robot_ID=robot.robot_name
+                )
                 init_coil_angle = robot.init_coil_angle
                 shifts_coil = robot.shifts_center_coil
                 points_of_interesting = []
-                pose_coil = coords[2+idx]
+                pose_coil = coords[2 + idx]
                 R = self.CalculateAngleCorrection(pose_coil[3:], init_coil_angle)
                 for shifts_coil_ in shifts_coil.values():
-                    point = R @ shifts_coil_+ pose_coil[:3]
+                    point = robot.R_maker @ R @ shifts_coil_ + robot.R_maker @ pose_coil[:3]
                     points_of_interesting.append(point)
                 points_of_interesting_all.append(points_of_interesting)
- 
+
             distance_coils = float("inf")
             distance_coils_ = []
             if len(points_of_interesting_all) > 1:
-
                 for idx, points_of_interesting_1 in enumerate(points_of_interesting_all[0]):
                     for idy, points_of_interesting_2 in enumerate(points_of_interesting_all[1]):
-                        distance_coils_.append(distance.euclidean(
-                            points_of_interesting_1, points_of_interesting_2
-                        ))
+                        distance_coils_.append(
+                            distance.euclidean(points_of_interesting_1, points_of_interesting_2)
+                        )
                 if distance_coils_:
                     distance_coils = min(distance_coils_)
-                
+
             return distance_coils
         return None
-    
+
     def UpdaeCoilsPosesView(self, points_of_interesting):
-        Publisher.sendMessage("Update dynamic Balls", positions = points_of_interesting)
+        Publisher.sendMessage("Update dynamic Balls", positions=points_of_interesting)
 
     def SendTrackerPoses(self, poses, visibilities):
         robots = self.GetAllRobots()
