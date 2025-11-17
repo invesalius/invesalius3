@@ -21,10 +21,9 @@
 # IMPORTS
 import copy
 import logging
-from collections.abc import Iterator, Sequence
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable, Dict, Iterator, Union, Literal, Sequence, Tuple
 
 import nibabel as nib
 import numpy as np
@@ -74,11 +73,11 @@ class Pipeline:
         Setter.
     """
 
-    vox_size: float | Literal["min"]
+    vox_size: Union[float, Literal["min"]]
     current_plane: misc.Plane
-    models: dict[misc.Plane, PytorchInference | TinyGradInference]
-    view_ops: dict[misc.Plane, dict[str, Any]]
-    conform_to_1mm_threshold: float | None
+    models: Dict[misc.Plane, Union[PytorchInference, TinyGradInference]]
+    view_ops: Dict[misc.Plane, Dict[str, Any]]
+    conform_to_1mm_threshold: Union[float, None]
     device: torch.device
     viewagg_device: torch.device
     _pool: Executor
@@ -86,9 +85,9 @@ class Pipeline:
     def __init__(
         self,
         lut: Path,
-        ckpt_ax: Path | None = None,
-        ckpt_sag: Path | None = None,
-        ckpt_cor: Path | None = None,
+        ckpt_ax: Union[Path, None] = None,
+        ckpt_sag: Union[Path, None] = None,
+        ckpt_cor: Union[Path, None] = None,
         device: str = "cpu",
         viewagg_device: str = "cpu",
         threads: int = 1,
@@ -146,7 +145,7 @@ class Pipeline:
             )
         self.conform_to_1mm_threshold = conform_to_1mm_threshold
 
-    def _setup_devices(self, device: str, viewagg_device: str) -> tuple[torch.device, torch.device]:
+    def _setup_devices(self, device: str, viewagg_device: str) -> Tuple[torch.device, torch.device]:
         """
         Setup main and view aggregation devices directly from device strings without using find_device.
         """
@@ -167,7 +166,7 @@ class Pipeline:
         LOGGER.info(f"Running view aggregation on {va_device}")
         return main_device, va_device
 
-    def _initialize_models(self) -> dict[misc.Plane, PytorchInference | TinyGradInference]:
+    def _initialize_models(self) -> Dict[misc.Plane, Union[PytorchInference, TinyGradInference]]:
         """
         Initialize models for all available planes.
 
@@ -209,7 +208,7 @@ class Pipeline:
     def conform_and_save(
         self,
         subject: misc.SubjectDirectory,
-    ) -> tuple[nib.analyze.SpatialImage, np.ndarray]:
+    ) -> Tuple[nib.analyze.SpatialImage, np.ndarray]:
         """
         Conform and saves original image.
 
@@ -254,7 +253,7 @@ class Pipeline:
         self,
         image_name: str,
         orig_data: np.ndarray,
-        zoom: np.ndarray | Sequence[int],
+        zoom: Union[np.ndarray, Sequence[int]],
         progress_callback: callable = None,
     ) -> np.ndarray:
         """
@@ -307,10 +306,10 @@ class Pipeline:
 
     def save_img(
         self,
-        save_as: str | Path,
-        data: np.ndarray | torch.Tensor,
+        save_as: Union[str, Path],
+        data: Union[np.ndarray, torch.Tensor],
         orig: nib.analyze.SpatialImage,
-        dtype: type | None = None,
+        dtype: Union[type, None] = None,
     ) -> None:
         """
         Save image as a file.
@@ -347,11 +346,11 @@ class Pipeline:
 
     def async_save_img(
         self,
-        save_as: str | Path,
-        data: np.ndarray | torch.Tensor,
+        save_as: Union[str, Path],
+        data: Union[np.ndarray, torch.Tensor],
         orig: nib.analyze.SpatialImage,
-        dtype: type | None = None,
-    ) -> Future[None]:
+        dtype: Union[type, None] = None,
+    ) -> Future:
         """Save image asynchronously and return Future to track completion."""
         return self.pool.submit(self.save_img, save_as, data, orig, dtype)
 
@@ -370,7 +369,7 @@ class Pipeline:
     def pipeline_conform_and_save(
         self,
         subjects: misc.SubjectList,
-    ) -> Iterator[tuple[misc.SubjectDirectory, tuple[nib.analyze.SpatialImage, np.ndarray]]]:
+    ) -> Iterator[Tuple[misc.SubjectDirectory, Tuple[nib.analyze.SpatialImage, np.ndarray]]]:
         """
         Pipeline for conforming and saving original images asynchronously.
 
@@ -391,7 +390,7 @@ class Pipeline:
 
 def run_pipeline(
     *,
-    orig_name: Path | str,
+    orig_name: Union[Path, str],
     out_dir: Path,
     pred_name: str,
     ckpt_ax: Path,
@@ -399,11 +398,11 @@ def run_pipeline(
     ckpt_cor: Path,
     qc_log: str = "",
     conf_name: str = "mri/orig.mgz",
-    in_dir: Path | None = None,
-    sid: str | None = None,
-    search_tag: str | None = None,
-    csv_file: str | Path | None = None,
-    lut: Path | str | None = None,
+    in_dir: Union[Path, None] = None,
+    sid: Union[str, None] = None,
+    search_tag: Union[str, None] = None,
+    csv_file: Union[str, Path, None] = None,
+    lut: Union[Path, str, None] = None,
     remove_suffix: str = "",
     brainmask_name: str = "mri/mask.mgz",
     aseg_name: str = "mri/aseg.auto_noCC.mgz",
@@ -415,9 +414,9 @@ def run_pipeline(
     threads: int = -1,
     conform_to_1mm_threshold: float = 0.95,
     backend: str = "pytorch",
-    progress_callback: callable = None,
+    progress_callback: Callable = None,
     **kwargs,
-) -> Literal[0] | str:
+) -> Union[Literal[0], str]:
     if len(kwargs) > 0:
         LOGGER.warning(f"Unknown arguments {list(kwargs.keys())} in {__file__}:main.")
 

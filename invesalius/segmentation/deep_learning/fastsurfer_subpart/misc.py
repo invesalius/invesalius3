@@ -19,16 +19,24 @@
 
 import logging
 import os
-from collections.abc import Callable, Iterable, Iterator, Mapping
+import sys
 from concurrent.futures import Executor, Future
 from dataclasses import MISSING, Field, dataclass, fields
 from dataclasses import field as _dataclass_field
 from pathlib import Path
 from typing import (
     Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
     Literal,
+    Mapping,
     Optional,
+    Tuple,
     TypeVar,
+    Union,
     overload,
 )
 
@@ -53,7 +61,7 @@ class DataConfig:
 
     PLANE: str = ""
     PADDED_SIZE: int = 320
-    SIZES: list[int] = None
+    SIZES: List[int] = None
 
     def __post_init__(self):
         if self.SIZES is None:
@@ -84,13 +92,13 @@ def create_config(plane: str, batch_size: int = 1) -> Config:
     )
 
 
-VoxSizeOption = float | Literal["min"]
+VoxSizeOption = Union[float, Literal["min"]]
 
 PlaneAxial = Literal["axial"]
 PlaneCoronal = Literal["coronal"]
 PlaneSagittal = Literal["sagittal"]
-Plane = PlaneAxial | PlaneCoronal | PlaneSagittal
-PLANES: tuple[PlaneAxial, PlaneCoronal, PlaneSagittal] = ("axial", "coronal", "sagittal")
+Plane = Union[PlaneAxial, PlaneCoronal, PlaneSagittal]
+PLANES: Tuple[PlaneAxial, PlaneCoronal, PlaneSagittal] = ("axial", "coronal", "sagittal")
 
 LOGGER = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -124,12 +132,12 @@ def field(
     *,
     default: _T,
     help: str = "",
-    flags: tuple[str] = (),
+    flags: Tuple[str, ...] = (),
     init: bool = True,
     repr: bool = True,
-    hash: bool | None = None,
+    hash: Union[bool, None] = None,
     compare: bool = True,
-    metadata: Mapping[Any, Any] | None = None,
+    metadata: Union[Mapping[Any, Any], None] = None,
     kw_only: bool = ...,
 ) -> _T: ...
 
@@ -138,12 +146,12 @@ def field(
 def field(
     *,
     help: str = "",
-    flags: tuple[str] = (),
+    flags: Tuple[str, ...] = (),
     init: bool = True,
     repr: bool = True,
-    hash: bool | None = None,
+    hash: Union[bool, None] = None,
     compare: bool = True,
-    metadata: Mapping[Any, Any] | None = None,
+    metadata: Union[Mapping[Any, Any], None] = None,
     kw_only: bool = ...,
 ) -> Any: ...
 
@@ -153,13 +161,13 @@ def field(
     default: _T = MISSING,
     default_factory: Callable[[], _T] = MISSING,
     help: str = "",
-    flags: tuple[str] = (),
+    flags: Tuple[str, ...] = (),
     init: bool = True,
     repr: bool = True,
-    hash: bool | None = None,
+    hash: Union[bool, None] = None,
     compare: bool = True,
-    metadata: Mapping[Any, Any] | None = None,
-    kw_only: bool = False,
+    metadata: Union[Mapping[Any, Any], None] = None,
+    kw_only: Union[bool, None] = None,
 ) -> _T:
     """
     Extends dataclasses.field to add help and flags to the metadata.
@@ -195,7 +203,12 @@ def field(
             raise TypeError("flags must be a tuple!")
         metadata["flags"] = flags
 
-    kwargs = dict(init=init, repr=repr, hash=hash, compare=compare, kw_only=kw_only)
+    kwargs = dict(init=init, repr=repr, hash=hash, compare=compare)
+
+    # Check the Python version for kw_only support
+    if sys.version_info >= (3, 10) and kw_only is not None:
+        kwargs["kw_only"] = kw_only
+
     if default is not MISSING:
         kwargs["default"] = default
     if default_factory is not MISSING:
@@ -203,7 +216,7 @@ def field(
     return _dataclass_field(**kwargs, metadata=metadata)
 
 
-def get_field(dc, fieldname: str) -> Field | None:
+def get_field(dc, fieldname: str) -> Union[Field, None]:
     """
     Return a specific Field object associated with a dataclass class or object.
 
@@ -270,7 +283,7 @@ def pipeline(
     iterable: Iterable[_Ti],
     *,
     pipeline_size: int = 1,
-) -> Iterator[tuple[_Ti, _T]]:
+) -> Iterator[Tuple[_Ti, _T]]:
     """
     Pipeline a function to be executed in the pool.
 
@@ -321,7 +334,7 @@ class SerialExecutor(Executor):
         self,
         fn: Callable[..., _T],
         *iterables: Iterable[Any],
-        timeout: float | None = None,
+        timeout: Union[float, None] = None,
         chunksize: int = -1,
     ) -> Iterator[_T]:
         """
@@ -412,7 +425,7 @@ class SubjectDirectory:
                 v = Path(v)
             setattr(self, "_" + k, v)
 
-    def filename_in_subject_folder(self, filepath: str | Path) -> Path:
+    def filename_in_subject_folder(self, filepath: Union[str, Path]) -> Path:
         """
         Return the full path to the file.
 
@@ -447,7 +460,7 @@ class SubjectDirectory:
         """
         return self.filename_in_subject_folder(self.get_attribute(attr_name))
 
-    def fileexists_in_subject_folder(self, filepath: str | Path) -> bool:
+    def fileexists_in_subject_folder(self, filepath: Union[str, Path]) -> bool:
         """
         Check if file exists in the subject folder.
 
@@ -493,7 +506,7 @@ class SubjectDirectory:
         return Path(self._subject_dir)
 
     @subject_dir.setter
-    def subject_dir(self, _folder: str | Path):
+    def subject_dir(self, _folder:  Union[str, Path]):
         """
         Set the subject directory name.
 
@@ -663,7 +676,7 @@ class SubjectDirectory:
         return self.filename_in_subject_folder(self._asegdkt_segfile)
 
     @asegdkt_segfile.setter
-    def asegdkt_segfile(self, _asegdkt_segfile: str | Path):
+    def asegdkt_segfile(self, _asegdkt_segfile:  Union[str, Path]):
         """
         Set path to segmentation file.
 
@@ -751,7 +764,7 @@ class SubjectDirectory:
         """
         return getattr(self, "_" + attr_name, None) is not None
 
-    def get_attribute(self, attr_name: str) -> str | Path:
+    def get_attribute(self, attr_name: str) ->  Union[str, Path]:
         """
         Give the requested attribute.
 
@@ -839,7 +852,7 @@ class SubjectList:
             os.makedirs(self.config.out_dir)
 
     @property
-    def flags(self) -> dict[str, dict]:
+    def flags(self) -> Dict[str, dict]:
         """
         Give the flags.
 
@@ -850,7 +863,7 @@ class SubjectList:
         """
         return self._flags
 
-    def __getitem__(self, item: int | str) -> SubjectDirectory:
+    def __getitem__(self, item:  Union[int, str]) -> SubjectDirectory:
         """
         Return a SubjectDirectory object for the i-th subject (if item is an int) or for
         the subject with the given name (if item is a str).

@@ -326,8 +326,8 @@ class TinyGradInference:
         orig_data: npt.NDArray,
         orig_zoom: npt.NDArray,
         out: Optional = None,
-        out_res: int | None = None,
-        batch_size: int | None = None,
+        out_res: Union[int, None] = None,
+        batch_size: Union[int, None] = None,
     ):
         """
         Run ONNX inference on the data
@@ -368,7 +368,7 @@ class PytorchInference:
         cfg: Config,
         device: torch.device,
         ckpt: str = "",
-        lut: str | np.ndarray | DataFrame | None = None,
+        lut: Union[str, np.ndarray, DataFrame, None] = None,
     ):
         self.cfg = cfg
         self.device = device
@@ -419,7 +419,7 @@ class PytorchInference:
         self._model_not_init = None
         self.device = None
 
-    def to(self, device: torch.device | None = None):
+    def to(self, device: Union[torch.device, None] = None):
         """Move and/or cast the parameters and buffers"""
         if self.model_parallel:
             raise RuntimeError(
@@ -464,7 +464,7 @@ class PytorchInference:
         val_loader: DataLoader,
         *,
         out_scale: Optional = None,
-        out: torch.Tensor | None = None,
+        out: Union[torch.Tensor, None] = None,
     ) -> torch.Tensor:
         """Perform prediction and inplace-aggregate views into pred_prob"""
         self.model.eval()
@@ -529,9 +529,9 @@ class PytorchInference:
         img_filename: str,
         orig_data: npt.NDArray,
         orig_zoom: npt.NDArray,
-        out: torch.Tensor | None = None,
-        out_res: int | None = None,
-        batch_size: int | None = None,
+        out: Union[torch.Tensor, None] = None,
+        out_res: Union[int, None] = None,
+        batch_size: Union[int, None] = None,
     ) -> torch.Tensor:
         """Run the loaded model on the data"""
         # Set up DataLoader
@@ -563,12 +563,12 @@ class PytorchInference:
 def CreateInference(
     backend: str,
     cfg: Config,
-    device: torch.device | str | None = None,
+    device: Union[torch.device, str, None] = None,
     ckpt: str = "",
-    lut: str | np.ndarray | DataFrame | None = None,
+    lut: Union[str, np.ndarray, DataFrame, None] = None,
     use_gpu: bool = False,
     **kwargs,
-) -> PytorchInference | TinyGradInference:
+) -> Union[PytorchInference, TinyGradInference]:
     """
     Creates inference instances based on backend
     """

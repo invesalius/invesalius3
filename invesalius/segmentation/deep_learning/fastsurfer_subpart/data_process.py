@@ -40,7 +40,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def load_image(
-    file: str | Path,
+    file: Union[str, Path],
     name: str = "image",
     **kwargs,
 ) -> Tuple[nib.analyze.SpatialImage, np.ndarray]:
@@ -56,8 +56,8 @@ def save_image(
     header_info: _Header,
     affine_info: npt.NDArray[float],
     img_array: np.ndarray,
-    save_as: str | Path,
-    dtype: npt.DTypeLike | None = None,
+    save_as: Union[str, Path],
+    dtype: Union[npt.DTypeLike, None] = None,
 ) -> None:
     """
     Save an image (nibabel MGHImage), according to the desired output file format.
@@ -291,7 +291,7 @@ def get_thick_slices(img_data: npt.NDArray, slice_thickness: int = 3) -> np.ndar
 
 
 def get_labels_from_lut(
-    lut: str | pd.DataFrame, label_extract: Tuple[str, str] = ("Left-", "ctx-rh")
+    lut: Union[str, pd.DataFrame], label_extract: Tuple[str, str] = ("Left-", "ctx-rh")
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Extract labels from the lookup tables.
@@ -302,7 +302,7 @@ def get_labels_from_lut(
     return lut["ID"].values, lut["ID"][~mask].values
 
 
-def infer_mapping_from_lut(num_classes_full: int, lut: str | pd.DataFrame) -> np.ndarray:
+def infer_mapping_from_lut(num_classes_full: int, lut: Union[str, pd.DataFrame]) -> np.ndarray:
     """
     Guess the mapping from a lookup table.
     """
@@ -934,7 +934,7 @@ def conform(
     mdc_affine = mdc_affine / np.linalg.norm(mdc_affine, axis=1)
     h1["Mdc"] = np.linalg.inv(mdc_affine)
 
-    h1["fov"] = max(i * v for i, v in zip(h1.get_data_shape(), h1.get_zooms(), strict=False))
+    h1["fov"] = max(i * v for i, v in zip(h1.get_data_shape(), h1.get_zooms()))
     center = np.asarray(img.shape[:3], dtype=float) / 2.0
     h1["Pxyz_c"] = img.affine.dot(np.hstack((center, [1.0])))[:3]
 

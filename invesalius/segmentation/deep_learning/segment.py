@@ -4,12 +4,12 @@ import os
 import pathlib
 import tempfile
 import traceback
-from collections.abc import Generator
 from pathlib import Path
 
 import nibabel.processing
 import numpy as np
 from skimage.transform import resize
+from typing import Generator, Tuple
 
 import invesalius.data.slice_ as slc
 from invesalius import inv_paths
@@ -68,12 +68,12 @@ def run_cranioplasty_implant():
     Publisher.sendMessage("Reload actual slice")
 
 
-patch_type = tuple[tuple[int, int], tuple[int, int], tuple[int, int]]
+patch_type = Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]
 
 
 def gen_patches(
     image: np.ndarray, patch_size: int, overlap: int
-) -> Generator[tuple[float, np.ndarray, patch_type], None, None]:
+) -> Generator[Tuple[float, np.ndarray, patch_type], None, None]:
     overlap = int(patch_size * overlap / 100)
     sz, sy, sx = image.shape
     slices_x = [i for i in range(0, sx, patch_size - overlap) if i + patch_size <= sx]

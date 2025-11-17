@@ -214,7 +214,7 @@ class Frame(wx.Frame):
         is_shell_focused = False
 
         # Check if the focus is on a text entry field
-        if focused and isinstance(focused, wx.TextCtrl | wx.ComboBox):
+        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
             is_search_field = True
 
         # Check if the shell is focused
@@ -1482,7 +1482,9 @@ class MenuBar(wx.MenuBar):
         self.ffill_segmentation.Enable(False)
         segmentation_menu.AppendSeparator()
         segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
-        segmentation_menu.Append(const.ID_SEGMENTATION_SUBPART, _("Brain subpart segmentation (MRI T1)"))
+        segmentation_menu.Append(
+            const.ID_SEGMENTATION_SUBPART, _("Brain subpart segmentation (MRI T1)")
+        )
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
 
