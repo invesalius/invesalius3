@@ -15,7 +15,7 @@
 
 import logging
 from pathlib import Path
-from typing import Optional, cast, Tuple, Union, Set, Dict
+from typing import Dict, Optional, Set, Tuple, Union, cast
 
 import nibabel as nib
 import numpy as np
@@ -318,9 +318,7 @@ def infer_mapping_from_lut(num_classes_full: int, lut: Union[str, pd.DataFrame])
 
 
 def apply_sagittal_mapping(
-    prediction_sag: npt.NDArray,
-    num_classes: int = 51,
-    lut: Union[str, None] = None
+    prediction_sag: npt.NDArray, num_classes: int = 51, lut: Union[str, None] = None
 ) -> np.ndarray:
     """
     Remap the prediction on the sagittal network to full label space used by coronal and axial networks.
@@ -630,10 +628,11 @@ def find_img_size_by_fov(img: nib.analyze.SpatialImage, vox_size: float, min_dim
     )  # compute number of voxels needed to cover field of view
     return max(min_dim, conform_dim)
 
+
 def get_conformed_vox_img_size(
     img: nib.analyze.SpatialImage,
     conform_vox_size: misc.VoxSizeOption,
-    conform_to_1mm_threshold: Union[float, None] = None
+    conform_to_1mm_threshold: Union[float, None] = None,
 ) -> Tuple[float, int]:
     """
     Extract the voxel size and the image size.
@@ -715,7 +714,7 @@ def map_image(
     out_shape: Union[Tuple[int, ...], np.ndarray],
     ras2ras: Union[np.ndarray, None] = None,
     order: int = 1,
-    dtype: Union[type, None] = None
+    dtype: Union[type, None] = None,
 ) -> np.ndarray:
     """
     Map image to new voxel space (RAS orientation).

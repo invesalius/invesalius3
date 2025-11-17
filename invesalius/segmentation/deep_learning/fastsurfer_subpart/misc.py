@@ -502,7 +502,7 @@ class SubjectDirectory:
         return Path(self._subject_dir)
 
     @subject_dir.setter
-    def subject_dir(self, _folder:  Union[str, Path]):
+    def subject_dir(self, _folder: Union[str, Path]):
         """
         Set the subject directory name.
 
@@ -672,7 +672,7 @@ class SubjectDirectory:
         return self.filename_in_subject_folder(self._asegdkt_segfile)
 
     @asegdkt_segfile.setter
-    def asegdkt_segfile(self, _asegdkt_segfile:  Union[str, Path]):
+    def asegdkt_segfile(self, _asegdkt_segfile: Union[str, Path]):
         """
         Set path to segmentation file.
 
@@ -760,7 +760,7 @@ class SubjectDirectory:
         """
         return getattr(self, "_" + attr_name, None) is not None
 
-    def get_attribute(self, attr_name: str) ->  Union[str, Path]:
+    def get_attribute(self, attr_name: str) -> Union[str, Path]:
         """
         Give the requested attribute.
 
@@ -859,7 +859,7 @@ class SubjectList:
         """
         return self._flags
 
-    def __getitem__(self, item:  Union[int, str]) -> SubjectDirectory:
+    def __getitem__(self, item: Union[int, str]) -> SubjectDirectory:
         """
         Return a SubjectDirectory object for the i-th subject (if item is an int) or for
         the subject with the given name (if item is a str).

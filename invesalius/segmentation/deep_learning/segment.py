@@ -5,11 +5,11 @@ import pathlib
 import tempfile
 import traceback
 from pathlib import Path
+from typing import Generator, Tuple
 
 import nibabel.processing
 import numpy as np
 from skimage.transform import resize
-from typing import Generator, Tuple
 
 import invesalius.data.slice_ as slc
 from invesalius import inv_paths
@@ -710,9 +710,21 @@ class SubpartSegmentProcess(SegmentProcess):
             return x - 1000
         # Subcortical pairs
         pairs = {
-            2: 41, 3: 42, 4: 43, 5: 44, 7: 46, 8: 47,
-            10: 49, 11: 50, 12: 51, 13: 52, 17: 53, 18: 54,
-            26: 58, 28: 60, 31: 63
+            2: 41,
+            3: 42,
+            4: 43,
+            5: 44,
+            7: 46,
+            8: 47,
+            10: 49,
+            11: 50,
+            12: 51,
+            13: 52,
+            17: 53,
+            18: 54,
+            26: 58,
+            28: 60,
+            31: 63,
         }
         if x in pairs:
             return pairs[x]

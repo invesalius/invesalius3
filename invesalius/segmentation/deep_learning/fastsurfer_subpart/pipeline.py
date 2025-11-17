@@ -18,7 +18,7 @@ import copy
 import logging
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, Union, Literal, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterator, Literal, Sequence, Tuple, Union
 
 import nibabel as nib
 import numpy as np

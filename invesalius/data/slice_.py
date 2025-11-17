@@ -105,7 +105,9 @@ class Slice(metaclass=utils.Singleton):
         self._n_tracts: int = 0
         self._tracker = None
         self.aux_matrices: dict[str, np.ndarray] = {}
-        self.aux_matrices_colours: dict[str, dict[Union[int, float], Tuple[float, float, float]]] = {}
+        self.aux_matrices_colours: dict[
+            str, dict[Union[int, float], Tuple[float, float, float]]
+        ] = {}
         self.state = const.STATE_DEFAULT
 
         self.to_show_aux = ""
