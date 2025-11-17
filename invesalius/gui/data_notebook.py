@@ -434,7 +434,7 @@ class MaskPage(wx.Panel):
                 return
 
     def OnCloseProject(self):
-        self.RefreshMasks(clear_project=True)
+        wx.CallAfter(self.RefreshMasks, True)
 
 
 class ButtonControlPanel(wx.Panel):
@@ -813,7 +813,6 @@ class MasksListCtrlPanel(InvListCtrl):
         if not evt.IsEditCancelled():
             index = evt.GetIndex()
             self.SetItem(index, 2, evt.GetLabel())
-            print("GGG")
             Publisher.sendMessage("Change mask name", index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
