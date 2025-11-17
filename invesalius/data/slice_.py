@@ -374,23 +374,50 @@ class Slice(metaclass=utils.Singleton):
         self.CloseProject()
 
     def CloseProject(self):
-        f = self._matrix.filename
-        self._matrix._mmap.close()
-        self._matrix = None
-        os.remove(f)
+        # Close and cleanup main matrix (if any)
+        m = getattr(self, "_matrix", None)
+        if m is not None:
+            f = getattr(m, "filename", None)
+            mm = getattr(m, "_mmap", None)
+            try:
+                if mm is not None:
+                    mm.close()
+            except Exception:
+                pass
+            self._matrix = None
+            if f:
+                try:
+                    if os.path.exists(f):
+                        os.remove(f)
+                except OSError:
+                    pass
+
         self.current_mask = None
 
-        for name in self.aux_matrices:
-            m = self.aux_matrices[name]
-            try:
-                f = m.filename
-            except AttributeError:
-                continue
-            m._mmap.close()
-            m = None
-            os.remove(f)
-        self.aux_matrices = {}
+        # Close and cleanup auxiliary matrices (if any)
+        if getattr(self, "aux_matrices", None):
+            for name, am in list(self.aux_matrices.items()):
+                if am is None:
+                    continue
+                f = getattr(am, "filename", None)
+                mm = getattr(am, "_mmap", None)
+                try:
+                    if mm is not None:
+                        mm.close()
+                except Exception:
+                    pass
+                if f:
+                    try:
+                        if os.path.exists(f):
+                            os.remove(f)
+                    except OSError:
+                        pass
+                self.aux_matrices[name] = None
+            self.aux_matrices.clear()
+        else:
+            self.aux_matrices = {}
 
+        # Reset other state
         self.values = None
         self.nodes = None
         self.from_ = OTHER
@@ -401,7 +428,12 @@ class Slice(metaclass=utils.Singleton):
         self.hue_range = (0, 0)
         self.value_range = (0, 1)
 
-        self.interaction_style.Reset()
+        ist = getattr(self, "interaction_style", None)
+        if ist is not None:
+            try:
+                ist.Reset()
+            except Exception:
+                pass
         self.to_show_aux = ""
 
         Publisher.sendMessage("Select first item from slice menu")
