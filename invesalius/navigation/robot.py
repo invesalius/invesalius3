@@ -233,70 +233,29 @@ class Robot:
         depth_vector_P = anterior - center_P_clean
         quintet_left_P = left + depth_vector_P
         quintet_right_P = right + depth_vector_P
+        
+        points_of_interest_world = {
+        "quintet_left": quintet_left_P,
+        "left": left,
+        "anterior": anterior,
+        "quintet_right": quintet_right_P,
+        "right": right,
+        "center": center_P_clean,
+    }
 
-        x_base = depth_vector_P / np.linalg.norm(depth_vector_P)
-        y_base = (left - center_P_clean) / np.linalg.norm((left - center_P_clean))
-        z_base = np.cross(x_base, y_base)
-        y_base = np.cross(x_base, z_base)
-        base_vector_right = (x_base, y_base, z_base)
-        r = Rotation.from_euler('zyx', init_coil_angle, degrees=True)
-        base_vector_marker = r.apply(np.eye(3))
+        r_marker_to_world = Rotation.from_euler('zyx', init_coil_angle, degrees=True)
+        R_marker_to_world = r_marker_to_world.as_matrix()
+        R_world_to_marker = R_marker_to_world.T
 
-        angles = []
-        for idx, vector in enumerate(base_vector_marker):
-            print("vector", vector)
-            print(base_vector_right[idx])
-            dot = np.dot(base_vector_right[idx], vector)
-            cos_theta = dot / (np.linalg.norm(base_vector_right[idx]) * np.linalg.norm(vector))
-            cos_theta = np.clip(cos_theta, -1.0, 1.0)
-            theta = np.arccos(cos_theta)
-            angles.append(np.degrees(theta))
-
-        self.shifts_center_coil = {
-            "quintet_left": quintet_left_P - init_coord_coil,
-            "left": left - init_coord_coil,
-            "anterior": anterior - init_coord_coil,
-            "quintet_right": quintet_right_P - init_coord_coil,
-            "right": right - init_coord_coil,
-            "center": center_P_clean - init_coord_coil,
-        }
-
-        self.init_coil_angle = init_coil_angle
-        self.R_maker = self.CalculateAngleCorrection(angles, [0, 0, 0])
-
-        print("angles", angles)
-        print("R_maker", self.R_maker)
-
-    def CalculateAngleCorrection(self, angles_coil, init_angles):
-        angles = self.angle_diff_sin_cos(angles_coil, init_angles)
-        alpha, beta, gamma = angles
-        ca, cb, cg = np.cos([alpha, beta, gamma])
-        sa, sb, sg = np.sin([alpha, beta, gamma])
-        R = np.array(
-            [
-                [cb * cg, -cb * sg, sb],
-                [sa * sb * cg + ca * sg, -sa * sb * sg + ca * cg, -sa * cb],
-                [-ca * sb * cg + sa * sg, ca * sb * sg + sa * cg, ca * cb],
-            ]
-        )
-        return R
-    
-    
-    def angle_diff_sin_cos(self, list_a, list_b):
-        """
-        Subtrai ângulos (em graus) de duas listas, normaliza o resultado para [-180, 180],
-        e retorna arrays com seno e cosseno das diferenças.
-        """
-        a = np.array(list_a, dtype=float)
-        b = np.array(list_b, dtype=float)
-
-        # Subtrai e normaliza para [-180, 180]
-        diff = (a - b + 180) % 360 - 180
-
-        # Converte para radianos
-        diff_rad = np.radians(diff)
-
-        return diff_rad
+        self.shifts_center_coil = {}
+        for name, p_world in points_of_interest_world.items():
+            # Vetor de shift no frame Mundial
+            shift_world = p_world - init_coord_coil
+            
+            # Converter para o frame Local e salvar
+            # P_local = R_inversa * (P_mundo - T_mundo)
+            shift_local = R_world_to_marker @ shift_world
+            self.shifts_center_coil[name] = shift_local
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -414,8 +373,7 @@ class Robots(metaclass=Singleton):
         Publisher.subscribe(self.SendTrackerPoses, "From Neuronavigation: Update tracker poses")
 
     def CalculateCoilDistance(self):
-        coils_name = ["robot_1", "robot_2"]
-
+        coils_name = self.GetAllCoilsRobots()
         if all(coils_name):
             points_of_interesting_all = []
 
@@ -424,14 +382,20 @@ class Robots(metaclass=Singleton):
                 coords, marker_visibilities = robot.tracker.TrackerCoordinates.GetCoordinates(
                     robot_ID=robot.robot_name
                 )
-                init_coil_angle = robot.init_coil_angle
-                shifts_coil = robot.shifts_center_coil
+                shifts_coil_local = robot.shifts_center_coil
+                if robot.robot_name == "robot_1":
+                    pose_coil_atual = coords[2]
+                else:
+                    pose_coil_atual = coords[3]
+                t_atual = pose_coil_atual[:3]
+                angles_atual = pose_coil_atual[3:]
+                r_atual = Rotation.from_euler('zyx', angles_atual, degrees=True)
+                R_atual = r_atual.as_matrix() # (R_atual)
+
                 points_of_interesting = []
-                pose_coil = coords[2 + idx]
-                R = self.CalculateAngleCorrection(pose_coil[3:], init_coil_angle)
-                for shifts_coil_ in shifts_coil.values():
-                    point = robot.R_maker @ (R @ shifts_coil_ +  pose_coil[:3])
-                    points_of_interesting.append(point)
+                for shift_local in shifts_coil_local.values():
+                    point_world = (R_atual @ shift_local) + t_atual
+                    points_of_interesting.append(point_world)
                 points_of_interesting_all.append(points_of_interesting)
             distance_coils = float("inf")
             distance_coils_ = []
@@ -441,7 +405,6 @@ class Robots(metaclass=Singleton):
                         distance_coils_.append(
                             distance.euclidean(points_of_interesting_1, points_of_interesting_2)
                         )
-                        print(idx, idy, distance_coils_[:-1])
                 if distance_coils_:
                     distance_coils = min(distance_coils_)
 
@@ -584,7 +547,6 @@ class Robots(metaclass=Singleton):
     def UpdateCoilsDistance(self, coords):
         if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1:
             distance_coils = self.CalculateCoilDistance()
-            print(distance_coils)
             if distance_coils:
                 robots = self.GetAllRobots()
                 for robot_ID in robots.keys():
