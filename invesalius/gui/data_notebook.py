@@ -320,18 +320,26 @@ class MaskPage(wx.Panel):
         self.update_scroll_layout()
 
     def update_selection_state(self, category=None):
-        """Update the global selection state and notify other components"""
-        all_selected_indices = []
-        for category_info in self.categories.values():
-            listctrl = category_info["list"]
-            selected = listctrl.GetSelected()
-            all_selected_indices.extend(selected)
+        """Limit selection to a single category and notify other components."""
+        # Without a category, default to no selection broadcast
+        if not category or category not in self.categories:
+            Publisher.sendMessage("Update selected masks list", indices=[])
+            Publisher.sendMessage("Select all masks changed", select_all_active=False)
+            return
 
-        # notify slice controller about selection changes
-        Publisher.sendMessage("Update selected masks list", indices=all_selected_indices)
-
-        # notify task panel about batch mode state for "Create All Surfaces" button
-        is_batch_mode = len(all_selected_indices) > 1
+        # Clear selections in all other categories
+        for cat, info in self.categories.items():
+            if cat != category:
+                lst = info["list"]
+                if hasattr(lst, "ClearSelection"):
+                    lst.ClearSelection()
+        # Collect selection only from the given category
+        listctrl = self.categories[category]["list"]
+        selected_indices = list(listctrl.GetSelected())
+        # Notify slice controller about selection changes
+        Publisher.sendMessage("Update selected masks list", indices=selected_indices)
+        # Notify task panel about batch mode state for "Create All Surfaces"
+        is_batch_mode = len(selected_indices) > 1
         Publisher.sendMessage("Select all masks changed", select_all_active=is_batch_mode)
 
     def AddMask(self, mask):
@@ -516,12 +524,19 @@ class ButtonControlPanel(wx.Panel):
 
     def OnRemove(self):
         all_selected_indices = []
-        for category_info in self.parent.categories.values():
+        # Snapshot to avoid "dictionary changed size during iteration"
+        categories_snapshot = list(self.parent.categories.values())
+        # First pass: collect selections
+        selections = []
+        for category_info in categories_snapshot:
             listctrl = category_info["list"]
-            selected = listctrl.GetSelected()
+            selected = list(listctrl.GetSelected())
             all_selected_indices.extend(selected)
             if selected:
-                listctrl.RemoveMasks(selected)
+                selections.append((listctrl, selected))
+        # Second pass: perform removals (delete highest index first)
+        for listctrl, selected in selections:
+            listctrl.RemoveMasks(sorted(set(selected), reverse=True))
 
     def OnDuplicate(self):
         all_selected_indices = []
@@ -651,7 +666,8 @@ class MasksListCtrlPanel(InvListCtrl):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-        self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.on_mouse_right_click)
+        # TODO: fix right click dropdown menu
+        # self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.on_mouse_right_click)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_selection_changed)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_selection_changed)
 
@@ -816,6 +832,13 @@ class MasksListCtrlPanel(InvListCtrl):
             Publisher.sendMessage("Change mask name", index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
+    def ClearSelection(self):
+        """Unselect all items in this list control."""
+        count = self.GetItemCount()
+        for i in range(count):
+            # Clear the SELECTED state bit
+            self.SetItemState(i, 0, wx.LIST_STATE_SELECTED)
+
     def OnCheckItem(self, index, flag):
         global_idx = -1
         for g_id, l_id in self.mask_list_index.items():
@@ -843,7 +866,7 @@ class MasksListCtrlPanel(InvListCtrl):
         image_index = self.imagelist.Add(image)
 
         self.InsertItem(index, "")
-        self.SetItemImage(index, 1)
+        self.SetItemImage(index, 0)
         self.SetItem(index, 1, "", imageId=image_index)
         self.SetItem(index, 2, label)
         self.SetItem(index, 3, threshold)

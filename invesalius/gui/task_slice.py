@@ -600,8 +600,17 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.Delete(i)
 
     def OnRemoveMasks(self, mask_indexes):
-        for i in mask_indexes:
-            self.combo_mask_name.Delete(i)
+        self.combo_mask_name.Freeze()
+        try:
+            count = self.combo_mask_name.GetCount()
+            if len(mask_indexes) >= count:
+                self.combo_mask_name.Clear()
+            else:
+                for i in sorted(set(mask_indexes), reverse=True):
+                    if 0 <= i < self.combo_mask_name.GetCount():
+                        self.combo_mask_name.Delete(i)
+        finally:
+            self.combo_mask_name.Thaw()
 
         if self.combo_mask_name.IsEmpty():
             self.combo_mask_name.SetValue("")
