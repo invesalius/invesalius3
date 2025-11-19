@@ -289,13 +289,13 @@ WILDCARD_INV_SAVE = (
     + _("InVesalius project compressed (*.inv3)|*.inv3")
 )
 
-WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" "All files (*.*)|*.*"
+WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|All files (*.*)|*.*"
 
-WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" "All files (*.*)|*.*"
+WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|All files (*.*)|*.*"
 
-WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|" "All files (*.*)|*.*"
+WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|All files (*.*)|*.*"
 # ".[jJ][pP][gG]"
-WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" "All files (*.*)|*.*"
+WILDCARD_PARREC = "PAR/REC (*.par)|*.par|All files (*.*)|*.*"
 
 WILDCARD_MESH_FILES = (
     "STL File format (*.stl)|*.stl|"
@@ -304,7 +304,7 @@ WILDCARD_MESH_FILES = (
     "VTK Polydata File Format (*.vtp)|*.vtp|"
     "All files (*.*)|*.*"
 )
-WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|" "All files (*.*)|*.*"
+WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|All files (*.*)|*.*"
 
 
 def ShowOpenProjectDialog() -> Union[str, None]:
@@ -7702,128 +7702,185 @@ class ProgressBarHandler(wx.ProgressDialog):
 
 class CoilTargetGridParametersDialog(wx.Dialog):
     """
-    A dialog window for configuring grid targets parameters.
-    It allows the user to define the grid's resolution, X and Y sizes.
+    Configure grid target parameters.
+    - Resolution X/Y: number of points along each axis.
+    - Grid X/Y Size: half-width (distance from center to edge) for each axis.
     """
 
     def __init__(
         self,
         parent,
-        title="Grid Parameters",
+        title="Coil Target Grid Parameters",
         style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP,
+        max_resolution=50,  # maximum allowed resolution per axis
+        max_size=50.0,  # maximum allowed half-size per axis
+        min_resolution=1,
+        min_size=0.0,
+        size_increment=0.5,  # step for size spin control
     ):
-        wx.Dialog.__init__(self, parent, -1, title=title, style=style)
+        super().__init__(parent, -1, title=title, style=style)
 
-        # Initialize grid parameters with default values
-        self.resolution = 5
+        # Limits
+        self.max_resolution = int(max_resolution)
+        self.min_resolution = int(min_resolution)
+        self.max_size = float(max_size)
+        self.min_size = float(min_size)
+        self.size_increment = float(size_increment)
+
+        # Default values
+        self.resolution_x = 5
+        self.resolution_y = 5
         self.x_size = 5.0
         self.y_size = 5.0
 
-        # Build the graphical user interface
         self._init_gui()
-
-        # Set the initial values in the text fields
-        self.set_grid_parameters(self.resolution, self.x_size, self.y_size)
-
-        # Bind events to their handlers
+        self.set_grid_parameters(self.resolution_x, self.resolution_y, self.x_size, self.y_size)
         self._bind_events()
-
-        # Center the dialog on the screen or parent
         self.CenterOnParent()
 
     def _init_gui(self):
         """Creates and lays out all the GUI widgets."""
-        # --- Widgets ---
-        # Create the text controls for each parameter
-        self.txt_resolution = wx.TextCtrl(self, -1)
-        self.txt_x_size = wx.TextCtrl(self, -1)
-        self.txt_y_size = wx.TextCtrl(self, -1)
+        # Description text
+        desc = wx.StaticText(
+            self,
+            -1,
+            "Resolution: number of points along X and Y.\n"
+            "Grid Size: half-width (distance from center to edge) for X and Y.",
+        )
 
-        # Create the standard OK and Cancel buttons
+        # Integer spin controls for resolution
+        self.spin_resolution_x = wx.SpinCtrl(
+            self, -1, min=self.min_resolution, max=self.max_resolution, initial=self.resolution_x
+        )
+        self.spin_resolution_y = wx.SpinCtrl(
+            self, -1, min=self.min_resolution, max=self.max_resolution, initial=self.resolution_y
+        )
+        self.spin_resolution_x.SetToolTip(
+            f"Number of points along X ({self.min_resolution}–{self.max_resolution})"
+        )
+        self.spin_resolution_y.SetToolTip(
+            f"Number of points along Y ({self.min_resolution}–{self.max_resolution})"
+        )
+
+        # Double spin controls for size
+        self.spin_x_size = wx.SpinCtrlDouble(
+            self,
+            -1,
+            min=self.min_size,
+            max=self.max_size,
+            inc=self.size_increment,
+            initial=self.x_size,
+        )
+        self.spin_y_size = wx.SpinCtrlDouble(
+            self,
+            -1,
+            min=self.min_size,
+            max=self.max_size,
+            inc=self.size_increment,
+            initial=self.y_size,
+        )
+        self.spin_x_size.SetDigits(2)
+        self.spin_y_size.SetDigits(2)
+        self.spin_x_size.SetToolTip(f"Half-width along X ({self.min_size}–{self.max_size})")
+        self.spin_y_size.SetToolTip(f"Half-width along Y ({self.min_size}–{self.max_size})")
+
+        # Buttons
         self.button_ok = wx.Button(self, wx.ID_OK)
         self.button_cancel = wx.Button(self, wx.ID_CANCEL)
-        self.button_ok.SetDefault()  # Make the OK button the default
+        self.button_ok.SetDefault()
 
-        # --- Sizers ---
-        # Sizer for the buttons
+        # Layout
         button_sizer = wx.StdDialogButtonSizer()
         button_sizer.AddButton(self.button_ok)
         button_sizer.AddButton(self.button_cancel)
         button_sizer.Realize()
 
-        # Flexible grid sizer for the parameters
-        # 4 rows, 2 columns, with 5px spacing between elements
-        sizer_params = wx.FlexGridSizer(4, 2, 5, 5)
-        sizer_params.AddGrowableCol(1, 1)  # Allow the second column (text controls) to grow
-        sizer_params.AddMany(
+        grid = wx.FlexGridSizer(4, 2, 5, 5)
+        grid.AddGrowableCol(1, 1)
+        grid.AddMany(
             [
-                (wx.StaticText(self, -1, "Resolution:"), 0, wx.ALIGN_CENTER_VERTICAL),
-                (self.txt_resolution, 1, wx.EXPAND),
+                (wx.StaticText(self, -1, "Resolution X:"), 0, wx.ALIGN_CENTER_VERTICAL),
+                (self.spin_resolution_x, 1, wx.EXPAND),
+                (wx.StaticText(self, -1, "Resolution Y:"), 0, wx.ALIGN_CENTER_VERTICAL),
+                (self.spin_resolution_y, 1, wx.EXPAND),
                 (wx.StaticText(self, -1, "Grid X Size:"), 0, wx.ALIGN_CENTER_VERTICAL),
-                (self.txt_x_size, 1, wx.EXPAND),
+                (self.spin_x_size, 1, wx.EXPAND),
                 (wx.StaticText(self, -1, "Grid Y Size:"), 0, wx.ALIGN_CENTER_VERTICAL),
-                (self.txt_y_size, 1, wx.EXPAND),
+                (self.spin_y_size, 1, wx.EXPAND),
             ]
         )
 
-        # StaticBoxSizer to visually group the parameters
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(sizer_params, 1, wx.EXPAND | wx.ALL, 10)
-        main_sizer.Add(button_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        main = wx.BoxSizer(wx.VERTICAL)
+        main.Add(desc, 0, wx.EXPAND | wx.ALL, 10)
+        main.Add(grid, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        main.Add(button_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        self.SetSizer(main_sizer)
-        main_sizer.Fit(self)
+        self.SetSizer(main)
+        main.Fit(self)
         self.Layout()
 
     def _bind_events(self):
-        """Binds the button click events."""
         self.button_ok.Bind(wx.EVT_BUTTON, self.OnOk)
         self.button_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
 
-    def set_grid_parameters(self, resolution, x_size, y_size):
-        """Updates the internal values and the text controls in the GUI."""
-        self.resolution = resolution
+    def set_grid_parameters(self, resolution_x, resolution_y, x_size, y_size):
+        """Update internal values and GUI controls."""
+        # Clamp to limits
+        resolution_x = max(self.min_resolution, min(self.max_resolution, int(resolution_x)))
+        resolution_y = max(self.min_resolution, min(self.max_resolution, int(resolution_y)))
+        x_size = max(self.min_size, min(self.max_size, float(x_size)))
+        y_size = max(self.min_size, min(self.max_size, float(y_size)))
+
+        self.resolution_x = resolution_x
+        self.resolution_y = resolution_y
         self.x_size = x_size
         self.y_size = y_size
 
-        self.txt_resolution.SetValue(str(resolution))
-        self.txt_x_size.SetValue(str(x_size))
-        self.txt_y_size.SetValue(str(y_size))
+        self.spin_resolution_x.SetValue(self.resolution_x)
+        self.spin_resolution_y.SetValue(self.resolution_y)
+        self.spin_x_size.SetValue(self.x_size)
+        self.spin_y_size.SetValue(self.y_size)
 
     def get_grid_parameters(self):
-        """
-        Returns the current grid parameters in a dictionary.
-        This method should be called after the dialog is closed with 'OK'.
-        """
+        """Return current grid parameters."""
         return {
-            "resolution": self.resolution,
+            "resolution_x": self.resolution_x,
+            "resolution_y": self.resolution_y,
             "x_size": self.x_size,
             "y_size": self.y_size,
         }
 
     def OnOk(self, event):
-        """
-        Called when OK is clicked. Validates the data and, if correct, closes the dialog.
-        """
-        try:
-            # Try to convert each text field to a float
-            self.resolution = int(self.txt_resolution.GetValue())
-            self.x_size = float(self.txt_x_size.GetValue())
-            self.y_size = float(self.txt_y_size.GetValue())
+        """Validate and close with OK."""
+        # Read from spin controls; they already enforce bounds
+        rx = int(self.spin_resolution_x.GetValue())
+        ry = int(self.spin_resolution_y.GetValue())
+        sx = float(self.spin_x_size.GetValue())
+        sy = float(self.spin_y_size.GetValue())
 
-            # If all values are valid, end the modal dialog with ID_OK
-            self.EndModal(wx.ID_OK)
-
-        except ValueError:
-            # If the conversion fails, display an error message
-            wx.MessageBox(
-                "Please enter valid numeric values in all fields.",
-                "Input Error",
-                wx.OK | wx.ICON_ERROR,
+        # Extra validation (just in case)
+        errs = []
+        if not (self.min_resolution <= rx <= self.max_resolution):
+            errs.append(
+                f"Resolution X must be between {self.min_resolution} and {self.max_resolution}."
             )
-            # The dialog is not closed, allowing the user to correct the values
+        if not (self.min_resolution <= ry <= self.max_resolution):
+            errs.append(
+                f"Resolution Y must be between {self.min_resolution} and {self.max_resolution}."
+            )
+        if not (self.min_size <= sx <= self.max_size):
+            errs.append(f"Grid X Size must be between {self.min_size} and {self.max_size}.")
+        if not (self.min_size <= sy <= self.max_size):
+            errs.append(f"Grid Y Size must be between {self.min_size} and {self.max_size}.")
+
+        if errs:
+            wx.MessageBox("\n".join(errs), "Input Error", wx.OK | wx.ICON_ERROR)
+            return
+
+        self.set_grid_parameters(rx, ry, sx, sy)
+        self.EndModal(wx.ID_OK)
 
     def OnCancel(self, event):
-        """Called when Cancel is clicked. Closes the dialog."""
+        """Close with Cancel."""
         self.EndModal(wx.ID_CANCEL)
         self.Destroy()

@@ -3155,7 +3155,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 # 'Create a grid of targets around the coil target' menu item.
             menu_id.AppendSeparator()
             create_grid_coil_target_menu_item = menu_id.Append(
-                unique_menu_id + 6, _("Create target coil grid")
+                unique_menu_id + 6, _("Create grid of coil targets")
             )
             menu_id.Bind(
                 wx.EVT_MENU,
@@ -3449,54 +3449,87 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             return
         self.markers.CreateCoilTargetFromLandmark(marker, label)
 
-    def CreateGrid(self, resolution, spacer_x, spacer_y):
-        minX, maxX, minY, maxY = -spacer_x, spacer_x, -spacer_y, spacer_y
-        # create one-dimensional arrays for x and y
-        x = np.linspace(minX, maxX, resolution)
-        y = np.linspace(minY, maxY, resolution)
+    def generate_coil_target_grid(
+        self, resolution_x: int, resolution_y: int, half_width_x: float, half_width_y: float
+    ):
+        """
+        Generate a grid of coordinates centered at (0, 0).
+
+        Parameters:
+            resolution_x: number of points along X
+            resolution_y: number of points along Y
+            half_width_x: half-width along X (grid spans [-half_width_x, +half_width_x])
+            half_width_y: half-width along Y (grid spans [-half_width_y, +half_width_y])
+
+        Returns:
+            X, Y: 2D arrays from np.meshgrid(x, y), suitable for iterating over grid points.
+        """
+        min_x, max_x = -half_width_x, half_width_x
+        min_y, max_y = -half_width_y, half_width_y
+
+        x = np.linspace(min_x, max_x, resolution_x)
+        y = np.linspace(min_y, max_y, resolution_y)
 
         return np.meshgrid(x, y)
 
     def OnCreateGridCoilTargetFromCoilTarget(self, evt):
-        grid_parameter_dlg = dlg.CoilTargetGridParametersDialog(self)
+        grid_dialog = dlg.CoilTargetGridParametersDialog(self)
 
-        if grid_parameter_dlg.ShowModal() == wx.ID_OK:
-            grid_resol = int(grid_parameter_dlg.resolution)
-            x_size = float(grid_parameter_dlg.x_size)
-            y_size = float(grid_parameter_dlg.y_size)
+        if grid_dialog.ShowModal() == wx.ID_OK:
+            resolution_x = int(grid_dialog.resolution_x)
+            resolution_y = int(grid_dialog.resolution_y)
+            half_width_x = float(grid_dialog.x_size)
+            half_width_y = float(grid_dialog.y_size)
 
-            grid_parameter_dlg.Destroy()
+            grid_dialog.Destroy()
 
-            list_index = self.marker_list_ctrl.GetFocusedItem()
-            if list_index == -1:
+            selected_index = self.marker_list_ctrl.GetFocusedItem()
+            if selected_index == -1:
                 wx.MessageBox(_("No data selected."), _("InVesalius 3"))
                 return
-            center_marker = self.__get_marker(list_index)
-
-            proj = prj.Project()
-            if not proj.surface_dict:
+            reference_marker = self.__get_marker(selected_index)
+            project = prj.Project()
+            if not project.surface_dict:
                 wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
                 return
 
-            X, Y = self.CreateGrid(grid_resol, x_size, y_size)
+            X, Y = self.generate_coil_target_grid(
+                resolution_x, resolution_y, half_width_x, half_width_y
+            )
 
-            for i in range(grid_resol):
-                for j in range(grid_resol):
-                    m_offset_target = dco.coordinates_to_transformation_matrix(
+            total_steps = resolution_x * resolution_y
+            dlg.ProgressBarHandler(
+                self, "Generating Grid Coil Targets", "Please wait...", max_value=100
+            )
+            k = 0
+            for i in range(resolution_y):
+                for j in range(resolution_x):
+                    k += 1
+                    percent = int((k * 100) / total_steps)
+                    if percent > 100:
+                        percent = 100
+                    Publisher.sendMessage(
+                        "Update Progress bar", value=percent, msg="Please wait..."
+                    )
+                    offset_transform = dco.coordinates_to_transformation_matrix(
                         position=[X[i][j], Y[i][j], 0],
-                        orientation=center_marker.orientation,
+                        orientation=reference_marker.orientation,
                         axes="sxyz",
                     )
-                    m_origin_coil = dco.coordinates_to_transformation_matrix(
-                        position=center_marker.position,
+                    origin_transform = dco.coordinates_to_transformation_matrix(
+                        position=reference_marker.position,
                         orientation=[0, 0, 0],
                         axes="sxyz",
                     )
-                    m_target = m_origin_coil @ m_offset_target
-
-                    new_marker = center_marker.duplicate()
-                    new_marker.position = [m_target[0][-1], m_target[1][-1], m_target[2][-1]]
+                    final_transform = origin_transform @ offset_transform
+                    new_marker = reference_marker.duplicate()
+                    new_marker.position = [
+                        final_transform[0][-1],
+                        final_transform[1][-1],
+                        final_transform[2][-1],
+                    ]
                     self.markers.CreateCoilTargetFromLandmark(new_marker)
+            Publisher.sendMessage("Close Progress bar")
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
         self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
