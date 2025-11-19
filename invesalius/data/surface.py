@@ -157,6 +157,10 @@ class Surface:
             self.area = sp["area"]
         except KeyError:
             self.area = 0.0
+        try:
+            self.category = sp["category"]
+        except KeyError:
+            self.category = "General"
         self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
         Surface.general_index = max(Surface.general_index, self.index)
 

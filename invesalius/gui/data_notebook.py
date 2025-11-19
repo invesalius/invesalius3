@@ -1224,8 +1224,7 @@ class SurfacePage(wx.Panel):
                 show = (key == index) and visibility
                 local_idx = listctrl.surface_list_index[key]
                 listctrl.SetItemImage(local_idx, int(show))
-                if listctrl.GetItemImage(local_idx) != int(show):
-                    Publisher.sendMessage("Show surface", index=key, visibility=show)
+                Publisher.sendMessage("Show surface", index=key, visibility=show)
 
     def OnShowMultiple(self, index_list, visibility):
         for category_info in self.categories.values():
