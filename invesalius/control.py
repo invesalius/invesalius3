@@ -340,7 +340,7 @@ class Controller:
                     self.ShowDialogSaveProject()
             if session.IsOpen():
                 self.CloseProject()
-            self.OpenProject(filepath)
+            wx.CallAfter(self.OpenProject, filepath)
         else:
             dialog.InexistentPath(filepath)
 
