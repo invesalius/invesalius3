@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from functools import partial
 
@@ -1067,9 +1068,9 @@ class ObjectTab(wx.Panel):
     def OnRobotConnectionStatus(self, data):
         if data is None:
             return
+        if data == "Connected":
+            self.choice_robot_coil.Show(True)
 
-        self.choice_robot_coil.Show(data)
-        if data:
             self.robot_lbl.SetLabel("Robot is connected. Coil attached to robot: ")
         else:
             self.robot_lbl.SetLabel("Robot is not connected.")
@@ -1500,6 +1501,8 @@ class TrackerTab(wx.Panel):
     def __init__(self, parent, tracker, robot):
         wx.Panel.__init__(self, parent)
 
+        self.session = ses.Session()
+
         self.__bind_events()
 
         self.tracker = tracker
@@ -1582,73 +1585,191 @@ class TrackerTab(wx.Panel):
         sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
         sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
-        lbl_rob = wx.StaticText(self, -1, _("Select IP for robot device: "))
+        lbl_rob = wx.StaticText(self, -1, _("IP for robot device: "))
 
         # ComboBox for spatial tracker device selection
         tooltip = _("Choose or type the robot IP")
-        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_IPS
+        robot_ip_options = self.robot.robot_ip_options
         choice_IP = wx.ComboBox(
             self, -1, "", choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER
         )
         choice_IP.SetToolTip(tooltip)
-        if self.robot.robot_ip is not None:
+
+        if self.robot.robot_ip in self.robot.robot_ip_options:
             choice_IP.SetSelection(robot_ip_options.index(self.robot.robot_ip))
-        else:
+            self.robot_ip = choice_IP.GetValue()
+
+        elif self.robot.robot_ip is not None:
+            choice_IP.SetValue(self.robot.robot_ip)
+            self.robot_ip = choice_IP.GetValue()
+
+        elif choice_IP.IsTextEmpty() and choice_IP.IsListEmpty():
+            choice_IP.ChangeValue(_("Select or type robot IP"))
+
+        elif choice_IP.IsTextEmpty():
             choice_IP.SetSelection(0)
+            self.robot_ip = choice_IP.GetValue()
+
         choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
         choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
         self.choice_IP = choice_IP
 
+        # ADD ip Robot
+        btn_rob_add_ip = wx.BitmapButton(self, -1, wx.ArtProvider.GetBitmap(wx.ART_PLUS))
+        btn_rob_add_ip.SetToolTip("Add a new IP to the list")
+        btn_rob_add_ip.Enable(1)
+        btn_rob_add_ip.Bind(wx.EVT_BUTTON, self.OnAddIP)
+        self.btn_rob_add_ip = btn_rob_add_ip
+
+        # Remove ip Robot
+        btn_rob_rem_ip = wx.BitmapButton(self, -1, wx.ArtProvider.GetBitmap(wx.ART_MINUS))
+        btn_rob_rem_ip.SetToolTip("Remove the selected IP from the list")
+        btn_rob_rem_ip.Enable(1)
+        btn_rob_rem_ip.Bind(wx.EVT_BUTTON, self.OnRemoveIP)
+        self.btn_rob_rem_ip = btn_rob_rem_ip
+
+        # Connect Robot button
         btn_rob = wx.Button(self, -1, _("Connect"))
-        btn_rob.SetToolTip("Connect to IP")
+        btn_rob.SetToolTip("Connect to the selected IP")
         btn_rob.Enable(1)
         btn_rob.Bind(wx.EVT_BUTTON, self.OnRobotConnect)
         self.btn_rob = btn_rob
 
         status_text = wx.StaticText(self, -1, "Status")
-        if self.robot.IsConnected():
-            status_text.SetLabelText("Robot is connected!")
-            if self.robot.matrix_tracker_to_robot is not None:
-                status_text.SetLabelText("Robot is fully setup!")
-        else:
-            status_text.SetLabelText("Robot is not connected!")
         self.status_text = status_text
 
         btn_rob_con = wx.Button(self, -1, _("Register"))
         btn_rob_con.SetToolTip("Register robot tracking")
         btn_rob_con.Enable(1)
         btn_rob_con.Bind(wx.EVT_BUTTON, self.OnRobotRegister)
+
         if self.robot.IsConnected():
+            self.status_text.SetLabelText(_("Robot is connected!"))
+
             if self.matrix_tracker_to_robot is None:
                 btn_rob_con.Show()
             else:
                 btn_rob_con.SetLabel("Register Again")
                 btn_rob_con.Show()
+
         else:
+            self.status_text.SetLabelText(_("Robot is not connected!"))
             btn_rob_con.Hide()
+
         self.btn_rob_con = btn_rob_con
 
-        rob_sizer = wx.FlexGridSizer(rows=2, cols=3, hgap=5, vgap=5)
-        rob_sizer.AddMany(
+        rob_ip_sizer = wx.FlexGridSizer(rows=1, cols=5, hgap=3, vgap=3)
+        rob_ip_sizer.AddGrowableCol(3, 1)
+        rob_ip_sizer.AddMany(
             [
-                (lbl_rob, 0, wx.LEFT),
-                (choice_IP, 1, wx.EXPAND),
-                (btn_rob, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
-                (status_text, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
-                (0, 0),
-                (btn_rob_con, 0, wx.LEFT | wx.ALIGN_CENTER_HORIZONTAL, 15),
+                (lbl_rob, 0, wx.ALIGN_CENTER_VERTICAL),
+                (btn_rob_add_ip, 0, wx.ALIGN_CENTER_VERTICAL),
+                (btn_rob_rem_ip, 0, wx.ALIGN_CENTER_VERTICAL),
+                (choice_IP, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND),
+                (btn_rob, 0, wx.ALIGN_CENTER_VERTICAL),
             ]
         )
 
+        rob_status_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        rob_status_sizer.Add(status_text, 1, wx.LEFT | wx.ALIGN_CENTER_VERTICAL)
+        rob_status_sizer.AddStretchSpacer(1)
+        rob_status_sizer.Add(btn_rob_con, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL)
+
+        # --- Pressure force setpoint (slider) ---
+        # Config and scaling (slider is integer)
+        # Recommended value
+        self.pressure_recommended = 5.0
+        self.pressure_match_tol = 0.1  # within 0.1 N counts as "at recommended"
+
+        self.pressure_min = 0.0
+        self.pressure_max = 20.0
+        self.pressure_step = 1
+        self.pressure_scale = int(1 / self.pressure_step)  # 10 for 0.1 resolution
+
+        self.pressure_setpoint = self.session.GetConfig(
+            "pressure_setpoint", self.pressure_recommended
+        )
+        # Clamp to range in case config has out-of-range value
+        self.pressure_setpoint = max(
+            self.pressure_min, min(self.pressure_max, float(self.pressure_setpoint))
+        )
+
+        self.pressure_lbl = wx.StaticText(self, -1, _("Pressure setpoint (N):"))
+        self.pressure_val_lbl = wx.StaticText(self, -1, f"{self.pressure_setpoint:.1f} N")
+
+        # Color logic: turn red above threshold
+        self.pressure_warn_threshold = 10.0
+        self._pressure_lbl_default_fg = self.pressure_lbl.GetForegroundColour()
+        self._pressure_val_default_fg = self.pressure_val_lbl.GetForegroundColour()
+
+        # Recommended hint label (small/italic)
+        self.pressure_rec_lbl = wx.StaticText(
+            self, -1, _("Recommended: {value} N").format(value=f"{self.pressure_recommended:.1f}")
+        )
+        try:
+            f = self.pressure_rec_lbl.GetFont()
+            f.MakeSmaller()
+            f.MakeItalic()
+            self.pressure_rec_lbl.SetFont(f)
+        except Exception:
+            pass
+        self.pressure_rec_lbl.SetForegroundColour(wx.Colour(90, 90, 90))  # subtle grey
+
+        # Apply initial color based on loaded value
+        self._apply_pressure_color(self.pressure_setpoint)
+
+        self.pressure_slider = wx.Slider(
+            self,
+            -1,
+            value=int(self.pressure_setpoint * self.pressure_scale),
+            minValue=int(self.pressure_min * self.pressure_scale),
+            maxValue=int(self.pressure_max * self.pressure_scale),
+            style=wx.SL_HORIZONTAL | wx.SL_AUTOTICKS,
+            size=wx.Size(-1, 23),
+        )
+        self.pressure_slider.SetToolTip(_("Set the desired pressure/force setpoint"))
+        # Tick frequency every 1.0 N
+        try:
+            self.pressure_slider.SetTickFreq(self.pressure_scale, 1)
+        except Exception:
+            pass
+
+        self.pressure_slider.Bind(wx.EVT_SLIDER, self.OnPressureSlider)
+
+        # quick-set button
+        self.btn_set_rec = wx.Button(self, -1, _("Set 5 N"), size=wx.Size(70, 23))
+        self.btn_set_rec.SetToolTip(_("Set pressure to the recommended 5.0 N"))
+        self.btn_set_rec.Bind(wx.EVT_BUTTON, self.OnSetRecommendedPressure)
+
+        # Row with label, slider, numeric value
+        pressure_row = wx.BoxSizer(wx.HORIZONTAL)
+        pressure_row.Add(self.pressure_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        pressure_row.Add(self.pressure_slider, 1, wx.EXPAND | wx.RIGHT, 8)
+        pressure_row.Add(self.pressure_val_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        pressure_row.Add(self.btn_set_rec, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        # Hint below
+        pressure_hint_row = wx.BoxSizer(wx.HORIZONTAL)
+        pressure_hint_row.Add((self.pressure_lbl.GetSize().Width, -1), 0)  # indent under label
+        pressure_hint_row.Add(self.pressure_rec_lbl, 0, wx.TOP, 2)
+
+        pressure_sizer = wx.BoxSizer(wx.VERTICAL)
+        pressure_sizer.Add(pressure_row, 0, wx.EXPAND)
+        pressure_sizer.Add(pressure_hint_row, 0, wx.TOP, 4)
+
         rob_static_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup robot"))
-        rob_static_sizer.Add(rob_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
+        rob_static_sizer.Add(rob_ip_sizer, 0, wx.ALL | wx.EXPAND, 7)
+        rob_static_sizer.Add(rob_status_sizer, 0, wx.ALL | wx.EXPAND, 7)
+        rob_static_sizer.Add(pressure_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
-            [(sizer, 0, wx.ALL | wx.EXPAND, 10), (rob_static_sizer, 0, wx.ALL | wx.EXPAND, 10)]
+            [(sizer, 0, wx.ALL | wx.EXPAND, 7), (rob_static_sizer, 0, wx.ALL | wx.EXPAND, 7)]
         )
         self.SetSizerAndFit(main_sizer)
         self.Layout()
+
+        Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
@@ -1721,20 +1842,97 @@ class TrackerTab(wx.Panel):
     def ShowParent(self):  # show preferences dialog box
         self.GetGrandParent().Show()
 
+    def verifyFormatIP(self, robot_ip):
+        robot_ip_strip = robot_ip.strip()
+        full_ip_pattern = re.compile(
+            r"^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
+            r"\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
+            r"\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)"
+            r"\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)$"
+        )
+
+        if full_ip_pattern.match(robot_ip_strip):
+            return True
+        else:
+            self.status_text.SetLabelText(_("Robot is not connected and invalid IP!"))
+            return False
+
     def OnTxt_Ent(self, evt, ctrl):
-        self.robot_ip = str(ctrl.GetValue())
+        robot_ip_input = ctrl.GetValue()
+        robot_ip_input = re.sub(r"[^0-9.]", "", robot_ip_input)
+        ctrl.ChangeValue(robot_ip_input)
+
+        msg_box = _("Select or type robot IP:")
+
+        if robot_ip_input == "":
+            ctrl.ChangeValue(msg_box)
+        else:
+            self.btn_rob_con.Hide()
+            self.robot_ip = robot_ip_input
+            if self.verifyFormatIP(self.robot_ip):
+                self.status_text.SetLabelText(_("Robot is not connected!"))
 
     def OnChoiceIP(self, evt, ctrl):
         self.robot_ip = ctrl.GetStringSelection()
 
-    def OnRobotConnect(self, evt):
+    def OnAddIP(self, evt):
         if self.robot_ip is not None:
-            self.status_text.SetLabelText("Trying to connect to robot...")
+            new_ip = self.choice_IP.GetValue()
+
+            if new_ip is not None and self.verifyFormatIP(new_ip):
+                if new_ip not in self.robot.robot_ip_options:
+                    self.choice_IP.Append(new_ip)
+                    self.robot.robot_ip_options.append(new_ip)
+                    self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+                else:
+                    self.choice_IP.SetSelection(self.robot.robot_ip_options.index(new_ip))
+            else:
+                self.status_text.SetLabelText(_("Please select or enter valid IP!"))
+
+    def OnRemoveIP(self, evt):
+        if self.robot_ip is not None:
+            current_ip = self.choice_IP.GetValue()
+
+            confirm_dlg = wx.MessageDialog(
+                self,
+                _(f"Do you really want to remove the IP '{current_ip}' from the list?"),
+                _("Confirmation"),
+                wx.YES_NO | wx.ICON_QUESTION,
+            )
+
+            if confirm_dlg.ShowModal() == wx.ID_YES:
+                try:
+                    index = self.choice_IP.FindString(current_ip)
+                    self.choice_IP.Delete(index)
+
+                    self.robot.robot_ip_options.remove(current_ip)
+                    self.robot.SaveConfig("robot_ip_options", self.robot.robot_ip_options)
+
+                    if self.choice_IP.GetCount() > 0:
+                        self.choice_IP.SetSelection(0)
+                    else:
+                        self.choice_IP.SetValue("")
+
+                except Exception as e:
+                    wx.MessageBox(
+                        _(f"An error occurred while removing the IP:\n{e}"),
+                        "Erro",
+                        wx.OK | wx.ICON_ERROR,
+                    )
+
+            confirm_dlg.Destroy()
+
+    def OnRobotConnect(self, evt):
+        if self.robot_ip is not None and self.verifyFormatIP(self.robot_ip):
+            self.robot.is_robot_connected = False
+            self.status_text.SetLabelText(_("Trying to connect to robot..."))
             self.btn_rob_con.Hide()
             self.robot.SetRobotIP(self.robot_ip)
             Publisher.sendMessage(
                 "Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip
             )
+        else:
+            self.status_text.SetLabelText(_("Please select or enter valid IP before connecting!"))
 
     def OnRobotRegister(self, evt):
         if sys.platform == "darwin":
@@ -1748,9 +1946,24 @@ class TrackerTab(wx.Panel):
             self.ShowParent()
 
     def OnRobotStatus(self, data):
-        if data:
-            self.status_text.SetLabelText("Setup robot transformation matrix:")
+        if data == "Connected":
+            self.robot.is_robot_connected = True
+            self.status_text.SetLabelText(_("Setup robot transformation matrix:"))
             self.btn_rob_con.Show()
+            self.Layout()
+
+            if (
+                self.robot.robot_ip not in self.robot.robot_ip_options
+                and self.robot.robot_ip is not None
+            ):
+                self.robot.robot_ip_options.append(self.robot.robot_ip)
+        else:
+            if self.robot.robot_ip is not None:
+                self.status_text.SetLabelText(_(f"{data} to robot on {self.robot.robot_ip}"))
+                self.btn_rob_con.Hide()
+            else:
+                self.status_text.SetLabelText(_(f"{data} to robot"))
+                self.btn_rob_con.Hide()
 
     def OnSetRobotTransformationMatrix(self, data):
         if self.robot.matrix_tracker_to_robot is not None:
@@ -1759,6 +1972,82 @@ class TrackerTab(wx.Panel):
             self.btn_rob_con.Show()
             self.btn_rob_con.Layout()
             self.Parent.Update()
+
+    def OnPressureSlider(self, evt):
+        # Convert integer slider value back to float with desired resolution
+        val_i = self.pressure_slider.GetValue()
+        value = val_i / self.pressure_scale
+
+        # Update label
+        self.pressure_val_lbl.SetLabel(f"{value:.1f} N")
+        # Update color based on threshold
+        self._apply_pressure_color(value)
+        self.pressure_setpoint = value
+
+        # Persist in session
+        try:
+            self.session.SetConfig("pressure_setpoint", value)
+        except Exception:
+            pass
+
+        try:
+            if hasattr(self.robot, "SetPressureSetpoint"):
+                self.robot.SetPressureSetpoint(value)
+        except Exception as e:
+            pass
+
+    def OnSetRecommendedPressure(self, event):
+        # Set slider to recommended value
+        val_i = int(round(self.pressure_recommended * self.pressure_scale))
+        self.pressure_slider.SetValue(val_i)
+
+        # Trigger same updates as moving the slider
+        value = val_i / self.pressure_scale
+        self.pressure_val_lbl.SetLabel(f"{value:.1f} N")
+        self._apply_pressure_color(value)
+        self.pressure_setpoint = value
+        try:
+            self.session.SetConfig("pressure_setpoint", value)
+        except Exception:
+            pass
+        try:
+            if hasattr(self.robot, "SetPressureSetpoint"):
+                self.robot.SetPressureSetpoint(value)
+        except Exception as e:
+            pass
+
+    def _apply_pressure_color(self, value: float):
+        # Red above threshold
+        if value > self.pressure_warn_threshold:
+            warn_color = wx.RED
+            self.pressure_lbl.SetForegroundColour(warn_color)
+            self.pressure_val_lbl.SetForegroundColour(warn_color)
+        else:
+            # Default
+            self.pressure_lbl.SetForegroundColour(self._pressure_lbl_default_fg)
+            self.pressure_val_lbl.SetForegroundColour(self._pressure_val_default_fg)
+
+        # Recommended hint styling: green if near 5.0 N, grey otherwise
+        if abs(value - self.pressure_recommended) <= self.pressure_match_tol:
+            self.pressure_rec_lbl.SetForegroundColour(wx.Colour(0, 140, 0))  # green
+            try:
+                f = self.pressure_rec_lbl.GetFont()
+                f.SetWeight(wx.FONTWEIGHT_BOLD)
+                self.pressure_rec_lbl.SetFont(f)
+            except Exception:
+                pass
+        else:
+            self.pressure_rec_lbl.SetForegroundColour(wx.Colour(90, 90, 90))
+            try:
+                f = self.pressure_rec_lbl.GetFont()
+                f.SetWeight(wx.FONTWEIGHT_NORMAL)
+                self.pressure_rec_lbl.SetFont(f)
+            except Exception:
+                pass
+
+        self.pressure_lbl.Refresh()
+        self.pressure_val_lbl.Refresh()
+        self.pressure_rec_lbl.Refresh()
 
 
 class LanguageTab(wx.Panel):

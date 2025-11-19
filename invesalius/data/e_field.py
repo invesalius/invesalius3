@@ -5,8 +5,11 @@ import time
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkIdList
 
+import invesalius.data.imagedata_utils as imagedata_utils
+import invesalius.data.transformations as tr
 
-def Get_coil_position(m_img):
+
+def Get_coil_position(coords):
     # coil position cp : the center point at the bottom of the coil casing,
     # corresponds to the origin of the coil template.
     # coil normal cn: outer normal of the coil, i.e. away from the head
@@ -15,18 +18,23 @@ def Get_coil_position(m_img):
     # % rotation matrix for the coil coordinates
     # T = [ct1;ct2;cn];
 
+    position, orientation = imagedata_utils.convert_invesalius_to_world(
+        position=[coords[0], coords[1], coords[2]],
+        orientation=[coords[3], coords[4], coords[5]],
+    )
+    m_img = tr.compose_matrix(angles=np.radians(orientation), translate=position)
     m_img_flip = m_img.copy()
-    m_img_flip[1, -1] = -m_img_flip[1, -1]
+    # m_img_flip[1, -1] = -m_img_flip[1, -1]
     cp = m_img_flip[:-1, -1]  # coil center
     cp = cp * 0.001  # convert to meters
     cp = cp.tolist()
 
-    ct1 = m_img_flip[:3, 1]  # is from posterior to anterior direction of the coil
-    ct2 = m_img_flip[:3, 0]  # is from left to right direction of the coil
+    ct1 = m_img_flip[:3, 1]  # is from left to right direction of the coil
+    ct2 = m_img_flip[:3, 0]  # is from posterior to anterior direction of the coil
     coil_dir = m_img_flip[:-1, 0]
     coil_face = m_img_flip[:-1, 1]
     cn = np.cross(coil_dir, coil_face)
-    T_rot = np.append(ct1, ct2, axis=0)
+    T_rot = np.append(-ct1, ct2, axis=0)
     T_rot = np.append(T_rot, cn, axis=0)  # append
     T_rot = T_rot.tolist()  # to list
 
@@ -75,7 +83,7 @@ class Visualize_E_field_Thread(threading.Thread):
 
                     if self.ID_list.GetNumberOfIds() != 0:
                         if np.all(self.coord_old != coord):
-                            [T_rot, cp] = Get_coil_position(m_img)
+                            [T_rot, cp] = Get_coil_position(coord)
                             if self.debug:
                                 enorm = self.enorm_debug
                             else:

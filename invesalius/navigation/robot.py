@@ -49,6 +49,7 @@ class Robot(metaclass=Singleton):
 
         self.is_robot_connected = False
         self.robot_ip = None
+        self.robot_ip_options = []
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
         self.target = None
@@ -88,6 +89,7 @@ class Robot(metaclass=Singleton):
             # Save the whole state
             state = {
                 "robot_ip": self.robot_ip,
+                "robot_ip_options": self.robot_ip_options,
                 "tracker_to_robot": self.matrix_tracker_to_robot.tolist(),
             }
             if self.coil_name is not None:
@@ -105,6 +107,7 @@ class Robot(metaclass=Singleton):
         self.coil_name = state.get("robot_coil", None)
 
         self.robot_ip = state.get("robot_ip", None)
+        self.robot_ip_options = state.get("robot_ip_options", [])
 
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
         if self.matrix_tracker_to_robot is not None:
@@ -117,11 +120,14 @@ class Robot(metaclass=Singleton):
         # TODO: Is this check necessary?
         if not data:
             return
+        if data == "Connected":
+            self.is_robot_connected = True
 
-        self.is_robot_connected = data
         if self.is_robot_connected:
             Publisher.sendMessage("Enable move away button", enabled=True)
             Publisher.sendMessage("Enable free drive button", enabled=True)
+        else:
+            self.is_robot_connected = False
 
     def RegisterRobot(self):
         Publisher.sendMessage("End busy cursor")
@@ -164,6 +170,10 @@ class Robot(metaclass=Singleton):
 
     def ConnectToRobot(self):
         Publisher.sendMessage("Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip)
+        pressure_setpoint = ses.Session().GetConfig("pressure_setpoint", 5.0)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Pressure set point", pressure=pressure_setpoint
+        )
         print("Connected to robot")
 
     def InitializeRobot(self):
@@ -257,3 +267,6 @@ class Robot(metaclass=Singleton):
 
         self.target = coord
         self.SendTargetToRobot()
+
+    def SetPressureSetpoint(self, pressure):
+        Publisher.sendMessage("Neuronavigation to Robot: Pressure set point", pressure=pressure)

@@ -40,6 +40,7 @@ class CoilVisualizer:
 
         # The actor for showing the target coil in the volume viewer.
         self.target_coil_actor = None
+        self.last_target_coil_visibility = True
 
         # The assembly for showing the vector field relative to the coil in the volume viewer.
         self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
@@ -138,8 +139,8 @@ class CoilVisualizer:
                 Publisher.sendMessage("Press show-coil button", pressed=True)
 
         if self.target_coil_actor is not None:
+            self.last_target_coil_visibility = state
             self.target_coil_actor.SetVisibility(state)
-        self.vector_field_assembly.SetVisibility(state)  # LUKATODO: Keep this hidden for now
 
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
@@ -189,7 +190,7 @@ class CoilVisualizer:
         self.target_coil_actor.GetProperty().SetSpecular(0.5)
         self.target_coil_actor.GetProperty().SetSpecularPower(10)
         self.target_coil_actor.GetProperty().SetOpacity(0.3)
-        self.target_coil_actor.SetVisibility(True)
+        self.target_coil_actor.SetVisibility(self.last_target_coil_visibility)
         self.target_coil_actor.SetUserMatrix(m_target)
 
         self.renderer.AddActor(self.target_coil_actor)

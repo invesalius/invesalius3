@@ -23,10 +23,10 @@ import platform
 import subprocess
 import sys
 import webbrowser
-from datetime import datetime
 
 import wx
 import wx.aui
+import wx.py.shell
 from wx.lib.agw.aui.auibar import AUI_TB_PLAIN_BACKGROUND, AuiToolBar
 
 import invesalius.constants as const
@@ -43,7 +43,9 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import inv_paths
+from invesalius.data.slice_ import Slice
 from invesalius.gui import project_properties
+from invesalius.gui.interactive_shell import InteractiveShellFrame
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -58,7 +60,7 @@ except ImportError:
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range(3)]
 
 # Custom IDs for our new menu items
-[ID_SHOW_LOG_VIEWER] = [wx.NewIdRef() for number in range(1)]
+[ID_SHOW_LOG_VIEWER, ID_INTERACTIVE_SHELL] = [wx.NewIdRef() for number in range(2)]
 
 WILDCARD_EXPORT_SLICE = (
     "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
@@ -206,11 +208,18 @@ class Frame(wx.Frame):
         keycode = event.GetKeyCode()
         modifiers = event.GetModifiers()
 
-        # Check if the focus is on a text entry field
+        # Check if the focus is on a text entry field or interactive shell
         focused = wx.Window.FindFocus()
         is_search_field = False
+        is_shell_focused = False
+
+        # Check if the focus is on a text entry field
         if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
             is_search_field = True
+
+        # Check if the shell is focused
+        if focused and isinstance(focused, wx.py.shell.Shell):
+            is_shell_focused = True
 
         # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
         if modifiers & wx.MOD_CONTROL:
@@ -220,17 +229,23 @@ class Frame(wx.Frame):
                 return
 
         # If the key is a move marker key, publish a message to move the marker,
-        # but only if we're not in a search field
+        # but only if we're not in a search field or shell
         if (
             keycode in const.MOVEMENT_KEYCODES
             and not self.edit_data_notebook_label
             and not is_search_field
+            and not is_shell_focused
         ):
             Publisher.sendMessage("Move marker by keyboard", keycode=keycode)
             return
 
         # Similarly with 'Del' key; publish a message to delete selected markers.
-        if keycode == wx.WXK_DELETE and not self.edit_data_notebook_label and not is_search_field:
+        if (
+            keycode == wx.WXK_DELETE
+            and not self.edit_data_notebook_label
+            and not is_search_field
+            and not is_shell_focused
+        ):
             Publisher.sendMessage("Delete selected markers")
             return
 
@@ -760,6 +775,8 @@ class Frame(wx.Frame):
 
         elif id == ID_SHOW_LOG_VIEWER:
             self.OnShowLogViewer(evt)
+        elif id == ID_INTERACTIVE_SHELL:
+            self.OnInteractiveShell(evt)
 
         # Handle task panel toggle
         elif id == const.ID_TASK_BAR:
@@ -1157,6 +1174,75 @@ class Frame(wx.Frame):
             # Show error message
             wx.MessageBox(f"Error showing log viewer: {e}", "Error", wx.OK | wx.ICON_ERROR)
 
+    def OnInteractiveShell(self, evt):
+        """Show the interactive Python shell."""
+        # Create context dictionary with useful objects
+        import numpy as np
+
+        app_context = {
+            "project": prj.Project(),  # singleton
+            "slice": Slice(),  # singletion
+            "session": ses.Session(),  # singleton
+            "frame": self,
+            "Publisher": Publisher,  # Will be set below
+            "volume_viewer": self.aui_manager.GetPane("Data")
+            .window.aui_manager.GetPane("Volume")
+            .window.GetSizer()
+            .GetItem(0)
+            .GetWindow()
+            .aui_manager.GetAllPanes()[0]
+            .window,
+            "axial_viewer": self.aui_manager.GetPane("Data")
+            .window.aui_manager.GetPane("Axial Slice")
+            .window,
+            "coronal_viewer": self.aui_manager.GetPane("Data")
+            .window.aui_manager.GetPane("Coronal Slice")
+            .window,
+            "sagittal_viewer": self.aui_manager.GetPane("Data")
+            .window.aui_manager.GetPane("Sagittal Slice")
+            .window,
+            "np": np,
+            "wx": wx,
+            "app": wx.GetApp(),
+        }
+
+        intro_text = (
+            "InVesalius Interactive Python Shell\n"
+            "===========================\n"
+            "Available objects:\n"
+            "  app             - Main application instance\n"
+            "  frame           - Main frame window\n"
+            "  project         - Current project data\n"
+            "  slice           - Slice singleton for image data\n"
+            "  Publisher       - PubSub publisher for messaging\n"
+            "  volume_viewer   - Volume viewer pane\n"
+            "  axial_viewer    - Axial slice viewer pane\n"
+            "  coronal_viewer  - Coronal slice viewer pane\n"
+            "  sagittal_viewer - Sagittal slice viewer pane\n"
+            "  wx              - wxPython module\n"
+            "  np              - NumPy module\n"
+            "\nIf Navigation mode is active the following objects are also available:\n"
+            "  markers         - MarkersControl instance for navigation markers\n"
+            "  navigation      - Navigation instance for controlling navigation\n"
+            "  robot           - Robot instance for robotic control\n"
+            "  tracker         - Tracker instance for tracking data\n"
+            "\nExample usage:\n"
+            "  >>> frame.GetTitle()\n"
+            "  >>> project.name\n"
+            "  >>> slice.current_mask\n"
+            "  >>> Publisher.sendMessage('Set threshold values', threshold_range=(100, 500))\n"
+            "\n"
+        )
+        # Check if shell window already exists
+        if not hasattr(self, "_shell_window") or not self._shell_window:
+            self._shell_window = InteractiveShellFrame(self, app_context, introText=intro_text)
+
+        # Show the shell window
+        self._shell_window.Show()
+        self._shell_window.Raise()
+
+        Publisher.sendMessage("Add navigation context to interactive shell")
+
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -1431,6 +1517,7 @@ class MenuBar(wx.MenuBar):
 
         # Add log viewer and error handling test menu items
         tools_menu.Append(ID_SHOW_LOG_VIEWER, _("Show Log Viewer"))
+        tools_menu.Append(ID_INTERACTIVE_SHELL, _("Interactive Shell"))
 
         self.tools_menu = tools_menu
 

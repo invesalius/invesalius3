@@ -202,6 +202,15 @@ class MarkersControl(metaclass=Singleton):
 
         return None
 
+    def FindLabel(self, label) -> Union[None, Marker]:
+        """
+        Return a list of markers with the given label.
+        If no markers are found, return None.
+        """
+        matching_markers = [marker for marker in self.list if marker.label == label]
+
+        return matching_markers if matching_markers else None
+
     def FindPointOfInterest(self) -> Union[None, Marker]:
         for marker in self.list:
             if marker.is_point_of_interest:
@@ -275,7 +284,7 @@ class MarkersControl(metaclass=Singleton):
         # keyboard events.
         self.transformator.UpdateSelectedMarker(None)
 
-    def CreateCoilTargetFromLandmark(self, marker: Marker) -> None:
+    def CreateCoilTargetFromLandmark(self, marker: Marker, label: str = None) -> None:
         new_marker = marker.duplicate()
 
         self.transformator.ProjectToScalp(
@@ -285,7 +294,10 @@ class MarkersControl(metaclass=Singleton):
             opposite_side=True,
         )
         new_marker.marker_type = MarkerType.COIL_TARGET
-        new_marker.label = self.GetNextMarkerLabel()
+        if not label:
+            new_marker.label = self.GetNextMarkerLabel()
+        else:
+            new_marker.label = label
 
         self.AddMarker(new_marker)
 
