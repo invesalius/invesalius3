@@ -241,7 +241,7 @@ class Mask:
             return "Cerebellum"
         elif self.name.lower().startswith("brain_stem"):
             return "Brain stem"
-        elif self.name.lower().startswith("choroid_Plexus"):
+        elif self.name.lower().startswith("choroid_plexus"):
             return "Choroid plexus"
         else:
             return "General"

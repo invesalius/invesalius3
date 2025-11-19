@@ -765,7 +765,7 @@ class MasksListCtrlPanel(InvListCtrl):
 
         if selected_items:
             Publisher.sendMessage("Remove masks", mask_indexes=selected_items)
-            Publisher.sendMessage("Refresh Masks")
+            wx.CallAfter(Publisher.sendMessage, "Refresh Masks")
         else:
             dlg.MaskSelectionRequiredForRemoval()
 
