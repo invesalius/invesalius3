@@ -700,57 +700,126 @@ class SubpartSegmentProcess(SegmentProcess):
                     shutil.rmtree(temp_output_dir)
 
     def apply_segment_threshold(self, threshold):
-        segmentation_array = self._probability_array
+        seg = getattr(self, "_probability_array", None)
+        if seg is None:
+            raise RuntimeError("_probability_array not initialized.")
 
-        # If no specific mask types selected, create a single whole brain mask
+        # Whole brain fallback
         if not self.selected_mask_types:
-            print("No specific masks selected, creating whole brain mask")
-            mask_name = new_name_by_pattern("whole_brain")
-            mask = slc.Slice().create_new_mask(name=mask_name, add_to_project=True)
+            mask = slc.Slice().create_new_mask(
+                name=new_name_by_pattern("whole_brain"), add_to_project=True
+            )
             mask.was_edited = True
-            mask.matrix[1:, 1:, 1:] = (segmentation_array > 0).astype(np.uint8) * 255
+            mask.matrix[1:, 1:, 1:] = (seg > 0).astype(np.uint8) * 255
             mask.modified(True)
             return
 
-        lut_df = read_classes_from_lut(self.lut_file)
-        lut_classes = lut_df.to_dict("records")
+        lut = read_classes_from_lut(self.lut_file).to_dict("records")
+        all_names = {str(rec["LabelName"]) for rec in lut}
 
-        # Create masks for each region within the selected categories
+        # Prefix constants (correct lengths)
+        P_CTX_LH = "ctx-lh-"
+        P_CTX_RH = "ctx-rh-"
+        P_CTX = "ctx-"
+        P_LEFT = "Left-"
+        P_RIGHT = "Right-"
+
+        # Helpers
+        def color(rec):
+            r = rec.get("R", rec.get("Red", 0))
+            g = rec.get("G", rec.get("Green", 0))
+            b = rec.get("B", rec.get("Blue", 0))
+            return (float(r) / 255.0, float(g) / 255.0, float(b) / 255.0)
+
+        is_ctx = lambda n: n.startswith((P_CTX_LH, P_CTX_RH, P_CTX))
+
+        # Expand WM category to include ventricles, cerebellum (WM and cortex), and choroid plexus
+        def is_wm_like(name: str) -> bool:
+            return (
+                name.startswith(("Left-Cerebral-White-Matter", "Right-Cerebral-White-Matter"))
+                or name.startswith(
+                    ("Left-Cerebellum-White-Matter", "Right-Cerebellum-White-Matter")
+                )
+                or name.startswith(("Left-Cerebellum-Cortex", "Right-Cerebellum-Cortex"))
+                or name in ("3rd-Ventricle", "4th-Ventricle")
+                or name.startswith(("Left-Lateral-Ventricle", "Right-Lateral-Ventricle"))
+                or name.startswith(("Left-Inf-Lat-Vent", "Right-Inf-Lat-Vent"))
+                or name.startswith(("Left-choroid-plexus", "Right-choroid-plexus"))
+                or name == "WM-hypointensities"
+            )
+
+        def pick_regions(cat):
+            """
+            Categories:
+              - cortical: any ctx-* labels
+              - subcortical: everything that's not cortical and not background (ID 0)
+              - wm: cerebral + cerebellar WM, cerebellar cortex, ventricles (lat/inf-lat/3rd/4th), choroid plexus, WM-hypointensities
+            """
+            c = str(cat).lower()
+            if c == "cortical":
+                return [r for r in lut if is_ctx(str(r["LabelName"]))]
+            if c == "subcortical":
+                return [r for r in lut if not is_ctx(str(r["LabelName"])) and int(r["ID"]) != 0]
+            if c in ("wm", "white_matter", "white-matter"):
+                return [r for r in lut if is_wm_like(str(r["LabelName"]))]
+            # Fallback: exact match by label name
+            return [r for r in lut if str(r["LabelName"]).lower() == c]
+
+        def std_name(label_name: str) -> str:
+            """
+            Standardize names (flip side in text only, lowercase 'left'/'right'):
+              - cortical: 'ctx-lh-foo' -> 'right_foo', 'ctx-rh-bar' -> 'left_bar'
+                if no RH counterpart for LH, drop side: 'ctx-lh-foo' -> 'foo'
+              - sub/wm: 'Left-foo' -> 'right_foo', 'Right-bar' -> 'left_bar'
+              - midline/unpaired: just sanitize with underscores
+            """
+            n = str(label_name)
+
+            # Cortical
+            if n.startswith(P_CTX_LH):
+                base = n[len(P_CTX_LH) :]
+                if (P_CTX_RH + base) in all_names:
+                    return "right_" + base.replace("-", "_").replace(" ", "_")
+                return base.replace("-", "_").replace(" ", "_")  # no RH counterpart -> drop side
+            if n.startswith(P_CTX_RH):
+                base = n[len(P_CTX_RH) :]
+                return "left_" + base.replace("-", "_").replace(" ", "_")
+            if n.startswith(P_CTX):
+                base = n[len(P_CTX) :]
+                return base.replace("-", "_").replace(" ", "_")
+
+            # Subcortical / WM (flip side in text only)
+            if n.startswith(P_LEFT):
+                base = n[len(P_LEFT) :]
+                return "right_" + base.replace("-", "_").replace(" ", "_")
+            if n.startswith(P_RIGHT):
+                base = n[len(P_RIGHT) :]
+                return "left_" + base.replace("-", "_").replace(" ", "_")
+
+            # Midline/unpaired (e.g., 3rd/4th ventricle, brain-stem, CSF)
+            return n.replace("-", "_").replace(" ", "_")
+
         for category in self.selected_mask_types:
-            regions_in_category = [
-                cls for cls in lut_classes if cls["Category"].lower() == category
-            ]
-
-            if not regions_in_category:
+            regions = pick_regions(category)
+            if not regions:
                 print(f"No regions found for category '{category}'. Skipping.")
                 continue
 
-            for region in regions_in_category:
-                label_id = region["ID"]
-                region_name = region["LabelName"]
-                color = (region["R"] / 255.0, region["G"] / 255.0, region["B"] / 255.0)
-
-                # Flip "lh" and "rh" in the region name
-                if "lh" in region_name:
-                    region_name = region_name.replace("lh", "rh")
-                elif "rh" in region_name:
-                    region_name = region_name.replace("rh", "lh")
-
-                region_name = region_name.replace("-", "_").replace(" ", "_")
-                mask_name = new_name_by_pattern(f"{category}_{region_name}")
-                binary_mask = (segmentation_array == label_id).astype(np.uint8) * 255
-
-                if not np.any(binary_mask):
-                    print(
-                        f"No voxels found for label ID {label_id} ('{region_name}'). Skipping mask creation."
-                    )
+            for rec in regions:
+                lid = int(rec["ID"])  # do NOT flip ID
+                name = std_name(rec["LabelName"])
+                binmask = (seg == lid).astype(np.uint8) * 255
+                if not np.any(binmask):
+                    print(f"No voxels found for label ID {lid} ('{name}'). Skipping mask creation.")
                     continue
 
-                mask = slc.Slice().create_new_mask(name=mask_name, add_to_project=True)
-                mask.color = color
-                mask.was_edited = True
-                mask.matrix[1:, 1:, 1:] = binary_mask
-                mask.modified(True)
+                m = slc.Slice().create_new_mask(
+                    name=new_name_by_pattern(f"{category}_{name}"), add_to_project=True
+                )
+                m.color = color(rec)
+                m.was_edited = True
+                m.matrix[1:, 1:, 1:] = binmask
+                m.modified(True)
 
 
 class TracheaSegmentProcess(SegmentProcess):
