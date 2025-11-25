@@ -765,8 +765,11 @@ class SubpartSegmentProcess(SegmentProcess):
                 region_name = region["LabelName"]
                 color = (region["R"] / 255.0, region["G"] / 255.0, region["B"] / 255.0)
 
-                # Always flip the label ID
-                label_id = self.flip_label_id(int(label_id))
+                # Flip "lh" and "rh" in the region name
+                if "lh" in region_name:
+                    region_name = region_name.replace("lh", "rh")
+                elif "rh" in region_name:
+                    region_name = region_name.replace("rh", "lh")
 
                 region_name = region_name.replace("-", "_").replace(" ", "_")
                 mask_name = new_name_by_pattern(f"{category}_{region_name}")
