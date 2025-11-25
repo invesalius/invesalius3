@@ -699,41 +699,6 @@ class SubpartSegmentProcess(SegmentProcess):
                 if os.path.exists(temp_output_dir):
                     shutil.rmtree(temp_output_dir)
 
-    def flip_label_id(self, x: int) -> int:
-        # Midline/self
-        if x in {0, 14, 15, 16, 24, 77}:
-            return x
-        # Cortical (FreeSurfer)
-        if 1000 <= x < 2000:
-            return x + 1000
-        if 2000 <= x < 3000:
-            return x - 1000
-        # Subcortical pairs
-        pairs = {
-            2: 41,
-            3: 42,
-            4: 43,
-            5: 44,
-            7: 46,
-            8: 47,
-            10: 49,
-            11: 50,
-            12: 51,
-            13: 52,
-            17: 53,
-            18: 54,
-            26: 58,
-            28: 60,
-            31: 63,
-        }
-        if x in pairs:
-            return pairs[x]
-        inv = {v: k for k, v in pairs.items()}
-        if x in inv:
-            return inv[x]
-        # Fallback: return original if no known flip
-        return x
-
     def apply_segment_threshold(self, threshold):
         segmentation_array = self._probability_array
 
