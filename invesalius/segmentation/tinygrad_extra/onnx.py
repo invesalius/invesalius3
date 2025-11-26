@@ -3,7 +3,7 @@ import functools
 import io
 import math
 import types
-from typing import Any, Callable, Literal, Sequence, cast
+from typing import Any, Callable, List, Literal, Sequence, cast
 
 import numpy as np
 
@@ -928,10 +928,10 @@ def get_onnx_ops():
     def MaxUnpool(
         xT: Tensor,
         xI: Tensor,
-        outshape: list[int] | None = None,
-        kernel_shape: list[int] = None,
-        pads: list[int] | int = 0,
-        strides: list[int] | int = 1,
+        outshape: List[int] | None = None,
+        kernel_shape: List[int] = None,
+        pads: List[int] | int = 0,
+        strides: List[int] | int = 1,
     ):
         pads, strides = (make_tuple(x, len(xI.shape)) for x in (pads, strides))
         out_sh = [

@@ -746,8 +746,20 @@ class HeadPage(wx.Panel):
             self.combo_mask.SetValue("")
 
     def OnRemoveMasks(self, mask_indexes):
-        for i in mask_indexes:
-            self.combo_mask.Delete(i)
+        self.combo_mask.Freeze()
+        try:
+            count = self.combo_mask.GetCount()
+            idxs = sorted(set(mask_indexes), reverse=True)
+
+            if len(idxs) >= count:
+                self.combo_mask.Clear()
+                return
+
+            for i in idxs:
+                if 0 <= i < self.combo_mask.GetCount():
+                    self.combo_mask.Delete(i)
+        finally:
+            self.combo_mask.Thaw()
 
     def SetThresholdBounds(self, threshold_range):
         thresh_min = threshold_range[0]

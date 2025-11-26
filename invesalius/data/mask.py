@@ -227,6 +227,25 @@ class Mask:
 
         self.history = EditionHistory()
 
+    @property
+    def category(self):
+        if self.name.lower().startswith("cortical"):
+            return "Cortical"
+        elif self.name.lower().startswith("subcortical"):
+            return "Subcortical"
+        elif self.name.lower().startswith("ventricles"):
+            return "Ventricles"
+        elif self.name.lower().startswith("white_matter"):
+            return "White matter"
+        elif self.name.lower().startswith("cerebellum"):
+            return "Cerebellum"
+        elif self.name.lower().startswith("brain_stem"):
+            return "Brain stem"
+        elif self.name.lower().startswith("choroid_plexus"):
+            return "Choroid plexus"
+        else:
+            return "General"
+
     def __bind_events(self):
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
         Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
@@ -293,7 +312,7 @@ class Mask:
 
     def SavePlist(self, dir_temp, filelist):
         mask = {}
-        filename = "mask_%d" % self.index
+        filename = f"mask_{self.index}"
         mask_filename = f"{filename}.dat"
         # mask_filepath = os.path.join(dir_temp, mask_filename)
         filelist[self.temp_file] = mask_filename
