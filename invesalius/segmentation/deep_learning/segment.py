@@ -2,21 +2,24 @@ import itertools
 import multiprocessing
 import os
 import pathlib
-import sys
 import tempfile
 import traceback
+from pathlib import Path
 from typing import Generator, Tuple
 
+import nibabel.processing
 import numpy as np
 from skimage.transform import resize
-from vtkmodules.vtkIOXML import vtkXMLImageDataWriter
 
 import invesalius.data.slice_ as slc
 from invesalius import inv_paths
 from invesalius.data import imagedata_utils
-from invesalius.data.converters import to_vtk
 from invesalius.net.utils import download_url_to_file
 from invesalius.pubsub import pub as Publisher
+from invesalius.segmentation.deep_learning.fastsurfer_subpart.data_process import (
+    read_classes_from_lut,
+)
+from invesalius.segmentation.deep_learning.fastsurfer_subpart.pipeline import run_pipeline
 from invesalius.utils import new_name_by_pattern
 
 from . import utils
@@ -35,7 +38,7 @@ def run_cranioplasty_implant():
     apply_wwwl = False
     create_new_mask = True
     use_gpu = True
-    resize_by_spacing = True
+    # resize_by_spacing = True
     window_width = slc.Slice().window_width
     window_level = slc.Slice().window_level
     overlap = 50
@@ -192,7 +195,7 @@ def segment_tinygrad(
     image: np.ndarray, weights_file, overlap, device_id, probability_array, comm_array, patch_size
 ):
     import onnx
-    from tinygrad import Device, Tensor, dtypes
+    from tinygrad import Tensor
     from tinygrad.engine.jit import TinyJit
 
     from invesalius.segmentation.tinygrad_extra.onnx import OnnxRunner
@@ -309,7 +312,7 @@ class SegmentProcess(ctx.Process):
 
         fd, fname = tempfile.mkstemp()
         self._probability_array = np.memmap(
-            filename=fname, shape=image.shape, dtype=np.float32, mode="w+"
+            filename=fname, shape=self._image_shape, dtype=np.float32, mode="w+"
         )
         self._prob_array_filename = self._probability_array.filename
         self._prob_array_fd = fd
@@ -504,6 +507,319 @@ class BrainSegmentProcess(SegmentProcess):
             "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.onnx"
         )
         self.onnx_weights_hash = "3e506ae448150ca2c7eb9a8a6b31075ffff38e8db0fc6e25cb58c320aea79d21"
+
+
+class SubpartSegmentProcess(SegmentProcess):
+    def __init__(
+        self,
+        image,
+        create_new_mask,
+        backend,
+        device_id,
+        use_gpu,
+        overlap=50,
+        apply_wwwl=False,
+        window_width=255,
+        window_level=127,
+        patch_size=SIZE,
+        selected_mask_types=None,
+    ):
+        super().__init__(
+            image,
+            create_new_mask,
+            backend,
+            device_id,
+            use_gpu,
+            overlap=overlap,
+            apply_wwwl=apply_wwwl,
+            window_width=window_width,
+            window_level=window_level,
+            patch_size=patch_size,
+        )
+        self.selected_mask_types = selected_mask_types or []
+        fastsurfer_dir = Path(__file__).parent / "fastsurfer_subpart"
+        self.lut_file = fastsurfer_dir / "LUT.tsv"
+
+    model_info = {
+        "axial": {
+            "pytorch": {
+                "filename": "model_axial.pt",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_axial.pt",
+                "hash": "3387b311aa985dc200941277013760ba67ca8f9fb43612e86c065b922619c1bf",
+            },
+            "tinygrad": {
+                "filename": "model_axial.onnx",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_axial.onnx",
+                "hash": "fcf8bd9af831f9eb3e836c868fee6434d41cdbeb76d38337f54bd4f6acc32624",
+            },
+        },
+        "coronal": {
+            "pytorch": {
+                "filename": "model_coronal.pt",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_coronal.pt",
+                "hash": "da64d4735053b72fb8c76713ab0273d1543a9fd8887453b141e8fe5813dd0faa",
+            },
+            "tinygrad": {
+                "filename": "model_coronal.onnx",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_coronal.onnx",
+                "hash": "45fb8b495d77de7787a0cb6759c2a8b18cc7972495275e19a3c0a7f7e1f8ba4c",
+            },
+        },
+        "sagittal": {
+            "pytorch": {
+                "filename": "model_sagittal.pt",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_sagittal.pt",
+                "hash": "91e523b9ba6cd463187654118a800eca55c76b3b0c9b3cc1a69310152a912731",
+            },
+            "tinygrad": {
+                "filename": "model_sagittal.onnx",
+                "url": "https://raw.githubusercontent.com/invesalius/weights/main/fastsurf/fastsurf_sagittal.onnx",
+                "hash": "7781066a49de688e127945f17209d6136dbee44fb163ea3b16387058b77856ce",
+            },
+        },
+    }
+
+    def get_model_path(self, plane):
+        backend = self.backend.lower()
+        info = self.model_info[plane][backend]
+        sys_path = inv_paths.MODELS_DIR / "fastsurfer" / plane / info["filename"]
+        user_path = inv_paths.USER_DL_WEIGHTS / info["filename"]
+        if sys_path.exists():
+            return str(sys_path)
+        elif user_path.exists():
+            return str(user_path)
+        else:
+            download_url_to_file(
+                info["url"], user_path, info["hash"], download_callback(self._comm_array)
+            )
+            return str(user_path)
+
+    def _run_segmentation(self):
+        import nibabel as nib
+
+        image = np.memmap(
+            self._image_filename,
+            dtype=self._image_dtype,
+            shape=self._image_shape,
+            mode="r",
+        )
+
+        if self.apply_wwwl:
+            image = imagedata_utils.get_LUT_value(image, self.window_width, self.window_level)
+
+        temp_dir = tempfile.gettempdir()
+        temp_img_file = pathlib.Path(temp_dir) / "input_image.nii.gz"
+
+        img = nib.load(f"{temp_dir}/proj_image.nii.gz")
+        nib.save(img, str(temp_img_file))
+
+        # get backend specific model paths
+        model_paths = {
+            plane: self.get_model_path(plane) for plane in ["axial", "coronal", "sagittal"]
+        }
+
+        # create temporary directory for output
+        with tempfile.TemporaryDirectory() as temp_output_dir:
+            try:
+                print("Starting subpart prediction pipeline...")
+
+                comm_array = np.memmap(
+                    self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
+                )
+
+                def progress_callback(current_step, total_steps):
+                    progress = current_step / total_steps
+                    comm_array[0] = progress * 0.9
+
+                sid = "subject"
+                pred_name = "mri/aparc.DKTatlas+aseg.deep.mgz"
+
+                args = {
+                    "orig_name": temp_img_file,
+                    "out_dir": Path(temp_output_dir),
+                    "sid": sid,
+                    "pred_name": pred_name,
+                    "ckpt_ax": model_paths["axial"],
+                    "ckpt_cor": model_paths["coronal"],
+                    "ckpt_sag": model_paths["sagittal"],
+                    "lut": self.lut_file,
+                    "device": self.device_id if self.use_gpu else "cpu",
+                    "viewagg_device": self.device_id if self.use_gpu else "cpu",
+                    "batch_size": 6,
+                    "threads": 4,
+                    "backend": self.backend.lower(),
+                    "progress_callback": progress_callback,
+                }
+                return_code = run_pipeline(**args)
+
+                if return_code != 0:
+                    raise RuntimeError(
+                        f"FastSurfer's pipeline.py failed with exit code {return_code}"
+                    )
+
+                segmentation_file = Path(temp_output_dir) / sid / pred_name
+                if not segmentation_file.exists():
+                    raise FileNotFoundError(
+                        f"Final segmentation file not found at {segmentation_file}"
+                    )
+
+                comm_array[0] = 0.92
+                original_nifti_img = nib.load(str(temp_img_file))
+                conformed_segmentation_img = nib.load(str(segmentation_file))
+
+                comm_array[0] = 0.95
+                resampled_segmentation_img = nibabel.processing.resample_from_to(
+                    conformed_segmentation_img, original_nifti_img, order=0
+                )
+
+                comm_array[0] = 0.98
+                final_segmentation = np.asarray(resampled_segmentation_img.dataobj)
+                final_segmentation = np.fliplr(np.swapaxes(final_segmentation, 0, 2))
+
+                print(
+                    f"Segmentation data range: [{final_segmentation.min()}, {final_segmentation.max()}]"
+                )
+                print(f"Segmentation unique values: {len(np.unique(final_segmentation))}")
+                print(f"Non-zero segmentation pixels: {np.count_nonzero(final_segmentation)}")
+
+                probability_array = np.memmap(
+                    self._prob_array_filename,
+                    dtype=np.float32,
+                    shape=self._image_shape,
+                    mode="r+",
+                )
+
+                probability_array[:] = final_segmentation.astype(np.float32)
+
+                comm_array[0] = 1.0
+
+            finally:
+                import shutil
+
+                if os.path.exists(temp_output_dir):
+                    shutil.rmtree(temp_output_dir)
+
+    def apply_segment_threshold(self, threshold):
+        seg = getattr(self, "_probability_array", None)
+        if seg is None:
+            raise RuntimeError("_probability_array not initialized.")
+
+        # Whole brain fallback
+        if not self.selected_mask_types:
+            mask = slc.Slice().create_new_mask(
+                name=new_name_by_pattern("whole_brain"), add_to_project=True
+            )
+            mask.was_edited = True
+            mask.matrix[1:, 1:, 1:] = (seg > 0).astype(np.uint8) * 255
+            mask.modified(True)
+            return
+
+        lut = read_classes_from_lut(self.lut_file).to_dict("records")
+        all_names = {str(rec["LabelName"]) for rec in lut}
+
+        # Prefix constants (correct lengths)
+        P_CTX_LH = "ctx-lh-"
+        P_CTX_RH = "ctx-rh-"
+        P_CTX = "ctx-"
+        P_LEFT = "Left-"
+        P_RIGHT = "Right-"
+
+        # Helpers
+        def color(rec):
+            r = rec.get("R", rec.get("Red", 0))
+            g = rec.get("G", rec.get("Green", 0))
+            b = rec.get("B", rec.get("Blue", 0))
+            return (float(r) / 255.0, float(g) / 255.0, float(b) / 255.0)
+
+        is_ctx = lambda n: n.startswith((P_CTX_LH, P_CTX_RH, P_CTX))
+
+        # Expand WM category to include ventricles, cerebellum (WM and cortex), and choroid plexus
+        def is_wm_like(name: str) -> bool:
+            return (
+                name.startswith(("Left-Cerebral-White-Matter", "Right-Cerebral-White-Matter"))
+                or name.startswith(
+                    ("Left-Cerebellum-White-Matter", "Right-Cerebellum-White-Matter")
+                )
+                or name.startswith(("Left-Cerebellum-Cortex", "Right-Cerebellum-Cortex"))
+                or name in ("3rd-Ventricle", "4th-Ventricle")
+                or name.startswith(("Left-Lateral-Ventricle", "Right-Lateral-Ventricle"))
+                or name.startswith(("Left-Inf-Lat-Vent", "Right-Inf-Lat-Vent"))
+                or name.startswith(("Left-choroid-plexus", "Right-choroid-plexus"))
+                or name == "WM-hypointensities"
+            )
+
+        def pick_regions(cat):
+            """
+            Categories:
+              - cortical: any ctx-* labels
+              - subcortical: everything that's not cortical and not background (ID 0)
+              - wm: cerebral + cerebellar WM, cerebellar cortex, ventricles (lat/inf-lat/3rd/4th), choroid plexus, WM-hypointensities
+            """
+            c = str(cat).lower()
+            if c == "cortical":
+                return [r for r in lut if is_ctx(str(r["LabelName"]))]
+            if c == "subcortical":
+                return [r for r in lut if not is_ctx(str(r["LabelName"])) and int(r["ID"]) != 0]
+            if c in ("wm", "white_matter", "white-matter"):
+                return [r for r in lut if is_wm_like(str(r["LabelName"]))]
+            # Fallback: exact match by label name
+            return [r for r in lut if str(r["LabelName"]).lower() == c]
+
+        def std_name(label_name: str) -> str:
+            """
+            Standardize names (flip side in text only, lowercase 'left'/'right'):
+              - cortical: 'ctx-lh-foo' -> 'right_foo', 'ctx-rh-bar' -> 'left_bar'
+                if no RH counterpart for LH, drop side: 'ctx-lh-foo' -> 'foo'
+              - sub/wm: 'Left-foo' -> 'right_foo', 'Right-bar' -> 'left_bar'
+              - midline/unpaired: just sanitize with underscores
+            """
+            n = str(label_name)
+
+            # Cortical
+            if n.startswith(P_CTX_LH):
+                base = n[len(P_CTX_LH) :]
+                if (P_CTX_RH + base) in all_names:
+                    return "right_" + base.replace("-", "_").replace(" ", "_")
+                return base.replace("-", "_").replace(" ", "_")  # no RH counterpart -> drop side
+            if n.startswith(P_CTX_RH):
+                base = n[len(P_CTX_RH) :]
+                return "left_" + base.replace("-", "_").replace(" ", "_")
+            if n.startswith(P_CTX):
+                base = n[len(P_CTX) :]
+                return base.replace("-", "_").replace(" ", "_")
+
+            # Subcortical / WM (flip side in text only)
+            if n.startswith(P_LEFT):
+                base = n[len(P_LEFT) :]
+                return "right_" + base.replace("-", "_").replace(" ", "_")
+            if n.startswith(P_RIGHT):
+                base = n[len(P_RIGHT) :]
+                return "left_" + base.replace("-", "_").replace(" ", "_")
+
+            # Midline/unpaired (e.g., 3rd/4th ventricle, brain-stem, CSF)
+            return n.replace("-", "_").replace(" ", "_")
+
+        for category in self.selected_mask_types:
+            regions = pick_regions(category)
+            if not regions:
+                print(f"No regions found for category '{category}'. Skipping.")
+                continue
+
+            for rec in regions:
+                lid = int(rec["ID"])  # do NOT flip ID
+                name = std_name(rec["LabelName"])
+                binmask = (seg == lid).astype(np.uint8) * 255
+                if not np.any(binmask):
+                    print(f"No voxels found for label ID {lid} ('{name}'). Skipping mask creation.")
+                    continue
+
+                m = slc.Slice().create_new_mask(
+                    name=new_name_by_pattern(f"{category}_{name}"), add_to_project=True
+                )
+                m.color = color(rec)
+                m.was_edited = True
+                m.matrix[1:, 1:, 1:] = binmask
+                m.modified(True)
 
 
 class TracheaSegmentProcess(SegmentProcess):

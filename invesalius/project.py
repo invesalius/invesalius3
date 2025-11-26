@@ -124,15 +124,19 @@ class Project(metaclass=Singleton):
 
     def RemoveMask(self, index: int) -> None:
         new_dict = TwoWaysDictionary()
-        new_index = 0
-        for i in self.mask_dict:
+        # Iterate safely over a snapshot of items
+        for i, mask in self.mask_dict.items():
             if i == index:
-                mask = self.mask_dict[i]
+                # Clean up the removed mask
                 mask.cleanup()
-            else:
-                new_dict[new_index] = self.mask_dict[i]
-                self.mask_dict[i] = new_index
-                new_index += 1
+                continue
+            # Compute the new index and update mask
+            new_i = i if i < index else i - 1
+            new_dict[new_i] = mask
+            # Keep the mask's own index in sync
+            if hasattr(mask, "index"):
+                mask.index = new_i
+        # Replace the dictionary with the rebuilt one
         self.mask_dict = new_dict
 
     def GetMask(self, index):

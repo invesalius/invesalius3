@@ -50,6 +50,7 @@ from invesalius_cy import mips, transforms
 
 if TYPE_CHECKING:
     from vtkmodules.vtkCommonDataModel import vtkImageData
+    from vtkmodules.vtkCommonMath import vtkMatrix4x4
 
 OTHER = 0
 PLIST = 1
@@ -94,6 +95,8 @@ class SliceBuffer:
 # Therefore, we use Singleton design pattern for implementing it.
 class Slice(metaclass=utils.Singleton):
     def __init__(self):
+        self.selected_mask_indices = []
+        self._matrix_filename = ""
         self.current_mask: Optional[Mask] = None
         self.blend_filter = None
         self.histogram: Optional[np.ndarray] = None
@@ -246,6 +249,10 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.OnDuplicateMasks, "Duplicate masks")
         Publisher.subscribe(self.UpdateSlice3D, "Update slice 3D")
 
+        Publisher.subscribe(self.on_select_all_masks_changed, "Select all masks changed")
+        Publisher.subscribe(self.create_surfaces_for_all_masks, "Create surfaces for all masks")
+        Publisher.subscribe(self.update_selected_masks, "Update selected masks list")
+
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
         Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
 
@@ -369,23 +376,50 @@ class Slice(metaclass=utils.Singleton):
         self.CloseProject()
 
     def CloseProject(self):
-        f = self._matrix.filename
-        self._matrix._mmap.close()
-        self._matrix = None
-        os.remove(f)
+        # Close and cleanup main matrix (if any)
+        m = getattr(self, "_matrix", None)
+        if m is not None:
+            f = getattr(m, "filename", None)
+            mm = getattr(m, "_mmap", None)
+            try:
+                if mm is not None:
+                    mm.close()
+            except Exception:
+                pass
+            self._matrix = None
+            if f:
+                try:
+                    if os.path.exists(f):
+                        os.remove(f)
+                except OSError:
+                    pass
+
         self.current_mask = None
 
-        for name in self.aux_matrices:
-            m = self.aux_matrices[name]
-            try:
-                f = m.filename
-            except AttributeError:
-                continue
-            m._mmap.close()
-            m = None
-            os.remove(f)
-        self.aux_matrices = {}
+        # Close and cleanup auxiliary matrices (if any)
+        if getattr(self, "aux_matrices", None):
+            for name, am in list(self.aux_matrices.items()):
+                if am is None:
+                    continue
+                f = getattr(am, "filename", None)
+                mm = getattr(am, "_mmap", None)
+                try:
+                    if mm is not None:
+                        mm.close()
+                except Exception:
+                    pass
+                if f:
+                    try:
+                        if os.path.exists(f):
+                            os.remove(f)
+                    except OSError:
+                        pass
+                self.aux_matrices[name] = None
+            self.aux_matrices.clear()
+        else:
+            self.aux_matrices = {}
 
+        # Reset other state
         self.values = None
         self.nodes = None
         self.from_ = OTHER
@@ -396,7 +430,12 @@ class Slice(metaclass=utils.Singleton):
         self.hue_range = (0, 0)
         self.value_range = (0, 1)
 
-        self.interaction_style.Reset()
+        ist = getattr(self, "interaction_style", None)
+        if ist is not None:
+            try:
+                ist.Reset()
+            except Exception:
+                pass
         self.to_show_aux = ""
 
         Publisher.sendMessage("Select first item from slice menu")
@@ -1240,6 +1279,43 @@ class Slice(metaclass=utils.Singleton):
             surface_parameters=surface_parameters,
         )
 
+    def on_select_all_masks_changed(self, select_all_active):
+        Publisher.sendMessage("Update create surface button", select_all_active=select_all_active)
+
+    def create_surfaces_for_all_masks(self, surface_template):
+        proj = Project()
+        created_surfaces = []
+        mask_dict = proj.mask_dict
+
+        for mask_index in self.selected_mask_indices:
+            if mask_index not in mask_dict:
+                continue
+            mask = mask_dict[mask_index]
+            if mask.matrix.max() < 127:
+                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels available")
+                continue
+
+            surface_parameters = surface_template.copy()
+            surface_parameters["options"] = surface_template["options"].copy()
+
+            surface_parameters["options"]["index"] = mask_index
+            surface_parameters["options"]["name"] = f"{mask.name}"
+            surface_parameters["options"]["overwrite"] = False  # always create new surfaces
+
+            print(f"Creating surface for mask '{mask.name}' (index {mask_index})")
+
+            try:
+                self.do_threshold_to_all_slices(mask)
+                Publisher.sendMessage(
+                    "Create surface", slice_=self, mask=mask, surface_parameters=surface_parameters
+                )
+                created_surfaces.append(mask_index)
+            except Exception as e:
+                print(f"Failed to create surface for mask '{mask.name}': {str(e)}")
+
+        print(f"Successfully created surfaces for {len(created_surfaces)} masks")
+        Publisher.sendMessage("Surfaces creation completed", created_count=len(created_surfaces))
+
     def GetOutput(self):
         return self.blend_filter.GetOutput()
 
@@ -1893,6 +1969,9 @@ class Slice(metaclass=utils.Singleton):
 
     def has_affine(self) -> bool:
         return not np.allclose(self.affine, np.eye(4))
+
+    def update_selected_masks(self, indices):
+        self.selected_mask_indices = indices
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:

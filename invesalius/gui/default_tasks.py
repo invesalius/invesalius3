@@ -255,9 +255,9 @@ class LowerTaskPanel(wx.Panel):
             item.Enable()
 
     def ResizeFPB(self):
-        y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
+        # y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
         x_current, _ = self.GetSize()
-        self.SetMinSize((x_current, y_needed))
+        self.SetMinSize((x_current, 180))
         self.GetParent().Layout()
 
 
@@ -301,7 +301,7 @@ class UpperTaskPanel(wx.Panel):
             # Create panel
             if mode == const.MODE_RP:
                 item = fold_panel.AddFoldPanel(
-                    "%d. %s" % (i + 1, name), collapsed=True, foldIcons=image_list
+                    f"{i + 1}. {name}", collapsed=True, foldIcons=image_list
                 )
             else:
                 item = fold_panel.AddFoldPanel(f"{name}", collapsed=True, foldIcons=image_list)

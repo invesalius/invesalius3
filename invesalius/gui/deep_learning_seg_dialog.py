@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
-import importlib
 import multiprocessing
 import time
 from typing import Dict
@@ -13,7 +12,7 @@ import invesalius.data.slice_ as slc
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from invesalius.segmentation.deep_learning import segment, utils
+from invesalius.segmentation.deep_learning import segment
 
 try:
     import torch
@@ -26,7 +25,7 @@ try:
     import tinygrad
 
     HAS_TINYGRAD = True
-except:
+except ImportError:
     HAS_TINYGRAD = False
 
 if HAS_TORCH:
@@ -388,7 +387,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
                 return
 
             progress = self.ps.get_completion()
-            if progress == np.inf:
+            if progress == np.inf or progress >= 1.0:
                 progress = 1.0
                 self.AfterSegment()
             else:
@@ -434,6 +433,192 @@ class BrainSegmenterDialog(DeepLearningSegmenterDialog):
             segmenter=segment.BrainSegmentProcess,
             auto_segment=auto_segment,
         )
+
+
+class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
+    def __init__(self, parent, auto_segment=False):
+        self.mask_types = {
+            "cortical": _("Cortical"),
+            "subcortical": _("Subcortical"),
+            "white_matter": _("White Matter"),
+            "cerebellum": _("Cerebellum"),
+            "ventricles": _("Ventricles"),
+            "brain_stem": _("Brain Stem"),
+            "choroid_plexus": _("Choroid Plexus"),
+        }
+
+        self.selected_mask_types = []
+
+        super().__init__(
+            parent=parent,
+            title=_("Brain subpart Segmentation"),
+            has_torch=True,
+            has_tinygrad=True,
+            segmenter=segment.SubpartSegmentProcess,
+            auto_segment=auto_segment,
+        )
+
+    def _init_gui(self):
+        """Override _init_gui to add
+        specific UI elements"""
+        super()._init_gui()
+
+        mask_types_box = wx.StaticBox(self, -1, _("Mask Types to Generate"))
+        self.mask_types_sizer = wx.StaticBoxSizer(mask_types_box, wx.VERTICAL)
+
+        self.chk_whole_brain = wx.CheckBox(self, wx.ID_ANY, _("Whole Brain"))
+        self.chk_whole_brain.SetValue(True)
+        self.chk_whole_brain.Disable()
+
+        self.separator = wx.StaticLine(self)
+        self.mask_checkboxes = {}
+        for mask_id, mask_label in self.mask_types.items():
+            self.mask_checkboxes[mask_id] = wx.CheckBox(self, wx.ID_ANY, mask_label)
+            self.mask_checkboxes[mask_id].SetValue(False)
+
+    def _do_layout(self):
+        """Override _do_layout to arrange FastSurferCNN specific UI elements"""
+        super()._do_layout()
+
+        # if hasattr(self, "cb_backends"):
+        #     sizer_item = self.main_sizer.GetItem(0)
+        #     if sizer_item:
+        #         self.main_sizer.Detach(sizer_item)
+        #         self.cb_backends.Hide()
+
+        # if hasattr(self, "lbl_device") and hasattr(self, "cb_devices"):
+        #     try:
+        #         for i, item in enumerate(self.main_sizer.GetChildren()):
+        #             if item.GetWindow() == self.lbl_device:
+        #                 self.main_sizer.Detach(item)
+        #                 self.lbl_device.Hide()
+        #             elif item.GetWindow() == self.cb_devices:
+        #                 self.main_sizer.Detach(item)
+        #                 self.cb_devices.Hide()
+        #     except:
+        #         self.lbl_device.Hide()
+        #         self.cb_devices.Hide()
+
+        #
+
+        if hasattr(self, "overlap"):
+            overlap_index = -1
+            for i, item in enumerate(self.main_sizer.GetChildren()):
+                if item.GetWindow() == self.overlap:
+                    overlap_index = i
+                    break
+
+            if overlap_index >= 0:
+                self.mask_types_sizer.Add(self.chk_whole_brain, 0, wx.ALL, 5)
+                self.mask_types_sizer.Add(self.separator, 0, wx.EXPAND | wx.ALL, 5)
+
+                for checkbox in self.mask_checkboxes.values():
+                    self.mask_types_sizer.Add(checkbox, 0, wx.ALL, 5)
+
+                self.main_sizer.Insert(
+                    overlap_index + 1, self.mask_types_sizer, 0, wx.ALL | wx.EXPAND, 5
+                )
+            else:
+                # Fallback - just add to the main sizer
+                self.main_sizer.Add(self.mask_types_sizer, 0, wx.ALL | wx.EXPAND, 5)
+
+        self.main_sizer.Fit(self)
+        self.Layout()
+
+    def OnSegment(self, evt):
+        self.selected_mask_types = [
+            mask_id for mask_id, checkbox in self.mask_checkboxes.items() if checkbox.GetValue()
+        ]
+
+        self.ShowProgress()
+        self.t0 = time.time()
+        self.elapsed_time_timer.Start(1000)
+
+        image = slc.Slice().matrix
+        backend = self.cb_backends.GetValue()
+        create_new_mask = self.chk_new_mask.GetValue()
+
+        if backend.lower() == "pytorch":
+            try:
+                device_id = self.torch_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = "cpu"
+            use_gpu = True if "cpu" not in device_id.lower() else False
+        elif backend.lower() == "tinygrad":
+            try:
+                device_id = self.tinygrad_devices[self.cb_devices.GetValue()]
+                if device_id == "GPU":
+                    device_id = "cuda"
+            except (KeyError, AttributeError):
+                device_id = "cpu"
+            use_gpu = "cuda" in device_id.lower()
+        else:
+            # Fallback for unknown backends
+            device_id = "cpu"
+            use_gpu = False
+        overlap = self.overlap_options[self.overlap.GetSelection()]
+        apply_wwwl = self.chk_apply_wwwl.GetValue()
+        window_width = slc.Slice().window_width
+        window_level = slc.Slice().window_level
+
+        self.btn_close.Disable()
+        self.btn_stop.Enable()
+        self.btn_segment.Disable()
+        self.chk_new_mask.Disable()
+        self.chk_use_gpu.Disable()
+        self.overlap.Disable()
+        self.cb_backends.Disable()
+        self.cb_devices.Disable()
+
+        for checkbox in self.mask_checkboxes.values():
+            checkbox.Disable()
+
+        # Start segmentation
+        try:
+            self.ps = self.segmenter(
+                image,
+                create_new_mask,
+                backend,
+                device_id,
+                use_gpu,
+                overlap,
+                apply_wwwl,
+                window_width,
+                window_level,
+                selected_mask_types=self.selected_mask_types,
+            )
+            self.ps.start()
+        except (multiprocessing.ProcessError, OSError, ValueError) as err:
+            self.OnStop(None)
+            self.HideProgress()
+            dlg = dialogs.ErrorMessageBox(
+                None,
+                _("It was not possible to start Subpart segmentation because:") + "\n" + str(err),
+                _("FastSurfer segmentation error"),
+            )
+            dlg.ShowModal()
+
+    def AfterSegment(self):
+        super().AfterSegment()
+
+        for checkbox in self.mask_checkboxes.values():
+            checkbox.Enable()
+
+    def apply_segment_threshold(self):
+        threshold = self.sld_threshold.GetValue() / 100.0
+        self.ps.apply_segment_threshold(threshold)
+        slc.Slice().discard_all_buffers()
+        Publisher.sendMessage("Reload actual slice")
+
+    def OnStop(self, evt):
+        super().OnStop(evt)
+
+        for checkbox in self.mask_checkboxes.values():
+            checkbox.Enable()
+
+        # self.cb_backends.Enable()
+        # self.cb_devices.Enable()
+        # self.HideProgress()
 
 
 class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
@@ -628,7 +813,7 @@ class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
-        prob_threshold = self.sld_threshold.GetValue() / 100.0
+        # prob_threshold = self.sld_threshold.GetValue() / 100.0
         method = self.method.GetSelection()
 
         self.btn_close.Disable()
