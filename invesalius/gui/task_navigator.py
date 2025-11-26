@@ -3149,37 +3149,39 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         menu_id.AppendSeparator()
 
-        # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
-        if is_coil_target:
-            mep_menu_item = menu_id.Append(unique_menu_id + 4, _("Change MEP value"))
-            menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP, mep_menu_item)
-            if is_active_target:
-                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Unset target"))
-                menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
-                if has_mTMS:
-                    brain_target_menu_item = menu_id.Append(
-                        unique_menu_id + 4, _("Set brain target")
-                    )
-                    menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
-            else:
-                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Set as target"))
-                menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
-                # 'Create a grid of targets around the coil target' menu item.
-            menu_id.AppendSeparator()
+        if is_coil_target or is_coil_pose:
+            # 'Create a grid of targets around the coil target' menu item.
             create_grid_coil_target_menu_item = menu_id.Append(
-                unique_menu_id + 6, _("Create grid of coil targets")
+                unique_menu_id + 4, _("Create grid of coil targets")
             )
             menu_id.Bind(
                 wx.EVT_MENU,
                 self.OnCreateGridCoilTargetFromCoilTarget,
                 create_grid_coil_target_menu_item,
             )
+            menu_id.AppendSeparator()
+
+        # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
+        if is_coil_target:
+            mep_menu_item = menu_id.Append(unique_menu_id + 5, _("Change MEP value"))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP, mep_menu_item)
+            if is_active_target:
+                target_menu_item = menu_id.Append(unique_menu_id + 6, _("Unset target"))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
+                if has_mTMS:
+                    brain_target_menu_item = menu_id.Append(
+                        unique_menu_id + 7, _("Set brain target")
+                    )
+                    menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
+            else:
+                target_menu_item = menu_id.Append(unique_menu_id + 6, _("Set as target"))
+                menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
         if is_coil_pose:
             # 'Create coil target' menu item.
             create_coil_target_menu_item = menu_id.Append(
-                unique_menu_id + 6, _("Create coil target")
+                unique_menu_id + 5, _("Create coil target")
             )
             menu_id.Bind(
                 wx.EVT_MENU, self.OnCreateCoilTargetFromCoilPose, create_coil_target_menu_item
