@@ -539,7 +539,6 @@ class Viewer(wx.Panel):
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
-        Publisher.subscribe(self.UpdateTractSeedBasedEfield, "Update tract seed based efield")
 
     def get_vtk_mouse_position(self):
         """
@@ -2144,7 +2143,7 @@ class Viewer(wx.Panel):
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
             self.efield_lut = self.CreateLUTTableForEfield(0, self.efield_max)
-            #self.CalculateEdgesEfield()
+            self.CalculateEdgesEfield()
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(const.CORTEX_COLOR[0])
             for h in range(len(self.Id_list)):
@@ -2196,18 +2195,6 @@ class Viewer(wx.Panel):
                 if np.all(self.old_coord != coord):
                     self.e_field_IDs_queue.put_nowait(self.radius_list)
                 self.old_coord = np.array([coord])
-        except queue.Full:
-            pass
-
-    def UpdateTractSeedBasedEfield(self, coord_tracts_queue):
-        #orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
-        orientation = [0,0,0]
-        m_img = tr.compose_matrix(angles=np.radians(orientation), translate=self.position_max)
-        #position =[67.33063094413055,   -160.53839688155534,   205.21968262054094]
-        #orientation =[0,0,0]
-        #m_img = tr.compose_matrix(angles=np.radians(orientation), translate=position)
-        try:
-            coord_tracts_queue.put_nowait(m_img)
         except queue.Full:
             pass
 
@@ -2514,7 +2501,7 @@ class Viewer(wx.Panel):
     def UpdateArrowPose(self, m_img, coord, flag):
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
 
-        if flag and self.efield_mesh is None:
+        if flag:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
