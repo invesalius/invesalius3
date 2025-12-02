@@ -1678,11 +1678,11 @@ class TrackerTab(wx.Panel):
         # --- Pressure force setpoint (slider) ---
         # Config and scaling (slider is integer)
         # Recommended value
-        self.pressure_recommended = 5.0
+        self.pressure_recommended = 10.0
         self.pressure_match_tol = 0.1  # within 0.1 N counts as "at recommended"
 
         self.pressure_min = 0.0
-        self.pressure_max = 20.0
+        self.pressure_max = 40.0
         self.pressure_step = 1
         self.pressure_scale = int(1 / self.pressure_step)  # 10 for 0.1 resolution
 
@@ -1698,7 +1698,7 @@ class TrackerTab(wx.Panel):
         self.pressure_val_lbl = wx.StaticText(self, -1, f"{self.pressure_setpoint:.1f} N")
 
         # Color logic: turn red above threshold
-        self.pressure_warn_threshold = 10.0
+        self.pressure_warn_threshold = 20.0
         self._pressure_lbl_default_fg = self.pressure_lbl.GetForegroundColour()
         self._pressure_val_default_fg = self.pressure_val_lbl.GetForegroundColour()
 
@@ -1737,7 +1737,7 @@ class TrackerTab(wx.Panel):
         self.pressure_slider.Bind(wx.EVT_SLIDER, self.OnPressureSlider)
 
         # quick-set button
-        self.btn_set_rec = wx.Button(self, -1, _("Set 5 N"), size=wx.Size(70, 23))
+        self.btn_set_rec = wx.Button(self, -1, _("Set 10 N"), size=wx.Size(70, 23))
         self.btn_set_rec.SetToolTip(_("Set pressure to the recommended 5.0 N"))
         self.btn_set_rec.Bind(wx.EVT_BUTTON, self.OnSetRecommendedPressure)
 

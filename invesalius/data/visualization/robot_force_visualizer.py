@@ -30,8 +30,8 @@ class RobotForceVisualizer:
         self.segments = []
 
         self.threshold_low = 5.0
-        self.threshold_high = 7.0
-        self.max_force = 10.0
+        self.threshold_high = 20.0
+        self.max_force = 40.0
 
         for i in range(num_segments):
             actor = self._create_segment(i)
