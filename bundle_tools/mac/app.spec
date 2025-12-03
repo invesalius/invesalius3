@@ -11,8 +11,8 @@ from pathlib import Path
 SOURCE_DIR = Path("./").resolve()
 print("SOURCE_DIR", SOURCE_DIR)
 
-from PyInstaller.utils.hooks import get_module_file_attribute, collect_dynamic_libs
-from PyInstaller.compat import is_darwin
+from PyInstaller.utils.hooks import get_module_file_attribute, collect_dynamic_libs, collect_data_files
+
 
 python_dir = os.path.dirname(sys.executable)
 venv_dir = os.path.dirname(python_dir) 
@@ -99,6 +99,8 @@ sample_data = get_all_files(os.path.join('samples'))
 for sd in sample_data:
     dest_dir = os.path.dirname(sd)
     data_files.append((sd, dest_dir))
+
+data_files += collect_data_files('tinygrad')
 
 #---------------------------------------------------------------------------------
 
