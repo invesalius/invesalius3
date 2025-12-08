@@ -1586,7 +1586,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
     def OnEditLabel(self, evt):
         if not evt.IsEditCancelled():
             index = evt.GetIndex()
-            self.SetItem(index, 1, evt.GetLabel())
+            self.SetItem(index, 2, evt.GetLabel())
             Publisher.sendMessage("Change surface name", index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
