@@ -1458,15 +1458,14 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
-        self.change_transparency(None)
+        self.change_transparency(global_surface_id)
 
-    def change_transparency(self, event):
-        focused_idx = self.GetFocusedItem()
+    def change_transparency(self, surface_index):
         initial_value = self.current_transparency
 
         transparency_dialog = dlg.SurfaceTransparencyDialog(
             self,
-            surface_index=focused_idx,
+            surface_index=surface_index,
             transparency=initial_value,
         )
 
@@ -1478,10 +1477,10 @@ class SurfacesListCtrlPanel(InvListCtrl):
         transparency_dialog.Destroy()
 
         Publisher.sendMessage(
-            "Set surface transparency", surface_index=focused_idx, transparency=new_value / 100.0
+            "Set surface transparency", surface_index=surface_index, transparency=new_value / 100.0
         )
 
-        Publisher.sendMessage("Change surface selected", surface_index=focused_idx)
+        Publisher.sendMessage("Change surface selected", surface_index=surface_index)
 
     def duplicate_surface(self, event):
         selected_items = self.GetSelected()
