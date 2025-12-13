@@ -21,6 +21,16 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
   * Volume rendering crop plane
   * Picture exportation (including: BMP, TIFF, JPG, PostScript, POV-Ray)
 
+## 🐍 Python Version Support
+
+The primary development and testing target for InVesalius is Python 3.8, as indicated above.
+
+*Important Note for Python 3.9+ Users: Some core dependencies, notably `pypolaris` (required for NDI Polaris/Vicra tracking hardware), have binary wheels publicly available only for Python 3.8. Attempting installation on newer Python versions may result in linking errors.
+
+*   For clinical or stable use, we recommend using a Python 3.8 environment.
+*   For development on newer Python versions, please see the workarounds and discussion in [issue #1026](https://github.com/invesalius/invesalius3/issues/1026).
+*   Community help in resolving compatibility with newer Python versions is welcome.
+
 ### Development
 
 * [Running InVesalius 3 in Linux](https://github.com/invesalius/invesalius3/wiki/Running-InVesalius-3-in-Linux)
