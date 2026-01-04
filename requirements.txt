@@ -9,12 +9,12 @@ Pillow==10.3.0
 imageio==2.34.2
 nibabel==5.2.1
 scikit-image==0.24.0
-python-gdcm==3.0.24
+python-gdcm==3.0.24.1
 vtk==9.3.0
 
 # Machine Learning
 torch>=2.3.1
-pytorch-cuda==12.4 ; sys_platform == "windows" or sys_platform == "linux"
+pytorch-cuda==12.4 ; sys_platform == "win32" or sys_platform == "linux"
 
 # Utilities
 Cython==3.0.10
@@ -24,8 +24,8 @@ psutil==6.0.0
 pyserial==3.5
 wxPython==4.2.2
 pyacvd==0.2.11
-optitrack ; python_version == "3.8" and sys_platform == "windows"
-pyclaron ; python_version == "3.8" and sys_platform == "windows"
+optitrack ; python_version == "3.8" and sys_platform == "win32"
+pyclaron ; python_version == "3.8" and sys_platform == "win32"
 
 # Testing
 pytest==8.3.5
