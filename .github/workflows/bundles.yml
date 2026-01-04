@@ -102,7 +102,12 @@ jobs:
             path: ./installer/*.exe
             
         - name: Delete previous nightly release
-          run: gh release delete nightly --yes --cleanup-tag
+          run: |
+            if (gh release view nightly 2>$null) {
+              gh release delete nightly --yes --cleanup-tag
+            } else {
+              echo "There is no nightly release, nothing to delete."
+            }
           env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build-mac:
