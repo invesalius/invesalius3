@@ -103,7 +103,8 @@ jobs:
             
         - name: Delete previous nightly release
           run: |
-            if (gh release view nightly 2>$null) {
+            gh release view nightly *> $null
+            if ($LASTEXITCODE -eq 0) {
               gh release delete nightly --yes --cleanup-tag
             } else {
               echo "There is no nightly release, nothing to delete."
