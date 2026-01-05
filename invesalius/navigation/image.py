@@ -136,7 +136,7 @@ class Image:
                 self.load_from_state = False
                 try:
                     self.LoadState()
-                except:
+                except (IOError, OSError, ValueError, KeyError) as e:
                     ses.Session.DeleteStateFile()
                     self.LoadProject()  # Load project if failed to load from state
             else:
