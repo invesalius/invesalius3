@@ -633,6 +633,10 @@ class MaskProperties(wx.Panel):
         self.combo_mask_name.SetString(index, name)
         self.combo_mask_name.Refresh()
 
+        if self.combo_mask_name.GetSelection() == index:
+            self.combo_mask_name.SetSelection(-1)
+            self.combo_mask_name.SetSelection(index)
+
     def SetThresholdValues(self, threshold_range):
         thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
