@@ -114,11 +114,13 @@ class Session(metaclass=Singleton):
         self.WriteStateFile()
 
     def DeleteStateFile(self) -> None:
-        if os.path.exists(STATE_PATH):
+        try:
             os.remove(STATE_PATH)
             print("Successfully deleted state file.")
-        else:
-            print("State file does not exist.")
+        except PermissionError:
+            print("State file is currently in use and cannot be deleted.")
+        except FileNotFoundError:
+            print("State file not found; nothing to delete.")
 
     def ExitedSuccessfullyLastTime(self) -> bool:
         return self._exited_successfully_last_time
