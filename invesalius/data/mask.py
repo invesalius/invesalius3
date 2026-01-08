@@ -214,7 +214,7 @@ class Mask:
         self.colour = random.choice(const.MASK_COLOUR)
         self.opacity = const.MASK_OPACITY
         self.threshold_range = const.THRESHOLD_RANGE
-        self.name = const.MASK_NAME_PATTERN % (Mask.general_index + 1)
+        self._name = const.MASK_NAME_PATTERN % (Mask.general_index + 1)
         self.edition_threshold_range = [const.THRESHOLD_OUTVALUE, const.THRESHOLD_INVALUE]
         self.is_shown = 1
         self.edited_points = {}
@@ -226,6 +226,24 @@ class Mask:
         self._modified_callbacks = []
 
         self.history = EditionHistory()
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, new_name):
+        if self._name == new_name:
+            return
+
+        self._name = new_name
+
+        Publisher.sendMessage(
+            "Mask name changed",
+            mask=self,
+            name=new_name,
+            index=self.index
+        )
 
     @property
     def category(self):
