@@ -1974,7 +1974,9 @@ class TrackerTab(wx.Panel):
             self.status_text.SetLabelText(_("Setup robot transformation matrix:"))
             self.btn_rob_con.Show()
             self.chk_enable_pressure.Enable(True)
-            self.chk_enable_pressure.SetValue(self.robot.robot_init_config.get("use_pressure_sensor", False))
+            self.chk_enable_pressure.SetValue(
+                self.robot.robot_init_config.get("use_pressure_sensor", False)
+            )
             self._update_pressure_controls_state(self.chk_enable_pressure.GetValue())
             self.Layout()
 
@@ -2077,8 +2079,7 @@ class TrackerTab(wx.Panel):
         self.robot.robot_init_config["use_pressure_sensor"] = enabled
         # Send message to robot-side configuration
         Publisher.sendMessage(
-            "Neuronavigation to Robot: Update config",
-            use_pressure_sensor=enabled
+            "Neuronavigation to Robot: Update config", use_pressure_sensor=enabled
         )
 
     def _apply_pressure_color(self, value: float):
