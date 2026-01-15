@@ -41,12 +41,13 @@ import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
 import invesalius.style as st
 import invesalius.utils as utils
+import invesalius_rs as mips
+import invesalius_rs as transforms
 from invesalius.data import transformations
 from invesalius.data.mask import Mask
 from invesalius.i18n import tr as _
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
-from invesalius_cy import mips, transforms
 
 if TYPE_CHECKING:
     from vtkmodules.vtkCommonDataModel import vtkImageData

@@ -50,9 +50,9 @@ for v in vtk_files:
         dest_dir = os.path.dirname(v.replace(site_packages, ''))[1:]
         libraries.append((v, dest_dir))
 
-# Add interpolation module
-#libraries.append((glob.glob(os.path.join(SOURCE_DIR, 'invesalius_cy', 
-#    'interpolation.*.so'))[0], 'invesalius_cy'))  # .so files for macOS
+# Add invesalius_rs module (Rust extension)
+libraries.append((glob.glob(os.path.join(SOURCE_DIR, 'invesalius_rs', 
+    '_native.*.so'))[0], 'invesalius_rs'))  # .so files for macOS
 
 # -- data files -----
 

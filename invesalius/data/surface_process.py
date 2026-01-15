@@ -23,7 +23,7 @@ from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
 import invesalius.data.converters as converters
-from invesalius_cy import cy_mesh
+import invesalius_rs as cy_mesh
 
 
 # TODO: Code duplicated from file {imagedata_utils.py}.

@@ -11,7 +11,7 @@ from invesalius.data import watershed_process
 from invesalius.data.mask import Mask
 from invesalius.data.slice_ import Slice
 from invesalius.data.styles import WaterShedInteractorStyle
-from invesalius_cy import floodfill
+import invesalius_rs as floodfill
 
 
 def test_region_growing_threshold():

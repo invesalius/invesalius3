@@ -1,0 +1,15 @@
+[package]
+name = "invesalius_rs"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.27", features = ["extension-module"] }
+numpy = "0.27"
+rayon = "1.10"
+nalgebra = "0.33"
+num-traits = "0.2"

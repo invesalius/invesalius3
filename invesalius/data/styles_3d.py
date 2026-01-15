@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 
 
-from typing import TYPE_CHECKING, Literal, Tuple, List
+from typing import TYPE_CHECKING, List, Literal, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -37,7 +37,7 @@ import invesalius.session as ses
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
-from invesalius_cy.mask_cut import mask_cut
+from invesalius_rs import mask_cut
 
 PROP_MEASURE = 0.8
 
