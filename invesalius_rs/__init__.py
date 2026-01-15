@@ -43,11 +43,16 @@ def floodfill_auto_threshold(data, seeds, p, fill, out):
     tuple_seeds = [tuple(s) for s in seeds]
     return _native_floodfill_auto_threshold(data, tuple_seeds, p, fill, out)
 lmip = _native.lmip
-mida = _native.mida
 fast_countour_mip = _native.fast_countour_mip
 apply_view_matrix_transform = _native.apply_view_matrix_transform
 convolve_non_zero = _native.convolve_non_zero
 mask_cut = _native.mask_cut
+
+def mida(image, axis, wl, ww, out):
+    """
+    Apply MIDA (Maximum Intensity Diffusion Algorithm) to the image.
+    """
+    return _native.mida(image, axis, int(wl), int(ww), out)
 
 # Rust Mesh class (low-level, takes numpy arrays)
 _RustMesh = _native.Mesh

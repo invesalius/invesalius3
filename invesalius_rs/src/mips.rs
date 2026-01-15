@@ -1,5 +1,6 @@
 use numpy::{PyReadonlyArray3, PyReadwriteArray2, ToPyArray, PyArrayMethods, ndarray};
 use pyo3::prelude::*;
+use rayon::prelude::*;
 
 #[pyfunction]
 pub fn lmip(
@@ -117,7 +118,9 @@ pub fn mida(
     match axis {
         0 => {
             // AXIAL
-            for x in 0..sx {
+            let out_ptr = out_arr.as_mut_ptr() as usize;
+            let out_strides = out_arr.strides();
+            (0..sx).into_par_iter().for_each(|x| {
                 for y in 0..sy {
                     let mut fmax = 0.0f32;
                     let mut alpha_p = 0.0f32;
@@ -149,13 +152,19 @@ pub fn mida(
                             break;
                         }
                     }
-                    out_arr[[y, x]] = (range * colour_p + min as f32) as i16;
+                    unsafe {
+                        let ptr = out_ptr as *mut i16;
+                        let offset = y as isize * out_strides[0] + x as isize * out_strides[1];
+                        *ptr.offset(offset) = (range * colour_p + min as f32) as i16;
+                    }
                 }
-            }
+            });
         }
         1 => {
             // CORONAL
-            for z in 0..sz {
+            let out_ptr = out_arr.as_mut_ptr() as usize;
+            let out_strides = out_arr.strides();
+            (0..sz).into_par_iter().for_each(|z| {
                 for x in 0..sx {
                     let mut fmax = 0.0f32;
                     let mut alpha_p = 0.0f32;
@@ -187,13 +196,19 @@ pub fn mida(
                             break;
                         }
                     }
-                    out_arr[[z, x]] = (range * colour_p + min as f32) as i16;
+                    unsafe {
+                        let ptr = out_ptr as *mut i16;
+                        let offset = z as isize * out_strides[0] + x as isize * out_strides[1];
+                        *ptr.offset(offset) = (range * colour_p + min as f32) as i16;
+                    }
                 }
-            }
+            });
         }
         2 => {
             // SAGITTAL
-            for z in 0..sz {
+            let out_ptr = out_arr.as_mut_ptr() as usize;
+            let out_strides = out_arr.strides();
+            (0..sz).into_par_iter().for_each(|z| {
                 for y in 0..sy {
                     let mut fmax = 0.0f32;
                     let mut alpha_p = 0.0f32;
@@ -225,9 +240,13 @@ pub fn mida(
                             break;
                         }
                     }
-                    out_arr[[z, y]] = (range * colour_p + min as f32) as i16;
+                    unsafe {
+                        let ptr = out_ptr as *mut i16;
+                        let offset = z as isize * out_strides[0] + y as isize * out_strides[1];
+                        *ptr.offset(offset) = (range * colour_p + min as f32) as i16;
+                    }
                 }
-            }
+            });
         }
         _ => (),
     }
