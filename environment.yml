@@ -1,4 +1,6 @@
 channels:
+  - pytorch
+  - nvidia
   - conda-forge
   - bioconda
 dependencies:
@@ -17,14 +19,15 @@ dependencies:
   - vtk==9.3.0
   - mido==1.2.10
   - nest-asyncio==1.6.0
-  - pytorch-cuda==12.4
+  - pytorch==2.3.1
+  - pytorch-cuda==12.1
   - pip
   - pip:
     - matplotlib==3.9.0
     - aioconsole==0.7.1
     - opencv-python==4.10.0.84
     - pandas==2.0.3
-    - python-gdcm==3.0.24
+    - python-gdcm==3.0.24.1
     - python-rtmidi==1.5.8
     - python-socketio[client]==5.11.3
     - pyacvd==0.2.11
