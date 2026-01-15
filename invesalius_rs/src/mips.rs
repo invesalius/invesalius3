@@ -1,6 +1,7 @@
 use numpy::{PyReadonlyArray3, PyReadwriteArray2, ToPyArray, PyArrayMethods, ndarray};
 use pyo3::prelude::*;
 use rayon::prelude::*;
+use ndarray::prelude::*;
 
 #[pyfunction]
 pub fn lmip(
@@ -85,6 +86,7 @@ pub fn lmip(
     Ok(())
 }
 
+#[inline(always)]
 fn get_opacity(vl: i16, wl: i16, ww: i16) -> f32 {
     let min_value = wl - (ww / 2);
     let max_value = wl + (ww / 2);
@@ -99,7 +101,7 @@ fn get_opacity(vl: i16, wl: i16, ww: i16) -> f32 {
 }
 
 #[pyfunction]
-pub fn mida(
+pub fn mida_old(
     image: PyReadonlyArray3<i16>,
     axis: usize,
     wl: i16,
@@ -140,7 +142,7 @@ pub fn mida(
 
                         let bt = 1.0 - dl;
                         let colour = fpi;
-                        let alpha = get_opacity(vl, wl, ww);
+                        let alpha = get_opacity(vl as i16, wl, ww);
 
                         let new_colour = (bt * colour_p) + (1.0 - bt * alpha_p) * colour * alpha;
                         let new_alpha = (bt * alpha_p) + (1.0 - bt * alpha_p) * alpha;
@@ -252,6 +254,73 @@ pub fn mida(
     }
     Ok(())
 }
+
+
+#[pyfunction]
+pub fn mida(
+    image: PyReadonlyArray3<i16>,
+    axis: usize,
+    wl: i16,
+    ww: i16,
+    mut out: PyReadwriteArray2<i16>,
+) {
+    let img = image.as_array();
+    let mut out_view = out.as_array_mut();
+    
+    // Cálculos preliminares
+    let img_min = *img.iter().min().unwrap_or(&0) as f32;
+    let img_max = *img.iter().max().unwrap_or(&0) as f32;
+    let range = img_max - img_min;
+
+    // Isso é mais eficiente que paralelizar o raio de projeção interno
+    out_view.indexed_iter_mut()
+        .collect::<Vec<_>>() // Coletamos para facilitar o paralelismo sobre pixels
+        .into_par_iter()
+        .for_each(|((r, c), val)| {
+            // Para cada pixel (r, c) na saída, calculamos o raio
+            // Selecionamos a linha de pixels através do volume
+            let lane = match axis {
+                0 => img.slice(s![.., r, c]), // Z é o que sobra
+                1 => img.slice(s![r, .., c]), // Y é o que sobra
+                _ => img.slice(s![r, c, ..]), // X é o que sobra
+            };
+
+            let mut fmax = 0.0;
+            let mut alpha_p = 0.0;
+            let mut colour_p = 0.0;
+            let mut final_colour = 0.0;
+
+            for &vl_raw in lane {
+                let vl = vl_raw as f32;
+                let fpi = (1.0 / range) * (vl - img_min);
+                
+                let dl = if fpi > fmax {
+                    let diff = fpi - fmax;
+                    fmax = fpi;
+                    diff
+                } else {
+                    0.0
+                };
+
+                let bt = 1.0 - dl;
+                let alpha = get_opacity(vl_raw, wl, ww);
+                
+                let colour = (bt * colour_p) + (1.0 - bt * alpha_p) * fpi * alpha;
+                let current_alpha = (bt * alpha_p) + (1.0 - bt * alpha_p) * alpha;
+
+                colour_p = colour;
+                alpha_p = current_alpha;
+                final_colour = colour;
+
+                if current_alpha >= 1.0 {
+                    break;
+                }
+            }
+
+            *val = (range * final_colour + img_min) as i16;
+        });
+}
+
 
 fn finite_difference(image: &ndarray::ArrayView3<i16>, x: usize, y: usize, z: usize, h: f32) -> [f32; 3] {
     let dims = image.shape();
@@ -371,7 +440,7 @@ pub fn fast_countour_mip(
         }
         2 => {
             // MIDA
-            mida(tmp_py.readonly(), axis, wl, ww, out)?;
+            mida(tmp_py.readonly(), axis, wl, ww, out);
         }
         _ => (),
     }
