@@ -272,11 +272,7 @@ pub fn mida(
     let img_max = *img.iter().max().unwrap_or(&0) as f32;
     let range = img_max - img_min;
 
-    // Isso é mais eficiente que paralelizar o raio de projeção interno
-    out_view.indexed_iter_mut()
-        .collect::<Vec<_>>() // Coletamos para facilitar o paralelismo sobre pixels
-        .into_par_iter()
-        .for_each(|((r, c), val)| {
+    azip!((index (r, c), val in &mut out_view) {
             // Para cada pixel (r, c) na saída, calculamos o raio
             // Selecionamos a linha de pixels através do volume
             let lane = match axis {
