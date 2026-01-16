@@ -2,7 +2,7 @@ use numpy::{PyReadonlyArray3, PyReadwriteArray2, ToPyArray, PyArrayMethods, ndar
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use ndarray::prelude::*;
-use ndarray::parallel::par_azip;
+use ndarray::parallel::prelude::*;
 
 #[pyfunction]
 pub fn lmip(
@@ -374,62 +374,32 @@ pub fn fast_countour_mip(
     // Calculate FCM intensity for entire volume
     let mut tmp = ndarray::Array3::<i16>::zeros((sz, sy, sx));
     
-    for z in 0..sz {
-        for y in 0..sy {
-            for x in 0..sx {
-                tmp[[z, y, x]] = calc_fcm_intensity(&image_arr, x, y, z, n, &dir) as i16;
-            }
-        }
-    }
+    par_azip!((index (z, y, x), val in &mut tmp){
+        *val = calc_fcm_intensity(&image_arr, x, y, z, n, &dir) as i16;
+    });
 
     let tmp_py = tmp.to_pyarray(py);
+    let img_min = i16::MIN;
 
     match tmip {
         0 => {
             // MIP - Maximum Intensity Projection
             let mut out_arr = out.as_array_mut();
-            match axis {
-                0 => {
-                    for y in 0..sy {
-                        for x in 0..sx {
-                            let mut max_val = tmp[[0, y, x]];
-                            for z in 1..sz {
-                                if tmp[[z, y, x]] > max_val {
-                                    max_val = tmp[[z, y, x]];
-                                }
-                            }
-                            out_arr[[y, x]] = max_val;
-                        }
+            par_azip!((index (r, c), val in &mut out_arr){
+                let lane = match axis {
+                    0 => tmp.slice(s![.., r, c]),
+                    1 => tmp.slice(s![r, .., c]),
+                    _ => tmp.slice(s![r, c, ..])
+
+                };
+                let mut max_val = img_min;
+                for &vl in lane {
+                    if vl > max_val {
+                        max_val = vl;
                     }
                 }
-                1 => {
-                    for z in 0..sz {
-                        for x in 0..sx {
-                            let mut max_val = tmp[[z, 0, x]];
-                            for y in 1..sy {
-                                if tmp[[z, y, x]] > max_val {
-                                    max_val = tmp[[z, y, x]];
-                                }
-                            }
-                            out_arr[[z, x]] = max_val;
-                        }
-                    }
-                }
-                2 => {
-                    for z in 0..sz {
-                        for y in 0..sy {
-                            let mut max_val = tmp[[z, y, 0]];
-                            for x in 1..sx {
-                                if tmp[[z, y, x]] > max_val {
-                                    max_val = tmp[[z, y, x]];
-                                }
-                            }
-                            out_arr[[z, y]] = max_val;
-                        }
-                    }
-                }
-                _ => (),
-            }
+                *val = max_val;
+            })
         }
         1 => {
             // LMIP
