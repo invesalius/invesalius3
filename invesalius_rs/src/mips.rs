@@ -2,6 +2,7 @@ use numpy::{PyReadonlyArray3, PyReadwriteArray2, ToPyArray, PyArrayMethods, ndar
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use ndarray::prelude::*;
+use ndarray::parallel::par_azip;
 
 #[pyfunction]
 pub fn lmip(
@@ -272,7 +273,7 @@ pub fn mida(
     let img_max = *img.iter().max().unwrap_or(&0) as f32;
     let range = img_max - img_min;
 
-    azip!((index (r, c), val in &mut out_view) {
+    par_azip!((index (r, c), val in &mut out_view) {
             // Para cada pixel (r, c) na saída, calculamos o raio
             // Selecionamos a linha de pixels através do volume
             let lane = match axis {
