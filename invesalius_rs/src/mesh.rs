@@ -2,7 +2,10 @@ use crate::types::{NormalT, VertexIdT, VertexT};
 use nalgebra::{Point3, Vector3};
 use numpy::{PyReadonlyArray2, ToPyArray, ndarray};
 use pyo3::prelude::*;
+use core::f64;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::Mutex;
+use ndarray::parallel::prelude::*;
 
 #[pyclass]
 pub struct Mesh {
@@ -105,12 +108,12 @@ impl Mesh {
         let mut output = Vec::new();
 
         for v_id in 0..n_vertices {
-            let mut max_z = -10000.0;
-            let mut min_z = 10000.0;
-            let mut max_y = -10000.0;
-            let mut min_y = 10000.0;
-            let mut max_x = -10000.0;
-            let mut min_x = 10000.0;
+            let mut max_z = f64::MAX;
+            let mut min_z = f64::MIN;
+            let mut max_y = f64::MAX;
+            let mut min_y = f64::MIN;
+            let mut max_x = f64::MAX;
+            let mut min_x = f64::MIN;
 
             if let Some(f_ids) = self.map_vface.get(&v_id) {
                 for &f_id in f_ids {
@@ -223,10 +226,13 @@ impl Mesh {
         bmin: f32,
     ) -> Vec<f32> {
         let n_vertices = self.vertices.shape()[0];
-        let mut weights = vec![bmin; n_vertices];
+        let weights = Mutex::new(vec![bmin; n_vertices]);
 
-        for &vi_id in vertices_staircase {
-            weights[vi_id] = 1.0;
+        vertices_staircase.par_iter().for_each(|&vi_id| {
+            {
+                let mut weights = weights.lock().unwrap();
+                weights[vi_id] = 1.0;
+            }
 
             let near_vertices = self.get_near_vertices_to_v(vi_id, tmax);
             let vi = self.vertices.row(vi_id);
@@ -238,13 +244,14 @@ impl Mesh {
                 let d = (p_vi - p_vj).norm();
                 let value = (1.0 - d / tmax) * (1.0 - bmin) + bmin;
                 
+                let mut weights = weights.lock().unwrap();
                 if value > weights[vj_id] {
                     weights[vj_id] = value;
                 }
             }
-        }
+        });
 
-        weights
+        weights.into_inner().unwrap()
     }
 
     fn calc_d(&self, v_id: usize) -> Vector3<f32> {
@@ -286,27 +293,29 @@ impl Mesh {
         for _ in 0..steps {
             // Calculate D for all vertices
             let d_values: Vec<Vector3<f32>> = (0..n_vertices)
+                .into_par_iter()
                 .map(|i| self.calc_d(i))
                 .collect();
             
             // Apply first smoothing step (lambda)
-            for i in 0..n_vertices {
-                self.vertices[[i, 0]] += weights[i] * l * d_values[i].x;
-                self.vertices[[i, 1]] += weights[i] * l * d_values[i].y;
-                self.vertices[[i, 2]] += weights[i] * l * d_values[i].z;
-            }
+            par_azip!((index i, mut vertex in self.vertices.outer_iter_mut()) {
+                vertex[[0]] += weights[i] * l * d_values[i].x;
+                vertex[[1]] += weights[i] * l * d_values[i].y;
+                vertex[[2]] += weights[i] * l * d_values[i].z;
+            });
             
             // Recalculate D
             let d_values: Vec<Vector3<f32>> = (0..n_vertices)
+                .into_par_iter()
                 .map(|i| self.calc_d(i))
                 .collect();
             
             // Apply second smoothing step (mu)
-            for i in 0..n_vertices {
-                self.vertices[[i, 0]] += weights[i] * m * d_values[i].x;
-                self.vertices[[i, 1]] += weights[i] * m * d_values[i].y;
-                self.vertices[[i, 2]] += weights[i] * m * d_values[i].z;
-            }
+            par_azip!((index i, mut vertex in self.vertices.outer_iter_mut()) {
+                vertex[[0]] += weights[i] * m * d_values[i].x;
+                vertex[[1]] += weights[i] * m * d_values[i].y;
+                vertex[[2]] += weights[i] * m * d_values[i].z;
+            });
         }
     }
 }
