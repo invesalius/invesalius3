@@ -1,8 +1,8 @@
-use numpy::{PyReadonlyArray3, PyReadwriteArray2, ToPyArray, PyArrayMethods, ndarray};
+use ndarray::parallel::prelude::*;
+use ndarray::prelude::*;
+use numpy::{ndarray, PyArrayMethods, PyReadonlyArray3, PyReadwriteArray2, ToPyArray};
 use pyo3::prelude::*;
 use rayon::prelude::*;
-use ndarray::prelude::*;
-use ndarray::parallel::prelude::*;
 
 #[pyfunction]
 pub fn lmip(
@@ -128,7 +128,7 @@ pub fn mida_old(
                     let mut fmax = 0.0f32;
                     let mut alpha_p = 0.0f32;
                     let mut colour_p = 0.0f32;
-                    
+
                     for z in 0..sz {
                         let vl = image_arr[[z, y, x]];
                         let fpi = (vl - min) as f32 / range;
@@ -172,7 +172,7 @@ pub fn mida_old(
                     let mut fmax = 0.0f32;
                     let mut alpha_p = 0.0f32;
                     let mut colour_p = 0.0f32;
-                    
+
                     for y in 0..sy {
                         let vl = image_arr[[z, y, x]];
                         let fpi = (vl - min) as f32 / range;
@@ -216,7 +216,7 @@ pub fn mida_old(
                     let mut fmax = 0.0f32;
                     let mut alpha_p = 0.0f32;
                     let mut colour_p = 0.0f32;
-                    
+
                     for x in 0..sx {
                         let vl = image_arr[[z, y, x]];
                         let fpi = (vl - min) as f32 / range;
@@ -256,7 +256,6 @@ pub fn mida_old(
     Ok(())
 }
 
-
 #[pyfunction]
 pub fn mida(
     image: PyReadonlyArray3<i16>,
@@ -267,59 +266,65 @@ pub fn mida(
 ) {
     let img = image.as_array();
     let mut out_view = out.as_array_mut();
-    
+
     // Cálculos preliminares
     let img_min = *img.iter().min().unwrap_or(&0) as f32;
     let img_max = *img.iter().max().unwrap_or(&0) as f32;
     let range = img_max - img_min;
 
     par_azip!((index (r, c), val in &mut out_view) {
-            // Para cada pixel (r, c) na saída, calculamos o raio
-            // Selecionamos a linha de pixels através do volume
-            let lane = match axis {
-                0 => img.slice(s![.., r, c]), // Z é o que sobra
-                1 => img.slice(s![r, .., c]), // Y é o que sobra
-                _ => img.slice(s![r, c, ..]), // X é o que sobra
+        // Para cada pixel (r, c) na saída, calculamos o raio
+        // Selecionamos a linha de pixels através do volume
+        let lane = match axis {
+            0 => img.slice(s![.., r, c]), // Z é o que sobra
+            1 => img.slice(s![r, .., c]), // Y é o que sobra
+            _ => img.slice(s![r, c, ..]), // X é o que sobra
+        };
+
+        let mut fmax = 0.0;
+        let mut alpha_p = 0.0;
+        let mut colour_p = 0.0;
+        let mut final_colour = 0.0;
+
+        for &vl_raw in lane {
+            let vl = vl_raw as f32;
+            let fpi = (1.0 / range) * (vl - img_min);
+
+            let dl = if fpi > fmax {
+                let diff = fpi - fmax;
+                fmax = fpi;
+                diff
+            } else {
+                0.0
             };
 
-            let mut fmax = 0.0;
-            let mut alpha_p = 0.0;
-            let mut colour_p = 0.0;
-            let mut final_colour = 0.0;
+            let bt = 1.0 - dl;
+            let alpha = get_opacity(vl_raw, wl, ww);
 
-            for &vl_raw in lane {
-                let vl = vl_raw as f32;
-                let fpi = (1.0 / range) * (vl - img_min);
-                
-                let dl = if fpi > fmax {
-                    let diff = fpi - fmax;
-                    fmax = fpi;
-                    diff
-                } else {
-                    0.0
-                };
+            let colour = (bt * colour_p) + (1.0 - bt * alpha_p) * fpi * alpha;
+            let current_alpha = (bt * alpha_p) + (1.0 - bt * alpha_p) * alpha;
 
-                let bt = 1.0 - dl;
-                let alpha = get_opacity(vl_raw, wl, ww);
-                
-                let colour = (bt * colour_p) + (1.0 - bt * alpha_p) * fpi * alpha;
-                let current_alpha = (bt * alpha_p) + (1.0 - bt * alpha_p) * alpha;
+            colour_p = colour;
+            alpha_p = current_alpha;
+            final_colour = colour;
 
-                colour_p = colour;
-                alpha_p = current_alpha;
-                final_colour = colour;
-
-                if current_alpha >= 1.0 {
-                    break;
-                }
+            if current_alpha >= 1.0 {
+                break;
             }
+        }
 
-            *val = (range * final_colour + img_min) as i16;
-        });
+        *val = (range * final_colour + img_min) as i16;
+    });
 }
 
-
-fn finite_difference(image: &ndarray::ArrayView3<i16>, x: usize, y: usize, z: usize, h: f32) -> [f32; 3] {
+#[inline(always)]
+fn finite_difference(
+    image: &ndarray::ArrayView3<i16>,
+    x: usize,
+    y: usize,
+    z: usize,
+    h: f32,
+) -> [f32; 3] {
     let dims = image.shape();
     let (sz, sy, sx) = (dims[0], dims[1], dims[2]);
 
@@ -337,7 +342,14 @@ fn finite_difference(image: &ndarray::ArrayView3<i16>, x: usize, y: usize, z: us
     [gx, gy, gz]
 }
 
-fn calc_fcm_intensity(image: &ndarray::ArrayView3<i16>, x: usize, y: usize, z: usize, n: f32, dir: &[f32; 3]) -> f32 {
+fn calc_fcm_intensity(
+    image: &ndarray::ArrayView3<i16>,
+    x: usize,
+    y: usize,
+    z: usize,
+    n: f32,
+    dir: &[f32; 3],
+) -> f32 {
     let g = finite_difference(image, x, y, z, 1.0);
     let gm = (g[0] * g[0] + g[1] * g[1] + g[2] * g[2]).sqrt();
     if gm == 0.0 {
@@ -373,33 +385,21 @@ pub fn fast_countour_mip(
 
     // Calculate FCM intensity for entire volume
     let mut tmp = ndarray::Array3::<i16>::zeros((sz, sy, sx));
-    
+
     par_azip!((index (z, y, x), val in &mut tmp){
         *val = calc_fcm_intensity(&image_arr, x, y, z, n, &dir) as i16;
     });
 
     let tmp_py = tmp.to_pyarray(py);
-    let img_min = i16::MIN;
 
     match tmip {
         0 => {
             // MIP - Maximum Intensity Projection
+            // Similar ao arr.max(axis) do NumPy - calcula máximo ao longo do eixo especificado
+            // Usa fold_axis que é o equivalente de alto nível do ndarray
+            let max_result = tmp.fold_axis(Axis(axis), i16::MIN, |&a, &b| a.max(b));
             let mut out_arr = out.as_array_mut();
-            par_azip!((index (r, c), val in &mut out_arr){
-                let lane = match axis {
-                    0 => tmp.slice(s![.., r, c]),
-                    1 => tmp.slice(s![r, .., c]),
-                    _ => tmp.slice(s![r, c, ..])
-
-                };
-                let mut max_val = img_min;
-                for &vl in lane {
-                    if vl > max_val {
-                        max_val = vl;
-                    }
-                }
-                *val = max_val;
-            })
+            out_arr.assign(&max_result);
         }
         1 => {
             // LMIP
