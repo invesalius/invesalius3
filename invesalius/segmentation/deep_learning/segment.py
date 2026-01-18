@@ -264,10 +264,12 @@ def segment_torch_jit(
     model.to(device)
     model.eval()
 
+    completion_steps = sum([True, flipped, resize_by_spacing])
+
     sums = np.zeros_like(image)
     # segmenting by patches
     for completion, sub_image, patch in gen_patches(image, patch_size, overlap):
-        comm_array[0] = completion
+        comm_array[0] = completion / completion_steps
         (iz, ez), (iy, ey), (ix, ex) = patch
         sub_mask = predict_patch_torch(sub_image, patch, model, device, patch_size)
         probability_array[iz:ez, iy:ey, ix:ex] += sub_mask.squeeze()
@@ -278,11 +280,13 @@ def segment_torch_jit(
     # FIX: to remove
     if flipped:
         probability_array = np.flip(probability_array, 2)
+        comm_array[0] += 1 / completion_steps
 
     if resize_by_spacing:
         original_probability_array[:] = resize(
             probability_array, output_shape=old_shape, preserve_range=True
         )
+        comm_array[0] += 1 / completion_steps
 
     comm_array[0] = np.inf
 
