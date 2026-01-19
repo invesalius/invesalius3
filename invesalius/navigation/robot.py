@@ -230,14 +230,46 @@ class Robot:
         center_P_clean = (left + right) / 2.0
         depth_vector_P = anterior - center_P_clean
 
+        # Pontos originais (6)
         points_of_interest_world = {
-            "quintet_left": left + depth_vector_P,
             "left": left,
-            "anterior": anterior,
-            "quintet_right": right + depth_vector_P,
             "right": right,
+            "anterior": anterior,
             "center": center_P_clean,
+            "quintet_left": left + depth_vector_P,
+            "quintet_right": right + depth_vector_P,
         }
+
+        # Pontos intermediários laterais (3)
+        points_of_interest_world["mid_left_center"] = (left + center_P_clean) / 2.0
+        points_of_interest_world["mid_right_center"] = (right + center_P_clean) / 2.0
+        points_of_interest_world["mid_left_right"] = (left + right) / 2.0
+
+        # Pontos em profundidade (4)
+        points_of_interest_world["mid_anterior_center"] = (anterior + center_P_clean) / 2.0
+        points_of_interest_world["deep_left"] = left + 2 * depth_vector_P
+        points_of_interest_world["deep_right"] = right + 2 * depth_vector_P
+        points_of_interest_world["deep_center"] = center_P_clean + depth_vector_P
+
+        # Pontos quintet intermediários (3)
+        center_deep = center_P_clean + depth_vector_P
+        points_of_interest_world["mid_quintet_left_center"] = (
+            points_of_interest_world["quintet_left"] + center_deep
+        ) / 2.0
+        points_of_interest_world["mid_quintet_right_center"] = (
+            points_of_interest_world["quintet_right"] + center_deep
+        ) / 2.0
+        points_of_interest_world["mid_quintet_left_right"] = (
+            points_of_interest_world["quintet_left"] + points_of_interest_world["quintet_right"]
+        ) / 2.0
+
+        # Pontos de borda (4)
+        points_of_interest_world["edge_left_anterior"] = (left + anterior) / 2.0
+        points_of_interest_world["edge_right_anterior"] = (right + anterior) / 2.0
+        points_of_interest_world["quarter_left"] = center_P_clean + 0.75 * (left - center_P_clean)
+        points_of_interest_world["quarter_right"] = center_P_clean + 0.75 * (right - center_P_clean)
+
+        # Total: 20 pontos virtuais (6 originais + 14 novos)
         R_world_to_marker = Rotation.from_euler("ZYX", init_coil_angle, degrees=True).as_matrix().T
 
         self.shifts_center_coil = {
@@ -390,13 +422,20 @@ class Robots(metaclass=Singleton):
         if len(points_of_interesting_all) < 2:
             return None
 
-        distances = [
-            distance.euclidean(p1, p2)
-            for p1 in points_of_interesting_all[0]
-            for p2 in points_of_interesting_all[1]
-        ]
+        # Otimização: calcular distância mínima sem criar lista completa
+        # Com 20 pontos, evitamos criar lista de 400 elementos
+        min_distance = float("inf")
+        for p1 in points_of_interesting_all[0]:
+            for p2 in points_of_interesting_all[1]:
+                # np.linalg.norm é mais rápido que scipy.spatial.distance.euclidean
+                dist = np.linalg.norm(p1 - p2)
+                if dist < min_distance:
+                    min_distance = dist
+                    # Early exit se distância já for muito próxima de zero
+                    if min_distance < 1e-6:
+                        return min_distance
 
-        return min(distances) if distances else None
+        return min_distance if min_distance != float("inf") else None
 
     def UpdaeCoilsPosesView(self, points_of_interesting):
         Publisher.sendMessage("Update dynamic Balls", positions=points_of_interesting)
