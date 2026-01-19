@@ -91,9 +91,6 @@ def convolve_non_zero(
 # Mask cut function
 def mask_cut(
     image: NDArray[np.int16],
-    x_coords: NDArray[np.int32],
-    y_coords: NDArray[np.int32],
-    z_coords: NDArray[np.int32],
     sx: float,
     sy: float,
     sz: float,
