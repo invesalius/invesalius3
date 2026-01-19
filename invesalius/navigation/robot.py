@@ -229,7 +229,7 @@ class Robot:
 
         center_P_clean = (left + right) / 2.0
         depth_vector_P = anterior - center_P_clean
-        
+
         points_of_interest_world = {
             "quintet_left": left + depth_vector_P,
             "left": left,
@@ -238,13 +238,11 @@ class Robot:
             "right": right,
             "center": center_P_clean,
         }
-        R_world_to_marker = Rotation.from_euler(
-        'zyx', init_coil_angle, degrees=True
-        ).as_matrix().T
+        R_world_to_marker = Rotation.from_euler("ZYX", init_coil_angle, degrees=True).as_matrix().T
 
         self.shifts_center_coil = {
-        name: R_world_to_marker @ (p_world - init_coord_coil)
-        for name, p_world in points_of_interest_world.items()
+            name: R_world_to_marker @ (p_world - init_coord_coil)
+            for name, p_world in points_of_interest_world.items()
         }
 
     def SendTargetToRobot(self):
@@ -366,26 +364,24 @@ class Robots(metaclass=Singleton):
         coils_name = self.GetAllCoilsRobots()
         if not all(coils_name):
             return None
-        
+
         points_of_interesting_all = []
         for coil_name in coils_name:
             robot = self.GetRobotByCoil(coil_name=coil_name)
-            
+
             # Obter coordenadas do tracker
-            coords, _ = robot.tracker.TrackerCoordinates.GetCoordinates(
-                robot_ID=robot.robot_name)
-            
+            coords, _ = robot.tracker.TrackerCoordinates.GetCoordinates(robot_ID=robot.robot_name)
+
             pose_idx = 2 if robot.robot_name == "robot_1" else 3
             pose_coil_atual = coords[pose_idx]
 
             t_atual = pose_coil_atual[:3]
             angles_atual = pose_coil_atual[3:]
 
-            R_atual = Rotation.from_euler('zyx', angles_atual, degrees=True).as_matrix()
+            R_atual = Rotation.from_euler("ZYX", angles_atual, degrees=True).as_matrix()
 
             points_world = [
-            R_atual @ shift_local + t_atual 
-            for shift_local in robot.shifts_center_coil.values()
+                R_atual @ shift_local + t_atual for shift_local in robot.shifts_center_coil.values()
             ]
             if pose_idx == 3:
                 pass
@@ -395,11 +391,11 @@ class Robots(metaclass=Singleton):
             return None
 
         distances = [
-        distance.euclidean(p1, p2)
-        for p1 in points_of_interesting_all[0]
-        for p2 in points_of_interesting_all[1]
+            distance.euclidean(p1, p2)
+            for p1 in points_of_interesting_all[0]
+            for p2 in points_of_interesting_all[1]
         ]
-    
+
         return min(distances) if distances else None
 
     def UpdaeCoilsPosesView(self, points_of_interesting):
