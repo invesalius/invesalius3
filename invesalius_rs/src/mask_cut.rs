@@ -1,21 +1,22 @@
 use nalgebra::{Matrix4, Vector4};
 use numpy::{PyReadonlyArray1, PyReadonlyArray2, PyReadonlyArray3, PyReadwriteArray3};
 use pyo3::prelude::*;
+use ndarray::parallel::prelude::*;
 
 #[pyfunction]
 pub fn mask_cut(
-    _image: PyReadonlyArray3<i16>,
+    _image: PyReadonlyArray3<u8>,
     x_coords: PyReadonlyArray1<i32>,
     y_coords: PyReadonlyArray1<i32>,
     z_coords: PyReadonlyArray1<i32>,
-    sx: f32,
-    sy: f32,
-    sz: f32,
-    max_depth: f32,
-    mask: PyReadonlyArray2<u8>,
+    sx: f64,
+    sy: f64,
+    sz: f64,
+    max_depth: f64,
+    mask: PyReadonlyArray2<bool>,
     m: PyReadonlyArray2<f64>,
     mv: PyReadonlyArray2<f64>,
-    mut out: PyReadwriteArray3<i16>,
+    mut out: PyReadwriteArray3<u8>,
 ) -> PyResult<()> {
     let m_slice = m.as_slice().unwrap();
     let mv_slice = mv.as_slice().unwrap();
@@ -27,19 +28,16 @@ pub fn mask_cut(
     let (h, w) = (mask_dims[0], mask_dims[1]);
 
     let mut out_arr = out.as_array_mut();
+    let out_ptr = out_arr.as_mut_ptr() as usize;
+    let out_strides = out_arr.strides();
+    let out_shape = out_arr.shape();
 
     let x_coords_arr = x_coords.as_array();
     let y_coords_arr = y_coords.as_array();
     let z_coords_arr = z_coords.as_array();
 
-    let n = z_coords_arr.len();
-
-    for i in 0..n {
-        let x = x_coords_arr[i] as f64;
-        let y = y_coords_arr[i] as f64;
-        let z = z_coords_arr[i] as f64;
-
-        let p = Vector4::new(x * sx as f64, y * sy as f64, z * sz as f64, 1.0);
+    par_azip!((x in x_coords_arr, y in y_coords_arr, z in z_coords_arr) {
+        let p = Vector4::new(*x as f64 * sx, *y as f64 * sy, *z as f64 * sz, 1.0);
 
         let q_ = m_nalgebra * p;
         if q_[3] > 0.0 {
@@ -55,13 +53,25 @@ pub fn mask_cut(
                 let py = (q[1] / 2.0 + 0.5) * (h - 1) as f64;
 
                 if px >= 0.0 && px < w as f64 && py >= 0.0 && py < h as f64 {
-                    if mask_arr[[py as usize, px as usize]] != 0 {
-                        out_arr[[z as usize, y as usize, x as usize]] = 0;
+                    if !mask_arr[[py as usize, px as usize]] {
+                        let z_idx = *z as usize;
+                        let y_idx = *y as usize;
+                        let x_idx = *x as usize;
+                        
+                        if z_idx < out_shape[0] && y_idx < out_shape[1] && x_idx < out_shape[2] {
+                            unsafe {
+                                let ptr = out_ptr as *mut u8;
+                                let offset = z_idx as isize * out_strides[0] 
+                                           + y_idx as isize * out_strides[1] 
+                                           + x_idx as isize * out_strides[2];
+                                *ptr.offset(offset) = 0;
+                            }
+                        }
                     }
                 }
             }
         }
-    }
+    });
 
     Ok(())
 }
