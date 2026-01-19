@@ -216,46 +216,36 @@ class Robot:
     def SetInitCoilCoords(
         self, left=None, right=None, anterior=None, init_coord_coil=None, init_coil_angle=None
     ):
-        # 1. Validar dados
         if not all(
             [v is not None for v in [left, right, anterior, init_coord_coil, init_coil_angle]]
         ):
             print("Erro: Dados de registro inicial incompletos.")
             return
 
-        left = np.array(left, dtype=float)
-        right = np.array(right, dtype=float)
-        anterior = np.array(anterior, dtype=float)
+        left, right, anterior = map(np.array, [left, right, anterior])
+
         init_coord_coil = np.array(init_coord_coil, dtype=float)
         init_coil_angle = np.array(init_coil_angle, dtype=float)
 
         center_P_clean = (left + right) / 2.0
         depth_vector_P = anterior - center_P_clean
-        quintet_left_P = left + depth_vector_P
-        quintet_right_P = right + depth_vector_P
         
         points_of_interest_world = {
-        "quintet_left": quintet_left_P,
-        "left": left,
-        "anterior": anterior,
-        "quintet_right": quintet_right_P,
-        "right": right,
-        "center": center_P_clean,
-    }
+            "quintet_left": left + depth_vector_P,
+            "left": left,
+            "anterior": anterior,
+            "quintet_right": right + depth_vector_P,
+            "right": right,
+            "center": center_P_clean,
+        }
+        R_world_to_marker = Rotation.from_euler(
+        'zyx', init_coil_angle, degrees=True
+        ).as_matrix().T
 
-        r_marker_to_world = Rotation.from_euler('zyx', init_coil_angle, degrees=True)
-        R_marker_to_world = r_marker_to_world.as_matrix()
-        R_world_to_marker = R_marker_to_world.T
-
-        self.shifts_center_coil = {}
-        for name, p_world in points_of_interest_world.items():
-            # Vetor de shift no frame Mundial
-            shift_world = p_world - init_coord_coil
-            
-            # Converter para o frame Local e salvar
-            # P_local = R_inversa * (P_mundo - T_mundo)
-            shift_local = R_world_to_marker @ shift_world
-            self.shifts_center_coil[name] = shift_local
+        self.shifts_center_coil = {
+        name: R_world_to_marker @ (p_world - init_coord_coil)
+        for name, p_world in points_of_interest_world.items()
+        }
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -374,42 +364,43 @@ class Robots(metaclass=Singleton):
 
     def CalculateCoilDistance(self):
         coils_name = self.GetAllCoilsRobots()
-        if all(coils_name):
-            points_of_interesting_all = []
+        if not all(coils_name):
+            return None
+        
+        points_of_interesting_all = []
+        for coil_name in coils_name:
+            robot = self.GetRobotByCoil(coil_name=coil_name)
+            
+            # Obter coordenadas do tracker
+            coords, _ = robot.tracker.TrackerCoordinates.GetCoordinates(
+                robot_ID=robot.robot_name)
+            
+            pose_idx = 2 if robot.robot_name == "robot_1" else 3
+            pose_coil_atual = coords[pose_idx]
 
-            for idx, coil_name in enumerate(coils_name):
-                robot = self.GetRobotByCoil(coil_name=coil_name)
-                coords, marker_visibilities = robot.tracker.TrackerCoordinates.GetCoordinates(
-                    robot_ID=robot.robot_name
-                )
-                shifts_coil_local = robot.shifts_center_coil
-                if robot.robot_name == "robot_1":
-                    pose_coil_atual = coords[2]
-                else:
-                    pose_coil_atual = coords[3]
-                t_atual = pose_coil_atual[:3]
-                angles_atual = pose_coil_atual[3:]
-                r_atual = Rotation.from_euler('zyx', angles_atual, degrees=True)
-                R_atual = r_atual.as_matrix() # (R_atual)
+            t_atual = pose_coil_atual[:3]
+            angles_atual = pose_coil_atual[3:]
 
-                points_of_interesting = []
-                for shift_local in shifts_coil_local.values():
-                    point_world = (R_atual @ shift_local) + t_atual
-                    points_of_interesting.append(point_world)
-                points_of_interesting_all.append(points_of_interesting)
-            distance_coils = float("inf")
-            distance_coils_ = []
-            if len(points_of_interesting_all) > 1:
-                for idx, points_of_interesting_1 in enumerate(points_of_interesting_all[0]):
-                    for idy, points_of_interesting_2 in enumerate(points_of_interesting_all[1]):
-                        distance_coils_.append(
-                            distance.euclidean(points_of_interesting_1, points_of_interesting_2)
-                        )
-                if distance_coils_:
-                    distance_coils = min(distance_coils_)
+            R_atual = Rotation.from_euler('zyx', angles_atual, degrees=True).as_matrix()
 
-            return distance_coils
-        return None
+            points_world = [
+            R_atual @ shift_local + t_atual 
+            for shift_local in robot.shifts_center_coil.values()
+            ]
+            if pose_idx == 3:
+                pass
+            points_of_interesting_all.append(points_world)
+
+        if len(points_of_interesting_all) < 2:
+            return None
+
+        distances = [
+        distance.euclidean(p1, p2)
+        for p1 in points_of_interesting_all[0]
+        for p2 in points_of_interesting_all[1]
+        ]
+    
+        return min(distances) if distances else None
 
     def UpdaeCoilsPosesView(self, points_of_interesting):
         Publisher.sendMessage("Update dynamic Balls", positions=points_of_interesting)
@@ -513,36 +504,6 @@ class Robots(metaclass=Singleton):
             allReady.append(robot.IsReady())
 
         return all(allReady)
-
-    def angle_diff_sin_cos(self, list_a, list_b):
-        """
-        Subtrai ângulos (em graus) de duas listas, normaliza o resultado para [-180, 180],
-        e retorna arrays com seno e cosseno das diferenças.
-        """
-        a = np.array(list_a, dtype=float)
-        b = np.array(list_b, dtype=float)
-
-        # Subtrai e normaliza para [-180, 180]
-        diff = (a - b + 180) % 360 - 180
-
-        # Converte para radianos
-        diff_rad = np.radians(diff)
-
-        return diff_rad
-
-    def CalculateAngleCorrection(self, angles_coil, init_angles):
-        angles = self.angle_diff_sin_cos(angles_coil, init_angles)
-        alpha, beta, gamma = angles
-        ca, cb, cg = np.cos([alpha, beta, gamma])
-        sa, sb, sg = np.sin([alpha, beta, gamma])
-        R = np.array(
-            [
-                [cb * cg, -cb * sg, sb],
-                [sa * sb * cg + ca * sg, -sa * sb * sg + ca * cg, -sa * cb],
-                [-ca * sb * cg + sa * sg, ca * sb * sg + sa * cg, ca * cb],
-            ]
-        )
-        return R
 
     def UpdateCoilsDistance(self, coords):
         if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1:
