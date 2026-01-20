@@ -21,7 +21,7 @@ from enum import Enum
 
 import numpy as np
 import wx
-from scipy.spatial import distance
+from scipy.spatial import cKDTree
 from scipy.spatial.transform import Rotation
 
 import invesalius.data.coordinates as dco
@@ -437,10 +437,10 @@ class Robots(metaclass=Singleton):
 
         brake_vectors = {}
         brake_vectors["robot_1"] = self.CalculateBrakeVector(
-            closest_point_coil1, closest_point_coil2, coords[1]
+            closest_point_robot1, closest_point_robot2, coords[1][:3]
         )
         brake_vectors["robot_2"] = self.CalculateBrakeVector(
-            closest_point_coil2, closest_point_coil1, coords[1]
+            closest_point_robot2, closest_point_robot1, coords[1][:3]
         )
 
         return min_distance, brake_vectors
@@ -448,10 +448,10 @@ class Robots(metaclass=Singleton):
     def CalculateBrakeVector(self, closest_point_coil1, closest_point_coil2, ref_point):
         opposite_coil_vector = (
             np.array(closest_point_coil1, dtype=float) - np.array(closest_point_coil2, dtype=float)
-        )[:3]
+        )
         opposite_subject_vector = (
             np.array(closest_point_coil1, dtype=float) - np.array(ref_point, dtype=float)
-        )[:3]
+        )
         opposite_coil_vector_norm = np.linalg.norm(opposite_coil_vector)
         opposite_subject_vector_norm = np.linalg.norm(opposite_subject_vector)
 
@@ -575,6 +575,6 @@ class Robots(metaclass=Singleton):
                     Publisher.sendMessage(
                         "Neuronavigation to Robot: Dynamically update distance coils",
                         distance=distance_result,
-                        brake_vector=brake_vectors[robot_ID],
+                        brake_vector=list(brake_vectors[robot_ID]),
                         robot_ID=robot_ID,
                     )
