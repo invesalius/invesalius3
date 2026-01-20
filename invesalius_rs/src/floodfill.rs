@@ -1,24 +1,10 @@
 use ndarray::{ArrayView3, ArrayViewMut3};
-use numpy::{PyArray3, PyReadonlyArray3, PyReadwriteArray3};
+use numpy::{PyReadonlyArray3, PyReadwriteArray3};
 use pyo3::prelude::*;
 use std::collections::VecDeque;
-use pyo3::FromPyObject;
 
 use numpy::PyArrayMethods;
-
-#[derive(FromPyObject)]
-enum SupportedArray<'py> {
-    F64(Bound<'py, PyArray3<f64>>),
-    I16(Bound<'py, PyArray3<i16>>),
-    U8(Bound<'py, PyArray3<u8>>),
-}
-
-#[derive(FromPyObject)]
-enum SupportedArrayMut<'py> {
-    F64(Bound<'py, PyArray3<f64>>),
-    I16(Bound<'py, PyArray3<i16>>),
-    U8(Bound<'py, PyArray3<u8>>),
-}
+use crate::types::SupportedArray;
 
 #[pyfunction]
 pub fn floodfill(
@@ -392,10 +378,9 @@ pub fn floodfill_threshold<'py>(
     }
 }
 
-
 #[pyfunction]
 pub fn floodfill_threshold_inplace<'py>(
-    data: SupportedArrayMut<'py>,
+    data: SupportedArray<'py>,
     seeds: Vec<(usize, usize, usize)>,
     t0: Bound<'py, PyAny>,
     t1: Bound<'py, PyAny>,
@@ -403,7 +388,7 @@ pub fn floodfill_threshold_inplace<'py>(
     strct: PyReadonlyArray3<u8>,
 ) -> PyResult<()> {
     match data {
-        SupportedArrayMut::I16(data) => {
+        SupportedArray::I16(data) => {
             generic_floodfill_threshold_inplace(
                 data.readwrite().as_array_mut(),
                 seeds,
@@ -414,7 +399,7 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        SupportedArrayMut::U8(data) => {
+        SupportedArray::U8(data) => {
             generic_floodfill_threshold_inplace(
                 data.readwrite().as_array_mut(),
                 seeds,
@@ -425,7 +410,7 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        SupportedArrayMut::F64(data) => {
+        SupportedArray::F64(data) => {
             generic_floodfill_threshold_inplace(
                 data.readwrite().as_array_mut(),
                 seeds,
