@@ -29,6 +29,10 @@ jobs:
           run: |
             $COMMIT=$(git rev-parse HEAD)
             echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
+
+        - name: Force setuptools-scm version
+          run: |
+            echo "SETUPTOOLS_SCM_PRETEND_VERSION=3.1.0-nightly.${{ github.run_number }}" >> $env:GITHUB_ENV
   
         - uses: astral-sh/setup-uv@v5
           with:
