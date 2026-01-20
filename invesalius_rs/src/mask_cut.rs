@@ -1,5 +1,5 @@
 use nalgebra::{Matrix4, Vector4};
-use numpy::{PyReadonlyArray1, PyReadonlyArray2, PyReadonlyArray3, PyReadwriteArray3};
+use numpy::{PyReadonlyArray2, PyReadonlyArray3, PyReadwriteArray3};
 use pyo3::prelude::*;
 use ndarray::parallel::prelude::*;
 
@@ -27,24 +27,26 @@ pub fn mask_cut(
     let mut out_arr = out.as_array_mut();
 
     par_azip!((index (z, y, x), val in &mut out_arr) {
-        let p = Vector4::new(x as f64 * sx, y as f64 * sy, z as f64 * sz, 1.0);
+        if *val > 127 {
+            let p = Vector4::new(x as f64 * sx, y as f64 * sy, z as f64 * sz, 1.0);
 
-        let q_ = m_nalgebra * p;
-        if q_[3] > 0.0 {
-            let q = q_ / q_[3];
+            let q_ = m_nalgebra * p;
+            if q_[3] > 0.0 {
+                let q = q_ / q_[3];
 
-            let c_ = mv_nalgebra * p;
-            let c = c_ / c_[3];
+                let c_ = mv_nalgebra * p;
+                let c = c_ / c_[3];
 
-            let dist = (c[0] * c[0] + c[1] * c[1] + c[2] * c[2]).sqrt();
+                let dist = (c[0] * c[0] + c[1] * c[1] + c[2] * c[2]).sqrt();
 
-            if dist <= max_depth as f64 {
-                let px = (q[0] / 2.0 + 0.5) * (w - 1) as f64;
-                let py = (q[1] / 2.0 + 0.5) * (h - 1) as f64;
+                if dist <= max_depth as f64 {
+                    let px = (q[0] / 2.0 + 0.5) * (w - 1) as f64;
+                    let py = (q[1] / 2.0 + 0.5) * (h - 1) as f64;
 
-                if px >= 0.0 && px < w as f64 && py >= 0.0 && py < h as f64 {
-                    if mask_arr[[py as usize, px as usize]] {
-                        *val = 0;
+                    if px >= 0.0 && px < w as f64 && py >= 0.0 && py < h as f64 {
+                        if mask_arr[[py as usize, px as usize]] {
+                            *val = 0;
+                        }
                     }
                 }
             }
