@@ -230,46 +230,46 @@ class Robot:
         center_P_clean = (left + right) / 2.0
         depth_vector_P = anterior - center_P_clean
 
-        # Pontos originais (6)
+        # Pontos base (sempre incluídos)
         points_of_interest_world = {
             "left": left,
             "right": right,
             "anterior": anterior,
             "center": center_P_clean,
-            "quintet_left": left + depth_vector_P,
-            "quintet_right": right + depth_vector_P,
         }
 
-        # Pontos intermediários laterais (3)
-        points_of_interest_world["mid_left_center"] = (left + center_P_clean) / 2.0
-        points_of_interest_world["mid_right_center"] = (right + center_P_clean) / 2.0
-        points_of_interest_world["mid_left_right"] = (left + right) / 2.0
+        # Criar sistema de coordenadas 2D no plano formado por left, right, anterior
+        # Vetor base 1: da esquerda para direita
+        u_vector = right - left
 
-        # Pontos em profundidade (4)
-        points_of_interest_world["mid_anterior_center"] = (anterior + center_P_clean) / 2.0
-        points_of_interest_world["deep_left"] = left + 2 * depth_vector_P
-        points_of_interest_world["deep_right"] = right + 2 * depth_vector_P
-        points_of_interest_world["deep_center"] = center_P_clean + depth_vector_P
+        # Vetor base 2: do centro para anterior (profundidade)
+        v_vector = anterior - center_P_clean
 
-        # Pontos quintet intermediários (3)
-        center_deep = center_P_clean + depth_vector_P
-        points_of_interest_world["mid_quintet_left_center"] = (
-            points_of_interest_world["quintet_left"] + center_deep
-        ) / 2.0
-        points_of_interest_world["mid_quintet_right_center"] = (
-            points_of_interest_world["quintet_right"] + center_deep
-        ) / 2.0
-        points_of_interest_world["mid_quintet_left_right"] = (
-            points_of_interest_world["quintet_left"] + points_of_interest_world["quintet_right"]
-        ) / 2.0
+        # Criar grade uniforme 8x8 = 64 pontos
+        # Cobrir região tanto na frente (anterior) quanto atrás (mesma distância)
+        grid_size = 8  # 8x8 = 64 pontos
 
-        # Pontos de borda (4)
-        points_of_interest_world["edge_left_anterior"] = (left + anterior) / 2.0
-        points_of_interest_world["edge_right_anterior"] = (right + anterior) / 2.0
-        points_of_interest_world["quarter_left"] = center_P_clean + 0.75 * (left - center_P_clean)
-        points_of_interest_world["quarter_right"] = center_P_clean + 0.75 * (right - center_P_clean)
+        point_idx = len(points_of_interest_world)
 
-        # Total: 20 pontos virtuais (6 originais + 14 novos)
+        # Gerar pontos uniformemente distribuídos
+        for i in range(grid_size):
+            for j in range(grid_size):
+                # Coordenadas normalizadas [0, 1] para direção horizontal (left → right)
+                u_factor = i / (grid_size - 1) if grid_size > 1 else 0.5
+
+                # Coordenadas normalizadas [-1, 1] para direção vertical (trás → frente)
+                # v_factor = -1: mesma distância para trás
+                # v_factor = 0: no centro (linha left-right)
+                # v_factor = +1: anterior (frente)
+                v_factor = -1 + (2 * j / (grid_size - 1)) if grid_size > 1 else 0.0
+
+                # Ponto no plano: partindo de 'left', movendo em u (horizontal) e v (profundidade)
+                point = left + u_factor * u_vector + v_factor * v_vector
+
+                points_of_interest_world[f"p{point_idx}"] = point
+                point_idx += 1
+
+        # Total: 68 pontos (4 base + 64 grid)
         R_world_to_marker = Rotation.from_euler("ZYX", init_coil_angle, degrees=True).as_matrix().T
 
         self.shifts_center_coil = {
@@ -395,9 +395,9 @@ class Robots(metaclass=Singleton):
     def CalculateCoilDistance(self):
         coils_name = self.GetAllCoilsRobots()
         if not all(coils_name):
-            return None
+            return None, None
 
-        points_of_interesting_all = []
+        points_of_interesting_all = {}
         for coil_name in coils_name:
             robot = self.GetRobotByCoil(coil_name=coil_name)
 
@@ -415,27 +415,53 @@ class Robots(metaclass=Singleton):
             points_world = [
                 R_atual @ shift_local + t_atual for shift_local in robot.shifts_center_coil.values()
             ]
-            if pose_idx == 3:
-                pass
-            points_of_interesting_all.append(points_world)
+            points_of_interesting_all[robot.robot_name] = points_world
 
         if len(points_of_interesting_all) < 2:
-            return None
+            return None, None
 
-        # Otimização: calcular distância mínima sem criar lista completa
-        # Com 20 pontos, evitamos criar lista de 400 elementos
-        min_distance = float("inf")
-        for p1 in points_of_interesting_all[0]:
-            for p2 in points_of_interesting_all[1]:
-                # np.linalg.norm é mais rápido que scipy.spatial.distance.euclidean
-                dist = np.linalg.norm(p1 - p2)
-                if dist < min_distance:
-                    min_distance = dist
-                    # Early exit se distância já for muito próxima de zero
-                    if min_distance < 1e-6:
-                        return min_distance
+        tree = cKDTree(points_of_interesting_all["robot_1"])
 
-        return min_distance if min_distance != float("inf") else None
+        distances, indices = tree.query(points_of_interesting_all["robot_2"])
+
+        # min_idx_robot2: índice do ponto em robot_2 que está mais próximo
+        min_idx_robot2 = np.argmin(distances)
+        min_distance = distances[min_idx_robot2]
+
+        # min_idx_robot1: índice do ponto correspondente em robot_1
+        min_idx_robot1 = indices[min_idx_robot2]
+
+        # Coordenadas corretas dos pontos mais próximos
+        closest_point_robot1 = points_of_interesting_all["robot_1"][min_idx_robot1]
+        closest_point_robot2 = points_of_interesting_all["robot_2"][min_idx_robot2]
+
+        brake_vectors = {}
+        brake_vectors["robot_1"] = self.CalculateBrakeVector(
+            closest_point_coil1, closest_point_coil2, coords[1]
+        )
+        brake_vectors["robot_2"] = self.CalculateBrakeVector(
+            closest_point_coil2, closest_point_coil1, coords[1]
+        )
+
+        return min_distance, brake_vectors
+
+    def CalculateBrakeVector(self, closest_point_coil1, closest_point_coil2, ref_point):
+        opposite_coil_vector = (
+            np.array(closest_point_coil1, dtype=float) - np.array(closest_point_coil2, dtype=float)
+        )[:3]
+        opposite_subject_vector = (
+            np.array(closest_point_coil1, dtype=float) - np.array(ref_point, dtype=float)
+        )[:3]
+        opposite_coil_vector_norm = np.linalg.norm(opposite_coil_vector)
+        opposite_subject_vector_norm = np.linalg.norm(opposite_subject_vector)
+
+        if opposite_coil_vector_norm > 1e-9 and opposite_subject_vector_norm > 1e-9:
+            # Soma de vetores normalizados: direção combinada de repulsão
+            brake_direction = (opposite_coil_vector / opposite_coil_vector_norm) + (
+                opposite_subject_vector / opposite_subject_vector_norm
+            )
+            return brake_direction
+        return None
 
     def UpdaeCoilsPosesView(self, points_of_interesting):
         Publisher.sendMessage("Update dynamic Balls", positions=points_of_interesting)
@@ -542,12 +568,13 @@ class Robots(metaclass=Singleton):
 
     def UpdateCoilsDistance(self, coords):
         if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1:
-            distance_coils = self.CalculateCoilDistance()
-            if distance_coils:
+            distance_result, brake_vectors = self.CalculateCoilDistance()
+            if distance_result:
                 robots = self.GetAllRobots()
                 for robot_ID in robots.keys():
                     Publisher.sendMessage(
                         "Neuronavigation to Robot: Dynamically update distance coils",
-                        distance=distance_coils,
+                        distance=distance_result,
+                        brake_vector=brake_vectors[robot_ID],
                         robot_ID=robot_ID,
                     )
