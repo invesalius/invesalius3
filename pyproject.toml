@@ -17,6 +17,8 @@ dependencies = [
     "nibabel==5.2.1",
     "numpy==1.26.4",
     "onnx>=1.17.0",
+    "onnxruntime-gpu>=1.17.0 ; sys_platform == 'windows' or sys_platform == 'linux'",
+    "onnxruntime>=1.17.0 ; sys_platform == 'darwin'",
     "optitrack ; python_full_version == '3.8.*' and sys_platform == 'windows'",
     "pandas>=2.3.3",
     "pillow==10.3.0",
@@ -37,7 +39,7 @@ dependencies = [
     "wxpython==4.2.2",
 ]
 license = { file = "LICENSE.txt" }
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = "==3.12.*"
 
 
@@ -186,4 +188,5 @@ extend-ignore = ["E731"]
 
 [tool.ruff.format]
 line-ending = "lf"
+
 
