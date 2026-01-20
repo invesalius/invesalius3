@@ -29,7 +29,8 @@ dependencies = [
     "requests>=2.32.3",
     "scikit-image==0.24.0",
     "scipy==1.14.0",
-    "setuptools-scm",
+    "setuptools>=68", # Versions above 8 are causing errors on Windows. 
+    "setuptools-scm<8",
     "tinygrad==0.10.2",
     "torch>=2.3.1",
     "vtk==9.3.0",
