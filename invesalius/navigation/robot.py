@@ -398,11 +398,14 @@ class Robots(metaclass=Singleton):
             return None, None
 
         points_of_interesting_all = {}
+        coords_all = {}  # Store coords for each robot
+
         for coil_name in coils_name:
             robot = self.GetRobotByCoil(coil_name=coil_name)
 
-            # Obter coordenadas do tracker
+            # Get tracker coordinates
             coords, _ = robot.tracker.TrackerCoordinates.GetCoordinates(robot_ID=robot.robot_name)
+            coords_all[robot.robot_name] = coords  # Save for each robot
 
             pose_idx = 2 if robot.robot_name == "robot_1" else 3
             pose_coil_atual = coords[pose_idx]
@@ -424,43 +427,70 @@ class Robots(metaclass=Singleton):
 
         distances, indices = tree.query(points_of_interesting_all["robot_2"])
 
-        # min_idx_robot2: índice do ponto em robot_2 que está mais próximo
+        # min_idx_robot2: index of closest point in robot_2
         min_idx_robot2 = np.argmin(distances)
         min_distance = distances[min_idx_robot2]
 
-        # min_idx_robot1: índice do ponto correspondente em robot_1
+        # min_idx_robot1: index of corresponding point in robot_1
         min_idx_robot1 = indices[min_idx_robot2]
 
-        # Coordenadas corretas dos pontos mais próximos
+        # Coordinates of the closest points
         closest_point_robot1 = points_of_interesting_all["robot_1"][min_idx_robot1]
         closest_point_robot2 = points_of_interesting_all["robot_2"][min_idx_robot2]
 
+        # Head/subject coordinate (tracker index 1)
+        subject_pos_robot1 = coords_all["robot_1"][1][:3]
+        subject_pos_robot2 = coords_all["robot_2"][1][:3]
+
         brake_vectors = {}
         brake_vectors["robot_1"] = self.CalculateBrakeVector(
-            closest_point_robot1, closest_point_robot2, coords[1][:3]
+            closest_point_robot1, closest_point_robot2, subject_pos_robot1
         )
         brake_vectors["robot_2"] = self.CalculateBrakeVector(
-            closest_point_robot2, closest_point_robot1, coords[1][:3]
+            closest_point_robot2, closest_point_robot1, subject_pos_robot2
         )
 
         return min_distance, brake_vectors
 
-    def CalculateBrakeVector(self, closest_point_coil1, closest_point_coil2, ref_point):
-        opposite_coil_vector = (
-            np.array(closest_point_coil1, dtype=float) - np.array(closest_point_coil2, dtype=float)
-        )
-        opposite_subject_vector = (
-            np.array(closest_point_coil1, dtype=float) - np.array(ref_point, dtype=float)
-        )
-        opposite_coil_vector_norm = np.linalg.norm(opposite_coil_vector)
-        opposite_subject_vector_norm = np.linalg.norm(opposite_subject_vector)
+    def CalculateBrakeVector(self, closest_point_coil, closest_point_other, subject_pos):
+        """
+        Calculate repulsion direction vector.
 
-        if opposite_coil_vector_norm > 1e-9 and opposite_subject_vector_norm > 1e-9:
-            # Soma de vetores normalizados: direção combinada de repulsão
-            brake_direction = (opposite_coil_vector / opposite_coil_vector_norm) + (
-                opposite_subject_vector / opposite_subject_vector_norm
+        The coil should move away from:
+        1. The other coil (avoid inter-coil collision)
+        2. The subject's head (avoid contact with person)
+
+        Args:
+            closest_point_coil: Closest point on this coil [x, y, z]
+            closest_point_other: Closest point on the other coil [x, y, z]
+            subject_pos: Position of head/subject [x, y, z]
+
+        Returns:
+            Direction vector for repulsion (normalized sum of two components)
+        """
+        # Vector 1: REPEL from other coil
+        # Direction: from other_coil → this_coil
+        repel_from_other_coil = np.array(closest_point_coil, dtype=float) - np.array(
+            closest_point_other, dtype=float
+        )
+
+        # Vector 2: REPEL from head/subject
+        # Direction: from head → this_coil
+        repel_from_subject = np.array(closest_point_coil, dtype=float) - np.array(
+            subject_pos, dtype=float
+        )
+
+        norm_coil = np.linalg.norm(repel_from_other_coil)
+        norm_subject = np.linalg.norm(repel_from_subject)
+
+        if norm_coil > 1e-9 and norm_subject > 1e-9:
+            # Sum of normalized vectors: combined repulsion direction
+            # Both point "outward" (away from other coil AND head)
+            brake_direction = (repel_from_other_coil / norm_coil) + (
+                repel_from_subject / norm_subject
             )
             return brake_direction
+
         return None
 
     def UpdaeCoilsPosesView(self, points_of_interesting):
