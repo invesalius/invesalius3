@@ -32,8 +32,8 @@ jobs:
 
         - name: Force setuptools-scm version
           run: |
-            echo "SETUPTOOLS_SCM_PRETEND_VERSION=3.1.0-nightly.${{ github.run_number }}" >> $env:GITHUB_ENV
-  
+            echo "SETUPTOOLS_SCM_PRETEND_VERSION=3.1.0.dev${{ github.run_number }}" >> $env:GITHUB_ENV
+
         - uses: astral-sh/setup-uv@v5
           with:
             python-version: 3.12
