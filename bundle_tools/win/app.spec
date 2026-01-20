@@ -153,7 +153,7 @@ a = Analysis(['app.py'],
              hiddenimports=['scipy._lib.messagestream','skimage.restoration._denoise',\
                             'scipy.linalg', 'scipy.linalg.blas', 'scipy.interpolate',\
                             'pywt._extensions._cwt','skimage.filters.rank.core_cy_3d',\
-                            'encodings','setuptools'], #,'keras','plaidml.keras','plaidml.keras.backend'
+                            'encodings','setuptools','tinygrad'], #,'keras','plaidml.keras','plaidml.keras.backend'
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -188,4 +188,5 @@ coll = COLLECT(exe,
 
 
 #print("1 >>>>>>>>>> ",a.zipped_data)
+
 #print("2 >>>>>>>>>> ",a.pure)
