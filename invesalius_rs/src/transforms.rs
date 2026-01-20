@@ -1,6 +1,7 @@
 use nalgebra::{Matrix4, Vector4};
 use numpy::{PyReadonlyArray3, PyReadwriteArray3, PyReadonlyArray2, ToPyArray, PyUntypedArrayMethods, ndarray};
 use pyo3::prelude::*;
+use ndarray::parallel::prelude::*;
 
 use crate::interpolation::{trilinear_interpolate_internal, tricubic_interpolate_internal, lanczos_interpolate_internal};
 
@@ -69,43 +70,25 @@ pub fn apply_view_matrix_transform(
     let (odz, ody, odx) = (out_dims[0], out_dims[1], out_dims[2]);
 
     let mut out_arr = out.as_array_mut();
-    
-    match orientation.as_str() {
-        "AXIAL" => {
-            for count in 0..odz {
-                let z = n + count;
-                for y in 0..dy {
-                    for x in 0..dx {
-                        out_arr[[count, y, x]] =
-                            coord_transform(&volume_arr, &m_nalgebra, x, y, z, sx, sy, sz, minterpol, cval);
-                    }
-                }
+
+    par_azip!((index (cz,cy,cx), val in &mut out_arr) {
+        let mut z = cz;
+        let mut y = cy;
+        let mut x = cx;
+        match orientation.as_str() {
+            "AXIAL" => {
+                z = n + cz;
             }
-        }
-        "CORONAL" => {
-            for count in 0..ody {
-                let y = n + count;
-                for z in 0..dz {
-                    for x in 0..dx {
-                        out_arr[[z, count, x]] =
-                            coord_transform(&volume_arr, &m_nalgebra, x, y, z, sx, sy, sz, minterpol, cval);
-                    }
-                }
+            "CORONAL" => {
+                y = n + cy;
             }
-        }
-        "SAGITAL" => {
-            for count in 0..odx {
-                let x = n + count;
-                for z in 0..dz {
-                    for y in 0..dy {
-                        out_arr[[z, y, count]] =
-                            coord_transform(&volume_arr, &m_nalgebra, x, y, z, sx, sy, sz, minterpol, cval);
-                    }
-                }
+            "SAGITAL" => {
+                x = n + cx;
             }
+            _ => (),
         }
-        _ => (),
-    }
+        *val = coord_transform(&volume_arr, &m_nalgebra, x, y, z, sx, sy, sz, minterpol, cval);
+    });
     
     Ok(())
 }
@@ -113,8 +96,8 @@ pub fn apply_view_matrix_transform(
 #[pyfunction]
 pub fn convolve_non_zero(
     py: Python,
-    volume: PyReadonlyArray3<i16>,
-    kernel: PyReadonlyArray3<i16>,
+    volume: PyReadonlyArray3<f64>,
+    kernel: PyReadonlyArray3<f64>,
     cval: i16,
 ) -> PyResult<Py<PyAny>> {
     let volume_arr = volume.as_array();
@@ -126,35 +109,30 @@ pub fn convolve_non_zero(
     let kernel_dims = kernel_arr.shape();
     let (skz, sky, skx) = (kernel_dims[0], kernel_dims[1], kernel_dims[2]);
 
-    let mut out_arr = ndarray::Array3::<i16>::zeros((sz, sy, sx));
+    let mut out_arr = ndarray::Array3::<f64>::zeros((sz, sy, sx));
 
-    for z in 0..sz {
-        for y in 0..sy {
-            for x in 0..sx {
-                if volume_arr[[z, y, x]] != 0 {
-                    let mut sum = 0i32;
-                    for k in 0..skz {
-                        let kz = z as isize - (skz / 2) as isize + k as isize;
-                        for j in 0..sky {
-                            let ky = y as isize - (sky / 2) as isize + j as isize;
-                            for i in 0..skx {
-                                let kx = x as isize - (skx / 2) as isize + i as isize;
+    println!("\n\nConvolving non-zero values!\n\n");
 
-                                let v = if kz >= 0 && kz < sz as isize && ky >= 0 && ky < sy as isize && kx >= 0 && kx < sx as isize {
-                                    volume_arr[[kz as usize, ky as usize, kx as usize]]
-                                } else {
-                                    cval
-                                };
-                                sum += (v as i32) * (kernel_arr[[k, j, i]] as i32);
-                            }
-                        }
+    par_azip!((index (z, y, x), val in &mut out_arr) {
+        if volume_arr[[z, y, x]] != 0.0 {
+            let mut sum = 0.0f64;
+            for k in 0..skz {
+                let kz = z as isize - (skz / 2) as isize + k as isize;
+                for j in 0..sky {
+                    let ky = y as isize - (sky / 2) as isize + j as isize;
+                    for i in 0..skx {
+                        let kx = x as isize - (skx / 2) as isize + i as isize;
+                        let v = if kz >= 0 && kz < sz as isize && ky >= 0 && ky < sy as isize && kx >= 0 && kx < sx as isize {
+                            volume_arr[[kz as usize, ky as usize, kx as usize]]
+                        } else {
+                            cval as f64
+                        };
+                        sum += v * kernel_arr[[k, j, i]];
                     }
-                    out_arr[[z, y, x]] = sum as i16;
                 }
             }
+            *val = sum;
         }
-    }
-    
-    let out_py = out_arr.to_pyarray(py).to_owned();
-    Ok(out_py.into())
+    });
+    Ok(out_arr.to_pyarray(py).to_owned().into())
 }
