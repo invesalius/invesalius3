@@ -1,6 +1,24 @@
-use numpy::{PyReadonlyArray3, PyReadwriteArray3};
+use ndarray::{ArrayView3, ArrayViewMut3};
+use numpy::{PyArray3, PyReadonlyArray3, PyReadwriteArray3};
 use pyo3::prelude::*;
 use std::collections::VecDeque;
+use pyo3::FromPyObject;
+
+use numpy::PyArrayMethods;
+
+#[derive(FromPyObject)]
+enum SupportedArray<'py> {
+    F64(Bound<'py, PyArray3<f64>>),
+    I16(Bound<'py, PyArray3<i16>>),
+    U8(Bound<'py, PyArray3<u8>>),
+}
+
+#[derive(FromPyObject)]
+enum SupportedArrayMut<'py> {
+    F64(Bound<'py, PyArray3<f64>>),
+    I16(Bound<'py, PyArray3<i16>>),
+    U8(Bound<'py, PyArray3<u8>>),
+}
 
 #[pyfunction]
 pub fn floodfill(
@@ -14,7 +32,7 @@ pub fn floodfill(
 ) -> PyResult<()> {
     let data_arr = data.as_array();
     let mut out_arr = out.as_array_mut();
-    
+
     let dims = data_arr.shape();
     let d = dims[0];
     let h = dims[1];
@@ -50,24 +68,22 @@ pub fn floodfill(
             stack.push_back((x - 1, y, z));
         }
     }
-    
+
     Ok(())
 }
 
-#[pyfunction]
-pub fn floodfill_threshold(
-    data: PyReadonlyArray3<i16>,
+pub fn generic_floodfill_threshold<T: PartialOrd + Copy>(
+    data_arr: ArrayView3<T>,
     seeds: Vec<(usize, usize, usize)>,
-    t0: i16,
-    t1: i16,
+    t0: T,
+    t1: T,
     fill: u8,
     strct: PyReadonlyArray3<u8>,
     mut out: PyReadwriteArray3<u8>,
-) -> PyResult<()> {
-    let data_arr = data.as_array();
+) {
     let strct_arr = strct.as_array();
     let mut out_arr = out.as_array_mut();
-    
+
     let data_dims = data_arr.shape();
     let dz = data_dims[0];
     let dy = data_dims[1];
@@ -101,14 +117,14 @@ pub fn floodfill_threshold(
                 continue;
             }
             let zo = zo as usize;
-            
+
             for jj in 0..ody {
                 let yo = y as isize + jj as isize - offset_y as isize;
                 if yo < 0 || yo >= dy as isize {
                     continue;
                 }
                 let yo = yo as usize;
-                
+
                 for ii in 0..odx {
                     if strct_arr[[kk, jj, ii]] != 0 {
                         let xo = x as isize + ii as isize - offset_x as isize;
@@ -116,7 +132,7 @@ pub fn floodfill_threshold(
                             continue;
                         }
                         let xo = xo as usize;
-                        
+
                         if out_arr[[zo, yo, xo]] != fill {
                             let val = data_arr[[zo, yo, xo]];
                             if val >= t0 && val <= t1 {
@@ -129,8 +145,79 @@ pub fn floodfill_threshold(
             }
         }
     }
-    
-    Ok(())
+}
+
+pub fn generic_floodfill_threshold_inplace<T: PartialOrd + Copy>(
+    mut data: ArrayViewMut3<T>,
+    seeds: Vec<(usize, usize, usize)>,
+    t0: T,
+    t1: T,
+    fill: T,
+    strct: PyReadonlyArray3<u8>,
+) {
+    let strct_arr = strct.as_array();
+
+    let data_dims = data.shape();
+    let dz = data_dims[0];
+    let dy = data_dims[1];
+    let dx = data_dims[2];
+
+    let strct_dims = strct_arr.shape();
+    let odz = strct_dims[0];
+    let ody = strct_dims[1];
+    let odx = strct_dims[2];
+
+    let offset_z = odz / 2;
+    let offset_y = ody / 2;
+    let offset_x = odx / 2;
+
+    let mut stack = VecDeque::new();
+
+    for (i, j, k) in seeds {
+        let val = data[[k, j, i]];
+        if val >= t0 && val <= t1 {
+            stack.push_back((i, j, k));
+            data[[k, j, i]] = fill;
+        }
+    }
+
+    while let Some((x, y, z)) = stack.pop_back() {
+        data[[z, y, x]] = fill;
+
+        for kk in 0..odz {
+            let zo = z as isize + kk as isize - offset_z as isize;
+            if zo < 0 || zo >= dz as isize {
+                continue;
+            }
+            let zo = zo as usize;
+
+            for jj in 0..ody {
+                let yo = y as isize + jj as isize - offset_y as isize;
+                if yo < 0 || yo >= dy as isize {
+                    continue;
+                }
+                let yo = yo as usize;
+
+                for ii in 0..odx {
+                    if strct_arr[[kk, jj, ii]] != 0 {
+                        let xo = x as isize + ii as isize - offset_x as isize;
+                        if xo < 0 || xo >= dx as isize {
+                            continue;
+                        }
+                        let xo = xo as usize;
+
+                        if data[[zo, yo, xo]] != fill {
+                            let val = data[[zo, yo, xo]];
+                            if val >= t0 && val <= t1 {
+                                data[[zo, yo, xo]] = fill;
+                                stack.push_back((xo, yo, zo));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[pyfunction]
@@ -143,7 +230,7 @@ pub fn floodfill_auto_threshold(
 ) -> PyResult<()> {
     let data_arr = data.as_array();
     let mut out_arr = out.as_array_mut();
-    
+
     let dims = data_arr.shape();
     let d = dims[0];
     let h = dims[1];
@@ -204,7 +291,7 @@ pub fn floodfill_auto_threshold(
             }
         }
     }
-    
+
     Ok(())
 }
 
@@ -217,7 +304,7 @@ pub fn fill_holes_automatically(
 ) -> PyResult<bool> {
     let labels_arr = labels.as_array();
     let mut mask_arr = mask.as_array_mut();
-    
+
     let mut sizes = vec![0u32; (nlabels + 1) as usize];
 
     for &label in labels_arr.iter() {
@@ -253,4 +340,101 @@ pub fn fill_holes_automatically(
     }
 
     Ok(true)
+}
+
+#[pyfunction]
+pub fn floodfill_threshold<'py>(
+    data: SupportedArray<'py>,
+    seeds: Vec<(usize, usize, usize)>,
+    t0: Bound<'py, PyAny>,
+    t1: Bound<'py, PyAny>,
+    fill: u8,
+    strct: PyReadonlyArray3<u8>,
+    out: PyReadwriteArray3<u8>,
+) -> PyResult<()> {
+    match data {
+        SupportedArray::I16(data) => {
+            generic_floodfill_threshold(
+                data.readonly().as_array(),
+                seeds,
+                t0.extract::<i16>()?,
+                t1.extract::<i16>()?,
+                fill,
+                strct,
+                out,
+            );
+            Ok(())
+        }
+        SupportedArray::U8(data) => {
+            generic_floodfill_threshold(
+                data.readonly().as_array(),
+                seeds,
+                t0.extract::<u8>()?,
+                t1.extract::<u8>()?,
+                fill,
+                strct,
+                out,
+            );
+            Ok(())
+        }
+        SupportedArray::F64(data) => {
+            generic_floodfill_threshold(
+                data.readonly().as_array(),
+                seeds,
+                t0.extract::<f64>()?,
+                t1.extract::<f64>()?,
+                fill,
+                strct,
+                out,
+            );
+            Ok(())
+        }
+    }
+}
+
+
+#[pyfunction]
+pub fn floodfill_threshold_inplace<'py>(
+    data: SupportedArrayMut<'py>,
+    seeds: Vec<(usize, usize, usize)>,
+    t0: Bound<'py, PyAny>,
+    t1: Bound<'py, PyAny>,
+    fill: Bound<'py, PyAny>,
+    strct: PyReadonlyArray3<u8>,
+) -> PyResult<()> {
+    match data {
+        SupportedArrayMut::I16(data) => {
+            generic_floodfill_threshold_inplace(
+                data.readwrite().as_array_mut(),
+                seeds,
+                t0.extract::<i16>()?,
+                t1.extract::<i16>()?,
+                fill.extract::<i16>()?,
+                strct,
+            );
+            Ok(())
+        }
+        SupportedArrayMut::U8(data) => {
+            generic_floodfill_threshold_inplace(
+                data.readwrite().as_array_mut(),
+                seeds,
+                t0.extract::<u8>()?,
+                t1.extract::<u8>()?,
+                fill.extract::<u8>()?,
+                strct,
+            );
+            Ok(())
+        }
+        SupportedArrayMut::F64(data) => {
+            generic_floodfill_threshold_inplace(
+                data.readwrite().as_array_mut(),
+                seeds,
+                t0.extract::<f64>()?,
+                t1.extract::<f64>()?,
+                fill.extract::<f64>()?,
+                strct,
+            );
+            Ok(())
+        }
+    }
 }

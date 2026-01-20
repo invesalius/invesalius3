@@ -2407,9 +2407,10 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                 bstruct = np.zeros((3, 3, 1), dtype="uint8")
                 bstruct[:, :, 0] = _bstruct
 
+        print("FloodFillMaskInteractorStyle", self.t0, self.t1)
         if self.config.target == "2D":
-            floodfill.floodfill_threshold(
-                mask, ((x, y, z),), self.t0, self.t1, self.fill_value, bstruct, mask
+            floodfill.floodfill_threshold_inplace(
+                mask, ((x, y, z),), self.t0, self.t1, self.fill_value, bstruct
             )
             b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
             index = self.viewer.slice_.buffer_slices[self.orientation].index
@@ -2425,14 +2426,13 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         else:
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
-                    floodfill.floodfill_threshold,
+                    floodfill.floodfill_threshold_inplace,
                     mask,
                     ((x, y, z),),
                     self.t0,
                     self.t1,
                     self.fill_value,
                     bstruct,
-                    mask,
                 )
 
                 dlg = wx.ProgressDialog(

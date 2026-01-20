@@ -15,6 +15,7 @@ tricub_interpolate2_py = _native.tricub_interpolate2_py
 lanczos_interpolate_py = _native.lanczos_interpolate_py
 floodfill = _native.floodfill
 _native_floodfill_threshold = _native.floodfill_threshold
+_native_floodfill_threshold_inplace = _native.floodfill_threshold_inplace
 _native_floodfill_auto_threshold = _native.floodfill_auto_threshold
 fill_holes_automatically = _native.fill_holes_automatically
 
@@ -31,6 +32,19 @@ def floodfill_threshold(data, seeds, t0, t1, fill, strct, out):
     # Ensure strct is uint8 (scipy's generate_binary_structure returns bool)
     strct_u8 = np.ascontiguousarray(strct, dtype=np.uint8)
     return _native_floodfill_threshold(data, tuple_seeds, t0, t1, fill, strct_u8, out)
+
+def floodfill_threshold_inplace(data, seeds, t0, t1, fill, strct):
+    """
+    Floodfill with threshold constraints.
+
+    This wrapper converts seed lists to tuples for Rust compatibility
+    and ensures array types are correct.
+    """
+    # Convert seeds to list of tuples if necessary
+    tuple_seeds = [tuple(s) for s in seeds]
+    # Ensure strct is uint8 (scipy's generate_binary_structure returns bool)
+    strct_u8 = np.ascontiguousarray(strct, dtype=np.uint8)
+    return _native_floodfill_threshold_inplace(data, tuple_seeds, t0, t1, fill, strct_u8)
 
 
 def floodfill_auto_threshold(data, seeds, p, fill, out):

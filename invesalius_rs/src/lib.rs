@@ -21,6 +21,7 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Floodfill functions
     m.add_function(wrap_pyfunction!(floodfill::floodfill, m)?)?;
     m.add_function(wrap_pyfunction!(floodfill::floodfill_threshold, m)?)?;
+    m.add_function(wrap_pyfunction!(floodfill::floodfill_threshold_inplace, m)?)?;
     m.add_function(wrap_pyfunction!(floodfill::floodfill_auto_threshold, m)?)?;
     m.add_function(wrap_pyfunction!(floodfill::fill_holes_automatically, m)?)?;
     
