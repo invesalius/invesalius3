@@ -13,6 +13,9 @@ print("SOURCE_DIR", SOURCE_DIR)
 
 from PyInstaller.utils.hooks import get_module_file_attribute, collect_dynamic_libs
 from PyInstaller.compat import is_win
+from PyInstaller.utils.hooks import collect_all
+
+tinygrad_data, tinygrad_binaries, tinygrad_hiddenimports = collect_all("tinygrad")
 
 python_dir = os.path.dirname(sys.executable)
 venv_dir = os.path.dirname(python_dir) 
@@ -148,12 +151,12 @@ block_cipher = None
 
 a = Analysis(['app.py'],
              pathex=[SOURCE_DIR],
-             binaries=libraries,
-             datas=data_files,
+             binaries=libraries + tinygrad_binaries,
+             datas=data_files + tinygrad_data,
              hiddenimports=['scipy._lib.messagestream','skimage.restoration._denoise',\
                             'scipy.linalg', 'scipy.linalg.blas', 'scipy.interpolate',\
                             'pywt._extensions._cwt','skimage.filters.rank.core_cy_3d',\
-                            'encodings','setuptools'], #,'keras','plaidml.keras','plaidml.keras.backend'
+                            'encodings','setuptools','tinygrad'] + tinygrad_hiddenimports, #,'keras','plaidml.keras','plaidml.keras.backend'
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -188,4 +191,6 @@ coll = COLLECT(exe,
 
 
 #print("1 >>>>>>>>>> ",a.zipped_data)
+
 #print("2 >>>>>>>>>> ",a.pure)
+
