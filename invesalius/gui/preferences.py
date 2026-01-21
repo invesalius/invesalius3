@@ -1217,21 +1217,8 @@ class ObjectTab(wx.Panel):
     def OnChoiceRobotCoil(self, event, robot):
         robot_coil_name = event.GetEventObject().GetStringSelection()
         robot.SetCoilName(robot_coil_name)
-
         coil_registration = self.coil_registrations.get(robot_coil_name, None)
-        if coil_registration:
-            left_fiducial = coil_registration.get("fiducials")[0]
-            right_fiducial = coil_registration.get("fiducials")[1]
-            anterior_fiducial = coil_registration.get("fiducials")[2]
-            init_coord_coil = coil_registration.get("fiducials")[3]
-            init_coil_angle = coil_registration.get("orientations")[3]
-            robot.SetInitCoilCoords(
-                left=left_fiducial,
-                right=right_fiducial,
-                anterior=anterior_fiducial,
-                init_coord_coil= init_coord_coil,
-                init_coil_angle=init_coil_angle,
-            )
+        robot.SetCoilRegistation(coil_registration)
 
     def AddCoilButton(self, coil_name, show_button=True):
         if self.no_coils_lbl is not None:
