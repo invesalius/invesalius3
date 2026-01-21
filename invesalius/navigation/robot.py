@@ -109,7 +109,6 @@ class Robot:
         state = robots.get(self.robot_name, {})
 
         self.coil_name = state.get("robot_coil", None)
-        self.coil_radius = state.get("coil_radius", None)
         self.robot_ip = state.get("robot_ip", None)
 
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
@@ -118,8 +117,26 @@ class Robot:
 
         self.robot_ip_options = session.GetConfig("robot_ip_options", [])
 
+        coil_registration = session.GetConfig("coil_registrations", {}).get(self.coil_name, {})
+        self.SetCoilRegistation(coil_registration)
+
         success = self.robot_ip is not None and self.matrix_tracker_to_robot is not None
         return success
+
+    def SetCoilRegistation(self, coil_registration):
+        if coil_registration:
+            left_fiducial = coil_registration.get("fiducials")[0]
+            right_fiducial = coil_registration.get("fiducials")[1]
+            anterior_fiducial = coil_registration.get("fiducials")[2]
+            init_coord_coil = coil_registration.get("fiducials")[3]
+            init_coil_angle = coil_registration.get("orientations")[3]
+            self.SetInitCoilCoords(
+                left=left_fiducial,
+                right=right_fiducial,
+                anterior=anterior_fiducial,
+                init_coord_coil=init_coord_coil,
+                init_coil_angle=init_coil_angle,
+            )
 
     def OnRobotConnectionStatus(self, data):
         # TODO: Is this check necessary?
@@ -210,7 +227,6 @@ class Robot:
         if not all(
             [v is not None for v in [left, right, anterior, init_coord_coil, init_coil_angle]]
         ):
-            print("Erro: Dados de registro inicial incompletos.")
             return
 
         left, right, anterior = map(np.array, [left, right, anterior])
@@ -219,7 +235,6 @@ class Robot:
         init_coil_angle = np.array(init_coil_angle, dtype=float)
 
         center_P_clean = (left + right) / 2.0
-        depth_vector_P = anterior - center_P_clean
 
         # Pontos base (sempre incluídos)
         points_of_interest_world = {
