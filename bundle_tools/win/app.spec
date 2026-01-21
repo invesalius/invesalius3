@@ -16,6 +16,7 @@ from PyInstaller.compat import is_win
 from PyInstaller.utils.hooks import collect_all
 
 tinygrad_data, tinygrad_binaries, tinygrad_hiddenimports = collect_all("tinygrad")
+onnx_data, onnx_binaries, onnx_hiddenimports = collect_all("onnxruntime")
 
 python_dir = os.path.dirname(sys.executable)
 venv_dir = os.path.dirname(python_dir) 
@@ -135,6 +136,16 @@ for sd in sample_data:
     dest_dir = os.path.dirname(sd)
     data_files.append((sd,dest_dir))
 
+
+# Add FastSurfer LUT and auxiliary file
+fastsurfer_dir = os.path.join(
+    'invesalius',
+    'segmentation',
+    'deep_learning',
+    'fastsurfer_subpart'
+)
+data_files.append((os.path.join(fastsurfer_dir,'LUT.tsv'),fastsurfer_dir))
+
 #---------------------------------------------------------------------------------
 
 block_cipher = None
@@ -151,12 +162,12 @@ block_cipher = None
 
 a = Analysis(['app.py'],
              pathex=[SOURCE_DIR],
-             binaries=libraries + tinygrad_binaries,
-             datas=data_files + tinygrad_data,
+             binaries=libraries + tinygrad_binaries + onnx_binaries,
+             datas=data_files + tinygrad_data + onnx_data,
              hiddenimports=['scipy._lib.messagestream','skimage.restoration._denoise',\
                             'scipy.linalg', 'scipy.linalg.blas', 'scipy.interpolate',\
                             'pywt._extensions._cwt','skimage.filters.rank.core_cy_3d',\
-                            'encodings','setuptools','tinygrad'] + tinygrad_hiddenimports, #,'keras','plaidml.keras','plaidml.keras.backend'
+                            'encodings','setuptools','tinygrad'] + tinygrad_hiddenimports + onnx_hiddenimports, #,'keras','plaidml.keras','plaidml.keras.backend'
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
