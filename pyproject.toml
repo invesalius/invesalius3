@@ -22,9 +22,10 @@ dependencies = [
     "psutil==6.0.0",
     "pyacvd==0.2.11",
     "pyclaron ; python_full_version == '3.8.*' and sys_platform == 'windows'",
+    "pypolaris>=0.0.8",
     "pypubsub==4.0.3",
     "pyserial==3.5",
-    "python-gdcm==3.0.24",
+    "python-gdcm",
     "requests>=2.32.3",
     "scikit-image==0.24.0",
     "scipy==1.14.0",
@@ -36,7 +37,7 @@ dependencies = [
 ]
 license = { file = "LICENSE.txt" }
 readme = "README.md"
-requires-python = "==3.12.*"
+requires-python = ">=3.10"
 
 
 [dependency-groups]

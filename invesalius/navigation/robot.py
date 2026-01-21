@@ -76,14 +76,6 @@ class Robot:
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(
-            self.AbortRobotConfiguration, "Robot to Neuronavigation: Close robot dialog"
-        )
-        Publisher.subscribe(
-            self.OnRobotConnectionStatus, "Robot to Neuronavigation: Robot connection status"
-        )
-        Publisher.subscribe(self.SetObjectiveByRobot, "Robot to Neuronavigation: Set objective")
-
         Publisher.subscribe(self.SetTarget, "Set target")
         Publisher.subscribe(self.UnsetTarget, "Unset target")
 
@@ -129,10 +121,7 @@ class Robot:
         success = self.robot_ip is not None and self.matrix_tracker_to_robot is not None
         return success
 
-    def OnRobotConnectionStatus(self, data, robot_ID):
-        if robot_ID != self.robot_name:
-            # Ignore messages for other robots.
-            return
+    def OnRobotConnectionStatus(self, data):
         # TODO: Is this check necessary?
         if not data:
             return
@@ -140,9 +129,13 @@ class Robot:
             self.is_robot_connected = True
 
         if self.is_robot_connected:
-            Publisher.sendMessage("Enable move away button", enabled=True, robot_ID=robot_ID)
-            Publisher.sendMessage("Enable free drive button", enabled=True, robot_ID=robot_ID)
-            Publisher.sendMessage("Enable clean errors button", enabled=True, robot_ID=robot_ID)
+            Publisher.sendMessage("Enable move away button", enabled=True, robot_ID=self.robot_name)
+            Publisher.sendMessage(
+                "Enable free drive button", enabled=True, robot_ID=self.robot_name
+            )
+            Publisher.sendMessage(
+                "Enable clean errors button", enabled=True, robot_ID=self.robot_name
+            )
         else:
             self.is_robot_connected = False
 
@@ -172,9 +165,7 @@ class Robot:
         self.SaveConfig("tracker_to_robot", self.matrix_tracker_to_robot.tolist())
         self.InitializeRobot()
 
-    def AbortRobotConfiguration(self, robot_ID):
-        if robot_ID != self.robot_name:
-            return
+    def AbortRobotConfiguration(self):
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
             self.robot_coregistration_dialog = None
@@ -332,23 +323,23 @@ class Robot:
             robot_ID=self.robot_name,
         )
 
-    def SetObjectiveByRobot(self, objective, robot_ID):
+    def SetObjectiveByRobot(self, objective):
         if objective is None:
             return
 
         self.objective = RobotObjective(objective)
         if self.objective == RobotObjective.TRACK_TARGET:
             # Unpress 'Move away from robot' button when the robot is tracking the target.
-            Publisher.sendMessage("Press move away button", pressed=False, robot_ID=robot_ID)
+            Publisher.sendMessage("Press move away button", pressed=False, robot_ID=self.robot_name)
 
         elif self.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
             # Unpress 'Track target' button when the robot is moving away from head.
-            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=robot_ID)
+            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=self.robot_name)
 
         elif self.objective == RobotObjective.NONE:
             # Unpress 'Track target' and 'Move away from robot' buttons when the robot has no objective.
-            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=robot_ID)
-            Publisher.sendMessage("Press move away button", pressed=False, robot_ID=robot_ID)
+            Publisher.sendMessage("Press robot button", pressed=False, robot_ID=self.robot_name)
+            Publisher.sendMessage("Press move away button", pressed=False, robot_ID=self.robot_name)
 
     def UnsetTarget(self, marker, robot_ID):
         if robot_ID != self.robot_name:
@@ -391,6 +382,25 @@ class Robots(metaclass=Singleton):
     def __bind_events(self):
         Publisher.subscribe(self.GetAllCoilsRobots, "Request update Robot Coil Association")
         Publisher.subscribe(self.SendTrackerPoses, "From Neuronavigation: Update tracker poses")
+        Publisher.subscribe(
+            self.AbortRobotConfiguration, "Robot to Neuronavigation: Close robot dialog"
+        )
+        Publisher.subscribe(
+            self.OnRobotConnectionStatus, "Robot to Neuronavigation: Robot connection status"
+        )
+        Publisher.subscribe(self.SetObjectiveByRobot, "Robot to Neuronavigation: Set objective")
+
+    def SetObjectiveByRobot(self, objective, robot_ID):
+        robot = self.GetRobot(robot_ID)
+        robot.SetObjectiveByRobot(objective)
+
+    def OnRobotConnectionStatus(self, data, robot_ID):
+        robot = self.GetRobot(robot_ID)
+        robot.OnRobotConnectionStatus(data)
+
+    def AbortRobotConfiguration(self, robot_ID):
+        robot = self.GetRobot(robot_ID)
+        robot.AbortRobotConfiguration()
 
     def CalculateCoilDistance(self):
         coils_name = self.GetAllCoilsRobots()
