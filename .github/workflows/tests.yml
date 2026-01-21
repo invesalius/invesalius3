@@ -13,6 +13,9 @@ jobs:
         with:
           fetch-depth: 0  
 
+      - name: Force setuptools-scm version
+        run: echo "SETUPTOOLS_SCM_PRETEND_VERSION=3.1.0-dev.${{ github.run_number }}" >> $GITHUB_ENV
+
       - uses: actions/setup-python@v5
         with:
           python-version: 3.12
@@ -53,7 +56,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Syncing with UV
-        run: uv sync
+        run: uv sync --all-extras
 
       - name: Run tests with xvfb
         run: xvfb-run -a bash -c "pytest"
