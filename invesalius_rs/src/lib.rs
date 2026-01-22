@@ -38,8 +38,8 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Mask cut function
     m.add_function(wrap_pyfunction!(mask_cut::mask_cut, m)?)?;
     
-    // Mesh class
-    m.add_class::<mesh::Mesh>()?;
+    // Mesh class (MeshPy usa Mesh<f32, i64, f32>; exposta como "Mesh" no Python)
+    m.add_class::<mesh::MeshPy>()?;
     
     Ok(())
 }
