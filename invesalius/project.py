@@ -122,13 +122,14 @@ class Project(metaclass=Singleton):
         mask.index = index
         return index
 
-    def RemoveMask(self, index: int) -> None:
+    def RemoveMask(self, index: int, cleanup: bool = True) -> None:
         new_dict = TwoWaysDictionary()
         # Iterate safely over a snapshot of items
         for i, mask in self.mask_dict.items():
             if i == index:
-                # Clean up the removed mask
-                mask.cleanup()
+                # Clean up the removed mask only if requested
+                if cleanup:
+                    mask.cleanup()
                 continue
             # Compute the new index and update mask
             new_i = i if i < index else i - 1
@@ -138,6 +139,29 @@ class Project(metaclass=Singleton):
                 mask.index = new_i
         # Replace the dictionary with the rebuilt one
         self.mask_dict = new_dict
+
+    def _insert_into_indexed_dict(self, d, index, item, add_func, dict_class=dict):
+        """Insert item at index, shifting subsequent items. Returns new dict or None if appended."""
+        if index >= len(d):
+            add_func(item)
+            return None
+        new_dict = dict_class() if dict_class != dict else {}
+        for i in (d.keys() if hasattr(d, 'keys') else d):
+            if i < index:
+                new_dict[i] = d[i]
+            else:
+                new_dict[i + 1] = d[i]
+                if hasattr(d[i], "index"):
+                    d[i].index = i + 1
+        new_dict[index] = item
+        item.index = index
+        return new_dict
+
+    def InsertMask(self, index: int, mask: "Mask") -> None:
+        """Insert a mask at a specific index, shifting subsequent masks."""
+        result = self._insert_into_indexed_dict(self.mask_dict, index, mask, self.AddMask, TwoWaysDictionary)
+        if result is not None:
+            self.mask_dict = result
 
     def GetMask(self, index):
         return self.mask_dict[index]
@@ -162,6 +186,7 @@ class Project(metaclass=Singleton):
                 new_dict[i - 1].index = i - 1
         self.surface_dict = new_dict
 
+
     def AddMeasurement(self, measurement):
         index = len(self.measurement_dict)
         measurement.index = index
@@ -181,6 +206,7 @@ class Project(metaclass=Singleton):
                 new_dict[i - 1] = self.measurement_dict[i]
                 new_dict[i - 1].index = i - 1
         self.measurement_dict = new_dict
+
 
     def SetAcquisitionModality(self, type_=None):
         if type_ is None:
