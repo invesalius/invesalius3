@@ -69,9 +69,18 @@ class EditionHistoryNode:
         print("applying to", self.orientation, "at slice", self.index)
 
     def __del__(self):
-        print("Removing", self.filename)
-        os.close(self.fd)
-        os.remove(self.filename)
+        if hasattr(self, "filename"):
+            print("Removing", self.filename)
+            try:
+                os.close(self.fd)
+                os.remove(self.filename)
+            except (AttributeError, OSError):
+                pass
+        if hasattr(self, "temp_file") and os.path.exists(self.temp_file):
+            try:
+                os.remove(self.temp_file)
+            except OSError:
+                pass
 
 
 class EditionHistory:
@@ -137,7 +146,11 @@ class EditionHistory:
 
         if self.index == 0:
             Publisher.sendMessage("Enable undo", value=False)
-        print("AT", self.index, len(self.history), self.history[self.index].filename)
+        
+        if self.index >= 0 and self.index < len(self.history):
+            print("AT", self.index, len(self.history), self.history[self.index].filename)
+        else:
+            print("AT", self.index, len(self.history), "No history item")
 
     def redo(self, mvolume, actual_slices=None):
         h = self.history
