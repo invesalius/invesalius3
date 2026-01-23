@@ -179,7 +179,7 @@ where
         ring1
     }
 
-    fn is_border(&self, v_id: usize) -> bool {
+    fn is_border(&self, _v_id: usize) -> bool {
         // Convert v_id to F type for lookup
         // Since we're using ArrayView, we need to check if the vertex index exists in border_vertices
         // For now, we'll need to convert: but border_vertices stores F, not usize

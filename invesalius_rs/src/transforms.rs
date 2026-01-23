@@ -64,10 +64,10 @@ pub fn apply_view_matrix_transform(
     let (sx, sy, sz) = (spacing[0], spacing[1], spacing[2]);
     
     let volume_dims = volume_arr.shape();
-    let (dz, dy, dx) = (volume_dims[0], volume_dims[1], volume_dims[2]);
+    let (_dz, _dy, _dx) = (volume_dims[0], volume_dims[1], volume_dims[2]);
     
     let out_dims = out.shape().to_vec();
-    let (odz, ody, odx) = (out_dims[0], out_dims[1], out_dims[2]);
+    let (_odz, _ody, _odx) = (out_dims[0], out_dims[1], out_dims[2]);
 
     let mut out_arr = out.as_array_mut();
 
