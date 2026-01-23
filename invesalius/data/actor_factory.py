@@ -1,37 +1,16 @@
 import os
 import random
 
-import numpy as np
 import vtk
 
 import invesalius.constants as const
-import invesalius.data.coordinates as dco
 import invesalius.project as prj
 from invesalius import inv_paths
-
+from invesalius.data.vtk_utils import coordinates_to_vtk_object_matrix
 
 class ActorFactory:
     def __init__(self):
         pass
-
-    # Utilities
-
-    # TODO: This is copied from viewer_volume.py, should be de-duplicated and moved to a single place.
-    def CreateVTKObjectMatrix(self, position, orientation):
-        m_img = dco.coordinates_to_transformation_matrix(
-            position=position,
-            orientation=orientation,
-            axes="sxyz",
-        )
-        m_img = np.asmatrix(m_img)
-
-        m_img_vtk = vtk.vtkMatrix4x4()
-
-        for row in range(0, 4):
-            for col in range(0, 4):
-                m_img_vtk.SetElement(row, col, m_img[row, col])
-
-        return m_img_vtk
 
     # Methods for creating actors
 
@@ -323,7 +302,7 @@ class ActorFactory:
         Update the position and orientation of an existing actor.
         """
         # Create the transformation matrix for the new position and orientation.
-        m_img_vtk = self.CreateVTKObjectMatrix(new_position, new_orientation)
+        m_img_vtk = coordinates_to_vtk_object_matrix(new_position, new_orientation)
 
         # Create a vtkTransform and apply the new matrix.
         transform = vtk.vtkTransform()
