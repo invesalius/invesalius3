@@ -154,7 +154,7 @@ where
         output
     }
 
-    pub fn ca_smoothing(&mut self, t: f64, tmax: f32, bmin: f32, n_iters: i32) {
+    pub fn ca_smoothing(&mut self, t: f64, tmax: f32, bmin: f32, n_iters: u32) {
         let stack_orientation = [0.0, 0.0, 1.0];
         let vertices_staircase = self.find_staircase_artifacts(stack_orientation, t);
 
@@ -295,7 +295,7 @@ where
     }
 
     /// Taubin smoothing algorithm (named after Gabriel Taubin)
-    fn taubin_smooth(&mut self, weights: &[f64], l: f64, m: f64, steps: i32)
+    fn taubin_smooth(&mut self, weights: &[f64], l: f64, m: f64, steps: u32)
     where
         V: std::ops::AddAssign<V>,
     {
@@ -680,7 +680,7 @@ impl MeshPy {
         }
     }
 
-    pub fn ca_smoothing(&mut self, t: f64, tmax: f32, bmin: f32, n_iters: i32) -> PyResult<()> {
+    pub fn ca_smoothing(&mut self, t: f64, tmax: f32, bmin: f32, n_iters: u32) -> PyResult<()> {
         match &mut self.inner {
             MeshDispatch::F32I64(mesh) => Ok(mesh.ca_smoothing(t, tmax, bmin, n_iters)),
             MeshDispatch::F64I64(mesh) => Ok(mesh.ca_smoothing(t, tmax, bmin, n_iters)),
