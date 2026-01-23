@@ -1,13 +1,13 @@
 use core::{f64, hash};
 use nalgebra::{Point3, Vector3};
 use ndarray::parallel::prelude::*;
-use ndarray::{Array2, ArrayView2};
+use ndarray::Array2;
 use num_traits::{AsPrimitive, NumCast};
 use numpy::{ndarray, PyReadonlyArray2, ToPyArray};
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Mutex;
-use pyo3::exceptions::PyValueError;
 
 /// Mesh genérico com tipos de vértices, índices de faces e normais parametrizáveis.
 pub struct Mesh<V, F, N> {
@@ -354,137 +354,135 @@ pub struct MeshPy {
 #[pymethods]
 impl MeshPy {
     #[new]
-    fn new<'py>(vertices: Bound<'py, PyAny>,
-         faces: Bound<'py, PyAny>,
-         normals: Bound<'py, PyAny>,
+    fn new<'py>(
+        vertices: Bound<'py, PyAny>,
+        faces: Bound<'py, PyAny>,
+        normals: Bound<'py, PyAny>,
     ) -> PyResult<Self> {
-        if let (Ok(V), Ok(F), Ok(N)) = (
+        // F32I64: vertices f32, faces i64, normals f32
+        if let (Ok(v), Ok(f), Ok(n)) = (
             vertices.extract::<PyReadonlyArray2<f32>>(),
             faces.extract::<PyReadonlyArray2<i64>>(),
             normals.extract::<PyReadonlyArray2<f32>>(),
         ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
+            let mesh = Mesh::new(
+                v.as_array().to_owned(),
+                f.as_array().to_owned(),
+                n.as_array().to_owned(),
+            )?;
             return Ok(Self {
                 inner: MeshDispatch::F32I64(mesh),
-            })
-        
-        } 
-        else if let (Ok(V), Ok(F), Ok(N)) = (
-            vertices.extract::<PyReadonlyArray2<f64>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
-            normals.extract::<PyReadonlyArray2<f64>>(),
-        ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
-            return Ok(Self {
-                inner: MeshDispatch::F64I64(mesh),
-            })
-        } else if let (Ok(V), Ok(F), Ok(N)) = (
-            vertices.extract::<PyReadonlyArray2<f32>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
-            normals.extract::<PyReadonlyArray2<f32>>(),
-        ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
-            return Ok(Self {
-                inner: MeshDispatch::F32I64(mesh),
-            })
-        } else if let (Ok(V), Ok(F), Ok(N)) = (
-            vertices.extract::<PyReadonlyArray2<f64>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
-            normals.extract::<PyReadonlyArray2<f64>>(),
-        ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
-            return Ok(Self {
-                inner: MeshDispatch::F64I64(mesh),
-            })
-        } else if let (Ok(V), Ok(F), Ok(N)) = (
-            vertices.extract::<PyReadonlyArray2<f32>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
-            normals.extract::<PyReadonlyArray2<f32>>(),
-        ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
-            return Ok(Self {
-                inner: MeshDispatch::F32I64(mesh),
-            })
-        } else if let (Ok(V), Ok(F), Ok(N)) = (
-            vertices.extract::<PyReadonlyArray2<f64>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
-            normals.extract::<PyReadonlyArray2<f64>>(),
-        ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
-            return Ok(Self {
-                inner: MeshDispatch::F64I64(mesh),
-            })
-        } else if let (Ok(V), Ok(F), Ok(N)) = (
-            vertices.extract::<PyReadonlyArray2<f32>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
-            normals.extract::<PyReadonlyArray2<f32>>(),
-        ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
-            return Ok(Self {
-                inner: MeshDispatch::F32I64(mesh),
-            })
-        } else if let (Ok(V), Ok(F), Ok(N)) = (
-            vertices.extract::<PyReadonlyArray2<f64>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
-            normals.extract::<PyReadonlyArray2<f64>>(),
-        ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
-            return Ok(Self {
-                inner: MeshDispatch::F64I64(mesh),
-            })
-        } 
-        else if let (Ok(V), Ok(F), Ok(N)) = (
-            vertices.extract::<PyReadonlyArray2<f32>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
-            normals.extract::<PyReadonlyArray2<f32>>(),
-        ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
-            return Ok(Self {
-                inner: MeshDispatch::F32I64(mesh),
-            })
+            });
         }
-        else if let (Ok(V), Ok(F), Ok(N)) = (
+        // F64I64: vertices f64, faces i64, normals f64
+        if let (Ok(v), Ok(f), Ok(n)) = (
             vertices.extract::<PyReadonlyArray2<f64>>(),
             faces.extract::<PyReadonlyArray2<i64>>(),
             normals.extract::<PyReadonlyArray2<f64>>(),
         ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
+            let mesh = Mesh::new(
+                v.as_array().to_owned(),
+                f.as_array().to_owned(),
+                n.as_array().to_owned(),
+            )?;
             return Ok(Self {
                 inner: MeshDispatch::F64I64(mesh),
-            })
+            });
         }
-        else if let (Ok(V), Ok(F), Ok(N)) = (
+        // F32U64: vertices f32, faces u64, normals f32
+        if let (Ok(v), Ok(f), Ok(n)) = (
             vertices.extract::<PyReadonlyArray2<f32>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
+            faces.extract::<PyReadonlyArray2<u64>>(),
             normals.extract::<PyReadonlyArray2<f32>>(),
         ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
+            let mesh = Mesh::new(
+                v.as_array().to_owned(),
+                f.as_array().to_owned(),
+                n.as_array().to_owned(),
+            )?;
             return Ok(Self {
-                inner: MeshDispatch::F32I64(mesh),
-            })
+                inner: MeshDispatch::F32U64(mesh),
+            });
         }
-        else if let (Ok(V), Ok(F), Ok(N)) = (
+        // F64U64: vertices f64, faces u64, normals f64
+        if let (Ok(v), Ok(f), Ok(n)) = (
             vertices.extract::<PyReadonlyArray2<f64>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
+            faces.extract::<PyReadonlyArray2<u64>>(),
             normals.extract::<PyReadonlyArray2<f64>>(),
         ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
+            let mesh = Mesh::new(
+                v.as_array().to_owned(),
+                f.as_array().to_owned(),
+                n.as_array().to_owned(),
+            )?;
             return Ok(Self {
-                inner: MeshDispatch::F64I64(mesh),
-            })
+                inner: MeshDispatch::F64U64(mesh),
+            });
         }
-        else if let (Ok(V), Ok(F), Ok(N)) = (
+        // F32I32: vertices f32, faces i32, normals f32
+        if let (Ok(v), Ok(f), Ok(n)) = (
             vertices.extract::<PyReadonlyArray2<f32>>(),
-            faces.extract::<PyReadonlyArray2<i64>>(),
+            faces.extract::<PyReadonlyArray2<i32>>(),
             normals.extract::<PyReadonlyArray2<f32>>(),
         ) {
-            let mesh = Mesh::new(V.as_array().to_owned(), F.as_array().to_owned(), N.as_array().to_owned())?;
+            let mesh = Mesh::new(
+                v.as_array().to_owned(),
+                f.as_array().to_owned(),
+                n.as_array().to_owned(),
+            )?;
             return Ok(Self {
-                inner: MeshDispatch::F32I64(mesh),
-            })
-        } else {
-            Err(PyValueError::new_err("Invalid input types"))
+                inner: MeshDispatch::F32I32(mesh),
+            });
         }
+        // F64I32: vertices f64, faces i32, normals f64
+        if let (Ok(v), Ok(f), Ok(n)) = (
+            vertices.extract::<PyReadonlyArray2<f64>>(),
+            faces.extract::<PyReadonlyArray2<i32>>(),
+            normals.extract::<PyReadonlyArray2<f64>>(),
+        ) {
+            let mesh = Mesh::new(
+                v.as_array().to_owned(),
+                f.as_array().to_owned(),
+                n.as_array().to_owned(),
+            )?;
+            return Ok(Self {
+                inner: MeshDispatch::F64I32(mesh),
+            });
+        }
+        // F32U32: vertices f32, faces u32, normals f32
+        if let (Ok(v), Ok(f), Ok(n)) = (
+            vertices.extract::<PyReadonlyArray2<f32>>(),
+            faces.extract::<PyReadonlyArray2<u32>>(),
+            normals.extract::<PyReadonlyArray2<f32>>(),
+        ) {
+            let mesh = Mesh::new(
+                v.as_array().to_owned(),
+                f.as_array().to_owned(),
+                n.as_array().to_owned(),
+            )?;
+            return Ok(Self {
+                inner: MeshDispatch::F32U32(mesh),
+            });
+        }
+        // F64U32: vertices f64, faces u32, normals f64
+        if let (Ok(v), Ok(f), Ok(n)) = (
+            vertices.extract::<PyReadonlyArray2<f64>>(),
+            faces.extract::<PyReadonlyArray2<u32>>(),
+            normals.extract::<PyReadonlyArray2<f64>>(),
+        ) {
+            let mesh = Mesh::new(
+                v.as_array().to_owned(),
+                f.as_array().to_owned(),
+                n.as_array().to_owned(),
+            )?;
+            return Ok(Self {
+                inner: MeshDispatch::F64U32(mesh),
+            });
+        }
+
+        Err(PyValueError::new_err(
+            "Invalid input types. Supported combinations: (f32/f64, i64/u64/i32/u32, f32/f64)",
+        ))
     }
 
     #[getter]
@@ -494,22 +492,22 @@ impl MeshPy {
             MeshDispatch::F64I64(mesh) => {
                 let arr_f32: ndarray::Array2<f32> = mesh.vertices.mapv(|x| x as f32);
                 Ok(arr_f32.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F32U64(mesh) => Ok(mesh.vertices.to_pyarray(py).into()),
             MeshDispatch::F64U64(mesh) => {
                 let arr_f32: ndarray::Array2<f32> = mesh.vertices.mapv(|x| x as f32);
                 Ok(arr_f32.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F32I32(mesh) => Ok(mesh.vertices.to_pyarray(py).into()),
             MeshDispatch::F64I32(mesh) => {
                 let arr_f32: ndarray::Array2<f32> = mesh.vertices.mapv(|x| x as f32);
                 Ok(arr_f32.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F32U32(mesh) => Ok(mesh.vertices.to_pyarray(py).into()),
             MeshDispatch::F64U32(mesh) => {
                 let arr_f32: ndarray::Array2<f32> = mesh.vertices.mapv(|x| x as f32);
                 Ok(arr_f32.to_pyarray(py).into())
-            },
+            }
         }
     }
 
@@ -521,27 +519,27 @@ impl MeshPy {
             MeshDispatch::F32U64(mesh) => {
                 let arr_i64: ndarray::Array2<i64> = mesh.faces.mapv(|x| x as i64);
                 Ok(arr_i64.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F64U64(mesh) => {
                 let arr_i64: ndarray::Array2<i64> = mesh.faces.mapv(|x| x as i64);
                 Ok(arr_i64.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F32I32(mesh) => {
                 let arr_i64: ndarray::Array2<i64> = mesh.faces.mapv(|x| x as i64);
                 Ok(arr_i64.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F64I32(mesh) => {
                 let arr_i64: ndarray::Array2<i64> = mesh.faces.mapv(|x| x as i64);
                 Ok(arr_i64.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F32U32(mesh) => {
                 let arr_i64: ndarray::Array2<i64> = mesh.faces.mapv(|x| x as i64);
                 Ok(arr_i64.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F64U32(mesh) => {
                 let arr_i64: ndarray::Array2<i64> = mesh.faces.mapv(|x| x as i64);
                 Ok(arr_i64.to_pyarray(py).into())
-            },
+            }
         }
     }
 
@@ -552,23 +550,22 @@ impl MeshPy {
             MeshDispatch::F64I64(mesh) => {
                 let arr_f32: ndarray::Array2<f32> = mesh.normals.mapv(|x| x as f32);
                 Ok(arr_f32.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F32U64(mesh) => Ok(mesh.normals.to_pyarray(py).into()),
             MeshDispatch::F64U64(mesh) => {
                 let arr_f32: ndarray::Array2<f32> = mesh.normals.mapv(|x| x as f32);
                 Ok(arr_f32.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F32I32(mesh) => Ok(mesh.normals.to_pyarray(py).into()),
             MeshDispatch::F64I32(mesh) => {
                 let arr_f32: ndarray::Array2<f32> = mesh.normals.mapv(|x| x as f32);
                 Ok(arr_f32.to_pyarray(py).into())
-            },
+            }
             MeshDispatch::F32U32(mesh) => Ok(mesh.normals.to_pyarray(py).into()),
             MeshDispatch::F64U32(mesh) => {
                 let arr_f32: ndarray::Array2<f32> = mesh.normals.mapv(|x| x as f32);
                 Ok(arr_f32.to_pyarray(py).into())
-            },
-            _ => Err(PyValueError::new_err("Invalid input types")),
+            }
         }
     }
 
@@ -663,10 +660,8 @@ impl MeshPy {
                     arr_f32.to_pyarray(py).into()
                 },
             )),
-            _ => Err(PyValueError::new_err("Invalid input types")),
         }
     }
-
 
     pub fn find_staircase_artifacts(
         &self,
@@ -682,7 +677,6 @@ impl MeshPy {
             MeshDispatch::F64I32(mesh) => Ok(mesh.find_staircase_artifacts(stack_orientation, t)),
             MeshDispatch::F32U32(mesh) => Ok(mesh.find_staircase_artifacts(stack_orientation, t)),
             MeshDispatch::F64U32(mesh) => Ok(mesh.find_staircase_artifacts(stack_orientation, t)),
-            _ => Err(PyValueError::new_err("Invalid input types")),
         }
     }
 
@@ -696,7 +690,6 @@ impl MeshPy {
             MeshDispatch::F64I32(mesh) => Ok(mesh.ca_smoothing(t, tmax, bmin, n_iters)),
             MeshDispatch::F32U32(mesh) => Ok(mesh.ca_smoothing(t, tmax, bmin, n_iters)),
             MeshDispatch::F64U32(mesh) => Ok(mesh.ca_smoothing(t, tmax, bmin, n_iters)),
-            _ => Err(PyValueError::new_err("Invalid input types")),
         }
     }
 }
