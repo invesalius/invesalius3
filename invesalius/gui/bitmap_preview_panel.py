@@ -439,8 +439,8 @@ class SingleImagePreview(wx.Panel):
         self.dicom_list = []
         self.nimages = 1
         self.current_index = 0
-        self.window_width = const.WINDOW_LEVEL[_("Bone")][0]
-        self.window_level = const.WINDOW_LEVEL[_("Bone")][1]
+        self.window_width = const.WINDOW_LEVEL["Bone"][0]
+        self.window_level = const.WINDOW_LEVEL["Bone"][1]
 
     def __init_vtk(self):
         text_image_size = vtku.TextZero()

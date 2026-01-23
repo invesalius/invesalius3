@@ -21,7 +21,8 @@ import plistlib
 import subprocess
 import sys
 import tempfile
-from typing import TYPE_CHECKING, List, Literal, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Literal, Optional
 
 import numpy as np
 import wx
@@ -128,7 +129,7 @@ class Controller:
         # for call cranioplasty implant by command line
         Publisher.subscribe(segment.run_cranioplasty_implant, "Create implant for cranioplasty")
 
-    def SetBitmapSpacing(self, spacing: Tuple[float, float, float]) -> None:
+    def SetBitmapSpacing(self, spacing: tuple[float, float, float]) -> None:
         proj = prj.Project()
         proj.spacing = spacing
 
@@ -278,7 +279,7 @@ class Controller:
 
         self.SaveProject(filepath, compress)
 
-    def ShowDialogCloseProject(self) -> Optional[Literal[-1]]:
+    def ShowDialogCloseProject(self) -> Literal[-1] | None:
         session = ses.Session()
         project_status = session.GetConfig("project_status")
         if project_status == const.PROJECT_STATUS_CLOSED:
@@ -461,7 +462,7 @@ class Controller:
         reader.SetDirectoryPath(path)
         Publisher.sendMessage("End busy cursor")
 
-    def Progress(self, data: Optional[Sequence[int]]) -> None:
+    def Progress(self, data: Sequence[int] | None) -> None:
         if data:
             message = _("Loading file %d of %d ...") % (data[0], data[1])
             if not (self.progress_dialog):
@@ -479,7 +480,7 @@ class Controller:
                 self.progress_dialog.Close()
                 self.progress_dialog = None
 
-    def OnLoadImportPanel(self, patient_series: Optional[List]) -> None:
+    def OnLoadImportPanel(self, patient_series: list | None) -> None:
         ok = self.LoadImportPanel(patient_series)
         if ok:
             Publisher.sendMessage("Show import panel")
@@ -487,7 +488,7 @@ class Controller:
             self.img_type = 1
 
     def OnLoadImportBitmapPanel(
-        self, data: List[Tuple[bytes, str, str, int, int, str, str, wx.WindowIDRef]]
+        self, data: list[tuple[bytes, str, str, int, int, str, str, wx.WindowIDRef]]
     ) -> None:
         ok = self.LoadImportBitmapPanel(data)
         if ok:
@@ -496,7 +497,7 @@ class Controller:
             # Publisher.sendMessage("Show import panel in invesalius.gui.frame") as frame
 
     def LoadImportBitmapPanel(
-        self, data: List[Tuple[bytes, str, str, int, int, str, str, wx.WindowIDRef]]
+        self, data: list[tuple[bytes, str, str, int, int, str, str, wx.WindowIDRef]]
     ) -> bool:
         # if patient_series and isinstance(patient_series, list):
         # Publisher.sendMessage("Load import panel", patient_series)
@@ -509,7 +510,7 @@ class Controller:
             dialog.ImportInvalidFiles("Bitmap")
         return False
 
-    def LoadImportPanel(self, patient_series: Optional[List]) -> bool:
+    def LoadImportPanel(self, patient_series: list | None) -> bool:
         if patient_series and isinstance(patient_series, list):
             Publisher.sendMessage("Load import panel", dicom_groups=patient_series)
             first_patient = patient_series[0]
@@ -606,8 +607,8 @@ class Controller:
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
         const.THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
 
-        const.WINDOW_LEVEL[_("Default")] = (proj.window, proj.level)
-        const.WINDOW_LEVEL[_("Manual")] = (proj.window, proj.level)
+        const.WINDOW_LEVEL["Default"] = (proj.window, proj.level)
+        const.WINDOW_LEVEL["Manual"] = (proj.window, proj.level)
 
         self.Slice = sl.Slice()
         self.Slice.spacing = proj.spacing
@@ -863,7 +864,7 @@ class Controller:
             self.LoadProject()
             Publisher.sendMessage("Enable state project", state=True)
 
-    def OnOpenBitmapFiles(self, rec_data: Tuple[str, str, float, float, float, float]) -> None:
+    def OnOpenBitmapFiles(self, rec_data: tuple[str, str, float, float, float, float]) -> None:
         bmp_data = bmp.BitmapData()
 
         if bmp_data.IsAllBitmapSameSize():
@@ -877,7 +878,7 @@ class Controller:
             dialogs.BitmapNotSameSize()
 
     def OpenBitmapFiles(
-        self, bmp_data: "bmp.BitmapData", rec_data: Tuple[str, str, float, float, float, float]
+        self, bmp_data: "bmp.BitmapData", rec_data: tuple[str, str, float, float, float, float]
     ):
         # name = rec_data[0]
         orientation = rec_data[1]
@@ -976,7 +977,7 @@ class Controller:
         self,
         dicom_group: "DicomGroup",
         interval: int,
-        file_range: Optional[Sequence[int]],
+        file_range: Sequence[int] | None,
         gui: bool = True,
     ):
         # Retrieve general DICOM headers

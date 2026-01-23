@@ -19,7 +19,6 @@
 
 import itertools
 import sys
-from typing import Dict, List, Optional, Tuple, Union
 
 import psutil
 import wx
@@ -182,16 +181,16 @@ CROP_PAN = 13
 
 # Color Table from Slice
 # NumberOfColors, SaturationRange, HueRange, ValueRange
-SLICE_COLOR_TABLE: Dict[
-    str, Tuple[Optional[int], Tuple[int, int], Tuple[float, float], Tuple[int, int]]
+SLICE_COLOR_TABLE: dict[
+    str, tuple[int | None, tuple[int, int], tuple[float, float], tuple[int, int]]
 ] = {
-    _("Default "): (None, (0, 0), (0, 0), (0, 1)),
-    _("Hue"): (None, (1, 1), (0, 1), (1, 1)),
-    _("Saturation"): (None, (0, 1), (0.6, 0.6), (1, 1)),
-    _("Desert"): (256, (1, 1), (0, 0.1), (1, 1)),
-    _("Rainbow"): (256, (1, 1), (0, 0.8), (1, 1)),
-    _("Ocean"): (256, (1, 1), (0.667, 0.5), (1, 1)),
-    _("Inverse Gray"): (256, (0, 0), (0, 0), (1, 0)),
+    "Default ": (None, (0, 0), (0, 0), (0, 1)),
+    "Hue": (None, (1, 1), (0, 1), (1, 1)),
+    "Saturation": (None, (0, 1), (0.6, 0.6), (1, 1)),
+    "Desert": (256, (1, 1), (0, 0.1), (1, 1)),
+    "Rainbow": (256, (1, 1), (0, 0.8), (1, 1)),
+    "Ocean": (256, (1, 1), (0.667, 0.5), (1, 1)),
+    "Inverse Gray": (256, (0, 0), (0, 0), (1, 0)),
 }
 
 # Colors for errors and positives
@@ -290,7 +289,7 @@ THRESHOLD_OUTVALUE = 0
 MASK_NAME_PATTERN = _("Mask %d")
 MASK_OPACITY = 0.40
 # MASK_OPACITY = 0.35
-MASK_COLOUR: List[List[float]] = [
+MASK_COLOUR: list[list[float]] = [
     [0.33, 1, 0.33],
     [1, 1, 0.33],
     [0.33, 0.91, 1],
@@ -312,7 +311,7 @@ MASK_COLOUR: List[List[float]] = [
 
 MEASURE_COLOUR = itertools.cycle([[1, 0, 0], [1, 0.4, 0], [0, 0, 1], [1, 0, 1], [0, 0.6, 0]])
 
-SURFACE_COLOUR: List[Tuple[float, float, float]] = [
+SURFACE_COLOUR: list[tuple[float, float, float]] = [
     (0.33, 1, 0.33),
     (1, 1, 0.33),
     (0.33, 0.91, 1),
@@ -355,10 +354,10 @@ BRUSH_MAX_SIZE = 100
 # 2: smooth_relaxation_factor
 # 3: decimate_reduction
 SURFACE_QUALITY = {
-    _("Low"): (3, 2, 0.3000, 0.4),
-    _("Medium"): (2, 2, 0.3000, 0.4),
-    _("High"): (0, 1, 0.3000, 0.1),
-    _("Optimal *"): (0, 2, 0.3000, 0.4),
+    "Low": (3, 2, 0.3000, 0.4),
+    "Medium": (2, 2, 0.3000, 0.4),
+    "High": (0, 1, 0.3000, 0.1),
+    "Optimal *": (0, 2, 0.3000, 0.4),
 }
 DEFAULT_SURFACE_QUALITY = _("Optimal *")
 SURFACE_QUALITY_LIST = [_("Low"), _("Medium"), _("High"), _("Optimal *")]
@@ -374,26 +373,26 @@ SURFACE_SPACE_INV = 1
 SURFACE_SPACE_CHOICES = [_("world/scanner space"), _("InVesalius space")]
 
 # Imagedata - window and level presets
-WINDOW_LEVEL: Dict[str, Union[Tuple[int, int], Tuple[None, None]]] = {
-    _("Abdomen"): (350, 50),
-    _("Bone"): (2000, 300),
-    _("Brain posterior fossa"): (120, 40),
-    _("Brain"): (80, 40),
-    _("Default"): (None, None),  # Control class set window and level from DICOM
-    _("Emphysema"): (500, -850),
-    _("Ischemia - Hard, non contrast"): (15, 32),
-    _("Ischemia - Soft, non contrast"): (80, 20),
-    _("Larynx"): (180, 80),
-    _("Liver"): (2000, -500),
-    _("Lung - Soft"): (1600, -600),
-    _("Lung - Hard"): (1000, -600),
-    _("Mediastinum"): (350, 25),
-    _("Manual"): (None, None),  # Case the user change window and level
-    _("Pelvis"): (450, 50),
-    _("Sinus"): (4000, 400),
-    _("Vasculature - Hard"): (240, 80),
-    _("Vasculature - Soft"): (650, 160),
-    _("Contour"): (255, 127),
+WINDOW_LEVEL: dict[str, tuple[int, int] | tuple[None, None]] = {
+    "Abdomen": (350, 50),
+    "Bone": (2000, 300),
+    "Brain posterior fossa": (120, 40),
+    "Brain": (80, 40),
+    "Default": (None, None),  # Control class set window and level from DICOM
+    "Emphysema": (500, -850),
+    "Ischemia - Hard, non contrast": (15, 32),
+    "Ischemia - Soft, non contrast": (80, 20),
+    "Larynx": (180, 80),
+    "Liver": (2000, -500),
+    "Lung - Soft": (1600, -600),
+    "Lung - Hard": (1000, -600),
+    "Mediastinum": (350, 25),
+    "Manual": (None, None),  # Case the user change window and level
+    "Pelvis": (450, 50),
+    "Sinus": (4000, 400),
+    "Vasculature - Hard": (240, 80),
+    "Vasculature - Soft": (650, 160),
+    "Contour": (255, 127),
 }
 
 REDUCE_IMAGEDATA_QUALITY = 0
