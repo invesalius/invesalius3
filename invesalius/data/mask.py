@@ -146,7 +146,7 @@ class EditionHistory:
 
         if self.index == 0:
             Publisher.sendMessage("Enable undo", value=False)
-        
+
         if self.index >= 0 and self.index < len(self.history):
             print("AT", self.index, len(self.history), self.history[self.index].filename)
         else:

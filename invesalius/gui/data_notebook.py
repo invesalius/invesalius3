@@ -367,7 +367,7 @@ class MaskPage(wx.Panel):
                 mask = mask_dict[i]
                 self.AddMask(mask)
         self.update_scroll_layout()
-        
+
         # its required to focus to the General list (or first available) to keep keyboard shortcuts working
         if "General" in self.categories:
             self.categories["General"]["list"].SetFocus()
@@ -525,17 +525,17 @@ class ButtonControlPanel(wx.Panel):
         if ok:
             mask_name, thresh, colour = dialog.GetValue()
             if mask_name:
-                from invesalius.data.mask import Mask
                 from invesalius.data.commands.mask import CreateMaskCommand
+                from invesalius.data.mask import Mask
                 from invesalius.session import Session
-                
+
                 mask = Mask()
                 mask.create_mask(shape=slice_.Slice().matrix.shape)
                 mask.spacing = slice_.Slice().spacing
                 mask.name = mask_name
                 mask.threshold_range = thresh
                 mask.colour = colour
-                
+
                 command = CreateMaskCommand(mask)
                 Session().undo_manager.execute(command)
         dialog.Destroy()
@@ -562,17 +562,19 @@ class ButtonControlPanel(wx.Panel):
         for cat in self.parent.categories.values():
             listctrl = cat["list"]
             local_to_global = {v: k for k, v in listctrl.mask_list_index.items()}
-            global_indices.extend(local_to_global[i] for i in listctrl.GetSelected() if i in local_to_global)
+            global_indices.extend(
+                local_to_global[i] for i in listctrl.GetSelected() if i in local_to_global
+            )
         return list(set(global_indices))
 
     def OnRemove(self):
-        from invesalius.data.commands.mask import DeleteMaskCommand
         from invesalius.data.command import CompositeCommand
+        from invesalius.data.commands.mask import DeleteMaskCommand
         from invesalius.session import Session
-        
+
         indices = self._get_selected_global_indices()
         sorted_indices = sorted(indices, reverse=True)
-        
+
         if len(sorted_indices) > 1:
             composite = CompositeCommand()
             for index in sorted_indices:
@@ -580,7 +582,7 @@ class ButtonControlPanel(wx.Panel):
             Session().undo_manager.execute(composite)
         elif sorted_indices:
             Session().undo_manager.execute(DeleteMaskCommand(sorted_indices[0]))
-            
+
         wx.CallAfter(Publisher.sendMessage, "Refresh Masks")
 
     def OnDuplicate(self):
@@ -588,14 +590,14 @@ class ButtonControlPanel(wx.Panel):
 
         if global_indices:
             from invesalius.data.commands.mask import DuplicateMaskCommand
-            from invesalius.session import Session
             from invesalius.project import Project
-            
+            from invesalius.session import Session
+
             for index in global_indices:
                 mask = Project().GetMask(index)
                 # using Mask.copy() to create a duplicate
                 new_mask = mask.copy(mask.name + " copy")
-                
+
                 command = DuplicateMaskCommand(new_mask)
                 Session().undo_manager.execute(command)
         else:
@@ -791,18 +793,18 @@ class MasksListCtrlPanel(InvListCtrl):
         selected_items = self.GetSelected()
         if selected_items:
             from invesalius.data.commands.mask import DuplicateMaskCommand
-            from invesalius.session import Session
             from invesalius.project import Project
-            
+            from invesalius.session import Session
+
             local_to_global = {v: k for k, v in self.mask_list_index.items()}
-            
+
             for local_idx in selected_items:
                 if local_idx in local_to_global:
                     index = local_to_global[local_idx]
                     mask = Project().GetMask(index)
-                    
+
                     new_mask = mask.copy(mask.name + " copy")
-                    
+
                     command = DuplicateMaskCommand(new_mask)
                     Session().undo_manager.execute(command)
         else:
@@ -832,20 +834,20 @@ class MasksListCtrlPanel(InvListCtrl):
             selected_items = self.GetSelected()
 
         if selected_items:
-            from invesalius.data.commands.mask import DeleteMaskCommand
             from invesalius.data.command import CompositeCommand
+            from invesalius.data.commands.mask import DeleteMaskCommand
             from invesalius.session import Session
-            
+
             local_to_global = {v: k for k, v in self.mask_list_index.items()}
             global_indices = []
-            
+
             for local_idx in selected_items:
                 if local_idx in local_to_global:
                     global_indices.append(local_to_global[local_idx])
-            
+
             # Sort descending to delete from end first
             sorted_indices = sorted(global_indices, reverse=True)
-            
+
             if len(sorted_indices) > 1:
                 composite_command = CompositeCommand()
                 for index in sorted_indices:
@@ -855,7 +857,7 @@ class MasksListCtrlPanel(InvListCtrl):
             elif sorted_indices:
                 command = DeleteMaskCommand(sorted_indices[0])
                 Session().undo_manager.execute(command)
-                
+
             wx.CallAfter(Publisher.sendMessage, "Refresh Masks")
         else:
             dlg.MaskSelectionRequiredForRemoval()
@@ -1410,7 +1412,7 @@ class SurfaceButtonControlPanel(wx.Panel):
 
         if ok:
             surface_options = dialog.GetValue()
-            
+
             Publisher.sendMessage("Create surface from index", surface_parameters=surface_options)
         dialog.Destroy()
 
@@ -1420,7 +1422,7 @@ class SurfaceButtonControlPanel(wx.Panel):
             listctrl = category_info["list"]
             selected = listctrl.GetSelected()
             all_selected_indices.extend(selected)
-            
+
         if all_selected_indices:
             Publisher.sendMessage("Remove surfaces", surface_indexes=all_selected_indices)
             Publisher.sendMessage("Repopulate surfaces")
@@ -1436,7 +1438,6 @@ class SurfaceButtonControlPanel(wx.Panel):
             Publisher.sendMessage("Duplicate surfaces", surface_indexes=all_selected_indices)
         else:
             dlg.SurfaceSelectionRequiredForDuplication()
-
 
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
@@ -1514,7 +1515,6 @@ class SurfacesListCtrlPanel(InvListCtrl):
         if result != wx.ID_OK:
             return
         self.RemoveSurfaces()
-
 
         surface_context_menu.AppendSeparator()
 

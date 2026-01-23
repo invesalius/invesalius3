@@ -184,13 +184,15 @@ class Frame(wx.Frame):
         # Specific bindings for undo/redo
         self.Bind(wx.EVT_MENU, self.OnUndo, id=const.ID_EDIT_UNDO)
         self.Bind(wx.EVT_MENU, self.OnRedo, id=const.ID_EDIT_REDO)
-        
+
         # Accelerators
-        accel_tbl = wx.AcceleratorTable([
-            (wx.ACCEL_CTRL, ord('Z'), const.ID_EDIT_UNDO),
-            (wx.ACCEL_CTRL, ord('Y'), const.ID_EDIT_REDO),
-            (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('Z'), const.ID_EDIT_REDO),
-        ])
+        accel_tbl = wx.AcceleratorTable(
+            [
+                (wx.ACCEL_CTRL, ord("Z"), const.ID_EDIT_UNDO),
+                (wx.ACCEL_CTRL, ord("Y"), const.ID_EDIT_REDO),
+                (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord("Z"), const.ID_EDIT_REDO),
+            ]
+        )
         self.SetAcceleratorTable(accel_tbl)
 
         # Close InVesalius main window, hence exit the software.
