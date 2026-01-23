@@ -2,6 +2,7 @@ import abc
 import logging
 from typing import List
 
+
 class Command(abc.ABC):
     """
     Abstract base class for all undoable commands.
@@ -15,14 +16,15 @@ class Command(abc.ABC):
     def undo(self):
         pass
 
-
     def redo(self):
         self.execute()
+
 
 class CompositeCommand(Command):
     """
     Executes a list of commands sequentially. useful for batch operations.
     """
+
     def __init__(self):
         self._commands: List[Command] = []
 
@@ -42,6 +44,7 @@ class UndoManager:
     """
     Manages the undo/redo stacks.
     """
+
     def __init__(self, max_history: int = 100):
         self._undo_stack: List[Command] = []
         self._redo_stack: List[Command] = []
@@ -70,6 +73,7 @@ class UndoManager:
         except Exception as e:
             logging.error(f"UndoManager.undo failed: {e}")
             import traceback
+
             traceback.print_exc()
         self._redo_stack.append(command)
 
@@ -89,7 +93,7 @@ class UndoManager:
         Ensures the undo stack does not exceed the maximum history limit.
         """
         if len(self._undo_stack) > self._max_history:
-            self._undo_stack.pop(0)  
+            self._undo_stack.pop(0)
 
     def clear(self):
         """
