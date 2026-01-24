@@ -171,7 +171,8 @@ class Inv3SplashScreen(SplashScreen):
                 else:
                     homedir = os.path.expanduser("~")
                     config_dir = os.path.join(homedir, ".invesalius")
-                    shutil.rmtree(config_dir)
+                    if os.path.exists(config_dir):
+                        shutil.rmtree(config_dir)
 
                     sys.exit()
 
