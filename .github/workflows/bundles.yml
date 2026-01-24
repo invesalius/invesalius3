@@ -207,7 +207,7 @@ jobs:
       - name: Setup node(npm)
         uses: actions/setup-node@v4
         with:
-          node-version: '20.5.0'
+          node-version: '20.11.1'
 
       - name: Create DMG
         run: |
