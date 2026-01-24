@@ -1,10 +1,9 @@
 use core::{f64, hash};
 use nalgebra::{Point3, Vector3};
 use ndarray::parallel::prelude::*;
-use ndarray::{Array2, ArrayView2, ArrayViewMut2, Axis};
+use ndarray::{Array2, ArrayView2, ArrayViewMut2};
 use num_traits::{AsPrimitive, NumCast};
-use numpy::{ndarray, PyArrayMethods, PyReadonlyArray2, ToPyArray};
-use pyo3::exceptions::PyValueError;
+use numpy::{ndarray, PyArrayMethods};
 use pyo3::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Mutex;
@@ -13,7 +12,7 @@ use crate::types::{FaceArray, VertexArray};
 
 
 pub fn context_aware_smoothing_internal<V, F, N>(
-    mut vertices: ArrayViewMut2<V>,
+    vertices: ArrayViewMut2<V>,
     faces: ArrayViewMut2<F>,
     normals: ArrayViewMut2<N>,
     t: f64,
@@ -26,9 +25,9 @@ pub fn context_aware_smoothing_internal<V, F, N>(
     F: num_traits::PrimInt + Copy + Send + Sync + Ord + hash::Hash + AsPrimitive<usize>,
     N: num_traits::Float + Copy + Send + Sync + AsPrimitive<f64>,
 {
-    let map_vface = build_map_vface(faces.view());
-    let mut edge_nfaces: HashMap<(F, F), i32> = HashMap::new();
-    let mut border_vertices: HashSet<F> = HashSet::new();
+    let _map_vface = build_map_vface(faces.view());
+    let _edge_nfaces: HashMap<(F, F), i32> = HashMap::new();
+    let _border_vertices: HashSet<F> = HashSet::new();
 
     let map_vface = build_map_vface(faces.view());
     let stack_orientation = [0.0, 0.0, 1.0];
@@ -78,7 +77,7 @@ where
 
 pub fn find_staircase_artifacts<V, F, N>(
     vertices: ArrayView2<V>,
-    faces: ArrayView2<F>,
+    _faces: ArrayView2<F>,
     normals: ArrayView2<N>,
     map_vface: &HashMap<usize, Vec<usize>>,
     stack_orientation: [f64; 3],
@@ -146,7 +145,7 @@ where
 fn calc_artifacts_weight<V, F, N>(
     vertices: ArrayView2<V>,
     faces: ArrayView2<F>,
-    normals: ArrayView2<N>,
+    _normals: ArrayView2<N>,
     map_vface: &HashMap<usize, Vec<usize>>,
     vertices_staircase: &[usize],
     tmax: f64,
@@ -237,7 +236,7 @@ where
     }
 }
 
-fn is_border(v_id: usize) -> bool {
+fn is_border(_v_id: usize) -> bool {
     // Convert v_id to F type for lookup
     // Since we're using ArrayView, we need to check if the vertex index exists in border_vertices
     // For now, we'll need to convert: but border_vertices stores F, not usize
