@@ -11,7 +11,8 @@ from pathlib import Path
 SOURCE_DIR = Path("./").resolve()
 print("SOURCE_DIR", SOURCE_DIR)
 
-from PyInstaller.utils.hooks import get_module_file_attribute, collect_dynamic_libs, collect_data_files
+from PyInstaller.utils.hooks import get_module_file_attribute,\
+                                    collect_dynamic_libs, collect_data_files, collect_all
 
 
 python_dir = os.path.dirname(sys.executable)
@@ -102,6 +103,11 @@ for sd in sample_data:
 
 data_files += collect_data_files('tinygrad')
 
+onnx_data, onnx_binaries, onnx_hiddenimports = collect_all("onnxruntime")
+
+data_files += onnx_data
+libraries += onnx_binaries
+
 #---------------------------------------------------------------------------------
 
 block_cipher = None
@@ -119,7 +125,7 @@ a = Analysis(['app.py'],
                           'pywt._extensions._cwt',
                           'skimage.filters.rank.core_cy_3d',
                           'encodings',
-                          'setuptools'],
+                          'setuptools'] + onnx_hiddenimports,
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
