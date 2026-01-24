@@ -101,7 +101,9 @@ for sd in sample_data:
     dest_dir = os.path.dirname(sd)
     data_files.append((sd, dest_dir))
 
-data_files += collect_data_files('tinygrad')
+tinygrad_data, tinygrad_binaries, tinygrad_hiddenimports = collect_all("tinygrad")
+data_files += tinygrad_data
+libraries += tinygrad_binaries
 
 onnx_data, onnx_binaries, onnx_hiddenimports = collect_all("onnxruntime")
 
@@ -125,7 +127,7 @@ a = Analysis(['app.py'],
                           'pywt._extensions._cwt',
                           'skimage.filters.rank.core_cy_3d',
                           'encodings',
-                          'setuptools'] + onnx_hiddenimports,
+                          'setuptools'] + onnx_hiddenimports + tinygrad_hiddenimports,
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
