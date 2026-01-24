@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 use std::collections::VecDeque;
 
 use numpy::PyArrayMethods;
-use crate::types::SupportedArray;
+use crate::types::{SupportedArray, SupportedArrayMut};
 
 #[pyfunction]
 pub fn floodfill(
@@ -341,7 +341,7 @@ pub fn floodfill_threshold<'py>(
     match data {
         SupportedArray::I16(data) => {
             generic_floodfill_threshold(
-                data.readonly().as_array(),
+                data.as_array(),
                 seeds,
                 t0.extract::<i16>()?,
                 t1.extract::<i16>()?,
@@ -353,7 +353,7 @@ pub fn floodfill_threshold<'py>(
         }
         SupportedArray::U8(data) => {
             generic_floodfill_threshold(
-                data.readonly().as_array(),
+                data.as_array(),
                 seeds,
                 t0.extract::<u8>()?,
                 t1.extract::<u8>()?,
@@ -365,7 +365,7 @@ pub fn floodfill_threshold<'py>(
         }
         SupportedArray::F64(data) => {
             generic_floodfill_threshold(
-                data.readonly().as_array(),
+                data.as_array(),
                 seeds,
                 t0.extract::<f64>()?,
                 t1.extract::<f64>()?,
@@ -380,7 +380,7 @@ pub fn floodfill_threshold<'py>(
 
 #[pyfunction]
 pub fn floodfill_threshold_inplace<'py>(
-    data: SupportedArray<'py>,
+    data: SupportedArrayMut<'py>,
     seeds: Vec<(usize, usize, usize)>,
     t0: Bound<'py, PyAny>,
     t1: Bound<'py, PyAny>,
@@ -388,7 +388,7 @@ pub fn floodfill_threshold_inplace<'py>(
     strct: PyReadonlyArray3<u8>,
 ) -> PyResult<()> {
     match data {
-        SupportedArray::I16(data) => {
+        SupportedArrayMut::I16(data) => {
             generic_floodfill_threshold_inplace(
                 data.readwrite().as_array_mut(),
                 seeds,
@@ -399,7 +399,7 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        SupportedArray::U8(data) => {
+        SupportedArrayMut::U8(data) => {
             generic_floodfill_threshold_inplace(
                 data.readwrite().as_array_mut(),
                 seeds,
@@ -410,7 +410,7 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        SupportedArray::F64(data) => {
+        SupportedArrayMut::F64(data) => {
             generic_floodfill_threshold_inplace(
                 data.readwrite().as_array_mut(),
                 seeds,
