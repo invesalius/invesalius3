@@ -77,8 +77,8 @@ def fast_countour_mip(
     return _native.fast_countour_mip(image, n, axis, int(wl), int(ww), tmip, out)
 
 
-# Rust Mesh class (low-level, takes numpy arrays)
-_RustMesh = _native.Mesh
+# Rust context-aware smoothing function
+_context_aware_smoothing = _native.context_aware_smoothing
 
 
 class Mesh:
@@ -98,68 +98,63 @@ class Mesh:
         other : Mesh, optional
             Another Mesh to copy from
         vertices : ndarray, optional
-            Vertex positions (Nx3 float32)
+            Vertex positions (Nx3 float32 or float64)
         faces : ndarray, optional
-            Face indices (Mx4 int64, first column is vertex count)
+            Face indices (Mx4 int64, int32, uint64, or uint32, first column is vertex count)
         normals : ndarray, optional
-            Face normals (Mx3 float32)
+            Face normals (Mx3 float32 or float64)
         """
         if pd is not None:
             # Import VTK utilities only when needed
             from vtkmodules.util import numpy_support
 
             # Extract vertices
-            _vertices = numpy_support.vtk_to_numpy(pd.GetPoints().GetData())
-            _vertices = np.ascontiguousarray(_vertices.reshape(-1, 3).astype(np.float32))
+            _vertices = numpy_support.vtk_to_numpy(pd.GetPoints().GetData()).reshape(-1, 3)
 
             # Extract faces
-            _faces = numpy_support.vtk_to_numpy(pd.GetPolys().GetData())
-            _faces = np.ascontiguousarray(_faces.reshape(-1, 4).astype(np.int64))
+            _faces = numpy_support.vtk_to_numpy(pd.GetPolys().GetData()).reshape(-1, 4)
 
             # Extract normals
-            normals_array = pd.GetCellData().GetArray("Normals")
-            if normals_array is not None:
-                _normals = numpy_support.vtk_to_numpy(normals_array)
-                _normals = np.ascontiguousarray(_normals.reshape(-1, 3).astype(np.float32))
-            else:
-                # Compute normals if not present
-                _normals = np.zeros((_faces.shape[0], 3), dtype=np.float32)
+            _normals = numpy_support.vtk_to_numpy(pd.GetCellData().GetArray("Normals")).reshape(-1, 3)
 
-            self._mesh = _RustMesh(_vertices, _faces, _normals)
+            print(f"{_vertices.dtype=} {_faces.dtype=} {_normals.dtype=}")
+
+            self._vertices = _vertices
+            self._faces = _faces
+            self._normals = _normals
 
         elif other is not None:
             # Copy from another Mesh
             if isinstance(other, Mesh):
-                v = np.ascontiguousarray(other.vertices.copy())
-                f = np.ascontiguousarray(other.faces.copy())
-                n = np.ascontiguousarray(other.normals.copy())
-                self._mesh = _RustMesh(v, f, n)
+                self._vertices = np.ascontiguousarray(other.vertices.copy())
+                self._faces = np.ascontiguousarray(other.faces.copy())
+                self._normals = np.ascontiguousarray(other.normals.copy())
             else:
                 raise TypeError("other must be a Mesh instance")
 
         elif vertices is not None and faces is not None and normals is not None:
-            # Direct numpy arrays
-            _vertices = np.ascontiguousarray(vertices.astype(np.float32))
-            _faces = np.ascontiguousarray(faces.astype(np.int64))
-            _normals = np.ascontiguousarray(normals.astype(np.float32))
-            self._mesh = _RustMesh(_vertices, _faces, _normals)
+            # Direct numpy arrays - ensure contiguous and proper types
+            # The Rust function accepts f32/f64 for vertices/normals and i64/i32/u64/u32 for faces
+            self._vertices = np.ascontiguousarray(vertices)
+            self._faces = np.ascontiguousarray(faces)
+            self._normals = np.ascontiguousarray(normals)
         else:
             raise ValueError("Must provide either pd, other, or (vertices, faces, normals)")
 
     @property
     def vertices(self):
         """Get vertex array."""
-        return self._mesh.vertices
+        return self._vertices
 
     @property
     def faces(self):
         """Get face array."""
-        return self._mesh.faces
+        return self._faces
 
     @property
     def normals(self):
         """Get normal array."""
-        return self._mesh.normals
+        return self._normals
 
     def to_vtk(self):
         """
@@ -205,7 +200,20 @@ class Mesh:
         n_iters : int
             Number of smoothing iterations
         """
-        self._mesh.ca_smoothing(T, tmax, bmin, n_iters)
+        # Ensure arrays are contiguous (may create copies if needed)
+        # The Rust function modifies arrays in place, so we need to ensure
+        # we're working with writable contiguous arrays
+        # vertices = np.ascontiguousarray(self._vertices, dtype=self._vertices.dtype)
+        # faces = np.ascontiguousarray(self._faces, dtype=self._faces.dtype)
+        # normals = np.ascontiguousarray(self._normals, dtype=self._normals.dtype)
+        
+        # Call the Rust function which modifies arrays in place
+        _context_aware_smoothing(self._vertices, self._faces, self._normals, T, tmax, bmin, n_iters)
+        
+        # Update stored arrays (in case copies were made or modifications occurred)
+        # self._vertices[:] = vertices
+        # self._faces[:]   = faces
+        # self._normals[:] = normals
 
 
 def ca_smoothing(mesh, T, tmax, bmin, n_iters):
