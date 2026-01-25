@@ -208,11 +208,6 @@ class Frame(wx.Frame):
     def OnWindowActivate(self, event):
         """
         Handle window activation changes.
-        Fix for issue #878: Close menus when window is deactivated (loses focus).
-        
-        When the user minimizes the window or switches to another application,
-        the menu bar should automatically close any open menus. Without this fix,
-        menus would persist on screen even after switching windows on macOS.
         """
         if not event.GetActive():
             # Window is being deactivated - dismiss any open menus
