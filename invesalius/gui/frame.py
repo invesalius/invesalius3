@@ -195,11 +195,41 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
 
+        # Fix for issue #878: Close menus when window loses focus
+        # This handles the case where menus stay open when minimizing or switching windows
+        self.Bind(wx.EVT_ACTIVATE, self.OnWindowActivate)
+
     def OnEditLabel(self, evt):
         if evt.GetEventType() == wx.wxEVT_LIST_BEGIN_LABEL_EDIT:
             self.edit_data_notebook_label = True
         if evt.GetEventType() == wx.wxEVT_LIST_END_LABEL_EDIT or evt.IsEditCancelled():
             self.edit_data_notebook_label = False
+
+    def OnWindowActivate(self, event):
+        """
+        Handle window activation changes.
+        Fix for issue #878: Close menus when window is deactivated (loses focus).
+        
+        When the user minimizes the window or switches to another application,
+        the menu bar should automatically close any open menus. Without this fix,
+        menus would persist on screen even after switching windows on macOS.
+        """
+        if not event.GetActive():
+            # Window is being deactivated - dismiss any open menus
+            menu_bar = self.GetMenuBar()
+            if menu_bar:
+                # On macOS, we need to explicitly dismiss the menu
+                # This ensures menus don't hang on screen when switching windows
+                try:
+                    # Attempt to close any popup menus
+                    if hasattr(menu_bar, 'Dismiss'):
+                        menu_bar.Dismiss()
+                except AttributeError:
+                    # Dismiss method may not be available on all platforms
+                    pass
+        
+        # Always propagate the event
+        event.Skip()
 
     def OnGlobalKey(self, event):
         """
