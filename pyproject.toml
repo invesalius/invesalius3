@@ -106,6 +106,9 @@ python-packages = ["invesalius", "invesalius_rs"]
 # Strip the library for minimum file size
 strip = true
 
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "invesalius_rs/src/**/*.rs" }, { file = "invesalius_rs/Cargo.toml" }, { file = "invesalius_rs/Cargo.lock" }]
+
 [tool.setuptools_scm]
 write_to = "invesalius/__version__.py"
 

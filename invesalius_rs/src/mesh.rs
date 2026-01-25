@@ -104,12 +104,12 @@ where
     let mut output = Vec::new();
 
     for v_id in 0..n_vertices {
-        let mut max_z = f64::MAX;
-        let mut min_z = f64::MIN;
-        let mut max_y = f64::MAX;
-        let mut min_y = f64::MIN;
-        let mut max_x = f64::MAX;
-        let mut min_x = f64::MIN;
+        let mut max_z = f64::MIN;
+        let mut min_z = f64::MAX;
+        let mut max_y = f64::MIN;
+        let mut min_y = f64::MAX;
+        let mut max_x = f64::MIN;
+        let mut min_x = f64::MAX;
 
         if let Some(f_ids) = map_vface.get(&v_id) {
             for &f_id in f_ids {
@@ -332,8 +332,13 @@ where
 
     for _ in 0..steps {
         // Calculate D for all vertices
-        let d_values: Array2<f64> =
-            Array2::from_shape_fn((n_vertices, 3), |(i, _)| calc_d(vertices.view(), faces.view(), map_vface, i).x);
+        let mut d_values: Array2<f64> = Array2::zeros((n_vertices, 3));
+        for i in 0..n_vertices {
+            let d = calc_d(vertices.view(), faces.view(), map_vface, i);
+            d_values[[i, 0]] = d.x;
+            d_values[[i, 1]] = d.y;
+            d_values[[i, 2]] = d.z;
+        }
 
         // Apply first smoothing step (lambda)
         par_azip!((index i, mut vertex in vertices.outer_iter_mut(), d in d_values.outer_iter()) {
@@ -345,9 +350,12 @@ where
             vertex[[2]] += dz;
         });
 
-        // Recalculate D
-        let d_values: Array2<f64> =
-            Array2::from_shape_fn((n_vertices, 3), |(i, _)| calc_d(vertices.view(), faces.view(), map_vface, i).x);
+        for i in 0..n_vertices {
+            let d = calc_d(vertices.view(), faces.view(), map_vface, i);
+            d_values[[i, 0]] = d.x;
+            d_values[[i, 1]] = d.y;
+            d_values[[i, 2]] = d.z;
+        }
 
         // Apply second smoothing step (mu)
         par_azip!((index i, mut vertex in vertices.outer_iter_mut(), d in d_values.outer_iter()) {
