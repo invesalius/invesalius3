@@ -50,6 +50,8 @@ class SliceMenu(wx.Menu):
         self.ID_TO_TOOL_ITEM: Dict[Union[wx.WindowIDRef, int], wx.MenuItem] = {}
         self.cdialog: Optional[ClutImagedataDialog] = None
 
+        self.ID_TO_CONST_KEY: Dict[Union[wx.WindowIDRef, int], str] = {}
+
         # ------------ Sub menu of the window and level ----------
         submenu_wl = wx.Menu()
 
@@ -59,17 +61,20 @@ class SliceMenu(wx.Menu):
         new_id = self.id_wl_first = wx.NewIdRef()
         wl_item = submenu_wl.Append(new_id, _("Default"), kind=wx.ITEM_RADIO)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
+        self.ID_TO_CONST_KEY[new_id] = "Default"
 
         # Case the user change window and level
         new_id = self.other_wl_id = wx.NewIdRef()
         wl_item = submenu_wl.Append(new_id, _("Manual"), kind=wx.ITEM_RADIO)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
+        self.ID_TO_CONST_KEY[new_id] = "Manual"
 
         for name in const.WINDOW_LEVEL:
-            if not (name == _("Default") or name == _("Manual")):
+            if not (name == "Default" or name == "Manual"):
                 new_id = wx.NewIdRef()
-                wl_item = submenu_wl.Append(new_id, name, kind=wx.ITEM_RADIO)
+                wl_item = submenu_wl.Append(new_id, _(name), kind=wx.ITEM_RADIO)
                 self.ID_TO_TOOL_ITEM[new_id] = wl_item
+                self.ID_TO_CONST_KEY[new_id] = name
 
         # ----------- Sub menu of the save and load options ---------
         # submenu_wl.AppendSeparator()
@@ -96,18 +101,20 @@ class SliceMenu(wx.Menu):
         color_item.Check(True)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
+        self.ID_TO_CONST_KEY[new_id] = "Default "
 
         for name in sorted(const.SLICE_COLOR_TABLE):
-            if not (name == _("Default ")):
+            if not (name == "Default "):
                 new_id = wx.NewIdRef()
-                color_item = submenu_pseudo_colours.Append(new_id, name, kind=mkind)
+                color_item = submenu_pseudo_colours.Append(new_id, _(name), kind=mkind)
                 self.ID_TO_TOOL_ITEM[new_id] = color_item
                 self.pseudo_color_items[new_id] = color_item
+                self.ID_TO_CONST_KEY[new_id] = name
 
         self.plist_presets = presets.get_wwwl_presets()
         for name in sorted(self.plist_presets):
             new_id = wx.NewIdRef()
-            color_item = submenu_pseudo_colours.Append(new_id, name, kind=mkind)
+            color_item = submenu_pseudo_colours.Append(new_id, _(name), kind=mkind)
             self.ID_TO_TOOL_ITEM[new_id] = color_item
             self.pseudo_color_items[new_id] = color_item
 
@@ -115,6 +122,7 @@ class SliceMenu(wx.Menu):
         color_item = submenu_pseudo_colours.Append(new_id, _("Custom"), kind=mkind)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
+        self.ID_TO_CONST_KEY[new_id] = "Custom"
 
         # --------------- Sub menu of the projection type ---------------------
         self.projection_items: Dict[Union[wx.WindowIDRef, int], wx.MenuItem] = {}
@@ -188,6 +196,9 @@ class SliceMenu(wx.Menu):
         # id = evt.GetId()
         item = self.ID_TO_TOOL_ITEM[evt.GetId()]
         key = item.GetItemLabelText()
+        if evt.GetId() in self.ID_TO_CONST_KEY:
+            key = self.ID_TO_CONST_KEY[evt.GetId()]
+
         if key in const.WINDOW_LEVEL.keys():
             window, level = const.WINDOW_LEVEL[key]
             Publisher.sendMessage(
@@ -241,7 +252,7 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage("Set projection type", projection_id=pid)
             Publisher.sendMessage("Reload actual slice")
 
-        elif key == _("Custom"):
+        elif key == "Custom":
             if self.cdialog is None:
                 slc = sl.Slice()
                 histogram = slc.histogram

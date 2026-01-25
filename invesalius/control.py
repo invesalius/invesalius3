@@ -604,10 +604,10 @@ class Controller:
 
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
-        const.THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
+        const.THRESHOLD_RANGE = proj.threshold_modes["Bone"]
 
-        const.WINDOW_LEVEL[_("Default")] = (proj.window, proj.level)
-        const.WINDOW_LEVEL[_("Manual")] = (proj.window, proj.level)
+        const.WINDOW_LEVEL["Default"] = (proj.window, proj.level)
+        const.WINDOW_LEVEL["Manual"] = (proj.window, proj.level)
 
         self.Slice = sl.Slice()
         self.Slice.spacing = proj.spacing

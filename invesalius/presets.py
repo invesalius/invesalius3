@@ -34,41 +34,41 @@ class Presets:
     def __init__(self):
         self.thresh_ct = TwoWaysDictionary(
             {
-                _("Bone"): (226, 3071),
-                _("Soft Tissue"): (-700, 225),
-                _("Enamel (Adult)"): (1553, 2850),
-                _("Enamel (Child)"): (2042, 3071),
-                _("Compact Bone (Adult)"): (662, 1988),
-                _("Compact Bone (Child)"): (586, 2198),
-                _("Spongial Bone (Adult)"): (148, 661),
-                _("Spongial Bone (Child)"): (156, 585),
-                _("Muscle Tissue (Adult)"): (-5, 135),
-                _("Muscle Tissue (Child)"): (-25, 139),
-                _("Fat Tissue (Adult)"): (-205, -51),
-                _("Fat Tissue (Child)"): (-212, -72),
-                _("Skin Tissue (Adult)"): (-718, -177),
-                _("Skin Tissue (Child)"): (-766, -202),
-                _("Custom"): (0, 0),
+                "Bone": (226, 3071),
+                "Soft Tissue": (-700, 225),
+                "Enamel (Adult)": (1553, 2850),
+                "Enamel (Child)": (2042, 3071),
+                "Compact Bone (Adult)": (662, 1988),
+                "Compact Bone (Child)": (586, 2198),
+                "Spongial Bone (Adult)": (148, 661),
+                "Spongial Bone (Child)": (156, 585),
+                "Muscle Tissue (Adult)": (-5, 135),
+                "Muscle Tissue (Child)": (-25, 139),
+                "Fat Tissue (Adult)": (-205, -51),
+                "Fat Tissue (Child)": (-212, -72),
+                "Skin Tissue (Adult)": (-718, -177),
+                "Skin Tissue (Child)": (-766, -202),
+                "Custom": (0, 0),
             }
         )
 
         self.thresh_mri = TwoWaysDictionary(
             {
-                _("Bone"): (1250, 4095),
-                _("Soft Tissue"): (324, 1249),
-                _("Enamel (Adult)"): (2577, 3874),
-                _("Enamel (Child)"): (3066, 4095),
-                _("Compact Bone (Adult)"): (1686, 3012),
-                _("Compact Bone (Child)"): (1610, 3222),
-                _("Spongial Bone (Adult)"): (1172, 1685),
-                _("Spongial Bone (Child)"): (1180, 1609),
-                _("Muscle Tissue (Adult)"): (1019, 1159),
-                _("Muscle Tissue (Child)"): (999, 1163),
-                _("Fat Tissue (Adult)"): (819, 973),
-                _("Fat Tissue (Child)"): (812, 952),
-                _("Skin Tissue (Adult)"): (306, 847),
-                _("Skin Tissue (Child)"): (258, 822),
-                _("Custom"): (0, 0),
+                "Bone": (1250, 4095),
+                "Soft Tissue": (324, 1249),
+                "Enamel (Adult)": (2577, 3874),
+                "Enamel (Child)": (3066, 4095),
+                "Compact Bone (Adult)": (1686, 3012),
+                "Compact Bone (Child)": (1610, 3222),
+                "Spongial Bone (Adult)": (1172, 1685),
+                "Spongial Bone (Child)": (1180, 1609),
+                "Muscle Tissue (Adult)": (1019, 1159),
+                "Muscle Tissue (Child)": (999, 1163),
+                "Fat Tissue (Adult)": (819, 973),
+                "Fat Tissue (Child)": (812, 952),
+                "Skin Tissue (Adult)": (306, 847),
+                "Skin Tissue (Child)": (258, 822),
+                "Custom": (0, 0),
             }
         )
         self.__bind_events()
@@ -105,31 +105,13 @@ class Presets:
         filename = "{}${}".format(filename, "presets.plist")
         preset = {}
 
-        translate_to_en = {
-            _("Bone"): "Bone",
-            _("Soft Tissue"): "Soft Tissue",
-            _("Enamel (Adult)"): "Enamel (Adult)",
-            _("Enamel (Child)"): "Enamel (Child)",
-            _("Compact Bone (Adult)"): "Compact Bone (Adult)",
-            _("Compact Bone (Child)"): "Compact Bone (Child)",
-            _("Spongial Bone (Adult)"): "Spongial Bone (Adult)",
-            _("Spongial Bone (Child)"): "Spongial Bone (Child)",
-            _("Muscle Tissue (Adult)"): "Muscle Tissue (Adult)",
-            _("Muscle Tissue (Child)"): "Muscle Tissue (Child)",
-            _("Fat Tissue (Adult)"): "Fat Tissue (Adult)",
-            _("Fat Tissue (Child)"): "Fat Tissue (Child)",
-            _("Skin Tissue (Adult)"): "Skin Tissue (Adult)",
-            _("Skin Tissue (Child)"): "Skin Tissue (Child)",
-            _("Custom"): "Custom",
-        }
-
         thresh_mri_new = {}
         for name in self.thresh_mri.keys():
-            thresh_mri_new[translate_to_en[name]] = self.thresh_mri[name]
+            thresh_mri_new[name] = self.thresh_mri[name]
 
         thresh_ct_new = {}
         for name in self.thresh_ct.keys():
-            thresh_ct_new[translate_to_en[name]] = self.thresh_ct[name]
+            thresh_ct_new[name] = self.thresh_ct[name]
 
         preset["thresh_mri"] = thresh_mri_new
         preset["thresh_ct"] = thresh_ct_new
@@ -138,39 +120,13 @@ class Presets:
         return os.path.split(filename)[1]
 
     def OpenPlist(self, filename: "str | Path") -> None:
-        translate_to_x = {
-            "Bone": _("Bone"),
-            "Soft Tissue": _("Soft Tissue"),
-            "Enamel (Adult)": _("Enamel (Adult)"),
-            "Enamel (Child)": _("Enamel (Child)"),
-            "Compact Bone (Adult)": _("Compact Bone (Adult)"),
-            "Compact Bone (Child)": _("Compact Bone (Child)"),
-            "Spongial Bone (Adult)": _("Spongial Bone (Adult)"),
-            "Spongial Bone (Child)": _("Spongial Bone (Child)"),
-            "Muscle Tissue (Adult)": _("Muscle Tissue (Adult)"),
-            "Muscle Tissue (Child)": _("Muscle Tissue (Child)"),
-            "Fat Tissue (Adult)": _("Fat Tissue (Adult)"),
-            "Fat Tissue (Child)": _("Fat Tissue (Child)"),
-            "Skin Tissue (Adult)": _("Skin Tissue (Adult)"),
-            "Skin Tissue (Child)": _("Skin Tissue (Child)"),
-            "Custom": _("Custom"),
-        }
-
         with open(filename, "rb") as f:
             p = plistlib.load(f, fmt=plistlib.FMT_XML)
         thresh_mri = p["thresh_mri"].copy()
         thresh_ct = p["thresh_ct"].copy()
 
-        thresh_ct_new = {}
-        for name in thresh_ct.keys():
-            thresh_ct_new[translate_to_x[name]] = thresh_ct[name]
-
-        thresh_mri_new = {}
-        for name in thresh_mri.keys():
-            thresh_mri_new[translate_to_x[name]] = thresh_mri[name]
-
-        self.thresh_mri = TwoWaysDictionary(thresh_mri_new)
-        self.thresh_ct = TwoWaysDictionary(thresh_ct_new)
+        self.thresh_mri = TwoWaysDictionary(thresh_mri)
+        self.thresh_ct = TwoWaysDictionary(thresh_ct)
 
 
 def get_wwwl_presets() -> Dict[str, str]:
