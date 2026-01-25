@@ -217,12 +217,12 @@ class Frame(wx.Frame):
                 # This ensures menus don't hang on screen when switching windows
                 try:
                     # Attempt to close any popup menus
-                    if hasattr(menu_bar, 'Dismiss'):
+                    if hasattr(menu_bar, "Dismiss"):
                         menu_bar.Dismiss()
                 except AttributeError:
                     # Dismiss method may not be available on all platforms
                     pass
-        
+
         # Always propagate the event
         event.Skip()
 
