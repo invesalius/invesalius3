@@ -35,24 +35,23 @@ pub fn context_aware_smoothing_internal<V, F, N>(
     F: Face,
     N: Vertex,
 {
-    let _map_vface = build_map_vface(faces.view());
-    let _edge_nfaces: HashMap<(F, F), i32> = HashMap::new();
-    let _border_vertices: HashSet<F> = HashSet::new();
+    let map_vface = build_map_vface(&faces.view());
+    let edge_nfaces: HashMap<(F, F), i32> = HashMap::new();
+    let border_vertices: HashSet<F> = HashSet::new();
 
-    let map_vface = build_map_vface(faces.view());
     let stack_orientation = [0.0, 0.0, 1.0];
     let vertices_staircase = find_staircase_artifacts(
-        vertices.view(),
-        faces.view(),
-        normals.view(),
+        &vertices.view(),
+        &faces.view(),
+        &normals.view(),
         &map_vface,
         stack_orientation,
         t,
     );
     let weights = calc_artifacts_weight(
-        vertices.view(),
-        faces.view(),
-        normals.view(),
+        &vertices.view(),
+        &faces.view(),
+        &normals.view(),
         &map_vface,
         &vertices_staircase,
         tmax,
@@ -60,7 +59,7 @@ pub fn context_aware_smoothing_internal<V, F, N>(
     );
     taubin_smooth(
         vertices,
-        faces.view(),
+        &faces.view(),
         &map_vface,
         &weights,
         0.5,
@@ -69,26 +68,27 @@ pub fn context_aware_smoothing_internal<V, F, N>(
     );  
 }
 
-fn build_map_vface<F>(faces: ArrayView2<F>) -> HashMap<usize, Vec<usize>>
+fn build_map_vface<F>(faces: &ArrayView2<F>) -> HashMap<usize, Vec<usize>>
 where
     F: Face,
 {
     let mut map_vface: HashMap<usize, Vec<usize>> = HashMap::new();
-    for face in faces.outer_iter() {
+    for f_id in 0..faces.shape()[0] {
+        let face = faces.row(f_id);
         for i in 0..face.len() {
             map_vface
                 .entry(face[i].as_())
                 .or_default()
-                .push(face[i].as_());
+                .push(f_id);
         }
     }
     map_vface
 }
 
 pub fn find_staircase_artifacts<V, F, N>(
-    vertices: ArrayView2<V>,
-    _faces: ArrayView2<F>,
-    normals: ArrayView2<N>,
+    vertices: &ArrayView2<V>,
+    _faces: &ArrayView2<F>,
+    normals: &ArrayView2<N>,
     map_vface: &HashMap<usize, Vec<usize>>,
     stack_orientation: [f64; 3],
     t: f64,
@@ -153,9 +153,9 @@ where
 }
 
 fn calc_artifacts_weight<V, F, N>(
-    vertices: ArrayView2<V>,
-    faces: ArrayView2<F>,
-    _normals: ArrayView2<N>,
+    vertices: &ArrayView2<V>,
+    faces: &ArrayView2<F>,
+    _normals: &ArrayView2<N>,
     map_vface: &HashMap<usize, Vec<usize>>,
     vertices_staircase: &[usize],
     tmax: f64,
@@ -176,8 +176,8 @@ where
         }
 
         let near_vertices = get_near_vertices_to_v(
-            vertices,
-            faces,
+            &vertices,
+            &faces,
             map_vface,
             *vi_id,
             tmax,
@@ -204,8 +204,8 @@ where
 }
 
 fn calc_d<V, F>(
-    vertices: ArrayView2<V>,
-    faces: ArrayView2<F>,
+    vertices: &ArrayView2<V>,
+    faces: &ArrayView2<F>,
     map_vface: &HashMap<usize, Vec<usize>>,
     v_id: usize,
 ) -> Vector3<f64>
@@ -214,9 +214,9 @@ where
     F: Face,
 {
     let vi = vertices.row(v_id);
-    let p_vi = Point3::new(vi[0].as_(), vi[1].as_(), vi[2].as_());
+    let p_vi = Vector3::new(vi[0].as_(), vi[1].as_(), vi[2].as_());
 
-    let ring1 = get_ring1(faces.view(), map_vface, v_id);
+    let ring1 = get_ring1(faces, map_vface, v_id);
     let mut d = Vector3::zeros();
     let mut n = 0.0f64;
 
@@ -224,7 +224,7 @@ where
         for &vj_id in &ring1 {
             if is_border(vj_id) {
                 let vj = vertices.row(vj_id);
-                let p_vj = Point3::new(vj[0].as_(), vj[1].as_(), vj[2].as_());
+                let p_vj = Vector3::new(vj[0].as_(), vj[1].as_(), vj[2].as_());
                 d += p_vi - p_vj;
                 n += 1.0;
             }
@@ -232,7 +232,7 @@ where
     } else {
         for &vj_id in &ring1 {
             let vj = vertices.row(vj_id);
-            let p_vj = Point3::new(vj[0].as_(), vj[1].as_(), vj[2].as_());
+            let p_vj = Vector3::new(vj[0].as_(), vj[1].as_(), vj[2].as_());
             d += p_vi - p_vj;
             n += 1.0;
         }
@@ -255,7 +255,7 @@ fn is_border(_v_id: usize) -> bool {
 }
 
 fn get_ring1<F>(
-    faces: ArrayView2<F>,
+    faces: &ArrayView2<F>,
     map_vface: &HashMap<usize, Vec<usize>>,
     v_id: usize,
 ) -> HashSet<usize>
@@ -278,8 +278,8 @@ where
 }
 
 fn get_near_vertices_to_v<V, F>(
-    vertices: ArrayView2<V>,
-    faces: ArrayView2<F>,
+    vertices: &ArrayView2<V>,
+    faces: &ArrayView2<F>,
     map_vface: &HashMap<usize, Vec<usize>>,
     v_id: usize,
     dmax: f64,
@@ -323,22 +323,23 @@ where
     near_vertices
 }
 
-fn taubin_smooth<V, F>(mut vertices: ArrayViewMut2<V>, faces: ArrayView2<F>, map_vface: &HashMap<usize, Vec<usize>>, weights: &[f64], l: f64, m: f64, steps: u32)
+fn taubin_smooth<V, F>(mut vertices: ArrayViewMut2<V>, faces: &ArrayView2<F>, map_vface: &HashMap<usize, Vec<usize>>, weights: &[f64], l: f64, m: f64, steps: u32)
 where
     V: Vertex,
     F: Face,
 {
     let n_vertices = vertices.shape()[0];
+    let mut d_values: Array2<f64> = Array2::zeros((n_vertices, 3));
 
     for _ in 0..steps {
         // Calculate D for all vertices
-        let mut d_values: Array2<f64> = Array2::zeros((n_vertices, 3));
-        for i in 0..n_vertices {
-            let d = calc_d(vertices.view(), faces.view(), map_vface, i);
-            d_values[[i, 0]] = d.x;
-            d_values[[i, 1]] = d.y;
-            d_values[[i, 2]] = d.z;
-        }
+
+        par_azip!((index i, mut d in d_values.outer_iter_mut()) {
+            let d_vec = calc_d(&vertices.view(), faces, map_vface, i);
+            d[0] = d_vec.x;
+            d[1] = d_vec.y;
+            d[2] = d_vec.z;
+        });
 
         // Apply first smoothing step (lambda)
         par_azip!((index i, mut vertex in vertices.outer_iter_mut(), d in d_values.outer_iter()) {
@@ -350,12 +351,13 @@ where
             vertex[[2]] += dz;
         });
 
-        for i in 0..n_vertices {
-            let d = calc_d(vertices.view(), faces.view(), map_vface, i);
-            d_values[[i, 0]] = d.x;
-            d_values[[i, 1]] = d.y;
-            d_values[[i, 2]] = d.z;
-        }
+        par_azip!((index i, mut d in d_values.outer_iter_mut()) {
+            let d_vec = calc_d(&vertices.view(), faces, map_vface, i);
+            d[0] = d_vec.x;
+            d[1] = d_vec.y;
+            d[2] = d_vec.z;
+        });
+
 
         // Apply second smoothing step (mu)
         par_azip!((index i, mut vertex in vertices.outer_iter_mut(), d in d_values.outer_iter()) {
