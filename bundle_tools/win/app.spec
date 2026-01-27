@@ -65,8 +65,8 @@ for v in vtk_files:
         libraries.append((v, dest_dir))
 
 #add interpolation module (pyinstaller not take automatically)
-libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy\Release', 
-    'interpolation.*.pyd'))[0],'invesalius_cy')) #.pyd files are inside of invesalius_cy\Release
+libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy', 
+    'interpolation.*.pyd'))[0],'invesalius_cy')) #.pyd files are inside of invesalius_cy
 
 #add plaidml modules and files
 #libraries.append((os.path.join(venv_dir,'library','bin','plaidml.dll'),'library\\bin'))
@@ -204,4 +204,5 @@ coll = COLLECT(exe,
 #print("1 >>>>>>>>>> ",a.zipped_data)
 
 #print("2 >>>>>>>>>> ",a.pure)
+
 
