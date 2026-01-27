@@ -49,8 +49,8 @@ jobs:
             $INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
             echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $env:GITHUB_ENV
   
-        - name: copy .pyd files to invesalius_cy
-          run: Copy-Item -Path invesalius_cy\* -Destination invesalius_cy -Recurse -Force
+        #- name: copy .pyd files to invesalius_cy
+        #  run: Copy-Item -Path invesalius_cy\Release\* -Destination invesalius_cy -Recurse -Force
   
         - name: Download mandible ai weight
           if: ${{ matrix.ai_ready == 1 }}
