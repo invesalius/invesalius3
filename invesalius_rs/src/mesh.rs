@@ -3,19 +3,25 @@ use nalgebra::{Point3, Vector3};
 use ndarray::parallel::prelude::*;
 use ndarray::{Array2, ArrayView2, ArrayViewMut2};
 use num_traits::{AsPrimitive, NumCast};
-use numpy::{ndarray, PyArrayMethods};
+use numpy::ndarray;
 use pyo3::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Mutex;
 
 use crate::types::{FaceArray, VertexArray};
 
-trait Vertex: num_traits::Float + Copy + Send + Sync + NumCast + std::ops::AddAssign<Self> + AsPrimitive<f64> {}
+pub trait Vertex:
+    num_traits::Float + Copy + Send + Sync + NumCast + std::ops::AddAssign<Self> + AsPrimitive<f64>
+{
+}
 
 impl Vertex for f32 {}
 impl Vertex for f64 {}
 
-trait Face: num_traits::PrimInt + Copy + Send + Sync + Ord + hash::Hash + AsPrimitive<usize> {}
+pub trait Face:
+    num_traits::PrimInt + Copy + Send + Sync + Ord + hash::Hash + AsPrimitive<usize>
+{
+}
 
 impl Face for i32 {}
 impl Face for i64 {}
@@ -36,8 +42,8 @@ pub fn context_aware_smoothing_internal<V, F, N>(
     N: Vertex,
 {
     let map_vface = build_map_vface(&faces.view());
-    let edge_nfaces: HashMap<(F, F), i32> = HashMap::new();
-    let border_vertices: HashSet<F> = HashSet::new();
+    let _edge_nfaces: HashMap<(F, F), i32> = HashMap::new();
+    let _border_vertices: HashSet<F> = HashSet::new();
 
     let stack_orientation = [0.0, 0.0, 1.0];
     let vertices_staircase = find_staircase_artifacts(
@@ -65,21 +71,18 @@ pub fn context_aware_smoothing_internal<V, F, N>(
         0.5,
         -0.53,
         n_iters,
-    );  
+    );
 }
 
 fn build_map_vface<F>(faces: &ArrayView2<F>) -> HashMap<usize, Vec<usize>>
 where
     F: Face,
 {
-    let mut map_vface: HashMap<usize, Vec<usize>> = HashMap::new();
-    for f_id in 0..faces.shape()[0] {
-        let face = faces.row(f_id);
-        for i in 0..face.len() {
-            map_vface
-                .entry(face[i].as_())
-                .or_default()
-                .push(f_id);
+    let mut map_vface: HashMap<usize, Vec<usize>> = HashMap::with_capacity(faces.nrows());
+
+    for (f_id, face) in faces.outer_iter().enumerate() {
+        for &v_id in face.iter() {
+            map_vface.entry(v_id.as_()).or_default().push(f_id);
         }
     }
     map_vface
@@ -175,13 +178,7 @@ where
             weights[*vi_id] = 1.0;
         }
 
-        let near_vertices = get_near_vertices_to_v(
-            &vertices,
-            &faces,
-            map_vface,
-            *vi_id,
-            tmax,
-        );
+        let near_vertices = get_near_vertices_to_v(&vertices, &faces, map_vface, *vi_id, tmax);
         let vi = vertices.row(*vi_id);
         let p_vi = Point3::new(vi[0].as_(), vi[1].as_(), vi[2].as_());
 
@@ -323,8 +320,15 @@ where
     near_vertices
 }
 
-fn taubin_smooth<V, F>(mut vertices: ArrayViewMut2<V>, faces: &ArrayView2<F>, map_vface: &HashMap<usize, Vec<usize>>, weights: &[f64], l: f64, m: f64, steps: u32)
-where
+fn taubin_smooth<V, F>(
+    mut vertices: ArrayViewMut2<V>,
+    faces: &ArrayView2<F>,
+    map_vface: &HashMap<usize, Vec<usize>>,
+    weights: &[f64],
+    l: f64,
+    m: f64,
+    steps: u32,
+) where
     V: Vertex,
     F: Face,
 {
@@ -358,7 +362,6 @@ where
             d[2] = d_vec.z;
         });
 
-
         // Apply second smoothing step (mu)
         par_azip!((index i, mut vertex in vertices.outer_iter_mut(), d in d_values.outer_iter()) {
             let dx: V = NumCast::from(weights[i] * m * d[0]).unwrap_or(vertex[0]);
@@ -371,8 +374,7 @@ where
     }
 }
 
-
-#[pyfunction]   
+#[pyfunction]
 pub fn context_aware_smoothing<'py>(
     vertices: VertexArray<'py>,
     faces: FaceArray<'py>,
@@ -384,7 +386,11 @@ pub fn context_aware_smoothing<'py>(
 ) -> PyResult<()> {
     match (vertices, faces, normals) {
         // F32 vertices, I64 faces
-        (VertexArray::F32(mut vertices), FaceArray::I64(mut faces), VertexArray::F32(mut normals)) => {
+        (
+            VertexArray::F32(mut vertices),
+            FaceArray::I64(mut faces),
+            VertexArray::F32(mut normals),
+        ) => {
             println!("F32 vertices, I64 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -397,7 +403,11 @@ pub fn context_aware_smoothing<'py>(
             );
             Ok(())
         }
-        (VertexArray::F32(mut vertices), FaceArray::I64(mut faces), VertexArray::F64(mut normals)) => {
+        (
+            VertexArray::F32(mut vertices),
+            FaceArray::I64(mut faces),
+            VertexArray::F64(mut normals),
+        ) => {
             println!("F32 vertices, I64 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -411,7 +421,11 @@ pub fn context_aware_smoothing<'py>(
             Ok(())
         }
         // F32 vertices, U64 faces
-        (VertexArray::F32(mut vertices), FaceArray::U64(mut faces), VertexArray::F32(mut normals)) => {
+        (
+            VertexArray::F32(mut vertices),
+            FaceArray::U64(mut faces),
+            VertexArray::F32(mut normals),
+        ) => {
             println!("F32 vertices, U64 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -424,7 +438,11 @@ pub fn context_aware_smoothing<'py>(
             );
             Ok(())
         }
-        (VertexArray::F32(mut vertices), FaceArray::U64(mut faces), VertexArray::F64(mut normals)) => {
+        (
+            VertexArray::F32(mut vertices),
+            FaceArray::U64(mut faces),
+            VertexArray::F64(mut normals),
+        ) => {
             println!("F32 vertices, U64 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -438,7 +456,11 @@ pub fn context_aware_smoothing<'py>(
             Ok(())
         }
         // F32 vertices, I32 faces
-        (VertexArray::F32(mut vertices), FaceArray::I32(mut faces), VertexArray::F32(mut normals)) => {
+        (
+            VertexArray::F32(mut vertices),
+            FaceArray::I32(mut faces),
+            VertexArray::F32(mut normals),
+        ) => {
             println!("F32 vertices, I32 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -451,7 +473,11 @@ pub fn context_aware_smoothing<'py>(
             );
             Ok(())
         }
-        (VertexArray::F32(mut vertices), FaceArray::I32(mut faces), VertexArray::F64(mut normals)) => {
+        (
+            VertexArray::F32(mut vertices),
+            FaceArray::I32(mut faces),
+            VertexArray::F64(mut normals),
+        ) => {
             println!("F32 vertices, I32 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -465,7 +491,11 @@ pub fn context_aware_smoothing<'py>(
             Ok(())
         }
         // F32 vertices, U32 faces
-        (VertexArray::F32(mut vertices), FaceArray::U32(mut faces), VertexArray::F32(mut normals)) => {
+        (
+            VertexArray::F32(mut vertices),
+            FaceArray::U32(mut faces),
+            VertexArray::F32(mut normals),
+        ) => {
             println!("F32 vertices, U32 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -478,7 +508,11 @@ pub fn context_aware_smoothing<'py>(
             );
             Ok(())
         }
-        (VertexArray::F32(mut vertices), FaceArray::U32(mut faces), VertexArray::F64(mut normals)) => {
+        (
+            VertexArray::F32(mut vertices),
+            FaceArray::U32(mut faces),
+            VertexArray::F64(mut normals),
+        ) => {
             println!("F32 vertices, U32 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -492,7 +526,11 @@ pub fn context_aware_smoothing<'py>(
             Ok(())
         }
         // F64 vertices, I64 faces
-        (VertexArray::F64(mut vertices), FaceArray::I64(mut faces), VertexArray::F32(mut normals)) => {
+        (
+            VertexArray::F64(mut vertices),
+            FaceArray::I64(mut faces),
+            VertexArray::F32(mut normals),
+        ) => {
             println!("F64 vertices, I64 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -505,7 +543,11 @@ pub fn context_aware_smoothing<'py>(
             );
             Ok(())
         }
-        (VertexArray::F64(mut vertices), FaceArray::I64(mut faces), VertexArray::F64(mut normals)) => {
+        (
+            VertexArray::F64(mut vertices),
+            FaceArray::I64(mut faces),
+            VertexArray::F64(mut normals),
+        ) => {
             println!("F64 vertices, I64 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -519,7 +561,11 @@ pub fn context_aware_smoothing<'py>(
             Ok(())
         }
         // F64 vertices, U64 faces
-        (VertexArray::F64(mut vertices), FaceArray::U64(mut faces), VertexArray::F32(mut normals)) => {
+        (
+            VertexArray::F64(mut vertices),
+            FaceArray::U64(mut faces),
+            VertexArray::F32(mut normals),
+        ) => {
             println!("F64 vertices, U64 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -532,9 +578,13 @@ pub fn context_aware_smoothing<'py>(
             );
             Ok(())
         }
-        (VertexArray::F64(mut vertices), FaceArray::U64(mut faces), VertexArray::F64(mut normals)) => {
+        (
+            VertexArray::F64(mut vertices),
+            FaceArray::U64(mut faces),
+            VertexArray::F64(mut normals),
+        ) => {
             println!("F64 vertices, U64 faces");
-                context_aware_smoothing_internal(
+            context_aware_smoothing_internal(
                 vertices.as_array_mut(),
                 faces.as_array_mut(),
                 normals.as_array_mut(),
@@ -546,7 +596,11 @@ pub fn context_aware_smoothing<'py>(
             Ok(())
         }
         // F64 vertices, I32 faces
-        (VertexArray::F64(mut vertices), FaceArray::I32(mut faces), VertexArray::F32(mut normals)) => {
+        (
+            VertexArray::F64(mut vertices),
+            FaceArray::I32(mut faces),
+            VertexArray::F32(mut normals),
+        ) => {
             println!("F64 vertices, I32 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -559,7 +613,11 @@ pub fn context_aware_smoothing<'py>(
             );
             Ok(())
         }
-        (VertexArray::F64(mut vertices), FaceArray::I32(mut faces), VertexArray::F64(mut normals)) => {
+        (
+            VertexArray::F64(mut vertices),
+            FaceArray::I32(mut faces),
+            VertexArray::F64(mut normals),
+        ) => {
             println!("F64 vertices, I32 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -573,7 +631,11 @@ pub fn context_aware_smoothing<'py>(
             Ok(())
         }
         // F64 vertices, U32 faces
-        (VertexArray::F64(mut vertices), FaceArray::U32(mut faces), VertexArray::F32(mut normals)) => {
+        (
+            VertexArray::F64(mut vertices),
+            FaceArray::U32(mut faces),
+            VertexArray::F32(mut normals),
+        ) => {
             println!("F64 vertices, U32 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
@@ -586,7 +648,11 @@ pub fn context_aware_smoothing<'py>(
             );
             Ok(())
         }
-        (VertexArray::F64(mut vertices), FaceArray::U32(mut faces), VertexArray::F64(mut normals)) => {
+        (
+            VertexArray::F64(mut vertices),
+            FaceArray::U32(mut faces),
+            VertexArray::F64(mut normals),
+        ) => {
             println!("F64 vertices, U32 faces");
             context_aware_smoothing_internal(
                 vertices.as_array_mut(),
