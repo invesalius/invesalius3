@@ -51,8 +51,8 @@ for v in vtk_files:
         libraries.append((v, dest_dir))
 
 # Add interpolation module
-libraries.append((glob.glob(os.path.join(SOURCE_DIR, 'invesalius_cy', 
-    'interpolation.*.so'))[0], 'invesalius_cy'))  # .so files for macOS
+#libraries.append((glob.glob(os.path.join(SOURCE_DIR, 'invesalius_cy', 
+#    'interpolation.*.so'))[0], 'invesalius_cy'))  # .so files for macOS
 
 # -- data files -----
 
