@@ -53,10 +53,7 @@ if sys.platform not in ("win32", "darwin"):
 import wx
 from wx.adv import SPLASH_CENTRE_ON_SCREEN, SPLASH_TIMEOUT, SplashScreen
 
-import invesalius.enhanced_logging
-import invesalius.error_handling
-import invesalius.gui.language_dialog as lang_dlg
-import invesalius.gui.log as log
+#import invesalius.error_handling
 import invesalius.i18n as i18n
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -118,10 +115,13 @@ class InVesalius(wx.App):
         self.frame.Show()
         self.frame.Raise()
 
+
         # Initialize the enhanced logging system
+        import invesalius.enhanced_logging
         invesalius.enhanced_logging.register_menu_handler()
 
         # Initialize the legacy logging system for backward compatibility
+        import invesalius.gui.log as log
         log.invLogger.configureLogging()
 
 
@@ -155,6 +155,7 @@ class Inv3SplashScreen(SplashScreen):
         # If no language is set into session file, show dialog so
         # user can select language
         if not install_lang:
+            import invesalius.gui.language_dialog as lang_dlg
             dialog = lang_dlg.LanguageDialog()
 
             # FIXME: This works ok in linux2, darwin and win32,
@@ -171,7 +172,8 @@ class Inv3SplashScreen(SplashScreen):
                 else:
                     homedir = os.path.expanduser("~")
                     config_dir = os.path.join(homedir, ".invesalius")
-                    shutil.rmtree(config_dir)
+                    if os.path.exists(config_dir):
+                        shutil.rmtree(config_dir)
 
                     sys.exit()
 
@@ -558,6 +560,27 @@ def init():
         path = inv_paths.USER_LOG_DIR.joinpath("stderr.log")
         sys.stderr = open(path, "w")
 
+def load_neuronavigation(args, connection, remote_host):
+    session = ses.Session()
+    session.SetConfig("debug", args.debug)
+    session.SetConfig("debug_efield", args.debug_efield)
+
+    if args.debug:
+        Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
+
+    if remote_host is not None or args.remote_host is not None:
+        from invesalius.net.remote_control import RemoteControl
+
+        remote_control = RemoteControl(remote_host or args.remote_host)
+        remote_control.connect()
+
+    if args.use_pedal:
+        from invesalius.net.pedal_connection import MidiPedal
+
+        MidiPedal().start()
+
+    from invesalius.net.neuronavigation_api import NeuronavigationApi
+    NeuronavigationApi(connection)
 
 def main(connection=None, remote_host=None):
     """
@@ -582,32 +605,14 @@ def main(connection=None, remote_host=None):
 
     args = parse_command_line()
 
-    session = ses.Session()
-    session.SetConfig("debug", args.debug)
-    session.SetConfig("debug_efield", args.debug_efield)
-
-    if args.debug:
-        Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
-
-    if remote_host is not None or args.remote_host is not None:
-        from invesalius.net.remote_control import RemoteControl
-
-        remote_control = RemoteControl(remote_host or args.remote_host)
-        remote_control.connect()
-
-    if args.use_pedal:
-        from invesalius.net.pedal_connection import MidiPedal
-
-        MidiPedal().start()
-
-    from invesalius.net.neuronavigation_api import NeuronavigationApi
-
-    NeuronavigationApi(connection)
-
     if args.no_gui:
         non_gui_startup(args)
     else:
         application = InVesalius(False)
+        #TODO: To avoid related translation (i18n) problems, any additional 
+        # module loading, especially those using constants.py, 
+        # should be placed after this section. 
+        load_neuronavigation(args, connection, remote_host)
         application.MainLoop()
 
 

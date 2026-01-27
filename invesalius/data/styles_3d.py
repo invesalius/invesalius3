@@ -126,6 +126,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
 
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
+        self.AddObserver("MiddleButtonReleaseEvent", self.OnMiddleRelease)
 
         # Set camera focus using left double-click.
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.SetCameraFocus)
@@ -141,6 +142,9 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
 
+    def OnMiddleRelease(self, evt, obj):
+        evt.EndPan()
+
     def OnMouseMove(self, evt, obj):
         if self.left_pressed:
             evt.Rotate()
@@ -155,10 +159,10 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
             evt.OnMiddleButtonDown()
 
     def OnRightClick(self, evt, obj):
-        self.viewer.interactor.InvokeEvent("StartSpinEvent")
+        evt.StartSpin()
 
     def OnRightRelease(self, evt, obj):
-        self.viewer.interactor.InvokeEvent("EndSpinEvent")
+        evt.EndSpin()
 
     def OnLeftClick(self, evt, obj):
         evt.StartRotate()

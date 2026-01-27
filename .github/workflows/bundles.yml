@@ -17,6 +17,8 @@ jobs:
         - uses: actions/checkout@v4
           with:
             submodules: true
+            fetch-depth: 0
+            fetch-tags: true
   
         - name: Put current date into a variable
           run: |
@@ -27,7 +29,11 @@ jobs:
           run: |
             $COMMIT=$(git rev-parse HEAD)
             echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
-  
+
+        - name: Force setuptools-scm version
+          run: |
+            echo "SETUPTOOLS_SCM_PRETEND_VERSION=3.1.0.dev${{ github.run_number }}" >> $env:GITHUB_ENV
+
         - uses: astral-sh/setup-uv@v5
           with:
             python-version: 3.12
@@ -130,6 +136,9 @@ jobs:
       - name: Put current commit hash in a variable
         run: echo "COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
+      - name: Force setuptools-scm version
+        run: echo "SETUPTOOLS_SCM_PRETEND_VERSION=3.1.0-dev.${{ github.run_number }}" >> $GITHUB_ENV
+
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: 3.12
@@ -198,7 +207,7 @@ jobs:
       - name: Setup node(npm)
         uses: actions/setup-node@v4
         with:
-          node-version: '20.1'
+          node-version: '20.11.1'
 
       - name: Create DMG
         run: |

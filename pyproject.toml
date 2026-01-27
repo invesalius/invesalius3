@@ -17,26 +17,29 @@ dependencies = [
     "nibabel==5.2.1",
     "numpy==1.26.4",
     "onnx>=1.17.0",
-    "optitrack ; python_full_version == '3.8.*' and sys_platform == 'windows'",
+    "onnxruntime-gpu==1.23.0 ; sys_platform == 'win32' or sys_platform == 'linux'",
+    "onnxruntime ; sys_platform == 'darwin'",
+    "optitrack ; python_full_version == '3.8.*' and sys_platform == 'win32'",
     "pandas>=2.3.3",
     "pillow==10.3.0",
     "psutil==6.0.0",
     "pyacvd==0.2.11",
-    "pyclaron ; python_full_version == '3.8.*' and sys_platform == 'windows'",
+    "pyclaron ; python_full_version == '3.8.*' and sys_platform == 'win32'",
     "pypubsub==4.0.3",
     "pyserial==3.5",
     "python-gdcm~=3.0.24",
     "requests>=2.32.3",
     "scikit-image==0.24.0",
     "scipy==1.14.0",
-    "setuptools-scm",
+    "setuptools>=68", # Versions above 8 are causing errors on Windows. 
+    "setuptools-scm<8",
     "tinygrad==0.10.2",
     "torch>=2.3.1",
     "vtk==9.3.0",
     "wxpython==4.2.2",
 ]
 license = { file = "LICENSE.txt" }
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = "==3.12.*"
 
 
@@ -70,7 +73,7 @@ installer = [
 [tool.uv.sources]
 torch = [
   { index = "pytorch-cpu", marker = "sys_platform == 'darwin'"},
-  { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+  { index = "pytorch-cu118", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
 ]
 
 [[tool.uv.index]]
@@ -79,8 +82,9 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [[tool.uv.index]]
-name = "pytorch-cu124"
-url = "https://download.pytorch.org/whl/cu124"
+#To maintain compatibility with older GPUs.
+name = "pytorch-cu118"
+url = "https://download.pytorch.org/whl/cu118"
 explicit = true
 
 
@@ -185,4 +189,3 @@ extend-ignore = ["E731"]
 
 [tool.ruff.format]
 line-ending = "lf"
-
