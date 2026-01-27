@@ -3149,27 +3149,39 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         menu_id.AppendSeparator()
 
+        if is_coil_target or is_coil_pose:
+            # 'Create a grid of targets around the coil target' menu item.
+            create_grid_coil_target_menu_item = menu_id.Append(
+                unique_menu_id + 4, _("Create grid of coil targets")
+            )
+            menu_id.Bind(
+                wx.EVT_MENU,
+                self.OnCreateGridCoilTargetFromCoilTarget,
+                create_grid_coil_target_menu_item,
+            )
+            menu_id.AppendSeparator()
+
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
-            mep_menu_item = menu_id.Append(unique_menu_id + 4, _("Change MEP value"))
+            mep_menu_item = menu_id.Append(unique_menu_id + 5, _("Change MEP value"))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP, mep_menu_item)
             if is_active_target:
-                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Unset target"))
+                target_menu_item = menu_id.Append(unique_menu_id + 6, _("Unset target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuUnsetTarget, target_menu_item)
                 if has_mTMS:
                     brain_target_menu_item = menu_id.Append(
-                        unique_menu_id + 4, _("Set brain target")
+                        unique_menu_id + 7, _("Set brain target")
                     )
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
-                target_menu_item = menu_id.Append(unique_menu_id + 5, _("Set as target"))
+                target_menu_item = menu_id.Append(unique_menu_id + 6, _("Set as target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
         if is_coil_pose:
             # 'Create coil target' menu item.
             create_coil_target_menu_item = menu_id.Append(
-                unique_menu_id + 6, _("Create coil target")
+                unique_menu_id + 5, _("Create coil target")
             )
             menu_id.Bind(
                 wx.EVT_MENU, self.OnCreateCoilTargetFromCoilPose, create_coil_target_menu_item
@@ -3196,7 +3208,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         is_brain_target = focused_marker.marker_type == MarkerType.BRAIN_TARGET
         if is_brain_target and has_mTMS:
             send_brain_target_menu_item = menu_id.Append(
-                unique_menu_id + 7, _("Send brain target to mTMS")
+                unique_menu_id + 8, _("Send brain target to mTMS")
             )
             menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu_item)
 
@@ -3204,17 +3216,17 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             # Publisher.sendMessage('Check efield data')
             # if not tuple(np.argwhere(self.indexes_saved_lists == self.marker_list_ctrl.GetFocusedItem())):
             if is_active_target:
-                efield_menu_item = menu_id.Append(unique_menu_id + 8, _("Save Efield target Data"))
+                efield_menu_item = menu_id.Append(unique_menu_id + 9, _("Save Efield target Data"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu_item)
 
         if self.navigation.e_field_loaded:
             efield_target_menu_item = menu_id.Append(
-                unique_menu_id + 9, _("Set as Efield target 1 (origin)")
+                unique_menu_id + 10, _("Set as Efield target 1 (origin)")
             )
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget, efield_target_menu_item)
 
             efield_target_menu_item = menu_id.Append(
-                unique_menu_id + 10, _("Set as Efield target 2")
+                unique_menu_id + 11, _("Set as Efield target 2")
             )
             menu_id.Bind(wx.EVT_MENU, self.OnMenuSetEfieldTarget2, efield_target_menu_item)
             # Publisher.sendMessage('Check efield data')
@@ -3230,21 +3242,21 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         if self.navigation.e_field_loaded and not self.nav_status:
             if is_active_target:
                 efield_vector_plot_menu_item = menu_id.Append(
-                    unique_menu_id + 11, _("Show vector field")
+                    unique_menu_id + 12, _("Show vector field")
                 )
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuShowVectorField, efield_vector_plot_menu_item)
 
         if self.navigation.e_field_loaded:
             if focused_marker.is_point_of_interest:
                 create_efield_target = menu_id.Append(
-                    unique_menu_id + 12, _("Remove Efield Cortex target")
+                    unique_menu_id + 13, _("Remove Efield Cortex target")
                 )
                 menu_id.Bind(
                     wx.EVT_MENU, self.OnMenuRemoveEfieldTargetatCortex, create_efield_target
                 )
             else:
                 create_efield_target = menu_id.Append(
-                    unique_menu_id + 12, _("Set as Efield Cortex target")
+                    unique_menu_id + 13, _("Set as Efield Cortex target")
                 )
                 menu_id.Bind(wx.EVT_MENU, self.OnSetEfieldBrainTarget, create_efield_target)
                 self.marker_list_ctrl.GetFocusedItem()
@@ -3450,6 +3462,88 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
             return
         self.markers.CreateCoilTargetFromLandmark(marker, label)
+
+    def generate_coil_target_grid(
+        self, resolution_x: int, resolution_y: int, half_width_x: float, half_width_y: float
+    ):
+        """
+        Generate a grid of coordinates centered at (0, 0).
+
+        Parameters:
+            resolution_x: number of points along X
+            resolution_y: number of points along Y
+            half_width_x: half-width along X (grid spans [-half_width_x, +half_width_x])
+            half_width_y: half-width along Y (grid spans [-half_width_y, +half_width_y])
+
+        Returns:
+            X, Y: 2D arrays from np.meshgrid(x, y), suitable for iterating over grid points.
+        """
+        min_x, max_x = -half_width_x, half_width_x
+        min_y, max_y = -half_width_y, half_width_y
+
+        x = np.linspace(min_x, max_x, resolution_x)
+        y = np.linspace(min_y, max_y, resolution_y)
+
+        return np.meshgrid(x, y)
+
+    def OnCreateGridCoilTargetFromCoilTarget(self, evt):
+        grid_dialog = dlg.CoilTargetGridParametersDialog(self)
+
+        if grid_dialog.ShowModal() == wx.ID_OK:
+            resolution_x = int(grid_dialog.resolution_x)
+            resolution_y = int(grid_dialog.resolution_y)
+            half_width_x = float(grid_dialog.x_size)
+            half_width_y = float(grid_dialog.y_size)
+
+            grid_dialog.Destroy()
+
+            selected_index = self.marker_list_ctrl.GetFocusedItem()
+            if selected_index == -1:
+                wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+                return
+            reference_marker = self.__get_marker(selected_index)
+            project = prj.Project()
+            if not project.surface_dict:
+                wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
+                return
+
+            X, Y = self.generate_coil_target_grid(
+                resolution_x, resolution_y, half_width_x, half_width_y
+            )
+
+            total_steps = resolution_x * resolution_y
+            dlg.ProgressBarHandler(
+                self, "Generating Grid Coil Targets", "Please wait...", max_value=100
+            )
+            k = 0
+            for i in range(resolution_y):
+                for j in range(resolution_x):
+                    k += 1
+                    percent = int((k * 100) / total_steps)
+                    if percent > 100:
+                        percent = 100
+                    Publisher.sendMessage(
+                        "Update Progress bar", value=percent, msg="Please wait..."
+                    )
+                    offset_transform = dco.coordinates_to_transformation_matrix(
+                        position=[X[i][j], Y[i][j], 0],
+                        orientation=reference_marker.orientation,
+                        axes="sxyz",
+                    )
+                    origin_transform = dco.coordinates_to_transformation_matrix(
+                        position=reference_marker.position,
+                        orientation=[0, 0, 0],
+                        axes="sxyz",
+                    )
+                    final_transform = origin_transform @ offset_transform
+                    new_marker = reference_marker.duplicate()
+                    new_marker.position = [
+                        final_transform[0][-1],
+                        final_transform[1][-1],
+                        final_transform[2][-1],
+                    ]
+                    self.markers.CreateCoilTargetFromLandmark(new_marker)
+            Publisher.sendMessage("Close Progress bar")
 
     def OnCreateCoilTargetFromBrainTargets(self, evt):
         self.markers.CreateCoilTargetFromBrainTarget(self.focused_brain_marker)
