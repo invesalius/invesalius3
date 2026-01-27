@@ -1486,12 +1486,12 @@ class Slice(metaclass=utils.Singleton):
             mask: A mask object.
             show: indicate if the mask will be shown.
         """
-        proj = Project()
-        index = proj.AddMask(mask)
-        mask.index = index
+        from invesalius.data.commands.mask import CreateMaskCommand
+        from invesalius.session import Session
 
-        ## update gui related to mask
-        Publisher.sendMessage("Add mask", mask=mask)
+        command = CreateMaskCommand(mask)
+        Session().undo_manager.execute(command)
+        mask.index = command.index
 
         if show:
             if self.current_mask:
