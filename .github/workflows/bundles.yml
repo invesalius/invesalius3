@@ -158,8 +158,8 @@ jobs:
           INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
           echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $GITHUB_ENV
 
-      #- name: copy .so files to invesalius_cy
-      #  run: cp .venv/Lib/site-packages/invesalius_cy/* invesalius_cy/ || true
+      - name: copy .so files to invesalius_cy
+        run: cp .venv/Lib/site-packages/invesalius_cy/* invesalius_cy/ || true
 
       # AI weights download steps (same as before)
       - name: Download mandible ai weight
