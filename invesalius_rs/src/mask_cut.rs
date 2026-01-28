@@ -39,15 +39,14 @@ pub fn mask_cut(
 
                 let dist = (c[0] * c[0] + c[1] * c[1] + c[2] * c[2]).sqrt();
 
-                if dist <= max_depth as f64 {
+                if dist <= max_depth {
                     let px = (q[0] / 2.0 + 0.5) * (w - 1) as f64;
                     let py = (q[1] / 2.0 + 0.5) * (h - 1) as f64;
 
-                    if px >= 0.0 && px < w as f64 && py >= 0.0 && py < h as f64 {
-                        if mask_arr[[py as usize, px as usize]] {
+                    if px >= 0.0 && px < w as f64 && py >= 0.0 && py < h as f64
+                        && mask_arr[[py as usize, px as usize]] {
                             *val = 0;
                         }
-                    }
                 }
             }
         }

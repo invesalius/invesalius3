@@ -143,7 +143,7 @@ pub fn mida_old(
 
                         let bt = 1.0 - dl;
                         let colour = fpi;
-                        let alpha = get_opacity(vl as i16, wl, ww);
+                        let alpha = get_opacity(vl, wl, ww);
 
                         let new_colour = (bt * colour_p) + (1.0 - bt * alpha_p) * colour * alpha;
                         let new_alpha = (bt * alpha_p) + (1.0 - bt * alpha_p) * alpha;

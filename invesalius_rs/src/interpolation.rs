@@ -14,21 +14,21 @@ fn get_value<T: Copy + Into<f64>>(v: &ndarray::ArrayView3<T>, x: isize, y: isize
     let mut x_idx = x;
 
     if x_idx < 0 {
-        x_idx = dx + x_idx;
+        x_idx += dx;
     } else if x_idx >= dx {
-        x_idx = x_idx - dx;
+        x_idx -= dx;
     }
 
     if y_idx < 0 {
-        y_idx = dy + y_idx;
+        y_idx += dy;
     } else if y_idx >= dy {
-        y_idx = y_idx - dy;
+        y_idx -= dy;
     }
 
     if z_idx < 0 {
-        z_idx = dz + z_idx;
+        z_idx += dz;
     } else if z_idx >= dz {
-        z_idx = z_idx - dz;
+        z_idx -= dz;
     }
 
     v[[z_idx as usize, y_idx as usize, x_idx as usize]].into()

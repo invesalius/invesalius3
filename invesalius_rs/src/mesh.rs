@@ -178,7 +178,7 @@ where
             weights[*vi_id] = 1.0;
         }
 
-        let near_vertices = get_near_vertices_to_v(&vertices, &faces, map_vface, *vi_id, tmax);
+        let near_vertices = get_near_vertices_to_v(vertices, faces, map_vface, *vi_id, tmax);
         let vi = vertices.row(*vi_id);
         let p_vi = Point3::new(vi[0].as_(), vi[1].as_(), vi[2].as_());
 
