@@ -1036,6 +1036,10 @@ class Controller:
                 filelist, size, orientation, resolution_percentage
             )
 
+            # Fix for issue #475: Initialize spacing with default value
+            # This prevents UnboundLocalError if orientation doesn't match expected values
+            spacing = (1.0, 1.0, 1.0)  # Default fallback spacing
+
             if orientation == "AXIAL":
                 spacing = xyspacing[0], xyspacing[1], zspacing
             elif orientation == "CORONAL":
