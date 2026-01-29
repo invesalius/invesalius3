@@ -281,6 +281,88 @@ def SplitDisconectedParts(polydata: vtkPolyData) -> List[vtkPolyData]:
     return polydata_collection
 
 
+def HasNonVisibleFaces(
+    polydata,
+    threshold=0.95,
+    positions=[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]],
+):
+    """
+    Detect if surface contains non-visible faces.
+
+    Checks if the surface has hidden faces by rendering from multiple viewpoints
+    and counting visible vs total points. Returns True if a significant portion
+    of the surface is not visible from the standard camera positions.
+
+    Args:
+        polydata: vtkPolyData surface to check
+        threshold: Minimum ratio of visible to total points (0.0-1.0)
+        positions: Camera positions for viewpoint rendering
+
+    Returns:
+        bool: True if surface has non-visible faces (visible ratio < threshold)
+    """
+    if not polydata or polydata.GetNumberOfPoints() == 0:
+        return False
+
+    polydata.BuildLinks()
+
+    mapper = vtkPolyDataMapper()
+    mapper.SetInputData(polydata)
+    mapper.Update()
+
+    actor = vtkActor()
+    actor.SetMapper(mapper)
+
+    renderer = vtkRenderer()
+    renderer.AddActor(actor)
+
+    render_window = vtkRenderWindow()
+    render_window.AddRenderer(renderer)
+    render_window.SetSize(800, 800)
+    render_window.OffScreenRenderingOn()
+
+    camera = renderer.GetActiveCamera()
+    renderer.ResetCamera()
+
+    pos = np.array(camera.GetPosition())
+    fp = np.array(camera.GetFocalPoint())
+    v = pos - fp
+    mag = np.linalg.norm(v)
+
+    id_filter = vtkIdFilter()
+    id_filter.SetInputData(polydata)
+    id_filter.PointIdsOn()
+    id_filter.Update()
+
+    set_points = None
+
+    for position in positions:
+        pos = fp + np.array(position) * mag
+        camera.SetPosition(pos.tolist())
+        renderer.ResetCamera()
+        render_window.Render()
+
+        select_visible_points = vtkSelectVisiblePoints()
+        select_visible_points.SetInputData(id_filter.GetOutput())
+        select_visible_points.SetRenderer(renderer)
+        select_visible_points.Update()
+        output = select_visible_points.GetOutput()
+        id_points = numpy_support.vtk_to_numpy(
+            output.GetPointData().GetAbstractArray("vtkIdFilter_Ids")
+        )
+        if set_points is None:
+            set_points = set(id_points.tolist())
+        else:
+            set_points.update(id_points.tolist())
+
+    total_points = polydata.GetNumberOfPoints()
+    visible_points = len(set_points)
+    visible_ratio = visible_points / total_points if total_points > 0 else 0.0
+
+    # Return True if visible ratio is below threshold (meaning non-visible faces exist)
+    return visible_ratio < threshold
+
+
 def RemoveNonVisibleFaces(
     polydata,
     positions=[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]],

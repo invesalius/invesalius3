@@ -1197,6 +1197,40 @@ def ReportICPDistributionError() -> None:
     dlg.Destroy()
 
 
+def WarnNonVisibleFaces() -> bool:
+    """
+    Warn user about non-visible faces in the surface and ask whether to proceed.
+
+    Returns:
+        bool: True if user chooses to proceed anyway, False if user cancels
+    """
+    msg = (
+        _("The surface contains non-visible faces.")
+        + "\n\n"
+        + _("For better ICP accuracy, it is recommended to clean the surface first.")
+        + "\n\n"
+        + _("Do you want to proceed with refinement anyway?")
+    )
+    if sys.platform == "darwin":
+        dlg = wx.MessageDialog(
+            None,
+            "",
+            msg,
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
+        )
+    else:
+        dlg = wx.MessageDialog(
+            None,
+            msg,
+            "InVesalius 3 - Refine Coregistration",
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
+        )
+
+    result = dlg.ShowModal() == wx.ID_YES
+    dlg.Destroy()
+    return result
+
+
 def ShowEnterMarkerID(default: str) -> str:
     msg = _("Change label")
     dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
