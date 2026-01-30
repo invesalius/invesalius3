@@ -152,14 +152,15 @@ jobs:
           export CPPFLAGS="-I$(brew --prefix libomp)/include"
           export LDFLAGS="-L$(brew --prefix libomp)/lib"
           OpenMP_ROOT=$(brew --prefix)/opt/libomp uv sync --all-extras
-
+          OpenMP_ROOT=$(brew --prefix)/opt/libomp uv run python setup.py build_ext --inplace
+      
       - name: Get InVesalius version
         run: |
           INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
           echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $GITHUB_ENV
 
       - name: copy .so files to invesalius_cy
-        run: cp .venv/Lib/site-packages/invesalius_cy/* invesalius_cy/ || true
+        run: cp .venv/Lib/site-packages/invesalius_cy/*.so invesalius_cy/ || true
 
       # AI weights download steps (same as before)
       - name: Download mandible ai weight
