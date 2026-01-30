@@ -2,16 +2,26 @@ use numpy::{PyReadwriteArray3, PyReadonlyArray3, PyReadwriteArray2};
 use pyo3::FromPyObject;
 
 #[derive(FromPyObject)]
-pub enum SupportedArray<'py> {
+pub enum ImageTypes<'py> {
     F64(PyReadonlyArray3<'py, f64>),
     I16(PyReadonlyArray3<'py, i16>),
     U8(PyReadonlyArray3<'py, u8>),
 }
 
 #[derive(FromPyObject)]
-pub enum SupportedArrayMut<'py> {
+pub enum MaskTypes<'py> {
+    U8(PyReadonlyArray3<'py, u8>),
+}
+
+#[derive(FromPyObject)]
+pub enum ImageTypesMut<'py> {
     F64(PyReadwriteArray3<'py, f64>),
     I16(PyReadwriteArray3<'py, i16>),
+    U8(PyReadwriteArray3<'py, u8>),
+}
+
+#[derive(FromPyObject)]
+pub enum MaskTypesMut<'py> {
     U8(PyReadwriteArray3<'py, u8>),
 }
 

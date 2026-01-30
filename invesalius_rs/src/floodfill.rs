@@ -1,61 +1,57 @@
 use ndarray::{ArrayView3, ArrayViewMut3};
+use num_traits::NumCast;
 use numpy::{PyReadonlyArray3, PyReadwriteArray3};
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use std::collections::VecDeque;
 
+use crate::types::{ImageTypes, ImageTypesMut, MaskTypes, MaskTypesMut};
 use numpy::PyArrayMethods;
-use crate::types::{SupportedArray, SupportedArrayMut};
 
-#[pyfunction]
-pub fn floodfill(
-    data: PyReadonlyArray3<i16>,
+pub fn floodfill_internal<T: PartialOrd + Copy, U: PartialOrd + Copy>(
+    data: ArrayView3<T>,
     i: usize,
     j: usize,
     k: usize,
-    v: i16,
-    fill: u8,
-    mut out: PyReadwriteArray3<u8>,
-) -> PyResult<()> {
-    let data_arr = data.as_array();
-    let mut out_arr = out.as_array_mut();
-
-    let dims = data_arr.shape();
+    v: T,
+    fill: U,
+    mut out: ArrayViewMut3<U>,
+) {
+    let dims = data.shape();
     let d = dims[0];
     let h = dims[1];
     let w = dims[2];
 
     let mut stack = VecDeque::new();
     stack.push_back((i, j, k));
-    out_arr[[k, j, i]] = fill;
+    out[[k, j, i]] = fill;
 
     while let Some((x, y, z)) = stack.pop_front() {
-        if z + 1 < d && data_arr[[z + 1, y, x]] == v && out_arr[[z + 1, y, x]] != fill {
-            out_arr[[z + 1, y, x]] = fill;
+        if z + 1 < d && data[[z + 1, y, x]] == v && out[[z + 1, y, x]] != fill {
+            out[[z + 1, y, x]] = fill;
             stack.push_back((x, y, z + 1));
         }
-        if z > 0 && data_arr[[z - 1, y, x]] == v && out_arr[[z - 1, y, x]] != fill {
-            out_arr[[z - 1, y, x]] = fill;
+        if z > 0 && data[[z - 1, y, x]] == v && out[[z - 1, y, x]] != fill {
+            out[[z - 1, y, x]] = fill;
             stack.push_back((x, y, z - 1));
         }
-        if y + 1 < h && data_arr[[z, y + 1, x]] == v && out_arr[[z, y + 1, x]] != fill {
-            out_arr[[z, y + 1, x]] = fill;
+        if y + 1 < h && data[[z, y + 1, x]] == v && out[[z, y + 1, x]] != fill {
+            out[[z, y + 1, x]] = fill;
             stack.push_back((x, y + 1, z));
         }
-        if y > 0 && data_arr[[z, y - 1, x]] == v && out_arr[[z, y - 1, x]] != fill {
-            out_arr[[z, y - 1, x]] = fill;
+        if y > 0 && data[[z, y - 1, x]] == v && out[[z, y - 1, x]] != fill {
+            out[[z, y - 1, x]] = fill;
             stack.push_back((x, y - 1, z));
         }
-        if x + 1 < w && data_arr[[z, y, x + 1]] == v && out_arr[[z, y, x + 1]] != fill {
-            out_arr[[z, y, x + 1]] = fill;
+        if x + 1 < w && data[[z, y, x + 1]] == v && out[[z, y, x + 1]] != fill {
+            out[[z, y, x + 1]] = fill;
             stack.push_back((x + 1, y, z));
         }
-        if x > 0 && data_arr[[z, y, x - 1]] == v && out_arr[[z, y, x - 1]] != fill {
-            out_arr[[z, y, x - 1]] = fill;
+        if x > 0 && data[[z, y, x - 1]] == v && out[[z, y, x - 1]] != fill {
+            out[[z, y, x - 1]] = fill;
             stack.push_back((x - 1, y, z));
         }
     }
-
-    Ok(())
 }
 
 pub fn generic_floodfill_threshold<T: PartialOrd + Copy>(
@@ -282,14 +278,62 @@ pub fn floodfill_auto_threshold(
 }
 
 #[pyfunction]
-pub fn fill_holes_automatically(
-    mut mask: PyReadwriteArray3<u8>,
+pub fn floodfill<'py>(
+    data: ImageTypes<'py>,
+    i: usize,
+    j: usize,
+    k: usize,
+    v: Bound<'py, PyAny>,
+    fill: Bound<'py, PyAny>,
+    mut out: MaskTypesMut<'py>,
+) -> PyResult<()> {
+    match (data, out) {
+        (ImageTypes::I16(data), MaskTypesMut::U8(mut out)) => {
+            floodfill_internal(
+                data.as_array(),
+                i,
+                j,
+                k,
+                v.extract::<i16>()?,
+                fill.extract::<u8>()?,
+                out.as_array_mut(),
+            );
+            Ok(())
+        }
+        (ImageTypes::U8(data), MaskTypesMut::U8(mut out)) => {
+            floodfill_internal(
+                data.as_array(),
+                i,
+                j,
+                k,
+                v.extract::<u8>()?,
+                fill.extract::<u8>()?,
+                out.as_array_mut(),
+            );
+            Ok(())
+        }
+        (ImageTypes::F64(data), MaskTypesMut::U8(mut out)) => {
+            floodfill_internal(
+                data.as_array(),
+                i,
+                j,
+                k,
+                v.extract::<f64>()?,
+                fill.extract::<u8>()?,
+                out.as_array_mut(),
+            );
+            Ok(())
+        }
+    }
+}
+
+pub fn fill_holes_automatically_internal<U: PartialOrd + Copy + NumCast>(
+    mut mask: ArrayViewMut3<U>,
     labels: PyReadonlyArray3<u16>,
     nlabels: u32,
     max_size: u32,
-) -> PyResult<bool> {
+) {
     let labels_arr = labels.as_array();
-    let mut mask_arr = mask.as_array_mut();
 
     let mut sizes = vec![0u32; (nlabels + 1) as usize];
 
@@ -306,10 +350,10 @@ pub fn fill_holes_automatically(
     }
 
     if !modified {
-        return Ok(false);
+        return;
     }
 
-    let mask_dims = mask_arr.shape();
+    let mask_dims = mask.shape();
     let dz = mask_dims[0];
     let dy = mask_dims[1];
     let dx = mask_dims[2];
@@ -319,18 +363,16 @@ pub fn fill_holes_automatically(
             for x in 0..dx {
                 let label = labels_arr[[z, y, x]];
                 if sizes[label as usize] <= max_size {
-                    mask_arr[[z, y, x]] = 254;
+                    mask[[z, y, x]] = NumCast::from(254).unwrap_or(mask[[z, y, x]]);
                 }
             }
         }
     }
-
-    Ok(true)
 }
 
 #[pyfunction]
 pub fn floodfill_threshold<'py>(
-    data: SupportedArray<'py>,
+    data: ImageTypes<'py>,
     seeds: Vec<(usize, usize, usize)>,
     t0: Bound<'py, PyAny>,
     t1: Bound<'py, PyAny>,
@@ -339,7 +381,7 @@ pub fn floodfill_threshold<'py>(
     out: PyReadwriteArray3<u8>,
 ) -> PyResult<()> {
     match data {
-        SupportedArray::I16(data) => {
+        ImageTypes::I16(data) => {
             generic_floodfill_threshold(
                 data.as_array(),
                 seeds,
@@ -351,7 +393,7 @@ pub fn floodfill_threshold<'py>(
             );
             Ok(())
         }
-        SupportedArray::U8(data) => {
+        ImageTypes::U8(data) => {
             generic_floodfill_threshold(
                 data.as_array(),
                 seeds,
@@ -363,7 +405,7 @@ pub fn floodfill_threshold<'py>(
             );
             Ok(())
         }
-        SupportedArray::F64(data) => {
+        ImageTypes::F64(data) => {
             generic_floodfill_threshold(
                 data.as_array(),
                 seeds,
@@ -380,7 +422,7 @@ pub fn floodfill_threshold<'py>(
 
 #[pyfunction]
 pub fn floodfill_threshold_inplace<'py>(
-    data: SupportedArrayMut<'py>,
+    data: ImageTypesMut<'py>,
     seeds: Vec<(usize, usize, usize)>,
     t0: Bound<'py, PyAny>,
     t1: Bound<'py, PyAny>,
@@ -388,7 +430,7 @@ pub fn floodfill_threshold_inplace<'py>(
     strct: PyReadonlyArray3<u8>,
 ) -> PyResult<()> {
     match data {
-        SupportedArrayMut::I16(mut data) => {
+        ImageTypesMut::I16(mut data) => {
             generic_floodfill_threshold_inplace(
                 data.as_array_mut(),
                 seeds,
@@ -399,7 +441,7 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        SupportedArrayMut::U8(mut data) => {
+        ImageTypesMut::U8(mut data) => {
             generic_floodfill_threshold_inplace(
                 data.as_array_mut(),
                 seeds,
@@ -410,7 +452,7 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        SupportedArrayMut::F64(mut data) => {
+        ImageTypesMut::F64(mut data) => {
             generic_floodfill_threshold_inplace(
                 data.as_array_mut(),
                 seeds,
@@ -421,5 +463,22 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
+    }
+}
+
+
+#[pyfunction]
+pub fn fill_holes_automatically<'py>(
+    mask: MaskTypesMut<'py>,
+    labels: PyReadonlyArray3<u16>,
+    nlabels: u32,
+    max_size: u32,
+) -> PyResult<()> {
+    match mask {
+        MaskTypesMut::U8(mut mask) => {
+            fill_holes_automatically_internal(mask.as_array_mut(), labels, nlabels, max_size);
+            Ok(())
+        }
+        _ => Err(PyTypeError::new_err("Invalid mask type")),
     }
 }
