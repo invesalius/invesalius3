@@ -112,8 +112,15 @@ data_files += onnx_data
 data_files += invesalius_cy_data
 
 libraries += onnx_binaries
+
+invesalius_cy_binaries_list = glob.glob(os.path.join(SOURCE_DIR, 'invesalius_cy', '*.so'))
+invesalius_cy_binaries = [(cy_bin, "invesalius_cy") for cy_bin in invesalius_cy_binaries_list]
+
 libraries += invesalius_cy_binaries
 
+print("----------")
+print(libraries)
+    
 #---------------------------------------------------------------------------------
 
 block_cipher = None
