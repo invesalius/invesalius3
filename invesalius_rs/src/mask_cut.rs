@@ -1,7 +1,7 @@
 use nalgebra::{Matrix4, Vector4};
+use ndarray::parallel::prelude::*;
 use numpy::{PyReadonlyArray2, PyReadonlyArray3, PyReadwriteArray3};
 use pyo3::prelude::*;
-use ndarray::parallel::prelude::*;
 
 #[pyfunction]
 pub fn mask_cut(

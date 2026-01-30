@@ -1,9 +1,14 @@
 use nalgebra::{Matrix4, Vector4};
-use numpy::{PyReadonlyArray3, PyReadwriteArray3, PyReadonlyArray2, ToPyArray, PyUntypedArrayMethods, ndarray};
-use pyo3::prelude::*;
 use ndarray::parallel::prelude::*;
+use numpy::{
+    ndarray, PyReadonlyArray2, PyReadonlyArray3, PyReadwriteArray3, PyUntypedArrayMethods,
+    ToPyArray,
+};
+use pyo3::prelude::*;
 
-use crate::interpolation::{trilinear_interpolate_internal, tricubic_interpolate_internal, lanczos_interpolate_internal};
+use crate::interpolation::{
+    lanczos_interpolate_internal, tricubic_interpolate_internal, trilinear_interpolate_internal,
+};
 
 fn coord_transform(
     volume: &ndarray::ArrayView3<i16>,
@@ -33,11 +38,19 @@ fn coord_transform(
             1 => trilinear_interpolate_internal(volume, nx, ny, nz),
             2 => {
                 let v = tricubic_interpolate_internal(volume, nx, ny, nz);
-                if v < cval as f64 { cval as f64 } else { v }
+                if v < cval as f64 {
+                    cval as f64
+                } else {
+                    v
+                }
             }
             _ => {
                 let v = lanczos_interpolate_internal(volume, nx, ny, nz);
-                if v < cval as f64 { cval as f64 } else { v }
+                if v < cval as f64 {
+                    cval as f64
+                } else {
+                    v
+                }
             }
         };
         v as i16
@@ -62,10 +75,10 @@ pub fn apply_view_matrix_transform(
     let m_nalgebra = Matrix4::from_row_slice(m_slice);
 
     let (sx, sy, sz) = (spacing[0], spacing[1], spacing[2]);
-    
+
     let volume_dims = volume_arr.shape();
     let (_dz, _dy, _dx) = (volume_dims[0], volume_dims[1], volume_dims[2]);
-    
+
     let out_dims = out.shape().to_vec();
     let (_odz, _ody, _odx) = (out_dims[0], out_dims[1], out_dims[2]);
 
@@ -89,7 +102,7 @@ pub fn apply_view_matrix_transform(
         }
         *val = coord_transform(&volume_arr, &m_nalgebra, x, y, z, sx, sy, sz, minterpol, cval);
     });
-    
+
     Ok(())
 }
 
@@ -102,7 +115,7 @@ pub fn convolve_non_zero(
 ) -> PyResult<Py<PyAny>> {
     let volume_arr = volume.as_array();
     let kernel_arr = kernel.as_array();
-    
+
     let volume_dims = volume_arr.shape();
     let (sz, sy, sx) = (volume_dims[0], volume_dims[1], volume_dims[2]);
 

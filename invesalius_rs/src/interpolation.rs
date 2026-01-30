@@ -1,4 +1,4 @@
-use numpy::{PyReadonlyArray3, ndarray};
+use numpy::{ndarray, PyReadonlyArray3};
 use pyo3::prelude::*;
 use std::f64::consts::PI;
 
@@ -35,25 +35,15 @@ fn get_value<T: Copy + Into<f64>>(v: &ndarray::ArrayView3<T>, x: isize, y: isize
 }
 
 #[pyfunction]
-pub fn nearest_neighbour_interp(
-    v: PyReadonlyArray3<i16>,
-    x: f64,
-    y: f64,
-    z: f64,
-) -> PyResult<f64> {
+pub fn nearest_neighbour_interp(v: PyReadonlyArray3<i16>, x: f64, y: f64, z: f64) -> PyResult<f64> {
     let arr = v.as_array();
     Ok(arr[[z as usize, y as usize, x as usize]] as f64)
 }
 
 #[pyfunction]
-pub fn trilin_interpolate_py(
-    v: PyReadonlyArray3<i16>,
-    x: f64,
-    y: f64,
-    z: f64,
-) -> PyResult<f64> {
+pub fn trilin_interpolate_py(v: PyReadonlyArray3<i16>, x: f64, y: f64, z: f64) -> PyResult<f64> {
     let arr = v.as_array();
-    
+
     let x0 = x.floor() as isize;
     let x1 = x0 + 1;
     let y0 = y.floor() as isize;
@@ -86,7 +76,11 @@ pub fn trilin_interpolate_py(
 }
 
 fn cubic_interpolate(p: [f64; 4], x: f64) -> f64 {
-    p[1] + 0.5 * x * (p[2] - p[0] + x * (2.0 * p[0] - 5.0 * p[1] + 4.0 * p[2] - p[3] + x * (3.0 * (p[1] - p[2]) + p[3] - p[0])))
+    p[1] + 0.5
+        * x
+        * (p[2] - p[0]
+            + x * (2.0 * p[0] - 5.0 * p[1] + 4.0 * p[2] - p[3]
+                + x * (3.0 * (p[1] - p[2]) + p[3] - p[0])))
 }
 
 fn bicubic_interpolate(p: [[f64; 4]; 4], x: f64, y: f64) -> f64 {
@@ -99,14 +93,9 @@ fn bicubic_interpolate(p: [[f64; 4]; 4], x: f64, y: f64) -> f64 {
 }
 
 #[pyfunction]
-pub fn tricub_interpolate_py(
-    v: PyReadonlyArray3<i16>,
-    x: f64,
-    y: f64,
-    z: f64,
-) -> PyResult<f64> {
+pub fn tricub_interpolate_py(v: PyReadonlyArray3<i16>, x: f64, y: f64, z: f64) -> PyResult<f64> {
     let arr = v.as_array();
-    
+
     let xi = x.floor() as isize;
     let yi = y.floor() as isize;
     let zi = z.floor() as isize;
@@ -116,7 +105,12 @@ pub fn tricub_interpolate_py(
     for i in 0..4 {
         for j in 0..4 {
             for k in 0..4 {
-                p[i][j][k] = get_value(&arr, xi + i as isize - 1, yi + j as isize - 1, zi + k as isize - 1);
+                p[i][j][k] = get_value(
+                    &arr,
+                    xi + i as isize - 1,
+                    yi + j as isize - 1,
+                    zi + k as isize - 1,
+                );
             }
         }
     }
@@ -126,17 +120,12 @@ pub fn tricub_interpolate_py(
     arr_result[1] = bicubic_interpolate(p[1], y - yi as f64, z - zi as f64);
     arr_result[2] = bicubic_interpolate(p[2], y - yi as f64, z - zi as f64);
     arr_result[3] = bicubic_interpolate(p[3], y - yi as f64, z - zi as f64);
-    
+
     Ok(cubic_interpolate(arr_result, x - xi as f64))
 }
 
 #[pyfunction]
-pub fn tricub_interpolate2_py(
-    v: PyReadonlyArray3<i16>,
-    x: f64,
-    y: f64,
-    z: f64,
-) -> PyResult<f64> {
+pub fn tricub_interpolate2_py(v: PyReadonlyArray3<i16>, x: f64, y: f64, z: f64) -> PyResult<f64> {
     // Same as tricub_interpolate_py - alternate implementation
     tricub_interpolate_py(v, x, y, z)
 }
@@ -154,15 +143,10 @@ fn lanczos_kernel(x: f64, a: i32) -> f64 {
 }
 
 #[pyfunction]
-pub fn lanczos_interpolate_py(
-    v: PyReadonlyArray3<i16>,
-    x: f64,
-    y: f64,
-    z: f64,
-) -> PyResult<f64> {
+pub fn lanczos_interpolate_py(v: PyReadonlyArray3<i16>, x: f64, y: f64, z: f64) -> PyResult<f64> {
     let arr = v.as_array();
     let a = 4i32; // Lanczos window size
-    
+
     let xd = x.floor() as isize;
     let yd = y.floor() as isize;
     let zd = z.floor() as isize;
@@ -215,7 +199,12 @@ pub fn lanczos_interpolate_py(
 }
 
 // Internal functions for use by transforms module
-pub fn trilinear_interpolate_internal(arr: &ndarray::ArrayView3<i16>, x: f64, y: f64, z: f64) -> f64 {
+pub fn trilinear_interpolate_internal(
+    arr: &ndarray::ArrayView3<i16>,
+    x: f64,
+    y: f64,
+    z: f64,
+) -> f64 {
     let x0 = x.floor() as isize;
     let x1 = x0 + 1;
     let y0 = y.floor() as isize;
@@ -247,7 +236,12 @@ pub fn trilinear_interpolate_internal(arr: &ndarray::ArrayView3<i16>, x: f64, y:
     c0 * (1.0 - zd) + c1 * zd
 }
 
-pub fn tricubic_interpolate_internal(arr: &ndarray::ArrayView3<i16>, x: f64, y: f64, z: f64) -> f64 {
+pub fn tricubic_interpolate_internal(
+    arr: &ndarray::ArrayView3<i16>,
+    x: f64,
+    y: f64,
+    z: f64,
+) -> f64 {
     let xi = x.floor() as isize;
     let yi = y.floor() as isize;
     let zi = z.floor() as isize;
@@ -257,7 +251,12 @@ pub fn tricubic_interpolate_internal(arr: &ndarray::ArrayView3<i16>, x: f64, y: 
     for i in 0..4 {
         for j in 0..4 {
             for k in 0..4 {
-                p[i][j][k] = get_value(arr, xi + i as isize - 1, yi + j as isize - 1, zi + k as isize - 1);
+                p[i][j][k] = get_value(
+                    arr,
+                    xi + i as isize - 1,
+                    yi + j as isize - 1,
+                    zi + k as isize - 1,
+                );
             }
         }
     }
@@ -267,13 +266,13 @@ pub fn tricubic_interpolate_internal(arr: &ndarray::ArrayView3<i16>, x: f64, y: 
     arr_result[1] = bicubic_interpolate(p[1], y - yi as f64, z - zi as f64);
     arr_result[2] = bicubic_interpolate(p[2], y - yi as f64, z - zi as f64);
     arr_result[3] = bicubic_interpolate(p[3], y - yi as f64, z - zi as f64);
-    
+
     cubic_interpolate(arr_result, x - xi as f64)
 }
 
 pub fn lanczos_interpolate_internal(arr: &ndarray::ArrayView3<i16>, x: f64, y: f64, z: f64) -> f64 {
     let a = 4i32;
-    
+
     let xd = x.floor() as isize;
     let yd = y.floor() as isize;
     let zd = z.floor() as isize;

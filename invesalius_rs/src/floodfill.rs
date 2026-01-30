@@ -5,7 +5,7 @@ use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use std::collections::VecDeque;
 
-use crate::types::{ImageTypes, ImageTypesMut, MaskTypes, MaskTypesMut};
+use crate::types::{ImageTypes, ImageTypesMut, MaskTypesMut};
 use numpy::PyArrayMethods;
 
 pub fn floodfill_internal<T: PartialOrd + Copy, U: PartialOrd + Copy>(
@@ -285,7 +285,7 @@ pub fn floodfill<'py>(
     k: usize,
     v: Bound<'py, PyAny>,
     fill: Bound<'py, PyAny>,
-    mut out: MaskTypesMut<'py>,
+    out: MaskTypesMut<'py>,
 ) -> PyResult<()> {
     match (data, out) {
         (ImageTypes::I16(data), MaskTypesMut::U8(mut out)) => {
@@ -465,7 +465,6 @@ pub fn floodfill_threshold_inplace<'py>(
         }
     }
 }
-
 
 #[pyfunction]
 pub fn fill_holes_automatically<'py>(

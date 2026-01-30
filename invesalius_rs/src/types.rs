@@ -1,4 +1,4 @@
-use numpy::{PyReadwriteArray3, PyReadonlyArray3, PyReadwriteArray2};
+use numpy::{PyReadonlyArray3, PyReadwriteArray2, PyReadwriteArray3};
 use pyo3::FromPyObject;
 
 #[derive(FromPyObject)]
