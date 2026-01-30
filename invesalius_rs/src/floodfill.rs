@@ -388,9 +388,9 @@ pub fn floodfill_threshold_inplace<'py>(
     strct: PyReadonlyArray3<u8>,
 ) -> PyResult<()> {
     match data {
-        SupportedArrayMut::I16(data) => {
+        SupportedArrayMut::I16(mut data) => {
             generic_floodfill_threshold_inplace(
-                data.readwrite().as_array_mut(),
+                data.as_array_mut(),
                 seeds,
                 t0.extract::<i16>()?,
                 t1.extract::<i16>()?,
@@ -399,9 +399,9 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        SupportedArrayMut::U8(data) => {
+        SupportedArrayMut::U8(mut data) => {
             generic_floodfill_threshold_inplace(
-                data.readwrite().as_array_mut(),
+                data.as_array_mut(),
                 seeds,
                 t0.extract::<u8>()?,
                 t1.extract::<u8>()?,
@@ -410,9 +410,9 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        SupportedArrayMut::F64(data) => {
+        SupportedArrayMut::F64(mut data) => {
             generic_floodfill_threshold_inplace(
-                data.readwrite().as_array_mut(),
+                data.as_array_mut(),
                 seeds,
                 t0.extract::<f64>()?,
                 t1.extract::<f64>()?,
