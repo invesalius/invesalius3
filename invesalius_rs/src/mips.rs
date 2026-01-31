@@ -1,20 +1,24 @@
 use ndarray::parallel::prelude::*;
 use ndarray::prelude::*;
+use ndarray::ArrayBase;
+use num_traits::{Float, Num, PrimInt, Bounded};
+use num_traits::{AsPrimitive, NumCast, ToPrimitive};
+use num_traits::Zero;
+use std::ops::Sub;
+use crate::types::{ImageTypes3, MaskTypesMut2};
 use numpy::{ndarray, PyArrayMethods, PyReadonlyArray3, PyReadwriteArray2, ToPyArray};
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-#[pyfunction]
-pub fn lmip(
-    image: PyReadonlyArray3<i16>,
+pub fn lmip<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync, U: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync>(
+    image: ArrayView3<T>,
     axis: usize,
-    tmin: i16,
-    tmax: i16,
-    mut out: PyReadwriteArray2<i16>,
-) -> PyResult<()> {
-    let image_arr = image.as_array();
-    let mut out_arr = out.as_array_mut();
-    let dims = image_arr.shape();
+    tmin: T,
+    tmax: T,
+    mut out: ArrayViewMut2<U>,
+) {
+    let dims = image.shape();
     let (sz, sy, sx) = (dims[0], dims[1], dims[2]);
 
     match axis {
@@ -22,10 +26,10 @@ pub fn lmip(
             // AXIAL
             for x in 0..sx {
                 for y in 0..sy {
-                    let mut max_val = image_arr[[0, y, x]];
+                    let mut max_val = image[[0, y, x]];
                     let mut start = max_val >= tmin && max_val <= tmax;
                     for z in 0..sz {
-                        let val = image_arr[[z, y, x]];
+                        let val = image[[z, y, x]];
                         if val > max_val {
                             max_val = val;
                         } else if val < max_val && start {
@@ -35,7 +39,7 @@ pub fn lmip(
                             start = true;
                         }
                     }
-                    out_arr[[y, x]] = max_val;
+                    out[[y, x]] = NumCast::from(max_val).unwrap();
                 }
             }
         }
@@ -43,10 +47,10 @@ pub fn lmip(
             // CORONAL
             for z in 0..sz {
                 for x in 0..sx {
-                    let mut max_val = image_arr[[z, 0, x]];
+                    let mut max_val = image[[z, 0, x]];
                     let mut start = max_val >= tmin && max_val <= tmax;
                     for y in 0..sy {
-                        let val = image_arr[[z, y, x]];
+                        let val = image[[z, y, x]];
                         if val > max_val {
                             max_val = val;
                         } else if val < max_val && start {
@@ -56,7 +60,7 @@ pub fn lmip(
                             start = true;
                         }
                     }
-                    out_arr[[z, x]] = max_val;
+                    out[[z, x]] = NumCast::from(max_val).unwrap();
                 }
             }
         }
@@ -64,10 +68,10 @@ pub fn lmip(
             // SAGITTAL
             for z in 0..sz {
                 for y in 0..sy {
-                    let mut max_val = image_arr[[z, y, 0]];
+                    let mut max_val = image[[z, y, 0]];
                     let mut start = max_val >= tmin && max_val <= tmax;
                     for x in 0..sx {
-                        let val = image_arr[[z, y, x]];
+                        let val = image[[z, y, x]];
                         if val > max_val {
                             max_val = val;
                         } else if val < max_val && start {
@@ -77,20 +81,19 @@ pub fn lmip(
                             start = true;
                         }
                     }
-                    out_arr[[z, y]] = max_val;
+                    out[[z, y]] = NumCast::from(max_val).unwrap();
                 }
             }
         }
         _ => (),
     }
 
-    Ok(())
 }
 
 #[inline(always)]
-fn get_opacity(vl: i16, wl: i16, ww: i16) -> f32 {
-    let min_value = wl - (ww / 2);
-    let max_value = wl + (ww / 2);
+fn get_opacity(vl: f32, wl: f32, ww: f32) -> f32 {
+    let min_value = wl - (ww / 2.0);
+    let max_value = wl + (ww / 2.0);
 
     if vl < min_value {
         0.0
@@ -143,7 +146,7 @@ pub fn mida_old(
 
                         let bt = 1.0 - dl;
                         let colour = fpi;
-                        let alpha = get_opacity(vl, wl, ww);
+                        let alpha = get_opacity(vl as f32, wl as f32, ww as f32);
 
                         let new_colour = (bt * colour_p) + (1.0 - bt * alpha_p) * colour * alpha;
                         let new_alpha = (bt * alpha_p) + (1.0 - bt * alpha_p) * alpha;
@@ -187,7 +190,7 @@ pub fn mida_old(
 
                         let bt = 1.0 - dl;
                         let colour = fpi;
-                        let alpha = get_opacity(vl, wl, ww);
+                        let alpha = get_opacity(vl as f32, wl as f32, ww as f32);
 
                         let new_colour = (bt * colour_p) + (1.0 - bt * alpha_p) * colour * alpha;
                         let new_alpha = (bt * alpha_p) + (1.0 - bt * alpha_p) * alpha;
@@ -231,7 +234,7 @@ pub fn mida_old(
 
                         let bt = 1.0 - dl;
                         let colour = fpi;
-                        let alpha = get_opacity(vl, wl, ww);
+                        let alpha = get_opacity(vl as f32, wl as f32, ww as f32);
 
                         let new_colour = (bt * colour_p) + (1.0 - bt * alpha_p) * colour * alpha;
                         let new_alpha = (bt * alpha_p) + (1.0 - bt * alpha_p) * alpha;
@@ -256,29 +259,26 @@ pub fn mida_old(
     Ok(())
 }
 
-#[pyfunction]
-pub fn mida(
-    image: PyReadonlyArray3<i16>,
+pub fn mida_internal<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num, U: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync  + Num>(
+    image: ArrayView3<T>,
     axis: usize,
-    wl: i16,
-    ww: i16,
-    mut out: PyReadwriteArray2<i16>,
+    wl: T,
+    ww: T,
+    mut out: ArrayViewMut2<U>,
 ) {
-    let img = image.as_array();
-    let mut out_view = out.as_array_mut();
 
     // Cálculos preliminares
-    let img_min = *img.iter().min().unwrap_or(&0) as f32;
-    let img_max = *img.iter().max().unwrap_or(&0) as f32;
+    let img_min = image.iter().map(|&x| <f32 as NumCast>::from(x).unwrap()).reduce(f32::min).unwrap();
+    let img_max = image.iter().map(|&x| <f32 as NumCast>::from(x).unwrap()).reduce(f32::max).unwrap();
     let range = img_max - img_min;
 
-    par_azip!((index (r, c), val in &mut out_view) {
+    par_azip!((index (r, c), val in &mut out) {
         // Para cada pixel (r, c) na saída, calculamos o raio
         // Selecionamos a linha de pixels através do volume
         let lane = match axis {
-            0 => img.slice(s![.., r, c]), // Z é o que sobra
-            1 => img.slice(s![r, .., c]), // Y é o que sobra
-            _ => img.slice(s![r, c, ..]), // X é o que sobra
+            0 => image.slice(s![.., r, c]), // Z é o que sobra
+            1 => image.slice(s![r, .., c]), // Y é o que sobra
+            _ => image.slice(s![r, c, ..]), // X é o que sobra
         };
 
         let mut fmax = 0.0;
@@ -287,7 +287,7 @@ pub fn mida(
         let mut final_colour = 0.0;
 
         for &vl_raw in lane {
-            let vl = vl_raw as f32;
+            let vl = NumCast::from(vl_raw).unwrap();
             let fpi = (1.0 / range) * (vl - img_min);
 
             let dl = if fpi > fmax {
@@ -299,7 +299,7 @@ pub fn mida(
             };
 
             let bt = 1.0 - dl;
-            let alpha = get_opacity(vl_raw, wl, ww);
+            let alpha = get_opacity(vl, <f32 as NumCast>::from(wl).unwrap(), <f32 as NumCast>::from(ww).unwrap());
 
             let colour = (bt * colour_p) + (1.0 - bt * alpha_p) * fpi * alpha;
             let current_alpha = (bt * alpha_p) + (1.0 - bt * alpha_p) * alpha;
@@ -313,13 +313,13 @@ pub fn mida(
             }
         }
 
-        *val = (range * final_colour + img_min) as i16;
+        *val = NumCast::from(range * final_colour + img_min).unwrap();
     });
 }
 
 #[inline(always)]
-fn finite_difference(
-    image: &ndarray::ArrayView3<i16>,
+fn finite_difference<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Sub<Output = T>> (
+    image: ArrayView3<T>,
     x: usize,
     y: usize,
     z: usize,
@@ -335,15 +335,15 @@ fn finite_difference(
     let pz = if z == 0 { 0 } else { z - 1 };
     let fz = if z == sz - 1 { sz - 1 } else { z + 1 };
 
-    let gx = (image[[z, y, fx]] - image[[z, y, px]]) as f32 / (2.0 * h);
-    let gy = (image[[z, fy, x]] - image[[z, py, x]]) as f32 / (2.0 * h);
-    let gz = (image[[fz, y, x]] - image[[pz, y, x]]) as f32 / (2.0 * h);
+    let gx = ((image[[z, y, fx]] - image[[z, y, px]])).to_f32().unwrap() / (2.0 * h);
+    let gy = ((image[[z, fy, x]] - image[[z, py, x]])).to_f32().unwrap() / (2.0 * h);
+    let gz = ((image[[fz, y, x]] - image[[pz, y, x]])).to_f32().unwrap() / (2.0 * h);
 
     [gx, gy, gz]
 }
 
-fn calc_fcm_intensity(
-    image: &ndarray::ArrayView3<i16>,
+fn calc_fcm_intensity<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num>(
+    image: ArrayView3<T>,
     x: usize,
     y: usize,
     z: usize,
@@ -360,19 +360,16 @@ fn calc_fcm_intensity(
     gm * sf
 }
 
-#[pyfunction]
-pub fn fast_countour_mip(
-    py: Python,
-    image: PyReadonlyArray3<i16>,
+pub fn fast_countour_mip_internal<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num + Bounded, U: Ord + Copy + ToPrimitive + Send + NumCast + Sync + Zero + Num>(
+    image: ArrayView3<T>,
     n: f32,
     axis: usize,
-    wl: i16,
-    ww: i16,
+    wl: T,
+    ww: T,
     tmip: usize,
-    mut out: PyReadwriteArray2<i16>,
-) -> PyResult<()> {
-    let image_arr = image.as_array();
-    let dims = image_arr.shape();
+    mut out: ArrayViewMut2<U>,
+) {
+    let dims = image.shape();
     let (sz, sy, sx) = (dims[0], dims[1], dims[2]);
 
     let mut dir = [0.0f32, 0.0, 0.0];
@@ -384,33 +381,90 @@ pub fn fast_countour_mip(
     }
 
     // Calculate FCM intensity for entire volume
-    let mut tmp = ndarray::Array3::<i16>::zeros((sz, sy, sx));
+    let mut tmp = Array3::<U>::zeros((sz, sy, sx));
 
     par_azip!((index (z, y, x), val in &mut tmp){
-        *val = calc_fcm_intensity(&image_arr, x, y, z, n, &dir) as i16;
+        *val = NumCast::from(calc_fcm_intensity(image, x, y, z, n, &dir)).unwrap();
     });
-
-    let tmp_py = tmp.to_pyarray(py);
 
     match tmip {
         0 => {
             // MIP - Maximum Intensity Projection
             // Similar ao arr.max(axis) do NumPy - calcula máximo ao longo do eixo especificado
             // Usa fold_axis que é o equivalente de alto nível do ndarray
-            let max_result = tmp.fold_axis(Axis(axis), i16::MIN, |&a, &b| a.max(b));
-            let mut out_arr = out.as_array_mut();
-            out_arr.assign(&max_result);
+            // let max_result = tmp.fold_axis(Axis(axis), <T as Sub>::Output::min_value().unwrap() as U, |&a, &b| a.max(b));
+            let max_result = tmp.fold_axis(Axis(axis), NumCast::from(<T>::min_value()).unwrap(), |acc: &U, elt: &U| (*acc).max(*elt));
+            out.assign(&max_result);
         }
         1 => {
             // LMIP
-            lmip(tmp_py.readonly(), axis, 700, 3033, out)?;
+            lmip(tmp.view(), axis, NumCast::from(700).unwrap(), NumCast::from(3033).unwrap(), out.view_mut());
         }
         2 => {
             // MIDA
-            mida(tmp_py.readonly(), axis, wl, ww, out);
+            mida_internal(
+            tmp.view(),
+                axis,
+                NumCast::from(wl).unwrap(),
+                NumCast::from(ww).unwrap(),
+                out,
+            );
         }
         _ => (),
     }
 
-    Ok(())
+}
+
+
+#[pyfunction]
+pub fn mida<'py>(
+    image: ImageTypes3<'py>,
+    axis: usize,
+    wl: Bound<'py, PyAny>,
+    ww: Bound<'py, PyAny>,
+    mut out: MaskTypesMut2<'py>,
+) -> PyResult<()> {
+    match (image, out) {
+        (ImageTypes3::I16(image), MaskTypesMut2::I16(mut out)) => {
+            mida_internal(image.as_array(), axis, wl.extract::<i16>()?, ww.extract::<i16>()?, out.as_array_mut());
+            Ok(())
+        }
+        (ImageTypes3::U8(image), MaskTypesMut2::U8(mut out)) => {
+            mida_internal(image.as_array(), axis, wl.extract::<u8>()?, ww.extract::<u8>()?, out.as_array_mut());
+            Ok(())
+        }
+        (ImageTypes3::F64(image), MaskTypesMut2::U8(mut out)) => {
+            mida_internal(image.as_array(), axis, wl.extract::<f64>()?, ww.extract::<f64>()?, out.as_array_mut());
+            Ok(())
+        }
+        _ => Err(PyTypeError::new_err("Invalid image or output type")),
+    }
+}
+
+
+#[pyfunction]
+pub fn fast_countour_mip<'py>(
+    image: ImageTypes3<'py>,
+    n: f32,
+    axis: usize,
+    wl: Bound<'py, PyAny>,
+    ww: Bound<'py, PyAny>,
+    tmip: usize,
+    mut out: MaskTypesMut2<'py>,
+) -> PyResult<()> {
+    match (image, out) {
+        (ImageTypes3::I16(image), MaskTypesMut2::U8(mut out)) => {
+            fast_countour_mip_internal(image.as_array(), n, axis, wl.extract::<i16>()?, ww.extract::<i16>()?, tmip, out.as_array_mut());
+            Ok(())
+        }
+        (ImageTypes3::U8(image), MaskTypesMut2::U8(mut out)) => {
+            fast_countour_mip_internal(image.as_array(), n, axis, wl.extract::<u8>()?, ww.extract::<u8>()?, tmip, out.as_array_mut());
+            Ok(())
+        }
+        (ImageTypes3::F64(image), MaskTypesMut2::U8(mut out)) => {
+            fast_countour_mip_internal(image.as_array(), n, axis, wl.extract::<f64>()?, ww.extract::<f64>()?, tmip, out.as_array_mut());
+            Ok(())
+        }
+        _ => Err(PyTypeError::new_err("Invalid image or output type")),
+    }
 }

@@ -248,10 +248,10 @@ pub fn tricubic_interpolate_internal(
 
     let mut p = [[[0.0; 4]; 4]; 4];
 
-    for i in 0..4 {
-        for j in 0..4 {
-            for k in 0..4 {
-                p[i][j][k] = get_value(
+    for (i, plane) in p.iter_mut().enumerate() {
+        for (j, row) in plane.iter_mut().enumerate() {
+            for (k, val) in row.iter_mut().enumerate() {
+                *val = get_value(
                     arr,
                     xi + i as isize - 1,
                     yi + j as isize - 1,
@@ -288,37 +288,28 @@ pub fn lanczos_interpolate_internal(arr: &ndarray::ArrayView3<i16>, x: f64, y: f
     let mut temp_x = vec![vec![0.0; size]; size];
     let mut temp_y = vec![0.0; size];
 
-    let mut m = 0usize;
-    for kk in zi..zf {
-        let mut n = 0usize;
-        for jj in yi..yf {
+    let _m = 0usize;
+    for (m, kk) in (zi..zf).enumerate() {
+        for (n, jj) in (yi..yf).enumerate() {
             let mut lx = 0.0;
             for ii in xi..xf {
                 lx += get_value(arr, ii, jj, kk) * lanczos_kernel(x - ii as f64, a);
             }
             temp_x[m][n] = lx;
-            n += 1;
         }
-        m += 1;
     }
 
-    m = 0;
-    for _ in zi..zf {
-        let mut n = 0usize;
+    for (m, _kk) in (zi..zf).enumerate() {
         let mut ly = 0.0;
-        for jj in yi..yf {
+        for (n, jj) in (yi..yf).enumerate() {
             ly += temp_x[m][n] * lanczos_kernel(y - jj as f64, a);
-            n += 1;
         }
         temp_y[m] = ly;
-        m += 1;
     }
 
     let mut lz = 0.0;
-    m = 0;
-    for kk in zi..zf {
+    for (m, kk) in (zi..zf).enumerate() {
         lz += temp_y[m] * lanczos_kernel(z - kk as f64, a);
-        m += 1;
     }
 
     lz

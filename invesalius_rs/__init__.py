@@ -58,7 +58,7 @@ def floodfill_auto_threshold(data, seeds, p, fill, out):
     return _native_floodfill_auto_threshold(data, tuple_seeds, p, fill, out)
 
 
-lmip = _native.lmip
+# lmip = _native.lmip
 apply_view_matrix_transform = _native.apply_view_matrix_transform
 convolve_non_zero = _native.convolve_non_zero
 mask_cut = _native.mask_cut
@@ -251,7 +251,7 @@ __all__ = [
     "floodfill_auto_threshold",
     "fill_holes_automatically",
     # MIPS
-    "lmip",
+    # "lmip",
     "mida",
     "fast_countour_mip",
     # Transforms

@@ -5,7 +5,7 @@ use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use std::collections::VecDeque;
 
-use crate::types::{ImageTypes, ImageTypesMut, MaskTypesMut};
+use crate::types::{ImageTypes3, ImageTypesMut3, MaskTypesMut3};
 use numpy::PyArrayMethods;
 
 pub fn floodfill_internal<T: PartialOrd + Copy, U: PartialOrd + Copy>(
@@ -279,16 +279,16 @@ pub fn floodfill_auto_threshold(
 
 #[pyfunction]
 pub fn floodfill<'py>(
-    data: ImageTypes<'py>,
+    data: ImageTypes3<'py>,
     i: usize,
     j: usize,
     k: usize,
     v: Bound<'py, PyAny>,
     fill: Bound<'py, PyAny>,
-    out: MaskTypesMut<'py>,
+    out: MaskTypesMut3<'py>,
 ) -> PyResult<()> {
     match (data, out) {
-        (ImageTypes::I16(data), MaskTypesMut::U8(mut out)) => {
+        (ImageTypes3::I16(data), MaskTypesMut3::U8(mut out)) => {
             floodfill_internal(
                 data.as_array(),
                 i,
@@ -300,7 +300,7 @@ pub fn floodfill<'py>(
             );
             Ok(())
         }
-        (ImageTypes::U8(data), MaskTypesMut::U8(mut out)) => {
+        (ImageTypes3::U8(data), MaskTypesMut3::U8(mut out)) => {
             floodfill_internal(
                 data.as_array(),
                 i,
@@ -312,7 +312,7 @@ pub fn floodfill<'py>(
             );
             Ok(())
         }
-        (ImageTypes::F64(data), MaskTypesMut::U8(mut out)) => {
+        (ImageTypes3::F64(data), MaskTypesMut3::U8(mut out)) => {
             floodfill_internal(
                 data.as_array(),
                 i,
@@ -372,7 +372,7 @@ pub fn fill_holes_automatically_internal<U: PartialOrd + Copy + NumCast>(
 
 #[pyfunction]
 pub fn floodfill_threshold<'py>(
-    data: ImageTypes<'py>,
+    data: ImageTypes3<'py>,
     seeds: Vec<(usize, usize, usize)>,
     t0: Bound<'py, PyAny>,
     t1: Bound<'py, PyAny>,
@@ -381,7 +381,7 @@ pub fn floodfill_threshold<'py>(
     out: PyReadwriteArray3<u8>,
 ) -> PyResult<()> {
     match data {
-        ImageTypes::I16(data) => {
+        ImageTypes3::I16(data) => {
             generic_floodfill_threshold(
                 data.as_array(),
                 seeds,
@@ -393,7 +393,7 @@ pub fn floodfill_threshold<'py>(
             );
             Ok(())
         }
-        ImageTypes::U8(data) => {
+        ImageTypes3::U8(data) => {
             generic_floodfill_threshold(
                 data.as_array(),
                 seeds,
@@ -405,7 +405,7 @@ pub fn floodfill_threshold<'py>(
             );
             Ok(())
         }
-        ImageTypes::F64(data) => {
+        ImageTypes3::F64(data) => {
             generic_floodfill_threshold(
                 data.as_array(),
                 seeds,
@@ -422,7 +422,7 @@ pub fn floodfill_threshold<'py>(
 
 #[pyfunction]
 pub fn floodfill_threshold_inplace<'py>(
-    data: ImageTypesMut<'py>,
+    data: ImageTypesMut3<'py>,
     seeds: Vec<(usize, usize, usize)>,
     t0: Bound<'py, PyAny>,
     t1: Bound<'py, PyAny>,
@@ -430,7 +430,7 @@ pub fn floodfill_threshold_inplace<'py>(
     strct: PyReadonlyArray3<u8>,
 ) -> PyResult<()> {
     match data {
-        ImageTypesMut::I16(mut data) => {
+        ImageTypesMut3::I16(mut data) => {
             generic_floodfill_threshold_inplace(
                 data.as_array_mut(),
                 seeds,
@@ -441,7 +441,7 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        ImageTypesMut::U8(mut data) => {
+        ImageTypesMut3::U8(mut data) => {
             generic_floodfill_threshold_inplace(
                 data.as_array_mut(),
                 seeds,
@@ -452,7 +452,7 @@ pub fn floodfill_threshold_inplace<'py>(
             );
             Ok(())
         }
-        ImageTypesMut::F64(mut data) => {
+        ImageTypesMut3::F64(mut data) => {
             generic_floodfill_threshold_inplace(
                 data.as_array_mut(),
                 seeds,
@@ -468,13 +468,13 @@ pub fn floodfill_threshold_inplace<'py>(
 
 #[pyfunction]
 pub fn fill_holes_automatically<'py>(
-    mask: MaskTypesMut<'py>,
+    mask: MaskTypesMut3<'py>,
     labels: PyReadonlyArray3<u16>,
     nlabels: u32,
     max_size: u32,
 ) -> PyResult<()> {
     match mask {
-        MaskTypesMut::U8(mut mask) => {
+        MaskTypesMut3::U8(mut mask) => {
             fill_holes_automatically_internal(mask.as_array_mut(), labels, nlabels, max_size);
             Ok(())
         }

@@ -29,7 +29,6 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(floodfill::fill_holes_automatically, m)?)?;
 
     // MIPS functions
-    m.add_function(wrap_pyfunction!(mips::lmip, m)?)?;
     m.add_function(wrap_pyfunction!(mips::mida, m)?)?;
     m.add_function(wrap_pyfunction!(mips::mida_old, m)?)?;
     m.add_function(wrap_pyfunction!(mips::fast_countour_mip, m)?)?;
