@@ -6,7 +6,6 @@ use pyo3::prelude::*;
 use std::collections::VecDeque;
 
 use crate::types::{ImageTypes3, ImageTypesMut3, MaskTypesMut3};
-use numpy::PyArrayMethods;
 
 pub fn floodfill_internal<T: PartialOrd + Copy, U: PartialOrd + Copy>(
     data: ArrayView3<T>,

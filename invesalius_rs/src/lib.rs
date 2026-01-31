@@ -11,16 +11,6 @@ mod types;
 /// InVesalius Rust extension module
 #[pymodule]
 fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    // Interpolation functions
-    m.add_function(wrap_pyfunction!(interpolation::trilin_interpolate_py, m)?)?;
-    m.add_function(wrap_pyfunction!(
-        interpolation::nearest_neighbour_interp,
-        m
-    )?)?;
-    m.add_function(wrap_pyfunction!(interpolation::tricub_interpolate_py, m)?)?;
-    m.add_function(wrap_pyfunction!(interpolation::tricub_interpolate2_py, m)?)?;
-    m.add_function(wrap_pyfunction!(interpolation::lanczos_interpolate_py, m)?)?;
-
     // Floodfill functions
     m.add_function(wrap_pyfunction!(floodfill::floodfill, m)?)?;
     m.add_function(wrap_pyfunction!(floodfill::floodfill_threshold, m)?)?;

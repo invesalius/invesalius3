@@ -8,11 +8,6 @@ import numpy as np
 from invesalius_rs import _native
 
 # Re-export all symbols from the native module
-trilin_interpolate_py = _native.trilin_interpolate_py
-nearest_neighbour_interp = _native.nearest_neighbour_interp
-tricub_interpolate_py = _native.tricub_interpolate_py
-tricub_interpolate2_py = _native.tricub_interpolate2_py
-lanczos_interpolate_py = _native.lanczos_interpolate_py
 floodfill = _native.floodfill
 _native_floodfill_threshold = _native.floodfill_threshold
 _native_floodfill_threshold_inplace = _native.floodfill_threshold_inplace

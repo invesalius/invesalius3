@@ -1,13 +1,11 @@
 use crate::types::{ImageTypes3, ImageTypesMut2, MaskTypesMut2};
 use ndarray::parallel::prelude::*;
 use ndarray::prelude::*;
-use num_traits::Zero;
-use num_traits::{Bounded, Float, Num};
+use num_traits::{Bounded, Num};
 use num_traits::{NumCast, ToPrimitive};
-use numpy::{ndarray, PyArrayMethods, PyReadonlyArray3, PyReadwriteArray2};
+use numpy::{PyReadonlyArray3, PyReadwriteArray2};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use rayon::prelude::*;
 use std::ops::Sub;
 
 pub fn lmip<
@@ -374,7 +372,7 @@ fn calc_fcm_intensity<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync
 }
 
 pub fn fast_countour_mip_internal<
-    T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num + Bounded + PartialOrd
+    T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num + Bounded + PartialOrd,
 >(
     image: ArrayView3<T>,
     n: f32,
