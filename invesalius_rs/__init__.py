@@ -26,6 +26,14 @@ def floodfill_threshold(data, seeds, t0, t1, fill, strct, out):
     tuple_seeds = [tuple(s) for s in seeds]
     # Ensure strct is uint8 (scipy's generate_binary_structure returns bool)
     strct_u8 = np.ascontiguousarray(strct, dtype=np.uint8)
+    if data.dtype in [np.int16, np.uint16, np.int32, np.uint32, np.int64, np.uint64]:
+        t0 = int(t0)
+        t1 = int(t1)
+        fill = int(fill)
+    elif data.dtype in [np.float32, np.float64]:
+        t0 = float(t0)
+        t1 = float(t1)
+        fill = float(fill)
     return _native_floodfill_threshold(data, tuple_seeds, t0, t1, fill, strct_u8, out)
 
 def floodfill_threshold_inplace(data, seeds, t0, t1, fill, strct):
