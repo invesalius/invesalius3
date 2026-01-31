@@ -83,6 +83,9 @@ class Session(metaclass=Singleton):
             "console_logging_level": 0,
         }
         self._exited_successfully_last_time = not self._ReadState()
+        # Unsaved changes tracking
+        self._has_unsaved_changes = False
+        self._auto_backup_path: Union[str, None] = None
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -162,12 +165,28 @@ class Session(metaclass=Singleton):
             self.temp_item = False
 
         self.SetConfig("project_status", const.PROJECT_STATUS_OPENED)
+        # Clear unsaved changes flag after successful save
+        self._has_unsaved_changes = False
+        # Remove auto-backup if it exists
+        self.RemoveAutoBackup()
 
     def ChangeProject(self) -> None:
         import invesalius.constants as const
 
         debug("Session.ChangeProject")
         self.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
+        # Mark project as having unsaved changes
+        was_clean = not self._has_unsaved_changes
+        self._has_unsaved_changes = True
+        
+        # Create auto-backup when project is first modified
+        # This ensures we can recover if the application crashes
+        if was_clean and self.IsOpen():
+            # Create backup in a separate thread to avoid blocking UI
+            from threading import Thread
+            backup_thread = Thread(target=self.CreateAutoBackup)
+            backup_thread.daemon = True
+            backup_thread.start()
 
     def CreateProject(self, filename: str) -> None:
         import invesalius.constants as const
@@ -321,6 +340,102 @@ class Session(metaclass=Singleton):
 
         return success
 
+    def HasUnsavedChanges(self) -> bool:
+        """Check if the project has unsaved changes."""
+        return self._has_unsaved_changes
+
+    def CreateAutoBackup(self) -> bool:
+        """
+        Create an auto-backup of the current project.
+        Returns True if backup was created successfully.
+        """
+        import invesalius.project as prj
+        from datetime import datetime
+
+        try:
+            # Get current project
+            project_path = self.GetState("project_path")
+            if not project_path:
+                return False
+
+            # Create backup directory
+            backup_dir = Path(inv_paths.USER_INV_DIR) / "temp_backup"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+
+            # Clean old backups (keep max 3, remove older than 7 days)
+            self._cleanup_old_backups(backup_dir)
+
+            # Create backup filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_filename = f"auto_backup_{timestamp}.inv3"
+            backup_path = backup_dir / backup_filename
+
+            # Save current project to backup location
+            proj = prj.Project()
+            dirpath, filename = project_path
+            
+            # Use the project's SavePlistProject method to create backup
+            proj.SavePlistProject(str(backup_dir), backup_filename, compress=True)
+            
+            self._auto_backup_path = str(backup_path)
+            self.SetState("auto_backup_path", str(backup_path))
+            
+            debug(f"Auto-backup created: {backup_path}")
+            return True
+
+        except Exception as e:
+            debug(f"Failed to create auto-backup: {e}")
+            return False
+
+    def RemoveAutoBackup(self) -> None:
+        """Remove the auto-backup file if it exists."""
+        if self._auto_backup_path and os.path.exists(self._auto_backup_path):
+            try:
+                os.remove(self._auto_backup_path)
+                debug(f"Auto-backup removed: {self._auto_backup_path}")
+            except Exception as e:
+                debug(f"Failed to remove auto-backup: {e}")
+        
+        self._auto_backup_path = None
+        self.SetState("auto_backup_path", None)
+
+    def GetAutoBackupPath(self) -> Union[str, None]:
+        """Get the path to the auto-backup file if it exists."""
+        backup_path = self.GetState("auto_backup_path")
+        if backup_path and os.path.exists(backup_path):
+            return backup_path
+        return None
+
+    def _cleanup_old_backups(self, backup_dir: Path) -> None:
+        """Clean up old backup files."""
+        from datetime import datetime, timedelta
+        
+        try:
+            if not backup_dir.exists():
+                return
+
+            # Get all backup files
+            backup_files = sorted(backup_dir.glob("auto_backup_*.inv3"), key=lambda p: p.stat().st_mtime, reverse=True)
+
+            # Remove files older than 7 days
+            seven_days_ago = datetime.now() - timedelta(days=7)
+            for backup_file in backup_files:
+                file_time = datetime.fromtimestamp(backup_file.stat().st_mtime)
+                if file_time < seven_days_ago:
+                    backup_file.unlink()
+                    debug(f"Removed old backup: {backup_file}")
+
+            # Keep only the 3 most recent backups
+            backup_files = sorted(backup_dir.glob("auto_backup_*.inv3"), key=lambda p: p.stat().st_mtime, reverse=True)
+            for backup_file in backup_files[3:]:
+                backup_file.unlink()
+                debug(f"Removed excess backup: {backup_file}")
+
+        except Exception as e:
+            debug(f"Failed to cleanup old backups: {e}")
+
     def _Exit(self) -> None:
         self.CloseProject()
-        self.DeleteStateFile()
+        # Only delete state file if no unsaved changes (for crash recovery)
+        if not self._has_unsaved_changes:
+            self.DeleteStateFile()
