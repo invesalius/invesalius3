@@ -1,17 +1,19 @@
+use crate::types::{ImageTypes3, MaskTypesMut2};
 use ndarray::parallel::prelude::*;
 use ndarray::prelude::*;
-use ndarray::ArrayBase;
-use num_traits::{Float, Num, PrimInt, Bounded};
-use num_traits::{AsPrimitive, NumCast, ToPrimitive};
 use num_traits::Zero;
-use std::ops::Sub;
-use crate::types::{ImageTypes3, MaskTypesMut2};
-use numpy::{ndarray, PyArrayMethods, PyReadonlyArray3, PyReadwriteArray2, ToPyArray};
+use num_traits::{Bounded, Float, Num};
+use num_traits::{NumCast, ToPrimitive};
+use numpy::{ndarray, PyArrayMethods, PyReadonlyArray3, PyReadwriteArray2};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use rayon::prelude::*;
+use std::ops::Sub;
 
-pub fn lmip<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync, U: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync>(
+pub fn lmip<
+    T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync,
+    U: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync,
+>(
     image: ArrayView3<T>,
     axis: usize,
     tmin: T,
@@ -87,7 +89,6 @@ pub fn lmip<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync, U: Parti
         }
         _ => (),
     }
-
 }
 
 #[inline(always)]
@@ -100,7 +101,7 @@ fn get_opacity(vl: f32, wl: f32, ww: f32) -> f32 {
     } else if vl > max_value {
         1.0
     } else {
-        (vl - min_value) as f32 / (max_value - min_value) as f32
+        (vl - min_value) / (max_value - min_value)
     }
 }
 
@@ -259,17 +260,27 @@ pub fn mida_old(
     Ok(())
 }
 
-pub fn mida_internal<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num, U: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync  + Num>(
+pub fn mida_internal<
+    T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num,
+    U: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num,
+>(
     image: ArrayView3<T>,
     axis: usize,
     wl: T,
     ww: T,
     mut out: ArrayViewMut2<U>,
 ) {
-
     // Cálculos preliminares
-    let img_min = image.iter().map(|&x| <f32 as NumCast>::from(x).unwrap()).reduce(f32::min).unwrap();
-    let img_max = image.iter().map(|&x| <f32 as NumCast>::from(x).unwrap()).reduce(f32::max).unwrap();
+    let img_min = image
+        .iter()
+        .map(|&x| <f32 as NumCast>::from(x).unwrap())
+        .reduce(f32::min)
+        .unwrap();
+    let img_max = image
+        .iter()
+        .map(|&x| <f32 as NumCast>::from(x).unwrap())
+        .reduce(f32::max)
+        .unwrap();
     let range = img_max - img_min;
 
     par_azip!((index (r, c), val in &mut out) {
@@ -318,7 +329,9 @@ pub fn mida_internal<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync 
 }
 
 #[inline(always)]
-fn finite_difference<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Sub<Output = T>> (
+fn finite_difference<
+    T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Sub<Output = T>,
+>(
     image: ArrayView3<T>,
     x: usize,
     y: usize,
@@ -335,9 +348,9 @@ fn finite_difference<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync 
     let pz = if z == 0 { 0 } else { z - 1 };
     let fz = if z == sz - 1 { sz - 1 } else { z + 1 };
 
-    let gx = ((image[[z, y, fx]] - image[[z, y, px]])).to_f32().unwrap() / (2.0 * h);
-    let gy = ((image[[z, fy, x]] - image[[z, py, x]])).to_f32().unwrap() / (2.0 * h);
-    let gz = ((image[[fz, y, x]] - image[[pz, y, x]])).to_f32().unwrap() / (2.0 * h);
+    let gx = (image[[z, y, fx]] - image[[z, y, px]]).to_f32().unwrap() / (2.0 * h);
+    let gy = (image[[z, fy, x]] - image[[z, py, x]]).to_f32().unwrap() / (2.0 * h);
+    let gz = (image[[fz, y, x]] - image[[pz, y, x]]).to_f32().unwrap() / (2.0 * h);
 
     [gx, gy, gz]
 }
@@ -360,7 +373,10 @@ fn calc_fcm_intensity<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync
     gm * sf
 }
 
-pub fn fast_countour_mip_internal<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num + Bounded, U: Ord + Copy + ToPrimitive + Send + NumCast + Sync + Zero + Num>(
+pub fn fast_countour_mip_internal<
+    T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num + Bounded,
+    U: Ord + Copy + ToPrimitive + Send + NumCast + Sync + Zero + Num,
+>(
     image: ArrayView3<T>,
     n: f32,
     axis: usize,
@@ -393,17 +409,27 @@ pub fn fast_countour_mip_internal<T: PartialOrd + Copy + ToPrimitive + Send + Nu
             // Similar ao arr.max(axis) do NumPy - calcula máximo ao longo do eixo especificado
             // Usa fold_axis que é o equivalente de alto nível do ndarray
             // let max_result = tmp.fold_axis(Axis(axis), <T as Sub>::Output::min_value().unwrap() as U, |&a, &b| a.max(b));
-            let max_result = tmp.fold_axis(Axis(axis), NumCast::from(<T>::min_value()).unwrap(), |acc: &U, elt: &U| (*acc).max(*elt));
+            let max_result = tmp.fold_axis(
+                Axis(axis),
+                NumCast::from(<T>::min_value()).unwrap(),
+                |acc: &U, elt: &U| (*acc).max(*elt),
+            );
             out.assign(&max_result);
         }
         1 => {
             // LMIP
-            lmip(tmp.view(), axis, NumCast::from(700).unwrap(), NumCast::from(3033).unwrap(), out.view_mut());
+            lmip(
+                tmp.view(),
+                axis,
+                NumCast::from(700).unwrap(),
+                NumCast::from(3033).unwrap(),
+                out.view_mut(),
+            );
         }
         2 => {
             // MIDA
             mida_internal(
-            tmp.view(),
+                tmp.view(),
                 axis,
                 NumCast::from(wl).unwrap(),
                 NumCast::from(ww).unwrap(),
@@ -412,9 +438,7 @@ pub fn fast_countour_mip_internal<T: PartialOrd + Copy + ToPrimitive + Send + Nu
         }
         _ => (),
     }
-
 }
-
 
 #[pyfunction]
 pub fn mida<'py>(
@@ -422,25 +446,42 @@ pub fn mida<'py>(
     axis: usize,
     wl: Bound<'py, PyAny>,
     ww: Bound<'py, PyAny>,
-    mut out: MaskTypesMut2<'py>,
+    out: MaskTypesMut2<'py>,
 ) -> PyResult<()> {
     match (image, out) {
         (ImageTypes3::I16(image), MaskTypesMut2::I16(mut out)) => {
-            mida_internal(image.as_array(), axis, wl.extract::<i16>()?, ww.extract::<i16>()?, out.as_array_mut());
+            mida_internal(
+                image.as_array(),
+                axis,
+                wl.extract::<i16>()?,
+                ww.extract::<i16>()?,
+                out.as_array_mut(),
+            );
             Ok(())
         }
         (ImageTypes3::U8(image), MaskTypesMut2::U8(mut out)) => {
-            mida_internal(image.as_array(), axis, wl.extract::<u8>()?, ww.extract::<u8>()?, out.as_array_mut());
+            mida_internal(
+                image.as_array(),
+                axis,
+                wl.extract::<u8>()?,
+                ww.extract::<u8>()?,
+                out.as_array_mut(),
+            );
             Ok(())
         }
         (ImageTypes3::F64(image), MaskTypesMut2::U8(mut out)) => {
-            mida_internal(image.as_array(), axis, wl.extract::<f64>()?, ww.extract::<f64>()?, out.as_array_mut());
+            mida_internal(
+                image.as_array(),
+                axis,
+                wl.extract::<f64>()?,
+                ww.extract::<f64>()?,
+                out.as_array_mut(),
+            );
             Ok(())
         }
         _ => Err(PyTypeError::new_err("Invalid image or output type")),
     }
 }
-
 
 #[pyfunction]
 pub fn fast_countour_mip<'py>(
@@ -450,19 +491,43 @@ pub fn fast_countour_mip<'py>(
     wl: Bound<'py, PyAny>,
     ww: Bound<'py, PyAny>,
     tmip: usize,
-    mut out: MaskTypesMut2<'py>,
+    out: MaskTypesMut2<'py>,
 ) -> PyResult<()> {
     match (image, out) {
         (ImageTypes3::I16(image), MaskTypesMut2::U8(mut out)) => {
-            fast_countour_mip_internal(image.as_array(), n, axis, wl.extract::<i16>()?, ww.extract::<i16>()?, tmip, out.as_array_mut());
+            fast_countour_mip_internal(
+                image.as_array(),
+                n,
+                axis,
+                wl.extract::<i16>()?,
+                ww.extract::<i16>()?,
+                tmip,
+                out.as_array_mut(),
+            );
             Ok(())
         }
         (ImageTypes3::U8(image), MaskTypesMut2::U8(mut out)) => {
-            fast_countour_mip_internal(image.as_array(), n, axis, wl.extract::<u8>()?, ww.extract::<u8>()?, tmip, out.as_array_mut());
+            fast_countour_mip_internal(
+                image.as_array(),
+                n,
+                axis,
+                wl.extract::<u8>()?,
+                ww.extract::<u8>()?,
+                tmip,
+                out.as_array_mut(),
+            );
             Ok(())
         }
         (ImageTypes3::F64(image), MaskTypesMut2::U8(mut out)) => {
-            fast_countour_mip_internal(image.as_array(), n, axis, wl.extract::<f64>()?, ww.extract::<f64>()?, tmip, out.as_array_mut());
+            fast_countour_mip_internal(
+                image.as_array(),
+                n,
+                axis,
+                wl.extract::<f64>()?,
+                ww.extract::<f64>()?,
+                tmip,
+                out.as_array_mut(),
+            );
             Ok(())
         }
         _ => Err(PyTypeError::new_err("Invalid image or output type")),
