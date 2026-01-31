@@ -1,4 +1,4 @@
-use crate::types::{ImageTypes3, MaskTypesMut2};
+use crate::types::{ImageTypes3, ImageTypesMut2, MaskTypesMut2};
 use ndarray::parallel::prelude::*;
 use ndarray::prelude::*;
 use num_traits::Zero;
@@ -374,8 +374,7 @@ fn calc_fcm_intensity<T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync
 }
 
 pub fn fast_countour_mip_internal<
-    T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num + Bounded,
-    U: Ord + Copy + ToPrimitive + Send + NumCast + Sync + Zero + Num,
+    T: PartialOrd + Copy + ToPrimitive + Send + NumCast + Sync + Num + Bounded + PartialOrd
 >(
     image: ArrayView3<T>,
     n: f32,
@@ -383,7 +382,7 @@ pub fn fast_countour_mip_internal<
     wl: T,
     ww: T,
     tmip: usize,
-    mut out: ArrayViewMut2<U>,
+    mut out: ArrayViewMut2<T>,
 ) {
     let dims = image.shape();
     let (sz, sy, sx) = (dims[0], dims[1], dims[2]);
@@ -397,7 +396,7 @@ pub fn fast_countour_mip_internal<
     }
 
     // Calculate FCM intensity for entire volume
-    let mut tmp = Array3::<U>::zeros((sz, sy, sx));
+    let mut tmp = Array3::<T>::zeros((sz, sy, sx));
 
     par_azip!((index (z, y, x), val in &mut tmp){
         *val = NumCast::from(calc_fcm_intensity(image, x, y, z, n, &dir)).unwrap();
@@ -411,8 +410,8 @@ pub fn fast_countour_mip_internal<
             // let max_result = tmp.fold_axis(Axis(axis), <T as Sub>::Output::min_value().unwrap() as U, |&a, &b| a.max(b));
             let max_result = tmp.fold_axis(
                 Axis(axis),
-                NumCast::from(<T>::min_value()).unwrap(),
-                |acc: &U, elt: &U| (*acc).max(*elt),
+                <T as Bounded>::min_value(),
+                |acc: &T, elt: &T| if *acc > *elt { *acc } else { *elt },
             );
             out.assign(&max_result);
         }
@@ -491,10 +490,10 @@ pub fn fast_countour_mip<'py>(
     wl: Bound<'py, PyAny>,
     ww: Bound<'py, PyAny>,
     tmip: usize,
-    out: MaskTypesMut2<'py>,
+    out: ImageTypesMut2<'py>,
 ) -> PyResult<()> {
     match (image, out) {
-        (ImageTypes3::I16(image), MaskTypesMut2::U8(mut out)) => {
+        (ImageTypes3::I16(image), ImageTypesMut2::I16(mut out)) => {
             fast_countour_mip_internal(
                 image.as_array(),
                 n,
@@ -506,7 +505,7 @@ pub fn fast_countour_mip<'py>(
             );
             Ok(())
         }
-        (ImageTypes3::U8(image), MaskTypesMut2::U8(mut out)) => {
+        (ImageTypes3::U8(image), ImageTypesMut2::U8(mut out)) => {
             fast_countour_mip_internal(
                 image.as_array(),
                 n,
@@ -518,7 +517,7 @@ pub fn fast_countour_mip<'py>(
             );
             Ok(())
         }
-        (ImageTypes3::F64(image), MaskTypesMut2::U8(mut out)) => {
+        (ImageTypes3::F64(image), ImageTypesMut2::F64(mut out)) => {
             fast_countour_mip_internal(
                 image.as_array(),
                 n,

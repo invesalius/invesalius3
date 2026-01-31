@@ -21,6 +21,13 @@ pub enum ImageTypesMut3<'py> {
 }
 
 #[derive(FromPyObject)]
+pub enum ImageTypesMut2<'py> {
+    F64(PyReadwriteArray2<'py, f64>),
+    I16(PyReadwriteArray2<'py, i16>),
+    U8(PyReadwriteArray2<'py, u8>),
+}
+
+#[derive(FromPyObject)]
 pub enum MaskTypesMut3<'py> {
     U8(PyReadwriteArray3<'py, u8>),
 }
