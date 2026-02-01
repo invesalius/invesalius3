@@ -36,6 +36,7 @@ def floodfill_threshold(data, seeds, t0, t1, fill, strct, out):
         fill = float(fill)
     return _native_floodfill_threshold(data, tuple_seeds, t0, t1, fill, strct_u8, out)
 
+
 def floodfill_threshold_inplace(data, seeds, t0, t1, fill, strct):
     """
     Floodfill with threshold constraints.
@@ -118,7 +119,9 @@ class Mesh:
             _faces = numpy_support.vtk_to_numpy(pd.GetPolys().GetData()).reshape(-1, 4)
 
             # Extract normals
-            _normals = numpy_support.vtk_to_numpy(pd.GetCellData().GetArray("Normals")).reshape(-1, 3)
+            _normals = numpy_support.vtk_to_numpy(pd.GetCellData().GetArray("Normals")).reshape(
+                -1, 3
+            )
 
             print(f"{_vertices.dtype=} {_faces.dtype=} {_normals.dtype=}")
 
@@ -209,10 +212,10 @@ class Mesh:
         # vertices = np.ascontiguousarray(self._vertices, dtype=self._vertices.dtype)
         # faces = np.ascontiguousarray(self._faces, dtype=self._faces.dtype)
         # normals = np.ascontiguousarray(self._normals, dtype=self._normals.dtype)
-        
+
         # Call the Rust function which modifies arrays in place
         _context_aware_smoothing(self._vertices, self._faces, self._normals, T, tmax, bmin, n_iters)
-        
+
         # Update stored arrays (in case copies were made or modifications occurred)
         # self._vertices[:] = vertices
         # self._faces[:]   = faces

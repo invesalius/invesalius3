@@ -33,7 +33,7 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Mask cut function
     m.add_function(wrap_pyfunction!(mask_cut::mask_cut, m)?)?;
 
-    // Mesh class (MeshPy usa Mesh<f32, i64, f32>; exposta como "Mesh" no Python)
+    // context aware smoothing function
     m.add_function(wrap_pyfunction!(mesh::context_aware_smoothing, m)?)?;
 
     Ok(())

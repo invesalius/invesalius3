@@ -268,7 +268,7 @@ pub fn mida_internal<
     ww: T,
     mut out: ArrayViewMut2<U>,
 ) {
-    // Cálculos preliminares
+    // Preliminary calculations
     let img_min = image
         .iter()
         .map(|&x| <f32 as NumCast>::from(x).unwrap())
@@ -282,12 +282,12 @@ pub fn mida_internal<
     let range = img_max - img_min;
 
     par_azip!((index (r, c), val in &mut out) {
-        // Para cada pixel (r, c) na saída, calculamos o raio
-        // Selecionamos a linha de pixels através do volume
+        // For each pixel (r, c) in the output, we calculate the ray
+        // We select the line of pixels through the volume
         let lane = match axis {
-            0 => image.slice(s![.., r, c]), // Z é o que sobra
-            1 => image.slice(s![r, .., c]), // Y é o que sobra
-            _ => image.slice(s![r, c, ..]), // X é o que sobra
+            0 => image.slice(s![.., r, c]), // Z is what's left
+            1 => image.slice(s![r, .., c]), // Y is what's left
+            _ => image.slice(s![r, c, ..]), // X is what's left
         };
 
         let mut fmax = 0.0;
@@ -403,8 +403,8 @@ pub fn fast_countour_mip_internal<
     match tmip {
         0 => {
             // MIP - Maximum Intensity Projection
-            // Similar ao arr.max(axis) do NumPy - calcula máximo ao longo do eixo especificado
-            // Usa fold_axis que é o equivalente de alto nível do ndarray
+            // Similar to NumPy's arr.max(axis) - calculates the maximum along the specified axis
+            // Uses fold_axis which is the high-level equivalent in ndarray
             // let max_result = tmp.fold_axis(Axis(axis), <T as Sub>::Output::min_value().unwrap() as U, |&a, &b| a.max(b));
             let max_result = tmp.fold_axis(
                 Axis(axis),
