@@ -331,7 +331,7 @@ pub fn fill_holes_automatically_internal<U: PartialOrd + Copy + NumCast>(
     labels: PyReadonlyArray3<u16>,
     nlabels: u32,
     max_size: u32,
-) {
+) -> bool {
     let labels_arr = labels.as_array();
 
     let mut sizes = vec![0u32; (nlabels + 1) as usize];
@@ -349,7 +349,7 @@ pub fn fill_holes_automatically_internal<U: PartialOrd + Copy + NumCast>(
     }
 
     if !modified {
-        return;
+        return false;
     }
 
     let mask_dims = mask.shape();
@@ -367,6 +367,8 @@ pub fn fill_holes_automatically_internal<U: PartialOrd + Copy + NumCast>(
             }
         }
     }
+
+    true
 }
 
 #[pyfunction]
@@ -471,11 +473,10 @@ pub fn fill_holes_automatically<'py>(
     labels: PyReadonlyArray3<u16>,
     nlabels: u32,
     max_size: u32,
-) -> PyResult<()> {
+) -> PyResult<bool> {
     match mask {
         MaskTypesMut3::U8(mut mask) => {
-            fill_holes_automatically_internal(mask.as_array_mut(), labels, nlabels, max_size);
-            Ok(())
+            Ok(fill_holes_automatically_internal(mask.as_array_mut(), labels, nlabels, max_size))
         }
         _ => Err(PyTypeError::new_err("Invalid mask type")),
     }
