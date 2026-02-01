@@ -40,6 +40,9 @@ jobs:
             enable-cache: true
             cache-dependency-glob: "uv.lock"
   
+        - name: Setup Rust
+          uses: dtolnay/rust-toolchain@stable
+
         - name: install venv and sync dependencies
           run: |
             uv sync --all-extras
@@ -145,6 +148,9 @@ jobs:
           python-version: 3.12
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: install venv and sync dependencies
         run: |

@@ -22,6 +22,10 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
+        
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Try syncing with UV
         id: sync
         continue-on-error: true
