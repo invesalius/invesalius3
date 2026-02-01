@@ -486,7 +486,7 @@ class Mask:
 
             imask = ~(matrix > 127)
             labels, nlabels = ndimage.label(imask, bstruct, output=np.uint32)
-            labels = np.asarray(labels, dtype=np.uint32, order='C')
+            labels = np.asarray(labels, dtype=np.uint32, order="C")
 
             if nlabels == 0:
                 return
@@ -508,7 +508,7 @@ class Mask:
 
             imask = ~(matrix > 127)
             labels, nlabels = ndimage.label(imask, bstruct, output=np.uint32)
-            labels = np.asarray(labels, dtype=np.uint32, order='C')
+            labels = np.asarray(labels, dtype=np.uint32, order="C")
 
             if nlabels == 0:
                 return
