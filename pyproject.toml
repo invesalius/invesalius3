@@ -195,11 +195,4 @@ extend-select = ["UP","I"] # Introduces linting rules for pyupgrade and isort
 extend-ignore = ["E731"]
 
 [tool.ruff.format]
-<<<<<<< HEAD
 line-ending = "lf"
-||||||| parent of 25aae4aa (Converted from cython to rust)
-line-ending = "lf"
-
-=======
-line-ending = "lf"
->>>>>>> 25aae4aa (Converted from cython to rust)
