@@ -475,9 +475,12 @@ pub fn fill_holes_automatically<'py>(
     max_size: u32,
 ) -> PyResult<bool> {
     match mask {
-        MaskTypesMut3::U8(mut mask) => {
-            Ok(fill_holes_automatically_internal(mask.as_array_mut(), labels, nlabels, max_size))
-        }
+        MaskTypesMut3::U8(mut mask) => Ok(fill_holes_automatically_internal(
+            mask.as_array_mut(),
+            labels,
+            nlabels,
+            max_size,
+        )),
         _ => Err(PyTypeError::new_err("Invalid mask type")),
     }
 }
