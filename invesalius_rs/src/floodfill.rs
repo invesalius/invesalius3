@@ -328,7 +328,7 @@ pub fn floodfill<'py>(
 
 pub fn fill_holes_automatically_internal<U: PartialOrd + Copy + NumCast>(
     mut mask: ArrayViewMut3<U>,
-    labels: PyReadonlyArray3<u16>,
+    labels: PyReadonlyArray3<u32>,
     nlabels: u32,
     max_size: u32,
 ) -> bool {
@@ -470,7 +470,7 @@ pub fn floodfill_threshold_inplace<'py>(
 #[pyfunction]
 pub fn fill_holes_automatically<'py>(
     mask: MaskTypesMut3<'py>,
-    labels: PyReadonlyArray3<u16>,
+    labels: PyReadonlyArray3<u32>,
     nlabels: u32,
     max_size: u32,
 ) -> PyResult<bool> {
