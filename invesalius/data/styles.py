@@ -2589,6 +2589,91 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage("Reload actual slice")
 
 
+class MedLSAMInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style for MedLSAM segmentation using a bounding box ROI.
+    Similar to CropMaskInteractorStyle but triggers segmentation instead of cropping.
+    """
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.state_code = const.SLICE_STATE_MEDLSAM
+
+        self.viewer = viewer
+        self.orientation = self.viewer.orientation
+        self.picker = vtkWorldPointPicker()
+        self.slice_actor = viewer.slice_data.actor
+        self.slice_data = viewer.slice_data
+        self.draw_retangle = None
+
+    def __evts__(self):
+        self.AddObserver("MouseMoveEvent", self.OnMove)
+        self.AddObserver("LeftButtonPressEvent", self.OnLeftPressed)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+        self.AddObserver("KeyPressEvent", self.OnKeyPress)
+
+    def OnMove(self, obj, evt):
+        x, y = self.GetMousePosition()
+        self.draw_retangle.MouseMove(x, y)
+
+    def OnLeftPressed(self, obj, evt):
+        self.draw_retangle.mouse_pressed = True
+        x, y = self.GetMousePosition()
+        self.draw_retangle.LeftPressed(x, y)
+
+    def OnReleaseLeftButton(self, obj, evt):
+        self.draw_retangle.mouse_pressed = False
+        self.draw_retangle.ReleaseLeft()
+
+    def OnKeyPress(self, obj, evt):
+        """Handle Enter key to trigger segmentation"""
+        key = self.GetInteractor().GetKeySym()
+        if key == "Return" or key == "KP_Enter":
+            self.RunMedLSAMSegmentation()
+
+    def SetUp(self):
+        self.draw_retangle = geom.DrawCrop2DRetangle()
+        self.draw_retangle.SetViewer(self.viewer)
+
+        self.viewer.canvas.draw_list.append(self.draw_retangle)
+        self.viewer.UpdateCanvas()
+
+        self.__evts__()
+
+        # Show instructions to user
+        Publisher.sendMessage(
+            "Show status message",
+            label="Draw bounding box around ROI. Press Enter to run MedLSAM segmentation."
+        )
+
+    def CleanUp(self):
+        self.viewer.canvas.draw_list.remove(self.draw_retangle)
+        Publisher.sendMessage("Redraw canvas")
+
+    def RunMedLSAMSegmentation(self):
+        """Extract ROI coordinates and trigger MedLSAM segmentation"""
+        if self.viewer.orientation == "AXIAL":
+            xi, xf, yi, yf, zi, zf = self.draw_retangle.box.GetLimits()
+
+            # Adjust indices (1-indexed to 0-indexed)
+            xi += 1
+            xf += 1
+            yi += 1
+            yf += 1
+            zi += 1
+            zf += 1
+
+            # TODO: Call MedLSAM segmentation process
+            # For now, just show a message
+            Publisher.sendMessage(
+                "Show status message",
+                label=f"MedLSAM segmentation ROI: x[{xi}:{xf}], y[{yi}:{yf}], z[{zi}:{zf}]"
+            )
+
+            # Disable the style after segmentation is triggered
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
+
+
 class SelectPartConfig(metaclass=utils.Singleton):
     def __init__(self):
         self.mask = None
@@ -2993,6 +3078,7 @@ class Styles:
         const.SLICE_STATE_SELECT_MASK_PARTS: SelectMaskPartsInteractorStyle,
         const.SLICE_STATE_FFILL_SEGMENTATION: FloodFillSegmentInteractorStyle,
         const.SLICE_STATE_CROP_MASK: CropMaskInteractorStyle,
+        const.SLICE_STATE_MEDLSAM: MedLSAMInteractorStyle,
         const.SLICE_STATE_TRACTS: TractsInteractorStyle,
     }
 

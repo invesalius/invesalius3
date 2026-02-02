@@ -727,6 +727,8 @@ class Frame(wx.Frame):
             self.OnTracheSegmentation()
         elif id == const.ID_SEGMENTATION_MANDIBLE_CT:
             self.OnMandibleCTSegmentation()
+        elif id == const.ID_SEGMENTATION_MEDLSAM:
+            self.OnMedLSAMSegmentation()
         elif id == const.ID_PLANNING_CRANIOPLASTY:
             self.OnImplantCTSegmentation()
 
@@ -1155,6 +1157,9 @@ class Frame(wx.Frame):
     def OnCropMask(self):
         Publisher.sendMessage("Enable style", style=const.SLICE_STATE_CROP_MASK)
 
+    def OnMedLSAMSegmentation(self):
+        Publisher.sendMessage("Enable style", style=const.SLICE_STATE_MEDLSAM)
+
     def OnEnableMask3DPreview(self, value):
         if value:
             Publisher.sendMessage("Enable mask 3D preview")
@@ -1487,6 +1492,8 @@ class MenuBar(wx.MenuBar):
         )
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
+        segmentation_menu.AppendSeparator()
+        segmentation_menu.Append(const.ID_SEGMENTATION_MEDLSAM, _("Segment with MedLSAM"))
 
         # Surface Menu
         surface_menu = wx.Menu()
