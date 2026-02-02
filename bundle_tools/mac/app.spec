@@ -51,8 +51,8 @@ for v in vtk_files:
         libraries.append((v, dest_dir))
 
 # Add interpolation module
-libraries.append((glob.glob(os.path.join(SOURCE_DIR, 'invesalius_cy', 
-    'interpolation.*.so'))[0], 'invesalius_cy'))  # .so files for macOS
+#libraries.append((glob.glob(os.path.join(SOURCE_DIR, 'invesalius_cy', 
+#    'interpolation.*.so'))[0], 'invesalius_cy'))  # .so files for macOS
 
 # -- data files -----
 
@@ -106,10 +106,21 @@ data_files += tinygrad_data
 libraries += tinygrad_binaries
 
 onnx_data, onnx_binaries, onnx_hiddenimports = collect_all("onnxruntime")
+invesalius_cy_data, invesalius_cy_binaries, invesalius_cy_hiddenimports = collect_all("invesalius_cy")
 
 data_files += onnx_data
+data_files += invesalius_cy_data
+
 libraries += onnx_binaries
 
+invesalius_cy_binaries_list = glob.glob(os.path.join(SOURCE_DIR, 'invesalius_cy', '*.so'))
+invesalius_cy_binaries = [(cy_bin, "invesalius_cy") for cy_bin in invesalius_cy_binaries_list]
+
+libraries += invesalius_cy_binaries
+
+print("----------")
+print(libraries)
+    
 #---------------------------------------------------------------------------------
 
 block_cipher = None
@@ -127,7 +138,7 @@ a = Analysis(['app.py'],
                           'pywt._extensions._cwt',
                           'skimage.filters.rank.core_cy_3d',
                           'encodings',
-                          'setuptools'] + onnx_hiddenimports + tinygrad_hiddenimports,
+                          'setuptools'] + onnx_hiddenimports + tinygrad_hiddenimports + invesalius_cy_hiddenimports,
              hookspath=[],
              runtime_hooks=[],
              excludes=[],

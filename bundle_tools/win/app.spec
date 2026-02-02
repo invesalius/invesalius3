@@ -18,6 +18,8 @@ from PyInstaller.utils.hooks import collect_all
 tinygrad_data, tinygrad_binaries, tinygrad_hiddenimports = collect_all("tinygrad")
 onnx_data, onnx_binaries, onnx_hiddenimports = collect_all("onnxruntime")
 
+invesalius_cy_data, invesalius_cy_binaries, invesalius_cy_hiddenimports = collect_all("invesalius_cy")
+
 python_dir = os.path.dirname(sys.executable)
 venv_dir = os.path.dirname(python_dir) 
 site_packages = os.path.join(venv_dir,'Lib','site-packages') #because Lib is inside .venv directory
@@ -65,8 +67,8 @@ for v in vtk_files:
         libraries.append((v, dest_dir))
 
 #add interpolation module (pyinstaller not take automatically)
-libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy\Release', 
-    'interpolation.*.pyd'))[0],'invesalius_cy')) #.pyd files are inside of invesalius_cy\Release
+#libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy', 
+#    'interpolation.*.pyd'))[0],'invesalius_cy')) #.pyd files are inside of invesalius_cy
 
 #add plaidml modules and files
 #libraries.append((os.path.join(venv_dir,'library','bin','plaidml.dll'),'library\\bin'))
@@ -162,12 +164,12 @@ block_cipher = None
 
 a = Analysis(['app.py'],
              pathex=[SOURCE_DIR],
-             binaries=libraries + tinygrad_binaries + onnx_binaries,
-             datas=data_files + tinygrad_data + onnx_data,
+             binaries=libraries + tinygrad_binaries + onnx_binaries + invesalius_cy_binaries,
+             datas=data_files + tinygrad_data + onnx_data + invesalius_cy_data,
              hiddenimports=['scipy._lib.messagestream','skimage.restoration._denoise',\
                             'scipy.linalg', 'scipy.linalg.blas', 'scipy.interpolate',\
                             'pywt._extensions._cwt','skimage.filters.rank.core_cy_3d',\
-                            'encodings','setuptools','tinygrad'] + tinygrad_hiddenimports + onnx_hiddenimports, #,'keras','plaidml.keras','plaidml.keras.backend'
+                            'encodings','setuptools','tinygrad'] + tinygrad_hiddenimports + onnx_hiddenimports + invesalius_cy_hiddenimports, #,'keras','plaidml.keras','plaidml.keras.backend'
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -204,4 +206,7 @@ coll = COLLECT(exe,
 #print("1 >>>>>>>>>> ",a.zipped_data)
 
 #print("2 >>>>>>>>>> ",a.pure)
+
+
+
 

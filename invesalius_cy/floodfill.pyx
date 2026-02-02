@@ -227,7 +227,7 @@ def floodfill_auto_threshold(np.ndarray[image_t, ndim=3] data, list seeds, float
         return out
 
 
-def fill_holes_automatically(np.ndarray[mask_t, ndim=3] mask, np.ndarray[np.uint16_t, ndim=3] labels, unsigned int nlabels, unsigned int max_size):
+def fill_holes_automatically(np.ndarray[mask_t, ndim=3] mask, np.ndarray[np.uint32_t, ndim=3] labels, unsigned int nlabels, unsigned int max_size):
     """
     Fill mask holes automatically. The hole must <= max_size. Return True if any hole were filled.
     """
