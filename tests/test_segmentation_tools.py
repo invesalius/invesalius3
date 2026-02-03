@@ -108,7 +108,7 @@ def test_fill_holes_automatically():
     mask = mask_2d[np.newaxis, ...]
 
     structure = np.ones((3, 3), dtype=np.uint8)
-    labels_2d, nlabels = ndimage.label(mask_2d == 0, structure=structure, output=np.uint16)
+    labels_2d, nlabels = ndimage.label(mask_2d == 0, structure=structure, output=np.uint32)
     border_labels = set()
     for i in range(labels_2d.shape[0]):
         border_labels.add(labels_2d[i, 0])
