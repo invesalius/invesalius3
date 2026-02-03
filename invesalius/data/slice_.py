@@ -1870,7 +1870,7 @@ class Slice(metaclass=utils.Singleton):
 
     def _open_image_matrix(self, filename, shape, dtype):
         import os
-        
+
         # Validate file exists before attempting to open
         if not os.path.exists(filename):
             error_msg = f"Image matrix file not found: {filename}\n\n"
@@ -1880,7 +1880,7 @@ class Slice(metaclass=utils.Singleton):
             error_msg += f"- Temp directory not accessible: {os.path.dirname(filename)}\n\n"
             error_msg += "Please check your system's temporary directory and ensure you have sufficient disk space and permissions."
             raise FileNotFoundError(error_msg)
-        
+
         self.matrix_filename = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
