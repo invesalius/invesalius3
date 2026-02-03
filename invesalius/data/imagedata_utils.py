@@ -289,7 +289,16 @@ def create_dicom_thumbnails(image, window=None, level=None):
 def array2memmap(arr, filename=None):
     fd = None
     if filename is None:
-        fd, filename = tempfile.mkstemp(prefix="inv3_", suffix=".dat")
+        try:
+            fd, filename = tempfile.mkstemp(prefix="inv3_", suffix=".dat")
+        except (OSError, PermissionError) as e:
+            raise RuntimeError(
+                f"Failed to create temporary file for image processing: {e}\n\n"
+                "Please check:\n"
+                "- Available disk space in your system's temp directory\n"
+                "- Write permissions for the temp directory\n"
+                f"- Temp directory location: {tempfile.gettempdir()}"
+            )
     matrix = np.memmap(filename, mode="w+", dtype=arr.dtype, shape=arr.shape)
     matrix[:] = arr[:]
     matrix.flush()
@@ -307,7 +316,16 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     if len(files) > 1:
         update_progress = vtk_utils.ShowProgress(len(files) - 1, dialog_type="ProgressDialog")
 
-    temp_fd, temp_file = tempfile.mkstemp()
+    try:
+        temp_fd, temp_file = tempfile.mkstemp()
+    except (OSError, PermissionError) as e:
+        raise RuntimeError(
+            f"Failed to create temporary file for image processing: {e}\n\n"
+            "Please check:\n"
+            "- Available disk space in your system's temp directory\n"
+            "- Write permissions for the temp directory\n"
+            f"- Temp directory location: {tempfile.gettempdir()}"
+        )
 
     if orientation == "SAGITTAL":
         if resolution_percentage == 1.0:
@@ -427,7 +445,16 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     first_slice = read_dcm_slice_as_np2(files[0], resolution_percentage)
     slice_size = first_slice.shape[::-1]
 
-    temp_fd, temp_file = tempfile.mkstemp()
+    try:
+        temp_fd, temp_file = tempfile.mkstemp()
+    except (OSError, PermissionError) as e:
+        raise RuntimeError(
+            f"Failed to create temporary file for image processing: {e}\n\n"
+            "Please check:\n"
+            "- Available disk space in your system's temp directory\n"
+            "- Write permissions for the temp directory\n"
+            f"- Temp directory location: {tempfile.gettempdir()}"
+        )
 
     if orientation == "SAGITTAL":
         shape = slice_size[0], slice_size[1], len(files)
@@ -500,7 +527,16 @@ def img2memmap(group):
     returns it and its related filename.
     """
 
-    temp_fd, temp_file = tempfile.mkstemp()
+    try:
+        temp_fd, temp_file = tempfile.mkstemp()
+    except (OSError, PermissionError) as e:
+        raise RuntimeError(
+            f"Failed to create temporary file for image processing: {e}\n\n"
+            "Please check:\n"
+            "- Available disk space in your system's temp directory\n"
+            "- Write permissions for the temp directory\n"
+            f"- Temp directory location: {tempfile.gettempdir()}"
+        )
 
     data = group.get_fdata()
 
