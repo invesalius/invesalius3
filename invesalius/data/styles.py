@@ -49,6 +49,12 @@ from vtkmodules.vtkRenderingCore import (
 )
 
 import invesalius.constants as const
+from invesalius.data.mask import Mask
+from invesalius.ai.medlsam import run_medlsam
+from scipy import ndimage
+import os
+import wx
+
 import invesalius.data.cursor_actors as ca
 import invesalius.data.geometry as geom
 
@@ -66,6 +72,7 @@ from invesalius.pubsub import pub as Publisher
 from invesalius_cy import floodfill
 
 # import invesalius.project as prj
+from invesalius.segmentation.roi_extraction import extract_roi
 
 # from time import sleep
 # ---
@@ -2589,7 +2596,24 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage("Reload actual slice")
 
 
+
+def extract_roi(volume, bbox):
+    """
+    Extracts the Region of Interest from the volume based on the bounding box.
+    """
+    xi, xf, yi, yf, zi, zf = bbox
+    # Ensure proper integer slicing
+    xi, xf = int(xi), int(xf)
+    yi, yf = int(yi), int(yf)
+    zi, zf = int(zi), int(zf)
+    
+    # InVesalius volumes are (Z, Y, X)
+    # Slicing: volume[z_start:z_end, y_start:y_end, x_start:x_end]
+    roi = volume[zi:zf, yi:yf, xi:xf]
+    return roi
+
 class MedLSAMInteractorStyle(DefaultInteractorStyle):
+
     """
     Interactor style for MedLSAM segmentation using a bounding box ROI.
     Similar to CropMaskInteractorStyle but triggers segmentation instead of cropping.
@@ -2627,8 +2651,13 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
 
     def OnKeyPress(self, obj, evt):
         """Handle Enter key to trigger segmentation"""
-        key = self.GetInteractor().GetKeySym()
-        if key == "Return" or key == "KP_Enter":
+        interactor = self.GetInteractor()
+        key = interactor.GetKeySym()
+        code = interactor.GetKeyCode()
+        
+        # Check both KeySym and ASCII code (13 is Enter)
+        if key in ["Return", "KP_Enter", "Enter"] or code == chr(13):
+            print(f"Debug: Enter pressed (Key='{key}', Code='{13}') - Triggering Segmentation")
             self.RunMedLSAMSegmentation()
 
     def SetUp(self):
@@ -2639,10 +2668,16 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
 
         self.__evts__()
+        
+        # Force focus to capture key events
+        try:
+            self.viewer.interactor.SetFocus()
+        except AttributeError:
+            pass
 
         # Show instructions to user
         Publisher.sendMessage(
-            "Show status message",
+            "Update status text in GUI",
             label="Draw bounding box around ROI. Press Enter to run MedLSAM segmentation."
         )
 
@@ -2652,23 +2687,146 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
 
     def RunMedLSAMSegmentation(self):
         """Extract ROI coordinates and trigger MedLSAM segmentation"""
-        if self.viewer.orientation == "AXIAL":
+        print("Debug: RunMedLSAMSegmentation called.")
+        
+        # We can run this from any orientation as long as the box is defined
+        if True:
             xi, xf, yi, yf, zi, zf = self.draw_retangle.box.GetLimits()
 
-            # Adjust indices (1-indexed to 0-indexed)
-            xi += 1
-            xf += 1
-            yi += 1
-            yf += 1
-            zi += 1
-            zf += 1
+            # No +1 adjustment needed for extraction logic if we rely on GetLimits range
+            # But let's verify what GetLimits returns exactly.
+            # Assuming inclusive indices.
+            
+            bbox = (xi, xf, yi, yf, zi, zf)
+            
 
-            # TODO: Call MedLSAM segmentation process
-            # For now, just show a message
-            Publisher.sendMessage(
-                "Show status message",
-                label=f"MedLSAM segmentation ROI: x[{xi}:{xf}], y[{yi}:{yf}], z[{zi}:{zf}]"
-            )
+            try:
+                # 1. Get the volume matrix
+                volume = self.viewer.slice_.matrix
+                
+                # 2. Extract ROI
+                roi = extract_roi(volume, bbox)
+                
+                z, y, x = roi.shape
+                print(f"Debug: Extracted 3D ROI: {z} slices, {y}x{x} pixels.")
+                
+                # 3. Validation
+                if roi.size == 0:
+                    raise ValueError("Extracted ROI is empty.")
+                    
+                # 4. Resolve Weights Path
+                # Assuming structure: invesalius/data/styles.py -> .../invesalius/ai/medlsam/weights/medsam_vit_b.pth
+                # We use the 'invesalius' package content mostly.
+                # Let's try to construct it relative to this file.
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                weights_path = os.path.join(current_dir, "..", "ai", "medlsam", "weights", "medsam_vit_b.pth")
+                weights_path = os.path.abspath(weights_path)
+                
+                if not os.path.exists(weights_path):
+                    # Fallback check if running from source root differently? 
+                    # But verifying strict path first.
+                    raise FileNotFoundError(f"MedSAM weights not found at: {weights_path}")
+                
+                Publisher.sendMessage(
+                    "Update status text in GUI",
+                    label="Running MedLSAM Inference..."
+                )
+                
+                # Get the main frame to be the parent
+                parent_frame = self.viewer.GetTopLevelParent()
+
+                # Create Progress Dialog
+                # Check for CUDA availability for display
+                import torch
+                device_name = "GPU (CUDA)" if torch.cuda.is_available() else "CPU"
+                
+                dlg = wx.ProgressDialog(
+                    f"MedLSAM Segmentation ({device_name})",
+                    "Initializing MedLSAM...",
+                    maximum=100,
+                    parent=parent_frame,
+                    style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_REMAINING_TIME
+                )
+                
+                def progress_callback(progress, message):
+                    # proper scaling 0.0-1.0 to 0-100
+                    val = int(progress * 100)
+                    keep_going, skip = dlg.Update(val, message)
+                    return keep_going
+
+                try:
+                    # 5. Run MedLSAM Inference
+                    # run_medlsam returns 0/1 uint8 array
+                    mask_roi = run_medlsam(roi, weights_path, callback=progress_callback)
+                finally:
+                    dlg.Destroy()
+                
+                # 6. Post-processing: Keep Largest Connected Component
+                # Identify connected components
+                labeled_mask, num_features = ndimage.label(mask_roi)
+                if num_features > 1:
+                    print(f"Debug: Found {num_features} components. Selecting largest.")
+                    # Count pixels per label (skipping label 0 which is background)
+                    component_sizes = np.bincount(labeled_mask.ravel())
+                    # component_sizes[0] is background size
+                    component_sizes[0] = 0 
+                    largest_label = component_sizes.argmax()
+                    mask_roi = (labeled_mask == largest_label).astype(np.uint8)
+                
+                # 7. Create InVesalius Mask
+                # Get full volume shape
+                full_shape = volume.shape
+                
+                new_mask = Mask()
+                new_mask.create_mask(full_shape)
+                new_mask.name = f"MedLSAM Segment"
+                # Green color for visibility
+                new_mask.colour = (0.0, 1.0, 0.0)
+                
+                # 8. Insert ROI into Full Mask
+                # Convert 0/1 to 0/255
+                mask_roi_255 = (mask_roi * 255).astype('uint8')
+                
+                # Mask matrix has +1 padding and flags at index 0
+                # Mapping: roi [z,y,x] -> mask.matrix [z+1, y+1, x+1]
+                
+                # Unpack bbox (from GetLimits)
+                # Note: extract_roi uses slicing [zi:zf, yi:yf, xi:xf]
+                # xi, xf, yi, yf, zi, zf = bbox
+                
+                # Ensure we fit within bounds (though extract_roi handles validation, let's be safe)
+                # The shape of mask_roi matches (zf-zi, yf-yi, xf-xi)
+                
+                new_mask.matrix[zi+1:zf+1, yi+1:yf+1, xi+1:xf+1] = mask_roi_255
+                
+                # Set Flags to mark these slices/rows/cols as computed
+                # This prevents InVesalius from overwriting them with global thresholding
+                if zf > zi:
+                    new_mask.matrix[zi+1:zf+1, 0, 0] = 1
+                if yf > yi:
+                    new_mask.matrix[0, yi+1:yf+1, 0] = 1
+                if xf > xi:
+                    new_mask.matrix[0, 0, xi+1:xf+1] = 1
+                
+                new_mask.matrix.flush()
+                
+                # 9. Register Mask in Project
+                self.viewer.slice_._add_mask_into_proj(new_mask)
+                
+                Publisher.sendMessage(
+                    "Update status text in GUI",
+                    label="MedLSAM Segmentation Complete"
+                )
+                
+            except Exception as e:
+                print(f"Error: MedLSAM failed: {e}")
+                # Print full traceback for debugging
+                import traceback
+                traceback.print_exc()
+                Publisher.sendMessage(
+                    "Update status text in GUI",
+                    label=f"Error: {e}"
+                )
 
             # Disable the style after segmentation is triggered
             Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
