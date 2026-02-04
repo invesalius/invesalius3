@@ -2077,6 +2077,10 @@ class TrackerTab(wx.Panel):
         self._update_pressure_controls_state(enabled)
 
         self.robot.robot_init_config["use_pressure_sensor"] = enabled
+
+        Publisher.sendMessage(
+            "Set visibility robot force visualizer", visible=enabled
+        )
         # Send message to robot-side configuration
         Publisher.sendMessage(
             "Neuronavigation to Robot: Update config", use_pressure_sensor=enabled
