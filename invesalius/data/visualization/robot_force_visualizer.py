@@ -58,9 +58,7 @@ class RobotForceVisualizer:
         Publisher.subscribe(
             self.OnUpdateRobotForceData, "Robot to Neuronavigation: Send force sensor data"
         )
-        Publisher.subscribe(
-            self.set_visibility, "Set visibility robot force visualizer"
-        )
+        Publisher.subscribe(self.set_visibility, "Set visibility robot force visualizer")
 
     def _create_segment(self, i):
         theta_start = (2 * math.pi / self.num_segments) * i
