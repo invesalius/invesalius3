@@ -76,9 +76,9 @@ class IterativeClosestPoint(metaclass=Singleton):
             import invesalius.project as prj
 
             proj = prj.Project()
-            
+
             # Get the currently selected surface
-            if hasattr(proj, 'surface_dict') and proj.surface_dict:
+            if hasattr(proj, "surface_dict") and proj.surface_dict:
                 # Get the last selected surface index
                 surface_indices = list(proj.surface_dict.keys())
                 if surface_indices:

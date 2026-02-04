@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 
 
-from typing import TYPE_CHECKING, Literal, Tuple, List
+from typing import TYPE_CHECKING, List, Literal, Tuple
 
 import numpy as np
 import numpy.typing as npt

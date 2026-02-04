@@ -289,13 +289,13 @@ WILDCARD_INV_SAVE = (
     + _("InVesalius project compressed (*.inv3)|*.inv3")
 )
 
-WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" "All files (*.*)|*.*"
+WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|All files (*.*)|*.*"
 
-WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" "All files (*.*)|*.*"
+WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|All files (*.*)|*.*"
 
-WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|" "All files (*.*)|*.*"
+WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|All files (*.*)|*.*"
 # ".[jJ][pP][gG]"
-WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" "All files (*.*)|*.*"
+WILDCARD_PARREC = "PAR/REC (*.par)|*.par|All files (*.*)|*.*"
 
 WILDCARD_MESH_FILES = (
     "STL File format (*.stl)|*.stl|"
@@ -304,7 +304,7 @@ WILDCARD_MESH_FILES = (
     "VTK Polydata File Format (*.vtp)|*.vtp|"
     "All files (*.*)|*.*"
 )
-WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|" "All files (*.*)|*.*"
+WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|All files (*.*)|*.*"
 
 
 def ShowOpenProjectDialog() -> Union[str, None]:
