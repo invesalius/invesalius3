@@ -3215,6 +3215,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu_item)
 
         if self.navigation.e_field_loaded:
+
+            efield_target_menu_item = menu_id.Append(
+                unique_menu_id + 13, _("Clear saved Efield data")
+            )
+            menu_id.Bind(wx.EVT_MENU, self.OnClearEfieldSavedData, efield_target_menu_item)
+
             efield_target_menu_item = menu_id.Append(
                 unique_menu_id + 9, _("Set as Efield target 1 (origin)")
             )
@@ -3617,9 +3623,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(idx)
         position = marker.position
         orientation = marker.orientation
-        coord = [position, np.radians(orientation)]
-        coord = np.array(coord).flatten()
-        # Calculate m_img because the e-field is calculated using the world coordinates
+        coord = np.concatenate([np.asarray(position, float),
+                                np.radians(np.asarray(orientation, float))])
+
         m_img = tr.compose_matrix(angles=np.radians(orientation), translate=position)
 
         position, orientation = imagedata_utils.convert_invesalius_to_world(
@@ -3647,6 +3653,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             )
         enorm_data = [self.T_rot, self.cp, coord, enorm, self.ID_list]
         Publisher.sendMessage("Get enorm", enorm_data=enorm_data, plot_vector=True)
+        plot_efield_vectors = self.navigation.plot_efield_vectors
+        Publisher.sendMessage(
+            "Save target data",
+            target_list_index=marker.marker_id,
+            position=position,
+            orientation=orientation,
+            plot_efield_vectors=plot_efield_vectors,
+        )
 
     def GetRotationPosition(self, T_rot, cp, m_img):
         self.T_rot = T_rot
@@ -3695,6 +3709,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             orientation=orientation,
             plot_efield_vectors=plot_efield_vectors,
         )
+
+    def OnClearEfieldSavedData(self, evt):
+        Publisher.sendMessage("Clear saved efield data")
 
     def OnSetEfieldBrainTarget(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()

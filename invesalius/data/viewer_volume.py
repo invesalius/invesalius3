@@ -503,6 +503,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.SaveEfieldData, "Save Efield data")
         Publisher.subscribe(self.SavedAllEfieldData, "Save all Efield data")
         Publisher.subscribe(self.SaveEfieldTargetData, "Save target data")
+        Publisher.subscribe(self.ClearSaveEfieldData, "Clear saved efield data")
         Publisher.subscribe(self.GetTargetSavedEfieldData, "Get target index efield")
         Publisher.subscribe(self.CheckStatusSavedEfieldData, "Check efield data")
         Publisher.subscribe(self.GetNeuronavigationApi, "Get Neuronavigation Api")
@@ -1667,7 +1668,14 @@ class Viewer(wx.Panel):
                 efield_coords_position = [list(position_world), list(orientation_world)]
             enorms_list = list(self.e_field_norms_to_save)
             if plot_efield_vectors:
-                e_field_vectors = list(self.max_efield_array)
+                if self.plot_no_connection:
+                    e_field_vectors = [
+                        [list(self.e_field_col1_to_save)],
+                        [list(self.e_field_col2_to_save)],
+                        [list(self.e_field_col3_to_save)],
+                    ]
+                else:
+                    e_field_vectors = list(self.max_efield_array)
                 self.target_radius_list.append(
                     [
                         target_list_index,
@@ -1705,6 +1713,9 @@ class Viewer(wx.Panel):
                         self.coil_position_Trot,
                     ]
                 )
+
+    def ClearSaveEfieldData(self):
+        self.target_radius_list.clear()
 
     def GetTargetSavedEfieldData(self, target_index_list):
         if len(self.target_radius_list) > 0:
@@ -2257,6 +2268,10 @@ class Viewer(wx.Panel):
                     self.e_field_col2[max],
                     self.e_field_col3[max],
                 ]
+                self.e_field_norms_to_save = enorm_data[3][:, 0]
+                self.e_field_col1_to_save = enorm_data[3][:, 1]
+                self.e_field_col2_to_save = enorm_data[3][:, 2]
+                self.e_field_col3_to_save = enorm_data[3][:, 3]
             else:
                 self.e_field_norms_to_save = enorm_data[3].enorm
                 self.e_field_norms = enorm_data[3].enorm
