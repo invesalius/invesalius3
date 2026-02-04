@@ -2699,6 +2699,10 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.to_show_aux = "SELECT"
 
         self.config.mask.was_edited = True
+        
+        # Update 3D volume preview to reflect mask changes (fixes #1081)
+        self.config.mask.modified(all_volume=True)
+        
         Publisher.sendMessage("Reload actual slice")
 
     def _create_new_mask(self):
