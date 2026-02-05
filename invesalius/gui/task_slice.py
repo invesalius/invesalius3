@@ -1019,6 +1019,11 @@ class EditionTools(wx.Panel):
         Publisher.sendMessage("M3E set depth value", value=spin_val)
 
     def OnClearPolyMaskEdit3D(self, _evt):
+        # Only clear polygons when 3D mask editing is currently enabled.
+        # This prevents the "Clean Polygons" button from clearing edits
+        # when "Edit in 3D" is disabled (see issue #1079).
+        if not self.cbox_mask_edit_3d.GetValue():
+            return
         Publisher.sendMessage("M3E clear polygons")
 
 
