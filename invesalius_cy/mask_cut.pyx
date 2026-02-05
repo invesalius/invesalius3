@@ -19,7 +19,8 @@ def mask_cut(np.ndarray[image_t, ndim=3] image,
                         np.ndarray[mask_t, ndim=2] mask,
                         np.ndarray[DTYPEF64_t, ndim=2] M,
                         np.ndarray[DTYPEF64_t, ndim=2] MV,
-                        np.ndarray[image_t, ndim=3] out):
+                        np.ndarray[image_t, ndim=3] out,
+                        int edit_mode):
     """
     Applies a mask cut operation with depth constraint on a 3D image array.
 
@@ -49,6 +50,9 @@ def mask_cut(np.ndarray[image_t, ndim=3] image,
         4x4 transformation matrix for depth calculation.
     out : np.ndarray[image_t, ndim=3]
         Output array to store the result.
+    edit_mode : int
+        Edit mode: 0 for include (keep inside polygon), 1 for exclude (keep outside polygon).
+        In include mode, voxels projecting outside the viewport are zeroed.
 
     Returns
     -------
@@ -112,4 +116,9 @@ def mask_cut(np.ndarray[image_t, ndim=3] image,
 
                     if 0 <= px <= w and 0 <= py <= h:
                         if mask[<int>(py), <int>(px)]:
+                            out[z, y, x] = 0
+                    else:
+                        # Voxel projects outside visible viewport
+                        if edit_mode == 0:  # include mode
+                            # In include mode, off-screen voxels are outside any drawn polygon
                             out[z, y, x] = 0
