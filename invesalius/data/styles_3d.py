@@ -753,9 +753,13 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         super().CleanUp()
         self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
         self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
-        for drawn_polygon in self.m3e_list:
-            drawn_polygon.visible = False
-            drawn_polygon.set_interactive(False)
+        # Remove all PolygonSelectCanvas items from the canvas draw list and clear local list
+        self.viewer.canvas.draw_list = [
+            drawn_item
+            for drawn_item in self.viewer.canvas.draw_list
+            if not isinstance(drawn_item, PolygonSelectCanvas)
+        ]
+        self.m3e_list.clear()
 
         if self.has_set_mask_preview:
             Publisher.sendMessage("Disable mask 3D preview")
@@ -796,6 +800,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
     def ClearPolygons(self):
         """Clear all polygons from the viewer and clear masker list in the style."""
+        # Remove all PolygonSelectCanvas items from the canvas draw list
         self.viewer.canvas.draw_list = [
             drawn_item
             for drawn_item in self.viewer.canvas.draw_list
@@ -919,7 +924,18 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             self.world_to_camera_coordinates,
             out,
         )
+        # Apply the edits to the mask.
         self.update_views(out)
+
+        # After applying the 3D edit, remove the polygons from the canvas but keep the edits.
+        # This addresses the issue where polygons remained visible after using the tool (#1078).
+        self.viewer.canvas.draw_list = [
+            drawn_item
+            for drawn_item in self.viewer.canvas.draw_list
+            if not isinstance(drawn_item, PolygonSelectCanvas)
+        ]
+        self.m3e_list.clear()
+        self.viewer.UpdateCanvas()
 
     def update_views(self, _mat: npt.NDArray):
         """Update the views with the given mask data."""
