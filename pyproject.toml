@@ -109,6 +109,11 @@ strip = true
 [tool.uv]
 cache-keys = [{ file = "pyproject.toml" }, { file = "invesalius_rs/src/**/*.rs" }, { file = "invesalius_rs/Cargo.toml" }, { file = "invesalius_rs/Cargo.lock" }]
 
+
+[tool.setuptools]
+packages = []
+py-modules = []
+
 [tool.setuptools_scm]
 write_to = "invesalius/__version__.py"
 
