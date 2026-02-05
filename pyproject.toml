@@ -10,7 +10,6 @@ keywords = [
   "neuronavigation",
 ]
 dependencies = [
-    "cython==3.0.10",
     "h5py==3.11.0",
     "imageio==2.34.2",
     "matplotlib==3.9.0",
@@ -56,7 +55,7 @@ dev = [
     "ruff~=0.5.0",
     "scikit-learn==1.5.0",
     "uvicorn[standard]==0.30.1",
-    "scikit-build-core",
+    "maturin>=1.0,<2.0",
     "pytest==8.3.5",
     "pytest-mock==3.14.0",
 ]
@@ -89,19 +88,31 @@ explicit = true
 
 
 [build-system]
-requires = ["scikit-build-core", "cython >= 3.0.2", "numpy >= 1.26.4"]
-build-backend = "scikit_build_core.build"
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
 
 
-[tool.scikit-build]
-experimental = true
-wheel.packages = ["invesalius","invesalius_cy"]
-editable.mode = "redirect"
-editable.verbose = true
-metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+[tool.maturin]
+# Build the Rust extension module
+features = ["pyo3/extension-module"]
+# Manifest path for Rust project
+manifest-path = "invesalius_rs/Cargo.toml"
+# Module name - use _native suffix so __init__.py can wrap it
+module-name = "invesalius_rs._native"
+# Python source directory
+python-source = "."
+# Python packages to include
+python-packages = ["invesalius", "invesalius_rs"]
+# Strip the library for minimum file size
+strip = true
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "invesalius_rs/src/**/*.rs" }, { file = "invesalius_rs/Cargo.toml" }, { file = "invesalius_rs/Cargo.lock" }]
+
 
 [tool.setuptools]
-packages = ["invesalius","invesalius_cy"]
+packages = []
+py-modules = []
 
 [tool.setuptools_scm]
 write_to = "invesalius/__version__.py"
@@ -174,6 +185,7 @@ module = [
     'win32com.*',
     'sigar.*',
     'numpy.*',
+    'invesalius_rs.*',
 ]
 ignore_missing_imports = true
 
