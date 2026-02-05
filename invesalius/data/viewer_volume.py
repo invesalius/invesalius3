@@ -1652,7 +1652,7 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.vectorfield_actor)
         self.interactor.Update()
 
-    def SaveEfieldTargetData(self, target_list_index, position, orientation, plot_efield_vectors):
+    def SaveEfieldTargetData(self, target_list_index, position, orientation, plot_efield_vectors):        
         if len(self.Id_list) > 0:
             if self.efield_coords is not None:
                 import invesalius.data.imagedata_utils as imagedata_utils
@@ -2228,7 +2228,7 @@ class Viewer(wx.Panel):
         self.list_index_efield_vectors = list_index
 
     def GetCoilPosition(self, position, orientation):
-        m_img = tr.compose_matrix(angles=orientation, translate=position)
+        m_img = tr.compose_matrix(angles=np.radians(orientation), translate=position)
         m_img_flip = m_img.copy()
         # m_img_flip[1, -1] = -m_img_flip[1, -1]
         cp = m_img_flip[:-1, -1]  # coil center
@@ -2288,11 +2288,13 @@ class Viewer(wx.Panel):
                     col2 = np.asarray(self.e_field_col2, dtype=float)
                     col3 = np.asarray(self.e_field_col3, dtype=float)
                     N = col1.size // K
-                    self.e_field_col1 = col1.reshape(K, N).sum(axis=0)
-                    self.e_field_col1 = col2.reshape(K, N).sum(axis=0)
-                    self.e_field_col3 = col3.reshape(K, N).sum(axis=0)
+                    if N >1:
+                        self.e_field_col1 = col1.reshape(N, -1).sum(axis=0)
+                        self.e_field_col2 = col2.reshape(N, -1).sum(axis=0)
+                        self.e_field_col3 = col3.reshape(N, -1).sum(axis=0)
+                
                     self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
-                    self.e_field_col1 = [self.e_field_col2[i] for i in self.Id_list]
+                    self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
                     self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
 
                 self.max_efield_array = enorm_data[3].mvector
@@ -2346,7 +2348,6 @@ class Viewer(wx.Panel):
 
     def SaveEfieldData(self, filename, plot_efield_vectors, marker_id):
         import csv
-
         import invesalius.data.imagedata_utils as imagedata_utils
 
         all_data = []
