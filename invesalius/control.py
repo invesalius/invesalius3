@@ -1043,6 +1043,7 @@ class Controller:
             elif orientation == "SAGITTAL":
                 spacing = zspacing, xyspacing[1], xyspacing[0]
         else:
+                        spacing = xyspacing[0], xyspacing[1], zspacing
             self.matrix, scalar_range, spacing, self.filename = image_utils.dcmmf2memmap(
                 filelist[0], orientation
             )
