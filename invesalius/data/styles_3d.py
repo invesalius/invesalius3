@@ -37,7 +37,7 @@ import invesalius.session as ses
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
-from invesalius_cy.mask_cut import mask_cut
+from invesalius_rs import mask_cut
 
 PROP_MEASURE = 0.8
 
@@ -920,6 +920,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             self.world_to_screen,
             self.world_to_camera_coordinates,
             _mat,
+            self.edit_mode,
         )
         self.update_views(_mat)
 
