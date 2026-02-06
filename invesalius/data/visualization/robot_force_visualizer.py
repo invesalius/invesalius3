@@ -33,6 +33,9 @@ class RobotForceVisualizer:
         self.threshold_high = 20.0
         self.max_force = 40.0
 
+        # visibility flag (default on)
+        self.visible = True
+
         for i in range(num_segments):
             actor = self._create_segment(i)
             self.ren_force.AddActor(actor)
@@ -55,6 +58,7 @@ class RobotForceVisualizer:
         Publisher.subscribe(
             self.OnUpdateRobotForceData, "Robot to Neuronavigation: Send force sensor data"
         )
+        Publisher.subscribe(self.set_visibility, "Set visibility robot force visualizer")
 
     def _create_segment(self, i):
         theta_start = (2 * math.pi / self.num_segments) * i
@@ -111,14 +115,19 @@ class RobotForceVisualizer:
         self.text.SetDisplayPosition(text_x - 25, text_y - 10)
 
     def OnUpdateRobotForceData(self, force_feedback):
-        self.update_visibility(1)
+        if not self.visible:
+            return
         self.update_force(force_feedback)
 
-    def update_visibility(self, robot_status):
-        visibility = 1 if robot_status else 0
+    def set_visibility(self, visible: bool):
+        self.visible = bool(visible)
+        vis_int = 1 if self.visible else 0
         for seg in self.segments:
-            seg.SetVisibility(visibility)
-        self.text.SetVisibility(visibility)
+            seg.SetVisibility(vis_int)
+        self.text.SetVisibility(vis_int)
+
+    def update_visibility(self, robot_status):
+        self.set_visibility(bool(robot_status))
 
     def update_force(self, force):
         active_segments = int((force / self.max_force) * self.num_segments)
