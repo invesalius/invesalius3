@@ -66,7 +66,11 @@ import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
-from invesalius.data.measures import CircleDensityMeasure, MeasureData, PolygonDensityMeasure
+from invesalius.data.measures import (
+    CircleDensityMeasure,
+    MeasureData,
+    PolygonDensityMeasure,
+)
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius_cy import floodfill
@@ -119,7 +123,9 @@ class BaseImageInteractorStyle(vtkInteractorStyleImage):
 
     def OnPressRightButton(self, evt, obj):
         self.right_pressed = True
-        self.viewer.last_position_mouse_move = self.viewer.interactor.GetLastEventPosition()
+        self.viewer.last_position_mouse_move = (
+            self.viewer.interactor.GetLastEventPosition()
+        )
 
     def OnReleaseRightButton(self, evt, obj):
         self.right_pressed = False
@@ -321,7 +327,12 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         slice_data.cursor.SetPosition((wx, wy, wz))
 
         self.edit_mask_pixel(
-            self.fill_value, index, cursor.GetPixels(), position, radius, viewer.orientation
+            self.fill_value,
+            index,
+            cursor.GetPixels(),
+            position,
+            radius,
+            viewer.orientation,
         )
 
         try:
@@ -362,7 +373,12 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
             slice_data.cursor.SetPosition((wx, wy, wz))
             self.edit_mask_pixel(
-                self.fill_value, index, cursor.GetPixels(), position, radius, viewer.orientation
+                self.fill_value,
+                index,
+                cursor.GetPixels(),
+                position,
+                radius,
+                viewer.orientation,
             )
             try:
                 self.after_brush_move()
@@ -543,7 +559,9 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.viewer.UpdateSlicesPosition([x, y, z])
 
         # Update the position of the cross in other slices.
-        Publisher.sendMessage("Set cross focal point", position=[x, y, z, None, None, None])
+        Publisher.sendMessage(
+            "Set cross focal point", position=[x, y, z, None, None, None]
+        )
 
         # Update the pointer in the volume viewer.
         #
@@ -557,7 +575,9 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         x, y, z = self.viewer.cross.GetFocalPoint()
         self.viewer.UpdateSlicesPosition([x, y, z])
         # This "Set cross" message is needed to update the cross in the other slices
-        Publisher.sendMessage("Set cross focal point", position=[x, y, z, None, None, None])
+        Publisher.sendMessage(
+            "Set cross focal point", position=[x, y, z, None, None, None]
+        )
         Publisher.sendMessage("Update slice viewer")
 
 
@@ -701,7 +721,10 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             # self.SetWLText(self.acum_achange_level,
             #              self.acum_achange_window)
 
-            const.WINDOW_LEVEL["Manual"] = (self.acum_achange_window, self.acum_achange_level)
+            const.WINDOW_LEVEL["Manual"] = (
+                self.acum_achange_window,
+                self.acum_achange_level,
+            )
             Publisher.sendMessage("Check window and level other")
             Publisher.sendMessage(
                 "Update window level value",
@@ -914,7 +937,9 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 if mr.IsComplete():
                     for n, p in enumerate(m.points):
                         coord.SetValue(p)
-                        cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
+                        cx, cy = coord.GetComputedDisplayValue(
+                            self.viewer.slice_data.renderer
+                        )
                         dist = (cx - x) ** 2 + (cy - y) ** 2
                         if dist <= max_dist:
                             return (n, m, mr)
@@ -960,7 +985,9 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         #  self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
         #  self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
         self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnInsertPoint)
-        self.viewer.canvas.subscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+        self.viewer.canvas.subscribe_event(
+            "LeftButtonDoubleClickEvent", self.OnInsertPolygon
+        )
 
     def SetUp(self):
         for n in self.viewer.draw_by_slice_number:
@@ -971,7 +998,9 @@ class DensityMeasureStyle(DefaultInteractorStyle):
 
     def CleanUp(self):
         self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPoint)
-        self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+        self.viewer.canvas.unsubscribe_event(
+            "LeftButtonDoubleClickEvent", self.OnInsertPolygon
+        )
         old_list = self.viewer.draw_by_slice_number
         self.viewer.draw_by_slice_number.clear()
         for n in old_list:
@@ -1606,7 +1635,9 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnBrushRelease)
         self.AddObserver("MouseMoveEvent", self.OnBrushMove)
 
-        Publisher.subscribe(self.expand_watershed, "Expand watershed to 3D " + self.orientation)
+        Publisher.subscribe(
+            self.expand_watershed, "Expand watershed to 3D " + self.orientation
+        )
         Publisher.subscribe(self.set_bsize, "Set watershed brush size")
         Publisher.subscribe(self.set_bunit, "Set watershed brush unit")
         Publisher.subscribe(self.set_bformat, "Set watershed brush format")
@@ -1633,7 +1664,9 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
     def CleanUp(self):
         # self._remove_mask()
-        Publisher.unsubscribe(self.expand_watershed, "Expand watershed to 3D " + self.orientation)
+        Publisher.unsubscribe(
+            self.expand_watershed, "Expand watershed to 3D " + self.orientation
+        )
         Publisher.unsubscribe(self.set_bformat, "Set watershed brush format")
         Publisher.unsubscribe(self.set_bsize, "Set watershed brush size")
         self.RemoveAllObservers()
@@ -1749,7 +1782,9 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         slice_data = viewer.get_slice_data(render)
 
         coord = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, picker=None)
-        position = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+        position = self.viewer.get_slice_pixel_coord_by_screen_pos(
+            mouse_x, mouse_y, self.picker
+        )
 
         slice_data.cursor.Show()
         slice_data.cursor.SetPosition(coord)
@@ -1771,7 +1806,9 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                 operation = BRUSH_ERASE
 
         n = self.viewer.slice_data.number
-        self.edit_mask_pixel(operation, n, cursor.GetPixels(), position, radius, self.orientation)
+        self.edit_mask_pixel(
+            operation, n, cursor.GetPixels(), position, radius, self.orientation
+        )
         # if self.orientation == "AXIAL":
         #     mask = self.matrix[n, :, :]
         # elif self.orientation == "CORONAL":
@@ -1864,7 +1901,8 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             if self.config.use_ww_wl:
                 if self.config.algorithm == "Watershed":
                     tmp_image = ndimage.morphological_gradient(
-                        get_LUT_value(image, ww, wl).astype("uint16"), self.config.mg_size
+                        get_LUT_value(image, ww, wl).astype("uint16"),
+                        self.config.mg_size,
                     )
                     tmp_mask = watershed(tmp_image, markers.astype("int16"), bstruct)
                 else:
@@ -1874,7 +1912,9 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                     # self.config.mg_size)
                     tmp_image = get_LUT_value(image, ww, wl).astype("uint16")
                     # markers[markers == 2] = -1
-                    tmp_mask = watershed_ift(tmp_image, markers.astype("int16"), bstruct)
+                    tmp_mask = watershed_ift(
+                        tmp_image, markers.astype("int16"), bstruct
+                    )
                     # markers[markers == -1] = 2
                     # tmp_mask[tmp_mask == -1]  = 2
 
@@ -1889,14 +1929,18 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                     # tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
                     # tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
                     tmp_image = image - image.min().astype("uint16")
-                    tmp_mask = watershed_ift(tmp_image, markers.astype("int16"), bstruct)
+                    tmp_mask = watershed_ift(
+                        tmp_image, markers.astype("int16"), bstruct
+                    )
 
             if self.viewer.overwrite_mask:
                 mask[:] = 0
                 mask[tmp_mask == 1] = 253
             else:
                 mask[(tmp_mask == 2) & ((mask == 0) | (mask == 2) | (mask == 253))] = 2
-                mask[(tmp_mask == 1) & ((mask == 0) | (mask == 2) | (mask == 253))] = 253
+                mask[(tmp_mask == 1) & ((mask == 0) | (mask == 2) | (mask == 253))] = (
+                    253
+                )
 
             self.viewer.slice_.current_mask.was_edited = True
             self.viewer.slice_.current_mask.modified()
@@ -2060,7 +2104,9 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                 mask[tmp_mask == 1] = 253
             else:
                 mask[(tmp_mask == 2) & ((mask == 0) | (mask == 2) | (mask == 253))] = 2
-                mask[(tmp_mask == 1) & ((mask == 0) | (mask == 2) | (mask == 253))] = 253
+                mask[(tmp_mask == 1) & ((mask == 0) | (mask == 2) | (mask == 253))] = (
+                    253
+                )
 
             self.viewer.slice_.current_mask.modified(True)
 
@@ -2102,7 +2148,9 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_data.renderer.AddObserver("StartEvent", self.OnUpdate)
 
         if self.viewer.orientation == "AXIAL":
-            Publisher.subscribe(self._set_reorientation_angles, "Set reorientation angles")
+            Publisher.subscribe(
+                self._set_reorientation_angles, "Set reorientation angles"
+            )
 
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClick)
 
@@ -2248,10 +2296,13 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         angle = np.arccos(np.dot(p0, p1) / (np.linalg.norm(p0) * np.linalg.norm(p1)))
 
         self.viewer.slice_.q_orientation = transformations.quaternion_multiply(
-            self.viewer.slice_.q_orientation, transformations.quaternion_about_axis(angle, axis)
+            self.viewer.slice_.q_orientation,
+            transformations.quaternion_about_axis(angle, axis),
         )
 
-        az, ay, ax = transformations.euler_from_quaternion(self.viewer.slice_.q_orientation)
+        az, ay, ax = transformations.euler_from_quaternion(
+            self.viewer.slice_.q_orientation
+        )
         Publisher.sendMessage("Update reorient angles", angles=(ax, ay, az))
 
         self._discard_buffers()
@@ -2390,7 +2441,9 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         # viewer = self.viewer
         # iren = viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
-        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(
+            mouse_x, mouse_y, self.picker
+        )
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         if mask[z, y, x] < self.t0 or mask[z, y, x] > self.t1:
@@ -2428,7 +2481,9 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             elif self.orientation == "SAGITAL":
                 p_mask = mask[:, :, index].copy()
 
-            self.viewer.slice_.current_mask.save_history(index, self.orientation, p_mask, b_mask)
+            self.viewer.slice_.current_mask.save_history(
+                index, self.orientation, p_mask, b_mask
+            )
         else:
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
@@ -2596,7 +2651,6 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage("Reload actual slice")
 
 
-
 def extract_roi(volume, bbox):
     """
     Extracts the Region of Interest from the volume based on the bounding box.
@@ -2606,18 +2660,19 @@ def extract_roi(volume, bbox):
     xi, xf = int(xi), int(xf)
     yi, yf = int(yi), int(yf)
     zi, zf = int(zi), int(zf)
-    
+
     # InVesalius volumes are (Z, Y, X)
     # Slicing: volume[z_start:z_end, y_start:y_end, x_start:x_end]
     roi = volume[zi:zf, yi:yf, xi:xf]
     return roi
 
-class MedLSAMInteractorStyle(DefaultInteractorStyle):
 
+class MedLSAMInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style for MedLSAM segmentation using a bounding box ROI.
     Similar to CropMaskInteractorStyle but triggers segmentation instead of cropping.
     """
+
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -2654,10 +2709,12 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
         interactor = self.GetInteractor()
         key = interactor.GetKeySym()
         code = interactor.GetKeyCode()
-        
+
         # Check both KeySym and ASCII code (13 is Enter)
         if key in ["Return", "KP_Enter", "Enter"] or code == chr(13):
-            print(f"Debug: Enter pressed (Key='{key}', Code='{13}') - Triggering Segmentation")
+            print(
+                f"Debug: Enter pressed (Key='{key}', Code='{13}') - Triggering Segmentation"
+            )
             self.RunMedLSAMSegmentation()
 
     def SetUp(self):
@@ -2668,7 +2725,7 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
 
         self.__evts__()
-        
+
         # Force focus to capture key events
         try:
             self.viewer.interactor.SetFocus()
@@ -2678,7 +2735,7 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
         # Show instructions to user
         Publisher.sendMessage(
             "Update status text in GUI",
-            label="Draw bounding box around ROI. Press Enter to run MedLSAM segmentation."
+            label="Draw bounding box around ROI. Press Enter to run MedLSAM segmentation.",
         )
 
     def CleanUp(self):
@@ -2687,67 +2744,63 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
 
     def RunMedLSAMSegmentation(self):
         """Extract ROI coordinates and trigger MedLSAM segmentation"""
-        print("Debug: RunMedLSAMSegmentation called.")
-        
-        # We can run this from any orientation as long as the box is defined
+
         if True:
             xi, xf, yi, yf, zi, zf = self.draw_retangle.box.GetLimits()
 
-            # No +1 adjustment needed for extraction logic if we rely on GetLimits range
-            # But let's verify what GetLimits returns exactly.
-            # Assuming inclusive indices.
-            
             bbox = (xi, xf, yi, yf, zi, zf)
-            
 
             try:
                 # 1. Get the volume matrix
                 volume = self.viewer.slice_.matrix
-                
+
                 # 2. Extract ROI
                 roi = extract_roi(volume, bbox)
-                
+
                 z, y, x = roi.shape
-                print(f"Debug: Extracted 3D ROI: {z} slices, {y}x{x} pixels.")
-                
+                z, y, x = roi.shape
+
                 # 3. Validation
                 if roi.size == 0:
                     raise ValueError("Extracted ROI is empty.")
-                    
+
                 # 4. Resolve Weights Path
-                # Assuming structure: invesalius/data/styles.py -> .../invesalius/ai/medlsam/weights/medsam_vit_b.pth
-                # We use the 'invesalius' package content mostly.
-                # Let's try to construct it relative to this file.
                 current_dir = os.path.dirname(os.path.abspath(__file__))
-                weights_path = os.path.join(current_dir, "..", "ai", "medlsam", "weights", "medsam_vit_b.pth")
-                weights_path = os.path.abspath(weights_path)
-                
-                if not os.path.exists(weights_path):
-                    # Fallback check if running from source root differently? 
-                    # But verifying strict path first.
-                    raise FileNotFoundError(f"MedSAM weights not found at: {weights_path}")
-                
-                Publisher.sendMessage(
-                    "Update status text in GUI",
-                    label="Running MedLSAM Inference..."
+                weights_path = os.path.join(
+                    current_dir, "..", "ai", "medlsam", "weights", "medsam_vit_b.pth"
                 )
-                
+                weights_path = os.path.abspath(weights_path)
+
+                if not os.path.exists(weights_path):
+                    raise FileNotFoundError(
+                        f"MedSAM weights not found at: {weights_path}"
+                    )
+
+                Publisher.sendMessage(
+                    "Update status text in GUI", label="Running MedLSAM Inference..."
+                )
+
                 # Get the main frame to be the parent
                 parent_frame = self.viewer.GetTopLevelParent()
 
                 # Create Progress Dialog
                 # Check for CUDA availability for display
                 import torch
+
                 device_name = "GPU (CUDA)" if torch.cuda.is_available() else "CPU"
-                
+
                 dlg = wx.ProgressDialog(
                     f"MedLSAM Segmentation ({device_name})",
                     "Initializing MedLSAM...",
                     maximum=100,
                     parent=parent_frame,
-                    style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_REMAINING_TIME
+                    style=wx.PD_APP_MODAL
+                    | wx.PD_AUTO_HIDE
+                    | wx.PD_CAN_ABORT
+                    | wx.PD_ELAPSED_TIME
+                    | wx.PD_REMAINING_TIME,
                 )
-                
+
                 def progress_callback(progress, message):
                     # proper scaling 0.0-1.0 to 0-100
                     val = int(progress * 100)
@@ -2757,10 +2810,12 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                 try:
                     # 5. Run MedLSAM Inference
                     # run_medlsam returns 0/1 uint8 array
-                    mask_roi = run_medlsam(roi, weights_path, callback=progress_callback)
+                    mask_roi = run_medlsam(
+                        roi, weights_path, callback=progress_callback
+                    )
                 finally:
                     dlg.Destroy()
-                
+
                 # 6. Post-processing: Keep Largest Connected Component
                 # Identify connected components
                 labeled_mask, num_features = ndimage.label(mask_roi)
@@ -2769,64 +2824,63 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                     # Count pixels per label (skipping label 0 which is background)
                     component_sizes = np.bincount(labeled_mask.ravel())
                     # component_sizes[0] is background size
-                    component_sizes[0] = 0 
+                    component_sizes[0] = 0
                     largest_label = component_sizes.argmax()
                     mask_roi = (labeled_mask == largest_label).astype(np.uint8)
-                
+
                 # 7. Create InVesalius Mask
                 # Get full volume shape
                 full_shape = volume.shape
-                
+
                 new_mask = Mask()
                 new_mask.create_mask(full_shape)
                 new_mask.name = f"MedLSAM Segment"
                 # Green color for visibility
                 new_mask.colour = (0.0, 1.0, 0.0)
-                
+
                 # 8. Insert ROI into Full Mask
                 # Convert 0/1 to 0/255
-                mask_roi_255 = (mask_roi * 255).astype('uint8')
-                
+                mask_roi_255 = (mask_roi * 255).astype("uint8")
+
                 # Mask matrix has +1 padding and flags at index 0
                 # Mapping: roi [z,y,x] -> mask.matrix [z+1, y+1, x+1]
-                
+
                 # Unpack bbox (from GetLimits)
                 # Note: extract_roi uses slicing [zi:zf, yi:yf, xi:xf]
                 # xi, xf, yi, yf, zi, zf = bbox
-                
+
                 # Ensure we fit within bounds (though extract_roi handles validation, let's be safe)
                 # The shape of mask_roi matches (zf-zi, yf-yi, xf-xi)
-                
-                new_mask.matrix[zi+1:zf+1, yi+1:yf+1, xi+1:xf+1] = mask_roi_255
-                
+
+                new_mask.matrix[zi + 1 : zf + 1, yi + 1 : yf + 1, xi + 1 : xf + 1] = (
+                    mask_roi_255
+                )
+
                 # Set Flags to mark these slices/rows/cols as computed
                 # This prevents InVesalius from overwriting them with global thresholding
                 if zf > zi:
-                    new_mask.matrix[zi+1:zf+1, 0, 0] = 1
+                    new_mask.matrix[zi + 1 : zf + 1, 0, 0] = 1
                 if yf > yi:
-                    new_mask.matrix[0, yi+1:yf+1, 0] = 1
+                    new_mask.matrix[0, yi + 1 : yf + 1, 0] = 1
                 if xf > xi:
-                    new_mask.matrix[0, 0, xi+1:xf+1] = 1
-                
+                    new_mask.matrix[0, 0, xi + 1 : xf + 1] = 1
+
                 new_mask.matrix.flush()
-                
+
                 # 9. Register Mask in Project
                 self.viewer.slice_._add_mask_into_proj(new_mask)
-                
+
                 Publisher.sendMessage(
-                    "Update status text in GUI",
-                    label="MedLSAM Segmentation Complete"
+                    "Update status text in GUI", label="MedLSAM Segmentation Complete"
                 )
-                
+
             except Exception as e:
                 print(f"Error: MedLSAM failed: {e}")
                 # Print full traceback for debugging
                 import traceback
+
                 traceback.print_exc()
-                Publisher.sendMessage(
-                    "Update status text in GUI",
-                    label=f"Error: {e}"
-                )
+                Publisher.sendMessage("Update status text in GUI", label=f"Error: {e}")
 
             # Disable the style after segmentation is triggered
             Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
@@ -2894,7 +2948,9 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 self.config.mask.name = self.config.mask_name
                 self.viewer.slice_._add_mask_into_proj(self.config.mask)
                 self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
-                Publisher.sendMessage("Change mask selected", index=self.config.mask.index)
+                Publisher.sendMessage(
+                    "Change mask selected", index=self.config.mask.index
+                )
 
             del self.viewer.slice_.aux_matrices["SELECT"]
             self.viewer.slice_.to_show_aux = ""
@@ -2907,11 +2963,15 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         iren = self.viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
-        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(
+            mouse_x, mouse_y, self.picker
+        )
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
-        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
+        bstruct = np.array(
+            generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
+        )
         self.viewer.slice_.do_threshold_to_all_slices()
 
         if self.config.mask is None:
@@ -3042,7 +3102,9 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         # viewer = self.viewer
         # iren = viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
-        x, y = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+        x, y = self.viewer.get_slice_pixel_coord_by_screen_pos(
+            mouse_x, mouse_y, self.picker
+        )
 
         mask = self.viewer.slice_.buffer_slices[self.orientation].mask.copy()
         image = self.viewer.slice_.buffer_slices[self.orientation].image
@@ -3090,7 +3152,9 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             )
             bstruct = bstruct.reshape((1, 3, 3))
 
-            floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask)
+            floodfill.floodfill_threshold(
+                image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask
+            )
 
         mask[out_mask.astype("bool")] = self.config.fill_value
 
@@ -3105,13 +3169,17 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         elif self.orientation == "SAGITAL":
             vol_mask[:, :, index] = mask
 
-        self.viewer.slice_.current_mask.save_history(index, self.orientation, mask, b_mask)
+        self.viewer.slice_.current_mask.save_history(
+            index, self.orientation, mask, b_mask
+        )
 
     def do_3d_seg(self):
         # viewer = self.viewer
         # iren = viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
-        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(
+            mouse_x, mouse_y, self.picker
+        )
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         image = self.viewer.slice_.matrix
@@ -3137,13 +3205,17 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             if image[z, y, x] < t0 or image[z, y, x] > t1:
                 return
 
-        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
+        bstruct = np.array(
+            generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
+        )
         self.viewer.slice_.do_threshold_to_all_slices()
         cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
         if self.config.method == "confidence":
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(self.do_rg_confidence, image, mask, (x, y, z), bstruct)
+                future = executor.submit(
+                    self.do_rg_confidence, image, mask, (x, y, z), bstruct
+                )
 
                 self.config.dlg.panel_ffill_progress.Enable()
                 self.config.dlg.panel_ffill_progress.StartTimer()
@@ -3158,7 +3230,14 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             out_mask = np.zeros_like(mask)
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
-                    floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask
+                    floodfill.floodfill_threshold,
+                    image,
+                    [[x, y, z]],
+                    t0,
+                    t1,
+                    1,
+                    bstruct,
+                    out_mask,
                 )
 
                 self.config.dlg.panel_ffill_progress.Enable()
@@ -3203,7 +3282,9 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             t0 = mean - var * self.config.confid_mult
             t1 = mean + var * self.config.confid_mult
 
-            floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+            floodfill.floodfill_threshold(
+                image, [[x, y, z]], t0, t1, 1, bstruct, out_mask
+            )
 
             bool_mask[out_mask == 1] = True
 
