@@ -53,6 +53,7 @@ class Robot(metaclass=Singleton):
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
         self.target = None
+        self.robot_init_config = None
 
         self.objective = RobotObjective.NONE
         self.target = None
@@ -77,6 +78,7 @@ class Robot(metaclass=Singleton):
             self.OnRobotConnectionStatus, "Robot to Neuronavigation: Robot connection status"
         )
         Publisher.subscribe(self.SetObjectiveByRobot, "Robot to Neuronavigation: Set objective")
+        Publisher.subscribe(self.OnRobotInitialConfig, "Robot to Neuronavigation: Initial config")
 
         Publisher.subscribe(self.SetTarget, "Set target")
         Publisher.subscribe(self.UnsetTarget, "Unset target")
@@ -135,6 +137,9 @@ class Robot(metaclass=Singleton):
             wx.MessageBox(_("Unable to connect to the robot."), _("InVesalius 3"))
             return
 
+        if not self.tracker.tracker_connected:
+            wx.MessageBox(_("Tracker is not connect."), _("InVesalius 3"))
+            return
         self.robot_coregistration_dialog = dlg.RobotCoregistrationDialog(
             robot=self, tracker=self.tracker
         )
@@ -253,6 +258,9 @@ class Robot(metaclass=Singleton):
             # Unpress 'Track target' and 'Move away from robot' buttons when the robot has no objective.
             Publisher.sendMessage("Press robot button", pressed=False)
             Publisher.sendMessage("Press move away button", pressed=False)
+
+    def OnRobotInitialConfig(self, config):
+        self.robot_init_config = config
 
     def UnsetTarget(self, marker):
         self.target = None

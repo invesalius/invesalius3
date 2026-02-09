@@ -40,6 +40,9 @@ jobs:
             enable-cache: true
             cache-dependency-glob: "uv.lock"
   
+        - name: Setup Rust
+          uses: dtolnay/rust-toolchain@stable
+
         - name: install venv and sync dependencies
           run: |
             uv sync --all-extras
@@ -49,8 +52,9 @@ jobs:
             $INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
             echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $env:GITHUB_ENV
   
-        - name: copy .pyd files to invesalius_cy
-          run: Copy-Item -Path .venv\Lib\site-packages\invesalius_cy\* -Destination invesalius_cy -Recurse -Force
+        - name: Build Rust extension with maturin
+          run: |
+            uv run maturin develop --release
   
         - name: Download mandible ai weight
           if: ${{ matrix.ai_ready == 1 }}
@@ -145,6 +149,9 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: install venv and sync dependencies
         run: |
           brew install libomp
@@ -159,8 +166,9 @@ jobs:
           INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
           echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $GITHUB_ENV
 
-      - name: copy .so files to invesalius_cy
-        run: cp .venv/Lib/site-packages/invesalius_cy/*.so invesalius_cy/ || true
+      - name: Build Rust extension with maturin
+        run: |
+          uv run maturin develop --release
 
       # AI weights download steps (same as before)
       - name: Download mandible ai weight

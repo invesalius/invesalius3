@@ -65,6 +65,7 @@ import invesalius.data.watershed_process as watershed_process
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 import invesalius.utils as utils
+import invesalius_rs as floodfill
 from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
 from invesalius.data.measures import (
     CircleDensityMeasure,
@@ -73,7 +74,6 @@ from invesalius.data.measures import (
 )
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from invesalius_cy import floodfill
 
 # import invesalius.project as prj
 from invesalius.segmentation.roi_extraction import extract_roi
@@ -2467,9 +2467,10 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                 bstruct = np.zeros((3, 3, 1), dtype="uint8")
                 bstruct[:, :, 0] = _bstruct
 
+        print("FloodFillMaskInteractorStyle", self.t0, self.t1)
         if self.config.target == "2D":
-            floodfill.floodfill_threshold(
-                mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask
+            floodfill.floodfill_threshold_inplace(
+                mask, ((x, y, z),), self.t0, self.t1, self.fill_value, bstruct
             )
             b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
             index = self.viewer.slice_.buffer_slices[self.orientation].index
@@ -2487,14 +2488,13 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         else:
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
-                    floodfill.floodfill_threshold,
+                    floodfill.floodfill_threshold_inplace,
                     mask,
-                    [[x, y, z]],
+                    ((x, y, z),),
                     self.t0,
                     self.t1,
                     self.fill_value,
                     bstruct,
-                    mask,
                 )
 
                 dlg = wx.ProgressDialog(
@@ -2980,7 +2980,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         if iren.GetControlKey():
             floodfill.floodfill_threshold(
                 self.config.mask.matrix[1:, 1:, 1:],
-                [[x, y, z]],
+                ((x, y, z),),
                 254,
                 255,
                 0,
@@ -2990,7 +2990,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         else:
             floodfill.floodfill_threshold(
                 mask,
-                [[x, y, z]],
+                ((x, y, z),),
                 self.t0,
                 self.t1,
                 self.fill_value,
@@ -3152,9 +3152,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             )
             bstruct = bstruct.reshape((1, 3, 3))
 
-            floodfill.floodfill_threshold(
-                image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask
-            )
+            floodfill.floodfill_threshold(image, ((x, y, 0),), t0, t1, 1, bstruct, out_mask)
 
         mask[out_mask.astype("bool")] = self.config.fill_value
 
@@ -3230,14 +3228,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             out_mask = np.zeros_like(mask)
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
-                    floodfill.floodfill_threshold,
-                    image,
-                    [[x, y, z]],
-                    t0,
-                    t1,
-                    1,
-                    bstruct,
-                    out_mask,
+                    floodfill.floodfill_threshold, image, ((x, y, z),), t0, t1, 1, bstruct, out_mask
                 )
 
                 self.config.dlg.panel_ffill_progress.Enable()
@@ -3282,9 +3273,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             t0 = mean - var * self.config.confid_mult
             t1 = mean + var * self.config.confid_mult
 
-            floodfill.floodfill_threshold(
-                image, [[x, y, z]], t0, t1, 1, bstruct, out_mask
-            )
+            floodfill.floodfill_threshold(image, ((x, y, z),), t0, t1, 1, bstruct, out_mask)
 
             bool_mask[out_mask == 1] = True
 
