@@ -320,3 +320,4 @@ Debug/
 *.tmp
 *.bak
 *.log
+*.pth
