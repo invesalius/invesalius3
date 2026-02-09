@@ -1316,6 +1316,7 @@ class MenuBar(wx.MenuBar):
             const.ID_SEGMENTATION_SUBPART,
             const.ID_SEGMENTATION_TRACHEA,
             const.ID_SEGMENTATION_MANDIBLE_CT,
+            const.ID_SEGMENTATION_MEDLSAM,
             const.ID_PLANNING_CRANIOPLASTY,
             const.ID_MASK_DENSITY_MEASURE,
             const.ID_CREATE_SURFACE,
