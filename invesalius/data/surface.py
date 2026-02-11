@@ -52,6 +52,7 @@ from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
+import threading
 
 from invesalius.pubsub import pub as Publisher
 
@@ -903,10 +904,13 @@ class SurfaceManager:
         Publisher.sendMessage("Stop navigation")
         progress = dialogs.PublishingSurfacesProgressWindow()
 
-        try:
-            self._publish_surfaces_worker(progress)
-        finally:
-            wx.CallAfter(progress.Close)
+        def worker():
+            try:
+                self._publish_surfaces_worker(progress)
+            finally:
+                wx.CallAfter(progress.Close)
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _publish_surfaces_worker(self, progress):
         proj = prj.Project()
