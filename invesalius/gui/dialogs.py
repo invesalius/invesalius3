@@ -6123,6 +6123,31 @@ class SurfaceProgressWindow:
         self.dlg.Destroy()
 
 
+class PublishingSurfacesProgressWindow:
+    def __init__(self):
+        title = "InVesalius 3"
+        message = _("Publishing surfaces to Dashboard...")
+        style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+        parent = wx.GetApp().GetTopWindow()
+
+        self.dlg = wx.ProgressDialog(title, message, parent=parent, style=style)
+        self.dlg.Show()
+
+    def WasCancelled(self) -> bool:
+        return self.dlg.WasCancelled()
+
+    def Update(self, msg: Optional[str] = None, value=None) -> None:
+        if value is not None:
+            self.dlg.Update(int(value), msg)
+        elif msg:
+            self.dlg.Pulse(msg)
+        else:
+            self.dlg.Pulse()
+
+    def Close(self) -> None:
+        self.dlg.Destroy()
+
+
 class GoToDialog(wx.Dialog):
     def __init__(self, title: str = _("Go to slice ..."), init_orientation: str = const.AXIAL_STR):
         wx.Dialog.__init__(

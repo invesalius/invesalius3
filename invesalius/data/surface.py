@@ -900,11 +900,32 @@ class SurfaceManager:
         dialog.running = False
 
     def on_publish_surface(self):
+        Publisher.sendMessage("Stop navigation")
+        progress = dialogs.PublishingSurfacesProgressWindow()
+
+        try:
+            self._publish_surfaces_worker(progress)
+        finally:
+            wx.CallAfter(progress.Close)
+
+    def _publish_surfaces_worker(self, progress):
         proj = prj.Project()
         surface_dict = proj.surface_dict
-        for key in surface_dict:
+        total = len(surface_dict)
+
+        for i, key in enumerate(surface_dict):
+            if progress.WasCancelled():
+                break
             surface = surface_dict[key]
+            percent = (i / total) * 100
+            wx.CallAfter(
+                progress.Update,
+                f"Processing {surface.name}...",
+                percent,
+            )
             self.publish_surface(surface.polydata, surface.name)
+
+        wx.CallAfter(progress.Update, "Finishing...", 100)
 
     def decimate_polydata(self, polydata, reduction=0.99):
         """Reduce the number of triangles by `reduction` (0.5 = 50%)."""
