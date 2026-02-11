@@ -39,10 +39,13 @@ from vtkmodules.vtkCommonCore import (
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkTriangle
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
+    vtkDecimatePro,
     vtkMassProperties,
     vtkPolyDataNormals,
     vtkStripper,
     vtkTriangleFilter,
+    vtkSmoothPolyDataFilter,
+    vtkCleanPolyData
 )
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
@@ -242,6 +245,8 @@ class SurfaceManager:
         Publisher.subscribe(self.export_all_surfaces_separately, "Export all surfaces separately")
 
         Publisher.subscribe(self.on_surfaces_creation_completed, "Surfaces creation completed")
+
+        Publisher.subscribe(self.on_publish_surface, "Publish surface")
 
     def on_surfaces_creation_completed(self, created_count):
         """
@@ -893,6 +898,70 @@ class SurfaceManager:
         Publisher.sendMessage("End busy cursor")
 
         dialog.running = False
+
+    def on_publish_surface(self):
+        proj = prj.Project()
+        surface_dict = proj.surface_dict
+        for key in surface_dict:
+            surface = surface_dict[key]
+            self.publish_surface(surface.polydata, surface.name)
+
+    def decimate_polydata(self, polydata, reduction=0.99):
+        """Reduce the number of triangles by `reduction` (0.5 = 50%)."""
+        # Step 1: Decimate to reduce complexity
+        decimator = vtkDecimatePro()
+        decimator.SetInputData(polydata)
+        decimator.SetTargetReduction(reduction)
+        decimator.PreserveTopologyOff()  # Consider disabling for aggressive reduction
+        decimator.Update()
+
+        # Step 2: Clean up any inconsistencies in mesh
+        cleaner = vtkCleanPolyData()
+        cleaner.SetInputData(decimator.GetOutput())
+        cleaner.Update()
+
+        # Step 3: Smooth out the remaining vertices
+        smoother = vtkSmoothPolyDataFilter()
+        smoother.SetInputData(cleaner.GetOutput())
+        smoother.SetNumberOfIterations(15)  # Adjust based on visual fidelity needs
+        smoother.Update()
+
+        return smoother.GetOutput()
+
+    def publish_surface(self, polydata: vtkPolyData, model_name: str):
+        """Export vtkPolyData to STL, compress, and send as base64."""
+        import base64
+        # 1. create temp file
+        fd, tmp_path = tempfile.mkstemp(suffix='.stl')
+        os.close(fd)  # VTK will write to this path
+
+        polydata_decimate = self.decimate_polydata(polydata)
+        # 2. write STL to temp file
+        writer = vtkSTLWriter()
+        writer.SetInputData(polydata_decimate)
+        writer.SetFileTypeToBinary()
+        writer.SetFileName(tmp_path)
+        writer.Write()
+
+        # 3. read bytes from temp file
+        with open(tmp_path, 'rb') as f:
+            raw_bytes = f.read()
+
+        # 4. encode compressed bytes to base64
+        stl_b64 = base64.b64encode(raw_bytes).decode('ascii')
+
+        # 5. send via pubsub / socket
+        Publisher.sendMessage(
+            "Neuronavigation to Dashboard: Send surface",
+            model_name=model_name,
+            stl_b64=stl_b64,
+        )
+
+        # 6. clean up temp file
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
 
     def _on_callback_error(self, e, dialog=None):
         dialog.running = False
