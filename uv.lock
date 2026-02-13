@@ -308,8 +308,11 @@ dependencies = [
     { name = "onnxruntime-gpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pandas" },
     { name = "pillow" },
+    { name = "polhemus", marker = "sys_platform == 'win32'" },
+    { name = "polhemusft", marker = "sys_platform == 'win32'" },
     { name = "psutil" },
     { name = "pyacvd" },
+    { name = "pypolaris", marker = "sys_platform == 'win32'" },
     { name = "pypubsub" },
     { name = "pyserial" },
     { name = "python-gdcm" },
@@ -362,10 +365,13 @@ requires-dist = [
     { name = "optitrack", marker = "python_full_version == '3.8.*' and sys_platform == 'win32'" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pillow", specifier = "==10.3.0" },
+    { name = "polhemus", marker = "sys_platform == 'win32'", specifier = "==0.0.3" },
+    { name = "polhemusft", marker = "sys_platform == 'win32'", specifier = "==0.0.3" },
     { name = "psutil", specifier = "==6.0.0" },
     { name = "pyacvd", specifier = "==0.2.11" },
     { name = "pyclaron", marker = "python_full_version == '3.8.*' and sys_platform == 'win32'" },
     { name = "pyinstaller", marker = "extra == 'installer'", specifier = ">=6.12.0" },
+    { name = "pypolaris", marker = "sys_platform == 'win32'", specifier = "==0.0.8" },
     { name = "pypubsub", specifier = "==4.0.3" },
     { name = "pyserial", specifier = "==3.5" },
     { name = "python-gdcm", specifier = "~=3.0.24" },
@@ -865,6 +871,22 @@ wheels = [
 ]
 
 [[package]]
+name = "polhemus"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/98/47b2b0b7c76296e5b3c5c4be4da2e658731656aa33ef6057a72a1c06f537/polhemus-0.0.3-cp312-none-win_amd64.whl", hash = "sha256:ea6fd0515b6f56933488a7227d0703330d039bd5d5091db024746e944f4db76d", size = 7286509, upload-time = "2026-02-13T07:58:48.55Z" },
+]
+
+[[package]]
+name = "polhemusft"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/9e/70e06a8707b5f557eed0c20c22e8975733aef4f3db232a9ccb423387aeb5/polhemusft-0.0.3-cp312-none-win_amd64.whl", hash = "sha256:6984096d8c254c525a61b9d36e3ed364d79f7b5702aba1f81897ae34bc91b74f", size = 3627656, upload-time = "2026-02-13T08:43:20.077Z" },
+]
+
+[[package]]
 name = "pooch"
 version = "1.8.2"
 source = { registry = "https://pypi.org/simple" }
@@ -985,6 +1007,14 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8b/1a/3544f4f299a47911c2ab3710f534e52fea62a633c96806995da5d25be4b2/pyparsing-3.2.1.tar.gz", hash = "sha256:61980854fd66de3a90028d679a954d5f2623e83144b5afe5ee86f43d762e5f0a", size = 1067694, upload-time = "2024-12-31T20:59:46.157Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1c/a7/c8a2d361bf89c0d9577c934ebb7421b25dc84bf3a8e3ac0a40aed9acc547/pyparsing-3.2.1-py3-none-any.whl", hash = "sha256:506ff4f4386c4cec0590ec19e6302d3aedb992fdc02c761e90416f158dacf8e1", size = 107716, upload-time = "2024-12-31T20:59:42.738Z" },
+]
+
+[[package]]
+name = "pypolaris"
+version = "0.0.8"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/db/9a/40fd38247191ca5a1b134d515b3343039512f8cd26c14d084ca126acd09c/pypolaris-0.0.8-cp312-none-win_amd64.whl", hash = "sha256:25743ac842503b6c7b2f4dfa30539ad7f97ef5e04c66ba4ed88d0d7670c8278e", size = 255899, upload-time = "2026-02-13T09:06:46.137Z" },
 ]
 
 [[package]]
