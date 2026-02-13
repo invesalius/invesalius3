@@ -362,8 +362,21 @@ def UpdateCheck() -> None:
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
 
-def vtkarray_to_numpy(m):
-    nm = np.zeros((4, 4))
+def vtkarray_to_numpy(m: Any) -> np.ndarray:
+        """
+    Convert a VTK 4x4 matrix to a NumPy ndarray.
+    
+    Parameters
+    ----------
+    m : Any
+        A VTK matrix object with GetElement method.
+    
+    Returns
+    -------
+    np.ndarray
+        A 4x4 NumPy array containing the matrix elements.
+    """n
+    m = np.zeros((4, 4))
     for i in range(4):
         for j in range(4):
             nm[i, j] = m.GetElement(i, j)
