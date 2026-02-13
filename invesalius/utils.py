@@ -375,8 +375,8 @@ def vtkarray_to_numpy(m: Any) -> np.ndarray:
     -------
     np.ndarray
         A 4x4 NumPy array containing the matrix elements.
-    """n
-    m = np.zeros((4, 4))
+    """
+    nm = np.zeros((4, 4))
     for i in range(4):
         for j in range(4):
             nm[i, j] = m.GetElement(i, j)
