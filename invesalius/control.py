@@ -1,21 +1,4 @@
-# --------------------------------------------------------------------------
-# Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
-# Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
-# Homepage:     http://www.softwarepublico.gov.br
-# Contact:      invesalius@cti.gov.br
-# License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-# --------------------------------------------------------------------------
-#    Este programa e software livre; voce pode redistribui-lo e/ou
-#    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
-#    publicada pela Free Software Foundation; de acordo com a versao 2
-#    da Licenca.
-#
-#    Este programa eh distribuido na expectativa de ser util, mas SEM
-#    QUALQUER GARANTIA; sem mesmo a garantia implicita de
-#    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
-#    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
-#    detalhes.
-# --------------------------------------------------------------------------
+
 import os
 import plistlib
 import subprocess
@@ -140,8 +123,7 @@ class Controller:
         # self.cancel_import = True
         Publisher.sendMessage("Hide import bitmap panel")
 
-    ###########################
-    ###########################
+   
 
     def OnShowDialogImportDirectory(self) -> None:
         self.ShowDialogImportDirectory()
@@ -161,7 +143,7 @@ class Controller:
     def OnShowBitmapFile(self) -> None:
         self.ShowDialogImportBitmapFile()
 
-    ###########################
+   
 
     def ShowDialogImportBitmapFile(self) -> None:
         # Offer to save current project if necessary
@@ -219,9 +201,34 @@ class Controller:
             self.StartImportPanel(dirpath)
 
     def ShowDialogImportOtherFiles(self, id_type: wx.WindowIDRef) -> None:
-        # Offer to save current project if necessary
+        # Check if we should offer to save/close project
+        # BUT: Don't close yet - we might be importing a mask into existing project
         session = ses.Session()
         project_status = session.GetConfig("project_status")
+        project_was_open = session.IsOpen()
+        
+        # Show file dialog first
+        filepath = dialog.ShowImportOtherFilesDialog(id_type)
+        
+        if not filepath:
+            # User cancelled
+            return
+        
+        # If project is open, try to import as mask first
+        if project_was_open:
+            print(f"[DEBUG] ShowDialogImportOtherFiles: Project is open, trying to import {filepath} as mask")
+            if self.TryImportAsMask(filepath):
+                print("[DEBUG] ShowDialogImportOtherFiles: Successfully imported as mask, keeping project open")
+                return  # Mask imported successfully, keep project open
+            print("[DEBUG] ShowDialogImportOtherFiles: Not a mask or user declined, will open as new project")
+        
+        # If we get here, either:
+        # 1. No project was open, OR
+        # 2. File is not a mask, OR
+        # 3. User declined to import as mask
+        # So we proceed with normal "open as new project" behavior
+        
+        # Now offer to save current project if necessary
         if (
             project_status == const.PROJECT_STATUS_NEW
             or project_status == const.PROJECT_STATUS_CHANGED
@@ -233,12 +240,11 @@ class Controller:
             if answer:
                 self.ShowDialogSaveProject()
             self.CloseProject()
-            # Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage("Set project name")
             Publisher.sendMessage("Stop Config Recording")
             Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
-        filepath = dialog.ShowImportOtherFilesDialog(id_type)
+        # Open as new project
         Publisher.sendMessage("Open other files", filepath=filepath)
 
     def ShowDialogOpenProject(self) -> None:
@@ -961,6 +967,16 @@ class Controller:
     def OnOpenOtherFiles(self, filepath: bytes) -> None:
         filepath = utils.decode(filepath, const.FS_ENCODE)
         if (filepath) is not None:
+            # Check if project is open and try to import as mask first
+            # NOTE: This is a fallback - normally handled in ShowDialogImportOtherFiles
+            session = ses.Session()
+            if session.IsOpen():
+                utils.debug(f"OnOpenOtherFiles: Project is open, trying to import {filepath} as mask")
+                if self.TryImportAsMask(filepath):
+                    utils.debug("OnOpenOtherFiles: Successfully imported as mask")
+                    return
+                utils.debug("OnOpenOtherFiles: Not a mask or user declined")
+
             name = os.path.basename(filepath).split(".")[0]
             group = oth.ReadOthers(filepath)
             if group:
@@ -971,6 +987,200 @@ class Controller:
                 Publisher.sendMessage("Enable state project", state=True)
             else:
                 dialog.ImportInvalidFiles(ftype="Others")
+
+    def TryImportAsMask(self, filepath):
+        """
+        Attempts to import a NIfTI file as a mask into the current project.
+        Returns True if successful, False if it should be treated as a volume.
+        """
+        print(f"[DEBUG] TryImportAsMask: Starting mask import attempt for {filepath}")
+        
+        import invesalius.data.mask as msk
+        import invesalius.project as prj
+        import invesalius.reader.nifti_utils as nifti_utils
+        import numpy as np
+        
+        # Use nibabel proxy to check header/data without full load if possible
+        try:
+            proxy = oth.ReadOthers(filepath)
+            if not proxy:
+                print("[DEBUG] TryImportAsMask: Failed to read file")
+                return False
+            
+            header = proxy.header
+            affine = proxy.affine
+        except Exception as e:
+            print(f"[DEBUG] TryImportAsMask: Exception reading file: {e}")
+            return False
+
+        # Pass proxy to utility for efficient sampling check
+        print("[DEBUG] TryImportAsMask: Checking if file is a mask...")
+        is_mask, reason = nifti_utils.check_is_mask(proxy)
+        print(f"[DEBUG] TryImportAsMask: is_mask={is_mask}, reason={reason}")
+        
+        if not is_mask:
+            # It's likely a volume, so return False to let standard import handle it
+            print(f"[DEBUG] TryImportAsMask: File rejected as mask: {reason}")
+            return False
+
+        # If it is a mask, ask user if they want to import it as such
+        print("[DEBUG] TryImportAsMask: File is a mask, asking user for confirmation...")
+        if not self._confirm_import_as_mask():
+            print("[DEBUG] TryImportAsMask: User declined to import as mask")
+            return False
+        
+        print("[DEBUG] TryImportAsMask: User confirmed, proceeding with mask import")
+
+        proj = prj.Project()
+        
+        # Load logic similar to volume loading to ensure consistent orientation
+        matrix, scalar_range, filename_tmp = image_utils.img2memmap(proxy)
+        
+        # Determine internal project spacing/orientation compatibility
+        # Convert both to tuple for comparison (proj.matrix_shape might be a list)
+        matrix_shape_tuple = tuple(matrix.shape)
+        proj_shape_tuple = tuple(proj.matrix_shape)
+        
+        print(f"[DEBUG] TryImportAsMask: matrix.shape = {matrix_shape_tuple}")
+        print(f"[DEBUG] TryImportAsMask: proj.matrix_shape = {proj_shape_tuple}")
+        print(f"[DEBUG] TryImportAsMask: Shapes are equal: {matrix_shape_tuple == proj_shape_tuple}")
+        
+        if matrix_shape_tuple != proj_shape_tuple:
+             print(f"[DEBUG] TryImportAsMask: Dimension mismatch detected!")
+             wx.MessageBox(
+                _("Dimension mismatch!\nProject: {}\nMask: {}").format(
+                    proj_shape_tuple, matrix_shape_tuple
+                ),
+                _("Import Error"), 
+                wx.OK | wx.ICON_ERROR
+             )
+             return True
+        
+        print("[DEBUG] TryImportAsMask: Dimension check passed, proceeding to affine validation")
+
+        # Check physical alignment (Affine) using robust utility
+        proj_affine = np.array(proj.affine) if proj.affine else None
+        print(f"[DEBUG] TryImportAsMask: proj_affine is None: {proj_affine is None}")
+        
+        if proj_affine is not None:
+             print("[DEBUG] TryImportAsMask: Validating mask compatibility with affine")
+             result = nifti_utils.validate_mask_compatibility(
+                 header, affine, None, proj.spacing, proj_affine
+             )
+             print(f"[DEBUG] TryImportAsMask: Validation result status: {result.status}")
+             
+             if result.status == nifti_utils.ValidationStatus.ERROR:
+                 print(f"[DEBUG] TryImportAsMask: Validation ERROR: {result.message}")
+                 wx.MessageBox(result.message, _("Import Error"), wx.OK | wx.ICON_ERROR)
+                 return True # Stop, but return True because it WAS a mask, just invalid
+                 
+             if result.status == nifti_utils.ValidationStatus.WARNING:
+                 print(f"[DEBUG] TryImportAsMask: Validation WARNING: {result.message}")
+                 # Show a warning dialog but allow proceeding
+                 dlg = wx.MessageDialog(
+                     self.frame,
+                     result.message + "\n\n" + _("Do you want to proceed with the import anyway?"),
+                     _("Import Warning"),
+                     wx.YES_NO | wx.ICON_WARNING
+                 )
+                 if dlg.ShowModal() != wx.ID_YES:
+                     print("[DEBUG] TryImportAsMask: User declined to proceed after warning")
+                     return True # User cancelled
+        
+        print("[DEBUG] TryImportAsMask: All validations passed, importing mask")
+        self._import_mask_to_project(matrix, proj, filepath)
+        print("[DEBUG] TryImportAsMask: Mask import completed successfully")
+        return True
+
+    def _confirm_import_as_mask(self):
+        """
+        Ask user if they want to import the detected mask file as a mask.
+        Returns True if user confirms, False otherwise.
+        """
+        dlg = wx.MessageDialog(
+            self.frame,
+            _("This file appears to be a segmentation mask.\n\n"
+              "Would you like to import it as a mask into the current project?\n\n"
+              "If you select 'No', it will be imported as a regular volume."),
+            _("Import as Mask?"),
+            wx.YES_NO | wx.ICON_QUESTION
+        )
+        result = dlg.ShowModal()
+        dlg.Destroy()
+        return result == wx.ID_YES
+
+    def _import_mask_to_project(self, matrix, proj, filepath):
+        """
+        Import the mask data into the current project.
+        
+        Args:
+            matrix: numpy array containing mask data
+            proj: Project instance
+            filepath: path to the original file (for naming)
+        """
+        import invesalius.data.mask as msk
+        import os
+        
+        print("[DEBUG] _import_mask_to_project: Starting mask import")
+        print(f"[DEBUG] _import_mask_to_project: matrix.shape = {matrix.shape}")
+        print(f"[DEBUG] _import_mask_to_project: proj.matrix_shape = {proj.matrix_shape}")
+        
+        # Create a new mask object
+        mask = msk.Mask()
+        
+        # Get shape from project (matrix_shape is (z, y, x))
+        shape = proj.matrix_shape
+        
+        # Create mask with project dimensions
+        print(f"[DEBUG] _import_mask_to_project: Creating mask with shape {shape}")
+        mask.create_mask(shape)
+        
+        # Set mask name from filename
+        filename = os.path.basename(filepath)
+        mask.name = os.path.splitext(filename)[0]
+        if mask.name.endswith('.nii'):
+            mask.name = os.path.splitext(mask.name)[0]  # Remove .nii from .nii.gz
+        
+        # Copy imported data to mask matrix
+        # The mask matrix has shape (z+1, y+1, x+1) with borders
+        # We need to copy to [1:, 1:, 1:]
+        try:
+            # Ensure data is uint8 (mask format)
+            mask_data = matrix.astype('uint8')
+            
+            # Copy to mask matrix (skipping border voxels)
+            mask.matrix[1:, 1:, 1:] = mask_data
+            
+            # Mark all slices as modified
+            mask.modified(all_volume=True)
+            
+            # Add mask to project
+            index = proj.AddMask(mask)
+            
+            # Set mask spacing to match project
+            mask.spacing = proj.spacing
+            
+            # Notify UI that mask was added
+            Publisher.sendMessage('Add mask', mask=mask)
+            Publisher.sendMessage('Show mask', index=index, value=True)
+            
+            # Show success message
+            wx.MessageBox(
+                _("Mask '{}' imported successfully!").format(mask.name),
+                _("Import Successful"),
+                wx.OK | wx.ICON_INFORMATION
+            )
+            
+        except Exception as e:
+            # Clean up mask if import fails
+            mask.cleanup()
+            wx.MessageBox(
+                _("Failed to import mask data: {}").format(str(e)),
+                _("Import Error"),
+                wx.OK | wx.ICON_ERROR
+            )
+            raise
+
 
     def OpenDicomGroup(
         self,
