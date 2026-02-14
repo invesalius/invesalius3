@@ -925,7 +925,7 @@ class SurfaceManager:
             safe_polydata.DeepCopy(surface.polydata)
 
             # Pass unique object
-            self.publish_surface(safe_polydata, surface.name)
+            self.publish_surface(safe_polydata, surface.name, surface.colour)
 
         wx.CallAfter(progress.Update, "Finishing...", 100)
 
@@ -948,16 +948,14 @@ class SurfaceManager:
             print("Decimation produced empty mesh. Returning original.")
             return polydata
 
-        # Step 2: Clean up any inconsistencies in mesh
+        # Clean up any inconsistencies in mesh
         cleaner = vtkCleanPolyData()
         cleaner.SetInputData(decimator.GetOutput())
         cleaner.Update()
-
         cleaned = cleaner.GetOutput()
-
         if cleaned.GetNumberOfPoints() == 0:
-            print("Cleaning produced empty mesh. Returning original.")
-            return polydata
+            print("Cleaning produced empty mesh.")
+            return output
 
         # Step 3: Smooth out the remaining vertices
         smoother = vtkSmoothPolyDataFilter()
@@ -968,11 +966,11 @@ class SurfaceManager:
         smoothed = smoother.GetOutput()
         if smoothed.GetNumberOfPoints() == 0:
             print("Smoothing produced empty mesh. Returning original.")
-            return polydata
+            return cleaned
 
         return smoothed
 
-    def publish_surface(self, polydata: vtkPolyData, model_name: str):
+    def publish_surface(self, polydata: vtkPolyData, model_name: str, colour: list):
         """Export vtkPolyData to STL, compress, and send as base64."""
         import base64
 
@@ -1000,6 +998,7 @@ class SurfaceManager:
             "Neuronavigation to Dashboard: Send surface",
             model_name=model_name,
             stl_b64=stl_b64,
+            color=colour,
         )
 
         # 6. clean up temp file
