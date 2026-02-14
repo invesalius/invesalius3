@@ -26,6 +26,7 @@ import random
 import shutil
 import sys
 import tempfile
+import threading
 import time
 import traceback
 
@@ -39,20 +40,19 @@ from vtkmodules.vtkCommonCore import (
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkTriangle
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersCore import (
+    vtkCleanPolyData,
     vtkDecimatePro,
     vtkMassProperties,
     vtkPolyDataNormals,
+    vtkSmoothPolyDataFilter,
     vtkStripper,
     vtkTriangleFilter,
-    vtkSmoothPolyDataFilter,
-    vtkCleanPolyData
 )
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
-import threading
 
 from invesalius.pubsub import pub as Publisher
 
@@ -901,16 +901,11 @@ class SurfaceManager:
         dialog.running = False
 
     def on_publish_surface(self):
-        Publisher.sendMessage("Stop navigation")
-        progress = dialogs.PublishingSurfacesProgressWindow()
-
-        def worker():
-            try:
-                self._publish_surfaces_worker(progress)
-            finally:
-                wx.CallAfter(progress.Close)
-
-        threading.Thread(target=worker, daemon=True).start()
+        # Publisher.sendMessage("Stop navigation")
+        # wx.Yield()
+        progress = dialogs.PublishingSurfacesProgressWindow(maximum=100)
+        self._publish_surfaces_worker(progress)
+        progress.Close()
 
     def _publish_surfaces_worker(self, progress):
         proj = prj.Project()
@@ -921,18 +916,26 @@ class SurfaceManager:
             if progress.WasCancelled():
                 break
             surface = surface_dict[key]
-            percent = (i / total) * 100
-            wx.CallAfter(
-                progress.Update,
-                f"Processing {surface.name}...",
-                percent,
-            )
-            self.publish_surface(surface.polydata, surface.name)
+            percent = (i / total) * 100 if total else 100
+
+            progress.Update(f"Processing {surface.name}...", percent)
+            wx.Yield()  # allow UI to update
+
+            # Create new instance per surface
+            safe_polydata = vtkPolyData()
+            safe_polydata.DeepCopy(surface.polydata)
+
+            # Pass unique object
+            self.publish_surface(safe_polydata, surface.name)
 
         wx.CallAfter(progress.Update, "Finishing...", 100)
 
-    def decimate_polydata(self, polydata, reduction=0.99):
+    def decimate_polydata(self, polydata, reduction=0.7):
         """Reduce the number of triangles by `reduction` (0.5 = 50%)."""
+        if polydata.GetNumberOfPoints() == 0:
+            print("Input mesh empty, skipping.")
+            return polydata
+
         # Step 1: Decimate to reduce complexity
         decimator = vtkDecimatePro()
         decimator.SetInputData(polydata)
@@ -940,10 +943,22 @@ class SurfaceManager:
         decimator.PreserveTopologyOff()  # Consider disabling for aggressive reduction
         decimator.Update()
 
+        output = decimator.GetOutput()
+        # SAFETY CHECK
+        if output.GetNumberOfPoints() == 0:
+            print("Decimation produced empty mesh. Returning original.")
+            return polydata
+
         # Step 2: Clean up any inconsistencies in mesh
         cleaner = vtkCleanPolyData()
         cleaner.SetInputData(decimator.GetOutput())
         cleaner.Update()
+
+        cleaned = cleaner.GetOutput()
+
+        if cleaned.GetNumberOfPoints() == 0:
+            print("Cleaning produced empty mesh. Returning original.")
+            return polydata
 
         # Step 3: Smooth out the remaining vertices
         smoother = vtkSmoothPolyDataFilter()
@@ -951,13 +966,19 @@ class SurfaceManager:
         smoother.SetNumberOfIterations(15)  # Adjust based on visual fidelity needs
         smoother.Update()
 
-        return smoother.GetOutput()
+        smoothed = smoother.GetOutput()
+        if smoothed.GetNumberOfPoints() == 0:
+            print("Smoothing produced empty mesh. Returning original.")
+            return polydata
+
+        return smoothed
 
     def publish_surface(self, polydata: vtkPolyData, model_name: str):
         """Export vtkPolyData to STL, compress, and send as base64."""
         import base64
+
         # 1. create temp file
-        fd, tmp_path = tempfile.mkstemp(suffix='.stl')
+        fd, tmp_path = tempfile.mkstemp(suffix=".stl")
         os.close(fd)  # VTK will write to this path
 
         polydata_decimate = self.decimate_polydata(polydata)
@@ -969,11 +990,11 @@ class SurfaceManager:
         writer.Write()
 
         # 3. read bytes from temp file
-        with open(tmp_path, 'rb') as f:
+        with open(tmp_path, "rb") as f:
             raw_bytes = f.read()
 
         # 4. encode compressed bytes to base64
-        stl_b64 = base64.b64encode(raw_bytes).decode('ascii')
+        stl_b64 = base64.b64encode(raw_bytes).decode("ascii")
 
         # 5. send via pubsub / socket
         Publisher.sendMessage(
