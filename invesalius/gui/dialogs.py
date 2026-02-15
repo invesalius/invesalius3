@@ -3286,8 +3286,15 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self._init_gui()
 
     def _init_gui(self) -> None:
-        self.target_name = wx.TextCtrl(self, -1)
-        self.target_name.SetValue(self.config.mask_name)
+        import invesalius.project as prj
+
+        project = prj.Project()
+        mask_names = [mask.name for mask in project.mask_dict.values()]
+
+        self.target_name = wx.ComboBox(
+            self, -1, value=self.config.mask_name,
+            choices=mask_names, style=wx.CB_DROPDOWN
+        )
 
         # Connectivity 3D
         self.panel3dcon = Panel3DConnectivity(self)
@@ -3298,8 +3305,8 @@ class SelectPartsOptionsDialog(wx.Dialog):
         else:
             self.panel3dcon.conect3D_6.SetValue(True)
 
-        self.btn_ok = wx.Button(self, wx.ID_OK)
-        self.btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        self.btn_ok = wx.Button(self, -1, _("OK"))
+        self.btn_cancel = wx.Button(self, -1, _("Cancel"))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -3325,7 +3332,8 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
 
-        self.target_name.Bind(wx.EVT_CHAR, self.OnChar)
+        self.target_name.Bind(wx.EVT_TEXT, self.OnTargetNameChanged)
+        self.target_name.Bind(wx.EVT_COMBOBOX, self.OnTargetNameChanged)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -3337,9 +3345,9 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.SetReturnCode(wx.CANCEL)
         self.Close()
 
-    def OnChar(self, evt: wx.KeyEvent) -> None:
-        evt.Skip()
+    def OnTargetNameChanged(self, evt: wx.CommandEvent) -> None:
         self.config.mask_name = self.target_name.GetValue()
+        evt.Skip()
 
     def OnSetRadio(self, evt: wx.CommandEvent) -> None:
         if self.panel3dcon.conect3D_6.GetValue():

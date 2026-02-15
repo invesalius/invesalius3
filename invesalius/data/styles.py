@@ -2632,8 +2632,11 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
             self.config.mask_name = default_name
             self.config.dlg_visible = True
-            self.dlg = dialogs.SelectPartsOptionsDialog(self.config)
-            self.dlg.Show()
+            try:
+                self.dlg = dialogs.SelectPartsOptionsDialog(self.config)
+                self.dlg.Show()
+            except Exception as e:
+                self.config.dlg_visible = False
 
     def CleanUp(self):
         if self.dlg is None:
@@ -2647,6 +2650,14 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.dlg = None
 
         if self.config.mask:
+            # Unload the selection mask's 3D preview volume
+            if self.config.mask.volume is not None:
+                Publisher.sendMessage(
+                    "Load mask preview",
+                    mask_3d_actor=self.config.mask.volume._actor,
+                    flag=False,
+                )
+
             if dialog_return == wx.OK:
                 self.config.mask.name = self.config.mask_name
                 self.viewer.slice_._add_mask_into_proj(self.config.mask)
@@ -2656,6 +2667,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             del self.viewer.slice_.aux_matrices["SELECT"]
             self.viewer.slice_.to_show_aux = ""
             Publisher.sendMessage("Reload actual slice")
+            Publisher.sendMessage("Render volume viewer")
             self.config.mask = None
 
     def OnSelect(self, obj, evt):
@@ -2674,15 +2686,30 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         if self.config.mask is None:
             self._create_new_mask()
 
-        if iren.GetControlKey():
+        selection_matrix = self.config.mask.matrix[1:, 1:, 1:]
+
+        # Check bounds to prevent crash if clicking outside volume
+        if (
+            x < 0
+            or y < 0
+            or z < 0
+            or x >= selection_matrix.shape[2]
+            or y >= selection_matrix.shape[1]
+            or z >= selection_matrix.shape[0]
+        ):
+            return
+
+        # Toggle: if clicking on an already-selected (red) voxel, deselect it
+        is_already_selected = selection_matrix[z, y, x] >= 254
+        if is_already_selected or iren.GetControlKey():
             floodfill.floodfill_threshold(
-                self.config.mask.matrix[1:, 1:, 1:],
+                selection_matrix.copy(),
                 ((x, y, z),),
                 254,
                 255,
                 0,
                 bstruct,
-                self.config.mask.matrix[1:, 1:, 1:],
+                selection_matrix,
             )
         else:
             floodfill.floodfill_threshold(
@@ -2692,13 +2719,29 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 self.t1,
                 self.fill_value,
                 bstruct,
-                self.config.mask.matrix[1:, 1:, 1:],
+                selection_matrix,
             )
 
         self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
         self.viewer.slice_.to_show_aux = "SELECT"
 
         self.config.mask.was_edited = True
+
+        self.viewer.slice_.buffer_slices["AXIAL"].discard_mask()
+        self.viewer.slice_.buffer_slices["CORONAL"].discard_mask()
+        self.viewer.slice_.buffer_slices["SAGITAL"].discard_mask()
+
+        self.viewer.slice_.buffer_slices["AXIAL"].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["CORONAL"].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["SAGITAL"].discard_vtk_mask()
+
+        self.viewer.slice_.current_mask.was_edited = True
+        self.viewer.slice_.current_mask.modified(all_volume=True)
+
+        # Update the selection mask's 3D preview volume
+        if self.config.mask.volume is not None:
+            self.config.mask._update_imagedata()
+
         Publisher.sendMessage("Reload actual slice")
 
     def _create_new_mask(self):
@@ -2707,6 +2750,33 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         mask.matrix[0, :, :] = 1
         mask.matrix[:, 0, :] = 1
         mask.matrix[:, :, 0] = 1
+
+        # Set selection colour to red and create 3D preview
+        mask.colour = (1.0, 0.0, 0.0)
+        mask.create_3d_preview()
+        if mask.volume is not None:
+            # Enhance selection visibility
+            prop = mask.volume._volume_property
+            prop.SetAmbient(0.6)
+            prop.SetDiffuse(0.9)
+            prop.SetSpecular(0.6)
+            prop.SetSpecularPower(20)
+
+            # Enhance selection visibility by inflating the surface
+            # Set threshold to 80 (lower than 127) to make surface larger and cover base mask
+            prop.GetIsoSurfaceValues().SetValue(0, 80)
+            
+            # Update opacity function for CPU rendering to match
+            pf = mask.volume._piecewise_function
+            if pf:
+                pf.RemoveAllPoints()
+                pf.AddPoint(0.0, 0.0)
+                pf.AddPoint(79, 0.0)
+                pf.AddPoint(80, 1.0)
+
+            Publisher.sendMessage(
+                "Load mask preview", mask_3d_actor=mask.volume._actor, flag=True
+            )
 
         self.config.mask = mask
 
