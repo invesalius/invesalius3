@@ -3286,16 +3286,6 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self._init_gui()
 
     def _init_gui(self) -> None:
-        import invesalius.project as prj
-
-        project = prj.Project()
-        mask_names = [mask.name for mask in project.mask_dict.values()]
-
-        self.target_name = wx.ComboBox(
-            self, -1, value=self.config.mask_name,
-            choices=mask_names, style=wx.CB_DROPDOWN
-        )
-
         # Connectivity 3D
         self.panel3dcon = Panel3DConnectivity(self)
         if self.config.con_3d == 18:
@@ -3305,21 +3295,17 @@ class SelectPartsOptionsDialog(wx.Dialog):
         else:
             self.panel3dcon.conect3D_6.SetValue(True)
 
-        self.btn_ok = wx.Button(self, -1, _("OK"))
-        self.btn_cancel = wx.Button(self, -1, _("Cancel"))
+        self.btn_ok = wx.Button(self, wx.ID_OK)
+        self.btn_cancel = wx.Button(self, wx.ID_CANCEL)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        sizer.AddSpacer(5)
-        sizer.Add(wx.StaticText(self, -1, _("Target mask name")), flag=wx.LEFT, border=5)
-        sizer.AddSpacer(5)
-        sizer.Add(self.target_name, flag=wx.LEFT | wx.EXPAND | wx.RIGHT, border=9)
         sizer.AddSpacer(5)
         sizer.Add(self.panel3dcon, flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
         sizer.AddSpacer(5)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        btn_sizer.Add(self.btn_ok, 0)  # flag=wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.btn_ok, 0)
         btn_sizer.Add(self.btn_cancel, 0, flag=wx.LEFT, border=5)
 
         sizer.Add(btn_sizer, 0, flag=wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT, border=5)
@@ -3332,8 +3318,6 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
 
-        self.target_name.Bind(wx.EVT_TEXT, self.OnTargetNameChanged)
-        self.target_name.Bind(wx.EVT_COMBOBOX, self.OnTargetNameChanged)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -3344,10 +3328,6 @@ class SelectPartsOptionsDialog(wx.Dialog):
     def OnCancel(self, evt: wx.CommandEvent) -> None:
         self.SetReturnCode(wx.CANCEL)
         self.Close()
-
-    def OnTargetNameChanged(self, evt: wx.CommandEvent) -> None:
-        self.config.mask_name = self.target_name.GetValue()
-        evt.Skip()
 
     def OnSetRadio(self, evt: wx.CommandEvent) -> None:
         if self.panel3dcon.conect3D_6.GetValue():
