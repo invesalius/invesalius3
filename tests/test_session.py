@@ -13,7 +13,9 @@ from invesalius.session import CONFIG_PATH, STATE_PATH, Session
 session = Session()
 
 
-def test_set_and_get_config():
+def test_set_and_get_config(mocker):
+    mocker.patch.object(session, "_write_to_json")
+    
     session.SetConfig("debug", True)
     assert session.GetConfig("debug") == True
 
