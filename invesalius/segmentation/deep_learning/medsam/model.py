@@ -42,9 +42,6 @@ class LayerNorm2d(nn.Module):
         return x
 
 
-# --- From transformer.py ---
-
-
 class TransformerAttention(nn.Module):
     """
     An attention layer that allows for downscaling the size of the embedding

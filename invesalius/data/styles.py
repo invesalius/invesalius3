@@ -50,7 +50,7 @@ from vtkmodules.vtkRenderingCore import (
 
 import invesalius.constants as const
 from invesalius.data.mask import Mask
-from invesalius.ai.medlsam import run_medlsam
+from invesalius.segmentation.deep_learning.medsam import run_medlsam
 from scipy import ndimage
 import os
 import wx
@@ -2705,42 +2705,43 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
         self.draw_retangle.ReleaseLeft()
 
     def OnKeyPress(self, obj, evt):
-        """Handle Enter key to trigger segmentation"""
         interactor = self.GetInteractor()
         key = interactor.GetKeySym()
         code = interactor.GetKeyCode()
 
-        # Check both KeySym and ASCII code (13 is Enter)
+        if key == "Escape" or (code and ord(code) == 27):
+            self.CleanUp()
+            Publisher.sendMessage("Set slice interaction style", style=const.SLICE_STATE_SCROLL)
+            Publisher.sendMessage("Untoggle object toolbar items")
+            return
+
         if key in ["Return", "KP_Enter", "Enter"] or code == chr(13):
-            print(
-                f"Debug: Enter pressed (Key='{key}', Code='{13}') - Triggering Segmentation"
-            )
             self.RunMedLSAMSegmentation()
 
     def SetUp(self):
         self.draw_retangle = geom.DrawCrop2DRetangle()
-        self.draw_retangle.SetViewer(self.viewer)
-
-        self.viewer.canvas.draw_list.append(self.draw_retangle)
-        self.viewer.UpdateCanvas()
+        if self.draw_retangle:
+             self.draw_retangle.SetViewer(self.viewer)
+             self.viewer.canvas.draw_list.append(self.draw_retangle)
+             self.viewer.UpdateCanvas()
 
         self.__evts__()
 
-        # Force focus to capture key events
         try:
             self.viewer.interactor.SetFocus()
         except AttributeError:
             pass
 
-        # Show instructions to user
         Publisher.sendMessage(
             "Update status text in GUI",
-            label="Draw bounding box around ROI. Press Enter to run MedLSAM segmentation.",
+            label="Draw a box around the object. Press Enter to Segment, Esc to Cancel.",
         )
 
     def CleanUp(self):
-        self.viewer.canvas.draw_list.remove(self.draw_retangle)
-        Publisher.sendMessage("Redraw canvas")
+        if self.draw_retangle in self.viewer.canvas.draw_list:
+            self.viewer.canvas.draw_list.remove(self.draw_retangle)
+            self.viewer.UpdateCanvas()
+        self.draw_retangle = None
 
     def RunMedLSAMSegmentation(self):
         """Extract ROI coordinates and trigger MedLSAM segmentation"""
@@ -2751,7 +2752,6 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
             bbox = (xi, xf, yi, yf, zi, zf)
 
             try:
-                # 1. Get the volume matrix
                 volume = self.viewer.slice_.matrix
 
                 # 2. Extract ROI
@@ -2767,7 +2767,7 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                 # 4. Resolve Weights Path
                 current_dir = os.path.dirname(os.path.abspath(__file__))
                 weights_path = os.path.join(
-                    current_dir, "..", "ai", "medlsam", "weights", "medsam_vit_b.pth"
+                    current_dir, "..", "segmentation", "deep_learning", "medsam", "weights", "medsam_vit_b.pth"
                 )
                 weights_path = os.path.abspath(weights_path)
 
@@ -2780,7 +2780,6 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                     "Update status text in GUI", label="Running MedLSAM Inference..."
                 )
 
-                # Get the main frame to be the parent
                 parent_frame = self.viewer.GetTopLevelParent()
 
                 # Create Progress Dialog
@@ -2810,8 +2809,9 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                 try:
                     # 5. Run MedLSAM Inference
                     # run_medlsam returns 0/1 uint8 array
+                    device_type = "cuda" if torch.cuda.is_available() else "cpu"
                     mask_roi = run_medlsam(
-                        roi, weights_path, callback=progress_callback
+                        roi, weights_path, device=device_type, callback=progress_callback
                     )
                 finally:
                     dlg.Destroy()
@@ -2823,13 +2823,11 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                     print(f"Debug: Found {num_features} components. Selecting largest.")
                     # Count pixels per label (skipping label 0 which is background)
                     component_sizes = np.bincount(labeled_mask.ravel())
-                    # component_sizes[0] is background size
                     component_sizes[0] = 0
                     largest_label = component_sizes.argmax()
                     mask_roi = (labeled_mask == largest_label).astype(np.uint8)
 
                 # 7. Create InVesalius Mask
-                # Get full volume shape
                 full_shape = volume.shape
 
                 new_mask = Mask()
@@ -2838,19 +2836,7 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                 # Green color for visibility
                 new_mask.colour = (0.0, 1.0, 0.0)
 
-                # 8. Insert ROI into Full Mask
-                # Convert 0/1 to 0/255
                 mask_roi_255 = (mask_roi * 255).astype("uint8")
-
-                # Mask matrix has +1 padding and flags at index 0
-                # Mapping: roi [z,y,x] -> mask.matrix [z+1, y+1, x+1]
-
-                # Unpack bbox (from GetLimits)
-                # Note: extract_roi uses slicing [zi:zf, yi:yf, xi:xf]
-                # xi, xf, yi, yf, zi, zf = bbox
-
-                # Ensure we fit within bounds (though extract_roi handles validation, let's be safe)
-                # The shape of mask_roi matches (zf-zi, yf-yi, xf-xi)
 
                 new_mask.matrix[zi + 1 : zf + 1, yi + 1 : yf + 1, xi + 1 : xf + 1] = (
                     mask_roi_255
