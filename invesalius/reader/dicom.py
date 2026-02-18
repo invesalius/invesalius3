@@ -24,6 +24,8 @@ import gdcm
 import invesalius.constants as const
 import invesalius.utils as utils
 from invesalius.i18n import tr as _
+from scipy.ndimage import zoom
+import numpy as np
 
 # In DICOM file format, if multiple values are present for the
 # "Window Center" (Level) and "Window Width", both attributes
@@ -480,13 +482,12 @@ class Parser:
 
     def GetPixelSpacing(self):
         """
-        Return [x, y] (number list) related to the distance between
-        each pair of pixel. That is, adjacent row spacing (delimiter)
-        and adjacent column spacing. Values are usually floating point
-        and represent mm.
+        Return [x, y, z] (number list) related to the distance between
+        each pair of pixels. Values are usually floating point and represent mm.
         Return "" if field is not defined.
 
-        DICOM standard tag (0x0028, 0x0030) was used.
+        DICOM standard tag (0x0028, 0x0030) was used for X and Y spacing.
+        Z spacing is calculated dynamically.
         """
         try:
             image_helper_spacing = self.data_image["spacing"]
@@ -497,13 +498,75 @@ class Parser:
         except KeyError:
             tag_spacing = ""
 
-        # Some dicom images have comma (,) as decimal separation. In this case
-        # InVesalius is not using the spacing given by gdcm.ImageHelper but
-        # using direct from the tag and replacing the comma with dot.
         if image_helper_spacing is not None and "," not in tag_spacing:
-            return image_helper_spacing[:2]
+            xy_spacing = image_helper_spacing[:2]
         else:
-            return [float(value) for value in tag_spacing.replace(",", ".").split("\\")]
+            xy_spacing = [float(value) for value in tag_spacing.replace(",", ".").split("\\")]
+
+        z_spacing = self.GetSliceSpacing()
+        return xy_spacing + [z_spacing]
+
+    def GetSliceSpacing(self):
+        """
+        Calculate the spacing between slices in a DICOM series.
+        Handles variable spacing by returning the average spacing.
+
+        Returns:
+           float: Average spacing between slices (in mm).
+        """
+        try:
+            positions = self.data_image["slice_positions"]
+        except KeyError:
+            return 1.0  # Default spacing if not defined
+
+        if len(positions) < 2:
+            return 1.0
+
+        positions = sorted(positions)
+        spacings = [positions[i + 1] - positions[i] for i in range(len(positions) - 1)]
+        return sum(spacings) / len(spacings)
+    
+    def LoadDicomSeries(self, dicom_files):
+        """
+        Load a DICOM series and handle variable slice spacing.
+
+        Parameters:
+           dicom_files (list): List of DICOM file paths.
+
+        Returns:
+            numpy.ndarray: 3D volume data.
+        """
+        slices = []
+        positions = []
+
+        for file in dicom_files:
+            reader = gdcm.ImageReader()
+            reader.SetFileName(file)
+            if not reader.Read():
+                continue
+
+            tag = gdcm.Tag(0x0020, 0x0032)
+            sf = gdcm.StringFilter()
+            sf.SetFile(reader.GetFile())
+            position = sf.ToStringPair(tag)[1]
+            if position:
+                z_position = float(position.split("\\")[2])
+                positions.append(z_position)
+                slices.append(reader)
+
+        sorted_slices = [x for _, x in sorted(zip(positions, slices))]
+
+        volume = np.stack([s.GetOutput().GetScalarPointer() for s in sorted_slices])
+        pixel_spacing = [float(x) for x in sorted_slices[0].GetFile().GetDataSet().GetDataElement(gdcm.Tag(0x0028, 0x0030)).GetValue().split("\\")]
+        slice_spacing = self.GetSliceSpacing()
+
+        if len(set(slice_spacing)) > 1:
+            print("Variable slice spacing detected. Resampling...")
+            original_spacing = [slice_spacing[0]] + pixel_spacing
+            new_spacing = [min(slice_spacing)] + pixel_spacing
+            volume = self.ResampleVolume(volume, original_spacing, new_spacing)
+
+        return volume
 
     def GetPatientWeight(self):
         """
@@ -1884,3 +1947,20 @@ class Image:
             self.spacing.append(parser.GetImageThickness())
         else:
             self.spacing.append(1.0)
+
+
+def ResampleVolume(volume, original_spacing, new_spacing):
+    """
+    Resample the volume to have uniform spacing.
+
+    Parameters:
+        volume (numpy.ndarray): The 3D volume data.
+        original_spacing (list): Original spacing [z, y, x].
+        new_spacing (list): Desired spacing [z, y, x].
+
+    Returns:
+        numpy.ndarray: Resampled volume.
+    """
+    zoom_factors = [o / n for o, n in zip(original_spacing, new_spacing)]
+    resampled_volume = zoom(volume, zoom_factors, order=1)
+    return resampled_volume
