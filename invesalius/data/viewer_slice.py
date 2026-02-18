@@ -917,6 +917,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnSetOverwriteMask, "Set overwrite mask")
 
         Publisher.subscribe(self.RefreshViewer, "Refresh viewer")
+        Publisher.subscribe(self.OnProjectLoaded, "Project loaded successfully")
         Publisher.subscribe(self.SetInterpolatedSlices, "Set interpolated slices")
         Publisher.subscribe(self.UpdateInterpolatedSlice, "Update Slice Interpolation")
 
@@ -1296,6 +1297,10 @@ class Viewer(wx.Panel):
             self.canvas.modified = True
             if not self.nav_status:
                 self.UpdateRender()
+
+    def OnProjectLoaded(self, pubsub_evt=None):
+        # Wait for layout to settle
+        wx.CallLater(100, self.UpdateCanvas)
 
     def _update_draw_list(self):
         cp_draw_list = self.canvas.draw_list[:]
