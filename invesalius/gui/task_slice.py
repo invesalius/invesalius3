@@ -507,7 +507,7 @@ class MaskProperties(wx.Panel):
 
         # Combo related to mask naem
         combo_mask_name = wx.ComboBox(
-            self, -1, "", choices=MASK_LIST, style=wx.CB_DROPDOWN | wx.CB_READONLY
+            self, -1, "",  style=wx.CB_DROPDOWN | wx.CB_READONLY
         )
         # combo_mask_name.SetSelection(0) # wx.CB_SORT
         if sys.platform != "win32":
@@ -583,7 +583,7 @@ class MaskProperties(wx.Panel):
         Publisher.subscribe(self.SetItemsColour, "Set GUI items colour")
         Publisher.subscribe(self.SetThresholdValues, "Set threshold values in gradient")
         Publisher.subscribe(self.SelectMaskName, "Select mask name in combo")
-        Publisher.subscribe(self.ChangeMaskName, "Change mask name")
+        Publisher.subscribe(self.OnMaskNameChanged, "Mask name changed")
         Publisher.subscribe(self.OnRemoveMasks, "Remove masks")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.SetThresholdValues2, "Set threshold values")
@@ -629,9 +629,18 @@ class MaskProperties(wx.Panel):
         else:
             self.combo_mask_name.SetValue("")
 
-    def ChangeMaskName(self, index, name):
-        self.combo_mask_name.SetString(index, name)
-        self.combo_mask_name.Refresh()
+    def OnMaskNameChanged(self, mask, name, index):
+        combo = self.combo_mask_name
+
+        for i in range(combo.GetCount()):
+            if combo.GetClientData(i) is mask:
+                combo.SetString(i, name)
+
+                # If the renamed mask is currently selected,
+                # update the text shown in the selection area
+                if combo.GetSelection() == i:
+                    combo.SetValue(name)
+                break
 
     def SetThresholdValues(self, threshold_range):
         thresh_min, thresh_max = threshold_range
@@ -668,17 +677,16 @@ class MaskProperties(wx.Panel):
         self.gradient.SetColour(colour)
         self.button_colour.SetColour(colour)
 
+
     def AddMask(self, mask):
         if self.combo_mask_name.IsEmpty():
             self.Enable()
-        mask_name = mask.name
-        # mask_thresh = mask.threshold_range
-        # mask_colour = [int(c * 255) for c in mask.colour]
-        _ = self.combo_mask_name.Append(mask_name)
-        #  self.combo_mask_name.SetSelection(index)
-        #  self.button_colour.SetColour(mask_colour)
-        #  self.gradient.SetColour(mask_colour)
-        #  self.combo_mask_name.SetSelection(index)
+            index = self.combo_mask_name.GetCount()
+            # Bind the Mask object to the ComboBox item
+            self.combo_mask_name.Append(mask.name, clientData=mask)
+            # Select first mask automatically
+        if index == 0:
+            self.combo_mask_name.SetSelection(0)
 
     def GetMaskSelected(self):
         # x = self.combo_mask_name.GetSelection()
@@ -747,6 +755,7 @@ class MaskProperties(wx.Panel):
         colour = evt.GetValue()[:3]
         self.gradient.SetColour(colour)
         Publisher.sendMessage("Change mask colour", colour=colour)
+
 
 
 class EditionTools(wx.Panel):
