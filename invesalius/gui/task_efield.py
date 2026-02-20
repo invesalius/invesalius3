@@ -658,5 +658,5 @@ class InnerTaskPanel(wx.Panel):
             path_meshes=self.path_meshes,
             cortex_file=self.cortex_file,
             meshes_file=self.meshes_file,
-            coilmodel=self.coil
+            coilmodel=self.coil,
         )
