@@ -649,14 +649,14 @@ class InnerTaskPanel(wx.Panel):
 
     def Send_dI_per_dt_to_report(self, diperdt, ci, co):
         Publisher.sendMessage(
-            "Get diperdt used in efield calculation", diperdt=diperdt, ci= self.ci, co = self.co
+            "Get diperdt used in efield calculation", diperdt=diperdt, ci=self.ci, co=self.co
         )
 
     def Send_meshes_coil_paths_to_report(self):
         Publisher.sendMessage(
             "Get path meshes",
-            path_meshes = self.path_meshes,
-            cortex_file = self.cortex_file,
-            meshes_file = self.meshes_file,
-            coilmodel= self.coil
+            path_meshes=self.path_meshes,
+            cortex_file=self.cortex_file,
+            meshes_file=self.meshes_file,
+            coilmodel=self.coil
         )

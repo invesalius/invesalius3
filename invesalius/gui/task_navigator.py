@@ -3640,7 +3640,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.sendMessage(
             "Update interseccion offline",
             m_img=m_img,
-            coord=np.concatenate([np.asarray(position, float), np.radians(np.asarray(orientation, float))]),
+            coord=np.concatenate(
+                [np.asarray(position, float), np.radians(np.asarray(orientation, float))]
+            ),
             list_index=marker.marker_id,
         )
 
