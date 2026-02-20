@@ -695,7 +695,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer: "Viewer"):
         super().__init__(viewer)
 
-        self.mask_data = slc.Slice().current_mask.matrix.copy()
+        # mask_data will be initialized in SetUp() when the style is activated
+        # to ensure the mask is properly loaded after DICOM import
+        self.mask_data = None
 
         self.m3e_list: list[PolygonSelectCanvas] = []
 
@@ -731,6 +733,16 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         This is called by the volume ``Viewer.SetInteractorStyle`` method.
         """
+        # Copy the mask data now that the style is being activated.
+        # This ensures the mask is properly initialized after DICOM import.
+        current_mask = slc.Slice().current_mask
+        if current_mask is not None:
+            self.mask_data = current_mask.matrix.copy()
+        else:
+            # Fallback: if no mask exists, create empty mask_data
+            # This shouldn't happen in normal usage but provides safety
+            self.mask_data = None
+
         for drawn_polygon in self.viewer.canvas.draw_list:
             if isinstance(drawn_polygon, PolygonSelectCanvas):
                 drawn_polygon.visible = True
@@ -867,6 +879,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
     def OnRestoreInitMask(self):
         """Restore the initial mask data from when the style was setup."""
+        if self.mask_data is None:
+            # Cannot restore - no initial mask data was captured
+            return
         _mat = self.mask_data[1:, 1:, 1:].copy()
         self.update_views(_mat)
 
@@ -881,6 +896,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
     def CutMaskFromPolygons(self):
         """Edit mask data based on the polygons drawn in the 3D viewer."""
+        if self.mask_data is None:
+            # Cannot edit - no mask data available
+            return
+
         completed_polygons = [m3e for m3e in self.m3e_list if m3e.complete]
         if len(completed_polygons) == 0:
             return
