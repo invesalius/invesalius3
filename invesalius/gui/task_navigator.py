@@ -3623,8 +3623,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(idx)
         position = marker.position
         orientation = marker.orientation
-        coord = np.concatenate([np.asarray(position, float),
-                                np.asarray(orientation, float)])
+        coord = np.concatenate([np.asarray(position, float), np.asarray(orientation, float)])
 
         m_img = tr.compose_matrix(angles=np.radians(orientation), translate=position)
 
@@ -3632,7 +3631,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             position=position,
             orientation=orientation,
         )
-        #orientation = np.radians(orientation)
+        # orientation = np.radians(orientation)
         Publisher.sendMessage(
             "Calculate position and rotation", position=position, orientation=orientation
         )
@@ -3641,8 +3640,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.sendMessage(
             "Update interseccion offline",
             m_img=m_img,
-            coord=np.concatenate([np.asarray(position, float),
-                                np.radians(np.asarray(orientation, float))]),
+            coord=np.concatenate([np.asarray(position, float), np.radians(np.asarray(orientation, float))]),
             list_index=marker.marker_id,
         )
 

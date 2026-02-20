@@ -540,7 +540,7 @@ class Viewer(wx.Panel):
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
-        Publisher.subscribe(self.Get_meshes_paths_to_report,"Get path meshes")
+        Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
 
     def get_vtk_mouse_position(self):
         """
@@ -1652,7 +1652,7 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.vectorfield_actor)
         self.interactor.Update()
 
-    def SaveEfieldTargetData(self, target_list_index, position, orientation, plot_efield_vectors):        
+    def SaveEfieldTargetData(self, target_list_index, position, orientation, plot_efield_vectors):
         if len(self.Id_list) > 0:
             if self.efield_coords is not None:
                 import invesalius.data.imagedata_utils as imagedata_utils
@@ -2110,7 +2110,7 @@ class Viewer(wx.Panel):
         self.focal_factor_members = []
         self.distance_efield = None
         self.mtms_coord = []
-        #self.diperdt = None
+        # self.diperdt = None
 
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
@@ -2288,7 +2288,7 @@ class Viewer(wx.Panel):
                     col2 = np.asarray(self.e_field_col2, dtype=float)
                     col3 = np.asarray(self.e_field_col3, dtype=float)
                     N = col1.size // K
-                    if N >1:
+                    if N > 1:
                         self.e_field_col1 = col1.reshape(N, -1).sum(axis=0)
                         self.e_field_col2 = col2.reshape(N, -1).sum(axis=0)
                         self.e_field_col3 = col3.reshape(N, -1).sum(axis=0)
@@ -2372,7 +2372,7 @@ class Viewer(wx.Panel):
             "path meshes",
             "meshes file",
             "cortex file",
-            "coil model file"
+            "coil model file",
         ]
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
@@ -2410,7 +2410,7 @@ class Viewer(wx.Panel):
                     self.path_meshes,
                     self.meshes_file,
                     self.cortex_file,
-                    self.coil_model
+                    self.coil_model,
                 ]
             )
 
@@ -2454,7 +2454,7 @@ class Viewer(wx.Panel):
             "path meshes",
             "meshes file",
             "cortex file",
-            "coil model file"
+            "coil model file",
         ]
         all_data = list(self.target_radius_list)
         with open(filename, "w", newline="") as f:
@@ -2467,7 +2467,7 @@ class Viewer(wx.Panel):
         self.ci = ci
         self.co = co
 
-    def Get_meshes_paths_to_report(self, path_meshes ,cortex_file, meshes_file, coilmodel):
+    def Get_meshes_paths_to_report(self, path_meshes, cortex_file, meshes_file, coilmodel):
         self.meshes_file = meshes_file
         self.cortex_file = cortex_file
         self.path_meshes = path_meshes

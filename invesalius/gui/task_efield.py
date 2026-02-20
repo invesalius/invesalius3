@@ -632,7 +632,7 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
-        self.Send_dI_per_dt_to_report(self.input_coils, self.ci , self.co)
+        self.Send_dI_per_dt_to_report(self.input_coils, self.ci, self.co)
 
     def OnEfieldsForTargeting(self, evt, ctrl):
         if ctrl.GetValue():
@@ -648,7 +648,15 @@ class InnerTaskPanel(wx.Panel):
         Publisher.sendMessage("Get targets Ids for mtms", target1_origin=[0, 0], target2=[0, 0])
 
     def Send_dI_per_dt_to_report(self, diperdt, ci, co):
-        Publisher.sendMessage("Get diperdt used in efield calculation", diperdt=diperdt, ci= self.ci, co = self.co)
+        Publisher.sendMessage(
+            "Get diperdt used in efield calculation", diperdt=diperdt, ci= self.ci, co = self.co
+        )
 
     def Send_meshes_coil_paths_to_report(self):
-        Publisher.sendMessage("Get path meshes", path_meshes = self.path_meshes,cortex_file = self.cortex_file, meshes_file = self.meshes_file, coilmodel= self.coil)
+        Publisher.sendMessage(
+            "Get path meshes",
+            path_meshes = self.path_meshes,
+            cortex_file = self.cortex_file,
+            meshes_file = self.meshes_file,
+            coilmodel= self.coil
+        )
