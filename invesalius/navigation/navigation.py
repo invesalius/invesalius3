@@ -211,6 +211,11 @@ class UpdateNavigationScene(threading.Thread):
                     )
                     wx.CallAfter(
                         Publisher.sendMessage,
+                        "From Neuronavigation: Send coil pose",
+                        coord=list(coords[main_coil]),
+                    )
+                    wx.CallAfter(
+                        Publisher.sendMessage,
                         "Update object arrow matrix",
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
