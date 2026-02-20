@@ -843,7 +843,7 @@ class Viewer(wx.Panel):
         point.SetRadius(radius)
 
         mapper = vtkPolyDataMapper()
-        mapper.SetInput(point.GetOutput())
+        mapper.SetInputConnection(point.GetOutputPort())
 
         p = vtkProperty()
         p.SetColor(colour)
