@@ -979,7 +979,7 @@ class SurfaceManager:
         model_name: str,
         colour: list,
         transparency: float,
-        surface_index: int
+        surface_index: int,
     ):
         """Export vtkPolyData to STL, compress, and send as base64."""
         import base64
