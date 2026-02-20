@@ -3215,7 +3215,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSaveEfieldTargetData, efield_menu_item)
 
         if self.navigation.e_field_loaded:
-
             efield_target_menu_item = menu_id.Append(
                 unique_menu_id + 13, _("Clear saved Efield data")
             )

@@ -2292,7 +2292,7 @@ class Viewer(wx.Panel):
                         self.e_field_col1 = col1.reshape(N, -1).sum(axis=0)
                         self.e_field_col2 = col2.reshape(N, -1).sum(axis=0)
                         self.e_field_col3 = col3.reshape(N, -1).sum(axis=0)
-                
+
                     self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
                     self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
                     self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
@@ -2348,6 +2348,7 @@ class Viewer(wx.Panel):
 
     def SaveEfieldData(self, filename, plot_efield_vectors, marker_id):
         import csv
+
         import invesalius.data.imagedata_utils as imagedata_utils
 
         all_data = []
