@@ -70,34 +70,6 @@ class IterativeClosestPoint(metaclass=Singleton):
         if self.use_icp:
             return
 
-        # Check if the current surface has non-visible faces
-        try:
-            import invesalius.data.polydata_utils as pu
-            import invesalius.project as prj
-
-            proj = prj.Project()
-
-            # Get the currently selected surface
-            if hasattr(proj, "surface_dict") and proj.surface_dict:
-                # Get the last selected surface index
-                surface_indices = list(proj.surface_dict.keys())
-                if surface_indices:
-                    # Use the last surface as it's typically the most recently created/selected
-                    last_surface_index = max(surface_indices)
-                    surface = proj.surface_dict[last_surface_index]
-                    polydata = surface.polydata
-
-                    # Check for non-visible faces
-                    if pu.HasNonVisibleFaces(polydata):
-                        # Show warning dialog and check if user wants to proceed
-                        if not dlg.WarnNonVisibleFaces():
-                            # User chose to cancel and clean the surface first
-                            return
-        except Exception:
-            # If validation fails for any reason, continue with normal workflow
-            # This ensures backward compatibility and robustness
-            pass
-
         # Show dialog to ask whether to use ICP. If not, return.
         if not dlg.ICPcorregistration(navigation.fre):
             return

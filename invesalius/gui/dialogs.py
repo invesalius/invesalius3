@@ -4420,6 +4420,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.actors_static_points = []
         self.point_coord = []
         self.actors_transformed_points = []
+        self._surface_validated = False
 
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
@@ -4465,6 +4466,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         combo_surface_name.SetSelection(init_surface)
         self.surface = self.proj.surface_dict[init_surface].polydata
         self.LoadActor()
+        wx.CallAfter(self._validate_surface)
 
         tooltip = _("Choose the registration mode:")
         choice_icp_method = wx.ComboBox(
@@ -4740,6 +4742,19 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         return np.sqrt(float(d))
 
+    def _validate_surface(self) -> None:
+        """Validate the selected surface for non-visible faces."""
+        try:
+            import invesalius.data.polydata_utils as pu
+
+            if pu.HasNonVisibleFaces(self.surface):
+                if not WarnNonVisibleFaces():
+                    self.EndModal(wx.ID_CANCEL)
+                    return
+        except Exception:
+            pass
+        self._surface_validated = True
+
     def OnComboName(self, evt: wx.CommandEvent) -> None:
         # surface_name = evt.GetString()
         surface_index = evt.GetSelection()
@@ -4747,6 +4762,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         if self.obj_actor:
             self.RemoveAllActors()
         self.LoadActor()
+        self._surface_validated = False
+        self._validate_surface()
 
     def OnChoiceICPMethod(self, evt: wx.CommandEvent) -> None:
         self.icp_mode = evt.GetSelection()
