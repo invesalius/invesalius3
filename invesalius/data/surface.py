@@ -926,7 +926,9 @@ class SurfaceManager:
             safe_polydata.DeepCopy(surface.polydata)
 
             # Pass unique object
-            self.publish_surface(safe_polydata, surface.name, surface.colour, surface.transparency, surface_index=key)
+            self.publish_surface(
+                safe_polydata, surface.name, surface.colour, surface.transparency, surface_index=key
+            )
 
         wx.CallAfter(progress.Update, "Finishing...", 100)
 
@@ -971,7 +973,14 @@ class SurfaceManager:
 
         return smoothed
 
-    def publish_surface(self, polydata: vtkPolyData, model_name: str, colour: list, transparency: float, surface_index: int):
+    def publish_surface(
+        self,
+        polydata: vtkPolyData,
+        model_name: str,
+        colour: list,
+        transparency: float,
+        surface_index: int
+    ):
         """Export vtkPolyData to STL, compress, and send as base64."""
         import base64
 

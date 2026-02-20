@@ -2255,10 +2255,6 @@ class ControlPanel(wx.Panel):
     def OnStopNavigation(self):
         Publisher.sendMessage("Disable style", style=const.STATE_NAVIGATION)
 
-        # tooltip = _("Start navigation")
-        # self.btn_nav.SetToolTip(tooltip)
-        # self.btn_nav.SetLabelText(_("Start navigation"))
-        # self.btn_nav.SetValue(False)
         # Set robot objective to NONE when stopping navigation.
         self.robot.SetObjective(RobotObjective.NONE)
 
