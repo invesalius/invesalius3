@@ -905,6 +905,7 @@ class SurfaceManager:
         progress = dialogs.PublishingSurfacesProgressWindow(maximum=100)
         self._publish_surfaces_worker(progress)
         progress.Close()
+        Publisher.sendMessage("Start navigation")
 
     def _publish_surfaces_worker(self, progress):
         proj = prj.Project()
