@@ -27,6 +27,7 @@ from imageio import imsave
 from scipy.spatial import distance
 from vtk import vtkCommand
 from vtkmodules.vtkCommonColor import vtkColorSeries, vtkNamedColors
+from invesalius.data.vtk_utils import coordinates_to_vtk_object_matrix
 
 # TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
 from vtkmodules.vtkCommonCore import (
@@ -982,7 +983,7 @@ class Viewer(wx.Panel):
         self.stored_camera_settings = self.GetCameraSettings()
 
         # Set the transformation matrix for the target.
-        self.m_target = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
+        self.m_target = coordinates_to_vtk_object_matrix(self.target_coord[:3], self.target_coord[3:])
 
         if self.actor_peel:
             self.object_orientation_torus_actor.SetVisibility(0)
@@ -1260,7 +1261,7 @@ class Viewer(wx.Panel):
 
         # Store the new target coordinates and create a new transformation matrix for the target.
         self.target_coord = coord
-        self.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
+        self.m_target = coordinates_to_vtk_object_matrix(coord[:3], coord[3:])
 
         self.coil_visualizer.AddTargetCoil(self.m_target)
 
