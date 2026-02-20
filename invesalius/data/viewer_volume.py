@@ -408,6 +408,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RemoveSurface, "Remove surface actor from viewer")
         # Publisher.subscribe(self.OnShowSurface, 'Show surface')
         Publisher.subscribe(self.UpdateRender, "Render volume viewer")
+        Publisher.subscribe(self.OnProjectLoaded, "Project loaded successfully")
         Publisher.subscribe(self.ChangeBackgroundColour, "Change volume viewer background colour")
 
         # Related to raycasting
@@ -2886,6 +2887,9 @@ class Viewer(wx.Panel):
         self.interactor.Update()
         evt.Skip()
 
+    def OnProjectLoaded(self, pubsub_evt=None):
+        wx.CallAfter(self.UpdateRender)
+
     def ChangeBackgroundColour(self, colour):
         self.ren.SetBackground(colour[:3])
         self.UpdateRender()
@@ -2987,12 +2991,16 @@ class Viewer(wx.Panel):
         else:
             self.ren.RemoveVolume(mask_3d_actor)
 
-        if (
-            self.ren.GetActors().GetNumberOfItems() == 0
-            and self.ren.GetVolumes().GetNumberOfItems() == 1
-        ):
-            self.ren.ResetCamera()
-            self.ren.ResetCameraClippingRange()
+        # Fix for #1085/#1086
+        # If no other major 3D objects (surfaces or raycasting volumes) are present,
+        # we can assume the user is starting a fresh 3D session with this mask.
+        # We explicitly set the "Front" view angle, which acts as a ResetCamera()
+        # but also ensures the anatomical orientation is useful (not arbitrary).
+        if flag and not self.surface_added and not self.raycasting_volume:
+            self.SetViewAngle(const.VOL_FRONT)
+
+        self.UpdateRender()
+        Publisher.sendMessage("Reload actual slice")
 
     def remove_mask_preview(self, mask_3d_actor):
         self.ren.RemoveVolume(mask_3d_actor)

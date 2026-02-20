@@ -1,21 +1,3 @@
-# --------------------------------------------------------------------------
-# Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
-# Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
-# Homepage:     http://www.softwarepublico.gov.br
-# Contact:      invesalius@cti.gov.br
-# License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-# --------------------------------------------------------------------------
-#    Este programa e software livre; voce pode redistribui-lo e/ou
-#    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
-#    publicada pela Free Software Foundation; de acordo com a versao 2
-#    da Licenca.
-#
-#    Este programa eh distribuido na expectativa de ser util, mas SEM
-#    QUALQUER GARANTIA; sem mesmo a garantia implicita de
-#    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
-#    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
-#    detalhes.
-# --------------------------------------------------------------------------
 
 import collections
 import os
@@ -336,7 +318,8 @@ class Viewer(wx.Panel):
 
         del self.style
 
-        style = styles.Styles.get_style(state)(self)
+        style_cls = styles.Styles.get_style(state)
+        style = style_cls(self)
 
         setup = getattr(style, "SetUp", None)
         if setup:
@@ -934,6 +917,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnSetOverwriteMask, "Set overwrite mask")
 
         Publisher.subscribe(self.RefreshViewer, "Refresh viewer")
+        Publisher.subscribe(self.OnProjectLoaded, "Project loaded successfully")
         Publisher.subscribe(self.SetInterpolatedSlices, "Set interpolated slices")
         Publisher.subscribe(self.UpdateInterpolatedSlice, "Update Slice Interpolation")
 
@@ -1313,6 +1297,10 @@ class Viewer(wx.Panel):
             self.canvas.modified = True
             if not self.nav_status:
                 self.UpdateRender()
+
+    def OnProjectLoaded(self, pubsub_evt=None):
+        # Wait for layout to settle
+        wx.CallLater(100, self.UpdateCanvas)
 
     def _update_draw_list(self):
         cp_draw_list = self.canvas.draw_list[:]

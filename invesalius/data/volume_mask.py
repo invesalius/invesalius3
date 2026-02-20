@@ -1,21 +1,4 @@
-# --------------------------------------------------------------------------
-# Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
-# Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
-# Homepage:     http://www.softwarepublico.gov.br
-# Contact:      invesalius@cti.gov.br
-# License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-# --------------------------------------------------------------------------
-#    Este programa e software livre; voce pode redistribui-lo e/ou
-#    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
-#    publicada pela Free Software Foundation; de acordo com a versao 2
-#    da Licenca.
-#
-#    Este programa eh distribuido na expectativa de ser util, mas SEM
-#    QUALQUER GARANTIA; sem mesmo a garantia implicita de
-#    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
-#    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
-#    detalhes.
-# --------------------------------------------------------------------------
+
 from packaging.version import Version
 from vtkmodules.vtkCommonCore import vtkVersion
 from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
@@ -86,6 +69,7 @@ class VolumeMask:
             self._piecewise_function = vtkPiecewiseFunction()
             self._piecewise_function.RemoveAllPoints()
             self._piecewise_function.AddPoint(0.0, 0.0)
+            self._piecewise_function.AddPoint(126, 0.0)
             self._piecewise_function.AddPoint(127, 1.0)
 
             self._volume_property = vtkVolumeProperty()
@@ -93,8 +77,10 @@ class VolumeMask:
             self._volume_property.SetScalarOpacity(self._piecewise_function)
             self._volume_property.ShadeOn()
             self._volume_property.SetInterpolationTypeToLinear()
-            self._volume_property.SetSpecular(0.75)
-            self._volume_property.SetSpecularPower(2)
+            self._volume_property.SetAmbient(0.3)
+            self._volume_property.SetDiffuse(0.7)
+            self._volume_property.SetSpecular(0.5)
+            self._volume_property.SetSpecularPower(10)
 
             if not self._volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
                 self._volume_property.SetScalarOpacityUnitDistance(pix_diag)
