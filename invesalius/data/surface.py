@@ -900,8 +900,8 @@ class SurfaceManager:
         dialog.running = False
 
     def on_publish_surface(self):
-        # Publisher.sendMessage("Stop navigation")
-        # wx.Yield()
+        Publisher.sendMessage("Stop navigation")
+        wx.Yield()
         progress = dialogs.PublishingSurfacesProgressWindow(maximum=100)
         self._publish_surfaces_worker(progress)
         progress.Close()
@@ -925,7 +925,7 @@ class SurfaceManager:
             safe_polydata.DeepCopy(surface.polydata)
 
             # Pass unique object
-            self.publish_surface(safe_polydata, surface.name, surface.colour)
+            self.publish_surface(safe_polydata, surface.name, surface.colour, surface.transparency, surface_index=key)
 
         wx.CallAfter(progress.Update, "Finishing...", 100)
 
@@ -970,7 +970,7 @@ class SurfaceManager:
 
         return smoothed
 
-    def publish_surface(self, polydata: vtkPolyData, model_name: str, colour: list):
+    def publish_surface(self, polydata: vtkPolyData, model_name: str, colour: list, transparency: float, surface_index: int):
         """Export vtkPolyData to STL, compress, and send as base64."""
         import base64
 
@@ -997,8 +997,10 @@ class SurfaceManager:
         Publisher.sendMessage(
             "Neuronavigation to Dashboard: Send surface",
             model_name=model_name,
+            surface_index=surface_index,
             stl_b64=stl_b64,
             color=colour,
+            transparency=transparency,
         )
 
         # 6. clean up temp file
