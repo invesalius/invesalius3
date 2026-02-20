@@ -44,7 +44,7 @@ class SerialPortConnection(threading.Thread):
     def Connect(self):
         if self.com_port is None:
             print("Serial port init error: COM port is unset.")
-            return
+            return False
         try:
             import serial
 
@@ -52,8 +52,10 @@ class SerialPortConnection(threading.Thread):
             print(f"Connection to port {self.com_port} opened.")
 
             Publisher.sendMessage("Serial port connection", state=True)
+            return True
         except Exception:
             print(f"Serial port init error: Connecting to port {self.com_port} failed.")
+            return False
 
     def Disconnect(self):
         if self.connection:
@@ -70,6 +72,10 @@ class SerialPortConnection(threading.Thread):
             print("Error: Serial port could not be written into.")
 
     def run(self):
+        if self.connection is None:
+            print("Serial port thread exiting: No active connection.")
+            return
+
         while not self.event.is_set():
             trigger_on = False
             try:
