@@ -7249,7 +7249,10 @@ class SetCOMPort(wx.Dialog):
         self.CenterOnParent()
 
     def GetCOMPort(self) -> str:
-        com_port = self.com_port_dropdown.GetString(self.com_port_dropdown.GetSelection())
+        com_port = self.com_port_dropdown.GetStringSelection()
+        if not com_port:
+            wx.MessageBox("Please select a COM port.", "No selection", wx.OK | wx.ICON_WARNING)
+            return
         return com_port
 
     def GetBaudRate(self) -> Optional[str]:

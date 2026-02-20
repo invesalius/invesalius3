@@ -256,6 +256,10 @@ class InnerFoldPanel(wx.Panel):
                 return
 
             com_port = dlg_port.GetCOMPort()
+            if not com_port:
+                ctrl.SetValue(False)
+                return
+
             baud_rate = 115200
 
             Publisher.sendMessage(
@@ -2463,6 +2467,9 @@ class ControlPanel(wx.Panel):
                 return
 
             com_port = dlg_port.GetCOMPort()
+            if not com_port:
+                self.UpdateToggleButton(ctrl, False)
+                return
             baud_rate = 115200
 
             Publisher.sendMessage(
