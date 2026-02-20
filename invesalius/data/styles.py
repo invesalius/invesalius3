@@ -2594,7 +2594,6 @@ class SelectPartConfig(metaclass=utils.Singleton):
         self.mask = None
         self.con_3d = 6
         self.dlg_visible = False
-        self.mask_name = ""
 
 
 class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
@@ -2626,14 +2625,12 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         if not self.config.dlg_visible:
-            import invesalius.data.mask as mask
-
-            default_name = const.MASK_NAME_PATTERN % (mask.Mask.general_index + 2)
-
-            self.config.mask_name = default_name
             self.config.dlg_visible = True
-            self.dlg = dialogs.SelectPartsOptionsDialog(self.config)
-            self.dlg.Show()
+            try:
+                self.dlg = dialogs.SelectPartsOptionsDialog(self.config)
+                self.dlg.Show()
+            except Exception as e:
+                self.config.dlg_visible = False
 
     def CleanUp(self):
         if self.dlg is None:
@@ -2647,15 +2644,54 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.dlg = None
 
         if self.config.mask:
-            if dialog_return == wx.OK:
-                self.config.mask.name = self.config.mask_name
-                self.viewer.slice_._add_mask_into_proj(self.config.mask)
-                self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
-                Publisher.sendMessage("Change mask selected", index=self.config.mask.index)
+            # Remove the temporary red preview actor from the 3D viewer
+            if self.config.mask.volume is not None:
+                Publisher.sendMessage(
+                    "Load mask preview",
+                    mask_3d_actor=self.config.mask.volume._actor,
+                    flag=False,
+                )
 
+            if dialog_return == wx.OK:
+                # Apply the selection to the ORIGINAL mask (no new mask created)
+                original = self.viewer.slice_.current_mask
+                selection = self.config.mask.matrix[1:, 1:, 1:]
+                original_matrix = original.matrix[1:, 1:, 1:]
+
+                # Overwrite original mask: keep only selected regions
+                original_matrix[:] = 0
+                original_matrix[selection >= 254] = 254
+
+                # Assign a NEW random color to the modified mask
+                # (following the same logic as Mask.__init__)
+                import random
+                import invesalius.constants as const
+                new_colour = random.choice(const.MASK_COLOUR)
+                original.colour = new_colour
+                
+                # Update the GUI to reflect the new color
+                colour_vtk = [c for c in new_colour]
+                self.viewer.slice_.SetMaskColour(original.index, colour_vtk, update=False)
+
+                # Invalidate all slice buffers so 2D views refresh
+                for orient in ("AXIAL", "CORONAL", "SAGITAL"):
+                    self.viewer.slice_.buffer_slices[orient].discard_mask()
+                    self.viewer.slice_.buffer_slices[orient].discard_vtk_mask()
+
+                # Mark original mask as modified — this triggers 3D update
+                # with the newly assigned color
+                original.was_edited = True
+                original.modified(all_volume=True)
+
+            # Unsubscribe the temporary preview mask from global events
+            Publisher.unsubscribe(self.config.mask.OnFlipVolume, "Flip volume")
+            Publisher.unsubscribe(self.config.mask.OnSwapVolumeAxes, "Swap volume axes")
+
+            # Clean up temporary preview mask and aux overlay
             del self.viewer.slice_.aux_matrices["SELECT"]
             self.viewer.slice_.to_show_aux = ""
             Publisher.sendMessage("Reload actual slice")
+            Publisher.sendMessage("Render volume viewer")
             self.config.mask = None
 
     def OnSelect(self, obj, evt):
@@ -2674,15 +2710,30 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         if self.config.mask is None:
             self._create_new_mask()
 
-        if iren.GetControlKey():
+        selection_matrix = self.config.mask.matrix[1:, 1:, 1:]
+
+        # Check bounds to prevent crash if clicking outside volume
+        if (
+            x < 0
+            or y < 0
+            or z < 0
+            or x >= selection_matrix.shape[2]
+            or y >= selection_matrix.shape[1]
+            or z >= selection_matrix.shape[0]
+        ):
+            return
+
+        # Toggle: if clicking on an already-selected (red) voxel, deselect it
+        is_already_selected = selection_matrix[z, y, x] >= 254
+        if is_already_selected or iren.GetControlKey():
             floodfill.floodfill_threshold(
-                self.config.mask.matrix[1:, 1:, 1:],
+                selection_matrix.copy(),
                 ((x, y, z),),
                 254,
                 255,
                 0,
                 bstruct,
-                self.config.mask.matrix[1:, 1:, 1:],
+                selection_matrix,
             )
         else:
             floodfill.floodfill_threshold(
@@ -2692,21 +2743,69 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 self.t1,
                 self.fill_value,
                 bstruct,
-                self.config.mask.matrix[1:, 1:, 1:],
+                selection_matrix,
             )
 
         self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
         self.viewer.slice_.to_show_aux = "SELECT"
 
         self.config.mask.was_edited = True
+
+        self.viewer.slice_.buffer_slices["AXIAL"].discard_mask()
+        self.viewer.slice_.buffer_slices["CORONAL"].discard_mask()
+        self.viewer.slice_.buffer_slices["SAGITAL"].discard_mask()
+
+        self.viewer.slice_.buffer_slices["AXIAL"].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["CORONAL"].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices["SAGITAL"].discard_vtk_mask()
+
+
+
+        # Update the selection mask's 3D preview volume
+        if self.config.mask.volume is not None:
+            self.config.mask._update_imagedata()
+
         Publisher.sendMessage("Reload actual slice")
 
     def _create_new_mask(self):
+        import invesalius.data.mask as mask_module
+
+        # Save and restore general_index to prevent counter drift
+        # from temporary preview mask creation
+        saved_index = mask_module.Mask.general_index
         mask = self.viewer.slice_.create_new_mask(show=False, add_to_project=False)
+        mask_module.Mask.general_index = saved_index
         mask.was_edited = True
         mask.matrix[0, :, :] = 1
         mask.matrix[:, 0, :] = 1
         mask.matrix[:, :, 0] = 1
+
+        # Set selection colour to red and create 3D preview
+        mask.colour = (1.0, 0.0, 0.0)
+        mask.create_3d_preview()
+        if mask.volume is not None:
+            # Enhance selection visibility
+            prop = mask.volume._volume_property
+            prop.SetAmbient(0.6)
+            prop.SetDiffuse(0.9)
+            prop.SetSpecular(0.6)
+            prop.SetSpecularPower(20)
+
+            # Enhance selection visibility by inflating the surface
+            # Set threshold to 80 (lower than 127) to make surface larger and cover base mask
+            prop.GetIsoSurfaceValues().SetValue(0, 80)
+
+            # Update opacity function for CPU rendering to match
+            pf = mask.volume._piecewise_function
+            if pf:
+                pf.RemoveAllPoints()
+                pf.AddPoint(0.0, 0.0)
+                pf.AddPoint(79, 0.0)
+                pf.AddPoint(80, 1.0)
+
+            Publisher.sendMessage(
+                "Load mask preview", mask_3d_actor=mask.volume._actor, flag=True
+            )
 
         self.config.mask = mask
 
