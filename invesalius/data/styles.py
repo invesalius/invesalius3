@@ -2648,23 +2648,25 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         if self.config.mask:
             if dialog_return == wx.OK:
-                # Capture old mask before selection changes, so we can clean up its 3D preview
+                # Capture old mask before selection changes, so we can hide its 3D preview
                 old_mask = self.viewer.slice_.current_mask
+
+                # If 3D preview is enabled, pre-create the 3D volume actor for the new mask 
+                # BEFORE it's added. This ensures that when _add_mask_into_proj triggers 
+                # "Show mask", data_notebook.py successfully finds the actor and loads it.
+                if ses.Session().mask_3d_preview:
+                    self.config.mask.create_3d_preview()
 
                 self.config.mask.name = self.config.mask_name
                 self.viewer.slice_._add_mask_into_proj(self.config.mask)
                 self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
                 Publisher.sendMessage("Change mask selected", index=self.config.mask.index)
 
-                # Update 3D preview if enabled
                 if ses.Session().mask_3d_preview:
-                    # Remove old mask's 3D preview from renderer to prevent overlay on the new mask
+                    # Safely detach the old mask's 3D preview from the renderer.
+                    # We do not destroy the volume data because the mask is still in the project.
                     if old_mask is not None and old_mask.volume is not None:
                         Publisher.sendMessage("Remove mask preview", mask_3d_actor=old_mask.volume._actor)
-                        old_mask.imagedata = None
-                        old_mask.volume = None
-                    # Create and render the 3D preview for the newly selected mask
-                    self.config.mask.create_3d_preview()
                     Publisher.sendMessage("Render volume viewer")
 
             del self.viewer.slice_.aux_matrices["SELECT"]
