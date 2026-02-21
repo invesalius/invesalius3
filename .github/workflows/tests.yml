@@ -50,7 +50,10 @@ jobs:
                   libxcomposite-dev \
                   libfreetype6-dev \
                   libxi-dev \
-
+                  build-essential \
+                  python3-dev \
+                  python3-wheel \
+                  python3-pip
 
       - uses: astral-sh/setup-uv@v5
         with:
