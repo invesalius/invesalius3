@@ -244,7 +244,7 @@ class Inv3SplashScreen(SplashScreen):
         if not session.ExitedSuccessfullyLastTime():
             # Check for auto-backup
             backup_path = session.GetAutoBackupPath()
-            
+
             if backup_path:
                 # Show recovery dialog
                 msg = (
@@ -253,16 +253,13 @@ class Inv3SplashScreen(SplashScreen):
                     "Would you like to recover it?"
                 )
                 dlg = wx.MessageDialog(
-                    None,
-                    msg,
-                    "InVesalius 3 - Crash Recovery",
-                    wx.ICON_QUESTION | wx.YES_NO
+                    None, msg, "InVesalius 3 - Crash Recovery", wx.ICON_QUESTION | wx.YES_NO
                 )
                 dlg.SetYesNoLabels("Recover", "Discard")
-                
+
                 answer = dlg.ShowModal()
                 dlg.Destroy()
-                
+
                 if answer == wx.ID_YES:
                     # Recover from backup
                     if os.path.exists(backup_path):
