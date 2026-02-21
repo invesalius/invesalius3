@@ -56,13 +56,7 @@ jobs:
                   libgl1-mesa-glx \
                   libgstreamer-plugins-good1.0-0 \
                   libgstreamer-plugins-bad1.0-0 \
-<<<<<<< HEAD
                   libpulse-dev
-=======
-                  libgstreamer-plugins-ugly1.0-0 \
-                  libpulse-dev
-
->>>>>>> 3757120a (Fix wxPython build issues: constrain setuptools and add missing system dependencies)
 
       - uses: astral-sh/setup-uv@v5
         with:
