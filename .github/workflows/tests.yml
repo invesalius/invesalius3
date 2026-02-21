@@ -50,7 +50,15 @@ jobs:
                   libxcomposite-dev \
                   libfreetype6-dev \
                   libxi-dev \
-
+                  libgtk-3-0 \
+                  libgl1-mesa-glx \
+                  libgstreamer-plugins-good1.0-0 \
+                  libgstreamer-plugins-bad1.0-0 \
+                  libpulse-dev \
+                  build-essential \
+                  python3-dev \
+                  python3-wheel \
+                  python3-pip
 
       - uses: astral-sh/setup-uv@v5
         with:
@@ -59,7 +67,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Syncing with UV
-        run: uv sync --all-extras
+        run: uv sync --all-extras --find-links https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04
 
       - name: Run tests with xvfb
         run: xvfb-run -a bash -c "pytest"
