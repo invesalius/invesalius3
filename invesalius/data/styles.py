@@ -2660,7 +2660,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 if ses.Session().mask_3d_preview:
                     # Remove old mask's 3D preview from renderer to prevent overlay on the new mask
                     if old_mask is not None and old_mask.volume is not None:
-                        Publisher.sendMessage("Unload volume", volume=old_mask.volume._actor)
+                        Publisher.sendMessage("Remove mask preview", mask_3d_actor=old_mask.volume._actor)
                         old_mask.imagedata = None
                         old_mask.volume = None
                     # Create and render the 3D preview for the newly selected mask
