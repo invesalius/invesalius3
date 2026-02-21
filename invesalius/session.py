@@ -153,6 +153,8 @@ class Session(metaclass=Singleton):
         self.SetConfig("project_status", const.PROJECT_STATUS_CLOSED)
         # self.mode = const.MODE_RP
         self.temp_item = False
+        # Reset unsaved changes flag so a clean close is not mistaken for a crash
+        self._has_unsaved_changes = False
 
     def SaveProject(self, path: Union[Tuple[()], Tuple[str, str]] = ()) -> None:
         import invesalius.constants as const

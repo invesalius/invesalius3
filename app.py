@@ -246,8 +246,8 @@ class Inv3SplashScreen(SplashScreen):
             if backup_path:
                 # Show recovery dialog
                 msg = (
-                    "InVesalius did not exit successfully last time.\\n\\n"
-                    "An auto-backup of your unsaved work was found.\\n"
+                    "InVesalius did not exit successfully last time.\n\n"
+                    "An auto-backup of your unsaved work was found.\n"
                     "Would you like to recover it?"
                 )
                 dlg = wx.MessageDialog(

@@ -117,9 +117,11 @@ def test_save_project(mocker):
     mocker.patch.object(
         session, "GetConfig", return_value=[["/dummy/path", "dummy.inv"]]
     )  # Ensures its not None
+    # Patch RemoveAutoBackup to avoid it calling SetState a second time
+    mocker.patch.object(session, "RemoveAutoBackup")
     project_path = ("path", "project.inv")
     session.SaveProject(project_path)
-    mock_set_state.assert_called_once_with("project_path", project_path)
+    mock_set_state.assert_any_call("project_path", project_path)
     mock_set_config.assert_has_calls(
         [
             call("recent_projects", mocker.ANY),  # Ensures recent projects were updated
@@ -132,8 +134,42 @@ def test_save_project(mocker):
 
 def test_change_project(mocker):
     mock_set_config = mocker.patch.object(session, "SetConfig")
+    # Patch IsOpen so no backup thread is spawned during the test
+    mocker.patch.object(session, "IsOpen", return_value=False)
+    session._has_unsaved_changes = False
     session.ChangeProject()
     mock_set_config.assert_called_once_with("project_status", const.PROJECT_STATUS_CHANGED)
+    assert session._has_unsaved_changes is True
+
+
+def test_has_unsaved_changes_after_change(mocker):
+    """HasUnsavedChanges should return True after ChangeProject is called."""
+    mocker.patch.object(session, "SetConfig")
+    mocker.patch.object(session, "IsOpen", return_value=False)
+    session._has_unsaved_changes = False
+    assert session.HasUnsavedChanges() is False
+    session.ChangeProject()
+    assert session.HasUnsavedChanges() is True
+
+
+def test_unsaved_changes_cleared_on_save(mocker):
+    """SaveProject should clear the unsaved-changes flag."""
+    mocker.patch.object(session, "SetState")
+    mocker.patch.object(session, "SetConfig")
+    mocker.patch.object(session, "GetConfig", return_value=[["/dummy/path", "dummy.inv"]])
+    mocker.patch.object(session, "RemoveAutoBackup")
+    session._has_unsaved_changes = True
+    session.SaveProject(("path", "project.inv"))
+    assert session.HasUnsavedChanges() is False
+
+
+def test_unsaved_changes_cleared_on_close(mocker):
+    """CloseProject should reset the unsaved-changes flag."""
+    mocker.patch.object(session, "SetState")
+    mocker.patch.object(session, "SetConfig")
+    session._has_unsaved_changes = True
+    session.CloseProject()
+    assert session.HasUnsavedChanges() is False
 
 
 def test_create_project(mocker):
