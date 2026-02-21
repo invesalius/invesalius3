@@ -352,9 +352,24 @@ class Controller:
         proj.OpenPlistProject(path)
         proj.SetAcquisitionModality(proj.modality)
         self.Slice = sl.Slice()
-        self.Slice._open_image_matrix(
-            proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
-        )
+        
+        try:
+            self.Slice._open_image_matrix(
+                proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
+            )
+        except (FileNotFoundError, RuntimeError) as e:
+            Publisher.sendMessage("End busy cursor")
+            if wx.GetApp() is None:
+                print(f"Error: Failed to load image matrix: {e}")
+            else:
+                dlg = dialogs.ErrorMessageBox(
+                    None,
+                    "Failed to Load Project",
+                    f"Could not open the image matrix file.\n\n{e}"
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+            return
 
         self.Slice.window_level = proj.level
         self.Slice.window_width = proj.window
@@ -577,9 +592,24 @@ class Controller:
         proj.load_from_folder(folder)
 
         self.Slice = sl.Slice()
-        self.Slice._open_image_matrix(
-            proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
-        )
+        
+        try:
+            self.Slice._open_image_matrix(
+                proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
+            )
+        except (FileNotFoundError, RuntimeError) as e:
+            Publisher.sendMessage("End busy cursor")
+            if wx.GetApp() is None:
+                print(f"Error: Failed to load image matrix: {e}")
+            else:
+                dlg = dialogs.ErrorMessageBox(
+                    None,
+                    "Failed to Import Folder",
+                    f"Could not open the image matrix file.\n\n{e}"
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+            return
 
         self.Slice.window_level = proj.level
         self.Slice.window_width = proj.window
