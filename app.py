@@ -53,7 +53,7 @@ if sys.platform not in ("win32", "darwin"):
 import wx
 from wx.adv import SPLASH_CENTRE_ON_SCREEN, SPLASH_TIMEOUT, SplashScreen
 
-#import invesalius.error_handling
+# import invesalius.error_handling
 import invesalius.i18n as i18n
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -115,13 +115,14 @@ class InVesalius(wx.App):
         self.frame.Show()
         self.frame.Raise()
 
-
         # Initialize the enhanced logging system
         import invesalius.enhanced_logging
+
         invesalius.enhanced_logging.register_menu_handler()
 
         # Initialize the legacy logging system for backward compatibility
         import invesalius.gui.log as log
+
         log.invLogger.configureLogging()
 
 
@@ -156,6 +157,7 @@ class Inv3SplashScreen(SplashScreen):
         # user can select language
         if not install_lang:
             import invesalius.gui.language_dialog as lang_dlg
+
             dialog = lang_dlg.LanguageDialog()
 
             # FIXME: This works ok in linux2, darwin and win32,
@@ -242,7 +244,7 @@ class Inv3SplashScreen(SplashScreen):
         if not session.ExitedSuccessfullyLastTime():
             # Check for auto-backup
             backup_path = session.GetAutoBackupPath()
-            
+
             if backup_path:
                 # Show recovery dialog
                 msg = (
@@ -251,16 +253,13 @@ class Inv3SplashScreen(SplashScreen):
                     "Would you like to recover it?"
                 )
                 dlg = wx.MessageDialog(
-                    None,
-                    msg,
-                    "InVesalius 3 - Crash Recovery",
-                    wx.ICON_QUESTION | wx.YES_NO
+                    None, msg, "InVesalius 3 - Crash Recovery", wx.ICON_QUESTION | wx.YES_NO
                 )
                 dlg.SetYesNoLabels("Recover", "Discard")
-                
+
                 answer = dlg.ShowModal()
                 dlg.Destroy()
-                
+
                 if answer == wx.ID_YES:
                     # Recover from backup
                     if os.path.exists(backup_path):
@@ -594,6 +593,7 @@ def init():
         path = inv_paths.USER_LOG_DIR.joinpath("stderr.log")
         sys.stderr = open(path, "w")
 
+
 def load_neuronavigation(args, connection, remote_host):
     session = ses.Session()
     session.SetConfig("debug", args.debug)
@@ -614,7 +614,9 @@ def load_neuronavigation(args, connection, remote_host):
         MidiPedal().start()
 
     from invesalius.net.neuronavigation_api import NeuronavigationApi
+
     NeuronavigationApi(connection)
+
 
 def main(connection=None, remote_host=None):
     """
@@ -643,9 +645,9 @@ def main(connection=None, remote_host=None):
         non_gui_startup(args)
     else:
         application = InVesalius(False)
-        #TODO: To avoid related translation (i18n) problems, any additional 
-        # module loading, especially those using constants.py, 
-        # should be placed after this section. 
+        # TODO: To avoid related translation (i18n) problems, any additional
+        # module loading, especially those using constants.py,
+        # should be placed after this section.
         load_neuronavigation(args, connection, remote_host)
         application.MainLoop()
 
