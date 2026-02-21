@@ -47,6 +47,12 @@ jobs:
                   libxcomposite-dev \
                   libfreetype6-dev \
                   libxi-dev \
+                  libgtk-3-0 \
+                  libgl1-mesa-glx \
+                  libgstreamer-plugins-good1.0-0 \
+                  libgstreamer-plugins-bad1.0-0 \
+                  libgstreamer-plugins-ugly1.0-0 \
+                  libpulse-dev
 
 
       - uses: astral-sh/setup-uv@v5
