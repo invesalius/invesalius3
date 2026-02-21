@@ -242,15 +242,46 @@ class Inv3SplashScreen(SplashScreen):
         p.start()
 
         if not session.ExitedSuccessfullyLastTime():
-            # Reopen project
-            project_path = session.GetState("project_path")
-            if project_path is not None:
-                filepath = os.path.join(project_path[0], project_path[1])
-                if os.path.exists(filepath):
-                    Publisher.sendMessage("Open project", filepath=filepath)
+            # Check for auto-backup
+            backup_path = session.GetAutoBackupPath()
+
+            if backup_path:
+                # Show recovery dialog
+                msg = (
+                    "InVesalius did not exit successfully last time.\n\n"
+                    "An auto-backup of your unsaved work was found.\n"
+                    "Would you like to recover it?"
+                )
+                dlg = wx.MessageDialog(
+                    None, msg, "InVesalius 3 - Crash Recovery", wx.ICON_QUESTION | wx.YES_NO
+                )
+                dlg.SetYesNoLabels("Recover", "Discard")
+
+                answer = dlg.ShowModal()
+                dlg.Destroy()
+
+                if answer == wx.ID_YES:
+                    # Recover from backup
+                    if os.path.exists(backup_path):
+                        Publisher.sendMessage("Open project", filepath=backup_path)
+                        # Mark project as having unsaved changes since it's from backup
+                        session._has_unsaved_changes = True
+                    else:
+                        utils.debug(f"Backup file doesn't exist: {backup_path}")
+                        session.RemoveAutoBackup()
                 else:
-                    utils.debug(f"File doesn't exist: {filepath}")
-                    session.CloseProject()
+                    # User chose to discard backup
+                    session.RemoveAutoBackup()
+            else:
+                # No backup, try to reopen previous project
+                project_path = session.GetState("project_path")
+                if project_path is not None:
+                    filepath = os.path.join(project_path[0], project_path[1])
+                    if os.path.exists(filepath):
+                        Publisher.sendMessage("Open project", filepath=filepath)
+                    else:
+                        utils.debug(f"File doesn't exist: {filepath}")
+                        session.CloseProject()
         else:
             session.CreateState()
 

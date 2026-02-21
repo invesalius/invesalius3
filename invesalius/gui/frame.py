@@ -555,9 +555,40 @@ class Frame(wx.Frame):
             self._last_viewer_orientation_focus = orientation
 
     def CloseProject(self):
+        # The controller's ShowDialogCloseProject already handles the
+        # unsaved-changes dialog when project_status is NEW or CHANGED.
         Publisher.sendMessage("Close Project")
 
     def ExitDialog(self):
+        session = ses.Session()
+
+        # Check for unsaved changes
+        if session.HasUnsavedChanges():
+            msg = _("You have unsaved changes. What would you like to do?")
+            dialog = wx.MessageDialog(
+                None, msg, "InVesalius 3 - Unsaved Changes", wx.ICON_WARNING | wx.YES_NO | wx.CANCEL
+            )
+            dialog.SetYesNoLabels(_("Save and Exit"), _("Discard and Exit"))
+
+            answer = dialog.ShowModal()
+            dialog.Destroy()
+
+            if answer == wx.ID_YES:
+                # Save and exit
+                Publisher.sendMessage("Show save dialog", save_as=session.temp_item)
+                # Wait a moment for save to complete
+                wx.Yield()
+                log.invLogger.closeLogging()
+                return 1  # Exit and delete session
+            elif answer == wx.ID_NO:
+                # Discard and exit
+                log.invLogger.closeLogging()
+                return 1  # Exit and delete session
+            else:
+                # Cancel - don't exit
+                return 0
+
+        # No unsaved changes, show normal exit dialog
         msg = _("Are you sure you want to exit?")
         dialog = wx.RichMessageDialog(
             None, msg, "Invesalius 3", wx.ICON_QUESTION | wx.YES_NO | wx.NO_DEFAULT
