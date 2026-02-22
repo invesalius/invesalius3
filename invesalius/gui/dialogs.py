@@ -1197,7 +1197,7 @@ def ReportICPDistributionError() -> None:
     dlg.Destroy()
 
 
-def WarnNonVisibleFaces() -> bool:
+def WarnNonVisibleFaces(parent: wx.Window = None) -> bool:
     """
     Warn user about non-visible faces in the surface and ask whether to proceed.
 
@@ -1213,14 +1213,14 @@ def WarnNonVisibleFaces() -> bool:
     )
     if sys.platform == "darwin":
         dlg = wx.MessageDialog(
-            None,
+            parent,
             "",
             msg,
             wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
         )
     else:
         dlg = wx.MessageDialog(
-            None,
+            parent,
             msg,
             "InVesalius 3 - Refine Coregistration",
             wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
@@ -4744,16 +4744,19 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def _validate_surface(self) -> None:
         """Validate the selected surface for non-visible faces."""
+        if self._surface_validated:
+            return
         try:
             import invesalius.data.polydata_utils as pu
 
             if pu.HasNonVisibleFaces(self.surface):
-                if not WarnNonVisibleFaces():
+                if not WarnNonVisibleFaces(self):
                     self.EndModal(wx.ID_CANCEL)
                     return
         except Exception:
             pass
         self._surface_validated = True
+        self.interactor.Render()
 
     def OnComboName(self, evt: wx.CommandEvent) -> None:
         # surface_name = evt.GetString()
