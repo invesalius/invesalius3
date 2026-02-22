@@ -823,6 +823,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         """Complete the polygon by connecting the last point to the first one."""
         self.m3e_list[-1].complete_polygon()
         Publisher.sendMessage("M3E cut mask from 3D")
+        self.ClearPolygons()
         self.viewer.UpdateCanvas()
 
     def ReceiveVolumeViewerActiveCamera(self, cam: "vtkCamera"):
