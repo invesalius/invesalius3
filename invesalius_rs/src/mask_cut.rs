@@ -1,15 +1,15 @@
+use crate::types::{ImageTypes3, MaskTypesMut3};
 use nalgebra::{Matrix4, Vector4};
 use ndarray::parallel::prelude::*;
-use numpy::{PyReadonlyArray2, PyReadonlyArray3, PyReadwriteArray3};
-use pyo3::prelude::*;
-use crate::types::{ImageTypes3, ImageTypesMut3, MaskTypesMut3, MaskTypes3, MaskTypes2};
-use ndarray::{ArrayView3, ArrayView2, ArrayViewMut3};
-use pyo3::exceptions::PyTypeError;
-use num_traits::NumCast;
+use ndarray::{ArrayView2, ArrayView3, ArrayViewMut3};
 use num_traits::AsPrimitive;
+use num_traits::NumCast;
+use numpy::PyReadonlyArray2;
+use pyo3::exceptions::PyTypeError;
+use pyo3::prelude::*;
 
 pub fn mask_cut_internal<T, U>(
-    image: ArrayView3<T>,
+    _image: ArrayView3<T>,
     sx: f64,
     sy: f64,
     sz: f64,
@@ -18,7 +18,10 @@ pub fn mask_cut_internal<T, U>(
     m: ArrayView2<f64>,
     mv: ArrayView2<f64>,
     mut out: ArrayViewMut3<U>,
-) where T: PartialOrd + Copy + Send + Sync + NumCast + AsPrimitive<f64>, U: PartialOrd + Copy + Send + Sync + NumCast + AsPrimitive<i32> {
+) where
+    T: PartialOrd + Copy + Send + Sync + NumCast + AsPrimitive<f64>,
+    U: PartialOrd + Copy + Send + Sync + NumCast + AsPrimitive<i32>,
+{
     let m_slice = m.as_slice().unwrap();
     let mv_slice = mv.as_slice().unwrap();
     let m_nalgebra = Matrix4::from_row_slice(m_slice);
@@ -52,9 +55,7 @@ pub fn mask_cut_internal<T, U>(
             }
         }
     });
-
 }
-
 
 #[pyfunction]
 pub fn mask_cut<'py>(
@@ -66,19 +67,49 @@ pub fn mask_cut<'py>(
     mask: PyReadonlyArray2<bool>,
     m: PyReadonlyArray2<f64>,
     mv: PyReadonlyArray2<f64>,
-    mut out: MaskTypesMut3<'py>,
+    out: MaskTypesMut3<'py>,
 ) -> PyResult<()> {
     match (image, out) {
         (ImageTypes3::I16(image), MaskTypesMut3::U8(mut out)) => {
-            mask_cut_internal(image.as_array(), sx, sy, sz, max_depth, mask.as_array(), m.as_array(), mv.as_array(), out.as_array_mut());
+            mask_cut_internal(
+                image.as_array(),
+                sx,
+                sy,
+                sz,
+                max_depth,
+                mask.as_array(),
+                m.as_array(),
+                mv.as_array(),
+                out.as_array_mut(),
+            );
             Ok(())
         }
         (ImageTypes3::U8(image), MaskTypesMut3::U8(mut out)) => {
-            mask_cut_internal(image.as_array(), sx, sy, sz, max_depth, mask.as_array(), m.as_array(), mv.as_array(), out.as_array_mut());
+            mask_cut_internal(
+                image.as_array(),
+                sx,
+                sy,
+                sz,
+                max_depth,
+                mask.as_array(),
+                m.as_array(),
+                mv.as_array(),
+                out.as_array_mut(),
+            );
             Ok(())
         }
         (ImageTypes3::F64(image), MaskTypesMut3::U8(mut out)) => {
-            mask_cut_internal(image.as_array(), sx, sy, sz, max_depth, mask.as_array(), m.as_array(), mv.as_array(), out.as_array_mut());
+            mask_cut_internal(
+                image.as_array(),
+                sx,
+                sy,
+                sz,
+                max_depth,
+                mask.as_array(),
+                m.as_array(),
+                mv.as_array(),
+                out.as_array_mut(),
+            );
             Ok(())
         }
         _ => Err(PyTypeError::new_err("Invalid image or mask type")),
