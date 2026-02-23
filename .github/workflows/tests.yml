@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: 3.12
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
 
       - name: Install Ubuntu dependencies
         run: |
@@ -61,11 +64,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Install wxPython from prebuilt wheel
-        run: pip install wxpython --find-links https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04
-
       - name: Syncing with UV
-        run: uv sync --all-extras --no-build-isolation
+        run: uv sync --all-extras --find-links https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04
 
       - name: Run tests with xvfb
         run: xvfb-run -a bash -c "pytest"
