@@ -28,6 +28,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+                  python3-dev \
+                  build-essential \
                   freeglut3-dev \
                   libcurl4-openssl-dev \
                   libexpat1-dev \
