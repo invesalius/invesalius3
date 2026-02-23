@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -58,18 +58,22 @@ jobs:
                   libgstreamer-plugins-bad1.0-0 \
                   libpulse-dev
 
-
       - uses: astral-sh/setup-uv@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Ensure setuptools <68 for wxPython compatibility
-        run: uv pip install "setuptools>=65,<68"
+      - name: Install wxPython with compatible setuptools
+        run: |
+          # Create venv and install setuptools <68 first
+          uv venv
+          uv pip install "setuptools>=65,<68" wheel
+          # Install wxPython without build isolation so it uses our setuptools
+          uv pip install --no-build-isolation -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04 wxpython==4.2.2
 
-      - name: Syncing with UV
-        run: uv sync --all-extras --find-links https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04
+      - name: Syncing remaining dependencies with UV
+        run: uv sync --all-extras
 
       - name: Run tests with xvfb
         run: xvfb-run -a bash -c "pytest"
