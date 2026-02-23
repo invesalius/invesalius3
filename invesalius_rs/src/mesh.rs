@@ -2,14 +2,13 @@ use core::{f64, hash};
 use crossbeam_deque::{Injector, Steal, Stealer, Worker};
 use nalgebra::{Point3, Vector3};
 use ndarray::parallel::prelude::*;
-use ndarray::{Array, Array1, Dim};
-use ndarray::{Array2, ArrayView2, ArrayViewMut2};
+use ndarray::Array1;
+use ndarray::{Array2, ArrayView1, ArrayView2, ArrayViewMut2};
 use num_traits::{AsPrimitive, NumCast};
 use numpy::ndarray;
 use pyo3::prelude::*;
-use rayon::Scope;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -82,9 +81,8 @@ pub fn context_aware_smoothing_internal<V, F, N>(
     //     bmin,
     // );
     let t0 = std::time::Instant::now();
-    let weights = floodfill_mesh(
+    let weights = propagate_weights(
         &vertices.view(),
-        &faces.view(),
         &vertex_connectivity,
         &vertices_staircase,
         tmax,
@@ -122,22 +120,18 @@ where
 fn build_vertex_connectivity<F, V>(
     faces: &ArrayView2<F>,
     vertices: &ArrayView2<V>,
-) -> HashMap<usize, Vec<usize>>
+) -> Vec<Vec<usize>>
 where
     F: Face,
     V: Vertex,
 {
-    let mut vertex_connectivity: HashMap<usize, Vec<usize>> =
-        HashMap::with_capacity(vertices.nrows());
+    let mut vertex_connectivity = vec![vec![]; vertices.nrows()];
 
-    for (f_id, face) in faces.outer_iter().enumerate() {
+    for face in faces.outer_iter() {
         for &v_i in face.iter().skip(1) {
             for &v_j in face.iter().skip(1) {
-                if v_i != v_j {
-                    vertex_connectivity
-                        .entry(v_i.as_())
-                        .or_default()
-                        .push(v_j.as_());
+                if v_i != v_j && !vertex_connectivity[v_i.as_()].contains(&v_j.as_()) {
+                    vertex_connectivity[v_i.as_()].push(v_j.as_());
                 }
             }
         }
@@ -183,20 +177,17 @@ where
 
                     if of_z > max_z {
                         max_z = of_z;
-                    }
-                    else if of_z < min_z {
+                    } else if of_z < min_z {
                         min_z = of_z;
                     }
                     if of_y > max_y {
                         max_y = of_y;
-                    }
-                    else if of_y < min_y {
+                    } else if of_y < min_y {
                         min_y = of_y;
                     }
                     if of_x > max_x {
                         max_x = of_x;
-                    }
-                    else if of_x < min_x {
+                    } else if of_x < min_x {
                         min_x = of_x;
                     }
 
@@ -261,8 +252,8 @@ where
 
 pub fn floodfill_mesh<V, F>(
     vertices: &ArrayView2<V>,
-    faces: &ArrayView2<F>,
-    vertex_connectivity: &HashMap<usize, Vec<usize>>,
+    _faces: &ArrayView2<F>,
+    vertex_connectivity: &Vec<Vec<usize>>,
     vertices_staircase: &Vec<usize>,
     tmax: f64,
     bmin: f64,
@@ -271,13 +262,13 @@ where
     V: Vertex,
     F: Face,
 {
-    let mut visited = Arc::new(
+    let visited = Arc::new(
         (0..vertices.shape()[0])
             .map(|_| AtomicBool::new(false))
             .collect::<Vec<_>>(),
     );
-    let mut injector = Arc::new(Injector::new());
-    let mut map_vstaircase = Arc::new(
+    let injector = Arc::new(Injector::new());
+    let map_vstaircase = Arc::new(
         (0..vertices.shape()[0])
             .map(|_| AtomicI64::new(-1))
             .collect::<Vec<_>>(),
@@ -286,7 +277,7 @@ where
 
     for &v_id in vertices_staircase.iter() {
         if !visited[v_id].swap(true, Ordering::AcqRel) {
-            injector.push((v_id));
+            injector.push(v_id );
             map_vstaircase[v_id].store(v_id as i64, Ordering::Release);
         }
     }
@@ -318,7 +309,7 @@ where
                     None => break,
                 };
 
-                for &vj in vertex_connectivity.get(&v).unwrap_or(&vec![]) {
+                for &vj in vertex_connectivity[v].iter() {
                     let pi = Vector3::new(
                         vertices.row(v)[0].as_(),
                         vertices.row(v)[1].as_(),
@@ -333,7 +324,7 @@ where
                     if dist_sq > tmax * tmax {
                         continue;
                     }
-                    let value = (1.0 - dist_sq / tmax) * (1.0 - bmin) + bmin;
+                    let _value = (1.0 - dist_sq / tmax) * (1.0 - bmin) + bmin;
                     let old_value = map_vstaircase[vj].load(Ordering::Acquire);
                     if old_value > -1 {
                         let old_pi = Vector3::new(
@@ -349,7 +340,7 @@ where
                     map_vstaircase[vj]
                         .store(map_vstaircase[v].load(Ordering::Acquire), Ordering::Release);
                     if !visited[vj].swap(true, Ordering::AcqRel) {
-                        injector.push((vj));
+                        injector.push(vj );
                     }
                 }
             });
@@ -376,10 +367,115 @@ where
     weights
 }
 
+fn sqdist<V>(a: &ArrayView1<V>, b: &ArrayView1<V>) -> f64
+where
+    V: Vertex,
+{
+    let dx = a[0].as_() - b[0].as_();
+    let dy = a[1].as_() - b[1].as_();
+    let dz = a[2].as_() - b[2].as_();
+    
+    dx * dx + dy * dy + dz * dz
+}
+
+pub fn propagate_weights<V>(
+    positions: &ArrayView2<V>,
+    adjacency: &[Vec<usize>],
+    seeds: &[usize],
+    tmax: f64,
+    bmin: f64,
+) -> Vec<f64>
+where
+    V: Vertex,
+{
+    let n = positions.shape()[0];
+
+    let dist = (0..n)
+        .map(|_| AtomicU64::new(f64::INFINITY.to_bits()))
+        .collect::<Vec<_>>();
+
+    let seed_map = (0..n)
+        .map(|_| AtomicUsize::new(usize::MAX))
+        .collect::<Vec<_>>();
+
+    let mut frontier = seeds.to_vec();
+
+    for &s in seeds {
+        dist[s].store(0f64.to_bits(), Ordering::Relaxed);
+        seed_map[s].store(s, Ordering::Relaxed);
+    }
+
+    let tmax_sq = tmax * tmax;
+
+    while !frontier.is_empty() {
+        let next: Vec<Vec<usize>> = frontier
+            .par_iter()
+            .map(|&v| {
+                let mut local = Vec::new();
+
+                let seed = seed_map[v].load(Ordering::Acquire);
+                let seed_pos = &positions.row(seed);
+
+                for &vj in &adjacency[v] {
+                    let pj = &positions.row(vj);
+
+                    let d_sq = sqdist(pj, seed_pos);
+
+                    if d_sq > tmax_sq {
+                        continue;
+                    }
+
+                    loop {
+                        let old = f64::from_bits(dist[vj].load(Ordering::Acquire));
+
+                        if d_sq >= old && old.is_finite() {
+                            break;
+                        }
+
+                        if dist[vj]
+                            .compare_exchange_weak(
+                                old.to_bits(),
+                                d_sq.to_bits(),
+                                Ordering::AcqRel,
+                                Ordering::Acquire,
+                            )
+                            .is_ok()
+                        {
+                            seed_map[vj].store(seed, Ordering::Release);
+
+                            local.push(vj);
+                            break;
+                        }
+                    }
+                }
+
+                local
+            })
+            .collect();
+        frontier = next.into_iter().flatten().collect();
+    }
+
+    // cálculo final do weight
+    
+    (0..n)
+        .map(|i| {
+            let d = f64::from_bits(dist[i].load(Ordering::Relaxed));
+
+            if !d.is_finite() {
+                return bmin;
+            }
+
+            let d = d.sqrt();
+
+            (1.0 - d / tmax) * (1.0 - bmin) + bmin
+        })
+        .collect()
+}
+
 #[inline]
 fn calc_d<V>(
     vertices: &ArrayView2<V>,
-    vertex_connectivity: &HashMap<usize, Vec<usize>>,
+    vertex_connectivity: &Vec<Vec<usize>>,
     v_id: usize,
 ) -> Vector3<f64>
 where
@@ -392,7 +488,7 @@ where
     let mut n = 0usize;
 
     if is_border(v_id) {
-        for &vj_id in vertex_connectivity.get(&v_id).unwrap_or(&vec![]) {
+        for &vj_id in vertex_connectivity[v_id].iter() {
             if is_border(vj_id) {
                 let vj = vertices.row(vj_id);
                 let p_vj = Vector3::new(vj[0].as_(), vj[1].as_(), vj[2].as_());
@@ -401,7 +497,7 @@ where
             }
         }
     } else {
-        for &vj_id in vertex_connectivity.get(&v_id).unwrap_or(&vec![]).iter() {
+        for &vj_id in vertex_connectivity[v_id].iter() {
             let vj = vertices.row(vj_id);
             let p_vj = Vector3::new(vj[0].as_(), vj[1].as_(), vj[2].as_());
             d += p_vi - p_vj;
@@ -496,8 +592,8 @@ where
 
 fn taubin_smooth<V>(
     mut vertices: ArrayViewMut2<V>,
-    vertex_connectivity: &HashMap<usize, Vec<usize>>,
-    weights: &Array1<f64>,
+    vertex_connectivity: &Vec<Vec<usize>>,
+    weights: &Vec<f64>,
     l: f64,
     m: f64,
     steps: u32,
@@ -511,7 +607,7 @@ fn taubin_smooth<V>(
         // Calculate D for all vertices
 
         par_azip!((index i, mut d in d_values.outer_iter_mut()) {
-            let d_vec = calc_d(&vertices.view(), &vertex_connectivity, i);
+            let d_vec = calc_d(&vertices.view(), vertex_connectivity, i);
             d[0] = d_vec.x;
             d[1] = d_vec.y;
             d[2] = d_vec.z;
@@ -528,7 +624,7 @@ fn taubin_smooth<V>(
         });
 
         par_azip!((index i, mut d in d_values.outer_iter_mut()) {
-            let d_vec = calc_d(&vertices.view(),  &vertex_connectivity, i);
+            let d_vec = calc_d(&vertices.view(),  vertex_connectivity, i);
             d[0] = d_vec.x;
             d[1] = d_vec.y;
             d[2] = d_vec.z;
