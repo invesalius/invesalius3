@@ -67,7 +67,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Syncing with UV
-        run: uv sync --all-extras --find-links https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04
+        run: uv sync --all-extras --find-links https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04 --no-build-package wxpython
 
       - name: Run tests with xvfb
         run: xvfb-run -a bash -c "pytest"
