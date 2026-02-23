@@ -66,8 +66,7 @@ jobs:
 
       - name: Install wxPython with compatible setuptools
         run: |
-          # Create venv and install setuptools <68 first
-          uv venv
+          # Install setuptools <68 first (for wxPython build compatibility)
           uv pip install "setuptools>=65,<68" wheel
           # Install wxPython without build isolation so it uses our setuptools
           uv pip install --no-build-isolation -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04 wxpython==4.2.2
