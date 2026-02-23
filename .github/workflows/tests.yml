@@ -66,11 +66,10 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Create setuptools constraint for wxPython
-        run: echo "setuptools<72" > /tmp/build-constraints.txt
-
       - name: Syncing with UV
-        run: uv sync --all-extras --override /tmp/build-constraints.txt
+        env:
+          MAKEFLAGS: "-j2"
+        run: uv sync --all-extras
 
       - name: Run tests with xvfb
         run: xvfb-run -a bash -c "pytest"

@@ -111,6 +111,8 @@ strip = true
 
 [tool.uv]
 cache-keys = [{ file = "pyproject.toml" }, { file = "invesalius_rs/src/**/*.rs" }, { file = "invesalius_rs/Cargo.toml" }, { file = "invesalius_rs/Cargo.lock" }]
+# wxPython 4.2.2 uses setuptools.build_meta:__legacy__ which broke in setuptools>=72
+constraint-dependencies = ["setuptools<72"]
 
 
 [tool.setuptools]
