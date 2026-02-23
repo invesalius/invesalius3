@@ -13,8 +13,10 @@ class CreateMaskCommand(Command):
         Publisher.sendMessage("Add mask", mask=self.mask)
 
     def undo(self):
-        Project().RemoveMask(self.index)
-        Publisher.sendMessage("Remove masks", mask_indexes=[self.index])
+        if self.index is None:
+            return
+        Project().RemoveMask(self.index, cleanup=False)
+        Publisher.sendMessage("Refresh Masks")
 
 
 class DeleteMaskCommand(Command):
@@ -24,7 +26,10 @@ class DeleteMaskCommand(Command):
 
     def execute(self):
         project = Project()
+        if self.index not in project.mask_dict:
+            return
         self.mask = project.GetMask(self.index)
+        # remove from project but don't cleanup (we need it for undo)
         project.RemoveMask(self.index, cleanup=False)
         Publisher.sendMessage("Remove masks", mask_indexes=[self.index])
 
@@ -32,7 +37,7 @@ class DeleteMaskCommand(Command):
         if self.mask is None:
             return
         Project().InsertMask(self.index, self.mask)
-        Publisher.sendMessage("Add mask", mask=self.mask)
+        Publisher.sendMessage("Refresh Masks")
 
 
 class DuplicateMaskCommand(Command):
@@ -45,5 +50,7 @@ class DuplicateMaskCommand(Command):
         Publisher.sendMessage("Add mask", mask=self.new_mask)
 
     def undo(self):
+        if self.new_index is None:
+            return
         Project().RemoveMask(self.new_index, cleanup=False)
-        Publisher.sendMessage("Remove masks", mask_indexes=[self.new_index])
+        Publisher.sendMessage("Refresh Masks")
