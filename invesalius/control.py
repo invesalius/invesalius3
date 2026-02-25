@@ -102,6 +102,11 @@ class Controller:
         Publisher.subscribe(self.OnCancelImport, "Cancel DICOM load")
         Publisher.subscribe(self.OnCancelImportBitmap, "Cancel bitmap load")
 
+        Publisher.subscribe(self.OnShowImportMaskDialog, "Show import mask dialog")
+        Publisher.subscribe(self.OnImportMaskNifti, "Import Nifti mask")
+        Publisher.subscribe(self.OnShowExportMaskDialog, "Show export mask dialog")
+        Publisher.subscribe(self.OnExportMaskNifti, "Export masks to nifti")
+
         Publisher.subscribe(self.OnShowDialogCloseProject, "Close Project")
         Publisher.subscribe(self.OnOpenProject, "Open project")
         Publisher.subscribe(self.OnOpenRecentProject, "Open recent project")
@@ -240,6 +245,130 @@ class Controller:
 
         filepath = dialog.ShowImportOtherFilesDialog(id_type)
         Publisher.sendMessage("Open other files", filepath=filepath)
+
+    def OnShowImportMaskDialog(self) -> None:
+        # Re-use the existing file dialog for NIfTI with a custom message
+        filepath = dialog.ShowImportOtherFilesDialog(
+            const.ID_NIFTI_IMPORT, msg=_("Import NIfTI Mask")
+        )
+        if filepath:
+            Publisher.sendMessage("Import Nifti mask", filepath=filepath)
+
+    def OnImportMaskNifti(self, filepath: "str | bytes") -> None:
+        try:
+            if isinstance(filepath, bytes):
+                filepath = filepath.decode("utf-8")
+                
+            import invesalius.reader.others_reader as oth
+            from invesalius.reader.nifti_utils import check_is_mask, validate_mask_compatibility
+            
+            img = oth.ReadOthers(filepath)
+            if img is False:
+                raise Exception(_("Failed to read NIfTI file."))
+
+            # Ensure a volume is loaded before importing a mask
+            if self.Slice.matrix is None:
+                raise ValueError(_("No volume loaded. Please load a volume before importing a mask."))
+
+            # Preserve original dtype; avoid forcing float64 conversion
+            data = np.asarray(img.dataobj)
+
+            # Validate dimensions match the current project volume
+            proj_shape = self.Slice.matrix.shape[::-1]
+            validate_mask_compatibility(data.shape, proj_shape)
+
+            # Convert and normalize to binary label map (0/255 uint8)
+            mask_data = check_is_mask(data)
+
+            # Match InVesalius internal (axial) coordinate layout (ZYX flipped)
+            mask_data = np.fliplr(np.swapaxes(mask_data, 0, 2))
+
+            name = os.path.splitext(os.path.basename(filepath))[0]
+            # Label-map threshold: strict 0-255 range for binary mask
+            thresh = (0, 255)
+            colour = const.MASK_COLOUR[len(prj.Project().mask_dict) % len(const.MASK_COLOUR)]
+            
+            Publisher.sendMessage(
+                "Create new mask", mask_name=name, thresh=thresh, colour=colour
+            )
+            
+            mask = self.Slice.current_mask
+            if mask:
+                # Mask matrix has shape (Z+1, Y+1, X+1) with padding at index 0. Re-assign correctly.
+                mask.matrix[1:, 1:, 1:] = mask_data
+                mask.was_edited = True
+                # Trigger full volume re-render for mask overlay
+                mask.modified(all_volume=True)
+
+            Publisher.sendMessage("Update status text in GUI", label=_("Mask imported successfully."))
+
+        except Exception as e:
+            dialogs.ErrorMessageBox(None, _("Error importing mask"), str(e)).ShowModal()
+
+    def OnShowExportMaskDialog(self, mask_indexes: list) -> None:
+        if not mask_indexes:
+            return
+        
+        project = prj.Project()
+        if len(mask_indexes) == 1:
+            mask = project.GetMask(mask_indexes[0])
+            default_file = f"{mask.name}.nii.gz" if mask else "mask.nii.gz"
+        else:
+            default_file = "masks.nii.gz"
+
+        dlg = wx.FileDialog(
+            None, 
+            _("Export Mask as NIfTI"), 
+            defaultFile=default_file,
+            wildcard=dialogs.WILDCARD_NIFTI, 
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
+        )
+
+        if dlg.ShowModal() == wx.ID_OK:
+            filepath = dlg.GetPath()
+            if isinstance(filepath, bytes):
+                filepath = filepath.decode("utf-8")
+                
+            if not (filepath.endswith(".nii") or filepath.endswith(".nii.gz")):
+                filepath += ".nii.gz"
+            Publisher.sendMessage("Export masks to nifti", mask_indexes=mask_indexes, filepath=filepath)
+        dlg.Destroy()
+
+    def OnExportMaskNifti(self, mask_indexes: list, filepath: "str | bytes") -> None:
+        try:
+            import nibabel as nib
+            project = prj.Project()
+            for index in mask_indexes:
+                mask = project.GetMask(index)
+                if not mask:
+                    continue
+                
+                # Strip 1-pixel padding from InVesalius mask matrix (padding is only at index 0)
+                mask_matrix = mask.matrix[1:, 1:, 1:]
+                
+                # Axis transform to NIfTI layout and cast to uint8
+                export_data = np.swapaxes(np.fliplr(mask_matrix), 0, 2).astype(np.uint8)
+
+                # Label-map enforcement: strict binary encoding (0=background, 255=mask)
+                export_data[export_data > 0] = 255
+
+                # Use None affine to match `export_project_to_nifti` safety behavior and bypass internal offsets
+                mask_nifti = nib.Nifti1Image(export_data, None)
+                mask_nifti.header.set_zooms(self.Slice.spacing)
+
+                # Save the NIfTI file cleanly without popping a dialog
+                if len(mask_indexes) > 1:
+                    # Append mask name if exporting multiple via loop
+                    base_path = filepath.split(".nii")[0]
+                    ext = ".nii" if filepath.endswith(".nii") else ".nii.gz"
+                    save_path = f"{base_path}_{mask.name}{ext}"
+                else:
+                    save_path = filepath
+                    
+                nib.save(mask_nifti, save_path)
+
+        except Exception as e:
+            dialogs.ErrorMessageBox(None, _("Error exporting mask"), str(e)).ShowModal()
 
     def ShowDialogOpenProject(self) -> None:
         # Offer to save current project if necessary
