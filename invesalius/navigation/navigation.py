@@ -211,6 +211,11 @@ class UpdateNavigationScene(threading.Thread):
                     )
                     wx.CallAfter(
                         Publisher.sendMessage,
+                        "From Neuronavigation: Send coil pose",
+                        coord=list(coords[main_coil]),
+                    )
+                    wx.CallAfter(
+                        Publisher.sendMessage,
                         "Update object arrow matrix",
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
@@ -614,8 +619,18 @@ class Navigation(metaclass=Singleton):
                     event=self.event,
                     sleep_nav=self.sleep_nav,
                 )
-                self.serial_port_connection.Connect()
-                jobs_list.append(self.serial_port_connection)
+                if self.serial_port_connection.Connect():
+                    # Only add to jobs_list if connection succeeded
+                    jobs_list.append(self.serial_port_connection)
+                else:
+                    # Connection failed - show error and disable serial port
+                    import wx
+
+                    wx.MessageBox(
+                        "Failed to connect to serial port. Navigation will continue without serial port support.",
+                        "InVesalius 3",
+                    )
+                    self.serial_port_in_use = False
 
             if self.view_tracts:
                 # initialize Trekker parameters

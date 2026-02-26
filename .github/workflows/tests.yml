@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: 3.12
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install Ubuntu dependencies
         run: |
           sudo apt-get update

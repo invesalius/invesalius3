@@ -41,12 +41,13 @@ import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
 import invesalius.style as st
 import invesalius.utils as utils
+import invesalius_rs as mips
+import invesalius_rs as transforms
 from invesalius.data import transformations
 from invesalius.data.mask import Mask
 from invesalius.i18n import tr as _
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
-from invesalius_cy import mips, transforms
 
 if TYPE_CHECKING:
     from vtkmodules.vtkCommonDataModel import vtkImageData
@@ -848,7 +849,9 @@ class Slice(metaclass=utils.Singleton):
                             shape=(tmp_array.shape[1], tmp_array.shape[2]),
                             dtype=tmp_array.dtype,
                         )
-                        mips.mida(tmp_array, 0, self.window_level, self.window_level, n_image)
+                        mips.mida(
+                            tmp_array, 0, int(self.window_level), int(self.window_level), n_image
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
                         n_image = np.empty(
                             shape=(tmp_array.shape[1], tmp_array.shape[2]),
@@ -934,7 +937,9 @@ class Slice(metaclass=utils.Singleton):
                             shape=(tmp_array.shape[0], tmp_array.shape[2]),
                             dtype=tmp_array.dtype,
                         )
-                        mips.mida(tmp_array, 1, self.window_level, self.window_level, n_image)
+                        mips.mida(
+                            tmp_array, 1, int(self.window_level), int(self.window_level), n_image
+                        )
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
                         n_image = np.empty(
                             shape=(tmp_array.shape[0], tmp_array.shape[2]),
@@ -1015,7 +1020,9 @@ class Slice(metaclass=utils.Singleton):
                             shape=(tmp_array.shape[0], tmp_array.shape[1]),
                             dtype=tmp_array.dtype,
                         )
-                        mips.mida(tmp_array, 2, self.window_level, self.window_level, n_image)
+                        mips.mida(
+                            tmp_array, 2, int(self.window_level), int(self.window_level), n_image
+                        )
 
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
                         n_image = np.empty(
