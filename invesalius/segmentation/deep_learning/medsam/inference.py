@@ -21,12 +21,12 @@ PIPELINE per slice:
   5. Consistency check vs seed: area + centroid
   6. Map back, crop to ROI, morphological cleanup, largest 3D CC
 
-CRITICAL: model.preprocess() is NEVER called.
 """
 
 import numpy as np
 import torch
 from torch.nn import functional as F
+from math import floor, ceil
 from scipy.ndimage import label as ndlabel
 from scipy.ndimage import binary_opening, binary_closing, gaussian_filter
 from skimage import transform
@@ -34,13 +34,14 @@ from skimage import transform
 from .model import sam_model_registry
 
 # Configuration 
-CROP_PAD_FACTOR = 0.4         # reduced from 0.5 to make the crop window tighter (less noise)
+CROP_PAD_FACTOR = 0.4        
 REFINE_PAD_PX = 10
 N_REFINE_ITERS = 1
-MORPH_KERNEL_SIZE = 5         # increased from 3 for stronger denoising
-MEDSAM_THRESHOLD = 0.6        # increased from 0.5 for more conservative masks
-MIN_COMPONENT_PX = 150        # increased from 100 — remove isolated CCs smaller than this
-SMOOTH_SIGMA = 1.0            # 3D Gaussian sigma for inter-slice smoothing
+MORPH_KERNEL_SIZE = 5        
+MEDSAM_THRESHOLD = 0.6       
+MIN_COMPONENT_PX = 150       
+SMOOTH_SIGMA_Z = 2.0         
+SMOOTH_SIGMA_XY = 0.5        
 
 # Seed-guided consistency thresholds
 MAX_AREA_RATIO = 2.5      
@@ -98,8 +99,7 @@ def _preprocess_ct_slice(slice_2d, hu_low=-160.0, hu_high=240.0):
 
 
 #  Cropped-Region Inference
-def _compute_crop_window(xi, yi, xf, yf, img_w, img_h,
-                          pad_factor=CROP_PAD_FACTOR):
+def _compute_crop_window(xi, yi, xf, yf, img_w, img_h,pad_factor=CROP_PAD_FACTOR):
     box_w = xf - xi
     box_h = yf - yi
     cx = (xi + xf) / 2.0
@@ -113,25 +113,16 @@ def _compute_crop_window(xi, yi, xf, yf, img_w, img_h,
     return crop_xi, crop_yi, crop_xf, crop_yf
 
 
-def _infer_on_crop(medsam_model, slice_3c, xi, yi, xf, yf,
-                    img_w, img_h, device):
+def _infer_on_crop(medsam_model, slice_3c, xi, yi, xf, yf,img_w, img_h, device):
     """Run MedSAM on a cropped region around the box."""
     cxi, cyi, cxf, cyf = _compute_crop_window(xi, yi, xf, yf, img_w, img_h)
     crop_w = cxf - cxi
     crop_h = cyf - cyi
     crop_img = slice_3c[cyi:cyf, cxi:cxf, :]
-
-    # Box in crop's 1024 coordinate space
-    box_in_crop = np.array([[
-        (xi - cxi) / crop_w * 1024,
-        (yi - cyi) / crop_h * 1024,
-        (xf - cxi) / crop_w * 1024,
-        (yf - cyi) / crop_h * 1024,
-    ]])
+    box_in_crop = np.array([[(xi - cxi) / crop_w * 1024, (yi - cyi) / crop_h * 1024, (xf - cxi) / crop_w * 1024, (yf - cyi) / crop_h * 1024]])
 
     embedding = _get_embedding(medsam_model, crop_img, device)
-    crop_mask = _medsam_inference(medsam_model, embedding, box_in_crop,
-                                  crop_h, crop_w)
+    crop_mask = _medsam_inference(medsam_model, embedding, box_in_crop,crop_h, crop_w)
 
     # Map back to full-image coordinates
     mask_full = np.zeros((img_h, img_w), dtype=np.uint8)
@@ -184,13 +175,11 @@ def _is_consistent(mask_roi, seed_area, seed_cy, seed_cx,
     if area == 0:
         return True  # empty is fine
 
-    # Area check: reject if too large or too small vs seed
     if seed_area > 0:
         ratio = area / seed_area
         if ratio > MAX_AREA_RATIO or ratio < MIN_AREA_RATIO:
             return False
 
-    # Centroid drift check: reject if centroid moved too far
     max_drift_y = roi_h * MAX_CENTROID_DRIFT
     max_drift_x = roi_w * MAX_CENTROID_DRIFT
 
@@ -198,6 +187,62 @@ def _is_consistent(mask_roi, seed_area, seed_cy, seed_cx,
         return False
 
     return True
+
+
+def _cluster_components(mask: np.ndarray, volume: np.ndarray, zi: int, yi: int, xi: int, min_vol: int = 500, hu_tol: float = 20.0):
+    """
+    Extracts 3D connected components and clusters them semantics based on HU
+    density. Returns a list of individual mask arrays.
+    """
+    labeled, num_features = ndlabel(mask)
+    if num_features == 0:
+        return []
+
+    components = []
+    for i in range(1, num_features + 1):
+        island_mask = (labeled == i)
+        vol = island_mask.sum()
+        
+        if vol < min_vol:
+            continue 
+
+        zs, ys, xs = np.where(island_mask)
+        
+        global_zs = zs + zi
+        global_ys = ys + yi
+        global_xs = xs + xi
+
+        mean_hu = volume[global_zs, global_ys, global_xs].mean()
+        
+        components.append({
+            'mask': island_mask,
+            'vol': vol,
+            'hu': mean_hu
+        })
+
+    if not components:
+        return []
+    clusters = []
+    for comp in components:
+        merged = False
+        for cluster in clusters:
+            if abs(comp['hu'] - cluster['mean_hu']) <= hu_tol:
+                cluster['mask'] = np.logical_or(cluster['mask'], comp['mask'])
+                total_vol = cluster['vol'] + comp['vol']
+                cluster['mean_hu'] = (cluster['mean_hu'] * cluster['vol'] + comp['hu'] * comp['vol']) / total_vol
+                cluster['vol'] = total_vol
+                merged = True
+                break
+        
+        if not merged:
+            # New distinct organ class
+            clusters.append({
+                'mask': comp['mask'],
+                'vol': comp['vol'],
+                'mean_hu': comp['hu']
+            })
+
+    return [c['mask'].astype(np.uint8) for c in clusters]
 
 
 def run_medlsam(
@@ -209,7 +254,7 @@ def run_medlsam(
     callback=None,
     hu_low: float = -160.0,
     hu_high: float = 240.0,
-) -> np.ndarray:
+) -> list:
     """
     MedSAM 3D segmentation with cropped-region inference + seed consistency.
 
@@ -251,7 +296,6 @@ def run_medlsam(
 
     result_mask = np.zeros((n_slices, roi_y, roi_x), dtype=np.uint8)
 
-    # ═══ PHASE 1: SEED from middle slice ═══
     mid_idx = n_slices // 2
     mid_z = zi + mid_idx
     print(f"\n[MedSAM] SEED z={mid_z}")
@@ -275,12 +319,11 @@ def run_medlsam(
     if callback:
         callback(0.1, "Seed done")
 
-    # ═══ PHASE 2: Process all other slices ═══
     rejected = 0
     with torch.no_grad():
         for idx in range(n_slices):
             if idx == mid_idx:
-                continue  # already done
+                continue
 
             z = zi + idx
             if callback:
@@ -298,107 +341,90 @@ def run_medlsam(
             )
             mask_roi = full_mask[yi:yf, xi:xf]
 
-            # Consistency check against seed
             if _is_consistent(mask_roi, seed_area, seed_cy, seed_cx,
                                roi_y, roi_x):
                 result_mask[idx] = mask_roi
             else:
-                # Reject this slice — wrong structure
                 result_mask[idx] = 0
                 rejected += 1
 
-            if idx % 5 == 0:
-                area = int(mask_roi.sum())
-                status = "✓" if result_mask[idx].sum() > 0 else "✗"
-                print(f"  z={z:3d}  area={area:>5}  {status}")
 
-    print(f"\n[MedSAM] Processed: {n_slices} slices, rejected {rejected}")
+    if total == 0:
+        return []
 
-    if callback:
-        callback(0.92, "Post-processing")
+    # --- Strict Clipping to Unpadded Box ---
+    for s in range(result_mask.shape[0]):
+        slice_mask = result_mask[s]
+        lb, num = ndlabel(slice_mask)
+        if num > 1:
+            sizes = np.bincount(lb.ravel())
+            sizes[0] = 0
+            for label_id, size in enumerate(sizes):
+                if label_id > 0 and size < MIN_COMPONENT_PX:
+                    slice_mask[lb == label_id] = 0
+            result_mask[s] = slice_mask
 
-    total = int(result_mask.sum())
-    print(f"[MedSAM] Raw: {total} voxels")
+    if callback: callback(0.95, "Smoothing (3D)")
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        
+        if MORPH_KERNEL_SIZE > 0:
+            sz = MORPH_KERNEL_SIZE
+            radius = sz // 2
+            z, y, x = np.ogrid[-radius:radius+1, -radius:radius+1, -radius:radius+1]
+            struct = (x**2 + y**2 + z**2) <= radius**2
+            
+            struct_mask = binary_opening(result_mask, structure=struct)
+            struct_mask = binary_closing(struct_mask, structure=struct)
+        else:
+            struct_mask = result_mask.copy()
 
-    # --- Per-slice small-component removal ---
-    if total > 0:
-        for s in range(result_mask.shape[0]):
-            sl = result_mask[s]
-            if sl.sum() == 0:
-                continue
-            labeled_2d, n_2d = ndlabel(sl)
-            for lbl in range(1, n_2d + 1):
-                if (labeled_2d == lbl).sum() < MIN_COMPONENT_PX:
-                    sl[labeled_2d == lbl] = 0
-            result_mask[s] = sl
-        print(f"[MedSAM] After per-slice CC filter: {result_mask.sum()} voxels")
+        if SMOOTH_SIGMA_Z > 0 or SMOOTH_SIGMA_XY > 0:
+            sigma = (SMOOTH_SIGMA_Z, SMOOTH_SIGMA_XY, SMOOTH_SIGMA_XY)
+            smoothed = gaussian_filter(struct_mask.astype(float), sigma=sigma)
+            struct_mask = (smoothed > 0.5).astype(np.uint8)
 
-    # --- Morphological cleanup (2D per-slice) ---
-    if result_mask.sum() > 0:
-        struct = np.ones((1, MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE), dtype=bool)
-        result_mask = binary_opening(result_mask, structure=struct).astype(np.uint8)
-        result_mask = binary_closing(result_mask, structure=struct).astype(np.uint8)
-        print(f"[MedSAM] After morphology: {result_mask.sum()} voxels")
+    # --- Multi-Mask Semantic Clustering ---
+    if callback: callback(0.98, "Clustering Organs")
+    final_masks = _cluster_components(struct_mask, volume, zi, yi, xi)
 
-    # --- 3D Gaussian smoothing → re-threshold ---
-    # Smooths jagged inter-slice transitions (the "shelf" noise)
-    if result_mask.sum() > 0:
-        smoothed = gaussian_filter(result_mask.astype(np.float32), sigma=SMOOTH_SIGMA)
-        result_mask = (smoothed > 0.5).astype(np.uint8)
-        print(f"[MedSAM] After 3D smoothing: {result_mask.sum()} voxels")
-
-    # --- Largest 3D connected component ---
-    if result_mask.sum() > 0:
-        result_mask = _keep_largest_component(result_mask)
-
-    return result_mask
-
+    if callback: callback(1.0, "Done")
+    return final_masks
 
 #  Diagnostics
-
-def _save_diagnostics(seed_u8, mask, xi, yi, xf, yf, vol_w, vol_h,
-                      cxi, cyi, cxf, cyf):
-    try:
-        import os
-        from PIL import Image as PILImage
-        diag_dir = os.path.join(os.path.dirname(__file__), "diagnostics")
-        os.makedirs(diag_dir, exist_ok=True)
-
-        PILImage.fromarray(seed_u8).save(os.path.join(diag_dir, "seed_input.png"))
-        PILImage.fromarray((mask * 255).astype(np.uint8)).save(
-            os.path.join(diag_dir, "seed_mask.png"))
-
-        overlay = np.repeat(seed_u8[:, :, None], 3, axis=-1).copy()
-        overlay[mask == 1, 0] = np.minimum(
-            overlay[mask == 1, 0].astype(int) + 120, 255).astype(np.uint8)
-        overlay[mask == 1, 1] = (overlay[mask == 1, 1] * 0.5).astype(np.uint8)
-        overlay[mask == 1, 2] = (overlay[mask == 1, 2] * 0.5).astype(np.uint8)
-        for t in range(2):
-            if yi+t < vol_h: overlay[yi+t, xi:xf] = [0,255,0]
-            if yf-1-t >= 0:  overlay[yf-1-t, xi:xf] = [0,255,0]
-            if xi+t < vol_w: overlay[yi:yf, xi+t] = [0,255,0]
-            if xf-1-t >= 0:  overlay[yi:yf, xf-1-t] = [0,255,0]
-        # Cyan = crop window
-        for t in range(2):
-            if cyi+t < vol_h: overlay[cyi+t, cxi:cxf] = [0,255,255]
-            if cyf-1-t >= 0:  overlay[cyf-1-t, cxi:cxf] = [0,255,255]
-            if cxi+t < vol_w: overlay[cyi:cyf, cxi+t] = [0,255,255]
-            if cxf-1-t >= 0:  overlay[cyi:cyf, cxf-1-t] = [0,255,255]
-        PILImage.fromarray(overlay).save(os.path.join(diag_dir, "seed_overlay.png"))
-        PILImage.fromarray(overlay[cyi:cyf, cxi:cxf]).save(
-            os.path.join(diag_dir, "seed_crop.png"))
-        print(f"[MedSAM] Diagnostics → {diag_dir}")
-    except Exception as e:
-        print(f"[MedSAM] Diagnostic save failed: {e}")
+def _save_diagnostics(seed_u8, mask, xi, yi, xf, yf, vol_w, vol_h, cxi, cyi, cxf, cyf):
+    """
+    Saves intermediate images of the MedSAM cropping, masking, and inference boundary process.
+    Commented out for production but can be enabled for MedSAM debugging.
+    """
+    pass
+    # try:
+    #     import os
+    #     from PIL import Image as PILImage
+    #     diag_dir = os.path.join(os.path.dirname(__file__), "diagnostics")
+    #     os.makedirs(diag_dir, exist_ok=True)
+    # 
+    #     PILImage.fromarray(seed_u8).save(os.path.join(diag_dir, "seed_input.png"))
+    #     PILImage.fromarray((mask * 255).astype(np.uint8)).save(os.path.join(diag_dir, "seed_mask.png"))
+    # 
+    #     overlay = np.repeat(seed_u8[:, :, None], 3, axis=-1).copy()
+    #     overlay[mask == 1, 0] = np.minimum(overlay[mask == 1, 0].astype(int) + 120, 255).astype(np.uint8)
+    #     overlay[mask == 1, 1] = (overlay[mask == 1, 1] * 0.5).astype(np.uint8)
+    #     overlay[mask == 1, 2] = (overlay[mask == 1, 2] * 0.5).astype(np.uint8)
+    #     for t in range(2):
+    #         if yi+t < vol_h: overlay[yi+t, xi:xf] = [0,255,0]
+    #         if yf-1-t >= 0:  overlay[yf-1-t, xi:xf] = [0,255,0]
+    #         if xi+t < vol_w: overlay[yi:yf, xi+t] = [0,255,0]
+    #         if xf-1-t >= 0:  overlay[yi:yf, xf-1-t] = [0,255,0]
+    #     for t in range(2):
+    #         if cyi+t < vol_h: overlay[cyi+t, cxi:cxf] = [0,255,255]
+    #         if cyf-1-t >= 0:  overlay[cyf-1-t, cxi:cxf] = [0,255,255]
+    #         if cxi+t < vol_w: overlay[cyi:cyf, cxi+t] = [0,255,255]
+    #         if cxf-1-t >= 0:  overlay[cyi:cyf, cxf-1-t] = [0,255,255]
+    #     PILImage.fromarray(overlay).save(os.path.join(diag_dir, "seed_overlay.png"))
+    #     PILImage.fromarray(overlay[cyi:cyf, cxi:cxf]).save(os.path.join(diag_dir, "seed_crop.png"))
+    # except Exception as e:
+    #     print(f"[MedSAM] Diagnostic save failed: {e}")
 
 
-#  Post-processing
-def _keep_largest_component(mask):
-    labeled, n = ndlabel(mask)
-    if n == 0:
-        return mask
-    sizes = np.bincount(labeled.ravel())
-    sizes[0] = 0
-    best = int(sizes.argmax())
-    result = (labeled == best).astype(np.uint8)
-    return result

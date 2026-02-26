@@ -2755,11 +2755,8 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
             try:
                 volume = self.viewer.slice_.matrix
 
-                # Validation
                 if volume is None or volume.size == 0:
                     raise ValueError("Volume is empty.")
-
-                # 4. Resolve Weights Path
                 current_dir = os.path.dirname(os.path.abspath(__file__))
                 weights_path = os.path.join(
                     current_dir, "..", "segmentation", "deep_learning", "medsam", "weights", "medsam_vit_b.pth"
@@ -2772,13 +2769,9 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                     )
 
                 Publisher.sendMessage(
-                    "Update status text in GUI", label="Running MedLSAM Inference..."
-                )
-
+                    "Update status text in GUI", label="Running MedLSAM Inference...")
                 parent_frame = self.viewer.GetTopLevelParent()
 
-                # Create Progress Dialog
-                # Check for CUDA availability for display
                 import torch
 
                 device_name = "GPU (CUDA)" if torch.cuda.is_available() else "CPU"
@@ -2796,18 +2789,13 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                 )
 
                 def progress_callback(progress, message):
-                    # proper scaling 0.0-1.0 to 0-100
                     val = int(progress * 100)
                     keep_going, skip = dlg.Update(val, message)
                     return keep_going
 
                 try:
-                    # Run MedSAM on the full volume with the user's tight box.
-                    # The inference function feeds complete axial slices so
-                    # MedSAM has full anatomical context, with the box covering
-                    # only the target organ (~10-20% of the slice area).
                     device_type = "cuda" if torch.cuda.is_available() else "cpu"
-                    mask_roi = run_medlsam(
+                    medsam_masks = run_medlsam(
                         volume,
                         bbox,
                         weights_path,
@@ -2817,63 +2805,66 @@ class MedLSAMInteractorStyle(DefaultInteractorStyle):
                 finally:
                     dlg.Destroy()
 
-                # 6. (Post-processing handled inside run_medlsam via correct
-                #     HU windowing + accurate box prompt — no CC filter needed)
+                if not medsam_masks:
+                    Publisher.sendMessage(
+                        "Update status text in GUI",
+                        label="MedSAM Segmentation Cancelled/Empty",
+                    )
+                    Publisher.sendMessage("End busy cursor")
+                    Publisher.sendMessage(
+                        "Enable style", style=const.STATE_DEFAULT
+                    )
+                    return
 
-                # 7. Count existing MedSAM masks for auto-numbering
                 from invesalius.project import Project as InvProject
                 proj_cleanup = InvProject()
-                existing_medsam = [
-                    m for m in proj_cleanup.mask_dict.values()
-                    if m.name.startswith("MedSAM")
-                ]
-                seg_num = len(existing_medsam) + 1
+                
+                existing_medsam = [m for m in proj_cleanup.mask_dict.values() if m.name.startswith("MedSAM")]
+                base_seg_num = len(existing_medsam) + 1
 
-                # Colour rotation so each segment is distinct
-                MEDSAM_COLOURS = [
-                    (1.0, 0.4, 0.0),   # orange
-                    (0.0, 0.8, 0.8),   # cyan
-                    (0.8, 0.2, 0.8),   # magenta
-                    (0.4, 1.0, 0.2),   # lime
-                    (1.0, 0.8, 0.0),   # gold
-                ]
-                colour = MEDSAM_COLOURS[(seg_num - 1) % len(MEDSAM_COLOURS)]
+                # Loop through all distinct masks returned by the clustering algorithm
+                for idx, mask_data in enumerate(medsam_masks):
+                    seg_num = base_seg_num + idx
+                    
+                    # Colour rotation so each segment is distinct
+                    MEDSAM_COLOURS = [
+                        (1.0, 0.4, 0.0),   
+                        (0.0, 0.8, 0.8),   
+                        (0.8, 0.2, 0.8),   
+                        (0.4, 1.0, 0.2),   
+                        (1.0, 0.8, 0.0),   
+                    ]
+                    colour = MEDSAM_COLOURS[(seg_num - 1) % len(MEDSAM_COLOURS)]
 
-                # 8. Create a NEW MedSAM mask (added alongside all existing masks)
-                full_shape = volume.shape
-                new_mask = Mask()
-                new_mask.create_mask(full_shape)
-                new_mask.name = f"MedSAM Mask {seg_num}"
-                new_mask.colour = colour
-                new_mask.threshold_range = (-160, 240)
-                new_mask.was_edited = True
+                    # Create a NEW MedSAM mask
+                    full_shape = volume.shape
+                    new_mask = Mask()
+                    new_mask.create_mask(full_shape)
+                    new_mask.name = f"MedSAM Mask {seg_num}"
+                    new_mask.colour = colour
+                    new_mask.threshold_range = (-160, 240)
+                    new_mask.was_edited = True
 
-                mask_roi_255 = (mask_roi * 255).astype("uint8")
+                    mask_roi_255 = (mask_data * 255).astype("uint8")
 
-                rz, ry, rx = mask_roi_255.shape
-                z0 = int(zi) + 1
-                y0 = int(yi) + 1
-                x0 = int(xi) + 1
-                new_mask.matrix[z0:z0+rz, y0:y0+ry, x0:x0+rx] = mask_roi_255
+                    rz, ry, rx = mask_roi_255.shape
+                    z0, y0, x0 = int(zi) + 1, int(yi) + 1, int(xi) + 1
+                    new_mask.matrix[z0:z0+rz, y0:y0+ry, x0:x0+rx] = mask_roi_255
+                    new_mask.matrix[1:, 0, 0] = 2
+                    new_mask.matrix[0, 1:, 0] = 2
+                    new_mask.matrix[0, 0, 1:] = 2
 
-                # Mark ALL slices as "edited" (value 2) so InVesalius
-                # NEVER auto-applies threshold on ANY slice/view.
-                new_mask.matrix[1:, 0, 0] = 2
-                new_mask.matrix[0, 1:, 0] = 2
-                new_mask.matrix[0, 0, 1:] = 2
+                    new_mask.matrix.flush()
 
-                new_mask.matrix.flush()
-
-                # 9. Register — sets MedSAM mask as current (hides Mask 1)
-                self.viewer.slice_._add_mask_into_proj(new_mask)
+                    # Register — sets MedSAM mask as current
+                    self.viewer.slice_._add_mask_into_proj(new_mask)
 
                 Publisher.sendMessage(
-                    "Update status text in GUI", label="MedSAM Segmentation Complete"
+                    "Update status text in GUI", label=f"MedSAM Segmentation:Extracted {len(medsam_masks)} distinct structures"
                 )
 
             except Exception as e:
                 print(f"Error: MedLSAM failed: {e}")
-                # Print full traceback for debugging
                 import traceback
 
                 traceback.print_exc()

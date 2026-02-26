@@ -1306,9 +1306,8 @@ class SurfaceButtonControlPanel(wx.Panel):
 
     def OnNew(self):
         sl = slice_.Slice()
-        dialog = dlg.SurfaceCreationDialog(
-            None, -1, _("New surface"), mask_edited=sl.current_mask.was_edited
-        )
+        mask_edited = getattr(sl.current_mask, 'was_edited', False) if sl.current_mask else False
+        dialog = dlg.SurfaceCreationDialog(None, -1, _("New surface"), mask_edited=mask_edited)
         try:
             if dialog.ShowModal() == wx.ID_OK:
                 ok = 1
