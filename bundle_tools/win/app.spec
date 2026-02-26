@@ -66,9 +66,9 @@ for v in vtk_files:
         dest_dir = os.path.dirname(v.replace(site_packages,''))[1:]
         libraries.append((v, dest_dir))
 
-#add interpolation module (pyinstaller not take automatically)
-#libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy', 
-#    'interpolation.*.pyd'))[0],'invesalius_cy')) #.pyd files are inside of invesalius_cy
+#add invesalius_rs module (Rust extension - pyinstaller not take automatically)
+libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_rs', 
+    '_native.*.pyd'))[0],'invesalius_rs')) #.pyd files built by maturin
 
 #add plaidml modules and files
 #libraries.append((os.path.join(venv_dir,'library','bin','plaidml.dll'),'library\\bin'))

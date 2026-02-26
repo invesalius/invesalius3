@@ -1741,6 +1741,21 @@ class TrackerTab(wx.Panel):
         self.btn_set_rec.SetToolTip(_("Set pressure to the recommended 5.0 N"))
         self.btn_set_rec.Bind(wx.EVT_BUTTON, self.OnSetRecommendedPressure)
 
+        # --- Pressure sensor sub-box ---
+        pressure_box = wx.StaticBox(self, -1, _("Pressure Control"))
+
+        # --- Toggle pressure sensor button ---
+        self.chk_enable_pressure = wx.CheckBox(self, -1, _("Enable pressure sensor"))
+        if getattr(self.robot, "robot_init_config", None):
+            use_pressure_sensor = self.robot.robot_init_config.get("use_pressure_sensor", False)
+        else:
+            Publisher.sendMessage("Neuronavigation to Robot: Request config")
+            use_pressure_sensor = False  # fallback default
+        self.chk_enable_pressure.SetValue(use_pressure_sensor)
+        self.chk_enable_pressure.Bind(wx.EVT_CHECKBOX, self.OnTogglePressureSensor)
+        self.chk_enable_pressure.Enable(self.robot.IsConnected())
+        self._update_pressure_controls_state(self.robot.IsConnected() and use_pressure_sensor)
+
         # Row with label, slider, numeric value
         pressure_row = wx.BoxSizer(wx.HORIZONTAL)
         pressure_row.Add(self.pressure_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
@@ -1753,7 +1768,8 @@ class TrackerTab(wx.Panel):
         pressure_hint_row.Add((self.pressure_lbl.GetSize().Width, -1), 0)  # indent under label
         pressure_hint_row.Add(self.pressure_rec_lbl, 0, wx.TOP, 2)
 
-        pressure_sizer = wx.BoxSizer(wx.VERTICAL)
+        pressure_sizer = wx.StaticBoxSizer(pressure_box, wx.VERTICAL)
+        pressure_sizer.Add(self.chk_enable_pressure, 0, wx.ALL, 5)
         pressure_sizer.Add(pressure_row, 0, wx.EXPAND)
         pressure_sizer.Add(pressure_hint_row, 0, wx.TOP, 4)
 
@@ -1778,6 +1794,7 @@ class TrackerTab(wx.Panel):
             self.OnSetRobotTransformationMatrix,
             "Neuronavigation to Robot: Set robot transformation matrix",
         )
+        Publisher.subscribe(self.OnRobotConfigReceived, "Robot to Neuronavigation: Initial config")
 
     def LoadConfig(self):
         session = ses.Session()
@@ -1789,6 +1806,12 @@ class TrackerTab(wx.Panel):
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
         if self.matrix_tracker_to_robot is not None:
             self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
+
+    def OnRobotConfigReceived(self, config):
+        # Update GUI checkbox with the actual value
+        use_pressure_sensor = config.get("use_pressure_sensor", False)
+        self.chk_enable_pressure.SetValue(use_pressure_sensor)
+        self._update_pressure_controls_state(self.robot.IsConnected() and use_pressure_sensor)
 
     def OnChooseNoOfCoils(self, evt, ctrl):
         old_n_coils = self.n_coils
@@ -1950,6 +1973,11 @@ class TrackerTab(wx.Panel):
             self.robot.is_robot_connected = True
             self.status_text.SetLabelText(_("Setup robot transformation matrix:"))
             self.btn_rob_con.Show()
+            self.chk_enable_pressure.Enable(True)
+            self.chk_enable_pressure.SetValue(
+                self.robot.robot_init_config.get("use_pressure_sensor", False)
+            )
+            self._update_pressure_controls_state(self.chk_enable_pressure.GetValue())
             self.Layout()
 
             if (
@@ -1960,10 +1988,11 @@ class TrackerTab(wx.Panel):
         else:
             if self.robot.robot_ip is not None:
                 self.status_text.SetLabelText(_(f"{data} to robot on {self.robot.robot_ip}"))
-                self.btn_rob_con.Hide()
             else:
                 self.status_text.SetLabelText(_(f"{data} to robot"))
-                self.btn_rob_con.Hide()
+            self.btn_rob_con.Hide()
+            self.chk_enable_pressure.Enable(False)
+            self._update_pressure_controls_state(False)
 
     def OnSetRobotTransformationMatrix(self, data):
         if self.robot.matrix_tracker_to_robot is not None:
@@ -2015,6 +2044,45 @@ class TrackerTab(wx.Panel):
                 self.robot.SetPressureSetpoint(value)
         except Exception as e:
             pass
+
+    def _update_pressure_controls_state(self, slider_enabled: bool):
+        """Enable/disable slider, value, button, and label colors."""
+        self.pressure_slider.Enable(slider_enabled)
+        self.btn_set_rec.Enable(slider_enabled)
+
+        # Set label colors
+        if slider_enabled:
+            # Normal colors
+            self.pressure_lbl.SetForegroundColour(self._pressure_lbl_default_fg)
+            self.pressure_val_lbl.SetForegroundColour(self._pressure_val_default_fg)
+            self._apply_pressure_color(self.pressure_setpoint)  # Recommended label handled inside
+        else:
+            gray_color = wx.Colour(150, 150, 150)
+            self.pressure_lbl.SetForegroundColour(gray_color)
+            self.pressure_val_lbl.SetForegroundColour(gray_color)
+            self.pressure_rec_lbl.SetForegroundColour(gray_color)
+
+        self.pressure_lbl.Refresh()
+        self.pressure_val_lbl.Refresh()
+        self.pressure_rec_lbl.Refresh()
+
+    def OnTogglePressureSensor(self, evt):
+        if not self.robot.robot_init_config:
+            print("Robot init config not loaded")
+            Publisher.sendMessage("Neuronavigation to Robot: Request config")
+            self.chk_enable_pressure.SetValue(False)
+            return
+
+        enabled = self.chk_enable_pressure.GetValue()
+        self._update_pressure_controls_state(enabled)
+
+        self.robot.robot_init_config["use_pressure_sensor"] = enabled
+
+        Publisher.sendMessage("Set visibility robot force visualizer", visible=enabled)
+        # Send message to robot-side configuration
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Update config", use_pressure_sensor=enabled
+        )
 
     def _apply_pressure_color(self, value: float):
         # Red above threshold

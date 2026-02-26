@@ -289,13 +289,13 @@ WILDCARD_INV_SAVE = (
     + _("InVesalius project compressed (*.inv3)|*.inv3")
 )
 
-WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" "All files (*.*)|*.*"
+WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|All files (*.*)|*.*"
 
-WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" "All files (*.*)|*.*"
+WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|All files (*.*)|*.*"
 
-WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|" "All files (*.*)|*.*"
+WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|All files (*.*)|*.*"
 # ".[jJ][pP][gG]"
-WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" "All files (*.*)|*.*"
+WILDCARD_PARREC = "PAR/REC (*.par)|*.par|All files (*.*)|*.*"
 
 WILDCARD_MESH_FILES = (
     "STL File format (*.stl)|*.stl|"
@@ -304,7 +304,7 @@ WILDCARD_MESH_FILES = (
     "VTK Polydata File Format (*.vtp)|*.vtp|"
     "All files (*.*)|*.*"
 )
-WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|" "All files (*.*)|*.*"
+WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|All files (*.*)|*.*"
 
 
 def ShowOpenProjectDialog() -> Union[str, None]:
@@ -6123,6 +6123,39 @@ class SurfaceProgressWindow:
         self.dlg.Destroy()
 
 
+class PublishingSurfacesProgressWindow:
+    def __init__(self, maximum=100):
+        title = "InVesalius 3"
+        message = _("Publishing surfaces to Dashboard...")
+        style = wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+
+        parent = wx.GetApp().GetTopWindow()
+
+        self.dlg = wx.ProgressDialog(
+            title,
+            message,
+            maximum=maximum,
+            parent=parent,
+            style=style,
+        )
+
+    def WasCancelled(self) -> bool:
+        return self.dlg.WasCancelled()
+
+    def Update(self, msg: str, value: int) -> None:
+        if not self.dlg:
+            return
+
+        if not self.dlg.WasCancelled():
+            self.dlg.Update(int(value), msg)
+            wx.Yield()
+
+    def Close(self) -> None:
+        if self.dlg:
+            self.dlg.Destroy()
+            self.dlg = None
+
+
 class GoToDialog(wx.Dialog):
     def __init__(self, title: str = _("Go to slice ..."), init_orientation: str = const.AXIAL_STR):
         wx.Dialog.__init__(
@@ -7249,7 +7282,10 @@ class SetCOMPort(wx.Dialog):
         self.CenterOnParent()
 
     def GetCOMPort(self) -> str:
-        com_port = self.com_port_dropdown.GetString(self.com_port_dropdown.GetSelection())
+        com_port = self.com_port_dropdown.GetStringSelection()
+        if not com_port:
+            wx.MessageBox("Please select a COM port.", "No selection", wx.OK | wx.ICON_WARNING)
+            return
         return com_port
 
     def GetBaudRate(self) -> Optional[str]:

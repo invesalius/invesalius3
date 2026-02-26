@@ -11,7 +11,7 @@ from invesalius.data import watershed_process
 from invesalius.data.mask import Mask
 from invesalius.data.slice_ import Slice
 from invesalius.data.styles import WaterShedInteractorStyle
-from invesalius_cy import floodfill
+import invesalius_rs as floodfill
 
 
 def test_region_growing_threshold():
@@ -46,9 +46,9 @@ def test_region_growing_threshold():
         ],
         dtype=np.uint8,
     )
-    assert np.array_equal(
-        out_mask[0], expected
-    ), f"Region growing incorrect.\nExpected:\n{expected}\nGot:\n{out_mask[0]}"
+    assert np.array_equal(out_mask[0], expected), (
+        f"Region growing incorrect.\nExpected:\n{expected}\nGot:\n{out_mask[0]}"
+    )
 
 
 def test_region_growing_strct_disconnected():
@@ -80,9 +80,9 @@ def test_region_growing_strct_disconnected():
         ],
         dtype=np.uint8,
     )
-    assert np.array_equal(
-        out_mask8, expected8
-    ), f" Both diagonals filled.\nExpected:\n{expected8}\nGot:\n{out_mask8}"
+    assert np.array_equal(out_mask8, expected8), (
+        f" Both diagonals filled.\nExpected:\n{expected8}\nGot:\n{out_mask8}"
+    )
     # diagonals are NOT connected (only neighbours connected), so only the starting 2 and its neighbours is filled as the rest 2 are not connected
     bstruct4 = generate_binary_structure(3, 1)
     out_mask4 = np.zeros((1, 3, 3), dtype=np.uint8)
@@ -97,9 +97,9 @@ def test_region_growing_strct_disconnected():
         ],
         dtype=np.uint8,
     )
-    assert np.array_equal(
-        out_mask4, expected4
-    ), f"only neighbour regions are filled\nExpected:\n{expected4}\nGot:\n{out_mask4}"
+    assert np.array_equal(out_mask4, expected4), (
+        f"only neighbour regions are filled\nExpected:\n{expected4}\nGot:\n{out_mask4}"
+    )
 
 
 def test_fill_holes_automatically():
@@ -108,7 +108,7 @@ def test_fill_holes_automatically():
     mask = mask_2d[np.newaxis, ...]
 
     structure = np.ones((3, 3), dtype=np.uint8)
-    labels_2d, nlabels = ndimage.label(mask_2d == 0, structure=structure, output=np.uint16)
+    labels_2d, nlabels = ndimage.label(mask_2d == 0, structure=structure, output=np.uint32)
     border_labels = set()
     for i in range(labels_2d.shape[0]):
         border_labels.add(labels_2d[i, 0])
@@ -129,9 +129,9 @@ def test_fill_holes_automatically():
     expected[0, 3, 3] = 254  # Only the hole is filled
 
     assert ret, "fill_holes_automatically function failed"
-    assert np.array_equal(
-        mask, expected
-    ), f"Fill holes failed.\nExpected:\n{expected}\nGot:\n{mask}"
+    assert np.array_equal(mask, expected), (
+        f"Fill holes failed.\nExpected:\n{expected}\nGot:\n{mask}"
+    )
 
 
 def test_threshold_and_density_measure():
@@ -155,9 +155,9 @@ def test_threshold_and_density_measure():
     expected = np.zeros((5, 5, 5), dtype=np.uint8)
     expected[2, 2, 2] = 255
     expected[3, 3, 3] = 255
-    assert np.array_equal(
-        mask_data, expected
-    ), f"Mask thresholding failed.\nExpected:\n{expected}\nGot:\n{mask_data}"
+    assert np.array_equal(mask_data, expected), (
+        f"Mask thresholding failed.\nExpected:\n{expected}\nGot:\n{mask_data}"
+    )
 
     # calc_image_density will use the mask as set by thresholding
     _min, _max, _mean, _std = slc.calc_image_density(mask)
@@ -273,9 +273,9 @@ def test_edit_mask_pixel_orientations(
     # Verify if the expected number of pixels were changed
     total_modified: int = int(np.sum(mask == 255))
     expected_count = len(expected_positions)
-    assert (
-        total_modified == expected_count
-    ), f"Expected {expected_count} modified pixels, got {total_modified}"
+    assert total_modified == expected_count, (
+        f"Expected {expected_count} modified pixels, got {total_modified}"
+    )
 
 
 @pytest.mark.parametrize("operation_value", [0, 128, 255])
@@ -286,9 +286,9 @@ def test_edit_mask_pixel_operation_values(operation_value: int):
     style.edit_mask_pixel(operation_value, 2, brush, (2, 2), 1, "AXIAL")
 
     if operation_value > 0:
-        assert (
-            style.matrix[2, 2, 2] == operation_value
-        ), f"Operation value should be {operation_value}, got {style.matrix[2, 2, 2]}"
+        assert style.matrix[2, 2, 2] == operation_value, (
+            f"Operation value should be {operation_value}, got {style.matrix[2, 2, 2]}"
+        )
     else:
         assert not np.any(style.matrix > 0), "Operation value 0 should not modify matrix"
 

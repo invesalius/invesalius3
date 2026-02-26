@@ -503,6 +503,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.SaveEfieldData, "Save Efield data")
         Publisher.subscribe(self.SavedAllEfieldData, "Save all Efield data")
         Publisher.subscribe(self.SaveEfieldTargetData, "Save target data")
+        Publisher.subscribe(self.ClearSaveEfieldData, "Clear saved efield data")
         Publisher.subscribe(self.GetTargetSavedEfieldData, "Get target index efield")
         Publisher.subscribe(self.CheckStatusSavedEfieldData, "Check efield data")
         Publisher.subscribe(self.GetNeuronavigationApi, "Get Neuronavigation Api")
@@ -539,6 +540,7 @@ class Viewer(wx.Panel):
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
+        Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
 
     def get_vtk_mouse_position(self):
         """
@@ -1666,7 +1668,14 @@ class Viewer(wx.Panel):
                 efield_coords_position = [list(position_world), list(orientation_world)]
             enorms_list = list(self.e_field_norms_to_save)
             if plot_efield_vectors:
-                e_field_vectors = list(self.max_efield_array)
+                if self.plot_no_connection:
+                    e_field_vectors = [
+                        [list(self.e_field_col1_to_save)],
+                        [list(self.e_field_col2_to_save)],
+                        [list(self.e_field_col3_to_save)],
+                    ]
+                else:
+                    e_field_vectors = list(self.max_efield_array)
                 self.target_radius_list.append(
                     [
                         target_list_index,
@@ -1683,6 +1692,12 @@ class Viewer(wx.Panel):
                         self.efield_ROISize,
                         self.mtms_coord,
                         self.diperdt,
+                        self.ci,
+                        self.co,
+                        self.path_meshes,
+                        self.meshes_file,
+                        self.cortex_file,
+                        self.coil_model,
                     ]
                 )
             else:
@@ -1698,6 +1713,9 @@ class Viewer(wx.Panel):
                         self.coil_position_Trot,
                     ]
                 )
+
+    def ClearSaveEfieldData(self):
+        self.target_radius_list.clear()
 
     def GetTargetSavedEfieldData(self, target_index_list):
         if len(self.target_radius_list) > 0:
@@ -2092,7 +2110,7 @@ class Viewer(wx.Panel):
         self.focal_factor_members = []
         self.distance_efield = None
         self.mtms_coord = []
-        self.diperdt = None
+        # self.diperdt = None
 
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
@@ -2210,7 +2228,7 @@ class Viewer(wx.Panel):
         self.list_index_efield_vectors = list_index
 
     def GetCoilPosition(self, position, orientation):
-        m_img = tr.compose_matrix(angles=orientation, translate=position)
+        m_img = tr.compose_matrix(angles=np.radians(orientation), translate=position)
         m_img_flip = m_img.copy()
         # m_img_flip[1, -1] = -m_img_flip[1, -1]
         cp = m_img_flip[:-1, -1]  # coil center
@@ -2250,6 +2268,10 @@ class Viewer(wx.Panel):
                     self.e_field_col2[max],
                     self.e_field_col3[max],
                 ]
+                self.e_field_norms_to_save = enorm_data[3][:, 0]
+                self.e_field_col1_to_save = enorm_data[3][:, 1]
+                self.e_field_col2_to_save = enorm_data[3][:, 2]
+                self.e_field_col3_to_save = enorm_data[3][:, 3]
             else:
                 self.e_field_norms_to_save = enorm_data[3].enorm
                 self.e_field_norms = enorm_data[3].enorm
@@ -2261,6 +2283,16 @@ class Viewer(wx.Panel):
                 self.e_field_col2_to_save = enorm_data[3].column2
                 self.e_field_col3_to_save = enorm_data[3].column3
                 if len(self.e_field_col1) > 1:
+                    K = len(self.e_field_norms_to_save)
+                    col1 = np.asarray(self.e_field_col1, dtype=float)
+                    col2 = np.asarray(self.e_field_col2, dtype=float)
+                    col3 = np.asarray(self.e_field_col3, dtype=float)
+                    N = col1.size // K
+                    if N > 1:
+                        self.e_field_col1 = col1.reshape(N, -1).sum(axis=0)
+                        self.e_field_col2 = col2.reshape(N, -1).sum(axis=0)
+                        self.e_field_col3 = col3.reshape(N, -1).sum(axis=0)
+
                     self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
                     self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
                     self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
@@ -2336,6 +2368,12 @@ class Viewer(wx.Panel):
             "Efield ROI size",
             "mTMS coordinates",
             "diperdt",
+            "ci",
+            "co",
+            "path meshes",
+            "meshes file",
+            "cortex file",
+            "coil model file",
         ]
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
@@ -2368,6 +2406,12 @@ class Viewer(wx.Panel):
                     self.efield_ROISize,
                     self.mtms_coord,
                     self.diperdt,
+                    self.ci,
+                    self.co,
+                    self.path_meshes,
+                    self.meshes_file,
+                    self.cortex_file,
+                    self.coil_model,
                 ]
             )
 
@@ -2406,6 +2450,12 @@ class Viewer(wx.Panel):
             "Efield ROI size",
             "mTMS coordinates",
             "diperdt",
+            "ci",
+            "co",
+            "path meshes",
+            "meshes file",
+            "cortex file",
+            "coil model file",
         ]
         all_data = list(self.target_radius_list)
         with open(filename, "w", newline="") as f:
@@ -2413,8 +2463,16 @@ class Viewer(wx.Panel):
             writer.writerow(header)
             writer.writerows(all_data)
 
-    def Getdiperdtforreport(self, diperdt):
+    def Getdiperdtforreport(self, diperdt, ci, co):
         self.diperdt = diperdt
+        self.ci = ci
+        self.co = co
+
+    def Get_meshes_paths_to_report(self, path_meshes, cortex_file, meshes_file, coilmodel):
+        self.meshes_file = meshes_file
+        self.cortex_file = cortex_file
+        self.path_meshes = path_meshes
+        self.coil_model = coilmodel
 
     def GetCellIntersection(self, p1, p2, locator):
         # vtk_colors = vtkNamedColors()
