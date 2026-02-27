@@ -503,24 +503,32 @@ def img2memmap(group):
     temp_fd, temp_file = tempfile.mkstemp()
 
     data = group.get_fdata()
+    print(f"[NIfTI Import] Raw data from file: dtype={data.dtype}, "
+          f"min={data.min():.4f}, max={data.max():.4f}, shape={data.shape}")
 
     # if scalar range is larger than uint16 maximum number, the image needs
     # to be rescalaed so that no negative values are created when converting to int16
     # maximum of 10000 was selected arbitrarily by testing with one MRI example
     # alternatively could test if "data.dtype == 'float64'" but maybe it is too specific
     if np.ptp(data) > (2**16 / 2 - 1):
+        print(f"[NIfTI Import] Rescaling: ptp={np.ptp(data):.4f} > {2**16/2 - 1}, normalizing to 0-10000")
         data = image_normalize(data, min_=0, max_=10000, output_dtype=np.int16)
         dlg.WarningRescalePixelValues()
 
     # images can have pixel intensities in small float numbers which after int conversion will
     # have to be binary (0, 1). To prevent that, rescale pixel values from 0-255
     elif data.max() < (2**3):
+        print(f"[NIfTI Import] Small values detected: max={data.max():.4f} < 8, offering rescale dialog")
         data_temp = image_normalize(data, min_=0, max_=255, output_dtype=np.int16)
         status = dlg.DialogRescalePixelIntensity(data.max(), np.unique(data_temp).size)
 
         if status:
             data = data_temp
-            # dlg.WarningRescalePixelValues()
+            print(f"[NIfTI Import] User accepted rescale to 0-255")
+        else:
+            print(f"[NIfTI Import] User rejected rescale, keeping original values")
+    else:
+        print(f"[NIfTI Import] No rescaling needed")
 
     # Convert RAS+ to default InVesalius orientation ZYX
     data = np.swapaxes(data, 0, 2)
@@ -531,6 +539,8 @@ def img2memmap(group):
     matrix.flush()
 
     scalar_range = np.amin(matrix), np.amax(matrix)
+    print(f"[NIfTI Import] Final memmap: dtype={matrix.dtype}, "
+          f"min={scalar_range[0]}, max={scalar_range[1]}")
     os.close(temp_fd)
 
     return matrix, scalar_range, temp_file

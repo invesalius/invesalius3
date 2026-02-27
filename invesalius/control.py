@@ -299,6 +299,11 @@ class Controller:
                 mask.was_edited = True
                 # Trigger full volume re-render for mask overlay
                 mask.modified(all_volume=True)
+                # Discard stale buffers and refresh 2D slice viewers
+                for buffer_ in self.Slice.buffer_slices.values():
+                    buffer_.discard_vtk_mask()
+                    buffer_.discard_mask()
+                Publisher.sendMessage("Reload actual slice")
 
             Publisher.sendMessage("Update status text in GUI", label=_("Mask imported successfully."))
 
@@ -657,6 +662,10 @@ class Controller:
         patients_groups = dcm.GetDicomGroups(directory)
         name = directory.rpartition("\\")[-1].split(".")
 
+        # Track whether this is a generic volume import (NIfTI/Analyze/PAR-REC)
+        # so we can skip auto mask creation for those paths.
+        is_other_files = False
+
         if len(patients_groups):
             # OPTION 1: DICOM
             group = dcm.SelectLargerDicomGroup(patients_groups)
@@ -666,6 +675,7 @@ class Controller:
             self.CreateDicomProject(dicom, matrix, matrix_filename)
         else:
             # OPTION 2: NIfTI, Analyze or PAR/REC
+            is_other_files = True
             if name[-1] == "gz":
                 name[1] = "nii.gz"
 
@@ -683,7 +693,7 @@ class Controller:
                 self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
             # OPTION 4: Nothing...
 
-        self.LoadProject()
+        self.LoadProject(create_default_mask=not is_other_files)
         Publisher.sendMessage("Enable state project", state=True)
 
     def OnImportGroup(self, group: "DicomGroup", use_gui: bool):
@@ -728,7 +738,7 @@ class Controller:
 
     # -------------------------------------------------------------------------------------
 
-    def LoadProject(self):
+    def LoadProject(self, create_default_mask=True):
         proj = prj.Project()
 
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
@@ -769,7 +779,7 @@ class Controller:
             if self.Slice.current_mask is not None:
                 Publisher.sendMessage("Show mask", index=visible_mask_idx, value=True)
                 Publisher.sendMessage("Change mask selected", index=visible_mask_idx)
-        else:
+        elif create_default_mask:
             mask_name = const.MASK_NAME_PATTERN % (1,)
 
             if proj.modality != "UNKNOWN":
@@ -1090,12 +1100,18 @@ class Controller:
     def OnOpenOtherFiles(self, filepath: bytes) -> None:
         filepath = utils.decode(filepath, const.FS_ENCODE)
         if (filepath) is not None:
+            # Close existing project fully (removes VTK actors, clears masks,
+            # surfaces, measurements via pubsub). Safe on fresh start.
+            session = ses.Session()
+            if session.IsOpen():
+                self.CloseProject()
+
             name = os.path.basename(filepath).split(".")[0]
             group = oth.ReadOthers(filepath)
             if group:
                 matrix, matrix_filename = self.OpenOtherFiles(group)
                 self.CreateOtherProject(name, matrix, matrix_filename)
-                self.LoadProject()
+                self.LoadProject(create_default_mask=False)
 
                 Publisher.sendMessage("Enable state project", state=True)
             else:
