@@ -465,7 +465,10 @@ class Project(metaclass=Singleton):
         import invesalius.data.slice_ as slc
 
         s = slc.Slice()
-        img_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(s.matrix), 0, 2), None)
+        export_data = np.swapaxes(np.fliplr(s.matrix), 0, 2)
+        print(f"[NIfTI Export] Intensity volume: dtype={export_data.dtype}, "
+              f"min={export_data.min()}, max={export_data.max()}, shape={export_data.shape}")
+        img_nifti = nib.Nifti1Image(export_data, None)
         img_nifti.header.set_zooms(s.spacing)
         img_nifti.header.set_dim_info(slice=0)
         nib.save(img_nifti, filename)
@@ -474,7 +477,8 @@ class Project(metaclass=Singleton):
                 mask = self.mask_dict[index]
                 s.do_threshold_to_all_slices(mask)
 
-                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask.matrix), 0, 2), None)
+                mask_data = mask.matrix[1:, 1:, 1:]
+                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask_data), 0, 2), None)
                 mask_nifti.header.set_zooms(s.spacing)
                 if filename.lower().endswith(".nii"):
                     basename = filename[:-4]
