@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 
 class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
     def __init__(self, viewer: "Viewer"):
+        self.viewer = viewer
         self.right_pressed = False
         self.left_pressed = False
         self.middle_pressed = False
@@ -67,18 +68,33 @@ class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
 
     def OnReleaseLeftButton(self, evt, obj):
         self.left_pressed = False
+        # Force a final "still" render after interaction ends.
+        # VTK may use lower-quality volume rendering during interaction; without an extra render
+        # here the preview can remain stuck in that low-quality state.
+        try:
+            self.viewer.UpdateRender()
+        except Exception:
+            self.viewer.interactor.GetRenderWindow().Render()
 
     def OnPressRightButton(self, evt, obj):
         self.right_pressed = True
 
     def OnReleaseRightButton(self, evt, obj):
         self.right_pressed = False
+        try:
+            self.viewer.UpdateRender()
+        except Exception:
+            self.viewer.interactor.GetRenderWindow().Render()
 
     def OnMiddleButtonPressEvent(self, evt, obj):
         self.middle_pressed = True
 
     def OnMiddleButtonReleaseEvent(self, evt, obj):
         self.middle_pressed = False
+        try:
+            self.viewer.UpdateRender()
+        except Exception:
+            self.viewer.interactor.GetRenderWindow().Render()
 
 
 class DefaultInteractorStyle(Base3DInteractorStyle):
