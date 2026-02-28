@@ -86,10 +86,14 @@ class Tracker(metaclass=Singleton):
         from typing import cast
 
         tracker_id: int = cast(int, state["tracker_id"])
-        tracker_fiducials: NDArray[np.float64] = np.array(state["tracker_fiducials"])
-        tracker_fiducials_raw: NDArray[np.float64] = np.array(state["tracker_fiducials_raw"])
+        tracker_fiducials: NDArray[np.float64] = np.array(
+            state["tracker_fiducials"], dtype=np.float64
+        )
+        tracker_fiducials_raw: NDArray[np.float64] = np.array(
+            state["tracker_fiducials_raw"], dtype=np.float64
+        )
         m_tracker_fiducials_raw: NDArray[np.float64] = np.array(
-            state["marker_tracker_fiducials_raw"]
+            state["marker_tracker_fiducials_raw"], dtype=np.float64
         )
         configuration: Optional[Dict[str, object]] = cast(
             Optional[Dict[str, object]], state["configuration"]

@@ -259,6 +259,18 @@ class Controller:
         # Open project
         filepath = dialog.ShowOpenProjectDialog()
         if filepath:
+            if not filepath.lower().endswith(".inv3"):
+                dlg = dialogs.ErrorMessageBox(
+                    None,
+                    _("Invalid file type"),
+                    _(
+                        "Please select an InVesalius 3 project file (.inv3).\n\n"
+                        "For DICOM files (.dcm), use File → Import DICOM instead."
+                    ),
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                return
             if session.IsOpen():
                 self.CloseProject()
             self.OpenProject(filepath)
