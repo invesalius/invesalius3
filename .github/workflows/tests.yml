@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -27,6 +27,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+                  build-essential \
+                  python3-dev \
                   freeglut3-dev \
                   libcurl4-openssl-dev \
                   libexpat1-dev \
@@ -50,15 +52,26 @@ jobs:
                   libxcomposite-dev \
                   libfreetype6-dev \
                   libxi-dev \
-
+                  libgtk-3-0 \
+                  libgl1-mesa-glx \
+                  libgstreamer-plugins-good1.0-0 \
+                  libgstreamer-plugins-bad1.0-0 \
+                  libpulse-dev
 
       - uses: astral-sh/setup-uv@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Syncing with UV
+      - name: Install wxPython with compatible setuptools
+        run: |
+          # Install setuptools <68 first (for wxPython build compatibility)
+          uv pip install "setuptools>=65,<68" wheel
+          # Install wxPython without build isolation so it uses our setuptools
+          uv pip install --no-build-isolation -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04 wxpython==4.2.2
+
+      - name: Syncing remaining dependencies with UV
         run: uv sync --all-extras
 
       - name: Run tests with xvfb

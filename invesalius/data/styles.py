@@ -2687,7 +2687,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             Publisher.unsubscribe(self.config.mask.OnFlipVolume, "Flip volume")
             Publisher.unsubscribe(self.config.mask.OnSwapVolumeAxes, "Swap volume axes")
 
-            # Clean up temporary preview mask and aux overlay
+           
             del self.viewer.slice_.aux_matrices["SELECT"]
             self.viewer.slice_.to_show_aux = ""
             Publisher.sendMessage("Reload actual slice")

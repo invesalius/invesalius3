@@ -222,6 +222,11 @@ class Robot(metaclass=Singleton):
         )
 
         Publisher.sendMessage(
+            "From Neuronavigation: Send target",
+            target=target,
+        )
+
+        Publisher.sendMessage(
             "Neuronavigation to Robot: Set target",
             target=m_target.tolist(),
         )
