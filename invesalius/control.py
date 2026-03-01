@@ -676,6 +676,11 @@ class Controller:
         img_file = Path(outdir) / "proj_image.nii.gz"
         proj.export_project_to_nifti(img_file, save_masks=False)
 
+        # Ensure volume is loaded in 3D viewer (fixes #1085: empty volume after
+        # DICOM import when enabling Edit in 3D)
+        if not prj.Project().raycasting_preset:
+            Publisher.sendMessage("Load raycasting preset", preset_name=_("Standard"))
+
         Publisher.sendMessage("End busy cursor")
         Publisher.sendMessage("Project loaded successfully")
 

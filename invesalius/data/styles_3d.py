@@ -34,6 +34,7 @@ import invesalius.constants as const
 import invesalius.data.slice_ as slc
 import invesalius.project as prj
 import invesalius.session as ses
+from invesalius.i18n import tr as _
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
@@ -744,6 +745,20 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage(
             "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
         )
+
+        # Ensure volume is loaded and displayed when entering 3D edit (fixes #1085)
+        n_vol = self.viewer.ren.GetVolumes().GetNumberOfItems()
+        if n_vol == 0:
+            Publisher.sendMessage("Load raycasting preset", preset_name=_("Standard"))
+            wx.CallLater(400, self._refresh_volume_view)
+        else:
+            Publisher.sendMessage("Render volume viewer")
+
+    def _refresh_volume_view(self):
+        self.viewer.ren.ResetCamera()
+        self.viewer.ren.ResetCameraClippingRange()
+        self.viewer.UpdateRender()
+        Publisher.sendMessage("Render volume viewer")
 
     def CleanUp(self):
         """Clean up is called when the interactor style is removed or changed.
