@@ -8,6 +8,7 @@ on:
 jobs:
   run-tests:
     runs-on: ubuntu-22.04 
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,8 +50,7 @@ jobs:
                   libxcursor-dev \
                   libxcomposite-dev \
                   libfreetype6-dev \
-                  libxi-dev \
-
+                  libxi-dev
 
       - uses: astral-sh/setup-uv@v5
         with:
@@ -58,7 +58,15 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Syncing with UV
+      # 🔧 Critical Fix for wxPython on Python 3.12
+      - name: Install wxPython with compatible setuptools
+        run: |
+          uv pip install "setuptools>=65,<68" wheel
+          uv pip install --no-build-isolation \
+            -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04 \
+            wxpython==4.2.2
+
+      - name: Syncing remaining dependencies with UV
         run: uv sync --all-extras
 
       - name: Run tests with xvfb
