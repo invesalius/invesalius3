@@ -1,12 +1,8 @@
-use crate::types::{ImageTypes3, MaskTypesMut3};
 use nalgebra::{Matrix4, Vector4};
 use ndarray::parallel::prelude::*;
 use ndarray::{ArrayView2, ArrayView3, ArrayViewMut3};
 use num_traits::AsPrimitive;
 use num_traits::NumCast;
-use numpy::PyReadonlyArray2;
-use pyo3::exceptions::PyTypeError;
-use pyo3::prelude::*;
 
 pub fn mask_cut_internal<T, U>(
     _image: ArrayView3<T>,
