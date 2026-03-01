@@ -39,7 +39,9 @@ from invesalius import inv_paths, project
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN, BTN_IMPORT_MASK, BTN_EXPORT_MASK = (wx.NewIdRef() for i in range(6))
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN, BTN_IMPORT_MASK, BTN_EXPORT_MASK = (
+    wx.NewIdRef() for i in range(6)
+)
 
 TYPE = {
     const.LINEAR: _("Linear"),

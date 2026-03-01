@@ -24,6 +24,7 @@ import sys
 import wx
 from vtkmodules.vtkFiltersGeneral import vtkCursor3D
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
+from vtkmodules.vtkFiltersSources import vtkRegularPolygonSource
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleImage
 from vtkmodules.vtkIOExport import vtkPOVExporter
 from vtkmodules.vtkIOImage import (
@@ -253,6 +254,9 @@ class Viewer(wx.Panel):
         self.__bind_events_wx()
 
         self._flush_buffer = False
+
+        # Marker highlight overlay
+        self.marker_highlight_actor = None
 
     def __init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -940,6 +944,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetCrossPos, "Set Update cross pos")
         Publisher.subscribe(self.UpdateCross, "Update cross pos")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.OnHighlightMarker, "Highlight marker")
 
     def RefreshViewer(self):
         self.Refresh()
@@ -1597,6 +1602,81 @@ class Viewer(wx.Panel):
         self.OnScrollBar()
         if not self.nav_status:
             self.UpdateRender()
+
+    def _remove_marker_highlight(self):
+        """Remove the marker highlight actor from the overlay renderer."""
+        if self.marker_highlight_actor is not None:
+            self.slice_data.overlay_renderer.RemoveActor(self.marker_highlight_actor)
+            self.marker_highlight_actor = None
+
+    def _create_marker_highlight_actor(self, wx, wy, wz):
+        """Create a circle actor at the given world position for the overlay."""
+        circle = vtkRegularPolygonSource()
+        circle.SetNumberOfSides(30)
+        circle.SetRadius(3.0)
+        circle.SetCenter(wx, wy, wz)
+        circle.GeneratePolygonOff()
+
+        # Orient the circle normal to face the viewer.
+        if self.orientation == "AXIAL":
+            circle.SetNormal(0, 0, 1)
+        elif self.orientation == "CORONAL":
+            circle.SetNormal(0, 1, 0)
+        elif self.orientation == "SAGITAL":
+            circle.SetNormal(1, 0, 0)
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(circle.GetOutputPort())
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(0.0, 1.0, 0.0)
+        actor.GetProperty().SetLineWidth(2.0)
+        actor.PickableOff()
+
+        return actor
+
+    def OnHighlightMarker(self, marker):
+        """Jump to the marker's slice and show a highlight circle on the overlay."""
+        # Determine the target slice index based on orientation.
+        if self.orientation == "AXIAL":
+            target_index = int(round(marker.z))
+        elif self.orientation == "CORONAL":
+            target_index = int(round(marker.y))
+        elif self.orientation == "SAGITAL":
+            target_index = int(round(marker.x))
+        else:
+            return
+
+        target_index = max(0, target_index)
+
+        # Jump to the target slice if needed.
+        if self.slice_data.number != target_index:
+            self.set_slice_number(target_index)
+
+        # Remove previous highlight.
+        self._remove_marker_highlight()
+
+        # Compute the marker's world position on this 2D slice.
+        xi, xf, yi, yf, zi, zf = self.slice_data.actor.GetBounds()
+        spacing = self.slice_.spacing
+
+        if self.orientation == "AXIAL":
+            wx = marker.x * spacing[0] + xi
+            wy = marker.y * spacing[1] + yi
+            wz = zi
+        elif self.orientation == "CORONAL":
+            wx = marker.x * spacing[0] + xi
+            wy = yi
+            wz = marker.z * spacing[2] + zi
+        elif self.orientation == "SAGITAL":
+            wx = xi
+            wy = marker.y * spacing[1] + yi
+            wz = marker.z * spacing[2] + zi
+
+        self.marker_highlight_actor = self._create_marker_highlight_actor(wx, wy, wz)
+        self.slice_data.overlay_renderer.AddActor(self.marker_highlight_actor)
+        self.UpdateRender()
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"

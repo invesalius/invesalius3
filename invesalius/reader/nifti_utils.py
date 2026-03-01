@@ -23,7 +23,9 @@ import numpy as np
 try:
     _
 except NameError:
-    def _(s): return s
+
+    def _(s):
+        return s
 
 
 def check_is_mask(data):
@@ -69,6 +71,8 @@ def validate_mask_compatibility(mask_shape, slice_shape):
     """
     if mask_shape != slice_shape:
         raise ValueError(
-            _("Dimension mismatch.\n\nProject: {} voxels\nMask:    {} voxels\n\n"
-              "Masks must match the volume dimensions exactly.").format(slice_shape, mask_shape)
+            _(
+                "Dimension mismatch.\n\nProject: {} voxels\nMask:    {} voxels\n\n"
+                "Masks must match the volume dimensions exactly."
+            ).format(slice_shape, mask_shape)
         )
