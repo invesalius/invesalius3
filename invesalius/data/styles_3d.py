@@ -34,7 +34,6 @@ import invesalius.constants as const
 import invesalius.data.slice_ as slc
 import invesalius.project as prj
 import invesalius.session as ses
-from invesalius.i18n import tr as _
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
@@ -746,18 +745,18 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
         )
 
-        # Ensure volume is loaded and displayed when entering 3D edit (fixes #1085)
-        n_vol = self.viewer.ren.GetVolumes().GetNumberOfItems()
-        if n_vol == 0:
-            Publisher.sendMessage("Load raycasting preset", preset_name=_("Standard"))
+        # Fixes #1085: when entering Edit in 3D, the mask 3D preview was already created
+        # by enable_mask_preview() above, but the camera was never reset to frame the new
+        # volume, making the 3D quadrant appear empty. A delayed camera reset fixes this.
+        # If the preview was already active before we entered this style, just re-render.
+        if self.has_set_mask_preview:
             wx.CallLater(400, self._refresh_volume_view)
         else:
             Publisher.sendMessage("Render volume viewer")
 
     def _refresh_volume_view(self):
-        self.viewer.ren.ResetCamera()
-        self.viewer.ren.ResetCameraClippingRange()
-        self.viewer.UpdateRender()
+        # Set the camera to front view — same orientation used by LoadVolume/AddSurface.
+        Publisher.sendMessage("Set volume view angle", view=const.VOL_FRONT)
         Publisher.sendMessage("Render volume viewer")
 
     def CleanUp(self):
