@@ -697,7 +697,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         current_mask = slc.Slice().current_mask
         if current_mask is None:
-            raise ValueError("No mask available. Please create or import a mask before using Edit in 3D.")
+            raise ValueError(
+                "No mask available. Please create or import a mask before using Edit in 3D."
+            )
         self.mask_data = current_mask.matrix.copy()
 
         self.m3e_list: list[PolygonSelectCanvas] = []
