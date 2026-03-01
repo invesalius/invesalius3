@@ -349,7 +349,7 @@ def run_medlsam(
                 rejected += 1
 
 
-    if total == 0:
+    if result_mask.sum() == 0:
         return []
 
     # --- Strict Clipping to Unpadded Box ---
