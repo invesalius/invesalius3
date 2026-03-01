@@ -1197,38 +1197,42 @@ def ReportICPDistributionError() -> None:
     dlg.Destroy()
 
 
-def WarnNonVisibleFaces(parent: wx.Window = None) -> bool:
+def WarnNonVisibleFaces(parent: wx.Window = None) -> None:
     """
-    Warn user about non-visible faces in the surface and ask whether to proceed.
+    Warn user about non-visible faces in the surface.
 
-    Returns:
-        bool: True if user chooses to proceed anyway, False if user cancels
+    Shows an informational OK-only warning dialog. Does not block ICP workflow.
     """
     msg = (
-        _("The surface contains non-visible faces.")
+        _("The selected surface contains inner structures.")
+        + "\n"
+        + _("For better ICP accuracy, it is recommended to perform")
+        + "\n"
+        + _("the refine registration using the scalp surface with only")
+        + "\n"
+        + _("the outer shell.")
         + "\n\n"
-        + _("For better ICP accuracy, it is recommended to clean the surface first.")
-        + "\n\n"
-        + _("Do you want to proceed with refinement anyway?")
+        + _("You can clean the surface using:")
+        + "\n"
+        + _("Tools \u2192 Surface \u2192 Remove Non-Visible Faces.")
     )
     if sys.platform == "darwin":
         dlg = wx.MessageDialog(
             parent,
             "",
             msg,
-            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
+            wx.OK | wx.ICON_WARNING,
         )
     else:
         dlg = wx.MessageDialog(
             parent,
             msg,
             "InVesalius 3 - Refine Coregistration",
-            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
+            wx.OK | wx.ICON_WARNING,
         )
 
-    result = dlg.ShowModal() == wx.ID_YES
+    dlg.ShowModal()
     dlg.Destroy()
-    return result
 
 
 def ShowEnterMarkerID(default: str) -> str:
@@ -4750,9 +4754,7 @@ class ICPCorregistrationDialog(wx.Dialog):
             import invesalius.data.polydata_utils as pu
 
             if pu.HasNonVisibleFaces(self.surface):
-                if not WarnNonVisibleFaces(self):
-                    self.EndModal(wx.ID_CANCEL)
-                    return
+                WarnNonVisibleFaces(parent=self)
         except Exception:
             pass
         self._surface_validated = True

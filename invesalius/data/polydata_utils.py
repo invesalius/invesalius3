@@ -283,7 +283,7 @@ def SplitDisconectedParts(polydata: vtkPolyData) -> List[vtkPolyData]:
 
 def HasNonVisibleFaces(
     polydata,
-    threshold=0.95,
+    threshold=0.7,
     positions=[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]],
 ):
     """
