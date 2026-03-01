@@ -745,19 +745,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
         )
 
-        # Fixes #1085: when entering Edit in 3D, the mask 3D preview was already created
-        # by enable_mask_preview() above, but the camera was never reset to frame the new
-        # volume, making the 3D quadrant appear empty. A delayed camera reset fixes this.
-        # If the preview was already active before we entered this style, just re-render.
-        if self.has_set_mask_preview:
-            wx.CallLater(400, self._refresh_volume_view)
-        else:
+        # If the mask preview was already active before entering this style,
+        # just trigger a re-render (camera was already positioned when preview was enabled).
+        if not self.has_set_mask_preview:
             Publisher.sendMessage("Render volume viewer")
-
-    def _refresh_volume_view(self):
-        # Set the camera to front view — same orientation used by LoadVolume/AddSurface.
-        Publisher.sendMessage("Set volume view angle", view=const.VOL_FRONT)
-        Publisher.sendMessage("Render volume viewer")
 
     def CleanUp(self):
         """Clean up is called when the interactor style is removed or changed.
