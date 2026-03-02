@@ -1,11 +1,11 @@
-use numpy::{PyReadonlyArray3, PyReadwriteArray3};
+use numpy::{PyReadonlyArray2, PyReadonlyArray3, PyReadwriteArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use std::collections::VecDeque;
 
 use crate::floodfill::{
     fill_holes_automatically_internal, floodfill_internal, generic_floodfill_threshold,
-    generic_floodfill_threshold_inplace,
+    generic_floodfill_threshold_inplace, floodfill_voronoi_inplace_internal, jump_flooding_internal,
 };
 use crate::types::{ImageTypes3, ImageTypesMut3, MaskTypesMut3};
 
@@ -246,4 +246,31 @@ pub fn fill_holes_automatically<'py>(
         )),
         _ => Err(PyTypeError::new_err("Invalid mask type")),
     }
+}
+
+#[pyfunction]
+pub fn floodfill_voronoi_inplace<'py>(
+    mut data: PyReadwriteArray3<f32>,
+    seeds: Vec<(usize, usize, usize)>,
+    strct: PyReadonlyArray3<u8>,
+    distance_fn: u8,
+) -> PyResult<()> {
+    floodfill_voronoi_inplace_internal(data.as_array_mut(), seeds, strct.as_array(), distance_fn);
+    Ok(())
+}
+
+#[pyfunction]
+pub fn jump_flooding(
+    mut distance_map: PyReadwriteArray3<f32>,
+    mut map_owners: PyReadwriteArray3<i32>,
+    sites: PyReadonlyArray2<i32>,
+    normalize: bool,
+) -> PyResult<()> {
+    jump_flooding_internal(
+        distance_map.as_array_mut(),
+        map_owners.as_array_mut(),
+        sites.as_array(),
+        normalize,
+    );
+    Ok(())
 }

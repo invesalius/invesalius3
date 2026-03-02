@@ -25,6 +25,10 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(floodfill_py::floodfill_auto_threshold, m)?)?;
     m.add_function(wrap_pyfunction!(floodfill_py::fill_holes_automatically, m)?)?;
+    m.add_function(wrap_pyfunction!(floodfill_py::jump_flooding, m)?)?;
+
+    // Floodfill voronoi function
+    m.add_function(wrap_pyfunction!(floodfill_py::floodfill_voronoi_inplace, m)?)?;
 
     // MIPS functions
     m.add_function(wrap_pyfunction!(mips_py::mida, m)?)?;

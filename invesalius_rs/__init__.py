@@ -13,7 +13,8 @@ _native_floodfill_threshold = _native.floodfill_threshold
 _native_floodfill_threshold_inplace = _native.floodfill_threshold_inplace
 _native_floodfill_auto_threshold = _native.floodfill_auto_threshold
 fill_holes_automatically = _native.fill_holes_automatically
-
+_native_floodfill_voronoi_inplace = _native.floodfill_voronoi_inplace
+_native_jump_flooding = _native.jump_flooding
 
 def floodfill_threshold(data, seeds, t0, t1, fill, strct, out):
     """
@@ -60,6 +61,21 @@ def floodfill_auto_threshold(data, seeds, p, fill, out):
     # Convert seeds to list of tuples if necessary
     tuple_seeds = [tuple(s) for s in seeds]
     return _native_floodfill_auto_threshold(data, tuple_seeds, p, fill, out)
+
+
+def floodfill_voronoi(data, seeds, strct, distance_fn):
+    """
+    Floodfill with voronoi distance constraints.
+    """
+    tuple_seeds = [tuple(s) for s in seeds]
+    return _native_floodfill_voronoi_inplace(data, tuple_seeds, strct, distance_fn)
+
+
+def jump_flooding(distance_map, map_owners, sites, normalize):
+    """
+    Jump flooding.
+    """
+    return _native_jump_flooding(distance_map, map_owners, sites, normalize)
 
 
 # lmip = _native.lmip
