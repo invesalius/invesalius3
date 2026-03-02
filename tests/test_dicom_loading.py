@@ -1,10 +1,18 @@
 import os
 import tempfile
 import zipfile
+import pytest
+import socket
 
 import requests
 
 from invesalius.reader import dicom_reader
+def has_internet():
+    try:
+       requests.get("https://github.com", timeout=443)
+       return True
+    except requests.exceptions.ConnectionError:
+       return False
 
 DICOM_ZIP_URL = "https://github.com/invesalius/invesalius3/releases/download/v3.0/0051.zip"
 DICOM_ZIP_FILENAME = "0051.zip"
@@ -22,8 +30,7 @@ def download_and_extract_dicom_zip(dest_folder):
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(dest_folder)
     return zip_path, extract_path
-
-
+@pytest.mark.skipif(not has_internet(), reason="No internet connection required to download the DICOM test data")
 def test_dicom_loading():
     with tempfile.TemporaryDirectory() as dicom_dir:
         zip_path, dicom_data_dir = download_and_extract_dicom_zip(dicom_dir)
