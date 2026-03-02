@@ -27,6 +27,13 @@ pub enum MaskTypesMut3<'py> {
     U8(PyReadwriteArray3<'py, u8>),
 }
 
+#[derive(FromPyObject)]
+pub enum LabelsTypes3<'py> {
+    I16(PyReadonlyArray3<'py, i16>),
+    I32(PyReadonlyArray3<'py, i32>),
+    I64(PyReadonlyArray3<'py, i64>),
+}
+
 // --- 2D read-only ---
 #[derive(FromPyObject)]
 pub enum MaskTypes2<'py> {

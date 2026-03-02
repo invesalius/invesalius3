@@ -15,6 +15,8 @@ _native_floodfill_auto_threshold = _native.floodfill_auto_threshold
 fill_holes_automatically = _native.fill_holes_automatically
 _native_floodfill_voronoi_inplace = _native.floodfill_voronoi_inplace
 _native_jump_flooding = _native.jump_flooding
+_native_count_regions = _native.count_regions
+
 
 def floodfill_threshold(data, seeds, t0, t1, fill, strct, out):
     """
@@ -99,6 +101,12 @@ def fast_countour_mip(
 
 # Rust context-aware smoothing function
 _context_aware_smoothing = _native.context_aware_smoothing
+
+
+def count_regions(image: np.ndarray, number_regions: int) -> np.ndarray:
+    out = np.zeros_like(image, dtype=np.uint32)
+    _native_count_regions(image, number_regions, out)
+    return out
 
 
 class Mesh:
@@ -284,4 +292,6 @@ __all__ = [
     # Mesh
     "Mesh",
     "ca_smoothing",
+    # Count regions
+    "count_regions",
 ]

@@ -12,6 +12,8 @@ mod mips_py;
 mod transforms;
 mod transforms_py;
 mod types;
+mod count_regions;
+mod count_regions_py;
 
 /// InVesalius Rust extension module
 #[pymodule]
@@ -47,6 +49,9 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // context aware smoothing function
     m.add_function(wrap_pyfunction!(mesh_py::context_aware_smoothing, m)?)?;
+
+    // Count regions function
+    m.add_function(wrap_pyfunction!(count_regions_py::count_regions, m)?)?;
 
     Ok(())
 }
