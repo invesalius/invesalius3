@@ -568,8 +568,7 @@ class Frame(wx.Frame):
             # Use RichMessageDialog so we can add a 'Store session' checkbox,
             # consistent with the normal (no unsaved changes) exit dialog.
             dialog = wx.RichMessageDialog(
-                None, msg, "InVesalius 3 - Unsaved Changes",
-                wx.ICON_WARNING | wx.YES_NO | wx.CANCEL
+                None, msg, "InVesalius 3 - Unsaved Changes", wx.ICON_WARNING | wx.YES_NO | wx.CANCEL
             )
             dialog.SetYesNoLabels(_("Save and Exit"), _("Discard and Exit"))
             dialog.ShowCheckBox(_("Store session"), False)
