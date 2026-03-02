@@ -17,10 +17,14 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
+import traceback
 from typing import Callable, Optional, Tuple
 
 from pubsub import pub as Publisher
 from pubsub.core.listener import Listener, UserListener
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     # subscribing
@@ -36,6 +40,32 @@ __all__ = [
 Hook = Callable[[str, dict], None]
 
 sendMessage_hook: Optional[Hook] = None
+
+
+# --- Error Isolation Handler ---
+# PyPubSub's built-in mechanism: when a listener raises an exception,
+# this handler is called instead of stopping the entire dispatch chain.
+# After logging the error, PyPubSub continues to the next listener.
+class PubSubExcHandler:
+    """Handle exceptions raised by pubsub listeners.
+
+    When a subscriber crashes during sendMessage(), this handler logs the
+    error and allows the remaining subscribers to execute. Without this,
+    a single bad subscriber would abort the entire message dispatch,
+    leaving the application in an inconsistent state (see issue #1124).
+    """
+
+    def __call__(self, listenerID, topicObj):
+        logger.error(
+            "Listener '%s' raised an exception on topic '%s':\n%s",
+            listenerID,
+            topicObj.getName(),
+            traceback.format_exc(),
+        )
+
+
+# Install the handler at module load time
+Publisher.setListenerExcHandler(PubSubExcHandler())
 
 
 def add_sendMessage_hook(hook: Hook) -> None:
