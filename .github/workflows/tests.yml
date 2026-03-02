@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: 3.11
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -54,7 +54,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
         with:
-          python-version: 3.12
+          python-version: 3.11
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
