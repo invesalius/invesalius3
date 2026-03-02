@@ -2,6 +2,7 @@ import vtk
 import wx
 
 from invesalius.gui import dialogs
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 

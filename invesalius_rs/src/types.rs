@@ -1,4 +1,4 @@
-use numpy::{PyReadonlyArray3, PyReadwriteArray2, PyReadwriteArray3};
+use numpy::{PyReadonlyArray2, PyReadonlyArray3, PyReadwriteArray2, PyReadwriteArray3};
 use pyo3::FromPyObject;
 
 #[derive(FromPyObject)]
@@ -11,6 +11,11 @@ pub enum ImageTypes3<'py> {
 #[derive(FromPyObject)]
 pub enum MaskTypes3<'py> {
     U8(PyReadonlyArray3<'py, u8>),
+}
+
+#[derive(FromPyObject)]
+pub enum MaskTypes2<'py> {
+    U8(PyReadonlyArray2<'py, u8>),
 }
 
 #[derive(FromPyObject)]

@@ -1250,6 +1250,10 @@ class Controller:
             mask.create_3d_preview()
             Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=True)
             Publisher.sendMessage("Render volume viewer")
+            # Fixes #1085: reset camera to front view so the mask preview is immediately
+            # visible without the user needing to interact with the repositioning tool.
+            # Covers both the menu (Mask → Mask 3D Preview → Enable) and Edit in 3D paths.
+            Publisher.sendMessage("Set volume view angle", view=const.VOL_FRONT)
 
     def disable_mask_preview(self):
         ses.Session().mask_3d_preview = False

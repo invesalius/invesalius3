@@ -745,6 +745,11 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
         )
 
+        # If the mask preview was already active before entering this style,
+        # just trigger a re-render (camera was already positioned when preview was enabled).
+        if not self.has_set_mask_preview:
+            Publisher.sendMessage("Render volume viewer")
+
     def CleanUp(self):
         """Clean up is called when the interactor style is removed or changed.
 
