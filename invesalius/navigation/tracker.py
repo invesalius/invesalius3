@@ -251,10 +251,12 @@ class Tracker(metaclass=Singleton):
         return True
 
     def ResetTrackerFiducials(self) -> None:
-        for m in range(3):
-            self.tracker_fiducials[m, :] = [np.nan, np.nan, np.nan]
+        # Use np.full to always create a fresh float64 array, consistent with
+        # how __init__ creates tracker_fiducials — avoids in-place dtype issues.
+        self.tracker_fiducials = np.full([3, 3], np.nan)
         Publisher.sendMessage("Reset tracker fiducials")
         self.SaveState()
+
 
     def GetTrackerFiducials(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
         return self.tracker_fiducials, self.tracker_fiducials_raw
