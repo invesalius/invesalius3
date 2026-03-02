@@ -86,6 +86,12 @@ class Session(metaclass=Singleton):
         # Unsaved changes tracking
         self._has_unsaved_changes = False
         self._auto_backup_path: Union[str, None] = None
+        # Backup debounce: prevent many concurrent backup threads when the
+        # user is painting quickly. At most one backup every 3 seconds.
+        import threading
+        import time
+        self._backup_lock = threading.Lock()
+        self._last_backup_time = 0.0
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -174,21 +180,23 @@ class Session(metaclass=Singleton):
 
     def ChangeProject(self) -> None:
         import invesalius.constants as const
+        import time
 
         debug("Session.ChangeProject")
         self.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
         # Mark project as having unsaved changes
-        was_clean = not self._has_unsaved_changes
         self._has_unsaved_changes = True
-        
-        # Create auto-backup when project is first modified
-        # This ensures we can recover if the application crashes
-        if was_clean and self.IsOpen():
-            # Create backup in a separate thread to avoid blocking UI
-            from threading import Thread
-            backup_thread = Thread(target=self.CreateAutoBackup)
-            backup_thread.daemon = True
-            backup_thread.start()
+
+        # Debounced backup: spawn at most one backup thread every 3 seconds
+        # to avoid race conditions when painting many rapid brush strokes.
+        if self.IsOpen():
+            now = time.time()
+            if now - self._last_backup_time >= 3.0:
+                self._last_backup_time = now
+                from threading import Thread
+                backup_thread = Thread(target=self._safe_create_backup)
+                backup_thread.daemon = True
+                backup_thread.start()
 
     def CreateProject(self, filename: str) -> None:
         import invesalius.constants as const
@@ -211,13 +219,18 @@ class Session(metaclass=Singleton):
 
         debug("Session.OpenProject")
 
-        # Add item to recent projects list
+        # Add item to recent projects list (only if not an auto-backup file)
         project_path = os.path.split(filepath)
-        self._add_to_recent_projects(project_path)
+        if "temp_backup" not in str(filepath):
+            self._add_to_recent_projects(project_path)
 
         # Set session info
         self.SetState("project_path", project_path)
         self.SetConfig("project_status", const.PROJECT_STATUS_OPENED)
+        # Reset unsaved-changes flag: any ChangeProject() calls that fired
+        # during LoadProject() (slice setup, etc.) should not count as
+        # user-initiated modifications.
+        self._has_unsaved_changes = False
 
     def WriteConfigFile(self) -> None:
         self._write_to_json(self._config, CONFIG_PATH)
@@ -317,6 +330,13 @@ class Session(metaclass=Singleton):
             except Exception as e2:
                 debug(str(e2))
                 return False
+        # Clean up any auto-backup entries that may have been added to the
+        # recent-projects list before this fix was applied.
+        recent = self.GetConfig("recent_projects")
+        if recent:
+            cleaned = [p for p in recent if "temp_backup" not in str(p)]
+            if len(cleaned) != len(recent):
+                self._config["recent_projects"] = cleaned
         self.WriteConfigFile()
         return True
 
@@ -346,13 +366,20 @@ class Session(metaclass=Singleton):
         """Check if the project has unsaved changes."""
         return self._has_unsaved_changes
 
+    def _safe_create_backup(self) -> None:
+        """Thread-safe wrapper: acquire lock before writing the backup file
+        so concurrent brush-stroke threads don't corrupt each other's writes."""
+        with self._backup_lock:
+            self.CreateAutoBackup()
+
     def CreateAutoBackup(self) -> bool:
         """
-        Create an auto-backup of the current project.
+        Create (or overwrite) the auto-backup of the current project.
+        Uses an atomic write pattern (write to temp file, then os.replace)
+        so a crash mid-write never corrupts the last good backup.
         Returns True if backup was created successfully.
         """
         import invesalius.project as prj
-        from datetime import datetime
 
         try:
             # Get current project
@@ -364,25 +391,25 @@ class Session(metaclass=Singleton):
             backup_dir = Path(inv_paths.USER_INV_DIR) / "temp_backup"
             backup_dir.mkdir(parents=True, exist_ok=True)
 
-            # Clean old backups (keep max 3, remove older than 7 days)
-            self._cleanup_old_backups(backup_dir)
+            # Write to a staging file first so that a crash mid-write never
+            # corrupts the last good backup (auto_backup.inv3).
+            staging_filename = "auto_backup_staging.inv3"
+            staging_path = backup_dir / staging_filename
+            final_filename = "auto_backup.inv3"
+            final_path = backup_dir / final_filename
 
-            # Create backup filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_filename = f"auto_backup_{timestamp}.inv3"
-            backup_path = backup_dir / backup_filename
-
-            # Save current project to backup location
+            # Save current project to the staging location
             proj = prj.Project()
-            dirpath, filename = project_path
-            
-            # Use the project's SavePlistProject method to create backup
-            proj.SavePlistProject(str(backup_dir), backup_filename, compress=True)
-            
-            self._auto_backup_path = str(backup_path)
-            self.SetState("auto_backup_path", str(backup_path))
-            
-            debug(f"Auto-backup created: {backup_path}")
+            proj.SavePlistProject(str(backup_dir), staging_filename, compress=True)
+
+            # Atomically promote staging → final (old backup preserved if
+            # SavePlistProject raised an exception above)
+            os.replace(str(staging_path), str(final_path))
+
+            self._auto_backup_path = str(final_path)
+            self.SetState("auto_backup_path", str(final_path))
+
+            debug(f"Auto-backup updated: {final_path}")
             return True
 
         except Exception as e:
@@ -407,34 +434,6 @@ class Session(metaclass=Singleton):
         if backup_path and os.path.exists(backup_path):
             return backup_path
         return None
-
-    def _cleanup_old_backups(self, backup_dir: Path) -> None:
-        """Clean up old backup files."""
-        from datetime import datetime, timedelta
-        
-        try:
-            if not backup_dir.exists():
-                return
-
-            # Get all backup files
-            backup_files = sorted(backup_dir.glob("auto_backup_*.inv3"), key=lambda p: p.stat().st_mtime, reverse=True)
-
-            # Remove files older than 7 days
-            seven_days_ago = datetime.now() - timedelta(days=7)
-            for backup_file in backup_files:
-                file_time = datetime.fromtimestamp(backup_file.stat().st_mtime)
-                if file_time < seven_days_ago:
-                    backup_file.unlink()
-                    debug(f"Removed old backup: {backup_file}")
-
-            # Keep only the 3 most recent backups
-            backup_files = sorted(backup_dir.glob("auto_backup_*.inv3"), key=lambda p: p.stat().st_mtime, reverse=True)
-            for backup_file in backup_files[3:]:
-                backup_file.unlink()
-                debug(f"Removed excess backup: {backup_file}")
-
-        except Exception as e:
-            debug(f"Failed to cleanup old backups: {e}")
 
     def _Exit(self) -> None:
         self.CloseProject()
