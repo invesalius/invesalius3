@@ -253,7 +253,7 @@ class Inv3SplashScreen(SplashScreen):
                     "Would you like to recover it?"
                 )
                 dlg = wx.MessageDialog(
-                    None, msg, "InVesalius 3 - Crash Recovery", wx.ICON_QUESTION | wx.YES_NO
+                    self.main, msg, "InVesalius 3 - Crash Recovery", wx.ICON_QUESTION | wx.YES_NO
                 )
                 dlg.SetYesNoLabels("Recover", "Discard")
 
