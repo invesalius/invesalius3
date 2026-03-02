@@ -257,7 +257,6 @@ class Tracker(metaclass=Singleton):
         Publisher.sendMessage("Reset tracker fiducials")
         self.SaveState()
 
-
     def GetTrackerFiducials(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
         return self.tracker_fiducials, self.tracker_fiducials_raw
 
