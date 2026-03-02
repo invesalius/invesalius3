@@ -264,8 +264,7 @@ class Controller:
                     None,
                     _("Invalid file type"),
                     _(
-                        "Please select an InVesalius 3 project file (.inv3).\n\n"
-                        "For DICOM files (.dcm), use File → Import DICOM instead."
+                        "Please select an InVesalius project file (.inv3)."
                     ),
                 )
                 dlg.ShowModal()
