@@ -213,7 +213,7 @@ class Viewer(wx.Panel):
         self.slice_data = None
 
         self.slice_actor = None
-        self.interpolation_slice_status = True
+        self.interpolation_slice_status = False
 
         self.canvas = None
 
@@ -1251,9 +1251,9 @@ class Viewer(wx.Panel):
 
         session = ses.Session()
         if session.GetConfig("slice_interpolation"):
-            actor.InterpolateOff()
-        else:
             actor.InterpolateOn()
+        else:
+            actor.InterpolateOff()
 
         slice_data = sd.SliceData()
         slice_data.SetOrientation(self.orientation)
@@ -1272,9 +1272,9 @@ class Viewer(wx.Panel):
         if self.slice_actor is not None:
             session = ses.Session()
             if session.GetConfig("slice_interpolation"):
-                self.slice_actor.InterpolateOff()
-            else:
                 self.slice_actor.InterpolateOn()
+            else:
+                self.slice_actor.InterpolateOff()
             if not self.nav_status:
                 self.UpdateRender()
 
