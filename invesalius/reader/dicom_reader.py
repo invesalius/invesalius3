@@ -331,7 +331,6 @@ class ProgressDicomReader:
 
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:
-            print(">>>>", value_progress)
             if not self.running:
                 break
             if isinstance(value_progress, tuple):
