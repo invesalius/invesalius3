@@ -16,6 +16,7 @@ pub fn mask_cut<'py>(
     m: PyReadonlyArray2<f64>,
     mv: PyReadonlyArray2<f64>,
     out: MaskTypesMut3<'py>,
+    edit_mode: i32,
 ) -> PyResult<()> {
     match (image, out) {
         (ImageTypes3::I16(image), MaskTypesMut3::U8(mut out)) => {
@@ -29,6 +30,7 @@ pub fn mask_cut<'py>(
                 m.as_array(),
                 mv.as_array(),
                 out.as_array_mut(),
+                edit_mode,
             );
             Ok(())
         }
@@ -43,6 +45,7 @@ pub fn mask_cut<'py>(
                 m.as_array(),
                 mv.as_array(),
                 out.as_array_mut(),
+                edit_mode,
             );
             Ok(())
         }
@@ -57,6 +60,7 @@ pub fn mask_cut<'py>(
                 m.as_array(),
                 mv.as_array(),
                 out.as_array_mut(),
+                edit_mode,
             );
             Ok(())
         }
