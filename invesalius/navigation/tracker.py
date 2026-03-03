@@ -53,6 +53,8 @@ class Tracker(metaclass=Singleton):
 
         self.TrackerCoordinates: dco.TrackerCoordinates = dco.TrackerCoordinates()
 
+        Publisher.subscribe(self.DisconnectTracker, "Disconnect tracker")
+
         try:
             self.LoadState()
         except:  # noqa: E722
