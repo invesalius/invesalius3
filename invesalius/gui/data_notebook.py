@@ -1431,10 +1431,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
-        self.change_surface_color(None)
+        self.change_surface_color(global_surface_id)
 
-    def change_surface_color(self, event):
-        focused_idx = self.GetFocusedItem()
+    def change_surface_color(self, surface_index):
         current_color = self.current_color
 
         new_color = dlg.ShowColorDialog(color_current=current_color)
@@ -1444,9 +1443,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         new_vtk_color = [c / 255.0 for c in new_color]
 
-        Publisher.sendMessage("Set surface colour", surface_index=focused_idx, colour=new_vtk_color)
+        Publisher.sendMessage("Set surface colour", surface_index=surface_index, colour=new_vtk_color)
 
-        Publisher.sendMessage("Change surface selected", surface_index=focused_idx)
+        Publisher.sendMessage("Change surface selected", surface_index=surface_index)
 
     def OnChangeTransparency(self, item_idx):
         global_surface_id = None
@@ -1459,15 +1458,14 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
-        self.change_transparency(None)
+        self.change_transparency(global_surface_id)
 
-    def change_transparency(self, event):
-        focused_idx = self.GetFocusedItem()
+    def change_transparency(self, surface_index):
         initial_value = self.current_transparency
 
         transparency_dialog = dlg.SurfaceTransparencyDialog(
             self,
-            surface_index=focused_idx,
+            surface_index=surface_index,
             transparency=initial_value,
         )
 
@@ -1479,10 +1477,10 @@ class SurfacesListCtrlPanel(InvListCtrl):
         transparency_dialog.Destroy()
 
         Publisher.sendMessage(
-            "Set surface transparency", surface_index=focused_idx, transparency=new_value / 100.0
+            "Set surface transparency", surface_index=surface_index, transparency=new_value / 100.0
         )
 
-        Publisher.sendMessage("Change surface selected", surface_index=focused_idx)
+        Publisher.sendMessage("Change surface selected", surface_index=surface_index)
 
     def duplicate_surface(self, event):
         selected_items = self.GetSelected()
