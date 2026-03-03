@@ -19,6 +19,8 @@
 import os
 import sys
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, SupportsInt, Tuple, Union
+import numpy as np
+import invesalius.data.coordinates as dco
 
 import wx
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
@@ -421,3 +423,24 @@ def CreateObjectPolyData(filename: str) -> Any:
         obj_polydata = None
 
     return obj_polydata
+
+
+def coordinates_to_vtk_object_matrix(
+       position: "np.ndarray | Sequence[float]",
+       orientation: "np.ndarray | Sequence[float]",
+       axes: str = "sxyz",
+   ) -> vtkMatrix4x4:
+       """
+       Build a VTK 4x4 transform from a world-space position + Euler orientation.
+
+       This is the shared version of the previously duplicated CreateVTKObjectMatrix
+       implementations in actor_factory and viewer_volume.
+       """
+       m_img = dco.coordinates_to_transformation_matrix(
+           position=position,
+           orientation=orientation,
+           axes=axes,
+       )
+       m_img = np.asarray(m_img, dtype=float).reshape(4, 4)
+
+       return numpy_to_vtkMatrix4x4(m_img)
