@@ -467,7 +467,7 @@ class InnerFoldPanel(wx.Panel):
     def ResizeFPB(self):
         sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
         if sys.platform != "win32":
-            sizeNeeded += 40
+            sizeNeeded += const.FOLD_PANEL_EXTRA_HEIGHT
         self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded))
         self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
 
