@@ -1609,8 +1609,7 @@ class Viewer(wx.Panel):
             return
 
         Publisher.sendMessage(
-            "Set cross focal point",
-            position=[marker.x, marker.y, marker.z, None, None, None]
+            "Set cross focal point", position=[marker.x, marker.y, marker.z, None, None, None]
         )
 
     def AddActors(self, actors, slice_number):
