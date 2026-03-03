@@ -28,7 +28,7 @@ from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
 )
-from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPicker
+from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkCoordinate, vtkPointPicker, vtkPropPicker
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
@@ -810,6 +810,38 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.OnRestoreInitMask()
         self.viewer.UpdateCanvas()
 
+    def _display_to_world_focal_plane(
+        self, display_x: float, display_y: float
+    ) -> Tuple[float, float, float]:
+        """Convert display coordinates to world coordinates on the camera focal plane.
+
+        Projects the given 2D display position onto the plane perpendicular to the
+        camera view direction passing through the focal point. This allows polygon
+        points to be stored in world space, so they remain aligned with the volume
+        when the window is resized, zoomed, or panned.
+
+        Args:
+            display_x: X position in display (pixel) coordinates.
+            display_y: Y position in display (pixel) coordinates.
+
+        Returns:
+            Tuple with (x, y, z) world coordinates on the focal plane.
+        """
+        renderer = self.viewer.ren
+        focal_point = renderer.GetActiveCamera().GetFocalPoint()
+
+        # Find the depth value of the focal point in display coordinates
+        renderer.SetWorldPoint(*focal_point, 1.0)
+        renderer.WorldToDisplay()
+        focal_depth = renderer.GetDisplayPoint()[2]
+
+        # Unproject the 2D mouse position at the focal plane depth
+        renderer.SetDisplayPoint(display_x, display_y, focal_depth)
+        renderer.DisplayToWorld()
+        world_point = renderer.GetWorldPoint()
+        w = world_point[3]
+        return (world_point[0] / w, world_point[1] / w, world_point[2] / w)
+
     def OnInsertPolygonPoint(self, _evt):
         """Insert a point in the polygon.
 
@@ -820,8 +852,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         if len(self.m3e_list) == 0 or self.m3e_list[-1].complete:
             self.init_new_polygon()
 
+        world_point = self._display_to_world_focal_plane(mouse_x, mouse_y)
+
         current_masker = self.m3e_list[-1]
-        current_masker.insert_point((mouse_x, mouse_y))
+        current_masker.insert_point(world_point)
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygon(self, _evt):
@@ -876,12 +910,24 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.update_views(_mat)
 
     def get_filters(self) -> List[npt.NDArray]:
-        """Create a boolean mask filter based on the polygon points and viewer size."""
+        """Create a boolean mask filter based on the polygon points and viewer size.
+
+        Since polygon points are stored in world coordinates, they are projected
+        back to display coordinates using the current camera before generating
+        the mask.
+        """
         w, h = self.resolution
-        # get the mask of the polygon in the shape of the screen resolution
-        filters = [
-            polygon2mask((w, h), poly_canvas.polygon.points) for poly_canvas in self.m3e_list
-        ]
+        renderer = self.viewer.ren
+        coord = vtkCoordinate()
+
+        filters = []
+        for poly_canvas in self.m3e_list:
+            display_points = []
+            for point in poly_canvas.polygon.points:
+                coord.SetValue(point)
+                px, py = coord.GetComputedDoubleDisplayValue(renderer)
+                display_points.append((px, py))
+            filters.append(polygon2mask((w, h), display_points))
         return filters
 
     def CutMaskFromPolygons(self):

@@ -2665,7 +2665,7 @@ class Viewer(wx.Panel):
         Publisher.sendMessage("Receive volume viewer active camera", cam=cam)
 
     def SendViewerSize(self):
-        width, height = self.GetSize()
+        width, height = self.interactor.GetRenderWindow().GetSize()
         Publisher.sendMessage("Receive volume viewer size", size=(width, height))
 
     # Note: Not in use currently, this method is not called from anywhere.

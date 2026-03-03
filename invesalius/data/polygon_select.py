@@ -48,7 +48,7 @@ class PolygonSelectCanvas(CanvasHandlerBase):
         self.location = const.SURFACE
         self.index = 0
 
-        self.polygon = Polygon(self, fill=False, closed=False, line_colour=colour, is_3d=False)
+        self.polygon = Polygon(self, fill=False, closed=False, line_colour=colour, is_3d=True)
         self.polygon.layer = 1
         self.add_child(self.polygon)
         self.complete = False
