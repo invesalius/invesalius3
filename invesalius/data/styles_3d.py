@@ -923,7 +923,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             self.world_to_screen,
             self.world_to_camera_coordinates,
             out,
+            self.edit_mode,
         )
+
         self.update_views(out)
 
     def update_views(self, _mat: npt.NDArray):

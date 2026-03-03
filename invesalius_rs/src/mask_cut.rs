@@ -18,6 +18,7 @@ pub fn mask_cut_internal<T, U>(
     m: ArrayView2<f64>,
     mv: ArrayView2<f64>,
     mut out: ArrayViewMut3<U>,
+    edit_mode: i32,
 ) where
     T: PartialOrd + Copy + Send + Sync + NumCast + AsPrimitive<f64>,
     U: PartialOrd + Copy + Send + Sync + NumCast + AsPrimitive<i32>,
@@ -47,10 +48,17 @@ pub fn mask_cut_internal<T, U>(
                     let px = (q[0] / 2.0 + 0.5) * (w - 1) as f64;
                     let py = (q[1] / 2.0 + 0.5) * (h - 1) as f64;
 
-                    if px >= 0.0 && px < w as f64 && py >= 0.0 && py < h as f64
-                        && mask[[py as usize, px as usize]] {
+                    if px >= 0.0 && px < w as f64 && py >= 0.0 && py < h as f64 {
+                        // Voxel is on screen — zero it if inside the polygon mask
+                        if mask[[py as usize, px as usize]] {
                             *val = NumCast::from(0).unwrap();
                         }
+                    } else if edit_mode == 0 {
+                        // Voxel projects outside the visible viewport.
+                        // In include mode (0) the polygon can never cover it,
+                        // so it must be zeroed out.  Fixes #1084.
+                        *val = NumCast::from(0).unwrap();
+                    }
                 }
             }
         }
@@ -68,6 +76,7 @@ pub fn mask_cut<'py>(
     m: PyReadonlyArray2<f64>,
     mv: PyReadonlyArray2<f64>,
     out: MaskTypesMut3<'py>,
+    edit_mode: i32,
 ) -> PyResult<()> {
     match (image, out) {
         (ImageTypes3::I16(image), MaskTypesMut3::U8(mut out)) => {
@@ -81,6 +90,7 @@ pub fn mask_cut<'py>(
                 m.as_array(),
                 mv.as_array(),
                 out.as_array_mut(),
+                edit_mode,
             );
             Ok(())
         }
@@ -95,6 +105,7 @@ pub fn mask_cut<'py>(
                 m.as_array(),
                 mv.as_array(),
                 out.as_array_mut(),
+                edit_mode,
             );
             Ok(())
         }
@@ -109,6 +120,7 @@ pub fn mask_cut<'py>(
                 m.as_array(),
                 mv.as_array(),
                 out.as_array_mut(),
+                edit_mode,
             );
             Ok(())
         }
