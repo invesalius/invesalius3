@@ -1009,8 +1009,13 @@ class EditionTools(wx.Panel):
         if self.cbox_mask_edit_3d.GetValue():
             Publisher.sendMessage("Enable style", style=style_id)
             Publisher.sendMessage("M3E set depth value", value=spin_val)
+            # Enable Clear Polygons button only when Edit in 3D is active
+            self.btn_clear_3d_poly.Enable()
         else:
             Publisher.sendMessage("Disable style", style=style_id)
+            # Disable Clear Polygons button when Edit in 3D is inactive
+            # to prevent clearing mask edits when the tool is not active.
+            self.btn_clear_3d_poly.Disable()
 
     def OnComboMaskEdit3DMode(self, evt: wx.CommandEvent):
         op_id = evt.GetSelection()
@@ -1021,7 +1026,10 @@ class EditionTools(wx.Panel):
         Publisher.sendMessage("M3E set depth value", value=spin_val)
 
     def OnClearPolyMaskEdit3D(self, _evt):
-        Publisher.sendMessage("M3E clear polygons")
+        # Only clear polygons when Edit in 3D is active.
+        # Fixes #1079: the button was clearing edits even when unchecked.
+        if self.cbox_mask_edit_3d.GetValue():
+            Publisher.sendMessage("M3E clear polygons")
 
 
 class WatershedTool(EditionTools):
