@@ -799,6 +799,8 @@ BOOLEAN_XOR = 4
 
 # -------------- User interface ---------------------
 
+FOLD_PANEL_EXTRA_HEIGHT = 40
+
 # The column order in the marker panel
 #
 ID_COLUMN = 0
