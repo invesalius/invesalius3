@@ -579,6 +579,9 @@ def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True)
 def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
     output = np.empty(shape=image.shape, dtype=output_dtype)
     imin, imax = image.min(), image.max()
+    if imin == imax:
+        output[:] = min_
+        return output
     output[:] = (image - imin) * ((max_ - min_) / (imax - imin)) + min_
     return output
 
