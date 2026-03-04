@@ -508,7 +508,10 @@ class Volume:
         number_filters = len(self.config["convolutionFilters"])
         if number_filters:
             if not (update_progress):
-                update_progress = vtk_utils.ShowProgress(number_filters)
+                update_progress = vtk_utils.ShowProgress(
+                    number_filters,
+                    msg=_("Rendering volume..."),
+                )
             for filter in self.config["convolutionFilters"]:
                 convolve = vtkImageConvolve()
                 convolve.SetInputData(imagedata)
@@ -555,7 +558,10 @@ class Volume:
         #     flip_image = False
 
         # if (flip_image):
-        update_progress = vtk_utils.ShowProgress(2 + number_filters)
+        update_progress = vtk_utils.ShowProgress(
+            2 + number_filters,
+            msg=_("Rendering volume..."),
+        )
         # Flip original vtkImageData
         flip = vtkImageFlip()
         flip.SetInputData(image)
