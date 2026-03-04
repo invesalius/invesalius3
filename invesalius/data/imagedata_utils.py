@@ -566,7 +566,9 @@ def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
 def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True):
     # based on https://docs.monai.io/en/latest/_modules/monai/transforms/intensity/array.html#ScaleIntensity
 
-    print(a_min, a_max, b_min, b_max, clip)
+    if a_min == a_max:
+        return np.full_like(img, fill_value=b_min, dtype=float)
+
     img = (img - a_min) / (a_max - a_min)
     img = img * (b_max - b_min) + b_min
 
