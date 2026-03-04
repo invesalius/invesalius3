@@ -76,7 +76,7 @@ class NotebookPanel(wx.Panel):
         book.SetSelection(0)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(book, 0, wx.EXPAND)
+        sizer.Add(book, 1, wx.EXPAND)
         self.SetSizer(sizer)
 
         book.Refresh()
@@ -126,7 +126,7 @@ class MeasurePage(wx.Panel):
         self.buttonctrl = MeasureButtonControlPanel(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.listctrl, 0, wx.EXPAND)
+        sizer.Add(self.listctrl, 1, wx.EXPAND)
         sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
         self.SetSizer(sizer)
         self.Fit()
@@ -139,7 +139,7 @@ class MeasureButtonControlPanel(wx.Panel):
     """
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
+        wx.Panel.__init__(self, parent)
         self.parent = parent
         self.__init_gui()
 
@@ -452,7 +452,7 @@ class ButtonControlPanel(wx.Panel):
     """
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
+        wx.Panel.__init__(self, parent)
         self.parent = parent
         self.__init_gui()
 
@@ -1244,7 +1244,7 @@ class SurfaceButtonControlPanel(wx.Panel):
     """
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
+        wx.Panel.__init__(self, parent)
         self.parent = parent
         self.__init_gui()
 

@@ -255,9 +255,9 @@ class LowerTaskPanel(wx.Panel):
             item.Enable()
 
     def ResizeFPB(self):
-        # y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
         x_current, _ = self.GetSize()
-        self.SetMinSize((x_current, 180))
+        y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
+        self.SetMinSize((x_current, max(180, y_needed)))
         self.GetParent().Layout()
 
 
