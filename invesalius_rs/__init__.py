@@ -13,9 +13,9 @@ _native_floodfill_threshold = _native.floodfill_threshold
 _native_floodfill_threshold_inplace = _native.floodfill_threshold_inplace
 _native_floodfill_auto_threshold = _native.floodfill_auto_threshold
 fill_holes_automatically = _native.fill_holes_automatically
-_native_floodfill_voronoi_inplace = _native.floodfill_voronoi_inplace
-_native_jump_flooding = _native.jump_flooding
-_native_count_regions = _native.count_regions
+_native_floodfill_voronoi_inplace = getattr(_native, "floodfill_voronoi_inplace", None)
+_native_jump_flooding = getattr(_native, "jump_flooding", None)
+_native_count_regions = getattr(_native, "count_regions", None)
 
 
 def floodfill_threshold(data, seeds, t0, t1, fill, strct, out):
@@ -69,6 +69,11 @@ def floodfill_voronoi(data, seeds, strct, distance_fn):
     """
     Floodfill with voronoi distance constraints.
     """
+    if _native_floodfill_voronoi_inplace is None:
+        raise NotImplementedError(
+            "floodfill_voronoi_inplace is not available in this build of invesalius_rs. "
+            "Please rebuild the Rust extension from source."
+        )
     tuple_seeds = [tuple(s) for s in seeds]
     return _native_floodfill_voronoi_inplace(data, tuple_seeds, strct, distance_fn)
 
@@ -77,6 +82,11 @@ def jump_flooding(distance_map, map_owners, sites, normalize):
     """
     Jump flooding.
     """
+    if _native_jump_flooding is None:
+        raise NotImplementedError(
+            "jump_flooding is not available in this build of invesalius_rs. "
+            "Please rebuild the Rust extension from source."
+        )
     return _native_jump_flooding(distance_map, map_owners, sites, normalize)
 
 
@@ -104,6 +114,11 @@ _context_aware_smoothing = _native.context_aware_smoothing
 
 
 def count_regions(image: np.ndarray, number_regions: int) -> np.ndarray:
+    if _native_count_regions is None:
+        raise NotImplementedError(
+            "count_regions is not available in this build of invesalius_rs. "
+            "Please rebuild the Rust extension from source."
+        )
     out = np.zeros_like(image, dtype=np.uint32)
     _native_count_regions(image, number_regions, out)
     return out
