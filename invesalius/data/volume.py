@@ -510,7 +510,6 @@ class Volume:
             if not (update_progress):
                 update_progress = vtk_utils.ShowProgress(
                     number_filters,
-                    dialog_type="ProgressDialog",
                     msg=_("Rendering volume..."),
                 )
             for filter in self.config["convolutionFilters"]:
@@ -561,7 +560,6 @@ class Volume:
         # if (flip_image):
         update_progress = vtk_utils.ShowProgress(
             2 + number_filters,
-            dialog_type="ProgressDialog",
             msg=_("Rendering volume..."),
         )
         # Flip original vtkImageData
