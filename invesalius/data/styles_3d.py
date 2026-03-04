@@ -708,6 +708,11 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         # keep track if we set preview here or not for UX
         self.has_set_mask_preview = False
 
+        # Initialise resolution from the current viewer widget size so that
+        # CutMaskFromPolygons always has a valid aspect ratio even before the
+        # first "Receive volume viewer size" message arrives (fixes #1086).
+        self.resolution: Tuple[int, int] = tuple(viewer.GetSize())
+
         self._bind_events()
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
 
@@ -893,6 +898,15 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         # All m3e will be updated with correct viewer settings
         Publisher.sendMessage("Send volume viewer size")
         Publisher.sendMessage("Send volume viewer active camera")
+
+        # Guard: if the viewer has not reported a valid size yet (e.g. on the
+        # very first Enable after a fresh DICOM import before the widget has
+        # been fully painted), skip the cut to avoid an incorrect projection
+        # matrix that would corrupt the mask.  The polygon stays in place so
+        # the user can re-apply once the viewer is ready.  Fixes #1086.
+        w, h = self.resolution
+        if h == 0:
+            return
 
         filters = self.get_filters()
 
