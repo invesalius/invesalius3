@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import sys
+
 import wx
 import wx.lib.agw.foldpanelbar as fpb
 
