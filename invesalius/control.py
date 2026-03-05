@@ -348,17 +348,19 @@ class Controller:
                 if not mask:
                     continue
                 
+                # Ensure all slices have threshold data (lazy threshold only generates visited slices)
+                self.Slice.do_threshold_to_all_slices(mask)
                 # Strip 1-pixel padding from InVesalius mask matrix (padding is only at index 0)
                 mask_matrix = mask.matrix[1:, 1:, 1:]
                 
                 # Axis transform to NIfTI layout and cast to uint8
-                export_data = np.swapaxes(np.fliplr(mask_matrix), 0, 2).astype(np.uint8)
+                export_data = np.ascontiguousarray(np.swapaxes(np.fliplr(mask_matrix), 0, 2)).astype(np.uint8)
 
                 # Label-map enforcement: strict binary encoding (0=background, 255=mask)
                 export_data[export_data > 0] = 255
 
-                # Use None affine to match `export_project_to_nifti` safety behavior and bypass internal offsets
-                mask_nifti = nib.Nifti1Image(export_data, None)
+                # Use identity affine to ensure RAS+ encoding; as_closest_canonical will be a no-op on reimport
+                mask_nifti = nib.Nifti1Image(export_data, np.eye(4))
                 mask_nifti.header.set_zooms(self.Slice.spacing)
 
                 # Save the NIfTI file cleanly without popping a dialog

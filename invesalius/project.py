@@ -465,10 +465,7 @@ class Project(metaclass=Singleton):
         import invesalius.data.slice_ as slc
 
         s = slc.Slice()
-        export_data = np.swapaxes(np.fliplr(s.matrix), 0, 2)
-        print(f"[NIfTI Export] Intensity volume: dtype={export_data.dtype}, "
-              f"min={export_data.min()}, max={export_data.max()}, shape={export_data.shape}")
-        img_nifti = nib.Nifti1Image(export_data, None)
+        img_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(s.matrix), 0, 2), None)
         img_nifti.header.set_zooms(s.spacing)
         img_nifti.header.set_dim_info(slice=0)
         nib.save(img_nifti, filename)

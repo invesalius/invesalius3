@@ -2629,16 +2629,9 @@ class Viewer(wx.Panel):
         if cleanup:
             self.style.CleanUp()
 
-        self.style = None
+        del self.style
 
-        try:
-            style = styles.Styles.get_style(state)(self)
-        except ValueError as e:
-            # Style cannot be initialized (e.g. Edit in 3D with no mask).
-            # Fall back to default style and notify user.
-            Publisher.sendMessage("Update status text in GUI", label=str(e))
-            style = styles.Styles.get_style(const.STATE_DEFAULT)(self)
-            state = const.STATE_DEFAULT
+        style = styles.Styles.get_style(state)(self)
 
         setup = getattr(style, "SetUp", None)
         if setup:
