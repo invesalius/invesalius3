@@ -63,9 +63,6 @@ if sys.platform == "win32":
 else:
     _has_win32api = False
 
-# Update progress value in GUI
-UpdateProgress = vu.ShowProgress()
-
 
 def ApplyDecimationFilter(polydata: vtkPolyData, reduction_factor: float) -> vtkPolyData:
     """

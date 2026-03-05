@@ -305,7 +305,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     """
     message = _("Generating multiplanar visualization...")
     if len(files) > 1:
-        update_progress = vtk_utils.ShowProgress(len(files) - 1, dialog_type="ProgressDialog")
+        update_progress = vtk_utils.ShowProgress(len(files) - 1)
 
     temp_fd, temp_file = tempfile.mkstemp()
 
@@ -422,7 +422,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     """
     if len(files) > 1:
         message = _("Generating multiplanar visualization...")
-        update_progress = vtk_utils.ShowProgress(len(files) - 1, dialog_type="ProgressDialog")
+        update_progress = vtk_utils.ShowProgress(len(files) - 1)
 
     first_slice = read_dcm_slice_as_np2(files[0], resolution_percentage)
     slice_size = first_slice.shape[::-1]
@@ -579,6 +579,9 @@ def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True)
 def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
     output = np.empty(shape=image.shape, dtype=output_dtype)
     imin, imax = image.min(), image.max()
+    if imin == imax:
+        output[:] = min_
+        return output
     output[:] = (image - imin) * ((max_ - min_) / (imax - imin)) + min_
     return output
 

@@ -1235,6 +1235,10 @@ class Polygon(CanvasHandlerBase):
         self.interactive = False
         return True
 
+    def on_drag_end(self, evt: "CanvasEvent") -> None:
+        """No-op: drag_end is handled by the parent PolygonSelectCanvas."""
+        pass
+
     @overload
     def convex_hull(
         self, points: List[Tuple[float, float]], merge: Literal[True]
