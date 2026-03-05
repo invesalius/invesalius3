@@ -320,7 +320,6 @@ class Slice(metaclass=utils.Singleton):
         return adjusted_affine, affine_vtk, img_shift
 
     def OnRemoveMasks(self, mask_indexes):
-        proj = Project()
         for item in mask_indexes:
             # if the deleted mask is the current mask, cleans the current mask
             # and discard from buffer all datas related to mask.
@@ -333,7 +332,6 @@ class Slice(metaclass=utils.Singleton):
 
                 Publisher.sendMessage("Show mask", index=item, value=False)
                 Publisher.sendMessage("Reload actual slice")
-            proj.RemoveMask(item)
 
     def OnDuplicateMasks(self, mask_indexes):
         proj = Project()
@@ -1493,12 +1491,11 @@ class Slice(metaclass=utils.Singleton):
             mask: A mask object.
             show: indicate if the mask will be shown.
         """
-        proj = Project()
-        index = proj.AddMask(mask)
-        mask.index = index
+        from invesalius.data.commands.mask import CreateMaskCommand
+        from invesalius.session import Session
 
-        ## update gui related to mask
-        Publisher.sendMessage("Add mask", mask=mask)
+        command = CreateMaskCommand(mask)
+        Session().undo_manager.execute(command)
 
         if show:
             if self.current_mask:
