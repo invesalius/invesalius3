@@ -6039,7 +6039,8 @@ class TractographyProgressWindow:
         self.title = "InVesalius 3"
         self.msg = msg
         self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
-        self.dlg = wx.ProgressDialog(self.title, self.msg, parent=None, style=self.style)
+        parent = wx.GetApp().GetTopWindow() if wx.GetApp() else None
+        self.dlg = wx.ProgressDialog(self.title, self.msg, parent=parent, style=self.style)
         self.running = True
         self.error = None
         self.dlg.Show()
@@ -6104,7 +6105,8 @@ class SurfaceProgressWindow:
         self.title = "InVesalius 3"
         self.msg = _("Creating 3D surface ...")
         self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
-        self.dlg = wx.ProgressDialog(self.title, self.msg, parent=None, style=self.style)
+        parent = wx.GetApp().GetTopWindow() if wx.GetApp() else None
+        self.dlg = wx.ProgressDialog(self.title, self.msg, parent=parent, style=self.style)
         self.running = True
         self.error = None
         self.dlg.Show()
