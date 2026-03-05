@@ -281,7 +281,7 @@ class Controller:
             mask_data = check_is_mask(data)
 
             # Match InVesalius internal (axial) coordinate layout (ZYX flipped)
-            mask_data = np.fliplr(np.swapaxes(mask_data, 0, 2))
+            mask_data = np.ascontiguousarray(np.fliplr(np.swapaxes(mask_data, 0, 2)))
 
             name = os.path.splitext(os.path.basename(filepath))[0]
             # Label-map threshold: strict 0-255 range for binary mask
