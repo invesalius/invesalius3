@@ -746,6 +746,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         # Synchronize edit mode and depth value from the GUI's current state
         import invesalius.pubsub as pub
+
         pub.pub.sendMessage("M3E ask for edit mode")
         pub.pub.sendMessage("M3E ask for depth value")
 
@@ -896,10 +897,11 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
     def get_filters(self) -> List[npt.NDArray]:
         """Create a boolean mask filter based on the polygon points and viewer size."""
         w, h = self.resolution
-        
+
         # Get scale factor (necessary for Mac HighDPI displays where physical
         # mouse coords are scaled by 2x but viewer resolution is logical w,h)
         import wx
+
         scale = wx.GetApp().GetTopWindow().GetContentScaleFactor()
 
         # polygon2mask((w, h), points_as_xy): treats (x, y) as (row, col) in a (w, h) array.

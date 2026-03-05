@@ -1022,7 +1022,7 @@ class EditionTools(wx.Panel):
     def OnComboMaskEdit3DMode(self, evt: wx.CommandEvent):
         op_id = evt.GetSelection()
         Publisher.sendMessage("M3E set edit mode", mode=op_id)
-        
+
     def OnAskMaskEdit3DMode(self):
         op_id = self.combo_mask_edit_3d_op.GetSelection()
         Publisher.sendMessage("M3E set edit mode", mode=op_id)
@@ -1030,7 +1030,7 @@ class EditionTools(wx.Panel):
     def OnSpinDepthMaskEdit3D(self, _evt):
         spin_val = self.spin_mask_edit_3d_depth.GetValue()
         Publisher.sendMessage("M3E set depth value", value=spin_val)
-        
+
     def OnAskDepthMaskEdit3D(self):
         spin_val = self.spin_mask_edit_3d_depth.GetValue()
         Publisher.sendMessage("M3E set depth value", value=spin_val)
