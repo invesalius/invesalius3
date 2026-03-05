@@ -1,12 +1,8 @@
-use crate::types::{ImageTypes3, MaskTypesMut3};
 use nalgebra::{Matrix4, Vector4};
 use ndarray::parallel::prelude::*;
 use ndarray::{ArrayView2, ArrayView3, ArrayViewMut3};
 use num_traits::AsPrimitive;
 use num_traits::NumCast;
-use numpy::PyReadonlyArray2;
-use pyo3::exceptions::PyTypeError;
-use pyo3::prelude::*;
 
 pub fn mask_cut_internal<T, U>(
     _image: ArrayView3<T>,
@@ -18,6 +14,7 @@ pub fn mask_cut_internal<T, U>(
     m: ArrayView2<f64>,
     mv: ArrayView2<f64>,
     mut out: ArrayViewMut3<U>,
+    edit_mode: i32,
 ) where
     T: PartialOrd + Copy + Send + Sync + NumCast + AsPrimitive<f64>,
     U: PartialOrd + Copy + Send + Sync + NumCast + AsPrimitive<i32>,
@@ -47,71 +44,19 @@ pub fn mask_cut_internal<T, U>(
                     let px = (q[0] / 2.0 + 0.5) * (w - 1) as f64;
                     let py = (q[1] / 2.0 + 0.5) * (h - 1) as f64;
 
-                    if px >= 0.0 && px < w as f64 && py >= 0.0 && py < h as f64
-                        && mask[[py as usize, px as usize]] {
+                    if px >= 0.0 && px < w as f64 && py >= 0.0 && py < h as f64 {
+                        // Voxel is on screen — zero it if inside the polygon mask
+                        if mask[[py as usize, px as usize]] {
                             *val = NumCast::from(0).unwrap();
                         }
+                    } else if edit_mode == 0 {
+                        // Voxel projects outside the visible viewport.
+                        // In include mode (0) the polygon can never cover it,
+                        // so it must be zeroed out.  Fixes #1084.
+                        *val = NumCast::from(0).unwrap();
+                    }
                 }
             }
         }
     });
-}
-
-#[pyfunction]
-pub fn mask_cut<'py>(
-    image: ImageTypes3<'py>,
-    sx: f64,
-    sy: f64,
-    sz: f64,
-    max_depth: f64,
-    mask: PyReadonlyArray2<bool>,
-    m: PyReadonlyArray2<f64>,
-    mv: PyReadonlyArray2<f64>,
-    out: MaskTypesMut3<'py>,
-) -> PyResult<()> {
-    match (image, out) {
-        (ImageTypes3::I16(image), MaskTypesMut3::U8(mut out)) => {
-            mask_cut_internal(
-                image.as_array(),
-                sx,
-                sy,
-                sz,
-                max_depth,
-                mask.as_array(),
-                m.as_array(),
-                mv.as_array(),
-                out.as_array_mut(),
-            );
-            Ok(())
-        }
-        (ImageTypes3::U8(image), MaskTypesMut3::U8(mut out)) => {
-            mask_cut_internal(
-                image.as_array(),
-                sx,
-                sy,
-                sz,
-                max_depth,
-                mask.as_array(),
-                m.as_array(),
-                mv.as_array(),
-                out.as_array_mut(),
-            );
-            Ok(())
-        }
-        (ImageTypes3::F64(image), MaskTypesMut3::U8(mut out)) => {
-            mask_cut_internal(
-                image.as_array(),
-                sx,
-                sy,
-                sz,
-                max_depth,
-                mask.as_array(),
-                m.as_array(),
-                mv.as_array(),
-                out.as_array_mut(),
-            );
-            Ok(())
-        }
-        _ => Err(PyTypeError::new_err("Invalid image or mask type")),
-    }
 }

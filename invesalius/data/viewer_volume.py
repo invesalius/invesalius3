@@ -3000,6 +3000,11 @@ class Viewer(wx.Panel):
         ):
             self.ren.ResetCamera()
             self.ren.ResetCameraClippingRange()
+            # Match the parallel projection used by AddSurface/LoadVolume so that
+            # GetCompositeProjectionTransformMatrix produces a correct world-to-screen
+            # matrix for the 3D mask editor (fixes #1086 – "Edit in 3D" without a
+            # surface generated first).
+            self.ren.GetActiveCamera().ParallelProjectionOn()
 
     def remove_mask_preview(self, mask_3d_actor):
         self.ren.RemoveVolume(mask_3d_actor)

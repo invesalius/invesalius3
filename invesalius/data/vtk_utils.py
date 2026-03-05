@@ -47,14 +47,16 @@ if TYPE_CHECKING:
 
 
 class ProgressDialog:
-    def __init__(self, parent: Optional[wx.Window], maximum: int, abort: bool = False):
+    def __init__(
+        self, parent: Optional[wx.Window], maximum: int, abort: bool = False, msg: str = ""
+    ):
         self.title = "InVesalius 3"
-        self.msg = _("Loading DICOM files")
+        self.msg = msg if msg else _("Loading DICOM files")
         self.maximum = maximum
         self.current = 0
-        self.style = wx.PD_APP_MODAL
+        self.style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME
         if abort:
-            self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+            self.style = self.style | wx.PD_CAN_ABORT
 
         self.dlg = wx.ProgressDialog(
             self.title, self.msg, maximum=self.maximum, parent=parent, style=self.style
@@ -103,7 +105,7 @@ else:
 
 
 def ShowProgress(
-    number_of_filters: int = 1, dialog_type: str = "GaugeProgress"
+    number_of_filters: int = 1, msg: str = ""
 ) -> Callable[[Union[float, int, "vtkAlgorithm"], str], float]:
     """
     To use this closure, do something like this:
@@ -112,11 +114,10 @@ def ShowProgress(
     """
     progress: List[float] = [0]
     last_obj_progress: List[float] = [0]
-    if dialog_type == "ProgressDialog":
-        try:
-            dlg = ProgressDialog(wx.GetApp().GetTopWindow(), 100)
-        except (wx.PyNoAppError, AttributeError):
-            return lambda obj, label: 0
+    try:
+        dlg = ProgressDialog(wx.GetApp().GetTopWindow(), 100, msg=msg)
+    except (wx.PyNoAppError, AttributeError):
+        return lambda obj, label: 0
 
     # when the pipeline is larger than 1, we have to consider this object
     # percentage
@@ -146,15 +147,11 @@ def ShowProgress(
 
         # final progress status value
         progress[0] = progress[0] + ratio * difference
-        # Tell GUI to update progress status value
-        if dialog_type == "GaugeProgress":
-            Publisher.sendMessage("Update status in GUI", value=progress[0], label=label)
-        else:
-            if progress[0] >= 99.999:
-                progress[0] = 100
+        if progress[0] >= 99.999:
+            progress[0] = 100
 
-            if not (dlg.Update(progress[0], label)):
-                dlg.Close()
+        if not (dlg.Update(progress[0], label)):
+            dlg.Close()
 
         return progress[0]
 

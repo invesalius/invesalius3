@@ -843,7 +843,6 @@ class Frame(wx.Frame):
             self.Reposition()
 
     def Reposition(self):
-        Publisher.sendMessage("ProgressBar Reposition")
         self.sizeChanged = False
 
     def OnMove(self, evt):
@@ -1764,49 +1763,6 @@ class MenuBar(wx.MenuBar):
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
-
-
-class ProgressBar(wx.Gauge):
-    """
-    Progress bar / gauge.
-    """
-
-    def __init__(self, parent):
-        wx.Gauge.__init__(self, parent, -1, 100)
-        self.parent = parent
-        self._Layout()
-
-        self.__bind_events()
-
-    def __bind_events(self):
-        """
-        Bind events related to pubsub.
-        """
-        sub = Publisher.subscribe
-        sub(self._Layout, "ProgressBar Reposition")
-
-    def _Layout(self):
-        """
-        Compute new size and position, according to parent resize
-        """
-        rect = self.Parent.GetFieldRect(2)
-        self.SetPosition((rect.x + 2, rect.y + 2))
-        self.SetSize((rect.width - 4, rect.height - 4))
-        self.Show()
-
-    def SetPercentage(self, value):
-        """
-        Set value [0;100] into gauge, moving "status" percentage.
-        """
-        self.SetValue(int(value))
-        if value >= 99:
-            self.SetValue(0)
-        self.Refresh()
-        self.Update()
-
-
-# ------------------------------------------------------------------
-# ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
 
@@ -1819,14 +1775,8 @@ class StatusBar(wx.StatusBar):
         wx.StatusBar.__init__(self, parent, -1)
 
         # General status configurations
-        self.SetFieldsCount(3)
-        self.SetStatusWidths([-2, -2, -1])
+        self.SetFieldsCount(1)
         self.SetStatusText(_("Ready"), 0)
-        self.SetStatusText("", 1)
-        self.SetStatusText("", 2)
-
-        # Add gaugee
-        self.progress_bar = ProgressBar(self)
 
         self.__bind_events()
 
@@ -1835,26 +1785,7 @@ class StatusBar(wx.StatusBar):
         Bind events related to pubsub.
         """
         sub = Publisher.subscribe
-        sub(self._SetProgressValue, "Update status in GUI")
         sub(self._SetProgressLabel, "Update status text in GUI")
-
-    def _SetProgressValue(self, value, label):
-        """
-        Set both percentage value in gauge and text progress label in
-        status.
-        """
-        self.progress_bar.SetPercentage(value)
-        self.SetStatusText(label, 0)
-        if int(value) >= 99:
-            self.SetStatusText("", 0)
-        if sys.platform == "win32":
-            # TODO: temporary fix necessary in the Windows XP 64 Bits
-            # BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
-            try:
-                # wx.SafeYield()
-                wx.Yield()
-            except wx.PyAssertionError:
-                utils.debug("wx._core.PyAssertionError")
 
     def _SetProgressLabel(self, label):
         """
