@@ -777,9 +777,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         super().CleanUp()
         self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
         self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
-        for drawn_polygon in self.m3e_list:
-            drawn_polygon.visible = False
-            drawn_polygon.set_interactive(False)
+
+        # Issue #1078: When the 3D editor is disabled, polygons shouldn't just be hidden
+        # (which doesn't work properly due to CanvasHandlerBase), they should be fully removed.
+        self.ClearPolygons()
 
         if self.has_set_mask_preview:
             Publisher.sendMessage("Disable mask 3D preview")
