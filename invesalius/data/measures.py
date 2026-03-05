@@ -65,7 +65,7 @@ map_id_locations = {
 if sys.platform == "win32":
     MEASURE_LINE_COLOUR = (255, 0, 0, 255)
     MEASURE_TEXT_COLOUR = (0, 0, 0)
-    MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 255)
+    MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 128)
 else:
     MEASURE_LINE_COLOUR = (255, 0, 0, 128)
     MEASURE_TEXT_COLOUR = (0, 0, 0)
@@ -726,8 +726,7 @@ class LinearMeasure:
         a.DragableOn()
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x, y, z)
-        a.GetProperty().SetColor((0, 1, 0))
-        a.GetProperty().SetOpacity(0.75)
+        a.GetProperty().SetOpacity(0.5)
         self.text_actor = a
 
     def draw_to_canvas(self, gc, canvas):
@@ -978,6 +977,7 @@ class AngularMeasure:
         a.DragableOn()
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x, y, z)
+        a.GetProperty().SetOpacity(0.5)
         self.text_actor = a
 
     def draw_to_canvas(self, gc, canvas):
