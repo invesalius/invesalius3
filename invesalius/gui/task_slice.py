@@ -907,6 +907,8 @@ class EditionTools(wx.Panel):
         Publisher.subscribe(self._set_brush_size, "Set edition brush size")
         Publisher.subscribe(self._set_threshold_range_gui, "Set edition threshold gui")
         Publisher.subscribe(self.ChangeMaskColour, "Set GUI items colour")
+        Publisher.subscribe(self.OnAskMaskEdit3DMode, "M3E ask for edit mode")
+        Publisher.subscribe(self.OnAskDepthMaskEdit3D, "M3E ask for depth value")
 
     def ChangeMaskColour(self, colour):
         self.gradient_thresh.SetColour(colour)
@@ -1020,8 +1022,16 @@ class EditionTools(wx.Panel):
     def OnComboMaskEdit3DMode(self, evt: wx.CommandEvent):
         op_id = evt.GetSelection()
         Publisher.sendMessage("M3E set edit mode", mode=op_id)
+        
+    def OnAskMaskEdit3DMode(self):
+        op_id = self.combo_mask_edit_3d_op.GetSelection()
+        Publisher.sendMessage("M3E set edit mode", mode=op_id)
 
     def OnSpinDepthMaskEdit3D(self, _evt):
+        spin_val = self.spin_mask_edit_3d_depth.GetValue()
+        Publisher.sendMessage("M3E set depth value", value=spin_val)
+        
+    def OnAskDepthMaskEdit3D(self):
         spin_val = self.spin_mask_edit_3d_depth.GetValue()
         Publisher.sendMessage("M3E set depth value", value=spin_val)
 
