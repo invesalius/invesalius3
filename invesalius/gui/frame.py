@@ -607,6 +607,8 @@ class Frame(wx.Frame):
 
             if status == 1:
                 Publisher.sendMessage("Exit session")
+            elif status == 2:
+                Publisher.sendMessage("Save session")
             self.Destroy()
 
     def OnMenuClick(self, evt):
