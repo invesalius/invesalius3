@@ -81,9 +81,18 @@ class PluginManager:
 
     def load_plugin(self, plugin_name: str) -> None:
         if plugin_name in self.plugins:
-            plugin_module = import_source(
-                plugin_name, self.plugins[plugin_name]["folder"].joinpath("__init__.py")
-            )
-            sys.modules[plugin_name] = plugin_module
-            main = importlib.import_module(plugin_name + ".main")
-            main.load()
+            try:
+                plugin_module = import_source(
+                    plugin_name, self.plugins[plugin_name]["folder"].joinpath("__init__.py")
+                )
+                sys.modules[plugin_name] = plugin_module
+                main = importlib.import_module(plugin_name + ".main")
+                main.load()
+            except Exception as err:
+                import wx
+                wx.MessageBox(
+                    f"It was not possible to load the plugin '{plugin_name}'.\n\nError: {err}",
+                    "Plugin Error",
+                    wx.OK | wx.ICON_ERROR
+                )
+                print(f"It was not possible to load plugin {plugin_name}. Error: {err}")
