@@ -1699,3 +1699,6 @@ class Viewer(wx.Panel):
             buffer_.discard_mask()
             if vtk_cache:
                 buffer_.discard_vtk_mask()
+
+    def OnProjectLoaded(self, pubsub_evt=None):
+        wx.CallLater(100, self.UpdateCanvas)
