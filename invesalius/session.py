@@ -31,6 +31,7 @@ from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, deep_merge_dict
 
+
 CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.json")
 OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.cfg")
 
@@ -87,6 +88,7 @@ class Session(metaclass=Singleton):
 
     def __bind_events(self) -> None:
         Publisher.subscribe(self._Exit, "Exit session")
+        Publisher.subscribe(self._SaveSession, "Save session")
 
     def CreateConfig(self) -> None:
         import invesalius.constants as const
@@ -324,3 +326,16 @@ class Session(metaclass=Singleton):
     def _Exit(self) -> None:
         self.CloseProject()
         self.DeleteStateFile()
+
+    def _SaveSession(self) -> None:
+        import invesalius.project as prj
+        # If project was never saved as .inv3, save it to temp path first
+        if self.temp_item:
+            project_path = self.GetState("project_path")
+            if project_path:
+                dirpath, filename = project_path
+                try:
+                    prj.Project().SavePlistProject(dirpath, filename, compress=False)
+                except Exception as e:
+                    print(f"Error saving temp project for session restore: {e}")
+        self.WriteStateFile()
