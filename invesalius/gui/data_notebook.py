@@ -39,7 +39,9 @@ from invesalius import inv_paths, project
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = (wx.NewIdRef() for i in range(4))
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN, BTN_IMPORT_MASK, BTN_EXPORT_MASK = (
+    wx.NewIdRef() for i in range(6)
+)
 
 TYPE = {
     const.LINEAR: _("Linear"),
@@ -465,6 +467,19 @@ class ButtonControlPanel(wx.Panel):
         BMP_DUPLICATE = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"), wx.BITMAP_TYPE_PNG
         )
+        BMP_IMPORT = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG
+        )
+        export_icon_path = os.path.join(inv_paths.ICON_DIR, "surface_export.png")
+        image = wx.Image(export_icon_path, wx.BITMAP_TYPE_PNG)
+        if not image.HasAlpha():
+            image.InitAlpha()
+        # Scale rigidly to 22x22 to match exactly with the 'object_add.png' import icon size.
+        # This prevents PlateButton from clipping transparent corners of large images.
+        image = image.Scale(22, 22, wx.IMAGE_QUALITY_HIGH)
+        BMP_EXPORT = image.ConvertToBitmap()
+        if not BMP_EXPORT.IsOk():
+            print("Failed to load export icon:", export_icon_path)
 
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -483,13 +498,26 @@ class ButtonControlPanel(wx.Panel):
         )
         button_duplicate.SetToolTip(_("Duplicate mask"))
 
+        button_import = pbtn.PlateButton(
+            self, BTN_IMPORT_MASK, "", BMP_IMPORT, style=button_style, size=wx.Size(24, 20)
+        )
+        button_import.SetToolTip(_("Import mask"))
+
+        button_export = pbtn.PlateButton(
+            self, BTN_EXPORT_MASK, "", BMP_EXPORT, style=button_style, size=wx.Size(24, 20)
+        )
+        button_export.SetToolTip(_("Export mask"))
+
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(button_new, 0, wx.GROW | wx.EXPAND | wx.LEFT)
         sizer.Add(button_remove, 0, wx.GROW | wx.EXPAND)
         sizer.Add(button_duplicate, 0, wx.GROW | wx.EXPAND)
+        sizer.Add(button_import, 0, wx.GROW | wx.EXPAND)
+        sizer.Add(button_export, 0, wx.GROW | wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
+        self.Layout()
 
         # Bindings
         self.Bind(wx.EVT_BUTTON, self.OnButton)
@@ -502,6 +530,10 @@ class ButtonControlPanel(wx.Panel):
             self.OnRemove()
         elif id == BTN_DUPLICATE:
             self.OnDuplicate()
+        elif id == BTN_IMPORT_MASK:
+            self.OnImportMask()
+        elif id == BTN_EXPORT_MASK:
+            self.OnExportMask()
 
     def OnNew(self):
         dialog = dlg.NewMask()
@@ -521,6 +553,21 @@ class ButtonControlPanel(wx.Panel):
                     "Create new mask", mask_name=mask_name, thresh=thresh, colour=colour
                 )
         dialog.Destroy()
+
+    def OnImportMask(self):
+        Publisher.sendMessage("Show import mask dialog")
+
+    def OnExportMask(self):
+        all_selected_indices = []
+        for category_info in self.parent.categories.values():
+            listctrl = category_info["list"]
+            selected = listctrl.GetSelected()
+            all_selected_indices.extend(selected)
+
+        if all_selected_indices:
+            Publisher.sendMessage("Show export mask dialog", mask_indexes=all_selected_indices)
+        else:
+            dlg.MaskSelectionRequiredForDuplication()
 
     def OnRemove(self):
         all_selected_indices = []
@@ -701,6 +748,11 @@ class MasksListCtrlPanel(InvListCtrl):
         delete_id = mask_context_menu.Append(start_idx + 2, _("Delete"))
         mask_context_menu.Bind(wx.EVT_MENU, self.delete_mask, delete_id)
 
+        mask_context_menu.AppendSeparator()
+
+        export_id = mask_context_menu.Append(start_idx + 3, _("Export as NIfTI"))
+        mask_context_menu.Bind(wx.EVT_MENU, self.export_mask_nifti, export_id)
+
         # Select the focused mask and show it in the slice viewer
         Publisher.sendMessage("Change mask selected", index=focused_item)
         Publisher.sendMessage("Show mask", index=focused_item, value=True)
@@ -747,6 +799,11 @@ class MasksListCtrlPanel(InvListCtrl):
         if result != wx.ID_OK:
             return
         self.RemoveMasks()
+
+    def export_mask_nifti(self, event):
+        selected_items = self.GetSelected()
+        if selected_items:
+            Publisher.sendMessage("Export masks to nifti", mask_indexes=selected_items)
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
