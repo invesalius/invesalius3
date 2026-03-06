@@ -215,7 +215,7 @@ class VisualizationTab(wx.Panel):
         sl_transparency = self.sl_transparency = wx.Slider(
             bsizer_slices.GetStaticBox(),
             -1,
-            value=50,
+            value=self.session.GetConfig("measure_transparency", 50),
             minValue=0,
             maxValue=100,
             style=wx.SL_HORIZONTAL | wx.SL_LABELS,
@@ -252,6 +252,17 @@ class VisualizationTab(wx.Panel):
         value = self.sl_transparency.GetValue()
         self.session.SetConfig("measure_transparency", value)
         Publisher.sendMessage("Update measurement transparency", transparency=value)
+
+    def LoadSelection(self, values):
+        rendering = values.get(const.RENDERING, 0)
+        surface_interpolation = values.get(const.SURFACE_INTERPOLATION, 1)
+        slice_interpolation = values.get(const.SLICE_INTERPOLATION, 0)
+        measure_transparency = values.get(const.MEASURE_TRANSPARENCY, 50)
+
+        self.rb_rendering.SetSelection(rendering)
+        self.rb_inter.SetSelection(surface_interpolation)
+        self.rb_inter_sl.SetSelection(int(not bool(slice_interpolation)))
+        self.sl_transparency.SetValue(measure_transparency)
 
     def InitMEPMapping(self, event):
         # Adding a new sized for MEP Mapping options

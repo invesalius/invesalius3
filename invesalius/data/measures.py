@@ -434,12 +434,13 @@ class MeasurementManager:
         )
 
     def _update_transparency(self, transparency):
-        # Update ONLY the current measurement being created
-        if self.current and hasattr(self.current, "update_transparency"):
-            self.current.update_transparency(transparency)
-
-        Publisher.sendMessage("Refresh slice-viewer")
-        Publisher.sendMessage("Update 3D render")
+        # Update all existing density measurements with the new transparency value
+        alpha = int(255 * (1.0 - transparency / 100.0))
+        for _m, mr in self.measures:
+            if hasattr(mr, "text_box") and mr.text_box is not None:
+                r, g, b, _a = mr.text_box.box_colour
+                mr.text_box.box_colour = (r, g, b, alpha)
+        Publisher.sendMessage("Redraw canvas")
 
     def OnCloseProject(self):
         self.measures.clean()
@@ -1238,7 +1239,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
 
         if self.text_box is None:
             self.text_box = TextBox(
-                self, text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR
+                self, text, self.point1, MEASURE_TEXT_COLOUR, get_measure_textbox_colour()
             )
             self.text_box.layer = 2
             self.add_child(self.text_box)
@@ -1551,7 +1552,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         p = [bounds[3], bounds[4], bounds[5]]
         if self.text_box is None:
             p[0] += 5
-            self.text_box = TextBox(self, "", p, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+            self.text_box = TextBox(self, "", p, MEASURE_TEXT_COLOUR, get_measure_textbox_colour())
             self.text_box.layer = 2
             self.add_child(self.text_box)
 
