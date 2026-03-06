@@ -104,6 +104,9 @@ class BaseImageInteractorStyle(vtkInteractorStyleImage):
         self.AddObserver("MiddleButtonPressEvent", self.OnMiddleButtonPressEvent)
         self.AddObserver("MiddleButtonReleaseEvent", self.OnMiddleButtonReleaseEvent)
 
+        self.AddObserver("MouseMoveEvent", self.OnStatusbarMouseMove)
+        self.AddObserver("LeaveEvent", self.OnStatusbarLeave)
+
     def OnPressLeftButton(self, evt, obj):
         self.left_pressed = True
 
@@ -122,6 +125,12 @@ class BaseImageInteractorStyle(vtkInteractorStyleImage):
 
     def OnMiddleButtonReleaseEvent(self, evt, obj):
         self.middle_pressed = False
+
+    def OnStatusbarMouseMove(self, evt, obj):
+        self.viewer.UpdateStatusbarInfo()
+
+    def OnStatusbarLeave(self, evt, obj):
+        Publisher.sendMessage("Clear statusbar image info")
 
     def GetMousePosition(self):
         mx, my = self.viewer.get_vtk_mouse_position()

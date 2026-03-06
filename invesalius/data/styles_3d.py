@@ -62,6 +62,15 @@ class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
         self.AddObserver("MiddleButtonPressEvent", self.OnMiddleButtonPressEvent)
         self.AddObserver("MiddleButtonReleaseEvent", self.OnMiddleButtonReleaseEvent)
 
+        self.AddObserver("MouseMoveEvent", self.OnStatusbarMouseMove)
+        self.AddObserver("LeaveEvent", self.OnStatusbarLeave)
+
+    def OnStatusbarMouseMove(self, evt, obj):
+        Publisher.sendMessage("Update statusbar image info", info="Window: Volume")
+
+    def OnStatusbarLeave(self, evt, obj):
+        Publisher.sendMessage("Clear statusbar image info")
+
     def OnPressLeftButton(self, evt, obj):
         self.left_pressed = True
 
