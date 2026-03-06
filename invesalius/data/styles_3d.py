@@ -28,7 +28,7 @@ from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
 )
-from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPicker
+from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkCoordinate, vtkPointPicker, vtkPropPicker
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
@@ -695,8 +695,6 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer: "Viewer"):
         super().__init__(viewer)
 
-        # mask_data is captured in SetUp() after the mask preview is enabled,
-        # so that do_threshold_to_all_slices() has already run.
         self.mask_data = None
 
         self.m3e_list: list[PolygonSelectCanvas] = []
@@ -709,11 +707,6 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         # keep track if we set preview here or not for UX
         self.has_set_mask_preview = False
-
-        # Initialise resolution from the current viewer widget size so that
-        # CutMaskFromPolygons always has a valid aspect ratio even before the
-        # first "Receive volume viewer size" message arrives (fixes #1086).
-        self.resolution: Tuple[int, int] = tuple(viewer.GetSize())
 
         self._bind_events()
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
@@ -744,21 +737,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
                 drawn_polygon.set_interactive(True)
                 self.m3e_list.append(drawn_polygon)
 
-        # Synchronize edit mode and depth value from the GUI's current state
-        import invesalius.pubsub as pub
-
-        pub.pub.sendMessage("M3E ask for edit mode")
-        pub.pub.sendMessage("M3E ask for depth value")
-
         if not ses.Session().mask_3d_preview:
             self.has_set_mask_preview = True
             Publisher.sendMessage("Enable mask 3D preview")
-
-        # Capture mask_data HERE, after Enable mask 3D preview has called
-        # do_threshold_to_all_slices().  Capturing it in __init__ was too early:
-        # the mask matrix was still all-zeros at that point, so every cut would
-        # restore to an empty mask.  Fixes #1086 (no-surface path).
-        self.mask_data = slc.Slice().current_mask.matrix.copy()
 
         Publisher.sendMessage(
             "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
@@ -768,6 +749,11 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         # just trigger a re-render (camera was already positioned when preview was enabled).
         if not self.has_set_mask_preview:
             Publisher.sendMessage("Render volume viewer")
+
+        # Capture the mask snapshot AFTER enabling the 3D preview, which runs
+        # do_threshold_to_all_slices and modifies the mask. This ensures
+        # ClearPolygons restores the correct post-threshold mask state.
+        self.mask_data = slc.Slice().current_mask.matrix.copy()
 
     def CleanUp(self):
         """Clean up is called when the interactor style is removed or changed.
@@ -829,6 +815,38 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.OnRestoreInitMask()
         self.viewer.UpdateCanvas()
 
+    def _display_to_world_focal_plane(
+        self, display_x: float, display_y: float
+    ) -> Tuple[float, float, float]:
+        """Convert display coordinates to world coordinates on the camera focal plane.
+
+        Projects the given 2D display position onto the plane perpendicular to the
+        camera view direction passing through the focal point. This allows polygon
+        points to be stored in world space, so they remain aligned with the volume
+        when the window is resized, zoomed, or panned.
+
+        Args:
+            display_x: X position in display (pixel) coordinates.
+            display_y: Y position in display (pixel) coordinates.
+
+        Returns:
+            Tuple with (x, y, z) world coordinates on the focal plane.
+        """
+        renderer = self.viewer.ren
+        focal_point = renderer.GetActiveCamera().GetFocalPoint()
+
+        # Find the depth value of the focal point in display coordinates
+        renderer.SetWorldPoint(*focal_point, 1.0)
+        renderer.WorldToDisplay()
+        focal_depth = renderer.GetDisplayPoint()[2]
+
+        # Unproject the 2D mouse position at the focal plane depth
+        renderer.SetDisplayPoint(display_x, display_y, focal_depth)
+        renderer.DisplayToWorld()
+        world_point = renderer.GetWorldPoint()
+        w = world_point[3]
+        return (world_point[0] / w, world_point[1] / w, world_point[2] / w)
+
     def OnInsertPolygonPoint(self, _evt):
         """Insert a point in the polygon.
 
@@ -839,8 +857,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         if len(self.m3e_list) == 0 or self.m3e_list[-1].complete:
             self.init_new_polygon()
 
+        world_point = self._display_to_world_focal_plane(mouse_x, mouse_y)
+
         current_masker = self.m3e_list[-1]
-        current_masker.insert_point((mouse_x, mouse_y))
+        current_masker.insert_point((mouse_x, mouse_y), world_point)
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygon(self, _evt):
@@ -895,22 +915,24 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.update_views(_mat)
 
     def get_filters(self) -> List[npt.NDArray]:
-        """Create a boolean mask filter based on the polygon points and viewer size."""
+        """Create a boolean mask filter based on the polygon points and viewer size.
+
+        Since polygon points are stored with parallel world coordinates,
+        they are projected back to display coordinates using the current
+        camera before generating the mask.
+        """
         w, h = self.resolution
+        renderer = self.viewer.ren
+        coord = vtkCoordinate()
 
-        # Get scale factor (necessary for Mac HighDPI displays where physical
-        # mouse coords are scaled by 2x but viewer resolution is logical w,h)
-        import wx
-
-        scale = wx.GetApp().GetTopWindow().GetContentScaleFactor()
-
-        # polygon2mask((w, h), points_as_xy): treats (x, y) as (row, col) in a (w, h) array.
-        # After the .T in CutMaskFromPolygons the result is (h, w) which the Rust code reads as
-        # shape (h, w) and indexes as mask[py][px] — correctly matching VTK screen coordinates.
-        filters = [
-            polygon2mask((w, h), [(x / scale, y / scale) for x, y in poly_canvas.polygon.points])
-            for poly_canvas in self.m3e_list
-        ]
+        filters = []
+        for poly_canvas in self.m3e_list:
+            display_points = []
+            for world_pt in poly_canvas._world_points:
+                coord.SetValue(world_pt)
+                px, py = coord.GetComputedDoubleDisplayValue(renderer)
+                display_points.append((px, py))
+            filters.append(polygon2mask((w, h), display_points))
         return filters
 
     def CutMaskFromPolygons(self):
@@ -919,21 +941,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         if len(completed_polygons) == 0:
             return
 
-        if self.mask_data is None:
-            return
-
         # All m3e will be updated with correct viewer settings
         Publisher.sendMessage("Send volume viewer size")
         Publisher.sendMessage("Send volume viewer active camera")
-
-        # Guard: if the viewer has not reported a valid size yet (e.g. on the
-        # very first Enable after a fresh DICOM import before the widget has
-        # been fully painted), skip the cut to avoid an incorrect projection
-        # matrix that would corrupt the mask.  The polygon stays in place so
-        # the user can re-apply once the viewer is ready.  Fixes #1086.
-        w, h = self.resolution
-        if h == 0:
-            return
 
         filters = self.get_filters()
 
@@ -950,21 +960,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         slice = slc.Slice()
         sx, sy, sz = slice.spacing
 
-        try:
-            near, far = self.clipping_range
-        except AttributeError:
-            print("[DEBUG] self.clipping_range not set yet — skipping cut")
-            return
+        print(f"\n\n\n\n{self.world_to_screen.flags=}\n{self.world_to_camera_coordinates.flags=}\n")
 
+        near, far = self.clipping_range
         depth = near + (far - near) * self.depth_val
-
-        try:
-            wts = self.world_to_screen
-            wtc = self.world_to_camera_coordinates
-        except AttributeError:
-            print("[DEBUG] self.world_to_screen not set yet — skipping cut")
-            return
-
         mask_cut(
             _mat,
             sx,
@@ -972,8 +971,8 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             sz,
             depth,
             filter,
-            wts,
-            wtc,
+            self.world_to_screen,
+            self.world_to_camera_coordinates,
             out,
             self.edit_mode,
         )
