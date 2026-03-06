@@ -259,6 +259,17 @@ class Controller:
         # Open project
         filepath = dialog.ShowOpenProjectDialog()
         if filepath:
+            if not filepath.lower().endswith(".inv3"):
+                dlg = dialogs.ErrorMessageBox(
+                    None,
+                    _("Invalid file type"),
+                    _(
+                        "Please select an InVesalius project file (.inv3)."
+                    ),
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                return
             if session.IsOpen():
                 self.CloseProject()
             self.OpenProject(filepath)
