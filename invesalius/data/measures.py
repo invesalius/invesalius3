@@ -65,11 +65,18 @@ map_id_locations = {
 if sys.platform == "win32":
     MEASURE_LINE_COLOUR = (255, 0, 0, 255)
     MEASURE_TEXT_COLOUR = (0, 0, 0)
-    MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 128)
+    # MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 128)
 else:
     MEASURE_LINE_COLOUR = (255, 0, 0, 128)
     MEASURE_TEXT_COLOUR = (0, 0, 0)
-    MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 255)
+    # MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 255)
+
+
+def get_measure_textbox_colour():
+    session = ses.Session()
+    transparency = session.GetConfig("measure_transparency", 50)
+    alpha = int(255 * (1.0 - transparency / 100.0))
+    return (255, 255, 165, alpha)
 
 
 DEBUG_DENSITY = False
@@ -726,7 +733,11 @@ class LinearMeasure:
         a.DragableOn()
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x, y, z)
-        a.GetProperty().SetOpacity(0.5)
+
+        session = ses.Session()
+        transparency = session.GetConfig("measure_transparency", 50)
+        a.GetProperty().SetOpacity(1.0 - transparency / 100.0)
+
         self.text_actor = a
 
     def draw_to_canvas(self, gc, canvas):
@@ -758,7 +769,7 @@ class LinearMeasure:
                     (points[0][1] + points[1][1]) / 2.0,
                 ),
                 txt_colour=MEASURE_TEXT_COLOUR,
-                bg_colour=MEASURE_TEXTBOX_COLOUR,
+                bg_colour=get_measure_textbox_colour(),
             )
 
     def GetNumberOfPoints(self):
@@ -977,7 +988,11 @@ class AngularMeasure:
         a.DragableOn()
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x, y, z)
-        a.GetProperty().SetOpacity(0.5)
+
+        session = ses.Session()
+        transparency = session.GetConfig("measure_transparency", 50)
+        a.GetProperty().SetOpacity(1.0 - transparency / 100.0)
+
         self.text_actor = a
 
     def draw_to_canvas(self, gc, canvas):
@@ -1015,7 +1030,7 @@ class AngularMeasure:
                     txt,
                     (points[1][0], points[1][1]),
                     txt_colour=MEASURE_TEXT_COLOUR,
-                    bg_colour=MEASURE_TEXTBOX_COLOUR,
+                    bg_colour=get_measure_textbox_colour(),
                 )
 
     def GetNumberOfPoints(self):

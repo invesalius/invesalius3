@@ -135,6 +135,7 @@ class Preferences(wx.Dialog):
         logging_file = log.invLogger.GetConfig("logging_file")
         console_logging = log.invLogger.GetConfig("console_logging")
         console_logging_level = log.invLogger.GetConfig("console_logging_level")
+        measure_transparency = session.GetConfig("measure_transparency", 50)
 
         values = {
             const.RENDERING: rendering,
@@ -147,6 +148,7 @@ class Preferences(wx.Dialog):
             const.LOGFILE: logging_file,
             const.CONSOLE_LOGGING: console_logging,
             const.CONSOLE_LOGGING_LEVEL: console_logging_level,
+            const.MEASURE_TRANSPARENCY: measure_transparency,
         }
 
         self.visualization_tab.LoadSelection(values)
@@ -209,6 +211,18 @@ class VisualizationTab(wx.Panel):
         bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer_slices.Add(rb_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
+        lbl_transparency = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Measurement label transparency"))
+        sl_transparency = self.sl_transparency = wx.Slider(
+            bsizer_slices.GetStaticBox(),
+            -1,
+            value=50,
+            minValue=0,
+            maxValue=100,
+            style=wx.SL_HORIZONTAL | wx.SL_LABELS,
+        )
+        bsizer_slices.Add(lbl_transparency, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_slices.Add(sl_transparency, 0, wx.TOP | wx.LEFT | wx.EXPAND | wx.FIXED_MINSIZE, 5)
+
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_slices, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
@@ -228,6 +242,7 @@ class VisualizationTab(wx.Panel):
             const.SLICE_INTERPOLATION: not bool(
                 self.rb_inter_sl.GetSelection()
             ),  # 0 for Yes, 1 for No
+            const.MEASURE_TRANSPARENCY: self.sl_transparency.GetValue(),
         }
         return options
 
@@ -558,6 +573,9 @@ class VisualizationTab(wx.Panel):
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
+
+        if const.MEASURE_TRANSPARENCY in values:
+            self.sl_transparency.SetValue(int(values[const.MEASURE_TRANSPARENCY]))
 
     def OnSelectColormap(self, event=None):
         self.conf["mep_colormap"] = self.colormaps[self.combo_thresh.GetSelection()]

@@ -747,6 +747,7 @@ LOGGING = 4
 LOGGING_LEVEL = 5
 APPEND_LOG_FILE = 6
 LOGFILE = 7
+MEASURE_TRANSPARENCY = 10
 
 
 # ------------ Logging options key------------
