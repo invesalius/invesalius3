@@ -1370,6 +1370,40 @@ class Viewer(wx.Panel):
             "Change slice from slice plane", orientation=self.orientation, index=pos
         )
 
+    def UpdateStatusbarInfo(self):
+        try:
+            if not hasattr(self, "slice_") or self.slice_ is None:
+                return
+            if not hasattr(self.slice_, "matrix") or self.slice_.matrix is None:
+                return
+            if self.slice_data is None:
+                return
+
+            mx, my = self.get_vtk_mouse_position()
+            px, py = self.get_slice_pixel_coord_by_screen_pos(mx, my)
+            slice_number = self.slice_data.number
+
+            matrix = self.slice_.matrix
+            dz, dy, dx = matrix.shape
+
+            if self.orientation == "AXIAL":
+                vx, vy, vz = int(px), int(py), slice_number
+            elif self.orientation == "CORONAL":
+                vx, vy, vz = int(px), slice_number, int(py)
+            else:  # SAGITAL
+                vx, vy, vz = slice_number, int(px), int(py)
+
+            if 0 <= vx < dx and 0 <= vy < dy and 0 <= vz < dz:
+                voxel_value = matrix[vz, vy, vx]
+                info = (
+                    f"Window: {self.orientation.capitalize()}  |  "
+                    f"Pos: ({int(px)}, {int(py)})  Slice: {slice_number}  |  "
+                    f"Value: {voxel_value}"
+                )
+                Publisher.sendMessage("Update statusbar image info", info=info)
+        except Exception:
+            pass
+
     def OnScrollBar(self, evt=None, update3D=True):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
@@ -1386,6 +1420,8 @@ class Viewer(wx.Panel):
             self.style.OnScrollBar()
         except AttributeError:
             pass
+
+        self.UpdateStatusbarInfo()
 
         if evt:
             if self._flush_buffer:
