@@ -1775,8 +1775,10 @@ class StatusBar(wx.StatusBar):
         wx.StatusBar.__init__(self, parent, -1)
 
         # General status configurations
-        self.SetFieldsCount(1)
+        self.SetFieldsCount(2)
+        self.SetStatusWidths([-1, 450])
         self.SetStatusText(_("Ready"), 0)
+        self.SetStatusText("", 1)
 
         self.__bind_events()
 
@@ -1786,12 +1788,19 @@ class StatusBar(wx.StatusBar):
         """
         sub = Publisher.subscribe
         sub(self._SetProgressLabel, "Update status text in GUI")
+        sub(self._SetImageInfoLabel, "Update image info in GUI")
 
     def _SetProgressLabel(self, label):
         """
         Set text progress label.
         """
         self.SetStatusText(label, 0)
+        
+    def _SetImageInfoLabel(self, label):
+        """
+        Set image info label.
+        """
+        self.SetStatusText(label, 1)
 
 
 # ------------------------------------------------------------------

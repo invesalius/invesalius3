@@ -2610,7 +2610,16 @@ class Viewer(wx.Panel):
     def __bind_events_wx(self):
         # self.Bind(wx.EVT_SIZE, self.OnSize)
         #  self.canvas.subscribe_event('LeftButtonPressEvent', self.on_insert_point)
-        pass
+        self.interactor.Bind(wx.EVT_MOTION, self.OnMouseMove)
+        self.interactor.Bind(wx.EVT_LEAVE_WINDOW, self.OnMouseLeave)
+
+    def OnMouseMove(self, evt):
+        Publisher.sendMessage("Update image info in GUI", label="Window: Volume")
+        evt.Skip()
+
+    def OnMouseLeave(self, evt):
+        Publisher.sendMessage("Update image info in GUI", label="")
+        evt.Skip()
 
     def on_insert_point(self, evt):
         pos = evt.position

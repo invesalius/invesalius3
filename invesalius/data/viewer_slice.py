@@ -1079,6 +1079,43 @@ class Viewer(wx.Panel):
         # self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
+        self.interactor.Bind(wx.EVT_MOTION, self.OnMouseMove)
+        self.interactor.Bind(wx.EVT_LEAVE_WINDOW, self.OnMouseLeave)
+
+    def OnMouseMove(self, evt):
+        if self.slice_ and self.slice_.matrix is not None:
+            try:
+                mx, my = self.get_vtk_mouse_position()
+                x, y, z = self.get_voxel_coord_by_screen_pos(mx, my, self.pick)
+                px, py = self.get_slice_pixel_coord_by_screen_pos(mx, my, self.pick)
+                slice_number = self.slice_data.number
+                
+                matrix = self.slice_.matrix
+                if 0 <= z < matrix.shape[0] and 0 <= y < matrix.shape[1] and 0 <= x < matrix.shape[2]:
+                    value = matrix[z, y, x]
+                    
+                    orientation_label = "Volume"
+                    if self.orientation == "AXIAL":
+                        orientation_label = "Axial"
+                    elif self.orientation == "CORONAL":
+                        orientation_label = "Coronal"
+                    elif self.orientation == "SAGITAL":
+                        orientation_label = "Sagittal"
+                        
+                    msg = f"Window: {orientation_label}  -  Position: {px}, {py}, Slice: {slice_number}  -  Voxel value: {value}"
+                    Publisher.sendMessage("Update image info in GUI", label=msg)
+                else:
+                    Publisher.sendMessage("Update image info in GUI", label="")
+            except Exception:
+                Publisher.sendMessage("Update image info in GUI", label="")
+        else:
+            Publisher.sendMessage("Update image info in GUI", label="")
+            
+        evt.Skip()
+
+    def OnMouseLeave(self, evt):
+        Publisher.sendMessage("Update image info in GUI", label="")
+        evt.Skip()
 
     def LoadImagedata(self, mask_dict):
         self.SetInput(mask_dict)
