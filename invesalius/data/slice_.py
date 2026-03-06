@@ -843,7 +843,7 @@ class Slice(metaclass=utils.Singleton):
                             shape=(tmp_array.shape[1], tmp_array.shape[2]),
                             dtype=tmp_array.dtype,
                         )
-                        mips.lmip(tmp_array, 0, self.window_level, self.window_level, n_image)
+                        mips.lmip(tmp_array, 0, int(self.window_level), int(self.window_level), n_image)
                     elif self._type_projection == const.PROJECTION_MIDA:
                         n_image = np.empty(
                             shape=(tmp_array.shape[1], tmp_array.shape[2]),
@@ -861,8 +861,8 @@ class Slice(metaclass=utils.Singleton):
                             tmp_array,
                             border_size,
                             0,
-                            self.window_level,
-                            self.window_level,
+                            int(self.window_level),
+                            int(self.window_level),
                             0,
                             n_image,
                         )
@@ -875,8 +875,8 @@ class Slice(metaclass=utils.Singleton):
                             tmp_array,
                             border_size,
                             0,
-                            self.window_level,
-                            self.window_level,
+                            int(self.window_level),
+                            int(self.window_level),
                             1,
                             n_image,
                         )
@@ -889,8 +889,8 @@ class Slice(metaclass=utils.Singleton):
                             tmp_array,
                             border_size,
                             0,
-                            self.window_level,
-                            self.window_level,
+                            int(self.window_level),
+                            int(self.window_level),
                             2,
                             n_image,
                         )
@@ -931,7 +931,7 @@ class Slice(metaclass=utils.Singleton):
                             shape=(tmp_array.shape[0], tmp_array.shape[2]),
                             dtype=tmp_array.dtype,
                         )
-                        mips.lmip(tmp_array, 1, self.window_level, self.window_level, n_image)
+                        mips.lmip(tmp_array, 1, int(self.window_level), int(self.window_level), n_image)
                     elif self._type_projection == const.PROJECTION_MIDA:
                         n_image = np.empty(
                             shape=(tmp_array.shape[0], tmp_array.shape[2]),
@@ -949,8 +949,8 @@ class Slice(metaclass=utils.Singleton):
                             tmp_array,
                             border_size,
                             1,
-                            self.window_level,
-                            self.window_level,
+                            int(self.window_level),
+                            int(self.window_level),
                             0,
                             n_image,
                         )
@@ -963,8 +963,8 @@ class Slice(metaclass=utils.Singleton):
                             tmp_array,
                             border_size,
                             1,
-                            self.window_level,
-                            self.window_level,
+                            int(self.window_level),
+                            int(self.window_level),
                             1,
                             n_image,
                         )
@@ -977,8 +977,8 @@ class Slice(metaclass=utils.Singleton):
                             tmp_array,
                             border_size,
                             1,
-                            self.window_level,
-                            self.window_level,
+                            int(self.window_level),
+                            int(self.window_level),
                             2,
                             n_image,
                         )
@@ -1014,7 +1014,7 @@ class Slice(metaclass=utils.Singleton):
                             shape=(tmp_array.shape[0], tmp_array.shape[1]),
                             dtype=tmp_array.dtype,
                         )
-                        mips.lmip(tmp_array, 2, self.window_level, self.window_level, n_image)
+                        mips.lmip(tmp_array, 2, int(self.window_level), int(self.window_level), n_image)
                     elif self._type_projection == const.PROJECTION_MIDA:
                         n_image = np.empty(
                             shape=(tmp_array.shape[0], tmp_array.shape[1]),
@@ -1033,8 +1033,8 @@ class Slice(metaclass=utils.Singleton):
                             tmp_array,
                             border_size,
                             2,
-                            self.window_level,
-                            self.window_level,
+                            int(self.window_level),
+                            int(self.window_level),
                             0,
                             n_image,
                         )
@@ -1047,8 +1047,8 @@ class Slice(metaclass=utils.Singleton):
                             tmp_array,
                             border_size,
                             2,
-                            self.window_level,
-                            self.window_level,
+                            int(self.window_level),
+                            int(self.window_level),
                             1,
                             n_image,
                         )
@@ -1061,8 +1061,8 @@ class Slice(metaclass=utils.Singleton):
                             tmp_array,
                             border_size,
                             2,
-                            self.window_level,
-                            self.window_level,
+                            int(self.window_level),
+                            int(self.window_level),
                             2,
                             n_image,
                         )
