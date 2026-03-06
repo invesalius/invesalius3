@@ -35,6 +35,12 @@ if TYPE_CHECKING:
     from invesalius.data.tracker_connection import TrackerConnection
 
 
+def _safe_call_after(func, *args, **kwargs):
+    """Call *func* on the main thread only if the wx.App still exists."""
+    if wx.GetApp() is not None:
+        wx.CallAfter(func, *args, **kwargs)
+
+
 class TrackerCoordinates:
     def __init__(self):
         self.coord: Optional[np.ndarray] = None
@@ -53,31 +59,31 @@ class TrackerCoordinates:
         self.coord = coord
         self.marker_visibilities = marker_visibilities
         if not self.nav_status:
-            wx.CallAfter(
+            _safe_call_after(
                 Publisher.sendMessage,
                 "From Neuronavigation: Update tracker poses",
                 poses=self.coord.tolist(),
                 visibilities=self.marker_visibilities,
             )
             if self.previous_marker_visibilities != self.marker_visibilities:
-                wx.CallAfter(
+                _safe_call_after(
                     Publisher.sendMessage,
                     "Sensors ID",
                     marker_visibilities=self.marker_visibilities,
                 )
-                wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
+                _safe_call_after(Publisher.sendMessage, "Render volume viewer")
                 self.previous_marker_visibilities = self.marker_visibilities
 
     def GetCoordinates(self) -> Tuple[Optional[np.ndarray], List[bool]]:
         if self.nav_status:
-            wx.CallAfter(
+            _safe_call_after(
                 Publisher.sendMessage,
                 "From Neuronavigation: Update tracker poses",
                 poses=self.coord.tolist(),
                 visibilities=self.marker_visibilities,
             )
             if self.previous_marker_visibilities != self.marker_visibilities:
-                wx.CallAfter(
+                _safe_call_after(
                     Publisher.sendMessage,
                     "Sensors ID",
                     marker_visibilities=self.marker_visibilities,
