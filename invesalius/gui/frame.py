@@ -1775,12 +1775,30 @@ class StatusBar(wx.StatusBar):
         wx.StatusBar.__init__(self, parent, -1)
 
         # General status configurations
-        self.SetFieldsCount(2)
-        self.SetStatusWidths([-1, -2])
+        self.SetFieldsCount(1)
         self.SetStatusText(_("Ready"), 0)
-        self.SetStatusText("", 1)
+
+        # Right-aligned label for image info
+        self.image_info_label = wx.StaticText(self, -1, "")
+        self.Bind(wx.EVT_SIZE, self._OnSize)
 
         self.__bind_events()
+
+    def _OnSize(self, evt):
+        evt.Skip()
+        self._RepositionImageInfo()
+
+    def _RepositionImageInfo(self):
+        rect = self.GetFieldRect(0)
+        label_width, label_height = self.image_info_label.GetTextExtent(
+            self.image_info_label.GetLabel()
+        )
+        if label_width == 0:
+            return
+        label_height = self.image_info_label.GetSize()[1]
+        x = rect.x + rect.width - label_width - 10
+        y = rect.y + (rect.height - label_height) // 2
+        self.image_info_label.SetPosition((x, y))
 
     def __bind_events(self):
         """
@@ -1801,13 +1819,14 @@ class StatusBar(wx.StatusBar):
         """
         Update image information in the statusbar.
         """
-        self.SetStatusText(info, 1)
+        self.image_info_label.SetLabel(info)
+        self._RepositionImageInfo()
 
     def _ClearImageInfo(self):
         """
         Clear image information in the statusbar.
         """
-        self.SetStatusText("", 1)
+        self.image_info_label.SetLabel("")
 
 
 # ------------------------------------------------------------------
