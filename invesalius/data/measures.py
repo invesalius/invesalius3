@@ -160,6 +160,7 @@ class MeasurementManager:
         Publisher.subscribe(self._rm_incomplete_measurements, "Remove incomplete measurements")
         Publisher.subscribe(self._change_measure_point_pos, "Change measurement point position")
         Publisher.subscribe(self._add_density_measure, "Add density measurement")
+        Publisher.subscribe(self._update_transparency, "Update measurement transparency")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
 
     def _load_measurements(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
@@ -432,6 +433,14 @@ class MeasurementManager:
             value=f"{m.value:.3f}",
         )
 
+    def _update_transparency(self, transparency):
+        # Update ONLY the current measurement being created
+        if self.current and hasattr(self.current, "update_transparency"):
+            self.current.update_transparency(transparency)
+
+        Publisher.sendMessage("Refresh slice-viewer")
+        Publisher.sendMessage("Update 3D render")
+
     def OnCloseProject(self):
         self.measures.clean()
 
@@ -654,6 +663,9 @@ class LinearMeasure:
             representation = CirclePointRepresentation(colour)
         self.representation = representation
 
+        session = ses.Session()
+        self.transparency = session.GetConfig("measure_transparency", 50)
+
     def IsComplete(self):
         """
         Is this measure complete?
@@ -734,11 +746,14 @@ class LinearMeasure:
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x, y, z)
 
-        session = ses.Session()
-        transparency = session.GetConfig("measure_transparency", 50)
-        a.GetProperty().SetOpacity(1.0 - transparency / 100.0)
+        a.GetProperty().SetOpacity(1.0 - self.transparency / 100.0)
 
         self.text_actor = a
+
+    def update_transparency(self, transparency):
+        self.transparency = transparency
+        if hasattr(self, "text_actor"):
+            self.text_actor.GetProperty().SetOpacity(1.0 - self.transparency / 100.0)
 
     def draw_to_canvas(self, gc, canvas):
         """
@@ -769,8 +784,12 @@ class LinearMeasure:
                     (points[0][1] + points[1][1]) / 2.0,
                 ),
                 txt_colour=MEASURE_TEXT_COLOUR,
-                bg_colour=get_measure_textbox_colour(),
+                bg_colour=self.get_textbox_colour(),
             )
+
+    def get_textbox_colour(self):
+        alpha = int(255 * (1.0 - self.transparency / 100.0))
+        return (255, 255, 165, alpha)
 
     def GetNumberOfPoints(self):
         return len(self.points)
@@ -840,6 +859,9 @@ class AngularMeasure:
         self.point_actor3 = None
         self.line_actor = None
         self.text_actor = None
+
+        session = ses.Session()
+        self.transparency = session.GetConfig("measure_transparency", 50)
         self.layer = 0
         if not representation:
             representation = CirclePointRepresentation(colour)
@@ -989,11 +1011,14 @@ class AngularMeasure:
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x, y, z)
 
-        session = ses.Session()
-        transparency = session.GetConfig("measure_transparency", 50)
-        a.GetProperty().SetOpacity(1.0 - transparency / 100.0)
+        a.GetProperty().SetOpacity(1.0 - self.transparency / 100.0)
 
         self.text_actor = a
+
+    def update_transparency(self, transparency):
+        self.transparency = transparency
+        if hasattr(self, "text_actor"):
+            self.text_actor.GetProperty().SetOpacity(1.0 - self.transparency / 100.0)
 
     def draw_to_canvas(self, gc, canvas):
         """
@@ -1030,8 +1055,12 @@ class AngularMeasure:
                     txt,
                     (points[1][0], points[1][1]),
                     txt_colour=MEASURE_TEXT_COLOUR,
-                    bg_colour=get_measure_textbox_colour(),
+                    bg_colour=self.get_textbox_colour(),
                 )
+
+    def get_textbox_colour(self):
+        alpha = int(255 * (1.0 - self.transparency / 100.0))
+        return (255, 255, 165, alpha)
 
     def GetNumberOfPoints(self):
         return self.number_of_points

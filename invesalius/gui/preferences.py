@@ -223,6 +223,8 @@ class VisualizationTab(wx.Panel):
         bsizer_slices.Add(lbl_transparency, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer_slices.Add(sl_transparency, 0, wx.TOP | wx.LEFT | wx.EXPAND | wx.FIXED_MINSIZE, 5)
 
+        sl_transparency.Bind(wx.EVT_SLIDER, self.OnMeasureTransparencySlider)
+
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_slices, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
@@ -245,6 +247,11 @@ class VisualizationTab(wx.Panel):
             const.MEASURE_TRANSPARENCY: self.sl_transparency.GetValue(),
         }
         return options
+
+    def OnMeasureTransparencySlider(self, event):
+        value = self.sl_transparency.GetValue()
+        self.session.SetConfig("measure_transparency", value)
+        Publisher.sendMessage("Update measurement transparency", transparency=value)
 
     def InitMEPMapping(self, event):
         # Adding a new sized for MEP Mapping options
