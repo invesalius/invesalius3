@@ -1089,11 +1089,15 @@ class Viewer(wx.Panel):
                 x, y, z = self.get_voxel_coord_by_screen_pos(mx, my, self.pick)
                 px, py = self.get_slice_pixel_coord_by_screen_pos(mx, my, self.pick)
                 slice_number = self.slice_data.number
-                
+
                 matrix = self.slice_.matrix
-                if 0 <= z < matrix.shape[0] and 0 <= y < matrix.shape[1] and 0 <= x < matrix.shape[2]:
+                if (
+                    0 <= z < matrix.shape[0]
+                    and 0 <= y < matrix.shape[1]
+                    and 0 <= x < matrix.shape[2]
+                ):
                     value = matrix[z, y, x]
-                    
+
                     orientation_label = "Volume"
                     if self.orientation == "AXIAL":
                         orientation_label = "Axial"
@@ -1101,7 +1105,7 @@ class Viewer(wx.Panel):
                         orientation_label = "Coronal"
                     elif self.orientation == "SAGITAL":
                         orientation_label = "Sagittal"
-                        
+
                     msg = f"Window: {orientation_label}  -  Position: {px}, {py}, Slice: {slice_number}  -  Voxel value: {value}"
                     Publisher.sendMessage("Update image info in GUI", label=msg)
                 else:
@@ -1110,7 +1114,7 @@ class Viewer(wx.Panel):
                 Publisher.sendMessage("Update image info in GUI", label="")
         else:
             Publisher.sendMessage("Update image info in GUI", label="")
-            
+
         evt.Skip()
 
     def OnMouseLeave(self, evt):

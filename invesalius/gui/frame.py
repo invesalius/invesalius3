@@ -1795,7 +1795,7 @@ class StatusBar(wx.StatusBar):
         Set text progress label.
         """
         self.SetStatusText(label, 0)
-        
+
     def _SetImageInfoLabel(self, label):
         """
         Set image info label.
