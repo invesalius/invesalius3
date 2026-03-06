@@ -66,9 +66,7 @@ class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
         self.AddObserver("LeaveEvent", self.OnStatusbarLeave)
 
     def OnStatusbarMouseMove(self, evt, obj):
-        Publisher.sendMessage(
-            "Update statusbar image info", info="Window: Volume"
-        )
+        Publisher.sendMessage("Update statusbar image info", info="Window: Volume")
 
     def OnStatusbarLeave(self, evt, obj):
         Publisher.sendMessage("Clear statusbar image info")
