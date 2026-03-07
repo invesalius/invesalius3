@@ -1752,9 +1752,8 @@ def DumpDictionary(filename, dictionary=info):
     """
     import pickle
 
-    fp = open(filename, "wb")
-    pickle.dump(info, fp)
-    fp.close()
+    with open(filename, "wb") as fp:
+        pickle.dump(dictionary, fp)
 
 
 if __name__ == "__main__":
