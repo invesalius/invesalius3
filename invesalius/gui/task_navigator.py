@@ -2821,7 +2821,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
         try:
             self.markers.LoadState()
-        except:
+        except Exception:
             self.session.DeleteStateFile()  # Delete state file if it is erroneous
 
         # Add all lines into main sizer
