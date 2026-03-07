@@ -48,7 +48,7 @@ TYPE = {
     const.ANGULAR: _("Angular"),
     const.DENSITY_ELLIPSE: _("Density Ellipse"),
     const.DENSITY_POLYGON: _("Density Polygon"),
-    const.COMMENT: _("Comment"),
+    const.ANNOTATION: _("Annotation"),
 }
 
 LOCATION = {
@@ -1930,7 +1930,7 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 value = f"{m.value:.2f} mm"
             elif m.type == const.ANGULAR:
                 value = f"{m.value:.2f}°"
-            elif m.type == const.COMMENT:
+            elif m.type == const.ANNOTATION:
                 value = m.value
             else:
                 value = f"{m.value:.3f}"

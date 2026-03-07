@@ -1323,7 +1323,7 @@ class Viewer(wx.Panel):
             if type(i).__name__ not in (
                 "AngularMeasure",
                 "LinearMeasure",
-                "CommentMeasure",
+                "AnnotationMeasure",
                 "CircleDensityMeasure",
                 "PolygonDensityMeasure",
             ):

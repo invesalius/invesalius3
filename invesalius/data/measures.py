@@ -41,7 +41,7 @@ TYPE = {
     const.ANGULAR: _("Angular"),
     const.DENSITY_ELLIPSE: _("Density Ellipse"),
     const.DENSITY_POLYGON: _("Density Polygon"),
-    const.COMMENT: _("Comment"),
+    const.ANNOTATION: _("Annotation"),
 }
 
 LOCATION = {
@@ -164,20 +164,20 @@ class MeasurementManager:
         if index < 0 or index >= len(self.measures):
             return
         m, mr = self.measures[index]
-        if m.type == const.COMMENT:
+        if m.type == const.ANNOTATION:
             import wx
 
-            from invesalius.gui.dialogs import CommentDialog
+            from invesalius.gui.dialogs import AnnotationDialog
 
-            dlg = CommentDialog()
-            dlg.txt_comment.SetValue(m.value)  # Pre-fill with existing text
+            dlg = AnnotationDialog()
+            dlg.txt_annotation.SetValue(m.value)  # Pre-fill with existing text
             result = dlg.ShowModal()
-            comment_text = dlg.GetValue()
+            annotation_text = dlg.GetValue()
             dlg.Destroy()
 
-            if result == wx.ID_OK and comment_text and comment_text != m.value:
-                m.value = comment_text
-                mr.SetText(comment_text)
+            if result == wx.ID_OK and annotation_text and annotation_text != m.value:
+                m.value = annotation_text
+                mr.SetText(annotation_text)
 
                 # Update GUI list
                 loc_ = LOCATION[m.location]
@@ -243,8 +243,8 @@ class MeasurementManager:
                 representation = CirclePointRepresentation(m.colour, radius)
                 if m.type == const.LINEAR:
                     mr = LinearMeasure(m.colour, representation)
-                elif m.type == const.COMMENT:
-                    mr = CommentMeasure(m.colour, representation)
+                elif m.type == const.ANNOTATION:
+                    mr = AnnotationMeasure(m.colour, representation)
                     mr.SetText(str(m.value))
                 elif m.type == const.ANGULAR:
                     mr = AngularMeasure(m.colour, representation)
@@ -292,15 +292,16 @@ class MeasurementManager:
                 mr = LinearMeasure(m.colour, representation)
             elif type == const.ANGULAR:
                 mr = AngularMeasure(m.colour, representation)
-            elif type == const.COMMENT:
-                mr = CommentMeasure(m.colour, representation)
-                m.name = const.COMMENT_NAME_PATTERN % (m.index + 1)
+            elif type == const.ANNOTATION:
+                mr = AnnotationMeasure(m.colour, representation)
+                m.name = const.ANNOTATION_NAME_PATTERN % (m.index + 1)
             if to_remove:
                 #  actors = self.current[1].GetActors()
                 #  slice_number = self.current[0].slice_number
                 #  Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
                 #  (actors, slice_number))
-                self.measures.pop()[1].Remove()
+                if self.measures:
+                    self.measures.pop()[1].Remove()
                 if self.current[0].location == const.SURFACE:
                     Publisher.sendMessage("Render volume viewer")
                 else:
@@ -325,8 +326,8 @@ class MeasurementManager:
             self.measures.append(self.current)
 
         if mr.IsComplete():
-            if type == const.COMMENT:
-                self._finish_comment(m, mr, type, location)
+            if type == const.ANNOTATION:
+                self._finish_annotation(m, mr, type, location)
             else:
                 index = prj.Project().AddMeasurement(m)
                 name = m.name
@@ -351,21 +352,21 @@ class MeasurementManager:
                 )
             self.current = None
 
-    def _finish_comment(self, m, mr, type, location):
-        """Show comment dialog after annotation point is placed."""
+    def _finish_annotation(self, m, mr, type, location):
+        """Show annotation dialog after annotation point is placed."""
         import wx
 
-        from invesalius.gui.dialogs import CommentDialog
+        from invesalius.gui.dialogs import AnnotationDialog
 
-        dlg = CommentDialog()
+        dlg = AnnotationDialog()
         result = dlg.ShowModal()
-        comment_text = dlg.GetValue()  # already stripped
+        annotation_text = dlg.GetValue()  # already stripped
         dlg.Destroy()
 
         # Treat empty text the same as Cancel
-        if result == wx.ID_OK and comment_text:
-            m.value = comment_text
-            mr.SetText(comment_text)
+        if result == wx.ID_OK and annotation_text:
+            m.value = annotation_text
+            mr.SetText(annotation_text)
             index = prj.Project().AddMeasurement(m)
             type_ = TYPE[type]
             loc_ = LOCATION[location]
@@ -377,7 +378,7 @@ class MeasurementManager:
                 colour=m.colour,
                 location=loc_,
                 type_=type_,
-                value=comment_text,
+                value=annotation_text,
             )
 
             session = ses.Session()
@@ -416,8 +417,10 @@ class MeasurementManager:
 
         if m.type == const.LINEAR:
             value = f"{m.value:.3f} mm"
-        else:
+        elif m.type == const.ANGULAR:
             value = f"{m.value:.3f}°"
+        else:
+            value = str(m.value)
 
         Publisher.sendMessage(
             "Update measurement info in GUI",
@@ -918,10 +921,10 @@ class LinearMeasure:
         self.Remove()
 
 
-class CommentMeasure:
+class AnnotationMeasure:
     """
     Renderer for comment annotations.
-    Draws a single marker point and displays the comment text beside it.
+    Draws a single marker point and displays the annotation text beside it.
     """
 
     def __init__(self, colour=(1, 0, 0), representation=None):
@@ -942,16 +945,35 @@ class CommentMeasure:
 
     def AddPoint(self, x, y, z):
         if not self.point_actor:
+            self.SetPoint1(x, y, z)
+        return (self.point_actor, self.text_actor, self.leader_actor)
+
+    def SetPoint1(self, x, y, z):
+        if len(self.points) == 0:
             self.points.append((x, y, z))
             self.point_actor = self.representation.GetRepresentation(x, y, z)
             self._draw_text()
-        return (self.point_actor, self.text_actor, self.leader_actor)
+        else:
+            self.points[0] = (x, y, z)
+            if self.point_actor:
+                try:
+                    self.point_actor.SetPosition(x, y, z)
+                except AttributeError:
+                    pass
+            if self.leader_actor:
+                self.leader_actor.GetPositionCoordinate().SetValue(x, y, z)
+                self.leader_actor.GetPosition2Coordinate().SetValue(x, y + 25, z + 25)
+            if self.text_actor:
+                self.text_actor.GetPositionCoordinate().SetValue(x, y + 25, z + 25)
 
     def SetText(self, text):
-        """Update the displayed comment text."""
+        """Update the displayed annotation text."""
         self._text = text
-        if self.text_actor:
-            self.text_actor.SetInput(f" {self._get_display_text()} ")
+        if hasattr(self, "text_actor") and self.text_actor:
+            if hasattr(self.text_actor, "SetInput"):
+                self.text_actor.SetInput(f" {self._get_display_text()} ")
+            elif hasattr(self, "text_source") and self.text_source:
+                self.text_source.SetText(f" {self._get_display_text()} ")
 
     def _get_display_text(self):
         """Format and truncate text to max 4 lines of ~30 chars."""
@@ -974,33 +996,40 @@ class CommentMeasure:
         leader.GetPositionCoordinate().SetValue(x, y, z)
 
         leader.GetPosition2Coordinate().SetCoordinateSystemToWorld()
-        leader.GetPosition2Coordinate().SetValue(x, y + 10, z + 10)
+        # Make the 3D arrow longer, similar to 2D
+        leader.GetPosition2Coordinate().SetValue(x, y + 25, z + 25)
 
         leader.SetArrowPlacementToPoint1()
         leader.SetArrowStyleToFilled()
-        leader.GetProperty().SetColor(self.colour)
-        leader.GetProperty().SetOpacity(0.75)
+
+        # In 2D, the arrow is drawn with MEASURE_TEXT_COLOUR (black)
+        # We need to explicitly convert 0-255 RGB to 0.0-1.0
+        r, g, b = [c / 255.0 for c in MEASURE_TEXT_COLOUR[:3]]
+        leader.GetProperty().SetColor(r, g, b)
+        leader.GetProperty().SetLineWidth(2.0)  # Matches width=2 in canvas
+        leader.GetProperty().SetOpacity(1.0)
+
         # Empty string avoids text rendering by the leader
         leader.SetLabel("")
         self.leader_actor = leader
 
-        # 2. Draw the text rigidly via vtkTextActor attached to Position2
+        # 2. Draw the text via vtkTextActor for multi-line support and better background
         text_actor = vtkTextActor()
         text_actor.SetInput(f" {self._get_display_text()} ")
 
-        # Bind the text actor to the end of the arrow (Position2)
-        text_actor.GetPositionCoordinate().SetCoordinateSystemToWorld()
-        text_actor.GetPositionCoordinate().SetValue(x, y + 10, z + 10)
+        prop = text_actor.GetTextProperty()
+        prop.SetColor(r, g, b)  # Black text
+        bg_r, bg_g, bg_b = [c / 255.0 for c in MEASURE_TEXTBOX_COLOUR[:3]]
+        prop.SetBackgroundColor(bg_r, bg_g, bg_b)  # Yellow background
+        prop.SetBackgroundOpacity(1.0)
+        prop.SetFontFamilyToArial()
+        prop.SetFontSize(20)
+        prop.ShadowOff()
+        prop.SetFrame(True)
+        prop.SetFrameColor(0.0, 0.0, 0.0)  # Black border
 
-        text_prop = text_actor.GetTextProperty()
-        text_prop.SetBackgroundColor(250 / 255.0, 247 / 255.0, 218 / 255.0)
-        text_prop.SetBackgroundOpacity(1.0)
-        text_prop.SetColor(self.colour)
-        text_prop.SetBold(1)
-        text_prop.SetItalic(0)
-        text_prop.SetFontSize(16)  # Rigid screen-pixel sizing
-        text_prop.SetJustificationToLeft()
-        text_prop.SetVerticalJustificationToCentered()
+        text_actor.GetPositionCoordinate().SetCoordinateSystemToWorld()
+        text_actor.GetPositionCoordinate().SetValue(x, y + 25, z + 25)
 
         self.text_actor = text_actor
 
