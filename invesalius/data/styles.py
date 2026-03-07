@@ -873,10 +873,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def OnLeaveMeasureInteractor(self, obj, evt):
         if self.creating or self.selected:
-            n, m, mr = self.creating
-            if not mr.IsComplete():
-                Publisher.sendMessage("Remove incomplete measurements")
-            self.creating = None
+            if self.creating:
+                n, m, mr = self.creating
+                if not mr.IsComplete():
+                    Publisher.sendMessage("Remove incomplete measurements")
+                self.creating = None
             self.selected = None
             self.viewer.UpdateCanvas()
             self.viewer.scroll_enabled = True
@@ -928,7 +929,44 @@ class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
         LinearMeasureInteractorStyle.__init__(self, viewer)
         self._type = const.ANGULAR
 
-        self.state_code = const.STATE_MEASURE_ANGLE
+
+class AnnotationInteractorStyle(LinearMeasureInteractorStyle):
+    """
+    Interactor style for placing annotations.
+    Single click places the annotation point; the annotation dialog
+    will be triggered in a later stage.
+    """
+
+    def __init__(self, viewer):
+        LinearMeasureInteractorStyle.__init__(self, viewer)
+        self.state_code = const.STATE_MEASURE_ANNOTATION
+        self._type = const.ANNOTATION
+
+    def OnInsertMeasurePoint(self, obj, evt):
+        mx, my = self.GetMousePosition()
+        selected = self._verify_clicked_display(mx, my)
+
+        if selected:
+            self.selected = selected
+            self.viewer.scroll_enabled = False
+            return  # Allow drag loop to take over
+
+        x, y, z = self._get_pos_clicked()
+        if not self.picker.GetViewProp():
+            return
+
+        slice_number = self.slice_data.number
+
+        # AnnotationMeasure is complete after 1 point, so send once.
+        Publisher.sendMessage(
+            "Add measurement point",
+            position=(x, y, z),
+            type=self._type,
+            location=ORIENTATIONS[self.orientation],
+            slice_number=slice_number,
+            radius=self.radius,
+        )
+        self.viewer.UpdateCanvas()
 
 
 class DensityMeasureStyle(DefaultInteractorStyle):
@@ -3006,6 +3044,7 @@ class Styles:
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.STATE_MEASURE_DENSITY_ELLIPSE: DensityMeasureEllipseStyle,
         const.STATE_MEASURE_DENSITY_POLYGON: DensityMeasurePolygonStyle,
+        const.STATE_MEASURE_ANNOTATION: AnnotationInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,

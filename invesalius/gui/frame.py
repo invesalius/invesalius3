@@ -2028,6 +2028,7 @@ class ObjectToolBar(AuiToolBar):
             const.STATE_MEASURE_ANGLE,
             const.STATE_MEASURE_DENSITY_ELLIPSE,
             const.STATE_MEASURE_DENSITY_POLYGON,
+            const.STATE_MEASURE_ANNOTATION,
             # const.STATE_ANNOTATE
         ]
         self.__init_items()
@@ -2086,6 +2087,9 @@ class ObjectToolBar(AuiToolBar):
 
         path = os.path.join(d, "measure_density_polygon32px.png")
         BMP_POLYGON = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
+        path = os.path.join(d, "tool_annotation_original.png")
+        BMP_ANNOTATION = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
         self.AddTool(
@@ -2162,6 +2166,15 @@ class ObjectToolBar(AuiToolBar):
             short_help_string=_("Measure density polygon"),
             kind=wx.ITEM_CHECK,
         )
+
+        self.AddTool(
+            const.STATE_MEASURE_ANNOTATION,
+            "",
+            BMP_ANNOTATION,
+            wx.NullBitmap,
+            short_help_string=_("Add annotation"),
+            kind=wx.ITEM_CHECK,
+        )
         # self.AddLabelTool(const.STATE_ANNOTATE,
         #                "",
         #                shortHelp = _("Add annotation"),
@@ -2224,7 +2237,11 @@ class ObjectToolBar(AuiToolBar):
         """
         id = evt.GetId()
         state = self.GetToolToggled(id)
-        if state and ((id == const.STATE_MEASURE_DISTANCE) or (id == const.STATE_MEASURE_ANGLE)):
+        if state and (
+            (id == const.STATE_MEASURE_DISTANCE)
+            or (id == const.STATE_MEASURE_ANGLE)
+            or (id == const.STATE_MEASURE_ANNOTATION)
+        ):
             Publisher.sendMessage("Fold measure task")
 
         if state:
