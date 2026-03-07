@@ -200,9 +200,7 @@ class VisualizationTab(wx.Panel):
         bsizer.Add(rb_rendering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
         cb_hardware_stereo = self.cb_hardware_stereo = wx.CheckBox(
-            bsizer.GetStaticBox(), 
-            -1, 
-            _("Enable Hardware Stereo (Requires restart)")
+            bsizer.GetStaticBox(), -1, _("Enable Hardware Stereo (Requires restart)")
         )
         bsizer.Add(cb_hardware_stereo, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
 
