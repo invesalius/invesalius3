@@ -1018,6 +1018,37 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Reload actual slice")
 
 
+class CommentAnnotationInteractorStyle(LinearMeasureInteractorStyle):
+    """
+    Interactor style for placing comment annotations on 3D surfaces.
+    Single-click places a marker and opens the comment dialog.
+    """
+
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.state_code = const.STATE_MEASURE_COMMENT
+
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertCommentPoint)
+
+    def OnInsertCommentPoint(self, obj, evt):
+        x, y = self.viewer.get_vtk_mouse_position()
+        self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+        x, y, z = self.measure_picker.GetPickPosition()
+        if self.measure_picker.GetActor():
+            self.left_pressed = False
+            Publisher.sendMessage(
+                "Add measurement point",
+                position=(x, y, z),
+                type=const.COMMENT,
+                location=const.SURFACE,
+                radius=self._radius,
+            )
+            self.viewer.interactor.Render()
+        else:
+            self.left_pressed = True
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -1028,6 +1059,7 @@ class Styles:
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
+        const.STATE_MEASURE_COMMENT: CommentAnnotationInteractorStyle,
         const.VOLUME_STATE_SEED: SeedInteractorStyle,
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,

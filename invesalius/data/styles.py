@@ -928,7 +928,42 @@ class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
         LinearMeasureInteractorStyle.__init__(self, viewer)
         self._type = const.ANGULAR
 
-        self.state_code = const.STATE_MEASURE_ANGLE
+
+class CommentAnnotationInteractorStyle(LinearMeasureInteractorStyle):
+    """
+    Interactor style for placing comment annotations.
+    Single click places the annotation point; the comment dialog
+    will be triggered in a later stage.
+    """
+
+    def __init__(self, viewer):
+        LinearMeasureInteractorStyle.__init__(self, viewer)
+        self.state_code = const.STATE_MEASURE_COMMENT
+        self._type = const.COMMENT
+
+    def OnInsertMeasurePoint(self, obj, evt):
+        x, y, z = self._get_pos_clicked()
+        if not self.picker.GetViewProp():
+            return
+
+        slice_number = self.slice_data.number
+
+        # CommentMeasure is complete after 1 point, so send once.
+        Publisher.sendMessage(
+            "Add measurement point",
+            position=(x, y, z),
+            type=self._type,
+            location=ORIENTATIONS[self.orientation],
+            slice_number=slice_number,
+            radius=self.radius,
+        )
+        self.viewer.UpdateCanvas()
+
+    def OnReleaseMeasurePoint(self, obj, evt):
+        pass  # No drag support for comments
+
+    def OnMoveMeasurePoint(self, obj, evt):
+        pass  # No drag support for comments
 
 
 class DensityMeasureStyle(DefaultInteractorStyle):
@@ -3006,6 +3041,7 @@ class Styles:
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.STATE_MEASURE_DENSITY_ELLIPSE: DensityMeasureEllipseStyle,
         const.STATE_MEASURE_DENSITY_POLYGON: DensityMeasurePolygonStyle,
+        const.STATE_MEASURE_COMMENT: CommentAnnotationInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,

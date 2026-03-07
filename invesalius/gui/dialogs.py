@@ -7734,3 +7734,49 @@ class ProgressBarHandler(wx.ProgressDialog):
             super().Pulse()
         else:
             super().Pulse(msg)
+
+
+class CommentDialog(wx.Dialog):
+    """Dialog for entering a comment annotation text."""
+
+    def __init__(self, parent=None, title=_("Add Comment")):
+        if parent is None:
+            parent = wx.GetApp().GetTopWindow()
+        wx.Dialog.__init__(
+            self,
+            parent,
+            -1,
+            title,
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.FRAME_FLOAT_ON_PARENT,
+        )
+        self._init_gui()
+
+    def _init_gui(self):
+        label = wx.StaticText(self, -1, _("Comment:"))
+        self.txt_comment = wx.TextCtrl(
+            self, -1, "", size=(300, 80), style=wx.TE_MULTILINE
+        )
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetDefault()
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(label, 0, wx.ALL, 5)
+        sizer.Add(self.txt_comment, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
+        sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.CenterOnParent()
+
+        self.txt_comment.SetFocus()
+
+    def GetValue(self):
+        """Return the comment text entered by the user."""
+        return self.txt_comment.GetValue().strip()

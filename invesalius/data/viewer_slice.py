@@ -1318,16 +1318,14 @@ class Viewer(wx.Panel):
         cp_draw_list = self.canvas.draw_list[:]
         self.canvas.draw_list = []
 
-        # Removing all measures
+        # Removing all measures securely avoiding module caching isinstance bugs
         for i in cp_draw_list:
-            if not isinstance(
-                i,
-                (
-                    measures.AngularMeasure,
-                    measures.LinearMeasure,
-                    measures.CircleDensityMeasure,
-                    measures.PolygonDensityMeasure,
-                ),
+            if type(i).__name__ not in (
+                "AngularMeasure",
+                "LinearMeasure",
+                "CommentMeasure",
+                "CircleDensityMeasure",
+                "PolygonDensityMeasure",
             ):
                 self.canvas.draw_list.append(i)
 
