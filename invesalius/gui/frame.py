@@ -866,6 +866,7 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values.get(const.SLICE_INTERPOLATION, 0)
+            hardware_stereo = values.get(const.HARDWARE_STEREO, False)
             file_logging = values.get(const.FILE_LOGGING, 0)
             file_logging_level = values.get(const.FILE_LOGGING_LEVEL, 0)
             append_log_file = values.get(const.APPEND_LOG_FILE, 0)
@@ -879,6 +880,7 @@ class Frame(wx.Frame):
             session.SetConfig("surface_interpolation", surface_interpolation)
             session.SetConfig("language", language)
             session.SetConfig("slice_interpolation", slice_interpolation)
+            session.SetConfig("hardware_stereo", hardware_stereo)
             session.SetConfig("file_logging", file_logging)
             session.SetConfig("file_logging_level", file_logging_level)
             session.SetConfig("append_log_file", append_log_file)
