@@ -1480,9 +1480,12 @@ class Viewer(wx.Panel):
 
     def MaxEfieldActor(self):
         vtk_colors = vtkNamedColors()
-        if self.max_efield_vector and self.ball_max_vector is not None:
+        if self.max_efield_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
+            self.max_efield_vector = None
+        if self.ball_max_vector is not None:
             self.ren.RemoveActor(self.ball_max_vector)
+            self.ball_max_vector = None
         self.position_max = self.efield_mesh.GetPoint(self.Idmax)
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
         self.max_efield_vector = self.DrawVectors(
@@ -1496,9 +1499,12 @@ class Viewer(wx.Panel):
 
     def CoGEfieldActor(self):
         vtk_colors = vtkNamedColors()
-        if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
+        if self.GoGEfieldVector is not None:
             self.ren.RemoveActor(self.GoGEfieldVector)
+            self.GoGEfieldVector = None
+        if self.ball_GoGEfieldVector is not None:
             self.ren.RemoveActor(self.ball_GoGEfieldVector)
+            self.ball_GoGEfieldVector = None
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
         [self.cell_id_indexes_above_threshold, self.positions_above_threshold] = (
             self.GetIndexesAboveThreshold(self.efield_threshold)
@@ -2112,30 +2118,40 @@ class Viewer(wx.Panel):
         self.mtms_coord = []
         # self.diperdt = None
 
-        if self.max_efield_vector and self.ball_max_vector is not None:
+        if self.max_efield_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
+            self.max_efield_vector = None
+        if self.ball_max_vector is not None:
             self.ren.RemoveActor(self.ball_max_vector)
+            self.ball_max_vector = None
 
-        if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
+        if self.GoGEfieldVector is not None:
             self.ren.RemoveActor(self.GoGEfieldVector)
+            self.GoGEfieldVector = None
+        if self.ball_GoGEfieldVector is not None:
             self.ren.RemoveActor(self.ball_GoGEfieldVector)
+            self.ball_GoGEfieldVector = None
 
         if self.vectorfield_actor is not None:
             self.ren.RemoveActor(self.vectorfield_actor)
+            self.vectorfield_actor = None
 
         if self.efield_scalar_bar is not None:
             self.ren.RemoveActor(self.efield_scalar_bar)
 
         if self.ClusterEfieldTextActor is not None:
             self.ren.RemoveActor(self.ClusterEfieldTextActor.actor)
+            self.ClusterEfieldTextActor = None
 
         if self.SpreadEfieldFactorTextActor is not None:
             self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
+            self.SpreadEfieldFactorTextActor = None
 
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
 
         if self.edge_actor is not None:
             self.ren.RemoveActor(self.edge_actor)
+            self.edge_actor = None
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
