@@ -12,6 +12,7 @@ from vtkmodules.vtkFiltersSources import (
     vtkSphereSource,
     vtkTextSource,
 )
+from vtkmodules.vtkRenderingAnnotation import vtkLeaderActor2D
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkActor2D,
@@ -20,7 +21,6 @@ from vtkmodules.vtkRenderingCore import (
     vtkPolyDataMapper2D,
     vtkTextActor,
 )
-from vtkmodules.vtkRenderingAnnotation import vtkLeaderActor2D
 
 import invesalius.constants as const
 import invesalius.project as prj
@@ -166,6 +166,7 @@ class MeasurementManager:
         m, mr = self.measures[index]
         if m.type == const.COMMENT:
             import wx
+
             from invesalius.gui.dialogs import CommentDialog
 
             dlg = CommentDialog()
@@ -177,7 +178,7 @@ class MeasurementManager:
             if result == wx.ID_OK and comment_text and comment_text != m.value:
                 m.value = comment_text
                 mr.SetText(comment_text)
-                
+
                 # Update GUI list
                 loc_ = LOCATION[m.location]
                 Publisher.sendMessage(
@@ -189,13 +190,13 @@ class MeasurementManager:
                     type_=TYPE[m.type],
                     value=comment_text,
                 )
-                
+
                 # Redraw
                 if m.location == const.SURFACE:
                     Publisher.sendMessage("Render volume viewer")
                 else:
                     Publisher.sendMessage("Redraw canvas")
-                
+
                 # Mark project as modified
                 session = ses.Session()
                 session.ChangeProject()
@@ -353,6 +354,7 @@ class MeasurementManager:
     def _finish_comment(self, m, mr, type, location):
         """Show comment dialog after annotation point is placed."""
         import wx
+
         from invesalius.gui.dialogs import CommentDialog
 
         dlg = CommentDialog()
@@ -915,6 +917,7 @@ class LinearMeasure:
     def __del__(self):
         self.Remove()
 
+
 class CommentMeasure:
     """
     Renderer for comment annotations.
@@ -953,7 +956,7 @@ class CommentMeasure:
     def _get_display_text(self):
         """Format and truncate text to max 4 lines of ~30 chars."""
         txt = self._text if self._text else "..."
-        lines = [txt[i:i + 30] for i in range(0, len(txt), 30)]
+        lines = [txt[i : i + 30] for i in range(0, len(txt), 30)]
         if len(lines) > 4:
             lines = lines[:4]
             # Replace last 3 characters of the 4th line with '...'
@@ -964,15 +967,15 @@ class CommentMeasure:
         if not self.points:
             return
         x, y, z = self.points[0]
-        
+
         # 1. Draw the connecting arrow with no text
         leader = vtkLeaderActor2D()
         leader.GetPositionCoordinate().SetCoordinateSystemToWorld()
         leader.GetPositionCoordinate().SetValue(x, y, z)
-        
+
         leader.GetPosition2Coordinate().SetCoordinateSystemToWorld()
         leader.GetPosition2Coordinate().SetValue(x, y + 10, z + 10)
-        
+
         leader.SetArrowPlacementToPoint1()
         leader.SetArrowStyleToFilled()
         leader.GetProperty().SetColor(self.colour)
@@ -980,15 +983,15 @@ class CommentMeasure:
         # Empty string avoids text rendering by the leader
         leader.SetLabel("")
         self.leader_actor = leader
-        
+
         # 2. Draw the text rigidly via vtkTextActor attached to Position2
         text_actor = vtkTextActor()
         text_actor.SetInput(f" {self._get_display_text()} ")
-        
+
         # Bind the text actor to the end of the arrow (Position2)
         text_actor.GetPositionCoordinate().SetCoordinateSystemToWorld()
         text_actor.GetPositionCoordinate().SetValue(x, y + 10, z + 10)
-        
+
         text_prop = text_actor.GetTextProperty()
         text_prop.SetBackgroundColor(250 / 255.0, 247 / 255.0, 218 / 255.0)
         text_prop.SetBackgroundOpacity(1.0)
@@ -998,7 +1001,7 @@ class CommentMeasure:
         text_prop.SetFontSize(16)  # Rigid screen-pixel sizing
         text_prop.SetJustificationToLeft()
         text_prop.SetVerticalJustificationToCentered()
-        
+
         self.text_actor = text_actor
 
     def draw_to_canvas(self, gc, canvas):
@@ -1051,9 +1054,7 @@ class CommentMeasure:
 
     def Remove(self):
         actors = self.GetActors()
-        Publisher.sendMessage(
-            "Remove actors " + str(const.SURFACE), actors=actors
-        )
+        Publisher.sendMessage("Remove actors " + str(const.SURFACE), actors=actors)
 
     def __del__(self):
         self.Remove()

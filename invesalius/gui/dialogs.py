@@ -7753,9 +7753,7 @@ class CommentDialog(wx.Dialog):
 
     def _init_gui(self):
         label = wx.StaticText(self, -1, _("Comment:"))
-        self.txt_comment = wx.TextCtrl(
-            self, -1, "", size=(300, 80), style=wx.TE_MULTILINE
-        )
+        self.txt_comment = wx.TextCtrl(self, -1, "", size=(300, 80), style=wx.TE_MULTILINE)
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetDefault()

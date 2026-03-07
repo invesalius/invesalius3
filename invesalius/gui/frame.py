@@ -2237,7 +2237,11 @@ class ObjectToolBar(AuiToolBar):
         """
         id = evt.GetId()
         state = self.GetToolToggled(id)
-        if state and ((id == const.STATE_MEASURE_DISTANCE) or (id == const.STATE_MEASURE_ANGLE) or (id == const.STATE_MEASURE_COMMENT)):
+        if state and (
+            (id == const.STATE_MEASURE_DISTANCE)
+            or (id == const.STATE_MEASURE_ANGLE)
+            or (id == const.STATE_MEASURE_COMMENT)
+        ):
             Publisher.sendMessage("Fold measure task")
 
         if state:
