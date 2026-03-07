@@ -2702,15 +2702,18 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self._create_new_mask()
 
         if iren.GetControlKey():
+            _preview = self.config.mask.matrix[1:, 1:, 1:]
+            _out = _preview.copy()
             floodfill.floodfill_threshold(
-                self.config.mask.matrix[1:, 1:, 1:],
+                _preview,
                 ((x, y, z),),
                 254,
                 255,
                 0,
                 bstruct,
-                self.config.mask.matrix[1:, 1:, 1:],
+                _out,
             )
+            _preview[:] = _out
         else:
             floodfill.floodfill_threshold(
                 mask,
