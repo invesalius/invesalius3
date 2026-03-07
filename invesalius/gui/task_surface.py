@@ -678,6 +678,3 @@ class QualityAdjustment(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
-
-    def OnComboQuality(self, evt):
-        print(f"TODO: Send Signal - Change surface quality: {evt.GetString()}")
