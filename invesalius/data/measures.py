@@ -188,7 +188,7 @@ class MeasurementManager:
                     colour=m.colour,
                     location=loc_,
                     type_=TYPE[m.type],
-                    value=comment_text,
+                    value=annotation_text,
                 )
 
                 # Redraw
