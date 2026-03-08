@@ -418,7 +418,7 @@ def run_pipeline(
     qc_file_handle = None
     if qc_log:
         try:
-            qc_file_handle = open(qc_log, "w")
+            qc_file_handle = open(qc_log, "w")  # noqa: SIM115 - long-lived handle closed in finally below
         except (NotADirectoryError, OSError):
             LOGGER.warning(f"Cannot create QC log file at {qc_log}. QC log will not be saved.")
 
@@ -466,69 +466,70 @@ def run_pipeline(
 
     iter_subjects = pipeline.pipeline_conform_and_save(subjects)
     futures = []
-    for subject, (orig_img, data_array) in iter_subjects:
-        # Run model
-        try:
-            pred_data = pipeline.get_prediction(
-                subject.orig_name, data_array, orig_img.header.get_zooms(), progress_callback
-            )
-            futures.append(
-                pipeline.async_save_img(subject.segfile, pred_data, orig_img, dtype=np.int16)
-            )
-            bm = None
-            store_brainmask = subject.can_resolve_filename(brainmask_name)
-            store_aseg = subject.can_resolve_filename(aseg_name)
-            if store_brainmask or store_aseg:
-                LOGGER.info("Creating brainmask based on segmentation...")
-                bm = dp.create_mask(copy.deepcopy(pred_data), 5, 4)
-            if store_brainmask:
-                # get mask
-                mask_name = subject.filename_in_subject_folder(brainmask_name)
-                futures.append(pipeline.async_save_img(mask_name, bm, orig_img, dtype=np.uint8))
-            else:
-                LOGGER.info(
-                    "Not saving the brainmask, because we could not figure out where "
-                    "to store it. Please specify a subject id with {sid[flag]}, or an "
-                    "absolute brainmask path with {brainmask_name[flag]}.".format(
-                        **subjects.flags,
+    try:
+        for subject, (orig_img, data_array) in iter_subjects:
+            # Run model
+            try:
+                pred_data = pipeline.get_prediction(
+                    subject.orig_name, data_array, orig_img.header.get_zooms(), progress_callback
+                )
+                futures.append(
+                    pipeline.async_save_img(subject.segfile, pred_data, orig_img, dtype=np.int16)
+                )
+                bm = None
+                store_brainmask = subject.can_resolve_filename(brainmask_name)
+                store_aseg = subject.can_resolve_filename(aseg_name)
+                if store_brainmask or store_aseg:
+                    LOGGER.info("Creating brainmask based on segmentation...")
+                    bm = dp.create_mask(copy.deepcopy(pred_data), 5, 4)
+                if store_brainmask:
+                    # get mask
+                    mask_name = subject.filename_in_subject_folder(brainmask_name)
+                    futures.append(pipeline.async_save_img(mask_name, bm, orig_img, dtype=np.uint8))
+                else:
+                    LOGGER.info(
+                        "Not saving the brainmask, because we could not figure out where "
+                        "to store it. Please specify a subject id with {sid[flag]}, or an "
+                        "absolute brainmask path with {brainmask_name[flag]}.".format(
+                            **subjects.flags,
+                        )
                     )
-                )
 
-            if store_aseg:
-                # reduce aparc to aseg and mask regions
-                LOGGER.info("Creating aseg based on segmentation...")
-                aseg = dp.reduce_to_aseg(pred_data)
-                aseg[bm == 0] = 0
-                aseg = dp.flip_wm_islands(aseg)
-                aseg_name = subject.filename_in_subject_folder(aseg_name)
-                futures.append(pipeline.async_save_img(aseg_name, aseg, orig_img, dtype=np.uint8))
-            else:
-                LOGGER.info(
-                    "Not saving the aseg file, because we could not figure out where "
-                    "to store it. Please specify a subject id with {sid[flag]}, or an "
-                    "absolute aseg path with {aseg_name[flag]}.".format(
-                        **subjects.flags,
+                if store_aseg:
+                    # reduce aparc to aseg and mask regions
+                    LOGGER.info("Creating aseg based on segmentation...")
+                    aseg = dp.reduce_to_aseg(pred_data)
+                    aseg[bm == 0] = 0
+                    aseg = dp.flip_wm_islands(aseg)
+                    aseg_name = subject.filename_in_subject_folder(aseg_name)
+                    futures.append(pipeline.async_save_img(aseg_name, aseg, orig_img, dtype=np.uint8))
+                else:
+                    LOGGER.info(
+                        "Not saving the aseg file, because we could not figure out where "
+                        "to store it. Please specify a subject id with {sid[flag]}, or an "
+                        "absolute aseg path with {aseg_name[flag]}.".format(
+                            **subjects.flags,
+                        )
                     )
-                )
 
-            # Run QC check
-            LOGGER.info("Running volume-based QC check on segmentation...")
-            seg_voxvol = np.prod(orig_img.header.get_zooms())
-            if not check_volume(pred_data, seg_voxvol):
-                LOGGER.warning(
-                    "Total segmentation volume is too small. Segmentation may be corrupted."
-                )
-                if qc_file_handle is not None:
-                    qc_file_handle.write(subject.id + "\n")
-                    qc_file_handle.flush()
-                qc_failed_subject_count += 1
-        except RuntimeError as e:
-            if not handle_cuda_memory_exception(e):
-                LOGGER.error(f"Prediction failed: {e}")
-                return str(e)
-
-    if qc_file_handle is not None:
-        qc_file_handle.close()
+                # Run QC check
+                LOGGER.info("Running volume-based QC check on segmentation...")
+                seg_voxvol = np.prod(orig_img.header.get_zooms())
+                if not check_volume(pred_data, seg_voxvol):
+                    LOGGER.warning(
+                        "Total segmentation volume is too small. Segmentation may be corrupted."
+                    )
+                    if qc_file_handle is not None:
+                        qc_file_handle.write(subject.id + "\n")
+                        qc_file_handle.flush()
+                    qc_failed_subject_count += 1
+            except RuntimeError as e:
+                if not handle_cuda_memory_exception(e):
+                    LOGGER.error(f"Prediction failed: {e}")
+                    return str(e)
+    finally:
+        if qc_file_handle is not None:
+            qc_file_handle.close()
 
     # Batch case: report ratio of QC warnings
     if len(subjects) > 1:

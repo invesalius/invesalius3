@@ -397,13 +397,13 @@ def GetPixelSpacingFromInfoFile(filepath):
         return False
 
     try:
-        fi = open(filepath)
-        lines = fi.readlines()
+        with open(filepath) as fi:
+            lines = fi.readlines()
     except UnicodeDecodeError:
         # fix uCTI from CTI file
         try:
-            fi = open(filepath, encoding="iso8859-1")
-            lines = fi.readlines()
+            with open(filepath, encoding="iso8859-1") as fi:
+                lines = fi.readlines()
         except UnicodeDecodeError:
             return False
 

@@ -584,21 +584,19 @@ class Slice(metaclass=utils.Singleton):
     def __export_slice(self, filename):
         import h5py
 
-        f = h5py.File(filename, "w")
-        f["data"] = self.matrix
-        f["spacing"] = self.spacing
-        f.flush()
-        f.close()
+        with h5py.File(filename, "w") as f:
+            f["data"] = self.matrix
+            f["spacing"] = self.spacing
+            f.flush()
 
     def __export_actual_mask(self, filename):
         import h5py
 
-        f = h5py.File(filename, "w")
         self.do_threshold_to_all_slices()
-        f["data"] = self.current_mask.matrix[1:, 1:, 1:]
-        f["spacing"] = self.spacing
-        f.flush()
-        f.close()
+        with h5py.File(filename, "w") as f:
+            f["data"] = self.current_mask.matrix[1:, 1:, 1:]
+            f["spacing"] = self.spacing
+            f.flush()
 
     def create_temp_mask(self):
         temp_fd, temp_file = tempfile.mkstemp()
