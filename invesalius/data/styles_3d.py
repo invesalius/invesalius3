@@ -474,6 +474,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
         self.viewer = viewer
         self.state_code = const.STATE_MEASURE_DISTANCE
+        self._type = const.LINEAR
         self.measure_picker = vtkPropPicker()
 
         proj = prj.Project()
@@ -499,7 +500,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage(
                 "Add measurement point",
                 position=(x, y, z),
-                type=const.LINEAR,
+                type=self._type,
                 location=const.SURFACE,
                 radius=self._radius,
             )
@@ -1021,125 +1022,25 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 class AnnotationInteractorStyle(LinearMeasureInteractorStyle):
     """
     Interactor style for placing annotations on 3D surfaces.
-    Single-click places a marker and opens the annotation dialog.
     """
 
     def __init__(self, viewer):
         super().__init__(viewer)
         self.state_code = const.STATE_MEASURE_ANNOTATION
-        self.selected = None
+        self._type = const.ANNOTATION
 
-        self.RemoveObservers("LeftButtonPressEvent")
-        self.AddObserver("LeftButtonPressEvent", self.OnInsertAnnotationPoint, 1.0)
-        self.AddObserver("MouseMoveEvent", self.OnMoveAnnotationPoint, 1.0)
-        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseAnnotationPoint, 1.0)
+        self.AddObserver("MouseMoveEvent", self.OnMouseMove)
 
-    def _verify_clicked_3d(self, actor):
-        if not actor:
-            return None
-
-        from invesalius.data.measures import MeasureData
-
-        measures = MeasureData()
-
-        if 0 in measures.measures.get(const.SURFACE, {}):
-            for m, mr in measures.measures[const.SURFACE][0]:
-                if mr.IsComplete() and m.visible:
-                    # Check if the clicked actor belongs to this annotation's points
-                    if hasattr(mr, "point_actor") and actor in (
-                        mr.point_actor,
-                        mr.text_actor,
-                        mr.leader_actor,
-                    ):
-                        # The annotation only has 1 point right now technically!
-                        return (0, m, mr)
-        return None
-
-    def OnInsertAnnotationPoint(self, obj, evt):
+    def OnMouseMove(self, obj, evt):
+        # We send the update message and let MeasurementManager decide if it's relevant.
+        # This avoiding crashing on missing Project attributes while in transition.
         x, y = self.viewer.get_vtk_mouse_position()
         self.measure_picker.Pick(x, y, 0, self.viewer.ren)
-
-        actor = self.measure_picker.GetActor()
-        selected = self._verify_clicked_3d(actor)
-        if selected:
-            self.selected = selected
-            self.left_pressed = False
-            return
-
-        # If prop picker failed, try a fallback distance-based check
-        # (Props can sometimes be tricky to pick in 3D if they are Actor2Ds)
-        # We check both the tip and the text box area roughly
-        selected = self._verify_clicked_display_3d(x, y)
-        if selected:
-            self.selected = selected
-            self.left_pressed = False
-            return
-
-        self.measure_picker.Pick(x, y, 0, self.viewer.ren)
-        x, y, z = self.measure_picker.GetPickPosition()
         if self.measure_picker.GetActor():
-            self.left_pressed = False
-            Publisher.sendMessage(
-                "Add measurement point",
-                position=(x, y, z),
-                type=const.ANNOTATION,
-                location=const.SURFACE,
-                radius=self._radius,
-            )
-            self.viewer.interactor.Render()
-        else:
-            self.left_pressed = True
+            pos = self.measure_picker.GetPickPosition()
+            Publisher.sendMessage("Update measurement point position", position=pos)
 
-    def OnMoveAnnotationPoint(self, obj, evt):
-        if self.selected:
-            x, y = self.viewer.get_vtk_mouse_position()
-            self.measure_picker.Pick(x, y, 0, self.viewer.ren)
-            x, y, z = self.measure_picker.GetPickPosition()
-
-            if self.measure_picker.GetActor():
-                n, m, mr = self.selected
-                from invesalius.data.measures import MeasureData
-
-                measures = MeasureData()
-                try:
-                    idx = measures._list_measures.index((m, mr))
-                except ValueError:
-                    return
-                Publisher.sendMessage(
-                    "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
-                )
-                self.viewer.interactor.Render()
-            self.left_pressed = False
-
-    def OnReleaseAnnotationPoint(self, obj, evt):
-        if self.selected:
-            self.selected = None
-            self.left_pressed = False
-            self.viewer.interactor.Render()
-
-    def _verify_clicked_display_3d(self, x, y, max_dist=15.0):
-        from vtkmodules.vtkRenderingCore import vtkCoordinate
-
-        from invesalius.data.measures import MeasureData
-
-        max_dist = max_dist**2
-        coord = vtkCoordinate()
-        measures = MeasureData()
-
-        if 0 in measures.measures.get(const.SURFACE, {}):
-            for m, mr in measures.measures[const.SURFACE][0]:
-                if mr.IsComplete() and m.visible:
-                    # Check the tip point strictly
-                    for n, p in enumerate(m.points):
-                        coord.SetValue(p)
-                        cx, cy = coord.GetComputedDisplayValue(self.viewer.ren)
-                        dist = (cx - x) ** 2 + (cy - y) ** 2
-                        if dist <= max_dist:
-                            return (n, m, mr)
-
-                    # Also check near the text box if possible (optional but helpful)
-                    # For now just the tip is safer to avoid overlapping drags
-        return None
+        super().OnMouseMove(obj, evt)
 
 
 class Styles:

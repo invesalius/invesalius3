@@ -4,6 +4,7 @@ import math
 import sys
 
 import numpy as np
+import wx
 from vtkmodules.vtkCommonCore import vtkMath
 from vtkmodules.vtkFiltersCore import vtkAppendPolyData
 from vtkmodules.vtkFiltersSources import (
@@ -157,7 +158,12 @@ class MeasurementManager:
         Publisher.subscribe(self._change_measure_point_pos, "Change measurement point position")
         Publisher.subscribe(self._add_density_measure, "Add density measurement")
         Publisher.subscribe(self._edit_measurement, "Edit measurement")
+        Publisher.subscribe(self._show_annotation_dialog, "Show annotation dialog")
+        Publisher.subscribe(self._update_point, "Update measurement point position")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+
+    def _base_annotation_handler(self, evt):
+        pass
 
     def _edit_measurement(self, index):
         """Handle edit requests (e.g. double click in GUI list)."""
@@ -245,7 +251,10 @@ class MeasurementManager:
                     mr = LinearMeasure(m.colour, representation)
                 elif m.type == const.ANNOTATION:
                     mr = AnnotationMeasure(m.colour, representation)
-                    mr.SetText(str(m.value))
+                    mr._text = m.value
+                    if len(m.points) == 1:
+                        p1 = m.points[0]
+                        m.points.append((p1[0], p1[1] + 25, p1[2] + 25))
                 elif m.type == const.ANGULAR:
                     mr = AngularMeasure(m.colour, representation)
                 else:
@@ -326,34 +335,48 @@ class MeasurementManager:
             self.measures.append(self.current)
 
         if mr.IsComplete():
-            if type == const.ANNOTATION:
-                self._finish_annotation(m, mr, type, location)
-            else:
-                index = prj.Project().AddMeasurement(m)
-                name = m.name
-                colour = m.colour
-                m.value = mr.GetValue()
-                type_ = TYPE[type]
-                location = LOCATION[location]
-                if type == const.LINEAR:
-                    value = f"{m.value:.3f} mm"
-                else:
-                    value = f"{m.value:.3f}°"
+            index = prj.Project().AddMeasurement(m)
+            name = m.name
+            colour = m.colour
+            m.value = mr.GetValue()
+            type_ = TYPE[type]
+            location_str = LOCATION[location]
 
-                msg = ("Update measurement info in GUI",)
-                Publisher.sendMessage(
-                    msg,
-                    index=index,
-                    name=name,
-                    colour=colour,
-                    location=location,
-                    type_=type_,
-                    value=value,
-                )
+            if type == const.LINEAR:
+                value = f"{m.value:.3f} mm"
+            elif type == const.ANGULAR:
+                value = f"{m.value:.3f}°"
+            elif type == const.ANNOTATION:
+                value = m.value
+
+            msg = ("Update measurement info in GUI",)
+            Publisher.sendMessage(
+                msg,
+                index=index,
+                name=name,
+                colour=colour,
+                location=location_str,
+                type_=type_,
+                value=value,
+            )
             self.current = None
 
-    def _finish_annotation(self, m, mr, type, location):
-        """Show annotation dialog after annotation point is placed."""
+            if type == const.ANNOTATION and location == const.SURFACE:
+                Publisher.sendMessage("Show annotation dialog", m=m, mr=mr, location=location)
+
+    def _update_point(self, position):
+        if self.current:
+            m, mr = self.current
+            if (
+                m.location == const.SURFACE
+                and isinstance(mr, AnnotationMeasure)
+                and len(m.points) == 1
+            ):
+                # Update temporary second point for rubber-banding
+                mr.SetPoint2(*position)
+                Publisher.sendMessage("Render volume viewer")
+
+    def _show_annotation_dialog(self, m, mr, location):
         import wx
 
         from invesalius.gui.dialogs import AnnotationDialog
@@ -363,23 +386,24 @@ class MeasurementManager:
         annotation_text = dlg.GetValue()  # already stripped
         dlg.Destroy()
 
-        # Treat empty text the same as Cancel
         if result == wx.ID_OK and annotation_text:
             m.value = annotation_text
             mr.SetText(annotation_text)
-            index = prj.Project().AddMeasurement(m)
-            type_ = TYPE[type]
-            loc_ = LOCATION[location]
 
             Publisher.sendMessage(
                 "Update measurement info in GUI",
-                index=index,
+                index=m.index,
                 name=m.name,
                 colour=m.colour,
-                location=loc_,
-                type_=type_,
+                location=LOCATION[location],
+                type_=TYPE[m.type],
                 value=annotation_text,
             )
+
+            if m.location == const.SURFACE:
+                Publisher.sendMessage("Render volume viewer")
+            else:
+                Publisher.sendMessage("Redraw canvas")
 
             session = ses.Session()
             session.ChangeProject()
@@ -387,7 +411,8 @@ class MeasurementManager:
             # Cancel or empty text: remove the annotation completely
             idx = self.measures._list_measures.index((m, mr))
             self.measures.remove((m, mr))
-            Publisher.sendMessage("Remove GUI measurement", measure_index=idx)
+            prj.Project().RemoveMeasurement(m.index)
+            Publisher.sendMessage("Remove GUI measurement", measure_index=m.index)
             mr.Remove()
             if m.location == const.SURFACE:
                 Publisher.sendMessage("Render volume viewer")
@@ -402,10 +427,16 @@ class MeasurementManager:
             m.points[0] = x, y, z
         elif npoint == 1:
             mr.SetPoint2(x, y, z)
-            m.points[1] = x, y, z
+            if len(m.points) > 1:
+                m.points[1] = x, y, z
+            else:
+                m.points.append((x, y, z))
         elif npoint == 2:
             mr.SetPoint3(x, y, z)
-            m.points[2] = x, y, z
+            if len(m.points) > 2:
+                m.points[2] = x, y, z
+            else:
+                m.points.append((x, y, z))
 
         m.value = mr.GetValue()
 
@@ -930,41 +961,60 @@ class AnnotationMeasure:
     def __init__(self, colour=(1, 0, 0), representation=None):
         self.colour = colour
         self.points = []
-        self.point_actor = None
+        self.point_actor1 = None
+        self.point_actor2 = None
         self.leader_actor = None
         self.text_actor = None
         self.renderer = None
         self.layer = 0
         self._text = ""
+        self.is_finalized = False
         if not representation:
             representation = CirclePointRepresentation(colour)
         self.representation = representation
 
     def IsComplete(self):
-        return self.point_actor is not None
+        return self.is_finalized
 
     def AddPoint(self, x, y, z):
-        if not self.point_actor:
+        if not self.point_actor1:
+            self.is_finalized = False
             self.SetPoint1(x, y, z)
-        return (self.point_actor, self.text_actor, self.leader_actor)
+            # Initialize arrow/text early for rubber-banding if in 3D
+            # We use the same point for both to start with 0-length arrow
+            self.SetPoint2(x, y, z)
+            return (self.point_actor1, self.leader_actor, self.text_actor)
+        else:
+            self.SetPoint2(x, y, z)
+            self.is_finalized = True
+            return (self.point_actor2, self.leader_actor, self.text_actor)
 
     def SetPoint1(self, x, y, z):
         if len(self.points) == 0:
             self.points.append((x, y, z))
-            self.point_actor = self.representation.GetRepresentation(x, y, z)
-            self._draw_text()
+            self.point_actor1 = self.representation.GetRepresentation(x, y, z)
         else:
             self.points[0] = (x, y, z)
-            if self.point_actor:
-                try:
-                    self.point_actor.SetPosition(x, y, z)
-                except AttributeError:
-                    pass
-            if self.leader_actor:
-                self.leader_actor.GetPositionCoordinate().SetValue(x, y, z)
-                self.leader_actor.GetPosition2Coordinate().SetValue(x, y + 25, z + 25)
-            if self.text_actor:
-                self.text_actor.GetPositionCoordinate().SetValue(x, y + 25, z + 25)
+            if len(self.points) == 2:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self._draw_text()
+            else:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+
+    def SetPoint2(self, x, y, z):
+        if len(self.points) == 1:
+            self.points.append((x, y, z))
+            self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+            self._draw_text()
+        else:
+            self.points[1] = (x, y, z)
+            self.Remove()
+            self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+            self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+            self._draw_text()
 
     def SetText(self, text):
         """Update the displayed annotation text."""
@@ -976,9 +1026,10 @@ class AnnotationMeasure:
                 self.text_source.SetText(f" {self._get_display_text()} ")
 
     def _get_display_text(self):
-        """Format and truncate text to max 4 lines of ~30 chars."""
+        """Format and truncate text to max 4 lines of ~25 chars for 2D legibility."""
         txt = self._text if self._text else "..."
-        lines = [txt[i : i + 30] for i in range(0, len(txt), 30)]
+        # Wrap every 25 chars for 2D to keep boxes compact
+        lines = [txt[i : i + 25] for i in range(0, len(txt), 25)]
         if len(lines) > 4:
             lines = lines[:4]
             # Replace last 3 characters of the 4th line with '...'
@@ -986,25 +1037,26 @@ class AnnotationMeasure:
         return "\n".join(lines)
 
     def _draw_text(self):
-        if not self.points:
+        if len(self.points) < 2:
             return
-        x, y, z = self.points[0]
+        p1, p2 = self.points
+        x1, y1, z1 = p1
+        x2, y2, z2 = p2
 
         # 1. Draw the connecting arrow with no text
+        # Points: p1 is the tip (Click 1), p2 is the tail/box (Click 2)
         leader = vtkLeaderActor2D()
         leader.GetPositionCoordinate().SetCoordinateSystemToWorld()
-        leader.GetPositionCoordinate().SetValue(x, y, z)
+        leader.GetPositionCoordinate().SetValue(x1, y1, z1)  # Tip at Click 1
 
         leader.GetPosition2Coordinate().SetCoordinateSystemToWorld()
-        # Make the 3D arrow longer, similar to 2D
-        leader.GetPosition2Coordinate().SetValue(x, y + 25, z + 25)
+        leader.GetPosition2Coordinate().SetValue(x2, y2, z2)  # Tail at Click 2
 
         leader.SetArrowPlacementToPoint1()
         leader.SetArrowStyleToFilled()
 
-        # In 2D, the arrow is drawn with MEASURE_TEXT_COLOUR (black)
-        # We need to explicitly convert 0-255 RGB to 0.0-1.0
-        r, g, b = [c / 255.0 for c in MEASURE_TEXT_COLOUR[:3]]
+        # Update to use the assigned measurement color instead of hardcoded black
+        r, g, b = self.colour
         leader.GetProperty().SetColor(r, g, b)
         leader.GetProperty().SetLineWidth(2.0)  # Matches width=2 in canvas
         leader.GetProperty().SetOpacity(1.0)
@@ -1018,7 +1070,7 @@ class AnnotationMeasure:
         text_actor.SetInput(f" {self._get_display_text()} ")
 
         prop = text_actor.GetTextProperty()
-        prop.SetColor(r, g, b)  # Black text
+        prop.SetColor(0.0, 0.0, 0.0)  # Standardized black for better legibility on yellow
         bg_r, bg_g, bg_b = [c / 255.0 for c in MEASURE_TEXTBOX_COLOUR[:3]]
         prop.SetBackgroundColor(bg_r, bg_g, bg_b)  # Yellow background
         prop.SetBackgroundOpacity(1.0)
@@ -1029,32 +1081,84 @@ class AnnotationMeasure:
         prop.SetFrameColor(0.0, 0.0, 0.0)  # Black border
 
         text_actor.GetPositionCoordinate().SetCoordinateSystemToWorld()
-        text_actor.GetPositionCoordinate().SetValue(x, y + 25, z + 25)
+        # Text box anchored at Click 2
+        text_actor.GetPositionCoordinate().SetValue(x2, y2, z2)
 
         self.text_actor = text_actor
 
     def draw_to_canvas(self, gc, canvas):
         coord = vtkCoordinate()
+        points = []
         for p in self.points:
             coord.SetValue(p)
             cx, cy = coord.GetComputedDisplayValue(canvas.evt_renderer)
+            points.append((cx, cy))
+
+        if len(points) > 1:
+            p0, p1 = points[0], points[1]
+            r, g, b = self.colour
+            line_colour = (int(r * 255), int(g * 255), int(b * 255), 255)
+
             wrapped = self._get_display_text()
-            # Offset text box further from click point to make arrow longer
-            tx, ty = cx + 35, cy - 35
+
+            # Anchor text box at Click 2 (p1) with minimal spacing
+            tx, ty = p1
+
+            # Retrieve canvas size safely (same as used in OnPaint)
+            cw_canvas, ch_canvas = canvas.canvas_renderer.GetSize()
+            scale = canvas.viewer.GetContentScaleFactor()
+
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            font.Scale(scale)
+
+            tw, th = canvas.calc_text_size(wrapped, font)
+            # Box dimensions including standard 5px border on all sides
+            bw, bh = tw + 10, th + 10
+            # Increase padding for safety
+            padding = 10
+
+            # X-axis clamping
+            tx = max(padding, min(tx, cw_canvas - bw - padding))
+            # Y-axis clamping (VTK uses bottom-left: 0 is bottom, ch is top)
+            ty = max(padding, min(ty, ch_canvas - bh - padding))
+
+            # Refine arrow anchor: Start from the center of the box side closest to target
+            # In VTK display coords: tx is LEFT, tx+bw is RIGHT, ty is BOTTOM, ty+bh is TOP
+            cx, cy = tx + bw / 2, ty + bh / 2  # Center of box
+
+            dx = p0[0] - cx
+            dy = p0[1] - cy
+
+            # Determine which side is closest based on aspect ratio and direction
+            if abs(dx) * bh > abs(dy) * bw:
+                # Closer to left or right sides
+                ax = tx if dx < 0 else tx + bw
+                ay = cy
+            else:
+                # Closer to top or bottom sides
+                ax = cx
+                ay = ty if dy < 0 else ty + bh
+
+            # Draw the line from the adjusted box edge (ax, ay) to target (p0)
+            canvas.draw_line(
+                (ax, ay),
+                p0,
+                arrow_end=True,
+                width=3,
+                colour=line_colour,
+            )
+
+            # draw_text_box expects pos as baseline (bottom-left) and draws UPWARDS?
+            # Wait, draw_text_box in canvas_renderer:
+            # self.draw_rectangle((px, py - ch), cw, ch, ...)
+            # This means it draws ABOVE the 'py' coordinate.
+            # So if we want the box to start at 'ty' (bottom), we pass 'ty + bh'.
             canvas.draw_text_box(
                 wrapped,
-                (tx, ty),
+                (tx, ty + bh),
                 txt_colour=MEASURE_TEXT_COLOUR,
                 bg_colour=MEASURE_TEXTBOX_COLOUR,
-            )
-            # Draw a thicker arrow from text to click point
-            colour_tuple = tuple(self.colour)
-            canvas.draw_line(
-                (tx, ty),
-                (cx, cy),
-                arrow_end=True,
-                width=3,  # Thicker line for better visibility
-                colour=colour_tuple + (255,) if len(colour_tuple) == 3 else colour_tuple,
+                font=font,
             )
 
     def GetNumberOfPoints(self):
@@ -1064,8 +1168,10 @@ class AnnotationMeasure:
         return self._text
 
     def SetVisibility(self, v):
-        if self.point_actor:
-            self.point_actor.SetVisibility(v)
+        if self.point_actor1:
+            self.point_actor1.SetVisibility(v)
+        if self.point_actor2:
+            self.point_actor2.SetVisibility(v)
         if self.leader_actor:
             self.leader_actor.SetVisibility(v)
         if self.text_actor:
@@ -1073,8 +1179,10 @@ class AnnotationMeasure:
 
     def GetActors(self):
         actors = []
-        if self.point_actor:
-            actors.append(self.point_actor)
+        if self.point_actor1:
+            actors.append(self.point_actor1)
+        if self.point_actor2:
+            actors.append(self.point_actor2)
         if self.leader_actor:
             actors.append(self.leader_actor)
         if self.text_actor:

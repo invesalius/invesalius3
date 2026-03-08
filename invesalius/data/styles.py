@@ -829,10 +829,14 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     radius=self.radius,
                 )
 
-                n, (m, mr) = 1, self.measures.measures[self._ori][slice_number][-1]
-                self.creating = n, m, mr
-                self.viewer.UpdateCanvas()
-                self.viewer.scroll_enabled = False
+                try:
+                    n, (m, mr) = 1, self.measures.measures[self._ori][slice_number][-1]
+                    self.creating = n, m, mr
+                    self.viewer.UpdateCanvas()
+                    self.viewer.scroll_enabled = False
+                except IndexError:
+                    # Failsafe if MeasurementManager failed to append the measure point
+                    self.creating = None
 
     def OnReleaseMeasurePoint(self, obj, evt):
         if self.selected:
@@ -933,8 +937,6 @@ class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
 class AnnotationInteractorStyle(LinearMeasureInteractorStyle):
     """
     Interactor style for placing annotations.
-    Single click places the annotation point; the annotation dialog
-    will be triggered in a later stage.
     """
 
     def __init__(self, viewer):
@@ -943,30 +945,19 @@ class AnnotationInteractorStyle(LinearMeasureInteractorStyle):
         self._type = const.ANNOTATION
 
     def OnInsertMeasurePoint(self, obj, evt):
-        mx, my = self.GetMousePosition()
-        selected = self._verify_clicked_display(mx, my)
+        was_creating = self.creating is not None
+        super().OnInsertMeasurePoint(obj, evt)
 
-        if selected:
-            self.selected = selected
-            self.viewer.scroll_enabled = False
-            return  # Allow drag loop to take over
-
-        x, y, z = self._get_pos_clicked()
-        if not self.picker.GetViewProp():
-            return
-
-        slice_number = self.slice_data.number
-
-        # AnnotationMeasure is complete after 1 point, so send once.
-        Publisher.sendMessage(
-            "Add measurement point",
-            position=(x, y, z),
-            type=self._type,
-            location=ORIENTATIONS[self.orientation],
-            slice_number=slice_number,
-            radius=self.radius,
-        )
-        self.viewer.UpdateCanvas()
+        # If it was creating, and now it's not, the rubber-banding finished (second click)
+        if was_creating and self.creating is None:
+            slice_number = self.slice_data.number
+            try:
+                m, mr = self.measures.measures[self._ori][slice_number][-1]
+                Publisher.sendMessage(
+                    "Show annotation dialog", m=m, mr=mr, location=ORIENTATIONS[self.orientation]
+                )
+            except (IndexError, KeyError):
+                pass
 
 
 class DensityMeasureStyle(DefaultInteractorStyle):
