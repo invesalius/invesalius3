@@ -502,7 +502,9 @@ def run_pipeline(
                     aseg[bm == 0] = 0
                     aseg = dp.flip_wm_islands(aseg)
                     aseg_name = subject.filename_in_subject_folder(aseg_name)
-                    futures.append(pipeline.async_save_img(aseg_name, aseg, orig_img, dtype=np.uint8))
+                    futures.append(
+                        pipeline.async_save_img(aseg_name, aseg, orig_img, dtype=np.uint8)
+                    )
                 else:
                     LOGGER.info(
                         "Not saving the aseg file, because we could not figure out where "
