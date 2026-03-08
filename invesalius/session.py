@@ -305,15 +305,12 @@ class Session(metaclass=Singleton):
             print("Restoring a previous state...")
             print("State file found.", STATE_PATH)
 
-            state_file = open(STATE_PATH)
             try:
-                self._state = json.load(state_file)
-                success = True
-
+                with open(STATE_PATH) as state_file:
+                    self._state = json.load(state_file)
+                    success = True
             except JSONDecodeError:
                 print("State file is corrupted. Deleting...")
-
-                state_file.close()
                 self.DeleteStateFile()
 
         if not success:
