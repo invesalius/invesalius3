@@ -211,7 +211,9 @@ class VisualizationTab(wx.Panel):
         bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer_slices.Add(rb_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
-        lbl_transparency = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Measurement label transparency"))
+        lbl_transparency = wx.StaticText(
+            bsizer_slices.GetStaticBox(), -1, _("Measurement label transparency")
+        )
         sl_transparency = self.sl_transparency = wx.Slider(
             bsizer_slices.GetStaticBox(),
             -1,
