@@ -5,7 +5,7 @@
 import numpy as np
 
 # Import the compiled Rust extension module
-from invesalius_rs import _native
+from . import _native
 
 # Re-export all symbols from the native module
 floodfill = _native.floodfill
