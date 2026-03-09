@@ -257,7 +257,7 @@ class Inv3SplashScreen(SplashScreen):
         if not self.main.IsShown():
             self.main.Show()
             self.main.Raise()
-        
+
         # Hide splash screen so it doesn't linger visually
         self.Hide()
 
