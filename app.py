@@ -309,7 +309,10 @@ class Inv3SplashScreen(SplashScreen):
                             f"Would you like to reopen the last opened project?\n{filepath}"
                         )
                         dlg = wx.MessageDialog(
-                            self.main, msg, "InVesalius 3 - Crash Recovery", wx.ICON_QUESTION | wx.YES_NO
+                            self.main,
+                            msg,
+                            "InVesalius 3 - Crash Recovery",
+                            wx.ICON_QUESTION | wx.YES_NO,
                         )
                         dlg.SetYesNoLabels("Reopen", "Cancel")
                         dlg.CenterOnParent()
