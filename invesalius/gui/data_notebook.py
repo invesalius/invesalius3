@@ -1135,9 +1135,8 @@ class SurfacePage(wx.Panel):
                     break
             except wx.wxAssertionError:
                 continue
-
+        new_visibility = not is_visible
         for global_surface_id, local_pos in listctrl.surface_list_index.items():
-            new_visibility = not is_visible
             listctrl.SetItemImage(local_pos, int(new_visibility))
             Publisher.sendMessage(
                 "Show surface", index=global_surface_id, visibility=new_visibility
