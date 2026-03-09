@@ -78,6 +78,10 @@ class Marker:
     # #TODO: add a reference to original coil marker to relate it to MEP
     # in micro Volts (but scale in milli Volts for display)
     mep_value: float = dataclasses.field(default=None)
+    x_mtms: float = dataclasses.field(default=None)
+    y_mtms: float = dataclasses.field(default=None)
+    r_mtms: float = dataclasses.field(default=None)
+    intensity_mtms: float = dataclasses.field(default=None)
     brain_target_list: list = dataclasses.field(default_factory=list)
 
     # x, y, z can be jointly accessed as position
@@ -265,6 +269,10 @@ class Marker:
             "z_rotation": self.z_rotation,
             "z_offset": self.z_offset,
             "mep_value": self.mep_value,
+            "x_mtms": self.x_mtms,
+            "y_mtms": self.y_mtms,
+            "r_mtms": self.r_mtms,
+            "intensity_mtms": self.intensity_mtms,
             "brain_target_list": self.brain_target_list,
             "marker_uuid": self.marker_uuid,
         }
@@ -312,6 +320,10 @@ class Marker:
         z_rotation = d.get("z_rotation", 0.0)
         is_point_of_interest = d.get("is_point_of_interest", False)
         mep_value = d.get("mep_value", None)
+        x_mtms = d.get("x_mtms", None)
+        y_mtms = d.get("y_mtms", None)
+        r_mtms = d.get("r_mtms", None)
+        intensity_mtms = d.get("intensity_mtms", None)
         brain_target_list = d.get("brain_target_list", [])
         marker_uuid = d.get("marker_uuid", "")
 
@@ -330,6 +342,10 @@ class Marker:
         self.z_offset = z_offset
         self.z_rotation = z_rotation
         self.mep_value = mep_value
+        self.x_mtms = x_mtms
+        self.y_mtms = y_mtms
+        self.r_mtms = r_mtms
+        self.intensity_mtms = intensity_mtms
         self.brain_target_list = brain_target_list
         self.marker_uuid = marker_uuid
 
