@@ -257,12 +257,18 @@ class Inv3SplashScreen(SplashScreen):
         if not self.main.IsShown():
             self.main.Show()
             self.main.Raise()
-        # Destroy the splash screen
-        self.Destroy()
+        
+        # Hide splash screen so it doesn't linger visually
+        self.Hide()
 
-        # After UI is fully loaded and shown, perform crash recovery checks.
-        # This guarantees dialogs center correctly.
+        # Defer crash recovery to ensure self.main geometry is fully realized
+        # by the window manager before center calculation (fixes GNOME Flashback)
+        wx.CallAfter(self._deferred_crash_recovery)
+
+    def _deferred_crash_recovery(self):
         self.CheckCrashRecovery()
+        # Safely destroy splash screen after all dialogs and recovery checks
+        self.Destroy()
 
     def CheckCrashRecovery(self):
         if not session.ExitedSuccessfullyLastTime():
@@ -288,7 +294,7 @@ class Inv3SplashScreen(SplashScreen):
                 if answer == wx.ID_YES:
                     # Recover from backup
                     if os.path.exists(backup_path):
-                        Publisher.sendMessage("Open project", filepath=backup_path)
+                        wx.CallAfter(Publisher.sendMessage, "Open project", filepath=backup_path)
                         # Mark project as having unsaved changes since it's from backup
                         session._has_unsaved_changes = True
                     else:
@@ -298,8 +304,7 @@ class Inv3SplashScreen(SplashScreen):
                     # User chose to discard backup
                     session.RemoveAutoBackup()
             else:
-                # No backup exists, but we crashed. Don't silently reopen the last project.
-                # Ask the user what they want to do.
+                # No backup exists, but we crashed. Ask the user to re-open
                 project_path = session.GetState("project_path")
                 if project_path is not None:
                     filepath = os.path.join(project_path[0], project_path[1])
@@ -321,7 +326,7 @@ class Inv3SplashScreen(SplashScreen):
                         dlg.Destroy()
 
                         if answer == wx.ID_YES:
-                            Publisher.sendMessage("Open project", filepath=filepath)
+                            wx.CallAfter(Publisher.sendMessage, "Open project", filepath=filepath)
                         else:
                             # User canceled reopening last project
                             session.CloseProject()
