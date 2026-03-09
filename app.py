@@ -259,7 +259,7 @@ class Inv3SplashScreen(SplashScreen):
             self.main.Raise()
         # Destroy the splash screen
         self.Destroy()
-        
+
         # After UI is fully loaded and shown, perform crash recovery checks.
         # This guarantees dialogs center correctly.
         self.CheckCrashRecovery()
@@ -332,6 +332,7 @@ class Inv3SplashScreen(SplashScreen):
                     session.CloseProject()
         else:
             session.CreateState()
+
 
 def non_gui_startup(args):
     if LANG:
