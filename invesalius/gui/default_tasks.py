@@ -17,6 +17,8 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import sys
+
 import wx
 import wx.lib.agw.foldpanelbar as fpb
 
@@ -257,7 +259,8 @@ class LowerTaskPanel(wx.Panel):
     def ResizeFPB(self):
         # y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
         x_current, _ = self.GetSize()
-        self.SetMinSize((x_current, 180))
+        min_size = (x_current, 240) if sys.platform != "win32" else (x_current, 230)
+        self.SetMinSize(min_size)
         self.GetParent().Layout()
 
 
