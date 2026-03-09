@@ -1951,7 +1951,9 @@ class ControlPanel(wx.Panel):
         BMP_SHOW_COIL = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG
         )
-        show_coil_button = wx.ToggleButton(scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        show_coil_button = wx.ToggleButton(
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
         show_coil_button.SetBackgroundColour(GREY_COLOR)
         show_coil_button.SetBitmap(BMP_SHOW_COIL)
         show_coil_button.SetToolTip(tooltip)
@@ -1995,7 +1997,9 @@ class ControlPanel(wx.Panel):
         # Toggle Button for Efield
         tooltip = _("Control E-Field")
         BMP_FIELD = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("field.png")), wx.BITMAP_TYPE_PNG)
-        efield_checkbox = wx.ToggleButton(scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        efield_checkbox = wx.ToggleButton(
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
         efield_checkbox.SetBackgroundColour(GREY_COLOR)
         efield_checkbox.SetBitmap(BMP_FIELD)
         efield_checkbox.SetValue(False)
@@ -2126,7 +2130,7 @@ class ControlPanel(wx.Panel):
                 (robot_track_target_button),
                 (robot_move_away_button),
                 (robot_free_drive_button),
-                ((48, 48), 0), 
+                ((48, 48), 0),
             ]
         )
 
