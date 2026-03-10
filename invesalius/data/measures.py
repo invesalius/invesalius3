@@ -1115,24 +1115,6 @@ class AnnotationMeasure:
             # Anchor text box at midpoint (matching LinearMeasure)
             tx, ty = (p0[0] + p1[0]) / 2.0, (p0[1] + p1[1]) / 2.0
 
-            # Retrieve canvas size safely (same as used in OnPaint)
-            cw_canvas, ch_canvas = canvas.canvas_renderer.GetSize()
-            scale = canvas.viewer.GetContentScaleFactor()
-
-            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-            font.Scale(scale)
-
-            tw, th = canvas.calc_text_size(wrapped, font)
-            # Box dimensions including standard 5px border on all sides
-            bw, bh = tw + 10, th + 10
-            # Increase padding for safety
-            padding = 10
-
-            # X-axis clamping
-            tx = max(padding, min(tx, cw_canvas - bw - padding))
-            # Y-axis clamping (VTK uses bottom-left: 0 is bottom, ch is top)
-            ty = max(padding, min(ty, ch_canvas - bh - padding))
-
             # Draw the full line from p1 to p0
             canvas.draw_line(
                 p1,
@@ -1141,17 +1123,11 @@ class AnnotationMeasure:
                 colour=line_colour,
             )
 
-            # draw_text_box expects pos as baseline (bottom-left) and draws UPWARDS?
-            # Wait, draw_text_box in canvas_renderer:
-            # self.draw_rectangle((px, py - ch), cw, ch, ...)
-            # This means it draws ABOVE the 'py' coordinate.
-            # So if we want the box to start at 'ty' (bottom), we pass 'ty + bh'.
             canvas.draw_text_box(
                 wrapped,
-                (tx, ty + bh),
+                (tx, ty),
                 txt_colour=MEASURE_TEXT_COLOUR,
                 bg_colour=MEASURE_TEXTBOX_COLOUR,
-                font=font,
             )
 
     def GetNumberOfPoints(self):
