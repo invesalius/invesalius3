@@ -83,6 +83,11 @@ class Session(metaclass=Singleton):
             "console_logging_level": 0,
         }
         self._exited_successfully_last_time = not self._ReadState()
+        # If the state file was saved intentionally via "Store session", the
+        # last exit was NOT a crash — override the flag so the recovery dialog
+        # is never shown for a deliberate Store-session exit.
+        if self._state.get("stored_session"):
+            self._exited_successfully_last_time = True
         # Unsaved changes tracking
         self._has_unsaved_changes = False
         self._auto_backup_path: Union[str, None] = None
@@ -227,6 +232,14 @@ class Session(metaclass=Singleton):
         # Set session info
         self.SetState("project_path", project_path)
         self.SetConfig("project_status", const.PROJECT_STATUS_OPENED)
+        # If opened from a backup, mark as temp_item so SaveProject forces a
+        # "Save As" dialog — this prevents the save from writing back into the
+        # temp backup folder, which is then immediately deleted by RemoveAutoBackup.
+        # Also clear the last saved directory so the Save-As dialog doesn't
+        # pre-fill with the backup temp path.
+        if "temp_backup" in str(filepath):
+            self.temp_item = True
+            self._config["last_directory_inv3"] = ""
         # Reset unsaved-changes flag: any ChangeProject() calls that fired
         # during LoadProject() (slice setup, etc.) should not count as
         # user-initiated modifications.

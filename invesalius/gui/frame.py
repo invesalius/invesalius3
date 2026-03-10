@@ -647,6 +647,12 @@ class Frame(wx.Frame):
 
             if status == 1:
                 Publisher.sendMessage("Exit session")
+            elif status == 2:
+                # "Store session" — keep state.json so the project is remembered,
+                # but mark it as intentional so the next launch doesn't treat it
+                # as a crash and show the recovery dialog.
+                import invesalius.session as ses
+                ses.Session().SetState("stored_session", True)
             self.Destroy()
 
     def OnMenuClick(self, evt):

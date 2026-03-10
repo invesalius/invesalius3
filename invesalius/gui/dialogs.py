@@ -568,6 +568,12 @@ def ShowSaveAsProjectDialog(default_filename: str) -> Tuple[Optional[str], bool]
     session = ses.Session()
     last_directory = session.GetConfig("last_directory_inv3", "")
 
+    # Never pre-fill with the temp backup directory: if the user recovered
+    # from a crash, last_directory may point inside the backup folder.
+    # Reset it so the dialog opens somewhere sensible instead.
+    if last_directory and "temp_backup" in str(last_directory):
+        last_directory = ""
+
     dlg = wx.FileDialog(
         None,
         _("Save project as..."),  # title
@@ -7701,6 +7707,14 @@ class ProgressBarHandler(wx.ProgressDialog):
 
         self.Bind(wx.EVT_CLOSE, self.close)
 
+        # Force the dialog to fully paint itself before the caller starts
+        # CPU-intensive work. Without this, slow window managers (e.g. GNOME
+        # Session Flashback on Linux) show a blank/broken dialog for several
+        # seconds. wx.SafeYield() processes all pending UI events (including
+        # paint) without re-entering user event handlers, so it is safe to
+        # call here on all platforms (macOS, Windows, Linux).
+        wx.SafeYield()
+
         # self.Show()
         self.__bind_events()
 
@@ -7724,7 +7738,7 @@ class ProgressBarHandler(wx.ProgressDialog):
                 value = self.max_value
             super().Update(int(value), msg)
 
-    def close(self) -> None:
+    def close(self, event=None) -> None:
         if self.IsShown():
             self.Destroy()
 

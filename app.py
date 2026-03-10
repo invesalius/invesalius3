@@ -276,6 +276,14 @@ class Inv3SplashScreen(SplashScreen):
         except RuntimeError:
             pass  # Already destroyed by splash screen timeout — that's fine
 
+    def _mark_recovered_project_as_changed(self):
+        """Called after opening a recovered backup to mark it as having unsaved
+        changes, so the 'Save before closing?' dialog is shown correctly."""
+        import invesalius.constants as const
+
+        session.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
+        session._has_unsaved_changes = True
+
     def CheckCrashRecovery(self):
         if not session.ExitedSuccessfullyLastTime():
             # Check for auto-backup
@@ -301,8 +309,10 @@ class Inv3SplashScreen(SplashScreen):
                     # Recover from backup
                     if os.path.exists(backup_path):
                         wx.CallAfter(Publisher.sendMessage, "Open project", filepath=backup_path)
-                        # Mark project as having unsaved changes since it's from backup
-                        session._has_unsaved_changes = True
+                        # After project opens, mark it as CHANGED so the close
+                        # dialog asks "Do you want to save?" (the backup was
+                        # never formally saved by the user)
+                        wx.CallAfter(self._mark_recovered_project_as_changed)
                     else:
                         utils.debug(f"Backup file doesn't exist: {backup_path}")
                         session.RemoveAutoBackup()
@@ -342,6 +352,17 @@ class Inv3SplashScreen(SplashScreen):
                 else:
                     session.CloseProject()
         else:
+            # Last exit was clean. Check if the user closed with "Store session"
+            # — in which case we should silently reopen the project, not show any dialog.
+            if session.GetState("stored_session"):
+                project_path = session.GetState("project_path")
+                if project_path:
+                    filepath = os.path.join(project_path[0], project_path[1])
+                    if os.path.exists(filepath):
+                        wx.CallAfter(Publisher.sendMessage, "Open project", filepath=filepath)
+                    else:
+                        utils.debug(f"Stored session project not found: {filepath}")
+            # Start fresh state for this new session (clears stored_session flag too)
             session.CreateState()
 
 
