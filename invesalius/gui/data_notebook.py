@@ -123,7 +123,7 @@ class MeasurePage(wx.Panel):
 
     def __init_gui(self):
         # listctrl were existing masks will be listed
-        self.listctrl = MeasuresListCtrlPanel(self, size=wx.Size(256, 100))
+        self.listctrl = MeasuresListCtrlPanel(self, size=wx.Size(256, 150))
         # button control with tools (eg. remove, add new, etc)
         self.buttonctrl = MeasureButtonControlPanel(self)
 
@@ -282,7 +282,7 @@ class MaskPage(wx.Panel):
 
         # content panel that will be shown/hidden manually
         content_panel = wx.Panel(self.scroll_panel)
-        listctrl = MasksListCtrlPanel(content_panel, size=wx.Size(256, 100))
+        listctrl = MasksListCtrlPanel(content_panel, size=wx.Size(256, 150))
         listctrl.category = category
         content_sizer = wx.BoxSizer(wx.VERTICAL)
         content_sizer.Add(listctrl, 1, wx.EXPAND)
@@ -1073,7 +1073,7 @@ class SurfacePage(wx.Panel):
         ) = self.create_category_header(self.scroll_panel, category)
 
         content_panel = wx.Panel(self.scroll_panel)
-        listctrl = SurfacesListCtrlPanel(content_panel, size=wx.Size(256, 100), category=category)
+        listctrl = SurfacesListCtrlPanel(content_panel, size=wx.Size(256, 150), category=category)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
         content_sizer.Add(listctrl, 1, wx.EXPAND)
         content_panel.SetSizer(content_sizer)

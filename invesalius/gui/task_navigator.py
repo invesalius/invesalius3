@@ -41,6 +41,7 @@ import wx.lib.agw.foldpanelbar as fpb
 import wx.lib.colourselect as csel
 import wx.lib.masked.numctrl
 import wx.lib.platebtn as pbtn
+import wx.lib.scrolledpanel as scrolled
 from wx.lib.mixins.listctrl import ColumnSorterMixin
 
 try:
@@ -179,6 +180,7 @@ class InnerFoldPanel(wx.Panel):
         self.nav_panel = nav_panel = fold_panel.AddFoldPanel(_("Navigation"), collapsed=True)
         self.__id_nav = nav_panel.GetId()
         ntw = NavigationPanel(parent=nav_panel, nav_hub=nav_hub)
+        self.__calc_best_size(ntw)
 
         fold_panel.ApplyCaptionStyle(nav_panel, style)
         fold_panel.AddFoldPanelWindow(nav_panel, ntw, spacing=0, leftSpacing=0, rightSpacing=0)
@@ -1813,15 +1815,16 @@ class NavigationPanel(wx.Panel):
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
         top_sizer.Add(self.marker_panel, 1, wx.GROW | wx.EXPAND)
 
-        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.TOP, 5)
-
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
-            [(top_sizer, 1, wx.EXPAND | wx.GROW), (bottom_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)]
+            [
+                (top_sizer, 1, wx.EXPAND | wx.GROW),
+                (self.control_panel, 0, wx.EXPAND | wx.TOP, 5),
+            ]
         )
         self.sizer = main_sizer
         self.SetSizerAndFit(main_sizer)
+        self.Layout()
         self.Update()
 
     def __bind_events(self):
@@ -1870,6 +1873,10 @@ class ControlPanel(wx.Panel):
 
         self.target_selected = False
 
+        scroll_panel = scrolled.ScrolledPanel(self, -1, size=wx.Size(-1, 150))
+        scroll_panel.SetupScrolling(scroll_x=False, scroll_y=True)
+        self.scroll_panel = scroll_panel
+
         # Toggle button for neuronavigation
         tooltip = _("Start navigation")
         btn_nav = wx.ToggleButton(self, -1, _("Start navigation"), size=wx.Size(80, -1))
@@ -1893,7 +1900,7 @@ class ControlPanel(wx.Panel):
         tooltip = _("Control Tractography")
         BMP_TRACT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("tract.png")), wx.BITMAP_TYPE_PNG)
         tractography_checkbox = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         tractography_checkbox.SetBackgroundColour(GREY_COLOR)
         tractography_checkbox.SetBitmap(BMP_TRACT)
@@ -1909,7 +1916,7 @@ class ControlPanel(wx.Panel):
         tooltip = _("Track coil")
         BMP_TRACK = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("coil.png")), wx.BITMAP_TYPE_PNG)
         track_object_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         track_object_button.SetBackgroundColour(GREY_COLOR)
         track_object_button.SetBitmap(BMP_TRACK)
@@ -1927,7 +1934,7 @@ class ControlPanel(wx.Panel):
             str(inv_paths.ICON_DIR.joinpath("lock_to_target.png")), wx.BITMAP_TYPE_PNG
         )
         lock_to_target_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         lock_to_target_button.SetBackgroundColour(GREY_COLOR)
         lock_to_target_button.SetBitmap(BMP_LOCK)
@@ -1944,7 +1951,9 @@ class ControlPanel(wx.Panel):
         BMP_SHOW_COIL = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("coil_eye.png")), wx.BITMAP_TYPE_PNG
         )
-        show_coil_button = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        show_coil_button = wx.ToggleButton(
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
         show_coil_button.SetBackgroundColour(GREY_COLOR)
         show_coil_button.SetBitmap(BMP_SHOW_COIL)
         show_coil_button.SetToolTip(tooltip)
@@ -1960,7 +1969,7 @@ class ControlPanel(wx.Panel):
             str(inv_paths.ICON_DIR.joinpath("stylus_eye.png")), wx.BITMAP_TYPE_PNG
         )
         show_probe_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         show_probe_button.SetBackgroundColour(GREY_COLOR)
         show_probe_button.SetBitmap(BMP_SHOW_PROBE)
@@ -1974,7 +1983,7 @@ class ControlPanel(wx.Panel):
         tooltip = _("Enable serial port communication to trigger pulse and create markers")
         BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("wave.png")), wx.BITMAP_TYPE_PNG)
         checkbox_serial_port = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         checkbox_serial_port.SetBackgroundColour(RED_COLOR)
         checkbox_serial_port.SetBitmap(BMP_PORT)
@@ -1988,7 +1997,9 @@ class ControlPanel(wx.Panel):
         # Toggle Button for Efield
         tooltip = _("Control E-Field")
         BMP_FIELD = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("field.png")), wx.BITMAP_TYPE_PNG)
-        efield_checkbox = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        efield_checkbox = wx.ToggleButton(
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
         efield_checkbox.SetBackgroundColour(GREY_COLOR)
         efield_checkbox.SetBitmap(BMP_FIELD)
         efield_checkbox.SetValue(False)
@@ -2003,7 +2014,7 @@ class ControlPanel(wx.Panel):
         tooltip = _("Target mode")
         BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
         target_mode_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         target_mode_button.SetBackgroundColour(GREY_COLOR)
         target_mode_button.SetBitmap(BMP_TARGET)
@@ -2020,7 +2031,7 @@ class ControlPanel(wx.Panel):
             str(inv_paths.ICON_DIR.joinpath("robot_track_target.png")), wx.BITMAP_TYPE_PNG
         )
         robot_track_target_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         robot_track_target_button.SetBackgroundColour(GREY_COLOR)
         robot_track_target_button.SetBitmap(BMP_TRACK_TARGET)
@@ -2039,7 +2050,7 @@ class ControlPanel(wx.Panel):
             str(inv_paths.ICON_DIR.joinpath("robot_move_away.png")), wx.BITMAP_TYPE_PNG
         )
         robot_move_away_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         robot_move_away_button.SetBackgroundColour(GREY_COLOR)
         robot_move_away_button.SetBitmap(BMP_ENABLE_MOVE_AWAY)
@@ -2058,7 +2069,7 @@ class ControlPanel(wx.Panel):
             str(inv_paths.ICON_DIR.joinpath("robot_free_drive.png")), wx.BITMAP_TYPE_PNG
         )
         robot_free_drive_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         robot_free_drive_button.SetBackgroundColour(GREY_COLOR)
         robot_free_drive_button.SetBitmap(BMP_FREE_DRIVE)
@@ -2077,7 +2088,7 @@ class ControlPanel(wx.Panel):
             str(inv_paths.ICON_DIR.joinpath("brain_eye.png")), wx.BITMAP_TYPE_PNG
         )
         show_motor_map_button = wx.ToggleButton(
-            self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         show_motor_map_button.SetBackgroundColour(GREY_COLOR)
         show_motor_map_button.SetBitmap(BMP_MOTOR_MAP)
@@ -2119,15 +2130,20 @@ class ControlPanel(wx.Panel):
                 (robot_track_target_button),
                 (robot_move_away_button),
                 (robot_free_drive_button),
+                ((48, 48), 0),
             ]
         )
+
+        scroll_sizer = wx.BoxSizer(wx.VERTICAL)
+        scroll_sizer.Add(navigation_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10)
+        scroll_sizer.Add(robot_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.BOTTOM, 10)
+        scroll_panel.SetSizer(scroll_sizer)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.AddMany(
             [
                 (start_navigation_button_sizer, 0, wx.EXPAND | wx.ALL, 10),
-                (navigation_buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.TOP | wx.BOTTOM, 10),
-                (robot_buttons_sizer, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 5),
+                (scroll_panel, 0, wx.EXPAND),
             ]
         )
 
