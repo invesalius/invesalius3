@@ -185,6 +185,16 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnUndo, id=const.ID_EDIT_UNDO)
         self.Bind(wx.EVT_MENU, self.OnRedo, id=const.ID_EDIT_REDO)
 
+        # Accelerators
+        accel_tbl = wx.AcceleratorTable(
+            [
+                (wx.ACCEL_CTRL, ord("Z"), const.ID_EDIT_UNDO),
+                (wx.ACCEL_CTRL, ord("Y"), const.ID_EDIT_REDO),
+                (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord("Z"), const.ID_EDIT_REDO),
+            ]
+        )
+        self.SetAcceleratorTable(accel_tbl)
+
         # Close InVesalius main window, hence exit the software.
         self.Bind(wx.EVT_CLOSE, self.OnExit)
 
@@ -240,14 +250,16 @@ class Frame(wx.Frame):
             return
 
         # Similarly with 'Del' key; publish a message to delete selected markers.
-        if (
-            keycode == wx.WXK_DELETE
-            and not self.edit_data_notebook_label
-            and not is_search_field
-            and not is_shell_focused
-        ):
-            Publisher.sendMessage("Delete selected markers")
-            return
+        if keycode == wx.WXK_DELETE:
+            is_data_list = getattr(focused, "is_data_notebook_list", False)
+            if (
+                not self.edit_data_notebook_label
+                and not is_search_field
+                and not is_shell_focused
+                and not is_data_list
+            ):
+                Publisher.sendMessage("Delete selected markers")
+                return
 
         # For all other keys, continue with the normal event handling (propagate the event).
         event.Skip()
@@ -1007,10 +1019,31 @@ class Frame(wx.Frame):
         Publisher.sendMessage("Reload actual slice")
 
     def OnUndo(self, evt=None):
-        Publisher.sendMessage("Undo edition")
+        """
+        Undo the last action.
+        """
+        # First check if we have a global undo action
+        session = ses.Session()
+        if session.undo_manager.can_undo():
+            session.undo_manager.undo()
+        else:
+            # only trigger legacy undo if there's a current mask with history
+            slc = Slice()
+            if slc.current_mask is not None and slc.current_mask.history.history:
+                Publisher.sendMessage("Undo edition")
 
     def OnRedo(self, evt=None):
-        Publisher.sendMessage("Redo edition")
+        """
+        Redo the last action.
+        """
+        session = ses.Session()
+        if session.undo_manager.can_redo():
+            session.undo_manager.redo()
+        else:
+            # Only trigger legacy redo if there's a current mask with history
+            slc = Slice()
+            if slc.current_mask is not None and slc.current_mask.history.history:
+                Publisher.sendMessage("Redo edition")
 
     def OnGotoSlice(self):
         gt_dialog = dlg.GoToDialog(init_orientation=self._last_viewer_orientation_focus)

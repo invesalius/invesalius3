@@ -69,9 +69,18 @@ class EditionHistoryNode:
         print("applying to", self.orientation, "at slice", self.index)
 
     def __del__(self):
-        print("Removing", self.filename)
-        os.close(self.fd)
-        os.remove(self.filename)
+        if hasattr(self, "filename"):
+            print("Removing", self.filename)
+            try:
+                os.close(self.fd)
+                os.remove(self.filename)
+            except (AttributeError, OSError):
+                pass
+        if hasattr(self, "temp_file") and os.path.exists(self.temp_file):
+            try:
+                os.remove(self.temp_file)
+            except OSError:
+                pass
 
 
 class EditionHistory:
@@ -137,7 +146,11 @@ class EditionHistory:
 
         if self.index == 0:
             Publisher.sendMessage("Enable undo", value=False)
-        print("AT", self.index, len(self.history), self.history[self.index].filename)
+
+        if self.index >= 0 and self.index < len(self.history):
+            print("AT", self.index, len(self.history), self.history[self.index].filename)
+        else:
+            print("AT", self.index, len(self.history), "No history item")
 
     def redo(self, mvolume, actual_slices=None):
         h = self.history
@@ -448,7 +461,8 @@ class Mask:
             Publisher.sendMessage("Render volume viewer")
             self.imagedata = None
             self.volume = None
-        del self.matrix
+        if hasattr(self, 'matrix'):
+            del self.matrix
 
     def copy(self, copy_name):
         """
@@ -457,6 +471,9 @@ class Mask:
         params:
             copy_name: the name from the copy
         """
+        if self.matrix is None:
+            raise RuntimeError("Cannot copy mask: matrix is None")
+
         new_mask = Mask()
         new_mask.name = copy_name
         new_mask.colour = self.colour
