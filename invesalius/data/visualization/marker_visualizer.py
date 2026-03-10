@@ -122,18 +122,11 @@ class MarkerVisualizer:
         """
         position = marker.position
         orientation = marker.orientation
-
-        position_flipped = list(position)
-        position_flipped[1] = -position_flipped[1]
-
-        position = marker.position
-        orientation = marker.orientation
         marker_id = marker.marker_id
         marker_type = marker.marker_type
         colour = marker.colour
         size = marker.size
         cortex_marker = marker.cortex_position_orientation
-
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
 
