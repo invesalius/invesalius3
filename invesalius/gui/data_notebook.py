@@ -48,6 +48,7 @@ TYPE = {
     const.ANGULAR: _("Angular"),
     const.DENSITY_ELLIPSE: _("Density Ellipse"),
     const.DENSITY_POLYGON: _("Density Polygon"),
+    const.ANNOTATION: _("Annotation"),
 }
 
 LOCATION = {
@@ -1765,6 +1766,10 @@ class MeasuresListCtrlPanel(InvListCtrl):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+
+    def OnItemActivated(self, evt):
+        Publisher.sendMessage("Edit measurement", index=evt.GetIndex())
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -1846,13 +1851,13 @@ class MeasuresListCtrlPanel(InvListCtrl):
         self.InsertColumn(1, _("Name"))
         self.InsertColumn(2, _("Location"))
         self.InsertColumn(3, _("Type"))
-        self.InsertColumn(4, _("Value"), wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(4, _("Value"))
 
         self.SetColumnWidth(0, 25)
-        self.SetColumnWidth(1, 65)
-        self.SetColumnWidth(2, 55)
-        self.SetColumnWidth(3, 50)
-        self.SetColumnWidth(4, 75)
+        self.SetColumnWidth(1, 90)
+        self.SetColumnWidth(2, 50)
+        self.SetColumnWidth(3, 75)
+        self.SetColumnWidth(4, 90)
 
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
@@ -1924,6 +1929,8 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 value = f"{m.value:.2f} mm"
             elif m.type == const.ANGULAR:
                 value = f"{m.value:.2f}°"
+            elif m.type == const.ANNOTATION:
+                value = m.value
             else:
                 value = f"{m.value:.3f}"
             self.InsertNewItem(m.index, m.name, colour, location, type, value)

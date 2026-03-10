@@ -474,6 +474,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
         self.viewer = viewer
         self.state_code = const.STATE_MEASURE_DISTANCE
+        self._type = const.LINEAR
         self.measure_picker = vtkPropPicker()
 
         proj = prj.Project()
@@ -499,7 +500,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage(
                 "Add measurement point",
                 position=(x, y, z),
-                type=const.LINEAR,
+                type=self._type,
                 location=const.SURFACE,
                 radius=self._radius,
             )
@@ -1018,6 +1019,30 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Reload actual slice")
 
 
+class AnnotationInteractorStyle(LinearMeasureInteractorStyle):
+    """
+    Interactor style for placing annotations on 3D surfaces.
+    """
+
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.state_code = const.STATE_MEASURE_ANNOTATION
+        self._type = const.ANNOTATION
+
+        self.AddObserver("MouseMoveEvent", self.OnMouseMove)
+
+    def OnMouseMove(self, obj, evt):
+        # We send the update message and let MeasurementManager decide if it's relevant.
+        # This avoiding crashing on missing Project attributes while in transition.
+        x, y = self.viewer.get_vtk_mouse_position()
+        self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+        if self.measure_picker.GetActor():
+            pos = self.measure_picker.GetPickPosition()
+            Publisher.sendMessage("Update measurement point position", position=pos)
+
+        super().OnMouseMove(obj, evt)
+
+
 class Styles:
     styles = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -1028,6 +1053,7 @@ class Styles:
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
+        const.STATE_MEASURE_ANNOTATION: AnnotationInteractorStyle,
         const.VOLUME_STATE_SEED: SeedInteractorStyle,
         const.SLICE_STATE_CROSS: CrossInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,

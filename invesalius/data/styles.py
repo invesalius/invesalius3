@@ -829,10 +829,14 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     radius=self.radius,
                 )
 
-                n, (m, mr) = 1, self.measures.measures[self._ori][slice_number][-1]
-                self.creating = n, m, mr
-                self.viewer.UpdateCanvas()
-                self.viewer.scroll_enabled = False
+                try:
+                    n, (m, mr) = 1, self.measures.measures[self._ori][slice_number][-1]
+                    self.creating = n, m, mr
+                    self.viewer.UpdateCanvas()
+                    self.viewer.scroll_enabled = False
+                except IndexError:
+                    # Failsafe if MeasurementManager failed to append the measure point
+                    self.creating = None
 
     def OnReleaseMeasurePoint(self, obj, evt):
         if self.selected:
@@ -873,10 +877,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def OnLeaveMeasureInteractor(self, obj, evt):
         if self.creating or self.selected:
-            n, m, mr = self.creating
-            if not mr.IsComplete():
-                Publisher.sendMessage("Remove incomplete measurements")
-            self.creating = None
+            if self.creating:
+                n, m, mr = self.creating
+                if not mr.IsComplete():
+                    Publisher.sendMessage("Remove incomplete measurements")
+                self.creating = None
             self.selected = None
             self.viewer.UpdateCanvas()
             self.viewer.scroll_enabled = True
@@ -928,7 +933,31 @@ class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
         LinearMeasureInteractorStyle.__init__(self, viewer)
         self._type = const.ANGULAR
 
-        self.state_code = const.STATE_MEASURE_ANGLE
+
+class AnnotationInteractorStyle(LinearMeasureInteractorStyle):
+    """
+    Interactor style for placing annotations.
+    """
+
+    def __init__(self, viewer):
+        LinearMeasureInteractorStyle.__init__(self, viewer)
+        self.state_code = const.STATE_MEASURE_ANNOTATION
+        self._type = const.ANNOTATION
+
+    def OnInsertMeasurePoint(self, obj, evt):
+        was_creating = self.creating is not None
+        super().OnInsertMeasurePoint(obj, evt)
+
+        # If it was creating, and now it's not, the rubber-banding finished (second click)
+        if was_creating and self.creating is None:
+            slice_number = self.slice_data.number
+            try:
+                m, mr = self.measures.measures[self._ori][slice_number][-1]
+                Publisher.sendMessage(
+                    "Show annotation dialog", m=m, mr=mr, location=ORIENTATIONS[self.orientation]
+                )
+            except (IndexError, KeyError):
+                pass
 
 
 class DensityMeasureStyle(DefaultInteractorStyle):
@@ -3006,6 +3035,7 @@ class Styles:
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.STATE_MEASURE_DENSITY_ELLIPSE: DensityMeasureEllipseStyle,
         const.STATE_MEASURE_DENSITY_POLYGON: DensityMeasurePolygonStyle,
+        const.STATE_MEASURE_ANNOTATION: AnnotationInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,
