@@ -267,8 +267,14 @@ class Inv3SplashScreen(SplashScreen):
 
     def _deferred_crash_recovery(self):
         self.CheckCrashRecovery()
-        # Safely destroy splash screen after all dialogs and recovery checks
-        self.Destroy()
+        # Guard: The parent SplashScreen auto-destroys itself via a timer.
+        # If the user took time on the dialog, the C++ object may already be
+        # gone by now, so only call Destroy() if we're still alive.
+        try:
+            if not self.IsBeingDeleted():
+                self.Destroy()
+        except RuntimeError:
+            pass  # Already destroyed by splash screen timeout — that's fine
 
     def CheckCrashRecovery(self):
         if not session.ExitedSuccessfullyLastTime():
