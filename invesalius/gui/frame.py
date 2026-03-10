@@ -652,6 +652,7 @@ class Frame(wx.Frame):
                 # but mark it as intentional so the next launch doesn't treat it
                 # as a crash and show the recovery dialog.
                 import invesalius.session as ses
+
                 ses.Session().SetState("stored_session", True)
             self.Destroy()
 
