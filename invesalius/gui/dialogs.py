@@ -1197,6 +1197,44 @@ def ReportICPDistributionError() -> None:
     dlg.Destroy()
 
 
+def WarnNonVisibleFaces(parent: wx.Window = None) -> None:
+    """
+    Warn user about non-visible faces in the surface.
+
+    Shows an informational OK-only warning dialog. Does not block ICP workflow.
+    """
+    msg = (
+        _("The selected surface contains inner structures.")
+        + "\n"
+        + _("For better ICP accuracy, it is recommended to perform")
+        + "\n"
+        + _("the refine registration using the scalp surface with only")
+        + "\n"
+        + _("the outer shell.")
+        + "\n\n"
+        + _("You can clean the surface using:")
+        + "\n"
+        + _("Tools \u2192 Surface \u2192 Remove Non-Visible Faces.")
+    )
+    if sys.platform == "darwin":
+        dlg = wx.MessageDialog(
+            parent,
+            "",
+            msg,
+            wx.OK | wx.ICON_WARNING,
+        )
+    else:
+        dlg = wx.MessageDialog(
+            parent,
+            msg,
+            "InVesalius 3 - Refine Coregistration",
+            wx.OK | wx.ICON_WARNING,
+        )
+
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
 def ShowEnterMarkerID(default: str) -> str:
     msg = _("Change label")
     dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
@@ -4386,6 +4424,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.actors_static_points = []
         self.point_coord = []
         self.actors_transformed_points = []
+        self._surface_validated = False
 
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
@@ -4431,6 +4470,7 @@ class ICPCorregistrationDialog(wx.Dialog):
         combo_surface_name.SetSelection(init_surface)
         self.surface = self.proj.surface_dict[init_surface].polydata
         self.LoadActor()
+        wx.CallAfter(self._validate_surface)
 
         tooltip = _("Choose the registration mode:")
         choice_icp_method = wx.ComboBox(
@@ -4706,6 +4746,20 @@ class ICPCorregistrationDialog(wx.Dialog):
 
         return np.sqrt(float(d))
 
+    def _validate_surface(self) -> None:
+        """Validate the selected surface for non-visible faces."""
+        if self._surface_validated:
+            return
+        try:
+            import invesalius.data.polydata_utils as pu
+
+            if pu.HasNonVisibleFaces(self.surface):
+                WarnNonVisibleFaces(parent=self)
+        except Exception:
+            pass
+        self._surface_validated = True
+        self.interactor.Render()
+
     def OnComboName(self, evt: wx.CommandEvent) -> None:
         # surface_name = evt.GetString()
         surface_index = evt.GetSelection()
@@ -4713,6 +4767,8 @@ class ICPCorregistrationDialog(wx.Dialog):
         if self.obj_actor:
             self.RemoveAllActors()
         self.LoadActor()
+        self._surface_validated = False
+        self._validate_surface()
 
     def OnChoiceICPMethod(self, evt: wx.CommandEvent) -> None:
         self.icp_mode = evt.GetSelection()
