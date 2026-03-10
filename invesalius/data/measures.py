@@ -2,6 +2,7 @@
 
 import math
 import sys
+import textwrap
 
 import numpy as np
 import wx
@@ -1023,7 +1024,10 @@ class AnnotationMeasure:
             if hasattr(self.text_actor, "SetInput"):
                 self.text_actor.SetInput(f" {self._get_display_text()} ")
             elif hasattr(self, "text_source") and self.text_source:
-                self.text_source.SetText(f" {self._get_display_text()} ")
+                comment_text = self._text if self._text else "..."
+                wrapped_3d_text = "\n".join(textwrap.wrap(comment_text, 30))
+                self.text_source.SetText(wrapped_3d_text)
+                self.text_source.Update()
 
     def _get_display_text(self):
         """Format and truncate text to max 4 lines of ~25 chars for 2D legibility."""
@@ -1058,33 +1062,40 @@ class AnnotationMeasure:
         # Update to use the assigned measurement color instead of hardcoded black
         r, g, b = self.colour
         leader.GetProperty().SetColor(r, g, b)
-        leader.GetProperty().SetLineWidth(2.0)  # Matches width=2 in canvas
+        leader.GetProperty().SetLineWidth(1.0)
         leader.GetProperty().SetOpacity(1.0)
 
         # Empty string avoids text rendering by the leader
         leader.SetLabel("")
         self.leader_actor = leader
 
-        # 2. Draw the text via vtkTextActor for multi-line support and better background
-        text_actor = vtkTextActor()
-        text_actor.SetInput(f" {self._get_display_text()} ")
+        # 2. Draw the text via vtkTextSource (matching LinearMeasure configuration)
+        textsource = vtkTextSource()
 
-        prop = text_actor.GetTextProperty()
-        prop.SetColor(0.0, 0.0, 0.0)  # Standardized black for better legibility on yellow
-        bg_r, bg_g, bg_b = [c / 255.0 for c in MEASURE_TEXTBOX_COLOUR[:3]]
-        prop.SetBackgroundColor(bg_r, bg_g, bg_b)  # Yellow background
-        prop.SetBackgroundOpacity(1.0)
-        prop.SetFontFamilyToArial()
-        prop.SetFontSize(20)
-        prop.ShadowOff()
-        prop.SetFrame(True)
-        prop.SetFrameColor(0.0, 0.0, 0.0)  # Black border
+        # Manually wrap long annotation text for 3D viewer (~30 chars)
+        comment_text = self._text if self._text else "..."
+        wrapped_3d_text = "\n".join(textwrap.wrap(comment_text, 30))
+        textsource.SetText(wrapped_3d_text)
+        textsource.Update()
 
-        text_actor.GetPositionCoordinate().SetCoordinateSystemToWorld()
-        # Text box anchored at Click 2
-        text_actor.GetPositionCoordinate().SetValue(x2, y2, z2)
+        textsource.SetBackgroundColor((250 / 255.0, 247 / 255.0, 218 / 255.0))
+        textsource.SetForegroundColor(self.colour)
 
-        self.text_actor = text_actor
+        m = vtkPolyDataMapper2D()
+        m.SetInputConnection(textsource.GetOutputPort())
+
+        a = vtkActor2D()
+        a.SetMapper(m)
+
+        tx, ty, tz = ((i + j) / 2.0 for i, j in zip(p1, p2))
+        a.GetPositionCoordinate().SetCoordinateSystemToWorld()
+        a.GetPositionCoordinate().SetValue(tx, ty, tz)
+
+        a.GetProperty().SetColor((0, 1, 0))
+        a.GetProperty().SetOpacity(0.75)
+
+        self.text_actor = a
+        self.text_source = textsource
 
     def draw_to_canvas(self, gc, canvas):
         coord = vtkCoordinate()
@@ -1101,8 +1112,8 @@ class AnnotationMeasure:
 
             wrapped = self._get_display_text()
 
-            # Anchor text box at Click 2 (p1) with minimal spacing
-            tx, ty = p1
+            # Anchor text box at midpoint (matching LinearMeasure)
+            tx, ty = (p0[0] + p1[0]) / 2.0, (p0[1] + p1[1]) / 2.0
 
             # Retrieve canvas size safely (same as used in OnPaint)
             cw_canvas, ch_canvas = canvas.canvas_renderer.GetSize()
@@ -1122,29 +1133,11 @@ class AnnotationMeasure:
             # Y-axis clamping (VTK uses bottom-left: 0 is bottom, ch is top)
             ty = max(padding, min(ty, ch_canvas - bh - padding))
 
-            # Refine arrow anchor: Start from the center of the box side closest to target
-            # In VTK display coords: tx is LEFT, tx+bw is RIGHT, ty is BOTTOM, ty+bh is TOP
-            cx, cy = tx + bw / 2, ty + bh / 2  # Center of box
-
-            dx = p0[0] - cx
-            dy = p0[1] - cy
-
-            # Determine which side is closest based on aspect ratio and direction
-            if abs(dx) * bh > abs(dy) * bw:
-                # Closer to left or right sides
-                ax = tx if dx < 0 else tx + bw
-                ay = cy
-            else:
-                # Closer to top or bottom sides
-                ax = cx
-                ay = ty if dy < 0 else ty + bh
-
-            # Draw the line from the adjusted box edge (ax, ay) to target (p0)
+            # Draw the full line from p1 to p0
             canvas.draw_line(
-                (ax, ay),
+                p1,
                 p0,
                 arrow_end=True,
-                width=3,
                 colour=line_colour,
             )
 

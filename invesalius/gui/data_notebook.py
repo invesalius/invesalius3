@@ -1854,7 +1854,7 @@ class MeasuresListCtrlPanel(InvListCtrl):
         self.InsertColumn(3, _("Type"))
         self.InsertColumn(4, _("Value"))
 
-        self.SetColumnWidth(0, 18)
+        self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 90)
         self.SetColumnWidth(2, 50)
         self.SetColumnWidth(3, 75)
