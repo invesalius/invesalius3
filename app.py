@@ -241,19 +241,6 @@ class Inv3SplashScreen(SplashScreen):
         p = Thread(target=utils.UpdateCheck, args=())
         p.start()
 
-        if not session.ExitedSuccessfullyLastTime():
-            # Reopen project
-            project_path = session.GetState("project_path")
-            if project_path is not None:
-                filepath = os.path.join(project_path[0], project_path[1])
-                if os.path.exists(filepath):
-                    Publisher.sendMessage("Open project", filepath=filepath)
-                else:
-                    utils.debug(f"File doesn't exist: {filepath}")
-                    session.CloseProject()
-        else:
-            session.CreateState()
-
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
         # destroyed
@@ -270,8 +257,113 @@ class Inv3SplashScreen(SplashScreen):
         if not self.main.IsShown():
             self.main.Show()
             self.main.Raise()
-        # Destroy the splash screen
-        self.Destroy()
+
+        # Hide splash screen so it doesn't linger visually
+        self.Hide()
+
+        # Defer crash recovery to ensure self.main geometry is fully realized
+        # by the window manager before center calculation (fixes GNOME Flashback)
+        wx.CallAfter(self._deferred_crash_recovery)
+
+    def _deferred_crash_recovery(self):
+        self.CheckCrashRecovery()
+        # Guard: The parent SplashScreen auto-destroys itself via a timer.
+        # If the user took time on the dialog, the C++ object may already be
+        # gone by now, so only call Destroy() if we're still alive.
+        try:
+            if not self.IsBeingDeleted():
+                self.Destroy()
+        except RuntimeError:
+            pass  # Already destroyed by splash screen timeout — that's fine
+
+    def _mark_recovered_project_as_changed(self):
+        """Called after opening a recovered backup to mark it as having unsaved
+        changes, so the 'Save before closing?' dialog is shown correctly."""
+        import invesalius.constants as const
+
+        session.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
+        session._has_unsaved_changes = True
+
+    def CheckCrashRecovery(self):
+        if not session.ExitedSuccessfullyLastTime():
+            # Check for auto-backup
+            backup_path = session.GetAutoBackupPath()
+
+            if backup_path:
+                # Show recovery dialog
+                msg = (
+                    "InVesalius did not exit successfully last time.\n\n"
+                    "An auto-backup of your unsaved work was found.\n"
+                    "Would you like to recover it?"
+                )
+                dlg = wx.MessageDialog(
+                    self.main, msg, "InVesalius 3 - Crash Recovery", wx.ICON_QUESTION | wx.YES_NO
+                )
+                dlg.SetYesNoLabels("Recover", "Discard")
+                dlg.CenterOnParent()
+
+                answer = dlg.ShowModal()
+                dlg.Destroy()
+
+                if answer == wx.ID_YES:
+                    # Recover from backup
+                    if os.path.exists(backup_path):
+                        wx.CallAfter(Publisher.sendMessage, "Open project", filepath=backup_path)
+                        # After project opens, mark it as CHANGED so the close
+                        # dialog asks "Do you want to save?" (the backup was
+                        # never formally saved by the user)
+                        wx.CallAfter(self._mark_recovered_project_as_changed)
+                    else:
+                        utils.debug(f"Backup file doesn't exist: {backup_path}")
+                        session.RemoveAutoBackup()
+                else:
+                    # User chose to discard backup
+                    session.RemoveAutoBackup()
+            else:
+                # No backup exists, but we crashed. Ask the user to re-open
+                project_path = session.GetState("project_path")
+                if project_path is not None:
+                    filepath = os.path.join(project_path[0], project_path[1])
+                    if os.path.exists(filepath):
+                        msg = (
+                            "InVesalius did not exit successfully last time.\n\n"
+                            f"Would you like to reopen the last opened project?\n{filepath}"
+                        )
+                        dlg = wx.MessageDialog(
+                            self.main,
+                            msg,
+                            "InVesalius 3 - Crash Recovery",
+                            wx.ICON_QUESTION | wx.YES_NO,
+                        )
+                        dlg.SetYesNoLabels("Reopen", "Cancel")
+                        dlg.CenterOnParent()
+
+                        answer = dlg.ShowModal()
+                        dlg.Destroy()
+
+                        if answer == wx.ID_YES:
+                            wx.CallAfter(Publisher.sendMessage, "Open project", filepath=filepath)
+                        else:
+                            # User canceled reopening last project
+                            session.CloseProject()
+                    else:
+                        utils.debug(f"File doesn't exist: {filepath}")
+                        session.CloseProject()
+                else:
+                    session.CloseProject()
+        else:
+            # Last exit was clean. Check if the user closed with "Store session"
+            # — in which case we should silently reopen the project, not show any dialog.
+            if session.GetState("stored_session"):
+                project_path = session.GetState("project_path")
+                if project_path:
+                    filepath = os.path.join(project_path[0], project_path[1])
+                    if os.path.exists(filepath):
+                        wx.CallAfter(Publisher.sendMessage, "Open project", filepath=filepath)
+                    else:
+                        utils.debug(f"Stored session project not found: {filepath}")
+            # Start fresh state for this new session (clears stored_session flag too)
+            session.CreateState()
 
 
 def non_gui_startup(args):
