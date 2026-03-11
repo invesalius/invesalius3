@@ -1873,13 +1873,14 @@ class ControlPanel(wx.Panel):
 
         self.target_selected = False
 
-        scroll_panel = scrolled.ScrolledPanel(self, -1, size=wx.Size(-1, 150))
+        scroll_panel_size = wx.Size(-1, 150) if sys.platform != "win32" else wx.Size(-1, 230)
+        scroll_panel = scrolled.ScrolledPanel(self, -1, size=scroll_panel_size)
         scroll_panel.SetupScrolling(scroll_x=False, scroll_y=True)
         self.scroll_panel = scroll_panel
 
         # Toggle button for neuronavigation
         tooltip = _("Start navigation")
-        btn_nav = wx.ToggleButton(self, -1, _("Start navigation"), size=wx.Size(80, -1))
+        btn_nav = wx.ToggleButton(self, -1, _("Start navigation"), size=wx.Size(215, -1))
         btn_nav.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         btn_nav.SetToolTip(tooltip)
         self.btn_nav = btn_nav
@@ -2105,7 +2106,7 @@ class ControlPanel(wx.Panel):
         start_navigation_button_sizer = wx.BoxSizer(wx.VERTICAL)
         start_navigation_button_sizer.AddMany(
             [
-                (btn_nav, 0, wx.EXPAND | wx.GROW),
+                (btn_nav, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.RIGHT, 15),
             ]
         )
 
@@ -2742,7 +2743,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # The marker list height is set to 120 pixels (accommodating 4 markers) if the screen height is
         # at most 1080 pixels (a commonly used height in laptops). Otherwise, the height grows linearly with
         # the screen height.
-        marker_list_height = max(120, int(screen_height / 4))
+        marker_list_height = max(120, int(screen_height / 5))
         self.marker_list_height = marker_list_height
 
         marker_list_ctrl = wx.ListCtrl(
