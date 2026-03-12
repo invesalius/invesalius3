@@ -56,7 +56,7 @@ class Image:
         session = ses.Session()
         state = session.GetState("image")
         if state is not None:
-            self.fiducials = np.array(state["image_fiducials"])
+            self.fiducials = np.array(state["image_fiducials"], dtype=np.float64)
 
     def LoadProject(self) -> None:
         self.fiducials = prj.Project().image_fiducials
