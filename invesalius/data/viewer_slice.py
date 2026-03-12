@@ -202,18 +202,27 @@ class _MarkerHighlightCircle(_CanvasHandlerBase):
 
     _COLOUR = (255, 165, 0, 200)  # orange, semi-transparent
     _RADIUS = 8
-    _LINE_WIDTH = 3
+    _LINE_WIDTH = 2
 
     def __init__(self, position=(0, 0, 0)):
         super().__init__(parent=None)
         self.position = position
         self.layer = 99  # draw on top of everything
+        self.axial_slice = None  # slice index where the marker lives in axial view
 
     def draw_to_canvas(self, gc, canvas):
         if not self.visible:
             return
+
+        viewer = canvas.viewer
+
+        # Only AXIAL needs a slice check; sagittal/coronal always show the projection
+        if viewer.orientation == "AXIAL" and viewer.slice_data is not None:
+            if self.axial_slice is not None and viewer.slice_data.number != self.axial_slice:
+                return
+
         px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
-        scale = canvas.viewer.GetContentScaleFactor()
+        scale = viewer.GetContentScaleFactor()
         canvas.draw_circle(
             (px, py),
             self._RADIUS * scale,
@@ -979,6 +988,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.OnHighlightMarker, "Highlight marker")
         Publisher.subscribe(self._on_unhighlight_marker, "Unhighlight marker")
+        Publisher.subscribe(self._on_delete_marker, "Delete marker")
+        Publisher.subscribe(self._on_delete_markers, "Delete markers")
 
     def RefreshViewer(self):
         self.Refresh()
@@ -1691,6 +1702,15 @@ class Viewer(wx.Panel):
                 self._marker_highlight = _MarkerHighlightCircle(position=pos)
             else:
                 self._marker_highlight.position = pos
+            # Compute the axial slice index the marker maps to
+            # (cannot use slice_data.number because ScrollSlice is deferred via wx.CallAfter)
+            if self.orientation == "AXIAL" and self.slice_data is not None:
+                try:
+                    px, py = self.get_slice_pixel_coord_by_world_pos(*pos)
+                    coord = self.calcultate_scroll_position(px, py)
+                    self._marker_highlight.axial_slice = int(coord[2])
+                except Exception:
+                    self._marker_highlight.axial_slice = self.slice_data.number
             if self._marker_highlight not in self.canvas.draw_list:
                 self.canvas.draw_list.append(self._marker_highlight)
             self.canvas.modified = True
@@ -1708,6 +1728,14 @@ class Viewer(wx.Panel):
             self.canvas.modified = True
             if not self.nav_status:
                 self.UpdateRender()
+
+    def _on_delete_marker(self, marker):
+        """Clear highlight when a single marker is deleted."""
+        self._on_unhighlight_marker()
+
+    def _on_delete_markers(self, markers):
+        """Clear highlight when multiple markers are deleted."""
+        self._on_unhighlight_marker()
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"

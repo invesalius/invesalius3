@@ -4083,7 +4083,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.FocusOnMarker(focus_index)
         else:
             self.currently_focused_marker = None  # disable focus if no markers left
-            Publisher.sendMessage("Unhighlight marker")
 
     def OnDeleteSelectedBrainTarget(self, evt):
         list_index = self.brain_targets_list_ctrl.GetFocusedItem()
