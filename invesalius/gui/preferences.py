@@ -128,6 +128,10 @@ class Preferences(wx.Dialog):
         # Must invert value as GUI returns 0 for Yes and 1 for No
         slice_interpolation = not bool(session.GetConfig("slice_interpolation"))
 
+        # Marker shapes (default to ball for both)
+        landmark_marker_shape = session.GetConfig("landmark_marker_shape", const.MARKER_SHAPE_BALL)
+        fiducial_marker_shape = session.GetConfig("fiducial_marker_shape", const.MARKER_SHAPE_CROSS)
+
         # logger = log.MyLogger()
         file_logging = log.invLogger.GetConfig("file_logging")
         file_logging_level = log.invLogger.GetConfig("file_logging_level")
@@ -141,6 +145,8 @@ class Preferences(wx.Dialog):
             const.SURFACE_INTERPOLATION: surface_interpolation,
             const.LANGUAGE: language,
             const.SLICE_INTERPOLATION: slice_interpolation,
+            const.LANDMARK_MARKER_SHAPE: landmark_marker_shape,
+            const.FIDUCIAL_MARKER_SHAPE: fiducial_marker_shape,
             const.FILE_LOGGING: file_logging,
             const.FILE_LOGGING_LEVEL: file_logging_level,
             const.APPEND_LOG_FILE: append_log_file,
@@ -209,8 +215,38 @@ class VisualizationTab(wx.Panel):
         bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer_slices.Add(rb_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
+        # Marker shape preferences
+        bsizer_markers = wx.StaticBoxSizer(wx.VERTICAL, self, _("Marker Shapes"))
+
+        lbl_landmark_shape = wx.StaticText(
+            bsizer_markers.GetStaticBox(), -1, _("Landmark Marker Shape")
+        )
+        rb_landmark_shape = self.rb_landmark_shape = wx.RadioBox(
+            bsizer_markers.GetStaticBox(),
+            -1,
+            choices=[_("Ball"), _("Cross")],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+        bsizer_markers.Add(lbl_landmark_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_markers.Add(rb_landmark_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        lbl_fiducial_shape = wx.StaticText(
+            bsizer_markers.GetStaticBox(), -1, _("Fiducial Marker Shape")
+        )
+        rb_fiducial_shape = self.rb_fiducial_shape = wx.RadioBox(
+            bsizer_markers.GetStaticBox(),
+            -1,
+            choices=[_("Ball"), _("Cross")],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+        bsizer_markers.Add(lbl_fiducial_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_markers.Add(rb_fiducial_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_slices, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+        border.Add(bsizer_markers, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
         # Creating MEP Mapping BoxSizer
@@ -228,6 +264,8 @@ class VisualizationTab(wx.Panel):
             const.SLICE_INTERPOLATION: not bool(
                 self.rb_inter_sl.GetSelection()
             ),  # 0 for Yes, 1 for No
+            const.LANDMARK_MARKER_SHAPE: self.rb_landmark_shape.GetSelection(),
+            const.FIDUCIAL_MARKER_SHAPE: self.rb_fiducial_shape.GetSelection(),
         }
         return options
 
@@ -554,10 +592,14 @@ class VisualizationTab(wx.Panel):
         rendering = values[const.RENDERING]
         surface_interpolation = values[const.SURFACE_INTERPOLATION]
         slice_interpolation = values[const.SLICE_INTERPOLATION]
+        landmark_marker_shape = values.get(const.LANDMARK_MARKER_SHAPE, const.MARKER_SHAPE_BALL)
+        fiducial_marker_shape = values.get(const.FIDUCIAL_MARKER_SHAPE, const.MARKER_SHAPE_CROSS)
 
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
+        self.rb_landmark_shape.SetSelection(int(landmark_marker_shape))
+        self.rb_fiducial_shape.SetSelection(int(fiducial_marker_shape))
 
     def OnSelectColormap(self, event=None):
         self.conf["mep_colormap"] = self.colormaps[self.combo_thresh.GetSelection()]
