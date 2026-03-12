@@ -4083,6 +4083,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.FocusOnMarker(focus_index)
         else:
             self.currently_focused_marker = None  # disable focus if no markers left
+            Publisher.sendMessage("Unhighlight marker")
 
     def OnDeleteSelectedBrainTarget(self, evt):
         list_index = self.brain_targets_list_ctrl.GetFocusedItem()
@@ -4405,7 +4406,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         marker = Marker()
 
-        marker.position = position or self.current_position
+        if position is None:
+            sl = slice_.Slice()
+            spacing = sl.spacing
+            position = [
+                sl.buffer_slices["SAGITAL"].index * spacing[0],
+                sl.buffer_slices["CORONAL"].index * spacing[1],
+                sl.buffer_slices["AXIAL"].index * spacing[2],
+            ]
+        marker.position = position
         marker.orientation = orientation or self.current_orientation
 
         marker.colour = colour or self.marker_colour

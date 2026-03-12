@@ -190,6 +190,39 @@ class ContourMIPConfig(wx.Panel):
             self.txt_mip_border.Disable()
 
 
+# ---------------------------------------------------------------------------
+# Lightweight canvas drawable: orange ring shown at the selected marker's
+# world position on each 2D slice view.  (Stage 2 – marker highlight overlay)
+# ---------------------------------------------------------------------------
+from invesalius.gui.widgets.canvas_renderer import CanvasHandlerBase as _CanvasHandlerBase
+
+
+class _MarkerHighlightCircle(_CanvasHandlerBase):
+    """A small orange ring drawn at a 3-D world position on the slice canvas."""
+
+    _COLOUR = (255, 165, 0, 200)  # orange, semi-transparent
+    _RADIUS = 8
+    _LINE_WIDTH = 3
+
+    def __init__(self, position=(0, 0, 0)):
+        super().__init__(parent=None)
+        self.position = position
+        self.layer = 99  # draw on top of everything
+
+    def draw_to_canvas(self, gc, canvas):
+        if not self.visible:
+            return
+        px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
+        scale = canvas.viewer.GetContentScaleFactor()
+        canvas.draw_circle(
+            (px, py),
+            self._RADIUS * scale,
+            width=self._LINE_WIDTH,
+            line_colour=self._COLOUR,
+            fill_colour=(0, 0, 0, 0),
+        )
+
+
 class Viewer(wx.Panel):
     def __init__(self, prnt, orientation="AXIAL"):
         wx.Panel.__init__(self, prnt, size=wx.Size(320, 300))
@@ -248,6 +281,9 @@ class Viewer(wx.Panel):
         # VTK pipeline and actors
         self.__config_interactor()
         self.cross_actor = vtkActor()
+
+        # Stage 2: marker highlight overlay (orange circle on slice views)
+        self._marker_highlight = None
 
         self.__bind_events()
         self.__bind_events_wx()
@@ -623,6 +659,7 @@ class Viewer(wx.Panel):
         :param position: list of 6 coordinates in vtk world coordinate system wx, wy, wz
         """
         self.cross.SetFocalPoint(position[:3])
+        self.UpdateSlicesPosition(position[:3])
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -940,6 +977,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetCrossPos, "Set Update cross pos")
         Publisher.subscribe(self.UpdateCross, "Update cross pos")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.OnHighlightMarker, "Highlight marker")
+        Publisher.subscribe(self._on_unhighlight_marker, "Unhighlight marker")
 
     def RefreshViewer(self):
         self.Refresh()
@@ -1059,6 +1098,7 @@ class Viewer(wx.Panel):
 
         self.orientation_texts = []
 
+        self._marker_highlight = None
         self.slice_number = 0
         self.cursor = None
         self.wl_text = None
@@ -1631,6 +1671,43 @@ class Viewer(wx.Panel):
         self.OnScrollBar()
         if not self.nav_status:
             self.UpdateRender()
+
+    def OnHighlightMarker(self, marker):
+        """Synchronize slice viewers and show a highlight circle at the marker position."""
+        if marker is None:
+            return
+
+        # Stage 1: only the AXIAL viewer drives the slice sync
+        if self.orientation == "AXIAL":
+            Publisher.sendMessage(
+                "Set cross focal point",
+                position=[marker.x, marker.y, marker.z, None, None, None],
+            )
+
+        # Stage 2: show an orange circle overlay on ALL slice views
+        if self.canvas is not None:
+            pos = list(marker.position)
+            if self._marker_highlight is None:
+                self._marker_highlight = _MarkerHighlightCircle(position=pos)
+            else:
+                self._marker_highlight.position = pos
+            if self._marker_highlight not in self.canvas.draw_list:
+                self.canvas.draw_list.append(self._marker_highlight)
+            self.canvas.modified = True
+            if not self.nav_status:
+                self.UpdateRender()
+
+    def _on_unhighlight_marker(self):
+        """Remove the marker highlight overlay from this slice view."""
+        if (
+            self._marker_highlight is not None
+            and self.canvas is not None
+            and self._marker_highlight in self.canvas.draw_list
+        ):
+            self.canvas.draw_list.remove(self._marker_highlight)
+            self.canvas.modified = True
+            if not self.nav_status:
+                self.UpdateRender()
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"
