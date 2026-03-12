@@ -1823,9 +1823,9 @@ class Viewer(wx.Panel):
         threshold = self.efield_threshold
         highlight_rgb = (255, 165, 0)
         for i in range(n):
-            norm_val = i / (n - 1)
-        if norm_val >= threshold:
-            lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)  # Set to orange
+            norm_val = i / (n - 1) if n > 1 else 0
+            if norm_val >= threshold:
+                lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)
         return lut
 
     def GetEfieldMaxMin(self, e_field_norms):
