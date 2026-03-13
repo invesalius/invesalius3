@@ -2696,7 +2696,8 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                     self.config.mask.volume.set_colour(self.config.mask.colour)
 
                 self.config.mask.name = self.config.mask_name
-                self.viewer.slice_._add_mask_into_proj(self.config.mask)
+                # Avoid triggering an immediate "Show mask" (and thus a render) while adding:
+                self.viewer.slice_._add_mask_into_proj(self.config.mask, show=False)
                 self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
                 Publisher.sendMessage("Change mask selected", index=self.config.mask.index)
 
@@ -2711,6 +2712,9 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                         Publisher.sendMessage(
                             "Remove mask preview", mask_3d_actor=old_mask.volume._actor
                         )
+                    
+                # Now that actors are ready, trigger the final visibility and render
+                Publisher.sendMessage("Show mask", index=self.config.mask.index, value=True)
                 Publisher.sendMessage("Render volume viewer")
 
             del self.viewer.slice_.aux_matrices["SELECT"]
