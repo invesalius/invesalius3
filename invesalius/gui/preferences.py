@@ -217,7 +217,7 @@ class VisualizationTab(wx.Panel):
 
         # Marker shape preferences - only show in Navigation mode
         mode = self.session.GetConfig("mode")
-        is_navigation_mode = (mode == const.MODE_NAVIGATOR)
+        is_navigation_mode = mode == const.MODE_NAVIGATOR
         if is_navigation_mode:
             bsizer_markers = wx.StaticBoxSizer(wx.VERTICAL, self, _("Marker Shapes"))
 
@@ -611,7 +611,9 @@ class VisualizationTab(wx.Panel):
         # Only load marker shape preferences if controls exist (navigation mode)
         if self.rb_landmark_shape is not None and self.rb_fiducial_shape is not None:
             landmark_marker_shape = values.get(const.LANDMARK_MARKER_SHAPE, const.MARKER_SHAPE_BALL)
-            fiducial_marker_shape = values.get(const.FIDUCIAL_MARKER_SHAPE, const.MARKER_SHAPE_CROSS)
+            fiducial_marker_shape = values.get(
+                const.FIDUCIAL_MARKER_SHAPE, const.MARKER_SHAPE_CROSS
+            )
             self.rb_landmark_shape.SetSelection(int(landmark_marker_shape))
             self.rb_fiducial_shape.SetSelection(int(fiducial_marker_shape))
 
