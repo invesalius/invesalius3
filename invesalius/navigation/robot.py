@@ -21,7 +21,6 @@ from enum import Enum
 
 import numpy as np
 import wx
-from scipy.spatial import cKDTree
 from scipy.spatial.transform import Rotation
 
 import invesalius.data.coordinates as dco
@@ -29,6 +28,10 @@ import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.i18n import tr as _
+from invesalius.math_utils import (
+    gjk_distance,
+    obb_vertices_from_center_axes,
+)
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
@@ -38,6 +41,9 @@ class RobotObjective(Enum):
     TRACK_TARGET = 1
     MOVE_AWAY_FROM_HEAD = 2
 
+# Coil half-thickness in mm. The coil plane is expanded up and down by this
+# amount along the surface normal to form a 3D bounding box.
+COIL_HALF_THICKNESS = 20.0
 
 # Only one robot will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
@@ -48,7 +54,7 @@ class Robot:
         self.icp = icp
         self.enabled_in_gui = False
         self.coil_name = None
-        self.shifts_center_coil = {}
+        self.obb_local = None  # OBB definition in marker-local frame: (center, axes_3x3)
         self.init_coil_angle = []
         self.init_center_coord = []
 
@@ -236,52 +242,38 @@ class Robot:
 
         center_P_clean = (left + right) / 2.0
 
-        # Pontos base (sempre incluídos)
-        points_of_interest_world = {
-            "left": left,
-            "right": right,
-            "anterior": anterior,
-            "center": center_P_clean,
-        }
-
-        # Criar sistema de coordenadas 2D no plano formado por left, right, anterior
-        # Vetor base 1: da esquerda para direita
+        # Coil coordinate system from left, right, anterior fiducials
+        # u_vector: width direction (left → right)
         u_vector = right - left
-
-        # Vetor base 2: do centro para anterior (profundidade)
+        # v_vector: depth direction (center → anterior)
         v_vector = anterior - center_P_clean
 
-        # Criar grade uniforme 8x8 = 64 pontos
-        # Cobrir região tanto na frente (anterior) quanto atrás (mesma distância)
-        grid_size = 8  # 8x8 = 64 pontos
-
-        point_idx = len(points_of_interest_world)
-
-        # Gerar pontos uniformemente distribuídos
-        for i in range(grid_size):
-            for j in range(grid_size):
-                # Coordenadas normalizadas [0, 1] para direção horizontal (left → right)
-                u_factor = i / (grid_size - 1) if grid_size > 1 else 0.5
-
-                # Coordenadas normalizadas [-1, 1] para direção vertical (trás → frente)
-                # v_factor = -1: mesma distância para trás
-                # v_factor = 0: no centro (linha left-right)
-                # v_factor = +1: anterior (frente)
-                v_factor = -1 + (2 * j / (grid_size - 1)) if grid_size > 1 else 0.0
-
-                # Ponto no plano: partindo de 'left', movendo em u (horizontal) e v (profundidade)
-                point = left + u_factor * u_vector + v_factor * v_vector
-
-                points_of_interest_world[f"p{point_idx}"] = point
-                point_idx += 1
-
-        # Total: 68 pontos (4 base + 64 grid)
         R_world_to_marker = Rotation.from_euler("ZYX", init_coil_angle, degrees=True).as_matrix().T
 
-        self.shifts_center_coil = {
-            name: R_world_to_marker @ (p_world - init_coord_coil)
-            for name, p_world in points_of_interest_world.items()
-        }
+        # --- OBB (Oriented Bounding Box) construction ---
+        # Build a rectangular block from the coil fiducials:
+        #   half_u: half-width  (left → right)
+        #   half_v: half-depth  (center → anterior, mirrored to posterior)
+        #   half_n: half-height (normal to the coil plane, using COIL_HALF_THICKNESS)
+        half_u = u_vector / 2.0
+        half_v = v_vector  # anterior - center is already the half-depth
+
+        normal = np.cross(half_u, half_v)
+        normal_norm = np.linalg.norm(normal)
+        if normal_norm > 1e-9:
+            normal_unit = normal / normal_norm
+        else:
+            normal_unit = np.array([0.0, 0.0, 1.0])
+        half_n = normal_unit * COIL_HALF_THICKNESS
+
+        # Transform to marker-local coordinate frame
+        obb_center_local = R_world_to_marker @ (center_P_clean - init_coord_coil)
+        obb_axes_local = np.array([
+            R_world_to_marker @ half_u,
+            R_world_to_marker @ half_v,
+            R_world_to_marker @ half_n,
+        ])
+        self.obb_local = (obb_center_local, obb_axes_local)
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
@@ -422,11 +414,15 @@ class Robots(metaclass=Singleton):
         if not all(coils_name):
             return None, None
 
-        points_of_interesting_all = {}
+        obbs_world = {}  # OBB vertices in world frame for each robot
         coords_all = {}  # Store coords for each robot
 
         for coil_name in coils_name:
             robot = self.GetRobotByCoil(coil_name=coil_name)
+
+            # Skip if OBB was not computed for this coil
+            if robot.obb_local is None:
+                return None, None
 
             # Get tracker coordinates
             coords, _ = robot.tracker.TrackerCoordinates.GetCoordinates(robot_ID=robot.robot_name)
@@ -440,28 +436,22 @@ class Robots(metaclass=Singleton):
 
             R_atual = Rotation.from_euler("ZYX", angles_atual, degrees=True).as_matrix()
 
-            points_world = [
-                R_atual @ shift_local + t_atual for shift_local in robot.shifts_center_coil.values()
-            ]
-            points_of_interesting_all[robot.robot_name] = points_world
+            # Transform OBB from marker-local to world coordinates
+            obb_center_local, obb_axes_local = robot.obb_local
+            obb_center_world = R_atual @ obb_center_local + t_atual
+            obb_axes_world = (R_atual @ obb_axes_local.T).T  # each row is a half-axis in world
 
-        if len(points_of_interesting_all) < 2:
+            # Build the 8 vertices of the OBB
+            vertices = obb_vertices_from_center_axes(obb_center_world, obb_axes_world)
+            obbs_world[robot.robot_name] = vertices
+
+        if len(obbs_world) < 2:
             return None, None
 
-        tree = cKDTree(points_of_interesting_all["robot_1"])
-
-        distances, indices = tree.query(points_of_interesting_all["robot_2"])
-
-        # min_idx_robot2: index of closest point in robot_2
-        min_idx_robot2 = np.argmin(distances)
-        min_distance = distances[min_idx_robot2]
-
-        # min_idx_robot1: index of corresponding point in robot_1
-        min_idx_robot1 = indices[min_idx_robot2]
-
-        # Coordinates of the closest points
-        closest_point_robot1 = points_of_interesting_all["robot_1"][min_idx_robot1]
-        closest_point_robot2 = points_of_interesting_all["robot_2"][min_idx_robot2]
+        # Use GJK to compute minimum distance between the two OBBs
+        min_distance, closest_pt_1, closest_pt_2 = gjk_distance(
+            obbs_world["robot_1"], obbs_world["robot_2"]
+        )
 
         # Head/subject coordinate (tracker index 1)
         subject_pos_robot1 = coords_all["robot_1"][1][:3]
@@ -469,10 +459,10 @@ class Robots(metaclass=Singleton):
 
         brake_vectors = {}
         brake_vectors["robot_1"] = self.CalculateBrakeVector(
-            closest_point_robot1, closest_point_robot2, subject_pos_robot1
+            closest_pt_1, closest_pt_2, subject_pos_robot1
         )
         brake_vectors["robot_2"] = self.CalculateBrakeVector(
-            closest_point_robot2, closest_point_robot1, subject_pos_robot2
+            closest_pt_2, closest_pt_1, subject_pos_robot2
         )
 
         return min_distance, brake_vectors
