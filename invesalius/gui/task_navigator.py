@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 import itertools
 import os
+import re
 import time
 from functools import partial
 from typing import Optional
@@ -2790,6 +2791,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.SetCameraToFocusOnMarker)
+        marker_list_ctrl.Bind(wx.EVT_CHAR_HOOK, self.OnMarkerListKeyDown)
 
         self.marker_list_ctrl = marker_list_ctrl
         self.column_sorter = ColumnSorterMixin.__init__(
@@ -3560,6 +3562,22 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             if current_uuid == target_uuid:
                 self.itemDataMap[key][const.TARGET_COLUMN] = "Yes"
 
+    @staticmethod
+    def _make_copy_label(original_label: str, existing_labels: list[str]) -> str:
+        """Generate a duplicate label that avoids stacking, e.g. 'M (copy)', 'M (copy 2)'."""
+        # Strip an existing " (copy)" or " (copy N)" suffix so we always work from the base.
+        base = re.sub(r" \(copy(?: \d+)?\)$", "", original_label)
+
+        candidate = f"{base} (copy)"
+        if candidate not in existing_labels:
+            return candidate
+
+        # Find the next available number.
+        n = 2
+        while f"{base} (copy {n})" in existing_labels:
+            n += 1
+        return f"{base} (copy {n})"
+
     def _DuplicateMarker(
         self, marker_idx: Optional[int] = None, duplicate_brain_target_list: bool = True
     ) -> None:
@@ -3587,13 +3605,23 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(marker_idx)
         new_marker = marker.duplicate()
 
-        # Update duplicate attributes
-        new_marker.label = f"{new_marker.label} (copy)"
+        # Generate a unique copy label that avoids stacking.
+        existing_labels = [m.label for m in self.markers.list]
+        new_marker.label = self._make_copy_label(new_marker.label, existing_labels)
+
         if not duplicate_brain_target_list:
             new_marker.brain_target_list = []
+        else:
+            # Regenerate UUIDs for each brain target to avoid collisions with the original.
+            for brain_target in new_marker.brain_target_list:
+                brain_target["marker_uuid"] = str(uuid.uuid4())
 
         # Add the new marker
         self.markers.AddMarker(new_marker, render=True, focus=True)
+
+        # Scroll the marker list to ensure the duplicated marker is visible.
+        new_index = self.marker_list_ctrl.GetItemCount() - 1
+        self.marker_list_ctrl.EnsureVisible(new_index)
 
         # Update target if necessary
         if set_target:
@@ -3602,12 +3630,45 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 self.markers.UnsetTarget(current_target.marker_id)
             self.markers.SetTarget(new_marker.marker_id)
 
+        # Force brain target visualization refresh to ensure correct rendering.
+        if new_marker.brain_target_list:
+            self.OnMarkerFocused(evt=None)
+
+    def OnMarkerListKeyDown(self, evt):
+        """Handle keyboard shortcuts on the marker list (Ctrl/Cmd+D to duplicate)."""
+        key_code = evt.GetKeyCode()
+        if key_code in (ord("D"), ord("d")) and (evt.ControlDown() or evt.CmdDown()):
+            self.OnMenuDuplicateMarker(None)
+        else:
+            evt.Skip()
+
     def OnMenuDuplicateMarker(self, evt):
         marker_idx = self.marker_list_ctrl.GetFocusedItem()
         if marker_idx == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-        self._DuplicateMarker(marker_idx)
+
+        marker = self.__get_marker(marker_idx)
+
+        # If the marker has brain targets, ask the user whether to duplicate them.
+        if marker.brain_target_list:
+            dlg_confirm = wx.MessageDialog(
+                self,
+                _("Duplicate associated brain targets as well?"),
+                _("Duplicate Marker"),
+                wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION,
+            )
+            result = dlg_confirm.ShowModal()
+            dlg_confirm.Destroy()
+
+            if result == wx.ID_CANCEL:
+                return
+
+            duplicate_brain_targets = result == wx.ID_YES
+            self._DuplicateMarker(marker_idx, duplicate_brain_target_list=duplicate_brain_targets)
+        else:
+            # No brain targets — duplicate directly without prompting.
+            self._DuplicateMarker(marker_idx)
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.indexes_saved_lists = []
@@ -3835,6 +3896,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         if marker_coil.brain_target_list:
             self.marker_list_ctrl.SetItemBackgroundColour(list_index, wx.Colour(251, 243, 226))
+            self.marker_list_ctrl.SetItemTextColour(list_index, wx.Colour(0, 0, 0))
         self.OnMarkerFocused(evt=None)
         self.markers.SaveState()
         dialog.Destroy()
@@ -3896,6 +3958,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Update the marker list control.
         if marker.brain_target_list:
             self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(251, 243, 226))
+            self.marker_list_ctrl.SetItemTextColour(idx, wx.Colour(0, 0, 0))
         else:
             self.marker_list_ctrl.SetItemBackgroundColour(idx, "white")
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
@@ -4470,6 +4533,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         if marker.brain_target_list:
             self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(251, 243, 226))
+            self.marker_list_ctrl.SetItemTextColour(num_items, wx.Colour(0, 0, 0))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 
