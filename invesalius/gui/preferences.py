@@ -254,9 +254,9 @@ class VisualizationTab(wx.Panel):
 
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_slices, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+        border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         if bsizer_markers:
             border.Add(bsizer_markers, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
-        border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
         # Creating MEP Mapping BoxSizer
         if self.conf.get("mep_enabled") is True:
