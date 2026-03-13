@@ -7,15 +7,36 @@ import numpy as np
 # Import the compiled Rust extension module
 from invesalius_rs import _native
 
+
+def _get_native(name):
+    """
+    Safely retrieve a function from the native Rust extension module.
+
+    Returns the function if available, or a stub that raises NotImplementedError.
+    This guards against missing functions in older or partial builds.
+    """
+    fn = getattr(_native, name, None)
+    if fn is not None:
+        return fn
+
+    def _not_available(*args, **kwargs):
+        raise NotImplementedError(
+            f"{name} is not available in this build of invesalius_rs. "
+            "Please rebuild the Rust extension from source."
+        )
+
+    return _not_available
+
+
 # Re-export all symbols from the native module
-floodfill = _native.floodfill
-_native_floodfill_threshold = _native.floodfill_threshold
-_native_floodfill_threshold_inplace = _native.floodfill_threshold_inplace
-_native_floodfill_auto_threshold = _native.floodfill_auto_threshold
-fill_holes_automatically = _native.fill_holes_automatically
-_native_floodfill_voronoi_inplace = _native.floodfill_voronoi_inplace
-_native_jump_flooding = _native.jump_flooding
-_native_count_regions = _native.count_regions
+floodfill = _get_native("floodfill")
+_native_floodfill_threshold = _get_native("floodfill_threshold")
+_native_floodfill_threshold_inplace = _get_native("floodfill_threshold_inplace")
+_native_floodfill_auto_threshold = _get_native("floodfill_auto_threshold")
+fill_holes_automatically = _get_native("fill_holes_automatically")
+_native_floodfill_voronoi_inplace = _get_native("floodfill_voronoi_inplace")
+_native_jump_flooding = _get_native("jump_flooding")
+_native_count_regions = _get_native("count_regions")
 
 
 def floodfill_threshold(data, seeds, t0, t1, fill, strct, out):
@@ -80,27 +101,31 @@ def jump_flooding(distance_map, map_owners, sites, normalize):
     return _native_jump_flooding(distance_map, map_owners, sites, normalize)
 
 
-# lmip = _native.lmip
-apply_view_matrix_transform = _native.apply_view_matrix_transform
-convolve_non_zero = _native.convolve_non_zero
-mask_cut = _native.mask_cut
+# lmip = _get_native("lmip")
+apply_view_matrix_transform = _get_native("apply_view_matrix_transform")
+convolve_non_zero = _get_native("convolve_non_zero")
+mask_cut = _get_native("mask_cut")
+
+
+_native_mida = _get_native("mida")
+_native_fast_countour_mip = _get_native("fast_countour_mip")
 
 
 def mida(image: np.ndarray, axis: int, wl: int, ww: int, out: np.ndarray):
     """
     Apply MIDA (Maximum Intensity Diffusion Algorithm) to the image.
     """
-    return _native.mida(image, axis, int(wl), int(ww), out)
+    return _native_mida(image, axis, int(wl), int(ww), out)
 
 
 def fast_countour_mip(
     image: np.ndarray, n: float, axis: int, wl: int, ww: int, tmip: int, out: np.ndarray
 ):
-    return _native.fast_countour_mip(image, n, axis, int(wl), int(ww), tmip, out)
+    return _native_fast_countour_mip(image, n, axis, int(wl), int(ww), tmip, out)
 
 
 # Rust context-aware smoothing function
-_context_aware_smoothing = _native.context_aware_smoothing
+_context_aware_smoothing = _get_native("context_aware_smoothing")
 
 
 def count_regions(image: np.ndarray, number_regions: int) -> np.ndarray:
