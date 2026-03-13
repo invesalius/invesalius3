@@ -2712,7 +2712,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                         Publisher.sendMessage(
                             "Remove mask preview", mask_3d_actor=old_mask.volume._actor
                         )
-                    
+
                 # Now that actors are ready, trigger the final visibility and render
                 Publisher.sendMessage("Show mask", index=self.config.mask.index, value=True)
                 Publisher.sendMessage("Render volume viewer")
@@ -2764,7 +2764,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         self.config.mask.was_edited = True
         Publisher.sendMessage("Reload actual slice")
-        
+
         # Bug 1 fix: also update the 3D Mask Preview to show selection in red
         if ses.Session().mask_3d_preview:
             self.config.mask.imagedata = self.config.mask.as_vtkimagedata()
