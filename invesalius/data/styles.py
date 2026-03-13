@@ -2689,11 +2689,11 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 # Capture old mask before selection changes, so we can hide its 3D preview
                 old_mask = self.viewer.slice_.current_mask
 
-                # If 3D preview is enabled, pre-create the 3D volume actor for the new mask
-                # BEFORE it's added. This ensures that when _add_mask_into_proj triggers
-                # "Show mask", data_notebook.py successfully finds the actor and loads it.
                 if ses.Session().mask_3d_preview:
+                    self.config.mask.imagedata = self.config.mask.as_vtkimagedata()
                     self.config.mask.create_3d_preview()
+                    # Ensure final colour is set BEFORE any render (fixes color flash)
+                    self.config.mask.volume.set_colour(self.config.mask.colour)
 
                 self.config.mask.name = self.config.mask_name
                 self.viewer.slice_._add_mask_into_proj(self.config.mask)
@@ -2701,13 +2701,17 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 Publisher.sendMessage("Change mask selected", index=self.config.mask.index)
 
                 if ses.Session().mask_3d_preview:
+                    # Load new actor FIRST, then remove old one — avoids black-flash frame
+                    Publisher.sendMessage(
+                        "Load mask preview", mask_3d_actor=self.config.mask.volume._actor, flag=True
+                    )
                     # Safely detach the old mask's 3D preview from the renderer.
                     # We do not destroy the volume data because the mask is still in the project.
                     if old_mask is not None and old_mask.volume is not None:
                         Publisher.sendMessage(
                             "Remove mask preview", mask_3d_actor=old_mask.volume._actor
                         )
-                    Publisher.sendMessage("Render volume viewer")
+                Publisher.sendMessage("Render volume viewer")
 
             del self.viewer.slice_.aux_matrices["SELECT"]
             self.viewer.slice_.to_show_aux = ""
@@ -2756,6 +2760,16 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         self.config.mask.was_edited = True
         Publisher.sendMessage("Reload actual slice")
+        
+        # Bug 1 fix: also update the 3D Mask Preview to show selection in red
+        if ses.Session().mask_3d_preview:
+            self.config.mask.imagedata = self.config.mask.as_vtkimagedata()
+            self.config.mask.create_3d_preview()
+            self.config.mask.volume.set_colour((1.0, 0.0, 0.0))
+            Publisher.sendMessage(
+                "Load mask preview", mask_3d_actor=self.config.mask.volume._actor, flag=True
+            )
+            Publisher.sendMessage("Render volume viewer")
 
     def _create_new_mask(self):
         mask = self.viewer.slice_.create_new_mask(show=False, add_to_project=False)
