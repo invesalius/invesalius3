@@ -336,6 +336,7 @@ class Viewer(wx.Panel):
         self.GoGEfieldVector = None
         self.vectorfield_actor = None
         self.efield_scalar_bar = None
+        self.efield_band_actor = None
         self.edge_actor = None
         # self.dummy_efield_coil_actor = None
         self.target_at_cortex = None
@@ -791,6 +792,16 @@ class Viewer(wx.Panel):
                 _("InVesalius was not able to export this picture"), _("Export picture error")
             )
 
+    def _cleanup_efield_actors(self):
+        if self.efield_band_actor is not None:
+            self.ren.RemoveViewProp(self.efield_band_actor)
+            self.efield_band_actor = None
+        if self.edge_actor is not None:
+            self.ren.RemoveViewProp(self.edge_actor)
+            self.edge_actor = None
+        if self.efield_scalar_bar is not None:
+            self.ren.RemoveActor2D(self.efield_scalar_bar)
+
     def OnCloseProject(self):
         if self.raycasting_volume:
             self.raycasting_volume = False
@@ -803,6 +814,8 @@ class Viewer(wx.Panel):
             self.mouse_pressed = 0
             self.on_wl = False
             self.slice_plane = 0
+
+        self._cleanup_efield_actors()
 
         self.interaction_style.Reset()
         self.SetInteractorStyle(const.STATE_DEFAULT)
@@ -1843,8 +1856,12 @@ class Viewer(wx.Panel):
         return closest_index
 
     def CalculateEdgesEfield(self):
+        if self.efield_band_actor is not None:
+            self.ren.RemoveViewProp(self.efield_band_actor)
         if self.edge_actor is not None:
             self.ren.RemoveViewProp(self.edge_actor)
+        if self.efield_scalar_bar is not None:
+            self.ren.RemoveActor2D(self.efield_scalar_bar)
         named_colors = vtkNamedColors()
         second_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
         second_lut.SetNumberOfTableValues(5)
@@ -1878,8 +1895,8 @@ class Viewer(wx.Panel):
         mapper.SetLookupTable(second_lut)
         mapper.SetScalarModeToUsePointData()
 
-        actor = vtkActor()
-        actor.SetMapper(mapper)
+        self.efield_band_actor = vtkActor()
+        self.efield_band_actor.SetMapper(mapper)
 
         edge_mapper = vtkPolyDataMapper()
         edge_mapper.SetInputData(bcf.GetContourEdgesOutput())
@@ -1889,8 +1906,8 @@ class Viewer(wx.Panel):
         self.edge_actor.SetMapper(edge_mapper)
         self.edge_actor.GetProperty().SetColor(named_colors.GetColor3d("Black"))
         self.edge_actor.GetProperty().SetLineWidth(3.0)
-        actor.GetProperty().SetOpacity(0)
-        self.ren.AddViewProp(actor)
+        self.efield_band_actor.GetProperty().SetOpacity(0)
+        self.ren.AddViewProp(self.efield_band_actor)
         self.ren.AddViewProp(self.edge_actor)
 
         self.efield_scalar_bar.SetLookupTable(self.efield_lut)
@@ -2134,8 +2151,12 @@ class Viewer(wx.Panel):
 
         self.efield_scalar_bar = e_field_brain.efield_scalar_bar
 
+        if self.efield_band_actor is not None:
+            self.ren.RemoveViewProp(self.efield_band_actor)
+            self.efield_band_actor = None
         if self.edge_actor is not None:
             self.ren.RemoveActor(self.edge_actor)
+            self.edge_actor = None
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
@@ -2535,6 +2556,7 @@ class Viewer(wx.Panel):
 
         self.camera_show_object = None
         if not self.nav_status:
+            self._cleanup_efield_actors()
             self.UpdateRender()
 
     def UpdateSeedOffset(self, data):
