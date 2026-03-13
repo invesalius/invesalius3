@@ -1100,9 +1100,12 @@ class AnnotationMeasure:
     def draw_to_canvas(self, gc, canvas):
         coord = vtkCoordinate()
         points = []
+        cw_canvas, ch_canvas = canvas.canvas_renderer.GetSize()
         for p in self.points:
             coord.SetValue(p)
             cx, cy = coord.GetComputedDisplayValue(canvas.evt_renderer)
+            if cx < 0 or cx > cw_canvas or cy < 0 or cy > ch_canvas:
+                return
             points.append((cx, cy))
 
         if len(points) > 1:
