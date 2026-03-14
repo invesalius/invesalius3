@@ -59,6 +59,7 @@ CONFIG_INIT = {
     "logging_file": "",
     "console_logging": 0,
     "console_logging_level": 0,
+    "hardware_stereo": False,
     "robot": {
         "robot_ip_options": "",
     },
@@ -297,6 +298,12 @@ class Session(metaclass=Singleton):
         slice_interpolation = config.getint("session", "slice_interpolation")
         rendering = config.getint("session", "rendering")
         random_id = config.getint("session", "random_id")
+        
+        try:
+            hardware_stereo = config.getboolean("session", "hardware_stereo")
+        except ConfigParser.NoOptionError:
+            hardware_stereo = False
+
         do_file_logging = config.getint("session", "do_file_logging")
         file_logging_level = config.getint("session", "file_logging_level")
         append_log_file = config.getint("session", "append_log_file")
@@ -311,6 +318,7 @@ class Session(metaclass=Singleton):
         self.SetConfig("debug", debug)
         self.SetConfig("debug_efield", debug_efield)
         self.SetConfig("language", language)
+        self.SetConfig("hardware_stereo", hardware_stereo)
         self.SetConfig("last_dicom_folder", last_dicom_folder)
         self.SetConfig("surface_interpolation", surface_interpolation)
         self.SetConfig("slice_interpolation", slice_interpolation)

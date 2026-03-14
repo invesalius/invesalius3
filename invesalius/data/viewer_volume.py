@@ -160,6 +160,10 @@ class Viewer(wx.Panel):
         # other platforms.  Instead, we call widget.Enable().  This means
         # that the RWI::Initialized ivar is not set, but in THIS SPECIFIC CASE,
         # that doesn't matter.
+        session = ses.Session()
+        if session.GetConfig("hardware_stereo", False):
+            interactor.GetRenderWindow().SetStereoCapableWindow(1)
+
         interactor.Enable(1)
 
         ren = vtkRenderer()

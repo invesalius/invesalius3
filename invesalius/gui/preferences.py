@@ -127,6 +127,7 @@ class Preferences(wx.Dialog):
         language = session.GetConfig("language")
         # Must invert value as GUI returns 0 for Yes and 1 for No
         slice_interpolation = not bool(session.GetConfig("slice_interpolation"))
+        hardware_stereo = session.GetConfig("hardware_stereo", False)
 
         # logger = log.MyLogger()
         file_logging = log.invLogger.GetConfig("file_logging")
@@ -141,6 +142,7 @@ class Preferences(wx.Dialog):
             const.SURFACE_INTERPOLATION: surface_interpolation,
             const.LANGUAGE: language,
             const.SLICE_INTERPOLATION: slice_interpolation,
+            const.HARDWARE_STEREO: hardware_stereo,
             const.FILE_LOGGING: file_logging,
             const.FILE_LOGGING_LEVEL: file_logging_level,
             const.APPEND_LOG_FILE: append_log_file,
@@ -197,6 +199,11 @@ class VisualizationTab(wx.Panel):
         bsizer.Add(lbl_rendering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer.Add(rb_rendering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
+        cb_hardware_stereo = self.cb_hardware_stereo = wx.CheckBox(
+            bsizer.GetStaticBox(), -1, _("Enable Hardware Stereo (Requires restart)")
+        )
+        bsizer.Add(cb_hardware_stereo, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+
         bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, _("2D Visualization"))
         lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Slice Interpolation "))
         rb_inter_sl = self.rb_inter_sl = wx.RadioBox(
@@ -228,6 +235,7 @@ class VisualizationTab(wx.Panel):
             const.SLICE_INTERPOLATION: not bool(
                 self.rb_inter_sl.GetSelection()
             ),  # 0 for Yes, 1 for No
+            const.HARDWARE_STEREO: self.cb_hardware_stereo.GetValue(),
         }
         return options
 
@@ -554,10 +562,12 @@ class VisualizationTab(wx.Panel):
         rendering = values[const.RENDERING]
         surface_interpolation = values[const.SURFACE_INTERPOLATION]
         slice_interpolation = values[const.SLICE_INTERPOLATION]
+        hardware_stereo = values.get(const.HARDWARE_STEREO, False)
 
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
+        self.cb_hardware_stereo.SetValue(hardware_stereo)
 
     def OnSelectColormap(self, event=None):
         self.conf["mep_colormap"] = self.colormaps[self.combo_thresh.GetSelection()]
