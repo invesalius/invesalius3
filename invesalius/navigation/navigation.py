@@ -214,7 +214,7 @@ class UpdateNavigationScene(threading.Thread):
                     wx.CallAfter(
                         Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
                     )
-                    self.robot.UpdateCoilsDistance(self.navigation.coord_raw)
+                    self.robot.UpdateCoilsDistance()
 
                     for coil in coils:
                         robot_ID = self.robot.GetRobotByCoil(coil).robot_name

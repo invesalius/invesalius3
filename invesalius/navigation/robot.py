@@ -43,7 +43,7 @@ class RobotObjective(Enum):
 
 # Coil half-thickness in mm. The coil plane is expanded up and down by this
 # amount along the surface normal to form a 3D bounding box.
-COIL_HALF_THICKNESS = 20.0
+COIL_HALF_THICKNESS = 7.0
 
 # Only one robot will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
@@ -465,6 +465,8 @@ class Robots(metaclass=Singleton):
             closest_pt_2, closest_pt_1, subject_pos_robot2
         )
 
+        min_distance = 0.5 if min_distance == 0.0 else min_distance
+            
         return min_distance, brake_vectors
 
     def CalculateBrakeVector(self, closest_point_coil, closest_point_other, subject_pos):
@@ -611,10 +613,10 @@ class Robots(metaclass=Singleton):
 
         return all(allReady)
 
-    def UpdateCoilsDistance(self, coords):
+    def UpdateCoilsDistance(self):
         if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1:
             distance_result, brake_vectors = self.CalculateCoilDistance()
-            if distance_result:
+            if distance_result is not None:
                 robots = self.GetAllRobots()
                 for robot_ID in robots.keys():
                     Publisher.sendMessage(
