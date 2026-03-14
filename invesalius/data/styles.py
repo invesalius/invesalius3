@@ -2716,6 +2716,12 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 # Now that actors are ready, trigger the final visibility and render
                 Publisher.sendMessage("Show mask", index=self.config.mask.index, value=True)
                 Publisher.sendMessage("Render volume viewer")
+            else:
+                if ses.Session().mask_3d_preview and hasattr(self.config.mask, 'volume') and self.config.mask.volume is not None:
+                    Publisher.sendMessage(
+                        "Remove mask preview", mask_3d_actor=self.config.mask.volume._actor
+                    )
+                    Publisher.sendMessage("Render volume viewer")
 
             del self.viewer.slice_.aux_matrices["SELECT"]
             self.viewer.slice_.to_show_aux = ""
