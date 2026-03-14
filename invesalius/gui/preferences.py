@@ -162,7 +162,8 @@ class Preferences(wx.Dialog):
 
         self.visualization_tab.LoadSelection(values)
         self.language_tab.LoadSelection(values)
-        self.navigation_tab.LoadSelection(values)
+        if hasattr(self, "navigation_tab"):
+            self.navigation_tab.LoadSelection(values)
         if self.have_log_tab == 1:
             self.logging_tab.LoadSelection(values)
 
