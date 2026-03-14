@@ -115,7 +115,7 @@ class Preferences(wx.Dialog):
         values.update(viewer)
 
         # Add navigation tab preferences (includes marker shapes)
-        if hasattr(self, 'navigation_tab'):
+        if hasattr(self, "navigation_tab"):
             nav = self.navigation_tab.GetSelection()
             values.update(nav)
 
