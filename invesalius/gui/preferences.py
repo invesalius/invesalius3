@@ -114,6 +114,11 @@ class Preferences(wx.Dialog):
         values.update(lang)
         values.update(viewer)
 
+        # Add navigation tab preferences (includes marker shapes)
+        if hasattr(self, 'navigation_tab'):
+            nav = self.navigation_tab.GetSelection()
+            values.update(nav)
+
         if self.have_log_tab == 1:
             logging = self.logging_tab.GetSelection()
             values.update(logging)
@@ -157,6 +162,7 @@ class Preferences(wx.Dialog):
 
         self.visualization_tab.LoadSelection(values)
         self.language_tab.LoadSelection(values)
+        self.navigation_tab.LoadSelection(values)
         if self.have_log_tab == 1:
             self.logging_tab.LoadSelection(values)
 
@@ -215,48 +221,9 @@ class VisualizationTab(wx.Panel):
         bsizer_slices.Add(lbl_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer_slices.Add(rb_inter_sl, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
-        # Marker shape preferences - only show in Navigation mode
-        mode = self.session.GetConfig("mode")
-        is_navigation_mode = mode == const.MODE_NAVIGATOR
-        if is_navigation_mode:
-            bsizer_markers = wx.StaticBoxSizer(wx.VERTICAL, self, _("Marker Shapes"))
-
-            lbl_landmark_shape = wx.StaticText(
-                bsizer_markers.GetStaticBox(), -1, _("Landmark Marker Shape")
-            )
-            rb_landmark_shape = self.rb_landmark_shape = wx.RadioBox(
-                bsizer_markers.GetStaticBox(),
-                -1,
-                choices=[_("Ball"), _("Cross")],
-                majorDimension=2,
-                style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
-            )
-            bsizer_markers.Add(lbl_landmark_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
-            bsizer_markers.Add(rb_landmark_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
-
-            lbl_fiducial_shape = wx.StaticText(
-                bsizer_markers.GetStaticBox(), -1, _("Fiducial Marker Shape")
-            )
-            rb_fiducial_shape = self.rb_fiducial_shape = wx.RadioBox(
-                bsizer_markers.GetStaticBox(),
-                -1,
-                choices=[_("Ball"), _("Cross")],
-                majorDimension=2,
-                style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
-            )
-            bsizer_markers.Add(lbl_fiducial_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
-            bsizer_markers.Add(rb_fiducial_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
-        else:
-            # Initialize as None when not in navigation mode
-            self.rb_landmark_shape = None
-            self.rb_fiducial_shape = None
-            bsizer_markers = None
-
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(bsizer_slices, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
-        if bsizer_markers:
-            border.Add(bsizer_markers, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
         # Creating MEP Mapping BoxSizer
         if self.conf.get("mep_enabled") is True:
@@ -274,10 +241,6 @@ class VisualizationTab(wx.Panel):
                 self.rb_inter_sl.GetSelection()
             ),  # 0 for Yes, 1 for No
         }
-        # Only include marker shape preferences if in navigation mode
-        if self.rb_landmark_shape is not None and self.rb_fiducial_shape is not None:
-            options[const.LANDMARK_MARKER_SHAPE] = self.rb_landmark_shape.GetSelection()
-            options[const.FIDUCIAL_MARKER_SHAPE] = self.rb_fiducial_shape.GetSelection()
         return options
 
     def InitMEPMapping(self, event):
@@ -608,15 +571,6 @@ class VisualizationTab(wx.Panel):
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
 
-        # Only load marker shape preferences if controls exist (navigation mode)
-        if self.rb_landmark_shape is not None and self.rb_fiducial_shape is not None:
-            landmark_marker_shape = values.get(const.LANDMARK_MARKER_SHAPE, const.MARKER_SHAPE_BALL)
-            fiducial_marker_shape = values.get(
-                const.FIDUCIAL_MARKER_SHAPE, const.MARKER_SHAPE_CROSS
-            )
-            self.rb_landmark_shape.SetSelection(int(landmark_marker_shape))
-            self.rb_fiducial_shape.SetSelection(int(fiducial_marker_shape))
-
     def OnSelectColormap(self, event=None):
         self.conf["mep_colormap"] = self.colormaps[self.combo_thresh.GetSelection()]
         colors = self.GenerateColormapColors(self.conf.get("mep_colormap"), self.number_colors)
@@ -899,8 +853,38 @@ class NavigationTab(wx.Panel):
             ]
         )
 
+        # Marker shape preferences
+        bsizer_markers = wx.StaticBoxSizer(wx.VERTICAL, self, _("Marker Shapes"))
+
+        lbl_landmark_shape = wx.StaticText(
+            bsizer_markers.GetStaticBox(), -1, _("Landmark Marker Shape")
+        )
+        rb_landmark_shape = self.rb_landmark_shape = wx.RadioBox(
+            bsizer_markers.GetStaticBox(),
+            -1,
+            choices=[_("Ball"), _("Cross")],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+        bsizer_markers.Add(lbl_landmark_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_markers.Add(rb_landmark_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        lbl_fiducial_shape = wx.StaticText(
+            bsizer_markers.GetStaticBox(), -1, _("Fiducial Marker Shape")
+        )
+        rb_fiducial_shape = self.rb_fiducial_shape = wx.RadioBox(
+            bsizer_markers.GetStaticBox(),
+            -1,
+            choices=[_("Ball"), _("Cross")],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+        bsizer_markers.Add(lbl_fiducial_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer_markers.Add(rb_fiducial_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(conf_sizer, 0, wx.ALL | wx.EXPAND, 10)
+        main_sizer.Add(bsizer_markers, 0, wx.ALL | wx.EXPAND, 10)
         self.SetSizerAndFit(main_sizer)
         self.Layout()
 
@@ -925,6 +909,19 @@ class NavigationTab(wx.Panel):
 
         if sleep_coord is not None:
             self.sleep_coord = sleep_coord
+
+    def GetSelection(self):
+        options = {
+            const.LANDMARK_MARKER_SHAPE: self.rb_landmark_shape.GetSelection(),
+            const.FIDUCIAL_MARKER_SHAPE: self.rb_fiducial_shape.GetSelection(),
+        }
+        return options
+
+    def LoadSelection(self, values):
+        landmark_marker_shape = values.get(const.LANDMARK_MARKER_SHAPE, const.MARKER_SHAPE_BALL)
+        fiducial_marker_shape = values.get(const.FIDUCIAL_MARKER_SHAPE, const.MARKER_SHAPE_CROSS)
+        self.rb_landmark_shape.SetSelection(int(landmark_marker_shape))
+        self.rb_fiducial_shape.SetSelection(int(fiducial_marker_shape))
 
 
 class ObjectTab(wx.Panel):
