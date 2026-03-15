@@ -160,7 +160,7 @@ class LowerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=(150, -1))
         fold_panel = fpb.FoldPanelBar(
-            self, -1, style=FPB_DEFAULT_STYLE, agwStyle=fpb.FPB_COLLAPSE_TO_BOTTOM
+            self, -1, style=FPB_DEFAULT_STYLE
         )
 
         self.fold_panel = fold_panel
@@ -257,11 +257,25 @@ class LowerTaskPanel(wx.Panel):
             item.Enable()
 
     def ResizeFPB(self):
-        # y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
+        item = self.enable_items[0]
+        # Check if the fold panel item is visually expanded
+        is_expanded = item.IsExpanded()
+        
         x_current, _ = self.GetSize()
-        min_size = (x_current, 240) if sys.platform != "win32" else (x_current, 230)
-        self.SetMinSize(min_size)
-        self.GetParent().Layout()
+        # Fallback to -1 so GridBagSizer can stretch it horizontally
+        if x_current <= 20:
+            x_current = -1
+            
+        if is_expanded:
+            y_needed = 240 if sys.platform != "win32" else 230
+        else:
+            y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
+            
+        self.SetMinSize((x_current, y_needed))
+        
+        parent = self.GetParent()
+        if parent:
+            parent.Layout()
 
 
 # Upper fold panel
@@ -409,6 +423,23 @@ class UpperTaskPanel(wx.Panel):
         wx.CallAfter(self.ResizeFPB)
 
     def ResizeFPB(self):
-        sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
-        self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded))
-        self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
+        item = self.enable_items[0]
+        # Check if the fold panel item is visually expanded
+        is_expanded = item.IsExpanded()
+        
+        if is_expanded:
+            y_needed = 240 if sys.platform != "win32" else 230
+        else:
+            y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
+            
+        self.fold_panel.SetMinSize((-1, y_needed))
+        self.fold_panel.SetSize((-1, y_needed))
+        
+        # We must also tell the parent (LowerTaskPanel) to refresh its min size 
+        # based on the new fold_panel size
+        self.SetMinSize((-1, y_needed))
+        self.SetSize((-1, y_needed))
+        
+        parent = self.GetParent()
+        if parent:
+            parent.Layout()
