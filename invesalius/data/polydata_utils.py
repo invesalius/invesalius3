@@ -24,16 +24,22 @@ import numpy as np
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonCore import vtkIdList, vtkIdTypeArray
 from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkSelection, vtkSelectionNode
+from vtkmodules.vtkCommonCore import vtkVersion
 from vtkmodules.vtkFiltersCore import (
     vtkAppendPolyData,
     vtkCleanPolyData,
-    vtkIdFilter,
     vtkMassProperties,
     vtkPolyDataConnectivityFilter,
     vtkQuadricDecimation,
     vtkSmoothPolyDataFilter,
     vtkTriangleFilter,
 )
+
+if vtkVersion.GetVTKMajorVersion() >= 9:
+    from vtkmodules.vtkFiltersCore import vtkGenerateIds as vtkIdFilter
+else:
+    from vtkmodules.vtkFiltersCore import vtkIdFilter
+
 from vtkmodules.vtkFiltersExtraction import vtkExtractSelection
 from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
 from vtkmodules.vtkFiltersModeling import vtkFillHolesFilter
@@ -77,7 +83,8 @@ def ApplyDecimationFilter(polydata: vtkPolyData, reduction_factor: float) -> vtk
     decimation.GetOutput().ReleaseDataFlagOn()
     decimation.AddObserver(
         "ProgressEvent",
-        lambda obj, evt: UpdateProgress(decimation, "Reducing number of triangles..."),
+        lambda obj, evt: UpdateProgress(
+            decimation, "Reducing number of triangles..."),
     )
     return decimation.GetOutput()
 
@@ -101,7 +108,8 @@ def ApplySmoothFilter(
     filler.SetHoleSize(1000)
     filler.Update()
     smoother.AddObserver(
-        "ProgressEvent", lambda obj, evt: UpdateProgress(smoother, "Smoothing surface...")
+        "ProgressEvent", lambda obj, evt: UpdateProgress(
+            smoother, "Smoothing surface...")
     )
 
     return filler.GetOutput()
@@ -219,7 +227,8 @@ def JoinSeedsParts(polydata: vtkPolyData, point_id_list: List[int]) -> vtkPolyDa
         pos += 1
 
     conn.AddObserver(
-        "ProgressEvent", lambda obj, evt: UpdateProgress(conn, "Getting selected parts")
+        "ProgressEvent", lambda obj, evt: UpdateProgress(
+            conn, "Getting selected parts")
     )
     conn.Update()
 
@@ -235,7 +244,8 @@ def SelectLargestPart(polydata: vtkPolyData) -> vtkPolyData:
     conn.SetInputData(polydata)
     conn.SetExtractionModeToLargestRegion()
     conn.AddObserver(
-        "ProgressEvent", lambda obj, evt: UpdateProgress(conn, "Getting largest part...")
+        "ProgressEvent", lambda obj, evt: UpdateProgress(
+            conn, "Getting largest part...")
     )
     conn.Update()
 
@@ -281,7 +291,8 @@ def SplitDisconectedParts(polydata: vtkPolyData) -> List[vtkPolyData]:
 def HasNonVisibleFaces(
     polydata,
     threshold=0.7,
-    positions=[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]],
+    positions=[[1, 0, 0], [-1, 0, 0], [0, 1, 0],
+               [0, -1, 0], [0, 0, 1], [0, 0, -1]],
 ):
     """
     Detect if surface contains non-visible faces.
@@ -362,7 +373,8 @@ def HasNonVisibleFaces(
 
 def RemoveNonVisibleFaces(
     polydata,
-    positions=[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]],
+    positions=[[1, 0, 0], [-1, 0, 0], [0, 1, 0],
+               [0, -1, 0], [0, 0, 1], [0, 0, -1]],
     remove_visible=False,
 ):
     polydata.BuildLinks()
@@ -427,7 +439,8 @@ def RemoveNonVisibleFaces(
             cells_ids.add(id_list.GetId(i))
 
     try:
-        id_list = numpy_support.numpy_to_vtkIdTypeArray(np.array(list(cells_ids), dtype=np.int64))
+        id_list = numpy_support.numpy_to_vtkIdTypeArray(
+            np.array(list(cells_ids), dtype=np.int64))
     except ValueError:
         id_list = vtkIdTypeArray()
 
