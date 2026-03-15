@@ -258,17 +258,19 @@ class Controller:
         try:
             if isinstance(filepath, bytes):
                 filepath = filepath.decode("utf-8")
-                
+
             import invesalius.reader.others_reader as oth
             from invesalius.reader.nifti_utils import check_is_mask, validate_mask_compatibility
-            
+
             img = oth.ReadOthers(filepath)
             if img is False:
                 raise Exception(_("Failed to read NIfTI file."))
 
             # Ensure a volume is loaded before importing a mask
             if self.Slice.matrix is None:
-                raise ValueError(_("No volume loaded. Please load a volume before importing a mask."))
+                raise ValueError(
+                    _("No volume loaded. Please load a volume before importing a mask.")
+                )
 
             # Preserve original dtype; avoid forcing float64 conversion
             data = np.asarray(img.dataobj)
@@ -287,11 +289,9 @@ class Controller:
             # Label-map threshold: strict 0-255 range for binary mask
             thresh = (0, 255)
             colour = const.MASK_COLOUR[len(prj.Project().mask_dict) % len(const.MASK_COLOUR)]
-            
-            Publisher.sendMessage(
-                "Create new mask", mask_name=name, thresh=thresh, colour=colour
-            )
-            
+
+            Publisher.sendMessage("Create new mask", mask_name=name, thresh=thresh, colour=colour)
+
             mask = self.Slice.current_mask
             if mask:
                 # Mask matrix has shape (Z+1, Y+1, X+1) with padding at index 0. Re-assign correctly.
@@ -305,7 +305,9 @@ class Controller:
                     buffer_.discard_mask()
                 Publisher.sendMessage("Reload actual slice")
 
-            Publisher.sendMessage("Update status text in GUI", label=_("Mask imported successfully."))
+            Publisher.sendMessage(
+                "Update status text in GUI", label=_("Mask imported successfully.")
+            )
 
         except Exception as e:
             dialogs.ErrorMessageBox(None, _("Error importing mask"), str(e)).ShowModal()
@@ -313,7 +315,7 @@ class Controller:
     def OnShowExportMaskDialog(self, mask_indexes: list) -> None:
         if not mask_indexes:
             return
-        
+
         project = prj.Project()
         if len(mask_indexes) == 1:
             mask = project.GetMask(mask_indexes[0])
@@ -322,39 +324,44 @@ class Controller:
             default_file = "masks.nii.gz"
 
         dlg = wx.FileDialog(
-            None, 
-            _("Export Mask as NIfTI"), 
+            None,
+            _("Export Mask as NIfTI"),
             defaultFile=default_file,
-            wildcard=dialogs.WILDCARD_NIFTI, 
-            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
+            wildcard=dialogs.WILDCARD_NIFTI,
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
         )
 
         if dlg.ShowModal() == wx.ID_OK:
             filepath = dlg.GetPath()
             if isinstance(filepath, bytes):
                 filepath = filepath.decode("utf-8")
-                
+
             if not (filepath.endswith(".nii") or filepath.endswith(".nii.gz")):
                 filepath += ".nii.gz"
-            Publisher.sendMessage("Export masks to nifti", mask_indexes=mask_indexes, filepath=filepath)
+            Publisher.sendMessage(
+                "Export masks to nifti", mask_indexes=mask_indexes, filepath=filepath
+            )
         dlg.Destroy()
 
     def OnExportMaskNifti(self, mask_indexes: list, filepath: "str | bytes") -> None:
         try:
             import nibabel as nib
+
             project = prj.Project()
             for index in mask_indexes:
                 mask = project.GetMask(index)
                 if not mask:
                     continue
-                
+
                 # Ensure all slices have threshold data (lazy threshold only generates visited slices)
                 self.Slice.do_threshold_to_all_slices(mask)
                 # Strip 1-pixel padding from InVesalius mask matrix (padding is only at index 0)
                 mask_matrix = mask.matrix[1:, 1:, 1:]
-                
+
                 # Axis transform to NIfTI layout and cast to uint8
-                export_data = np.ascontiguousarray(np.swapaxes(np.fliplr(mask_matrix), 0, 2)).astype(np.uint8)
+                export_data = np.ascontiguousarray(
+                    np.swapaxes(np.fliplr(mask_matrix), 0, 2)
+                ).astype(np.uint8)
 
                 # Label-map enforcement: strict binary encoding (0=background, 255=mask)
                 export_data[export_data > 0] = 255
@@ -371,7 +378,7 @@ class Controller:
                     save_path = f"{base_path}_{mask.name}{ext}"
                 else:
                     save_path = filepath
-                    
+
                 nib.save(mask_nifti, save_path)
 
         except Exception as e:
@@ -399,9 +406,7 @@ class Controller:
                 dlg = dialogs.ErrorMessageBox(
                     None,
                     _("Invalid file type"),
-                    _(
-                        "Please select an InVesalius project file (.inv3)."
-                    ),
+                    _("Please select an InVesalius project file (.inv3)."),
                 )
                 dlg.ShowModal()
                 dlg.Destroy()
@@ -1408,10 +1413,6 @@ class Controller:
             mask.create_3d_preview()
             Publisher.sendMessage("Load mask preview", mask_3d_actor=mask.volume._actor, flag=True)
             Publisher.sendMessage("Render volume viewer")
-            # Fixes #1085: reset camera to front view so the mask preview is immediately
-            # visible without the user needing to interact with the repositioning tool.
-            # Covers both the menu (Mask → Mask 3D Preview → Enable) and Edit in 3D paths.
-            Publisher.sendMessage("Set volume view angle", view=const.VOL_FRONT)
 
     def disable_mask_preview(self):
         ses.Session().mask_3d_preview = False
