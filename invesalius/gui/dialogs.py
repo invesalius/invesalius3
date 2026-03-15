@@ -302,6 +302,7 @@ WILDCARD_MESH_FILES = (
     "Standard Polygon File Format (*.ply)|*.ply|"
     "Alias Wavefront Object (*.obj)|*.obj|"
     "VTK Polydata File Format (*.vtp)|*.vtp|"
+    "3D Manufacturing Format (*.3mf)|*.3mf|"
     "All files (*.*)|*.*"
 )
 WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|All files (*.*)|*.*"
