@@ -244,7 +244,7 @@ class InnerTaskPanel(wx.Panel):
         event.Skip()
 
     def ImportPACS(self):
-        print("TODO: Send Signal - Import DICOM files from PACS")
+        pass
 
     #######
     def ImportDicom(self):

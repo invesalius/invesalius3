@@ -131,7 +131,7 @@ class InnerTaskPanel(wx.Panel):
         self.sizer = main_sizer
 
     def OnTextAnnotation(self, evt=None):
-        print("TODO: Send Signal - Add text annotation (both 2d and 3d)")
+        pass
 
     def OnLinkLinearMeasure(self):
         Publisher.sendMessage("Enable style", style=constants.STATE_MEASURE_DISTANCE)
