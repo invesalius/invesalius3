@@ -1,6 +1,8 @@
 import vtk
 
+import invesalius.constants as const
 import invesalius.data.coordinates as dco
+import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
 
@@ -130,13 +132,24 @@ class MarkerVisualizer:
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
 
-        # For 'fiducial' type markers, create a ball. TODO: This could be changed to something more distinctive.
-        if marker_type == MarkerType.FIDUCIAL:
-            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
+        # Get marker shape preferences from session
+        session = ses.Session()
 
-        # For 'landmark' type markers, create a ball.
+        # For 'fiducial' type markers, use user preference (ball or cross).
+        if marker_type == MarkerType.FIDUCIAL:
+            fiducial_shape = session.GetConfig("fiducial_marker_shape", const.MARKER_SHAPE_CROSS)
+            if fiducial_shape == const.MARKER_SHAPE_CROSS:
+                actor = self.actor_factory.CreateCross(position_flipped, colour, size)
+            else:
+                actor = self.actor_factory.CreateBall(position_flipped, colour, size)
+
+        # For 'landmark' type markers, use user preference (ball or cross).
         elif marker_type == MarkerType.LANDMARK:
-            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
+            landmark_shape = session.GetConfig("landmark_marker_shape", const.MARKER_SHAPE_BALL)
+            if landmark_shape == const.MARKER_SHAPE_CROSS:
+                actor = self.actor_factory.CreateCross(position_flipped, colour, size)
+            else:
+                actor = self.actor_factory.CreateBall(position_flipped, colour, size)
 
         # For 'brain target' type markers, create an arrow.
         elif marker_type == MarkerType.BRAIN_TARGET:

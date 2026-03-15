@@ -114,6 +114,11 @@ class Preferences(wx.Dialog):
         values.update(lang)
         values.update(viewer)
 
+        # Add navigation tab preferences (includes marker shapes)
+        if hasattr(self, "navigation_tab"):
+            nav = self.navigation_tab.GetSelection()
+            values.update(nav)
+
         if self.have_log_tab == 1:
             logging = self.logging_tab.GetSelection()
             values.update(logging)
@@ -128,6 +133,10 @@ class Preferences(wx.Dialog):
         # Must invert value as GUI returns 0 for Yes and 1 for No
         slice_interpolation = not bool(session.GetConfig("slice_interpolation"))
 
+        # Marker shapes (default to ball for both)
+        landmark_marker_shape = session.GetConfig("landmark_marker_shape", const.MARKER_SHAPE_BALL)
+        fiducial_marker_shape = session.GetConfig("fiducial_marker_shape", const.MARKER_SHAPE_CROSS)
+
         # logger = log.MyLogger()
         file_logging = log.invLogger.GetConfig("file_logging")
         file_logging_level = log.invLogger.GetConfig("file_logging_level")
@@ -141,6 +150,8 @@ class Preferences(wx.Dialog):
             const.SURFACE_INTERPOLATION: surface_interpolation,
             const.LANGUAGE: language,
             const.SLICE_INTERPOLATION: slice_interpolation,
+            const.LANDMARK_MARKER_SHAPE: landmark_marker_shape,
+            const.FIDUCIAL_MARKER_SHAPE: fiducial_marker_shape,
             const.FILE_LOGGING: file_logging,
             const.FILE_LOGGING_LEVEL: file_logging_level,
             const.APPEND_LOG_FILE: append_log_file,
@@ -151,6 +162,8 @@ class Preferences(wx.Dialog):
 
         self.visualization_tab.LoadSelection(values)
         self.language_tab.LoadSelection(values)
+        if hasattr(self, "navigation_tab"):
+            self.navigation_tab.LoadSelection(values)
         if self.have_log_tab == 1:
             self.logging_tab.LoadSelection(values)
 
@@ -160,17 +173,6 @@ class VisualizationTab(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.session = ses.Session()
-
-        self.colormaps = [str(cmap) for cmap in const.MEP_COLORMAP_DEFINITIONS.keys()]
-        self.number_colors = 4
-        self.cluster_volume = None
-
-        self.conf = self.session.GetConfig("mep_configuration")
-        try:
-            self.conf = dict(self.conf)
-        except TypeError:
-            self.conf = {}
-        self.conf["mep_colormap"] = self.conf.get("mep_colormap", "Viridis")
 
         bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
         lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, _("Surface Interpolation "))
@@ -213,11 +215,6 @@ class VisualizationTab(wx.Panel):
         border.Add(bsizer_slices, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
         border.Add(bsizer, 1, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
-        # Creating MEP Mapping BoxSizer
-        if self.conf.get("mep_enabled") is True:
-            self.bsizer_mep = self.InitMEPMapping(None)
-            border.Add(self.bsizer_mep, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
-
         self.SetSizerAndFit(border)
         self.Layout()
 
@@ -231,325 +228,6 @@ class VisualizationTab(wx.Panel):
         }
         return options
 
-    def InitMEPMapping(self, event):
-        # Adding a new sized for MEP Mapping options
-        # Structured as follows:
-        # MEP Mapping
-        # - Surface Selection -> ComboBox
-        # - Gaussian Radius -> SpinCtrlDouble
-        # - Gaussian Standard Deviation -> SpinCtrlDouble
-        # - Select Colormap -> ComboBox + Image frame
-        # - Color Map Values
-        # -- Min Value -> SpinCtrlDouble
-        # -- Low Value -> SpinCtrlDouble
-        # -- Mid Value -> SpinCtrlDouble
-        # -- Max Value -> SpinCtrlDouble
-        # TODO: Add a button to apply the colormap to the current volume
-        # TODO: Store MEP visualization settings in a
-
-        bsizer_mep = wx.StaticBoxSizer(wx.VERTICAL, self, _("TMS Motor Mapping"))
-
-        # Surface Selection
-        try:
-            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
-        except AttributeError:
-            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
-        self.SetBackgroundColour(default_colour)
-
-        # Initializing the project singleton
-        from invesalius import project as prj
-
-        self.proj = prj.Project()
-
-        combo_brain_surface_name = wx.ComboBox(
-            bsizer_mep.GetStaticBox(), -1, size=(210, 23), style=wx.CB_DROPDOWN | wx.CB_READONLY
-        )
-        if sys.platform != "win32":
-            combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        # TODO: Sending the event to the MEP Visualizer to update the surface
-        # combo_brain_surface_name.Bind(
-        #     wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
-        combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-
-        for n in range(len(self.proj.surface_dict)):
-            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
-
-        self.combo_brain_surface_name = combo_brain_surface_name
-
-        # Mask colour
-        button_colour = csel.ColourSelect(
-            bsizer_mep.GetStaticBox(), -1, colour=(0, 0, 255), size=(22, -1)
-        )
-        button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
-        self.button_colour = button_colour
-
-        # Sizer which represents the first line
-        line1 = wx.BoxSizer(wx.HORIZONTAL)
-        line1.Add(combo_brain_surface_name, 1, wx.ALL | wx.EXPAND | wx.GROW, 7)
-        line1.Add(button_colour, 0, wx.ALL | wx.EXPAND | wx.GROW, 7)
-
-        surface_sel_lbl = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Brain Surface:"))
-        surface_sel_lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        surface_sel_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        surface_sel_sizer.Add(surface_sel_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
-        # fixed_sizer.AddSpacer(7)
-        surface_sel_sizer.Add(line1, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 5)
-
-        # Gaussian Radius Line
-        lbl_gaussian_radius = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Gaussian Radius:"))
-        self.spin_gaussian_radius = wx.SpinCtrlDouble(
-            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23), inc=0.5
-        )
-        self.spin_gaussian_radius.Enable(1)
-        self.spin_gaussian_radius.SetRange(1, 99)
-        self.spin_gaussian_radius.SetValue(self.conf.get("gaussian_radius"))
-
-        self.spin_gaussian_radius.Bind(
-            wx.EVT_TEXT, partial(self.OnSelectGaussianRadius, ctrl=self.spin_gaussian_radius)
-        )
-        self.spin_gaussian_radius.Bind(
-            wx.EVT_SPINCTRL, partial(self.OnSelectGaussianRadius, ctrl=self.spin_gaussian_radius)
-        )
-
-        line_gaussian_radius = wx.BoxSizer(wx.HORIZONTAL)
-        line_gaussian_radius.AddMany(
-            [
-                (lbl_gaussian_radius, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 0),
-                (self.spin_gaussian_radius, 0, wx.ALL | wx.EXPAND | wx.GROW, 0),
-            ]
-        )
-
-        # Gaussian Standard Deviation Line
-        lbl_std_dev = wx.StaticText(
-            bsizer_mep.GetStaticBox(), -1, _("Gaussian Standard Deviation:")
-        )
-        self.spin_std_dev = wx.SpinCtrlDouble(
-            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23), inc=0.01
-        )
-        self.spin_std_dev.Enable(1)
-        self.spin_std_dev.SetRange(0.01, 5.0)
-        self.spin_std_dev.SetValue(self.conf.get("gaussian_sharpness"))
-
-        self.spin_std_dev.Bind(wx.EVT_TEXT, partial(self.OnSelectStdDev, ctrl=self.spin_std_dev))
-        self.spin_std_dev.Bind(
-            wx.EVT_SPINCTRL, partial(self.OnSelectStdDev, ctrl=self.spin_std_dev)
-        )
-
-        line_std_dev = wx.BoxSizer(wx.HORIZONTAL)
-        line_std_dev.AddMany(
-            [
-                (lbl_std_dev, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 0),
-                (self.spin_std_dev, 0, wx.ALL | wx.EXPAND | wx.GROW, 0),
-            ]
-        )
-
-        # Dimensions size line
-        lbl_dims_size = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Dimensions size:"))
-        self.spin_dims_size = wx.SpinCtrl(bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23))
-        self.spin_dims_size.Enable(1)
-        self.spin_dims_size.SetIncrement(5)
-        self.spin_dims_size.SetRange(10, 100)
-        self.spin_dims_size.SetValue(self.conf.get("dimensions_size"))
-
-        self.spin_dims_size.Bind(
-            wx.EVT_TEXT, partial(self.OnSelectDimsSize, ctrl=self.spin_dims_size)
-        )
-        self.spin_dims_size.Bind(
-            wx.EVT_SPINCTRL, partial(self.OnSelectDimsSize, ctrl=self.spin_dims_size)
-        )
-
-        line_dims_size = wx.BoxSizer(wx.HORIZONTAL)
-        line_dims_size.AddMany(
-            [
-                (lbl_dims_size, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 0),
-                (self.spin_dims_size, 0, wx.ALL | wx.EXPAND | wx.GROW, 0),
-            ]
-        )
-
-        # Select Colormap Line
-        lbl_colormap = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Select Colormap:"))
-        lbl_colormap.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-
-        self.combo_thresh = wx.ComboBox(
-            bsizer_mep.GetStaticBox(),
-            -1,
-            "",  # size=(15,-1),
-            choices=self.colormaps,
-            style=wx.CB_DROPDOWN | wx.CB_READONLY,
-        )
-        self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnSelectColormap)
-        # by default use the initial value set in the configuration
-        self.combo_thresh.SetSelection(self.colormaps.index(self.conf.get("mep_colormap")))
-        # self.combo_thresh.SetSelection(0)
-
-        colors_gradient = self.GenerateColormapColors(
-            self.conf.get("mep_colormap"), self.number_colors
-        )
-
-        self.gradient = grad.GradientDisp(
-            bsizer_mep.GetStaticBox(), -1, -5000, 5000, -5000, 5000, colors_gradient
-        )
-
-        colormap_gradient_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        colormap_gradient_sizer.AddMany(
-            [
-                (self.combo_thresh, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5),
-                (self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5),
-            ]
-        )
-
-        colormap_sizer = wx.BoxSizer(wx.VERTICAL)
-
-        colormap_sizer.AddMany(
-            [
-                (lbl_colormap, 0, wx.TOP | wx.BOTTOM | wx.LEFT, 5),
-                (colormap_gradient_sizer, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 5),
-            ]
-        )
-
-        colormap_custom = wx.BoxSizer(wx.VERTICAL)
-
-        lbl_colormap_ranges = wx.StaticText(
-            bsizer_mep.GetStaticBox(), -1, _("Custom Colormap Ranges")
-        )
-        lbl_colormap_ranges.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-
-        lbl_min = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Min Value (uV):"))
-
-        self.spin_min = wx.SpinCtrlDouble(
-            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10
-        )
-        self.spin_min.Enable(1)
-        self.spin_min.SetRange(0, 10000)
-        self.spin_min.SetValue(self.conf.get("colormap_range_uv").get("min"))
-
-        lbl_low = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Low Value (uV):"))
-        self.spin_low = wx.SpinCtrlDouble(
-            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10
-        )
-        self.spin_low.Enable(1)
-        self.spin_low.SetRange(0, 10000)
-        self.spin_low.SetValue(self.conf.get("colormap_range_uv").get("low"))
-
-        lbl_mid = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Mid Value (uV):"))
-        self.spin_mid = wx.SpinCtrlDouble(
-            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10
-        )
-        self.spin_mid.Enable(1)
-        self.spin_mid.SetRange(0, 10000)
-        self.spin_mid.SetValue(self.conf.get("colormap_range_uv").get("mid"))
-
-        lbl_max = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Max Value (uV):"))
-        self.spin_max = wx.SpinCtrlDouble(
-            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10
-        )
-        self.spin_max.Enable(1)
-        self.spin_max.SetRange(0, 10000)
-        self.spin_max.SetValue(self.conf.get("colormap_range_uv").get("max"))
-
-        line_cm_texts = wx.BoxSizer(wx.HORIZONTAL)
-        line_cm_texts.AddMany(
-            [
-                (lbl_min, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
-                (lbl_low, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
-                (lbl_mid, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
-                (lbl_max, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
-            ]
-        )
-
-        line_cm_spins = wx.BoxSizer(wx.HORIZONTAL)
-        line_cm_spins.AddMany(
-            [
-                (self.spin_min, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
-                (self.spin_low, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
-                (self.spin_mid, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
-                (self.spin_max, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
-            ]
-        )
-
-        # Binding events for the colormap ranges
-        for ctrl in zip(
-            [self.spin_min, self.spin_low, self.spin_mid, self.spin_max],
-            ["min", "low", "mid", "max"],
-        ):
-            ctrl[0].Bind(
-                wx.EVT_TEXT, partial(self.OnSelectColormapRange, ctrl=ctrl[0], key=ctrl[1])
-            )
-            ctrl[0].Bind(
-                wx.EVT_SPINCTRL, partial(self.OnSelectColormapRange, ctrl=ctrl[0], key=ctrl[1])
-            )
-
-        colormap_custom.AddMany(
-            [
-                (lbl_colormap_ranges, 0, wx.TOP | wx.BOTTOM | wx.LEFT, 5),
-                (line_cm_texts, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 0),
-                (line_cm_spins, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 0),
-            ]
-        )
-
-        # Reset to defaults button
-        btn_reset = wx.Button(bsizer_mep.GetStaticBox(), -1, _("Reset to defaults"))
-        btn_reset.Bind(wx.EVT_BUTTON, self.ResetMEPSettings)
-
-        # centered button reset
-        colormap_custom.Add(btn_reset, 0, wx.ALIGN_CENTER | wx.TOP, 15)
-
-        colormap_sizer.Add(colormap_custom, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        bsizer_mep.AddMany(
-            [
-                (surface_sel_sizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
-                (line_gaussian_radius, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
-                (line_std_dev, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
-                (line_dims_size, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
-                (colormap_sizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
-            ]
-        )
-
-        return bsizer_mep
-
-    def ResetMEPSettings(self, event):
-        # fire an event that will reset the MEP settings to the default values in MEP Visualizer
-        Publisher.sendMessage("Reset MEP Config")
-        # self.session.SetConfig('mep_configuration', self.conf)
-        self.UpdateMEPFromSession()
-
-    def UpdateMEPFromSession(self):
-        self.conf = dict(self.session.GetConfig("mep_configuration"))
-        self.spin_gaussian_radius.SetValue(self.conf.get("gaussian_radius"))
-        self.spin_std_dev.SetValue(self.conf.get("gaussian_sharpness"))
-        self.spin_dims_size.SetValue(self.conf.get("dimensions_size"))
-
-        self.combo_thresh.SetSelection(self.colormaps.index(self.conf.get("mep_colormap")))
-        partial(self.OnSelectColormap, event=None, ctrl=self.combo_thresh)
-        partial(self.OnSelectColormapRange, event=None, ctrl=self.spin_min, key="min")
-
-        ranges = self.conf.get("colormap_range_uv")
-        ranges = dict(ranges)
-        self.spin_min.SetValue(ranges.get("min"))
-        self.spin_low.SetValue(ranges.get("low"))
-        self.spin_mid.SetValue(ranges.get("mid"))
-        self.spin_max.SetValue(ranges.get("max"))
-
-    def OnSelectStdDev(self, evt, ctrl):
-        self.conf["gaussian_sharpness"] = ctrl.GetValue()
-        # Save the configuration
-        self.session.SetConfig("mep_configuration", self.conf)
-
-    def OnSelectGaussianRadius(self, evt, ctrl):
-        self.conf["gaussian_radius"] = ctrl.GetValue()
-        # Save the configuration
-        self.session.SetConfig("mep_configuration", self.conf)
-
-    def OnSelectDimsSize(self, evt, ctrl):
-        self.conf["dimensions_size"] = ctrl.GetValue()
-        # Save the configuration
-        self.session.SetConfig("mep_configuration", self.conf)
-
-    def OnSelectColormapRange(self, evt, ctrl, key):
-        self.conf["colormap_range_uv"][key] = ctrl.GetValue()
-        self.session.SetConfig("mep_configuration", self.conf)
-
     def LoadSelection(self, values):
         rendering = values[const.RENDERING]
         surface_interpolation = values[const.SURFACE_INTERPOLATION]
@@ -558,67 +236,6 @@ class VisualizationTab(wx.Panel):
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
-
-    def OnSelectColormap(self, event=None):
-        self.conf["mep_colormap"] = self.colormaps[self.combo_thresh.GetSelection()]
-        colors = self.GenerateColormapColors(self.conf.get("mep_colormap"), self.number_colors)
-
-        # Save the configuration
-        self.session.SetConfig("mep_configuration", self.conf)
-        Publisher.sendMessage("Save Preferences")
-        self.UpdateGradient(self.gradient, colors)
-
-    def GenerateColormapColors(self, colormap_name, number_colors=4):
-        # Extract colors and positions
-        color_def = const.MEP_COLORMAP_DEFINITIONS[colormap_name]
-        colors = list(color_def.values())
-        positions = [0.0, 0.25, 0.5, 1.0]  # Assuming even spacing between colors
-
-        # Create LinearSegmentedColormap
-        cmap = mcolors.LinearSegmentedColormap.from_list(
-            colormap_name, list(zip(positions, colors))
-        )
-        colors_gradient = [
-            (
-                int(255 * cmap(i)[0]),
-                int(255 * cmap(i)[1]),
-                int(255 * cmap(i)[2]),
-                int(255 * cmap(i)[3]),
-            )
-            for i in np.linspace(0, 1, number_colors)
-        ]
-
-        return colors_gradient
-
-    def UpdateGradient(self, gradient, colors):
-        gradient.SetGradientColours(colors)
-        gradient.Refresh()
-        gradient.Update()
-
-        self.Refresh()
-        self.Update()
-        self.Show(True)
-
-    def OnComboName(self, evt):
-        from invesalius import project as prj
-
-        self.proj = prj.Project()
-        surface_index = self.combo_brain_surface_name.GetSelection()
-        Publisher.sendMessage("Show single surface", index=surface_index, visibility=True)
-        Publisher.sendMessage("Get brain surface actor", index=surface_index)
-        Publisher.sendMessage("Press motor map button", pressed=True)
-
-        self.button_colour.SetColour(
-            [int(value * 255) for value in self.proj.surface_dict[surface_index].colour]
-        )
-
-    def OnSelectColour(self, evt):
-        colour = [value / 255.0 for value in self.button_colour.GetColour()]
-        Publisher.sendMessage(
-            "Set surface colour",
-            surface_index=self.combo_brain_surface_name.GetSelection(),
-            colour=colour,
-        )
 
 
 class LoggingTab(wx.Panel):
@@ -841,8 +458,39 @@ class NavigationTab(wx.Panel):
             ]
         )
 
+        # Marker shape preferences
+        bsizer_markers = wx.StaticBoxSizer(wx.HORIZONTAL, self, _("Marker Shapes"))
+
+        lbl_landmark_shape = wx.StaticText(bsizer_markers.GetStaticBox(), -1, _("Landmarks: "))
+        rb_landmark_shape = self.rb_landmark_shape = wx.RadioBox(
+            bsizer_markers.GetStaticBox(),
+            -1,
+            choices=[_("Ball"), _("Cross")],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+        bsizer_markers.Add(lbl_landmark_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 18)
+        bsizer_markers.Add(rb_landmark_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
+        lbl_fiducial_shape = wx.StaticText(bsizer_markers.GetStaticBox(), -1, _("Fiducials: "))
+        rb_fiducial_shape = self.rb_fiducial_shape = wx.RadioBox(
+            bsizer_markers.GetStaticBox(),
+            -1,
+            choices=[_("Ball"), _("Cross")],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+        bsizer_markers.Add(lbl_fiducial_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 18)
+        bsizer_markers.Add(rb_fiducial_shape, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(conf_sizer, 0, wx.ALL | wx.EXPAND, 10)
+        main_sizer.Add(bsizer_markers, 0, wx.ALL | wx.EXPAND, 10)
+        # Creating MEP Mapping BoxSizer
+        if self.mep_configuration.get("mep_enabled") is True:
+            self.bsizer_mep = self.InitMEPMapping(None)
+            main_sizer.Add(self.bsizer_mep, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
+
         self.SetSizerAndFit(main_sizer)
         self.Layout()
 
@@ -861,12 +509,422 @@ class NavigationTab(wx.Panel):
     def LoadConfig(self):
         sleep_nav = self.session.GetConfig("sleep_nav")
         sleep_coord = self.session.GetConfig("sleep_coord")
+        mep_configuration = self.session.GetConfig("mep_configuration")
 
         if sleep_nav is not None:
             self.sleep_nav = sleep_nav
 
         if sleep_coord is not None:
             self.sleep_coord = sleep_coord
+
+        try:
+            self.mep_configuration = dict(mep_configuration)
+        except TypeError:
+            self.mep_configuration = {}
+        self.mep_configuration["mep_colormap"] = self.mep_configuration.get(
+            "mep_colormap", "Viridis"
+        )
+        self.colormaps = [str(cmap) for cmap in const.MEP_COLORMAP_DEFINITIONS.keys()]
+        self.number_colors = 4
+
+    def GetSelection(self):
+        options = {
+            const.LANDMARK_MARKER_SHAPE: self.rb_landmark_shape.GetSelection(),
+            const.FIDUCIAL_MARKER_SHAPE: self.rb_fiducial_shape.GetSelection(),
+        }
+        return options
+
+    def LoadSelection(self, values):
+        landmark_marker_shape = values.get(const.LANDMARK_MARKER_SHAPE, const.MARKER_SHAPE_BALL)
+        fiducial_marker_shape = values.get(const.FIDUCIAL_MARKER_SHAPE, const.MARKER_SHAPE_CROSS)
+        self.rb_landmark_shape.SetSelection(int(landmark_marker_shape))
+        self.rb_fiducial_shape.SetSelection(int(fiducial_marker_shape))
+
+    def InitMEPMapping(self, event):
+        # Adding a new sized for MEP Mapping options
+        # Structured as follows:
+        # MEP Mapping
+        # - Surface Selection -> ComboBox
+        # - Gaussian Radius -> SpinCtrlDouble
+        # - Gaussian Standard Deviation -> SpinCtrlDouble
+        # - Select Colormap -> ComboBox + Image frame
+        # - Color Map Values
+        # -- Min Value -> SpinCtrlDouble
+        # -- Low Value -> SpinCtrlDouble
+        # -- Mid Value -> SpinCtrlDouble
+        # -- Max Value -> SpinCtrlDouble
+        # TODO: Add a button to apply the colormap to the current volume
+        # TODO: Store MEP visualization settings in a
+
+        bsizer_mep = wx.StaticBoxSizer(wx.VERTICAL, self, _("TMS Motor Mapping"))
+
+        # Surface Selection
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
+
+        # Initializing the project singleton
+        from invesalius import project as prj
+
+        self.proj = prj.Project()
+
+        combo_brain_surface_name = wx.ComboBox(
+            bsizer_mep.GetStaticBox(), -1, size=(210, 23), style=wx.CB_DROPDOWN | wx.CB_READONLY
+        )
+        if sys.platform != "win32":
+            combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        # TODO: Sending the event to the MEP Visualizer to update the surface
+        # combo_brain_surface_name.Bind(
+        #     wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
+        combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+
+        for n in range(len(self.proj.surface_dict)):
+            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+
+        self.combo_brain_surface_name = combo_brain_surface_name
+
+        # Mask colour
+        button_colour = csel.ColourSelect(
+            bsizer_mep.GetStaticBox(), -1, colour=(0, 0, 255), size=(22, -1)
+        )
+        button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
+        self.button_colour = button_colour
+
+        # Sizer which represents the first line
+        line1 = wx.BoxSizer(wx.HORIZONTAL)
+        line1.Add(combo_brain_surface_name, 1, wx.ALL | wx.EXPAND | wx.GROW, 7)
+        line1.Add(button_colour, 0, wx.ALL | wx.EXPAND | wx.GROW, 7)
+
+        surface_sel_lbl = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Brain Surface:"))
+        surface_sel_lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        surface_sel_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        surface_sel_sizer.Add(surface_sel_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
+        # fixed_sizer.AddSpacer(7)
+        surface_sel_sizer.Add(line1, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 5)
+
+        # Gaussian Radius Line
+        lbl_gaussian_radius = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Gaussian Radius:"))
+        self.spin_gaussian_radius = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23), inc=0.5
+        )
+        self.spin_gaussian_radius.Enable(1)
+        self.spin_gaussian_radius.SetRange(1, 99)
+        self.spin_gaussian_radius.SetValue(self.mep_configuration.get("gaussian_radius"))
+
+        self.spin_gaussian_radius.Bind(
+            wx.EVT_TEXT, partial(self.OnSelectGaussianRadius, ctrl=self.spin_gaussian_radius)
+        )
+        self.spin_gaussian_radius.Bind(
+            wx.EVT_SPINCTRL, partial(self.OnSelectGaussianRadius, ctrl=self.spin_gaussian_radius)
+        )
+
+        line_gaussian_radius = wx.BoxSizer(wx.HORIZONTAL)
+        line_gaussian_radius.AddMany(
+            [
+                (lbl_gaussian_radius, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 0),
+                (self.spin_gaussian_radius, 0, wx.ALL | wx.EXPAND | wx.GROW, 0),
+            ]
+        )
+
+        # Gaussian Standard Deviation Line
+        lbl_std_dev = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Gaussian Standard Deviation:")
+        )
+        self.spin_std_dev = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23), inc=0.01
+        )
+        self.spin_std_dev.Enable(1)
+        self.spin_std_dev.SetRange(0.01, 5.0)
+        self.spin_std_dev.SetValue(self.mep_configuration.get("gaussian_sharpness"))
+
+        self.spin_std_dev.Bind(wx.EVT_TEXT, partial(self.OnSelectStdDev, ctrl=self.spin_std_dev))
+        self.spin_std_dev.Bind(
+            wx.EVT_SPINCTRL, partial(self.OnSelectStdDev, ctrl=self.spin_std_dev)
+        )
+
+        line_std_dev = wx.BoxSizer(wx.HORIZONTAL)
+        line_std_dev.AddMany(
+            [
+                (lbl_std_dev, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 0),
+                (self.spin_std_dev, 0, wx.ALL | wx.EXPAND | wx.GROW, 0),
+            ]
+        )
+
+        # Dimensions size line
+        lbl_dims_size = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Dimensions size:"))
+        self.spin_dims_size = wx.SpinCtrl(bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(64, 23))
+        self.spin_dims_size.Enable(1)
+        self.spin_dims_size.SetIncrement(5)
+        self.spin_dims_size.SetRange(10, 100)
+        self.spin_dims_size.SetValue(self.mep_configuration.get("dimensions_size"))
+
+        self.spin_dims_size.Bind(
+            wx.EVT_TEXT, partial(self.OnSelectDimsSize, ctrl=self.spin_dims_size)
+        )
+        self.spin_dims_size.Bind(
+            wx.EVT_SPINCTRL, partial(self.OnSelectDimsSize, ctrl=self.spin_dims_size)
+        )
+
+        line_dims_size = wx.BoxSizer(wx.HORIZONTAL)
+        line_dims_size.AddMany(
+            [
+                (lbl_dims_size, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, 0),
+                (self.spin_dims_size, 0, wx.ALL | wx.EXPAND | wx.GROW, 0),
+            ]
+        )
+
+        # Select Colormap Line
+        lbl_colormap = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Select Colormap:"))
+        lbl_colormap.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+
+        self.combo_thresh = wx.ComboBox(
+            bsizer_mep.GetStaticBox(),
+            -1,
+            "",  # size=(15,-1),
+            choices=self.colormaps,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnSelectColormap)
+        # by default use the initial value set in the configuration
+        self.combo_thresh.SetSelection(
+            self.colormaps.index(self.mep_configuration.get("mep_colormap"))
+        )
+        # self.combo_thresh.SetSelection(0)
+
+        colors_gradient = self.GenerateColormapColors(
+            self.mep_configuration.get("mep_colormap"), self.number_colors
+        )
+
+        self.gradient = grad.GradientDisp(
+            bsizer_mep.GetStaticBox(), -1, -5000, 5000, -5000, 5000, colors_gradient
+        )
+
+        colormap_gradient_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        colormap_gradient_sizer.AddMany(
+            [
+                (self.combo_thresh, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5),
+                (self.gradient, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5),
+            ]
+        )
+
+        colormap_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        colormap_sizer.AddMany(
+            [
+                (lbl_colormap, 0, wx.TOP | wx.BOTTOM | wx.LEFT, 5),
+                (colormap_gradient_sizer, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 5),
+            ]
+        )
+
+        colormap_custom = wx.BoxSizer(wx.VERTICAL)
+
+        lbl_colormap_ranges = wx.StaticText(
+            bsizer_mep.GetStaticBox(), -1, _("Custom Colormap Ranges")
+        )
+        lbl_colormap_ranges.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+
+        lbl_min = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Min Value (uV):"))
+
+        self.spin_min = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10
+        )
+        self.spin_min.Enable(1)
+        self.spin_min.SetRange(0, 10000)
+        self.spin_min.SetValue(self.mep_configuration.get("colormap_range_uv").get("min"))
+
+        lbl_low = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Low Value (uV):"))
+        self.spin_low = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10
+        )
+        self.spin_low.Enable(1)
+        self.spin_low.SetRange(0, 10000)
+        self.spin_low.SetValue(self.mep_configuration.get("colormap_range_uv").get("low"))
+
+        lbl_mid = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Mid Value (uV):"))
+        self.spin_mid = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10
+        )
+        self.spin_mid.Enable(1)
+        self.spin_mid.SetRange(0, 10000)
+        self.spin_mid.SetValue(self.mep_configuration.get("colormap_range_uv").get("mid"))
+
+        lbl_max = wx.StaticText(bsizer_mep.GetStaticBox(), -1, _("Max Value (uV):"))
+        self.spin_max = wx.SpinCtrlDouble(
+            bsizer_mep.GetStaticBox(), -1, "", size=wx.Size(70, 23), inc=10
+        )
+        self.spin_max.Enable(1)
+        self.spin_max.SetRange(0, 10000)
+        self.spin_max.SetValue(self.mep_configuration.get("colormap_range_uv").get("max"))
+
+        line_cm_texts = wx.BoxSizer(wx.HORIZONTAL)
+        line_cm_texts.AddMany(
+            [
+                (lbl_min, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
+                (lbl_low, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
+                (lbl_mid, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
+                (lbl_max, 1, wx.EXPAND | wx.GROW | wx.RIGHT | wx.LEFT, 5),
+            ]
+        )
+
+        line_cm_spins = wx.BoxSizer(wx.HORIZONTAL)
+        line_cm_spins.AddMany(
+            [
+                (self.spin_min, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
+                (self.spin_low, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
+                (self.spin_mid, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
+                (self.spin_max, 0, wx.RIGHT | wx.LEFT | wx.EXPAND | wx.GROW, 12),
+            ]
+        )
+
+        # Binding events for the colormap ranges
+        for ctrl in zip(
+            [self.spin_min, self.spin_low, self.spin_mid, self.spin_max],
+            ["min", "low", "mid", "max"],
+        ):
+            ctrl[0].Bind(
+                wx.EVT_TEXT, partial(self.OnSelectColormapRange, ctrl=ctrl[0], key=ctrl[1])
+            )
+            ctrl[0].Bind(
+                wx.EVT_SPINCTRL, partial(self.OnSelectColormapRange, ctrl=ctrl[0], key=ctrl[1])
+            )
+
+        colormap_custom.AddMany(
+            [
+                (lbl_colormap_ranges, 0, wx.TOP | wx.BOTTOM | wx.LEFT, 5),
+                (line_cm_texts, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 0),
+                (line_cm_spins, 0, wx.GROW | wx.SHRINK | wx.LEFT | wx.RIGHT, 0),
+            ]
+        )
+
+        # Reset to defaults button
+        btn_reset = wx.Button(bsizer_mep.GetStaticBox(), -1, _("Reset to defaults"))
+        btn_reset.Bind(wx.EVT_BUTTON, self.ResetMEPSettings)
+
+        # centered button reset
+        colormap_custom.Add(btn_reset, 0, wx.ALIGN_CENTER | wx.TOP, 15)
+
+        colormap_sizer.Add(colormap_custom, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        bsizer_mep.AddMany(
+            [
+                (surface_sel_sizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+                (line_gaussian_radius, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+                (line_std_dev, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+                (line_dims_size, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+                (colormap_sizer, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5),
+            ]
+        )
+
+        return bsizer_mep
+
+    def ResetMEPSettings(self, event):
+        # fire an event that will reset the MEP settings to the default values in MEP Visualizer
+        Publisher.sendMessage("Reset MEP Config")
+        # self.session.SetConfig('mep_configuration', self.mep_configuration)
+        self.UpdateMEPFromSession()
+
+    def UpdateMEPFromSession(self):
+        self.mep_configuration = dict(self.session.GetConfig("mep_configuration"))
+        self.spin_gaussian_radius.SetValue(self.mep_configuration.get("gaussian_radius"))
+        self.spin_std_dev.SetValue(self.mep_configuration.get("gaussian_sharpness"))
+        self.spin_dims_size.SetValue(self.mep_configuration.get("dimensions_size"))
+
+        self.combo_thresh.SetSelection(
+            self.colormaps.index(self.mep_configuration.get("mep_colormap"))
+        )
+        partial(self.OnSelectColormap, event=None, ctrl=self.combo_thresh)
+        partial(self.OnSelectColormapRange, event=None, ctrl=self.spin_min, key="min")
+
+        ranges = self.mep_configuration.get("colormap_range_uv")
+        ranges = dict(ranges)
+        self.spin_min.SetValue(ranges.get("min"))
+        self.spin_low.SetValue(ranges.get("low"))
+        self.spin_mid.SetValue(ranges.get("mid"))
+        self.spin_max.SetValue(ranges.get("max"))
+
+    def OnSelectStdDev(self, evt, ctrl):
+        self.mep_configuration["gaussian_sharpness"] = ctrl.GetValue()
+        # Save the configuration
+        self.session.SetConfig("mep_configuration", self.mep_configuration)
+
+    def OnSelectGaussianRadius(self, evt, ctrl):
+        self.mep_configuration["gaussian_radius"] = ctrl.GetValue()
+        # Save the configuration
+        self.session.SetConfig("mep_configuration", self.mep_configuration)
+
+    def OnSelectDimsSize(self, evt, ctrl):
+        self.mep_configuration["dimensions_size"] = ctrl.GetValue()
+        # Save the configuration
+        self.session.SetConfig("mep_configuration", self.mep_configuration)
+
+    def OnSelectColormapRange(self, evt, ctrl, key):
+        self.mep_configuration["colormap_range_uv"][key] = ctrl.GetValue()
+        self.session.SetConfig("mep_configuration", self.mep_configuration)
+
+    def OnSelectColormap(self, event=None):
+        self.mep_configuration["mep_colormap"] = self.colormaps[self.combo_thresh.GetSelection()]
+        colors = self.GenerateColormapColors(
+            self.mep_configuration.get("mep_colormap"), self.number_colors
+        )
+
+        # Save the configuration
+        self.session.SetConfig("mep_configuration", self.mep_configuration)
+        Publisher.sendMessage("Save Preferences")
+        self.UpdateGradient(self.gradient, colors)
+
+    def GenerateColormapColors(self, colormap_name, number_colors=4):
+        # Extract colors and positions
+        color_def = const.MEP_COLORMAP_DEFINITIONS[colormap_name]
+        colors = list(color_def.values())
+        positions = [0.0, 0.25, 0.5, 1.0]  # Assuming even spacing between colors
+
+        # Create LinearSegmentedColormap
+        cmap = mcolors.LinearSegmentedColormap.from_list(
+            colormap_name, list(zip(positions, colors))
+        )
+        colors_gradient = [
+            (
+                int(255 * cmap(i)[0]),
+                int(255 * cmap(i)[1]),
+                int(255 * cmap(i)[2]),
+                int(255 * cmap(i)[3]),
+            )
+            for i in np.linspace(0, 1, number_colors)
+        ]
+
+        return colors_gradient
+
+    def UpdateGradient(self, gradient, colors):
+        gradient.SetGradientColours(colors)
+        gradient.Refresh()
+        gradient.Update()
+
+        self.Refresh()
+        self.Update()
+        self.Show(True)
+
+    def OnComboName(self, evt):
+        from invesalius import project as prj
+
+        self.proj = prj.Project()
+        surface_index = self.combo_brain_surface_name.GetSelection()
+        Publisher.sendMessage("Show single surface", index=surface_index, visibility=True)
+        Publisher.sendMessage("Get brain surface actor", index=surface_index)
+        Publisher.sendMessage("Press motor map button", pressed=True)
+
+        self.button_colour.SetColour(
+            [int(value * 255) for value in self.proj.surface_dict[surface_index].colour]
+        )
+
+    def OnSelectColour(self, evt):
+        colour = [value / 255.0 for value in self.button_colour.GetColour()]
+        Publisher.sendMessage(
+            "Set surface colour",
+            surface_index=self.combo_brain_surface_name.GetSelection(),
+            colour=colour,
+        )
 
 
 class ObjectTab(wx.Panel):
