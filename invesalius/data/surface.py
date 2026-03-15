@@ -19,6 +19,7 @@
 
 import functools
 import gc
+import logging
 import multiprocessing
 import os
 import plistlib
@@ -1357,15 +1358,50 @@ class SurfaceManager:
         Set actor transparency (oposite to opacity) according to given actor
         index and value.
         """
-        self.actors_dict[surface_index].GetProperty().SetOpacity(1 - transparency)
+        if surface_index < 0:
+            logging.warning(
+                "SetActorTransparency called with invalid index %s; ignoring.",
+                surface_index,
+            )
+            return
+
+        actor = self.actors_dict.get(surface_index)
+        if actor is None:
+            logging.warning(
+                "SetActorTransparency: surface_index %s not found in actors_dict; ignoring.",
+                surface_index,
+            )
+            return
+
+        actor.GetProperty().SetOpacity(1 - transparency)
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[surface_index].transparency = transparency
         Publisher.sendMessage("Render volume viewer")
 
     def SetActorColour(self, surface_index, colour):
-        """ """
-        self.actors_dict[surface_index].GetProperty().SetColor(colour[:3])
+        """Set the colour of the surface actor at *surface_index*.
+
+        Validates the index before accessing ``actors_dict`` so that an
+        invalid value (e.g. ``-1`` when no surface is selected) results
+        in a logged warning instead of a ``KeyError`` crash.
+        """
+        if surface_index < 0:
+            logging.warning(
+                "SetActorColour called with invalid index %s; ignoring.",
+                surface_index,
+            )
+            return
+
+        actor = self.actors_dict.get(surface_index)
+        if actor is None:
+            logging.warning(
+                "SetActorColour: surface_index %s not found in actors_dict; ignoring.",
+                surface_index,
+            )
+            return
+
+        actor.GetProperty().SetColor(colour[:3])
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[surface_index].colour = colour
