@@ -732,9 +732,18 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         ## Remove observers and bindings from super
         self.RemoveObservers("LeftButtonPressEvent")
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.SetCameraFocus)
+        self.RemoveObservers("MouseWheelForwardEvent")
+        self.RemoveObservers("MouseWheelBackwardEvent")
+        self.RemoveObservers("MouseMoveEvent")
+
         ## Bind events for this style
-        self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
-        self.viewer.canvas.subscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+        self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnLeftButtonPress)
+        self.viewer.canvas.subscribe_event(
+            "LeftButtonDoubleClickEvent", self.OnLeftButtonDoubleClick
+        )
+        self.AddObserver("MouseMoveEvent", self.OnMouseMove)
+        self.AddObserver("MouseWheelForwardEvent", self.OnScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
 
         sub = Publisher.subscribe
         sub(self.ReceiveVolumeViewerActiveCamera, "Receive volume viewer active camera")
@@ -785,8 +794,10 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         This is called by the volume ``Viewer.SetInteractorStyle`` method.
         """
         super().CleanUp()
-        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
-        self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnLeftButtonPress)
+        self.viewer.canvas.unsubscribe_event(
+            "LeftButtonDoubleClickEvent", self.OnLeftButtonDoubleClick
+        )
 
         # Issue #1078: When the 3D editor is disabled, polygons shouldn't just be hidden
         # (which doesn't work properly due to CanvasHandlerBase), they should be fully removed.
@@ -847,7 +858,43 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.OnRestoreInitMask()
         self.viewer.UpdateCanvas()
 
-    def OnInsertPolygonPoint(self, _evt):
+    def OnLeftButtonPress(self, evt):
+        if self.viewer.interactor.GetShiftKey():
+            # Delegate to standard camera rotation
+            self.left_pressed = True
+            self.StartRotate()
+            return
+
+        # Original polygon insertion logic
+        self.OnInsertPolygonPoint(evt)
+
+    def OnLeftButtonDoubleClick(self, evt):
+        if self.viewer.interactor.GetShiftKey():
+            # Delegate to standard camera focus
+            self.SetCameraFocus(evt)
+            return
+
+        # Original polygon completion logic
+        self.OnInsertPolygon(evt)
+
+    def OnMouseMove(self, obj, evt):
+        if self.viewer.interactor.GetShiftKey():
+            # If standard camera manipulation was started via shift+left/middle/right click
+            if self.left_pressed or self.middle_pressed or self.right_pressed:
+                super().OnMouseMove(obj, evt)
+                return
+
+        super().OnMouseMove(obj, evt)
+
+    def OnScrollForward(self, obj, evt):
+        if self.viewer.interactor.GetShiftKey():
+            super().OnScrollForward(obj, evt)
+
+    def OnScrollBackward(self, obj, evt):
+        if self.viewer.interactor.GetShiftKey():
+            super().OnScrollBackward(obj, evt)
+
+    def OnInsertPolygonPoint(self, evt):
         """Insert a point in the polygon.
 
         If no polygon is open, it initializes a new one.
@@ -861,11 +908,12 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         current_masker.insert_point((mouse_x, mouse_y))
         self.viewer.UpdateCanvas()
 
-    def OnInsertPolygon(self, _evt):
+    def OnInsertPolygon(self, evt):
         """Complete the polygon by connecting the last point to the first one."""
-        self.m3e_list[-1].complete_polygon()
-        Publisher.sendMessage("M3E cut mask from 3D")
-        self.viewer.UpdateCanvas()
+        if len(self.m3e_list) > 0 and not self.m3e_list[-1].complete:
+            self.m3e_list[-1].complete_polygon()
+            Publisher.sendMessage("M3E cut mask from 3D")
+            self.viewer.UpdateCanvas()
 
     def ReceiveVolumeViewerActiveCamera(self, cam: "vtkCamera"):
         """Receive the active camera from the volume viewer through pubsub.
