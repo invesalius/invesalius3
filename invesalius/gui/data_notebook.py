@@ -39,8 +39,8 @@ from invesalius import inv_paths, project
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN, BTN_IMPORT_MASK, BTN_EXPORT_MASK = (
-    wx.NewIdRef() for i in range(6)
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN, BTN_IMPORT_MASK, BTN_EXPORT_MASK, BTN_EXPORT_3MF = (
+    wx.NewIdRef() for i in range(7)
 )
 
 TYPE = {
@@ -1315,6 +1315,9 @@ class SurfaceButtonControlPanel(wx.Panel):
             os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"), wx.BITMAP_TYPE_PNG
         )
         BMP_OPEN = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "load_mesh.png"), wx.BITMAP_TYPE_PNG)
+        BMP_EXPORT_3MF = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_export.png"), wx.BITMAP_TYPE_PNG
+        )
 
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -1338,12 +1341,18 @@ class SurfaceButtonControlPanel(wx.Panel):
         )
         button_open.SetToolTip(_("Import a surface file into InVesalius"))
 
+        button_export_3mf = pbtn.PlateButton(
+            self, BTN_EXPORT_3MF, "", BMP_EXPORT_3MF, style=button_style, size=wx.Size(24, 20)
+        )
+        button_export_3mf.SetToolTip(_("Export surface as .3MF"))
+
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(button_new, 0, wx.GROW | wx.EXPAND | wx.LEFT)
         sizer.Add(button_remove, 0, wx.GROW | wx.EXPAND)
         sizer.Add(button_duplicate, 0, wx.GROW | wx.EXPAND)
         sizer.Add(button_open, 0, wx.GROW | wx.EXPAND)
+        sizer.Add(button_export_3mf, 0, wx.GROW | wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
 
@@ -1360,6 +1369,8 @@ class SurfaceButtonControlPanel(wx.Panel):
             self.OnDuplicate()
         elif id == BTN_OPEN:
             self.OnOpenMesh()
+        elif id == BTN_EXPORT_3MF:
+            self.OnExport3MF()
 
     def OnNew(self):
         sl = slice_.Slice()
@@ -1404,7 +1415,36 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
         if filename:
+            # Guard clause for 3MF format (not yet implemented)
+            if filename.lower().endswith(".3mf"):
+                wx.MessageBox(
+                    _(".3MF import is coming soon. This feature is under active development."),
+                    _("Feature Coming Soon"),
+                    wx.OK | wx.ICON_INFORMATION,
+                )
+                return
             Publisher.sendMessage("Import surface file", filename=filename)
+
+    def OnExport3MF(self):
+        project_obj = project.Project()
+        n_surface = 0
+
+        for index in project_obj.surface_dict:
+            if project_obj.surface_dict[index].is_shown:
+                n_surface += 1
+
+        if n_surface:
+            wx.MessageBox(
+                _(".3MF export is coming soon. This feature is under active development."),
+                _("Feature Coming Soon"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+        else:
+            wx.MessageBox(
+                _("You need to create a surface and make it visible before exporting it."),
+                _("InVesalius 3"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
 
 
 class SurfacesListCtrlPanel(InvListCtrl):

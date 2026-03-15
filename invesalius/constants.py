@@ -515,6 +515,7 @@ FILETYPE_OBJ = wx.NewIdRef()
 FILETYPE_VTP = wx.NewIdRef()
 FILETYPE_PLY = wx.NewIdRef()
 FILETYPE_X3D = wx.NewIdRef()
+FILETYPE_3MF = wx.NewIdRef()
 
 FILETYPE_IMAGEDATA = wx.NewIdRef()
 
