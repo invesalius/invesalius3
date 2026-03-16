@@ -80,7 +80,9 @@ class Marker:
     # in micro Volts (but scale in milli Volts for display)
     mep_value: float = dataclasses.field(default=None)
     brain_target_list: list = dataclasses.field(default_factory=list)
-    timestamp: str = dataclasses.field(default_factory=lambda: datetime.now().isoformat(timespec='seconds'))
+    timestamp: str = dataclasses.field(
+        default_factory=lambda: datetime.now().isoformat(timespec="seconds")
+    )
 
     # x, y, z can be jointly accessed as position
     @property
