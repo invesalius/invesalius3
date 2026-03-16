@@ -2987,17 +2987,19 @@ class Viewer(wx.Panel):
         else:
             self.ren.RemoveVolume(mask_3d_actor)
 
-        if (
-            self.ren.GetActors().GetNumberOfItems() == 0
-            and self.ren.GetVolumes().GetNumberOfItems() == 1
-        ):
-            self.ren.ResetCamera()
-            self.ren.ResetCameraClippingRange()
-            # Match the parallel projection used by AddSurface/LoadVolume so that
-            # GetCompositeProjectionTransformMatrix produces a correct world-to-screen
-            # matrix for the 3D mask editor (fixes #1086 – "Edit in 3D" without a
-            # surface generated first).
-            self.ren.GetActiveCamera().ParallelProjectionOn()
+        if flag and not self.surface_added and not self.raycasting_volume:
+            self.SetViewAngle(const.VOL_FRONT)
+            if (
+                self.ren.GetActors().GetNumberOfItems() == 0
+                and self.ren.GetVolumes().GetNumberOfItems() == 1
+            ):
+                self.ren.ResetCamera()
+                self.ren.ResetCameraClippingRange()
+                # Match the parallel projection used by AddSurface/LoadVolume so that
+                # GetCompositeProjectionTransformMatrix produces a correct world-to-screen
+                # matrix for the 3D mask editor (fixes #1086 – "Edit in 3D" without a
+                # surface generated first).
+                self.ren.GetActiveCamera().ParallelProjectionOn()
 
     def remove_mask_preview(self, mask_3d_actor):
         self.ren.RemoveVolume(mask_3d_actor)
@@ -3044,6 +3046,7 @@ class Viewer(wx.Panel):
         self.ren.ResetCamera()
         if not self.nav_status:
             self.UpdateRender()
+            Publisher.sendMessage("Reload actual slice")
 
     def ShowOrientationCube(self):
         cube = vtkAnnotatedCubeActor()
