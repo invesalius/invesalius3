@@ -2987,12 +2987,11 @@ class Viewer(wx.Panel):
         else:
             self.ren.RemoveVolume(mask_3d_actor)
 
-        if (
-            self.ren.GetActors().GetNumberOfItems() == 0
-            and self.ren.GetVolumes().GetNumberOfItems() == 1
-        ):
-            self.ren.ResetCamera()
-            self.ren.ResetCameraClippingRange()
+        if flag:
+            if not self.view_angle:
+                self.SetViewAngle(const.VOL_FRONT)
+                self.view_angle = 1
+
             # Match the parallel projection used by AddSurface/LoadVolume so that
             # GetCompositeProjectionTransformMatrix produces a correct world-to-screen
             # matrix for the 3D mask editor (fixes #1086 – "Edit in 3D" without a
