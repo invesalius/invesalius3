@@ -4393,6 +4393,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         marker = Marker()
 
+        if position is None and self.current_position == [0, 0, 0] and not self.nav_status:
+            sl = slice_.Slice()
+            spacing = sl.spacing
+            position = [
+                sl.buffer_slices["SAGITAL"].index * spacing[0],
+                sl.buffer_slices["CORONAL"].index * spacing[1],
+                sl.buffer_slices["AXIAL"].index * spacing[2],
+            ]
+
         marker.position = position or self.current_position
         marker.orientation = orientation or self.current_orientation
 

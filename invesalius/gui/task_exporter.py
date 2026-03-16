@@ -42,7 +42,6 @@ from invesalius.pubsub import pub as Publisher
 BTN_MASK = wx.NewIdRef()
 BTN_PICTURE = wx.NewIdRef()
 BTN_SURFACE = wx.NewIdRef()
-BTN_IMPORT_3MF = wx.NewIdRef()
 BTN_REPORT = wx.NewIdRef()
 BTN_REQUEST_RP = wx.NewIdRef()
 
@@ -151,17 +150,6 @@ class InnerTaskPanel(wx.Panel):
         link_export_surface.UpdateLink()
         link_export_surface.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkExportSurface)
 
-        tooltip = _("Import .3MF surface")
-        link_import_3mf = hl.HyperLinkCtrl(self, -1, _("Import .3MF surface..."))
-        link_import_3mf.SetUnderlines(False, False, False)
-        link_import_3mf.SetBold(True)
-        link_import_3mf.SetColours("BLACK", "BLACK", "BLACK")
-        link_import_3mf.SetBackgroundColour(self.GetBackgroundColour())
-        link_import_3mf.SetToolTip(tooltip)
-        link_import_3mf.AutoBrowse(False)
-        link_import_3mf.UpdateLink()
-        link_import_3mf.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImport3MF)
-
         # tooltip = _("Export 3D mask (voxels)")
         # link_export_mask = hl.HyperLinkCtrl(self, -1,_("Export mask..."))
         # link_export_mask.SetUnderlines(False, False, False)
@@ -222,10 +210,6 @@ class InnerTaskPanel(wx.Panel):
         )
         button_surface.SetBackgroundColour(self.GetBackgroundColour())
 
-        button_import_3mf = pbtn.PlateButton(
-            self, BTN_IMPORT_3MF, "", BMP_EXPORT_SURFACE, style=button_style
-        )
-        button_import_3mf.SetBackgroundColour(self.GetBackgroundColour())
         # button_mask = pbtn.PlateButton(self, BTN_MASK, "",
         #                                BMP_EXPORT_MASK,
         #                                style=button_style)
@@ -242,7 +226,7 @@ class InnerTaskPanel(wx.Panel):
         flag_link = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
         flag_button = wx.EXPAND | wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
+        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany(
             [
@@ -250,8 +234,6 @@ class InnerTaskPanel(wx.Panel):
                 (button_picture, 0, flag_button),
                 (link_export_surface, 1, flag_link, 3),
                 (button_surface, 0, flag_button),
-                (link_import_3mf, 1, flag_link, 3),
-                (button_import_3mf, 0, flag_button),
             ]
         )
         # (link_export_mask, 1, flag_link, 3),
@@ -390,18 +372,18 @@ class InnerTaskPanel(wx.Panel):
                     if filename.split(".")[-1] != extension:
                         filename = filename + "." + extension
 
-                if filename:
-                    last_directory = os.path.split(filename)[0]
-                    session.SetConfig("last_directory_3d_surface", last_directory)
-
-                # Guard clause for 3MF format (not yet implemented)
-                if filetype == const.FILETYPE_3MF:
+                if filetype_index == 9:
                     wx.MessageBox(
                         _(".3MF export is coming soon. This feature is under active development."),
                         _("Feature Coming Soon"),
                         wx.OK | wx.ICON_INFORMATION,
                     )
+                    dlg.Destroy()
                     return
+
+                if filename:
+                    last_directory = os.path.split(filename)[0]
+                    session.SetConfig("last_directory_3d_surface", last_directory)
 
                 Publisher.sendMessage(
                     "Export surface to file",
@@ -416,13 +398,6 @@ class InnerTaskPanel(wx.Panel):
                 wx.OK | wx.ICON_INFORMATION,
             )
 
-    def OnLinkImport3MF(self, evt=None):
-        wx.MessageBox(
-            _(".3MF import is coming soon. This feature is under active development."),
-            _("Feature Coming Soon"),
-            wx.OK | wx.ICON_INFORMATION,
-        )
-
     def OnLinkRequestRP(self, evt=None):
         pass
 
@@ -435,8 +410,6 @@ class InnerTaskPanel(wx.Panel):
             self.OnLinkExportPicture()
         elif id == BTN_SURFACE:
             self.OnLinkExportSurface()
-        elif id == BTN_IMPORT_3MF:
-            self.OnLinkImport3MF()
         elif id == BTN_REPORT:
             self.OnLinkReport()
         elif id == BTN_REQUEST_RP:
