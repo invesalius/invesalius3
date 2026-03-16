@@ -54,7 +54,8 @@ WILDCARD_SAVE_3D = (
     "VRML (*.vrml)|*.vrml|"
     "VTK PolyData (*.vtp)|*.vtp|"
     "Wavefront (*.obj)|*.obj|"
-    "X3D (*.x3d)|*.x3d"
+    "X3D (*.x3d)|*.x3d|"
+    "3MF (*.3mf)|*.3mf"
 )
 
 INDEX_TO_TYPE_3D = {
@@ -67,6 +68,7 @@ INDEX_TO_TYPE_3D = {
     6: const.FILETYPE_VTP,
     7: const.FILETYPE_OBJ,
     8: const.FILETYPE_X3D,
+    9: const.FILETYPE_3MF,
 }
 INDEX_TO_EXTENSION = {
     0: "iv",
@@ -78,6 +80,7 @@ INDEX_TO_EXTENSION = {
     6: "vtp",
     7: "obj",
     8: "x3d",
+    9: "3mf",
 }
 
 WILDCARD_SAVE_2D = (
@@ -206,6 +209,7 @@ class InnerTaskPanel(wx.Panel):
             self, BTN_SURFACE, "", BMP_EXPORT_SURFACE, style=button_style
         )
         button_surface.SetBackgroundColour(self.GetBackgroundColour())
+
         # button_mask = pbtn.PlateButton(self, BTN_MASK, "",
         #                                BMP_EXPORT_MASK,
         #                                style=button_style)
@@ -368,6 +372,15 @@ class InnerTaskPanel(wx.Panel):
                     if filename.split(".")[-1] != extension:
                         filename = filename + "." + extension
 
+                if filetype_index == 9:
+                    wx.MessageBox(
+                        _(".3MF export is coming soon. This feature is under active development."),
+                        _("Feature Coming Soon"),
+                        wx.OK | wx.ICON_INFORMATION,
+                    )
+                    dlg.Destroy()
+                    return
+
                 if filename:
                     last_directory = os.path.split(filename)[0]
                     session.SetConfig("last_directory_3d_surface", last_directory)
@@ -379,16 +392,11 @@ class InnerTaskPanel(wx.Panel):
                     convert_to_world=convert_to_world,
                 )
         else:
-            dlg = wx.MessageDialog(
-                None,
-                _("You need to create a surface and make it ") + _("visible before exporting it."),
-                "InVesalius 3",
+            wx.MessageBox(
+                _("You need to create a surface and make it visible before exporting it."),
+                _("InVesalius 3"),
                 wx.OK | wx.ICON_INFORMATION,
             )
-            try:
-                dlg.ShowModal()
-            finally:
-                dlg.Destroy()
 
     def OnLinkRequestRP(self, evt=None):
         pass
