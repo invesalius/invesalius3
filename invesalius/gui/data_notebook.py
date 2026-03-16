@@ -18,6 +18,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 import os
+import pathlib
 import sys
 
 try:
@@ -35,13 +36,20 @@ import wx.lib.scrolledpanel as scrolled
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
+import invesalius.session as ses
 from invesalius import inv_paths, project
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN, BTN_IMPORT_MASK, BTN_EXPORT_MASK = (
-    wx.NewIdRef() for i in range(6)
-)
+(
+    BTN_NEW,
+    BTN_REMOVE,
+    BTN_DUPLICATE,
+    BTN_OPEN,
+    BTN_IMPORT_MASK,
+    BTN_EXPORT_MASK,
+    BTN_EXPORT_SURFACE,
+) = (wx.NewIdRef() for i in range(7))
 
 TYPE = {
     const.LINEAR: _("Linear"),
@@ -1315,6 +1323,9 @@ class SurfaceButtonControlPanel(wx.Panel):
             os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"), wx.BITMAP_TYPE_PNG
         )
         BMP_OPEN = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "load_mesh.png"), wx.BITMAP_TYPE_PNG)
+        BMP_EXPORT = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_export.png"), wx.BITMAP_TYPE_PNG
+        )
 
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -1338,12 +1349,18 @@ class SurfaceButtonControlPanel(wx.Panel):
         )
         button_open.SetToolTip(_("Import a surface file into InVesalius"))
 
+        button_export = pbtn.PlateButton(
+            self, BTN_EXPORT_SURFACE, "", BMP_EXPORT, style=button_style, size=wx.Size(24, 20)
+        )
+        button_export.SetToolTip(_("Export surface"))
+
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(button_new, 0, wx.GROW | wx.EXPAND | wx.LEFT)
         sizer.Add(button_remove, 0, wx.GROW | wx.EXPAND)
         sizer.Add(button_duplicate, 0, wx.GROW | wx.EXPAND)
         sizer.Add(button_open, 0, wx.GROW | wx.EXPAND)
+        sizer.Add(button_export, 0, wx.GROW | wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
 
@@ -1360,6 +1377,8 @@ class SurfaceButtonControlPanel(wx.Panel):
             self.OnDuplicate()
         elif id == BTN_OPEN:
             self.OnOpenMesh()
+        elif id == BTN_EXPORT_SURFACE:
+            self.OnExportSurface()
 
     def OnNew(self):
         sl = slice_.Slice()
@@ -1404,7 +1423,104 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
         if filename:
+            # Guard clause for 3MF format (not yet implemented)
+            if filename.lower().endswith(".3mf"):
+                wx.MessageBox(
+                    _(".3MF import is coming soon. This feature is under active development."),
+                    _("Feature Coming Soon"),
+                    wx.OK | wx.ICON_INFORMATION,
+                )
+                return
             Publisher.sendMessage("Import surface file", filename=filename)
+
+    def OnExportSurface(self):
+        from invesalius.data.slice_ import Slice
+        from invesalius.gui.task_exporter import (
+            INDEX_TO_EXTENSION,
+            INDEX_TO_TYPE_3D,
+            WILDCARD_SAVE_3D,
+        )
+
+        project_obj = project.Project()
+        n_surface = 0
+
+        for index in project_obj.surface_dict:
+            if project_obj.surface_dict[index].is_shown:
+                n_surface += 1
+
+        if not n_surface:
+            wx.MessageBox(
+                _("You need to create a surface and make it visible before exporting it."),
+                _("InVesalius 3"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+            return
+
+        if sys.platform == "win32":
+            project_name = pathlib.Path(project_obj.name).stem
+        else:
+            project_name = pathlib.Path(project_obj.name).stem + ".stl"
+
+        session = ses.Session()
+        last_directory = session.GetConfig("last_directory_3d_surface", "")
+
+        dlg_message = _("Save 3D surface as...")
+        dlg_style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
+
+        convert_to_world = False
+        if Slice().has_affine():
+            export_dlg = dlg.FileSelectionDialog(
+                title=dlg_message, default_dir=last_directory, wildcard=WILDCARD_SAVE_3D
+            )
+            conversion_radio_box = wx.RadioBox(
+                export_dlg,
+                -1,
+                _("Export in"),
+                choices=const.SURFACE_SPACE_CHOICES,
+                style=wx.RA_SPECIFY_ROWS,
+            )
+            export_dlg.sizer.Hide(0)
+            export_dlg.sizer.Add(conversion_radio_box, 0, wx.LEFT)
+            export_dlg.sizer.Layout()
+            export_dlg.FitSizers()
+
+            if export_dlg.ShowModal() == wx.ID_OK:
+                convert_to_world = conversion_radio_box.GetSelection() == const.SURFACE_SPACE_WORLD
+            else:
+                export_dlg.Destroy()
+                return
+            export_dlg.Destroy()
+
+        export_dlg = wx.FileDialog(
+            None,
+            dlg_message,
+            last_directory,
+            project_name,
+            WILDCARD_SAVE_3D,
+            dlg_style,
+        )
+        export_dlg.SetFilterIndex(3)  # default STL
+
+        if export_dlg.ShowModal() == wx.ID_OK:
+            filetype_index = export_dlg.GetFilterIndex()
+            filetype = INDEX_TO_TYPE_3D[filetype_index]
+            filename = export_dlg.GetPath()
+            extension = INDEX_TO_EXTENSION[filetype_index]
+            if sys.platform != "win32":
+                if filename.split(".")[-1] != extension:
+                    filename = filename + "." + extension
+
+            if filename:
+                last_directory = os.path.split(filename)[0]
+                session.SetConfig("last_directory_3d_surface", last_directory)
+
+            Publisher.sendMessage(
+                "Export surface to file",
+                filename=filename,
+                filetype=filetype,
+                convert_to_world=convert_to_world,
+            )
+        export_dlg.Destroy()
 
 
 class SurfacesListCtrlPanel(InvListCtrl):
