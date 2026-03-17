@@ -1417,16 +1417,18 @@ class ObjectTab(wx.Panel):
                 obj_fiducials = registration_coordinates[:, :3]
                 obj_orients = registration_coordinates[:, 3:]
 
-                coil_name = data[0][0][2:]
-                coil_path = data[0][1].encode(const.FS_ENCODE)
-                tracker_id = int(data[0][3])
-                obj_id = int(data[0][-1])
-                coil_name = "default_coil" if self.navigation.n_coils == 1 else coil_name
-
                 # Handle old OBR file which lacks coil_name and tracker information
                 if len(data[0]) < 6:
                     coil_name = "default_coil"
+                    coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl").encode(const.FS_ENCODE)
                     tracker_id = self.tracker.tracker_id
+                    obj_id = int(data[0][-1])
+                else:
+                    coil_name = data[0][0][2:]
+                    coil_path = data[0][1].encode(const.FS_ENCODE)
+                    tracker_id = int(data[0][3])
+                    obj_id = int(data[0][-1])
+                coil_name = "default_coil" if self.navigation.n_coils == 1 else coil_name
 
                 if coil_name in self.coil_registrations and coil_name != "default_coil":
                     # Warn that we are overwriting an old registration
