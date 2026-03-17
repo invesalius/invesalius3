@@ -1068,6 +1068,12 @@ class SurfaceManager:
             overwrite = False
         mask.matrix.flush()
 
+        # Default values (Optimal *)
+        imagedata_resolution = const.SURFACE_QUALITY[const.DEFAULT_SURFACE_QUALITY][0]
+        smooth_iterations = const.SURFACE_QUALITY[const.DEFAULT_SURFACE_QUALITY][1]
+        smooth_relaxation_factor = const.SURFACE_QUALITY[const.DEFAULT_SURFACE_QUALITY][2]
+        decimate_reduction = const.SURFACE_QUALITY[const.DEFAULT_SURFACE_QUALITY][3]
+
         if quality in const.SURFACE_QUALITY.keys():
             imagedata_resolution = const.SURFACE_QUALITY[quality][0]
             smooth_iterations = const.SURFACE_QUALITY[quality][1]
@@ -1176,7 +1182,7 @@ class SurfaceManager:
                 surface_filename, surface_measures = f.get()
             except Exception:
                 print(_("InVesalius was not able to create the surface"))
-                print(traceback.print_exc())
+                traceback.print_exc()
                 return
 
             reader = vtkXMLPolyDataReader()
