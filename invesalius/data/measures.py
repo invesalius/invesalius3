@@ -7,15 +7,15 @@ import textwrap
 import numpy as np
 import wx
 from vtkmodules.vtkCommonCore import vtkMath
+from vtkmodules.vtkCommonDataModel import vtkPointLocator
 from vtkmodules.vtkFiltersCore import vtkAppendPolyData, vtkTriangleFilter
+from vtkmodules.vtkFiltersModeling import vtkDijkstraGraphGeodesicPath
 from vtkmodules.vtkFiltersSources import (
     vtkArcSource,
     vtkLineSource,
     vtkSphereSource,
     vtkTextSource,
 )
-from vtkmodules.vtkCommonDataModel import vtkPointLocator, vtkPolyData
-from vtkmodules.vtkFiltersModeling import vtkDijkstraGraphGeodesicPath
 from vtkmodules.vtkRenderingAnnotation import vtkLeaderActor2D
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
@@ -23,7 +23,6 @@ from vtkmodules.vtkRenderingCore import (
     vtkCoordinate,
     vtkPolyDataMapper,
     vtkPolyDataMapper2D,
-    vtkTextActor,
 )
 
 import invesalius.constants as const
@@ -281,7 +280,9 @@ class MeasurementManager:
                 else:
                     Publisher.sendMessage("Redraw canvas")
 
-    def _add_point(self, position, type, location, slice_number=0, radius=const.PROP_MEASURE, polydata=None):
+    def _add_point(
+        self, position, type, location, slice_number=0, radius=const.PROP_MEASURE, polydata=None
+    ):
         to_remove = False
         if self.current is None:
             to_create = True
@@ -334,7 +335,7 @@ class MeasurementManager:
         actors = mr.AddPoint(x, y, z)
         m.points.append(position)
 
-        if type == const.CURVED_LINEAR and hasattr(mr, 'SetSurface') and polydata:
+        if type == const.CURVED_LINEAR and hasattr(mr, "SetSurface") and polydata:
             mr.SetSurface(polydata)
 
         if m.location == const.SURFACE:
@@ -969,7 +970,7 @@ class GeodesicMeasure(LinearMeasure):
     def __init__(self, colour=(1, 0, 0), representation=None):
         super().__init__(colour, representation)
         self.surface_polydata = None
-        self._path_length = None    # cached geodesic length (mm)
+        self._path_length = None  # cached geodesic length (mm)
         self._path_computed = False  # True once _compute_and_publish_path finished
 
     def IsComplete(self):
@@ -980,7 +981,6 @@ class GeodesicMeasure(LinearMeasure):
         path computation runs independently and will update the value later.
         """
         return self.point_actor1 is not None and self.point_actor2 is not None
-
 
     def SetSurface(self, polydata):
         self.surface_polydata = polydata
@@ -1016,8 +1016,6 @@ class GeodesicMeasure(LinearMeasure):
             Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=path_actors)
         Publisher.sendMessage("Render volume viewer")
 
-
-
     def _draw_line(self):
         if not self.surface_polydata:
             super()._draw_line()
@@ -1026,7 +1024,7 @@ class GeodesicMeasure(LinearMeasure):
         p1, p2 = self.points
 
         # Validate polydata type — only Accept vtkPolyData, not vtkImageData
-        if not self.surface_polydata or not hasattr(self.surface_polydata, 'GetNumberOfCells'):
+        if not self.surface_polydata or not hasattr(self.surface_polydata, "GetNumberOfCells"):
             return
         if self.surface_polydata.GetNumberOfCells() == 0:
             return
@@ -1070,6 +1068,7 @@ class GeodesicMeasure(LinearMeasure):
 
         # Render as a solid 3D tube for clear visibility on the surface
         from vtkmodules.vtkFiltersCore import vtkTubeFilter
+
         tube = vtkTubeFilter()
         tube.SetInputData(path)
         tube.SetRadius(0.6)
@@ -1083,7 +1082,6 @@ class GeodesicMeasure(LinearMeasure):
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
         self.line_actor = a
-
 
     def GetValue(self):
         """Return cached geodesic length (avoids re-running Dijkstra)."""

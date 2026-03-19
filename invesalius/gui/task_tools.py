@@ -108,7 +108,6 @@ class InnerTaskPanel(wx.Panel):
         )
         button_measure_curved.SetToolTip(_("Measure curved distance on surface"))
 
-
         button_annotation = pbtn.PlateButton(
             self, ID_BTN_ANNOTATION, "", BMP_ANNOTATE, style=button_style
         )

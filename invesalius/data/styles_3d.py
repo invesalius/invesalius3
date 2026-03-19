@@ -18,7 +18,7 @@
 # --------------------------------------------------------------------------
 
 
-from typing import TYPE_CHECKING, List, Literal, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -521,7 +521,6 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.left_pressed = True
 
 
-
 class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
     """
     Interactor style responsible for geodesic (curved) measurements by clicking
@@ -549,7 +548,7 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
             # Retrieve the surface polydata so GeodesicMeasure can compute the path
             polydata = None
             actor = self.measure_picker.GetActor()
-            if actor and hasattr(actor, 'GetMapper') and actor.GetMapper():
+            if actor and hasattr(actor, "GetMapper") and actor.GetMapper():
                 polydata = actor.GetMapper().GetInput()
             # Use 3x radius so the sphere marker protrudes above the surface mesh
             # (same-radius spheres get half-buried and are invisible)
@@ -781,7 +780,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         # Initialise resolution from the current viewer widget size so that
         # CutMaskFromPolygons always has a valid aspect ratio even before the
         # first "Receive volume viewer size" message arrives (fixes #1086).
-        self.resolution: Tuple[int, int] = tuple(viewer.GetSize())
+        self.resolution: tuple[int, int] = tuple(viewer.GetSize())
 
         self._bind_events()
         Publisher.subscribe(self.ClearPolygons, "M3E clear polygons")
@@ -882,7 +881,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
     def _display_to_world_focal_plane(
         self, display_x: float, display_y: float
-    ) -> Tuple[float, float, float]:
+    ) -> tuple[float, float, float]:
         """Convert display coordinates to world coordinates on the camera focal plane.
         Projects the given 2D display position onto the plane perpendicular to the
         camera view direction passing through the focal point. This allows polygon
@@ -1044,7 +1043,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         MV = vtkarray_to_numpy(MV)
         self.world_to_camera_coordinates = MV @ inv_Y_matrix
 
-    def ReceiveVolumeViewerSize(self, size: Tuple[int, int]):
+    def ReceiveVolumeViewerSize(self, size: tuple[int, int]):
         """Receive the size of the volume viewer through pubsub.
 
         Args:
@@ -1058,7 +1057,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         _mat = self.mask_data[1:, 1:, 1:].copy()
         self.update_views(_mat)
 
-    def get_filters(self) -> List[npt.NDArray]:
+    def get_filters(self) -> list[npt.NDArray]:
         """Create a boolean mask filter based on the polygon points and viewer size.
 
         Since polygon points are stored with parallel world coordinates,

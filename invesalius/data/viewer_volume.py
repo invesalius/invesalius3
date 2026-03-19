@@ -821,6 +821,7 @@ class Viewer(wx.Panel):
         if not actors:
             return
         from vtkmodules.vtkRenderingCore import vtkActor2D
+
         for actor in actors:
             if actor is None:
                 continue
@@ -828,7 +829,6 @@ class Viewer(wx.Panel):
                 self.ren.AddActor2D(actor)
             else:
                 self.ren.AddActor(actor)
-
 
     def RemoveVolume(self):
         volumes = self.ren.GetVolumes()
@@ -842,6 +842,7 @@ class Viewer(wx.Panel):
     def RemoveActors(self, actors):
         "Remove a list of actors"
         from vtkmodules.vtkRenderingCore import vtkActor2D
+
         for actor in actors:
             if actor is None:
                 continue
