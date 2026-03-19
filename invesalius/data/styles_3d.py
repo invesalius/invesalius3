@@ -763,6 +763,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         sub(self.CutMaskFromPolygons, "M3E cut mask from 3D")
         sub(self.SetEditMode, "M3E set edit mode")
         sub(self.SetDepthValue, "M3E set depth value")
+        sub(self.OnMaskChanged, "Change mask selected")
 
     def SetUp(self):
         """Set up is called just before the style is set in the interactor.
@@ -1058,6 +1059,17 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         self.update_views(out)
 
+    def OnMaskChanged(self, index: int):
+        """Refresh mask_data when the active mask changes (e.g. after Select Parts).
+
+        Without this, the 3D editor keeps the stale matrix from the old mask,
+        so the first polygon cut after a 'Select Parts' would restore the old
+        mask instead of operating on the new one.  Fixes #1258.
+        """
+        cur_mask = slc.Slice().current_mask
+        if cur_mask is not None:
+            self.mask_data = cur_mask.matrix.copy()
+
     def update_views(self, _mat: npt.NDArray):
         """Update the views with the given mask data."""
         slice = slc.Slice()
@@ -1066,6 +1078,16 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             _cur_mask.matrix[:] = 1
             _cur_mask.matrix[1:, 1:, 1:] = _mat
             _cur_mask.was_edited = True
+
+            # Explicitly rebuild the VTK imagedata from the updated numpy matrix
+            # so that the 3D volume re-renders with the new polygon-cut data.
+            # Calling modified(all_volume=True) only calls imagedata.Modified()
+            # which does NOT transfer the numpy changes into the VTK scalar array.
+            # Fix for #1258: rebuild imagedata so 3D window reflects the cut.
+            if _cur_mask.volume is not None and ses.Session().mask_3d_preview:
+                _cur_mask.imagedata = _cur_mask.as_vtkimagedata()
+                _cur_mask.volume.change_imagedata()
+
             _cur_mask.modified(all_volume=True)
 
         # Discard all buffers to reupdate view
@@ -1075,7 +1097,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         # Save modification in the history
         _cur_mask.save_history(0, "VOLUME", _cur_mask.matrix.copy(), self.mask_data)
 
-        Publisher.sendMessage("Update mask 3D preview")
+        Publisher.sendMessage("Render volume viewer")  # Fix #1258: re-render 3D window after cut
         Publisher.sendMessage("Reload actual slice")
 
 
