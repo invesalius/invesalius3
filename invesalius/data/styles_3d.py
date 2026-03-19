@@ -521,6 +521,52 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.left_pressed = True
 
 
+
+class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
+    """
+    Interactor style responsible for geodesic (curved) measurements by clicking
+    two points on a 3D surface in the volume viewer.
+    """
+
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.state_code = const.STATE_MEASURE_CURVED_LINEAR
+        self._type = const.CURVED_LINEAR
+
+    def SetUp(self):
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
+
+    def CleanUp(self):
+        super().CleanUp()
+        Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
+
+    def OnInsertLinearMeasurePoint(self, obj, evt):
+        x, y = self.viewer.get_vtk_mouse_position()
+        self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+        x, y, z = self.measure_picker.GetPickPosition()
+        if self.measure_picker.GetActor():
+            self.left_pressed = False
+            # Retrieve the surface polydata so GeodesicMeasure can compute the path
+            polydata = None
+            actor = self.measure_picker.GetActor()
+            if actor and hasattr(actor, 'GetMapper') and actor.GetMapper():
+                polydata = actor.GetMapper().GetInput()
+            # Use 3x radius so the sphere marker protrudes above the surface mesh
+            # (same-radius spheres get half-buried and are invisible)
+            Publisher.sendMessage(
+                "Add measurement point",
+                position=(x, y, z),
+                type=self._type,
+                location=const.SURFACE,
+                radius=self._radius * 3.0,
+                polydata=polydata,
+            )
+            # Explicitly render so the new point marker appears immediately
+            Publisher.sendMessage("Render volume viewer")
+        else:
+            self.left_pressed = True
+
+
 class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for angular measurements by clicking consecutive points in the volume viewer.
@@ -1175,6 +1221,7 @@ class Styles:
         const.STATE_SPIN: SpinInteractorStyle,
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
+        const.STATE_MEASURE_CURVED_LINEAR: CurvedMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.STATE_MEASURE_ANNOTATION: AnnotationInteractorStyle,
         const.VOLUME_STATE_SEED: SeedInteractorStyle,

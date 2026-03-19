@@ -818,8 +818,17 @@ class Viewer(wx.Panel):
 
     def AddActors(self, actors):
         "Inserting actors"
+        if not actors:
+            return
+        from vtkmodules.vtkRenderingCore import vtkActor2D
         for actor in actors:
-            self.ren.AddActor(actor)
+            if actor is None:
+                continue
+            if isinstance(actor, vtkActor2D):
+                self.ren.AddActor2D(actor)
+            else:
+                self.ren.AddActor(actor)
+
 
     def RemoveVolume(self):
         volumes = self.ren.GetVolumes()
@@ -832,8 +841,14 @@ class Viewer(wx.Panel):
 
     def RemoveActors(self, actors):
         "Remove a list of actors"
+        from vtkmodules.vtkRenderingCore import vtkActor2D
         for actor in actors:
-            self.ren.RemoveActor(actor)
+            if actor is None:
+                continue
+            if isinstance(actor, vtkActor2D):
+                self.ren.RemoveActor2D(actor)
+            else:
+                self.ren.RemoveActor(actor)
 
     def AddPointReference(self, position, radius=1, colour=(1, 0, 0)):
         """

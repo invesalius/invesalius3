@@ -30,6 +30,7 @@ from invesalius.pubsub import pub as Publisher
 
 ID_BTN_MEASURE_LINEAR = wx.NewIdRef()
 ID_BTN_MEASURE_ANGULAR = wx.NewIdRef()
+ID_BTN_MEASURE_CURVED = wx.NewIdRef()
 ID_BTN_ANNOTATION = wx.NewIdRef()
 
 
@@ -100,6 +101,13 @@ class InnerTaskPanel(wx.Panel):
         button_measure_angular = pbtn.PlateButton(
             self, ID_BTN_MEASURE_ANGULAR, "", BMP_ANGLE, style=button_style
         )
+        button_measure_angular.SetToolTip(_("Measure angles"))
+
+        button_measure_curved = pbtn.PlateButton(
+            self, ID_BTN_MEASURE_CURVED, "", BMP_DISTANCE, style=button_style
+        )
+        button_measure_curved.SetToolTip(_("Measure curved distance on surface"))
+
 
         button_annotation = pbtn.PlateButton(
             self, ID_BTN_ANNOTATION, "", BMP_ANNOTATE, style=button_style
@@ -116,6 +124,7 @@ class InnerTaskPanel(wx.Panel):
         sizer.Add(txt_measure, pos=(0, 0), flag=wx.GROW | wx.EXPAND | wx.TOP, border=3)
         sizer.Add(button_measure_linear, pos=(0, 1), flag=wx.GROW | wx.EXPAND)
         sizer.Add(button_measure_angular, pos=(0, 2), flag=wx.GROW | wx.EXPAND)
+        sizer.Add(button_measure_curved, pos=(0, 3), flag=wx.GROW | wx.EXPAND)
         sizer.Add(txt_annotation, pos=(1, 0), flag=wx.GROW | wx.EXPAND)
         sizer.Add(button_annotation, pos=(1, 2), span=(2, 1), flag=wx.GROW | wx.EXPAND)
         sizer.AddGrowableCol(0)
@@ -136,8 +145,8 @@ class InnerTaskPanel(wx.Panel):
     def OnLinkLinearMeasure(self):
         Publisher.sendMessage("Enable style", style=constants.STATE_MEASURE_DISTANCE)
 
-    def OnLinkAngularMeasure(self):
-        Publisher.sendMessage("Enable style", style=constants.STATE_MEASURE_ANGLE)
+    def OnLinkCurvedMeasure(self):
+        Publisher.sendMessage("Enable style", style=constants.STATE_MEASURE_CURVED_LINEAR)
 
     def OnButton(self, evt):
         id = evt.GetId()
@@ -146,5 +155,7 @@ class InnerTaskPanel(wx.Panel):
             self.OnLinkLinearMeasure()
         elif id == ID_BTN_MEASURE_ANGULAR:
             self.OnLinkAngularMeasure()
+        elif id == ID_BTN_MEASURE_CURVED:
+            self.OnLinkCurvedMeasure()
         else:  # elif id == ID_BTN_ANNOTATION:
             self.OnTextAnnotation()

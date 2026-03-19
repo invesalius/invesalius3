@@ -2082,6 +2082,7 @@ class ObjectToolBar(AuiToolBar):
             const.STATE_MEASURE_DENSITY_ELLIPSE,
             const.STATE_MEASURE_DENSITY_POLYGON,
             const.STATE_MEASURE_ANNOTATION,
+            const.STATE_MEASURE_CURVED_LINEAR,
             # const.STATE_ANNOTATE
         ]
         self.__init_items()
@@ -2226,6 +2227,16 @@ class ObjectToolBar(AuiToolBar):
             BMP_ANNOTATION,
             wx.NullBitmap,
             short_help_string=_("Add annotation"),
+            kind=wx.ITEM_CHECK,
+        )
+
+        # Use same distance icon for curved distance
+        self.AddTool(
+            const.STATE_MEASURE_CURVED_LINEAR,
+            "",
+            BMP_DISTANCE,
+            wx.NullBitmap,
+            short_help_string=_("Measure curved distance on surface"),
             kind=wx.ITEM_CHECK,
         )
         # self.AddLabelTool(const.STATE_ANNOTATE,

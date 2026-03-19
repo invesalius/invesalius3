@@ -7,13 +7,15 @@ import textwrap
 import numpy as np
 import wx
 from vtkmodules.vtkCommonCore import vtkMath
-from vtkmodules.vtkFiltersCore import vtkAppendPolyData
+from vtkmodules.vtkFiltersCore import vtkAppendPolyData, vtkTriangleFilter
 from vtkmodules.vtkFiltersSources import (
     vtkArcSource,
     vtkLineSource,
     vtkSphereSource,
     vtkTextSource,
 )
+from vtkmodules.vtkCommonDataModel import vtkPointLocator, vtkPolyData
+from vtkmodules.vtkFiltersModeling import vtkDijkstraGraphGeodesicPath
 from vtkmodules.vtkRenderingAnnotation import vtkLeaderActor2D
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
@@ -44,6 +46,7 @@ TYPE = {
     const.DENSITY_ELLIPSE: _("Density Ellipse"),
     const.DENSITY_POLYGON: _("Density Polygon"),
     const.ANNOTATION: _("Annotation"),
+    const.CURVED_LINEAR: _("Curved Linear"),
 }
 
 LOCATION = {
@@ -278,7 +281,7 @@ class MeasurementManager:
                 else:
                     Publisher.sendMessage("Redraw canvas")
 
-    def _add_point(self, position, type, location, slice_number=0, radius=const.PROP_MEASURE):
+    def _add_point(self, position, type, location, slice_number=0, radius=const.PROP_MEASURE, polydata=None):
         to_remove = False
         if self.current is None:
             to_create = True
@@ -302,6 +305,8 @@ class MeasurementManager:
                 mr = LinearMeasure(m.colour, representation)
             elif type == const.ANGULAR:
                 mr = AngularMeasure(m.colour, representation)
+            elif type == const.CURVED_LINEAR:
+                mr = GeodesicMeasure(m.colour, representation)
             elif type == const.ANNOTATION:
                 mr = AnnotationMeasure(m.colour, representation)
                 m.name = const.ANNOTATION_NAME_PATTERN % (m.index + 1)
@@ -329,6 +334,9 @@ class MeasurementManager:
         actors = mr.AddPoint(x, y, z)
         m.points.append(position)
 
+        if type == const.CURVED_LINEAR and hasattr(mr, 'SetSurface') and polydata:
+            mr.SetSurface(polydata)
+
         if m.location == const.SURFACE:
             Publisher.sendMessage("Add actors " + str(location), actors=actors)
 
@@ -345,10 +353,14 @@ class MeasurementManager:
 
             if type == const.LINEAR:
                 value = f"{m.value:.3f} mm"
+            elif type == const.CURVED_LINEAR:
+                value = f"{m.value:.3f} mm"
             elif type == const.ANGULAR:
                 value = f"{m.value:.3f}°"
             elif type == const.ANNOTATION:
                 value = m.value
+            else:
+                value = str(m.value)
 
             msg = ("Update measurement info in GUI",)
             Publisher.sendMessage(
@@ -951,6 +963,168 @@ class LinearMeasure:
 
     def __del__(self):
         self.Remove()
+
+
+class GeodesicMeasure(LinearMeasure):
+    def __init__(self, colour=(1, 0, 0), representation=None):
+        super().__init__(colour, representation)
+        self.surface_polydata = None
+        self._path_length = None    # cached geodesic length (mm)
+        self._path_computed = False  # True once _compute_and_publish_path finished
+
+    def IsComplete(self):
+        """Report complete as soon as both point actors exist.
+
+        This lets the MeasurementManager set self.current = None immediately
+        after click 2, so click 3 starts a fresh measurement. The deferred
+        path computation runs independently and will update the value later.
+        """
+        return self.point_actor1 is not None and self.point_actor2 is not None
+
+
+    def SetSurface(self, polydata):
+        self.surface_polydata = polydata
+
+    def AddPoint(self, x, y, z):
+        """Override to return point_actor2 immediately on the 2nd click,
+        then defer the slow Dijkstra computation so the dot renders first."""
+        if not self.point_actor1:
+            self.SetPoint1(x, y, z)
+            return (self.point_actor1,)
+        elif not self.point_actor2:
+            # Create the sphere for point2 RIGHT NOW so it renders instantly
+            self.points.append((x, y, z))
+            self.point_actor2 = self.representation.GetRepresentation(x, y, z)
+            # Defer geodesic path + text computation to after the next render cycle
+            wx.CallAfter(self._compute_and_publish_path)
+            return (self.point_actor2,)
+        # Both points already set — return empty tuple (nothing more to add)
+        return ()
+
+    def _compute_and_publish_path(self):
+        """Called by wx.CallAfter after point_actor2 has been rendered.
+        Computes the geodesic path, then pushes the line + text actors."""
+        self._draw_line()
+        self._draw_text()
+        self._path_computed = True  # now IsComplete() returns True
+        path_actors = []
+        if self.line_actor:
+            path_actors.append(self.line_actor)
+        if self.text_actor:
+            path_actors.append(self.text_actor)
+        if path_actors:
+            Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=path_actors)
+        Publisher.sendMessage("Render volume viewer")
+
+
+
+    def _draw_line(self):
+        if not self.surface_polydata:
+            super()._draw_line()
+            return
+
+        p1, p2 = self.points
+
+        # Validate polydata type — only Accept vtkPolyData, not vtkImageData
+        if not self.surface_polydata or not hasattr(self.surface_polydata, 'GetNumberOfCells'):
+            return
+        if self.surface_polydata.GetNumberOfCells() == 0:
+            return
+
+        # Ensure polydata is triangulated for Dijkstra
+        triangle_filter = vtkTriangleFilter()
+        triangle_filter.SetInputData(self.surface_polydata)
+        triangle_filter.Update()
+        triangulated_surface = triangle_filter.GetOutput()
+
+        if triangulated_surface.GetNumberOfCells() == 0:
+            return
+
+        # Run Dijkstra on the FULL mesh (no decimation) so the path is accurate.
+        # Decimating changes mesh topology and causes wrong path direction.
+        dijkstra = vtkDijkstraGraphGeodesicPath()
+        dijkstra.SetInputData(triangulated_surface)
+
+        locator = vtkPointLocator()
+        locator.SetDataSet(triangulated_surface)
+        locator.BuildLocator()
+
+        start_id = locator.FindClosestPoint(p1)
+        end_id = locator.FindClosestPoint(p2)
+
+        dijkstra.SetStartVertex(start_id)
+        dijkstra.SetEndVertex(end_id)
+        dijkstra.Update()
+
+        path = dijkstra.GetOutput()
+        if path.GetNumberOfPoints() == 0:
+            return
+
+        # Cache the geodesic path length
+        length = 0.0
+        for i in range(path.GetNumberOfPoints() - 1):
+            pt1 = path.GetPoint(i)
+            pt2 = path.GetPoint(i + 1)
+            length += math.sqrt(vtkMath.Distance2BetweenPoints(pt1, pt2))
+        self._path_length = length
+
+        # Render as a solid 3D tube for clear visibility on the surface
+        from vtkmodules.vtkFiltersCore import vtkTubeFilter
+        tube = vtkTubeFilter()
+        tube.SetInputData(path)
+        tube.SetRadius(0.6)
+        tube.SetNumberOfSides(8)
+        tube.Update()
+
+        m = vtkPolyDataMapper()
+        m.SetInputConnection(tube.GetOutputPort())
+
+        a = vtkActor()
+        a.SetMapper(m)
+        a.GetProperty().SetColor(self.colour)
+        self.line_actor = a
+
+
+    def GetValue(self):
+        """Return cached geodesic length (avoids re-running Dijkstra)."""
+        if self._path_length is not None:
+            return self._path_length
+        if not self._path_computed:
+            # Path not yet computed — return straight-line distance as placeholder
+            return super().GetValue()
+        return 0.0
+
+    def _draw_text(self):
+        if not self.surface_polydata:
+            super()._draw_text()
+            return
+
+        p1, p2 = self.points
+        value = self.GetValue()
+        text = f" {value:.3f} mm "
+
+        x, y, z = ((i + j) / 2 for i, j in zip(p1, p2))
+
+        textsource = vtkTextSource()
+        textsource.SetText(text)
+        textsource.SetBackgroundColor((250 / 255.0, 247 / 255.0, 218 / 255.0))
+        textsource.SetForegroundColor(self.colour)
+
+        m = vtkPolyDataMapper2D()
+        m.SetInputConnection(textsource.GetOutputPort())
+
+        a = vtkActor2D()
+        a.SetMapper(m)
+        a.DragableOn()
+        a.GetPositionCoordinate().SetCoordinateSystemToWorld()
+        a.GetPositionCoordinate().SetValue(x, y, z)
+        a.GetProperty().SetColor((0, 1, 0))
+        a.GetProperty().SetOpacity(0.75)
+        self.text_actor = a
+
+    def draw_to_canvas(self, gc, canvas):
+        # Geodesic measures are only in 3D for now
+        pass
 
 
 class AnnotationMeasure:

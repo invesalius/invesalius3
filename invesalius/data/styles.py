@@ -791,6 +791,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 self.creating = None
                 self.viewer.scroll_enabled = True
             else:
+                prop = self.picker.GetViewProp()
+                polydata = None
+                if prop and hasattr(prop, 'GetMapper') and prop.GetMapper():
+                    polydata = prop.GetMapper().GetInput()
+
                 Publisher.sendMessage(
                     "Add measurement point",
                     position=(x, y, z),
@@ -798,6 +803,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     location=ORIENTATIONS[self.orientation],
                     slice_number=slice_number,
                     radius=self.radius,
+                    polydata=polydata,
                 )
                 n = len(m.points) - 1
                 self.creating = n, m, mr
@@ -810,8 +816,12 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.selected = selected
             self.viewer.scroll_enabled = False
         else:
-            if self.picker.GetViewProp():
-                # renderer = self.viewer.slice_data.renderer
+            prop = self.picker.GetViewProp()
+            if prop:
+                polydata = None
+                if hasattr(prop, 'GetMapper') and prop.GetMapper():
+                    polydata = prop.GetMapper().GetInput()
+
                 Publisher.sendMessage(
                     "Add measurement point",
                     position=(x, y, z),
@@ -819,6 +829,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     location=ORIENTATIONS[self.orientation],
                     slice_number=slice_number,
                     radius=self.radius,
+                    polydata=polydata,
                 )
                 Publisher.sendMessage(
                     "Add measurement point",
@@ -827,6 +838,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     location=ORIENTATIONS[self.orientation],
                     slice_number=slice_number,
                     radius=self.radius,
+                    polydata=polydata,
                 )
 
                 try:
@@ -926,6 +938,21 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                         if dist <= max_dist:
                             return (n, m, mr)
         return None
+
+
+class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.state_code = const.STATE_MEASURE_CURVED_LINEAR
+        self._type = const.CURVED_LINEAR
+
+    def SetUp(self):
+        super().SetUp()
+        # In 3D view, we want to pick surfaces
+        if self.orientation == "VOLUME":
+            for actor in self.viewer.slice_data.surface_actors:
+                self.picker.AddPickList(self.viewer.slice_data.surface_actors[actor])
+            self.picker.PickFromListOn()
 
 
 class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
@@ -3064,6 +3091,8 @@ class Styles:
         const.STATE_MEASURE_DENSITY_ELLIPSE: DensityMeasureEllipseStyle,
         const.STATE_MEASURE_DENSITY_POLYGON: DensityMeasurePolygonStyle,
         const.STATE_MEASURE_ANNOTATION: AnnotationInteractorStyle,
+        const.STATE_MEASURE_ANNOTATION: AnnotationInteractorStyle,
+        const.STATE_MEASURE_CURVED_LINEAR: CurvedMeasureInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,
