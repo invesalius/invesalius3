@@ -913,6 +913,10 @@ class Frame(wx.Frame):
             surface_interpolation = values[const.SURFACE_INTERPOLATION]
             language = values[const.LANGUAGE]
             slice_interpolation = values.get(const.SLICE_INTERPOLATION, 0)
+            landmark_marker_shape = values.get(const.LANDMARK_MARKER_SHAPE, const.MARKER_SHAPE_BALL)
+            fiducial_marker_shape = values.get(
+                const.FIDUCIAL_MARKER_SHAPE, const.MARKER_SHAPE_CROSS
+            )
             file_logging = values.get(const.FILE_LOGGING, 0)
             file_logging_level = values.get(const.FILE_LOGGING_LEVEL, 0)
             append_log_file = values.get(const.APPEND_LOG_FILE, 0)
@@ -926,6 +930,8 @@ class Frame(wx.Frame):
             session.SetConfig("surface_interpolation", surface_interpolation)
             session.SetConfig("language", language)
             session.SetConfig("slice_interpolation", slice_interpolation)
+            session.SetConfig("landmark_marker_shape", landmark_marker_shape)
+            session.SetConfig("fiducial_marker_shape", fiducial_marker_shape)
             session.SetConfig("file_logging", file_logging)
             session.SetConfig("file_logging_level", file_logging_level)
             session.SetConfig("append_log_file", append_log_file)

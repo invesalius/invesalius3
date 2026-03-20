@@ -28,7 +28,7 @@ from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
 )
-from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkPointPicker, vtkPropPicker
+from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkCoordinate, vtkPointPicker, vtkPropPicker
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
@@ -65,10 +65,22 @@ class Base3DInteractorStyle(vtkInteractorStyleTrackballCamera):
         self.AddObserver("MouseMoveEvent", self.OnStatusbarMouseMove)
         self.AddObserver("LeaveEvent", self.OnStatusbarLeave)
 
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+
+    def OnNavigationStatus(self, nav_status, vis_status):
+        self.nav_status = nav_status
+
     def OnStatusbarMouseMove(self, evt, obj):
+        if self.nav_status:
+            return
         Publisher.sendMessage("Update statusbar image info", info="Window: Volume")
 
     def OnStatusbarLeave(self, evt, obj):
+        if self.nav_status:
+            return
         Publisher.sendMessage("Clear statusbar image info")
 
     def OnPressLeftButton(self, evt, obj):
@@ -732,9 +744,18 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         ## Remove observers and bindings from super
         self.RemoveObservers("LeftButtonPressEvent")
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK, handler=self.SetCameraFocus)
+        self.RemoveObservers("MouseWheelForwardEvent")
+        self.RemoveObservers("MouseWheelBackwardEvent")
+        self.RemoveObservers("MouseMoveEvent")
+
         ## Bind events for this style
-        self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
-        self.viewer.canvas.subscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+        self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnLeftButtonPress)
+        self.viewer.canvas.subscribe_event(
+            "LeftButtonDoubleClickEvent", self.OnLeftButtonDoubleClick
+        )
+        self.AddObserver("MouseMoveEvent", self.OnMouseMove)
+        self.AddObserver("MouseWheelForwardEvent", self.OnScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
 
         sub = Publisher.subscribe
         sub(self.ReceiveVolumeViewerActiveCamera, "Receive volume viewer active camera")
@@ -742,6 +763,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         sub(self.CutMaskFromPolygons, "M3E cut mask from 3D")
         sub(self.SetEditMode, "M3E set edit mode")
         sub(self.SetDepthValue, "M3E set depth value")
+        sub(self.OnMaskChanged, "Change mask selected")
 
     def SetUp(self):
         """Set up is called just before the style is set in the interactor.
@@ -779,14 +801,21 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         if not self.has_set_mask_preview:
             Publisher.sendMessage("Render volume viewer")
 
+        # Capture the mask snapshot AFTER enabling the 3D preview, which runs
+        # do_threshold_to_all_slices and modifies the mask. This ensures
+        # ClearPolygons restores the correct post-threshold mask state.
+        self.mask_data = slc.Slice().current_mask.matrix.copy()
+
     def CleanUp(self):
         """Clean up is called when the interactor style is removed or changed.
 
         This is called by the volume ``Viewer.SetInteractorStyle`` method.
         """
         super().CleanUp()
-        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnInsertPolygonPoint)
-        self.viewer.canvas.unsubscribe_event("LeftButtonDoubleClickEvent", self.OnInsertPolygon)
+        self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnLeftButtonPress)
+        self.viewer.canvas.unsubscribe_event(
+            "LeftButtonDoubleClickEvent", self.OnLeftButtonDoubleClick
+        )
 
         # Issue #1078: When the 3D editor is disabled, polygons shouldn't just be hidden
         # (which doesn't work properly due to CanvasHandlerBase), they should be fully removed.
@@ -804,6 +833,35 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
         self.viewer.UpdateCanvas()
+
+    def _display_to_world_focal_plane(
+        self, display_x: float, display_y: float
+    ) -> Tuple[float, float, float]:
+        """Convert display coordinates to world coordinates on the camera focal plane.
+        Projects the given 2D display position onto the plane perpendicular to the
+        camera view direction passing through the focal point. This allows polygon
+        points to be stored in world space, so they remain aligned with the volume
+        when the window is resized, zoomed, or panned.
+
+        Args:
+            display_x: X position in display (pixel) coordinates.
+            display_y: Y position in display (pixel) coordinates.
+
+        Returns:
+            Tuple with (x, y, z) world coordinates on the focal plane.
+        """
+        renderer = self.viewer.ren
+        focal_point = renderer.GetActiveCamera().GetFocalPoint()
+        # Find the depth value of the focal point in display coordinates
+        renderer.SetWorldPoint(*focal_point, 1.0)
+        renderer.WorldToDisplay()
+        focal_depth = renderer.GetDisplayPoint()[2]
+        # Unproject the 2D mouse position at the focal plane depth
+        renderer.SetDisplayPoint(display_x, display_y, focal_depth)
+        renderer.DisplayToWorld()
+        world_point = renderer.GetWorldPoint()
+        w = world_point[3]
+        return (world_point[0] / w, world_point[1] / w, world_point[2] / w)
 
     def SetEditMode(self, mode: int):
         """Set edit mode for the style.
@@ -847,7 +905,47 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.OnRestoreInitMask()
         self.viewer.UpdateCanvas()
 
-    def OnInsertPolygonPoint(self, _evt):
+    def OnLeftButtonPress(self, evt):
+        if self.viewer.interactor.GetShiftKey():
+            # Delegate to standard camera rotation
+            self.left_pressed = True
+            self.StartRotate()
+            return
+
+        # Original polygon insertion logic
+        self.OnInsertPolygonPoint(evt)
+
+    def OnLeftButtonDoubleClick(self, evt):
+        if self.viewer.interactor.GetShiftKey():
+            # Delegate to standard camera focus
+            self.SetCameraFocus(evt)
+            return
+
+        # Original polygon completion logic
+        self.OnInsertPolygon(evt)
+
+    def OnMouseMove(self, obj, evt):
+        if self.viewer.interactor.GetShiftKey():
+            # If standard camera manipulation was started via shift+left/middle/right click
+            if self.left_pressed or self.middle_pressed or self.right_pressed:
+                super().OnMouseMove(obj, evt)
+                return
+
+        super().OnMouseMove(obj, evt)
+
+    def OnScrollForward(self, obj, evt):
+        if self.viewer.interactor.GetShiftKey():
+            super().OnScrollForward(obj, evt)
+        else:
+            self.OnMouseWheelForward()
+
+    def OnScrollBackward(self, obj, evt):
+        if self.viewer.interactor.GetShiftKey():
+            super().OnScrollBackward(obj, evt)
+        else:
+            self.OnMouseWheelBackward()
+
+    def OnInsertPolygonPoint(self, evt):
         """Insert a point in the polygon.
 
         If no polygon is open, it initializes a new one.
@@ -857,15 +955,17 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         if len(self.m3e_list) == 0 or self.m3e_list[-1].complete:
             self.init_new_polygon()
 
+        world_point = self._display_to_world_focal_plane(mouse_x, mouse_y)
         current_masker = self.m3e_list[-1]
-        current_masker.insert_point((mouse_x, mouse_y))
+        current_masker.insert_point((mouse_x, mouse_y), world_point)
         self.viewer.UpdateCanvas()
 
-    def OnInsertPolygon(self, _evt):
+    def OnInsertPolygon(self, evt):
         """Complete the polygon by connecting the last point to the first one."""
-        self.m3e_list[-1].complete_polygon()
-        Publisher.sendMessage("M3E cut mask from 3D")
-        self.viewer.UpdateCanvas()
+        if len(self.m3e_list) > 0 and not self.m3e_list[-1].complete:
+            self.m3e_list[-1].complete_polygon()
+            Publisher.sendMessage("M3E cut mask from 3D")
+            self.viewer.UpdateCanvas()
 
     def ReceiveVolumeViewerActiveCamera(self, cam: "vtkCamera"):
         """Receive the active camera from the volume viewer through pubsub.
@@ -913,22 +1013,23 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.update_views(_mat)
 
     def get_filters(self) -> List[npt.NDArray]:
-        """Create a boolean mask filter based on the polygon points and viewer size."""
+        """Create a boolean mask filter based on the polygon points and viewer size.
+
+        Since polygon points are stored with parallel world coordinates,
+        they are projected back to display coordinates using the current
+        camera before generating the mask.
+        """
         w, h = self.resolution
-
-        # Get scale factor (necessary for Mac HighDPI displays where physical
-        # mouse coords are scaled by 2x but viewer resolution is logical w,h)
-        import wx
-
-        scale = wx.GetApp().GetTopWindow().GetContentScaleFactor()
-
-        # polygon2mask((w, h), points_as_xy): treats (x, y) as (row, col) in a (w, h) array.
-        # After the .T in CutMaskFromPolygons the result is (h, w) which the Rust code reads as
-        # shape (h, w) and indexes as mask[py][px] — correctly matching VTK screen coordinates.
-        filters = [
-            polygon2mask((w, h), [(x / scale, y / scale) for x, y in poly_canvas.polygon.points])
-            for poly_canvas in self.m3e_list
-        ]
+        renderer = self.viewer.ren
+        coord = vtkCoordinate()
+        filters = []
+        for poly_canvas in self.m3e_list:
+            display_points = []
+            for world_pt in poly_canvas._world_points:
+                coord.SetValue(world_pt)
+                px, py = coord.GetComputedDoubleDisplayValue(renderer)
+                display_points.append((px, py))
+            filters.append(polygon2mask((w, h), display_points))
         return filters
 
     def CutMaskFromPolygons(self):
@@ -975,6 +1076,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             return
 
         depth = near + (far - near) * self.depth_val
+        print(f"\n\n\n\n{self.world_to_screen.flags=}\n{self.world_to_camera_coordinates.flags=}\n")
 
         try:
             wts = self.world_to_screen
@@ -998,6 +1100,17 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         self.update_views(out)
 
+    def OnMaskChanged(self, index: int):
+        """Refresh mask_data when the active mask changes (e.g. after Select Parts).
+
+        Without this, the 3D editor keeps the stale matrix from the old mask,
+        so the first polygon cut after a 'Select Parts' would restore the old
+        mask instead of operating on the new one.  Fixes #1258.
+        """
+        cur_mask = slc.Slice().current_mask
+        if cur_mask is not None:
+            self.mask_data = cur_mask.matrix.copy()
+
     def update_views(self, _mat: npt.NDArray):
         """Update the views with the given mask data."""
         slice = slc.Slice()
@@ -1006,6 +1119,16 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             _cur_mask.matrix[:] = 1
             _cur_mask.matrix[1:, 1:, 1:] = _mat
             _cur_mask.was_edited = True
+
+            # Explicitly rebuild the VTK imagedata from the updated numpy matrix
+            # so that the 3D volume re-renders with the new polygon-cut data.
+            # Calling modified(all_volume=True) only calls imagedata.Modified()
+            # which does NOT transfer the numpy changes into the VTK scalar array.
+            # Fix for #1258: rebuild imagedata so 3D window reflects the cut.
+            if _cur_mask.volume is not None and ses.Session().mask_3d_preview:
+                _cur_mask.imagedata = _cur_mask.as_vtkimagedata()
+                _cur_mask.volume.change_imagedata()
+
             _cur_mask.modified(all_volume=True)
 
         # Discard all buffers to reupdate view
@@ -1015,7 +1138,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         # Save modification in the history
         _cur_mask.save_history(0, "VOLUME", _cur_mask.matrix.copy(), self.mask_data)
 
-        Publisher.sendMessage("Update mask 3D preview")
+        Publisher.sendMessage("Render volume viewer")  # Fix #1258: re-render 3D window after cut
         Publisher.sendMessage("Reload actual slice")
 
 

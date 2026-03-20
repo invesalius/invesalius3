@@ -623,6 +623,8 @@ class Viewer(wx.Panel):
         :param position: list of 6 coordinates in vtk world coordinate system wx, wy, wz
         """
         self.cross.SetFocalPoint(position[:3])
+        if not self.nav_status:
+            self.UpdateSlicesPosition(position[:3])
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -940,6 +942,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.GetCrossPos, "Set Update cross pos")
         Publisher.subscribe(self.UpdateCross, "Update cross pos")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.OnHighlightMarker, "Highlight marker")
 
     def RefreshViewer(self):
         self.Refresh()
@@ -1631,6 +1634,19 @@ class Viewer(wx.Panel):
         self.OnScrollBar()
         if not self.nav_status:
             self.UpdateRender()
+
+    def OnHighlightMarker(self, marker):
+        """Synchronize slice viewers to the selected marker's position."""
+        if marker is None:
+            return
+
+        if self.orientation != "AXIAL":
+            return
+
+        if not self.nav_status:
+            Publisher.sendMessage(
+                "Set cross focal point", position=[marker.x, marker.y, marker.z, None, None, None]
+            )
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"

@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 
 try:
     import queue
@@ -179,7 +180,10 @@ def create_surface_piece(
     #  contour.ComputeGradientsOn()
     #  contour.ComputeNormalsOn()
     contour.ReleaseDataFlagOn()
+    start = time.perf_counter()
     contour.Update()
+    duration = time.perf_counter() - start
+    print(f"[PERF] Extraction (vtkContourFilter): {duration:.4f}s")
 
     polydata = contour.GetOutput()
     del image
@@ -234,7 +238,10 @@ def join_process_surface(
         del reader
         del polydata
 
+    start = time.perf_counter()
     polydata_append.Update()
+    duration = time.perf_counter() - start
+    print(f"[PERF] Joining surface pieces: {duration:.4f}s")
     #  polydata_append.GetOutput().ReleaseDataFlagOn()
     polydata = polydata_append.GetOutput()
     # polydata.Register(None)
@@ -250,7 +257,10 @@ def join_process_surface(
     #  UpdateProgress(clean_ref(), _("Creating 3D surface...")))
     clean.SetInputData(polydata)
     clean.PointMergingOn()
+    start = time.perf_counter()
     clean.Update()
+    duration = time.perf_counter() - start
+    print(f"[PERF] Cleaning merged surface: {duration:.4f}s")
 
     del polydata
     polydata = clean.GetOutput()
@@ -301,9 +311,12 @@ def join_process_surface(
 
         send_message("Context Aware smoothing ...")
         mesh = cy_mesh.Mesh(polydata)
+        start = time.perf_counter()
         cy_mesh.ca_smoothing(
             mesh, options["angle"], options["max distance"], options["min weight"], options["steps"]
         )
+        duration = time.perf_counter() - start
+        print(f"[PERF] Context Aware smoothing: {duration:.4f}s")
         #  polydata = mesh.to_vtk()
 
         #  polydata.SetSource(None)
@@ -348,7 +361,10 @@ def join_process_surface(
         # decimation.SplittingOff()
         # decimation.BoundaryVertexDeletionOff()
         #  decimation.GetOutput().ReleaseDataFlagOn()
+        start = time.perf_counter()
         decimation.Update()
+        duration = time.perf_counter() - start
+        print(f"[PERF] Decimating: {duration:.4f}s")
         del polydata
         polydata = decimation.GetOutput()
         # polydata.Register(None)
@@ -386,7 +402,10 @@ def join_process_surface(
         # filled_polydata_ref = weakref.ref(filled_polydata)
         #  filled_polydata_ref().AddObserver("ProgressEvent", lambda obj,evt:
         #  UpdateProgress(filled_polydata_ref(), _("Creating 3D surface...")))
+        start = time.perf_counter()
         filled_polydata.Update()
+        duration = time.perf_counter() - start
+        print(f"[PERF] Filling holes: {duration:.4f}s")
         #  filled_polydata.GetOutput().ReleaseDataFlagOn()
         del polydata
         polydata = filled_polydata.GetOutput()

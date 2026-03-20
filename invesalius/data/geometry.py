@@ -98,65 +98,59 @@ class Box(metaclass=utils.Singleton):
         """
         Update values in a matrix to each orientation.
         """
+        xi, xf = self.xi - (self.xs / 2.0), self.xf + (self.xs / 2.0)
+        yi, yf = self.yi - (self.ys / 2.0), self.yf + (self.ys / 2.0)
+        zi, zf = self.zi - (self.zs / 2.0), self.zf + (self.zs / 2.0)
 
         self.sagital[const.SAGITAL_LEFT] = [
-            [self.xi, self.yi - (self.ys / 2), self.zi],
-            [self.xi, self.yi - (self.ys / 2), self.zf],
+            [self.xi, yi, zi],
+            [self.xi, yi, zf],
         ]
-
         self.sagital[const.SAGITAL_RIGHT] = [
-            [self.xi, self.yf + (self.ys / 2), self.zi],
-            [self.xi, self.yf + (self.ys / 2), self.zf],
+            [self.xi, yf, zi],
+            [self.xi, yf, zf],
         ]
-
         self.sagital[const.SAGITAL_BOTTOM] = [
-            [self.xi, self.yi, self.zi - (self.zs / 2)],
-            [self.xi, self.yf, self.zi - (self.zs / 2)],
+            [self.xi, yi, zi],
+            [self.xi, yf, zi],
         ]
-
         self.sagital[const.SAGITAL_UPPER] = [
-            [self.xi, self.yi, self.zf + (self.zs / 2)],
-            [self.xi, self.yf, self.zf + (self.zs / 2)],
+            [self.xi, yi, zf],
+            [self.xi, yf, zf],
         ]
 
         self.coronal[const.CORONAL_BOTTOM] = [
-            [self.xi, self.yi, self.zi - (self.zs / 2)],
-            [self.xf, self.yf, self.zi - (self.zs / 2)],
+            [xi, self.yi, zi],
+            [xf, self.yi, zi],
         ]
-
         self.coronal[const.CORONAL_UPPER] = [
-            [self.xi, self.yi, self.zf + (self.zs / 2)],
-            [self.xf, self.yf, self.zf + (self.zs / 2)],
+            [xi, self.yi, zf],
+            [xf, self.yi, zf],
         ]
-
         self.coronal[const.CORONAL_LEFT] = [
-            [self.xi - (self.xs / 2), self.yi, self.zi],
-            [self.xi - (self.xs / 2), self.yf, self.zf],
+            [xi, self.yi, zi],
+            [xi, self.yi, zf],
         ]
-
         self.coronal[const.CORONAL_RIGHT] = [
-            [self.xf + (self.xs / 2), self.yi, self.zi],
-            [self.xf + (self.xs / 2), self.yf, self.zf],
+            [xf, self.yi, zi],
+            [xf, self.yi, zf],
         ]
 
         self.axial[const.AXIAL_BOTTOM] = [
-            [self.xi, self.yi - (self.ys / 2), self.zi],
-            [self.xf, self.yi - (self.ys / 2), self.zf],
+            [xi, yi, self.zi],
+            [xf, yi, self.zi],
         ]
-
         self.axial[const.AXIAL_UPPER] = [
-            [self.xi, self.yf + (self.ys / 2), self.zi],
-            [self.xf, self.yf + (self.ys / 2), self.zf],
+            [xi, yf, self.zi],
+            [xf, yf, self.zi],
         ]
-
         self.axial[const.AXIAL_LEFT] = [
-            [self.xi - (self.xs / 2), self.yi, self.zi],
-            [self.xi - (self.xs / 2), self.yf, self.zf],
+            [xi, yi, self.zi],
+            [xi, yf, self.zi],
         ]
-
         self.axial[const.AXIAL_RIGHT] = [
-            [self.xf + (self.xs / 2), self.yi, self.zi],
-            [self.xf + (self.xs / 2), self.yf, self.zf],
+            [xf, yi, self.zi],
+            [xf, yf, self.zi],
         ]
 
         Publisher.sendMessage("Update crop limits into gui", limits=self.GetLimits())
