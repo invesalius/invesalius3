@@ -1,36 +1,40 @@
 import gdcm
+from pynetdicom import AE, debug_logger
+from pynetdicom.sop_class import Verification
 
 import invesalius.utils as utils
 
+debug_logger()
+
 
 class DicomNet:
-    def __init__(self):
-        self.address = ""
-        self.port = ""
-        self.aetitle_call = ""
-        self.aetitle = ""
+    def __init__(self, address: str, port: int, aetitle_call: str, aetitle: str):
+        self.SetHost(address)
+        self.SetPort(port)
+        self.SetAETitleCall(aetitle_call)
+        self.SetAETitle(aetitle)
         self.search_word = ""
         self.search_type = "patient"
 
     def __call__(self):
         return self
 
-    def SetHost(self, address):
+    def SetHost(self, address: str):
         self.address = address
 
-    def SetPort(self, port):
+    def SetPort(self, port: int):
         self.port = port
 
-    def SetAETitleCall(self, name):
+    def SetAETitleCall(self, name: str):
         self.aetitle_call = name
 
-    def SetAETitle(self, ae_title):
+    def SetAETitle(self, ae_title: str):
         self.aetitle = ae_title
 
-    def SetSearchWord(self, word):
+    def SetSearchWord(self, word: str):
         self.search_word = word
 
-    def SetSearchType(self, stype):
+    def SetSearchType(self, stype: str):
         self.search_type = stype
 
     def GetValueFromDICOM(self, ret, tag):
@@ -40,8 +44,33 @@ class DicomNet:
         return value
 
     def RunCEcho(self):
-        cnf = gdcm.CompositeNetworkFunctions()
-        return cnf.CEcho(self.address, int(self.port), self.aetitle, self.aetitle_call)
+        """run CEcho to check if the server is alive."""
+
+        try:
+            ae = AE()
+            ae.add_requested_context(Verification)
+
+            assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)
+
+            if not assoc.is_established:
+                print(f"C-ECHO: Association failed")
+                return False
+
+            status = assoc.send_c_echo()
+
+            if status and status.Status == 0x0000:
+                print("C-ECHO: Verification successful")
+                assoc.release()
+                return True
+
+            else:
+                print(f"C-ECHO: Verification failed with status {status}")
+                assoc.release()
+                return False
+
+        except Exception as e:
+            print("Unexpected error:", e)
+            return False
 
     def RunCFind(self):
         tags = [

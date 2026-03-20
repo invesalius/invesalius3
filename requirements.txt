@@ -24,6 +24,7 @@ psutil==6.0.0
 pyserial==3.5
 wxPython==4.2.2
 pyacvd==0.2.11
+pynetdicom==2.0.2
 optitrack ; python_version == "3.8" and sys_platform == "win32"
 pyclaron ; python_version == "3.8" and sys_platform == "win32"
 
