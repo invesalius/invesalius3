@@ -735,29 +735,39 @@ class SubpartSegmentProcess(SegmentProcess):
             b = rec.get("B", rec.get("Blue", 0))
             return (float(r) / 255.0, float(g) / 255.0, float(b) / 255.0)
 
-        is_ctx = lambda n: n.startswith((P_CTX_LH, P_CTX_RH, P_CTX))
+        def is_ctx(name: str) -> bool:
+            return name.startswith(P_CTX_LH) or name.startswith(P_CTX_RH) or name.startswith(P_CTX)
 
         # Expand WM category to include ventricles, cerebellum (WM and cortex), and choroid plexus
         def is_wm_like(name: str) -> bool:
             return (
                 name.startswith(("Left-Cerebral-White-Matter", "Right-Cerebral-White-Matter"))
-                or name.startswith(
-                    ("Left-Cerebellum-White-Matter", "Right-Cerebellum-White-Matter")
-                )
-                or name.startswith(("Left-Cerebellum-Cortex", "Right-Cerebellum-Cortex"))
-                or name in ("3rd-Ventricle", "4th-Ventricle")
-                or name.startswith(("Left-Lateral-Ventricle", "Right-Lateral-Ventricle"))
-                or name.startswith(("Left-Inf-Lat-Vent", "Right-Inf-Lat-Vent"))
-                or name.startswith(("Left-choroid-plexus", "Right-choroid-plexus"))
                 or name == "WM-hypointensities"
             )
 
         def pick_regions(cat):
             """
             Categories:
-              - cortical: any ctx-* labels
-              - subcortical: everything that's not cortical and not background (ID 0)
-              - wm: cerebral + cerebellar WM, cerebellar cortex, ventricles (lat/inf-lat/3rd/4th), choroid plexus, WM-hypointensities
+              - 'cortical':
+                    any ctx-* labels
+              - 'subcortical':
+                    everything that's not cortical and not background (ID 0)
+              - 'wm'|'white_matter'|'white-matter':
+                    cerebral + cerebellar WM,
+                    cerebellar cortex,
+                    ventricles (lat/inf-lat/3rd/4th),
+                    choroid plexus,
+                    WM-hypointensities
+              - 'cerebellum':
+                    cerebellar cortex + cerebellar white matter
+              - 'ventricles':
+                    all ventricular labels (lat/inf-lat/3rd/4th)
+              - 'brain_stem':
+                    brain stem
+              - 'choroid_plexus':
+                    left/right choroid plexus
+              - any other string:
+                    exact label name match (case-insensitive)
             """
             c = str(cat).lower()
             if c == "cortical":
@@ -766,7 +776,36 @@ class SubpartSegmentProcess(SegmentProcess):
                 return [r for r in lut if not is_ctx(str(r["LabelName"])) and int(r["ID"]) != 0]
             if c in ("wm", "white_matter", "white-matter"):
                 return [r for r in lut if is_wm_like(str(r["LabelName"]))]
-            # Fallback: exact match by label name
+            if c == "cerebellum":
+                return [
+                    r
+                    for r in lut
+                    if str(r["LabelName"]).startswith("Left-Cerebellum-")
+                    or str(r["LabelName"]).startswith("Right-Cerebellum-")
+                ]
+            if c == "ventricles":
+                return [
+                    r
+                    for r in lut
+                    if (
+                        "Ventricle" in str(r["LabelName"])
+                        or str(r["LabelName"]).startswith("Left-Lateral-Ventricle")
+                        or str(r["LabelName"]).startswith("Right-Lateral-Ventricle")
+                        or str(r["LabelName"]).startswith("Left-Inf-Lat-Vent")
+                        or str(r["LabelName"]).startswith("Right-Inf-Lat-Vent")
+                    )
+                ]
+            if c in ("brain_stem", "brainstem", "brain-stem"):
+                return [r for r in lut if str(r["LabelName"]) == "Brain-Stem"]
+            if c in ("choroid_plexus", "choroid-plexus", "choroidplexus"):
+                return [
+                    r
+                    for r in lut
+                    if str(r["LabelName"]).startswith("Left-choroid-plexus")
+                    or str(r["LabelName"]).startswith("Right-choroid-plexus")
+                ]
+
+            # Fallback: exact match by label name (case-insensitive)
             return [r for r in lut if str(r["LabelName"]).lower() == c]
 
         def std_name(label_name: str) -> str:
