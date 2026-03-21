@@ -20,6 +20,7 @@
 
 from typing import TYPE_CHECKING
 
+import time
 import numpy as np
 import numpy.typing as npt
 import wx
@@ -531,39 +532,78 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
         super().__init__(viewer)
         self.state_code = const.STATE_MEASURE_CURVED_LINEAR
         self._type = const.CURVED_LINEAR
+        self._last_click_time = 0
+        self._click_debounce = 0.2  # 200ms debounce
 
     def SetUp(self):
+        super().SetUp()
+        # Unbind default DClick Focus and bind our Finalize
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnFinalizeCurved)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        # Restore default DClick Focus
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.SetCameraFocus)
         super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
 
+    def OnFinalizeCurved(self, evt):
+        """Finalize multi-point curved measurement on double-click."""
+        multi = ses.Session().GetConfig("geodesic_multi_point", False)
+        if multi:
+            Publisher.sendMessage("Finalize measurement")
+            # LOCK OUT any immediate trailing click events for 300ms
+            self._last_click_time = time.time() + 0.3
+            self.viewer.interactor.Render()
+        evt.Skip()
+
     def OnInsertLinearMeasurePoint(self, obj, evt):
+        # Prevent adding points on the second click of a double-click
+        if self.viewer.interactor.GetRepeatCount() > 0:
+            return
+
+        # Debounce to prevent ghost clicks (e.g. from trackpad jitter or rapid events)
+        current_time = time.time()
+        if (current_time - self._last_click_time) < 0.25:  # 250ms debounce
+            return
+        self._last_click_time = current_time
+
         x, y = self.viewer.get_vtk_mouse_position()
         self.measure_picker.Pick(x, y, 0, self.viewer.ren)
         x, y, z = self.measure_picker.GetPickPosition()
-        if self.measure_picker.GetActor():
+        actor = self.measure_picker.GetActor()
+
+        # ONLY add points if we hit a surface mesh (not marker spheres or line tubes)
+        is_surface = False
+        for surface in self.viewer.surface_geometry.surfaces:
+            if surface["original"]["actor"] == actor:
+                is_surface = True
+                break
+
+        if actor and is_surface:
             self.left_pressed = False
-            # Retrieve the surface polydata so GeodesicMeasure can compute the path
-            polydata = None
-            actor = self.measure_picker.GetActor()
-            if actor and hasattr(actor, "GetMapper") and actor.GetMapper():
-                polydata = actor.GetMapper().GetInput()
-            # Use 3x radius so the sphere marker protrudes above the surface mesh
-            # (same-radius spheres get half-buried and are invisible)
+            polydata = actor.GetMapper().GetInput()
             Publisher.sendMessage(
                 "Add measurement point",
                 position=(x, y, z),
                 type=self._type,
                 location=const.SURFACE,
-                radius=self._radius * 3.0,
+                radius=self._radius,
                 polydata=polydata,
             )
             # Explicitly render so the new point marker appears immediately
             Publisher.sendMessage("Render volume viewer")
         else:
+            # Allow rotation by clicking on the background
             self.left_pressed = True
+
+    def OnMouseMove(self, evt, obj):
+        if self.left_pressed:
+            # Only allow rotation, DON'T call OnLeftButtonDown()
+            # which would trigger recursive clicks in this interactor style.
+            evt.Rotate()
 
 
 class AngularMeasureInteractorStyle(DefaultInteractorStyle):

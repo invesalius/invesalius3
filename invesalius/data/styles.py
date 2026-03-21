@@ -775,6 +775,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Remove incomplete measurements")
 
     def OnInsertMeasurePoint(self, obj, evt):
+        if self._type == const.CURVED_LINEAR:
+            from invesalius.gui.utils import show_warning
+            show_warning(_("Curved Ruler"), _("This measurement can only be performed on the 3D surface."))
+            return
+
         slice_number = self.slice_data.number
         x, y, z = self._get_pos_clicked()
         mx, my = self.GetMousePosition()
@@ -945,6 +950,11 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
         self.state_code = const.STATE_MEASURE_CURVED_LINEAR
         self._type = const.CURVED_LINEAR
 
+    def _bind_events(self):
+        super()._bind_events()
+        # Bind double-click to finalize multi-point geodesic measurement
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnFinalizeCurved)
+
     def SetUp(self):
         super().SetUp()
         # In 3D view, we want to pick surfaces
@@ -952,6 +962,19 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
             for actor in self.viewer.slice_data.surface_actors:
                 self.picker.AddPickList(self.viewer.slice_data.surface_actors[actor])
             self.picker.PickFromListOn()
+
+    def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        super().CleanUp()
+
+    def OnFinalizeCurved(self, evt):
+        """Finalize multi-point curved measurement on double-click."""
+        multi = ses.Session().GetConfig("geodesic_multi_point", False)
+        if multi and self.creating:
+            Publisher.sendMessage("Finalize measurement")
+            self.creating = None
+            self.viewer.scroll_enabled = True
+        evt.Skip()
 
 
 class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
