@@ -1066,7 +1066,7 @@ class GeodesicMeasure(LinearMeasure):
 
         if path_actors:
             Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=path_actors)
-        
+
         Publisher.sendMessage("Render volume viewer")
 
     def _draw_line(self):
