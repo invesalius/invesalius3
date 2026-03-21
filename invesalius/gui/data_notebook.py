@@ -57,6 +57,7 @@ TYPE = {
     const.DENSITY_ELLIPSE: _("Density Ellipse"),
     const.DENSITY_POLYGON: _("Density Polygon"),
     const.ANNOTATION: _("Annotation"),
+    const.CURVED_LINEAR: _("Curved Linear"),
 }
 
 LOCATION = {

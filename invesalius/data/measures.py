@@ -383,7 +383,7 @@ class MeasurementManager:
             value = str(m.value)
 
         Publisher.sendMessage(
-            "Add measurement info to GUI",
+            "Update measurement info in GUI",
             index=index,
             name=name,
             colour=colour,

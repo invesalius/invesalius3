@@ -41,7 +41,6 @@ import invesalius.gui.preferences as preferences
 #  import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
-import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data.slice_ import Slice
 from invesalius.gui import project_properties
@@ -2195,6 +2194,14 @@ class ObjectToolBar(AuiToolBar):
             kind=wx.ITEM_CHECK,
         )
         self.AddTool(
+            const.STATE_MEASURE_CURVED_LINEAR,
+            "",
+            BMP_DISTANCE,
+            wx.NullBitmap,
+            short_help_string=_("Measure curved distance on surface"),
+            kind=wx.ITEM_CHECK,
+        )
+        self.AddTool(
             const.STATE_MEASURE_ANGLE,
             "",
             BMP_ANGLE,
@@ -2230,15 +2237,6 @@ class ObjectToolBar(AuiToolBar):
             kind=wx.ITEM_CHECK,
         )
 
-        # Use same distance icon for curved distance
-        self.AddTool(
-            const.STATE_MEASURE_CURVED_LINEAR,
-            "",
-            BMP_DISTANCE,
-            wx.NullBitmap,
-            short_help_string=_("Measure curved distance on surface"),
-            kind=wx.ITEM_CHECK,
-        )
         # self.AddLabelTool(const.STATE_ANNOTATE,
         #                "",
         #                shortHelp = _("Add annotation"),
