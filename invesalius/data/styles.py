@@ -2777,12 +2777,15 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         # Bug 1 fix: also update the 3D Mask Preview to show selection in red
         if ses.Session().mask_3d_preview:
-            self.config.mask.imagedata = self.config.mask.as_vtkimagedata()
-            self.config.mask.create_3d_preview()
-            self.config.mask.volume.set_colour((1.0, 0.0, 0.0))
-            Publisher.sendMessage(
-                "Load mask preview", mask_3d_actor=self.config.mask.volume._actor, flag=True
-            )
+            if self.config.mask.volume is None:
+                self.config.mask.imagedata = self.config.mask.as_vtkimagedata()
+                self.config.mask.create_3d_preview()
+                self.config.mask.volume.set_colour((1.0, 0.0, 0.0))
+                Publisher.sendMessage(
+                    "Load mask preview", mask_3d_actor=self.config.mask.volume._actor, flag=True
+                )
+            else:
+                self.config.mask._update_imagedata(update_volume_viewer=False)
             Publisher.sendMessage("Render volume viewer")
 
     def _create_new_mask(self):
