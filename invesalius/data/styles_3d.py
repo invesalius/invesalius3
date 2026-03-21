@@ -20,6 +20,7 @@
 
 import time
 from typing import TYPE_CHECKING
+
 import numpy as np
 import numpy.typing as npt
 import wx

@@ -1050,20 +1050,20 @@ class GeodesicMeasure(LinearMeasure):
             old_actors.append(self.line_actor)
         if self.text_actor:
             old_actors.append(self.text_actor)
-        
+
         if old_actors:
             Publisher.sendMessage("Remove actors " + str(const.SURFACE), actors=old_actors)
 
         self._draw_line()
         self._draw_text()
         self._path_computed = True  # now IsComplete() returns True
-        
+
         path_actors = []
         if self.line_actor:
             path_actors.append(self.line_actor)
         if self.text_actor:
             path_actors.append(self.text_actor)
-        
+
         if path_actors:
             Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=path_actors)
         

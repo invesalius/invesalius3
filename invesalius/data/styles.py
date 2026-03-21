@@ -777,6 +777,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     def OnInsertMeasurePoint(self, obj, evt):
         if self._type == const.CURVED_LINEAR:
             from invesalius.gui.utils import show_warning
+
             show_warning(
                 _("Curved Ruler"), _("This measurement can only be performed on the 3D surface.")
             )
