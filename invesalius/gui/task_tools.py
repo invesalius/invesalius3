@@ -25,9 +25,9 @@ import wx.lib.platebtn as pbtn
 
 import invesalius.constants as constants
 from invesalius import inv_paths
-from invesalius.session import Session
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+from invesalius.session import Session
 
 ID_BTN_MEASURE_LINEAR = wx.NewIdRef()
 ID_BTN_MEASURE_ANGULAR = wx.NewIdRef()
@@ -107,10 +107,9 @@ class InnerTaskPanel(wx.Panel):
         button_measure_curved = pbtn.PlateButton(
             self, ID_BTN_MEASURE_CURVED, "", BMP_DISTANCE, style=button_style
         )
-        button_measure_curved.SetToolTip(_(
-            "Measure curved distance on surface\n"
-            "Click to select: Two points or Multi-points"
-        ))
+        button_measure_curved.SetToolTip(
+            _("Measure curved distance on surface\nClick to select: Two points or Multi-points")
+        )
 
         button_annotation = pbtn.PlateButton(
             self, ID_BTN_ANNOTATION, "", BMP_ANNOTATE, style=button_style

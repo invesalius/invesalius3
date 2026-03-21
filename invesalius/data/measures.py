@@ -1029,7 +1029,6 @@ class GeodesicMeasure(LinearMeasure):
                 self.point_actor1 = actor
             elif not self.point_actor2:
                 self.point_actor2 = actor
-            
             if len(self.points) >= 2:
                 wx.CallAfter(self._compute_and_publish_path)
             return (actor,)
@@ -1102,7 +1101,7 @@ class GeodesicMeasure(LinearMeasure):
 
         for i in range(len(self.points) - 1):
             p_start = self.points[i]
-            p_end = self.points[i+1]
+            p_end = self.points[i + 1]
 
             dijkstra = vtkDijkstraGraphGeodesicPath()
             dijkstra.SetInputData(triangulated_surface)
