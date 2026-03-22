@@ -204,11 +204,13 @@ class DicomTagsDialog(wx.Dialog):
                         tag = self.list_ctrl.GetItemText(i, 0)
                         name = self.list_ctrl.GetItemText(i, 1)
                         value = self.list_ctrl.GetItemText(i, 2)
-                        
+
                         # Clean up the value to handle special characters
                         try:
                             # Replace problematic characters
-                            value_clean = value.replace('\x00', '').replace('\r', ' ').replace('\n', ' ')
+                            value_clean = (
+                                value.replace("\x00", "").replace("\r", " ").replace("\n", " ")
+                            )
                             writer.writerow([tag, name, value_clean])
                         except Exception:
                             # If there's still an encoding issue, use repr
