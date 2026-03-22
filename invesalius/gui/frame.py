@@ -33,6 +33,7 @@ import invesalius.constants as const
 import invesalius.gui.default_tasks as tasks
 import invesalius.gui.default_viewers as viewers
 import invesalius.gui.dialogs as dlg
+import invesalius.gui.dicom_tags_dialog as dicom_tags_dlg
 import invesalius.gui.import_bitmap_panel as imp_bmp
 import invesalius.gui.import_panel as imp
 import invesalius.gui.log as log
@@ -732,6 +733,9 @@ class Frame(wx.Frame):
             wwwl_dlg = dlg.ManualWWWLDialog(self)
             wwwl_dlg.Show()
 
+        elif id == const.ID_DICOM_TAGS:
+            self.OnShowDicomTags()
+
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
             Publisher.sendMessage("Disable actual style")
@@ -1095,6 +1099,32 @@ class Frame(wx.Frame):
         fdlg = dlg.FillHolesAutoDialog(_("Fill holes automatically"))
         fdlg.Show()
 
+    def OnShowDicomTags(self):
+        """Show DICOM tags information dialog."""
+        # Import the module-level variables from dicom_reader
+        from invesalius.reader import dicom_reader
+
+        # Check if DICOM data is available
+        if not dicom_reader.dict_file:
+            wx.MessageBox(
+                _("No DICOM data available. Please import DICOM files first."),
+                _("No DICOM Data"),
+                wx.OK | wx.ICON_INFORMATION,
+                self,
+            )
+            return
+
+        # Get the first available DICOM file's data
+        # (In a multi-file series, they share most tags)
+        first_file = next(iter(dicom_reader.dict_file.keys()))
+        data_image = dicom_reader.dict_file[first_file]
+        tag_labels = dicom_reader.tag_labels
+
+        # Show the dialog
+        dialog = dicom_tags_dlg.DicomTagsDialog(self, data_image, tag_labels)
+        dialog.ShowModal()
+        dialog.Destroy()
+
     def OnRemoveMaskParts(self):
         Publisher.sendMessage("Enable style", style=const.SLICE_STATE_REMOVE_MASK_PARTS)
 
@@ -1368,6 +1398,7 @@ class MenuBar(wx.MenuBar):
             const.ID_CREATE_MASK,
             const.ID_GOTO_SLICE,
             const.ID_MANUAL_WWWL,
+            const.ID_DICOM_TAGS,
         ]
         self.__init_items()
         self.__bind_events()
@@ -1571,6 +1602,7 @@ class MenuBar(wx.MenuBar):
 
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _("Reorient image\tCtrl+Shift+O"))
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
+        image_menu.Append(const.ID_DICOM_TAGS, _("DICOM Tags..."))
 
         planning_menu = wx.Menu()
         planning_menu.Append(const.ID_PLANNING_CRANIOPLASTY, _("Cranioplasty"))

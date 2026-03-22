@@ -634,6 +634,7 @@ ID_GOTO_SLICE = wx.NewIdRef()
 ID_GOTO_COORD = wx.NewIdRef()
 
 ID_MANUAL_WWWL = wx.NewIdRef()
+ID_DICOM_TAGS = wx.NewIdRef()
 
 # Tractography with Trekker
 ID_TREKKER_MASK = wx.NewIdRef()
