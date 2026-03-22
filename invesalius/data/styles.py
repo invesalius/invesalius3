@@ -2776,7 +2776,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Reload actual slice")
 
         # Bug 1 fix: also update the 3D Mask Preview to show selection in red
-        if ses.Session().mask_3d_preview:
+        if ses.Session().mask_3d_preview and self.config.mask:
             if self.config.mask.volume is None:
                 self.config.mask.imagedata = self.config.mask.as_vtkimagedata()
                 self.config.mask.create_3d_preview()

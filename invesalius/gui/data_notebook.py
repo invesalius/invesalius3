@@ -734,8 +734,15 @@ class MasksListCtrlPanel(InvListCtrl):
         """Handle selection changes in the mask list"""
         if hasattr(self, "category"):
             Publisher.sendMessage("Update mask selection state", category=self.category)
+
+            # Authoritatively switch the current mask when selection changes in the list.
+            # This ensures 3D preview and project state stay in sync with list highlight.
+            selected_indices = self.GetSelected()
+            if len(selected_indices) == 1:
+                Publisher.sendMessage("Change mask selected", index=selected_indices[0])
         else:
             print("Selection changed but 'category' attribute not found on self.")
+
         if evt:
             evt.Skip()
 
