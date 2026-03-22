@@ -401,7 +401,6 @@ class Viewer(wx.Panel):
                 values = [_("R"), _("L"), _("T"), _("B")]
 
             left_text = self.left_text = vtku.TextZero()
-            left_text.ShadowOff()
             left_text.SetColour(colour)
             left_text.SetPosition(const.TEXT_POS_VCENTRE_LEFT)
             left_text.SetVerticalJustificationToCentered()
@@ -409,7 +408,6 @@ class Viewer(wx.Panel):
             left_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             right_text = self.right_text = vtku.TextZero()
-            right_text.ShadowOff()
             right_text.SetColour(colour)
             right_text.SetPosition(const.TEXT_POS_VCENTRE_RIGHT_ZERO)
             right_text.SetVerticalJustificationToCentered()
@@ -418,7 +416,6 @@ class Viewer(wx.Panel):
             right_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             up_text = self.up_text = vtku.TextZero()
-            up_text.ShadowOff()
             up_text.SetColour(colour)
             up_text.SetPosition(const.TEXT_POS_HCENTRE_UP)
             up_text.SetJustificationToCentered()
@@ -426,7 +423,6 @@ class Viewer(wx.Panel):
             up_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             down_text = self.down_text = vtku.TextZero()
-            down_text.ShadowOff()
             down_text.SetColour(colour)
             down_text.SetPosition(const.TEXT_POS_HCENTRE_DOWN_ZERO)
             down_text.SetJustificationToCentered()
