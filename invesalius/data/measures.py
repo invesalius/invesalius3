@@ -464,11 +464,13 @@ class MeasurementManager:
             else:
                 m.points.append((x, y, z))
         elif npoint == 2:
-            mr.SetPoint3(x, y, z)
-            if len(m.points) > 2:
-                m.points[2] = x, y, z
-            else:
-                m.points.append((x, y, z))
+            # Only AngularMeasure has 3 points
+            if hasattr(mr, 'SetPoint3'):
+                mr.SetPoint3(x, y, z)
+                if len(m.points) > 2:
+                    m.points[2] = x, y, z
+                else:
+                    m.points.append((x, y, z))
 
         # Re-add actors to renderer after SetPoint removes and recreates them
         if mr.IsComplete():
@@ -1016,6 +1018,45 @@ class GeodesicMeasure(LinearMeasure):
 
     def SetSurface(self, polydata):
         self.surface_polydata = polydata
+
+    def SetPoint1(self, x, y, z):
+        """Override to properly update geodesic measurement endpoint."""
+        if len(self.points) == 0:
+            self.points.append((x, y, z))
+            self.point_actor1 = self.representation.GetRepresentation(x, y, z)
+            self.point_actors = [self.point_actor1]
+        else:
+            # Update the point position
+            self.points[0] = (x, y, z)
+            # Remove old actors
+            self.Remove()
+            # Recreate point actors
+            self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+            self.point_actors = [self.point_actor1]
+            if len(self.points) >= 2:
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.point_actors.append(self.point_actor2)
+                # Recompute geodesic path
+                wx.CallAfter(self._compute_and_publish_path)
+
+    def SetPoint2(self, x, y, z):
+        """Override to properly update geodesic measurement endpoint."""
+        if len(self.points) == 1:
+            self.points.append((x, y, z))
+            self.point_actor2 = self.representation.GetRepresentation(x, y, z)
+            self.point_actors.append(self.point_actor2)
+            wx.CallAfter(self._compute_and_publish_path)
+        else:
+            # Update the point position
+            self.points[1] = (x, y, z)
+            # Remove old actors
+            self.Remove()
+            # Recreate point actors
+            self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+            self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+            self.point_actors = [self.point_actor1, self.point_actor2]
+            # Recompute geodesic path
+            wx.CallAfter(self._compute_and_publish_path)
 
     def AddPoint(self, x, y, z):
         """Override to support multi-point geodesic measurements."""
