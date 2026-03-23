@@ -481,6 +481,8 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for linear measurements by clicking consecutive points in the volume viewer.
+    Supports dragging measurement points to reposition them (GitHub Issue #16).
+    Shows hand cursor when hovering over measurement points (GitHub Issue #39).
     """
 
     def __init__(self, viewer):
@@ -493,33 +495,143 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         proj = prj.Project()
         self._radius = min(proj.spacing) * PROP_MEASURE
 
+        # Import MeasureData to track measurements
+        from invesalius.data.measures import MeasureData
+
+        self.measures = MeasureData()
+        self.selected = None  # Currently selected measurement point for dragging
+        self.creating = None  # Measurement being created
+
+        self._bind_events()
+
+    def _bind_events(self):
         self.RemoveObservers("LeftButtonPressEvent")
         self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
+        self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
 
     def SetUp(self):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
+        # Set crosshair cursor for better measurement accuracy
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
 
     def CleanUp(self):
         super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
+        # Restore default cursor when exiting measurement mode
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
     def OnInsertLinearMeasurePoint(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
-        self.measure_picker.Pick(x, y, 0, self.viewer.ren)
-        x, y, z = self.measure_picker.GetPickPosition()
-        if self.measure_picker.GetActor():
-            self.left_pressed = False
-            Publisher.sendMessage(
-                "Add measurement point",
-                position=(x, y, z),
-                type=self._type,
-                location=const.SURFACE,
-                radius=self._radius,
-            )
-            self.viewer.interactor.Render()
+
+        # If already dragging a point, clicking again deselects it
+        if self.selected:
+            self.selected = None
+            return
+
+        # Check if user clicked on an existing measurement point
+        selected = self._verify_clicked_3d(x, y)
+
+        if selected:
+            # Select the point for dragging - DON'T add a new point
+            self.selected = selected
+            return  # CRITICAL: Must return here to prevent adding new point
         else:
-            self.left_pressed = True
+            # If not clicking on existing point, add new measurement point
+            self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+            x, y, z = self.measure_picker.GetPickPosition()
+            if self.measure_picker.GetActor():
+                self.left_pressed = False
+                Publisher.sendMessage(
+                    "Add measurement point",
+                    position=(x, y, z),
+                    type=self._type,
+                    location=const.SURFACE,
+                    radius=self._radius,
+                )
+                self.viewer.interactor.Render()
+            else:
+                self.left_pressed = True
+
+    def OnReleaseMeasurePoint(self, obj, evt):
+        """Handle mouse button release - finalize dragging if a point was selected."""
+        if self.selected:
+            # Update the final position
+            x, y = self.viewer.get_vtk_mouse_position()
+            self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+
+            # Only update if we picked a valid surface point
+            if self.measure_picker.GetActor():
+                x, y, z = self.measure_picker.GetPickPosition()
+                n, m, mr = self.selected
+                idx = self.measures._list_measures.index((m, mr))
+                Publisher.sendMessage(
+                    "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
+                )
+                self.viewer.interactor.Render()
+
+            # Deselect after release
+            self.selected = None
+
+    def OnMoveMeasurePoint(self, obj, evt):
+        """Handle mouse movement - drag selected point or update cursor."""
+        x, y = self.viewer.get_vtk_mouse_position()
+
+        if self.selected:
+            # Dragging a selected measurement point
+            self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+
+            # Only update position if we're picking a valid surface point
+            if self.measure_picker.GetActor():
+                px, py, pz = self.measure_picker.GetPickPosition()
+                n, m, mr = self.selected
+                idx = self.measures._list_measures.index((m, mr))
+                Publisher.sendMessage(
+                    "Change measurement point position", index=idx, npoint=n, pos=(px, py, pz)
+                )
+                self.viewer.interactor.Render()
+        else:
+            # Not dragging - check if hovering over a measurement point
+            # Update cursor to hand icon if over a measurement point
+            if self._verify_clicked_3d(x, y):
+                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+            else:
+                # Restore crosshair cursor when not hovering over a point (measurement mode is active)
+                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
+
+    def _verify_clicked_3d(self, screen_x, screen_y, tolerance=10.0):
+        """
+        Check if the mouse click is near a measurement point in 3D view.
+        Returns (point_index, measurement, measurement_renderer) tuple if found, None otherwise.
+
+        Args:
+            screen_x: Screen X coordinate
+            screen_y: Screen Y coordinate
+            tolerance: Distance tolerance in pixels (default 10.0)
+        """
+        tolerance_sq = tolerance**2
+        coord = vtkCoordinate()
+        coord.SetCoordinateSystemToWorld()
+
+        # Check all surface measurements (3D measurements are stored with location=SURFACE)
+        if const.SURFACE in self.measures.measures:
+            for slice_num in self.measures.measures[const.SURFACE]:
+                for m, mr in self.measures.measures[const.SURFACE][slice_num]:
+                    if mr.IsComplete():
+                        # Check each point in the measurement
+                        for n, point in enumerate(m.points):
+                            coord.SetValue(point)
+                            # Convert world coordinates to display coordinates
+                            display_coords = coord.GetComputedDisplayValue(self.viewer.ren)
+                            dx = display_coords[0] - screen_x
+                            dy = display_coords[1] - screen_y
+                            dist_sq = dx * dx + dy * dy
+
+                            if dist_sq <= tolerance_sq:
+                                return (n, m, mr)
+
+        return None
 
 
 class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
@@ -541,6 +653,8 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnFinalizeCurved)
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
+        # Set crosshair cursor for better measurement accuracy
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
@@ -548,6 +662,8 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.SetCameraFocus)
         super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
+        # Restore default cursor when exiting measurement mode
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
     def OnFinalizeCurved(self, evt):
         """Finalize multi-point curved measurement on double-click."""
@@ -571,33 +687,42 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
         self._last_click_time = current_time
 
         x, y = self.viewer.get_vtk_mouse_position()
-        self.measure_picker.Pick(x, y, 0, self.viewer.ren)
-        x, y, z = self.measure_picker.GetPickPosition()
-        actor = self.measure_picker.GetActor()
 
-        # ONLY add points if we hit a surface mesh (not marker spheres or line tubes)
-        is_surface = False
-        for surface in self.viewer.surface_geometry.surfaces:
-            if surface["original"]["actor"] == actor:
-                is_surface = True
-                break
-
-        if actor and is_surface:
-            self.left_pressed = False
-            polydata = actor.GetMapper().GetInput()
-            Publisher.sendMessage(
-                "Add measurement point",
-                position=(x, y, z),
-                type=self._type,
-                location=const.SURFACE,
-                radius=self._radius,
-                polydata=polydata,
-            )
-            # Explicitly render so the new point marker appears immediately
-            Publisher.sendMessage("Render volume viewer")
+        # Check if user clicked on an existing measurement point (for dragging)
+        selected = self._verify_clicked_3d(x, y)
+        if selected:
+            # Just set selected, don't return - matches 2D behavior
+            self.selected = selected
+            # Don't add new point when selecting existing one
         else:
-            # Allow rotation by clicking on the background
-            self.left_pressed = True
+            # Add new measurement point only if not selecting existing one
+            self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+            x, y, z = self.measure_picker.GetPickPosition()
+            actor = self.measure_picker.GetActor()
+
+            # ONLY add points if we hit a surface mesh (not marker spheres or line tubes)
+            is_surface = False
+            for surface in self.viewer.surface_geometry.surfaces:
+                if surface["original"]["actor"] == actor:
+                    is_surface = True
+                    break
+
+            if actor and is_surface:
+                self.left_pressed = False
+                polydata = actor.GetMapper().GetInput()
+                Publisher.sendMessage(
+                    "Add measurement point",
+                    position=(x, y, z),
+                    type=self._type,
+                    location=const.SURFACE,
+                    radius=self._radius,
+                    polydata=polydata,
+                )
+                # Explicitly render so the new point marker appears immediately
+                Publisher.sendMessage("Render volume viewer")
+            else:
+                # Allow rotation by clicking on the background
+                self.left_pressed = True
 
     def OnMouseMove(self, evt, obj):
         if self.left_pressed:
@@ -609,6 +734,8 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
 class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for angular measurements by clicking consecutive points in the volume viewer.
+    Supports dragging measurement points to reposition them (GitHub Issue #16).
+    Shows hand cursor when hovering over measurement points (GitHub Issue #39).
     """
 
     def __init__(self, viewer):
@@ -620,33 +747,141 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         proj = prj.Project()
         self._radius = min(proj.spacing) * PROP_MEASURE
 
+        # Import MeasureData to track measurements
+        from invesalius.data.measures import MeasureData
+
+        self.measures = MeasureData()
+        self.selected = None  # Currently selected measurement point for dragging
+
+        self._bind_events()
+
+    def _bind_events(self):
         self.RemoveObservers("LeftButtonPressEvent")
         self.AddObserver("LeftButtonPressEvent", self.OnInsertAngularMeasurePoint)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
+        self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
 
     def SetUp(self):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
+        # Set crosshair cursor for better measurement accuracy
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
 
     def CleanUp(self):
         super().CleanUp()
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         Publisher.sendMessage("Remove incomplete measurements")
+        # Restore default cursor when exiting measurement mode
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
         x, y = self.viewer.get_vtk_mouse_position()
-        self.measure_picker.Pick(x, y, 0, self.viewer.ren)
-        x, y, z = self.measure_picker.GetPickPosition()
-        if self.measure_picker.GetActor():
-            self.left_pressed = False
-            Publisher.sendMessage(
-                "Add measurement point",
-                position=(x, y, z),
-                type=const.ANGULAR,
-                location=const.SURFACE,
-                radius=self._radius,
-            )
-            self.viewer.interactor.Render()
+
+        # If already dragging a point, clicking again deselects it
+        if self.selected:
+            self.selected = None
+            return
+
+        # Check if user clicked on an existing measurement point
+        selected = self._verify_clicked_3d(x, y)
+        if selected:
+            # Select the point for dragging - DON'T add a new point
+            self.selected = selected
+            return  # CRITICAL: Must return here to prevent adding new point
         else:
-            self.left_pressed = True
+            # If not clicking on existing point, add new measurement point
+            self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+            x, y, z = self.measure_picker.GetPickPosition()
+            if self.measure_picker.GetActor():
+                self.left_pressed = False
+                Publisher.sendMessage(
+                    "Add measurement point",
+                    position=(x, y, z),
+                    type=const.ANGULAR,
+                    location=const.SURFACE,
+                    radius=self._radius,
+                )
+                self.viewer.interactor.Render()
+            else:
+                self.left_pressed = True
+
+    def OnReleaseMeasurePoint(self, obj, evt):
+        """Handle mouse button release - finalize dragging if a point was selected."""
+        if self.selected:
+            # Update the final position
+            x, y = self.viewer.get_vtk_mouse_position()
+            self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+
+            # Only update if we picked a valid surface point
+            if self.measure_picker.GetActor():
+                x, y, z = self.measure_picker.GetPickPosition()
+                n, m, mr = self.selected
+                idx = self.measures._list_measures.index((m, mr))
+                Publisher.sendMessage(
+                    "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
+                )
+                self.viewer.interactor.Render()
+
+            # Deselect after release
+            self.selected = None
+
+    def OnMoveMeasurePoint(self, obj, evt):
+        """Handle mouse movement - drag selected point or update cursor."""
+        x, y = self.viewer.get_vtk_mouse_position()
+
+        if self.selected:
+            # Dragging a selected measurement point
+            self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+
+            # Only update position if we're picking a valid surface point
+            if self.measure_picker.GetActor():
+                px, py, pz = self.measure_picker.GetPickPosition()
+                n, m, mr = self.selected
+                idx = self.measures._list_measures.index((m, mr))
+                Publisher.sendMessage(
+                    "Change measurement point position", index=idx, npoint=n, pos=(px, py, pz)
+                )
+                self.viewer.interactor.Render()
+        else:
+            # Not dragging - check if hovering over a measurement point
+            # Update cursor to hand icon if over a measurement point
+            if self._verify_clicked_3d(x, y):
+                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+            else:
+                # Restore crosshair cursor when not hovering over a point (measurement mode is active)
+                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
+
+    def _verify_clicked_3d(self, screen_x, screen_y, tolerance=10.0):
+        """
+        Check if the mouse click is near a measurement point in 3D view.
+        Returns (point_index, measurement, measurement_renderer) tuple if found, None otherwise.
+
+        Args:
+            screen_x: Screen X coordinate
+            screen_y: Screen Y coordinate
+            tolerance: Distance tolerance in pixels (default 10.0)
+        """
+        tolerance_sq = tolerance**2
+        coord = vtkCoordinate()
+        coord.SetCoordinateSystemToWorld()
+
+        # Check all surface measurements (3D measurements are stored with location=SURFACE)
+        if const.SURFACE in self.measures.measures:
+            for slice_num in self.measures.measures[const.SURFACE]:
+                for m, mr in self.measures.measures[const.SURFACE][slice_num]:
+                    if mr.IsComplete():
+                        # Check each point in the measurement
+                        for n, point in enumerate(m.points):
+                            coord.SetValue(point)
+                            # Convert world coordinates to display coordinates
+                            display_coords = coord.GetComputedDisplayValue(self.viewer.ren)
+                            dx = display_coords[0] - screen_x
+                            dy = display_coords[1] - screen_y
+                            dist_sq = dx * dx + dy * dy
+
+                            if dist_sq <= tolerance_sq:
+                                return (n, m, mr)
+
+        return None
 
 
 class SeedInteractorStyle(DefaultInteractorStyle):
@@ -1157,17 +1392,14 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         try:
             near, far = self.clipping_range
         except AttributeError:
-            print("[DEBUG] self.clipping_range not set yet — skipping cut")
             return
 
         depth = near + (far - near) * self.depth_val
-        print(f"\n\n\n\n{self.world_to_screen.flags=}\n{self.world_to_camera_coordinates.flags=}\n")
 
         try:
             wts = self.world_to_screen
             wtc = self.world_to_camera_coordinates
         except AttributeError:
-            print("[DEBUG] self.world_to_screen not set yet — skipping cut")
             return
 
         mask_cut(

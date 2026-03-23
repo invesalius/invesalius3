@@ -768,11 +768,15 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
+        # Set crosshair cursor for better measurement accuracy
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
 
     def CleanUp(self):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         self.picker.PickFromListOff()
         Publisher.sendMessage("Remove incomplete measurements")
+        # Restore default cursor when exiting measurement mode
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
     def OnInsertMeasurePoint(self, obj, evt):
         if self._type == const.CURVED_LINEAR:
@@ -892,7 +896,8 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             if self._verify_clicked_display(mx, my):
                 self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_HAND))
             else:
-                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
+                # Restore crosshair cursor when not hovering over a point (measurement mode is active)
+                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
 
     def OnLeaveMeasureInteractor(self, obj, evt):
         if self.creating or self.selected:

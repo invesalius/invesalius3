@@ -470,6 +470,12 @@ class MeasurementManager:
             else:
                 m.points.append((x, y, z))
 
+        # Re-add actors to renderer after SetPoint removes and recreates them
+        if mr.IsComplete():
+            actors = mr.GetActors()
+            if m.location == const.SURFACE:
+                Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=actors)
+
         m.value = mr.GetValue()
 
         name = m.name
@@ -494,6 +500,12 @@ class MeasurementManager:
             type_=type_,
             value=value,
         )
+
+        # Trigger render to update the visual display
+        if m.location == const.SURFACE:
+            Publisher.sendMessage("Render volume viewer")
+        else:
+            Publisher.sendMessage("Redraw canvas")
 
     def _change_name(self, index, name):
         self.measures[index][0].name = name
