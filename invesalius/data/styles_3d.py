@@ -126,7 +126,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
         self.viewer = viewer
 
         self.picker = vtkCellPicker()
-        self.picker.SetTolerance(1e-3)
+        self.picker.SetTolerance(0.01)  # Increased tolerance for better marker detection
         self.viewer.interactor.SetPicker(self.picker)
 
         # Keep track of whether a marker was found under the mouse cursor.

@@ -240,6 +240,17 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
+    def ChangeNotes(self, marker: Marker, new_notes: str) -> None:
+        """
+        Change the notes field of a marker.
+
+        :param marker: instance of Marker
+        :param new_notes: new notes string
+        """
+        marker.notes = str(new_notes)
+        Publisher.sendMessage("Update marker notes", marker=marker)
+        self.SaveState()
+
     def GetNextMarkerLabel(self) -> str:
         """
         Return a label for the next marker that is not already in use, in the form 'New marker N',

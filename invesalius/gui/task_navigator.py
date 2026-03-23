@@ -2746,8 +2746,20 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_height = max(120, int(screen_height / 5))
         self.marker_list_height = marker_list_height
 
+        # Search bar for filtering markers
+        search_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        lbl_search = wx.StaticText(self, -1, "Search:")
+        search_sizer.Add(lbl_search, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.txt_search = wx.TextCtrl(self, -1, "", size=(150, -1))
+        self.txt_search.SetToolTip("Search markers by label, notes, or MEP value")
+        self.txt_search.Bind(wx.EVT_TEXT, self.OnSearchMarkers)
+        search_sizer.Add(self.txt_search, 1, wx.EXPAND)
+        btn_clear_search = wx.Button(self, -1, "Clear")
+        btn_clear_search.Bind(wx.EVT_BUTTON, self.OnClearSearch)
+        search_sizer.Add(btn_clear_search, 0, wx.LEFT, 5)
+
         marker_list_ctrl = wx.ListCtrl(
-            self, -1, style=wx.LC_REPORT, size=wx.Size(0, marker_list_height)
+            self, -1, style=wx.LC_REPORT | wx.LC_EDIT_LABELS, size=wx.Size(0, marker_list_height)
         )
         marker_list_ctrl.InsertColumn(const.ID_COLUMN, "#")
         marker_list_ctrl.SetColumnWidth(const.ID_COLUMN, 24)
@@ -2776,6 +2788,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.InsertColumn(const.UUID, "UUID")
         marker_list_ctrl.SetColumnWidth(const.UUID, 45)
 
+        marker_list_ctrl.InsertColumn(const.NOTES_COLUMN, "Notes")
+        marker_list_ctrl.SetColumnWidth(const.NOTES_COLUMN, 150)
+
         if self.session.GetConfig("debug"):
             marker_list_ctrl.InsertColumn(const.X_COLUMN, "X")
             marker_list_ctrl.SetColumnWidth(const.X_COLUMN, 45)
@@ -2790,6 +2805,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.SetCameraToFocusOnMarker)
+        marker_list_ctrl.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditMarkerNotes)
 
         self.marker_list_ctrl = marker_list_ctrl
         self.column_sorter = ColumnSorterMixin.__init__(
@@ -2846,6 +2862,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        group_sizer.Add(search_sizer, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_main_coil, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Add(brain_targets_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
@@ -2904,6 +2921,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self._UnsetPointOfInterest, "Unset point of interest")
         Publisher.subscribe(self._UpdateMarkerLabel, "Update marker label")
         Publisher.subscribe(self._UpdateMEP, "Update marker mep")
+        Publisher.subscribe(self._UpdateMarkerNotes, "Update marker notes")
 
         Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
         # Publisher.subscribe(self.SetVectorField, "Set vector field")
@@ -3033,6 +3051,114 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Trigger redraw MEP mapping
         Publisher.sendMessage("Redraw MEP mapping")
 
+    def _UpdateMarkerNotes(self, marker):
+        """Update the notes column in the marker list when notes change."""
+        idx = self.__find_marker_index(marker.marker_id)
+        self.marker_list_ctrl.SetItem(idx, const.NOTES_COLUMN, str(marker.notes))
+
+        # Update the notes in self.itemDataMap so that sorting works
+        uuid = marker.marker_uuid
+        for key, data in self.itemDataMap.items():
+            current_uuid = data[-1]
+            if current_uuid == uuid:
+                self.itemDataMap[key][const.NOTES_COLUMN] = marker.notes
+
+    def OnSearchMarkers(self, event):
+        """Filter markers based on search text."""
+        search_text = self.txt_search.GetValue().lower()
+
+        # Store current marker data before clearing
+        marker_data = []
+        for idx in range(self.marker_list_ctrl.GetItemCount()):
+            item_data = []
+            for col in range(self.marker_list_ctrl.GetColumnCount()):
+                item = self.marker_list_ctrl.GetItem(idx, col)
+                item_data.append(item.GetText())
+            marker_data.append(item_data)
+
+        # Clear the list
+        self.marker_list_ctrl.DeleteAllItems()
+
+        # Re-add markers that match the search
+        for idx, data in enumerate(marker_data):
+            label = data[const.LABEL_COLUMN].lower() if const.LABEL_COLUMN < len(data) else ""
+            notes = data[const.NOTES_COLUMN].lower() if const.NOTES_COLUMN < len(data) else ""
+            mep = data[const.MEP_COLUMN].lower() if const.MEP_COLUMN < len(data) else ""
+
+            # Check if search text matches any field
+            if (
+                not search_text
+                or search_text in label
+                or search_text in notes
+                or search_text in mep
+            ):
+                # Add the item back - use current list count as index
+                list_idx = self.marker_list_ctrl.GetItemCount()
+                for col, text in enumerate(data):
+                    if col == 0:
+                        self.marker_list_ctrl.InsertItem(list_idx, text)
+                    else:
+                        self.marker_list_ctrl.SetItem(list_idx, col, text)
+
+    def OnClearSearch(self, event):
+        """Clear the search and show all markers."""
+        self.txt_search.SetValue("")
+        # Reload all markers from the MarkersControl
+        self._ReloadAllMarkers()
+
+    def _ReloadAllMarkers(self):
+        """Reload all markers from MarkersControl to the list."""
+        # Clear current list
+        self.marker_list_ctrl.DeleteAllItems()
+
+        # Get number of columns
+        num_columns = self.marker_list_ctrl.GetColumnCount()
+
+        # Add all markers from MarkersControl
+        for idx, marker in enumerate(self.markers.list):
+            list_entry = [""] * num_columns
+            list_entry[const.ID_COLUMN] = idx
+            list_entry[const.SESSION_COLUMN] = str(marker.session_id)
+            list_entry[const.MARKER_TYPE_COLUMN] = marker.marker_type.human_readable
+            list_entry[const.LABEL_COLUMN] = marker.label
+            list_entry[const.Z_OFFSET_COLUMN] = (
+                str(marker.z_offset) if marker.z_offset != 0.0 else ""
+            )
+            list_entry[const.TARGET_COLUMN] = "Yes" if marker.is_target else ""
+            list_entry[const.POINT_OF_INTEREST_TARGET_COLUMN] = (
+                "Yes" if marker.is_point_of_interest else ""
+            )
+            list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
+            list_entry[const.UUID] = str(marker.marker_uuid) if marker.marker_uuid else ""
+
+            # Add notes if column exists
+            if const.NOTES_COLUMN < num_columns:
+                list_entry[const.NOTES_COLUMN] = getattr(marker, "notes", "")
+
+            # Add items to list
+            for col, text in enumerate(list_entry):
+                if col == 0:
+                    self.marker_list_ctrl.InsertItem(idx, text)
+                else:
+                    self.marker_list_ctrl.SetItem(idx, col, text)
+
+        # Refresh the list
+        self.marker_list_ctrl.Refresh()
+
+    def OnEditMarkerNotes(self, event):
+        """Handle editing of marker notes in the list."""
+        col = event.GetColumn()
+        if col == const.NOTES_COLUMN:
+            item_id = event.GetItem().GetId()
+            # Find the marker by index in the markers list
+            idx = self.__find_marker_index(item_id)
+            if idx is not None and idx < len(self.markers.list):
+                marker = self.markers.list[idx]
+                new_notes = event.GetText()
+                # Update the marker notes
+                self.markers.ChangeNotes(marker, new_notes)
+        event.Skip()
+
     @staticmethod
     def __list_fiducial_labels():
         """Return the list of marker labels denoting fiducials."""
@@ -3160,7 +3286,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         edit_id = menu_id.Append(unique_menu_id, _("Change label"))
         menu_id.Bind(wx.EVT_MENU, self.ChangeLabel, edit_id)
 
-        color_id = menu_id.Append(unique_menu_id + 1, _("Change color"))
+        # Add "Edit Notes" menu item
+        notes_id = menu_id.Append(unique_menu_id + 10, _("Edit Notes"))
+        menu_id.Bind(wx.EVT_MENU, self.OnEditMarkerNotesMenu, notes_id)
+
+        color_id = menu_id.Append(
+            unique_menu_id + 1, _("Change color")
+        )  # Increment the unique_menu_id
         menu_id.Bind(wx.EVT_MENU, self.ChangeColor, color_id)
 
         delete_id = menu_id.Append(unique_menu_id + 2, _("Delete"))
@@ -3513,6 +3645,22 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.marker_list_ctrl.GetItemText(list_index, const.LABEL_COLUMN)
         )
         self.markers.ChangeLabel(marker, new_label)
+
+    def OnEditMarkerNotesMenu(self, evt):
+        """Edit marker notes from right-click menu."""
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        if list_index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+        marker = self.__get_marker(list_index)
+        current_notes = getattr(marker, "notes", "")
+        dialog = wx.TextEntryDialog(
+            self, "Enter notes for this marker:", "Edit Notes", current_notes
+        )
+        if dialog.ShowModal() == wx.ID_OK:
+            new_notes = dialog.GetValue()
+            self.markers.ChangeNotes(marker, new_notes)
+        dialog.Destroy()
 
     def ChangeLabelBrainTarget(self, evt):
         list_index = self.brain_targets_list_ctrl.GetFocusedItem()
@@ -4104,9 +4252,21 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_type=None,
         cortex_position_orientation=None,
         mep_value=None,
+        notes=None,
     ):
         if label is None:
             label = self.GetNextMarkerLabel()
+
+        # Ask for notes if not provided
+        if notes is None:
+            dialog = wx.TextEntryDialog(
+                self, "Enter notes for this marker (optional):", "Marker Notes", ""
+            )
+            if dialog.ShowModal() == wx.ID_OK:
+                notes = dialog.GetValue()
+            else:
+                notes = ""
+            dialog.Destroy()
 
         if self.nav_status and self.navigation.e_field_loaded:
             Publisher.sendMessage("Get Cortex position")
@@ -4142,6 +4302,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
             mep_value=mep_value,
+            notes=notes,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
 
@@ -4384,6 +4545,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         z_offset=0.0,
         z_rotation=0.0,
         mep_value=None,
+        notes="",
     ):
         """
         Create a new marker object.
@@ -4409,6 +4571,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker.z_offset = z_offset
         marker.z_rotation = z_rotation
         marker.mep_value = mep_value
+        marker.notes = notes
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers.list)
@@ -4425,7 +4588,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Add marker to the marker list in GUI and to the itemDataMap.
         num_items = self.marker_list_ctrl.GetItemCount()
 
-        list_entry = ["" for _ in range(0, const.X_COLUMN)]
+        # Calculate number of columns in the list control
+        num_columns = self.marker_list_ctrl.GetColumnCount()
+        list_entry = ["" for _ in range(num_columns)]
         list_entry[const.ID_COLUMN] = num_items
         list_entry[const.SESSION_COLUMN] = str(marker.session_id)
         list_entry[const.MARKER_TYPE_COLUMN] = marker.marker_type.human_readable
@@ -4437,6 +4602,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
         list_entry[const.MEP_COLUMN] = str(marker.mep_value) if marker.mep_value else ""
         list_entry[const.UUID] = str(marker.marker_uuid) if marker.marker_uuid else ""
+
+        list_entry[const.NOTES_COLUMN] = marker.notes if hasattr(marker, "notes") else ""
 
         if self.session.GetConfig("debug"):
             list_entry.append(round(marker.x, 1))
