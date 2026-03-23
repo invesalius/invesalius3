@@ -465,7 +465,7 @@ class MeasurementManager:
                 m.points.append((x, y, z))
         elif npoint == 2:
             # Only AngularMeasure has 3 points
-            if hasattr(mr, 'SetPoint3'):
+            if hasattr(mr, "SetPoint3"):
                 mr.SetPoint3(x, y, z)
                 if len(m.points) > 2:
                     m.points[2] = x, y, z
