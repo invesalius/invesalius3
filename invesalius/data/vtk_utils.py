@@ -371,7 +371,7 @@ class TextZero:
                 x -= w
             if self.bottom_pos:
                 y += h
-        canvas.draw_text(self.text, (x, y), font=font)
+        canvas.draw_text(self.text, (x, y), font=font, add_background=True)
 
 
 def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:

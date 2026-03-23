@@ -763,7 +763,7 @@ class CanvasRendererCTX:
         pos: Tuple[float, float],
         font: Optional[wx.Font] = None,
         txt_colour: Tuple[int, int, int] = (255, 255, 255),
-        add_background: bool = True,
+        add_background: bool = False,
     ) -> None:
         """
         Draw text with optional shadow and background for better visibility.
