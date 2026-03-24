@@ -1554,6 +1554,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         self.current_transparency = 0
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
+        self.item_images = {}  # maps row index -> image index (0 or 1)
 
     def __init_evt(self):
         pass
@@ -1898,6 +1899,23 @@ class SurfacesListCtrlPanel(InvListCtrl):
             if image_index != -1:
                 self.imagelist.Replace(image_index, image)
                 self.RefreshItem(local_pos)
+
+    def GetItemImage(self, idx):
+        """
+        Return the image index (0 = hidden, 1 = visible) for the given row.
+        Defaults to 0 if not set.
+        """
+        return self.item_images.get(idx, 0)
+    
+    def SetItemImage(self, idx, img_idx):
+        """
+        Set the image index for a row and store it internally.
+        """
+        # Call parent method (actual UI update)
+        super().SetItemImage(idx, img_idx)
+        # Store the state (0 or 1)
+        self.item_images[idx] = img_idx
+
 
 
 # -------------------------------------------------
