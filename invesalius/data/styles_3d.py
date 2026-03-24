@@ -557,6 +557,9 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     def OnReleaseMeasurePoint(self, obj, evt):
         """Handle mouse button release - finalize dragging if a point was selected."""
         if self.selected:
+            # Show busy cursor before updating position (geodesic computation will start)
+            Publisher.sendMessage("Begin busy cursor")
+
             # Update the final position
             x, y = self.viewer.get_vtk_mouse_position()
             self.measure_picker.Pick(x, y, 0, self.viewer.ren)
@@ -570,6 +573,9 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
                 )
                 self.viewer.interactor.Render()
+            else:
+                # If no valid pick, restore cursor immediately
+                Publisher.sendMessage("End busy cursor")
 
             # Deselect after release
             self.selected = None
@@ -807,6 +813,9 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     def OnReleaseMeasurePoint(self, obj, evt):
         """Handle mouse button release - finalize dragging if a point was selected."""
         if self.selected:
+            # Show busy cursor before updating position (geodesic computation will start)
+            Publisher.sendMessage("Begin busy cursor")
+
             # Update the final position
             x, y = self.viewer.get_vtk_mouse_position()
             self.measure_picker.Pick(x, y, 0, self.viewer.ren)
@@ -820,6 +829,9 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
                     "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
                 )
                 self.viewer.interactor.Render()
+            else:
+                # If no valid pick, restore cursor immediately
+                Publisher.sendMessage("End busy cursor")
 
             # Deselect after release
             self.selected = None

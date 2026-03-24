@@ -1036,8 +1036,6 @@ class GeodesicMeasure(LinearMeasure):
             if len(self.points) >= 2:
                 self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
                 self.point_actors.append(self.point_actor2)
-                # Show busy cursor while computing geodesic path
-                Publisher.sendMessage("Begin busy cursor")
                 # Recompute geodesic path
                 wx.CallAfter(self._compute_and_publish_path)
 
@@ -1047,8 +1045,7 @@ class GeodesicMeasure(LinearMeasure):
             self.points.append((x, y, z))
             self.point_actor2 = self.representation.GetRepresentation(x, y, z)
             self.point_actors.append(self.point_actor2)
-            # Show busy cursor while computing geodesic path
-            Publisher.sendMessage("Begin busy cursor")
+            # Recompute geodesic path
             wx.CallAfter(self._compute_and_publish_path)
         else:
             # Update the point position
@@ -1059,8 +1056,6 @@ class GeodesicMeasure(LinearMeasure):
             self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
             self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
             self.point_actors = [self.point_actor1, self.point_actor2]
-            # Show busy cursor while computing geodesic path
-            Publisher.sendMessage("Begin busy cursor")
             # Recompute geodesic path
             wx.CallAfter(self._compute_and_publish_path)
 
