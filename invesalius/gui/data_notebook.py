@@ -1906,7 +1906,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         Defaults to 0 if not set.
         """
         return self.item_images.get(idx, 0)
-    
+
     def SetItemImage(self, idx, img_idx):
         """
         Set the image index for a row and store it internally.
@@ -1915,7 +1915,6 @@ class SurfacesListCtrlPanel(InvListCtrl):
         super().SetItemImage(idx, img_idx)
         # Store the state (0 or 1)
         self.item_images[idx] = img_idx
-
 
 
 # -------------------------------------------------
