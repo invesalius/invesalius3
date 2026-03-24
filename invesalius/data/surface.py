@@ -315,6 +315,16 @@ class SurfaceManager:
         points_id_list = seeds
         index = self.last_surface_index
         proj = prj.Project()
+
+        if not hasattr(proj, 'surface_dict') or not proj.surface_dict:
+            print("No surfaces exist, cannot create a seeded surface.")
+            return  
+
+        if index not in proj.surface_dict:
+            print(f"Surface index {index} does not exist.")
+            return
+        
+
         surface = proj.surface_dict[index]
 
         new_polydata = pu.JoinSeedsParts(surface.polydata, points_id_list)
@@ -346,6 +356,16 @@ class SurfaceManager:
         """
         index = self.last_surface_index
         proj = prj.Project()
+        
+        if not hasattr(proj, 'surface_dict') or not proj.surface_dict:
+            print("No surfaces exist, cannot split surfaces.")
+            return 
+
+        if index not in proj.surface_dict:
+            print(f"Surface index {index} does not exist, cannot split.")
+            return
+
+
         surface = proj.surface_dict[index]
 
         index_list = []
