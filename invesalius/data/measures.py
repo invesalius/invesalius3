@@ -1036,6 +1036,8 @@ class GeodesicMeasure(LinearMeasure):
             if len(self.points) >= 2:
                 self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
                 self.point_actors.append(self.point_actor2)
+                # Show busy cursor while computing geodesic path
+                Publisher.sendMessage("Begin busy cursor")
                 # Recompute geodesic path
                 wx.CallAfter(self._compute_and_publish_path)
 
@@ -1045,6 +1047,8 @@ class GeodesicMeasure(LinearMeasure):
             self.points.append((x, y, z))
             self.point_actor2 = self.representation.GetRepresentation(x, y, z)
             self.point_actors.append(self.point_actor2)
+            # Show busy cursor while computing geodesic path
+            Publisher.sendMessage("Begin busy cursor")
             wx.CallAfter(self._compute_and_publish_path)
         else:
             # Update the point position
@@ -1055,6 +1059,8 @@ class GeodesicMeasure(LinearMeasure):
             self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
             self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
             self.point_actors = [self.point_actor1, self.point_actor2]
+            # Show busy cursor while computing geodesic path
+            Publisher.sendMessage("Begin busy cursor")
             # Recompute geodesic path
             wx.CallAfter(self._compute_and_publish_path)
 
@@ -1097,30 +1103,34 @@ class GeodesicMeasure(LinearMeasure):
     def _compute_and_publish_path(self):
         """Called by wx.CallAfter after point_actor2 has been rendered.
         Computes the geodesic path, then pushes the line + text actors."""
-        # BEFORE computing new ones, remove OLD actors if they exist
-        old_actors = []
-        if self.line_actor:
-            old_actors.append(self.line_actor)
-        if self.text_actor:
-            old_actors.append(self.text_actor)
+        try:
+            # BEFORE computing new ones, remove OLD actors if they exist
+            old_actors = []
+            if self.line_actor:
+                old_actors.append(self.line_actor)
+            if self.text_actor:
+                old_actors.append(self.text_actor)
 
-        if old_actors:
-            Publisher.sendMessage("Remove actors " + str(const.SURFACE), actors=old_actors)
+            if old_actors:
+                Publisher.sendMessage("Remove actors " + str(const.SURFACE), actors=old_actors)
 
-        self._draw_line()
-        self._draw_text()
-        self._path_computed = True  # now IsComplete() returns True
+            self._draw_line()
+            self._draw_text()
+            self._path_computed = True  # now IsComplete() returns True
 
-        path_actors = []
-        if self.line_actor:
-            path_actors.append(self.line_actor)
-        if self.text_actor:
-            path_actors.append(self.text_actor)
+            path_actors = []
+            if self.line_actor:
+                path_actors.append(self.line_actor)
+            if self.text_actor:
+                path_actors.append(self.text_actor)
 
-        if path_actors:
-            Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=path_actors)
+            if path_actors:
+                Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=path_actors)
 
-        Publisher.sendMessage("Render volume viewer")
+            Publisher.sendMessage("Render volume viewer")
+        finally:
+            # Always restore cursor, even if computation fails
+            Publisher.sendMessage("End busy cursor")
 
     def _draw_line(self):
         if not self.surface_polydata:
