@@ -14,3 +14,5 @@ ndarray = { version = "0.17.2", features = ["rayon"] }
 rayon = "1.10"
 nalgebra = "0.33"
 num-traits = "0.2"
+rustc-hash = "2"
+

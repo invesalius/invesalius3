@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 import time
@@ -8,7 +9,9 @@ except ImportError:
     import Queue as queue
 
 import numpy
-from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
+from vtkmodules.util import numpy_support
+from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow, vtkPoints
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData
 from vtkmodules.vtkFiltersCore import (
     vtkAppendPolyData,
     vtkCleanPolyData,
@@ -25,6 +28,8 @@ from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
 import invesalius.data.converters as converters
 import invesalius_rs as cy_mesh
+
+logger = logging.getLogger(__name__)
 
 
 # TODO: Code duplicated from file {imagedata_utils.py}.
@@ -68,6 +73,46 @@ def pad_image(image, pad_value, pad_bottom, pad_top):
     return paded_image
 
 
+def _configure_vtk_output_window():
+    log_fd, log_path = tempfile.mkstemp("vtkoutput.txt")
+    fow = vtkFileOutputWindow()
+    fow.SetFileName(log_path)
+    ow = vtkOutputWindow()
+    ow.SetInstance(fow)
+    os.close(log_fd)
+
+
+def triangles_to_vtk_polydata(vertices, faces):
+    import numpy as np
+
+    polydata = vtkPolyData()
+    if len(vertices) == 0 or len(faces) == 0:
+        return polydata
+
+    # Enforce float64 for VTK transformation precision alignment
+    vertices = np.ascontiguousarray(vertices, dtype=np.float64)
+    # Flip winding order to counteract the Y-axis physical MIRROR applied earlier in the pipeline
+    faces = faces[:, ::-1]
+    faces = np.ascontiguousarray(faces, dtype=np.int64)
+
+    vtk_points = vtkPoints()
+    vtk_points.SetDataTypeToDouble()
+    vtk_points.SetData(numpy_support.numpy_to_vtk(vertices, deep=1))
+
+    face_cells = np.empty((faces.shape[0], 4), dtype=np.int64)
+    face_cells[:, 0] = 3
+    face_cells[:, 1:] = faces
+
+    vtk_faces = vtkCellArray()
+    vtk_faces.SetCells(
+        faces.shape[0], numpy_support.numpy_to_vtkIdTypeArray(face_cells.reshape(-1), deep=1)
+    )
+
+    polydata.SetPoints(vtk_points)
+    polydata.SetPolys(vtk_faces)
+    return polydata
+
+
 def create_surface_piece(
     filename,
     shape,
@@ -90,12 +135,7 @@ def create_surface_piece(
     imagedata_resolution,
     fill_border_holes,
 ):
-    log_fd, log_path = tempfile.mkstemp("vtkoutput.txt")
-    fow = vtkFileOutputWindow()
-    fow.SetFileName(log_path)
-    ow = vtkOutputWindow()
-    ow.SetInstance(fow)
-    os.close(log_fd)
+    _configure_vtk_output_window()
 
     pad_bottom = roi.start == 0
     pad_top = roi.stop >= shape[0]
@@ -169,25 +209,75 @@ def create_surface_piece(
     image = flip.GetOutput()
     del flip
 
-    contour = vtkContourFilter()
-    contour.SetInputData(image)
-    if from_binary:
-        contour.SetValue(0, 127)  # initial threshold
-    else:
-        contour.SetValue(0, min_value)  # initial threshold
-        contour.SetValue(1, max_value)  # final threshold
-    #  contour.ComputeScalarsOn()
-    #  contour.ComputeGradientsOn()
-    #  contour.ComputeNormalsOn()
-    contour.ReleaseDataFlagOn()
-    start = time.perf_counter()
-    contour.Update()
-    duration = time.perf_counter() - start
-    print(f"[PERF] Extraction (vtkContourFilter): {duration:.4f}s")
+    if "tetrahedra" in algorithm:
+        import numpy as np
+        from vtkmodules.util import numpy_support
+        from vtkmodules.vtkCommonTransforms import vtkTransform
+        from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 
-    polydata = contour.GetOutput()
-    del image
-    del contour
+        dims = image.GetDimensions()
+        scalars = image.GetPointData().GetScalars()
+        np_arr = numpy_support.vtk_to_numpy(scalars)
+
+        # VTK point data is flattened: shape (Z, Y, X)
+        np_arr = np_arr.reshape(dims[2], dims[1], dims[0])
+
+        print("[PERF] MT Extraction (create_surface_piece)")
+        start = time.perf_counter()
+
+        # Marching tetrahedra Rust backend uses a threshold of 127
+        if np_arr.dtype != np.uint8:
+            bin_mask = np.clip(np_arr, 0, 255).astype(np.uint8, copy=False)
+        else:
+            bin_mask = np_arr
+
+        vertices, faces = cy_mesh.marching_tetrahedra(bin_mask, (1.0, 1.0, 1.0))
+        duration = time.perf_counter() - start
+        print(f"[PERF] Marching Tetrahedra (sub-chunk): {duration:.4f}s")
+
+        polydata = triangles_to_vtk_polydata(vertices, faces)
+
+        # Shift & scale correctly in world space
+        if polydata.GetNumberOfPoints() > 0:
+            transform = vtkTransform()
+            origin = image.GetOrigin()
+            spacing = image.GetSpacing()
+            extent = image.GetExtent()
+
+            tx = origin[0] + extent[0] * spacing[0]
+            ty = origin[1] + extent[2] * spacing[1]
+            tz = origin[2] + extent[4] * spacing[2]
+
+            transform.Translate(tx, ty, tz)
+            transform.Scale(spacing[0], spacing[1], spacing[2])
+
+            t_filter = vtkTransformPolyDataFilter()
+            t_filter.SetInputData(polydata)
+            t_filter.SetTransform(transform)
+            t_filter.Update()
+            polydata = t_filter.GetOutput()
+
+        del image
+    else:
+        contour = vtkContourFilter()
+        contour.SetInputData(image)
+        if from_binary:
+            contour.SetValue(0, 127)  # initial threshold
+        else:
+            contour.SetValue(0, min_value)  # initial threshold
+            contour.SetValue(1, max_value)  # final threshold
+        #  contour.ComputeScalarsOn()
+        #  contour.ComputeGradientsOn()
+        #  contour.ComputeNormalsOn()
+        contour.ReleaseDataFlagOn()
+        start = time.perf_counter()
+        contour.Update()
+        duration = time.perf_counter() - start
+        print(f"[PERF] Extraction (vtkContourFilter): {duration:.4f}s")
+
+        polydata = contour.GetOutput()
+        del image
+        del contour
 
     fd, filename = tempfile.mkstemp(suffix="_%d_%d.vtp" % (roi.start, roi.stop))
     writer = vtkXMLPolyDataWriter()
@@ -257,6 +347,10 @@ def join_process_surface(
     #  UpdateProgress(clean_ref(), _("Creating 3D surface...")))
     clean.SetInputData(polydata)
     clean.PointMergingOn()
+    if "tetrahedra" in algorithm:
+        clean.SetToleranceIsAbsolute(True)
+        # Handle f32 float boundary math artifacts from Cython extraction
+        clean.SetAbsoluteTolerance(1e-4)
     start = time.perf_counter()
     clean.Update()
     duration = time.perf_counter() - start
@@ -267,7 +361,7 @@ def join_process_surface(
     #  polydata.SetSource(None)
     del clean
 
-    if algorithm == "ca_smoothing":
+    if algorithm in ("ca_smoothing", "ca_smoothing_tetrahedra"):
         send_message("Calculating normals ...")
         normals = vtkPolyDataNormals()
         # normals_ref = weakref.ref(normals)
@@ -347,7 +441,7 @@ def join_process_surface(
     #  #  polydata.SetSource(None)
     #  del smoother
 
-    if not decimate_reduction:
+    if decimate_reduction:
         print("Decimating", decimate_reduction)
         send_message("Decimating ...")
         decimation = vtkQuadricDecimation()
