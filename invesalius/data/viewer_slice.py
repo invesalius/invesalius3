@@ -640,13 +640,13 @@ class Viewer(wx.Panel):
 
         if aspect_ratio_diff < 0.1:
             # Very similar aspect ratios - minimal margin
-            margin = 1.02
+            margin = 1.005
         elif aspect_ratio_diff < 0.3:
             # Moderate difference - small margin
-            margin = 1.03
+            margin = 1.01
         else:
-            # Large difference - larger margin to prevent "too close"
-            margin = 1.04
+            # Large difference - slightly larger margin to prevent "too close"
+            margin = 1.015
 
         scale *= margin
 
