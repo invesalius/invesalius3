@@ -139,7 +139,7 @@ class UpdateNavigationScene(threading.Thread):
         self.neuronavigation_api = neuronavigation_api
         self.navigation = Navigation()
         self._last_render = 0.0
-        self._render_interval = max(self.sle, 1.0 / 30.0)
+        self._render_interval = max(self.sle, 1.0 / 100.0)
         self._slice_render_interval = max(self.sle, 1.0 / 10.0)
         self._loop_sleep = max(self.sle, 1.0 / 120.0)
         self._last_pose_update = 0.0
