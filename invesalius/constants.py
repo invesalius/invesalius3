@@ -602,6 +602,7 @@ ID_SWAP_YZ = wx.NewIdRef()
 
 ID_BOOLEAN_MASK = wx.NewIdRef()
 ID_CLEAN_MASK = wx.NewIdRef()
+ID_IMAGE_FILTERS = wx.NewIdRef()
 
 ID_REORIENT_IMG = wx.NewIdRef()
 ID_FLOODFILL_MASK = wx.NewIdRef()

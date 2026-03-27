@@ -25,6 +25,7 @@ import wx.lib.agw.foldpanelbar as fpb
 import invesalius.constants as const
 import invesalius.gui.data_notebook as nb
 import invesalius.gui.task_exporter as exporter
+import invesalius.gui.task_filters as filters
 import invesalius.gui.task_importer as importer
 import invesalius.gui.task_imports as imports
 import invesalius.gui.task_navigator as navigator
@@ -119,8 +120,8 @@ class Panel(wx.Panel):
 
         gbs.AddGrowableCol(0)
 
-        gbs.AddGrowableRow(0, 1)
-        gbs.AddGrowableRow(1, 0)
+        gbs.AddGrowableRow(0, 0)
+        gbs.AddGrowableRow(1, 1)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(gbs, 1, wx.EXPAND)
@@ -299,6 +300,7 @@ class UpperTaskPanel(wx.Panel):
         if mode == const.MODE_RP:
             tasks = [
                 (_("Load data"), importer.TaskPanel),
+                (_("Image filters"), filters.TaskPanel),
                 (_("Select region of interest"), slice_.TaskPanel),
                 (_("Configure 3D surface"), surface.TaskPanel),
                 (_("Export data"), exporter.TaskPanel),
@@ -371,7 +373,14 @@ class UpperTaskPanel(wx.Panel):
             Publisher.subscribe(self.OnFoldSurface, "Fold surface task")
             Publisher.subscribe(self.OnFoldExport, "Fold export task")
         Publisher.subscribe(self.OnEnableState, "Enable state project")
-        # Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
+        # Bind to idle event to resize once the event loop starts and window is shown
+        self.Bind(wx.EVT_IDLE, self.OnFirstIdle)
+
+    def OnFirstIdle(self, evt):
+        """Called on first idle event after the window is fully rendered. Resize so all headers show."""
+        evt.Skip()
+        self.Unbind(wx.EVT_IDLE)
+        self.ResizeFPB()
 
     def OnOverwrite(self, surface_parameters):
         self.overwrite = surface_parameters["options"]["overwrite"]
@@ -421,14 +430,10 @@ class UpperTaskPanel(wx.Panel):
         wx.CallAfter(self.ResizeFPB)
 
     def ResizeFPB(self):
-        item = self.enable_items[0]
-        # Check if the fold panel item is visually expanded
-        is_expanded = item.IsExpanded()
+        y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
 
-        if is_expanded:
-            y_needed = 240 if sys.platform != "win32" else 230
-        else:
-            y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
+        # Add a small buffer to ensure nothing is clipped
+        y_needed += 10
 
         self.fold_panel.SetMinSize((-1, y_needed))
         self.fold_panel.SetSize((-1, y_needed))

@@ -18,9 +18,11 @@
 # --------------------------------------------------------------------------
 import os
 import tempfile
-from typing import TYPE_CHECKING, Literal, Optional, Tuple, Union
+import threading
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
+import scipy.ndimage as ndimage
 from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkImagingColor import vtkImageMapToWindowLevelColors
 from vtkmodules.vtkImagingCore import (
@@ -66,10 +68,10 @@ class SliceBuffer:
 
     def __init__(self):
         self.index: int = -1
-        self.image: Optional[np.ndarray] = None
-        self.mask: Optional[np.ndarray] = None
-        self.vtk_image: Optional[vtkImageData] = None
-        self.vtk_mask: Optional[vtkImageData] = None
+        self.image: np.ndarray | None = None
+        self.mask: np.ndarray | None = None
+        self.vtk_image: vtkImageData | None = None
+        self.vtk_mask: vtkImageData | None = None
 
     def discard_vtk_mask(self) -> None:
         self.vtk_mask = None
@@ -98,17 +100,15 @@ class Slice(metaclass=utils.Singleton):
     def __init__(self):
         self.selected_mask_indices = []
         self._matrix_filename = ""
-        self.current_mask: Optional[Mask] = None
+        self.current_mask: Mask | None = None
         self.blend_filter = None
-        self.histogram: Optional[np.ndarray] = None
-        self._matrix: Optional[np.ndarray] = None
+        self.histogram: np.ndarray | None = None
+        self._matrix: np.ndarray | None = None
         self._affine: np.ndarray = np.identity(4)
         self._n_tracts: int = 0
         self._tracker = None
         self.aux_matrices: dict[str, np.ndarray] = {}
-        self.aux_matrices_colours: dict[
-            str, dict[Union[int, float], Tuple[float, float, float]]
-        ] = {}
+        self.aux_matrices_colours: dict[str, dict[int | float, tuple[float, float, float]]] = {}
         self.state = const.STATE_DEFAULT
 
         self.to_show_aux = ""
@@ -145,7 +145,7 @@ class Slice(metaclass=utils.Singleton):
         self.opacity: float = 0.8
 
     @property
-    def matrix(self) -> Optional[np.ndarray]:
+    def matrix(self) -> np.ndarray | None:
         return self._matrix
 
     @matrix.setter
@@ -157,11 +157,11 @@ class Slice(metaclass=utils.Singleton):
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
     @property
-    def spacing(self) -> Tuple[float, float, float]:
+    def spacing(self) -> tuple[float, float, float]:
         return self._spacing
 
     @spacing.setter
-    def spacing(self, value: Tuple[float, float, float]) -> None:
+    def spacing(self, value: tuple[float, float, float]) -> None:
         self._spacing = value
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
@@ -208,6 +208,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.__show_mask, "Show mask")
         Publisher.subscribe(self.__hide_current_mask, "Hide current mask")
         Publisher.subscribe(self.__show_current_mask, "Show current mask")
+        Publisher.subscribe(self.__apply_image_filter, "Apply image filter")
         Publisher.subscribe(self.__clean_current_mask, "Clean current mask")
 
         Publisher.subscribe(self.__export_slice, "Export slice")
@@ -266,7 +267,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.do_threshold_to_all_slices, "Appy threshold all slices")
 
     def GetMaxSliceNumber(self, orientation: str) -> int:
-        shape: Tuple[int, int, int] = self.matrix.shape
+        shape: tuple[int, int, int] = self.matrix.shape
 
         # Because matrix indexing starts with 0 so the last slice is the shape
         # minu 1.
@@ -280,12 +281,11 @@ class Slice(metaclass=utils.Singleton):
 
     def discard_all_buffers(self) -> None:
         for buffer_ in self.buffer_slices.values():
-            buffer_.discard_vtk_mask()
-            buffer_.discard_mask()
+            buffer_.discard_buffer()  # resets index=-1 + clears all image/mask caches
 
     def get_world_to_invesalius_vtk_affine(
         self, inverse: bool = False
-    ) -> Tuple[np.ndarray, "vtkMatrix4x4", float]:
+    ) -> tuple[np.ndarray, "vtkMatrix4x4", float]:
         """
         Creates an affine matrix with img_shift adjustment and returns both the NumPy
         and VTK versions of the matrix, along with the img_shift value.
@@ -1975,6 +1975,90 @@ class Slice(metaclass=utils.Singleton):
 
     def update_selected_masks(self, indices):
         self.selected_mask_indices = indices
+
+    def __apply_image_filter(self, filter_type, value):
+        if self.matrix is None:
+            return
+
+        # Prevent starting a new filter while one is already running
+        if getattr(self, "_is_filtering", False):
+            return
+        self._is_filtering = True
+
+        # Always apply to the original matrix snapshot to keep each filter independent
+        # Store it on first filter application; reset it if the user loads new data
+        if not hasattr(self, "_original_matrix") or self._original_matrix is None:
+            self._original_matrix = self.matrix.copy()
+
+        def _run_filter():
+            matrix = self._original_matrix
+            dtype = matrix.dtype
+
+            try:
+                if filter_type == 0:  # Gaussian Blur
+                    result = ndimage.gaussian_filter(matrix, sigma=value)
+                elif filter_type == 1:  # Median Filter (3D, capped at size 5)
+                    size = max(3, min(int(2 * value + 1), 5))
+                    result = ndimage.median_filter(matrix, size=size)
+                elif filter_type == 2:  # Mean Filter (fast separable 3D)
+                    size = int(2 * value + 1)
+                    result = ndimage.uniform_filter(matrix, size=size).astype(dtype)
+                elif filter_type == 3:  # Sharpen via Unsharp Masking
+                    min_val = matrix.min()
+                    max_val = matrix.max()
+                    blurred = ndimage.gaussian_filter(matrix.astype(float), sigma=1.0)
+                    detail = matrix.astype(float) - blurred
+                    sharpened = matrix.astype(float) + value * 0.5 * detail
+                    result = np.clip(sharpened, min_val, max_val).astype(dtype)
+                elif filter_type == 4:  # Despeckle
+                    # Replace outlier voxels with local 3x3x3 median
+                    local_median = ndimage.median_filter(matrix, size=3)
+                    deviation = np.abs(matrix.astype(float) - local_median.astype(float))
+                    std_dev = float(deviation.std())
+                    if std_dev == 0:
+                        result = matrix.copy()
+                    else:
+                        # Higher sensitivity -> lower threshold -> more pixels replaced
+                        threshold = std_dev / max(value, 0.01)
+                        speckle_mask = deviation > threshold
+                        result = matrix.copy()
+                        result[speckle_mask] = local_median[speckle_mask]
+                elif filter_type == 5:  # Border Detection (Sobel gradient magnitude)
+                    float_matrix = matrix.astype(float)
+                    sx = ndimage.sobel(float_matrix, axis=0)
+                    sy = ndimage.sobel(float_matrix, axis=1)
+                    sz = ndimage.sobel(float_matrix, axis=2)
+                    magnitude = np.sqrt(sx**2 + sy**2 + sz**2)
+                    min_val = float(matrix.min())
+                    max_val = float(matrix.max())
+                    mag_min = magnitude.min()
+                    mag_range = magnitude.max() - mag_min
+                    if mag_range > 0:
+                        magnitude = (magnitude - mag_min) / mag_range * (
+                            max_val - min_val
+                        ) + min_val
+                    result = magnitude.astype(dtype)
+                else:
+                    return
+
+                self.matrix = result.astype(dtype)
+            finally:
+                import wx
+
+                wx.CallAfter(self._after_filter)
+
+        thread = threading.Thread(target=_run_filter, daemon=True)
+        thread.start()
+
+    def _after_filter(self):
+        """Called on the main thread after filter completes."""
+        self._is_filtering = False
+        # Must discard cached VTK buffers so viewers re-read the updated matrix
+        self.discard_all_buffers()
+        Publisher.sendMessage("Reload actual slice")
+        Publisher.sendMessage("Update slice viewer")
+        Publisher.sendMessage("Render volume viewer")
+        Publisher.sendMessage("Image filter done")
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:
