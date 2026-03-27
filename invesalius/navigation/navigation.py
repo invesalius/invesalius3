@@ -140,16 +140,19 @@ class UpdateNavigationScene(threading.Thread):
         self.navigation = Navigation()
         self._last_render = 0.0
         self._render_interval = max(self.sle, 1.0 / 30.0)
+        self._slice_render_interval = max(self.sle, 1.0 / 10.0)
         self._loop_sleep = max(self.sle, 1.0 / 120.0)
         self._last_pose_update = 0.0
         self._last_dispatch = 0.0
         self._dispatch_pending = False
+        self._last_slice_render = 0.0
 
     def _dispatch_updates(
         self,
         *,
         update_pose,
         render,
+        slice_render,
         coord,
         probe_visible,
         probe_coord,
@@ -226,7 +229,8 @@ class UpdateNavigationScene(threading.Thread):
 
             if render:
                 Publisher.sendMessage("Render volume viewer")
-                Publisher.sendMessage("Update slice viewer")
+                if slice_render:
+                    Publisher.sendMessage("Update slice viewer")
         finally:
             self._dispatch_pending = False
 
@@ -275,6 +279,7 @@ class UpdateNavigationScene(threading.Thread):
             now = time.monotonic()
             update_pose = now - self._last_pose_update >= self._render_interval
             render = now - self._last_render >= self._render_interval
+            slice_render = render and (now - self._last_slice_render >= self._slice_render_interval)
             enorm_data = None
             if update_pose and coil_visible and self.e_field_loaded:
                 try:
@@ -288,6 +293,8 @@ class UpdateNavigationScene(threading.Thread):
                 self._last_pose_update = now
             if render:
                 self._last_render = now
+            if slice_render:
+                self._last_slice_render = now
 
             if update_pose or render or tracts_payload is not None or trigger_on:
                 if not self._dispatch_pending and now - self._last_dispatch >= self._loop_sleep:
@@ -297,6 +304,7 @@ class UpdateNavigationScene(threading.Thread):
                         self._dispatch_updates,
                         update_pose=update_pose,
                         render=render,
+                        slice_render=slice_render,
                         coord=coord,
                         probe_visible=probe_visible,
                         probe_coord=probe_coord,
