@@ -2201,7 +2201,9 @@ class SurfaceMethodPanel(wx.Panel):
         self.alg_types = {
             _("Default"): "Default",
             _("Context aware smoothing"): "ca_smoothing",
+            _("Context aware smoothing (Marching Tetrahedra)"): "ca_smoothing_tetrahedra",
             _("Binary"): "Binary",
+            _("Binary (Marching Tetrahedra)"): "Binary_tetrahedra",
         }
         self.edited_imp = [
             _("Default"),
@@ -2255,7 +2257,7 @@ class SurfaceMethodPanel(wx.Panel):
         self.cb_types.Bind(wx.EVT_COMBOBOX, self._set_cb_types)
 
     def _set_cb_types(self, evt: wx.CommandEvent) -> None:
-        if self.alg_types[evt.GetString()] == "ca_smoothing":
+        if self.alg_types[evt.GetString()] in ("ca_smoothing", "ca_smoothing_tetrahedra"):
             self.ca_options.Enable()
         else:
             self.ca_options.Disable()
@@ -2265,7 +2267,7 @@ class SurfaceMethodPanel(wx.Panel):
         return self.alg_types.get(self.cb_types.GetValue(), "Default")
 
     def GetOptions(self) -> Dict[str, float]:
-        if self.GetAlgorithmSelected() == "ca_smoothing":
+        if self.GetAlgorithmSelected() in ("ca_smoothing", "ca_smoothing_tetrahedra"):
             options = {
                 "angle": self.ca_options.angle.GetValue(),
                 "max distance": self.ca_options.max_distance.GetValue(),
