@@ -1271,10 +1271,8 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     def OnUnZoom(self, evt):
         mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
         ren = self.viewer.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        # slice_data = self.get_slice_data(ren)
-        ren.ResetCamera()
-        ren.ResetCameraClippingRange()
-        # self.Reposition(slice_data)
+        slice_data = self.viewer.get_slice_data(ren)
+        self.viewer.Reposition(slice_data)
         self.viewer.interactor.Render()
 
 
@@ -1299,10 +1297,8 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
     def OnUnZoom(self, evt):
         mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
         ren = self.viewer.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        # slice_data = self.get_slice_data(ren)
-        ren.ResetCamera()
-        ren.ResetCameraClippingRange()
-        # self.Reposition(slice_data)
+        slice_data = self.viewer.get_slice_data(ren)
+        self.viewer.Reposition(slice_data)
         self.viewer.interactor.Render()
 
 

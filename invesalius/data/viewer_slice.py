@@ -1700,7 +1700,47 @@ class Viewer(wx.Panel):
         elif (axis0, axis1) == (1, 0):
             cursor.SetSpacing((spacing[0], spacing[2], spacing[1]))
 
+        # After axis swap, dimensions change, so we need to:
+        # 1. Update scroll bar range
+        # 2. Reset to middle slice (to avoid out-of-range indices)
+        # 3. Reposition camera for proper fit
+        # Use CallAfter to ensure data is fully updated before repositioning
+        wx.CallAfter(self._reposition_after_swap)
+
+    def _reposition_after_swap(self):
+        """
+        Helper method to reposition camera after axis swap.
+        Called via wx.CallAfter to ensure all data updates are complete.
+
+        After axis swap, the volume dimensions change, so we need to:
+        1. Update scroll bar to reflect new slice count
+        2. Reset to middle slice (to avoid out-of-range indices)
+        3. Ensure slice data is fully loaded with new bounds
+        4. Apply proper fit-to-view scaling
+        """
+        # Get the new maximum slice number for this orientation
+        max_slice_number = sl.Slice().GetMaxSliceNumber(self.orientation)
+
+        # Update scroll bar with new range
+        self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number + 1, max_slice_number + 1)
+
+        # Set to middle slice to ensure visibility
+        middle_slice = max_slice_number // 2
+        self.scroll.SetThumbPosition(middle_slice)
+
+        # Reload the slice at the new position - this updates actor input data
+        self.set_slice_number(middle_slice)
+
+        # Force actor to update its bounds with new data
+        self.slice_data.actor.Modified()
+        self.slice_data.renderer.ResetCameraClippingRange()
+
+        # Now apply proper fit-to-view scaling with updated bounds
+        # Reposition() will call ResetCamera() internally which will center the view
         self.Reposition(self.slice_data)
+
+        if not self.nav_status:
+            self.UpdateRender()
 
     def GetCrossPos(self):
         spacing = self.slice_data.actor.GetInput().GetSpacing()
