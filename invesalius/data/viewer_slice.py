@@ -620,24 +620,35 @@ class Viewer(wx.Panel):
 
         # Calculate viewport aspect ratio
         viewport_aspect = viewport_width / viewport_height
+        image_aspect = width / height
 
-        # Compute proper parallel scale for tight fit
+        # Compute proper parallel scale for optimal fit
         # ParallelScale is half the height of the view in world coordinates
-        # Calculate scale needed for both dimensions
+
+        # Calculate both scales
         scale_x = (width / viewport_aspect) / 2.0
         scale_y = height / 2.0
 
-        # For AXIAL (square images), prefer height-based scaling
-        # For SAGITAL/CORONAL (rectangular), use minimum for tight fit
-        if self.orientation == "AXIAL":
-            # Axial is typically square, use height-based scaling
-            scale = scale_y
-        else:
-            # Sagittal and Coronal are rectangular, use min for tight fit
-            scale = min(scale_x, scale_y)
+        # Use maximum scale to fill viewport as much as possible
+        # This ensures the image occupies maximum space
+        scale = max(scale_x, scale_y)
 
-        # Add margin to prevent cropping (8% padding)
-        scale *= 1.08
+        # Adaptive margin based on aspect ratio difference
+        # If aspect ratios are similar, use smaller margin
+        # If aspect ratios are very different, use larger margin
+        aspect_ratio_diff = abs(image_aspect - viewport_aspect) / max(image_aspect, viewport_aspect)
+
+        if aspect_ratio_diff < 0.1:
+            # Very similar aspect ratios - minimal margin
+            margin = 1.02
+        elif aspect_ratio_diff < 0.3:
+            # Moderate difference - small margin
+            margin = 1.03
+        else:
+            # Large difference - larger margin to prevent "too close"
+            margin = 1.04
+
+        scale *= margin
 
         # Apply the calculated scale
         cam.SetParallelScale(scale)
