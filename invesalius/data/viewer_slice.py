@@ -569,15 +569,80 @@ class Viewer(wx.Panel):
 
     def Reposition(self, slice_data):
         """
-        Based on code of method Zoom in the
-        vtkInteractorStyleRubberBandZoom, the of
-        vtk 5.4.3
+        Fit the slice image to fill the viewport while maintaining aspect ratio.
         """
-        ren = slice_data.renderer
-        # size = ren.GetSize()
+        if slice_data is None or slice_data.renderer is None or slice_data.actor is None:
+            return
 
+        ren = slice_data.renderer
+        cam = ren.GetActiveCamera()
+        actor = slice_data.actor
+
+        # First, reset camera to center on the actor and get proper focal point
         ren.ResetCamera()
-        ren.GetActiveCamera().Zoom(1.0)
+
+        # Get image bounds in world coordinates
+        bounds = actor.GetBounds()
+        if bounds is None:
+            if not self.nav_status:
+                self.UpdateRender()
+            return
+
+        # For 2D slices, one dimension is always zero (the slice plane)
+        # We need to identify which two dimensions are actually visible
+        # based on the orientation
+        x_size = bounds[1] - bounds[0]
+        y_size = bounds[3] - bounds[2]
+        z_size = bounds[5] - bounds[4]
+
+        # Determine visible dimensions based on orientation
+        if self.orientation == "AXIAL":
+            # XY plane visible
+            width = x_size
+            height = y_size
+        elif self.orientation == "SAGITAL":
+            # YZ plane visible
+            width = y_size
+            height = z_size
+        else:  # CORONAL
+            # XZ plane visible
+            width = x_size
+            height = z_size
+
+        # Get viewport dimensions in pixels
+        viewport_width, viewport_height = ren.GetSize()
+
+        # Safety checks
+        if viewport_width <= 0 or viewport_height <= 0 or width <= 0 or height <= 0:
+            if not self.nav_status:
+                self.UpdateRender()
+            return
+
+        # Calculate viewport aspect ratio
+        viewport_aspect = viewport_width / viewport_height
+
+        # Compute proper parallel scale for tight fit
+        # ParallelScale is half the height of the view in world coordinates
+        # Calculate scale needed for both dimensions
+        scale_x = (width / viewport_aspect) / 2.0
+        scale_y = height / 2.0
+
+        # For AXIAL (square images), prefer height-based scaling
+        # For SAGITAL/CORONAL (rectangular), use minimum for tight fit
+        if self.orientation == "AXIAL":
+            # Axial is typically square, use height-based scaling
+            scale = scale_y
+        else:
+            # Sagittal and Coronal are rectangular, use min for tight fit
+            scale = min(scale_x, scale_y)
+
+        # Add margin to prevent cropping (8% padding)
+        scale *= 1.08
+
+        # Apply the calculated scale
+        cam.SetParallelScale(scale)
+        ren.ResetCameraClippingRange()
+
         if not self.nav_status:
             self.UpdateRender()
 
@@ -1072,12 +1137,22 @@ class Viewer(wx.Panel):
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
 
+    def OnSize(self, evt):
+        """
+        Handle window resize events to maintain proper fit.
+        """
+        if self.slice_data:
+            wx.CallAfter(self.Reposition, self.slice_data)
+        if evt:
+            evt.Skip()
+
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
         self.scroll.Bind(wx.EVT_SCROLL_THUMBTRACK, self.OnScrollBarRelease)
         # self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
+        self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, mask_dict):
         self.SetInput(mask_dict)
@@ -1165,7 +1240,7 @@ class Viewer(wx.Panel):
         # enough to show all slices.
         self.set_slice_number(max_slice_number - 1)
         self.__update_camera()
-        self.slice_data.renderer.ResetCamera()
+        self.Reposition(self.slice_data)
         self.interactor.GetRenderWindow().AddRenderer(self.slice_data.renderer)
         if not self.nav_status:
             self.UpdateRender()
@@ -1614,7 +1689,7 @@ class Viewer(wx.Panel):
         elif (axis0, axis1) == (1, 0):
             cursor.SetSpacing((spacing[0], spacing[2], spacing[1]))
 
-        self.slice_data.renderer.ResetCamera()
+        self.Reposition(self.slice_data)
 
     def GetCrossPos(self):
         spacing = self.slice_data.actor.GetInput().GetSpacing()
