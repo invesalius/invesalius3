@@ -866,7 +866,9 @@ class Controller:
         try:
             # Get DICOM file paths from the current group
             if hasattr(self, 'dicom_group') and self.dicom_group:
-                dicom_files = [dcm.image.file for dcm in self.dicom_group.GetDicomFiles()]
+                # GetList() returns dicom objects, extract file paths from them
+                dicom_list = self.dicom_group.GetList()
+                dicom_files = [dcm.image.file for dcm in dicom_list]
                 proj.dicom_files = dicom_files
                 
                 logger.info(f"📋 Found {len(dicom_files)} DICOM files in group")
