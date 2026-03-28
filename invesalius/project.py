@@ -91,6 +91,10 @@ class Project(metaclass=Singleton):
 
         # Image fiducials for navigation
         self.image_fiducials = np.full([3, 3], np.nan)
+        
+        # DICOM metadata store
+        self.metadata_store = None
+        self.dicom_files = []  # Store DICOM file paths for metadata extraction
 
         # self.surface_quality_list = ["Low", "Medium", "High", "Optimal *",
         #                             "Custom"i]
@@ -209,6 +213,9 @@ class Project(metaclass=Singleton):
         return measures
 
     def SavePlistProject(self, dir_, filename, compress=False):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         dir_temp = decode(tempfile.mkdtemp(), const.FS_ENCODE)
 
         self.compress = compress
@@ -268,6 +275,61 @@ class Project(metaclass=Singleton):
 
         # Saving the annotations (empty in this version)
         project["annotations"] = {}
+        
+        # Saving DICOM metadata if available
+        if self.metadata_store is not None:
+            try:
+                metadata_filename = "metadata.json"
+                temp_metadata = os.path.join(dir_temp, metadata_filename)
+                logger.info(f"Attempting to save metadata to: {temp_metadata}")
+                logger.info(f"Metadata store has data: {self.metadata_store.get_all_metadata() is not None}")
+                
+                self.metadata_store.save(temp_metadata, compress=False)
+                
+                # Verify file was created
+                if os.path.exists(temp_metadata):
+                    file_size = os.path.getsize(temp_metadata)
+                    logger.info(f"✅ Metadata file created: {temp_metadata} ({file_size} bytes)")
+                    filelist[temp_metadata] = metadata_filename
+                    project["metadata"] = metadata_filename
+                    logger.info(f"✅ Added metadata to filelist and project dict")
+                else:
+                    logger.error(f"❌ Metadata file was NOT created: {temp_metadata}")
+                    
+            except Exception as e:
+                logger.error(f"Failed to save DICOM metadata: {e}", exc_info=True)
+        else:
+            logger.info("No metadata_store available, checking dicom_files...")
+            if self.dicom_files:
+                # Try to extract metadata if DICOM files are still accessible
+                try:
+                    from invesalius.reader.dicom_metadata import MetadataExtractor
+                    from invesalius.data.metadata_store import MetadataStore
+                    
+                    logger.info(f"Extracting DICOM metadata from {len(self.dicom_files)} source files")
+                    extractor = MetadataExtractor()
+                    metadata = extractor.extract_from_files(self.dicom_files)
+                    
+                    store = MetadataStore()
+                    store.set_metadata(metadata)
+                    
+                    metadata_filename = "metadata.json"
+                    temp_metadata = os.path.join(dir_temp, metadata_filename)
+                    store.save(temp_metadata, compress=False)
+                    
+                    # Verify file was created
+                    if os.path.exists(temp_metadata):
+                        file_size = os.path.getsize(temp_metadata)
+                        logger.info(f"✅ Metadata file created from extraction: {temp_metadata} ({file_size} bytes)")
+                        filelist[temp_metadata] = metadata_filename
+                        project["metadata"] = metadata_filename
+                    else:
+                        logger.error(f"❌ Metadata file was NOT created from extraction: {temp_metadata}")
+                        
+                except Exception as e:
+                    logger.error(f"Failed to extract DICOM metadata: {e}", exc_info=True)
+            else:
+                logger.info("No dicom_files available either, skipping metadata save")
 
         # Saving the main plist
         temp_fd, temp_plist = tempfile.mkstemp()
@@ -376,6 +438,23 @@ class Project(metaclass=Singleton):
                     measure = ms.Measurement()
                 measure.Load(measurements[index])
                 self.measurement_dict[int(index)] = measure
+        
+        # Loading DICOM metadata if available
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        self.metadata_store = None
+        if "metadata" in project:
+            metadata_file = os.path.join(dirpath, project["metadata"])
+            if os.path.exists(metadata_file):
+                try:
+                    from invesalius.data.metadata_store import MetadataStore
+                    self.metadata_store = MetadataStore(metadata_file)
+                    logger.info("Loaded DICOM metadata from project")
+                except Exception as e:
+                    logger.warning(f"Failed to load DICOM metadata: {e}")
+        else:
+            logger.debug("No DICOM metadata found in project (legacy format)")
 
     def create_project_file(
         self,
@@ -495,6 +574,9 @@ def Compress(
     filelist: Dict[Union[str, os.PathLike], Union[str, os.PathLike]],
     compress: bool = False,
 ) -> None:
+    import logging
+    logger = logging.getLogger(__name__)
+    
     tmpdir, tmpdir_ = os.path.split(folder)
     # current_dir = os.path.abspath(".")
     fd_inv3, temp_inv3 = tempfile.mkstemp()
@@ -508,15 +590,32 @@ def Compress(
         tar = tarfile.open(temp_inv3, "w:gz")
     else:
         tar = tarfile.open(temp_inv3, "w")
+    
+    logger.debug(f"Compressing {len(filelist)} files into archive")
+    
     for name in filelist:
         sanit_name = os.path.normpath(filelist[name])  # Sanitizing path
-        if ".." in sanit_name or os.path.isabs(sanit_name):
+        
+        # Check if path is problematic
+        if ".." in sanit_name:
+            logger.warning(f"Skipping file with '..' in path: {sanit_name}")
             continue
-
-        tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
+        
+        if os.path.isabs(sanit_name):
+            logger.warning(f"Skipping file with absolute path: {sanit_name} (source: {name})")
+            continue
+        
+        # Add file to archive
+        try:
+            tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
+            logger.debug(f"Added to archive: {filelist[name]}")
+        except Exception as e:
+            logger.error(f"Failed to add {name} to archive: {e}")
+    
     tar.close()
     os.close(fd_inv3)
     shutil.move(temp_inv3, filename)
+    logger.info(f"Archive created: {filename}")
     # os.chdir(current_dir)
 
 

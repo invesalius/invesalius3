@@ -718,6 +718,9 @@ class Controller:
         self.ImportGroup(group, use_gui)
 
     def ImportGroup(self, group: "DicomGroup", gui: bool = True):
+        # Store the group for metadata extraction
+        self.dicom_group = group
+        
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
         if matrix is None:
             return
@@ -855,6 +858,38 @@ class Controller:
         proj.level = float(dicom.image.level)
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
+        
+        # Extract DICOM metadata if files are available
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Get DICOM file paths from the current group
+            if hasattr(self, 'dicom_group') and self.dicom_group:
+                dicom_files = [dcm.image.file for dcm in self.dicom_group.GetDicomFiles()]
+                proj.dicom_files = dicom_files
+                
+                logger.info(f"📋 Found {len(dicom_files)} DICOM files in group")
+                
+                # Extract metadata
+                from invesalius.reader.dicom_metadata import MetadataExtractor
+                from invesalius.data.metadata_store import MetadataStore
+                
+                logger.info(f"🔍 Extracting DICOM metadata from {len(dicom_files)} files")
+                extractor = MetadataExtractor()
+                metadata = extractor.extract_from_files(dicom_files)
+                
+                logger.info(f"📊 Extracted metadata: {len(metadata.get('series', {}))} series tags, {len(metadata.get('slices', []))} slices")
+                
+                proj.metadata_store = MetadataStore()
+                proj.metadata_store.set_metadata(metadata)
+                logger.info("✅ DICOM metadata extraction complete and stored in project")
+            else:
+                logger.warning("⚠️ No dicom_group found, cannot extract metadata")
+                proj.metadata_store = None
+        except Exception as e:
+            logger.error(f"❌ Failed to extract DICOM metadata: {e}", exc_info=True)
+            proj.metadata_store = None
 
         filename = proj.name + ".inv3"
         filename = filename.replace("/", "")  # Fix problem case other/Skull_DICOM
