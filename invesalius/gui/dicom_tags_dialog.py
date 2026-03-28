@@ -114,33 +114,33 @@ class DicomTagsDialog(wx.Dialog):
     def _populate_tags(self):
         """Populate the list with all DICOM tags."""
         self.all_tags = []
-        
+
         # Use new MetadataStore if available
         if self.metadata_store is not None:
             self._populate_from_metadata_store()
         # Fallback to legacy data_image format
         elif self.data_image is not None:
             self._populate_from_data_image()
-        
+
         # Display all tags
         self._display_tags(self.all_tags)
-    
+
     def _populate_from_metadata_store(self):
         """Populate tags from MetadataStore (new approach)."""
         # Get all tags from the first slice (series-level tags are the same across slices)
         all_metadata = self.metadata_store.get_all_metadata()
-        
+
         if not all_metadata:
             return
-        
+
         # Get series-level metadata (common to all slices)
         series_metadata = all_metadata.get("series", {})
-        
+
         for tag_str, tag_data in sorted(series_metadata.items()):
             tag_name = tag_data.get("name", _("Unknown"))
             value_str = str(tag_data.get("value", "")) if tag_data.get("value") is not None else ""
             self.all_tags.append((tag_str, tag_name, value_str))
-        
+
         # Optionally add slice-specific tags from first slice
         slices = all_metadata.get("slices", [])
         if slices:
@@ -150,9 +150,11 @@ class DicomTagsDialog(wx.Dialog):
                 if tag_str in series_metadata:
                     continue
                 tag_name = tag_data.get("name", _("Unknown"))
-                value_str = str(tag_data.get("value", "")) if tag_data.get("value") is not None else ""
+                value_str = (
+                    str(tag_data.get("value", "")) if tag_data.get("value") is not None else ""
+                )
                 self.all_tags.append((tag_str, tag_name, value_str))
-    
+
     def _populate_from_data_image(self):
         """Populate tags from legacy data_image format."""
         # Skip the 'invesalius' and 'spacing' special keys
@@ -244,11 +246,13 @@ class DicomTagsDialog(wx.Dialog):
                         tag = self.list_ctrl.GetItemText(i, 0)
                         name = self.list_ctrl.GetItemText(i, 1)
                         value = self.list_ctrl.GetItemText(i, 2)
-                        
+
                         # Clean up the value to handle special characters
                         try:
                             # Replace problematic characters
-                            value_clean = value.replace('\x00', '').replace('\r', ' ').replace('\n', ' ')
+                            value_clean = (
+                                value.replace("\x00", "").replace("\r", " ").replace("\n", " ")
+                            )
                             writer.writerow([tag, name, value_clean])
                         except Exception:
                             # If there's still an encoding issue, use repr

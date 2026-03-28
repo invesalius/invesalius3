@@ -1102,9 +1102,9 @@ class Frame(wx.Frame):
     def OnShowDicomTags(self):
         """Show DICOM tags information dialog."""
         import invesalius.project as prj
-        
+
         proj = prj.Project()
-        
+
         # Check if metadata store is available (new approach)
         if proj.metadata_store is not None:
             # Use new MetadataStore approach
@@ -1112,10 +1112,10 @@ class Frame(wx.Frame):
             dialog.ShowModal()
             dialog.Destroy()
             return
-        
+
         # Fallback to old approach for backward compatibility
         from invesalius.reader import dicom_reader
-        
+
         if not dicom_reader.dict_file:
             wx.MessageBox(
                 _("No DICOM data available. Please import DICOM files first."),
@@ -1124,12 +1124,12 @@ class Frame(wx.Frame):
                 self,
             )
             return
-        
+
         # Get the first available DICOM file's data
         first_file = next(iter(dicom_reader.dict_file.keys()))
         data_image = dicom_reader.dict_file[first_file]
         tag_labels = dicom_reader.tag_labels
-        
+
         # Show the dialog with old data format
         dialog = dicom_tags_dlg.DicomTagsDialog(self, data_image=data_image, tag_labels=tag_labels)
         dialog.ShowModal()
