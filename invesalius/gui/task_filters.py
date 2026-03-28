@@ -10,7 +10,6 @@ import sys
 
 import wx
 
-from invesalius.gui.widgets.inv_spinctrl import InvFloatSpinCtrl
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -18,13 +17,11 @@ from invesalius.pubsub import pub as Publisher
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
+        inner = InnerTaskPanel(self)
 
-        inner_panel = InnerTaskPanel(self)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(inner_panel, 0, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT | wx.LEFT, 7)
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(inner, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT | wx.LEFT, 7)
         sizer.Fit(self)
-
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
@@ -33,95 +30,50 @@ class TaskPanel(wx.Panel):
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        # Inherit background from parent TaskNavigator
-        self.SetAutoLayout(1)
-
-        # Filters content
         self.filters_panel = FiltersPanel(self)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(self.filters_panel, 0, wx.GROW | wx.EXPAND | wx.TOP, 10)
+        main_sizer.Add(self.filters_panel, 0, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(main_sizer)
-        main_sizer.Fit(self)
+        self.Layout()
         self.Update()
 
 
 class FiltersPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
+        self._dialog = None
+        self._init_gui()
+
+    def _init_gui(self):
+        self.btn_open = wx.Button(self, -1, _("Open Image Filters\u2026"))
+        if sys.platform != "win32":
+            self.btn_open.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-
-        # Filter selection
-        txt_filter = wx.StaticText(self, -1, _("Filter type:"))
-        self.cb_filter = wx.ComboBox(
-            self,
-            -1,
-            choices=[
-                _("Despeckle"),
-                _("Border Detection"),
-            ],
-            style=wx.CB_READONLY,
-        )
-        self.cb_filter.SetSelection(0)
-        if sys.platform != "win32":
-            self.cb_filter.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.cb_filter.Bind(wx.EVT_COMBOBOX, self.OnSelectFilter)
-
-        # Parameter label + spinner (only shown for Despeckle)
-        self.txt_param = wx.StaticText(self, -1, _("Sensitivity:"))
-        self.spin_param = InvFloatSpinCtrl(
-            self, -1, value=1.0, min_value=0.1, max_value=10.0, increment=0.1
-        )
-
-        # Apply button
-        self.btn_apply = wx.Button(self, -1, _("Apply to Volume"))
-        self.btn_apply.Bind(wx.EVT_BUTTON, self.OnApply)
-
-        # Layout
-        sizer.AddSpacer(10)
-        sizer.Add(txt_filter, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-        sizer.AddSpacer(5)
-        sizer.Add(self.cb_filter, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 10)
-        sizer.AddSpacer(15)
-        sizer.Add(self.txt_param, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-        sizer.AddSpacer(5)
-        sizer.Add(self.spin_param, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.RIGHT, 10)
-        sizer.AddSpacer(25)
-        sizer.Add(self.btn_apply, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10)
-        sizer.AddSpacer(10)
-
+        sizer.Add(self.btn_open, 0, wx.EXPAND | wx.ALL, 4)
         self.SetSizer(sizer)
         sizer.Fit(self)
-        self.Layout()
 
-        # Subscribe to filter-done event to re-enable button after thread finishes
-        Publisher.subscribe(self.OnFilterDone, "Image filter done")
+        self.btn_open.Bind(wx.EVT_BUTTON, self._on_open)
 
-    def OnSelectFilter(self, evt):
-        filter_name = self.cb_filter.GetStringSelection()
-        show_param = filter_name == _("Despeckle")
-        self.txt_param.Show(show_param)
-        self.spin_param.Show(show_param)
-        self.GetSizer().Layout()
-        self.GetParent().GetSizer().Layout()
+        Publisher.subscribe(self._on_project_close, "Close project data")
 
-    def OnApply(self, evt):
-        # 0 = Despeckle, 1 = Border Detection (matches slice_.py filter_type 4 & 5)
-        selection = self.cb_filter.GetSelection()
-        filter_type = 4 + selection  # maps 0→4 (Despeckle), 1→5 (Border Detection)
-        value = self.spin_param.GetValue()
+    def _on_open(self, evt):
+        # Only one dialog at a time — reuse if still alive
+        if self._dialog and self._dialog.IsShown():
+            self._dialog.Raise()
+            return
+        from invesalius.gui.dialogs import ImageFilterDialog
 
-        # Disable button with loading feedback – re-enabled by OnFilterDone
-        self.btn_apply.Disable()
-        self.btn_apply.SetLabel(_("Applying..."))
+        self._dialog = ImageFilterDialog()
+        self._dialog.Show()
 
-        # Start the filter in a background thread (non-blocking)
-        Publisher.sendMessage("Apply image filter", filter_type=filter_type, value=value)
-
-    def OnFilterDone(self):
-        """Called on the main thread when the background filter thread finishes."""
-        if self.btn_apply:
-            self.btn_apply.SetLabel(_("Apply to Volume"))
-            self.btn_apply.Enable()
+    def _on_project_close(self):
+        if self._dialog:
+            try:
+                self._dialog.Close()
+            except Exception:
+                pass
+            self._dialog = None

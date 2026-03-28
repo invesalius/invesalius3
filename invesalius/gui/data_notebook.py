@@ -80,6 +80,8 @@ class NotebookPanel(wx.Panel):
         if sys.platform != "win32":
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
+        self.image_page = ImagePage(book)
+        book.AddPage(self.image_page, _("Images"))
         book.AddPage(MaskPage(book), _("Masks"))
         book.AddPage(SurfacePage(book), _("3D surfaces"))
         book.AddPage(MeasurePage(book), _("Measures"))
@@ -102,24 +104,31 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._FoldMeasure, "Fold measure task")
         Publisher.subscribe(self._FoldMask, "Fold mask task")
         Publisher.subscribe(self._FoldMask, "Fold mask page")
+        Publisher.subscribe(self._FoldImage, "Fold image page")
+
+    def _FoldImage(self):
+        """
+        Fold Images notebook page.
+        """
+        self.book.SetSelection(0)
 
     def _FoldSurface(self):
         """
         Fold surface notebook page.
         """
-        self.book.SetSelection(1)
+        self.book.SetSelection(2)
 
     def _FoldMeasure(self):
         """
         Fold measure notebook page.
         """
-        self.book.SetSelection(2)
+        self.book.SetSelection(3)
 
     def _FoldMask(self):
         """
         Fold mask notebook page.
         """
-        self.book.SetSelection(0)
+        self.book.SetSelection(1)
 
 
 class MeasurePage(wx.Panel):
@@ -2253,3 +2262,121 @@ class AnnotationsListCtrlPanel(wx.ListCtrl):
         )
         for data in dict:
             self.InsertNewItem(data[0], data[1], data[2], data[3])
+
+
+# ---------------------------------------------------------------------------
+# Images Tab — lists original and filtered image versions
+# ---------------------------------------------------------------------------
+
+
+class ImagePage(wx.Panel):
+    """Notebook page that manages image versions (original + filtered).
+
+    Mirrors the Masks tab pattern.  A new row is added each time a filter
+    is applied.  Selecting a row swaps the active volume matrix so the
+    viewers update immediately.  The first row ("Original") is always
+    present and cannot be removed.
+    """
+
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        self._entries = []  # list of (label, numpy_array)
+        self._init_gui()
+        self._bind_events()
+
+    # ------------------------------------------------------------------
+    # GUI setup
+    # ------------------------------------------------------------------
+
+    def _init_gui(self):
+        self.list_ctrl = wx.ListCtrl(
+            self,
+            style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN,
+            size=wx.Size(256, 120),
+        )
+        self.list_ctrl.InsertColumn(0, _("Image"), width=200)
+        self.list_ctrl.InsertColumn(1, _("Info"), width=80)
+
+        self.btn_restore = wx.Button(self, -1, _("Restore Original"))
+        self.btn_restore.Disable()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.btn_restore, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+        self.SetSizer(sizer)
+        self.Fit()
+
+    # ------------------------------------------------------------------
+    # Events
+    # ------------------------------------------------------------------
+
+    def _bind_events(self):
+        self.list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_select)
+        self.btn_restore.Bind(wx.EVT_BUTTON, self._on_restore)
+
+        Publisher.subscribe(self._on_project_loaded, "Load slice to viewer")
+        Publisher.subscribe(self._on_filter_done, "Image filter done")
+        Publisher.subscribe(self._on_close, "Close project data")
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def add_entry(self, label, matrix):
+        """Add a new image version entry."""
+        self._entries.append((label, matrix))
+        idx = self.list_ctrl.GetItemCount()
+        info = _("Original") if idx == 0 else _("Filtered")
+        self.list_ctrl.InsertItem(idx, label)
+        self.list_ctrl.SetItem(idx, 1, info)
+        # Auto-select the newly added item
+        self.list_ctrl.Select(idx)
+        self.list_ctrl.Focus(idx)
+        if len(self._entries) > 1:
+            self.btn_restore.Enable()
+
+    def clear(self):
+        self.list_ctrl.DeleteAllItems()
+        self._entries.clear()
+        self.btn_restore.Disable()
+
+    # ------------------------------------------------------------------
+    # Handlers
+    # ------------------------------------------------------------------
+
+    def _on_select(self, evt):
+        """Switch active volume to the selected image version."""
+        idx = evt.GetIndex()
+        if 0 <= idx < len(self._entries):
+            _, matrix = self._entries[idx]
+            Publisher.sendMessage("Switch active image", matrix=matrix)
+        evt.Skip()
+
+    def _on_restore(self, evt):
+        """Select the first (Original) row, which triggers _on_select."""
+        if self._entries:
+            self.list_ctrl.Select(0)
+            self.list_ctrl.Focus(0)
+
+    def _on_project_loaded(self, *args, **kwargs):
+        """Called when a new project is loaded — reset to just 'Original'."""
+        import invesalius.data.slice_ as slice_module
+
+        self.clear()
+        slc = slice_module.Slice()
+        if hasattr(slc, "matrix") and slc.matrix is not None:
+            self.add_entry(_("Original"), slc.matrix.copy())
+
+    def _on_filter_done(self):
+        """Called after a filter is applied — add a new filtered entry."""
+        import invesalius.data.slice_ as slice_module
+
+        slc = slice_module.Slice()
+        if hasattr(slc, "matrix") and slc.matrix is not None:
+            filtered_label = _("Filtered")
+            n_filtered = sum(1 for lbl, _mat in self._entries if lbl.startswith(filtered_label))
+            label = filtered_label + (f" {n_filtered + 1}" if n_filtered else "")
+            self.add_entry(label, slc.matrix.copy())
+
+    def _on_close(self):
+        wx.CallAfter(self.clear)

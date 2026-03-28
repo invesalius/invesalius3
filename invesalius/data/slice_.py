@@ -209,6 +209,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.__hide_current_mask, "Hide current mask")
         Publisher.subscribe(self.__show_current_mask, "Show current mask")
         Publisher.subscribe(self.__apply_image_filter, "Apply image filter")
+        Publisher.subscribe(self.__switch_active_image, "Switch active image")
         Publisher.subscribe(self.__clean_current_mask, "Clean current mask")
 
         Publisher.subscribe(self.__export_slice, "Export slice")
@@ -2059,6 +2060,18 @@ class Slice(metaclass=utils.Singleton):
         Publisher.sendMessage("Update slice viewer")
         Publisher.sendMessage("Render volume viewer")
         Publisher.sendMessage("Image filter done")
+
+    def __switch_active_image(self, matrix):
+        """Swap the active volume to a previously stored image version.
+
+        Called when the user selects a row in the Images notebook tab.
+        *matrix* is a numpy array previously snapshotted by ImagePage.
+        """
+        self.matrix[:] = matrix
+        self.discard_all_buffers()
+        Publisher.sendMessage("Reload actual slice")
+        Publisher.sendMessage("Update slice viewer")
+        Publisher.sendMessage("Render volume viewer")
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:
