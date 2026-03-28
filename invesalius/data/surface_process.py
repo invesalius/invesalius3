@@ -91,7 +91,7 @@ def triangles_to_vtk_polydata(vertices, faces):
 
     # Enforce float64 for VTK transformation precision alignment
     vertices = np.ascontiguousarray(vertices, dtype=np.float64)
-    # Flip winding order to counteract the Y-axis physical MIRROR applied earlier in the pipeline
+    # Mirror in MT Y mapping flips handedness, so reverse winding to keep normals consistent.
     faces = faces[:, ::-1]
     faces = np.ascontiguousarray(faces, dtype=np.int64)
 
@@ -193,6 +193,8 @@ def create_surface_piece(
     #  if imagedata_resolution:
     #  image = ResampleImage3D(image, imagedata_resolution)
 
+    pre_flip_image = image  # MT reads scalar data from pre-flip image coordinates
+
     flip = vtkImageFlip()
     flip.SetInputData(image)
     flip.SetFilteredAxis(1)
@@ -212,17 +214,15 @@ def create_surface_piece(
     if "tetrahedra" in algorithm:
         import numpy as np
         from vtkmodules.util import numpy_support
-        from vtkmodules.vtkCommonTransforms import vtkTransform
-        from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 
-        dims = image.GetDimensions()
-        scalars = image.GetPointData().GetScalars()
+        dims = pre_flip_image.GetDimensions()
+        scalars = pre_flip_image.GetPointData().GetScalars()
         np_arr = numpy_support.vtk_to_numpy(scalars)
 
         # VTK point data is flattened: shape (Z, Y, X)
         np_arr = np_arr.reshape(dims[2], dims[1], dims[0])
 
-        print("[PERF] MT Extraction (create_surface_piece)")
+        print("[PERF][MT] create_surface_piece")
         start = time.perf_counter()
 
         # Marching tetrahedra Rust backend uses a threshold of 127
@@ -231,32 +231,28 @@ def create_surface_piece(
         else:
             bin_mask = np_arr
 
-        vertices, faces = cy_mesh.marching_tetrahedra(bin_mask, (1.0, 1.0, 1.0))
+        spacing_xyz = pre_flip_image.GetSpacing()
+        vertices, faces = cy_mesh.marching_tetrahedra(bin_mask, spacing_xyz)
         duration = time.perf_counter() - start
-        print(f"[PERF] Marching Tetrahedra (sub-chunk): {duration:.4f}s")
+        print(f"[PERF][MT] Rust extraction (sub-chunk): {duration:.4f}s")
+
+        # Align MT vertices with vtkContourFilter world coordinates:
+        # Rust emits coordinates in chunk-local index space scaled by spacing,
+        # so apply only world-origin translation from image extent/origin.
+        if len(vertices) > 0:
+            vertices = np.asarray(vertices, dtype=np.float64)
+            origin = pre_flip_image.GetOrigin()
+            extent = pre_flip_image.GetExtent()
+            tx = origin[0] + extent[0] * spacing_xyz[0]
+            tz = origin[2] + extent[4] * spacing_xyz[2]
+            vertices[:, 0] += tx
+            # vtkImageFlip(axis=1, FlipAboutOriginOn) mirrors world Y about origin.
+            vertices[:, 1] = -(origin[1] + extent[2] * spacing_xyz[1] + vertices[:, 1])
+            vertices[:, 2] += tz
 
         polydata = triangles_to_vtk_polydata(vertices, faces)
 
-        # Shift & scale correctly in world space
-        if polydata.GetNumberOfPoints() > 0:
-            transform = vtkTransform()
-            origin = image.GetOrigin()
-            spacing = image.GetSpacing()
-            extent = image.GetExtent()
-
-            tx = origin[0] + extent[0] * spacing[0]
-            ty = origin[1] + extent[2] * spacing[1]
-            tz = origin[2] + extent[4] * spacing[2]
-
-            transform.Translate(tx, ty, tz)
-            transform.Scale(spacing[0], spacing[1], spacing[2])
-
-            t_filter = vtkTransformPolyDataFilter()
-            t_filter.SetInputData(polydata)
-            t_filter.SetTransform(transform)
-            t_filter.Update()
-            polydata = t_filter.GetOutput()
-
+        del pre_flip_image
         del image
     else:
         contour = vtkContourFilter()
@@ -350,7 +346,11 @@ def join_process_surface(
     if "tetrahedra" in algorithm:
         clean.SetToleranceIsAbsolute(True)
         # Handle f32 float boundary math artifacts from Cython extraction
-        clean.SetAbsoluteTolerance(1e-4)
+        clean.SetAbsoluteTolerance(1e-3)
+        print(
+            f"[PERF][MT] Pre-clean point count: {polydata.GetNumberOfPoints()}, "
+            f"face count: {polydata.GetNumberOfCells()}"
+        )
     start = time.perf_counter()
     clean.Update()
     duration = time.perf_counter() - start
@@ -360,6 +360,20 @@ def join_process_surface(
     polydata = clean.GetOutput()
     #  polydata.SetSource(None)
     del clean
+
+    if decimate_reduction and "tetrahedra" in algorithm:
+        print("Decimating (pre-smooth, MT only)", decimate_reduction)
+        send_message("Decimating ...")
+        decimation = vtkQuadricDecimation()
+        decimation.SetInputData(polydata)
+        decimation.SetTargetReduction(decimate_reduction)
+        start = time.perf_counter()
+        decimation.Update()
+        duration = time.perf_counter() - start
+        print(f"[PERF] Decimating (pre-smooth MT): {duration:.4f}s")
+        del polydata
+        polydata = decimation.GetOutput()
+        del decimation
 
     if algorithm in ("ca_smoothing", "ca_smoothing_tetrahedra"):
         send_message("Calculating normals ...")
@@ -441,7 +455,7 @@ def join_process_surface(
     #  #  polydata.SetSource(None)
     #  del smoother
 
-    if decimate_reduction:
+    if decimate_reduction and "tetrahedra" not in algorithm:
         print("Decimating", decimate_reduction)
         send_message("Decimating ...")
         decimation = vtkQuadricDecimation()
@@ -547,6 +561,16 @@ def join_process_surface(
     #  del stripper
 
     send_message("Calculating area and volume ...")
+    if "tetrahedra" in algorithm:
+        from vtkmodules.vtkFiltersCore import vtkTriangleFilter
+
+        tri_filter = vtkTriangleFilter()
+        tri_filter.SetInputData(to_measure)
+        tri_filter.PassVertsOff()
+        tri_filter.PassLinesOff()
+        tri_filter.Update()
+        to_measure = tri_filter.GetOutput()
+
     measured_polydata = vtkMassProperties()
     measured_polydata.SetInputData(to_measure)
     measured_polydata.Update()
