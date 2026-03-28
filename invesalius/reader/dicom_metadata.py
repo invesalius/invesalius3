@@ -33,6 +33,28 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
+def _clean_surrogates(text: str) -> str:
+    """
+    Remove or replace Unicode surrogate characters that can't be encoded in UTF-8.
+
+    Args:
+        text: String that may contain surrogates
+
+    Returns:
+        Cleaned string safe for JSON encoding
+    """
+    if not isinstance(text, str):
+        return text
+
+    # Encode with surrogateescape error handler, then decode back
+    # This replaces surrogates with replacement character
+    try:
+        return text.encode("utf-8", errors="surrogateescape").decode("utf-8", errors="replace")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        # If that fails, just replace surrogates with ?
+        return text.encode("utf-8", errors="replace").decode("utf-8", errors="replace")
+
+
 class MetadataExtractionError(Exception):
     """Raised when metadata extraction fails."""
 
@@ -270,16 +292,19 @@ class MetadataExtractor:
         # Handle multi-valued elements
         if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
             try:
-                return list(value)
+                result_list = list(value)
+                # Clean surrogates from string elements
+                return [_clean_surrogates(str(v)) if isinstance(v, str) else v for v in result_list]
             except:
-                return str(value)
+                return _clean_surrogates(str(value))
 
         # Handle numeric types
         if isinstance(value, (int, float)):
             return value
 
-        # Convert everything else to string
-        return str(value)
+        # Convert everything else to string and clean surrogates
+        result = str(value)
+        return _clean_surrogates(result)
 
     def _get_gdcm_value(self, data_element, vr: str) -> Any:
         """
@@ -302,7 +327,15 @@ class MetadataExtractor:
                 buffer = byte_value.GetBuffer()
                 # Handle both string and bytes (GDCM version differences)
                 if isinstance(buffer, str):
-                    buffer = buffer.encode("latin1")
+                    try:
+                        # Try UTF-8 first, then latin1 as fallback
+                        buffer = buffer.encode("utf-8")
+                    except (UnicodeEncodeError, UnicodeDecodeError):
+                        try:
+                            buffer = buffer.encode("latin1")
+                        except (UnicodeEncodeError, UnicodeDecodeError):
+                            # If all else fails, use error handling
+                            buffer = buffer.encode("utf-8", errors="replace")
                 if len(buffer) > 1024 * 1024:
                     logger.warning(f"Binary data exceeds 1MB, truncating")
                     buffer = buffer[: 1024 * 1024]
@@ -319,11 +352,12 @@ class MetadataExtractor:
             buffer = byte_value.GetBuffer()
             # Handle both string and bytes (GDCM version differences)
             if isinstance(buffer, bytes):
-                return buffer.decode("utf-8", errors="replace").strip()
+                decoded = buffer.decode("utf-8", errors="replace").strip()
+                return _clean_surrogates(decoded)
             elif isinstance(buffer, str):
-                return buffer.strip()
+                return _clean_surrogates(buffer.strip())
             else:
-                return str(buffer).strip()
+                return _clean_surrogates(str(buffer).strip())
 
         return None
 

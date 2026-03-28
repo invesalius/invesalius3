@@ -271,6 +271,18 @@ class MetadataStore:
         """
         return self._series_metadata
 
+    def get_all_metadata(self) -> Dict[str, Any]:
+        """
+        Get complete metadata structure (for saving/anonymization).
+
+        Returns:
+            Dictionary with 'series_metadata' and 'per_slice_metadata' keys
+        """
+        return {
+            "series_metadata": self._series_metadata,
+            "per_slice_metadata": self._per_slice_metadata,
+        }
+
     def get_all_tags(self) -> List[str]:
         """
         Get list of all tag identifiers.

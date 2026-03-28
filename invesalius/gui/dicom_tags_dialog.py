@@ -134,7 +134,7 @@ class DicomTagsDialog(wx.Dialog):
             return
 
         # Get series-level metadata (common to all slices)
-        series_metadata = all_metadata.get("series", {})
+        series_metadata = all_metadata.get("series_metadata", {})
 
         for tag_str, tag_data in sorted(series_metadata.items()):
             tag_name = tag_data.get("name", _("Unknown"))
@@ -142,10 +142,11 @@ class DicomTagsDialog(wx.Dialog):
             self.all_tags.append((tag_str, tag_name, value_str))
 
         # Optionally add slice-specific tags from first slice
-        slices = all_metadata.get("slices", [])
+        slices = all_metadata.get("per_slice_metadata", [])
         if slices:
-            first_slice = slices[0]
-            for tag_str, tag_data in sorted(first_slice.items()):
+            first_slice_data = slices[0]
+            first_slice_tags = first_slice_data.get("tags", {})
+            for tag_str, tag_data in sorted(first_slice_tags.items()):
                 # Skip if already in series-level tags
                 if tag_str in series_metadata:
                     continue

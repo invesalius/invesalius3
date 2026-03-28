@@ -881,7 +881,7 @@ class Controller:
                 extractor = MetadataExtractor()
                 metadata = extractor.extract_from_files(dicom_files)
                 
-                logger.info(f"📊 Extracted metadata: {len(metadata.get('series', {}))} series tags, {len(metadata.get('slices', []))} slices")
+                logger.info(f"📊 Extracted metadata: {len(metadata.get('series_metadata', {}))} series tags, {len(metadata.get('per_slice_metadata', []))} slices")
                 
                 proj.metadata_store = MetadataStore()
                 proj.metadata_store.set_metadata(metadata)
@@ -1132,6 +1132,9 @@ class Controller:
         return self.matrix, self.filename  # , dicom
 
     def OnOpenDicomGroup(self, group, interval, file_range):
+        # Store the group for metadata extraction
+        self.dicom_group = group
+        
         dicom = group.GetDicomSample()
         samples_per_pixel = dicom.image.samples_per_pixel
         if samples_per_pixel == 3:
