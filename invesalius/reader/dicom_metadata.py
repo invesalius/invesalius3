@@ -215,16 +215,16 @@ class MetadataExtractor:
             data_element = iterator.value()
             tag = data_element.GetTag()
 
-            # Format tag as GGGG|EEEE
-            tag_id = f"{tag.GetGroup():04X}|{tag.GetElement():04X}"
+            # Format tag as (GGGG,EEEE)
+            tag_id = f"({tag.GetGroup():04X},{tag.GetElement():04X})"
 
-            # Get VR
-            vr_type = gdcm.DataElement.GetVRFromTag(tag, dataset)
-            vr = str(vr_type)
+            # Get VR from the data element itself
+            vr = str(data_element.GetVR())
 
-            # Get tag name
-            tag_name = gdcm.Global.GetInstance().GetDicts().GetDictEntry(tag).GetName()
-            if not tag_name:
+            # Get tag name from dictionary
+            dict_entry = gdcm.Global.GetInstance().GetDicts().GetDictEntry(tag)
+            tag_name = dict_entry.GetName() if dict_entry else "Unknown"
+            if not tag_name or tag_name == "":
                 tag_name = "Unknown"
 
             # Get value
@@ -300,6 +300,9 @@ class MetadataExtractor:
             if byte_value:
                 # Get bytes
                 buffer = byte_value.GetBuffer()
+                # Handle both string and bytes (GDCM version differences)
+                if isinstance(buffer, str):
+                    buffer = buffer.encode("latin1")
                 if len(buffer) > 1024 * 1024:
                     logger.warning(f"Binary data exceeds 1MB, truncating")
                     buffer = buffer[: 1024 * 1024]
@@ -313,7 +316,14 @@ class MetadataExtractor:
         # Get string value
         byte_value = data_element.GetByteValue()
         if byte_value:
-            return byte_value.GetBuffer().decode("utf-8", errors="replace").strip()
+            buffer = byte_value.GetBuffer()
+            # Handle both string and bytes (GDCM version differences)
+            if isinstance(buffer, bytes):
+                return buffer.decode("utf-8", errors="replace").strip()
+            elif isinstance(buffer, str):
+                return buffer.strip()
+            else:
+                return str(buffer).strip()
 
         return None
 
