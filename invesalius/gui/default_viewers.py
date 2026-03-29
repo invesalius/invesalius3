@@ -356,6 +356,7 @@ class VolumeToolPanel(wx.Panel):
         BMP_3D_STEREO = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG
         )
+        BMP_SSAO = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG)
         # BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
 
         self.button_raycasting = pbtn.PlateButton(
@@ -366,6 +367,15 @@ class VolumeToolPanel(wx.Panel):
             self, -1, "", BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         self.button_stereo.SetToolTip("Real 3D")
+        self.button_ssao = pbtn.PlateButton(
+            self,
+            -1,
+            "",
+            BMP_SSAO,
+            style=pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_TOGGLE,
+            size=ICON_SIZE,
+        )
+        self.button_ssao.SetToolTip("Ambient Occlusion (SSAO)")
         self.button_slice_plane = pbtn.PlateButton(
             self, -1, "", BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
@@ -398,6 +408,7 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(self.button_view, 0, wx.TOP | wx.BOTTOM, 1)
         sizer.Add(self.button_slice_plane, 0, wx.TOP | wx.BOTTOM, 1)
         sizer.Add(self.button_stereo, 0, wx.TOP | wx.BOTTOM, 1)
+        sizer.Add(self.button_ssao, 0, wx.TOP | wx.BOTTOM, 1)
         # sizer.Add(self.button_target, 0, wx.TOP | wx.BOTTOM, 1)
         #  sizer.Add(self.button_3d_mask, 0, wx.TOP | wx.BOTTOM, 1)
 
@@ -406,6 +417,9 @@ class VolumeToolPanel(wx.Panel):
         # Conditions for enabling Target button:
         self.target_selected = False
         self.track_obj = False
+
+        # Track SSAO button state manually
+        self.ssao_button_state = False
 
         sizer.Fit(self)
 
@@ -422,6 +436,7 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.ChangeButtonColour, "Change volume viewer gui colour")
         Publisher.subscribe(self.DisablePreset, "Close project data")
         Publisher.subscribe(self.Uncheck, "Uncheck image plane menu")
+        Publisher.subscribe(self.UntoggleSSAO, "Untoggle SSAO")
 
     def DisablePreset(self):
         self.off_item.Check(1)
@@ -432,6 +447,8 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
+        # For SSAO toggle button, use LEFT_DOWN and manually manage state
+        self.button_ssao.Bind(wx.EVT_LEFT_DOWN, self.OnButtonSSAO)
         # self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonRaycasting(self, evt):
@@ -440,6 +457,25 @@ class VolumeToolPanel(wx.Panel):
 
     def OnButtonStereo(self, evt):
         self.button_stereo.PopupMenu(self.stereo_menu)
+
+    def OnButtonSSAO(self, evt):
+        """Handle SSAO button toggle."""
+        # Manually toggle the state
+        self.ssao_button_state = not self.ssao_button_state
+
+        # Update button visual state
+        self.button_ssao._SetState(self.ssao_button_state)
+        self.button_ssao.Refresh()
+
+        print(f"[DEBUG] SSAO button clicked, new_state={self.ssao_button_state}")
+        Publisher.sendMessage("Toggle SSAO", enable=self.ssao_button_state)
+        print(f"[DEBUG] Published 'Toggle SSAO' message with enable={self.ssao_button_state}")
+
+    def UntoggleSSAO(self):
+        """Untoggle SSAO button when VTK version check fails."""
+        self.ssao_button_state = False
+        self.button_ssao._SetState(False)
+        self.button_ssao.Refresh()
 
     def OnButtonView(self, evt):
         self.button_view.PopupMenu(self.menu_view)
