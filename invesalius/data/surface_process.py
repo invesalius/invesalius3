@@ -9,6 +9,7 @@ except ImportError:
     import Queue as queue
 
 import numpy
+import numpy as np
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow, vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData
@@ -20,6 +21,7 @@ from vtkmodules.vtkFiltersCore import (
     vtkPolyDataConnectivityFilter,
     vtkPolyDataNormals,
     vtkQuadricDecimation,
+    vtkTriangleFilter,
 )
 from vtkmodules.vtkFiltersModeling import vtkFillHolesFilter
 from vtkmodules.vtkImagingCore import vtkImageFlip, vtkImageResample
@@ -212,8 +214,6 @@ def create_surface_piece(
     del flip
 
     if "tetrahedra" in algorithm:
-        import numpy as np
-        from vtkmodules.util import numpy_support
 
         dims = pre_flip_image.GetDimensions()
         scalars = pre_flip_image.GetPointData().GetScalars()
@@ -562,8 +562,6 @@ def join_process_surface(
 
     send_message("Calculating area and volume ...")
     if "tetrahedra" in algorithm:
-        from vtkmodules.vtkFiltersCore import vtkTriangleFilter
-
         tri_filter = vtkTriangleFilter()
         tri_filter.SetInputData(to_measure)
         tri_filter.PassVertsOff()

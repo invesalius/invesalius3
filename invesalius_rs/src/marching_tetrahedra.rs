@@ -15,7 +15,7 @@ type EdgeKey   = (GridPoint, GridPoint);
 
 #[derive(Debug, Default)]
 pub struct TetraMesh {
-    pub vertices: Vec<[f32; 3]>,
+    pub vertices: Vec<[f64; 3]>,
     pub faces:    Vec<[i32; 3]>,
 }
 
@@ -60,6 +60,7 @@ const TET_EDGES: [(usize, usize); 6] = [
 // 16 cases (one per subset of the 4 tetrahedron vertices being "inside").
 // Each entry lists edge indices whose intersection points form triangles.
 // Winding order is chosen so outward normals face the "outside" region.
+// Convention: right-hand rule, normal points away from inside (val >= THR).
 // Complementary cases (e.g. 1↔14, 7↔8) have reversed winding to match.
 const MT_TABLE: &[&[usize]] = &[
     &[],                 // 0000 — fully outside
@@ -93,7 +94,7 @@ pub fn marching_tetrahedra_mask(mask: ArrayView3<u8>, spacing: [f64; 3]) -> Tetr
 
     let voxel_count = (nz - 1) * (ny - 1) * (nx - 1);
 
-    let mut vertices: Vec<[f32; 3]> = Vec::with_capacity(voxel_count / 4);
+    let mut vertices: Vec<[f64; 3]> = Vec::with_capacity(voxel_count / 4);
     let mut faces:    Vec<[i32; 3]> = Vec::with_capacity(voxel_count / 2);
 
     // FxHashMap uses a fast integer hash (no DoS protection needed here).
@@ -125,7 +126,7 @@ fn process_cube(
     mask:            &ArrayView3<u8>,
     z: usize, y: usize, x: usize,
     spacing:         [f64; 3],
-    vertices:        &mut Vec<[f32; 3]>,
+    vertices:        &mut Vec<[f64; 3]>,
     faces:           &mut Vec<[i32; 3]>,
     edge_to_vertex:  &mut FxHashMap<EdgeKey, u32>,
 ) {
@@ -168,7 +169,8 @@ fn process_cube(
                     edge_to_vertex,
                 );
 
-                face_vids[slot] = vid as i32;
+                face_vids[slot] = i32::try_from(vid)
+                    .expect("vertex index exceeds i32::MAX — mesh is too large");
             }
 
             // Skip degenerate triangles (two or more identical vertex indices).
@@ -193,7 +195,7 @@ fn get_or_create_vertex(
     tet_vals:       [u8; 4],
     v1: usize, v2: usize,
     spacing:        [f64; 3],
-    vertices:       &mut Vec<[f32; 3]>,
+    vertices:       &mut Vec<[f64; 3]>,
     edge_to_vertex: &mut FxHashMap<EdgeKey, u32>,
 ) -> u32 {
     let mut p1 = tet_coords[v1];
@@ -222,13 +224,10 @@ fn get_or_create_vertex(
         let vy = interp(tet_coords[v1].1, tet_coords[v2].1) * spacing[1];
         let vz = interp(tet_coords[v1].0, tet_coords[v2].0) * spacing[2];
 
-        let new_vid = vertices.len() as u32;
-        debug_assert!(
-            new_vid <= i32::MAX as u32,
-            "vertex count exceeds i32::MAX — mesh is too large"
-        );
+        let new_vid = u32::try_from(vertices.len())
+            .expect("vertex count exceeds u32::MAX — mesh is too large");
 
-        vertices.push([vx as f32, vy as f32, vz as f32]);
+        vertices.push([vx, vy, vz]);
         new_vid
     })
 }

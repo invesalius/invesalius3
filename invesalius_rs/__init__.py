@@ -92,7 +92,7 @@ def marching_tetrahedra(mask: np.ndarray, spacing):
         )
     mask_u8 = np.ascontiguousarray(mask, dtype=np.uint8)
     vertices, faces = _native_marching_tetrahedra(mask_u8, tuple(float(v) for v in spacing))
-    return np.ascontiguousarray(vertices, dtype=np.float32), np.ascontiguousarray(faces, dtype=np.int32)
+    return np.ascontiguousarray(vertices, dtype=np.float64), np.ascontiguousarray(faces, dtype=np.int32)
 
 
 # lmip = _native.lmip

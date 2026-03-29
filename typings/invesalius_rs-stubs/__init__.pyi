@@ -105,7 +105,7 @@ def mask_cut(
 def marching_tetrahedra(
     mask: NDArray[np.uint8],
     spacing: tuple[float, float, float],
-) -> tuple[NDArray[np.float32], NDArray[np.int32]]: ...
+) -> tuple[NDArray[np.float64], NDArray[np.int32]]: ...
 
 # Mesh class
 class Mesh:
