@@ -140,13 +140,7 @@ _MEASURE_TABLE_HTML = """\
 </table>"""
 
 _MEASURE_ROW_HTML = (
-    "<tr>"
-    "<td>{index}</td>"
-    "<td>{name}</td>"
-    "<td>{type}</td>"
-    "<td>{location}</td>"
-    "<td>{value}</td>"
-    "</tr>"
+    "<tr><td>{index}</td><td>{name}</td><td>{type}</td><td>{location}</td><td>{value}</td></tr>"
 )
 
 

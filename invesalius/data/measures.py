@@ -1207,7 +1207,6 @@ class GeodesicMeasure(LinearMeasure):
                 m_obj.value = total_length
                 break
 
-
         # Render as a solid 3D tube for clear visibility on the surface
         from vtkmodules.vtkFiltersCore import vtkTubeFilter
 
