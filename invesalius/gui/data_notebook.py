@@ -2294,17 +2294,37 @@ class ImagePage(wx.Panel):
             style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN,
             size=wx.Size(256, 120),
         )
-        self.list_ctrl.InsertColumn(0, _("Image"), width=200)
-        self.list_ctrl.InsertColumn(1, _("Info"), width=80)
+        self.list_ctrl.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
+        self.list_ctrl.InsertColumn(1, _("Image"), width=175)
+        self.list_ctrl.InsertColumn(2, _("Info"), width=80)
+        self.list_ctrl.SetColumnWidth(0, 25)
 
-        self.btn_restore = wx.Button(self, -1, _("Restore Original"))
-        self.btn_restore.Disable()
+        self._init_image_list()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 2)
-        sizer.Add(self.btn_restore, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
         self.SetSizer(sizer)
         self.Fit()
+
+    def _init_image_list(self):
+        import os
+
+        from invesalius import inv_paths
+
+        self.imagelist = wx.ImageList(16, 16)
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
+        bitmap.SetWidth(16)
+        bitmap.SetHeight(16)
+        self.imagelist.Add(bitmap)
+
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
+        bitmap.SetWidth(16)
+        bitmap.SetHeight(16)
+        self.imagelist.Add(bitmap)
+
+        self.list_ctrl.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
 
     # ------------------------------------------------------------------
     # Events
@@ -2312,11 +2332,14 @@ class ImagePage(wx.Panel):
 
     def _bind_events(self):
         self.list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_select)
-        self.btn_restore.Bind(wx.EVT_BUTTON, self._on_restore)
 
         Publisher.subscribe(self._on_project_loaded, "Load slice to viewer")
         Publisher.subscribe(self._on_filter_done, "Image filter done")
         Publisher.subscribe(self._on_close, "Close project data")
+        
+        # New bindings for syncing with ImageFilterDialog
+        Publisher.subscribe(self._on_get_image_labels, "Get image labels")
+        Publisher.subscribe(self._on_set_active_image, "Set active image")
 
     # ------------------------------------------------------------------
     # Public API
@@ -2327,36 +2350,54 @@ class ImagePage(wx.Panel):
         self._entries.append((label, matrix))
         idx = self.list_ctrl.GetItemCount()
         info = _("Original") if idx == 0 else _("Filtered")
-        self.list_ctrl.InsertItem(idx, label)
-        self.list_ctrl.SetItem(idx, 1, info)
-        # Auto-select the newly added item
+        self.list_ctrl.InsertItem(idx, "")
+        self.list_ctrl.SetItemImage(idx, 0)
+        self.list_ctrl.SetItem(idx, 1, label)
+        self.list_ctrl.SetItem(idx, 2, info)
+        # Auto-select the newly added item (triggers _on_select)
         self.list_ctrl.Select(idx)
         self.list_ctrl.Focus(idx)
-        if len(self._entries) > 1:
-            self.btn_restore.Enable()
 
     def clear(self):
         self.list_ctrl.DeleteAllItems()
         self._entries.clear()
-        self.btn_restore.Disable()
 
     # ------------------------------------------------------------------
     # Handlers
     # ------------------------------------------------------------------
 
     def _on_select(self, evt):
-        """Switch active volume to the selected image version."""
+        """Switch active volume to the selected image version and update icons."""
         idx = evt.GetIndex()
         if 0 <= idx < len(self._entries):
+            # Update icons: set all to invisible (0), then active to visible (1)
+            for i in range(self.list_ctrl.GetItemCount()):
+                self.list_ctrl.SetItemImage(i, 0)
+            self.list_ctrl.SetItemImage(idx, 1)
+
             _, matrix = self._entries[idx]
             Publisher.sendMessage("Switch active image", matrix=matrix)
         evt.Skip()
 
-    def _on_restore(self, evt):
-        """Select the first (Original) row, which triggers _on_select."""
-        if self._entries:
-            self.list_ctrl.Select(0)
-            self.list_ctrl.Focus(0)
+    def _on_get_image_labels(self):
+        """Provide a list of current image labels and active index to the requester."""
+        labels = [lbl for lbl, _ in self._entries]
+        
+        # Find currently active index (the one with the visible eye icon)
+        active_idx = 0
+        for i in range(self.list_ctrl.GetItemCount()):
+            item = self.list_ctrl.GetItem(i)
+            if item.GetImage() == 1:
+                active_idx = i
+                break
+
+        Publisher.sendMessage("Update image filter combobox", labels=labels, active_idx=active_idx)
+
+    def _on_set_active_image(self, index):
+        """Programmatically switch the active image (e.g., from combo box)."""
+        if 0 <= index < self.list_ctrl.GetItemCount():
+            self.list_ctrl.Select(index)
+            self.list_ctrl.Focus(index)
 
     def _on_project_loaded(self, *args, **kwargs):
         """Called when a new project is loaded — reset to just 'Original'."""

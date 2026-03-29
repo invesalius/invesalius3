@@ -371,6 +371,11 @@ class Mask:
         elif axis == 2:
             submatrix[:] = submatrix[:, :, ::-1]
             self.matrix[0, 0, 1::] = self.matrix[0, 0, :0:-1]
+            
+        if self.volume:
+            self.imagedata = self.as_vtkimagedata()
+            self.volume.change_imagedata()
+            
         self.modified()
 
     def OnSwapVolumeAxes(self, axes):

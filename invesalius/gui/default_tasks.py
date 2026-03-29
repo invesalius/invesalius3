@@ -21,11 +21,11 @@ import sys
 
 import wx
 import wx.lib.agw.foldpanelbar as fpb
+import wx.lib.scrolledpanel as scrolled
 
 import invesalius.constants as const
 import invesalius.gui.data_notebook as nb
 import invesalius.gui.task_exporter as exporter
-import invesalius.gui.task_filters as filters
 import invesalius.gui.task_importer as importer
 import invesalius.gui.task_imports as imports
 import invesalius.gui.task_navigator as navigator
@@ -120,8 +120,8 @@ class Panel(wx.Panel):
 
         gbs.AddGrowableCol(0)
 
-        gbs.AddGrowableRow(0, 0)
-        gbs.AddGrowableRow(1, 1)
+        gbs.AddGrowableRow(0, 1)
+        gbs.AddGrowableRow(1, 0)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(gbs, 1, wx.EXPAND)
@@ -278,9 +278,9 @@ class LowerTaskPanel(wx.Panel):
 
 
 # Upper fold panel
-class UpperTaskPanel(wx.Panel):
+class UpperTaskPanel(scrolled.ScrolledPanel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        scrolled.ScrolledPanel.__init__(self, parent)
         fold_panel = fpb.FoldPanelBar(
             self, -1, wx.DefaultPosition, wx.DefaultSize, FPB_DEFAULT_STYLE, fpb.FPB_SINGLE_FOLD
         )
@@ -300,7 +300,6 @@ class UpperTaskPanel(wx.Panel):
         if mode == const.MODE_RP:
             tasks = [
                 (_("Load data"), importer.TaskPanel),
-                (_("Image filters"), filters.TaskPanel),
                 (_("Select region of interest"), slice_.TaskPanel),
                 (_("Configure 3D surface"), surface.TaskPanel),
                 (_("Export data"), exporter.TaskPanel),
@@ -355,7 +354,8 @@ class UpperTaskPanel(wx.Panel):
         sizer.Add(fold_panel, 1, wx.GROW | wx.EXPAND)
         self.sizer = sizer
         self.SetStateProjectClose()
-        self.SetSizerAndFit(sizer)
+        self.SetSizer(sizer)
+        self.SetupScrolling()
         self.__bind_events()
 
         # Show the navigation panel in navigation mode; otherwise, show the imports panel

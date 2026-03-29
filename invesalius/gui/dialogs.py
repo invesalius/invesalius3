@@ -7867,6 +7867,17 @@ class ImageFilterDialog(wx.Dialog):
 
         from invesalius.gui.widgets.inv_spinctrl import InvFloatSpinCtrl
 
+        # Volume selection dropdown
+        lbl_volume = wx.StaticText(self, -1, _("Apply filter to:"))
+        self.cb_volume = wx.ComboBox(
+            self,
+            -1,
+            choices=[],
+            style=wx.CB_READONLY,
+        )
+        if sys.platform != "win32":
+            self.cb_volume.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
         # Filter type dropdown
         lbl_filter = wx.StaticText(self, -1, _("Filter type:"))
         self.cb_filter = wx.ComboBox(
@@ -7892,6 +7903,10 @@ class ImageFilterDialog(wx.Dialog):
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.AddSpacer(10)
+        sizer.Add(lbl_volume, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(5)
+        sizer.Add(self.cb_volume, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(12)
         sizer.Add(lbl_filter, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         sizer.AddSpacer(5)
         sizer.Add(self.cb_filter, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
@@ -7912,11 +7927,27 @@ class ImageFilterDialog(wx.Dialog):
         self.Layout()
 
     def _bind_events(self):
+        self.cb_volume.Bind(wx.EVT_COMBOBOX, self._on_select_volume)
         self.cb_filter.Bind(wx.EVT_COMBOBOX, self._on_select_filter)
         self.btn_apply.Bind(wx.EVT_BUTTON, self._on_apply)
         self.btn_close.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
         self.Bind(wx.EVT_CLOSE, self._on_close)
+        
         Publisher.subscribe(self._on_filter_done, "Image filter done")
+        Publisher.subscribe(self._on_update_combobox, "Update image filter combobox")
+        
+        # Request initial list of image labels to populate the cb_volume
+        wx.CallAfter(Publisher.sendMessage, "Get image labels")
+
+    def _on_update_combobox(self, labels, active_idx):
+        self.cb_volume.Clear()
+        self.cb_volume.AppendItems(labels)
+        if 0 <= active_idx < len(labels):
+            self.cb_volume.SetSelection(active_idx)
+
+    def _on_select_volume(self, evt):
+        idx = self.cb_volume.GetSelection()
+        Publisher.sendMessage("Set active image", index=idx)
 
     def _on_select_filter(self, evt):
         is_despeckle = self.cb_filter.GetSelection() == 0
@@ -7937,10 +7968,13 @@ class ImageFilterDialog(wx.Dialog):
         if self.btn_apply:
             self.btn_apply.SetLabel(_("Apply to Volume"))
             self.btn_apply.Enable()
+        # Refresh volume list in case a new filtered version was created
+        wx.CallAfter(Publisher.sendMessage, "Get image labels")
 
     def _on_close(self, evt):
         try:
             Publisher.unsubscribe(self._on_filter_done, "Image filter done")
+            Publisher.unsubscribe(self._on_update_combobox, "Update image filter combobox")
         except Exception:
             pass
         evt.Skip()
