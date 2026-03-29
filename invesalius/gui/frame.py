@@ -2145,7 +2145,7 @@ class ObjectToolBar(AuiToolBar):
 
         path = os.path.join(d, "tool_annotation_original.png")
         BMP_ANNOTATION = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
-        
+
         path = os.path.join(d, "3D_glasses.png")
         BMP_SSAO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
@@ -2241,9 +2241,9 @@ class ObjectToolBar(AuiToolBar):
             short_help_string=_("Add annotation"),
             kind=wx.ITEM_CHECK,
         )
-        
+
         self.AddSeparator()
-        
+
         self.AddTool(
             const.STATE_SSAO,
             "",
@@ -2314,13 +2314,16 @@ class ObjectToolBar(AuiToolBar):
         should be toggle each time).
         """
         id = evt.GetId()
-        state = self.GetToolToggled(id)
-        
+
         # Handle SSAO toggle separately - it doesn't conflict with other tools
         if id == const.STATE_SSAO:
+            state = self.GetToolToggled(id)
             Publisher.sendMessage("Toggle SSAO", enable=state)
+            evt.Skip()
             return
-        
+
+        state = self.GetToolToggled(id)
+
         if state and (
             (id == const.STATE_MEASURE_DISTANCE)
             or (id == const.STATE_MEASURE_ANGLE)
@@ -2367,7 +2370,6 @@ class ObjectToolBar(AuiToolBar):
         """
         self.ToggleTool(const.STATE_SSAO, False)
         self.Refresh()
-
 
     def SetStateProjectClose(self):
         """

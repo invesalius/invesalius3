@@ -22,6 +22,7 @@ import queue
 import sys
 
 import numpy as np
+import vtk
 import wx
 from imageio import imsave
 from scipy.spatial import distance
@@ -82,7 +83,6 @@ from vtkmodules.vtkRenderingCore import (
     vtkWindowToImageFilter,
 )
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-import vtk
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
@@ -547,7 +547,7 @@ class Viewer(wx.Panel):
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
         Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
-        
+
         # SSAO (Ambient Occlusion)
         Publisher.subscribe(self.ToggleSSAO, "Toggle SSAO")
 
@@ -3136,9 +3136,11 @@ class Viewer(wx.Panel):
         major = vtk.vtkVersion.GetVTKMajorVersion()
         if major < 9:
             wx.MessageBox(
-                _("Ambient occlusion requires VTK 9 or higher.\nYour VTK version: {}.x").format(major),
+                _("Ambient occlusion requires VTK 9 or higher.\nYour VTK version: {}.x").format(
+                    major
+                ),
                 _("Not supported"),
-                wx.OK | wx.ICON_WARNING
+                wx.OK | wx.ICON_WARNING,
             )
             # Send message to untoggle the toolbar button
             Publisher.sendMessage("Untoggle SSAO")
@@ -3152,7 +3154,7 @@ class Viewer(wx.Panel):
     def _EnableSSAO(self):
         """Enable SSAO render pass."""
         try:
-            from vtkmodules.vtkRenderingOpenGL2 import vtkSSAOPass, vtkRenderStepsPass
+            from vtkmodules.vtkRenderingOpenGL2 import vtkRenderStepsPass, vtkSSAOPass
 
             # Create the basic render passes
             self.basic_passes = vtkRenderStepsPass()
@@ -3174,16 +3176,18 @@ class Viewer(wx.Panel):
 
         except ImportError:
             wx.MessageBox(
-                _("SSAO is not available in your VTK build.\nPlease ensure VTK is compiled with OpenGL2 support."),
+                _(
+                    "SSAO is not available in your VTK build.\nPlease ensure VTK is compiled with OpenGL2 support."
+                ),
                 _("Not available"),
-                wx.OK | wx.ICON_ERROR
+                wx.OK | wx.ICON_ERROR,
             )
             Publisher.sendMessage("Untoggle SSAO")
         except Exception as e:
             wx.MessageBox(
                 _("Error enabling ambient occlusion: {}").format(str(e)),
                 _("Error"),
-                wx.OK | wx.ICON_ERROR
+                wx.OK | wx.ICON_ERROR,
             )
             Publisher.sendMessage("Untoggle SSAO")
 
@@ -3199,7 +3203,6 @@ class Viewer(wx.Panel):
 
             self.ssao_enabled = False
             self.UpdateRender()
-
 
 
 class SlicePlane:
