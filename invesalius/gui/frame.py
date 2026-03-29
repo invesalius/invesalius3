@@ -2082,6 +2082,7 @@ class ObjectToolBar(AuiToolBar):
             const.STATE_MEASURE_DENSITY_POLYGON,
             const.STATE_MEASURE_ANNOTATION,
             const.STATE_MEASURE_CURVED_LINEAR,
+            const.STATE_SSAO,
             # const.STATE_ANNOTATE
         ]
         self.__init_items()
@@ -2101,6 +2102,7 @@ class ObjectToolBar(AuiToolBar):
         sub(self._ToggleLinearMeasure, "Set tool linear measure")
         sub(self._ToggleAngularMeasure, "Set tool angular measure")
         sub(self.ToggleItem, "Toggle toolbar item")
+        sub(self._UntoggleSSAO, "Untoggle SSAO")
 
     def __bind_events_wx(self):
         """
@@ -2143,6 +2145,9 @@ class ObjectToolBar(AuiToolBar):
 
         path = os.path.join(d, "tool_annotation_original.png")
         BMP_ANNOTATION = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+        
+        path = os.path.join(d, "3D_glasses.png")
+        BMP_SSAO = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
         self.AddTool(
@@ -2236,6 +2241,17 @@ class ObjectToolBar(AuiToolBar):
             short_help_string=_("Add annotation"),
             kind=wx.ITEM_CHECK,
         )
+        
+        self.AddSeparator()
+        
+        self.AddTool(
+            const.STATE_SSAO,
+            "",
+            BMP_SSAO,
+            wx.NullBitmap,
+            short_help_string=_("Ambient Occlusion (SSAO)"),
+            kind=wx.ITEM_CHECK,
+        )
 
         # self.AddLabelTool(const.STATE_ANNOTATE,
         #                "",
@@ -2299,6 +2315,12 @@ class ObjectToolBar(AuiToolBar):
         """
         id = evt.GetId()
         state = self.GetToolToggled(id)
+        
+        # Handle SSAO toggle separately - it doesn't conflict with other tools
+        if id == const.STATE_SSAO:
+            Publisher.sendMessage("Toggle SSAO", enable=state)
+            return
+        
         if state and (
             (id == const.STATE_MEASURE_DISTANCE)
             or (id == const.STATE_MEASURE_ANGLE)
@@ -2338,6 +2360,14 @@ class ObjectToolBar(AuiToolBar):
         if _id in self.enable_items:
             self.ToggleTool(_id, value)
             self.Refresh()
+
+    def _UntoggleSSAO(self):
+        """
+        Untoggle SSAO button when VTK version check fails.
+        """
+        self.ToggleTool(const.STATE_SSAO, False)
+        self.Refresh()
+
 
     def SetStateProjectClose(self):
         """

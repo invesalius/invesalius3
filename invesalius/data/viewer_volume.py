@@ -82,6 +82,7 @@ from vtkmodules.vtkRenderingCore import (
     vtkWindowToImageFilter,
 )
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+import vtk
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
@@ -349,6 +350,11 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
+        # SSAO (Ambient Occlusion) state
+        self.ssao_enabled = False
+        self.ssao_pass = None
+        self.basic_passes = None
+
         # self.renderers = (self.target_guide_renderer, ren, canvas_renderer)
 
         renwin = interactor.GetRenderWindow().GetRenderers()
@@ -541,6 +547,9 @@ class Viewer(wx.Panel):
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
         Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
+        
+        # SSAO (Ambient Occlusion)
+        Publisher.subscribe(self.ToggleSSAO, "Toggle SSAO")
 
     def get_vtk_mouse_position(self):
         """
@@ -3117,6 +3126,80 @@ class Viewer(wx.Panel):
             elif not self.repositioned_coronal_plan and plane_label == "Coronal":
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_coronal_plan = 1
+
+    def ToggleSSAO(self, enable):
+        """
+        Enable or disable Screen Space Ambient Occlusion (SSAO).
+        Requires VTK 9 or higher.
+        """
+        # Check VTK version
+        major = vtk.vtkVersion.GetVTKMajorVersion()
+        if major < 9:
+            wx.MessageBox(
+                _("Ambient occlusion requires VTK 9 or higher.\nYour VTK version: {}.x").format(major),
+                _("Not supported"),
+                wx.OK | wx.ICON_WARNING
+            )
+            # Send message to untoggle the toolbar button
+            Publisher.sendMessage("Untoggle SSAO")
+            return
+
+        if enable and not self.ssao_enabled:
+            self._EnableSSAO()
+        elif not enable and self.ssao_enabled:
+            self._DisableSSAO()
+
+    def _EnableSSAO(self):
+        """Enable SSAO render pass."""
+        try:
+            from vtkmodules.vtkRenderingOpenGL2 import vtkSSAOPass, vtkRenderStepsPass
+
+            # Create the basic render passes
+            self.basic_passes = vtkRenderStepsPass()
+
+            # Create and configure SSAO pass
+            self.ssao_pass = vtkSSAOPass()
+            self.ssao_pass.SetDelegatePass(self.basic_passes)
+
+            # Configure SSAO parameters
+            self.ssao_pass.SetRadius(0.1)
+            self.ssao_pass.SetBias(0.001)
+            self.ssao_pass.SetKernelSize(128)
+
+            # Apply the pass to the renderer
+            self.ren.SetPass(self.ssao_pass)
+
+            self.ssao_enabled = True
+            self.UpdateRender()
+
+        except ImportError:
+            wx.MessageBox(
+                _("SSAO is not available in your VTK build.\nPlease ensure VTK is compiled with OpenGL2 support."),
+                _("Not available"),
+                wx.OK | wx.ICON_ERROR
+            )
+            Publisher.sendMessage("Untoggle SSAO")
+        except Exception as e:
+            wx.MessageBox(
+                _("Error enabling ambient occlusion: {}").format(str(e)),
+                _("Error"),
+                wx.OK | wx.ICON_ERROR
+            )
+            Publisher.sendMessage("Untoggle SSAO")
+
+    def _DisableSSAO(self):
+        """Disable SSAO render pass and restore default rendering."""
+        if self.ssao_pass:
+            # Remove the pass from the renderer
+            self.ren.SetPass(None)
+
+            # Clean up
+            self.ssao_pass = None
+            self.basic_passes = None
+
+            self.ssao_enabled = False
+            self.UpdateRender()
+
 
 
 class SlicePlane:
