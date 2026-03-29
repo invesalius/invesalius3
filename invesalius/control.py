@@ -415,6 +415,9 @@ class Controller:
                 self.CloseProject()
             self.OpenProject(filepath)
 
+            # Disable simultaneous multicoil mode
+            Publisher.sendMessage("Press simultaneous multicoil button", state=False)
+
     def ShowDialogSaveProject(self, saveas: bool = False) -> None:
         session = ses.Session()
         if saveas or session.temp_item:
@@ -711,7 +714,9 @@ class Controller:
                 self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
             # OPTION 4: Nothing...
 
-        self.LoadProject(create_default_mask=not is_other_files)
+        session = ses.Session()
+        session_mode = session.GetConfig("mode")
+        self.LoadProject(create_default_mask=(not is_other_files or session_mode == const.MODE_NAVIGATOR))
         Publisher.sendMessage("Enable state project", state=True)
 
     def OnImportGroup(self, group: "DicomGroup", use_gui: bool):
@@ -1129,7 +1134,8 @@ class Controller:
             if group:
                 matrix, matrix_filename = self.OpenOtherFiles(group)
                 self.CreateOtherProject(name, matrix, matrix_filename)
-                self.LoadProject(create_default_mask=False)
+                session_mode = session.GetConfig("mode")
+                self.LoadProject(create_default_mask=(session_mode == const.MODE_NAVIGATOR))
 
                 Publisher.sendMessage("Enable state project", state=True)
             else:

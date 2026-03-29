@@ -26,6 +26,7 @@ dependencies = [
     "polhemusFT==0.0.3; sys_platform == 'win32'",
     "pyacvd==0.2.11",
     "pyclaron ; python_full_version == '3.8.*' and sys_platform == 'win32'",
+    "pypolaris>=0.0.8",
     "pypubsub==4.0.3",
     "pypolaris==0.0.8; sys_platform == 'win32'",
     "pyserial==3.5",
@@ -42,7 +43,7 @@ dependencies = [
 ]
 license = { file = "LICENSE.txt" }
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = "==3.12.*"
+requires-python = ">=3.10"
 
 
 [dependency-groups]

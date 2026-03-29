@@ -114,7 +114,7 @@ class RobotForceVisualizer:
         # Approximate text width adjustment for centering
         self.text.SetDisplayPosition(text_x - 25, text_y - 10)
 
-    def OnUpdateRobotForceData(self, force_feedback):
+    def OnUpdateRobotForceData(self, force_feedback, robot_ID):
         if not self.visible:
             return
         self.update_force(force_feedback)

@@ -232,7 +232,7 @@ class NeuronavigationApi(metaclass=Singleton):
                 polygons=polygons,
             )
 
-    def update_coil_at_target(self, state):
+    def update_coil_at_target(self, state, coil_name):
         if self.connection is not None:
             self.connection.update_coil_at_target(state=state)
 
@@ -375,6 +375,7 @@ class NeuronavigationApi(metaclass=Singleton):
             Publisher.sendMessage,
             "Robot to Neuronavigation: Update robot status",
             robot_status=status,
+            robot_ID = None,
         )
 
     def robot_connection_status(self, status):
@@ -386,11 +387,14 @@ class NeuronavigationApi(metaclass=Singleton):
         wx.CallAfter(
             Publisher.sendMessage,
             "Robot to Neuronavigation: Coordinates for the robot transformation matrix collected",
+            robot_ID = None,
         )
 
     def set_objective_to_neuronavigation(self, objective):
         wx.CallAfter(
-            Publisher.sendMessage, "Robot to Neuronavigation: Set objective", objective=objective
+            Publisher.sendMessage, "Robot to Neuronavigation: Set objective",
+            objective=objective,
+            robot_ID = None,
         )
 
     def close_robot_dialog(self, status):
@@ -401,6 +405,7 @@ class NeuronavigationApi(metaclass=Singleton):
             Publisher.sendMessage,
             "Robot to Neuronavigation: Update robot transformation matrix",
             data=matrix,
+            robot_ID = None,
         )
 
     def update_coil_target(self, coil_target):
