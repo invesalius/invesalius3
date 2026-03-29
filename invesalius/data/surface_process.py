@@ -214,7 +214,6 @@ def create_surface_piece(
     del flip
 
     if "tetrahedra" in algorithm:
-
         dims = pre_flip_image.GetDimensions()
         scalars = pre_flip_image.GetPointData().GetScalars()
         np_arr = numpy_support.vtk_to_numpy(scalars)
