@@ -2336,7 +2336,7 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self._on_project_loaded, "Load slice to viewer")
         Publisher.subscribe(self._on_filter_done, "Image filter done")
         Publisher.subscribe(self._on_close, "Close project data")
-        
+
         # New bindings for syncing with ImageFilterDialog
         Publisher.subscribe(self._on_get_image_labels, "Get image labels")
         Publisher.subscribe(self._on_set_active_image, "Set active image")
@@ -2382,7 +2382,7 @@ class ImagePage(wx.Panel):
     def _on_get_image_labels(self):
         """Provide a list of current image labels and active index to the requester."""
         labels = [lbl for lbl, _ in self._entries]
-        
+
         # Find currently active index (the one with the visible eye icon)
         active_idx = 0
         for i in range(self.list_ctrl.GetItemCount()):

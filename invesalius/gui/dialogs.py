@@ -7932,10 +7932,10 @@ class ImageFilterDialog(wx.Dialog):
         self.btn_apply.Bind(wx.EVT_BUTTON, self._on_apply)
         self.btn_close.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
         self.Bind(wx.EVT_CLOSE, self._on_close)
-        
+
         Publisher.subscribe(self._on_filter_done, "Image filter done")
         Publisher.subscribe(self._on_update_combobox, "Update image filter combobox")
-        
+
         # Request initial list of image labels to populate the cb_volume
         wx.CallAfter(Publisher.sendMessage, "Get image labels")
 
