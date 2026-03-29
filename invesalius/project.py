@@ -475,7 +475,9 @@ class Project(metaclass=Singleton):
                 s.do_threshold_to_all_slices(mask)
 
                 mask_data = mask.matrix[1:, 1:, 1:]
-                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask_data), 0, 2), None)
+                # Normalize mask data to uint8 with values {0, 255}
+                mask_data = (mask_data > 127).astype('uint8') * 255
+                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask_data), 0, 2), np.eye(4))
                 mask_nifti.header.set_zooms(s.spacing)
                 if filename.lower().endswith(".nii"):
                     basename = filename[:-4]
