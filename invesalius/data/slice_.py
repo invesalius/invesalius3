@@ -1218,13 +1218,11 @@ class Slice(metaclass=utils.Singleton):
                     m[m == 1] = 255
                     self.current_mask.matrix[n + 1, 1:, 1:] = m
             else:
-                # Use the base-image slice cached in the buffer (already the
-                # original orientation slice if _get_base_matrix_slice was used),
-                # or fall back to extracting directly from the base matrix.
-                if orientation is not None:
-                    slice_ = self._get_base_matrix_slice(orientation, slice_number)
-                else:
-                    slice_ = None
+                # Per-slice path: visual preview only (called when user drags
+                # threshold slider). Uses the currently-buffered image — this
+                # does NOT write to current_mask.matrix, so it does not cause
+                # the mask-modified-on-scroll bug (that is fixed in get_mask_slice).
+                slice_ = self.buffer_slices[orientation].image
                 if slice_ is not None:
                     self.buffer_slices[orientation].mask = (
                         255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))
