@@ -550,6 +550,7 @@ class Viewer(wx.Panel):
 
         # SSAO (Ambient Occlusion)
         Publisher.subscribe(self.ToggleSSAO, "Toggle SSAO")
+        Publisher.subscribe(self.OnUpdateSSAOPreference, "Update SSAO Preference")
 
     def get_vtk_mouse_position(self):
         """
@@ -3127,17 +3128,20 @@ class Viewer(wx.Panel):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_coronal_plan = 1
 
+    def OnUpdateSSAOPreference(self, enabled):
+        """Update SSAO state based on preference setting."""
+        if enabled and not self.ssao_enabled:
+            self._EnableSSAO()
+        elif not enabled and self.ssao_enabled:
+            self._DisableSSAO()
+
     def ToggleSSAO(self, enable):
         """
         Enable or disable Screen Space Ambient Occlusion (SSAO).
         Requires VTK 9 or higher.
         """
-        print(f"[DEBUG] ToggleSSAO called with enable={enable}")
-        print(f"[DEBUG] Current ssao_enabled={self.ssao_enabled}")
-
         # Check VTK version
         major = vtk.vtkVersion.GetVTKMajorVersion()
-        print(f"[DEBUG] VTK version: {major}")
 
         if major < 9:
             wx.MessageBox(
@@ -3152,47 +3156,34 @@ class Viewer(wx.Panel):
             return
 
         if enable and not self.ssao_enabled:
-            print("[DEBUG] Calling _EnableSSAO()")
             self._EnableSSAO()
         elif not enable and self.ssao_enabled:
-            print("[DEBUG] Calling _DisableSSAO()")
             self._DisableSSAO()
-        else:
-            print(f"[DEBUG] No action needed: enable={enable}, ssao_enabled={self.ssao_enabled}")
 
     def _EnableSSAO(self):
-        """Enable SSAO render pass."""
-        print("[DEBUG] _EnableSSAO() started")
+        """Enable SSAO render pass for both surfaces and volume raycasting."""
         try:
             from vtkmodules.vtkRenderingOpenGL2 import vtkRenderStepsPass, vtkSSAOPass
 
-            print("[DEBUG] Successfully imported SSAO classes")
-
             # Create the basic render passes
             self.basic_passes = vtkRenderStepsPass()
-            print("[DEBUG] Created vtkRenderStepsPass")
 
             # Create and configure SSAO pass
             self.ssao_pass = vtkSSAOPass()
             self.ssao_pass.SetDelegatePass(self.basic_passes)
-            print("[DEBUG] Created vtkSSAOPass and set delegate")
 
             # Configure SSAO parameters
             self.ssao_pass.SetRadius(0.1)
             self.ssao_pass.SetBias(0.001)
             self.ssao_pass.SetKernelSize(128)
-            print("[DEBUG] Configured SSAO parameters")
 
-            # Apply the pass to the renderer
+            # Apply the pass to the renderer (applies to both surfaces and volume)
             self.ren.SetPass(self.ssao_pass)
-            print("[DEBUG] Applied pass to renderer")
 
             self.ssao_enabled = True
             self.UpdateRender()
-            print("[DEBUG] SSAO enabled successfully")
 
         except ImportError as e:
-            print(f"[DEBUG] ImportError: {e}")
             wx.MessageBox(
                 _(
                     "SSAO is not available in your VTK build.\nPlease ensure VTK is compiled with OpenGL2 support."
@@ -3202,7 +3193,6 @@ class Viewer(wx.Panel):
             )
             Publisher.sendMessage("Untoggle SSAO")
         except Exception as e:
-            print(f"[DEBUG] Exception: {e}")
             wx.MessageBox(
                 _("Error enabling ambient occlusion: {}").format(str(e)),
                 _("Error"),

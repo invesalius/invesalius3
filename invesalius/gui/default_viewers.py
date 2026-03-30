@@ -447,8 +447,8 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
-        # For SSAO toggle button, use LEFT_DOWN and manually manage state
-        self.button_ssao.Bind(wx.EVT_LEFT_DOWN, self.OnButtonSSAO)
+        # For SSAO toggle button, bind to EVT_TOGGLEBUTTON on parent
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.OnButtonSSAO, self.button_ssao)
         # self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonRaycasting(self, evt):
@@ -460,21 +460,20 @@ class VolumeToolPanel(wx.Panel):
 
     def OnButtonSSAO(self, evt):
         """Handle SSAO button toggle."""
-        # Manually toggle the state
-        self.ssao_button_state = not self.ssao_button_state
+        # Let the button toggle naturally, then read its state
+        # Use wx.CallAfter to ensure the button state has updated
+        wx.CallAfter(self._HandleSSAOToggle)
 
-        # Update button visual state
-        self.button_ssao._SetState(self.ssao_button_state)
-        self.button_ssao.Refresh()
-
-        print(f"[DEBUG] SSAO button clicked, new_state={self.ssao_button_state}")
+    def _HandleSSAOToggle(self):
+        """Handle SSAO toggle after button state has updated."""
+        # Read the current button state
+        self.ssao_button_state = self.button_ssao.GetState() == 1
         Publisher.sendMessage("Toggle SSAO", enable=self.ssao_button_state)
-        print(f"[DEBUG] Published 'Toggle SSAO' message with enable={self.ssao_button_state}")
 
     def UntoggleSSAO(self):
         """Untoggle SSAO button when VTK version check fails."""
         self.ssao_button_state = False
-        self.button_ssao._SetState(False)
+        self.button_ssao._SetState(0)
         self.button_ssao.Refresh()
 
     def OnButtonView(self, evt):

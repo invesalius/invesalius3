@@ -929,6 +929,8 @@ class Frame(wx.Frame):
             session.SetConfig("surface_interpolation", surface_interpolation)
             session.SetConfig("language", language)
             session.SetConfig("slice_interpolation", slice_interpolation)
+            ssao_enabled = values.get(const.SSAO_ENABLED, False)
+            session.SetConfig("ssao_enabled", ssao_enabled)
             session.SetConfig("landmark_marker_shape", landmark_marker_shape)
             session.SetConfig("fiducial_marker_shape", fiducial_marker_shape)
             session.SetConfig("file_logging", file_logging)
@@ -948,6 +950,7 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Update Slice Interpolation MenuBar")
             Publisher.sendMessage("Update Navigation Mode MenuBar")
             Publisher.sendMessage("Update Surface Interpolation")
+            Publisher.sendMessage("Update SSAO Preference", enabled=ssao_enabled)
 
     def ShowAbout(self):
         """
