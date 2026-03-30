@@ -921,10 +921,7 @@ class MasksListCtrlPanel(InvListCtrl):
                 break
 
         if global_idx == -1:
-            print(f" OnCheckItem: global_idx not found for local index {index}")
             return
-
-        print(f" OnCheckItem: global_idx = {global_idx}")
 
         if flag:
             Publisher.sendMessage("Change mask selected", index=global_idx)
@@ -955,6 +952,15 @@ class MasksListCtrlPanel(InvListCtrl):
             local_position = len(self.mask_list_index)
             self.mask_list_index[mask.index] = local_position
             self.InsertNewItem(local_position, mask.name, str(mask.threshold_range), mask.colour)
+
+            # Set checkbox state based on mask.is_shown
+            if mask.is_shown:
+                self.SetItemImage(local_position, 1)  # Checked
+                # Trigger the show mask message to enable menu items
+                Publisher.sendMessage("Show mask", index=mask.index, value=True)
+            else:
+                self.SetItemImage(local_position, 0)  # Unchecked
+                Publisher.sendMessage("Show mask", index=mask.index, value=False)
 
     def EditMaskThreshold(self, global_mask_id, threshold_range):
         if global_mask_id in self.mask_list_index:
