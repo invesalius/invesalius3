@@ -38,8 +38,8 @@ import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius import inv_paths
-from invesalius.project import Project
 from invesalius.i18n import tr as _
+from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
 (
@@ -2398,7 +2398,7 @@ class ImagePage(wx.Panel):
 
         # Ensure Original is present if loading a fresh project
         if not proj.image_versions and slc.matrix is not None:
-            proj.image_versions.append((_( "Original"), slc.matrix.copy()))
+            proj.image_versions.append((_("Original"), slc.matrix.copy()))
 
         # Add all entries without auto-selecting (eye icons are reset in add_entry)
         for label, matrix in proj.image_versions:
