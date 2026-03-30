@@ -1986,13 +1986,9 @@ class Slice(metaclass=utils.Singleton):
             return
         self._is_filtering = True
 
-        # Always apply to the original matrix snapshot to keep each filter independent
-        # Store it on first filter application; reset it if the user loads new data
-        if not hasattr(self, "_original_matrix") or self._original_matrix is None:
-            self._original_matrix = self.matrix.copy()
-
         def _run_filter():
-            matrix = self._original_matrix
+            # Use the current matrix to allow filter chaining
+            matrix = self.matrix
             dtype = matrix.dtype
 
             try:
@@ -2054,6 +2050,14 @@ class Slice(metaclass=utils.Singleton):
     def _after_filter(self):
         """Called on the main thread after filter completes."""
         self._is_filtering = False
+
+        # Add the new filtered version to the project
+        proj = Project()
+        filtered_label = _("Filtered")
+        n_filtered = sum(1 for lbl, _mat in proj.image_versions if lbl.startswith(filtered_label))
+        label = filtered_label + (f" {n_filtered + 1}" if n_filtered else "")
+        proj.image_versions.append((label, self.matrix.copy()))
+
         # Must discard cached VTK buffers so viewers re-read the updated matrix
         self.discard_all_buffers()
         Publisher.sendMessage("Reload actual slice")
@@ -2067,11 +2071,13 @@ class Slice(metaclass=utils.Singleton):
         Called when the user selects a row in the Images notebook tab.
         *matrix* is a numpy array previously snapshotted by ImagePage.
         """
-        self.matrix[:] = matrix
-        self.discard_all_buffers()
-        Publisher.sendMessage("Reload actual slice")
-        Publisher.sendMessage("Update slice viewer")
-        Publisher.sendMessage("Render volume viewer")
+        if self.matrix is not None:
+            # Swap reference instead of overwriting memory to avoid corruption
+            self.matrix = matrix
+            self.discard_all_buffers()
+            Publisher.sendMessage("Reload actual slice")
+            Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage("Render volume viewer")
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:

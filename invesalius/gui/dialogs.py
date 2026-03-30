@@ -7883,7 +7883,10 @@ class ImageFilterDialog(wx.Dialog):
         self.cb_filter = wx.ComboBox(
             self,
             -1,
-            choices=[_("Despeckle"), _("Border Detection")],
+            choices=[
+                _("Despeckle"),
+                _("Border Detection"),
+            ],
             style=wx.CB_READONLY,
         )
         self.cb_filter.SetSelection(0)
@@ -7897,7 +7900,7 @@ class ImageFilterDialog(wx.Dialog):
         )
 
         # Buttons
-        self.btn_apply = wx.Button(self, wx.ID_APPLY, _("Apply to Volume"))
+        self.btn_apply = wx.Button(self, wx.ID_APPLY, _("Apply"))
         self.btn_close = wx.Button(self, wx.ID_CLOSE, _("Close"))
 
         # Layout
@@ -7950,6 +7953,7 @@ class ImageFilterDialog(wx.Dialog):
         Publisher.sendMessage("Set active image", index=idx)
 
     def _on_select_filter(self, evt):
+        # 0 (Despeckle) has sensitivity, 1 (Border Detection) does not
         is_despeckle = self.cb_filter.GetSelection() == 0
         self.lbl_sensitivity.Show(is_despeckle)
         self.spin_sensitivity.Show(is_despeckle)
@@ -7957,7 +7961,7 @@ class ImageFilterDialog(wx.Dialog):
         self.Fit()
 
     def _on_apply(self, evt):
-        # 0 → Despeckle (filter_type=4), 1 → Border Detection (filter_type=5)
+        # 0 -> Despeckle (type 4), 1 -> Border Detection (type 5)
         filter_type = 4 + self.cb_filter.GetSelection()
         value = self.spin_sensitivity.GetValue()
         self.btn_apply.Disable()
@@ -7966,7 +7970,7 @@ class ImageFilterDialog(wx.Dialog):
 
     def _on_filter_done(self):
         if self.btn_apply:
-            self.btn_apply.SetLabel(_("Apply to Volume"))
+            self.btn_apply.SetLabel(_("Apply"))
             self.btn_apply.Enable()
         # Refresh volume list in case a new filtered version was created
         wx.CallAfter(Publisher.sendMessage, "Get image labels")

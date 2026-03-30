@@ -31,6 +31,7 @@ from scipy import ndimage
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.session as ses
+import invesalius.utils as utils
 import invesalius_rs as floodfill
 from invesalius.data.volume_mask import VolumeMask
 from invesalius.pubsub import pub as Publisher
@@ -310,13 +311,12 @@ class Mask:
             if update_volume_viewer:
                 Publisher.sendMessage("Render volume viewer")
 
-    def SavePlist(self, dir_temp, filelist):
+    def SavePlist(self, dir_temp, filelist, save_temp_files=None):
         mask = {}
         filename = f"mask_{self.index}"
         mask_filename = f"{filename}.dat"
-        # mask_filepath = os.path.join(dir_temp, mask_filename)
+        # Map the live mask data file into the archive — never add to save_temp_files
         filelist[self.temp_file] = mask_filename
-        # self._save_mask(mask_filepath)
 
         mask["index"] = self.index
         mask["name"] = self.name
@@ -330,13 +330,15 @@ class Mask:
         mask["edited"] = self.was_edited
 
         plist_filename = filename + ".plist"
-        # plist_filepath = os.path.join(dir_temp, plist_filename)
 
         temp_fd, temp_plist = tempfile.mkstemp()
         with open(temp_plist, "w+b") as f:
             plistlib.dump(mask, f)
 
         filelist[temp_plist] = plist_filename
+        # The plist metadata file is safe to delete once save is complete
+        if save_temp_files is not None:
+            save_temp_files.add(temp_plist)
         os.close(temp_fd)
 
         return plist_filename

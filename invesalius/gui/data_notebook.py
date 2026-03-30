@@ -37,7 +37,8 @@ import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
-from invesalius import inv_paths, project
+from invesalius import inv_paths
+from invesalius.project import Project
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -382,7 +383,7 @@ class MaskPage(wx.Panel):
         self.create_category("General")
 
         if not clear_project:
-            mask_dict = project.Project().mask_dict
+            mask_dict = Project().mask_dict
             for i in sorted(mask_dict.keys()):
                 mask = mask_dict[i]
                 self.AddMask(mask)
@@ -2289,11 +2290,7 @@ class ImagePage(wx.Panel):
     # ------------------------------------------------------------------
 
     def _init_gui(self):
-        self.list_ctrl = wx.ListCtrl(
-            self,
-            style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN,
-            size=wx.Size(256, 120),
-        )
+        self.list_ctrl = ImagesListCtrl(self)
         self.list_ctrl.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.list_ctrl.InsertColumn(1, _("Image"), width=175)
         self.list_ctrl.InsertColumn(2, _("Info"), width=80)
@@ -2331,8 +2328,6 @@ class ImagePage(wx.Panel):
     # ------------------------------------------------------------------
 
     def _bind_events(self):
-        self.list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_select)
-
         Publisher.subscribe(self._on_project_loaded, "Load slice to viewer")
         Publisher.subscribe(self._on_filter_done, "Image filter done")
         Publisher.subscribe(self._on_close, "Close project data")
@@ -2347,41 +2342,35 @@ class ImagePage(wx.Panel):
 
     def add_entry(self, label, matrix):
         """Add a new image version entry."""
-        self._entries.append((label, matrix))
+        # Entries are now stored in Project().image_versions
+        proj = Project()
         idx = self.list_ctrl.GetItemCount()
         info = _("Original") if idx == 0 else _("Filtered")
         self.list_ctrl.InsertItem(idx, "")
         self.list_ctrl.SetItemImage(idx, 0)
         self.list_ctrl.SetItem(idx, 1, label)
         self.list_ctrl.SetItem(idx, 2, info)
-        # Auto-select the newly added item (triggers _on_select)
+        # Ensure only the new item has the eye icon (radio behavior)
+        for i in range(self.list_ctrl.GetItemCount()):
+            self.list_ctrl.SetItemImage(i, 0)
+        self.list_ctrl.SetItemImage(idx, 1)
+
+        # Auto-select the newly added item (triggers _on_select if it was checked)
         self.list_ctrl.Select(idx)
         self.list_ctrl.Focus(idx)
 
     def clear(self):
         self.list_ctrl.DeleteAllItems()
-        self._entries.clear()
+        # Project().image_versions should be cleared by Project close logic
 
     # ------------------------------------------------------------------
     # Handlers
     # ------------------------------------------------------------------
 
-    def _on_select(self, evt):
-        """Switch active volume to the selected image version and update icons."""
-        idx = evt.GetIndex()
-        if 0 <= idx < len(self._entries):
-            # Update icons: set all to invisible (0), then active to visible (1)
-            for i in range(self.list_ctrl.GetItemCount()):
-                self.list_ctrl.SetItemImage(i, 0)
-            self.list_ctrl.SetItemImage(idx, 1)
-
-            _, matrix = self._entries[idx]
-            Publisher.sendMessage("Switch active image", matrix=matrix)
-        evt.Skip()
-
     def _on_get_image_labels(self):
         """Provide a list of current image labels and active index to the requester."""
-        labels = [lbl for lbl, _ in self._entries]
+        proj = Project()
+        labels = [lbl for lbl, _ in proj.image_versions]
 
         # Find currently active index (the one with the visible eye icon)
         active_idx = 0
@@ -2400,24 +2389,78 @@ class ImagePage(wx.Panel):
             self.list_ctrl.Focus(index)
 
     def _on_project_loaded(self, *args, **kwargs):
-        """Called when a new project is loaded — reset to just 'Original'."""
+        """Called when a new project is loaded — populate version list from project."""
         import invesalius.data.slice_ as slice_module
 
         self.clear()
+        proj = Project()
         slc = slice_module.Slice()
-        if hasattr(slc, "matrix") and slc.matrix is not None:
-            self.add_entry(_("Original"), slc.matrix.copy())
+
+        # Ensure Original is present if loading a fresh project
+        if not proj.image_versions and slc.matrix is not None:
+            proj.image_versions.append((_( "Original"), slc.matrix.copy()))
+
+        # Add all entries without auto-selecting (eye icons are reset in add_entry)
+        for label, matrix in proj.image_versions:
+            idx = self.list_ctrl.GetItemCount()
+            info = _("Original") if idx == 0 else _("Filtered")
+            self.list_ctrl.InsertItem(idx, "")
+            self.list_ctrl.SetItemImage(idx, 0)  # start hidden
+            self.list_ctrl.SetItem(idx, 1, label)
+            self.list_ctrl.SetItem(idx, 2, info)
+
+        # After all entries are loaded, activate item 0 exclusively
+        if self.list_ctrl.GetItemCount() > 0:
+            for i in range(self.list_ctrl.GetItemCount()):
+                self.list_ctrl.SetItemImage(i, 0)
+            self.list_ctrl.SetItemImage(0, 1)  # only Original is active on load
+            self.list_ctrl.Select(0)
+            self.list_ctrl.Focus(0)
 
     def _on_filter_done(self):
-        """Called after a filter is applied — add a new filtered entry."""
-        import invesalius.data.slice_ as slice_module
-
-        slc = slice_module.Slice()
-        if hasattr(slc, "matrix") and slc.matrix is not None:
-            filtered_label = _("Filtered")
-            n_filtered = sum(1 for lbl, _mat in self._entries if lbl.startswith(filtered_label))
-            label = filtered_label + (f" {n_filtered + 1}" if n_filtered else "")
-            self.add_entry(label, slc.matrix.copy())
+        """Called after a filter is applied — add the latest project version to the list."""
+        proj = Project()
+        if proj.image_versions:
+            label, matrix = proj.image_versions[-1]
+            self.add_entry(label, matrix)
 
     def _on_close(self):
         wx.CallAfter(self.clear)
+
+
+class ImagesListCtrl(InvListCtrl):
+    def __init__(self, parent):
+        super().__init__(parent, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN)
+        # Bind selection event directly here — the double-underscore __bind_events_wx
+        # in the parent uses name-mangling and cannot be overridden from a subclass.
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
+
+    def OnCheckItem(self, index, flag):
+        """Handle single-click on the eye icon (column 0).
+        Always switch to the clicked item — never allow un-checking.
+        """
+        # Make this item active regardless of its previous state
+        for i in range(self.GetItemCount()):
+            self.SetItemImage(i, 0)
+        self.SetItemImage(index, 1)
+        self.Select(index)
+        self.Focus(index)
+        self.OnSelectionChanged(None, index)
+
+    def OnSelectionChanged(self, evt, manual_index=None):
+        idx = evt.GetIndex() if evt else manual_index
+        if idx is None:
+            return
+        proj = Project()
+        if 0 <= idx < len(proj.image_versions):
+            # Update icons: set all to invisible (0), then active to visible (1)
+            for i in range(self.GetItemCount()):
+                self.SetItemImage(i, 0)
+            self.SetItemImage(idx, 1)
+
+            _, matrix = proj.image_versions[idx]
+            Publisher.sendMessage("Switch active image", matrix=matrix)
+
+    def __bind_events_wx(self):
+        """Not called due to name-mangling — binding is done in __init__ instead."""
+        pass

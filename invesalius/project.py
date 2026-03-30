@@ -31,6 +31,7 @@ from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius
 import invesalius.constants as const
+import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.gui.dialogs import ErrorMessageBox
 
@@ -88,6 +89,9 @@ class Project(metaclass=Singleton):
         self.threshold_range = ""
 
         self.raycasting_preset = ""
+
+        # Image versions (labels and matrices for filtered images)
+        self.image_versions: list[tuple[str, np.ndarray | str]] = []
 
         # Image fiducials for navigation
         self.image_fiducials = np.full([3, 3], np.nan)
@@ -213,8 +217,10 @@ class Project(metaclass=Singleton):
 
         self.compress = compress
 
-        # filename_tmp = os.path.join(dir_temp, "matrix.dat")
         filelist = {}
+        # Tracks ONLY the temp files created by THIS save call that are safe to delete afterward.
+        # We must NEVER add mask data files or image matrix files to this set.
+        save_temp_files = set()
 
         project = {
             # Format info
@@ -234,7 +240,7 @@ class Project(metaclass=Singleton):
             "image_fiducials": self.image_fiducials.tolist(),
         }
 
-        # Saving the matrix containing the slices
+        # Saving the main matrix containing the slices
         matrix = {
             "filename": "matrix.dat",
             "shape": self.matrix_shape,
@@ -242,12 +248,33 @@ class Project(metaclass=Singleton):
         }
         project["matrix"] = matrix
         filelist[self.matrix_filename] = "matrix.dat"
-        # shutil.copyfile(self.matrix_filename, filename_tmp)
 
-        # Saving the masks
+        # Saving the extra image versions (filtered versions)
+        image_versions_plist = []
+        for i, (label, mat) in enumerate(self.image_versions):
+            v_filename = f"matrix_v{i}.dat"
+
+            if isinstance(mat, np.ndarray):
+                # mat is in-memory: write it to a new temp file
+                fd_v, temp_v = tempfile.mkstemp()
+                m_v = np.memmap(temp_v, shape=mat.shape, dtype=mat.dtype, mode="w+")
+                m_v[:] = mat
+                del m_v
+                os.close(fd_v)
+                filelist[temp_v] = v_filename
+                save_temp_files.add(temp_v)  # safe to delete after save
+            else:
+                # mat is a file path to an existing memmap — do NOT delete after save
+                filelist[mat] = v_filename
+
+            image_versions_plist.append({"label": label, "filename": v_filename})
+
+        project["image_versions"] = image_versions_plist
+
+        # Saving the masks (mask data files are owned by the Mask object — never delete them)
         masks = {}
         for index in self.mask_dict:
-            masks[str(index)] = self.mask_dict[index].SavePlist(dir_temp, filelist)
+            masks[str(index)] = self.mask_dict[index].SavePlist(dir_temp, filelist, save_temp_files)
         project["masks"] = masks
 
         # Saving the surfaces
@@ -264,6 +291,7 @@ class Project(metaclass=Singleton):
             plistlib.dump(measurements, f)
         filelist[temp_mplist] = measurements_filename
         project["measurements"] = measurements_filename
+        save_temp_files.add(temp_mplist)  # safe to delete after save
         os.close(fd_mplist)
 
         # Saving the annotations (empty in this version)
@@ -274,18 +302,22 @@ class Project(metaclass=Singleton):
         with open(temp_plist, "w+b") as f:
             plistlib.dump(project, f)
         filelist[temp_plist] = "main.plist"
+        save_temp_files.add(temp_plist)  # safe to delete after save
         os.close(temp_fd)
 
         # Compressing and generating the .inv3 file
         path = os.path.join(dir_, filename)
         Compress(dir_temp, path, filelist, compress)
 
-        # Removing the temp folder.
+        # Removing the temp folder (only contains copies, not originals).
         shutil.rmtree(dir_temp)
 
-        for f in filelist:
-            if filelist[f].endswith(".plist"):
+        # Only delete files we explicitly created during THIS save — never active data files.
+        for f in save_temp_files:
+            try:
                 os.remove(f)
+            except OSError:
+                pass
 
     def OpenPlistProject(self, filename):
         if not const.VTK_WARNING:
@@ -325,14 +357,14 @@ class Project(metaclass=Singleton):
         self.window = project["window_width"]
         self.level = project["window_level"]
         self.threshold_range = project["scalar_range"]
-        self.spacing = project["spacing"]
+        self.spacing = tuple(project["spacing"])
 
         self.compress = project.get("compress", True)
 
         # Opening the matrix containing the slices
         filepath: str = os.path.join(dirpath, project["matrix"]["filename"])
         self.matrix_filename = filepath
-        self.matrix_shape = project["matrix"]["shape"]
+        self.matrix_shape = tuple(project["matrix"]["shape"])
         self.matrix_dtype = project["matrix"]["dtype"]
 
         if project.get("affine", ""):
@@ -342,6 +374,18 @@ class Project(metaclass=Singleton):
             self.image_fiducials = np.asarray(project["image_fiducials"])
         except KeyError:
             pass
+
+        # Opening image versions
+        self.image_versions = []
+        for version in project.get("image_versions", []):
+            label = version["label"]
+            v_filename = version["filename"]
+            v_filepath = os.path.join(dirpath, v_filename)
+            # We store the filepath at first, or we can load it into memmap
+            if os.path.exists(v_filepath):
+                # Using 'r+' so they can be filtered further if needed
+                mat = np.memmap(v_filepath, shape=self.matrix_shape, dtype=self.matrix_dtype, mode="r+")
+                self.image_versions.append((label, mat))
 
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()
@@ -513,7 +557,11 @@ def Compress(
         if ".." in sanit_name or os.path.isabs(sanit_name):
             continue
 
-        tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
+        if not os.path.exists(name):
+            utils.debug(f"Warning: Skipping missing file during compression: {name}")
+            continue
+
+        tar.add(name, arcname=os.path.join(tmpdir_, sanit_name))
     tar.close()
     os.close(fd_inv3)
     shutil.move(temp_inv3, filename)
