@@ -149,7 +149,9 @@ class Viewer(wx.Panel):
         self._fps_frames = 0
         self.fps_text = vtku.Text()
         self.fps_text.SetSize(const.TEXT_SIZE_SMALL)
-        self.fps_text.SetPosition((const.TEXT_POS_LEFT_UP[0], min(0.995, const.TEXT_POS_LEFT_UP[1] + 0.02)))
+        self.fps_text.SetPosition(
+            (const.TEXT_POS_LEFT_UP[0], min(0.995, const.TEXT_POS_LEFT_UP[1] + 0.02))
+        )
         self.fps_text.SetValue("FPS: --")
         self._fps_text_visible = True
         self.nav_status = False

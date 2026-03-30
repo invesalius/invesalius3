@@ -534,9 +534,11 @@ class CoordinateCorregistrate(threading.Thread):
         obj_id = obj_data[0]
         obj_cache = self._obj_cache.get(obj_id)
         if obj_cache is None:
-            return corregistrate_object_dynamic(
-                m_change, obj_data, coord_raw, icp
-            ) if self.ref_mode_id else corregistrate_object_static(m_change, obj_data, coord_raw, icp)
+            return (
+                corregistrate_object_dynamic(m_change, obj_data, coord_raw, icp)
+                if self.ref_mode_id
+                else corregistrate_object_static(m_change, obj_data, coord_raw, icp)
+            )
 
         m_probe = self._object_marker_to_center_cached(coord_raw, obj_cache)
 
@@ -553,9 +555,7 @@ class CoordinateCorregistrate(threading.Thread):
             m_probe[2, -1] = -m_probe[2, -1]
             m_img = m_change @ m_probe
             r_obj = (
-                obj_cache["r_obj_img_m_obj_raw_inv_s0_dyn_inv"]
-                @ m_probe
-                @ obj_cache["m_obj_raw"]
+                obj_cache["r_obj_img_m_obj_raw_inv_s0_dyn_inv"] @ m_probe @ obj_cache["m_obj_raw"]
             )
 
         m_img[:3, :3] = r_obj[:3, :3]
