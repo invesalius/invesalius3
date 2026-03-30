@@ -284,6 +284,27 @@ class Slice(metaclass=utils.Singleton):
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()  # resets index=-1 + clears all image/mask caches
 
+    def _get_base_matrix_slice(self, orientation: str, slice_number: int) -> "np.ndarray":
+        """Return a 2D slice from the ORIGINAL (unfiltered) image matrix.
+
+        Threshold and mask calculations must always operate on the original
+        anatomy data, not on any filtered version, so that the mask stays
+        stable when the user merely navigates slices.
+        Falls back to self.matrix when no image-version history exists.
+        """
+        proj = Project()
+        if proj.image_versions:
+            base_matrix = proj.image_versions[0][1]
+        else:
+            base_matrix = self.matrix
+
+        if orientation == "AXIAL":
+            return np.array(base_matrix[slice_number])
+        elif orientation == "CORONAL":
+            return np.array(base_matrix[:, slice_number, :])
+        else:  # SAGITAL
+            return np.array(base_matrix[:, :, slice_number])
+
     def get_world_to_invesalius_vtk_affine(
         self, inverse: bool = False
     ) -> tuple[np.ndarray, "vtkMatrix4x4", float]:
@@ -1086,11 +1107,13 @@ class Slice(metaclass=utils.Singleton):
         ):
             return self.buffer_slices[orientation].mask
         n = slice_number + 1
+        # Always threshold against the ORIGINAL (unfiltered) image so that
+        # merely scrolling slices does not mutate the mask when a filter is active.
         if orientation == "AXIAL":
             if self.current_mask.matrix[n, 0, 0] == 0:
                 mask = self.current_mask.matrix[n, 1:, 1:]
                 mask[:] = self.do_threshold_to_a_slice(
-                    self.get_image_slice(orientation, slice_number), mask
+                    self._get_base_matrix_slice(orientation, slice_number), mask
                 )
                 self.current_mask.matrix[n, 0, 0] = 1
             n_mask = np.array(
@@ -1102,7 +1125,7 @@ class Slice(metaclass=utils.Singleton):
             if self.current_mask.matrix[0, n, 0] == 0:
                 mask = self.current_mask.matrix[1:, n, 1:]
                 mask[:] = self.do_threshold_to_a_slice(
-                    self.get_image_slice(orientation, slice_number), mask
+                    self._get_base_matrix_slice(orientation, slice_number), mask
                 )
                 self.current_mask.matrix[0, n, 0] = 1
             n_mask = np.array(
@@ -1114,7 +1137,7 @@ class Slice(metaclass=utils.Singleton):
             if self.current_mask.matrix[0, 0, n] == 0:
                 mask = self.current_mask.matrix[1:, 1:, n]
                 mask[:] = self.do_threshold_to_a_slice(
-                    self.get_image_slice(orientation, slice_number), mask
+                    self._get_base_matrix_slice(orientation, slice_number), mask
                 )
                 self.current_mask.matrix[0, 0, n] = 1
             n_mask = np.array(
@@ -1185,17 +1208,23 @@ class Slice(metaclass=utils.Singleton):
         proj = Project()
         if proj.mask_dict[index] == self.current_mask:
             self.current_mask.was_edited = False
-            # TODO: find out a better way to do threshold
+            # Always threshold on the original (unfiltered) image data.
+            _base = proj.image_versions[0][1] if proj.image_versions else self.matrix
             if slice_number is None:
-                for n, slice_ in enumerate(self.matrix):
-                    print(n)
+                for n, slice_ in enumerate(_base):
                     m = np.ones(slice_.shape, self.current_mask.matrix.dtype)
                     m[slice_ < thresh_min] = 0
                     m[slice_ > thresh_max] = 0
                     m[m == 1] = 255
                     self.current_mask.matrix[n + 1, 1:, 1:] = m
             else:
-                slice_ = self.buffer_slices[orientation].image
+                # Use the base-image slice cached in the buffer (already the
+                # original orientation slice if _get_base_matrix_slice was used),
+                # or fall back to extracting directly from the base matrix.
+                if orientation is not None:
+                    slice_ = self._get_base_matrix_slice(orientation, slice_number)
+                else:
+                    slice_ = None
                 if slice_ is not None:
                     self.buffer_slices[orientation].mask = (
                         255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))
@@ -1598,11 +1627,14 @@ class Slice(metaclass=utils.Singleton):
         """
         if mask is None:
             mask = self.current_mask
+        # Always use the original (unfiltered) image data for thresholding.
+        proj = Project()
+        _base = proj.image_versions[0][1] if proj.image_versions else self.matrix
         for n in range(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
                 mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(
-                    self.matrix[n - 1], m, mask.threshold_range
+                    _base[n - 1], m, mask.threshold_range
                 )
 
         mask.matrix.flush()
@@ -1985,6 +2017,15 @@ class Slice(metaclass=utils.Singleton):
         if getattr(self, "_is_filtering", False):
             return
         self._is_filtering = True
+
+        # ------------------------------------------------------------------ #
+        # Guarantee that image_versions[0] is always the unfiltered original. #
+        # This must happen synchronously (on the main thread) before the       #
+        # filter thread starts, because the thread overwrites self.matrix.     #
+        # ------------------------------------------------------------------ #
+        proj = Project()
+        if not proj.image_versions:
+            proj.image_versions.append((_("Original"), self.matrix.copy()))
 
         def _run_filter():
             # Use the current matrix to allow filter chaining
