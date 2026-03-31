@@ -2899,6 +2899,12 @@ class Viewer(wx.Panel):
             if self.on_wl:
                 self.text.Show()
 
+            # Apply SSAO if enabled in preferences
+            session = ses.Session()
+            ssao_enabled = session.GetConfig("ssao_enabled", False)
+            if ssao_enabled and not self.ssao_enabled:
+                self._EnableSSAO()
+
     def OnHideRaycasting(self):
         self.raycasting_volume = False
         self.text.Hide()
@@ -2995,6 +3001,12 @@ class Viewer(wx.Panel):
         if not self.surface_added:
             self.surface = volume
         self.EnableRuler()
+
+        # Apply SSAO if enabled in preferences
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+        if ssao_enabled and not self.ssao_enabled:
+            self._EnableSSAO()
 
     def UnloadVolume(self, volume):
         self.ren.RemoveVolume(volume)
@@ -3173,15 +3185,41 @@ class Viewer(wx.Panel):
             self.ssao_pass.SetDelegatePass(self.basic_passes)
 
             # Configure SSAO parameters
-            self.ssao_pass.SetRadius(0.1)
-            self.ssao_pass.SetBias(0.001)
+            # Increase radius for better visibility on volumes
+            self.ssao_pass.SetRadius(0.5)
+            self.ssao_pass.SetBias(0.01)
             self.ssao_pass.SetKernelSize(128)
 
-            # Apply the pass to the renderer (applies to both surfaces and volume)
-            self.ren.SetPass(self.ssao_pass)
+            # Enable blur for smoother effect
+            self.ssao_pass.SetBlur(True)
+
+            # Volume-specific SSAO parameters (available in VTK 9.4+)
+            # These improve SSAO on volume raycasting but are not available in VTK 9.3.0
+            if hasattr(self.ssao_pass, "SetVolumeOpacityThreshold"):
+                self.ssao_pass.SetVolumeOpacityThreshold(0.95)
+            if hasattr(self.ssao_pass, "SetIntensityScale"):
+                self.ssao_pass.SetIntensityScale(1.5)
+            if hasattr(self.ssao_pass, "SetIntensityShift"):
+                self.ssao_pass.SetIntensityShift(0.0)
+            if hasattr(self.ssao_pass, "SetDepthFormat"):
+                try:
+                    # Fixed32 = 4 in vtkTextureObject
+                    self.ssao_pass.SetDepthFormat(vtk.vtkTextureObject.Fixed32)
+                except:
+                    # Fallback to integer value if constant not available
+                    self.ssao_pass.SetDepthFormat(4)
+
+            # Apply the pass to ALL renderers (surfaces, volumes, and target guide)
+            # This ensures SSAO works with both surface rendering and volume raycasting
+            for renderer in self.renderers:
+                # Skip canvas renderer (layer 1, used for 2D overlays)
+                if renderer.GetLayer() == 0:
+                    renderer.SetPass(self.ssao_pass)
 
             self.ssao_enabled = True
-            self.UpdateRender()
+
+            # Force render update
+            self.interactor.GetRenderWindow().Render()
 
         except ImportError as e:
             wx.MessageBox(
@@ -3203,15 +3241,19 @@ class Viewer(wx.Panel):
     def _DisableSSAO(self):
         """Disable SSAO render pass and restore default rendering."""
         if self.ssao_pass:
-            # Remove the pass from the renderer
-            self.ren.SetPass(None)
+            # Remove the pass from ALL renderers
+            for renderer in self.renderers:
+                if renderer.GetLayer() == 0:
+                    renderer.SetPass(None)
 
             # Clean up
             self.ssao_pass = None
             self.basic_passes = None
 
             self.ssao_enabled = False
-            self.UpdateRender()
+
+            # Force render update
+            self.interactor.GetRenderWindow().Render()
 
 
 class SlicePlane:

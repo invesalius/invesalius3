@@ -437,6 +437,10 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisablePreset, "Close project data")
         Publisher.subscribe(self.Uncheck, "Uncheck image plane menu")
         Publisher.subscribe(self.UntoggleSSAO, "Untoggle SSAO")
+        Publisher.subscribe(self.OnUpdateSSAOPreference, "Update SSAO Preference")
+
+        # Load SSAO preference on startup and sync button state
+        wx.CallAfter(self.LoadSSAOPreference)
 
     def DisablePreset(self):
         self.off_item.Check(1)
@@ -475,6 +479,28 @@ class VolumeToolPanel(wx.Panel):
         self.ssao_button_state = False
         self.button_ssao._SetState(0)
         self.button_ssao.Refresh()
+
+    def OnUpdateSSAOPreference(self, enabled):
+        """Update SSAO button state when preference changes."""
+        self.ssao_button_state = enabled
+        self.button_ssao._SetState(1 if enabled else 0)
+        self.button_ssao.Refresh()
+
+    def LoadSSAOPreference(self):
+        """Load SSAO preference from config and sync button state on startup."""
+        import invesalius.session as ses
+
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+
+        # Sync button state with saved preference
+        self.ssao_button_state = ssao_enabled
+        self.button_ssao._SetState(1 if ssao_enabled else 0)
+        self.button_ssao.Refresh()
+
+        # Apply SSAO if enabled in preferences
+        if ssao_enabled:
+            Publisher.sendMessage("Toggle SSAO", enable=True)
 
     def OnButtonView(self, evt):
         self.button_view.PopupMenu(self.menu_view)
