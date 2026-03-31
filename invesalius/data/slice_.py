@@ -284,27 +284,6 @@ class Slice(metaclass=utils.Singleton):
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()  # resets index=-1 + clears all image/mask caches
 
-    def _get_base_matrix_slice(self, orientation: str, slice_number: int) -> "np.ndarray":
-        """Return a 2D slice from the ORIGINAL (unfiltered) image matrix.
-
-        Threshold and mask calculations must always operate on the original
-        anatomy data, not on any filtered version, so that the mask stays
-        stable when the user merely navigates slices.
-        Falls back to self.matrix when no image-version history exists.
-        """
-        proj = Project()
-        if proj.image_versions:
-            base_matrix = proj.image_versions[0][1]
-        else:
-            base_matrix = self.matrix
-
-        if orientation == "AXIAL":
-            return np.array(base_matrix[slice_number])
-        elif orientation == "CORONAL":
-            return np.array(base_matrix[:, slice_number, :])
-        else:  # SAGITAL
-            return np.array(base_matrix[:, :, slice_number])
-
     def get_world_to_invesalius_vtk_affine(
         self, inverse: bool = False
     ) -> tuple[np.ndarray, "vtkMatrix4x4", float]:
@@ -1107,13 +1086,11 @@ class Slice(metaclass=utils.Singleton):
         ):
             return self.buffer_slices[orientation].mask
         n = slice_number + 1
-        # Always threshold against the ORIGINAL (unfiltered) image so that
-        # merely scrolling slices does not mutate the mask when a filter is active.
         if orientation == "AXIAL":
             if self.current_mask.matrix[n, 0, 0] == 0:
                 mask = self.current_mask.matrix[n, 1:, 1:]
                 mask[:] = self.do_threshold_to_a_slice(
-                    self._get_base_matrix_slice(orientation, slice_number), mask
+                    self.get_image_slice(orientation, slice_number), mask
                 )
                 self.current_mask.matrix[n, 0, 0] = 1
             n_mask = np.array(
@@ -1125,7 +1102,7 @@ class Slice(metaclass=utils.Singleton):
             if self.current_mask.matrix[0, n, 0] == 0:
                 mask = self.current_mask.matrix[1:, n, 1:]
                 mask[:] = self.do_threshold_to_a_slice(
-                    self._get_base_matrix_slice(orientation, slice_number), mask
+                    self.get_image_slice(orientation, slice_number), mask
                 )
                 self.current_mask.matrix[0, n, 0] = 1
             n_mask = np.array(
@@ -1137,7 +1114,7 @@ class Slice(metaclass=utils.Singleton):
             if self.current_mask.matrix[0, 0, n] == 0:
                 mask = self.current_mask.matrix[1:, 1:, n]
                 mask[:] = self.do_threshold_to_a_slice(
-                    self._get_base_matrix_slice(orientation, slice_number), mask
+                    self.get_image_slice(orientation, slice_number), mask
                 )
                 self.current_mask.matrix[0, 0, n] = 1
             n_mask = np.array(
@@ -1208,15 +1185,15 @@ class Slice(metaclass=utils.Singleton):
         proj = Project()
         if proj.mask_dict[index] == self.current_mask:
             self.current_mask.was_edited = False
-            # Always threshold on the original (unfiltered) image data.
-            _base = proj.image_versions[0][1] if proj.image_versions else self.matrix
+            # Threshold using the ACTIVE matrix for consistency with what the user sees.
             if slice_number is None:
-                for n, slice_ in enumerate(_base):
+                for n, slice_ in enumerate(self.matrix):
                     m = np.ones(slice_.shape, self.current_mask.matrix.dtype)
                     m[slice_ < thresh_min] = 0
                     m[slice_ > thresh_max] = 0
                     m[m == 1] = 255
                     self.current_mask.matrix[n + 1, 1:, 1:] = m
+                    self.current_mask.matrix[n + 1, 0, 0] = 1
             else:
                 # Per-slice path: visual preview only (called when user drags
                 # threshold slider). Uses the currently-buffered image — this
@@ -1625,15 +1602,13 @@ class Slice(metaclass=utils.Singleton):
         """
         if mask is None:
             mask = self.current_mask
-        # Always use the original (unfiltered) image data for thresholding.
-        proj = Project()
-        _base = proj.image_versions[0][1] if proj.image_versions else self.matrix
         for n in range(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
                 mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(
-                    _base[n - 1], m, mask.threshold_range
+                    self.matrix[n - 1], m, mask.threshold_range
                 )
+                mask.matrix[n, 0, 0] = 1
 
         mask.matrix.flush()
 
@@ -2113,6 +2088,15 @@ class Slice(metaclass=utils.Singleton):
         if self.matrix is not None:
             # Swap reference instead of overwriting memory to avoid corruption
             self.matrix = matrix
+
+            # Invalidate threshold flags in the current mask to ensure stability
+            # across image versions during lazy evaluation (scrolling).
+            # This forces scrolling to re-threshold against the newly active matrix.
+            if self.current_mask:
+                self.current_mask.matrix[:, 0, 0] = 0
+                self.current_mask.matrix[0, :, 0] = 0
+                self.current_mask.matrix[0, 0, :] = 0
+
             self.discard_all_buffers()
             Publisher.sendMessage("Reload actual slice")
             Publisher.sendMessage("Update slice viewer")
