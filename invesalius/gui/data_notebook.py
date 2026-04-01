@@ -703,7 +703,6 @@ class InvListCtrl(wx.ListCtrl):
         return -1
 
 
-
 class MasksListCtrlPanel(InvListCtrl):
     def __init__(
         self,
