@@ -281,25 +281,21 @@ class Project(metaclass=Singleton):
             try:
                 metadata_filename = "metadata.json"
                 temp_metadata = os.path.join(dir_temp, metadata_filename)
-                logger.info(f"Attempting to save metadata to: {temp_metadata}")
-                logger.info(f"Metadata store has data: {self.metadata_store.get_all_metadata() is not None}")
                 
                 self.metadata_store.save(temp_metadata, compress=False)
                 
                 # Verify file was created
                 if os.path.exists(temp_metadata):
                     file_size = os.path.getsize(temp_metadata)
-                    logger.info(f"✅ Metadata file created: {temp_metadata} ({file_size} bytes)")
+                    logger.info(f"Metadata file created: {temp_metadata} ({file_size} bytes)")
                     filelist[temp_metadata] = metadata_filename
                     project["metadata"] = metadata_filename
-                    logger.info(f"✅ Added metadata to filelist and project dict")
                 else:
-                    logger.error(f"❌ Metadata file was NOT created: {temp_metadata}")
+                    logger.error(f"Metadata file was not created: {temp_metadata}")
                     
             except Exception as e:
                 logger.error(f"Failed to save DICOM metadata: {e}", exc_info=True)
         else:
-            logger.info("No metadata_store available, checking dicom_files...")
             if self.dicom_files:
                 # Try to extract metadata if DICOM files are still accessible
                 try:
@@ -320,16 +316,14 @@ class Project(metaclass=Singleton):
                     # Verify file was created
                     if os.path.exists(temp_metadata):
                         file_size = os.path.getsize(temp_metadata)
-                        logger.info(f"✅ Metadata file created from extraction: {temp_metadata} ({file_size} bytes)")
+                        logger.info(f"Metadata file created from extraction: {temp_metadata} ({file_size} bytes)")
                         filelist[temp_metadata] = metadata_filename
                         project["metadata"] = metadata_filename
                     else:
-                        logger.error(f"❌ Metadata file was NOT created from extraction: {temp_metadata}")
+                        logger.error(f"Metadata file was not created from extraction: {temp_metadata}")
                         
                 except Exception as e:
                     logger.error(f"Failed to extract DICOM metadata: {e}", exc_info=True)
-            else:
-                logger.info("No dicom_files available either, skipping metadata save")
 
         # Saving the main plist
         temp_fd, temp_plist = tempfile.mkstemp()
