@@ -365,8 +365,6 @@ class Viewer(wx.Panel):
             renderer = renwin.GetNextItem()
             self.renderers.append(renderer)
 
-        print(len(self.renderers))
-
         Publisher.sendMessage("Press target mode button", pressed=False)
 
     def UpdateCanvas(self):
@@ -901,7 +899,6 @@ class Viewer(wx.Panel):
         self.angle_threshold = angle
 
     def OnUpdateDistanceThreshold(self, dist_threshold):
-        print("updated to ", dist_threshold)
         self.distance_threshold = dist_threshold
 
     def OnUpdateRobotWarning(self, robot_warning):
@@ -1292,8 +1289,6 @@ class Viewer(wx.Panel):
 
         self.coil_visualizer.AddTargetCoil(self.m_target)
 
-        print(f"Target updated to coordinates {coord}")
-
     def CreateVTKObjectMatrix(self, direction, orientation):
         m_img = dco.coordinates_to_transformation_matrix(
             position=direction,
@@ -1337,7 +1332,6 @@ class Viewer(wx.Panel):
         try:
             surface = proj.surface_dict[0].polydata
         except KeyError:
-            print("There is not any surface created")
             return barycenter
 
         polydata = surface
@@ -3177,6 +3171,10 @@ class Viewer(wx.Panel):
         try:
             from vtkmodules.vtkRenderingOpenGL2 import vtkRenderStepsPass, vtkSSAOPass
 
+            # Check if render window is properly initialized
+            if not self.interactor or not self.interactor.GetRenderWindow():
+                return
+
             # Create the basic render passes
             self.basic_passes = vtkRenderStepsPass()
 
@@ -3190,8 +3188,11 @@ class Viewer(wx.Panel):
             self.ssao_pass.SetBias(0.01)
             self.ssao_pass.SetKernelSize(128)
 
-            # Enable blur for smoother effect
-            self.ssao_pass.SetBlur(True)
+            # Enable blur for smoother effect (available in VTK 9.4+)
+            minor = vtk.vtkVersion.GetVTKMinorVersion()
+            major = vtk.vtkVersion.GetVTKMajorVersion()
+            if major > 9 or (major == 9 and minor >= 4):
+                self.ssao_pass.SetBlur(True)
 
             # Volume-specific SSAO parameters (available in VTK 9.4+)
             # These improve SSAO on volume raycasting but are not available in VTK 9.3.0

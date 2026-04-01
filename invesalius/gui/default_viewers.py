@@ -499,8 +499,9 @@ class VolumeToolPanel(wx.Panel):
         self.button_ssao.Refresh()
 
         # Apply SSAO if enabled in preferences
+        # Delay application to ensure 3D viewer is fully initialized
         if ssao_enabled:
-            Publisher.sendMessage("Toggle SSAO", enable=True)
+            wx.CallLater(500, lambda: Publisher.sendMessage("Toggle SSAO", enable=True))
 
     def OnButtonView(self, evt):
         self.button_view.PopupMenu(self.menu_view)
