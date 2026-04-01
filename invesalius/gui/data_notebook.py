@@ -691,14 +691,17 @@ class InvListCtrl(wx.ListCtrl):
         ctrl.SelectAll()
 
     def get_column_clicked(self, position):
-        epx, epy = position
-        wpx, wpy = self.GetPosition()
+        """Return the column index at the given client-relative position.
+        evt.GetPosition() is already client-relative, so no offset subtraction is needed.
+        """
+        epx = position[0]
         width_sum = 0
         for i in range(self.GetColumnCount()):
             width_sum += self.GetColumnWidth(i)
-            if (epx - wpx) <= width_sum:
+            if epx <= width_sum:
                 return i
         return -1
+
 
 
 class MasksListCtrlPanel(InvListCtrl):
@@ -928,9 +931,6 @@ class MasksListCtrlPanel(InvListCtrl):
             self.current_index = index
 
         Publisher.sendMessage("Show mask", index=global_idx, value=flag)
-
-        # Also trigger selection update since this affects the overall selection state
-        self.on_selection_changed(None)
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
         image = self.CreateColourBitmap(colour)
