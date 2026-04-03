@@ -358,12 +358,30 @@ class CoordinateCorregistrate(threading.Thread):
         self.e_field_loaded = e_field_loaded
         self.event = event
         self.sle = sle
+        self._loop_sleep = max(self.sle, 1.0 / 120.0)
         self.use_icp = icp.use_icp
         self.m_icp = icp.m_icp
         self.last_coord = None
         self.tracker_id = tracker_id
         self.target = target
         self.target_flag = False
+        self._obj_cache = {}
+        for obj_data in obj_datas.values():
+            obj_id, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = obj_data
+            m_obj_raw_inv = np.linalg.inv(m_obj_raw)
+            s0_dyn_inv = np.linalg.inv(s0_dyn)
+            self._obj_cache[obj_id] = {
+                "obj_id": obj_id,
+                "t_obj_raw": t_obj_raw,
+                "s0_raw": s0_raw,
+                "s0_raw_inv": np.linalg.inv(s0_raw),
+                "r_s0_raw_inv": np.linalg.inv(r_s0_raw),
+                "m_obj_raw": m_obj_raw,
+                "m_obj_raw_inv": m_obj_raw_inv,
+                "s0_dyn_inv": s0_dyn_inv,
+                "r_obj_img": r_obj_img,
+                "r_obj_img_m_obj_raw_inv_s0_dyn_inv": r_obj_img @ m_obj_raw_inv @ s0_dyn_inv,
+            }
 
         if self.target is not None:
             self.target = np.array(self.target)
@@ -378,34 +396,51 @@ class CoordinateCorregistrate(threading.Thread):
         m_change, r_stylus = self.coreg_data
         obj_datas = self.obj_datas
 
-        corregistrate_object = (
-            corregistrate_object_dynamic if self.ref_mode_id else corregistrate_object_static
-        )
-
         icp = (self.use_icp, self.m_icp)
+        r_stylus_eff = r_stylus
+        if r_stylus_eff is None:
+            r_stylus_eff = np.eye(3)
+            r_stylus_eff[0] = -r_stylus_eff[0]  # Flip over vtk x-axis
+        probe_rot = tr.euler_matrix(*np.radians([0, 0, -90]), axes="rxyz")[:3, :3]
+        probe_rot_inv = np.linalg.inv(probe_rot)
         while not self.event.is_set():
             try:
                 if not self.object_at_target_queue.empty():
                     self.target_flag = self.object_at_target_queue.get_nowait()
 
-                coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
+                can_push_coord = not self.coord_queue.full()
+                can_push_tracts = self.view_tracts and not self.coord_tracts_queue.full()
+                can_push_efield = self.e_field_loaded and not self.efield_queue.full()
+                if not (can_push_coord or can_push_tracts or can_push_efield):
+                    sleep(self._loop_sleep)
+                    continue
 
-                coord_probe, m_img_probe = corregistrate_probe(
-                    m_change, r_stylus, coord_raw, self.ref_mode_id, icp=icp
+                coord_raw, marker_visibilities = self.tracker.TrackerCoordinates.GetCoordinates()
+                coord_probe, m_img_probe = self._corregistrate_probe(
+                    m_change,
+                    r_stylus_eff,
+                    coord_raw,
+                    self.ref_mode_id,
+                    icp,
+                    probe_rot,
+                    probe_rot_inv,
                 )
 
                 coords = {"probe": coord_probe}
                 m_imgs = {"probe": m_img_probe}
 
-                for coil_name in obj_datas:
-                    coord_coil, m_img_coil = corregistrate_object(
-                        m_change, obj_datas[coil_name], coord_raw, icp
+                # LUKATODO: this is an arbitrary coil, so efields/tracts work correctly with 1 coil but may bug out when using multiple
+                main_coil = next(iter(obj_datas))
+                for coil_name, obj_data in obj_datas.items():
+                    if coil_name != main_coil:
+                        obj_id = obj_data[0]
+                        if obj_id < len(marker_visibilities) and not marker_visibilities[obj_id]:
+                            continue
+                    coord_coil, m_img_coil = self._corregistrate_object_cached(
+                        m_change, obj_data, coord_raw, icp
                     )
                     coords[coil_name] = coord_coil
                     m_imgs[coil_name] = m_img_coil
-
-                # LUKATODO: this is an arbitrary coil, so efields/tracts work correctly with 1 coil but may bug out when using multiple
-                main_coil = next(iter(obj_datas))
                 coord = coords[main_coil]
                 m_img = m_imgs[main_coil]
 
@@ -428,18 +463,111 @@ class CoordinateCorregistrate(threading.Thread):
                     m_imgs[main_coil] = tr.compose_matrix(angles=angles, translate=translate)
                     m_img = m_imgs[main_coil]
 
-                self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
+                if can_push_coord:
+                    self.coord_queue.put_nowait([coords, marker_visibilities, m_imgs])
 
                 # Compute data for efield/tracts
-                m_img_flip = m_img.copy()
-                m_img_flip[1, -1] = -m_img_flip[1, -1]
+                if can_push_tracts:
+                    m_img_flip = m_img.copy()
+                    m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                if self.view_tracts:
+                if can_push_tracts:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
-                if self.e_field_loaded:
+                if can_push_efield:
                     self.efield_queue.put_nowait([m_img, coord])
             except queue.Full:
                 pass
 
             # The sleep has to be in both threads
-            sleep(self.sle)
+            sleep(self._loop_sleep)
+
+    def _corregistrate_probe(
+        self, m_change, r_stylus_eff, coord_raw, ref_mode_id, icp, probe_rot, probe_rot_inv
+    ):
+        m_probe = compute_marker_transformation(coord_raw, 0)
+
+        # transform probe to reference system if dynamic ref_mode
+        if ref_mode_id:
+            m_probe_ref = object_to_reference(coord_raw, m_probe)
+        else:
+            m_probe_ref = m_probe
+
+        # invert y coordinate
+        m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+
+        # translate m_probe_ref from tracker to image space
+        m_img = m_change @ m_probe_ref
+        m_img = apply_icp(m_img, icp)
+
+        # rotate m_probe_ref from tracker to image space
+        r_img = r_stylus_eff @ probe_rot @ m_probe_ref[:3, :3] @ probe_rot_inv
+        m_img[:3, :3] = r_img[:3, :3]
+
+        # compute rotation angles
+        angles = np.degrees(tr.euler_from_matrix(m_img, axes="sxyz"))
+
+        # create output coordinate list
+        coord = (
+            m_img[0, -1],
+            m_img[1, -1],
+            m_img[2, -1],
+            angles[0],
+            angles[1],
+            angles[2],
+        )
+
+        return coord, m_img
+
+    def _object_marker_to_center_cached(self, coord_raw, obj_cache):
+        obj_id = obj_cache["obj_id"]
+        as1, bs1, gs1 = np.radians(coord_raw[obj_id, 3:])
+        r_probe = tr.euler_matrix(as1, bs1, gs1, "rzyx")
+        t_probe_raw = tr.translation_matrix(coord_raw[obj_id, :3])
+        t_offset_aux = obj_cache["r_s0_raw_inv"] @ r_probe @ obj_cache["t_obj_raw"]
+        t_offset = np.identity(4)
+        t_offset[:, -1] = t_offset_aux[:, -1]
+        t_probe = obj_cache["s0_raw"] @ t_offset @ obj_cache["s0_raw_inv"] @ t_probe_raw
+        m_probe = tr.concatenate_matrices(t_probe, r_probe)
+        return m_probe
+
+    def _corregistrate_object_cached(self, m_change, obj_data, coord_raw, icp):
+        obj_id = obj_data[0]
+        obj_cache = self._obj_cache.get(obj_id)
+        if obj_cache is None:
+            return (
+                corregistrate_object_dynamic(m_change, obj_data, coord_raw, icp)
+                if self.ref_mode_id
+                else corregistrate_object_static(m_change, obj_data, coord_raw, icp)
+            )
+
+        m_probe = self._object_marker_to_center_cached(coord_raw, obj_cache)
+
+        if self.ref_mode_id:
+            m_probe_ref = object_to_reference(coord_raw, m_probe)
+            m_probe_ref[2, -1] = -m_probe_ref[2, -1]
+            m_img = m_change @ m_probe_ref
+            r_obj = (
+                obj_cache["r_obj_img_m_obj_raw_inv_s0_dyn_inv"]
+                @ m_probe_ref
+                @ obj_cache["m_obj_raw"]
+            )
+        else:
+            m_probe[2, -1] = -m_probe[2, -1]
+            m_img = m_change @ m_probe
+            r_obj = (
+                obj_cache["r_obj_img_m_obj_raw_inv_s0_dyn_inv"] @ m_probe @ obj_cache["m_obj_raw"]
+            )
+
+        m_img[:3, :3] = r_obj[:3, :3]
+        m_img = apply_icp(m_img, icp)
+
+        angles = np.degrees(tr.euler_from_matrix(m_img, axes="sxyz"))
+        coord = (
+            m_img[0, -1],
+            m_img[1, -1],
+            m_img[2, -1],
+            angles[0],
+            angles[1],
+            angles[2],
+        )
+        return coord, m_img

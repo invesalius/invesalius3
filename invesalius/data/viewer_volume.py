@@ -20,6 +20,7 @@
 import os
 import queue
 import sys
+import time
 
 import numpy as np
 import wx
@@ -144,6 +145,17 @@ class Viewer(wx.Panel):
         self.interactor = interactor
         self.interactor.SetRenderWhenDisabled(True)
 
+        self._fps_last_time = time.monotonic()
+        self._fps_frames = 0
+        self.fps_text = vtku.Text()
+        self.fps_text.SetSize(const.TEXT_SIZE_SMALL)
+        self.fps_text.SetPosition(
+            (const.TEXT_POS_LEFT_UP[0], min(0.995, const.TEXT_POS_LEFT_UP[1] + 0.02))
+        )
+        self.fps_text.SetValue("FPS: --")
+        self._fps_text_visible = True
+        self.nav_status = False
+
         self.enable_style(const.STATE_DEFAULT)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -193,6 +205,9 @@ class Viewer(wx.Panel):
             self.text.SetSize(int(round(font_size, 0)))
         self.ren.AddActor(self.text.actor)
 
+        self.ren.AddActor(self.fps_text.actor)
+        self.fps_text.Hide()
+
         #  self.polygon = Polygon(None, is_3d=False)
 
         # Enable canvas for ruler to be drawn
@@ -236,8 +251,6 @@ class Viewer(wx.Panel):
 
         self.use_volumetric_camera = False
         self.camera_show_object = None
-
-        self.nav_status = False
 
         # Pointer is the ball that is shown to indicate the 3D point in the volume viewer that corresponds to the
         # selected slice positions. The same pointer is also used to show the point selected from the 3D viewer by
@@ -362,6 +375,15 @@ class Viewer(wx.Panel):
         print(len(self.renderers))
 
         Publisher.sendMessage("Press target mode button", pressed=False)
+        self._update_fps_visibility()
+
+    def _update_fps_visibility(self):
+        show_fps = (
+            self._fps_text_visible
+            and self.nav_status
+            and getattr(self, "state", None) == const.STATE_NAVIGATION
+        )
+        self.fps_text.Show(show_fps)
 
     def UpdateCanvas(self):
         if self.canvas is not None:
@@ -809,12 +831,16 @@ class Viewer(wx.Panel):
 
     def OnHideText(self):
         self.text.Hide()
+        self._fps_text_visible = False
+        self._update_fps_visibility()
         self.UpdateRender()
 
     def OnShowText(self):
         if self.on_wl:
             self.text.Show()
-            self.UpdateRender()
+        self._fps_text_visible = True
+        self._update_fps_visibility()
+        self.UpdateRender()
 
     def AddActors(self, actors):
         "Inserting actors"
@@ -2550,6 +2576,7 @@ class Viewer(wx.Panel):
             self.pTarget = self.CenterOfMass()
 
         self.camera_show_object = None
+        self._update_fps_visibility()
         if not self.nav_status:
             self.UpdateRender()
 
@@ -2659,6 +2686,7 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
         self.state = state
+        self._update_fps_visibility()
 
     def enable_style(self, style):
         if styles.Styles.has_style(style):
@@ -3096,7 +3124,17 @@ class Viewer(wx.Panel):
         orientation_widget.InteractiveOff()
 
     def UpdateRender(self):
+        start = time.monotonic()
         self.interactor.Render()
+        if self.fps_text.actor.GetVisibility():
+            end = time.monotonic()
+            self._fps_frames += 1
+            elapsed = end - self._fps_last_time
+            if elapsed >= 0.5:
+                fps = self._fps_frames / elapsed
+                self._fps_last_time = end
+                self._fps_frames = 0
+                self.fps_text.SetValue(f"FPS: {fps:0.1f}")
 
     def SetWidgetInteractor(self, widget=None):
         widget.SetInteractor(self.interactor._Iren)

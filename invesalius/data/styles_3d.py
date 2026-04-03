@@ -557,9 +557,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     def OnReleaseMeasurePoint(self, obj, evt):
         """Handle mouse button release - finalize dragging if a point was selected."""
         if self.selected:
-            # Show busy cursor before updating position (geodesic computation will start)
-            Publisher.sendMessage("Begin busy cursor")
-
+            # Linear measurements are instant, no need for busy cursor
             # Update the final position
             x, y = self.viewer.get_vtk_mouse_position()
             self.measure_picker.Pick(x, y, 0, self.viewer.ren)
@@ -570,12 +568,13 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 n, m, mr = self.selected
                 idx = self.measures._list_measures.index((m, mr))
                 Publisher.sendMessage(
-                    "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
+                    "Change measurement point position",
+                    index=idx,
+                    npoint=n,
+                    pos=(x, y, z),
+                    end_busy_cursor=False,  # Linear is instant, no busy cursor needed
                 )
                 self.viewer.interactor.Render()
-            else:
-                # If no valid pick, restore cursor immediately
-                Publisher.sendMessage("End busy cursor")
 
             # Deselect after release
             self.selected = None
@@ -736,6 +735,36 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
             # which would trigger recursive clicks in this interactor style.
             evt.Rotate()
 
+    def OnReleaseMeasurePoint(self, obj, evt):
+        """Handle mouse button release - finalize dragging if a point was selected.
+
+        Override parent method to add busy cursor for geodesic computation.
+        """
+        if self.selected:
+            # Update the final position
+            x, y = self.viewer.get_vtk_mouse_position()
+            self.measure_picker.Pick(x, y, 0, self.viewer.ren)
+
+            # Only update if we picked a valid surface point
+            if self.measure_picker.GetActor():
+                # Show busy cursor IMMEDIATELY before geodesic computation
+                wx.BeginBusyCursor()
+
+                x, y, z = self.measure_picker.GetPickPosition()
+                n, m, mr = self.selected
+                idx = self.measures._list_measures.index((m, mr))
+                Publisher.sendMessage(
+                    "Change measurement point position",
+                    index=idx,
+                    npoint=n,
+                    pos=(x, y, z),
+                    end_busy_cursor=False,  # Don't end here - _compute_and_publish_path will end it
+                )
+                self.viewer.interactor.Render()
+
+            # Deselect after release
+            self.selected = None
+
 
 class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """
@@ -813,9 +842,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     def OnReleaseMeasurePoint(self, obj, evt):
         """Handle mouse button release - finalize dragging if a point was selected."""
         if self.selected:
-            # Show busy cursor before updating position (geodesic computation will start)
-            Publisher.sendMessage("Begin busy cursor")
-
+            # Angular measurements are instant, no need for busy cursor
             # Update the final position
             x, y = self.viewer.get_vtk_mouse_position()
             self.measure_picker.Pick(x, y, 0, self.viewer.ren)
@@ -826,12 +853,13 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
                 n, m, mr = self.selected
                 idx = self.measures._list_measures.index((m, mr))
                 Publisher.sendMessage(
-                    "Change measurement point position", index=idx, npoint=n, pos=(x, y, z)
+                    "Change measurement point position",
+                    index=idx,
+                    npoint=n,
+                    pos=(x, y, z),
+                    end_busy_cursor=False,  # Angular is instant, no busy cursor needed
                 )
                 self.viewer.interactor.Render()
-            else:
-                # If no valid pick, restore cursor immediately
-                Publisher.sendMessage("End busy cursor")
 
             # Deselect after release
             self.selected = None

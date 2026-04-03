@@ -3660,10 +3660,16 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def OnMarkerListKeyDown(self, evt):
         """Handle keyboard shortcuts on the marker list (Ctrl/Cmd+D to duplicate)."""
         key_code = evt.GetKeyCode()
-        if key_code in (ord("D"), ord("d")) and (evt.ControlDown() or evt.CmdDown()):
+        if (
+            key_code in (ord("D"), ord("d"))
+            and (evt.ControlDown() or evt.CmdDown())
+            and not evt.ShiftDown()
+        ):
+            # Handle Ctrl+D for duplication
             self.OnMenuDuplicateMarker(None)
-        else:
-            evt.Skip()
+
+        # Always skip the event to allow other handlers (like menu accelerators) to process it
+        evt.Skip()
 
     def OnMenuDuplicateMarker(self, evt):
         marker_idx = self.marker_list_ctrl.GetFocusedItem()

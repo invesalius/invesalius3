@@ -324,6 +324,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         self.edit_mask_pixel(
             self.fill_value, index, cursor.GetPixels(), position, radius, viewer.orientation
         )
+        viewer._flush_buffer = True
 
         try:
             self.after_brush_click()
@@ -365,6 +366,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
             self.edit_mask_pixel(
                 self.fill_value, index, cursor.GetPixels(), position, radius, viewer.orientation
             )
+            viewer._flush_buffer = True
             try:
                 self.after_brush_move()
             except AttributeError:
@@ -1501,7 +1503,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         viewer.slice_.edit_mask_pixel(
             operation, cursor.GetPixels(), position, radius, viewer.orientation
         )
-        # viewer._flush_buffer = True
+        viewer._flush_buffer = True
 
         # TODO: To create a new function to reload images to viewer.
         viewer.OnScrollBar()
@@ -1548,6 +1550,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             viewer.slice_.edit_mask_pixel(
                 operation, cursor.GetPixels(), position, radius, viewer.orientation
             )
+            viewer._flush_buffer = True
 
             viewer.OnScrollBar(update3D=False)
 

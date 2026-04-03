@@ -451,7 +451,7 @@ class MeasurementManager:
             else:
                 Publisher.sendMessage("Redraw canvas")
 
-    def _change_measure_point_pos(self, index, npoint, pos):
+    def _change_measure_point_pos(self, index, npoint, pos, end_busy_cursor=False):
         m, mr = self.measures[index]
         x, y, z = pos
         if npoint == 0:
@@ -508,6 +508,10 @@ class MeasurementManager:
             Publisher.sendMessage("Render volume viewer")
         else:
             Publisher.sendMessage("Redraw canvas")
+
+        # End busy cursor only if it was started (e.g., on mouse release, not during dragging)
+        if end_busy_cursor:
+            Publisher.sendMessage("End busy cursor")
 
     def _change_name(self, index, name):
         self.measures[index][0].name = name
@@ -1125,7 +1129,11 @@ class GeodesicMeasure(LinearMeasure):
             Publisher.sendMessage("Render volume viewer")
         finally:
             # Always restore cursor, even if computation fails
-            Publisher.sendMessage("End busy cursor")
+            # Use direct wx call for immediate response
+            try:
+                wx.EndBusyCursor()
+            except Exception:
+                pass  # Ignore if cursor wasn't started
 
     def _draw_line(self):
         if not self.surface_polydata:
