@@ -1745,7 +1745,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         if selected_items:
             Publisher.sendMessage("Remove surfaces", surface_indexes=selected_items)
-            Publisher.sendMessage("Repopulate surfaces")
+            # Defer rebuild to avoid destroying list controls in the same
+            # native event cycle that triggered the deletion (macOS crash).
+            wx.CallAfter(Publisher.sendMessage, "Repopulate surfaces")
         else:
             dlg.SurfaceSelectionRequiredForRemoval()
 
