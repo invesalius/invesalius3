@@ -37,6 +37,7 @@ from invesalius.gui.dialogs import ErrorMessageBox
 
 # from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, TwoWaysDictionary, debug, decode
 
@@ -95,6 +96,7 @@ class Project(metaclass=Singleton):
 
         # Image fiducials for navigation
         self.image_fiducials = np.full([3, 3], np.nan)
+        self.active_image_version = _("Original")
 
         # self.surface_quality_list = ["Low", "Medium", "High", "Optimal *",
         #                             "Custom"i]
@@ -213,6 +215,7 @@ class Project(metaclass=Singleton):
         return measures
 
     def SavePlistProject(self, dir_, filename, compress=False):
+        import invesalius.data.slice_ as slice_
         dir_temp = decode(tempfile.mkdtemp(), const.FS_ENCODE)
 
         self.compress = compress
@@ -238,6 +241,7 @@ class Project(metaclass=Singleton):
             "spacing": self.spacing,
             "affine": self.affine,
             "image_fiducials": self.image_fiducials.tolist(),
+            "active_image_version": slice_.Slice().current_image_label,
         }
 
         # Saving the main matrix containing the slices
@@ -377,6 +381,7 @@ class Project(metaclass=Singleton):
 
         # Opening image versions
         self.image_versions = []
+        self.active_image_version = project.get("active_image_version", _("Original"))
         for version in project.get("image_versions", []):
             label = version["label"]
             v_filename = version["filename"]

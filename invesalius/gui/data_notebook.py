@@ -750,7 +750,11 @@ class MasksListCtrlPanel(InvListCtrl):
             # This ensures 3D preview and project state stay in sync with list highlight.
             selected_indices = self.GetSelected()
             if len(selected_indices) == 1:
-                Publisher.sendMessage("Change mask selected", index=selected_indices[0])
+                idx = selected_indices[0]
+                Publisher.sendMessage("Change mask selected", index=idx)
+                # Switch background image to match the mask's derived source
+                mask = Project().mask_dict[idx]
+                Publisher.sendMessage("Switch active image by label", label=mask.derived_from)
         else:
             print("Selection changed but 'category' attribute not found on self.")
 
@@ -881,11 +885,13 @@ class MasksListCtrlPanel(InvListCtrl):
         self.InsertColumn(1, "", wx.LIST_FORMAT_CENTER)
         self.InsertColumn(2, _("Name"))
         self.InsertColumn(3, _("Threshold"), wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(4, _("Derived"))
 
         self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 25)
         self.SetColumnWidth(2, 95)
         self.SetColumnWidth(3, 90)
+        self.SetColumnWidth(4, 90)
 
         # Set tooltip to inform users about color clicking
         self.SetToolTip(_("Change mask color"))
@@ -945,7 +951,7 @@ class MasksListCtrlPanel(InvListCtrl):
         # Also trigger selection update since this affects the overall selection state
         self.on_selection_changed(None)
 
-    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
+    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None, derived_from=_("Original")):
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
 
@@ -954,6 +960,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self.SetItem(index, 1, "", imageId=image_index)
         self.SetItem(index, 2, label)
         self.SetItem(index, 3, threshold)
+        self.SetItem(index, 4, derived_from)
         #  self.SetItemImage(index, 1)
         #  for key in self.mask_list_index.keys():
         #  if key != index:
@@ -964,7 +971,7 @@ class MasksListCtrlPanel(InvListCtrl):
         if mask.index not in self.mask_list_index:
             local_position = len(self.mask_list_index)
             self.mask_list_index[mask.index] = local_position
-            self.InsertNewItem(local_position, mask.name, str(mask.threshold_range), mask.colour)
+            self.InsertNewItem(local_position, mask.name, str(mask.threshold_range), mask.colour, mask.derived_from)
 
     def EditMaskThreshold(self, global_mask_id, threshold_range):
         if global_mask_id in self.mask_list_index:
@@ -2335,6 +2342,11 @@ class ImagePage(wx.Panel):
         # New bindings for syncing with ImageFilterDialog
         Publisher.subscribe(self._on_get_image_labels, "Get image labels")
         Publisher.subscribe(self._on_set_active_image, "Set active image")
+        Publisher.subscribe(self._on_update_selection, "Update image version selection")
+
+    def _on_update_selection(self, label):
+        """Update the list choice without triggering a matrix switch (already done by Slice)."""
+        self.list_ctrl.SelectLabel(label)
 
     # ------------------------------------------------------------------
     # Public API
@@ -2409,13 +2421,20 @@ class ImagePage(wx.Panel):
             self.list_ctrl.SetItem(idx, 1, label)
             self.list_ctrl.SetItem(idx, 2, info)
 
-        # After all entries are loaded, activate item 0 exclusively
+        # After all entries are loaded, activate the previously active version
         if self.list_ctrl.GetItemCount() > 0:
+            active_label = proj.active_image_version
+            active_idx = 0
+            for i in range(self.list_ctrl.GetItemCount()):
+                if self.list_ctrl.GetItemText(i, 1) == active_label:
+                    active_idx = i
+                    break
+            
             for i in range(self.list_ctrl.GetItemCount()):
                 self.list_ctrl.SetItemImage(i, 0)
-            self.list_ctrl.SetItemImage(0, 1)  # only Original is active on load
-            self.list_ctrl.Select(0)
-            self.list_ctrl.Focus(0)
+            self.list_ctrl.SetItemImage(active_idx, 1)
+            self.list_ctrl.Select(active_idx)
+            self.list_ctrl.Focus(active_idx)
 
     def _on_filter_done(self):
         """Called after a filter is applied — add the latest project version to the list."""
@@ -2446,6 +2465,14 @@ class ImagesListCtrl(InvListCtrl):
         self.Select(index)
         self.Focus(index)
         self.OnSelectionChanged(None, index)
+
+    def SelectLabel(self, label):
+        """Update active image icons for a given label without triggering a switch event."""
+        for i in range(self.GetItemCount()):
+            if self.GetItemText(i, 1) == label:
+                self.SetItemImage(i, 1)
+            else:
+                self.SetItemImage(i, 0)
 
     def OnSelectionChanged(self, evt, manual_index=None):
         idx = evt.GetIndex() if evt else manual_index

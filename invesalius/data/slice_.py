@@ -139,6 +139,7 @@ class Slice(metaclass=utils.Singleton):
 
         self.values = None
         self.nodes = None
+        self.current_image_label = _("Original")
 
         self.from_ = OTHER
         self.__bind_events()
@@ -210,6 +211,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.__show_current_mask, "Show current mask")
         Publisher.subscribe(self.__apply_image_filter, "Apply image filter")
         Publisher.subscribe(self.__switch_active_image, "Switch active image")
+        Publisher.subscribe(self.__switch_active_image_by_label, "Switch active image by label")
         Publisher.subscribe(self.__clean_current_mask, "Clean current mask")
 
         Publisher.subscribe(self.__export_slice, "Export slice")
@@ -1450,6 +1452,7 @@ class Slice(metaclass=utils.Singleton):
         edition_threshold_range=None,
         add_to_project=True,
         show=True,
+        derived_from=None,
     ):
         """
         Creates a new mask and add it to project.
@@ -1484,6 +1487,9 @@ class Slice(metaclass=utils.Singleton):
             future_mask.edition_threshold_range = edition_threshold_range
         if threshold_range:
             future_mask.threshold_range = threshold_range
+
+        if derived_from:
+            future_mask.derived_from = derived_from
 
         if add_to_project:
             self._add_mask_into_proj(future_mask, show=show)
@@ -2074,6 +2080,11 @@ class Slice(metaclass=utils.Singleton):
 
         # Must discard cached VTK buffers so viewers re-read the updated matrix
         self.discard_all_buffers()
+
+        # Create a new mask for the new filtered image
+        self.create_new_mask(name=None, show=True, derived_from=label)
+        self.current_image_label = label
+
         Publisher.sendMessage("Reload actual slice")
         Publisher.sendMessage("Update slice viewer")
         Publisher.sendMessage("Render volume viewer")
@@ -2101,6 +2112,20 @@ class Slice(metaclass=utils.Singleton):
             Publisher.sendMessage("Reload actual slice")
             Publisher.sendMessage("Update slice viewer")
             Publisher.sendMessage("Render volume viewer")
+
+    def __switch_active_image_by_label(self, label):
+        """Find an image version by label and switch to it if not already active."""
+        if label == self.current_image_label:
+            return
+
+        proj = Project()
+        for l, mat in proj.image_versions:
+            if l == label:
+                self.current_image_label = label
+                self.__switch_active_image(mat)
+                # Notify the Images tab to update its eye icon
+                Publisher.sendMessage("Update image version selection", label=label)
+                break
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:
