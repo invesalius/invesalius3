@@ -950,7 +950,14 @@ class MasksListCtrlPanel(InvListCtrl):
         # Also trigger selection update since since this affects the overall selection state
         self.on_selection_changed(None)
 
-    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None, derived_from=_("Original")):
+    def InsertNewItem(
+        self,
+        index=0,
+        label=_("Mask"),
+        threshold="(1000, 4500)",
+        colour=None,
+        derived_from=_("Original"),
+    ):
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
 
@@ -970,7 +977,9 @@ class MasksListCtrlPanel(InvListCtrl):
         if mask.index not in self.mask_list_index:
             local_position = len(self.mask_list_index)
             self.mask_list_index[mask.index] = local_position
-            self.InsertNewItem(local_position, mask.name, str(mask.threshold_range), mask.colour, mask.derived_from)
+            self.InsertNewItem(
+                local_position, mask.name, str(mask.threshold_range), mask.colour, mask.derived_from
+            )
 
             # Set checkbox state based on mask.is_shown
             if mask.is_shown:
@@ -2437,7 +2446,7 @@ class ImagePage(wx.Panel):
                 if self.list_ctrl.GetItemText(i, 1) == active_label:
                     active_idx = i
                     break
-            
+
             for i in range(self.list_ctrl.GetItemCount()):
                 self.list_ctrl.SetItemImage(i, 0)
             self.list_ctrl.SetItemImage(active_idx, 1)
