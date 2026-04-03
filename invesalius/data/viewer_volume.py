@@ -2945,6 +2945,12 @@ class Viewer(wx.Panel):
         self.surface = actor
         self.EnableRuler()
 
+        # Apply SSAO if enabled in preferences
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+        if ssao_enabled and not self.ssao_enabled:
+            self._EnableSSAO()
+
     def RemoveSurface(self, actor):
         # Remove the actor from the renderer.
         self.ren.RemoveActor(actor)
@@ -3173,6 +3179,12 @@ class Viewer(wx.Panel):
 
             # Check if render window is properly initialized
             if not self.interactor or not self.interactor.GetRenderWindow():
+                return
+
+            # Additional check: ensure render window has been initialized and rendered at least once
+            render_window = self.interactor.GetRenderWindow()
+            if not render_window.GetNeverRendered() == 0:
+                # Render window has never been rendered, defer SSAO application
                 return
 
             # Create the basic render passes
