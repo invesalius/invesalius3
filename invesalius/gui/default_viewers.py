@@ -356,7 +356,26 @@ class VolumeToolPanel(wx.Panel):
         BMP_3D_STEREO = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG
         )
-        BMP_SSAO = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG)
+        # SSAO icons - disabled and enabled states
+        BMP_SSAO_DISABLED = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("surface_export.png")), wx.BITMAP_TYPE_PNG
+        )
+        BMP_SSAO_ENABLED_ORIG = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("3D_glasses_original.png")), wx.BITMAP_TYPE_PNG
+        )
+        # Scale the enabled icon to match other buttons (24x24 like other icons)
+        img = BMP_SSAO_ENABLED_ORIG.ConvertToImage()
+        img = img.Scale(24, 24, wx.IMAGE_QUALITY_HIGH)
+        BMP_SSAO_ENABLED = wx.Bitmap(img)
+
+        # Also scale disabled icon to match
+        img_disabled = BMP_SSAO_DISABLED.ConvertToImage()
+        img_disabled = img_disabled.Scale(24, 24, wx.IMAGE_QUALITY_HIGH)
+        BMP_SSAO_DISABLED = wx.Bitmap(img_disabled)
+
+        # Store both icons for later use
+        self.BMP_SSAO_DISABLED = BMP_SSAO_DISABLED
+        self.BMP_SSAO_ENABLED = BMP_SSAO_ENABLED
         # BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
 
         self.button_raycasting = pbtn.PlateButton(
@@ -367,9 +386,10 @@ class VolumeToolPanel(wx.Panel):
             self, -1, "", BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         self.button_stereo.SetToolTip("Real 3D")
-        # Use wx.ToggleButton instead of PlateButton for SSAO to properly maintain toggle state
-        self.button_ssao = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
-        self.button_ssao.SetBitmap(BMP_SSAO)
+        # Use PlateButton without toggle style, change icon instead
+        self.button_ssao = pbtn.PlateButton(
+            self, -1, "", BMP_SSAO_DISABLED, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
         self.button_ssao.SetToolTip("Ambient Occlusion (SSAO)")
         self.button_slice_plane = pbtn.PlateButton(
             self, -1, "", BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
@@ -445,8 +465,8 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
-        # For SSAO toggle button, use EVT_TOGGLEBUTTON
-        self.button_ssao.Bind(wx.EVT_TOGGLEBUTTON, self.OnButtonSSAO)
+        # For SSAO button, use EVT_BUTTON and change icon based on state
+        self.button_ssao.Bind(wx.EVT_BUTTON, self.OnButtonSSAO)
         # self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonRaycasting(self, evt):
@@ -457,20 +477,26 @@ class VolumeToolPanel(wx.Panel):
         self.button_stereo.PopupMenu(self.stereo_menu)
 
     def OnButtonSSAO(self, evt):
-        """Handle SSAO button toggle."""
-        # wx.ToggleButton automatically toggles, just read the new state
-        new_state = self.button_ssao.GetValue()
+        """Handle SSAO button click - toggle state and change icon."""
+        # Toggle the state
+        self.ssao_button_state = not self.ssao_button_state
 
-        # Update our tracking variable
-        self.ssao_button_state = new_state
+        # Change icon based on new state
+        if self.ssao_button_state:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_ENABLED)
+        else:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_DISABLED)
+
+        self.button_ssao.Refresh()
 
         # Send message to toggle SSAO
-        Publisher.sendMessage("Toggle SSAO", enable=new_state)
+        Publisher.sendMessage("Toggle SSAO", enable=self.ssao_button_state)
 
     def UntoggleSSAO(self):
         """Untoggle SSAO button when VTK version check fails."""
         self.ssao_button_state = False
-        self.button_ssao.SetValue(False)
+        self.button_ssao.SetBitmapLabel(self.BMP_SSAO_DISABLED)
+        self.button_ssao.Refresh()
 
     def LoadSSAOPreference(self):
         """Load SSAO preference from config and sync button state on startup."""
@@ -481,7 +507,14 @@ class VolumeToolPanel(wx.Panel):
 
         # Sync button state with saved preference
         self.ssao_button_state = ssao_enabled
-        self.button_ssao.SetValue(ssao_enabled)
+
+        # Set appropriate icon based on state
+        if ssao_enabled:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_ENABLED)
+        else:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_DISABLED)
+
+        self.button_ssao.Refresh()
 
         # Do NOT apply SSAO here - it will be applied automatically when volume is loaded
         # See viewer_volume.py LoadVolume() method which checks ssao_enabled config
