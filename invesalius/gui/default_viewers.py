@@ -367,14 +367,9 @@ class VolumeToolPanel(wx.Panel):
             self, -1, "", BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         self.button_stereo.SetToolTip("Real 3D")
-        self.button_ssao = pbtn.PlateButton(
-            self,
-            -1,
-            "",
-            BMP_SSAO,
-            style=pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_TOGGLE,
-            size=ICON_SIZE,
-        )
+        # Use wx.ToggleButton instead of PlateButton for SSAO to properly maintain toggle state
+        self.button_ssao = wx.ToggleButton(self, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE)
+        self.button_ssao.SetBitmap(BMP_SSAO)
         self.button_ssao.SetToolTip("Ambient Occlusion (SSAO)")
         self.button_slice_plane = pbtn.PlateButton(
             self, -1, "", BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
@@ -437,7 +432,6 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisablePreset, "Close project data")
         Publisher.subscribe(self.Uncheck, "Uncheck image plane menu")
         Publisher.subscribe(self.UntoggleSSAO, "Untoggle SSAO")
-        Publisher.subscribe(self.OnUpdateSSAOPreference, "Update SSAO Preference")
 
         # Load SSAO preference on startup and sync button state
         wx.CallAfter(self.LoadSSAOPreference)
@@ -451,8 +445,8 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
-        # For SSAO toggle button, bind to EVT_TOGGLEBUTTON on parent
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.OnButtonSSAO, self.button_ssao)
+        # For SSAO toggle button, use EVT_TOGGLEBUTTON
+        self.button_ssao.Bind(wx.EVT_TOGGLEBUTTON, self.OnButtonSSAO)
         # self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonRaycasting(self, evt):
@@ -464,27 +458,19 @@ class VolumeToolPanel(wx.Panel):
 
     def OnButtonSSAO(self, evt):
         """Handle SSAO button toggle."""
-        # Let the button toggle naturally, then read its state
-        # Use wx.CallAfter to ensure the button state has updated
-        wx.CallAfter(self._HandleSSAOToggle)
+        # wx.ToggleButton automatically toggles, just read the new state
+        new_state = self.button_ssao.GetValue()
 
-    def _HandleSSAOToggle(self):
-        """Handle SSAO toggle after button state has updated."""
-        # Read the current button state
-        self.ssao_button_state = self.button_ssao.GetState() == 1
-        Publisher.sendMessage("Toggle SSAO", enable=self.ssao_button_state)
+        # Update our tracking variable
+        self.ssao_button_state = new_state
+
+        # Send message to toggle SSAO
+        Publisher.sendMessage("Toggle SSAO", enable=new_state)
 
     def UntoggleSSAO(self):
         """Untoggle SSAO button when VTK version check fails."""
         self.ssao_button_state = False
-        self.button_ssao._SetState(0)
-        self.button_ssao.Refresh()
-
-    def OnUpdateSSAOPreference(self, enabled):
-        """Update SSAO button state when preference changes."""
-        self.ssao_button_state = enabled
-        self.button_ssao._SetState(1 if enabled else 0)
-        self.button_ssao.Refresh()
+        self.button_ssao.SetValue(False)
 
     def LoadSSAOPreference(self):
         """Load SSAO preference from config and sync button state on startup."""
@@ -495,8 +481,7 @@ class VolumeToolPanel(wx.Panel):
 
         # Sync button state with saved preference
         self.ssao_button_state = ssao_enabled
-        self.button_ssao._SetState(1 if ssao_enabled else 0)
-        self.button_ssao.Refresh()
+        self.button_ssao.SetValue(ssao_enabled)
 
         # Do NOT apply SSAO here - it will be applied automatically when volume is loaded
         # See viewer_volume.py LoadVolume() method which checks ssao_enabled config
