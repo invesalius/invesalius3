@@ -2896,7 +2896,7 @@ class Viewer(wx.Panel):
             # self._check_and_set_ball_visibility()
             if self.on_wl:
                 self.text.Show()
-            
+
             # Disable SSAO when volume rendering is shown (SSAO is only for surfaces)
             if self.ssao_enabled:
                 self._DisableSSAO()
