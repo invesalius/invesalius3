@@ -22,7 +22,6 @@ import queue
 import sys
 
 import numpy as np
-import vtk
 import wx
 from imageio import imsave
 from scipy.spatial import distance
@@ -350,10 +349,9 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
-        # SSAO (Ambient Occlusion) state
+        # SSAO state tracking
         self.ssao_enabled = False
         self.ssao_pass = None
-        self.basic_passes = None
 
         # self.renderers = (self.target_guide_renderer, ren, canvas_renderer)
 
@@ -364,6 +362,8 @@ class Viewer(wx.Panel):
         for i in range(renwin.GetNumberOfItems()):
             renderer = renwin.GetNextItem()
             self.renderers.append(renderer)
+
+        print(len(self.renderers))
 
         Publisher.sendMessage("Press target mode button", pressed=False)
 
@@ -546,9 +546,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
         Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
 
-        # SSAO (Ambient Occlusion)
-        Publisher.subscribe(self.ToggleSSAO, "Toggle SSAO")
-        Publisher.subscribe(self.OnUpdateSSAOPreference, "Update SSAO Preference")
+        # SSAO related
+        Publisher.subscribe(self._EnableSSAO, "Enable SSAO")
+        Publisher.subscribe(self._DisableSSAO, "Disable SSAO")
 
     def get_vtk_mouse_position(self):
         """
@@ -899,6 +899,7 @@ class Viewer(wx.Panel):
         self.angle_threshold = angle
 
     def OnUpdateDistanceThreshold(self, dist_threshold):
+        print("updated to ", dist_threshold)
         self.distance_threshold = dist_threshold
 
     def OnUpdateRobotWarning(self, robot_warning):
@@ -1289,6 +1290,8 @@ class Viewer(wx.Panel):
 
         self.coil_visualizer.AddTargetCoil(self.m_target)
 
+        print(f"Target updated to coordinates {coord}")
+
     def CreateVTKObjectMatrix(self, direction, orientation):
         m_img = dco.coordinates_to_transformation_matrix(
             position=direction,
@@ -1332,6 +1335,7 @@ class Viewer(wx.Panel):
         try:
             surface = proj.surface_dict[0].polydata
         except KeyError:
+            print("There is not any surface created")
             return barycenter
 
         polydata = surface
@@ -2893,12 +2897,6 @@ class Viewer(wx.Panel):
             if self.on_wl:
                 self.text.Show()
 
-            # Apply SSAO if enabled in preferences
-            session = ses.Session()
-            ssao_enabled = session.GetConfig("ssao_enabled", False)
-            if ssao_enabled and not self.ssao_enabled:
-                self._EnableSSAO()
-
     def OnHideRaycasting(self):
         self.raycasting_volume = False
         self.text.Hide()
@@ -3001,12 +2999,6 @@ class Viewer(wx.Panel):
         if not self.surface_added:
             self.surface = volume
         self.EnableRuler()
-
-        # Apply SSAO if enabled in preferences
-        session = ses.Session()
-        ssao_enabled = session.GetConfig("ssao_enabled", False)
-        if ssao_enabled and not self.ssao_enabled:
-            self._EnableSSAO()
 
     def UnloadVolume(self, volume):
         self.ren.RemoveVolume(volume)
@@ -3126,6 +3118,62 @@ class Viewer(wx.Panel):
     def AppendActor(self, actor):
         self.ren.AddActor(actor)
 
+    def _EnableSSAO(self):
+        if self.ssao_enabled:
+            return
+
+        render_window = self.interactor.GetRenderWindow()
+
+        if not render_window:
+            return
+
+        if render_window.GetNeverRendered():
+            return
+
+        try:
+            from vtkmodules.vtkRenderingOpenGL2 import (
+                vtkCameraPass,
+                vtkRenderStepsPass,
+                vtkSSAOPass,
+            )
+
+            basic_passes = vtkRenderStepsPass()
+
+            ssao = vtkSSAOPass()
+            ssao.SetRadius(0.5)
+            ssao.SetBias(0.01)
+            ssao.SetKernelSize(128)
+
+            ssao.SetDelegatePass(basic_passes)
+
+            camera_pass = vtkCameraPass()
+            camera_pass.SetDelegatePass(ssao)
+
+            self.ren.SetPass(camera_pass)
+            self.ssao_pass = camera_pass
+            self.ssao_enabled = True
+
+            session = ses.Session()
+            session.SetConfig("ssao_enabled", True)
+
+            self.UpdateRender()
+
+        except (ImportError, AttributeError):
+            pass
+
+    def _DisableSSAO(self):
+        if not self.ssao_enabled:
+            return
+
+        self.ren.SetPass(None)
+        self.ssao_pass = None
+        self.ssao_enabled = False
+
+        session = ses.Session()
+        session.SetConfig("ssao_enabled", False)
+
+        self.UpdateRender()
+
     def Reposition3DPlane(self, plane_label):
         if not self.surface_added and not self.raycasting_volume:
             if not self.repositioned_axial_plan and plane_label == "Axial":
@@ -3139,134 +3187,6 @@ class Viewer(wx.Panel):
             elif not self.repositioned_coronal_plan and plane_label == "Coronal":
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_coronal_plan = 1
-
-    def OnUpdateSSAOPreference(self, enabled):
-        """Update SSAO state based on preference setting."""
-        if enabled and not self.ssao_enabled:
-            self._EnableSSAO()
-        elif not enabled and self.ssao_enabled:
-            self._DisableSSAO()
-
-    def ToggleSSAO(self, enable):
-        """
-        Enable or disable Screen Space Ambient Occlusion (SSAO).
-        Requires VTK 9 or higher.
-        """
-        # Check VTK version
-        major = vtk.vtkVersion.GetVTKMajorVersion()
-
-        if major < 9:
-            wx.MessageBox(
-                _("Ambient occlusion requires VTK 9 or higher.\nYour VTK version: {}.x").format(
-                    major
-                ),
-                _("Not supported"),
-                wx.OK | wx.ICON_WARNING,
-            )
-            # Send message to untoggle the toolbar button
-            Publisher.sendMessage("Untoggle SSAO")
-            return
-
-        if enable and not self.ssao_enabled:
-            self._EnableSSAO()
-        elif not enable and self.ssao_enabled:
-            self._DisableSSAO()
-
-    def _EnableSSAO(self):
-        """Enable SSAO render pass for both surfaces and volume raycasting."""
-        try:
-            from vtkmodules.vtkRenderingOpenGL2 import vtkRenderStepsPass, vtkSSAOPass
-
-            # Check if render window is properly initialized
-            if not self.interactor or not self.interactor.GetRenderWindow():
-                return
-
-            # Additional check: ensure render window has been initialized and rendered at least once
-            render_window = self.interactor.GetRenderWindow()
-            if not render_window.GetNeverRendered() == 0:
-                # Render window has never been rendered, defer SSAO application
-                return
-
-            # Create the basic render passes
-            self.basic_passes = vtkRenderStepsPass()
-
-            # Create and configure SSAO pass
-            self.ssao_pass = vtkSSAOPass()
-            self.ssao_pass.SetDelegatePass(self.basic_passes)
-
-            # Configure SSAO parameters
-            # Increase radius for better visibility on volumes
-            self.ssao_pass.SetRadius(0.5)
-            self.ssao_pass.SetBias(0.01)
-            self.ssao_pass.SetKernelSize(128)
-
-            # Enable blur for smoother effect (available in VTK 9.4+)
-            minor = vtk.vtkVersion.GetVTKMinorVersion()
-            major = vtk.vtkVersion.GetVTKMajorVersion()
-            if major > 9 or (major == 9 and minor >= 4):
-                self.ssao_pass.SetBlur(True)
-
-            # Volume-specific SSAO parameters (available in VTK 9.4+)
-            # These improve SSAO on volume raycasting but are not available in VTK 9.3.0
-            if hasattr(self.ssao_pass, "SetVolumeOpacityThreshold"):
-                self.ssao_pass.SetVolumeOpacityThreshold(0.95)
-            if hasattr(self.ssao_pass, "SetIntensityScale"):
-                self.ssao_pass.SetIntensityScale(1.5)
-            if hasattr(self.ssao_pass, "SetIntensityShift"):
-                self.ssao_pass.SetIntensityShift(0.0)
-            if hasattr(self.ssao_pass, "SetDepthFormat"):
-                try:
-                    # Fixed32 = 4 in vtkTextureObject
-                    self.ssao_pass.SetDepthFormat(vtk.vtkTextureObject.Fixed32)
-                except:
-                    # Fallback to integer value if constant not available
-                    self.ssao_pass.SetDepthFormat(4)
-
-            # Apply the pass to ALL renderers (surfaces, volumes, and target guide)
-            # This ensures SSAO works with both surface rendering and volume raycasting
-            for renderer in self.renderers:
-                # Skip canvas renderer (layer 1, used for 2D overlays)
-                if renderer.GetLayer() == 0:
-                    renderer.SetPass(self.ssao_pass)
-
-            self.ssao_enabled = True
-
-            # Force render update
-            self.interactor.GetRenderWindow().Render()
-
-        except ImportError as e:
-            wx.MessageBox(
-                _(
-                    "SSAO is not available in your VTK build.\nPlease ensure VTK is compiled with OpenGL2 support."
-                ),
-                _("Not available"),
-                wx.OK | wx.ICON_ERROR,
-            )
-            Publisher.sendMessage("Untoggle SSAO")
-        except Exception as e:
-            wx.MessageBox(
-                _("Error enabling ambient occlusion: {}").format(str(e)),
-                _("Error"),
-                wx.OK | wx.ICON_ERROR,
-            )
-            Publisher.sendMessage("Untoggle SSAO")
-
-    def _DisableSSAO(self):
-        """Disable SSAO render pass and restore default rendering."""
-        if self.ssao_pass:
-            # Remove the pass from ALL renderers
-            for renderer in self.renderers:
-                if renderer.GetLayer() == 0:
-                    renderer.SetPass(None)
-
-            # Clean up
-            self.ssao_pass = None
-            self.basic_passes = None
-
-            self.ssao_enabled = False
-
-            # Force render update
-            self.interactor.GetRenderWindow().Render()
 
 
 class SlicePlane:

@@ -132,11 +132,13 @@ class Preferences(wx.Dialog):
         language = session.GetConfig("language")
         # Must invert value as GUI returns 0 for Yes and 1 for No
         slice_interpolation = not bool(session.GetConfig("slice_interpolation"))
-        ssao_enabled = session.GetConfig("ssao_enabled", False)  # Default to False
 
         # Marker shapes (default to ball for both)
         landmark_marker_shape = session.GetConfig("landmark_marker_shape", const.MARKER_SHAPE_BALL)
         fiducial_marker_shape = session.GetConfig("fiducial_marker_shape", const.MARKER_SHAPE_CROSS)
+
+        # SSAO preference
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
 
         # logger = log.MyLogger()
         file_logging = log.invLogger.GetConfig("file_logging")
@@ -151,7 +153,6 @@ class Preferences(wx.Dialog):
             const.SURFACE_INTERPOLATION: surface_interpolation,
             const.LANGUAGE: language,
             const.SLICE_INTERPOLATION: slice_interpolation,
-            const.SSAO_ENABLED: ssao_enabled,
             const.LANDMARK_MARKER_SHAPE: landmark_marker_shape,
             const.FIDUCIAL_MARKER_SHAPE: fiducial_marker_shape,
             const.FILE_LOGGING: file_logging,
@@ -160,6 +161,7 @@ class Preferences(wx.Dialog):
             const.LOGFILE: logging_file,
             const.CONSOLE_LOGGING: console_logging,
             const.CONSOLE_LOGGING_LEVEL: console_logging_level,
+            "ssao_enabled": ssao_enabled,
         }
 
         self.visualization_tab.LoadSelection(values)
@@ -213,6 +215,7 @@ class VisualizationTab(wx.Panel):
             majorDimension=2,
             style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
         )
+        self.rb_ssao.Bind(wx.EVT_RADIOBOX, self.OnSSAORadioBox)
         bsizer.Add(lbl_ssao, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer.Add(rb_ssao, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
@@ -235,6 +238,18 @@ class VisualizationTab(wx.Panel):
         self.SetSizerAndFit(border)
         self.Layout()
 
+    def OnSSAORadioBox(self, evt):
+        enabled = bool(self.rb_ssao.GetSelection())  # 0 for Disable, 1 for Enable
+        session = ses.Session()
+        session.SetConfig("ssao_enabled", enabled)
+
+        if enabled:
+            Publisher.sendMessage("Enable SSAO")
+        else:
+            Publisher.sendMessage("Disable SSAO")
+
+        Publisher.sendMessage("SSAO preference changed", enabled=enabled)
+
     def GetSelection(self):
         options = {
             const.RENDERING: self.rb_rendering.GetSelection(),
@@ -242,7 +257,7 @@ class VisualizationTab(wx.Panel):
             const.SLICE_INTERPOLATION: not bool(
                 self.rb_inter_sl.GetSelection()
             ),  # 0 for Yes, 1 for No
-            const.SSAO_ENABLED: bool(self.rb_ssao.GetSelection()),  # 0 for Disable, 1 for Enable
+            "ssao_enabled": bool(self.rb_ssao.GetSelection()),  # 0 for Disable, 1 for Enable
         }
         return options
 
@@ -250,12 +265,12 @@ class VisualizationTab(wx.Panel):
         rendering = values[const.RENDERING]
         surface_interpolation = values[const.SURFACE_INTERPOLATION]
         slice_interpolation = values[const.SLICE_INTERPOLATION]
-        ssao_enabled = values.get(const.SSAO_ENABLED, False)  # Default to False if not present
+        ssao_enabled = values.get("ssao_enabled", False)
 
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
-        self.rb_ssao.SetSelection(int(ssao_enabled))
+        self.rb_ssao.SetSelection(int(ssao_enabled))  # 0 for Disable, 1 for Enable
 
 
 class LoggingTab(wx.Panel):
