@@ -79,6 +79,7 @@ class Preferences(wx.Dialog):
         self.book.SetSelection(page)
 
         self.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self.OnCancel, id=wx.ID_CANCEL)
         self.Bind(wx.EVT_CHAR_HOOK, self.OnCharHook)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -98,8 +99,18 @@ class Preferences(wx.Dialog):
         except wx._core.wxAssertionError:
             self.Destroy()
 
+    def OnCancel(self, event):
+        # Restore original SSAO state when Cancel is clicked
+        self.visualization_tab.RestoreOriginalSSAO()
+        try:
+            self.EndModal(wx.ID_CANCEL)
+        except wx._core.wxAssertionError:
+            self.Destroy()
+
     def OnCharHook(self, event):
         if event.GetKeyCode() == wx.WXK_ESCAPE:
+            # Restore original SSAO state when ESC is pressed
+            self.visualization_tab.RestoreOriginalSSAO()
             self.EndModal(wx.ID_CANCEL)
         if event.GetKeyCode() == wx.WXK_RETURN:
             self.OnOK(event)
@@ -161,7 +172,7 @@ class Preferences(wx.Dialog):
             const.LOGFILE: logging_file,
             const.CONSOLE_LOGGING: console_logging,
             const.CONSOLE_LOGGING_LEVEL: console_logging_level,
-            "ssao_enabled": ssao_enabled,
+            const.SSAO_ENABLED: ssao_enabled,
         }
 
         self.visualization_tab.LoadSelection(values)
@@ -177,6 +188,9 @@ class VisualizationTab(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.session = ses.Session()
+
+        # Store original SSAO state for Cancel functionality
+        self.original_ssao_enabled = self.session.GetConfig("ssao_enabled", False)
 
         bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
         lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, _("Surface Interpolation "))
@@ -239,10 +253,9 @@ class VisualizationTab(wx.Panel):
         self.Layout()
 
     def OnSSAORadioBox(self, evt):
-        enabled = bool(self.rb_ssao.GetSelection())  # 0 for Disable, 1 for Enable
-        session = ses.Session()
-        session.SetConfig("ssao_enabled", enabled)
+        enabled = bool(self.rb_ssao.GetSelection())
 
+        # Send messages for immediate preview
         if enabled:
             Publisher.sendMessage("Enable SSAO")
         else:
@@ -257,7 +270,7 @@ class VisualizationTab(wx.Panel):
             const.SLICE_INTERPOLATION: not bool(
                 self.rb_inter_sl.GetSelection()
             ),  # 0 for Yes, 1 for No
-            "ssao_enabled": bool(self.rb_ssao.GetSelection()),  # 0 for Disable, 1 for Enable
+            const.SSAO_ENABLED: bool(self.rb_ssao.GetSelection()),  # 0 for Disable, 1 for Enable
         }
         return options
 
@@ -265,12 +278,34 @@ class VisualizationTab(wx.Panel):
         rendering = values[const.RENDERING]
         surface_interpolation = values[const.SURFACE_INTERPOLATION]
         slice_interpolation = values[const.SLICE_INTERPOLATION]
-        ssao_enabled = values.get("ssao_enabled", False)
+        ssao_enabled = values.get(const.SSAO_ENABLED, False)
 
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
-        self.rb_ssao.SetSelection(int(ssao_enabled))  # 0 for Disable, 1 for Enable
+        self.rb_ssao.SetSelection(int(ssao_enabled))
+
+        # Update the stored original state
+        self.original_ssao_enabled = ssao_enabled
+
+    def RestoreOriginalSSAO(self):
+        """Restore SSAO to its original state when Cancel is clicked"""
+        current_selection = bool(self.rb_ssao.GetSelection())
+
+        # Only restore if the user changed it
+        if current_selection != self.original_ssao_enabled:
+            # Restore the UI
+            self.rb_ssao.SetSelection(int(self.original_ssao_enabled))
+
+            # Restore the actual SSAO state
+            if self.original_ssao_enabled:
+                Publisher.sendMessage("Enable SSAO")
+            else:
+                Publisher.sendMessage("Disable SSAO")
+
+            Publisher.sendMessage(
+                "SSAO preference changed", enabled=self.original_ssao_enabled
+            )  # 0 for Disable, 1 for Enable
 
 
 class LoggingTab(wx.Panel):
