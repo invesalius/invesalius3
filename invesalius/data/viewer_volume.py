@@ -2896,6 +2896,10 @@ class Viewer(wx.Panel):
             # self._check_and_set_ball_visibility()
             if self.on_wl:
                 self.text.Show()
+            
+            # Disable SSAO when volume rendering is shown (SSAO is only for surfaces)
+            if self.ssao_enabled:
+                self._DisableSSAO()
 
     def OnHideRaycasting(self):
         self.raycasting_volume = False
@@ -2971,6 +2975,10 @@ class Viewer(wx.Panel):
         self.raycasting_volume = True
         # self._to_show_ball += 1
         # self._check_and_set_ball_visibility()
+
+        # Disable SSAO when volume rendering is loaded (SSAO is only for surfaces)
+        if self.ssao_enabled:
+            self._DisableSSAO()
 
         self.light = self.ren.GetLights().GetNextItem()
 
@@ -3120,6 +3128,10 @@ class Viewer(wx.Panel):
 
     def _EnableSSAO(self):
         if self.ssao_enabled:
+            return
+
+        # SSAO should only be applied to surfaces, not volume rendering
+        if not self.surface_added or self.raycasting_volume:
             return
 
         render_window = self.interactor.GetRenderWindow()
