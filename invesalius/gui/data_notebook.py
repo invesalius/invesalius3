@@ -2502,8 +2502,8 @@ class ImagesListCtrl(InvListCtrl):
                 self.SetItemImage(i, 0)
             self.SetItemImage(idx, 1)
 
-            _, matrix = proj.image_versions[idx]
-            Publisher.sendMessage("Switch active image", matrix=matrix)
+            label, _ = proj.image_versions[idx]
+            Publisher.sendMessage("Switch active image by label", label=label)
 
     def __bind_events_wx(self):
         """Not called due to name-mangling — binding is done in __init__ instead."""
