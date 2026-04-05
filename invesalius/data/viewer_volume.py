@@ -3153,8 +3153,9 @@ class Viewer(wx.Panel):
             self.ssao_pass = camera_pass
             self.ssao_enabled = True
 
-            session = ses.Session()
-            session.SetConfig("ssao_enabled", True)
+            # Don't save to config here - only Preferences dialog should save
+            # session = ses.Session()
+            # session.SetConfig("ssao_enabled", True)
 
             self.UpdateRender()
 
@@ -3169,8 +3170,9 @@ class Viewer(wx.Panel):
         self.ssao_pass = None
         self.ssao_enabled = False
 
-        session = ses.Session()
-        session.SetConfig("ssao_enabled", False)
+        # Don't save to config here - only Preferences dialog should save
+        # session = ses.Session()
+        # session.SetConfig("ssao_enabled", False)
 
         self.UpdateRender()
 
