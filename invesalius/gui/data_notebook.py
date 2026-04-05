@@ -745,20 +745,22 @@ class MasksListCtrlPanel(InvListCtrl):
 
     def on_selection_changed(self, evt):
         """Handle selection changes in the mask list"""
-        if hasattr(self, "category"):
-            Publisher.sendMessage("Update mask selection state", category=self.category)
-
-            # Authoritatively switch the current mask when selection changes in the list.
-            # This ensures 3D preview and project state stay in sync with list highlight.
-            selected_indices = self.GetSelected()
-            if len(selected_indices) == 1:
-                idx = selected_indices[0]
-                Publisher.sendMessage("Change mask selected", index=idx)
-                # Switch background image to match the mask's derived source
-                mask = Project().mask_dict[idx]
-                Publisher.sendMessage("Switch active image by label", label=mask.derived_from)
-        else:
-            print("Selection changed but 'category' attribute not found on self.")
+        # Authoritatively switch the current mask when selection changes in the list.
+        # This ensures 3D preview and project state stay in sync with list highlight.
+        selected_indices = self.GetSelected()
+        if len(selected_indices) == 1:
+            global_idx = selected_indices[0]
+            Publisher.sendMessage("Change mask selected", index=global_idx)
+            Publisher.sendMessage("Show mask", index=global_idx, value=True)
+            if global_idx in self.mask_list_index:
+                self.current_index = self.mask_list_index[global_idx]
+            # Switch background image to match the mask's derived source
+            if hasattr(self, "category"):
+                Publisher.sendMessage(
+                    "Update mask selection state", category=self.category
+                )
+            mask = Project().mask_dict[global_idx]
+            Publisher.sendMessage("Switch active image by label", label=mask.derived_from)
 
         if evt:
             evt.Skip()
