@@ -947,9 +947,6 @@ class MasksListCtrlPanel(InvListCtrl):
 
         Publisher.sendMessage("Show mask", index=global_idx, value=flag)
 
-        # Also trigger selection update since since this affects the overall selection state
-        self.on_selection_changed(None)
-
     def InsertNewItem(
         self,
         index=0,

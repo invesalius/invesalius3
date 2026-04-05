@@ -258,17 +258,22 @@ class Project(metaclass=Singleton):
         for i, (label, mat) in enumerate(self.image_versions):
             v_filename = f"matrix_v{i}.dat"
 
-            if type(mat) == np.ndarray:
-                # mat is in-memory: write it to a new temp file
-                fd_v, temp_v = tempfile.mkstemp()
-                m_v = np.memmap(temp_v, shape=mat.shape, dtype=mat.dtype, mode="w+")
-                m_v[:] = mat
-                del m_v
-                os.close(fd_v)
-                filelist[temp_v] = v_filename
-                save_temp_files.add(temp_v)  # safe to delete after save
+            if isinstance(mat, np.ndarray):
+                # mat is a numpy array or memmap
+                if hasattr(mat, "filename") and mat.filename:
+                    # It's a memmap already backed by a file: use its filename
+                    filelist[mat.filename] = v_filename
+                else:
+                    # It's an in-memory array: write it to a new temp file
+                    fd_v, temp_v = tempfile.mkstemp()
+                    m_v = np.memmap(temp_v, shape=mat.shape, dtype=mat.dtype, mode="w+")
+                    m_v[:] = mat
+                    del m_v
+                    os.close(fd_v)
+                    filelist[temp_v] = v_filename
+                    save_temp_files.add(temp_v)  # safe to delete after save
             else:
-                # mat is a file path to an existing memmap — do NOT delete after save
+                # mat is already a file path (string)
                 filelist[mat] = v_filename
 
             image_versions_plist.append({"label": label, "filename": v_filename})
