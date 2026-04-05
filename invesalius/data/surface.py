@@ -1039,6 +1039,18 @@ class SurfaceManager:
         t_init = time.time()
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
+
+        # If the mask was derived from a filtered image, ensure we use that image's data and filename
+        if hasattr(mask, "derived_from") and mask.derived_from != _("Original"):
+            proj = prj.Project()
+            for label, mat in proj.image_versions:
+                if label == mask.derived_from:
+                    matrix = mat
+                    # Ensure filename_img points to the .dat file for the surface_process workers
+                    if hasattr(mat, "filename"):
+                        filename_img = mat.filename
+                    break
+
         spacing = slice_.spacing
 
         mask_temp_file = mask.temp_file

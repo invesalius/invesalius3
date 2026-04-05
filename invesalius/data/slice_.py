@@ -147,15 +147,49 @@ class Slice(metaclass=utils.Singleton):
 
     @property
     def matrix(self) -> np.ndarray | None:
+        from invesalius.project import Project
+
+        if hasattr(self, "current_image_label") and self.current_image_label != _("Original"):
+            proj = Project()
+            for label, mat in proj.image_versions:
+                if label == self.current_image_label:
+                    return mat
         return self._matrix
+
+    @property
+    def matrix_filename(self) -> str:
+        from invesalius.project import Project
+
+        if hasattr(self, "current_image_label") and self.current_image_label != _("Original"):
+            proj = Project()
+            for label, mat in proj.image_versions:
+                if label == self.current_image_label:
+                    if hasattr(mat, "filename"):
+                        return mat.filename
+        return self._matrix_filename
+
+    @matrix_filename.setter
+    def matrix_filename(self, value: str) -> None:
+        self._matrix_filename = value
 
     @matrix.setter
     def matrix(self, value: np.ndarray) -> None:
-        self._matrix = value
+        # Don't overwrite the original CT image if we're just switching to a filtered version
+        from invesalius.project import Project
+        proj = Project()
+        is_filtered = False
+        for l, mat in proj.image_versions:
+            if mat is value and l != _("Original"):
+                is_filtered = True
+                break
+
+        if not is_filtered:
+            self._matrix = value
+
         i, e = value.min(), value.max()
         r = int(e) - int(i)
-        self.histogram = np.histogram(self._matrix, r, (i, e))[0]
-        self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
+        self.histogram = np.histogram(value, r, (i, e))[0]
+        self.center = [(s * d / 2.0) for (d, s) in zip(value.shape[::-1], self.spacing)]
 
     @property
     def spacing(self) -> tuple[float, float, float]:
@@ -2076,7 +2110,17 @@ class Slice(metaclass=utils.Singleton):
         filtered_label = _("Filtered")
         n_filtered = sum(1 for lbl, _mat in proj.image_versions if lbl.startswith(filtered_label))
         label = filtered_label + (f" {n_filtered + 1}" if n_filtered else "")
-        proj.image_versions.append((label, self.matrix.copy()))
+        # Write the filtered data to a temporary memmap disk file so that multi-core 
+        # 3D surface generators can access it instead of silently falling back.
+        import tempfile
+        import os
+        fd_v, temp_v = tempfile.mkstemp(suffix=".dat")
+        os.close(fd_v)
+        filtered_mat = np.memmap(temp_v, shape=self.matrix.shape, dtype=self.matrix.dtype, mode="w+")
+        filtered_mat[:] = self.matrix[:]
+        filtered_mat.flush()
+
+        proj.image_versions.append((label, filtered_mat))
 
         # Must discard cached VTK buffers so viewers re-read the updated matrix
         self.discard_all_buffers()
@@ -2107,6 +2151,7 @@ class Slice(metaclass=utils.Singleton):
                 self.current_mask.matrix[:, 0, 0] = 0
                 self.current_mask.matrix[0, :, 0] = 0
                 self.current_mask.matrix[0, 0, :] = 0
+                self.current_mask.matrix.flush()
 
             self.discard_all_buffers()
             Publisher.sendMessage("Reload actual slice")
@@ -2122,6 +2167,8 @@ class Slice(metaclass=utils.Singleton):
         for l, mat in proj.image_versions:
             if l == label:
                 self.current_image_label = label
+                # This will trigger matrix.setter which updates histograms etc.
+                self.matrix = mat
                 self.__switch_active_image(mat)
                 # Notify the Images tab to update its eye icon
                 Publisher.sendMessage("Update image version selection", label=label)

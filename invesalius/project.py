@@ -258,7 +258,7 @@ class Project(metaclass=Singleton):
         for i, (label, mat) in enumerate(self.image_versions):
             v_filename = f"matrix_v{i}.dat"
 
-            if isinstance(mat, np.ndarray):
+            if type(mat) == np.ndarray:
                 # mat is in-memory: write it to a new temp file
                 fd_v, temp_v = tempfile.mkstemp()
                 m_v = np.memmap(temp_v, shape=mat.shape, dtype=mat.dtype, mode="w+")
