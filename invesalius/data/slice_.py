@@ -176,6 +176,7 @@ class Slice(metaclass=utils.Singleton):
     def matrix(self, value: np.ndarray) -> None:
         # Don't overwrite the original CT image if we're just switching to a filtered version
         from invesalius.project import Project
+
         proj = Project()
         is_filtered = False
         for l, mat in proj.image_versions:
@@ -2110,13 +2111,16 @@ class Slice(metaclass=utils.Singleton):
         filtered_label = _("Filtered")
         n_filtered = sum(1 for lbl, _mat in proj.image_versions if lbl.startswith(filtered_label))
         label = filtered_label + (f" {n_filtered + 1}" if n_filtered else "")
-        # Write the filtered data to a temporary memmap disk file so that multi-core 
+        # Write the filtered data to a temporary memmap disk file so that multi-core
         # 3D surface generators can access it instead of silently falling back.
-        import tempfile
         import os
+        import tempfile
+
         fd_v, temp_v = tempfile.mkstemp(suffix=".dat")
         os.close(fd_v)
-        filtered_mat = np.memmap(temp_v, shape=self.matrix.shape, dtype=self.matrix.dtype, mode="w+")
+        filtered_mat = np.memmap(
+            temp_v, shape=self.matrix.shape, dtype=self.matrix.dtype, mode="w+"
+        )
         filtered_mat[:] = self.matrix[:]
         filtered_mat.flush()
 

@@ -756,9 +756,7 @@ class MasksListCtrlPanel(InvListCtrl):
                 self.current_index = self.mask_list_index[global_idx]
             # Switch background image to match the mask's derived source
             if hasattr(self, "category"):
-                Publisher.sendMessage(
-                    "Update mask selection state", category=self.category
-                )
+                Publisher.sendMessage("Update mask selection state", category=self.category)
             mask = Project().mask_dict[global_idx]
             Publisher.sendMessage("Switch active image by label", label=mask.derived_from)
 
