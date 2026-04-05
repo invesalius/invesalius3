@@ -946,6 +946,10 @@ class MasksListCtrlPanel(InvListCtrl):
             self.current_index = index
 
         Publisher.sendMessage("Show mask", index=global_idx, value=flag)
+        
+        # Switch background image to match the mask's source (Original vs Filtered)
+        mask = Project().mask_dict[global_idx]
+        Publisher.sendMessage("Switch active image by label", label=mask.derived_from)
 
     def InsertNewItem(
         self,
