@@ -549,6 +549,7 @@ class Viewer(wx.Panel):
         # SSAO related
         Publisher.subscribe(self._EnableSSAO, "Enable SSAO")
         Publisher.subscribe(self._DisableSSAO, "Disable SSAO")
+        Publisher.subscribe(self._ApplySSAOAfterProjectLoad, "Project loaded successfully")
 
     def get_vtk_mouse_position(self):
         """
@@ -2947,7 +2948,8 @@ class Viewer(wx.Panel):
         self.surface = actor
         self.EnableRuler()
 
-        # Apply SSAO if enabled in preferences
+        # Apply SSAO if enabled in preferences (for newly created surfaces)
+        # Note: For .inv3 file loading, _ApplySSAOAfterProjectLoad will handle it
         session = ses.Session()
         ssao_enabled = session.GetConfig("ssao_enabled", False)
         if ssao_enabled and not self.ssao_enabled:
@@ -3187,6 +3189,38 @@ class Viewer(wx.Panel):
         # session.SetConfig("ssao_enabled", False)
 
         self.UpdateRender()
+
+    def _ApplySSAOAfterProjectLoad(self):
+        """Apply SSAO after project is fully loaded from .inv3 file"""
+        # Check if SSAO is enabled in preferences
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+
+        # Only apply if enabled in preferences, surface exists, and not already enabled
+        if (
+            ssao_enabled
+            and self.surface_added
+            and not self.ssao_enabled
+            and not self.raycasting_volume
+        ):
+            # Use a timer to retry SSAO application after the window has been rendered
+            # This is needed because when loading from .inv3, the render window may not be ready yet
+            import wx
+
+            wx.CallLater(500, self._RetryEnableSSAO)  # Retry after 500ms
+
+    def _RetryEnableSSAO(self):
+        """Retry enabling SSAO after a delay to ensure render window is ready"""
+        render_window = self.interactor.GetRenderWindow()
+        if render_window:
+            if not render_window.GetNeverRendered():
+                # Render window is ready, apply SSAO
+                self._EnableSSAO()
+            else:
+                # Render window still not rendered, retry again after another delay
+                import wx
+
+                wx.CallLater(500, self._RetryEnableSSAO)
 
     def Reposition3DPlane(self, plane_label):
         if not self.surface_added and not self.raycasting_volume:
