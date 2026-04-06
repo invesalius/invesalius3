@@ -1157,6 +1157,38 @@ class Viewer(wx.Panel):
         if evt:
             evt.Skip()
 
+    def _deferred_reposition(self):
+        """
+        Deferred repositioning to ensure window is fully initialized.
+
+        This is particularly important on Windows and macOS where the initial
+        window size may not be finalized when SetInput is called, leading to
+        incorrect camera positioning. Uses a timer to ensure AUI pane layout
+        is completely finished before repositioning.
+        """
+        if self.slice_data:
+            # Use a timer with a small delay to ensure AUI manager has
+            # completely finished laying out panes. CallAfter alone is not
+            # sufficient as the AUI manager may still be adjusting dimensions.
+            wx.CallLater(100, self._do_reposition)
+
+    def _do_reposition(self):
+        """
+        Actually perform the repositioning after layout is complete.
+
+        This is called after a delay to ensure the viewport has its final
+        dimensions from the AUI manager.
+        """
+        if self.slice_data:
+            # Force a layout update to ensure dimensions are current
+            self.Layout()
+            self.Update()
+
+            # Now reposition with correct viewport size
+            self.Reposition(self.slice_data)
+            if not self.nav_status:
+                self.UpdateRender()
+
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
         self.scroll.Bind(wx.EVT_SCROLL_THUMBTRACK, self.OnScrollBarRelease)
@@ -1263,6 +1295,12 @@ class Viewer(wx.Panel):
 
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)
+
+        # Fix for Windows: Ensure proper repositioning after window is fully initialized
+        # On Windows, the initial Reposition may occur before the window has its final size,
+        # causing incorrect alignment. This deferred call ensures repositioning happens
+        # after the window layout is complete.
+        wx.CallAfter(self._deferred_reposition)
 
     def __build_cross_lines(self):
         renderer = self.slice_data.overlay_renderer
