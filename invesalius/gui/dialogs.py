@@ -7847,7 +7847,7 @@ class AnnotationDialog(wx.Dialog):
 
 
 class ImageFilterDialog(wx.Dialog):
-    """Floating non-modal dialog for applying image filters (Despeckle, Border Detection).
+    """Floating non-modal dialog for applying image filters (Despeckle (Gaussian), Border Detection (Sobel)).
     Follows the same pattern as FillHolesAutoDialog.
     """
 
@@ -7884,8 +7884,8 @@ class ImageFilterDialog(wx.Dialog):
             self,
             -1,
             choices=[
-                _("Despeckle"),
-                _("Border Detection"),
+                _("Despeckle (Gaussian)"),
+                _("Border Detection (Sobel)"),
             ],
             style=wx.CB_READONLY,
         )
@@ -7893,9 +7893,9 @@ class ImageFilterDialog(wx.Dialog):
         if sys.platform != "win32":
             self.cb_filter.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
-        # Sensitivity parameter (shown for Despeckle only)
-        self.lbl_sensitivity = wx.StaticText(self, -1, _("Sensitivity:"))
-        self.spin_sensitivity = InvFloatSpinCtrl(
+        # Kernel physical size parameter
+        self.lbl_kernel = wx.StaticText(self, -1, _("Kernel size:"))
+        self.spin_kernel = InvFloatSpinCtrl(
             self, -1, value=1.0, min_value=0.1, max_value=10.0, increment=0.1
         )
 
@@ -7914,9 +7914,9 @@ class ImageFilterDialog(wx.Dialog):
         sizer.AddSpacer(5)
         sizer.Add(self.cb_filter, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         sizer.AddSpacer(12)
-        sizer.Add(self.lbl_sensitivity, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.Add(self.lbl_kernel, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         sizer.AddSpacer(5)
-        sizer.Add(self.spin_sensitivity, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.Add(self.spin_kernel, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         sizer.AddSpacer(15)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -7953,17 +7953,16 @@ class ImageFilterDialog(wx.Dialog):
         Publisher.sendMessage("Set active image", index=idx)
 
     def _on_select_filter(self, evt):
-        # 0 (Despeckle) has sensitivity, 1 (Border Detection) does not
-        is_despeckle = self.cb_filter.GetSelection() == 0
-        self.lbl_sensitivity.Show(is_despeckle)
-        self.spin_sensitivity.Show(is_despeckle)
+        # Both filters now use the kernel size parameter
+        self.lbl_kernel.Show(True)
+        self.spin_kernel.Show(True)
         self.GetSizer().Layout()
         self.Fit()
 
     def _on_apply(self, evt):
         # 0 -> Despeckle (type 4), 1 -> Border Detection (type 5)
         filter_type = 4 + self.cb_filter.GetSelection()
-        value = self.spin_sensitivity.GetValue()
+        value = self.spin_kernel.GetValue()
         self.btn_apply.Disable()
         self.btn_apply.SetLabel(_("Applying..."))
         Publisher.sendMessage("Apply image filter", filter_type=filter_type, value=value)

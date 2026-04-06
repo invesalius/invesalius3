@@ -22,7 +22,6 @@ import threading
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
-import scipy.ndimage as ndimage
 from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkImagingColor import vtkImageMapToWindowLevelColors
 from vtkmodules.vtkImagingCore import (
@@ -2048,48 +2047,17 @@ class Slice(metaclass=utils.Singleton):
 
             try:
                 if filter_type == 0:  # Gaussian Blur
-                    result = ndimage.gaussian_filter(matrix, sigma=value)
-                elif filter_type == 1:  # Median Filter (3D, capped at size 5)
-                    size = max(3, min(int(2 * value + 1), 5))
-                    result = ndimage.median_filter(matrix, size=size)
-                elif filter_type == 2:  # Mean Filter (fast separable 3D)
-                    size = int(2 * value + 1)
-                    result = ndimage.uniform_filter(matrix, size=size).astype(dtype)
-                elif filter_type == 3:  # Sharpen via Unsharp Masking
-                    min_val = matrix.min()
-                    max_val = matrix.max()
-                    blurred = ndimage.gaussian_filter(matrix.astype(float), sigma=1.0)
-                    detail = matrix.astype(float) - blurred
-                    sharpened = matrix.astype(float) + value * 0.5 * detail
-                    result = np.clip(sharpened, min_val, max_val).astype(dtype)
+                    result = iu.gaussian_blur_filter(matrix, sigma=value)
+                elif filter_type == 1:  # Median Filter
+                    result = iu.median_blur_filter(matrix, value)
+                elif filter_type == 2:  # Mean Filter
+                    result = iu.mean_blur_filter(matrix, value)
+                elif filter_type == 3:  # Sharpening
+                    result = iu.sharpening_filter(matrix, value)
                 elif filter_type == 4:  # Despeckle
-                    # Replace outlier voxels with local 3x3x3 median
-                    local_median = ndimage.median_filter(matrix, size=3)
-                    deviation = np.abs(matrix.astype(float) - local_median.astype(float))
-                    std_dev = float(deviation.std())
-                    if std_dev == 0:
-                        result = matrix.copy()
-                    else:
-                        # Higher sensitivity -> lower threshold -> more pixels replaced
-                        threshold = std_dev / max(value, 0.01)
-                        speckle_mask = deviation > threshold
-                        result = matrix.copy()
-                        result[speckle_mask] = local_median[speckle_mask]
-                elif filter_type == 5:  # Border Detection (Sobel gradient magnitude)
-                    float_matrix = matrix.astype(float)
-                    sx = ndimage.sobel(float_matrix, axis=0)
-                    sy = ndimage.sobel(float_matrix, axis=1)
-                    sz = ndimage.sobel(float_matrix, axis=2)
-                    magnitude = np.sqrt(sx**2 + sy**2 + sz**2)
-                    min_val = float(matrix.min())
-                    max_val = float(matrix.max())
-                    mag_min = magnitude.min()
-                    mag_range = magnitude.max() - mag_min
-                    if mag_range > 0:
-                        magnitude = (magnitude - mag_min) / mag_range * (
-                            max_val - min_val
-                        ) + min_val
-                    result = magnitude.astype(dtype)
+                    result = iu.despeckle_filter(matrix, value)
+                elif filter_type == 5:  # Border Detection
+                    result = iu.border_detection_filter(matrix, value=value)
                 else:
                     return
 
