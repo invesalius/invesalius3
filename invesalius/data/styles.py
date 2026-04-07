@@ -1193,7 +1193,8 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
         iren = self.viewer.interactor
         mouse_x, mouse_y = iren.GetLastEventPosition()
         ren = iren.FindPokedRenderer(mouse_x, mouse_y)
-        ren.ResetCamera()
+        slice_data = self.viewer.get_slice_data(ren)
+        self.viewer.Reposition(slice_data)
         iren.Render()
 
 
