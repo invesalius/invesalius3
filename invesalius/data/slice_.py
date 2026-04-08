@@ -2096,14 +2096,18 @@ class Slice(metaclass=utils.Singleton):
 
         if filter_type is not None:
             # 0: Gaussian, 1: Median, 2: Mean, 3: Sharpen, 4: Despeckle, 5: Sobel
-            filter_names = {0: "gaussian", 1: "median", 2: "mean", 3: "sharpen", 4: "despeckle", 5: "sobel"}
+            filter_names = {
+                0: "gaussian",
+                1: "median",
+                2: "mean",
+                3: "sharpen",
+                4: "despeckle",
+                5: "sobel",
+            }
             fname = filter_names.get(filter_type, "unknown")
             if not hasattr(proj, "image_versions_meta"):
                 proj.image_versions_meta = {}
-            proj.image_versions_meta[label] = {
-                "applied_filter": fname,
-                "sigma_smooth": str(value)
-            }
+            proj.image_versions_meta[label] = {"applied_filter": fname, "sigma_smooth": str(value)}
 
         # Must discard cached VTK buffers so viewers re-read the updated matrix
         self.discard_all_buffers()

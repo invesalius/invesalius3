@@ -102,7 +102,9 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         from invesalius.project import Project
 
         proj = Project()
-        self.img_labels = [lbl for lbl, _ in proj.image_versions] if proj.image_versions else [_("Original")]
+        self.img_labels = (
+            [lbl for lbl, _ in proj.image_versions] if proj.image_versions else [_("Original")]
+        )
 
         self.lbl_input = wx.StaticText(self, -1, _("Input image"))
         self.cb_input = wx.ComboBox(
@@ -111,7 +113,11 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             choices=self.img_labels,
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
-        current_lbl = slc.Slice().current_image_label if hasattr(slc.Slice(), "current_image_label") else _("Original")
+        current_lbl = (
+            slc.Slice().current_image_label
+            if hasattr(slc.Slice(), "current_image_label")
+            else _("Original")
+        )
         if current_lbl in self.img_labels:
             self.cb_input.SetValue(current_lbl)
         elif self.img_labels:
