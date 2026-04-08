@@ -2065,12 +2065,12 @@ class Slice(metaclass=utils.Singleton):
             finally:
                 import wx
 
-                wx.CallAfter(self._after_filter)
+                wx.CallAfter(self._after_filter, filter_type, value)
 
         thread = threading.Thread(target=_run_filter, daemon=True)
         thread.start()
 
-    def _after_filter(self):
+    def _after_filter(self, filter_type=None, value=None):
         """Called on the main thread after filter completes."""
         self._is_filtering = False
 
@@ -2078,7 +2078,7 @@ class Slice(metaclass=utils.Singleton):
         proj = Project()
         filtered_label = _("Filtered")
         n_filtered = sum(1 for lbl, _mat in proj.image_versions if lbl.startswith(filtered_label))
-        label = filtered_label + (f" {n_filtered + 1}" if n_filtered else "")
+        label = f"{filtered_label} {n_filtered + 1}"
         # Write the filtered data to a temporary memmap disk file so that multi-core
         # 3D surface generators can access it instead of silently falling back.
         import os
@@ -2093,6 +2093,17 @@ class Slice(metaclass=utils.Singleton):
         filtered_mat.flush()
 
         proj.image_versions.append((label, filtered_mat))
+
+        if filter_type is not None:
+            # 0: Gaussian, 1: Median, 2: Mean, 3: Sharpen, 4: Despeckle, 5: Sobel
+            filter_names = {0: "gaussian", 1: "median", 2: "mean", 3: "sharpen", 4: "despeckle", 5: "sobel"}
+            fname = filter_names.get(filter_type, "unknown")
+            if not hasattr(proj, "image_versions_meta"):
+                proj.image_versions_meta = {}
+            proj.image_versions_meta[label] = {
+                "applied_filter": fname,
+                "sigma_smooth": str(value)
+            }
 
         # Must discard cached VTK buffers so viewers re-read the updated matrix
         self.discard_all_buffers()

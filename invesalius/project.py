@@ -93,6 +93,7 @@ class Project(metaclass=Singleton):
 
         # Image versions (labels and matrices for filtered images)
         self.image_versions: list[tuple[str, np.ndarray | str]] = []
+        self.image_versions_meta: dict = {}
 
         # Image fiducials for navigation
         self.image_fiducials = np.full([3, 3], np.nan)
@@ -276,7 +277,10 @@ class Project(metaclass=Singleton):
                 # mat is already a file path (string)
                 filelist[mat] = v_filename
 
-            image_versions_plist.append({"label": label, "filename": v_filename})
+            plist_entry = {"label": label, "filename": v_filename}
+            if label in self.image_versions_meta:
+                 plist_entry.update(self.image_versions_meta[label])
+            image_versions_plist.append(plist_entry)
 
         project["image_versions"] = image_versions_plist
 
@@ -386,10 +390,19 @@ class Project(metaclass=Singleton):
 
         # Opening image versions
         self.image_versions = []
+        self.image_versions_meta = {}
         self.active_image_version = project.get("active_image_version", _("Original"))
         for version in project.get("image_versions", []):
             label = version["label"]
             v_filename = version["filename"]
+
+            meta = {}
+            if "applied_filter" in version:
+                 meta["applied_filter"] = version["applied_filter"]
+            if "sigma_smooth" in version:
+                 meta["sigma_smooth"] = version["sigma_smooth"]
+            if meta:
+                 self.image_versions_meta[label] = meta
             v_filepath = os.path.join(dirpath, v_filename)
             # We store the filepath at first, or we can load it into memmap
             if os.path.exists(v_filepath):

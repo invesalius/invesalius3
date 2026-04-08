@@ -7847,8 +7847,8 @@ class AnnotationDialog(wx.Dialog):
 
 
 class ImageFilterDialog(wx.Dialog):
-    """Floating non-modal dialog for applying image filters (Despeckle (Gaussian), Border Detection (Sobel)).
-    Follows the same pattern as FillHolesAutoDialog.
+    """Floating non-modal dialog for applying image filters.
+    Supports: Despeckle (Gaussian), Border Detection (Sobel), Mean, Median.
     """
 
     def __init__(self):
@@ -7860,6 +7860,7 @@ class ImageFilterDialog(wx.Dialog):
             style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
         )
         self._init_gui()
+        self._on_select_filter()
         self._bind_events()
 
     def _init_gui(self):
@@ -7886,6 +7887,8 @@ class ImageFilterDialog(wx.Dialog):
             choices=[
                 _("Despeckle (Gaussian)"),
                 _("Border Detection (Sobel)"),
+                _("Mean"),
+                _("Median"),
             ],
             style=wx.CB_READONLY,
         )
@@ -7893,9 +7896,9 @@ class ImageFilterDialog(wx.Dialog):
         if sys.platform != "win32":
             self.cb_filter.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
-        # Kernel physical size parameter
-        self.lbl_kernel = wx.StaticText(self, -1, _("Kernel size:"))
-        self.spin_kernel = InvFloatSpinCtrl(
+        # Parameter label changes based on selected filter
+        self.lbl_param = wx.StaticText(self, -1, _("Sigma:"))
+        self.spin_param = InvFloatSpinCtrl(
             self, -1, value=1.0, min_value=0.1, max_value=10.0, increment=0.1
         )
 
@@ -7914,9 +7917,9 @@ class ImageFilterDialog(wx.Dialog):
         sizer.AddSpacer(5)
         sizer.Add(self.cb_filter, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         sizer.AddSpacer(12)
-        sizer.Add(self.lbl_kernel, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.Add(self.lbl_param, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         sizer.AddSpacer(5)
-        sizer.Add(self.spin_kernel, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.Add(self.spin_param, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         sizer.AddSpacer(15)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -7952,17 +7955,42 @@ class ImageFilterDialog(wx.Dialog):
         idx = self.cb_volume.GetSelection()
         Publisher.sendMessage("Set active image", index=idx)
 
-    def _on_select_filter(self, evt):
-        # Both filters now use the kernel size parameter
-        self.lbl_kernel.Show(True)
-        self.spin_kernel.Show(True)
+    def _on_select_filter(self, evt=None):
+        """Update the parameter label and spin range to match the chosen filter."""
+        sel = self.cb_filter.GetSelection()
+        if sel == 0:  # Despeckle (Gaussian)
+            self.lbl_param.SetLabel(_("Sigma:"))
+            self.spin_param.SetRange(0.1, 10.0)
+            self.spin_param.SetIncrement(0.1)
+            if self.spin_param.GetValue() > 10.0:
+                self.spin_param.SetValue(1.0)
+        elif sel == 1:  # Border Detection (Sobel)
+            self.lbl_param.SetLabel(_("Pre-smooth sigma:"))
+            self.spin_param.SetRange(0.1, 10.0)
+            self.spin_param.SetIncrement(0.1)
+            if self.spin_param.GetValue() > 10.0:
+                self.spin_param.SetValue(1.0)
+        elif sel == 2:  # Mean
+            self.lbl_param.SetLabel(_("Kernel size:"))
+            self.spin_param.SetRange(3, 15)
+            self.spin_param.SetIncrement(2)
+            if self.spin_param.GetValue() < 3:
+                self.spin_param.SetValue(3)
+        elif sel == 3:  # Median
+            self.lbl_param.SetLabel(_("Kernel size:"))
+            self.spin_param.SetRange(3, 15)
+            self.spin_param.SetIncrement(2)
+            if self.spin_param.GetValue() < 3:
+                self.spin_param.SetValue(3)
         self.GetSizer().Layout()
         self.Fit()
 
     def _on_apply(self, evt):
-        # 0 -> Despeckle (type 4), 1 -> Border Detection (type 5)
-        filter_type = 4 + self.cb_filter.GetSelection()
-        value = self.spin_kernel.GetValue()
+        sel = self.cb_filter.GetSelection()
+        # 0->Despeckle(4), 1->BorderDetection(5), 2->Mean(2), 3->Median(1)
+        filter_map = {0: 4, 1: 5, 2: 2, 3: 1}
+        filter_type = filter_map.get(sel, 4)
+        value = self.spin_param.GetValue()
         self.btn_apply.Disable()
         self.btn_apply.SetLabel(_("Applying..."))
         Publisher.sendMessage("Apply image filter", filter_type=filter_type, value=value)

@@ -99,6 +99,24 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             self.OnSegment(self)
 
     def _init_gui(self):
+        from invesalius.project import Project
+
+        proj = Project()
+        self.img_labels = [lbl for lbl, _ in proj.image_versions] if proj.image_versions else [_("Original")]
+
+        self.lbl_input = wx.StaticText(self, -1, _("Input image"))
+        self.cb_input = wx.ComboBox(
+            self,
+            wx.ID_ANY,
+            choices=self.img_labels,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        current_lbl = slc.Slice().current_image_label if hasattr(slc.Slice(), "current_image_label") else _("Original")
+        if current_lbl in self.img_labels:
+            self.cb_input.SetValue(current_lbl)
+        elif self.img_labels:
+            self.cb_input.SetSelection(0)
+
         self.cb_backends = wx.ComboBox(
             self,
             wx.ID_ANY,
@@ -158,6 +176,12 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
     def _do_layout(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        sizer_input = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_input.Add(self.lbl_input, 0, wx.ALIGN_CENTER, 0)
+        sizer_input.Add(self.cb_input, 1, wx.LEFT, 5)
+        main_sizer.Add(sizer_input, 0, wx.ALL | wx.EXPAND, 5)
+
         sizer_3 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_backends = wx.BoxSizer(wx.HORIZONTAL)
         label_1 = wx.StaticText(self, wx.ID_ANY, _("Backend"))
@@ -203,6 +227,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.Centre()
 
     def _set_events(self):
+        self.cb_input.Bind(wx.EVT_COMBOBOX, self.OnSetImage)
         self.cb_backends.Bind(wx.EVT_COMBOBOX, self.OnSetBackend)
         self.sld_threshold.Bind(wx.EVT_SCROLL, self.OnScrollThreshold)
         self.txt_threshold.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
@@ -224,6 +249,10 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         dc.SetFont(self.GetFont())
         width, height = dc.GetTextExtent(text)
         return width, height
+
+    def OnSetImage(self, evt=None):
+        label = self.cb_input.GetValue()
+        Publisher.sendMessage("Switch active image by label", label=label)
 
     def OnSetBackend(self, evt=None):
         if self.cb_backends.GetValue().lower() == "pytorch":
