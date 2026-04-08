@@ -1,6 +1,11 @@
 import gdcm
+from datetime import datetime
+from pydicom.dataset import Dataset
 from pynetdicom import AE, debug_logger
-from pynetdicom.sop_class import Verification
+from pynetdicom.sop_class import (
+    Verification,
+    PatientRootQueryRetrieveInformationModelFind,
+)
 
 import invesalius.utils as utils
 
@@ -73,92 +78,117 @@ class DicomNet:
             return False
 
     def RunCFind(self):
-        tags = [
-            (0x0010, 0x0010),
-            (0x0010, 0x1010),
-            (0x0010, 0x0040),
-            (0x0008, 0x1030),
-            (0x0008, 0x0060),
-            (0x0008, 0x0022),
-            (0x0008, 0x0080),
-            (0x0010, 0x0030),
-            (0x0008, 0x0050),
-            (0x0008, 0x0090),
-            (0x0008, 0x103E),
-            (0x0008, 0x0033),
-            (0x0008, 0x0032),
-            (0x0020, 0x000D),
-        ]
+        ae = AE()
+        ae.add_requested_context(PatientRootQueryRetrieveInformationModelFind)
 
-        ds = gdcm.DataSet()
-
-        for tag in tags:
-            tg = gdcm.Tag(tag[0], tag[1])
-
-            de = gdcm.DataElement(tg)
-
-            if self.search_type == "patient" and tag == (0x0010, 0x0010):
-                bit_size = len(self.search_word) + 1
-                de.SetByteValue(str(self.search_word + "*"), gdcm.VL(bit_size))
-            else:
-                de.SetByteValue("*", gdcm.VL(1))
-
-            ds.Insert(de)
-
-        cnf = gdcm.CompositeNetworkFunctions()
-        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
-        ret = gdcm.DataSetArrayType()
-
-        cnf.CFind(self.address, int(self.port), theQuery, ret, self.aetitle, self.aetitle_call)
+        assoc = ae.associate(self.address, int(self.port), ae_title=self.aetitle)
+        if not assoc.is_established:
+            return False
 
         patients = {}
 
-        exist_images = False
-        c = 0
-        for i in range(0, ret.size()):
-            patient_id = str(ret[i].GetDataElement(gdcm.Tag(0x0010, 0x0020)).GetValue())
-            serie_id = str(ret[i].GetDataElement(gdcm.Tag(0x0020, 0x000E)).GetValue())
+        patient_ds = Dataset()
+        patient_ds.QueryRetrieveLevel = "PATIENT"
+        patient_ds.PatientName = f"*{self.search_word}*"
+        patient_ds.PatientID = ""
 
-            if not (patient_id in patients.keys()):
-                patients[patient_id] = {}
+        patient_response = assoc.send_c_find(patient_ds, PatientRootQueryRetrieveInformationModelFind)
+        for patient_status, patient_identifier in patient_response:
+            if patient_status and patient_status.Status in (0xFF00, 0xFF01):
+                patient_id = patient_identifier.get("PatientID")
+                if not patient_id:
+                    continue
+                if patient_id not in patients:
+                    patients[patient_id] = {}
 
-            if not (serie_id in patients[patient_id]):
-                rt = ret[i]
+        for patientId in patients.keys():
+            study_ds = Dataset()
+            study_ds.QueryRetrieveLevel = "STUDY"
+            study_ds.PatientID = patientId
+            study_ds.StudyInstanceUID = ""
+            study_response = assoc.send_c_find(study_ds, PatientRootQueryRetrieveInformationModelFind)
+            for study_status, study_identifier in study_response:
+                if study_status and study_status.Status in (0xFF00, 0xFF01):
+                    patients[patientId][(study_identifier.get("StudyInstanceUID", None))] = {}
 
-                name = self.GetValueFromDICOM(rt, (0x0010, 0x0010))
-                age = self.GetValueFromDICOM(rt, (0x0010, 0x1010))
-                gender = self.GetValueFromDICOM(rt, (0x0010, 0x0040))
-                study_description = self.GetValueFromDICOM(rt, (0x0008, 0x1030))
-                modality = self.GetValueFromDICOM(rt, (0x0008, 0x0060))
-                institution = self.GetValueFromDICOM(rt, (0x0008, 0x0080))
-                date_of_birth = utils.format_date(self.GetValueFromDICOM(rt, (0x0010, 0x0030)))
-                acession_number = self.GetValueFromDICOM(rt, (0x0008, 0x0050))
-                ref_physician = self.GetValueFromDICOM(rt, (0x0008, 0x0090))
-                serie_description = self.GetValueFromDICOM(rt, (0x0008, 0x103E))
-                acquisition_time = utils.format_time(self.GetValueFromDICOM(rt, (0x0008, 0x0032)))
-                acquisition_date = utils.format_date(self.GetValueFromDICOM(rt, (0x0008, 0x0022)))
+            for study_id in patients[patientId].keys():            
+                series_ds = Dataset()
+                series_ds.QueryRetrieveLevel = "SERIES"
+                series_ds.PatientID = patientId
+                series_ds.StudyInstanceUID = study_id
+                series_ds.SeriesInstanceUID = ""
+                series_response = assoc.send_c_find(
+                    series_ds, PatientRootQueryRetrieveInformationModelFind
+                )
+                for series_status, series_identifier in series_response:
+                    if series_status and series_status.Status in (0xFF00, 0xFF01):
+                        patients[patientId][study_id][series_identifier.get("SeriesInstanceUID", None)] = {}
 
-                teste = self.GetValueFromDICOM(rt, (0x0020, 0x000D))
+                for serie_id in patients[patientId][study_id].keys():
+                    image_ds = Dataset()
+                    image_ds.QueryRetrieveLevel = "IMAGE"
+                    image_ds.PatientID = patientId
+                    image_ds.StudyInstanceUID = study_id
+                    image_ds.SeriesInstanceUID = serie_id
+                    image_ds.SOPInstanceUID = ""
+                    image_ds.PatientName = ""
+                    image_ds.PatientBirthDate = ""
+                    image_ds.PatientAge = ""
+                    image_ds.PatientSex = ""
+                    image_ds.StudyDescription = ""
+                    image_ds.InstitutionName = ""
+                    image_ds.Modality = ""
+                    image_ds.AccessionNumber = ""
+                    image_ds.ReferringPhysicianName = ""
+                    image_ds.SeriesDescription = ""
+                    image_ds.AcquisitionTime = ""
+                    image_ds.AcquisitionDate = ""
+                    image_response = assoc.send_c_find(
+                        image_ds, PatientRootQueryRetrieveInformationModelFind
+                    )
+                    for image_status, image_identifier in image_response:
+                        if image_status and image_status.Status in (0xFF00, 0xFF01):
+                            name = image_identifier.get("PatientName", None)
+                            age = image_identifier.get("PatientAge", None)
+                            age = age.rstrip("Y").lstrip("0") if age else ""
+                            gender = image_identifier.get("PatientSex", None)
+                            study_instance_uid = image_identifier.get("StudyInstanceUID", None)
+                            study_description = image_identifier.get("StudyDescription", None)
+                            modality = image_identifier.get("Modality", None)
+                            institution = image_identifier.get("InstitutionName", None)
+                            date_of_birth = image_identifier.get("PatientBirthDate", None)
+                            date_of_birth = (
+                                self._date_format(date_of_birth) if date_of_birth else ""
+                            )
+                            acession_number = image_identifier.get("AccessionNumber", None)
+                            ref_physician = image_identifier.get("ReferringPhysicianName", None)
+                            serie_description = image_identifier.get("SeriesDescription", None)
+                            acquisition_time = image_identifier.get("AcquisitionTime", None)
+                            acquisition_time = (
+                                self._time_format(acquisition_time) if acquisition_time else ""
+                            )
+                            acquisition_date = image_identifier.get("AcquisitionDate", None)
+                            acquisition_date = (
+                                self._date_format(acquisition_date) if acquisition_date else ""
+                            )
 
-                patients[patient_id][serie_id] = {
-                    "name": name,
-                    "age": age,
-                    "gender": gender,
-                    "study_description": study_description,
-                    "modality": modality,
-                    "acquisition_time": acquisition_time,
-                    "acquisition_date": acquisition_date,
-                    "institution": institution,
-                    "date_of_birth": date_of_birth,
-                    "acession_number": acession_number,
-                    "ref_physician": ref_physician,
-                    "serie_description": serie_description,
-                }
-
-                patients[patient_id][serie_id]["n_images"] = 1
-            else:
-                patients[patient_id][serie_id]["n_images"] += 1
-
+                            patients[patientId][study_id][serie_id] = {
+                                "name": name,
+                                "age": age,
+                                "gender": gender,
+                                "study_id": study_instance_uid,
+                                "study_description": study_description,
+                                "modality": modality,
+                                "acquisition_time": acquisition_time,
+                                "acquisition_date": acquisition_date,
+                                "institution": institution,
+                                "date_of_birth": date_of_birth,
+                                "acession_number": acession_number,
+                                "ref_physician": ref_physician,
+                                "serie_description": serie_description,
+                                "n_images": 1,
+                            }
+        assoc.release()
         return patients
 
     def RunCMove(self, values):
@@ -229,3 +259,13 @@ class DicomNet:
         # for r in ret:
         #    print r
         #    print "\n"
+
+    def _date_format(self, date):
+        date = date.split(".")[0] if "." in date else date
+        date = datetime.strptime(date, "%Y%m%d").strftime("%d/%m/%Y")
+        return date
+
+    def _time_format(self, time):
+        time = time.split(".")[0] if "." in time else time
+        time = datetime.strptime(time, "%H%M%S").strftime("%H:%M:%S")
+        return time
