@@ -182,7 +182,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
     def _do_layout(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        
+
         sizer_input = wx.BoxSizer(wx.HORIZONTAL)
         sizer_input.Add(self.lbl_input, 0, wx.ALIGN_CENTER, 0)
         sizer_input.Add(self.cb_input, 1, wx.LEFT, 5)
