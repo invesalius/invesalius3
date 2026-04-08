@@ -419,7 +419,16 @@ class Project(metaclass=Singleton):
             filepath = os.path.join(dirpath, filename)
             m = msk.Mask()
             m.spacing = self.spacing
-            m.OpenPList(filepath)
+            try:
+                m.OpenPList(filepath)
+            except FileNotFoundError as e:
+                import warnings
+                warnings.warn(
+                    f"Skipping mask '{filename}': {e}. "
+                    "The mask temporary file was not found (possibly deleted after a force-close).",
+                    stacklevel=2,
+                )
+                continue
             m.index = len(self.mask_dict)
             self.mask_dict[m.index] = m
 

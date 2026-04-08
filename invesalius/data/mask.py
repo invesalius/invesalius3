@@ -395,6 +395,13 @@ class Mask:
         shutil.copyfile(self.temp_file, filename)
 
     def _open_mask(self, filename, shape, dtype="uint8"):
+        if not os.path.exists(filename):
+            raise FileNotFoundError(
+                f"Mask data file not found: '{filename}'.\n"
+                "This can happen if InVesalius was force-closed and the temporary "
+                "mask file was deleted by the operating system. "
+                "Please create a new mask."
+            )
         self.temp_file = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
