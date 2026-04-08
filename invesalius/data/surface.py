@@ -1068,7 +1068,7 @@ class SurfaceManager:
             overwrite = False
         mask.matrix.flush()
 
-        if quality in const.SURFACE_QUALITY.keys():
+        if quality in const.SURFACE_QUALITY:
             imagedata_resolution = const.SURFACE_QUALITY[quality][0]
             smooth_iterations = const.SURFACE_QUALITY[quality][1]
             smooth_relaxation_factor = const.SURFACE_QUALITY[quality][2]
@@ -1093,7 +1093,7 @@ class SurfaceManager:
             flip_image = True
 
         if imagedata_resolution > 0:
-            spacing = tuple([s * imagedata_resolution for s in spacing])
+            spacing = tuple(s * imagedata_resolution for s in spacing)
             matrix = iu.resize_image_array(matrix, 1.0 / imagedata_resolution, True)
             mask = iu.resize_image_array(mask.matrix, 1.0 / imagedata_resolution, True)
 
@@ -1298,8 +1298,6 @@ class SurfaceManager:
         del pool
         del manager
         del msg_queue
-        import gc
-
         gc.collect()
 
     def GetActor(self, surface_index):

@@ -3,6 +3,8 @@ use pyo3::prelude::*;
 mod floodfill;
 mod floodfill_py;
 mod interpolation;
+mod marching_tetrahedra;
+mod marching_tetrahedra_py;
 mod mask_cut;
 mod mask_cut_py;
 mod mesh;
@@ -49,6 +51,12 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // context aware smoothing function
     m.add_function(wrap_pyfunction!(mesh_py::context_aware_smoothing, m)?)?;
+
+    // marching tetrahedra function
+    m.add_function(wrap_pyfunction!(
+        marching_tetrahedra_py::marching_tetrahedra,
+        m
+    )?)?;
 
     // Count regions function
     m.add_function(wrap_pyfunction!(count_regions_py::count_regions, m)?)?;

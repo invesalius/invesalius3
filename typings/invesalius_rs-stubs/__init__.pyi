@@ -101,6 +101,12 @@ def mask_cut(
     out: NDArray[np.int16],
 ) -> None: ...
 
+# Marching tetrahedra
+def marching_tetrahedra(
+    mask: NDArray[np.uint8],
+    spacing: tuple[float, float, float],
+) -> tuple[NDArray[np.float64], NDArray[np.int32]]: ...
+
 # Mesh class
 class Mesh:
     """Mesh class for 3D mesh manipulation and smoothing."""

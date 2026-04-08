@@ -16,6 +16,7 @@ fill_holes_automatically = _native.fill_holes_automatically
 _native_floodfill_voronoi_inplace = _native.floodfill_voronoi_inplace
 _native_jump_flooding = _native.jump_flooding
 _native_count_regions = _native.count_regions
+_native_marching_tetrahedra = getattr(_native, "marching_tetrahedra", None)
 
 
 def floodfill_threshold(data, seeds, t0, t1, fill, strct, out):
@@ -78,6 +79,20 @@ def jump_flooding(distance_map, map_owners, sites, normalize):
     Jump flooding.
     """
     return _native_jump_flooding(distance_map, map_owners, sites, normalize)
+
+
+def marching_tetrahedra(mask: np.ndarray, spacing):
+    """
+    Extract a triangle mesh from a binary mask using marching tetrahedra.
+    """
+    if _native_marching_tetrahedra is None:
+        raise RuntimeError(
+            "marching_tetrahedra is not available in invesalius_rs._native. "
+            "Rebuild/reinstall the Rust extension so the new symbol is exported."
+        )
+    mask_u8 = np.ascontiguousarray(mask, dtype=np.uint8)
+    vertices, faces = _native_marching_tetrahedra(mask_u8, tuple(float(v) for v in spacing))
+    return np.ascontiguousarray(vertices, dtype=np.float64), np.ascontiguousarray(faces, dtype=np.int32)
 
 
 # lmip = _native.lmip

@@ -2200,8 +2200,10 @@ class SurfaceMethodPanel(wx.Panel):
         self.mask_edited = mask_edited
         self.alg_types = {
             _("Default"): "Default",
-            _("Context aware smoothing"): "ca_smoothing",
-            _("Binary"): "Binary",
+            _("Context aware smoothing (Marching Cubes)"): "ca_smoothing",
+            _("Context aware smoothing (Marching Tetrahedra)"): "ca_smoothing_tetrahedra",
+            _("Binary (Marching Cubes)"): "Binary",
+            _("Binary (Marching Tetrahedra)"): "Binary_tetrahedra",
         }
         self.edited_imp = [
             _("Default"),
@@ -2244,7 +2246,7 @@ class SurfaceMethodPanel(wx.Panel):
         self.Fit()
 
         if self.mask_edited:
-            self.cb_types.SetValue(_("Context aware smoothing"))
+            self.cb_types.SetValue(_("Context aware smoothing (Marching Cubes)"))
             self.ca_options.Enable()
             self.method_sizer.Show(self.bmp)
         else:
@@ -2255,7 +2257,7 @@ class SurfaceMethodPanel(wx.Panel):
         self.cb_types.Bind(wx.EVT_COMBOBOX, self._set_cb_types)
 
     def _set_cb_types(self, evt: wx.CommandEvent) -> None:
-        if self.alg_types[evt.GetString()] == "ca_smoothing":
+        if self.alg_types[evt.GetString()] in ("ca_smoothing", "ca_smoothing_tetrahedra"):
             self.ca_options.Enable()
         else:
             self.ca_options.Disable()
@@ -2265,7 +2267,7 @@ class SurfaceMethodPanel(wx.Panel):
         return self.alg_types.get(self.cb_types.GetValue(), "Default")
 
     def GetOptions(self) -> Dict[str, float]:
-        if self.GetAlgorithmSelected() == "ca_smoothing":
+        if self.GetAlgorithmSelected() in ("ca_smoothing", "ca_smoothing_tetrahedra"):
             options = {
                 "angle": self.ca_options.angle.GetValue(),
                 "max distance": self.ca_options.max_distance.GetValue(),
@@ -2288,7 +2290,7 @@ class SurfaceMethodPanel(wx.Panel):
             [i for i in sorted(self.alg_types) if not (self.mask_edited and i in self.edited_imp)]
         )
         if self.mask_edited:
-            self.cb_types.SetValue(_("Context aware smoothing"))
+            self.cb_types.SetValue(_("Context aware smoothing (Marching Cubes)"))
             self.ca_options.Enable()
             self.method_sizer.Show(self.bmp)
         else:
