@@ -401,6 +401,8 @@ class Project(metaclass=Singleton):
                  meta["applied_filter"] = version["applied_filter"]
             if "sigma_smooth" in version:
                  meta["sigma_smooth"] = version["sigma_smooth"]
+            if "derived" in version:
+                 meta["derived"] = version["derived"]
             if meta:
                  self.image_versions_meta[label] = meta
             v_filepath = os.path.join(dirpath, v_filename)

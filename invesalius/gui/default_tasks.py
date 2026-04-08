@@ -21,7 +21,6 @@ import sys
 
 import wx
 import wx.lib.agw.foldpanelbar as fpb
-import wx.lib.scrolledpanel as scrolled
 
 import invesalius.constants as const
 import invesalius.gui.data_notebook as nb
@@ -278,9 +277,9 @@ class LowerTaskPanel(wx.Panel):
 
 
 # Upper fold panel
-class UpperTaskPanel(scrolled.ScrolledPanel):
+class UpperTaskPanel(wx.Panel):
     def __init__(self, parent):
-        scrolled.ScrolledPanel.__init__(self, parent)
+        wx.Panel.__init__(self, parent)
         fold_panel = fpb.FoldPanelBar(
             self, -1, wx.DefaultPosition, wx.DefaultSize, FPB_DEFAULT_STYLE, fpb.FPB_SINGLE_FOLD
         )
@@ -354,8 +353,7 @@ class UpperTaskPanel(scrolled.ScrolledPanel):
         sizer.Add(fold_panel, 1, wx.GROW | wx.EXPAND)
         self.sizer = sizer
         self.SetStateProjectClose()
-        self.SetSizer(sizer)
-        self.SetupScrolling()
+        self.SetSizerAndFit(sizer)
         self.__bind_events()
 
         # Show the navigation panel in navigation mode; otherwise, show the imports panel
@@ -373,14 +371,6 @@ class UpperTaskPanel(scrolled.ScrolledPanel):
             Publisher.subscribe(self.OnFoldSurface, "Fold surface task")
             Publisher.subscribe(self.OnFoldExport, "Fold export task")
         Publisher.subscribe(self.OnEnableState, "Enable state project")
-        # Bind to idle event to resize once the event loop starts and window is shown
-        self.Bind(wx.EVT_IDLE, self.OnFirstIdle)
-
-    def OnFirstIdle(self, evt):
-        """Called on first idle event after the window is fully rendered. Resize so all headers show."""
-        evt.Skip()
-        self.Unbind(wx.EVT_IDLE)
-        self.ResizeFPB()
 
     def OnOverwrite(self, surface_parameters):
         self.overwrite = surface_parameters["options"]["overwrite"]
@@ -427,22 +417,3 @@ class UpperTaskPanel(scrolled.ScrolledPanel):
             Publisher.sendMessage("Disable task slice style")
 
         evt.Skip()
-        wx.CallAfter(self.ResizeFPB)
-
-    def ResizeFPB(self):
-        y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
-
-        # Add a small buffer to ensure nothing is clipped
-        y_needed += 10
-
-        self.fold_panel.SetMinSize((-1, y_needed))
-        self.fold_panel.SetSize((-1, y_needed))
-
-        # We must also tell the parent (LowerTaskPanel) to refresh its min size
-        # based on the new fold_panel size
-        self.SetMinSize((-1, y_needed))
-        self.SetSize((-1, y_needed))
-
-        parent = self.GetParent()
-        if parent:
-            parent.Layout()

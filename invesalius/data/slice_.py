@@ -2107,7 +2107,12 @@ class Slice(metaclass=utils.Singleton):
             fname = filter_names.get(filter_type, "unknown")
             if not hasattr(proj, "image_versions_meta"):
                 proj.image_versions_meta = {}
-            proj.image_versions_meta[label] = {"applied_filter": fname, "sigma_smooth": str(value)}
+            derived_from = getattr(self, "current_image_label", _("Original"))
+            proj.image_versions_meta[label] = {
+                "applied_filter": fname,
+                "sigma_smooth": str(value),
+                "derived": derived_from,
+            }
 
         # Must discard cached VTK buffers so viewers re-read the updated matrix
         self.discard_all_buffers()
