@@ -317,11 +317,11 @@ class SurfaceManager:
         proj = prj.Project()
 
         if not hasattr(proj, "surface_dict") or not proj.surface_dict:
-            print("No surfaces exist, cannot create a seeded surface.")
+            dialogs.SeedSurfaceNotExist()
             return
 
         if index not in proj.surface_dict:
-            print(f"Surface index {index} does not exist.")
+            dialogs.SurfaceIndexNotExist(index)
             return
 
         surface = proj.surface_dict[index]
@@ -357,11 +357,11 @@ class SurfaceManager:
         proj = prj.Project()
 
         if not hasattr(proj, "surface_dict") or not proj.surface_dict:
-            print("No surfaces exist, cannot split surfaces.")
+            dialogs.SplitSurfaceNotExist()
             return
 
         if index not in proj.surface_dict:
-            print(f"Surface index {index} does not exist, cannot split.")
+            dialogs.SurfaceIndexNotExist(index)
             return
 
         surface = proj.surface_dict[index]
