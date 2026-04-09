@@ -4,8 +4,8 @@ import os
 import pathlib
 import tempfile
 import traceback
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Tuple
 
 import nibabel.processing
 import numpy as np
@@ -68,12 +68,12 @@ def run_cranioplasty_implant():
     Publisher.sendMessage("Reload actual slice")
 
 
-patch_type = Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]
+patch_type = tuple[tuple[int, int], tuple[int, int], tuple[int, int]]
 
 
 def gen_patches(
     image: np.ndarray, patch_size: int, overlap: int
-) -> Generator[Tuple[float, np.ndarray, patch_type], None, None]:
+) -> Generator[tuple[float, np.ndarray, patch_type], None, None]:
     overlap = int(patch_size * overlap / 100)
     sz, sy, sx = image.shape
     slices_x = [i for i in range(0, sx, patch_size - overlap) if i + patch_size <= sx]
@@ -451,16 +451,14 @@ class SegmentProcess(ctx.Process):
             if self.mask is None:
                 name = new_name_by_pattern("brainseg_mri_t1")
                 self.mask = slc.Slice().create_new_mask(
-                    name=name,
-                    derived_from=getattr(slc.Slice(), "current_image_label", "Original")
+                    name=name, derived_from=getattr(slc.Slice(), "current_image_label", "Original")
                 )
         else:
             self.mask = slc.Slice().current_mask
             if self.mask is None:
                 name = new_name_by_pattern("brainseg_mri_t1")
                 self.mask = slc.Slice().create_new_mask(
-                    name=name,
-                    derived_from=getattr(slc.Slice(), "current_image_label", "Original")
+                    name=name, derived_from=getattr(slc.Slice(), "current_image_label", "Original")
                 )
 
         self.mask.was_edited = True
@@ -717,9 +715,9 @@ class SubpartSegmentProcess(SegmentProcess):
         # Whole brain fallback
         if not self.selected_mask_types:
             mask = slc.Slice().create_new_mask(
-                name=new_name_by_pattern("whole_brain"), 
+                name=new_name_by_pattern("whole_brain"),
                 add_to_project=True,
-                derived_from=getattr(slc.Slice(), "current_image_label", "Original")
+                derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
             )
             mask.was_edited = True
             mask.matrix[1:, 1:, 1:] = (seg > 0).astype(np.uint8) * 255
@@ -865,9 +863,9 @@ class SubpartSegmentProcess(SegmentProcess):
                     continue
 
                 m = slc.Slice().create_new_mask(
-                    name=new_name_by_pattern(f"{category}_{name}"), 
+                    name=new_name_by_pattern(f"{category}_{name}"),
                     add_to_project=True,
-                    derived_from=getattr(slc.Slice(), "current_image_label", "Original")
+                    derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
                 )
                 m.color = color(rec)
                 m.was_edited = True

@@ -2042,16 +2042,18 @@ class Slice(metaclass=utils.Singleton):
             # is always valid when AI segmentation tools read it later.
             orig = self._matrix
             if isinstance(orig, np.memmap):
-                proj.image_versions.append((_('Original'), orig))
+                proj.image_versions.append((_("Original"), orig))
             else:
                 # Fallback: write to a temp file for consistent memmap semantics
-                import os, tempfile
+                import os
+                import tempfile
+
                 fd_o, temp_o = tempfile.mkstemp(suffix=".dat")
                 os.close(fd_o)
                 orig_mat = np.memmap(temp_o, shape=orig.shape, dtype=orig.dtype, mode="w+")
                 orig_mat[:] = orig[:]
                 orig_mat.flush()
-                proj.image_versions.append((_('Original'), orig_mat))
+                proj.image_versions.append((_("Original"), orig_mat))
 
         def _run_filter():
             # Use the current matrix to allow filter chaining
