@@ -450,12 +450,18 @@ class SegmentProcess(ctx.Process):
         if self.create_new_mask:
             if self.mask is None:
                 name = new_name_by_pattern("brainseg_mri_t1")
-                self.mask = slc.Slice().create_new_mask(name=name)
+                self.mask = slc.Slice().create_new_mask(
+                    name=name,
+                    derived_from=getattr(slc.Slice(), "current_image_label", "Original")
+                )
         else:
             self.mask = slc.Slice().current_mask
             if self.mask is None:
                 name = new_name_by_pattern("brainseg_mri_t1")
-                self.mask = slc.Slice().create_new_mask(name=name)
+                self.mask = slc.Slice().create_new_mask(
+                    name=name,
+                    derived_from=getattr(slc.Slice(), "current_image_label", "Original")
+                )
 
         self.mask.was_edited = True
         self.mask.matrix[1:, 1:, 1:] = (self._probability_array >= threshold) * 255
@@ -711,7 +717,9 @@ class SubpartSegmentProcess(SegmentProcess):
         # Whole brain fallback
         if not self.selected_mask_types:
             mask = slc.Slice().create_new_mask(
-                name=new_name_by_pattern("whole_brain"), add_to_project=True
+                name=new_name_by_pattern("whole_brain"), 
+                add_to_project=True,
+                derived_from=getattr(slc.Slice(), "current_image_label", "Original")
             )
             mask.was_edited = True
             mask.matrix[1:, 1:, 1:] = (seg > 0).astype(np.uint8) * 255
@@ -857,7 +865,9 @@ class SubpartSegmentProcess(SegmentProcess):
                     continue
 
                 m = slc.Slice().create_new_mask(
-                    name=new_name_by_pattern(f"{category}_{name}"), add_to_project=True
+                    name=new_name_by_pattern(f"{category}_{name}"), 
+                    add_to_project=True,
+                    derived_from=getattr(slc.Slice(), "current_image_label", "Original")
                 )
                 m.color = color(rec)
                 m.was_edited = True
