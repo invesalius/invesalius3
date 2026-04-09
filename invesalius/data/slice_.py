@@ -2038,7 +2038,20 @@ class Slice(metaclass=utils.Singleton):
         # ------------------------------------------------------------------ #
         proj = Project()
         if not proj.image_versions:
-            proj.image_versions.append((_("Original"), self.matrix.copy()))
+            # Store the original as a disk-backed memmap so that .filename
+            # is always valid when AI segmentation tools read it later.
+            orig = self._matrix
+            if isinstance(orig, np.memmap):
+                proj.image_versions.append((_('Original'), orig))
+            else:
+                # Fallback: write to a temp file for consistent memmap semantics
+                import os, tempfile
+                fd_o, temp_o = tempfile.mkstemp(suffix=".dat")
+                os.close(fd_o)
+                orig_mat = np.memmap(temp_o, shape=orig.shape, dtype=orig.dtype, mode="w+")
+                orig_mat[:] = orig[:]
+                orig_mat.flush()
+                proj.image_versions.append((_('Original'), orig_mat))
 
         def _run_filter():
             # Use the current matrix to allow filter chaining
@@ -2159,10 +2172,16 @@ class Slice(metaclass=utils.Singleton):
         for l, mat in proj.image_versions:
             if l == label:
                 self.current_image_label = label
-                # This will trigger matrix.setter which updates histograms etc.
-                self.matrix = mat
+                if label == _("Original"):
+                    # Restore _matrix to the original memmap stored in image_versions
+                    # (which is the same object as _matrix or a disk-backed copy).
+                    # Do NOT call the matrix setter — it would re-check is_filtered
+                    # and may overwrite _matrix with a plain ndarray losing .filename.
+                    self._matrix = mat
+                else:
+                    # For filtered versions call the setter to update histograms.
+                    self.matrix = mat
                 self.__switch_active_image(mat)
-                # Notify the Images tab to update its eye icon
                 Publisher.sendMessage("Update image version selection", label=label)
                 break
 
