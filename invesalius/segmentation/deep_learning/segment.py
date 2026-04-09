@@ -310,7 +310,23 @@ class SegmentProcess(ctx.Process):
     ):
         multiprocessing.Process.__init__(self)
 
-        self._image_filename = image.filename
+        # Ensure the image is backed by a real file on disk.
+        # np.memmap.filename can be None if the array was created from a buffer
+        # (e.g. the original CT image before any filter is applied).
+        # Plain ndarrays don't have .filename at all.
+        # In either case, write the data to a temporary file so _image_filename is
+        # always a valid path for the subprocess that loads it via np.memmap.
+        _img_filename = getattr(image, "filename", None)
+        if _img_filename is None:
+            fd_img, _img_filename = tempfile.mkstemp(suffix=".dat")
+            os.close(fd_img)
+            _tmp_img = np.memmap(_img_filename, dtype=image.dtype, mode="w+", shape=image.shape)
+            _tmp_img[:] = image[:]
+            _tmp_img.flush()
+            # Keep the reference alive so the file isn't GC'd
+            self._tmp_image_memmap = _tmp_img
+
+        self._image_filename = _img_filename
         self._image_dtype = image.dtype
         self._image_shape = image.shape
 

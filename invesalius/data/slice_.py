@@ -183,7 +183,7 @@ class Slice(metaclass=utils.Singleton):
                 is_filtered = True
                 break
 
-        if not is_filtered:
+        if not is_filtered and not getattr(self, "_is_filtering", False):
             self._matrix = value
 
         i, e = value.min(), value.max()
@@ -2076,7 +2076,9 @@ class Slice(metaclass=utils.Singleton):
                 else:
                     return
 
-                self.matrix = result.astype(dtype)
+                # Don't set self.matrix here - that would overwrite self._matrix
+                # (the original image). Instead, stash the result for _after_filter.
+                self._pending_filter_result = result.astype(dtype)
             finally:
                 import wx
 
@@ -2099,12 +2101,16 @@ class Slice(metaclass=utils.Singleton):
         import os
         import tempfile
 
+        # Get the result produced by the filter thread
+        result = getattr(self, "_pending_filter_result", None)
+        if result is None:
+            return
+        self._pending_filter_result = None
+
         fd_v, temp_v = tempfile.mkstemp(suffix=".dat")
         os.close(fd_v)
-        filtered_mat = np.memmap(
-            temp_v, shape=self.matrix.shape, dtype=self.matrix.dtype, mode="w+"
-        )
-        filtered_mat[:] = self.matrix[:]
+        filtered_mat = np.memmap(temp_v, shape=result.shape, dtype=result.dtype, mode="w+")
+        filtered_mat[:] = result[:]
         filtered_mat.flush()
 
         proj.image_versions.append((label, filtered_mat))
@@ -2128,6 +2134,15 @@ class Slice(metaclass=utils.Singleton):
                 "sigma_smooth": str(value),
                 "derived": derived_from,
             }
+
+        # Update histogram and center for the filtered image.
+        # Previously this happened via the matrix setter in _run_filter, but now
+        # we bypass the setter there to protect self._matrix (the original image).
+        i, e = filtered_mat.min(), filtered_mat.max()
+        r = int(e) - int(i)
+        if r > 0:
+            self.histogram = np.histogram(filtered_mat, r, (i, e))[0]
+        self.center = [(s * d / 2.0) for (d, s) in zip(filtered_mat.shape[::-1], self.spacing)]
 
         # Must discard cached VTK buffers so viewers re-read the updated matrix
         self.discard_all_buffers()
