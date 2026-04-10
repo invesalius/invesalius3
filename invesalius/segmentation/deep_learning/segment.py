@@ -479,6 +479,14 @@ class SegmentProcess(ctx.Process):
 
         self.mask.was_edited = True
         self.mask.matrix[1:, 1:, 1:] = (self._probability_array >= threshold) * 255
+
+        # Mark all slices as fully "edited" (flag=2) so the lazy-evaluation
+        # scrolling viewer doesn't try to overwrite the AI output with a standard threshold
+        self.mask.matrix[:, 0, 0] = 2
+        self.mask.matrix[0, :, 0] = 2
+        self.mask.matrix[0, 0, :] = 2
+        self.mask.matrix.flush()
+
         self.mask.modified(True)
 
     def get_completion(self):

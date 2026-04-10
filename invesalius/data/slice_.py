@@ -2144,12 +2144,15 @@ class Slice(metaclass=utils.Singleton):
             self.histogram = np.histogram(filtered_mat, r, (i, e))[0]
         self.center = [(s * d / 2.0) for (d, s) in zip(filtered_mat.shape[::-1], self.spacing)]
 
+        # Fix 1: Switch to the newly created filtered image label FIRST, so that
+        # any mask creation or viewer updates triggered below use the correct image matrix!
+        self.current_image_label = label
+
         # Must discard cached VTK buffers so viewers re-read the updated matrix
         self.discard_all_buffers()
 
         # Create a new mask for the new filtered image
         self.create_new_mask(name=None, show=True, derived_from=label)
-        self.current_image_label = label
 
         Publisher.sendMessage("Reload actual slice")
         Publisher.sendMessage("Update slice viewer")
@@ -2169,7 +2172,9 @@ class Slice(metaclass=utils.Singleton):
             # Invalidate threshold flags in the current mask to ensure stability
             # across image versions during lazy evaluation (scrolling).
             # This forces scrolling to re-threshold against the newly active matrix.
-            if self.current_mask:
+            # Fix 2: Only wipe threshold flags if the mask was NOT manually edited
+            # or created by deep learning. Otherwise, we destroy the AI segmentations!
+            if self.current_mask and not self.current_mask.was_edited:
                 self.current_mask.matrix[:, 0, 0] = 0
                 self.current_mask.matrix[0, :, 0] = 0
                 self.current_mask.matrix[0, 0, :] = 0
