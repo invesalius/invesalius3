@@ -21,17 +21,13 @@ import os
 import pathlib
 import sys
 
-try:
-    import Image
-except ImportError:
-    from PIL import Image
-
 import wx
 import wx.grid
 
 #  import invesalius.gui.widgets.listctrl as listmix
 import wx.lib.platebtn as pbtn
 import wx.lib.scrolledpanel as scrolled
+from PIL import Image
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
@@ -742,6 +738,24 @@ class MasksListCtrlPanel(InvListCtrl):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.OnSelectMaskName, "Select mask name in combo")
+
+    def OnSelectMaskName(self, index):
+        """Programmatically synchronize the list selection and eye icons"""
+        # Temporarily unbind to avoid infinite loops when we programmatically select
+        self.Unbind(wx.EVT_LIST_ITEM_SELECTED)
+        self.Unbind(wx.EVT_LIST_ITEM_DESELECTED)
+
+        for global_idx, local_pos in self.mask_list_index.items():
+            if global_idx == index:
+                self.SetItemState(local_pos, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+                self.SetItemImage(local_pos, 1)  # Eye icon ON
+            else:
+                self.SetItemState(local_pos, 0, wx.LIST_STATE_SELECTED)
+                self.SetItemImage(local_pos, 0)  # Eye icon OFF
+
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_selection_changed)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_selection_changed)
 
     def on_selection_changed(self, evt):
         """Handle selection changes in the mask list"""
@@ -1281,7 +1295,7 @@ class SurfacePage(wx.Panel):
 
         if not clear_project:
             self.create_category("General")
-            surface_dict = project.Project().surface_dict
+            surface_dict = Project().surface_dict
             for i in sorted(surface_dict.keys()):
                 surface = surface_dict[i]
                 self.AddSurface(surface)
@@ -1484,7 +1498,7 @@ class SurfaceButtonControlPanel(wx.Panel):
             WILDCARD_SAVE_3D,
         )
 
-        project_obj = project.Project()
+        project_obj = Project()
         n_surface = 0
 
         for index in project_obj.surface_dict:
@@ -2373,7 +2387,6 @@ class ImagePage(wx.Panel):
     def add_entry(self, label, matrix):
         """Add a new image version entry."""
         # Entries are now stored in Project().image_versions
-        proj = Project()
         idx = self.list_ctrl.GetItemCount()
         info = _("Original") if idx == 0 else _("Filtered")
         self.list_ctrl.InsertItem(idx, "")

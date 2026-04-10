@@ -2205,6 +2205,19 @@ class Slice(metaclass=utils.Singleton):
                     self.matrix = mat
                 self.__switch_active_image(mat)
                 Publisher.sendMessage("Update image version selection", label=label)
+
+                # Maintainer fix: synchronize mask with the newly selected image view.
+                # If the currently active mask doesn't belong to this image version,
+                # search for one that does and select it to update the UI comboboxes.
+                if (
+                    self.current_mask
+                    and getattr(self.current_mask, "derived_from", "Original") != label
+                ):
+                    for mask_idx, mask in proj.mask_dict.items():
+                        if getattr(mask, "derived_from", "Original") == label:
+                            self.SelectCurrentMask(mask_idx)
+                            break
+
                 break
 
 
