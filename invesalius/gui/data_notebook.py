@@ -1612,7 +1612,16 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         surface_context_menu.AppendSeparator()
 
-        delete_id = surface_context_menu.Append(start_idx + 3, _("Delete"))
+        properties_id = surface_context_menu.Append(start_idx + 3, _("Properties"))
+        surface_context_menu.Bind(
+            wx.EVT_MENU,
+            lambda evt: self.OnShowProperties(surface_index=global_surface_id),
+            properties_id,
+        )
+
+        surface_context_menu.AppendSeparator()
+
+        delete_id = surface_context_menu.Append(start_idx + 4, _("Delete"))
         surface_context_menu.Bind(wx.EVT_MENU, self.delete_surface, delete_id)
 
         self.PopupMenu(surface_context_menu)
@@ -1726,6 +1735,62 @@ class SurfacesListCtrlPanel(InvListCtrl):
         if result != wx.ID_OK:
             return
         self.RemoveSurfaces()
+
+    def OnShowProperties(self, event=None, surface_index=None):
+        """Show properties for the selected surface"""
+        if surface_index is None:
+            local_idx = self.GetFocusedItem()
+            global_surface_id = None
+            for g_id, l_id in self.surface_list_index.items():
+                if l_id == local_idx:
+                    global_surface_id = g_id
+                    break
+        else:
+            global_surface_id = surface_index
+
+        if global_surface_id is None:
+            return
+
+        # Get the surface from the project
+        proj = project.Project()
+        if global_surface_id not in proj.surface_dict:
+            return
+
+        surface = proj.surface_dict[global_surface_id]
+        polydata = surface.polydata
+
+        # Calculate properties
+        num_triangles = polydata.GetNumberOfCells()
+        num_points = polydata.GetNumberOfPoints()
+
+        # Calculate edges using vtkExtractEdges
+        from vtkmodules.vtkFiltersCore import vtkExtractEdges
+
+        edges_filter = vtkExtractEdges()
+        edges_filter.SetInputData(polydata)
+        edges_filter.Update()
+        num_edges = edges_filter.GetOutput().GetNumberOfLines()
+
+        # Calculate shells using vtkConnectivityFilter
+        from vtkmodules.vtkFiltersCore import vtkConnectivityFilter
+
+        connectivity_filter = vtkConnectivityFilter()
+        connectivity_filter.SetInputData(polydata)
+        connectivity_filter.SetExtractionModeToAllRegions()
+        connectivity_filter.Update()
+        num_shells = connectivity_filter.GetNumberOfExtractedRegions()
+
+        # Format the message
+        message = (
+            f"Surface: {surface.name}\n\n"
+            f"Number of triangles: {num_triangles:,}\n"
+            f"Number of points: {num_points:,}\n"
+            f"Number of edges: {num_edges:,}\n"
+            f"Number of shells: {num_shells:,}"
+        )
+
+        # Show message box
+        wx.MessageBox(message, _("Surface Properties"), wx.OK | wx.ICON_INFORMATION)
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
