@@ -1759,35 +1759,47 @@ class SurfacesListCtrlPanel(InvListCtrl):
         surface = proj.surface_dict[global_surface_id]
         polydata = surface.polydata
 
-        # Calculate properties
-        num_triangles = polydata.GetNumberOfCells()
-        num_points = polydata.GetNumberOfPoints()
+        # Show progress window
+        progress = dlg.CalculateSurfacePropertiesProgressWindow()
+        wx.SafeYield()
 
-        # Calculate edges using vtkExtractEdges
-        from vtkmodules.vtkFiltersCore import vtkExtractEdges
+        try:
+            # Calculate properties
+            num_triangles = polydata.GetNumberOfCells()
+            num_points = polydata.GetNumberOfPoints()
+            progress.Update()
 
-        edges_filter = vtkExtractEdges()
-        edges_filter.SetInputData(polydata)
-        edges_filter.Update()
-        num_edges = edges_filter.GetOutput().GetNumberOfLines()
+            # Calculate edges using vtkExtractEdges
+            from vtkmodules.vtkFiltersCore import vtkExtractEdges
 
-        # Calculate shells using vtkConnectivityFilter
-        from vtkmodules.vtkFiltersCore import vtkConnectivityFilter
+            edges_filter = vtkExtractEdges()
+            edges_filter.SetInputData(polydata)
+            edges_filter.Update()
+            num_edges = edges_filter.GetOutput().GetNumberOfLines()
+            progress.Update()
 
-        connectivity_filter = vtkConnectivityFilter()
-        connectivity_filter.SetInputData(polydata)
-        connectivity_filter.SetExtractionModeToAllRegions()
-        connectivity_filter.Update()
-        num_shells = connectivity_filter.GetNumberOfExtractedRegions()
+            # Calculate shells using vtkConnectivityFilter
+            from vtkmodules.vtkFiltersCore import vtkConnectivityFilter
 
-        # Format the message
-        message = (
-            f"Surface: {surface.name}\n\n"
-            f"Number of triangles: {num_triangles:,}\n"
-            f"Number of points: {num_points:,}\n"
-            f"Number of edges: {num_edges:,}\n"
-            f"Number of shells: {num_shells:,}"
-        )
+            connectivity_filter = vtkConnectivityFilter()
+            connectivity_filter.SetInputData(polydata)
+            connectivity_filter.SetExtractionModeToAllRegions()
+            connectivity_filter.Update()
+            num_shells = connectivity_filter.GetNumberOfExtractedRegions()
+            progress.Update()
+
+            # Format the message
+            message = (
+                f"Surface: {surface.name}\n\n"
+                f"Number of triangles: {num_triangles:,}\n"
+                f"Number of points: {num_points:,}\n"
+                f"Number of edges: {num_edges:,}\n"
+                f"Number of shells: {num_shells:,}"
+            )
+
+        finally:
+            # Close progress window
+            progress.Close()
 
         # Show message box
         wx.MessageBox(message, _("Surface Properties"), wx.OK | wx.ICON_INFORMATION)
