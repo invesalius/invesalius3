@@ -2787,7 +2787,9 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                     )
                     Publisher.sendMessage("Render volume viewer")
 
-            del self.viewer.slice_.aux_matrices["SELECT"]
+            # Use pop() with default to safely handle the case where the user
+            # clicked OK without first clicking on a region (SELECT never created).
+            self.viewer.slice_.aux_matrices.pop("SELECT", None)
             self.viewer.slice_.to_show_aux = ""
             Publisher.sendMessage("Reload actual slice")
             self.config.mask = None
@@ -2849,7 +2851,12 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage("Render volume viewer")
 
     def _create_new_mask(self):
-        mask = self.viewer.slice_.create_new_mask(show=False, add_to_project=False)
+        # Pass current_image_label so the new mask is correctly tagged as derived
+        # from the active image (Original or Filtered), not always "Original".
+        current_label = getattr(self.viewer.slice_, "current_image_label", _("Original"))
+        mask = self.viewer.slice_.create_new_mask(
+            show=False, add_to_project=False, derived_from=current_label
+        )
         mask.was_edited = True
         mask.matrix[0, :, :] = 1
         mask.matrix[:, 0, :] = 1
