@@ -1279,39 +1279,44 @@ class Slice(metaclass=utils.Singleton):
 
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."
-        if self.current_mask:
-            self.current_mask.is_shown = False
+        import wx
+        wx.BeginBusyCursor()
+        try:
+            if self.current_mask:
+                self.current_mask.is_shown = False
+                self.current_mask.on_show()
+
+            proj = Project()
+            future_mask = proj.GetMask(index)
+            future_mask.is_shown = True
+            self.current_mask = future_mask
+            # Update the current mask index because is some edge cases
+            # it will be incorrect after self.current_mask = future_mask
+            self.current_mask.index = index
             self.current_mask.on_show()
 
-        proj = Project()
-        future_mask = proj.GetMask(index)
-        future_mask.is_shown = True
-        self.current_mask = future_mask
-        # Update the current mask index because is some edge cases
-        # it will be incorrect after self.current_mask = future_mask
-        self.current_mask.index = index
-        self.current_mask.on_show()
+            colour = future_mask.colour
+            self.SetMaskColour(index, colour, update=True)
 
-        colour = future_mask.colour
-        self.SetMaskColour(index, colour, update=True)
+            self.buffer_slices = {
+                "AXIAL": SliceBuffer(),
+                "CORONAL": SliceBuffer(),
+                "SAGITAL": SliceBuffer(),
+            }
 
-        self.buffer_slices = {
-            "AXIAL": SliceBuffer(),
-            "CORONAL": SliceBuffer(),
-            "SAGITAL": SliceBuffer(),
-        }
-
-        Publisher.sendMessage(
-            "Set mask threshold in notebook",
-            index=index,
-            threshold_range=self.current_mask.threshold_range,
-        )
-        Publisher.sendMessage(
-            "Set threshold values in gradient",
-            threshold_range=self.current_mask.threshold_range,
-        )
-        Publisher.sendMessage("Select mask name in combo", index=index)
-        Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage(
+                "Set mask threshold in notebook",
+                index=index,
+                threshold_range=self.current_mask.threshold_range,
+            )
+            Publisher.sendMessage(
+                "Set threshold values in gradient",
+                threshold_range=self.current_mask.threshold_range,
+            )
+            Publisher.sendMessage("Select mask name in combo", index=index)
+            Publisher.sendMessage("Update slice viewer")
+        finally:
+            wx.EndBusyCursor()
 
     # ---------------------------------------------------------------------------
 
@@ -1507,26 +1512,31 @@ class Slice(metaclass=utils.Singleton):
         Returns:
             new_mask: The new mask object.
         """
-        future_mask = Mask()
-        future_mask.create_mask(self.matrix.shape)
-        future_mask.spacing = self.spacing
+        import wx
+        wx.BeginBusyCursor()
+        try:
+            future_mask = Mask()
+            future_mask.create_mask(self.matrix.shape)
+            future_mask.spacing = self.spacing
 
-        if name:
-            future_mask.name = name
-        if colour:
-            future_mask.colour = colour
-        if opacity:
-            future_mask.opacity = opacity
-        if edition_threshold_range:
-            future_mask.edition_threshold_range = edition_threshold_range
-        if threshold_range:
-            future_mask.threshold_range = threshold_range
+            if name:
+                future_mask.name = name
+            if colour:
+                future_mask.colour = colour
+            if opacity:
+                future_mask.opacity = opacity
+            if edition_threshold_range:
+                future_mask.edition_threshold_range = edition_threshold_range
+            if threshold_range:
+                future_mask.threshold_range = threshold_range
 
-        if derived_from:
-            future_mask.derived_from = derived_from
+            if derived_from:
+                future_mask.derived_from = derived_from
 
-        if add_to_project:
-            self._add_mask_into_proj(future_mask, show=show)
+            if add_to_project:
+                self._add_mask_into_proj(future_mask, show=show)
+        finally:
+            wx.EndBusyCursor()
 
         return future_mask
 
@@ -2135,30 +2145,35 @@ class Slice(metaclass=utils.Singleton):
                 "derived": derived_from,
             }
 
-        # Update histogram and center for the filtered image.
-        # Previously this happened via the matrix setter in _run_filter, but now
-        # we bypass the setter there to protect self._matrix (the original image).
-        i, e = filtered_mat.min(), filtered_mat.max()
-        r = int(e) - int(i)
-        if r > 0:
-            self.histogram = np.histogram(filtered_mat, r, (i, e))[0]
-        self.center = [(s * d / 2.0) for (d, s) in zip(filtered_mat.shape[::-1], self.spacing)]
+        import wx
+        wx.BeginBusyCursor()
+        try:
+            # Update histogram and center for the filtered image.
+            # Previously this happened via the matrix setter in _run_filter, but now
+            # we bypass the setter there to protect self._matrix (the original image).
+            i, e = filtered_mat.min(), filtered_mat.max()
+            r = int(e) - int(i)
+            if r > 0:
+                self.histogram = np.histogram(filtered_mat, r, (i, e))[0]
+            self.center = [(s * d / 2.0) for (d, s) in zip(filtered_mat.shape[::-1], self.spacing)]
 
-        # Fix 1: Switch to the newly created filtered image label FIRST, so that
-        # any mask creation or viewer updates triggered below use the correct image matrix!
-        self.current_image_label = label
+            # Fix 1: Switch to the newly created filtered image label FIRST, so that
+            # any mask creation or viewer updates triggered below use the correct image matrix!
+            self.current_image_label = label
 
-        # Must discard cached VTK buffers so viewers re-read the updated matrix
-        self.discard_all_buffers()
+            # Must discard cached VTK buffers so viewers re-read the updated matrix
+            self.discard_all_buffers()
 
-        # Create a new mask for the new filtered image
-        self.create_new_mask(name=None, show=True, derived_from=label)
+            # Create a new mask for the new filtered image
+            self.create_new_mask(name=None, show=True, derived_from=label)
 
-        Publisher.sendMessage("Reload actual slice")
-        Publisher.sendMessage("Update slice viewer")
-        Publisher.sendMessage("Refresh viewer")
-        Publisher.sendMessage("Render volume viewer")
-        Publisher.sendMessage("Image filter done")
+            Publisher.sendMessage("Reload actual slice")
+            Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage("Refresh viewer")
+            Publisher.sendMessage("Render volume viewer")
+            Publisher.sendMessage("Image filter done")
+        finally:
+            wx.EndBusyCursor()
 
     def __switch_active_image(self, matrix):
         """Swap the active volume to a previously stored image version.
@@ -2166,61 +2181,71 @@ class Slice(metaclass=utils.Singleton):
         Called when the user selects a row in the Images notebook tab.
         *matrix* is a numpy array previously snapshotted by ImagePage.
         """
-        if self.matrix is not None:
-            # Swap reference instead of overwriting memory to avoid corruption
-            self.matrix = matrix
+        import wx
+        wx.BeginBusyCursor()
+        try:
+            if self.matrix is not None:
+                # Swap reference instead of overwriting memory to avoid corruption
+                self.matrix = matrix
 
-            # Invalidate threshold flags in the current mask to ensure stability
-            # across image versions during lazy evaluation (scrolling).
-            # This forces scrolling to re-threshold against the newly active matrix.
-            # Fix 2: Only wipe threshold flags if the mask was NOT manually edited
-            # or created by deep learning. Otherwise, we destroy the AI segmentations!
-            if self.current_mask and not self.current_mask.was_edited:
-                self.current_mask.matrix[:, 0, 0] = 0
-                self.current_mask.matrix[0, :, 0] = 0
-                self.current_mask.matrix[0, 0, :] = 0
-                self.current_mask.matrix.flush()
+                # Invalidate threshold flags in the current mask to ensure stability
+                # across image versions during lazy evaluation (scrolling).
+                # This forces scrolling to re-threshold against the newly active matrix.
+                # Fix 2: Only wipe threshold flags if the mask was NOT manually edited
+                # or created by deep learning. Otherwise, we destroy the AI segmentations!
+                if self.current_mask and not self.current_mask.was_edited:
+                    self.current_mask.matrix[:, 0, 0] = 0
+                    self.current_mask.matrix[0, :, 0] = 0
+                    self.current_mask.matrix[0, 0, :] = 0
+                    self.current_mask.matrix.flush()
 
-            self.discard_all_buffers()
-            Publisher.sendMessage("Reload actual slice")
-            Publisher.sendMessage("Update slice viewer")
-            Publisher.sendMessage("Refresh viewer")
-            Publisher.sendMessage("Render volume viewer")
+                self.discard_all_buffers()
+                Publisher.sendMessage("Reload actual slice")
+                Publisher.sendMessage("Update slice viewer")
+                Publisher.sendMessage("Refresh viewer")
+                Publisher.sendMessage("Render volume viewer")
+        finally:
+            wx.EndBusyCursor()
 
     def __switch_active_image_by_label(self, label):
         """Find an image version by label and switch to it if not already active."""
         if label == self.current_image_label:
             return
 
-        proj = Project()
-        for l, mat in proj.image_versions:
-            if l == label:
-                self.current_image_label = label
-                if label == _("Original"):
-                    # Restore _matrix to the original memmap stored in image_versions
-                    # (which is the same object as _matrix or a disk-backed copy).
-                    # Do NOT call the matrix setter — it would re-check is_filtered
-                    # and may overwrite _matrix with a plain ndarray losing .filename.
-                    self._matrix = mat
-                else:
-                    # For filtered versions call the setter to update histograms.
-                    self.matrix = mat
-                self.__switch_active_image(mat)
-                Publisher.sendMessage("Update image version selection", label=label)
+        import wx
+        wx.BeginBusyCursor()
+        try:
+            proj = Project()
+            for l, mat in proj.image_versions:
+                if l == label:
+                    self.current_image_label = label
+                    if label == _("Original"):
+                        # Restore _matrix to the original memmap stored in image_versions
+                        # (which is the same object as _matrix or a disk-backed copy).
+                        # Do NOT call the matrix setter — it would re-check is_filtered
+                        # and may overwrite _matrix with a plain ndarray losing .filename.
+                        self._matrix = mat
+                    else:
+                        # For filtered versions call the setter to update histograms.
+                        self.matrix = mat
+                    self.__switch_active_image(mat)
+                    Publisher.sendMessage("Update image version selection", label=label)
 
-                # Maintainer fix: synchronize mask with the newly selected image view.
-                # If the currently active mask doesn't belong to this image version,
-                # search for one that does and select it to update the UI comboboxes.
-                if (
-                    self.current_mask
-                    and getattr(self.current_mask, "derived_from", "Original") != label
-                ):
-                    for mask_idx, mask in proj.mask_dict.items():
-                        if getattr(mask, "derived_from", "Original") == label:
-                            self.SelectCurrentMask(mask_idx)
-                            break
+                    # Maintainer fix: synchronize mask with the newly selected image view.
+                    # If the currently active mask doesn't belong to this image version,
+                    # search for one that does and select it to update the UI comboboxes.
+                    if (
+                        self.current_mask
+                        and getattr(self.current_mask, "derived_from", "Original") != label
+                    ):
+                        for mask_idx, mask in proj.mask_dict.items():
+                            if getattr(mask, "derived_from", "Original") == label:
+                                Publisher.sendMessage("Change mask selected", index=mask_idx)
+                                break
 
-                break
+                    break
+        finally:
+            wx.EndBusyCursor()
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:

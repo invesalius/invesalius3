@@ -61,7 +61,7 @@ import invesalius.utils as utils
 import invesalius_rs as floodfill
 from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
 from invesalius.data.measures import CircleDensityMeasure, MeasureData, PolygonDensityMeasure
-from invesalius.i18n import tr as _
+from invesalius.i18n import tr as _, tr
 from invesalius.pubsub import pub as Publisher
 
 # import invesalius.project as prj
@@ -2475,6 +2475,13 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             self.dlg_ffill = None
 
     def OnFFClick(self, obj, evt):
+        # Lazily repopulate the buffer slice if it was cleared by an image switch.
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
+            slice_number = self.slice_data.number
+            n_mask = self.viewer.slice_.get_mask_slice(self.orientation, slice_number)
+            self.viewer.slice_.buffer_slices[self.orientation].mask = n_mask
+            self.viewer.slice_.buffer_slices[self.orientation].index = slice_number
+
         if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
@@ -2693,6 +2700,11 @@ class SelectPartConfig(metaclass=utils.Singleton):
         self.con_3d = 6
         self.dlg_visible = False
         self.mask_name = ""
+        # Stores the list of (x, y, z) voxels that were clicked so the selection
+        # can be multi-part and re-evaluated when the threshold changes.
+        self.seeds = []
+        # Stores the list of 3-D ROI boundaries (tuple of 3 slices) for each seed.
+        self.rois = []
 
 
 class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
@@ -2723,6 +2735,17 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnSelect)
 
     def SetUp(self):
+        # Clear the active selection whenever the threshold slider moves so that
+        # previously-selected voxels do not remain highlighted as red after the
+        # bone range changes (fixing the 'red in background' confusion).
+        # While the threshold slider is being dragged, temporarily hide the
+        # red overlay (re-evaluating the full 3-D flood fill on every tick
+        # would be too slow).
+        Publisher.subscribe(self._preview_threshold_change, "Changing threshold values")
+        # When the slider is released, re-run the flood fill from the stored
+        # seed so the selection dynamically follows the new bone boundary.
+        Publisher.subscribe(self._reeval_selection_on_threshold_change, "Set threshold values")
+
         if not self.config.dlg_visible:
             import invesalius.data.mask as mask
 
@@ -2733,7 +2756,94 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.dlg = dialogs.SelectPartsOptionsDialog(self.config)
             self.dlg.Show()
 
+    def _preview_threshold_change(self, threshold_range):
+        """While the threshold slider is being dragged, hide the red overlay.
+
+        Re-running a full 3-D flood fill on every slider tick is too expensive.
+        We temporarily suppress the aux display; it will be restored by
+        _reeval_selection_on_threshold_change when the slider is released.
+        """
+        if self.config.mask is not None and self.viewer.slice_.to_show_aux == "SELECT":
+            self.viewer.slice_.to_show_aux = ""
+            Publisher.sendMessage("Reload actual slice")
+
+    def _reeval_selection_on_threshold_change(self, threshold_range):
+        """Re-run the 3-D flood fill for ALL stored seeds after a threshold change.
+
+        This makes the red highlights dynamically follow all selected bones:
+        - If the seed voxels are still within the new bone range, their full
+          connected components are recomputed within their ROIs and shown in red.
+        - If a seed falls out of range, that part disappears until the range is restored.
+        """
+        if self.config.mask is None or not self.config.seeds:
+            return
+
+        wx.BeginBusyCursor()
+        try:
+            thresh_0, thresh_1 = threshold_range
+
+            # Threshold the volume in memory for the flood fill.
+            self.viewer.slice_.do_threshold_to_all_slices()
+
+            # Get relevant data segments: active image (Original/Filtered) and the pre-selected mask.
+            img_matrix = self.viewer.slice_.matrix
+            mask_matrix = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+            
+            bstruct = np.array(
+                generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
+            )
+
+            # Zero the previous selection and re-fill for EVERY seed.
+            self.config.mask.matrix[1:, 1:, 1:][:] = 0
+            
+            for (x, y, z), (roi_z, roi_y, roi_x) in zip(self.config.seeds, self.config.rois):
+                # Check if current image version still works for this ROI
+                if (
+                    roi_z.stop > img_matrix.shape[0]
+                    or roi_y.stop > img_matrix.shape[1]
+                    or roi_x.stop > img_matrix.shape[2]
+                ):
+                    continue
+
+                img_roi = img_matrix[roi_z, roi_y, roi_x]
+                mask_roi = mask_matrix[roi_z, roi_y, roi_x]
+
+                # Prepare a source ROI constrained to the existing mask area.
+                local_source = np.full(img_roi.shape, thresh_0 - 1, dtype=img_roi.dtype)
+                local_source[mask_roi > 127] = img_roi[mask_roi > 127]
+
+                # Localize seed coordinate to the ROI box.
+                seed_loc = (x - roi_x.start, y - roi_y.start, z - roi_z.start)
+                out_roi = self.config.mask.matrix[1:, 1:, 1:][roi_z, roi_y, roi_x]
+
+                floodfill.floodfill_threshold(
+                    local_source,
+                    (seed_loc,),
+                    thresh_0,
+                    thresh_1,
+                    self.fill_value,
+                    bstruct,
+                    out_roi
+                )
+
+            self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
+            self.viewer.slice_.to_show_aux = "SELECT"
+        finally:
+            wx.EndBusyCursor()
+        self.config.mask.was_edited = True
+        Publisher.sendMessage("Reload actual slice")
+
     def CleanUp(self):
+        # Unsubscribe threshold-change listeners first (safe even if not yet subscribed)
+        try:
+            Publisher.unsubscribe(self._preview_threshold_change, "Changing threshold values")
+        except Exception:
+            pass
+        try:
+            Publisher.unsubscribe(self._reeval_selection_on_threshold_change, "Set threshold values")
+        except Exception:
+            pass
+
         if self.dlg is None:
             return
 
@@ -2795,6 +2905,13 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.config.mask = None
 
     def OnSelect(self, obj, evt):
+        # Lazily repopulate the buffer slice if it was cleared by an image switch.
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
+            slice_number = self.slice_data.number
+            n_mask = self.viewer.slice_.get_mask_slice(self.orientation, slice_number)
+            self.viewer.slice_.buffer_slices[self.orientation].mask = n_mask
+            self.viewer.slice_.buffer_slices[self.orientation].index = slice_number
+
         if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
@@ -2802,37 +2919,137 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
-        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+        # Guard: out-of-bounds click – Rust floodfill extension can't handle negatives.
+        mask_shape = self.viewer.slice_.current_mask.matrix.shape
+        if x < 0 or y < 0 or z < 0:
+            return
+        if z >= mask_shape[0] - 1 or y >= mask_shape[1] - 1 or x >= mask_shape[2] - 1:
+            return
 
-        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
-        self.viewer.slice_.do_threshold_to_all_slices()
+        # Reset stale config.mask when the user has switched to a different image version.
+        # Without this, the old filtered-image selection mask is reused on the original
+        # image (or vice-versa), producing wrong / mixed-data results.
+        current_label = getattr(self.viewer.slice_, "current_image_label", tr("Original"))
+        if self.config.mask is not None:
+            config_label = getattr(self.config.mask, "derived_from", tr("Original"))
+            if config_label != current_label:
+                self.viewer.slice_.aux_matrices.pop("SELECT", None)
+                self.viewer.slice_.to_show_aux = ""
+                self.config.mask = None
 
-        if self.config.mask is None:
-            self._create_new_mask()
+        # Identify the 2-D connected component (bone blob) the user clicked.
+        # We use its width and height to define a 'Shape-Aware' 3-D ROI.
+        from scipy.ndimage import label, find_objects
 
-        if iren.GetControlKey():
-            floodfill.floodfill_threshold(
-                self.config.mask.matrix[1:, 1:, 1:],
-                ((x, y, z),),
-                254,
-                255,
-                0,
-                bstruct,
-                self.config.mask.matrix[1:, 1:, 1:],
-            )
-        else:
-            floodfill.floodfill_threshold(
-                mask,
-                ((x, y, z),),
-                self.t0,
-                self.t1,
-                self.fill_value,
-                bstruct,
-                self.config.mask.matrix[1:, 1:, 1:],
-            )
+        # Get the actual voxel matrix and the project's current threshold range.
+        mask_matrix = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+        thresh_0, thresh_1 = self.viewer.slice_.current_mask.threshold_range
 
-        self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
-        self.viewer.slice_.to_show_aux = "SELECT"
+        # Extract the 2-D voxel slice corresponding to the user's click.
+        # This avoids resampling errors and ensures the search box is accurate.
+        if self.orientation == "AXIAL":
+            voxel_2d = mask_matrix[z, :, :]
+            r, c = y, x
+        elif self.orientation == "CORONAL":
+            voxel_2d = mask_matrix[:, y, :]
+            r, c = z, x
+        else:  # SAGITAL
+            voxel_2d = mask_matrix[:, :, x]
+            r, c = z, y
+
+        # Threshold the 2-D voxel slice to find the connected bone blob.
+        binary_2d = np.zeros(voxel_2d.shape, dtype=np.uint8)
+        binary_2d[(voxel_2d >= thresh_0) & (voxel_2d <= thresh_1)] = 1
+        
+        # Identify the component the user clicked.
+        labeled_2d, _ncomp = label(binary_2d)
+        comp_id = labeled_2d[r, c]
+        if comp_id == 0:
+            return  # Clicked non-bone background
+
+        # Get the voxel-space bounds of the clicked bone blob.
+        objs = find_objects(labeled_2d)
+        blob_r, blob_c = objs[comp_id - 1]
+
+        # Construct a 3-D ROI with moderate padding (45 voxels) for curvature,
+        # and a generous vertical range (150 voxels). This isolates the 
+        # structure (e.g. skull, rib) perfectly without clipping or leaking.
+        _P = 45
+        _Z_P = 150
+        
+        if self.orientation == "AXIAL":
+            roi_z = slice(max(0, z - _Z_P), min(mask_matrix.shape[0], z + _Z_P + 1))
+            roi_y = slice(max(0, blob_r.start - _P), min(mask_matrix.shape[1], blob_r.stop + _P))
+            roi_x = slice(max(0, blob_c.start - _P), min(mask_matrix.shape[2], blob_c.stop + _P))
+        elif self.orientation == "CORONAL":
+            roi_y = slice(max(0, y - _Z_P), min(mask_matrix.shape[1], y + _Z_P + 1))
+            roi_z = slice(max(0, blob_r.start - _P), min(mask_matrix.shape[0], blob_r.stop + _P))
+            roi_x = slice(max(0, blob_c.start - _P), min(mask_matrix.shape[2], blob_c.stop + _P))
+        else:  # SAGITAL
+            roi_x = slice(max(0, x - _Z_P), min(mask_matrix.shape[2], x + _Z_P + 1))
+            roi_z = slice(max(0, blob_r.start - _P), min(mask_matrix.shape[0], blob_r.stop + _P))
+            roi_y = slice(max(0, blob_c.start - _P), min(mask_matrix.shape[1], blob_c.stop + _P))
+
+        wx.BeginBusyCursor()
+        try:
+            self.config.rois.append((roi_z, roi_y, roi_x))
+            self.config.seeds.append((x, y, z))
+
+            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
+
+            # Threshold the volume in memory for the flood fill.
+            self.viewer.slice_.do_threshold_to_all_slices()
+
+            # Get relevant data segments: active image (Original/Filtered) and the pre-selected mask.
+            img_matrix = self.viewer.slice_.matrix
+            mask_matrix = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+            
+            img_roi = img_matrix[roi_z, roi_y, roi_x]
+            mask_roi = mask_matrix[roi_z, roi_y, roi_x]
+
+            # Prepare a source ROI constrained to the existing mask area.
+            # We fill non-mask areas with a 'forbidden' value outside the threshold range.
+            local_source = np.full(img_roi.shape, thresh_0 - 1, dtype=img_roi.dtype)
+            local_source[mask_roi > 127] = img_roi[mask_roi > 127]
+
+            if self.config.mask is None:
+                self._create_new_mask()
+
+            # Localize seed coordinate to the ROI box.
+            seed_loc = (x - roi_x.start, y - roi_y.start, z - roi_z.start)
+            out_roi = self.config.mask.matrix[1:, 1:, 1:][roi_z, roi_y, roi_x]
+
+            if iren.GetControlKey():
+                # On Ctrl+Click remove from mask and attempt to prune seed list
+                floodfill.floodfill_threshold(
+                    self.config.mask.matrix[1:, 1:, 1:],
+                    ((x, y, z),),
+                    254,
+                    255,
+                    0,
+                    bstruct,
+                    self.config.mask.matrix[1:, 1:, 1:],
+                )
+                # Cleanup lists to avoid unbounded growth on many removal clicks
+                # (Simple reset for now; robust pruning requires distance checks)
+                if len(self.config.seeds) > 50:
+                    self.config.seeds = []
+                    self.config.rois = []
+            else:
+                floodfill.floodfill_threshold(
+                    local_source,
+                    (seed_loc,),
+                    thresh_0,
+                    thresh_1,
+                    self.fill_value,
+                    bstruct,
+                    out_roi
+                )
+
+            self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
+            self.viewer.slice_.to_show_aux = "SELECT"
+        finally:
+            wx.EndBusyCursor()
 
         self.config.mask.was_edited = True
         Publisher.sendMessage("Reload actual slice")
@@ -2853,7 +3070,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
     def _create_new_mask(self):
         # Pass current_image_label so the new mask is correctly tagged as derived
         # from the active image (Original or Filtered), not always "Original".
-        current_label = getattr(self.viewer.slice_, "current_image_label", _("Original"))
+        current_label = getattr(self.viewer.slice_, "current_image_label", tr("Original"))
         mask = self.viewer.slice_.create_new_mask(
             show=False, add_to_project=False, derived_from=current_label
         )
@@ -2929,6 +3146,13 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             self.config.dlg = None
 
     def OnFFClick(self, obj, evt):
+        # Lazily repopulate the buffer slice if it was cleared by an image switch.
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
+            slice_number = self.slice_data.number
+            n_mask = self.viewer.slice_.get_mask_slice(self.orientation, slice_number)
+            self.viewer.slice_.buffer_slices[self.orientation].mask = n_mask
+            self.viewer.slice_.buffer_slices[self.orientation].index = slice_number
+
         if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
