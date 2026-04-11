@@ -61,7 +61,8 @@ import invesalius.utils as utils
 import invesalius_rs as floodfill
 from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
 from invesalius.data.measures import CircleDensityMeasure, MeasureData, PolygonDensityMeasure
-from invesalius.i18n import tr as _, tr
+from invesalius.i18n import tr
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 # import invesalius.project as prj
@@ -2817,13 +2818,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 out_roi = self.config.mask.matrix[1:, 1:, 1:][roi_z, roi_y, roi_x]
 
                 floodfill.floodfill_threshold(
-                    local_source,
-                    (seed_loc,),
-                    thresh_0,
-                    thresh_1,
-                    self.fill_value,
-                    bstruct,
-                    out_roi
+                    local_source, (seed_loc,), thresh_0, thresh_1, self.fill_value, bstruct, out_roi
                 )
 
             self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
@@ -2840,7 +2835,9 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         except Exception:
             pass
         try:
-            Publisher.unsubscribe(self._reeval_selection_on_threshold_change, "Set threshold values")
+            Publisher.unsubscribe(
+                self._reeval_selection_on_threshold_change, "Set threshold values"
+            )
         except Exception:
             pass
 
@@ -2939,7 +2936,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         # Identify the 2-D connected component (bone blob) the user clicked.
         # We use its width and height to define a 'Shape-Aware' 3-D ROI.
-        from scipy.ndimage import label, find_objects
+        from scipy.ndimage import find_objects, label
 
         # Get the actual voxel matrix and the project's current threshold range.
         mask_matrix = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
@@ -3037,13 +3034,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                     self.config.rois = []
             else:
                 floodfill.floodfill_threshold(
-                    local_source,
-                    (seed_loc,),
-                    thresh_0,
-                    thresh_1,
-                    self.fill_value,
-                    bstruct,
-                    out_roi
+                    local_source, (seed_loc,), thresh_0, thresh_1, self.fill_value, bstruct, out_roi
                 )
 
             self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]

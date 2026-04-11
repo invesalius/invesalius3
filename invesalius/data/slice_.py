@@ -1280,6 +1280,7 @@ class Slice(metaclass=utils.Singleton):
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."
         import wx
+
         wx.BeginBusyCursor()
         try:
             if self.current_mask:
@@ -1513,6 +1514,7 @@ class Slice(metaclass=utils.Singleton):
             new_mask: The new mask object.
         """
         import wx
+
         wx.BeginBusyCursor()
         try:
             future_mask = Mask()
@@ -2146,6 +2148,7 @@ class Slice(metaclass=utils.Singleton):
             }
 
         import wx
+
         wx.BeginBusyCursor()
         try:
             # Update histogram and center for the filtered image.
@@ -2182,6 +2185,7 @@ class Slice(metaclass=utils.Singleton):
         *matrix* is a numpy array previously snapshotted by ImagePage.
         """
         import wx
+
         wx.BeginBusyCursor()
         try:
             if self.matrix is not None:
@@ -2213,6 +2217,7 @@ class Slice(metaclass=utils.Singleton):
             return
 
         import wx
+
         wx.BeginBusyCursor()
         try:
             proj = Project()
