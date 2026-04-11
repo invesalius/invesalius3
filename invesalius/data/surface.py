@@ -1505,6 +1505,65 @@ class SurfaceManager:
                 )
                 proj.surface_dict[index].is_shown = False
 
+    def _validate_geometry(self, polydata):
+        """
+        Phase 2: Lightweight geometry validation.
+
+        Checks for:
+        - Degenerate triangles (zero or near-zero area)
+        - Duplicate vertices within cells
+
+        Args:
+            polydata: vtkPolyData object to validate
+
+        Raises:
+            ValueError: If geometry issues are detected
+        """
+        AREA_THRESHOLD = 1e-10
+        degenerate_count = 0
+        duplicate_vertex_count = 0
+
+        idlist = vtkIdList()
+
+        for i in range(polydata.GetNumberOfCells()):
+            polydata.GetCellPoints(i, idlist)
+            n_points = idlist.GetNumberOfIds()
+
+            if n_points < 3:
+                continue
+
+            # Check for duplicate vertices within cell
+            point_ids = [idlist.GetId(j) for j in range(n_points)]
+            if len(point_ids) != len(set(point_ids)):
+                duplicate_vertex_count += 1
+                continue
+
+            # Check for degenerate triangle (zero area)
+            if n_points == 3:
+                p0 = np.array(polydata.GetPoint(point_ids[0]))
+                p1 = np.array(polydata.GetPoint(point_ids[1]))
+                p2 = np.array(polydata.GetPoint(point_ids[2]))
+
+                # Calculate triangle area using cross product
+                v1 = p1 - p0
+                v2 = p2 - p0
+                cross = np.cross(v1, v2)
+                area = 0.5 * np.linalg.norm(cross)
+
+                if area < AREA_THRESHOLD:
+                    degenerate_count += 1
+
+        # Report issues if found
+        if degenerate_count > 0:
+            raise ValueError(
+                f"Mesh contains {degenerate_count} degenerate triangle(s) with near-zero area."
+            )
+
+        if duplicate_vertex_count > 0:
+            raise ValueError(
+                f"Mesh contains {duplicate_vertex_count} cell(s) with duplicate vertices."
+            )
+
     def _export_surface(self, filename, filetype, convert_to_world):
         # First we identify all surfaces that are selected
         # (if any)
@@ -1525,8 +1584,18 @@ class SurfaceManager:
         else:
             polydata = pu.Merge(polydata_list)
 
+        # Phase 1: Basic structural validation
+        if polydata is None:
+            raise ValueError("Polydata is None.")
+
         if polydata.GetNumberOfPoints() == 0:
             raise ValueError("Polydata has zero points.")
+
+        if polydata.GetNumberOfCells() == 0:
+            raise ValueError("Polydata has zero cells.")
+
+        # Phase 2: Lightweight geometry validation
+        self._validate_geometry(polydata)
 
         # Initializing progress dialog
         progress = wx.ProgressDialog(
