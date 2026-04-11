@@ -2789,14 +2789,14 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             # Get relevant data segments: active image (Original/Filtered) and the pre-selected mask.
             img_matrix = self.viewer.slice_.matrix
             mask_matrix = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
-            
+
             bstruct = np.array(
                 generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
             )
 
             # Zero the previous selection and re-fill for EVERY seed.
             self.config.mask.matrix[1:, 1:, 1:][:] = 0
-            
+
             for (x, y, z), (roi_z, roi_y, roi_x) in zip(self.config.seeds, self.config.rois):
                 # Check if current image version still works for this ROI
                 if (
@@ -2957,7 +2957,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         # Threshold the 2-D voxel slice to find the connected bone blob.
         binary_2d = np.zeros(voxel_2d.shape, dtype=np.uint8)
         binary_2d[(voxel_2d >= thresh_0) & (voxel_2d <= thresh_1)] = 1
-        
+
         # Identify the component the user clicked.
         labeled_2d, _ncomp = label(binary_2d)
         comp_id = labeled_2d[r, c]
@@ -2969,11 +2969,11 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         blob_r, blob_c = objs[comp_id - 1]
 
         # Construct a 3-D ROI with moderate padding (45 voxels) for curvature,
-        # and a generous vertical range (150 voxels). This isolates the 
+        # and a generous vertical range (150 voxels). This isolates the
         # structure (e.g. skull, rib) perfectly without clipping or leaking.
         _P = 45
         _Z_P = 150
-        
+
         if self.orientation == "AXIAL":
             roi_z = slice(max(0, z - _Z_P), min(mask_matrix.shape[0], z + _Z_P + 1))
             roi_y = slice(max(0, blob_r.start - _P), min(mask_matrix.shape[1], blob_r.stop + _P))
@@ -2992,7 +2992,9 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.config.rois.append((roi_z, roi_y, roi_x))
             self.config.seeds.append((x, y, z))
 
-            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
+            bstruct = np.array(
+                generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
+            )
 
             # Threshold the volume in memory for the flood fill.
             self.viewer.slice_.do_threshold_to_all_slices()
@@ -3000,7 +3002,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             # Get relevant data segments: active image (Original/Filtered) and the pre-selected mask.
             img_matrix = self.viewer.slice_.matrix
             mask_matrix = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
-            
+
             img_roi = img_matrix[roi_z, roi_y, roi_x]
             mask_roi = mask_matrix[roi_z, roi_y, roi_x]
 
