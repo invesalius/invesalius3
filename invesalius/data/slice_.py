@@ -2156,6 +2156,7 @@ class Slice(metaclass=utils.Singleton):
 
         Publisher.sendMessage("Reload actual slice")
         Publisher.sendMessage("Update slice viewer")
+        Publisher.sendMessage("Refresh viewer")
         Publisher.sendMessage("Render volume viewer")
         Publisher.sendMessage("Image filter done")
 
@@ -2183,6 +2184,7 @@ class Slice(metaclass=utils.Singleton):
             self.discard_all_buffers()
             Publisher.sendMessage("Reload actual slice")
             Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage("Refresh viewer")
             Publisher.sendMessage("Render volume viewer")
 
     def __switch_active_image_by_label(self, label):
