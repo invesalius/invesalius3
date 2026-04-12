@@ -58,8 +58,7 @@ class Robot(metaclass=Singleton):
         self.objective = RobotObjective.NONE
         self.target = None
 
-        # If tracker already has fiducials set, send them to the robot; this can happen, e.g.,
-        # when a pre-existing state is loaded at start-up.
+        # If tracker already has fiducials set, send them to the robot; this can happen, e.g.,when a pre-existing state is loaded at start-up.
         if self.tracker.AreTrackerFiducialsSet():
             self.TrackerFiducialsSet()
 
@@ -92,7 +91,11 @@ class Robot(metaclass=Singleton):
             state = {
                 "robot_ip": self.robot_ip,
                 "robot_ip_options": self.robot_ip_options,
-                "tracker_to_robot": self.matrix_tracker_to_robot.tolist(),
+                "tracker_to_robot": (
+                    self.matrix_tracker_to_robot.tolist()
+                    if self.matrix_tracker_to_robot is not None
+                    else None
+                ),
             }
             if self.coil_name is not None:
                 state["robot_coil"] = self.coil_name
@@ -182,6 +185,8 @@ class Robot(metaclass=Singleton):
         print("Connected to robot")
 
     def InitializeRobot(self):
+        if self.matrix_tracker_to_robot is None:
+            return
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
