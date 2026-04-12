@@ -2783,12 +2783,8 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         try:
             thresh_0, thresh_1 = threshold_range
 
-            # Threshold the volume in memory for the flood fill.
-            self.viewer.slice_.do_threshold_to_all_slices()
-
-            # Get relevant data segments: active image (Original/Filtered) and the pre-selected mask.
+            # Get active image matrix (Original/Filtered).
             img_matrix = self.viewer.slice_.matrix
-            mask_matrix = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
             bstruct = np.array(
                 generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
@@ -2807,18 +2803,19 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                     continue
 
                 img_roi = img_matrix[roi_z, roi_y, roi_x]
-                mask_roi = mask_matrix[roi_z, roi_y, roi_x]
-
-                # Prepare a source ROI constrained to the existing mask area.
-                local_source = np.full(img_roi.shape, thresh_0 - 1, dtype=img_roi.dtype)
-                local_source[mask_roi > 127] = img_roi[mask_roi > 127]
 
                 # Localize seed coordinate to the ROI box.
                 seed_loc = (x - roi_x.start, y - roi_y.start, z - roi_z.start)
                 out_roi = self.config.mask.matrix[1:, 1:, 1:][roi_z, roi_y, roi_x]
 
+                # Safety Guard: Ensure localized seed fits within the ROI block.
+                if not (0 <= seed_loc[2] < img_roi.shape[0] and
+                        0 <= seed_loc[1] < img_roi.shape[1] and
+                        0 <= seed_loc[0] < img_roi.shape[2]):
+                    continue
+
                 floodfill.floodfill_threshold(
-                    local_source, (seed_loc,), thresh_0, thresh_1, self.fill_value, bstruct, out_roi
+                    img_roi, (seed_loc,), thresh_0, thresh_1, self.fill_value, bstruct, out_roi
                 )
 
             self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
@@ -2996,20 +2993,9 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
             )
 
-            # Threshold the volume in memory for the flood fill.
-            self.viewer.slice_.do_threshold_to_all_slices()
-
-            # Get relevant data segments: active image (Original/Filtered) and the pre-selected mask.
+            # Get active image matrix (Original/Filtered).
             img_matrix = self.viewer.slice_.matrix
-            mask_matrix = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
-
             img_roi = img_matrix[roi_z, roi_y, roi_x]
-            mask_roi = mask_matrix[roi_z, roi_y, roi_x]
-
-            # Prepare a source ROI constrained to the existing mask area.
-            # We fill non-mask areas with a 'forbidden' value outside the threshold range.
-            local_source = np.full(img_roi.shape, thresh_0 - 1, dtype=img_roi.dtype)
-            local_source[mask_roi > 127] = img_roi[mask_roi > 127]
 
             if self.config.mask is None:
                 self._create_new_mask()
@@ -3036,7 +3022,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                     self.config.rois = []
             else:
                 floodfill.floodfill_threshold(
-                    local_source, (seed_loc,), thresh_0, thresh_1, self.fill_value, bstruct, out_roi
+                    img_roi, (seed_loc,), thresh_0, thresh_1, self.fill_value, bstruct, out_roi
                 )
 
             self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]

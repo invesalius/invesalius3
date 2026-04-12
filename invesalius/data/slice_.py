@@ -2193,15 +2193,16 @@ class Slice(metaclass=utils.Singleton):
                 self.matrix = matrix
 
                 # Invalidate threshold flags in the current mask to ensure stability
-                # across image versions during lazy evaluation (scrolling).
-                # This forces scrolling to re-threshold against the newly active matrix.
-                # Fix 2: Only wipe threshold flags if the mask was NOT manually edited
-                # or created by deep learning. Otherwise, we destroy the AI segmentations!
-                if self.current_mask and not self.current_mask.was_edited:
+                # across image versions.
+                # Synchronously re-threshold the entire volume so the background mask
+                # matches the new image immediately, preserving manual edits (254)
+                # and preventing lazy-evaluation partial-update stripe artifacts.
+                if self.current_mask:
                     self.current_mask.matrix[:, 0, 0] = 0
                     self.current_mask.matrix[0, :, 0] = 0
                     self.current_mask.matrix[0, 0, :] = 0
                     self.current_mask.matrix.flush()
+                    self.do_threshold_to_all_slices(self.current_mask)
 
                 self.discard_all_buffers()
                 Publisher.sendMessage("Reload actual slice")
@@ -2233,12 +2234,12 @@ class Slice(metaclass=utils.Singleton):
                     else:
                         # For filtered versions call the setter to update histograms.
                         self.matrix = mat
-                    self.__switch_active_image(mat)
-                    Publisher.sendMessage("Update image version selection", label=label)
 
                     # Maintainer fix: synchronize mask with the newly selected image view.
                     # If the currently active mask doesn't belong to this image version,
-                    # search for one that does and select it to update the UI comboboxes.
+                    # search for one that does and switch to it BEFORE re-evaluating the volume.
+                    # This prevents the previous image's mask (along with its manual edits)
+                    # from being incorrectly re-thresholded against the new image matrix.
                     if (
                         self.current_mask
                         and getattr(self.current_mask, "derived_from", "Original") != label
@@ -2246,7 +2247,12 @@ class Slice(metaclass=utils.Singleton):
                         for mask_idx, mask in proj.mask_dict.items():
                             if getattr(mask, "derived_from", "Original") == label:
                                 Publisher.sendMessage("Change mask selected", index=mask_idx)
+                                Publisher.sendMessage("Select mask name in combo", index=mask_idx)
+                                Publisher.sendMessage("Show mask", index=mask_idx, value=True)
                                 break
+
+                    self.__switch_active_image(mat)
+                    Publisher.sendMessage("Update image version selection", label=label)
 
                     break
         finally:
