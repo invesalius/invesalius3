@@ -2809,9 +2809,11 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 out_roi = self.config.mask.matrix[1:, 1:, 1:][roi_z, roi_y, roi_x]
 
                 # Safety Guard: Ensure localized seed fits within the ROI block.
-                if not (0 <= seed_loc[2] < img_roi.shape[0] and
-                        0 <= seed_loc[1] < img_roi.shape[1] and
-                        0 <= seed_loc[0] < img_roi.shape[2]):
+                if not (
+                    0 <= seed_loc[2] < img_roi.shape[0]
+                    and 0 <= seed_loc[1] < img_roi.shape[1]
+                    and 0 <= seed_loc[0] < img_roi.shape[2]
+                ):
                     continue
 
                 floodfill.floodfill_threshold(
