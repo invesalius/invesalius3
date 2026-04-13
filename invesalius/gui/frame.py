@@ -273,7 +273,17 @@ class Frame(wx.Frame):
 
         # First, the task panel, to be on the left fo the frame
         # This will be specific according to InVesalius application
-        aui_manager.AddPane(task_panel, wx.aui.AuiPaneInfo().Name("Tasks").CaptionVisible(False))
+        aui_manager.AddPane(
+            task_panel,
+            wx.aui.AuiPaneInfo()
+            .Name("Tasks")
+            .CaptionVisible(False)
+            .Left()
+            .BestSize((385, -1))
+            .MinSize((385, -1))
+            .CloseButton(False)
+            .Layer(0),
+        )
 
         # Then, add the viewers panel, which will contain slices and
         # volume panels. In future this might also be specific
