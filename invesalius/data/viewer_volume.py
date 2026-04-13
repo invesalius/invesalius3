@@ -365,6 +365,7 @@ class Viewer(wx.Panel):
         # SSAO state tracking
         self.ssao_enabled = False
         self.ssao_pass = None
+        self.ssao_before_measurement = False  # Track SSAO state before entering measurement mode
 
         # self.renderers = (self.target_guide_renderer, ren, canvas_renderer)
 
@@ -2677,6 +2678,26 @@ class Viewer(wx.Panel):
         imsave("/tmp/polygon.png", arr)
 
     def SetInteractorStyle(self, state):
+        # Check if we're entering or exiting a measurement state
+        measurement_states = {
+            const.STATE_MEASURE_DISTANCE,
+            const.STATE_MEASURE_ANGLE,
+            const.STATE_MEASURE_CURVED_LINEAR,
+            const.STATE_MEASURE_ANNOTATION,
+        }
+
+        entering_measurement = state in measurement_states
+        exiting_measurement = (
+            hasattr(self, "state")
+            and self.state in measurement_states
+            and state not in measurement_states
+        )
+
+        # Temporarily disable SSAO when entering measurement mode
+        if entering_measurement and self.ssao_enabled:
+            self.ssao_before_measurement = True
+            self._DisableSSAO()
+
         cleanup = getattr(self.style, "CleanUp", None)
         if cleanup:
             self.style.CleanUp()
@@ -2696,6 +2717,11 @@ class Viewer(wx.Panel):
 
         self.state = state
         self._update_fps_visibility()
+
+        # Re-enable SSAO when exiting measurement mode (if it was enabled before)
+        if exiting_measurement and self.ssao_before_measurement:
+            self.ssao_before_measurement = False
+            self._EnableSSAO()
 
     def enable_style(self, style):
         if styles.Styles.has_style(style):
@@ -3168,6 +3194,18 @@ class Viewer(wx.Panel):
 
     def _EnableSSAO(self):
         if self.ssao_enabled:
+            return
+
+        # Don't enable SSAO during measurement mode (it interferes with picking)
+        measurement_states = {
+            const.STATE_MEASURE_DISTANCE,
+            const.STATE_MEASURE_ANGLE,
+            const.STATE_MEASURE_CURVED_LINEAR,
+            const.STATE_MEASURE_ANNOTATION,
+        }
+        if hasattr(self, "state") and self.state in measurement_states:
+            # Remember that user wants SSAO enabled, so it will be restored after measurement
+            self.ssao_before_measurement = True
             return
 
         # SSAO should only be applied to surfaces, not volume rendering
