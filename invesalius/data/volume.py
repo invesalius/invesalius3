@@ -164,14 +164,22 @@ class Volume:
             Publisher.sendMessage("Disable volume cut menu")
             Publisher.sendMessage("Unload volume", volume=self.volume)
 
-            del self.image
-            del self.imagedata
-            del self.final_imagedata
-            del self.volume
-            del self.color_transfer
-            del self.opacity_transfer_func
-            del self.volume_properties
-            del self.volume_mapper
+            if hasattr(self, "image"):
+                del self.image
+            if hasattr(self, "imagedata"):
+                del self.imagedata
+            if hasattr(self, "final_imagedata"):
+                del self.final_imagedata
+            if hasattr(self, "volume"):
+                del self.volume
+            if hasattr(self, "color_transfer"):
+                del self.color_transfer
+            if hasattr(self, "opacity_transfer_func"):
+                del self.opacity_transfer_func
+            if hasattr(self, "volume_properties"):
+                del self.volume_properties
+            if hasattr(self, "volume_mapper"):
+                del self.volume_mapper
             self.volume = None
             self.exist = False
             self.loaded_image = False
@@ -230,14 +238,22 @@ class Volume:
             Publisher.sendMessage("Change volume viewer gui colour", colour=colour)
         else:
             Publisher.sendMessage("Unload volume", volume=self.volume)
-            del self.image
-            del self.imagedata
-            del self.final_imagedata
-            del self.volume
-            del self.color_transfer
-            del self.opacity_transfer_func
-            del self.volume_properties
-            del self.volume_mapper
+            if hasattr(self, "image"):
+                del self.image
+            if hasattr(self, "imagedata"):
+                del self.imagedata
+            if hasattr(self, "final_imagedata"):
+                del self.final_imagedata
+            if hasattr(self, "volume"):
+                del self.volume
+            if hasattr(self, "color_transfer"):
+                del self.color_transfer
+            if hasattr(self, "opacity_transfer_func"):
+                del self.opacity_transfer_func
+            if hasattr(self, "volume_properties"):
+                del self.volume_properties
+            if hasattr(self, "volume_mapper"):
+                del self.volume_mapper
             self.volume = None
             self.exist = False
             self.loaded_image = False

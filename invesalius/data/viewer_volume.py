@@ -3003,12 +3003,23 @@ class Viewer(wx.Panel):
 
         self.surface_added = True
 
+        # make camera projection to parallel (do this early)
+        self.ren.GetActiveCamera().ParallelProjectionOn()
+
         if not self.view_angle:
+            # Force actor to update its bounds before repositioning
+            actor.Modified()
+            ren.ResetCameraClippingRange()
+
             self.SetViewAngle(const.VOL_FRONT)
             self.view_angle = 1
         else:
+            # Force actor to update its bounds before repositioning
+            actor.Modified()
             ren.ResetCamera()
             ren.ResetCameraClippingRange()
+            # Apply improved camera positioning for better fit-to-view
+            self.RepositionCamera(const.VOL_FRONT)
 
             # XXX: This is a hack to get some decent initial settings for the camera, needed when
             #   a session is restored when a target is already set. (When unsetting the target, the
@@ -3017,9 +3028,6 @@ class Viewer(wx.Panel):
             self.stored_camera_settings = self.GetCameraSettings()
         if not self.nav_status:
             self.UpdateRender()
-
-        # make camera projection to parallel
-        self.ren.GetActiveCamera().ParallelProjectionOn()
 
         # use the 3D surface actor for measurement calculations
         self.surface = actor
@@ -3071,16 +3079,24 @@ class Viewer(wx.Panel):
 
         self.ren.SetBackground(colour)
 
+        # make camera projection to parallel (do this early)
+        self.ren.GetActiveCamera().ParallelProjectionOn()
+
         if not (self.view_angle):
+            # Force volume to update its bounds before repositioning
+            volume.Modified()
+            self.ren.ResetCameraClippingRange()
+
             self.SetViewAngle(const.VOL_FRONT)
         else:
+            # Force volume to update its bounds before repositioning
+            volume.Modified()
             self.ren.ResetCamera()
             self.ren.ResetCameraClippingRange()
+            # Apply improved camera positioning for better fit-to-view
+            self.RepositionCamera(const.VOL_FRONT)
         if not self.nav_status:
             self.UpdateRender()
-
-        # make camera projection to parallel
-        self.ren.GetActiveCamera().ParallelProjectionOn()
 
         # if there is no 3D surface, use the volume render for measurement calculation
         if not self.surface_added:
@@ -3143,6 +3159,153 @@ class Viewer(wx.Panel):
         camera.SetViewAngle(settings["view_angle"])
         camera.SetParallelScale(settings["parallel_scale"])
 
+    def RepositionCamera(self, view):
+        """
+        Adjust camera scaling for optimal fit-to-view of 3D objects.
+        Similar to the 2D slice Reposition() method from #1299, but adapted for 3D rendering.
+        """
+        cam = self.ren.GetActiveCamera()
+
+        # Get viewport dimensions first - if not ready, we can't reposition
+        viewport_width, viewport_height = self.ren.GetSize()
+
+        if viewport_width <= 0 or viewport_height <= 0:
+            # Viewport not ready yet, skip repositioning
+            return
+
+        # Get all actors in the scene to compute combined bounds
+        actors = self.ren.GetActors()
+        volumes = self.ren.GetVolumes()
+
+        # Collect all bounds
+        all_bounds = []
+
+        actors.InitTraversal()
+        actor = actors.GetNextItem()
+        while actor:
+            # Force actor to compute bounds if needed
+            actor.Modified()
+            bounds = actor.GetBounds()
+            if bounds and len(bounds) == 6 and bounds[0] != bounds[1]:  # Valid bounds
+                all_bounds.append(bounds)
+            actor = actors.GetNextItem()
+
+        volumes.InitTraversal()
+        volume = volumes.GetNextItem()
+        while volume:
+            # Force volume to compute bounds if needed
+            volume.Modified()
+            bounds = volume.GetBounds()
+            if bounds and len(bounds) == 6 and bounds[0] != bounds[1]:  # Valid bounds
+                all_bounds.append(bounds)
+            volume = volumes.GetNextItem()
+
+        # If no valid bounds, nothing to reposition
+        if not all_bounds:
+            return
+
+        # Compute combined bounding box
+        x_min = min(b[0] for b in all_bounds)
+        x_max = max(b[1] for b in all_bounds)
+        y_min = min(b[2] for b in all_bounds)
+        y_max = max(b[3] for b in all_bounds)
+        z_min = min(b[4] for b in all_bounds)
+        z_max = max(b[5] for b in all_bounds)
+
+        x_size = x_max - x_min
+        y_size = y_max - y_min
+        z_size = z_max - z_min
+
+        viewport_aspect = viewport_width / viewport_height
+
+        # Determine which dimensions are visible based on camera position
+        # This maps the 3D bounding box to the 2D viewport plane
+        cam_pos = cam.GetPosition()
+
+        # Normalize camera position to determine primary viewing direction
+        import math
+
+        cam_dist = math.sqrt(cam_pos[0] ** 2 + cam_pos[1] ** 2 + cam_pos[2] ** 2)
+        if cam_dist == 0:
+            return
+
+        cam_dir = [cam_pos[0] / cam_dist, cam_pos[1] / cam_dist, cam_pos[2] / cam_dist]
+
+        # Determine visible dimensions based on dominant camera direction
+        # For orthogonal views, use the two dimensions perpendicular to view direction
+        abs_x, abs_y, abs_z = abs(cam_dir[0]), abs(cam_dir[1]), abs(cam_dir[2])
+
+        if abs_y > abs_x and abs_y > abs_z:
+            # Looking along Y-axis (FRONT/BACK): sees XZ plane
+            width = x_size
+            height = z_size
+        elif abs_x > abs_y and abs_x > abs_z:
+            # Looking along X-axis (RIGHT/LEFT): sees YZ plane
+            width = y_size
+            height = z_size
+        elif abs_z > abs_x and abs_z > abs_y:
+            # Looking along Z-axis (TOP/BOTTOM): sees XY plane
+            width = x_size
+            height = y_size
+        else:
+            # Oblique view (ISO): use maximum dimensions
+            # For isometric views, we need to account for all three dimensions
+            # Use a more conservative approach for oblique views
+            # Calculate the diagonal in the XY plane and add Z height
+            width = math.sqrt(x_size**2 + y_size**2)
+            # For ISO view, height should account for both Z and the projection
+            # Use a very generous calculation to ensure everything fits comfortably
+            # Increase the factor to 1.0 to match the diagonal width
+            height = max(z_size, math.sqrt(x_size**2 + y_size**2))
+            # Apply a larger margin for ISO views since they show more of the object
+            # This will be handled by increasing the scale slightly
+
+        if width <= 0 or height <= 0:
+            return
+
+        # Calculate object aspect ratio
+        object_aspect = width / height
+
+        # Compute proper parallel scale for optimal fit
+        # ParallelScale is half the height of the view in world coordinates
+        scale_x = (width / viewport_aspect) / 2.0
+        scale_y = height / 2.0
+
+        # Use maximum scale to fill viewport as much as possible
+        scale = max(scale_x, scale_y)
+
+        # Adaptive margin based on aspect ratio difference
+        aspect_ratio_diff = abs(object_aspect - viewport_aspect) / max(
+            object_aspect, viewport_aspect
+        )
+
+        # Check if this is an oblique view (ISO) by checking camera direction
+        is_oblique = (
+            not (abs_y > abs_x and abs_y > abs_z)
+            and not (abs_x > abs_y and abs_x > abs_z)
+            and not (abs_z > abs_x and abs_z > abs_y)
+        )
+
+        if is_oblique:
+            # ISO/oblique views need significantly more margin since they show more of the object
+            # Use a larger margin to ensure comfortable viewing of all three visible faces
+            margin = 1.35
+        elif aspect_ratio_diff < 0.1:
+            # Very similar aspect ratios - minimal margin
+            margin = 1.02
+        elif aspect_ratio_diff < 0.3:
+            # Moderate difference - small margin
+            margin = 1.05
+        else:
+            # Large difference - slightly larger margin
+            margin = 1.08
+
+        scale *= margin
+
+        # Apply the calculated scale
+        cam.SetParallelScale(scale)
+        self.ren.ResetCameraClippingRange()
+
     def SetViewAngle(self, view):
         cam = self.ren.GetActiveCamera()
         cam.SetFocalPoint(0, 0, 0)
@@ -3158,6 +3321,17 @@ class Viewer(wx.Panel):
 
         self.ren.ResetCameraClippingRange()
         self.ren.ResetCamera()
+
+        # Apply improved camera positioning for better fit-to-view
+        # Note: We need to ensure the render window is properly initialized
+        # before calculating optimal scale
+        try:
+            self.RepositionCamera(view)
+        except Exception:
+            # If repositioning fails (e.g., viewport not ready),
+            # the ResetCamera() above will still provide a reasonable view
+            pass
+
         if not self.nav_status:
             self.UpdateRender()
 
