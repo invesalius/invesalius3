@@ -209,8 +209,8 @@ class _MarkerHighlightCircle(_CanvasHandlerBase):
         self.position = position
         self.layer = 99  # draw on top of everything
         self.sagittal_slice = None  # slice index for sagittal view
-        self.coronal_slice = None   # slice index for coronal view
-        self.axial_slice = None     # slice index for axial view
+        self.coronal_slice = None  # slice index for coronal view
+        self.axial_slice = None  # slice index for axial view
 
     def draw_to_canvas(self, gc, canvas):
         if not self.visible:
@@ -221,7 +221,7 @@ class _MarkerHighlightCircle(_CanvasHandlerBase):
         # Check if we're on the correct slice for this orientation
         if viewer.slice_data is not None:
             current_slice = viewer.slice_data.number
-            
+
             if viewer.orientation == "AXIAL":
                 if self.axial_slice is not None and current_slice != self.axial_slice:
                     return
@@ -235,13 +235,13 @@ class _MarkerHighlightCircle(_CanvasHandlerBase):
         px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
         scale = viewer.GetContentScaleFactor()
         size = self._SIZE * scale
-        
+
         # Draw an X mark: two diagonal lines
         gc.SetPen(wx.Pen(wx.Colour(*self._COLOUR), self._LINE_WIDTH))
-        
+
         # Line from top-left to bottom-right
         gc.StrokeLine(px - size, py - size, px + size, py + size)
-        
+
         # Line from top-right to bottom-left
         gc.StrokeLine(px + size, py - size, px - size, py + size)
 
@@ -1716,7 +1716,7 @@ class Viewer(wx.Panel):
                 self._marker_highlight = _MarkerHighlightCircle(position=pos)
             else:
                 self._marker_highlight.position = pos
-            
+
             # Compute the slice indices for all three orientations
             # This ensures the marker only appears on the exact slice where it was created
             try:
@@ -1734,7 +1734,7 @@ class Viewer(wx.Panel):
                         self._marker_highlight.coronal_slice = self.slice_data.number
                     elif self.orientation == "SAGITAL":
                         self._marker_highlight.sagittal_slice = self.slice_data.number
-            
+
             if self._marker_highlight not in self.canvas.draw_list:
                 self.canvas.draw_list.append(self._marker_highlight)
             self.canvas.modified = True
