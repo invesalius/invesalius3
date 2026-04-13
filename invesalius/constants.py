@@ -752,6 +752,13 @@ LOGGING = 4
 LOGGING_LEVEL = 5
 APPEND_LOG_FILE = 6
 LOGFILE = 7
+# Marker shapes
+LANDMARK_MARKER_SHAPE = 10
+FIDUCIAL_MARKER_SHAPE = 11
+
+# Marker shape options
+MARKER_SHAPE_BALL = 0
+MARKER_SHAPE_CROSS = 1
 
 
 # ------------ Logging options key------------

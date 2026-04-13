@@ -126,7 +126,7 @@ class MEPVisualizer:
                     wx.OK | wx.ICON_INFORMATION,
                 )
                 self._SaveUserParameters()
-                Publisher.sendMessage("Open preferences menu", page=0)
+                Publisher.sendMessage("Open preferences menu", page=1)
                 return False
             progress_dialog = dialogs.BrainSurfaceLoadingProgressWindow()
             progress_dialog.Update(value=20, msg="Preparing brain surface...")
@@ -396,6 +396,10 @@ class MEPVisualizer:
         if not self._config_params["mep_enabled"]:
             return
         if not self.surface:
+            return
+        if marker_target.orientation is None or any(
+            o is None for o in marker_target.orientation[:3]
+        ):
             return
         brain_markers = []
         for m in brain_target_list:

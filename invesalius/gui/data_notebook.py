@@ -1448,19 +1448,36 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
     def on_mouse_right_click(self, event):
         start_idx = 1
-        focused_idx = self.GetFocusedItem()
+        local_idx = self.GetFocusedItem()
+
+        global_surface_id = None
+        for g_id, l_id in self.surface_list_index.items():
+            if l_id == local_idx:
+                global_surface_id = g_id
+                break
+
+        if global_surface_id is None:
+            return
 
         # Select the surface that was clicked
-        Publisher.sendMessage("Change surface selected", surface_index=focused_idx)
+        Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
 
         # Create the context menu and add all the menu items
         surface_context_menu = wx.Menu()
 
         colour_id = surface_context_menu.Append(start_idx, _("Change color"))
-        surface_context_menu.Bind(wx.EVT_MENU, self.change_surface_color, colour_id)
+        surface_context_menu.Bind(
+            wx.EVT_MENU,
+            lambda evt: self.change_surface_color(surface_index=global_surface_id),
+            colour_id,
+        )
 
         transparency_id = surface_context_menu.Append(start_idx + 1, _("Change transparency"))
-        surface_context_menu.Bind(wx.EVT_MENU, self.change_transparency, transparency_id)
+        surface_context_menu.Bind(
+            wx.EVT_MENU,
+            lambda evt: self.change_transparency(surface_index=global_surface_id),
+            transparency_id,
+        )
 
         duplicate_id = surface_context_menu.Append(start_idx + 2, _("Duplicate"))
         surface_context_menu.Bind(wx.EVT_MENU, self.duplicate_surface, duplicate_id)
@@ -1488,10 +1505,22 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
-        self.change_surface_color(None)
+        self.change_surface_color(surface_index=global_surface_id)
 
-    def change_surface_color(self, event):
-        focused_idx = self.GetFocusedItem()
+    def change_surface_color(self, event=None, surface_index=None):
+        if surface_index is not None:
+            global_surface_id = surface_index
+        else:
+            local_idx = self.GetFocusedItem()
+            global_surface_id = None
+            for g_id, l_id in self.surface_list_index.items():
+                if l_id == local_idx:
+                    global_surface_id = g_id
+                    break
+
+        if global_surface_id is None:
+            return
+
         current_color = self.current_color
 
         new_color = dlg.ShowColorDialog(color_current=current_color)
@@ -1501,9 +1530,11 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         new_vtk_color = [c / 255.0 for c in new_color]
 
-        Publisher.sendMessage("Set surface colour", surface_index=focused_idx, colour=new_vtk_color)
+        Publisher.sendMessage(
+            "Set surface colour", surface_index=global_surface_id, colour=new_vtk_color
+        )
 
-        Publisher.sendMessage("Change surface selected", surface_index=focused_idx)
+        Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
 
     def OnChangeTransparency(self, item_idx):
         global_surface_id = None
@@ -1516,15 +1547,27 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
-        self.change_transparency(None)
+        self.change_transparency(surface_index=global_surface_id)
 
-    def change_transparency(self, event):
-        focused_idx = self.GetFocusedItem()
+    def change_transparency(self, event=None, surface_index=None):
+        if surface_index is not None:
+            global_surface_id = surface_index
+        else:
+            local_idx = self.GetFocusedItem()
+            global_surface_id = None
+            for g_id, l_id in self.surface_list_index.items():
+                if l_id == local_idx:
+                    global_surface_id = g_id
+                    break
+
+        if global_surface_id is None:
+            return
+
         initial_value = self.current_transparency
 
         transparency_dialog = dlg.SurfaceTransparencyDialog(
             self,
-            surface_index=focused_idx,
+            surface_index=global_surface_id,
             transparency=initial_value,
         )
 
@@ -1536,10 +1579,12 @@ class SurfacesListCtrlPanel(InvListCtrl):
         transparency_dialog.Destroy()
 
         Publisher.sendMessage(
-            "Set surface transparency", surface_index=focused_idx, transparency=new_value / 100.0
+            "Set surface transparency",
+            surface_index=global_surface_id,
+            transparency=new_value / 100.0,
         )
 
-        Publisher.sendMessage("Change surface selected", surface_index=focused_idx)
+        Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
 
     def duplicate_surface(self, event):
         selected_items = self.GetSelected()
