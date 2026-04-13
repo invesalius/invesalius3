@@ -67,6 +67,11 @@ LOCATION = {
 
 # Panel that initializes notebook and related tabs
 class NotebookPanel(wx.Panel):
+    IMAGE_PAGE_INDEX = 0
+    MASK_PAGE_INDEX = 1
+    SURFACE_PAGE_INDEX = 2
+    MEASURE_PAGE_INDEX = 3
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -84,7 +89,7 @@ class NotebookPanel(wx.Panel):
         book.AddPage(MeasurePage(book), _("Measures"))
         # book.AddPage(AnnotationsListCtrlPanel(book), _("Notes"))
 
-        book.SetSelection(0)
+        book.SetSelection(self.MASK_PAGE_INDEX)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(book, 0, wx.EXPAND)
@@ -92,6 +97,7 @@ class NotebookPanel(wx.Panel):
 
         book.Refresh()
         self.book = book
+        self.navigation_on = False
 
         self.__bind_events()
 
@@ -102,30 +108,40 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._FoldMask, "Fold mask task")
         Publisher.subscribe(self._FoldMask, "Fold mask page")
         Publisher.subscribe(self._FoldImage, "Fold image page")
+        Publisher.subscribe(self._OnNavigationStatus, "Navigation status")
 
     def _FoldImage(self):
         """
         Fold Images notebook page.
         """
-        self.book.SetSelection(0)
+        self.book.SetSelection(self.IMAGE_PAGE_INDEX)
 
     def _FoldSurface(self):
         """
         Fold surface notebook page.
         """
-        self.book.SetSelection(2)
+        self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
     def _FoldMeasure(self):
         """
         Fold measure notebook page.
         """
-        self.book.SetSelection(3)
+        self.book.SetSelection(self.MEASURE_PAGE_INDEX)
 
     def _FoldMask(self):
         """
         Fold mask notebook page.
         """
-        self.book.SetSelection(1)
+        if self.navigation_on:
+            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
+            return
+        self.book.SetSelection(self.MASK_PAGE_INDEX)
+
+    def _OnNavigationStatus(self, nav_status, vis_status):
+        self.navigation_on = bool(nav_status)
+        self.book.GetPage(self.MASK_PAGE_INDEX).Enable(not self.navigation_on)
+        if self.navigation_on:
+            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
 
 class MeasurePage(wx.Panel):
@@ -484,18 +500,11 @@ class ButtonControlPanel(wx.Panel):
             os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"), wx.BITMAP_TYPE_PNG
         )
         BMP_IMPORT = wx.Bitmap(
-            os.path.join(inv_paths.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG
+            os.path.join(inv_paths.ICON_DIR, "mask_import_original_min.png"), wx.BITMAP_TYPE_PNG
         )
-        export_icon_path = os.path.join(inv_paths.ICON_DIR, "surface_export.png")
-        image = wx.Image(export_icon_path, wx.BITMAP_TYPE_PNG)
-        if not image.HasAlpha():
-            image.InitAlpha()
-        # Scale rigidly to 22x22 to match exactly with the 'object_add.png' import icon size.
-        # This prevents PlateButton from clipping transparent corners of large images.
-        image = image.Scale(22, 22, wx.IMAGE_QUALITY_HIGH)
-        BMP_EXPORT = image.ConvertToBitmap()
-        if not BMP_EXPORT.IsOk():
-            print("Failed to load export icon:", export_icon_path)
+        BMP_EXPORT = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "mask_export_original_min.png"), wx.BITMAP_TYPE_PNG
+        )
 
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -1379,9 +1388,12 @@ class SurfaceButtonControlPanel(wx.Panel):
         BMP_DUPLICATE = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"), wx.BITMAP_TYPE_PNG
         )
-        BMP_OPEN = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "load_mesh.png"), wx.BITMAP_TYPE_PNG)
+        BMP_OPEN = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_import_original_min.png"), wx.BITMAP_TYPE_PNG
+        )
+
         BMP_EXPORT = wx.Bitmap(
-            os.path.join(inv_paths.ICON_DIR, "surface_export.png"), wx.BITMAP_TYPE_PNG
+            os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"), wx.BITMAP_TYPE_PNG
         )
 
         # Plate buttons based on previous bitmaps
@@ -1657,7 +1669,16 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         surface_context_menu.AppendSeparator()
 
-        delete_id = surface_context_menu.Append(start_idx + 3, _("Delete"))
+        properties_id = surface_context_menu.Append(start_idx + 3, _("Properties"))
+        surface_context_menu.Bind(
+            wx.EVT_MENU,
+            lambda evt: self.OnShowProperties(surface_index=global_surface_id),
+            properties_id,
+        )
+
+        surface_context_menu.AppendSeparator()
+
+        delete_id = surface_context_menu.Append(start_idx + 4, _("Delete"))
         surface_context_menu.Bind(wx.EVT_MENU, self.delete_surface, delete_id)
 
         self.PopupMenu(surface_context_menu)
@@ -1771,6 +1792,74 @@ class SurfacesListCtrlPanel(InvListCtrl):
         if result != wx.ID_OK:
             return
         self.RemoveSurfaces()
+
+    def OnShowProperties(self, event=None, surface_index=None):
+        """Show properties for the selected surface"""
+        if surface_index is None:
+            local_idx = self.GetFocusedItem()
+            global_surface_id = None
+            for g_id, l_id in self.surface_list_index.items():
+                if l_id == local_idx:
+                    global_surface_id = g_id
+                    break
+        else:
+            global_surface_id = surface_index
+
+        if global_surface_id is None:
+            return
+
+        # Get the surface from the project
+        proj = project.Project()
+        if global_surface_id not in proj.surface_dict:
+            return
+
+        surface = proj.surface_dict[global_surface_id]
+        polydata = surface.polydata
+
+        # Show progress window
+        progress = dlg.CalculateSurfacePropertiesProgressWindow()
+        wx.SafeYield()
+
+        try:
+            # Calculate properties
+            num_triangles = polydata.GetNumberOfCells()
+            num_points = polydata.GetNumberOfPoints()
+            progress.Update()
+
+            # Calculate edges using vtkExtractEdges
+            from vtkmodules.vtkFiltersCore import vtkExtractEdges
+
+            edges_filter = vtkExtractEdges()
+            edges_filter.SetInputData(polydata)
+            edges_filter.Update()
+            num_edges = edges_filter.GetOutput().GetNumberOfLines()
+            progress.Update()
+
+            # Calculate shells using vtkConnectivityFilter
+            from vtkmodules.vtkFiltersCore import vtkConnectivityFilter
+
+            connectivity_filter = vtkConnectivityFilter()
+            connectivity_filter.SetInputData(polydata)
+            connectivity_filter.SetExtractionModeToAllRegions()
+            connectivity_filter.Update()
+            num_shells = connectivity_filter.GetNumberOfExtractedRegions()
+            progress.Update()
+
+            # Format the message
+            message = (
+                f"Surface: {surface.name}\n\n"
+                f"Number of triangles: {num_triangles:,}\n"
+                f"Number of points: {num_points:,}\n"
+                f"Number of edges: {num_edges:,}\n"
+                f"Number of shells: {num_shells:,}"
+            )
+
+        finally:
+            # Close progress window
+            progress.Close()
+
+        # Show message box
+        wx.MessageBox(message, _("Surface Properties"), wx.OK | wx.ICON_INFORMATION)
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()

@@ -655,6 +655,10 @@ class Volume:
         volume = vtkVolume()
         volume.SetMapper(volume_mapper)
         volume.SetProperty(volume_properties)
+
+        # Enable shading for SSAO compatibility (computes normals for volume raycasting)
+        volume.GetProperty().ShadeOn()
+
         self.volume = volume
 
         colour = self.GetBackgroundColour()

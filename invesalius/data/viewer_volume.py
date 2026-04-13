@@ -362,6 +362,10 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
+        # SSAO state tracking
+        self.ssao_enabled = False
+        self.ssao_pass = None
+
         # self.renderers = (self.target_guide_renderer, ren, canvas_renderer)
 
         renwin = interactor.GetRenderWindow().GetRenderers()
@@ -563,6 +567,11 @@ class Viewer(wx.Panel):
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
         Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
+
+        # SSAO related
+        Publisher.subscribe(self._EnableSSAO, "Enable SSAO")
+        Publisher.subscribe(self._DisableSSAO, "Disable SSAO")
+        Publisher.subscribe(self._ApplySSAOAfterProjectLoad, "Project loaded successfully")
 
     def get_vtk_mouse_position(self):
         """
@@ -2917,6 +2926,10 @@ class Viewer(wx.Panel):
             if self.on_wl:
                 self.text.Show()
 
+            # Disable SSAO when volume rendering is shown (SSAO is only for surfaces)
+            if self.ssao_enabled:
+                self._DisableSSAO()
+
     def OnHideRaycasting(self):
         self.raycasting_volume = False
         self.text.Hide()
@@ -2963,6 +2976,13 @@ class Viewer(wx.Panel):
         self.surface = actor
         self.EnableRuler()
 
+        # Apply SSAO if enabled in preferences (for newly created surfaces)
+        # Note: For .inv3 file loading, _ApplySSAOAfterProjectLoad will handle it
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+        if ssao_enabled and not self.ssao_enabled:
+            self._EnableSSAO()
+
     def RemoveSurface(self, actor):
         # Remove the actor from the renderer.
         self.ren.RemoveActor(actor)
@@ -2985,6 +3005,10 @@ class Viewer(wx.Panel):
         self.raycasting_volume = True
         # self._to_show_ball += 1
         # self._check_and_set_ball_visibility()
+
+        # Disable SSAO when volume rendering is loaded (SSAO is only for surfaces)
+        if self.ssao_enabled:
+            self._DisableSSAO()
 
         self.light = self.ren.GetLights().GetNextItem()
 
@@ -3141,6 +3165,100 @@ class Viewer(wx.Panel):
 
     def AppendActor(self, actor):
         self.ren.AddActor(actor)
+
+    def _EnableSSAO(self):
+        if self.ssao_enabled:
+            return
+
+        # SSAO should only be applied to surfaces, not volume rendering
+        if not self.surface_added or self.raycasting_volume:
+            return
+
+        render_window = self.interactor.GetRenderWindow()
+
+        if not render_window:
+            return
+
+        if render_window.GetNeverRendered():
+            return
+
+        try:
+            from vtkmodules.vtkRenderingOpenGL2 import (
+                vtkCameraPass,
+                vtkRenderStepsPass,
+                vtkSSAOPass,
+            )
+
+            basic_passes = vtkRenderStepsPass()
+
+            ssao = vtkSSAOPass()
+            ssao.SetRadius(0.5)
+            ssao.SetBias(0.01)
+            ssao.SetKernelSize(128)
+
+            ssao.SetDelegatePass(basic_passes)
+
+            camera_pass = vtkCameraPass()
+            camera_pass.SetDelegatePass(ssao)
+
+            self.ren.SetPass(camera_pass)
+            self.ssao_pass = camera_pass
+            self.ssao_enabled = True
+
+            # Don't save to config here - only Preferences dialog should save
+            # session = ses.Session()
+            # session.SetConfig("ssao_enabled", True)
+
+            self.UpdateRender()
+
+        except (ImportError, AttributeError):
+            pass
+
+    def _DisableSSAO(self):
+        if not self.ssao_enabled:
+            return
+
+        self.ren.SetPass(None)
+        self.ssao_pass = None
+        self.ssao_enabled = False
+
+        # Don't save to config here - only Preferences dialog should save
+        # session = ses.Session()
+        # session.SetConfig("ssao_enabled", False)
+
+        self.UpdateRender()
+
+    def _ApplySSAOAfterProjectLoad(self):
+        """Apply SSAO after project is fully loaded from .inv3 file"""
+        # Check if SSAO is enabled in preferences
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+
+        # Only apply if enabled in preferences, surface exists, and not already enabled
+        if (
+            ssao_enabled
+            and self.surface_added
+            and not self.ssao_enabled
+            and not self.raycasting_volume
+        ):
+            # Use a timer to retry SSAO application after the window has been rendered
+            # This is needed because when loading from .inv3, the render window may not be ready yet
+            import wx
+
+            wx.CallLater(500, self._RetryEnableSSAO)  # Retry after 500ms
+
+    def _RetryEnableSSAO(self):
+        """Retry enabling SSAO after a delay to ensure render window is ready"""
+        render_window = self.interactor.GetRenderWindow()
+        if render_window:
+            if not render_window.GetNeverRendered():
+                # Render window is ready, apply SSAO
+                self._EnableSSAO()
+            else:
+                # Render window still not rendered, retry again after another delay
+                import wx
+
+                wx.CallLater(500, self._RetryEnableSSAO)
 
     def Reposition3DPlane(self, plane_label):
         if not self.surface_added and not self.raycasting_volume:
