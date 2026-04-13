@@ -2922,9 +2922,9 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         # Reset stale config.mask when the user has switched to a different image version.
         # Without this, the old filtered-image selection mask is reused on the original
         # image (or vice-versa), producing wrong / mixed-data results.
-        current_label = getattr(self.viewer.slice_, "current_image_label", tr("Original"))
+        current_label = getattr(self.viewer.slice_, "current_image_label", "original")
         if self.config.mask is not None:
-            config_label = getattr(self.config.mask, "derived_from", tr("Original"))
+            config_label = getattr(self.config.mask, "derived_from", "original")
             if config_label != current_label:
                 self.viewer.slice_.aux_matrices.pop("SELECT", None)
                 self.viewer.slice_.to_show_aux = ""

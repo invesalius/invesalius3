@@ -980,7 +980,7 @@ class MasksListCtrlPanel(InvListCtrl):
         label=_("Mask"),
         threshold="(1000, 4500)",
         colour=None,
-        derived_from=_("Original"),
+        derived_from="original",
     ):
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
@@ -990,7 +990,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self.SetItem(index, 1, "", imageId=image_index)
         self.SetItem(index, 2, label)
         self.SetItem(index, 3, threshold)
-        self.SetItem(index, 4, derived_from)
+        self.SetItem(index, 4, _("Original") if derived_from == "original" else derived_from)
         #  self.SetItemImage(index, 1)
         #  for key in self.mask_list_index.keys():
         #  if key != index:
@@ -1809,7 +1809,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         # Get the surface from the project
-        proj = project.Project()
+        proj = Project()
         if global_surface_id not in proj.surface_dict:
             return
 
@@ -2480,7 +2480,7 @@ class ImagePage(wx.Panel):
         info = _("Original") if idx == 0 else _("Filtered")
         self.list_ctrl.InsertItem(idx, "")
         self.list_ctrl.SetItemImage(idx, 0)
-        self.list_ctrl.SetItem(idx, 1, label)
+        self.list_ctrl.SetItem(idx, 1, _("Original") if label == "original" else label)
         self.list_ctrl.SetItem(idx, 2, info)
         # Ensure only the new item has the eye icon (radio behavior)
         for i in range(self.list_ctrl.GetItemCount()):
@@ -2530,7 +2530,7 @@ class ImagePage(wx.Panel):
 
         # Ensure Original is present if loading a fresh project
         if not proj.image_versions and slc.matrix is not None:
-            proj.image_versions.append((_("Original"), slc.matrix.copy()))
+            proj.image_versions.append(("original", slc.matrix.copy()))
 
         # Add all entries without auto-selecting (eye icons are reset in add_entry)
         for label, matrix in proj.image_versions:
@@ -2538,7 +2538,7 @@ class ImagePage(wx.Panel):
             info = _("Original") if idx == 0 else _("Filtered")
             self.list_ctrl.InsertItem(idx, "")
             self.list_ctrl.SetItemImage(idx, 0)  # start hidden
-            self.list_ctrl.SetItem(idx, 1, label)
+            self.list_ctrl.SetItem(idx, 1, _("Original") if label == "original" else label)
             self.list_ctrl.SetItem(idx, 2, info)
 
         # After all entries are loaded, activate the previously active version

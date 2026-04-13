@@ -138,7 +138,7 @@ class Slice(metaclass=utils.Singleton):
 
         self.values = None
         self.nodes = None
-        self.current_image_label = _("Original")
+        self.current_image_label = "original"
 
         self.from_ = OTHER
         self.__bind_events()
@@ -148,7 +148,7 @@ class Slice(metaclass=utils.Singleton):
     def matrix(self) -> np.ndarray | None:
         from invesalius.project import Project
 
-        if hasattr(self, "current_image_label") and self.current_image_label != _("Original"):
+        if hasattr(self, "current_image_label") and self.current_image_label != "original":
             proj = Project()
             for label, mat in proj.image_versions:
                 if label == self.current_image_label:
@@ -159,7 +159,7 @@ class Slice(metaclass=utils.Singleton):
     def matrix_filename(self) -> str:
         from invesalius.project import Project
 
-        if hasattr(self, "current_image_label") and self.current_image_label != _("Original"):
+        if hasattr(self, "current_image_label") and self.current_image_label != "original":
             proj = Project()
             for label, mat in proj.image_versions:
                 if label == self.current_image_label:
@@ -179,7 +179,7 @@ class Slice(metaclass=utils.Singleton):
         proj = Project()
         is_filtered = False
         for l, mat in proj.image_versions:
-            if mat is value and l != _("Original"):
+            if mat is value and l != "original":
                 is_filtered = True
                 break
 
@@ -2054,7 +2054,7 @@ class Slice(metaclass=utils.Singleton):
             # is always valid when AI segmentation tools read it later.
             orig = self._matrix
             if isinstance(orig, np.memmap):
-                proj.image_versions.append((_("Original"), orig))
+                proj.image_versions.append(("original", orig))
             else:
                 # Fallback: write to a temp file for consistent memmap semantics
                 import os
@@ -2065,7 +2065,7 @@ class Slice(metaclass=utils.Singleton):
                 orig_mat = np.memmap(temp_o, shape=orig.shape, dtype=orig.dtype, mode="w+")
                 orig_mat[:] = orig[:]
                 orig_mat.flush()
-                proj.image_versions.append((_("Original"), orig_mat))
+                proj.image_versions.append(("original", orig_mat))
 
         def _run_filter():
             # Use the current matrix to allow filter chaining
@@ -2140,7 +2140,7 @@ class Slice(metaclass=utils.Singleton):
             fname = filter_names.get(filter_type, "unknown")
             if not hasattr(proj, "image_versions_meta"):
                 proj.image_versions_meta = {}
-            derived_from = getattr(self, "current_image_label", _("Original"))
+            derived_from = getattr(self, "current_image_label", "original")
             proj.image_versions_meta[label] = {
                 "applied_filter": fname,
                 "sigma_smooth": str(value),
@@ -2225,7 +2225,7 @@ class Slice(metaclass=utils.Singleton):
             for l, mat in proj.image_versions:
                 if l == label:
                     self.current_image_label = label
-                    if label == _("Original"):
+                    if label == "original":
                         # Restore _matrix to the original memmap stored in image_versions
                         # (which is the same object as _matrix or a disk-backed copy).
                         # Do NOT call the matrix setter — it would re-check is_filtered

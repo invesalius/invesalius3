@@ -97,7 +97,7 @@ class Project(metaclass=Singleton):
 
         # Image fiducials for navigation
         self.image_fiducials = np.full([3, 3], np.nan)
-        self.active_image_version = _("Original")
+        self.active_image_version = "original"
 
         # self.surface_quality_list = ["Low", "Medium", "High", "Optimal *",
         #                             "Custom"i]
@@ -391,7 +391,7 @@ class Project(metaclass=Singleton):
         # Opening image versions
         self.image_versions = []
         self.image_versions_meta = {}
-        self.active_image_version = project.get("active_image_version", _("Original"))
+        self.active_image_version = project.get("active_image_version", "original")
         for version in project.get("image_versions", []):
             label = version["label"]
             v_filename = version["filename"]

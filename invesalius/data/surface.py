@@ -1041,7 +1041,7 @@ class SurfaceManager:
         filename_img = slice_.matrix_filename
 
         # If the mask was derived from a filtered image, ensure we use that image's data and filename
-        if hasattr(mask, "derived_from") and mask.derived_from != _("Original"):
+        if hasattr(mask, "derived_from") and mask.derived_from != "original":
             proj = prj.Project()
             for label, mat in proj.image_versions:
                 if label == mask.derived_from:

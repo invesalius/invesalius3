@@ -103,23 +103,25 @@ class DeepLearningSegmenterDialog(wx.Dialog):
 
         proj = Project()
         self.img_labels = (
-            [lbl for lbl, _ in proj.image_versions] if proj.image_versions else [_("Original")]
+            [lbl for lbl, _ in proj.image_versions] if proj.image_versions else ["original"]
         )
+        # Translate for display only — raw labels are stored in self.img_labels for pubsub
+        display_labels = [_("Original") if lbl == "original" else lbl for lbl in self.img_labels]
 
         self.lbl_input = wx.StaticText(self, -1, _("Input image"))
         self.cb_input = wx.ComboBox(
             self,
             wx.ID_ANY,
-            choices=self.img_labels,
+            choices=display_labels,
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
         current_lbl = (
             slc.Slice().current_image_label
             if hasattr(slc.Slice(), "current_image_label")
-            else _("Original")
+            else "original"
         )
         if current_lbl in self.img_labels:
-            self.cb_input.SetValue(current_lbl)
+            self.cb_input.SetSelection(self.img_labels.index(current_lbl))
         elif self.img_labels:
             self.cb_input.SetSelection(0)
 
@@ -257,7 +259,8 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         return width, height
 
     def OnSetImage(self, evt=None):
-        label = self.cb_input.GetValue()
+        idx = self.cb_input.GetSelection()
+        label = self.img_labels[idx] if 0 <= idx < len(self.img_labels) else "original"
         Publisher.sendMessage("Switch active image by label", label=label)
 
     def OnSetBackend(self, evt=None):

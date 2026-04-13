@@ -223,7 +223,7 @@ class Mask:
         self.volume = None
         self.auto_update_mask = True
         self.modified_time = 0
-        self.derived_from = _("Original")
+        self.derived_from = "original"
         self.__bind_events()
         self._modified_callbacks = []
 
@@ -359,7 +359,7 @@ class Mask:
         mask_file = mask["mask_file"]
         shape = mask["mask_shape"]
         self.was_edited = mask.get("edited", False)
-        self.derived_from = mask.get("derived_from", _("Original"))
+        self.derived_from = mask.get("derived_from", "original")
 
         dirpath = os.path.abspath(os.path.split(filename)[0])
         path = os.path.join(dirpath, mask_file)
