@@ -174,6 +174,32 @@ class MeasurementManager:
         if index < 0 or index >= len(self.measures):
             return
         m, mr = self.measures[index]
+
+        # Synchronize visualization with the measurement/annotation
+        if m.location != const.SURFACE:
+            loc_str = map_id_locations.get(m.location)
+            if loc_str:
+                Publisher.sendMessage(("Set scroll position", loc_str), index=m.slice_number)
+
+        if m.points:
+            x, y, z = m.points[0]
+            
+            # The 3D surface picker stores points with an inverted Y coordinate relative to the 2D slices.
+            # We must map them appropriately depending on the target renderer.
+            if m.location == const.SURFACE:
+                cross_y = -y
+                vol_y = y
+            else:
+                cross_y = y
+                vol_y = -y
+                
+            # Update the position of the cross in slices
+            Publisher.sendMessage("Set cross focal point", position=[x, cross_y, z, None, None, None])
+            # Update the pointer in the volume viewer
+            Publisher.sendMessage("Update volume viewer pointer", position=[x, vol_y, z])
+            Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage("Render volume viewer")
+
         if m.type == const.ANNOTATION:
             import wx
 
