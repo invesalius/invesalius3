@@ -111,6 +111,7 @@ from invesalius.pubsub import pub as Publisher
 if sys.platform == "win32":
     try:
         import win32api
+
         _has_win32api = True
     except ImportError:
         win32api = None
