@@ -41,7 +41,6 @@ import invesalius.gui.preferences as preferences
 #  import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
-import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.data.slice_ import Slice
 from invesalius.gui import project_properties
@@ -930,6 +929,8 @@ class Frame(wx.Frame):
             session.SetConfig("surface_interpolation", surface_interpolation)
             session.SetConfig("language", language)
             session.SetConfig("slice_interpolation", slice_interpolation)
+            ssao_enabled = values.get(const.SSAO_ENABLED, False)
+            session.SetConfig("ssao_enabled", ssao_enabled)
             session.SetConfig("landmark_marker_shape", landmark_marker_shape)
             session.SetConfig("fiducial_marker_shape", fiducial_marker_shape)
             session.SetConfig("file_logging", file_logging)
@@ -949,6 +950,7 @@ class Frame(wx.Frame):
             Publisher.sendMessage("Update Slice Interpolation MenuBar")
             Publisher.sendMessage("Update Navigation Mode MenuBar")
             Publisher.sendMessage("Update Surface Interpolation")
+            Publisher.sendMessage("Update SSAO Preference", enabled=ssao_enabled)
 
     def ShowAbout(self):
         """
@@ -2082,6 +2084,7 @@ class ObjectToolBar(AuiToolBar):
             const.STATE_MEASURE_DENSITY_ELLIPSE,
             const.STATE_MEASURE_DENSITY_POLYGON,
             const.STATE_MEASURE_ANNOTATION,
+            const.STATE_MEASURE_CURVED_LINEAR,
             # const.STATE_ANNOTATE
         ]
         self.__init_items()
@@ -2131,6 +2134,9 @@ class ObjectToolBar(AuiToolBar):
 
         path = os.path.join(d, "measure_line_original.png")
         BMP_DISTANCE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
+
+        path = os.path.join(d, "measure_curve_original.png")
+        BMP_CURVED_DISTANCE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
 
         path = os.path.join(d, "measure_angle_original.png")
         BMP_ANGLE = wx.Bitmap(str(path), wx.BITMAP_TYPE_PNG)
@@ -2194,6 +2200,14 @@ class ObjectToolBar(AuiToolBar):
             kind=wx.ITEM_CHECK,
         )
         self.AddTool(
+            const.STATE_MEASURE_CURVED_LINEAR,
+            "",
+            BMP_CURVED_DISTANCE,
+            wx.NullBitmap,
+            short_help_string=_("Measure curved distance on surface"),
+            kind=wx.ITEM_CHECK,
+        )
+        self.AddTool(
             const.STATE_MEASURE_ANGLE,
             "",
             BMP_ANGLE,
@@ -2228,6 +2242,7 @@ class ObjectToolBar(AuiToolBar):
             short_help_string=_("Add annotation"),
             kind=wx.ITEM_CHECK,
         )
+
         # self.AddLabelTool(const.STATE_ANNOTATE,
         #                "",
         #                shortHelp = _("Add annotation"),
@@ -2290,12 +2305,29 @@ class ObjectToolBar(AuiToolBar):
         """
         id = evt.GetId()
         state = self.GetToolToggled(id)
+
         if state and (
             (id == const.STATE_MEASURE_DISTANCE)
             or (id == const.STATE_MEASURE_ANGLE)
             or (id == const.STATE_MEASURE_ANNOTATION)
         ):
             Publisher.sendMessage("Fold measure task")
+
+        if state:
+            if id == const.STATE_MEASURE_CURVED_LINEAR:
+                choices = [_("Two points"), _("Multi-points")]
+                current_multi = ses.Session().GetConfig("geodesic_multi_point", False)
+                dlg = wx.SingleChoiceDialog(
+                    self, _("Select curved measurement mode:"), _("Curved Ruler"), choices
+                )
+                dlg.SetSelection(1 if current_multi else 0)
+                if dlg.ShowModal() == wx.ID_OK:
+                    multi = dlg.GetSelection() == 1
+                    ses.Session().SetConfig("geodesic_multi_point", multi)
+                else:
+                    self.ToggleTool(id, False)
+                    state = False
+                dlg.Destroy()
 
         if state:
             Publisher.sendMessage("Enable style", style=id)

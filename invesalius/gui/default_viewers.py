@@ -358,6 +358,26 @@ class VolumeToolPanel(wx.Panel):
         )
         # BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
 
+        # SSAO BUTTON - Icons for enabled/disabled states
+        BMP_SSAO_DISABLED = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("surface_export.png")), wx.BITMAP_TYPE_PNG
+        )
+        BMP_SSAO_ENABLED = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("3D_glasses_original.png")), wx.BITMAP_TYPE_PNG
+        )
+
+        # Scale icons to 24x24
+        img_disabled = BMP_SSAO_DISABLED.ConvertToImage()
+        img_disabled = img_disabled.Scale(24, 24, wx.IMAGE_QUALITY_HIGH)
+        BMP_SSAO_DISABLED = wx.Bitmap(img_disabled)
+
+        img_enabled = BMP_SSAO_ENABLED.ConvertToImage()
+        img_enabled = img_enabled.Scale(24, 24, wx.IMAGE_QUALITY_HIGH)
+        BMP_SSAO_ENABLED = wx.Bitmap(img_enabled)
+
+        self.BMP_SSAO_DISABLED = BMP_SSAO_DISABLED
+        self.BMP_SSAO_ENABLED = BMP_SSAO_ENABLED
+
         self.button_raycasting = pbtn.PlateButton(
             self, -1, "", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
@@ -372,6 +392,16 @@ class VolumeToolPanel(wx.Panel):
         self.button_slice_plane.SetToolTip("Slices into 3D")
         # self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
         # self.button_target.Enable(0)
+
+        # SSAO BUTTON - Initialize with icon based on preference
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+        initial_icon = BMP_SSAO_ENABLED if ssao_enabled else BMP_SSAO_DISABLED
+        self.button_ssao = pbtn.PlateButton(
+            self, -1, "", initial_icon, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        self.button_ssao.SetToolTip("Screen Space Ambient Occlusion (SSAO)")
+        self.ssao_button_state = ssao_enabled
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1], wx.BITMAP_TYPE_PNG)
@@ -398,6 +428,7 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(self.button_view, 0, wx.TOP | wx.BOTTOM, 1)
         sizer.Add(self.button_slice_plane, 0, wx.TOP | wx.BOTTOM, 1)
         sizer.Add(self.button_stereo, 0, wx.TOP | wx.BOTTOM, 1)
+        sizer.Add(self.button_ssao, 0, wx.TOP | wx.BOTTOM, 1)
         # sizer.Add(self.button_target, 0, wx.TOP | wx.BOTTOM, 1)
         #  sizer.Add(self.button_3d_mask, 0, wx.TOP | wx.BOTTOM, 1)
 
@@ -422,6 +453,7 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.ChangeButtonColour, "Change volume viewer gui colour")
         Publisher.subscribe(self.DisablePreset, "Close project data")
         Publisher.subscribe(self.Uncheck, "Uncheck image plane menu")
+        Publisher.subscribe(self.OnSSAOPreferenceChanged, "SSAO preference changed")
 
     def DisablePreset(self):
         self.off_item.Check(1)
@@ -432,6 +464,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
+        self.button_ssao.Bind(wx.EVT_BUTTON, self.OnButtonSSAO)
         # self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonRaycasting(self, evt):
@@ -617,3 +650,23 @@ class VolumeToolPanel(wx.Panel):
     def OnSelectColour(self, evt):
         colour = [i / 255.0 for i in evt.GetValue()]
         Publisher.sendMessage("Change volume viewer background colour", colour=colour)
+
+    def OnButtonSSAO(self, evt):
+        self.ssao_button_state = not self.ssao_button_state
+
+        if self.ssao_button_state:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_ENABLED)
+            Publisher.sendMessage("Enable SSAO")
+        else:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_DISABLED)
+            Publisher.sendMessage("Disable SSAO")
+
+        self.button_ssao.Refresh()
+
+    def OnSSAOPreferenceChanged(self, enabled):
+        self.ssao_button_state = enabled
+        if enabled:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_ENABLED)
+        else:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_DISABLED)
+        self.button_ssao.Refresh()

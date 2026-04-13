@@ -79,6 +79,7 @@ class Preferences(wx.Dialog):
         self.book.SetSelection(page)
 
         self.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self.OnCancel, id=wx.ID_CANCEL)
         self.Bind(wx.EVT_CHAR_HOOK, self.OnCharHook)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -98,8 +99,18 @@ class Preferences(wx.Dialog):
         except wx._core.wxAssertionError:
             self.Destroy()
 
+    def OnCancel(self, event):
+        # Restore original SSAO state when Cancel is clicked
+        self.visualization_tab.RestoreOriginalSSAO()
+        try:
+            self.EndModal(wx.ID_CANCEL)
+        except wx._core.wxAssertionError:
+            self.Destroy()
+
     def OnCharHook(self, event):
         if event.GetKeyCode() == wx.WXK_ESCAPE:
+            # Restore original SSAO state when ESC is pressed
+            self.visualization_tab.RestoreOriginalSSAO()
             self.EndModal(wx.ID_CANCEL)
         if event.GetKeyCode() == wx.WXK_RETURN:
             self.OnOK(event)
@@ -137,6 +148,9 @@ class Preferences(wx.Dialog):
         landmark_marker_shape = session.GetConfig("landmark_marker_shape", const.MARKER_SHAPE_BALL)
         fiducial_marker_shape = session.GetConfig("fiducial_marker_shape", const.MARKER_SHAPE_CROSS)
 
+        # SSAO preference
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+
         # logger = log.MyLogger()
         file_logging = log.invLogger.GetConfig("file_logging")
         file_logging_level = log.invLogger.GetConfig("file_logging_level")
@@ -158,6 +172,7 @@ class Preferences(wx.Dialog):
             const.LOGFILE: logging_file,
             const.CONSOLE_LOGGING: console_logging,
             const.CONSOLE_LOGGING_LEVEL: console_logging_level,
+            const.SSAO_ENABLED: ssao_enabled,
         }
 
         self.visualization_tab.LoadSelection(values)
@@ -173,6 +188,9 @@ class VisualizationTab(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.session = ses.Session()
+
+        # Store original SSAO state for Cancel functionality
+        self.original_ssao_enabled = self.session.GetConfig("ssao_enabled", False)
 
         bsizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("3D Visualization"))
         lbl_inter = wx.StaticText(bsizer.GetStaticBox(), -1, _("Surface Interpolation "))
@@ -199,6 +217,22 @@ class VisualizationTab(wx.Panel):
         bsizer.Add(lbl_rendering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
         bsizer.Add(rb_rendering, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
 
+        # SSAO option
+        lbl_ssao = wx.StaticText(
+            bsizer.GetStaticBox(), -1, _("Screen Space Ambient Occlusion (SSAO)")
+        )
+        rb_ssao = self.rb_ssao = wx.RadioBox(
+            bsizer.GetStaticBox(),
+            -1,
+            "",
+            choices=[_("Disable"), _("Enable")],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS | wx.NO_BORDER,
+        )
+        self.rb_ssao.Bind(wx.EVT_RADIOBOX, self.OnSSAORadioBox)
+        bsizer.Add(lbl_ssao, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 10)
+        bsizer.Add(rb_ssao, 0, wx.TOP | wx.LEFT | wx.FIXED_MINSIZE, 0)
+
         bsizer_slices = wx.StaticBoxSizer(wx.VERTICAL, self, _("2D Visualization"))
         lbl_inter_sl = wx.StaticText(bsizer_slices.GetStaticBox(), -1, _("Slice Interpolation "))
         rb_inter_sl = self.rb_inter_sl = wx.RadioBox(
@@ -218,6 +252,17 @@ class VisualizationTab(wx.Panel):
         self.SetSizerAndFit(border)
         self.Layout()
 
+    def OnSSAORadioBox(self, evt):
+        enabled = bool(self.rb_ssao.GetSelection())
+
+        # Send messages for immediate preview
+        if enabled:
+            Publisher.sendMessage("Enable SSAO")
+        else:
+            Publisher.sendMessage("Disable SSAO")
+
+        Publisher.sendMessage("SSAO preference changed", enabled=enabled)
+
     def GetSelection(self):
         options = {
             const.RENDERING: self.rb_rendering.GetSelection(),
@@ -225,6 +270,7 @@ class VisualizationTab(wx.Panel):
             const.SLICE_INTERPOLATION: not bool(
                 self.rb_inter_sl.GetSelection()
             ),  # 0 for Yes, 1 for No
+            const.SSAO_ENABLED: bool(self.rb_ssao.GetSelection()),  # 0 for Disable, 1 for Enable
         }
         return options
 
@@ -232,10 +278,34 @@ class VisualizationTab(wx.Panel):
         rendering = values[const.RENDERING]
         surface_interpolation = values[const.SURFACE_INTERPOLATION]
         slice_interpolation = values[const.SLICE_INTERPOLATION]
+        ssao_enabled = values.get(const.SSAO_ENABLED, False)
 
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
         self.rb_inter_sl.SetSelection(int(slice_interpolation))
+        self.rb_ssao.SetSelection(int(ssao_enabled))
+
+        # Update the stored original state
+        self.original_ssao_enabled = ssao_enabled
+
+    def RestoreOriginalSSAO(self):
+        """Restore SSAO to its original state when Cancel is clicked"""
+        current_selection = bool(self.rb_ssao.GetSelection())
+
+        # Only restore if the user changed it
+        if current_selection != self.original_ssao_enabled:
+            # Restore the UI
+            self.rb_ssao.SetSelection(int(self.original_ssao_enabled))
+
+            # Restore the actual SSAO state
+            if self.original_ssao_enabled:
+                Publisher.sendMessage("Enable SSAO")
+            else:
+                Publisher.sendMessage("Disable SSAO")
+
+            Publisher.sendMessage(
+                "SSAO preference changed", enabled=self.original_ssao_enabled
+            )  # 0 for Disable, 1 for Enable
 
 
 class LoggingTab(wx.Panel):

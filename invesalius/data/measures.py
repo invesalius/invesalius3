@@ -7,7 +7,9 @@ import textwrap
 import numpy as np
 import wx
 from vtkmodules.vtkCommonCore import vtkMath
-from vtkmodules.vtkFiltersCore import vtkAppendPolyData
+from vtkmodules.vtkCommonDataModel import vtkPointLocator
+from vtkmodules.vtkFiltersCore import vtkAppendPolyData, vtkTriangleFilter
+from vtkmodules.vtkFiltersModeling import vtkDijkstraGraphGeodesicPath
 from vtkmodules.vtkFiltersSources import (
     vtkArcSource,
     vtkLineSource,
@@ -21,7 +23,6 @@ from vtkmodules.vtkRenderingCore import (
     vtkCoordinate,
     vtkPolyDataMapper,
     vtkPolyDataMapper2D,
-    vtkTextActor,
 )
 
 import invesalius.constants as const
@@ -44,6 +45,7 @@ TYPE = {
     const.DENSITY_ELLIPSE: _("Density Ellipse"),
     const.DENSITY_POLYGON: _("Density Polygon"),
     const.ANNOTATION: _("Annotation"),
+    const.CURVED_LINEAR: _("Curved Linear"),
 }
 
 LOCATION = {
@@ -161,6 +163,7 @@ class MeasurementManager:
         Publisher.subscribe(self._edit_measurement, "Edit measurement")
         Publisher.subscribe(self._show_annotation_dialog, "Show annotation dialog")
         Publisher.subscribe(self._update_point, "Update measurement point position")
+        Publisher.subscribe(self._finalize_measurement, "Finalize measurement")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
 
     def _base_annotation_handler(self, evt):
@@ -278,7 +281,9 @@ class MeasurementManager:
                 else:
                     Publisher.sendMessage("Redraw canvas")
 
-    def _add_point(self, position, type, location, slice_number=0, radius=const.PROP_MEASURE):
+    def _add_point(
+        self, position, type, location, slice_number=0, radius=const.PROP_MEASURE, polydata=None
+    ):
         to_remove = False
         if self.current is None:
             to_create = True
@@ -302,6 +307,8 @@ class MeasurementManager:
                 mr = LinearMeasure(m.colour, representation)
             elif type == const.ANGULAR:
                 mr = AngularMeasure(m.colour, representation)
+            elif type == const.CURVED_LINEAR:
+                mr = GeodesicMeasure(m.colour, representation)
             elif type == const.ANNOTATION:
                 mr = AnnotationMeasure(m.colour, representation)
                 m.name = const.ANNOTATION_NAME_PATTERN % (m.index + 1)
@@ -329,6 +336,9 @@ class MeasurementManager:
         actors = mr.AddPoint(x, y, z)
         m.points.append(position)
 
+        if type == const.CURVED_LINEAR and hasattr(mr, "SetSurface") and polydata:
+            mr.SetSurface(polydata)
+
         if m.location == const.SURFACE:
             Publisher.sendMessage("Add actors " + str(location), actors=actors)
 
@@ -336,34 +346,55 @@ class MeasurementManager:
             self.measures.append(self.current)
 
         if mr.IsComplete():
-            index = prj.Project().AddMeasurement(m)
-            name = m.name
-            colour = m.colour
-            m.value = mr.GetValue()
-            type_ = TYPE[type]
-            location_str = LOCATION[location]
+            self._complete_measurement()
 
-            if type == const.LINEAR:
-                value = f"{m.value:.3f} mm"
-            elif type == const.ANGULAR:
-                value = f"{m.value:.3f}°"
-            elif type == const.ANNOTATION:
-                value = m.value
+    def _finalize_measurement(self, *args, **kwargs):
+        if self.current:
+            m, mr = self.current
+            if hasattr(mr, "finalize"):
+                mr.finalize()
 
-            msg = ("Update measurement info in GUI",)
-            Publisher.sendMessage(
-                msg,
-                index=index,
-                name=name,
-                colour=colour,
-                location=location_str,
-                type_=type_,
-                value=value,
-            )
-            self.current = None
+            if mr.IsComplete():
+                self._complete_measurement()
 
-            if type == const.ANNOTATION and location == const.SURFACE:
-                Publisher.sendMessage("Show annotation dialog", m=m, mr=mr, location=location)
+    def _complete_measurement(self):
+        if not self.current:
+            return
+        m, mr = self.current
+        index = prj.Project().AddMeasurement(m)
+        name = m.name
+        colour = m.colour
+        location = m.location
+        type = m.type
+        m.value = mr.GetValue()
+
+        location_str = LOCATION[location]
+        type_ = TYPE[type]
+
+        if type == const.LINEAR:
+            value = f"{m.value:.3f} mm"
+        elif type == const.CURVED_LINEAR:
+            value = f"{m.value:.3f} mm"
+        elif type == const.ANGULAR:
+            value = f"{m.value:.3f}°"
+        elif type == const.ANNOTATION:
+            value = m.value
+        else:
+            value = str(m.value)
+
+        Publisher.sendMessage(
+            "Update measurement info in GUI",
+            index=index,
+            name=name,
+            colour=colour,
+            location=location_str,
+            type_=type_,
+            value=value,
+        )
+        self.current = None
+
+        if type == const.ANNOTATION and location == const.SURFACE:
+            Publisher.sendMessage("Show annotation dialog", m=m, mr=mr, location=location)
 
     def _update_point(self, position):
         if self.current:
@@ -420,7 +451,7 @@ class MeasurementManager:
             else:
                 Publisher.sendMessage("Redraw canvas")
 
-    def _change_measure_point_pos(self, index, npoint, pos):
+    def _change_measure_point_pos(self, index, npoint, pos, end_busy_cursor=False):
         m, mr = self.measures[index]
         x, y, z = pos
         if npoint == 0:
@@ -433,11 +464,19 @@ class MeasurementManager:
             else:
                 m.points.append((x, y, z))
         elif npoint == 2:
-            mr.SetPoint3(x, y, z)
-            if len(m.points) > 2:
-                m.points[2] = x, y, z
-            else:
-                m.points.append((x, y, z))
+            # Only AngularMeasure has 3 points
+            if hasattr(mr, "SetPoint3"):
+                mr.SetPoint3(x, y, z)
+                if len(m.points) > 2:
+                    m.points[2] = x, y, z
+                else:
+                    m.points.append((x, y, z))
+
+        # Re-add actors to renderer after SetPoint removes and recreates them
+        if mr.IsComplete():
+            actors = mr.GetActors()
+            if m.location == const.SURFACE:
+                Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=actors)
 
         m.value = mr.GetValue()
 
@@ -463,6 +502,16 @@ class MeasurementManager:
             type_=type_,
             value=value,
         )
+
+        # Trigger render to update the visual display
+        if m.location == const.SURFACE:
+            Publisher.sendMessage("Render volume viewer")
+        else:
+            Publisher.sendMessage("Redraw canvas")
+
+        # End busy cursor only if it was started (e.g., on mouse release, not during dragging)
+        if end_busy_cursor:
+            Publisher.sendMessage("End busy cursor")
 
     def _change_name(self, index, name):
         self.measures[index][0].name = name
@@ -880,7 +929,7 @@ class LinearMeasure:
             points.append((cx, cy))
 
         if len(points) > 1:
-            for p0, p1 in zip(points[:-1:], points[1::]):
+            for p0, p1 in zip(points[:-1], points[1:]):
                 r, g, b = self.colour
                 canvas.draw_line(p0, p1, colour=(r * 255, g * 255, b * 255, 255))
 
@@ -951,6 +1000,257 @@ class LinearMeasure:
 
     def __del__(self):
         self.Remove()
+
+
+class GeodesicMeasure(LinearMeasure):
+    def __init__(self, colour=(1, 0, 0), representation=None):
+        super().__init__(colour, representation)
+        self.surface_polydata = None
+        self._path_length = 0.0  # cached geodesic length (mm)
+        self._path_computed = False  # True once _compute_and_publish_path finished
+        self.point_actors = []
+        self._is_finalized = False
+
+    def IsComplete(self):
+        """Report complete based on the geodesic mode (two-point or multi-point)."""
+        if ses.Session().GetConfig("geodesic_multi_point", False):
+            return self._is_finalized
+        return self.point_actor1 is not None and self.point_actor2 is not None
+
+    def finalize(self):
+        self._is_finalized = True
+
+    def SetSurface(self, polydata):
+        self.surface_polydata = polydata
+
+    def SetPoint1(self, x, y, z):
+        """Override to properly update geodesic measurement endpoint."""
+        if len(self.points) == 0:
+            self.points.append((x, y, z))
+            self.point_actor1 = self.representation.GetRepresentation(x, y, z)
+            self.point_actors = [self.point_actor1]
+        else:
+            # Update the point position
+            self.points[0] = (x, y, z)
+            # Remove old actors
+            self.Remove()
+            # Recreate point actors
+            self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+            self.point_actors = [self.point_actor1]
+            if len(self.points) >= 2:
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.point_actors.append(self.point_actor2)
+                # Recompute geodesic path
+                wx.CallAfter(self._compute_and_publish_path)
+
+    def SetPoint2(self, x, y, z):
+        """Override to properly update geodesic measurement endpoint."""
+        if len(self.points) == 1:
+            self.points.append((x, y, z))
+            self.point_actor2 = self.representation.GetRepresentation(x, y, z)
+            self.point_actors.append(self.point_actor2)
+            # Recompute geodesic path
+            wx.CallAfter(self._compute_and_publish_path)
+        else:
+            # Update the point position
+            self.points[1] = (x, y, z)
+            # Remove old actors
+            self.Remove()
+            # Recreate point actors
+            self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+            self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+            self.point_actors = [self.point_actor1, self.point_actor2]
+            # Recompute geodesic path
+            wx.CallAfter(self._compute_and_publish_path)
+
+    def AddPoint(self, x, y, z):
+        """Override to support multi-point geodesic measurements."""
+        if not ses.Session().GetConfig("geodesic_multi_point", False):
+            if not self.point_actor1:
+                self.SetPoint1(x, y, z)
+                self.point_actors = [self.point_actor1]
+                return (self.point_actor1,)
+            elif not self.point_actor2:
+                self.points.append((x, y, z))
+                self.point_actor2 = self.representation.GetRepresentation(x, y, z)
+                self.point_actors.append(self.point_actor2)
+                wx.CallAfter(self._compute_and_publish_path)
+                return (self.point_actor2,)
+            return ()
+        else:
+            # Multi-point mode
+            self.points.append((x, y, z))
+            actor = self.representation.GetRepresentation(x, y, z)
+            self.point_actors.append(actor)
+            # Maintain point_actor1/2 for compatibility if possible
+            if not self.point_actor1:
+                self.point_actor1 = actor
+            elif not self.point_actor2:
+                self.point_actor2 = actor
+            if len(self.points) >= 2:
+                wx.CallAfter(self._compute_and_publish_path)
+            return (actor,)
+
+    def GetActors(self):
+        actors = list(self.point_actors)
+        if self.line_actor:
+            actors.append(self.line_actor)
+        if self.text_actor:
+            actors.append(self.text_actor)
+        return actors
+
+    def _compute_and_publish_path(self):
+        """Called by wx.CallAfter after point_actor2 has been rendered.
+        Computes the geodesic path, then pushes the line + text actors."""
+        try:
+            # BEFORE computing new ones, remove OLD actors if they exist
+            old_actors = []
+            if self.line_actor:
+                old_actors.append(self.line_actor)
+            if self.text_actor:
+                old_actors.append(self.text_actor)
+
+            if old_actors:
+                Publisher.sendMessage("Remove actors " + str(const.SURFACE), actors=old_actors)
+
+            self._draw_line()
+            self._draw_text()
+            self._path_computed = True  # now IsComplete() returns True
+
+            path_actors = []
+            if self.line_actor:
+                path_actors.append(self.line_actor)
+            if self.text_actor:
+                path_actors.append(self.text_actor)
+
+            if path_actors:
+                Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=path_actors)
+
+            Publisher.sendMessage("Render volume viewer")
+        finally:
+            # Always restore cursor, even if computation fails
+            # Use direct wx call for immediate response
+            try:
+                wx.EndBusyCursor()
+            except Exception:
+                pass  # Ignore if cursor wasn't started
+
+    def _draw_line(self):
+        if not self.surface_polydata:
+            super()._draw_line()
+            return
+
+        if len(self.points) < 2:
+            return
+
+        # Validate polydata type — only Accept vtkPolyData, not vtkImageData
+        if not self.surface_polydata or not hasattr(self.surface_polydata, "GetNumberOfCells"):
+            return
+        if self.surface_polydata.GetNumberOfCells() == 0:
+            return
+
+        # Ensure polydata is triangulated for Dijkstra
+        triangle_filter = vtkTriangleFilter()
+        triangle_filter.SetInputData(self.surface_polydata)
+        triangle_filter.Update()
+        triangulated_surface = triangle_filter.GetOutput()
+
+        if triangulated_surface.GetNumberOfCells() == 0:
+            return
+
+        locator = vtkPointLocator()
+        locator.SetDataSet(triangulated_surface)
+        locator.BuildLocator()
+
+        append_filter = vtkAppendPolyData()
+        total_length = 0.0
+
+        for i in range(len(self.points) - 1):
+            p_start = self.points[i]
+            p_end = self.points[i + 1]
+
+            dijkstra = vtkDijkstraGraphGeodesicPath()
+            dijkstra.SetInputData(triangulated_surface)
+            dijkstra.SetStartVertex(locator.FindClosestPoint(p_start))
+            dijkstra.SetEndVertex(locator.FindClosestPoint(p_end))
+            dijkstra.Update()
+
+            path_segment = dijkstra.GetOutput()
+            if path_segment.GetNumberOfPoints() > 0:
+                append_filter.AddInputData(path_segment)
+                # Sum the segment length
+                for j in range(path_segment.GetNumberOfPoints() - 1):
+                    pt1 = path_segment.GetPoint(j)
+                    pt2 = path_segment.GetPoint(j + 1)
+                    total_length += math.sqrt(vtkMath.Distance2BetweenPoints(pt1, pt2))
+
+        append_filter.Update()
+        combined_path = append_filter.GetOutput()
+        if combined_path.GetNumberOfPoints() == 0:
+            return
+
+        self._path_length = total_length
+
+        # Render as a solid 3D tube for clear visibility on the surface
+        from vtkmodules.vtkFiltersCore import vtkTubeFilter
+
+        tube = vtkTubeFilter()
+        tube.SetInputData(combined_path)
+        tube.SetRadius(0.1)
+        tube.SetNumberOfSides(8)
+        tube.Update()
+
+        m = vtkPolyDataMapper()
+        m.SetInputConnection(tube.GetOutputPort())
+
+        a = vtkActor()
+        a.SetMapper(m)
+        a.GetProperty().SetColor(self.colour)
+        self.line_actor = a
+
+    def GetValue(self):
+        """Return cached geodesic length (avoids re-running Dijkstra)."""
+        if self._path_length is not None:
+            return self._path_length
+        if not self._path_computed:
+            # Path not yet computed — return straight-line distance as placeholder
+            return super().GetValue()
+        return 0.0
+
+    def _draw_text(self):
+        if not self.surface_polydata:
+            super()._draw_text()
+            return
+
+        if len(self.points) < 2:
+            return
+
+        value = self.GetValue()
+        text = f" {value:.3f} mm "
+
+        # Position text at the average of all points
+        x, y, z = (sum(p[i] for p in self.points) / len(self.points) for i in range(3))
+
+        textsource = vtkTextSource()
+        textsource.SetText(text)
+        textsource.SetBackgroundColor((250 / 255.0, 247 / 255.0, 218 / 255.0))
+        textsource.SetForegroundColor(self.colour)
+
+        m = vtkPolyDataMapper2D()
+        m.SetInputConnection(textsource.GetOutputPort())
+
+        a = vtkActor2D()
+        a.SetMapper(m)
+        a.DragableOn()
+        a.GetPositionCoordinate().SetCoordinateSystemToWorld()
+        a.GetPositionCoordinate().SetValue(x, y, z)
+        a.GetProperty().SetColor((0, 1, 0))
+        a.GetProperty().SetOpacity(0.75)
+        self.text_actor = a
+
+    def draw_to_canvas(self, gc, canvas):
+        # Geodesic measures are only in 3D for now
+        pass
 
 
 class AnnotationMeasure:
@@ -1344,7 +1644,7 @@ class AngularMeasure:
             points.append((cx, cy))
 
         if len(points) > 1:
-            for p0, p1 in zip(points[:-1:], points[1::]):
+            for p0, p1 in zip(points[:-1], points[1:]):
                 r, g, b = self.colour
                 canvas.draw_line(p0, p1, colour=(r * 255, g * 255, b * 255, 255))
 

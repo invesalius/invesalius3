@@ -1,6 +1,7 @@
 import copy
 import dataclasses
 import uuid
+from datetime import datetime
 from enum import Enum
 
 import invesalius.data.imagedata_utils as imagedata_utils
@@ -45,7 +46,7 @@ class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
 
-    version: int = 3
+    version: int = 5
     marker_id: int = 0
     x: float = 0
     y: float = 0
@@ -79,6 +80,9 @@ class Marker:
     # in micro Volts (but scale in milli Volts for display)
     mep_value: float = dataclasses.field(default=None)
     brain_target_list: list = dataclasses.field(default_factory=list)
+    timestamp: str = dataclasses.field(
+        default_factory=lambda: datetime.now().isoformat(timespec="seconds")
+    )
 
     # x, y, z can be jointly accessed as position
     @property
@@ -241,6 +245,7 @@ class Marker:
             "session_id": self.session_id,
             "mep_value": self.mep_value,
             "marker_uuid": self.marker_uuid,
+            "timestamp": self.timestamp,
             "x_mtms": self.x_mtms,
             "y_mtms": self.y_mtms,
             "r_mtms": self.r_mtms,
@@ -267,6 +272,7 @@ class Marker:
             "mep_value": self.mep_value,
             "brain_target_list": self.brain_target_list,
             "marker_uuid": self.marker_uuid,
+            "timestamp": self.timestamp,
         }
 
     def from_dict(self, d):
@@ -314,6 +320,7 @@ class Marker:
         mep_value = d.get("mep_value", None)
         brain_target_list = d.get("brain_target_list", [])
         marker_uuid = d.get("marker_uuid", "")
+        timestamp = d.get("timestamp", "")
 
         self.size = d["size"]
         self.label = d["label"]
@@ -332,6 +339,7 @@ class Marker:
         self.mep_value = mep_value
         self.brain_target_list = brain_target_list
         self.marker_uuid = marker_uuid
+        self.timestamp = timestamp
 
         return self
 

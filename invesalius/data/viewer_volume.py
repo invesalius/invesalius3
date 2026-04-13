@@ -20,6 +20,7 @@
 import os
 import queue
 import sys
+import time
 
 import numpy as np
 import wx
@@ -144,6 +145,17 @@ class Viewer(wx.Panel):
         self.interactor = interactor
         self.interactor.SetRenderWhenDisabled(True)
 
+        self._fps_last_time = time.monotonic()
+        self._fps_frames = 0
+        self.fps_text = vtku.Text()
+        self.fps_text.SetSize(const.TEXT_SIZE_SMALL)
+        self.fps_text.SetPosition(
+            (const.TEXT_POS_LEFT_UP[0], min(0.995, const.TEXT_POS_LEFT_UP[1] + 0.02))
+        )
+        self.fps_text.SetValue("FPS: --")
+        self._fps_text_visible = True
+        self.nav_status = False
+
         self.enable_style(const.STATE_DEFAULT)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -193,6 +205,9 @@ class Viewer(wx.Panel):
             self.text.SetSize(int(round(font_size, 0)))
         self.ren.AddActor(self.text.actor)
 
+        self.ren.AddActor(self.fps_text.actor)
+        self.fps_text.Hide()
+
         #  self.polygon = Polygon(None, is_3d=False)
 
         # Enable canvas for ruler to be drawn
@@ -236,8 +251,6 @@ class Viewer(wx.Panel):
 
         self.use_volumetric_camera = False
         self.camera_show_object = None
-
-        self.nav_status = False
 
         # Pointer is the ball that is shown to indicate the 3D point in the volume viewer that corresponds to the
         # selected slice positions. The same pointer is also used to show the point selected from the 3D viewer by
@@ -349,6 +362,10 @@ class Viewer(wx.Panel):
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
+        # SSAO state tracking
+        self.ssao_enabled = False
+        self.ssao_pass = None
+
         # self.renderers = (self.target_guide_renderer, ren, canvas_renderer)
 
         renwin = interactor.GetRenderWindow().GetRenderers()
@@ -362,6 +379,15 @@ class Viewer(wx.Panel):
         print(len(self.renderers))
 
         Publisher.sendMessage("Press target mode button", pressed=False)
+        self._update_fps_visibility()
+
+    def _update_fps_visibility(self):
+        show_fps = (
+            self._fps_text_visible
+            and self.nav_status
+            and getattr(self, "state", None) == const.STATE_NAVIGATION
+        )
+        self.fps_text.Show(show_fps)
 
     def UpdateCanvas(self):
         if self.canvas is not None:
@@ -541,6 +567,11 @@ class Viewer(wx.Panel):
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
         Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
+
+        # SSAO related
+        Publisher.subscribe(self._EnableSSAO, "Enable SSAO")
+        Publisher.subscribe(self._DisableSSAO, "Disable SSAO")
+        Publisher.subscribe(self._ApplySSAOAfterProjectLoad, "Project loaded successfully")
 
     def get_vtk_mouse_position(self):
         """
@@ -809,17 +840,30 @@ class Viewer(wx.Panel):
 
     def OnHideText(self):
         self.text.Hide()
+        self._fps_text_visible = False
+        self._update_fps_visibility()
         self.UpdateRender()
 
     def OnShowText(self):
         if self.on_wl:
             self.text.Show()
-            self.UpdateRender()
+        self._fps_text_visible = True
+        self._update_fps_visibility()
+        self.UpdateRender()
 
     def AddActors(self, actors):
         "Inserting actors"
+        if not actors:
+            return
+        from vtkmodules.vtkRenderingCore import vtkActor2D
+
         for actor in actors:
-            self.ren.AddActor(actor)
+            if actor is None:
+                continue
+            if isinstance(actor, vtkActor2D):
+                self.ren.AddActor2D(actor)
+            else:
+                self.ren.AddActor(actor)
 
     def RemoveVolume(self):
         volumes = self.ren.GetVolumes()
@@ -832,8 +876,15 @@ class Viewer(wx.Panel):
 
     def RemoveActors(self, actors):
         "Remove a list of actors"
+        from vtkmodules.vtkRenderingCore import vtkActor2D
+
         for actor in actors:
-            self.ren.RemoveActor(actor)
+            if actor is None:
+                continue
+            if isinstance(actor, vtkActor2D):
+                self.ren.RemoveActor2D(actor)
+            else:
+                self.ren.RemoveActor(actor)
 
     def AddPointReference(self, position, radius=1, colour=(1, 0, 0)):
         """
@@ -2534,6 +2585,7 @@ class Viewer(wx.Panel):
             self.pTarget = self.CenterOfMass()
 
         self.camera_show_object = None
+        self._update_fps_visibility()
         if not self.nav_status:
             self.UpdateRender()
 
@@ -2643,6 +2695,7 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
         self.state = state
+        self._update_fps_visibility()
 
     def enable_style(self, style):
         if styles.Styles.has_style(style):
@@ -2665,7 +2718,7 @@ class Viewer(wx.Panel):
         Publisher.sendMessage("Receive volume viewer active camera", cam=cam)
 
     def SendViewerSize(self):
-        width, height = self.GetSize()
+        width, height = self.interactor.GetRenderWindow().GetSize()
         Publisher.sendMessage("Receive volume viewer size", size=(width, height))
 
     # Note: Not in use currently, this method is not called from anywhere.
@@ -2873,6 +2926,10 @@ class Viewer(wx.Panel):
             if self.on_wl:
                 self.text.Show()
 
+            # Disable SSAO when volume rendering is shown (SSAO is only for surfaces)
+            if self.ssao_enabled:
+                self._DisableSSAO()
+
     def OnHideRaycasting(self):
         self.raycasting_volume = False
         self.text.Hide()
@@ -2919,6 +2976,13 @@ class Viewer(wx.Panel):
         self.surface = actor
         self.EnableRuler()
 
+        # Apply SSAO if enabled in preferences (for newly created surfaces)
+        # Note: For .inv3 file loading, _ApplySSAOAfterProjectLoad will handle it
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+        if ssao_enabled and not self.ssao_enabled:
+            self._EnableSSAO()
+
     def RemoveSurface(self, actor):
         # Remove the actor from the renderer.
         self.ren.RemoveActor(actor)
@@ -2941,6 +3005,10 @@ class Viewer(wx.Panel):
         self.raycasting_volume = True
         # self._to_show_ball += 1
         # self._check_and_set_ball_visibility()
+
+        # Disable SSAO when volume rendering is loaded (SSAO is only for surfaces)
+        if self.ssao_enabled:
+            self._DisableSSAO()
 
         self.light = self.ren.GetLights().GetNextItem()
 
@@ -2987,12 +3055,11 @@ class Viewer(wx.Panel):
         else:
             self.ren.RemoveVolume(mask_3d_actor)
 
-        if (
-            self.ren.GetActors().GetNumberOfItems() == 0
-            and self.ren.GetVolumes().GetNumberOfItems() == 1
-        ):
-            self.ren.ResetCamera()
-            self.ren.ResetCameraClippingRange()
+        if flag:
+            if not self.view_angle:
+                self.SetViewAngle(const.VOL_FRONT)
+                self.view_angle = 1
+
             # Match the parallel projection used by AddSurface/LoadVolume so that
             # GetCompositeProjectionTransformMatrix produces a correct world-to-screen
             # matrix for the 3D mask editor (fixes #1086 – "Edit in 3D" without a
@@ -3081,13 +3148,117 @@ class Viewer(wx.Panel):
         orientation_widget.InteractiveOff()
 
     def UpdateRender(self):
+        start = time.monotonic()
         self.interactor.Render()
+        if self.fps_text.actor.GetVisibility():
+            end = time.monotonic()
+            self._fps_frames += 1
+            elapsed = end - self._fps_last_time
+            if elapsed >= 0.5:
+                fps = self._fps_frames / elapsed
+                self._fps_last_time = end
+                self._fps_frames = 0
+                self.fps_text.SetValue(f"FPS: {fps:0.1f}")
 
     def SetWidgetInteractor(self, widget=None):
         widget.SetInteractor(self.interactor._Iren)
 
     def AppendActor(self, actor):
         self.ren.AddActor(actor)
+
+    def _EnableSSAO(self):
+        if self.ssao_enabled:
+            return
+
+        # SSAO should only be applied to surfaces, not volume rendering
+        if not self.surface_added or self.raycasting_volume:
+            return
+
+        render_window = self.interactor.GetRenderWindow()
+
+        if not render_window:
+            return
+
+        if render_window.GetNeverRendered():
+            return
+
+        try:
+            from vtkmodules.vtkRenderingOpenGL2 import (
+                vtkCameraPass,
+                vtkRenderStepsPass,
+                vtkSSAOPass,
+            )
+
+            basic_passes = vtkRenderStepsPass()
+
+            ssao = vtkSSAOPass()
+            ssao.SetRadius(0.5)
+            ssao.SetBias(0.01)
+            ssao.SetKernelSize(128)
+
+            ssao.SetDelegatePass(basic_passes)
+
+            camera_pass = vtkCameraPass()
+            camera_pass.SetDelegatePass(ssao)
+
+            self.ren.SetPass(camera_pass)
+            self.ssao_pass = camera_pass
+            self.ssao_enabled = True
+
+            # Don't save to config here - only Preferences dialog should save
+            # session = ses.Session()
+            # session.SetConfig("ssao_enabled", True)
+
+            self.UpdateRender()
+
+        except (ImportError, AttributeError):
+            pass
+
+    def _DisableSSAO(self):
+        if not self.ssao_enabled:
+            return
+
+        self.ren.SetPass(None)
+        self.ssao_pass = None
+        self.ssao_enabled = False
+
+        # Don't save to config here - only Preferences dialog should save
+        # session = ses.Session()
+        # session.SetConfig("ssao_enabled", False)
+
+        self.UpdateRender()
+
+    def _ApplySSAOAfterProjectLoad(self):
+        """Apply SSAO after project is fully loaded from .inv3 file"""
+        # Check if SSAO is enabled in preferences
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+
+        # Only apply if enabled in preferences, surface exists, and not already enabled
+        if (
+            ssao_enabled
+            and self.surface_added
+            and not self.ssao_enabled
+            and not self.raycasting_volume
+        ):
+            # Use a timer to retry SSAO application after the window has been rendered
+            # This is needed because when loading from .inv3, the render window may not be ready yet
+            import wx
+
+            wx.CallLater(500, self._RetryEnableSSAO)  # Retry after 500ms
+
+    def _RetryEnableSSAO(self):
+        """Retry enabling SSAO after a delay to ensure render window is ready"""
+        render_window = self.interactor.GetRenderWindow()
+        if render_window:
+            if not render_window.GetNeverRendered():
+                # Render window is ready, apply SSAO
+                self._EnableSSAO()
+            else:
+                # Render window still not rendered, retry again after another delay
+                import wx
+
+                wx.CallLater(500, self._RetryEnableSSAO)
 
     def Reposition3DPlane(self, plane_label):
         if not self.surface_added and not self.raycasting_volume:

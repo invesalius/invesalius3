@@ -449,13 +449,13 @@ class Slice(metaclass=utils.Singleton):
             self.SetMaskEditionThreshold(index, (thresh_min, thresh_max))
 
     def __add_mask(self, mask_name):
-        self.create_new_mask(name=mask_name)
-        self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
+        mask = self.create_new_mask(name=mask_name)
+        self.SetMaskColour(mask.index, mask.colour)
 
     def __add_mask_thresh(self, mask_name, thresh, colour):
-        self.create_new_mask(name=mask_name, threshold_range=thresh, colour=colour)
-        self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
-        self.SelectCurrentMask(self.current_mask.index)
+        mask = self.create_new_mask(name=mask_name, threshold_range=thresh, colour=colour)
+        self.SetMaskColour(mask.index, mask.colour)
+        # self.SelectCurrentMask(mask.index) # This is already called by create_new_mask -> _add_mask_into_proj
         Publisher.sendMessage("Reload actual slice")
 
     def __select_current_mask(self, index):
@@ -1252,7 +1252,7 @@ class Slice(metaclass=utils.Singleton):
         self.current_mask.on_show()
 
         colour = future_mask.colour
-        self.SetMaskColour(index, colour, update=False)
+        self.SetMaskColour(index, colour, update=True)
 
         self.buffer_slices = {
             "AXIAL": SliceBuffer(),
@@ -1501,10 +1501,6 @@ class Slice(metaclass=utils.Singleton):
         Publisher.sendMessage("Add mask", mask=mask)
 
         if show:
-            if self.current_mask:
-                self.current_mask.is_shown = False
-            self.current_mask = mask
-            Publisher.sendMessage("Show mask", index=mask.index, value=True)
             Publisher.sendMessage("Change mask selected", index=mask.index)
             Publisher.sendMessage("Update slice viewer")
 
