@@ -1317,8 +1317,11 @@ class SurfacePage(wx.Panel):
             for key in list(listctrl.surface_list_index.keys()):
                 show = (key in index_list) and visibility
                 local_idx = listctrl.surface_list_index[key]
-                listctrl.SetItemImage(local_idx, int(show))
-                if listctrl.GetItemImage(local_idx) != int(show):
+                # InvListCtrl/SurfacesListCtrlPanel does not expose GetItemImage in all builds.
+                # Read the current image through GetItem and only publish when visibility changes.
+                current_img = listctrl.GetItem(local_idx, 0).GetImage()
+                if current_img != int(show):
+                    listctrl.SetItemImage(local_idx, int(show))
                     Publisher.sendMessage("Show surface", index=key, visibility=show)
 
 
