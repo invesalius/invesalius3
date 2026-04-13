@@ -227,6 +227,18 @@ class Frame(wx.Frame):
                 event.Skip()
                 return
 
+        # Handle Ctrl+Shift+A for clearing mask (should work at any time, even outside edit mode)
+        if (
+            modifiers == (wx.MOD_CONTROL | wx.MOD_SHIFT)
+            and keycode == ord("A")
+            and not is_search_field
+            and not is_shell_focused
+        ):
+            # Only clear mask if a mask is available (menu is enabled)
+            if self.clean_mask_menu.IsEnabled():
+                self.OnCleanMask()
+            return
+
         # If the key is a move marker key, publish a message to move the marker,
         # but only if we're not in a search field or shell
         if (
