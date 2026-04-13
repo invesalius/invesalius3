@@ -185,8 +185,6 @@ class MeasurementManager:
         if m.points:
             x, y, z = m.points[0]
 
-
-
         if m.type == const.ANNOTATION:
             import wx
 
