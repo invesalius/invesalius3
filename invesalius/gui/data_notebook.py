@@ -21,14 +21,13 @@ import os
 import pathlib
 import sys
 
-from PIL import Image
-
 import wx
 import wx.grid
 
 #  import invesalius.gui.widgets.listctrl as listmix
 import wx.lib.platebtn as pbtn
 import wx.lib.scrolledpanel as scrolled
+from PIL import Image
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
@@ -1324,7 +1323,9 @@ class SurfaceButtonControlPanel(wx.Panel):
         BMP_DUPLICATE = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"), wx.BITMAP_TYPE_PNG
         )
-        BMP_OPEN = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "surface_import_original_min.png"), wx.BITMAP_TYPE_PNG)
+        BMP_OPEN = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_import_original_min.png"), wx.BITMAP_TYPE_PNG
+        )
 
         BMP_EXPORT = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"), wx.BITMAP_TYPE_PNG
@@ -1998,7 +1999,7 @@ class MeasuresListCtrlPanel(InvListCtrl):
     def SetItemImage(self, item, image, info=0):
         if image != -1:
             self.dict_visibility[item] = image
-            
+
         if self.IsSelected(item):
             super().SetItemImage(item, image, info)
         else:
@@ -2284,7 +2285,7 @@ class MeasuresListCtrlPanel(InvListCtrl):
         # Deselect any old selections
         for i in self.GetSelected():
             self.Select(i, False)
-        
+
         # Select the newly added item automatically
         self.Select(index, True)
 

@@ -183,7 +183,7 @@ class MeasurementManager:
 
         if m.points:
             x, y, z = m.points[0]
-            
+
             # The 3D surface picker stores points with an inverted Y coordinate relative to the 2D slices.
             # We must map them appropriately depending on the target renderer.
             if m.location == const.SURFACE:
@@ -192,9 +192,11 @@ class MeasurementManager:
             else:
                 cross_y = y
                 vol_y = -y
-                
+
             # Update the position of the cross in slices
-            Publisher.sendMessage("Set cross focal point", position=[x, cross_y, z, None, None, None])
+            Publisher.sendMessage(
+                "Set cross focal point", position=[x, cross_y, z, None, None, None]
+            )
             # Update the pointer in the volume viewer
             Publisher.sendMessage("Update volume viewer pointer", position=[x, vol_y, z])
             Publisher.sendMessage("Update slice viewer")
