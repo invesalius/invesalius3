@@ -290,6 +290,9 @@ class Viewer(wx.Panel):
         self.target_mode = False
         self._target_camera_last_update = 0.0
         self._target_camera_update_interval = 1.0 / 20.0
+        self._target_guide_last_update = 0.0
+        self._target_guide_update_interval = 1.0 / 20.0
+        self._target_guide_deadband = 2.0
         self._target_guide_last_signature = None
 
         # Set the angle and distance thresholds.
@@ -1074,6 +1077,7 @@ class Viewer(wx.Panel):
 
         self.CreateTargetGuide()
         self._target_camera_last_update = 0.0
+        self._target_guide_last_update = 0.0
         self._target_guide_last_signature = None
 
         self.ren.ResetCamera()
@@ -1241,11 +1245,15 @@ class Viewer(wx.Panel):
             )
 
             guide_signature = (
-                int(round(coordrx_arrow)),
-                int(round(coordry_arrow)),
-                int(round(coordrz_arrow)),
+                int(round(coordrx_arrow / self._target_guide_deadband)),
+                int(round(coordry_arrow / self._target_guide_deadband)),
+                int(round(coordrz_arrow / self._target_guide_deadband)),
             )
-            if guide_signature != self._target_guide_last_signature:
+            should_update_guide = (
+                guide_signature != self._target_guide_last_signature
+                and now - self._target_guide_last_update >= self._target_guide_update_interval
+            )
+            if should_update_guide:
                 if self.guide_arrow_actors is not None:
                     for actor in self.guide_arrow_actors:
                         self.target_guide_renderer.RemoveActor(actor)
@@ -1311,6 +1319,7 @@ class Viewer(wx.Panel):
                     self.target_guide_renderer.AddActor(ind)
 
                 self._target_guide_last_signature = guide_signature
+                self._target_guide_last_update = now
 
     def OnUnsetTarget(self, marker):
         self.DisableTargetMode()
