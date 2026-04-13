@@ -288,6 +288,9 @@ class Viewer(wx.Panel):
         self.dummy_ref_actor = None
         self.dummy_obj_actor = None
         self.target_mode = False
+        self._target_camera_last_update = 0.0
+        self._target_camera_update_interval = 1.0 / 20.0
+        self._target_guide_last_signature = None
 
         # Set the angle and distance thresholds.
         session = ses.Session()
@@ -1070,6 +1073,8 @@ class Viewer(wx.Panel):
         self.robot_warnings_text = robot_warnings_text
 
         self.CreateTargetGuide()
+        self._target_camera_last_update = 0.0
+        self._target_guide_last_signature = None
 
         self.ren.ResetCamera()
         self.SetCameraTarget()
@@ -1109,6 +1114,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.robot_warnings_text.actor)
 
         self.camera_show_object = None
+        self._target_guide_last_signature = None
         if self.actor_peel:
             if self.object_orientation_torus_actor:
                 self.object_orientation_torus_actor.SetVisibility(1)
@@ -1133,6 +1139,7 @@ class Viewer(wx.Panel):
     def OnUpdateCoilPose(self, m_img, coord):
         # vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
+            now = time.monotonic()
             distance_to_target = distance.euclidean(
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
@@ -1142,13 +1149,14 @@ class Viewer(wx.Panel):
             if self.distance_text is not None:
                 self.distance_text.SetValue(formatted_distance)
 
-            self.ren.ResetCamera()
-            self.SetCameraTarget()
-            if distance_to_target > 100:
-                distance_to_target = 100
-            # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
-            # the distance between 1 and 100 mm
-            self.ren.GetActiveCamera().Zoom((-0.0404 * distance_to_target) + 5.0404)
+            if now - self._target_camera_last_update >= self._target_camera_update_interval:
+                self.ren.ResetCamera()
+                self.SetCameraTarget()
+                zoom_distance = min(distance_to_target, 100)
+                # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
+                # the distance between 1 and 100 mm
+                self.ren.GetActiveCamera().Zoom((-0.0404 * zoom_distance) + 5.0404)
+                self._target_camera_last_update = now
 
             is_under_distance_threshold = distance_to_target <= self.distance_threshold
 
@@ -1186,10 +1194,6 @@ class Viewer(wx.Panel):
                 distance_to_target[5] = -const.ARROW_UPPER_LIMIT
             coordrz_arrow = const.ARROW_SCALE * distance_to_target[5]
 
-            if self.guide_arrow_actors is not None:
-                for actor in self.guide_arrow_actors:
-                    self.target_guide_renderer.RemoveActor(actor)
-
             if (
                 self.angle_threshold * const.ARROW_SCALE
                 > coordrx_arrow
@@ -1200,22 +1204,6 @@ class Viewer(wx.Panel):
             else:
                 is_under_x_angle_threshold = False
                 self.guide_coil_actors[0].GetProperty().SetColor(1, 1, 1)
-
-            offset = 5
-
-            arrow_roll_x1 = self.actor_factory.CreateArrow(
-                [-55, -35, offset], [-55, -35, offset - coordrx_arrow]
-            )
-            arrow_roll_x1.RotateX(-60)
-            arrow_roll_x1.RotateZ(180)
-            arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
-
-            arrow_roll_x2 = self.actor_factory.CreateArrow(
-                [55, -35, offset], [55, -35, offset + coordrx_arrow]
-            )
-            arrow_roll_x2.RotateX(-60)
-            arrow_roll_x2.RotateZ(180)
-            arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
 
             if (
                 self.angle_threshold * const.ARROW_SCALE
@@ -1228,22 +1216,6 @@ class Viewer(wx.Panel):
                 is_under_z_angle_threshold = False
                 self.guide_coil_actors[1].GetProperty().SetColor(1, 1, 1)
 
-            offset = -35
-
-            arrow_yaw_z1 = self.actor_factory.CreateArrow(
-                [-55, offset, 0], [-55, offset - coordrz_arrow, 0]
-            )
-            arrow_yaw_z1.SetPosition(0, -150, 0)
-            arrow_yaw_z1.RotateZ(180)
-            arrow_yaw_z1.GetProperty().SetColor(0, 1, 0)
-
-            arrow_yaw_z2 = self.actor_factory.CreateArrow(
-                [55, offset, 0], [55, offset + coordrz_arrow, 0]
-            )
-            arrow_yaw_z2.SetPosition(0, -150, 0)
-            arrow_yaw_z2.RotateZ(180)
-            arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
-
             if (
                 self.angle_threshold * const.ARROW_SCALE
                 > coordry_arrow
@@ -1254,24 +1226,6 @@ class Viewer(wx.Panel):
             else:
                 is_under_y_angle_threshold = False
                 self.guide_coil_actors[2].GetProperty().SetColor(1, 1, 1)
-
-            offset = 38
-            arrow_pitch_y1 = self.actor_factory.CreateArrow(
-                [0, 65, offset], [0, 65, offset + coordry_arrow]
-            )
-            arrow_pitch_y1.SetPosition(0, -300, 0)
-            arrow_pitch_y1.RotateY(90)
-            arrow_pitch_y1.RotateZ(180)
-            arrow_pitch_y1.GetProperty().SetColor(1, 0, 0)
-
-            offset = 5
-            arrow_pitch_y2 = self.actor_factory.CreateArrow(
-                [0, -55, offset], [0, -55, offset - coordry_arrow]
-            )
-            arrow_pitch_y2.SetPosition(0, -300, 0)
-            arrow_pitch_y2.RotateY(90)
-            arrow_pitch_y2.RotateZ(180)
-            arrow_pitch_y2.GetProperty().SetColor(1, 0, 0)
 
             # Combine all the conditions to check if the coil is at the target.
             coil_at_target = (
@@ -1286,17 +1240,77 @@ class Viewer(wx.Panel):
                 Publisher.sendMessage, "From Neuronavigation: Coil at target", state=coil_at_target
             )
 
-            self.guide_arrow_actors = (
-                arrow_roll_x1,
-                arrow_roll_x2,
-                arrow_yaw_z1,
-                arrow_yaw_z2,
-                arrow_pitch_y1,
-                arrow_pitch_y2,
+            guide_signature = (
+                int(round(coordrx_arrow)),
+                int(round(coordry_arrow)),
+                int(round(coordrz_arrow)),
             )
+            if guide_signature != self._target_guide_last_signature:
+                if self.guide_arrow_actors is not None:
+                    for actor in self.guide_arrow_actors:
+                        self.target_guide_renderer.RemoveActor(actor)
 
-            for ind in self.guide_arrow_actors:
-                self.target_guide_renderer.AddActor(ind)
+                offset = 5
+                arrow_roll_x1 = self.actor_factory.CreateArrow(
+                    [-55, -35, offset], [-55, -35, offset - coordrx_arrow]
+                )
+                arrow_roll_x1.RotateX(-60)
+                arrow_roll_x1.RotateZ(180)
+                arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
+
+                arrow_roll_x2 = self.actor_factory.CreateArrow(
+                    [55, -35, offset], [55, -35, offset + coordrx_arrow]
+                )
+                arrow_roll_x2.RotateX(-60)
+                arrow_roll_x2.RotateZ(180)
+                arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
+
+                offset = -35
+                arrow_yaw_z1 = self.actor_factory.CreateArrow(
+                    [-55, offset, 0], [-55, offset - coordrz_arrow, 0]
+                )
+                arrow_yaw_z1.SetPosition(0, -150, 0)
+                arrow_yaw_z1.RotateZ(180)
+                arrow_yaw_z1.GetProperty().SetColor(0, 1, 0)
+
+                arrow_yaw_z2 = self.actor_factory.CreateArrow(
+                    [55, offset, 0], [55, offset + coordrz_arrow, 0]
+                )
+                arrow_yaw_z2.SetPosition(0, -150, 0)
+                arrow_yaw_z2.RotateZ(180)
+                arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
+
+                offset = 38
+                arrow_pitch_y1 = self.actor_factory.CreateArrow(
+                    [0, 65, offset], [0, 65, offset + coordry_arrow]
+                )
+                arrow_pitch_y1.SetPosition(0, -300, 0)
+                arrow_pitch_y1.RotateY(90)
+                arrow_pitch_y1.RotateZ(180)
+                arrow_pitch_y1.GetProperty().SetColor(1, 0, 0)
+
+                offset = 5
+                arrow_pitch_y2 = self.actor_factory.CreateArrow(
+                    [0, -55, offset], [0, -55, offset - coordry_arrow]
+                )
+                arrow_pitch_y2.SetPosition(0, -300, 0)
+                arrow_pitch_y2.RotateY(90)
+                arrow_pitch_y2.RotateZ(180)
+                arrow_pitch_y2.GetProperty().SetColor(1, 0, 0)
+
+                self.guide_arrow_actors = (
+                    arrow_roll_x1,
+                    arrow_roll_x2,
+                    arrow_yaw_z1,
+                    arrow_yaw_z2,
+                    arrow_pitch_y1,
+                    arrow_pitch_y2,
+                )
+
+                for ind in self.guide_arrow_actors:
+                    self.target_guide_renderer.AddActor(ind)
+
+                self._target_guide_last_signature = guide_signature
 
     def OnUnsetTarget(self, marker):
         self.DisableTargetMode()
@@ -3148,7 +3162,6 @@ class Viewer(wx.Panel):
         orientation_widget.InteractiveOff()
 
     def UpdateRender(self):
-        start = time.monotonic()
         self.interactor.Render()
         if self.fps_text.actor.GetVisibility():
             end = time.monotonic()
