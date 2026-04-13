@@ -24,7 +24,9 @@ import shutil
 import sys
 import tarfile
 import tempfile
+import time
 from typing import TYPE_CHECKING, Dict, List, Union
+
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
@@ -377,11 +379,13 @@ class Project(metaclass=Singleton):
             self.mask_dict[m.index] = m
 
             current_item += 1
+            progress_val = 30 + (current_item / total_items) * 60
             Publisher.sendMessage(
                 "Update Progress bar",
-                value=30 + (current_item / total_items) * 60,
-                msg=_("Loading Mask %d of %d...") % (current_item, len(masks_list)),
+                value=progress_val,
+                msg=_("Loading Mask: %s (%d of %d)") % (m.name, current_item, len(masks_list)),
             )
+
 
         # Opening the surfaces
         self.surface_dict: dict[int, srf.Surface] = {}
@@ -399,12 +403,14 @@ class Project(metaclass=Singleton):
             self.surface_dict[s.index] = s
 
             current_item += 1
+            progress_val = 30 + (current_item / total_items) * 60
             Publisher.sendMessage(
                 "Update Progress bar",
-                value=30 + (current_item / total_items) * 60,
-                msg=_("Loading Surface %d of %d...")
-                % (current_item - len(masks_list), len(surfaces_list)),
+                value=progress_val,
+                msg=_("Loading Surface: %s (%d of %d)")
+                % (s.name, current_item - len(masks_list), len(surfaces_list)),
             )
+
 
         # Opening the measurements
         self.measurement_dict = {}
@@ -601,9 +607,14 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
     idir = decode(os.path.split(tar.getnames()[0])[0], "utf8")
     os.makedirs(os.path.join(folder, idir), exist_ok=True)
     filelist = []
-    tar_filter = getattr(tarfile, "tar_filter", None)
+    
     members = tar.getmembers()
-    total = len(members)
+    total_size = sum(m.size for m in members)
+    current_size = 0
+    last_update_time = 0
+    
+    tar_filter = getattr(tarfile, "tar_filter", None)
+    
     for i, t in enumerate(members):
         cancel_token = {"cancelled": False}
         Publisher.sendMessage("Check cancellation", token=cancel_token)
@@ -611,8 +622,10 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
             tar.close()
             return None
 
-
         try:
+            # We still use tar.extract but we track the size for progress
+            # For even smoother progress, we could read in chunks, but 
+            # tar.extract handles all metadata/permissions/filters correctly.
             tar.extract(t, path=folder, filter=tar_filter)
             fname = os.path.join(folder, decode(t.name, "utf-8"))
             filelist.append(fname)
@@ -623,14 +636,26 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
                 fname = os.path.join(folder, decode(filtered.name, "utf-8"))
                 filelist.append(fname)
 
-        Publisher.sendMessage(
-            "Update Progress bar",
-            value=(i / total) * 30,
-            msg=_("Extracting file %d of %d...") % (i + 1, total),
-        )
+        current_size += t.size
+        
+        # Throttle updates to ~10Hz to keep UI responsive
+        current_time = time.time()
+        if total_size > 0 and (current_time - last_update_time > 0.1 or i == len(members)-1):
+            progress_val = (current_size / total_size) * 30
+            Publisher.sendMessage(
+                "Update Progress bar",
+                value=progress_val,
+                msg=_("Extracting: %s (%.1f MB of %.1f MB)") % (
+                    os.path.basename(t.name),
+                    current_size / (1024*1024),
+                    total_size / (1024*1024)
+                ),
+            )
+            last_update_time = current_time
 
     tar.close()
     return filelist
+
 
 
 
