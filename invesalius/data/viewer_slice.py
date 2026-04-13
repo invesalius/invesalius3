@@ -198,17 +198,19 @@ from invesalius.gui.widgets.canvas_renderer import CanvasHandlerBase as _CanvasH
 
 
 class _MarkerHighlightCircle(_CanvasHandlerBase):
-    """A small orange ring drawn at a 3-D world position on the slice canvas."""
+    """An orange 'X' mark drawn at a 3-D world position on the slice canvas."""
 
     _COLOUR = (255, 165, 0, 200)  # orange, semi-transparent
-    _RADIUS = 8
+    _SIZE = 10  # half-width of the X
     _LINE_WIDTH = 2
 
     def __init__(self, position=(0, 0, 0)):
         super().__init__(parent=None)
         self.position = position
         self.layer = 99  # draw on top of everything
-        self.axial_slice = None  # slice index where the marker lives in axial view
+        self.sagittal_slice = None  # slice index for sagittal view
+        self.coronal_slice = None   # slice index for coronal view
+        self.axial_slice = None     # slice index for axial view
 
     def draw_to_canvas(self, gc, canvas):
         if not self.visible:
@@ -216,20 +218,32 @@ class _MarkerHighlightCircle(_CanvasHandlerBase):
 
         viewer = canvas.viewer
 
-        # Only AXIAL needs a slice check; sagittal/coronal always show the projection
-        if viewer.orientation == "AXIAL" and viewer.slice_data is not None:
-            if self.axial_slice is not None and viewer.slice_data.number != self.axial_slice:
-                return
+        # Check if we're on the correct slice for this orientation
+        if viewer.slice_data is not None:
+            current_slice = viewer.slice_data.number
+            
+            if viewer.orientation == "AXIAL":
+                if self.axial_slice is not None and current_slice != self.axial_slice:
+                    return
+            elif viewer.orientation == "CORONAL":
+                if self.coronal_slice is not None and current_slice != self.coronal_slice:
+                    return
+            elif viewer.orientation == "SAGITAL":
+                if self.sagittal_slice is not None and current_slice != self.sagittal_slice:
+                    return
 
         px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
         scale = viewer.GetContentScaleFactor()
-        canvas.draw_circle(
-            (px, py),
-            self._RADIUS * scale,
-            width=self._LINE_WIDTH,
-            line_colour=self._COLOUR,
-            fill_colour=(0, 0, 0, 0),
-        )
+        size = self._SIZE * scale
+        
+        # Draw an X mark: two diagonal lines
+        gc.SetPen(wx.Pen(wx.Colour(*self._COLOUR), self._LINE_WIDTH))
+        
+        # Line from top-left to bottom-right
+        gc.StrokeLine(px - size, py - size, px + size, py + size)
+        
+        # Line from top-right to bottom-left
+        gc.StrokeLine(px + size, py - size, px - size, py + size)
 
 
 class Viewer(wx.Panel):
@@ -1684,7 +1698,7 @@ class Viewer(wx.Panel):
             self.UpdateRender()
 
     def OnHighlightMarker(self, marker):
-        """Synchronize slice viewers and show a highlight circle at the marker position."""
+        """Synchronize slice viewers and show a highlight X mark at the marker position."""
         if marker is None:
             return
 
@@ -1695,22 +1709,32 @@ class Viewer(wx.Panel):
                 position=[marker.x, marker.y, marker.z, None, None, None],
             )
 
-        # Stage 2: show an orange circle overlay on ALL slice views
+        # Stage 2: show an orange X mark overlay on the exact slice where marker was created
         if self.canvas is not None:
             pos = list(marker.position)
             if self._marker_highlight is None:
                 self._marker_highlight = _MarkerHighlightCircle(position=pos)
             else:
                 self._marker_highlight.position = pos
-            # Compute the axial slice index the marker maps to
-            # (cannot use slice_data.number because ScrollSlice is deferred via wx.CallAfter)
-            if self.orientation == "AXIAL" and self.slice_data is not None:
-                try:
-                    px, py = self.get_slice_pixel_coord_by_world_pos(*pos)
-                    coord = self.calcultate_scroll_position(px, py)
-                    self._marker_highlight.axial_slice = int(coord[2])
-                except Exception:
-                    self._marker_highlight.axial_slice = self.slice_data.number
+            
+            # Compute the slice indices for all three orientations
+            # This ensures the marker only appears on the exact slice where it was created
+            try:
+                px, py = self.get_slice_pixel_coord_by_world_pos(*pos)
+                sagittal, coronal, axial = self.calcultate_scroll_position(px, py)
+                self._marker_highlight.sagittal_slice = int(sagittal)
+                self._marker_highlight.coronal_slice = int(coronal)
+                self._marker_highlight.axial_slice = int(axial)
+            except Exception:
+                # Fallback: use current slice number if calculation fails
+                if self.slice_data is not None:
+                    if self.orientation == "AXIAL":
+                        self._marker_highlight.axial_slice = self.slice_data.number
+                    elif self.orientation == "CORONAL":
+                        self._marker_highlight.coronal_slice = self.slice_data.number
+                    elif self.orientation == "SAGITAL":
+                        self._marker_highlight.sagittal_slice = self.slice_data.number
+            
             if self._marker_highlight not in self.canvas.draw_list:
                 self.canvas.draw_list.append(self._marker_highlight)
             self.canvas.modified = True
