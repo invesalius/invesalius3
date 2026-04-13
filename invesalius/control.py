@@ -130,8 +130,69 @@ class Controller:
 
         Publisher.subscribe(self.LoadProject, "Load project data")
 
+        Publisher.subscribe(self.OnCheckCancellation, "Check cancellation")
+
         # for call cranioplasty implant by command line
         Publisher.subscribe(segment.run_cranioplasty_implant, "Create implant for cranioplasty")
+
+    def OnCheckCancellation(self, token: dict) -> None:
+        if self.progress_dialog and hasattr(self.progress_dialog, "was_cancelled"):
+            token["cancelled"] = self.progress_dialog.was_cancelled()
+
+
+    def OpenProject(self, filepath: "str | Path") -> None:
+        path = os.path.abspath(filepath)
+
+        session = ses.Session()
+        if session.IsOpen():
+            self.CloseProject()
+
+        # Initialize progress bar with cancel button
+        self.progress_dialog = dialog.ProgressBarHandler(
+            self.frame,
+            title=_("Opening Project"),
+            msg=_("Initializing..."),
+            max_value=100,
+            style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME,
+        )
+
+        proj = prj.Project()
+        try:
+            ok = proj.OpenPlistProject(path)
+            if not ok:
+                utils.debug("Project opening cancelled or failed")
+                self.CloseProject()
+                return
+
+            proj.SetAcquisitionModality(proj.modality)
+            self.Slice = sl.Slice()
+            self.Slice._open_image_matrix(
+                proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
+            )
+
+            self.Slice.window_level = proj.level
+            self.Slice.window_width = proj.window
+            if proj.affine:
+                self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
+            else:
+                self.Slice.affine = np.identity(4)
+
+            Publisher.sendMessage("Update threshold limits list", threshold_range=proj.threshold_range)
+
+            self.LoadProject()
+
+            session.OpenProject(filepath)
+            Publisher.sendMessage("Enable state project", state=True)
+
+        except Exception as e:
+            utils.debug(f"Error opening project: {e}")
+            self.CloseProject()
+            dialogs.ErrorMessageBox(self.frame, _("Error opening project"), str(e)).ShowModal()
+        finally:
+            if self.progress_dialog:
+                self.progress_dialog.close()
+                self.progress_dialog = None
+            Publisher.sendMessage("End busy cursor")
 
     def SetBitmapSpacing(self, spacing: Tuple[float, float, float]) -> None:
         proj = prj.Project()
@@ -496,32 +557,7 @@ class Controller:
         else:
             dialog.InexistentPath(filepath)
 
-    def OpenProject(self, filepath: "str | Path") -> None:
-        Publisher.sendMessage("Begin busy cursor")
-        path = os.path.abspath(filepath)
 
-        proj = prj.Project()
-        proj.OpenPlistProject(path)
-        proj.SetAcquisitionModality(proj.modality)
-        self.Slice = sl.Slice()
-        self.Slice._open_image_matrix(
-            proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
-        )
-
-        self.Slice.window_level = proj.level
-        self.Slice.window_width = proj.window
-        if proj.affine:
-            self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
-        else:
-            self.Slice.affine = np.identity(4)
-
-        Publisher.sendMessage("Update threshold limits list", threshold_range=proj.threshold_range)
-
-        self.LoadProject()
-
-        session = ses.Session()
-        session.OpenProject(filepath)
-        Publisher.sendMessage("Enable state project", state=True)
 
     def OnSaveProject(self, filepath: Optional["str | Path"]) -> None:
         self.SaveProject(filepath)

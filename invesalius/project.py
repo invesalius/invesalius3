@@ -33,6 +33,7 @@ import invesalius
 import invesalius.constants as const
 from invesalius import inv_paths
 from invesalius.gui.dialogs import ErrorMessageBox
+from invesalius.i18n import tr as _
 
 # from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
@@ -48,9 +49,12 @@ if sys.platform == "win32":
 
         _has_win32api = True
     except ImportError:
+        win32api = None
         _has_win32api = False
 else:
+    win32api = None
     _has_win32api = False
+
 
 
 # Only one project will be initialized per time. Therefore, we use
@@ -295,9 +299,12 @@ class Project(metaclass=Singleton):
             ow = vtkOutputWindow()
             ow.SetInstance(fow)
 
-        filelist = Extract(filename, tempfile.mkdtemp())
-        dirpath = os.path.abspath(os.path.split(filelist[0])[0])
-        self.load_from_folder(dirpath)
+        temp_dir = tempfile.mkdtemp()
+        filelist = Extract(filename, temp_dir)
+        if filelist:
+            dirpath = os.path.abspath(os.path.split(filelist[0])[0])
+            return self.load_from_folder(dirpath)
+        return False
 
     def load_from_folder(self, dirpath):
         """
@@ -343,9 +350,24 @@ class Project(metaclass=Singleton):
         except KeyError:
             pass
 
+        # Progress calculation
+        masks_list = sorted(project.get("masks", []), key=lambda x: int(x))
+        surfaces_list = sorted(project.get("surfaces", []), key=lambda x: int(x))
+        measures_file = os.path.join(dirpath, project.get("measurements", "measurements.plist"))
+        has_measures = os.path.exists(measures_file)
+
+        total_items = len(masks_list) + len(surfaces_list) + (1 if has_measures else 0)
+        current_item = 0
+
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()
-        for index in sorted(project.get("masks", []), key=lambda x: int(x)):
+        for index in masks_list:
+            cancel_token = {"cancelled": False}
+            Publisher.sendMessage("Check cancellation", token=cancel_token)
+            if cancel_token["cancelled"]:
+                return False
+
+
             filename = project["masks"][index]
             filepath = os.path.join(dirpath, filename)
             m = msk.Mask()
@@ -354,19 +376,45 @@ class Project(metaclass=Singleton):
             m.index = len(self.mask_dict)
             self.mask_dict[m.index] = m
 
+            current_item += 1
+            Publisher.sendMessage(
+                "Update Progress bar",
+                value=30 + (current_item / total_items) * 60,
+                msg=_("Loading Mask %d of %d...") % (current_item, len(masks_list)),
+            )
+
         # Opening the surfaces
         self.surface_dict: dict[int, srf.Surface] = {}
-        for index in sorted(project.get("surfaces", []), key=lambda x: int(x)):
+        for index in surfaces_list:
+            cancel_token = {"cancelled": False}
+            Publisher.sendMessage("Check cancellation", token=cancel_token)
+            if cancel_token["cancelled"]:
+                return False
+
+
             filename = project["surfaces"][index]
             filepath = os.path.join(dirpath, filename)
             s = srf.Surface(int(index))
             s.OpenPList(filepath)
             self.surface_dict[s.index] = s
 
+            current_item += 1
+            Publisher.sendMessage(
+                "Update Progress bar",
+                value=30 + (current_item / total_items) * 60,
+                msg=_("Loading Surface %d of %d...")
+                % (current_item - len(masks_list), len(surfaces_list)),
+            )
+
         # Opening the measurements
         self.measurement_dict = {}
-        measures_file = os.path.join(dirpath, project.get("measurements", "measurements.plist"))
-        if os.path.exists(measures_file):
+        if has_measures:
+            cancel_token = {"cancelled": False}
+            Publisher.sendMessage("Check cancellation", token=cancel_token)
+            if cancel_token["cancelled"]:
+                return False
+
+
             with open(measures_file, "r+b") as f:
                 measurements = plistlib.load(f, fmt=plistlib.FMT_XML)
             for index in measurements:
@@ -376,6 +424,14 @@ class Project(metaclass=Singleton):
                     measure = ms.Measurement()
                 measure.Load(measurements[index])
                 self.measurement_dict[int(index)] = measure
+
+            current_item += 1
+            Publisher.sendMessage(
+                "Update Progress bar", value=30 + (current_item / total_items) * 60, msg=_("Loading measurements...")
+            )
+
+        return True
+
 
     def create_project_file(
         self,
@@ -546,7 +602,16 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
     os.makedirs(os.path.join(folder, idir), exist_ok=True)
     filelist = []
     tar_filter = getattr(tarfile, "tar_filter", None)
-    for t in tar.getmembers():
+    members = tar.getmembers()
+    total = len(members)
+    for i, t in enumerate(members):
+        cancel_token = {"cancelled": False}
+        Publisher.sendMessage("Check cancellation", token=cancel_token)
+        if cancel_token["cancelled"]:
+            tar.close()
+            return None
+
+
         try:
             tar.extract(t, path=folder, filter=tar_filter)
             fname = os.path.join(folder, decode(t.name, "utf-8"))
@@ -558,8 +623,15 @@ def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, 
                 fname = os.path.join(folder, decode(filtered.name, "utf-8"))
                 filelist.append(fname)
 
+        Publisher.sendMessage(
+            "Update Progress bar",
+            value=(i / total) * 30,
+            msg=_("Extracting file %d of %d...") % (i + 1, total),
+        )
+
     tar.close()
     return filelist
+
 
 
 def Extract_(

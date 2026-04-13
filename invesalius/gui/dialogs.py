@@ -46,9 +46,12 @@ if sys.platform == "win32":
 
         _has_win32api = True
     except ImportError:
+        win32api = None
         _has_win32api = False
 else:
+    win32api = None
     _has_win32api = False
+
 
 import csv
 
@@ -7304,7 +7307,7 @@ class SetCOMPort(wx.Dialog):
         if sys.platform.startswith("win"):
             ports = [comport.device for comport in serial.tools.list_ports.comports()]
         else:
-            raise OSError("Unsupported platform")
+            ports = []
         return ports
 
     def _init_gui(self) -> None:
@@ -7780,8 +7783,9 @@ class ProgressBarHandler(wx.ProgressDialog):
         title: str = "Progress Dialog",
         msg: str = "Initializing...",
         max_value: Optional[float] = None,
+        style: int = wx.PD_APP_MODAL | wx.PD_AUTO_HIDE,
     ):
-        super().__init__(title, msg, parent=parent, style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE)
+        super().__init__(title, msg, parent=parent, style=style)
 
         self.max_value = max_value
 
@@ -7806,28 +7810,28 @@ class ProgressBarHandler(wx.ProgressDialog):
     def was_cancelled(self) -> bool:
         return super().WasCancelled()
 
-    def update(self, value: float, msg: Optional[str] = None) -> None:
+    def update(self, value: float, msg: Optional[str] = None) -> bool:
         if self.was_cancelled():
-            return
+            return False
 
         if self.max_value is None:
-            self.pulse(msg)
+            return self.pulse(msg)
         else:
             # value must be less than or equal max_value
             if value > self.max_value:
                 value = self.max_value
-            super().Update(int(value), msg)
+            return super().Update(int(value), msg)[0]
 
     def close(self, event=None) -> None:
         if self.IsShown():
             self.Destroy()
 
-    def pulse(self, msg: Optional[str] = None) -> None:
+    def pulse(self, msg: Optional[str] = None) -> bool:
         # if self.IsShown():
         if msg is None:
-            super().Pulse()
+            return super().Pulse()[0]
         else:
-            super().Pulse(msg)
+            return super().Pulse(msg)[0]
 
 
 class AnnotationDialog(wx.Dialog):
