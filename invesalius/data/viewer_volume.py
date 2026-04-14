@@ -1488,7 +1488,7 @@ class Viewer(wx.Panel):
             cam.SetPosition(new_pos[0], new_pos[1], new_pos[2])
             cam.SetViewUp(0, 0, 1)
             self.ren.ResetCameraClippingRange()
-            
+
         if not self.nav_status:
             self.UpdateRender()
 
