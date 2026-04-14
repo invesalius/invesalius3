@@ -632,6 +632,7 @@ ID_MASK_3D_EDIT = wx.NewIdRef()
 
 ID_GOTO_SLICE = wx.NewIdRef()
 ID_GOTO_COORD = wx.NewIdRef()
+ID_ORIENTATION_CUBE = wx.NewIdRef()
 
 ID_MANUAL_WWWL = wx.NewIdRef()
 
