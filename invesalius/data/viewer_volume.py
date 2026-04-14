@@ -433,8 +433,10 @@ class Viewer(wx.Panel):
         if not self.surface_added:
             # Surface not yet present – notify user and revert toolbar state
             from invesalius.gui.utils import show_warning
+
             show_warning(
-                _("Orientation Cube"), _("The orientation cube can only be displayed on the 3D surface.")
+                _("Orientation Cube"),
+                _("The orientation cube can only be displayed on the 3D surface."),
             )
             # Revert the toolbar to "True" to ensure the feature stays enabled
             # by default and will auto-show once the surface is finally created.
@@ -469,11 +471,11 @@ class Viewer(wx.Panel):
 
             # Build the annotated cube actor with anatomical labels.
             cube = vtkAnnotatedCubeActor()
-            cube.GetXPlusFaceProperty().SetColor(1, 0, 0)   # A – Anterior
+            cube.GetXPlusFaceProperty().SetColor(1, 0, 0)  # A – Anterior
             cube.GetXMinusFaceProperty().SetColor(1, 0, 0)  # P – Posterior
-            cube.GetYPlusFaceProperty().SetColor(0, 1, 0)   # L – Left
+            cube.GetYPlusFaceProperty().SetColor(0, 1, 0)  # L – Left
             cube.GetYMinusFaceProperty().SetColor(0, 1, 0)  # R – Right
-            cube.GetZPlusFaceProperty().SetColor(0, 0, 1)   # T – Top
+            cube.GetZPlusFaceProperty().SetColor(0, 0, 1)  # T – Top
             cube.GetZMinusFaceProperty().SetColor(0, 0, 1)  # B – Bottom
             cube.GetTextEdgesProperty().SetColor(0, 0, 0)
             cube.SetXPlusFaceText(_("A"))
@@ -494,6 +496,7 @@ class Viewer(wx.Panel):
             self._cube_retries = 0
         except Exception as e:
             import logging
+
             logging.warning("Could not create orientation cube: %s", e)
 
     def OnInteractorEvent(self, sender, event):

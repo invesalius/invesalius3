@@ -253,7 +253,6 @@ class Frame(wx.Frame):
         # For all other keys, continue with the normal event handling (propagate the event).
         event.Skip()
 
-
     def __init_aui(self):
         """
         Build AUI manager and all panels inside InVesalius frame.
@@ -1722,7 +1721,6 @@ class MenuBar(wx.MenuBar):
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
 
-
     def AddPluginsItems(self, items):
         for menu_item in self.plugins_menu.GetMenuItems():
             if menu_item.GetId() != const.ID_PLUGINS_SHOW_PATH:
@@ -2810,7 +2808,6 @@ class LayoutToolBar(AuiToolBar):
             const.ID_ORIENTATION_CUBE,
             _("Hide orientation cube") if status else _("Show orientation cube"),
         )
-        Publisher.sendMessage("Update AUI")
 
     def SetStateProjectClose(self):
         """
