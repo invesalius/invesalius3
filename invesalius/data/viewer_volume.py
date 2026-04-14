@@ -471,17 +471,17 @@ class Viewer(wx.Panel):
 
             # Build the annotated cube actor with anatomical labels.
             cube = vtkAnnotatedCubeActor()
-            cube.GetXPlusFaceProperty().SetColor(1, 0, 0)  # A – Anterior
-            cube.GetXMinusFaceProperty().SetColor(1, 0, 0)  # P – Posterior
-            cube.GetYPlusFaceProperty().SetColor(0, 1, 0)  # L – Left
-            cube.GetYMinusFaceProperty().SetColor(0, 1, 0)  # R – Right
+            cube.GetXPlusFaceProperty().SetColor(1, 0, 0)  # L – Left
+            cube.GetXMinusFaceProperty().SetColor(1, 0, 0)  # R – Right
+            cube.GetYPlusFaceProperty().SetColor(0, 1, 0)  # P – Posterior
+            cube.GetYMinusFaceProperty().SetColor(0, 1, 0)  # A – Anterior
             cube.GetZPlusFaceProperty().SetColor(0, 0, 1)  # T – Top
             cube.GetZMinusFaceProperty().SetColor(0, 0, 1)  # B – Bottom
             cube.GetTextEdgesProperty().SetColor(0, 0, 0)
-            cube.SetXPlusFaceText(_("A"))
-            cube.SetXMinusFaceText(_("P"))
-            cube.SetYPlusFaceText(_("L"))
-            cube.SetYMinusFaceText(_("R"))
+            cube.SetXPlusFaceText(_("L"))
+            cube.SetXMinusFaceText(_("R"))
+            cube.SetYPlusFaceText(_("P"))
+            cube.SetYMinusFaceText(_("A"))
             cube.SetZPlusFaceText(_("T"))
             cube.SetZMinusFaceText(_("B"))
 
@@ -3254,13 +3254,16 @@ class Viewer(wx.Panel):
         cube.GetZPlusFaceProperty().SetColor(0, 0, 1)
         cube.GetTextEdgesProperty().SetColor(0, 0, 0)
 
-        # anatomic labelling
-        cube.SetXPlusFaceText("A")
-        cube.SetXMinusFaceText("P")
-        cube.SetYPlusFaceText("L")
-        cube.SetYMinusFaceText("R")
-        cube.SetZPlusFaceText("S")
-        cube.SetZMinusFaceText("I")
+        # Face labels as specified in the issue: A (Anterior/front), P (Posterior/back),
+        # R (Right), L (Left), T (Top), B (Bottom).
+        # InVesalius AXIAL orientation: VOL_FRONT camera is at (0, -1, 0), so the
+        # Y-minus face faces the viewer → A. X-axis → L/R. Z-axis → T/B.
+        cube.SetXPlusFaceText("L")
+        cube.SetXMinusFaceText("R")
+        cube.SetYPlusFaceText("P")
+        cube.SetYMinusFaceText("A")
+        cube.SetZPlusFaceText("T")
+        cube.SetZMinusFaceText("B")
 
         axes = vtkAxesActor()
         axes.SetShaftTypeToCylinder()
