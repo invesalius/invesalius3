@@ -237,6 +237,7 @@ class Frame(wx.Frame):
             # Only clear mask if a mask is available (menu is enabled)
             if hasattr(self, "clean_mask_menu") and self.clean_mask_menu.IsEnabled():
                 self.OnCleanMask()
+            event.Skip()
             return
 
         # If the key is a move marker key, publish a message to move the marker,
