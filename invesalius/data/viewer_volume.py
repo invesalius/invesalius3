@@ -1467,24 +1467,24 @@ class Viewer(wx.Panel):
         so that the measurement exactly faces the screen, without shifting the skull.
         """
         cam = self.ren.GetActiveCamera()
-        
+
         center = np.array(cam.GetFocalPoint())
         old_pos = np.array(cam.GetPosition())
         target = np.array(position)
-        
+
         # Calculate distance from camera to center to maintain zoom level
         distance = np.linalg.norm(old_pos - center)
-        
+
         # Vector from center of the volume pointing outward toward the measurement
         direction = target - center
         dir_norm = np.linalg.norm(direction)
-        
+
         if dir_norm > 0:
             direction = direction / dir_norm
-            
+
             # Orbit to the new position while staring back at the center
             new_pos = center + direction * distance
-            
+
             cam.SetPosition(new_pos[0], new_pos[1], new_pos[2])
             cam.SetViewUp(0, 0, 1)
             self.ren.ResetCameraClippingRange()
