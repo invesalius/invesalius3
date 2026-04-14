@@ -3287,7 +3287,7 @@ class Viewer(wx.Panel):
         if is_oblique:
             # ISO/oblique views need more margin for comfortable rotation
             # Since we're using 3D diagonal, a moderate margin is sufficient
-            margin = 3.0
+            margin = 2.5
         elif aspect_ratio_diff < 0.1:
             # Very similar aspect ratios - moderate margin to prevent edge clipping
             margin = 1.15
