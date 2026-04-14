@@ -2986,11 +2986,32 @@ class Viewer(wx.Panel):
         # self._check_and_set_ball_visibility()
 
     def OnSize(self, evt):
-        self.UpdateRender()
-        self.Refresh()
-        self.interactor.UpdateWindowUI()
-        self.interactor.Update()
-        evt.Skip()
+        """Handle window resize event to reposition camera for current view"""
+        evt.Skip()  # Allow other handlers to process the event first
+
+        # Defer camera repositioning until after the window has fully resized
+        # This ensures we get the correct viewport dimensions
+        if hasattr(self, "view_angle") and self.view_angle is not None:
+            wx.CallAfter(self._DeferredRepositionCamera)
+
+    def _DeferredRepositionCamera(self):
+        """Reposition camera after window resize is complete"""
+        try:
+            # Force render window to update its size
+            render_window = self.interactor.GetRenderWindow()
+            if render_window:
+                render_window.Modified()
+                # Give VTK a moment to update internal state
+                render_window.Render()
+
+            # Now reposition with correct viewport dimensions
+            self.RepositionCamera(self.view_angle)
+
+            if not self.nav_status:
+                self.UpdateRender()
+        except Exception:
+            # If repositioning fails, just skip it
+            pass
 
     def ChangeBackgroundColour(self, colour):
         self.ren.SetBackground(colour[:3])
@@ -3235,8 +3256,27 @@ class Viewer(wx.Panel):
         # For orthogonal views, use the two dimensions perpendicular to view direction
         abs_x, abs_y, abs_z = abs(cam_dir[0]), abs(cam_dir[1]), abs(cam_dir[2])
 
-        if abs_y > abs_x and abs_y > abs_z:
-            # Looking along Y-axis (FRONT/BACK): sees XZ plane
+        # Check if this is explicitly ISO view FIRST
+        is_iso_view = (view == const.VOL_ISO) if hasattr(const, "VOL_ISO") else False
+
+        # Check if this is an oblique view by checking camera direction
+        is_oblique = (
+            not (abs_y > abs_x and abs_y > abs_z)
+            and not (abs_x > abs_y and abs_x > abs_z)
+            and not (abs_z > abs_x and abs_z > abs_y)
+        )
+
+        # For ISO view, ALWAYS use projection-based calculation regardless of camera direction
+        if is_iso_view or is_oblique:
+            # Oblique view (ISO): Use the two largest dimensions
+            # ISO view shows the object at an angle, so we see a combination of all dimensions
+            # Using the two largest gives a good approximation
+
+            # Sort dimensions to get the two largest
+            dims = sorted([x_size, y_size, z_size], reverse=True)
+            width = dims[0]  # Largest dimension
+            height = dims[1]  # Second largest dimension
+        elif abs_y > abs_x and abs_y > abs_z:
             width = x_size
             height = z_size
         elif abs_x > abs_y and abs_x > abs_z:
@@ -3247,16 +3287,6 @@ class Viewer(wx.Panel):
             # Looking along Z-axis (TOP/BOTTOM): sees XY plane
             width = x_size
             height = y_size
-        else:
-            # Oblique view (ISO): use maximum dimensions
-            # For isometric views, all three dimensions are equally visible
-            # Use the 3D diagonal to ensure the entire object fits
-            # Calculate the 3D diagonal of the bounding box
-            diagonal_3d = math.sqrt(x_size**2 + y_size**2 + z_size**2)
-            # For isometric projection, both width and height should use the 3D diagonal
-            # to ensure the object fits comfortably from all angles
-            width = diagonal_3d
-            height = diagonal_3d
 
         if width <= 0 or height <= 0:
             return
@@ -3277,25 +3307,24 @@ class Viewer(wx.Panel):
             object_aspect, viewport_aspect
         )
 
-        # Check if this is an oblique view (ISO) by checking camera direction
-        # IMPORTANT: Also check the view parameter directly since ISO camera positions
-        # may have a dominant axis component that makes them appear orthogonal
-        is_oblique = (
-            not (abs_y > abs_x and abs_y > abs_z)
-            and not (abs_x > abs_y and abs_x > abs_z)
-            and not (abs_z > abs_x and abs_z > abs_y)
-        )
+        # Apply margins based on view type (is_iso_view and is_oblique were calculated earlier)
+        if is_iso_view or is_oblique:
+            # ISO/oblique views: use slightly larger margins than orthogonal views
+            # ISO shows more of the object, so needs a bit more clearance
+            if viewport_aspect >= 1.8:
+                margin = 1.20  # Very wide displays
+            elif viewport_aspect >= 1.5:
+                margin = 1.22  # Wide displays (3:2)
+            elif viewport_aspect >= 1.3:
+                margin = 1.20  # Moderate displays (4:3)
+            elif viewport_aspect >= 1.0:
+                margin = 1.20  # Square displays
+            else:
+                margin = 1.25  # Narrow/portrait displays
 
-        # Also check if view is explicitly VOL_ISO
-        is_iso_view = (view == const.VOL_ISO) if hasattr(const, "VOL_ISO") else False
-
-        if is_oblique or is_iso_view:
-            # ISO/oblique views use moderate margin (1.25) to provide balanced spacing around the object
-            # The 3D diagonal calculation already ensures full object visibility
-            margin = 1.25
-            print(
-                f"DEBUG: ISO view detected! margin={margin}, is_oblique={is_oblique}, is_iso_view={is_iso_view}, abs_x={abs_x:.3f}, abs_y={abs_y:.3f}, abs_z={abs_z:.3f}"
-            )
+            # Additional safety for very small viewports
+            if viewport_height < 400:
+                margin *= 1.05  # Add 5% extra margin for small windows
         elif aspect_ratio_diff < 0.1:
             # Very similar aspect ratios - moderate margin to prevent edge clipping
             margin = 1.15
@@ -3313,7 +3342,14 @@ class Viewer(wx.Panel):
         self.ren.ResetCameraClippingRange()
 
     def SetViewAngle(self, view):
+        # Store the current view angle for resize handling
+        self.view_angle = view
+
         cam = self.ren.GetActiveCamera()
+
+        # Enable parallel projection for consistent scaling
+        cam.ParallelProjectionOn()
+
         cam.SetFocalPoint(0, 0, 0)
 
         # proj = prj.Project()
