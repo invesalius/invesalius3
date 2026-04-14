@@ -1,4 +1,4 @@
-# --------------------------------------------------------------------------
+90  # --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
@@ -3249,16 +3249,14 @@ class Viewer(wx.Panel):
             height = y_size
         else:
             # Oblique view (ISO): use maximum dimensions
-            # For isometric views, we need to account for all three dimensions
-            # Use a more conservative approach for oblique views
-            # Calculate the diagonal in the XY plane and add Z height
-            width = math.sqrt(x_size**2 + y_size**2)
-            # For ISO view, height should account for both Z and the projection
-            # Use a very generous calculation to ensure everything fits comfortably
-            # Increase the factor to 1.0 to match the diagonal width
-            height = max(z_size, math.sqrt(x_size**2 + y_size**2))
-            # Apply a larger margin for ISO views since they show more of the object
-            # This will be handled by increasing the scale slightly
+            # For isometric views, all three dimensions are equally visible
+            # Use the 3D diagonal to ensure the entire object fits
+            # Calculate the 3D diagonal of the bounding box
+            diagonal_3d = math.sqrt(x_size**2 + y_size**2 + z_size**2)
+            # For isometric projection, both width and height should use the 3D diagonal
+            # to ensure the object fits comfortably from all angles
+            width = diagonal_3d
+            height = diagonal_3d
 
         if width <= 0 or height <= 0:
             return
@@ -3287,18 +3285,18 @@ class Viewer(wx.Panel):
         )
 
         if is_oblique:
-            # ISO/oblique views need significantly more margin since they show more of the object
-            # Use a larger margin to ensure comfortable viewing of all three visible faces
-            margin = 1.35
+            # ISO/oblique views need more margin for comfortable rotation
+            # Since we're using 3D diagonal, a moderate margin is sufficient
+            margin = 3.0
         elif aspect_ratio_diff < 0.1:
-            # Very similar aspect ratios - minimal margin
-            margin = 1.02
+            # Very similar aspect ratios - moderate margin to prevent edge clipping
+            margin = 1.15
         elif aspect_ratio_diff < 0.3:
-            # Moderate difference - small margin
-            margin = 1.05
+            # Moderate difference - reasonable margin
+            margin = 1.20
         else:
-            # Large difference - slightly larger margin
-            margin = 1.08
+            # Large difference - larger margin
+            margin = 1.25
 
         scale *= margin
 
