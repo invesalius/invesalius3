@@ -3278,16 +3278,24 @@ class Viewer(wx.Panel):
         )
 
         # Check if this is an oblique view (ISO) by checking camera direction
+        # IMPORTANT: Also check the view parameter directly since ISO camera positions
+        # may have a dominant axis component that makes them appear orthogonal
         is_oblique = (
             not (abs_y > abs_x and abs_y > abs_z)
             and not (abs_x > abs_y and abs_x > abs_z)
             and not (abs_z > abs_x and abs_z > abs_y)
         )
 
-        if is_oblique:
-            # ISO/oblique views need more margin for comfortable rotation
-            # Since we're using 3D diagonal, a moderate margin is sufficient
-            margin = 2.5
+        # Also check if view is explicitly VOL_ISO
+        is_iso_view = (view == const.VOL_ISO) if hasattr(const, "VOL_ISO") else False
+
+        if is_oblique or is_iso_view:
+            # ISO/oblique views use moderate margin (1.25) to provide balanced spacing around the object
+            # The 3D diagonal calculation already ensures full object visibility
+            margin = 1.25
+            print(
+                f"DEBUG: ISO view detected! margin={margin}, is_oblique={is_oblique}, is_iso_view={is_iso_view}, abs_x={abs_x:.3f}, abs_y={abs_y:.3f}, abs_z={abs_z:.3f}"
+            )
         elif aspect_ratio_diff < 0.1:
             # Very similar aspect ratios - moderate margin to prevent edge clipping
             margin = 1.15
