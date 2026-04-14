@@ -235,7 +235,7 @@ class Frame(wx.Frame):
             and not is_shell_focused
         ):
             # Only clear mask if a mask is available (menu is enabled)
-            if self.clean_mask_menu.IsEnabled():
+            if hasattr(self, "clean_mask_menu") and self.clean_mask_menu.IsEnabled():
                 self.OnCleanMask()
             return
 
