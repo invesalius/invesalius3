@@ -472,6 +472,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnHideRuler, "Hide rulers on viewers")
         Publisher.subscribe(self.OnRulerVisibilityStatus, "Receive ruler visibility status")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.FocusCamera, "Focus volume camera")
 
         Publisher.subscribe(self.RemoveAllActors, "Remove all volume actors")
 
@@ -776,7 +777,7 @@ class Viewer(wx.Panel):
             Publisher.sendMessage("Begin busy cursor")
             if _has_win32api:
                 utils.touch(filename)
-                win_filename = win32api.GetShortPathName(filename)
+                win_filename = win32api.GetShortPathName(filename)  # type: ignore
                 self._export_picture(orientation, win_filename, filetype)
             else:
                 self._export_picture(orientation, filename, filetype)
@@ -1457,6 +1458,37 @@ class Viewer(wx.Panel):
 
         self.pointer_actor.SetPosition(position)
         # Update the render window manually, as it is not updated automatically when not navigating.
+        if not self.nav_status:
+            self.UpdateRender()
+
+    def FocusCamera(self, position):
+        """
+        Orbit the camera around the current focal point (the skull's center)
+        so that the measurement exactly faces the screen, without shifting the skull.
+        """
+        cam = self.ren.GetActiveCamera()
+        
+        center = np.array(cam.GetFocalPoint())
+        old_pos = np.array(cam.GetPosition())
+        target = np.array(position)
+        
+        # Calculate distance from camera to center to maintain zoom level
+        distance = np.linalg.norm(old_pos - center)
+        
+        # Vector from center of the volume pointing outward toward the measurement
+        direction = target - center
+        dir_norm = np.linalg.norm(direction)
+        
+        if dir_norm > 0:
+            direction = direction / dir_norm
+            
+            # Orbit to the new position while staring back at the center
+            new_pos = center + direction * distance
+            
+            cam.SetPosition(new_pos[0], new_pos[1], new_pos[2])
+            cam.SetViewUp(0, 0, 1)
+            self.ren.ResetCameraClippingRange()
+            
         if not self.nav_status:
             self.UpdateRender()
 
@@ -2777,7 +2809,7 @@ class Viewer(wx.Panel):
         ):
             if _has_win32api:
                 utils.touch(filename)
-                win_filename = win32api.GetShortPathName(filename)
+                win_filename = win32api.GetShortPathName(filename)  # type: ignore
                 self._export_surface(win_filename, filetype)
             else:
                 self._export_surface(filename, filetype)
