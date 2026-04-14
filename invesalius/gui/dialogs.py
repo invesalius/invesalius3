@@ -7839,7 +7839,7 @@ class ProjectLoadProgressDialog:
 
         self.title = _("Loading Project")
         self.msg = _("Preparing to load project...")
-        self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+        self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE
         self.cancelled = False
 
         self.dlg = wx.ProgressDialog(

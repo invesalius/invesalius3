@@ -507,7 +507,10 @@ class Controller:
         
         path = os.path.abspath(filepath)
 
-        # Create progress dialog (no busy cursor - user needs to click cancel)
+        # Show busy cursor during loading (main window)
+        Publisher.sendMessage("Begin busy cursor")
+        
+        # Create progress dialog (modal - cancel button remains clickable)
         progress_dlg = dialogs.ProjectLoadProgressDialog()
         
         try:
@@ -528,6 +531,9 @@ class Controller:
                 # Clean up the partially loaded project
                 proj.Close()
                 
+                # End busy cursor
+                Publisher.sendMessage("End busy cursor")
+                
                 # Show cancellation message
                 wx.MessageBox(
                     _("Project loading was cancelled."),
@@ -540,6 +546,7 @@ class Controller:
             if not progress_dlg.Update(96, _("Initializing project...")):
                 progress_dlg.Close()
                 proj.Close()
+                Publisher.sendMessage("End busy cursor")
                 return
             
             proj.SetAcquisitionModality(proj.modality)
@@ -561,27 +568,34 @@ class Controller:
             if not progress_dlg.Update(98, _("Loading project into interface...")):
                 progress_dlg.Close()
                 proj.Close()
+                Publisher.sendMessage("End busy cursor")
                 return
 
-            self.LoadProject(end_busy_cursor=False)  # Don't end busy cursor - we're using progress dialog
+            self.LoadProject(end_busy_cursor=False)
 
             session = ses.Session()
             session.OpenProject(filepath)
             Publisher.sendMessage("Enable state project", state=True)
             
-            # Complete
+            # Complete - dialog will auto-hide at 100%
             progress_dlg.Update(100, _("Project loaded successfully!"))
+            
+            # End busy cursor after successful load
+            Publisher.sendMessage("End busy cursor")
             
         except Exception as e:
             # Handle any errors during loading
+            progress_dlg.Close()
+            Publisher.sendMessage("End busy cursor")
             wx.MessageBox(
                 _("Error loading project: {}").format(str(e)),
                 _("Load Error"),
                 wx.OK | wx.ICON_ERROR
             )
         finally:
-            # Always close the progress dialog
-            progress_dlg.Close()
+            # Ensure progress dialog is closed
+            if progress_dlg.dlg:
+                progress_dlg.Close()
 
     def OnSaveProject(self, filepath: Optional["str | Path"]) -> None:
         self.SaveProject(filepath)
