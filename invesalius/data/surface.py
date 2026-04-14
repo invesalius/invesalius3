@@ -382,8 +382,15 @@ class SurfaceManager:
         """
         proj = prj.Project()
         index = self.last_surface_index
+        # if index not in proj.surface_dict:
+        #     print(f"[Error] Surface index {index} not found in surface_dict.")
+        #     return
+        if not hasattr(proj, "surface_dict") or not proj.surface_dict:
+            dialogs.LargestSurfaceNotExist()
+            return
+
         if index not in proj.surface_dict:
-            print(f"[Error] Surface index {index} not found in surface_dict.")
+            dialogs.SurfaceIndexNotExist(index)
             return
         progress_dialog = dialogs.SelectLargestSurfaceProgressWindow()
         progress_dialog.Update()

@@ -1047,7 +1047,7 @@ def SurfaceSelectionRequiredForDuplication() -> None:
 
 
 def SeedSurfaceNotExist() -> None:
-    msg = _("No surfaces exist, cannot create a seeded surface.")
+    msg = _("No surfaces exist, therefore cannot create a seeded surface.")
     if sys.platform == "darwin":
         dlg = wx.MessageDialog(None, "", msg, wx.OK | wx.ICON_ERROR)
     else:
@@ -1057,7 +1057,17 @@ def SeedSurfaceNotExist() -> None:
 
 
 def SplitSurfaceNotExist() -> None:
-    msg = _("No surfaces exist, cannot split surfaces.")
+    msg = _("No surfaces exist, therefore cannot split surfaces.")
+    if sys.platform == "darwin":
+        dlg = wx.MessageDialog(None, "", msg, wx.OK | wx.ICON_ERROR)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3", wx.OK | wx.ICON_ERROR)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def LargestSurfaceNotExist() -> None:
+    msg = _("No surfaces exist, therefore cannot select the largest surface.")
     if sys.platform == "darwin":
         dlg = wx.MessageDialog(None, "", msg, wx.OK | wx.ICON_ERROR)
     else:
