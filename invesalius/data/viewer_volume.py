@@ -3268,14 +3268,28 @@ class Viewer(wx.Panel):
 
         # For ISO view, ALWAYS use projection-based calculation regardless of camera direction
         if is_iso_view or is_oblique:
-            # Oblique view (ISO): Use the two largest dimensions
-            # ISO view shows the object at an angle, so we see a combination of all dimensions
-            # Using the two largest gives a good approximation
+            # Oblique view (ISO): Account for all three dimensions
+            # In isometric view, the object is rotated so all dimensions contribute to what's visible
+            # For a full body (tall object), the height is critical and gets projected at an angle
 
-            # Sort dimensions to get the two largest
-            dims = sorted([x_size, y_size, z_size], reverse=True)
-            width = dims[0]  # Largest dimension
-            height = dims[1]  # Second largest dimension
+            # Calculate the 3D diagonal - this represents the maximum extent in any direction
+            diagonal_3d = math.sqrt(x_size**2 + y_size**2 + z_size**2)
+
+            # For width and height, use a conservative estimate
+            # Width sees contribution from X and Y dimensions
+            # Height sees contribution from Y and Z dimensions (critical for tall objects)
+            width = math.sqrt(x_size**2 + y_size**2)
+            height = math.sqrt(y_size**2 + z_size**2)
+
+            # Ensure we use at least the diagonal for the larger dimension
+            # This prevents clipping for elongated objects
+            max_dim = max(width, height)
+            if max_dim < diagonal_3d * 0.8:
+                # If our estimate is too small, use a larger value
+                if width > height:
+                    width = diagonal_3d * 0.85
+                else:
+                    height = diagonal_3d * 0.85
         elif abs_y > abs_x and abs_y > abs_z:
             width = x_size
             height = z_size
@@ -3309,22 +3323,22 @@ class Viewer(wx.Panel):
 
         # Apply margins based on view type (is_iso_view and is_oblique were calculated earlier)
         if is_iso_view or is_oblique:
-            # ISO/oblique views: use slightly larger margins than orthogonal views
-            # ISO shows more of the object, so needs a bit more clearance
+            # ISO/oblique views: use moderate margins
+            # The dimension calculation already accounts for the rotation
             if viewport_aspect >= 1.8:
-                margin = 1.20  # Very wide displays
+                margin = 1.25  # Very wide displays
             elif viewport_aspect >= 1.5:
-                margin = 1.22  # Wide displays (3:2)
+                margin = 1.28  # Wide displays (3:2)
             elif viewport_aspect >= 1.3:
-                margin = 1.20  # Moderate displays (4:3)
+                margin = 1.26  # Moderate displays (4:3)
             elif viewport_aspect >= 1.0:
-                margin = 1.20  # Square displays
+                margin = 1.25  # Square displays
             else:
-                margin = 1.25  # Narrow/portrait displays
+                margin = 1.30  # Narrow/portrait displays
 
             # Additional safety for very small viewports
             if viewport_height < 400:
-                margin *= 1.05  # Add 5% extra margin for small windows
+                margin *= 1.10  # Add 10% extra margin for small windows
         elif aspect_ratio_diff < 0.1:
             # Very similar aspect ratios - moderate margin to prevent edge clipping
             margin = 1.15
