@@ -497,31 +497,105 @@ class Controller:
             dialog.InexistentPath(filepath)
 
     def OpenProject(self, filepath: "str | Path") -> None:
-        Publisher.sendMessage("Begin busy cursor")
+        """
+        Open a .inv3 project file with progress dialog and cancellation support.
+        
+        Args:
+            filepath: Path to the .inv3 project file
+        """
+        from invesalius.gui import dialogs
+        
         path = os.path.abspath(filepath)
 
-        proj = prj.Project()
-        proj.OpenPlistProject(path)
-        proj.SetAcquisitionModality(proj.modality)
-        self.Slice = sl.Slice()
-        self.Slice._open_image_matrix(
-            proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
-        )
+        # Show busy cursor during loading (main window)
+        Publisher.sendMessage("Begin busy cursor")
+        
+        # Create progress dialog (modal - cancel button remains clickable)
+        progress_dlg = dialogs.ProjectLoadProgressDialog()
+        
+        try:
+            proj = prj.Project()
+            
+            # Define progress callback
+            def progress_callback(value, message):
+                """Update progress dialog and check for cancellation."""
+                return progress_dlg.Update(value, message)
+            
+            # Load project with progress updates
+            result = proj.OpenPlistProject(path, progress_callback)
+            
+            # Check if loading was cancelled
+            if result is False or progress_dlg.WasCancelled():
+                progress_dlg.Close()
+                
+                # Clean up the partially loaded project
+                proj.Close()
+                
+                # End busy cursor
+                Publisher.sendMessage("End busy cursor")
+                
+                # Show cancellation message
+                wx.MessageBox(
+                    _("Project loading was cancelled."),
+                    _("Load Cancelled"),
+                    wx.OK | wx.ICON_INFORMATION
+                )
+                return
+            
+            # Update progress
+            if not progress_dlg.Update(96, _("Initializing project...")):
+                progress_dlg.Close()
+                proj.Close()
+                Publisher.sendMessage("End busy cursor")
+                return
+            
+            proj.SetAcquisitionModality(proj.modality)
+            self.Slice = sl.Slice()
+            self.Slice._open_image_matrix(
+                proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
+            )
 
-        self.Slice.window_level = proj.level
-        self.Slice.window_width = proj.window
-        if proj.affine:
-            self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
-        else:
-            self.Slice.affine = np.identity(4)
+            self.Slice.window_level = proj.level
+            self.Slice.window_width = proj.window
+            if proj.affine:
+                self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
+            else:
+                self.Slice.affine = np.identity(4)
 
-        Publisher.sendMessage("Update threshold limits list", threshold_range=proj.threshold_range)
+            Publisher.sendMessage("Update threshold limits list", threshold_range=proj.threshold_range)
 
-        self.LoadProject()
+            # Update progress
+            if not progress_dlg.Update(98, _("Loading project into interface...")):
+                progress_dlg.Close()
+                proj.Close()
+                Publisher.sendMessage("End busy cursor")
+                return
 
-        session = ses.Session()
-        session.OpenProject(filepath)
-        Publisher.sendMessage("Enable state project", state=True)
+            self.LoadProject(end_busy_cursor=False)
+
+            session = ses.Session()
+            session.OpenProject(filepath)
+            Publisher.sendMessage("Enable state project", state=True)
+            
+            # Complete - dialog will auto-hide at 100%
+            progress_dlg.Update(100, _("Project loaded successfully!"))
+            
+            # End busy cursor after successful load
+            Publisher.sendMessage("End busy cursor")
+            
+        except Exception as e:
+            # Handle any errors during loading
+            progress_dlg.Close()
+            Publisher.sendMessage("End busy cursor")
+            wx.MessageBox(
+                _("Error loading project: {}").format(str(e)),
+                _("Load Error"),
+                wx.OK | wx.ICON_ERROR
+            )
+        finally:
+            # Ensure progress dialog is closed
+            if progress_dlg.dlg:
+                progress_dlg.Close()
 
     def OnSaveProject(self, filepath: Optional["str | Path"]) -> None:
         self.SaveProject(filepath)
@@ -756,7 +830,7 @@ class Controller:
 
     # -------------------------------------------------------------------------------------
 
-    def LoadProject(self, create_default_mask=True):
+    def LoadProject(self, create_default_mask=True, end_busy_cursor=True):
         proj = prj.Project()
 
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
@@ -833,7 +907,9 @@ class Controller:
         img_file = Path(outdir) / "proj_image.nii.gz"
         proj.export_project_to_nifti(img_file, save_masks=False)
 
-        Publisher.sendMessage("End busy cursor")
+        # End busy cursor only if it was started (not when using progress dialog)
+        if end_busy_cursor:
+            Publisher.sendMessage("End busy cursor")
         Publisher.sendMessage("Project loaded successfully")
 
     def CreateDicomProject(self, dicom, matrix, matrix_filename):
