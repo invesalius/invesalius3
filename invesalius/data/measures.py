@@ -165,6 +165,7 @@ class MeasurementManager:
         Publisher.subscribe(self._update_point, "Update measurement point position")
         Publisher.subscribe(self._finalize_measurement, "Finalize measurement")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self._update_geodesic_measure, "Update geodesic measure value")
 
     def _base_annotation_handler(self, evt):
         pass
@@ -174,6 +175,21 @@ class MeasurementManager:
         if index < 0 or index >= len(self.measures):
             return
         m, mr = self.measures[index]
+
+        # Synchronize visualization: only update the slice where this measurement lives.
+        # Do NOT jump other slices — the maintainer wants each slice to stay in its current position.
+        if m.location != const.SURFACE:
+            loc_str = map_id_locations.get(m.location)
+            if loc_str:
+                Publisher.sendMessage(("Set scroll position", loc_str), index=m.slice_number)
+
+        if m.points:
+            x, y, z = m.points[0]
+
+            if m.location == const.SURFACE:
+                # Trigger the cleanly orbiting 3D camera rotation without the positioning sphere
+                Publisher.sendMessage("Focus volume camera", position=[x, y, z])
+
         if m.type == const.ANNOTATION:
             import wx
 
@@ -563,8 +579,24 @@ class MeasurementManager:
                 Publisher.sendMessage("Redraw canvas")
 
             #  if self.measures:
-            #  self.measures.pop()
             self.current = None
+
+    def _update_geodesic_measure(self, mr):
+        """Asynchronously triggered when the geodesic path computation completes."""
+        for index, (m, m_repr) in enumerate(self.measures):
+            if m_repr == mr:
+                m.value = mr.GetValue()
+                # Safely update GUI with the new geodesic distance
+                Publisher.sendMessage(
+                    "Update measurement info in GUI",
+                    index=m.index,
+                    name=m.name,
+                    colour=m.colour,
+                    location=LOCATION[m.location],
+                    type_=TYPE[m.type],
+                    value=f"{m.value:.3f} mm",
+                )
+                break
 
     def _add_density_measure(self, density_measure):
         m = DensityMeasurement()
@@ -1126,6 +1158,7 @@ class GeodesicMeasure(LinearMeasure):
             if path_actors:
                 Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=path_actors)
 
+            Publisher.sendMessage("Update geodesic measure value", mr=self)
             Publisher.sendMessage("Render volume viewer")
         finally:
             # Always restore cursor, even if computation fails
