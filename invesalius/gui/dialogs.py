@@ -1046,6 +1046,46 @@ def SurfaceSelectionRequiredForDuplication() -> None:
     dlg.Destroy()
 
 
+def SeedSurfaceNotExist() -> None:
+    msg = _("No surfaces exist, therefore cannot create a seeded surface.")
+    if sys.platform == "darwin":
+        dlg = wx.MessageDialog(None, "", msg, wx.OK | wx.ICON_ERROR)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3", wx.OK | wx.ICON_ERROR)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def SplitSurfaceNotExist() -> None:
+    msg = _("No surfaces exist, therefore cannot split surfaces.")
+    if sys.platform == "darwin":
+        dlg = wx.MessageDialog(None, "", msg, wx.OK | wx.ICON_ERROR)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3", wx.OK | wx.ICON_ERROR)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def LargestSurfaceNotExist() -> None:
+    msg = _("No surfaces exist, therefore cannot select the largest surface.")
+    if sys.platform == "darwin":
+        dlg = wx.MessageDialog(None, "", msg, wx.OK | wx.ICON_ERROR)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3", wx.OK | wx.ICON_ERROR)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def SurfaceIndexNotExist(index: int) -> None:
+    msg = _(f"Surface index {index} does not exist.")
+    if sys.platform == "darwin":
+        dlg = wx.MessageDialog(None, "", msg, wx.OK | wx.ICON_ERROR)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3", wx.OK | wx.ICON_ERROR)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
 # Dialogs for neuronavigation mode
 # ----------------------------------
 
@@ -7822,6 +7862,67 @@ class ProgressBarHandler(wx.ProgressDialog):
             super().Pulse()
         else:
             super().Pulse(msg)
+
+
+class ProjectLoadProgressDialog:
+    """Progress dialog for loading .inv3 project files with cancellation support."""
+
+    def __init__(self, parent: Optional[wx.Window] = None):
+        if parent is None:
+            parent = wx.GetApp().GetTopWindow()
+
+        self.title = _("Loading Project")
+        self.msg = _("Preparing to load project...")
+        self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE
+        self.cancelled = False
+
+        self.dlg = wx.ProgressDialog(
+            self.title, self.msg, maximum=100, parent=parent, style=self.style
+        )
+
+        # Force the dialog to paint before loading starts
+        wx.SafeYield()
+
+    def Update(self, value: int, message: str = "") -> bool:
+        """
+        Update progress dialog.
+
+        Args:
+            value: Progress value (0-100)
+            message: Status message to display
+
+        Returns:
+            True if should continue, False if cancelled
+        """
+        if self.cancelled:
+            return False
+
+        try:
+            if message:
+                continue_loading, skip = self.dlg.Update(value, message)
+            else:
+                continue_loading, skip = self.dlg.Update(value)
+
+            if not continue_loading:
+                self.cancelled = True
+                return False
+
+            return True
+        except Exception:
+            return False
+
+    def WasCancelled(self) -> bool:
+        """Check if user cancelled the operation."""
+        return self.cancelled
+
+    def Close(self) -> None:
+        """Close and destroy the progress dialog."""
+        try:
+            if self.dlg:
+                self.dlg.Destroy()
+                self.dlg = None
+        except Exception:
+            pass
 
 
 class AnnotationDialog(wx.Dialog):

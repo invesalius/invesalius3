@@ -1363,8 +1363,11 @@ class SurfacePage(wx.Panel):
             for key in list(listctrl.surface_list_index.keys()):
                 show = (key in index_list) and visibility
                 local_idx = listctrl.surface_list_index[key]
-                listctrl.SetItemImage(local_idx, int(show))
-                if listctrl.GetItemImage(local_idx) != int(show):
+                # InvListCtrl/SurfacesListCtrlPanel does not expose GetItemImage in all builds.
+                # Read the current image through GetItem and only publish when visibility changes.
+                current_img = listctrl.GetItem(local_idx, 0).GetImage()
+                if current_img != int(show):
+                    listctrl.SetItemImage(local_idx, int(show))
                     Publisher.sendMessage("Show surface", index=key, visibility=show)
 
 
@@ -1615,6 +1618,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         self.current_transparency = 0
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
+        self.item_images = {}  # maps row index -> image index (0 or 1)
 
     def __init_evt(self):
         pass
@@ -2036,6 +2040,22 @@ class SurfacesListCtrlPanel(InvListCtrl):
             if image_index != -1:
                 self.imagelist.Replace(image_index, image)
                 self.RefreshItem(local_pos)
+
+    def GetItemImage(self, idx):
+        """
+        Return the image index (0 = hidden, 1 = visible) for the given row.
+        Defaults to 0 if not set.
+        """
+        return self.item_images.get(idx, 0)
+
+    def SetItemImage(self, idx, img_idx):
+        """
+        Set the image index for a row and store it internally.
+        """
+        # Call parent method (actual UI update)
+        super().SetItemImage(idx, img_idx)
+        # Store the state (0 or 1)
+        self.item_images[idx] = img_idx
 
 
 # -------------------------------------------------
