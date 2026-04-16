@@ -190,6 +190,78 @@ class ContourMIPConfig(wx.Panel):
             self.txt_mip_border.Disable()
 
 
+# ---------------------------------------------------------------------------
+# Lightweight canvas drawable: orange X mark shown at the selected marker's
+# world position on each 2D slice view.  (Stage 2 – marker highlight overlay)
+# ---------------------------------------------------------------------------
+from invesalius.gui.widgets.canvas_renderer import CanvasHandlerBase as _CanvasHandlerBase
+
+
+class _MarkerHighlightX(_CanvasHandlerBase):
+    """A red 'X' mark drawn at a 3-D world position on the slice canvas.
+
+    The X mark is only visible on the slice where the marker was created,
+    ensuring precise spatial awareness of the marker's location.
+    """
+
+    _COLOUR = (255, 0, 0, 255)  # bright red for maximum visibility
+    _SIZE = 7  # half-width of X mark (14px total span)
+    _LINE_WIDTH = 2  # line thickness
+
+    def __init__(self, position=(0, 0, 0)):
+        super().__init__(parent=None)
+        self.position = position
+        self.layer = 99  # draw on top of everything
+        self.visible = True
+        self.sagittal_slice = None  # slice index for sagittal view
+        self.coronal_slice = None  # slice index for coronal view
+        self.axial_slice = None  # slice index for axial view
+
+    def draw_to_canvas(self, gc, canvas):
+        """Draw the X mark only on the slice where the marker was created."""
+        if not self.visible:
+            return
+
+        viewer = canvas.viewer
+
+        # Check if we're on the correct slice for this orientation
+        if viewer.slice_data is not None:
+            current_slice = viewer.slice_data.number
+
+            # Only draw if we're on the exact slice where the marker was created
+            if viewer.orientation == "AXIAL":
+                if self.axial_slice is None or current_slice != self.axial_slice:
+                    return
+            elif viewer.orientation == "CORONAL":
+                if self.coronal_slice is None or current_slice != self.coronal_slice:
+                    return
+            elif viewer.orientation == "SAGITAL":
+                if self.sagittal_slice is None or current_slice != self.sagittal_slice:
+                    return
+
+        # Project 3D marker position to 2D screen coordinates
+        px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
+        scale = viewer.GetContentScaleFactor()
+        size = self._SIZE * scale
+
+        # Draw an X mark using canvas.draw_line() method
+        # Line from top-left to bottom-right
+        canvas.draw_line(
+            (px - size, py - size),
+            (px + size, py + size),
+            colour=self._COLOUR,
+            width=self._LINE_WIDTH,
+        )
+
+        # Line from top-right to bottom-left
+        canvas.draw_line(
+            (px + size, py - size),
+            (px - size, py + size),
+            colour=self._COLOUR,
+            width=self._LINE_WIDTH,
+        )
+
+
 class Viewer(wx.Panel):
     def __init__(self, prnt, orientation="AXIAL"):
         wx.Panel.__init__(self, prnt, size=wx.Size(320, 300))
@@ -245,6 +317,8 @@ class Viewer(wx.Panel):
         self.on_text = False
         # Newly added attribute for ruler
         self.ruler = None
+        # Marker highlight overlay (Stage 2)
+        self._marker_highlight = None
         # VTK pipeline and actors
         self.__config_interactor()
         self.cross_actor = vtkActor()
@@ -1015,6 +1089,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateCross, "Update cross pos")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.OnHighlightMarker, "Highlight marker")
+        Publisher.subscribe(self.OnUnhighlightMarker, "Unhighlight marker")
+        Publisher.subscribe(self.OnDeleteMarker, "Delete marker")
+        Publisher.subscribe(self.OnDeleteMarkers, "Delete markers")
 
     def RefreshViewer(self):
         self.Refresh()
@@ -1796,17 +1873,83 @@ class Viewer(wx.Panel):
             self.UpdateRender()
 
     def OnHighlightMarker(self, marker):
-        """Synchronize slice viewers to the selected marker's position."""
+        """Synchronize slice viewers and show a highlight X mark at the marker position."""
         if marker is None:
             return
 
-        if self.orientation != "AXIAL":
-            return
-
+        # Synchronize slice position to marker location (Stage 1)
         if not self.nav_status:
             Publisher.sendMessage(
                 "Set cross focal point", position=[marker.x, marker.y, marker.z, None, None, None]
             )
+
+        # Stage 2: show an orange X mark overlay on the exact slice where marker was created
+        if self.canvas is not None:
+            pos = list(marker.position)
+            if self._marker_highlight is None:
+                self._marker_highlight = _MarkerHighlightX(position=pos)
+            else:
+                self._marker_highlight.position = pos
+
+            # Compute the slice indices for all three orientations
+            # This ensures the marker only appears on the exact slice where it was created
+            # Use the marker's world coordinates directly to calculate slice indices
+            try:
+                # Get slice spacing from the slice object
+                slice_obj = sl.Slice()
+                spacing = slice_obj.spacing
+
+                # Calculate slice indices directly from world coordinates
+                # Each orientation uses a different axis:
+                # AXIAL: uses Z coordinate (pos[2])
+                # CORONAL: uses Y coordinate (pos[1])
+                # SAGITTAL: uses X coordinate (pos[0])
+                axial_slice = int(round(pos[2] / spacing[2]))
+                coronal_slice = int(round(pos[1] / spacing[1]))
+                sagittal_slice = int(round(pos[0] / spacing[0]))
+
+                self._marker_highlight.sagittal_slice = sagittal_slice
+                self._marker_highlight.coronal_slice = coronal_slice
+                self._marker_highlight.axial_slice = axial_slice
+            except Exception:
+                # Fallback: use current slice number if calculation fails
+                if self.slice_data is not None:
+                    if self.orientation == "AXIAL":
+                        self._marker_highlight.axial_slice = self.slice_data.number
+                    elif self.orientation == "CORONAL":
+                        self._marker_highlight.coronal_slice = self.slice_data.number
+                    elif self.orientation == "SAGITAL":
+                        self._marker_highlight.sagittal_slice = self.slice_data.number
+
+            if self._marker_highlight not in self.canvas.draw_list:
+                self.canvas.draw_list.append(self._marker_highlight)
+            self.canvas.modified = True
+            if not self.nav_status:
+                self.UpdateRender()
+
+    def OnUnhighlightMarker(self):
+        """Remove the X mark overlay when marker is deselected or deleted."""
+        if self._marker_highlight is not None and self.canvas is not None:
+            # Remove from draw list if present
+            if self._marker_highlight in self.canvas.draw_list:
+                self.canvas.draw_list.remove(self._marker_highlight)
+
+            # Hide the marker highlight
+            self._marker_highlight.visible = False
+            self._marker_highlight = None
+
+            # Mark canvas as modified and update
+            self.canvas.modified = True
+            if not self.nav_status:
+                self.UpdateRender()
+
+    def OnDeleteMarker(self, marker):
+        """Remove the X mark overlay when a marker is deleted."""
+        self.OnUnhighlightMarker()
+
+    def OnDeleteMarkers(self, markers):
+        """Remove the X mark overlay when markers are deleted."""
+        self.OnUnhighlightMarker()
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"
