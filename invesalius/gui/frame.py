@@ -2572,7 +2572,7 @@ class LayoutToolBar(AuiToolBar):
         self.ontool_layout = False
         self.ontool_text = True
         self.ontool_ruler = True
-        self.ontool_orientation_cube = True  # visible by default
+        self.ontool_orientation_cube = False  # hidden by default; click icon to show
 
         self.Realize()
         self.SetStateProjectClose()
@@ -2656,7 +2656,7 @@ class LayoutToolBar(AuiToolBar):
             self.BMP_ORIENTATION_CUBE,
             wx.NullBitmap,
             wx.ITEM_NORMAL,
-            short_help_string=_("Hide orientation cube"),
+            short_help_string=_("Show orientation cube"),
         )
 
     def _EnableState(self, state):

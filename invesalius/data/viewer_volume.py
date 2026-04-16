@@ -83,7 +83,6 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderer,
     vtkWindowToImageFilter,
 )
-from vtkmodules.vtkRenderingFreeType import vtkVectorText
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 import invesalius.constants as const
@@ -458,6 +457,14 @@ class Viewer(wx.Panel):
         else:
             if self.orientation_widget:
                 self.orientation_widget.SetEnabled(0)
+                # Remove renderer observer so we stop updating a hidden cube.
+                tag = getattr(self, "_cube_render_observer_tag", None)
+                if tag is not None:
+                    try:
+                        self.ren.RemoveObserver(tag)
+                    except Exception:
+                        pass
+                    self._cube_render_observer_tag = None
                 self.UpdateRender()
 
     def _ShowOrientationCube(self):
@@ -500,44 +507,25 @@ class Viewer(wx.Panel):
             cube.GetZPlusFaceProperty().SetColor(0.1, 0.1, 0.7)   # T – Top
             cube.GetZMinusFaceProperty().SetColor(0.1, 0.1, 0.7)  # B – Bottom
             cube.GetTextEdgesProperty().SetColor(0.5, 0.5, 0.5)
-
             cube.SetXPlusFaceText(_("L"))
             cube.SetXMinusFaceText(_("R"))
             cube.SetYPlusFaceText(_("P"))
             cube.SetYMinusFaceText(_("A"))
-            # Decouple T/B from vtkAnnotatedCubeActor shared Z-face rotation.
-            # Keep cube Z faces colorized, but draw T/B as independent 3D text actors.
-            cube.SetZPlusFaceText("")
-            cube.SetZMinusFaceText("")
+            # Use built-in face text for T/B.
+            # SetZFaceTextRotation applies the SAME angle to both Z faces; since T (+Z)
+            # and B (-Z) have opposite normals, +90 makes T upright but B upside-down.
+            # _UpdateOrientationCubeZTextRotation() switches between +90 and -90 on
+            # every render based on the camera's Z position relative to the focal point,
+            # so whichever Z face is currently visible always appears upright.
+            cube.SetZPlusFaceText(_("T"))
+            cube.SetZMinusFaceText(_("B"))
+            cube.SetZFaceTextRotation(90)  # initial default; updated dynamically
+            # Store reference so _UpdateOrientationCubeZTextRotation can reach the actor.
+            self._orientation_cube_actor = cube
 
             # Wrap in vtkAssembly to ensure the orientation is preserved.
             assembly = vtkAssembly()
             assembly.AddPart(cube)
-
-            def _make_face_text_actor(text: str, z_pos: float, rotate_x: float) -> vtkActor:
-                text_source = vtkVectorText()
-                text_source.SetText(text)
-
-                text_mapper = vtkPolyDataMapper()
-                text_mapper.SetInputConnection(text_source.GetOutputPort())
-
-                text_actor = vtkActor()
-                text_actor.SetMapper(text_mapper)
-                text_actor.SetScale(0.22, 0.22, 0.22)
-                text_actor.SetPosition(-0.07, -0.08, z_pos)
-                text_actor.RotateX(rotate_x)
-                text_actor.GetProperty().SetColor(0.1, 0.1, 0.7)
-                text_actor.GetProperty().SetAmbient(1.0)
-                text_actor.GetProperty().SetDiffuse(0.0)
-                text_actor.GetProperty().BackfaceCullingOff()
-                text_actor.PickableOff()
-                return text_actor
-
-            top_text_actor = _make_face_text_actor("T", 0.53, 0.0)
-            # Independent orientation for B, no dependency on T.
-            bottom_text_actor = _make_face_text_actor("B", -0.53, 180.0)
-            assembly.AddPart(top_text_actor)
-            assembly.AddPart(bottom_text_actor)
 
             widget = vtkOrientationMarkerWidget()
             widget.SetOrientationMarker(assembly)
@@ -549,6 +537,24 @@ class Viewer(wx.Panel):
             
             # Reset retries once successfully shown
             self._cube_retries = 0
+
+            # Add a renderer StartEvent observer so _UpdateOrientationCubeZTextRotation
+            # is called before EVERY render — including those from VTK mouse-rotation
+            # events that bypass InVesalius's UpdateRender().  Without this, the
+            # Z-face text rotation can get stuck at the wrong value whenever the cube
+            # is first created (skull may have just changed the focal point) and not
+            # get corrected until the next Publisher-triggered render.
+            existing_tag = getattr(self, "_cube_render_observer_tag", None)
+            if existing_tag is not None:
+                try:
+                    self.ren.RemoveObserver(existing_tag)
+                except Exception:
+                    pass
+            self._cube_render_observer_tag = self.ren.AddObserver(
+                "StartEvent",
+                lambda *_: self._UpdateOrientationCubeZTextRotation()
+            )
+
             self._UpdateOrientationCubeZTextRotation()
             self.UpdateRender()
         except Exception as e:
@@ -557,13 +563,26 @@ class Viewer(wx.Panel):
 
     def _UpdateOrientationCubeZTextRotation(self):
         """
-        Keep Z-face letters (T/B) upright.
-        VTK exposes one Z-face text rotation for both faces, so we adapt it based
-        on whether camera is below or above the focal point.
+        Dynamically keep Z-face letters (T/B) upright by switching
+        SetZFaceTextRotation between +90 and -90 based on the camera position.
+
+        Reason: vtkAnnotatedCubeActor exposes only ONE Z-face rotation value
+        that applies identically to both the T (+Z) and B (-Z) faces.  Because
+        those faces have opposite normals, +90 makes T upright but leaves B
+        rotated 180°, while -90 does the reverse.  We resolve this by switching
+        the value on every render so that whichever face the camera is looking
+        at always appears upright.
         """
-        # No-op: T/B are now separate billboard labels with independent upright
-        # orientation, so no shared Z-face text rotation is needed.
-        return
+        cube = getattr(self, "_orientation_cube_actor", None)
+        if cube is None:
+            return
+        camera = self.ren.GetActiveCamera()
+        cam_z = camera.GetPosition()[2]
+        focal_z = camera.GetFocalPoint()[2]
+        # Camera above focal point → T face is towards camera → use +90
+        # Camera below focal point → B face is towards camera → use -90
+        rotation = 90 if cam_z >= focal_z else -90
+        cube.SetZFaceTextRotation(rotation)
 
     def OnInteractorEvent(self, sender, event):
         if self.canvas and self.ruler and self.ruler in self.canvas.draw_list:
