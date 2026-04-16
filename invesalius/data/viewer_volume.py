@@ -74,6 +74,7 @@ from vtkmodules.vtkIOImage import (
 from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
+    vtkAssembly,
     vtkCompositePolyDataMapper,
     vtkPointPicker,
     vtkPolyDataMapper,
@@ -82,6 +83,7 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderer,
     vtkWindowToImageFilter,
 )
+from vtkmodules.vtkRenderingFreeType import vtkVectorText
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 import invesalius.constants as const
@@ -379,11 +381,15 @@ class Viewer(wx.Panel):
 
         print(len(self.renderers))
 
+        # Set default view angle to Anterior (Front) so orientation cube shows "A"
+        # even before data is loaded.
+        self.SetViewAngle(const.VOL_FRONT)
+
         Publisher.sendMessage("Press target mode button", pressed=False)
         self._update_fps_visibility()
-        # NOTE: We do NOT request the cube here. The cube must only appear
-        # after a 3D surface is loaded so that the camera is already in the
-        # correct position. See AddSurface for the actual trigger.
+        # Request the orientation cube visibility status with a small delay
+        # to ensure the interactor has time to initialize during app startup.
+        wx.CallLater(1000, Publisher.sendMessage, "Send orientation cube visibility status")
 
     def _update_fps_visibility(self):
         show_fps = (
@@ -430,74 +436,134 @@ class Viewer(wx.Panel):
         """
         Receive the requested visibility state for the orientation cube.
         """
-        if not self.surface_added:
-            # Surface not yet present – notify user and revert toolbar state
-            from invesalius.gui.utils import show_warning
-
-            show_warning(
-                _("Orientation Cube"),
-                _("The orientation cube can only be displayed on the 3D surface."),
-            )
-            # Revert the toolbar to "True" to ensure the feature stays enabled
-            # by default and will auto-show once the surface is finally created.
-            Publisher.sendMessage("Set orientation cube state", status=True)
-            return
+        # Track the intended state to handle retry loop cancellation
+        self._cube_request_on = status
 
         if status:
+            # When no 3D surface exists yet, force the canonical front camera so
+            # the cube starts with "A" (anterior) facing the viewer.
+            if not self.surface_added:
+                self.SetViewAngle(const.VOL_FRONT)
+
+            # FORCE RE-CREATION to fix "1st click" and "2nd click" synchronization issues
+            if self.orientation_widget:
+                try:
+                    self.orientation_widget.SetEnabled(0)
+                except:
+                    pass
+                self.orientation_widget = None
+                
+            self._cube_retries = 0
             self._ShowOrientationCube()
         else:
-            if self.orientation_widget is not None:
+            if self.orientation_widget:
                 self.orientation_widget.SetEnabled(0)
                 self.UpdateRender()
 
     def _ShowOrientationCube(self):
         """
-        Build (if necessary) and show the vtkOrientationMarkerWidget.
+        Build and enable the 3D orientation cube (anatomical directions).
         """
+        if not getattr(self, "_cube_request_on", False):
+            return
+
+        if not self.interactor:
+            wx.CallLater(100, self._ShowOrientationCube)
+            return
+
+        if not self.interactor.GetInitialized():
+            # Interactor not ready yet – retry up to 200 times (approx 20s total).
+            # Force a render attempt to trigger initialization.
+            self.interactor.Render()
+            retries = getattr(self, "_cube_retries", 0)
+            if retries < 200:
+                self._cube_retries = retries + 1
+                wx.CallLater(100, self._ShowOrientationCube)
+            else:
+                import logging
+                logging.warning("Orientation cube failed to initialize: Interactor timeout")
+                Publisher.sendMessage("Set orientation cube state", status=False)
+                self._cube_retries = 0
+            return
+
         try:
-            if self.orientation_widget is not None:
-                self.orientation_widget.SetEnabled(1)
-                self.orientation_widget.InteractiveOff()
-                self.UpdateRender()
-                return
-
-            if not self.interactor or not self.interactor.GetInitialized():
-                # Interactor not ready yet – retry up to 10 times.
-                retries = getattr(self, "_cube_retries", 0)
-                if retries < 10:
-                    self._cube_retries = retries + 1
-                    wx.CallLater(200, self._ShowOrientationCube)
-                return
-
             # Build the annotated cube actor with anatomical labels.
             cube = vtkAnnotatedCubeActor()
-            cube.GetXPlusFaceProperty().SetColor(1, 0, 0)  # L – Left
-            cube.GetXMinusFaceProperty().SetColor(1, 0, 0)  # R – Right
-            cube.GetYPlusFaceProperty().SetColor(0, 1, 0)  # P – Posterior
-            cube.GetYMinusFaceProperty().SetColor(0, 1, 0)  # A – Anterior
-            cube.GetZPlusFaceProperty().SetColor(0, 0, 1)  # T – Top
-            cube.GetZMinusFaceProperty().SetColor(0, 0, 1)  # B – Bottom
-            cube.GetTextEdgesProperty().SetColor(0, 0, 0)
+
+            # Canonical anatomical mapping:
+            # X axis -> Left/Right, Y axis -> Posterior/Anterior, Z axis -> Top/Bottom.
+            # With VOL_FRONT camera (0, -1, 0), the Y- face is visible => "A".
+            cube.GetXPlusFaceProperty().SetColor(0.7, 0.1, 0.1)   # L – Left
+            cube.GetXMinusFaceProperty().SetColor(0.7, 0.1, 0.1)  # R – Right
+            cube.GetYPlusFaceProperty().SetColor(0.1, 0.7, 0.1)   # P – Posterior
+            cube.GetYMinusFaceProperty().SetColor(0.1, 0.7, 0.1)  # A – Anterior
+            cube.GetZPlusFaceProperty().SetColor(0.1, 0.1, 0.7)   # T – Top
+            cube.GetZMinusFaceProperty().SetColor(0.1, 0.1, 0.7)  # B – Bottom
+            cube.GetTextEdgesProperty().SetColor(0.5, 0.5, 0.5)
+
             cube.SetXPlusFaceText(_("L"))
             cube.SetXMinusFaceText(_("R"))
             cube.SetYPlusFaceText(_("P"))
             cube.SetYMinusFaceText(_("A"))
-            cube.SetZPlusFaceText(_("T"))
-            cube.SetZMinusFaceText(_("B"))
+            # Decouple T/B from vtkAnnotatedCubeActor shared Z-face rotation.
+            # Keep cube Z faces colorized, but draw T/B as independent 3D text actors.
+            cube.SetZPlusFaceText("")
+            cube.SetZMinusFaceText("")
+
+            # Wrap in vtkAssembly to ensure the orientation is preserved.
+            assembly = vtkAssembly()
+            assembly.AddPart(cube)
+
+            def _make_face_text_actor(text: str, z_pos: float, rotate_x: float) -> vtkActor:
+                text_source = vtkVectorText()
+                text_source.SetText(text)
+
+                text_mapper = vtkPolyDataMapper()
+                text_mapper.SetInputConnection(text_source.GetOutputPort())
+
+                text_actor = vtkActor()
+                text_actor.SetMapper(text_mapper)
+                text_actor.SetScale(0.22, 0.22, 0.22)
+                text_actor.SetPosition(-0.07, -0.08, z_pos)
+                text_actor.RotateX(rotate_x)
+                text_actor.GetProperty().SetColor(0.1, 0.1, 0.7)
+                text_actor.GetProperty().SetAmbient(1.0)
+                text_actor.GetProperty().SetDiffuse(0.0)
+                text_actor.GetProperty().BackfaceCullingOff()
+                text_actor.PickableOff()
+                return text_actor
+
+            top_text_actor = _make_face_text_actor("T", 0.53, 0.0)
+            # Independent orientation for B, no dependency on T.
+            bottom_text_actor = _make_face_text_actor("B", -0.53, 180.0)
+            assembly.AddPart(top_text_actor)
+            assembly.AddPart(bottom_text_actor)
 
             widget = vtkOrientationMarkerWidget()
-            widget.SetOrientationMarker(cube)
+            widget.SetOrientationMarker(assembly)
             widget.SetViewport(0.85, 0.0, 1.0, 0.15)  # Bottom-right corner
             widget.SetInteractor(self.interactor)
             widget.SetEnabled(1)
             widget.InteractiveOff()  # Fixed position – does not move with mouse
             self.orientation_widget = widget
-            self.UpdateRender()
+            
+            # Reset retries once successfully shown
             self._cube_retries = 0
+            self._UpdateOrientationCubeZTextRotation()
+            self.UpdateRender()
         except Exception as e:
             import logging
+            logging.error("Failed to show orientation cube: %s", e)
 
-            logging.warning("Could not create orientation cube: %s", e)
+    def _UpdateOrientationCubeZTextRotation(self):
+        """
+        Keep Z-face letters (T/B) upright.
+        VTK exposes one Z-face text rotation for both faces, so we adapt it based
+        on whether camera is below or above the focal point.
+        """
+        # No-op: T/B are now separate billboard labels with independent upright
+        # orientation, so no shared Z-face text rotation is needed.
+        return
 
     def OnInteractorEvent(self, sender, event):
         if self.canvas and self.ruler and self.ruler in self.canvas.draw_list:
@@ -3126,13 +3192,6 @@ class Viewer(wx.Panel):
         # use the 3D surface actor for measurement calculations
         self.surface = actor
 
-        # Now that the surface is added and the camera is positioned correctly,
-        # show the orientation cube by default and ensure the toolbar icon is active.
-        # We use wx.CallLater (150ms delay) to let the heavy VTK pipeline finish its
-        # current render pass and un-freeze the UI before attaching the overlay widget,
-        # ensuring it displays immediately without requiring a physical click.
-        Publisher.sendMessage("Set orientation cube state", status=True)
-        wx.CallLater(150, self._ShowOrientationCube)
         self.EnableRuler()
 
         # Apply SSAO if enabled in preferences (for newly created surfaces)
@@ -3492,6 +3551,9 @@ class Viewer(wx.Panel):
         cube.SetYMinusFaceText("A")
         cube.SetZPlusFaceText("T")
         cube.SetZMinusFaceText("B")
+        # Keep A/P/L/R exactly as-is; only rotate Z-face text so T/B render upright.
+        if hasattr(cube, "SetZFaceTextRotation"):
+            cube.SetZFaceTextRotation(90)
 
         axes = vtkAxesActor()
         axes.SetShaftTypeToCylinder()
@@ -3511,6 +3573,7 @@ class Viewer(wx.Panel):
         orientation_widget.InteractiveOff()
 
     def UpdateRender(self):
+        self._UpdateOrientationCubeZTextRotation()
         self.interactor.Render()
         if self.fps_text.actor.GetVisibility():
             end = time.monotonic()
