@@ -451,7 +451,7 @@ class Viewer(wx.Panel):
                 except:
                     pass
                 self.orientation_widget = None
-                
+
             self._cube_retries = 0
             self._ShowOrientationCube()
         else:
@@ -488,6 +488,7 @@ class Viewer(wx.Panel):
                 wx.CallLater(100, self._ShowOrientationCube)
             else:
                 import logging
+
                 logging.warning("Orientation cube failed to initialize: Interactor timeout")
                 Publisher.sendMessage("Set orientation cube state", status=False)
                 self._cube_retries = 0
@@ -500,11 +501,11 @@ class Viewer(wx.Panel):
             # Canonical anatomical mapping:
             # X axis -> Left/Right, Y axis -> Posterior/Anterior, Z axis -> Top/Bottom.
             # With VOL_FRONT camera (0, -1, 0), the Y- face is visible => "A".
-            cube.GetXPlusFaceProperty().SetColor(0.7, 0.1, 0.1)   # L – Left
+            cube.GetXPlusFaceProperty().SetColor(0.7, 0.1, 0.1)  # L – Left
             cube.GetXMinusFaceProperty().SetColor(0.7, 0.1, 0.1)  # R – Right
-            cube.GetYPlusFaceProperty().SetColor(0.1, 0.7, 0.1)   # P – Posterior
+            cube.GetYPlusFaceProperty().SetColor(0.1, 0.7, 0.1)  # P – Posterior
             cube.GetYMinusFaceProperty().SetColor(0.1, 0.7, 0.1)  # A – Anterior
-            cube.GetZPlusFaceProperty().SetColor(0.1, 0.1, 0.7)   # T – Top
+            cube.GetZPlusFaceProperty().SetColor(0.1, 0.1, 0.7)  # T – Top
             cube.GetZMinusFaceProperty().SetColor(0.1, 0.1, 0.7)  # B – Bottom
             cube.GetTextEdgesProperty().SetColor(0.5, 0.5, 0.5)
             cube.SetXPlusFaceText(_("L"))
@@ -534,7 +535,7 @@ class Viewer(wx.Panel):
             widget.SetEnabled(1)
             widget.InteractiveOff()  # Fixed position – does not move with mouse
             self.orientation_widget = widget
-            
+
             # Reset retries once successfully shown
             self._cube_retries = 0
 
@@ -551,14 +552,14 @@ class Viewer(wx.Panel):
                 except Exception:
                     pass
             self._cube_render_observer_tag = self.ren.AddObserver(
-                "StartEvent",
-                lambda *_: self._UpdateOrientationCubeZTextRotation()
+                "StartEvent", lambda *_: self._UpdateOrientationCubeZTextRotation()
             )
 
             self._UpdateOrientationCubeZTextRotation()
             self.UpdateRender()
         except Exception as e:
             import logging
+
             logging.error("Failed to show orientation cube: %s", e)
 
     def _UpdateOrientationCubeZTextRotation(self):
