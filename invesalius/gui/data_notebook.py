@@ -70,6 +70,10 @@ LOCATION = {
 
 # Panel that initializes notebook and related tabs
 class NotebookPanel(wx.Panel):
+    MASK_PAGE_INDEX = 0
+    SURFACE_PAGE_INDEX = 1
+    MEASURE_PAGE_INDEX = 2
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -85,7 +89,7 @@ class NotebookPanel(wx.Panel):
         book.AddPage(MeasurePage(book), _("Measures"))
         # book.AddPage(AnnotationsListCtrlPanel(book), _("Notes"))
 
-        book.SetSelection(0)
+        book.SetSelection(self.MASK_PAGE_INDEX)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(book, 0, wx.EXPAND)
@@ -93,6 +97,7 @@ class NotebookPanel(wx.Panel):
 
         book.Refresh()
         self.book = book
+        self.navigation_on = False
 
         self.__bind_events()
 
@@ -102,24 +107,34 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._FoldMeasure, "Fold measure task")
         Publisher.subscribe(self._FoldMask, "Fold mask task")
         Publisher.subscribe(self._FoldMask, "Fold mask page")
+        Publisher.subscribe(self._OnNavigationStatus, "Navigation status")
 
     def _FoldSurface(self):
         """
         Fold surface notebook page.
         """
-        self.book.SetSelection(1)
+        self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
     def _FoldMeasure(self):
         """
         Fold measure notebook page.
         """
-        self.book.SetSelection(2)
+        self.book.SetSelection(self.MEASURE_PAGE_INDEX)
 
     def _FoldMask(self):
         """
         Fold mask notebook page.
         """
-        self.book.SetSelection(0)
+        if self.navigation_on:
+            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
+            return
+        self.book.SetSelection(self.MASK_PAGE_INDEX)
+
+    def _OnNavigationStatus(self, nav_status, vis_status):
+        self.navigation_on = bool(nav_status)
+        self.book.GetPage(self.MASK_PAGE_INDEX).Enable(not self.navigation_on)
+        if self.navigation_on:
+            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
 
 class MeasurePage(wx.Panel):
@@ -1302,8 +1317,11 @@ class SurfacePage(wx.Panel):
             for key in list(listctrl.surface_list_index.keys()):
                 show = (key in index_list) and visibility
                 local_idx = listctrl.surface_list_index[key]
-                listctrl.SetItemImage(local_idx, int(show))
-                if listctrl.GetItemImage(local_idx) != int(show):
+                # InvListCtrl/SurfacesListCtrlPanel does not expose GetItemImage in all builds.
+                # Read the current image through GetItem and only publish when visibility changes.
+                current_img = listctrl.GetItem(local_idx, 0).GetImage()
+                if current_img != int(show):
+                    listctrl.SetItemImage(local_idx, int(show))
                     Publisher.sendMessage("Show surface", index=key, visibility=show)
 
 
@@ -1327,7 +1345,9 @@ class SurfaceButtonControlPanel(wx.Panel):
         BMP_DUPLICATE = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"), wx.BITMAP_TYPE_PNG
         )
-        BMP_OPEN = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "surface_import_original_min.png"), wx.BITMAP_TYPE_PNG)
+        BMP_OPEN = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_import_original_min.png"), wx.BITMAP_TYPE_PNG
+        )
 
         BMP_EXPORT = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"), wx.BITMAP_TYPE_PNG
@@ -1552,6 +1572,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         self.current_transparency = 0
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
+        self.item_images = {}  # maps row index -> image index (0 or 1)
 
     def __init_evt(self):
         pass
@@ -1973,6 +1994,22 @@ class SurfacesListCtrlPanel(InvListCtrl):
             if image_index != -1:
                 self.imagelist.Replace(image_index, image)
                 self.RefreshItem(local_pos)
+
+    def GetItemImage(self, idx):
+        """
+        Return the image index (0 = hidden, 1 = visible) for the given row.
+        Defaults to 0 if not set.
+        """
+        return self.item_images.get(idx, 0)
+
+    def SetItemImage(self, idx, img_idx):
+        """
+        Set the image index for a row and store it internally.
+        """
+        # Call parent method (actual UI update)
+        super().SetItemImage(idx, img_idx)
+        # Store the state (0 or 1)
+        self.item_images[idx] = img_idx
 
 
 # -------------------------------------------------

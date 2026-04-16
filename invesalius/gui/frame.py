@@ -227,6 +227,19 @@ class Frame(wx.Frame):
                 event.Skip()
                 return
 
+        # Handle Ctrl+Shift+A for clearing mask (should work at any time, even outside edit mode)
+        if (
+            modifiers == (wx.MOD_CONTROL | wx.MOD_SHIFT)
+            and keycode == ord("A")
+            and not is_search_field
+            and not is_shell_focused
+        ):
+            # Only clear mask if a mask is available (menu is enabled)
+            if hasattr(self, "clean_mask_menu") and self.clean_mask_menu.IsEnabled():
+                self.OnCleanMask()
+            event.Skip()
+            return
+
         # If the key is a move marker key, publish a message to move the marker,
         # but only if we're not in a search field or shell
         if (
@@ -273,7 +286,17 @@ class Frame(wx.Frame):
 
         # First, the task panel, to be on the left fo the frame
         # This will be specific according to InVesalius application
-        aui_manager.AddPane(task_panel, wx.aui.AuiPaneInfo().Name("Tasks").CaptionVisible(False))
+        aui_manager.AddPane(
+            task_panel,
+            wx.aui.AuiPaneInfo()
+            .Name("Tasks")
+            .CaptionVisible(False)
+            .Left()
+            .BestSize((385, -1))
+            .MinSize((385, -1))
+            .CloseButton(False)
+            .Layer(0),
+        )
 
         # Then, add the viewers panel, which will contain slices and
         # volume panels. In future this might also be specific
