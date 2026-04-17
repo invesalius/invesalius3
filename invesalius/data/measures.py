@@ -390,6 +390,7 @@ class MeasurementManager:
             return
         m, mr = self.current
         index = prj.Project().AddMeasurement(m)
+        m.index = index  # Update the measurement's index with the one from Project
         name = m.name
         colour = m.colour
         location = m.location
@@ -410,15 +411,19 @@ class MeasurementManager:
         else:
             value = str(m.value)
 
-        Publisher.sendMessage(
-            "Update measurement info in GUI",
-            index=index,
-            name=name,
-            colour=colour,
-            location=location_str,
-            type_=type_,
-            value=value,
-        )
+        # For annotations, don't send GUI update here - the dialog handler will do it
+        # This prevents duplicate entries in the measurements list
+        if type != const.ANNOTATION:
+            Publisher.sendMessage(
+                "Update measurement info in GUI",
+                index=index,
+                name=name,
+                colour=colour,
+                location=location_str,
+                type_=type_,
+                value=value,
+            )
+
         self.current = None
 
         if type == const.ANNOTATION and location == const.SURFACE:
@@ -638,7 +643,8 @@ class MeasurementManager:
 
         self.measures.append((m, density_measure))
 
-        # index = prj.Project().AddMeasurement(m)
+        index = prj.Project().AddMeasurement(m)
+        m.index = index  # Update with the correct index from Project
 
         msg = ("Update measurement info in GUI",)
         Publisher.sendMessage(
