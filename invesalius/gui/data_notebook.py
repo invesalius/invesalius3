@@ -2059,6 +2059,13 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 # Clicking anywhere in the Name column (including color icon) opens rename dialog
                 self.ShowRenameDialog(item_idx)
                 return
+            elif column_clicked == 4:
+                # Check if this is an annotation (column 3 contains the type)
+                item_type = self.GetItemText(item_idx, 3)
+                if "Annotation" in item_type:
+                    # For annotations, clicking Value column opens edit dialog
+                    Publisher.sendMessage("Edit measurement", index=item_idx)
+                    return
             elif column_clicked == 5:
                 self.OnChangeTransparency(item_idx)
                 return
