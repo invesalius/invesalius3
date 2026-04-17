@@ -2056,12 +2056,9 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 self.OnCheckItem(item_idx, flag)
                 return
             elif column_clicked == 1:
-                # Only pop the color dialog if clicking precisely on the tiny color icon on the left (width roughly 22px buffer)
-                col0_width = self.GetColumnWidth(0)
-                local_x = pos_x - col0_width
-                if local_x < 22:
-                    self.OnChangeColor(item_idx)
-                    return
+                # Clicking anywhere in the Name column (including color icon) opens rename dialog
+                self.ShowRenameDialog(item_idx)
+                return
             elif column_clicked == 5:
                 self.OnChangeTransparency(item_idx)
                 return
@@ -2072,12 +2069,16 @@ class MeasuresListCtrlPanel(InvListCtrl):
 
         item_idx, flag = self.HitTest(evt.GetPosition())
         if item_idx > -1:
-            current_time = time.time()
-            # Prevent duplicate edit calls within 500ms for the same item
-            if self._last_edit_index != item_idx or current_time - self._last_edit_time > 0.5:
-                self._last_edit_index = item_idx
-                self._last_edit_time = current_time
-                Publisher.sendMessage("Edit measurement", index=item_idx)
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            # Only display position for Location, Type, and Value columns (2, 3, 4)
+            # Name column (1) and visibility column (0) don't trigger position display
+            if column_clicked in (2, 3, 4):
+                current_time = time.time()
+                # Prevent duplicate calls within 500ms for the same item
+                if self._last_edit_index != item_idx or current_time - self._last_edit_time > 0.5:
+                    self._last_edit_index = item_idx
+                    self._last_edit_time = current_time
+                    Publisher.sendMessage("Show measurement position", index=item_idx)
         # Don't call evt.Skip() to prevent the event from propagating to OnItemActivated
 
     def __init_evt(self):
@@ -2101,13 +2102,16 @@ class MeasuresListCtrlPanel(InvListCtrl):
         import time
 
         # Kept for redundancy on some platforms
+        # This event is triggered by double-click on some platforms
+        # We handle it the same way as OnDblClickItem
         item_idx = evt.GetIndex()
         current_time = time.time()
-        # Prevent duplicate edit calls within 500ms for the same item
+        # Prevent duplicate calls within 500ms for the same item
         if self._last_edit_index != item_idx or current_time - self._last_edit_time > 0.5:
             self._last_edit_index = item_idx
             self._last_edit_time = current_time
-            Publisher.sendMessage("Edit measurement", index=item_idx)
+            # Display position in slices/3D
+            Publisher.sendMessage("Show measurement position", index=item_idx)
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -2240,6 +2244,35 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 "Change measurement name", index=evt.GetIndex(), name=evt.GetLabel()
             )
         evt.Skip()
+
+    def ShowRenameDialog(self, item_idx):
+        """Show a dialog to rename the measurement/annotation."""
+        import wx
+
+        # Get current name
+        current_name = self.GetItemText(item_idx, 1)
+
+        # Get type to determine dialog title (column 3 contains the type)
+        item_type = self.GetItemText(item_idx, 3)
+
+        # Set appropriate dialog title based on type
+        if "Annotation" in item_type:
+            dialog_title = _("Rename Annotation")
+        else:
+            dialog_title = _("Rename Measurement")
+
+        # Show rename dialog
+        dlg = wx.TextEntryDialog(self, _("Enter new name:"), dialog_title, value=current_name)
+
+        if dlg.ShowModal() == wx.ID_OK:
+            new_name = dlg.GetValue()
+            if new_name and new_name != current_name:
+                # Update the list
+                self.SetItem(item_idx, 1, new_name)
+                # Send message to update backend
+                Publisher.sendMessage("Change measurement name", index=item_idx, name=new_name)
+
+        dlg.Destroy()
 
     def OnCheckItem(self, index, flag):
         Publisher.sendMessage("Show measurement", index=index, visibility=flag)

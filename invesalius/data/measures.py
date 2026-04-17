@@ -162,6 +162,7 @@ class MeasurementManager:
         Publisher.subscribe(self._change_measure_point_pos, "Change measurement point position")
         Publisher.subscribe(self._add_density_measure, "Add density measurement")
         Publisher.subscribe(self._edit_measurement, "Edit measurement")
+        Publisher.subscribe(self._show_measurement_position, "Show measurement position")
         Publisher.subscribe(self._show_annotation_dialog, "Show annotation dialog")
         Publisher.subscribe(self._update_point, "Update measurement point position")
         Publisher.subscribe(self._finalize_measurement, "Finalize measurement")
@@ -238,6 +239,27 @@ class MeasurementManager:
             finally:
                 # Always clear the flag, even if an exception occurs
                 self._editing_annotation = False
+
+    def _show_measurement_position(self, index):
+        """Display the position of a measurement in slices/3D without opening edit dialog."""
+        if index < 0 or index >= len(self.measures):
+            return
+
+        m, mr = self.measures[index]
+
+        # Synchronize visualization: only update the slice where this measurement lives.
+        # Do NOT jump other slices — the maintainer wants each slice to stay in its current position.
+        if m.location != const.SURFACE:
+            loc_str = map_id_locations.get(m.location)
+            if loc_str:
+                Publisher.sendMessage(("Set scroll position", loc_str), index=m.slice_number)
+
+        if m.points:
+            x, y, z = m.points[0]
+
+            if m.location == const.SURFACE:
+                # Trigger the cleanly orbiting 3D camera rotation without the positioning sphere
+                Publisher.sendMessage("Focus volume camera", position=[x, y, z])
 
     def _load_measurements(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
         for i in measurement_dict:
