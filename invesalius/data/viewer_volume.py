@@ -74,6 +74,7 @@ from vtkmodules.vtkIOImage import (
 from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
+    vtkAssembly,
     vtkCompositePolyDataMapper,
     vtkPointPicker,
     vtkPolyDataMapper,
@@ -114,8 +115,10 @@ if sys.platform == "win32":
 
         _has_win32api = True
     except ImportError:
+        win32api = None  # type: ignore[assignment]
         _has_win32api = False
 else:
+    win32api = None  # type: ignore[assignment]
     _has_win32api = False
 
 PROP_MEASURE = 0.8
@@ -213,16 +216,8 @@ class Viewer(wx.Panel):
         # Enable canvas for ruler to be drawn
         self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer)
         self.prev_view_port_height = None
-        # self.canvas.draw_list.append(self.text)
-        # self.canvas.draw_list.append(self.polygon)
-        # axes = vtkAxesActor()
-        # axes.SetXAxisLabelText('x')
-        # axes.SetYAxisLabelText('y')
-        # axes.SetZAxisLabelText('z')
-        # axes.SetTotalLength(50, 50, 50)
-        #
-        # self.ren.AddActor(axes)
         self.ruler = None
+        self.orientation_widget = None  # VTK orientation cube widget
 
         self.slice_plane = None
 
@@ -387,6 +382,9 @@ class Viewer(wx.Panel):
 
         Publisher.sendMessage("Press target mode button", pressed=False)
         self._update_fps_visibility()
+        # Request the orientation cube visibility status with a small delay
+        # to ensure the interactor has time to initialize during app startup.
+        wx.CallLater(1000, Publisher.sendMessage, "Send orientation cube visibility status")
 
     def _update_fps_visibility(self):
         show_fps = (
@@ -428,6 +426,160 @@ class Viewer(wx.Panel):
 
     def OnShowRuler(self):
         self.ShowRuler()
+
+    def OnShowOrientationCube(self, status):
+        """
+        Receive the requested visibility state for the orientation cube.
+        """
+        # Track the intended state to handle retry loop cancellation
+        self._cube_request_on = status
+
+        if status:
+            # When no 3D surface exists yet, force the canonical front camera so
+            # the cube starts with "A" (anterior) facing the viewer.
+            if not self.view_angle:
+                self.SetViewAngle(const.VOL_FRONT)
+
+            # FORCE RE-CREATION to fix "1st click" and "2nd click" synchronization issues
+            if self.orientation_widget:
+                try:
+                    self.orientation_widget.SetEnabled(0)
+                except:
+                    pass
+                self.orientation_widget = None
+
+            self._cube_retries = 0
+            self._ShowOrientationCube()
+        else:
+            if self.orientation_widget:
+                self.orientation_widget.SetEnabled(0)
+                # Remove renderer observer so we stop updating a hidden cube.
+                tag = getattr(self, "_cube_render_observer_tag", None)
+                if tag is not None:
+                    try:
+                        self.ren.RemoveObserver(tag)
+                    except Exception:
+                        pass
+                    self._cube_render_observer_tag = None
+            self.UpdateRender()
+
+    def _ShowOrientationCube(self):
+        """
+        Build and enable the 3D orientation cube (anatomical directions).
+        """
+        if not getattr(self, "_cube_request_on", False):
+            return
+
+        if not self.interactor:
+            wx.CallLater(100, self._ShowOrientationCube)
+            return
+
+        if not self.interactor.GetInitialized():
+            # Interactor not ready yet – retry up to 200 times (approx 20s total).
+            # Force a render attempt to trigger initialization.
+            self.interactor.Render()
+            retries = getattr(self, "_cube_retries", 0)
+            if retries < 200:
+                self._cube_retries = retries + 1
+                wx.CallLater(100, self._ShowOrientationCube)
+            else:
+                import logging
+
+                logging.warning("Orientation cube failed to initialize: Interactor timeout")
+                Publisher.sendMessage("Set orientation cube state", status=False)
+                self._cube_retries = 0
+            return
+
+        try:
+            # Build the annotated cube actor with anatomical labels.
+            cube = vtkAnnotatedCubeActor()
+
+            # Canonical anatomical mapping:
+            # X axis -> Left/Right, Y axis -> Posterior/Anterior, Z axis -> Top/Bottom.
+            # With VOL_FRONT camera (0, -1, 0), the Y- face is visible => "A".
+            cube.GetXPlusFaceProperty().SetColor(0.7, 0.1, 0.1)  # L – Left
+            cube.GetXMinusFaceProperty().SetColor(0.7, 0.1, 0.1)  # R – Right
+            cube.GetYPlusFaceProperty().SetColor(0.1, 0.7, 0.1)  # P – Posterior
+            cube.GetYMinusFaceProperty().SetColor(0.1, 0.7, 0.1)  # A – Anterior
+            cube.GetZPlusFaceProperty().SetColor(0.1, 0.1, 0.7)  # T – Top
+            cube.GetZMinusFaceProperty().SetColor(0.1, 0.1, 0.7)  # B – Bottom
+            cube.GetTextEdgesProperty().SetColor(0.5, 0.5, 0.5)
+            cube.SetXPlusFaceText(_("L"))
+            cube.SetXMinusFaceText(_("R"))
+            cube.SetYPlusFaceText(_("P"))
+            cube.SetYMinusFaceText(_("A"))
+            # Use built-in face text for T/B.
+            # SetZFaceTextRotation applies the SAME angle to both Z faces; since T (+Z)
+            # and B (-Z) have opposite normals, +90 makes T upright but B upside-down.
+            # _UpdateOrientationCubeZTextRotation() switches between +90 and -90 on
+            # every render based on the camera's Z position relative to the focal point,
+            # so whichever Z face is currently visible always appears upright.
+            cube.SetZPlusFaceText(_("T"))
+            cube.SetZMinusFaceText(_("B"))
+            cube.SetZFaceTextRotation(90)  # initial default; updated dynamically
+            # Store reference so _UpdateOrientationCubeZTextRotation can reach the actor.
+            self._orientation_cube_actor = cube
+
+            # Wrap in vtkAssembly to ensure the orientation is preserved.
+            assembly = vtkAssembly()
+            assembly.AddPart(cube)
+
+            widget = vtkOrientationMarkerWidget()
+            widget.SetOrientationMarker(assembly)
+            widget.SetViewport(0.85, 0.0, 1.0, 0.15)  # Bottom-right corner
+            widget.SetInteractor(self.interactor)
+            widget.SetEnabled(1)
+            widget.InteractiveOff()  # Fixed position – does not move with mouse
+            self.orientation_widget = widget
+
+            # Reset retries once successfully shown
+            self._cube_retries = 0
+
+            # Add a renderer StartEvent observer so _UpdateOrientationCubeZTextRotation
+            # is called before EVERY render — including those from VTK mouse-rotation
+            # events that bypass InVesalius's UpdateRender().  Without this, the
+            # Z-face text rotation can get stuck at the wrong value whenever the cube
+            # is first created (skull may have just changed the focal point) and not
+            # get corrected until the next Publisher-triggered render.
+            existing_tag = getattr(self, "_cube_render_observer_tag", None)
+            if existing_tag is not None:
+                try:
+                    self.ren.RemoveObserver(existing_tag)
+                except Exception:
+                    pass
+            self._cube_render_observer_tag = self.ren.AddObserver(
+                "StartEvent", lambda *_: self._UpdateOrientationCubeZTextRotation()
+            )
+
+            self._UpdateOrientationCubeZTextRotation()
+            self.UpdateRender()
+        except Exception as e:
+            import logging
+
+            logging.error("Failed to show orientation cube: %s", e)
+
+    def _UpdateOrientationCubeZTextRotation(self):
+        """
+        Dynamically keep Z-face letters (T/B) upright by switching
+        SetZFaceTextRotation between +90 and -90 based on the camera position.
+
+        Reason: vtkAnnotatedCubeActor exposes only ONE Z-face rotation value
+        that applies identically to both the T (+Z) and B (-Z) faces.  Because
+        those faces have opposite normals, +90 makes T upright but leaves B
+        rotated 180°, while -90 does the reverse.  We resolve this by switching
+        the value on every render so that whichever face the camera is looking
+        at always appears upright.
+        """
+        cube = getattr(self, "_orientation_cube_actor", None)
+        if cube is None:
+            return
+        camera = self.ren.GetActiveCamera()
+        cam_z = camera.GetPosition()[2]
+        focal_z = camera.GetFocalPoint()[2]
+        # Camera above focal point → T face is towards camera → use +90
+        # Camera below focal point → B face is towards camera → use -90
+        rotation = 90 if cam_z >= focal_z else -90
+        cube.SetZFaceTextRotation(rotation)
 
     def OnInteractorEvent(self, sender, event):
         if self.canvas and self.ruler and self.ruler in self.canvas.draw_list:
@@ -478,7 +630,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnShowRuler, "Show rulers on viewers")
         Publisher.subscribe(self.OnHideRuler, "Hide rulers on viewers")
         Publisher.subscribe(self.OnRulerVisibilityStatus, "Receive ruler visibility status")
+        Publisher.subscribe(self.OnShowOrientationCube, "Show orientation cube")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.FocusCamera, "Focus volume camera")
 
         Publisher.subscribe(self.RemoveAllActors, "Remove all volume actors")
 
@@ -783,7 +937,7 @@ class Viewer(wx.Panel):
             Publisher.sendMessage("Begin busy cursor")
             if _has_win32api:
                 utils.touch(filename)
-                win_filename = win32api.GetShortPathName(filename)
+                win_filename = win32api.GetShortPathName(filename)  # type: ignore
                 self._export_picture(orientation, win_filename, filetype)
             else:
                 self._export_picture(orientation, filename, filetype)
@@ -830,6 +984,15 @@ class Viewer(wx.Panel):
             )
 
     def OnCloseProject(self):
+        # Disable the orientation cube widget cleanly to prevent visualization
+        # artifacts across projects, but leave the object intact so the Python
+        # GC can clean it up safely during application exit without segfaulting.
+        if self.orientation_widget is not None:
+            try:
+                self.orientation_widget.SetEnabled(0)
+            except Exception:
+                pass
+
         if self.raycasting_volume:
             self.raycasting_volume = False
 
@@ -1481,6 +1644,37 @@ class Viewer(wx.Panel):
 
         self.pointer_actor.SetPosition(position)
         # Update the render window manually, as it is not updated automatically when not navigating.
+        if not self.nav_status:
+            self.UpdateRender()
+
+    def FocusCamera(self, position):
+        """
+        Orbit the camera around the current focal point (the skull's center)
+        so that the measurement exactly faces the screen, without shifting the skull.
+        """
+        cam = self.ren.GetActiveCamera()
+
+        center = np.array(cam.GetFocalPoint())
+        old_pos = np.array(cam.GetPosition())
+        target = np.array(position)
+
+        # Calculate distance from camera to center to maintain zoom level
+        distance = np.linalg.norm(old_pos - center)
+
+        # Vector from center of the volume pointing outward toward the measurement
+        direction = target - center
+        dir_norm = np.linalg.norm(direction)
+
+        if dir_norm > 0:
+            direction = direction / dir_norm
+
+            # Orbit to the new position while staring back at the center
+            new_pos = center + direction * distance
+
+            cam.SetPosition(new_pos[0], new_pos[1], new_pos[2])
+            cam.SetViewUp(0, 0, 1)
+            self.ren.ResetCameraClippingRange()
+
         if not self.nav_status:
             self.UpdateRender()
 
@@ -2826,7 +3020,7 @@ class Viewer(wx.Panel):
         ):
             if _has_win32api:
                 utils.touch(filename)
-                win_filename = win32api.GetShortPathName(filename)
+                win_filename = win32api.GetShortPathName(filename)  # type: ignore
                 self._export_surface(win_filename, filetype)
             else:
                 self._export_surface(filename, filetype)
@@ -3032,26 +3226,25 @@ class Viewer(wx.Panel):
             actor.Modified()
             ren.ResetCameraClippingRange()
 
-            self.SetViewAngle(const.VOL_FRONT)
+            proj = prj.Project()
+            modality = str(getattr(proj, "modality", "CT")).upper()
+            if modality in ["MRI", "MR"]:
+                self.SetViewAngle(const.VOL_BACK)
+            else:
+                self.SetViewAngle(const.VOL_FRONT)
             self.view_angle = 1
         else:
             # Force actor to update its bounds before repositioning
             actor.Modified()
             ren.ResetCamera()
             ren.ResetCameraClippingRange()
-            # Apply improved camera positioning for better fit-to-view
-            self.RepositionCamera(const.VOL_FRONT)
-
-            # XXX: This is a hack to get some decent initial settings for the camera, needed when
-            #   a session is restored when a target is already set. (When unsetting the target, the
-            #   camera settings will be restored from self.stored_camera_settings, hence we need
-            #   to ensure that these settings can be used.)
             self.stored_camera_settings = self.GetCameraSettings()
         if not self.nav_status:
             self.UpdateRender()
 
         # use the 3D surface actor for measurement calculations
         self.surface = actor
+
         self.EnableRuler()
 
         # Apply SSAO if enabled in preferences (for newly created surfaces)
@@ -3108,7 +3301,13 @@ class Viewer(wx.Panel):
             volume.Modified()
             self.ren.ResetCameraClippingRange()
 
-            self.SetViewAngle(const.VOL_FRONT)
+            proj = prj.Project()
+            modality = str(getattr(proj, "modality", "CT")).upper()
+            if modality in ["MRI", "MR"]:
+                self.SetViewAngle(const.VOL_BACK)
+            else:
+                self.SetViewAngle(const.VOL_FRONT)
+            self.view_angle = 1
         else:
             # Force volume to update its bounds before repositioning
             volume.Modified()
@@ -3143,7 +3342,12 @@ class Viewer(wx.Panel):
 
         if flag:
             if not self.view_angle:
-                self.SetViewAngle(const.VOL_FRONT)
+                proj = prj.Project()
+                modality = str(getattr(proj, "modality", "CT")).upper()
+                if modality in ["MRI", "MR"]:
+                    self.SetViewAngle(const.VOL_BACK)
+                else:
+                    self.SetViewAngle(const.VOL_FRONT)
                 self.view_angle = 1
 
             # Match the parallel projection used by AddSurface/LoadVolume so that
@@ -3151,6 +3355,8 @@ class Viewer(wx.Panel):
             # matrix for the 3D mask editor (fixes #1086 – "Edit in 3D" without a
             # surface generated first).
             self.ren.GetActiveCamera().ParallelProjectionOn()
+
+        self.UpdateRender()
 
     def remove_mask_preview(self, mask_3d_actor):
         self.ren.RemoveVolume(mask_3d_actor)
@@ -3401,13 +3607,19 @@ class Viewer(wx.Panel):
         cube.GetZPlusFaceProperty().SetColor(0, 0, 1)
         cube.GetTextEdgesProperty().SetColor(0, 0, 0)
 
-        # anatomic labelling
-        cube.SetXPlusFaceText("A")
-        cube.SetXMinusFaceText("P")
-        cube.SetYPlusFaceText("L")
-        cube.SetYMinusFaceText("R")
-        cube.SetZPlusFaceText("S")
-        cube.SetZMinusFaceText("I")
+        # Face labels as specified in the issue: A (Anterior/front), P (Posterior/back),
+        # R (Right), L (Left), T (Top), B (Bottom).
+        # InVesalius AXIAL orientation: VOL_FRONT camera is at (0, -1, 0), so the
+        # Y-minus face faces the viewer → A. X-axis → L/R. Z-axis → T/B.
+        cube.SetXPlusFaceText("L")
+        cube.SetXMinusFaceText("R")
+        cube.SetYPlusFaceText("P")
+        cube.SetYMinusFaceText("A")
+        cube.SetZPlusFaceText("T")
+        cube.SetZMinusFaceText("B")
+        # Keep A/P/L/R exactly as-is; only rotate Z-face text so T/B render upright.
+        if hasattr(cube, "SetZFaceTextRotation"):
+            cube.SetZFaceTextRotation(90)
 
         axes = vtkAxesActor()
         axes.SetShaftTypeToCylinder()
@@ -3427,6 +3639,7 @@ class Viewer(wx.Panel):
         orientation_widget.InteractiveOff()
 
     def UpdateRender(self):
+        self._UpdateOrientationCubeZTextRotation()
         self.interactor.Render()
         if self.fps_text.actor.GetVisibility():
             end = time.monotonic()

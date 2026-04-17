@@ -1882,7 +1882,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         if selected_items:
             Publisher.sendMessage("Remove surfaces", surface_indexes=selected_items)
-            Publisher.sendMessage("Repopulate surfaces")
+            # Defer rebuild to avoid destroying list controls in the same
+            # native event cycle that triggered the deletion (macOS crash).
+            wx.CallAfter(Publisher.sendMessage, "Repopulate surfaces")
         else:
             dlg.SurfaceSelectionRequiredForRemoval()
 
@@ -2073,12 +2075,60 @@ class MeasuresListCtrlPanel(InvListCtrl):
     ):
         super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
+        self._last_edit_index = None
+        self._last_edit_time = 0
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
         self.__bind_events_wx()
         self._list_index = {}
         self._bmp_idx_to_name = {}
+        self.dict_visibility = {}
+
+    def SetItemImage(self, item, image, info=0):
+        if image != -1:
+            self.dict_visibility[item] = image
+
+        # Always show the visibility icon, regardless of selection state
+        super().SetItemImage(item, image, info)
+
+    def OnClickItem(self, evt):
+        self._click_check = False
+        pos_x = evt.GetPosition()[0]
+        item_idx, flag = self.HitTest(evt.GetPosition())
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 0:
+                self._click_check = True
+                current_vis = self.dict_visibility.get(item_idx, 1)
+                flag = not bool(current_vis)
+                self.SetItemImage(item_idx, int(flag))
+                self.OnCheckItem(item_idx, flag)
+                return
+            elif column_clicked == 1:
+                # Only pop the color dialog if clicking precisely on the tiny color icon on the left (width roughly 22px buffer)
+                col0_width = self.GetColumnWidth(0)
+                local_x = pos_x - col0_width
+                if local_x < 22:
+                    self.OnChangeColor(item_idx)
+                    return
+            elif column_clicked == 5:
+                self.OnChangeTransparency(item_idx)
+                return
+        evt.Skip()
+
+    def OnDblClickItem(self, evt):
+        import time
+
+        item_idx, flag = self.HitTest(evt.GetPosition())
+        if item_idx > -1:
+            current_time = time.time()
+            # Prevent duplicate edit calls within 500ms for the same item
+            if self._last_edit_index != item_idx or current_time - self._last_edit_time > 0.5:
+                self._last_edit_index = item_idx
+                self._last_edit_time = current_time
+                Publisher.sendMessage("Edit measurement", index=item_idx)
+        # Don't call evt.Skip() to prevent the event from propagating to OnItemActivated
 
     def __init_evt(self):
         Publisher.subscribe(self.AddItem_, "Update measurement info in GUI")
@@ -2092,11 +2142,22 @@ class MeasuresListCtrlPanel(InvListCtrl):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected_)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClickItem)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
 
     def OnItemActivated(self, evt):
-        Publisher.sendMessage("Edit measurement", index=evt.GetIndex())
+        import time
+
+        # Kept for redundancy on some platforms
+        item_idx = evt.GetIndex()
+        current_time = time.time()
+        # Prevent duplicate edit calls within 500ms for the same item
+        if self._last_edit_index != item_idx or current_time - self._last_edit_time > 0.5:
+            self._last_edit_index = item_idx
+            self._last_edit_time = current_time
+            Publisher.sendMessage("Edit measurement", index=item_idx)
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -2112,12 +2173,16 @@ class MeasuresListCtrlPanel(InvListCtrl):
 
             old_dict = self._list_index
             new_dict = {}
+            new_vis = {}
             j = 0
             for i in old_dict:
                 if i != measure_index:
                     new_dict[j] = old_dict[i]
+                    if i in self.dict_visibility:
+                        new_vis[j] = self.dict_visibility[i]
                     j += 1
             self._list_index = new_dict
+            self.dict_visibility = new_vis
 
     def RemoveMeasurements(self):
         """
@@ -2132,13 +2197,19 @@ class MeasuresListCtrlPanel(InvListCtrl):
         if selected_items:
             for index in selected_items:
                 new_dict = {}
+                new_vis = {}
                 self.DeleteItem(index)
                 for i in old_dict:
                     if i < index:
                         new_dict[i] = old_dict[i]
+                        if i in self.dict_visibility:
+                            new_vis[i] = self.dict_visibility[i]
                     if i > index:
                         new_dict[i - 1] = old_dict[i]
+                        if i in self.dict_visibility:
+                            new_vis[i - 1] = self.dict_visibility[i]
                 old_dict = new_dict
+                self.dict_visibility = new_vis
             self._list_index = new_dict
             Publisher.sendMessage("Remove measurements", indexes=selected_items)
         else:
@@ -2148,15 +2219,15 @@ class MeasuresListCtrlPanel(InvListCtrl):
         self.DeleteAllItems()
         self._list_index = {}
         self._bmp_idx_to_name = {}
+        self.dict_visibility = {}
 
     def OnItemSelected_(self, evt):
         # Note: DON'T rename to OnItemSelected!!!
         # Otherwise the parent's method will be overwritten and other
         # things will stop working, e.g.: OnCheckItem
+        evt.Skip()
 
-        # last_index = evt.Index
-        #  Publisher.sendMessage('Change measurement selected',
-        #  last_index)
+    def OnItemDeselected_(self, evt):
         evt.Skip()
 
     def GetSelected(self):
@@ -2301,6 +2372,14 @@ class MeasuresListCtrlPanel(InvListCtrl):
         self.SetItem(index, 3, type_)
         self.SetItem(index, 4, value)
         self.SetItemImage(index, 1)
+
+        # Deselect any old selections
+        for i in self.GetSelected():
+            self.Select(i, False)
+
+        # Select the newly added item automatically
+        self.Select(index, True)
+
         self.Refresh()
 
     def UpdateItemInfo(

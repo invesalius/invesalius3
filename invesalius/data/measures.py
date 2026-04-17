@@ -149,6 +149,7 @@ class MeasurementManager:
     def __init__(self):
         self.current = None
         self.measures = MeasureData()
+        self._editing_annotation = False
         self._bind_events()
 
     def _bind_events(self):
@@ -165,6 +166,7 @@ class MeasurementManager:
         Publisher.subscribe(self._update_point, "Update measurement point position")
         Publisher.subscribe(self._finalize_measurement, "Finalize measurement")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self._update_geodesic_measure, "Update geodesic measure value")
 
     def _base_annotation_handler(self, evt):
         pass
@@ -173,43 +175,69 @@ class MeasurementManager:
         """Handle edit requests (e.g. double click in GUI list)."""
         if index < 0 or index >= len(self.measures):
             return
+
+        # Prevent re-entry while a dialog is already open
+        if self._editing_annotation:
+            return
+
         m, mr = self.measures[index]
+
+        # Synchronize visualization: only update the slice where this measurement lives.
+        # Do NOT jump other slices — the maintainer wants each slice to stay in its current position.
+        if m.location != const.SURFACE:
+            loc_str = map_id_locations.get(m.location)
+            if loc_str:
+                Publisher.sendMessage(("Set scroll position", loc_str), index=m.slice_number)
+
+        if m.points:
+            x, y, z = m.points[0]
+
+            if m.location == const.SURFACE:
+                # Trigger the cleanly orbiting 3D camera rotation without the positioning sphere
+                Publisher.sendMessage("Focus volume camera", position=[x, y, z])
+
         if m.type == const.ANNOTATION:
             import wx
 
             from invesalius.gui.dialogs import AnnotationDialog
 
-            dlg = AnnotationDialog()
-            dlg.txt_annotation.SetValue(m.value)  # Pre-fill with existing text
-            result = dlg.ShowModal()
-            annotation_text = dlg.GetValue()
-            dlg.Destroy()
+            # Set flag to prevent re-entry
+            self._editing_annotation = True
+            try:
+                dlg = AnnotationDialog()
+                dlg.txt_annotation.SetValue(m.value)  # Pre-fill with existing text
+                result = dlg.ShowModal()
+                annotation_text = dlg.GetValue()
+                dlg.Destroy()
 
-            if result == wx.ID_OK and annotation_text and annotation_text != m.value:
-                m.value = annotation_text
-                mr.SetText(annotation_text)
+                if result == wx.ID_OK and annotation_text and annotation_text != m.value:
+                    m.value = annotation_text
+                    mr.SetText(annotation_text)
 
-                # Update GUI list
-                loc_ = LOCATION[m.location]
-                Publisher.sendMessage(
-                    "Update measurement info in GUI",
-                    index=m.index,
-                    name=m.name,
-                    colour=m.colour,
-                    location=loc_,
-                    type_=TYPE[m.type],
-                    value=annotation_text,
-                )
+                    # Update GUI list
+                    loc_ = LOCATION[m.location]
+                    Publisher.sendMessage(
+                        "Update measurement info in GUI",
+                        index=m.index,
+                        name=m.name,
+                        colour=m.colour,
+                        location=loc_,
+                        type_=TYPE[m.type],
+                        value=annotation_text,
+                    )
 
-                # Redraw
-                if m.location == const.SURFACE:
-                    Publisher.sendMessage("Render volume viewer")
-                else:
-                    Publisher.sendMessage("Redraw canvas")
+                    # Redraw
+                    if m.location == const.SURFACE:
+                        Publisher.sendMessage("Render volume viewer")
+                    else:
+                        Publisher.sendMessage("Redraw canvas")
 
-                # Mark project as modified
-                session = ses.Session()
-                session.ChangeProject()
+                    # Mark project as modified
+                    session = ses.Session()
+                    session.ChangeProject()
+            finally:
+                # Always clear the flag, even if an exception occurs
+                self._editing_annotation = False
 
     def _load_measurements(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
         for i in measurement_dict:
@@ -362,6 +390,7 @@ class MeasurementManager:
             return
         m, mr = self.current
         index = prj.Project().AddMeasurement(m)
+        m.index = index  # Update the measurement's index with the one from Project
         name = m.name
         colour = m.colour
         location = m.location
@@ -382,15 +411,19 @@ class MeasurementManager:
         else:
             value = str(m.value)
 
-        Publisher.sendMessage(
-            "Update measurement info in GUI",
-            index=index,
-            name=name,
-            colour=colour,
-            location=location_str,
-            type_=type_,
-            value=value,
-        )
+        # For annotations, don't send GUI update here - the dialog handler will do it
+        # This prevents duplicate entries in the measurements list
+        if type != const.ANNOTATION:
+            Publisher.sendMessage(
+                "Update measurement info in GUI",
+                index=index,
+                name=name,
+                colour=colour,
+                location=location_str,
+                type_=type_,
+                value=value,
+            )
+
         self.current = None
 
         if type == const.ANNOTATION and location == const.SURFACE:
@@ -563,8 +596,24 @@ class MeasurementManager:
                 Publisher.sendMessage("Redraw canvas")
 
             #  if self.measures:
-            #  self.measures.pop()
             self.current = None
+
+    def _update_geodesic_measure(self, mr):
+        """Asynchronously triggered when the geodesic path computation completes."""
+        for index, (m, m_repr) in enumerate(self.measures):
+            if m_repr == mr:
+                m.value = mr.GetValue()
+                # Safely update GUI with the new geodesic distance
+                Publisher.sendMessage(
+                    "Update measurement info in GUI",
+                    index=m.index,
+                    name=m.name,
+                    colour=m.colour,
+                    location=LOCATION[m.location],
+                    type_=TYPE[m.type],
+                    value=f"{m.value:.3f} mm",
+                )
+                break
 
     def _add_density_measure(self, density_measure):
         m = DensityMeasurement()
@@ -594,7 +643,8 @@ class MeasurementManager:
 
         self.measures.append((m, density_measure))
 
-        # index = prj.Project().AddMeasurement(m)
+        index = prj.Project().AddMeasurement(m)
+        m.index = index  # Update with the correct index from Project
 
         msg = ("Update measurement info in GUI",)
         Publisher.sendMessage(
@@ -974,10 +1024,14 @@ class LinearMeasure:
         self.renderer = renderer
 
     def SetVisibility(self, v):
-        self.point_actor1.SetVisibility(v)
-        self.point_actor2.SetVisibility(v)
-        self.line_actor.SetVisibility(v)
-        self.text_actor.SetVisibility(v)
+        if self.point_actor1:
+            self.point_actor1.SetVisibility(v)
+        if self.point_actor2:
+            self.point_actor2.SetVisibility(v)
+        if self.line_actor:
+            self.line_actor.SetVisibility(v)
+        if self.text_actor:
+            self.text_actor.SetVisibility(v)
 
     def GetActors(self):
         """
@@ -1126,6 +1180,7 @@ class GeodesicMeasure(LinearMeasure):
             if path_actors:
                 Publisher.sendMessage("Add actors " + str(const.SURFACE), actors=path_actors)
 
+            Publisher.sendMessage("Update geodesic measure value", mr=self)
             Publisher.sendMessage("Render volume viewer")
         finally:
             # Always restore cursor, even if computation fails
@@ -1674,11 +1729,16 @@ class AngularMeasure:
             return 0.0
 
     def SetVisibility(self, v):
-        self.point_actor1.SetVisibility(v)
-        self.point_actor2.SetVisibility(v)
-        self.point_actor3.SetVisibility(v)
-        self.line_actor.SetVisibility(v)
-        self.text_actor.SetVisibility(v)
+        if self.point_actor1:
+            self.point_actor1.SetVisibility(v)
+        if self.point_actor2:
+            self.point_actor2.SetVisibility(v)
+        if self.point_actor3:
+            self.point_actor3.SetVisibility(v)
+        if self.line_actor:
+            self.line_actor.SetVisibility(v)
+        if self.text_actor:
+            self.text_actor.SetVisibility(v)
 
     def GetActors(self):
         """
