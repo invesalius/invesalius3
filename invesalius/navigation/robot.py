@@ -278,7 +278,9 @@ class Robot(metaclass=Singleton):
         Publisher.sendMessage("Set visibility robot force visualizer", visible=enabled)
 
         # Some robot backends only start streaming feedback after an explicit update.
-        Publisher.sendMessage("Neuronavigation to Robot: Update config", use_pressure_sensor=enabled)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Update config", use_pressure_sensor=enabled
+        )
 
     def UnsetTarget(self, marker):
         self.target = None
