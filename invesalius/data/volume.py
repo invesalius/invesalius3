@@ -278,13 +278,13 @@ class Volume:
         scale = self.scale
         ww = self.ww if self.ww is not None else self.config["ww"]
         wl = self.TranslateScale(scale, self.wl if self.wl is not None else self.config["wl"])
-        
+
         init = wl - ww / 2.0
         inc = ww / (len(colors) - 1.0)
-        
+
         for n, rgb in enumerate(colors):
             self.color_transfer.AddRGBPoint(init + n * inc, *[i / 255.0 for i in rgb])
-            
+
         Publisher.sendMessage("Render volume viewer")
 
     def OnFlipVolume(self, axis):
