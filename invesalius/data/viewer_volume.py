@@ -380,10 +380,6 @@ class Viewer(wx.Panel):
 
         print(len(self.renderers))
 
-        # Set default view angle to Anterior (Front) so orientation cube shows "A"
-        # even before data is loaded.
-        self.SetViewAngle(const.VOL_FRONT)
-
         Publisher.sendMessage("Press target mode button", pressed=False)
         self._update_fps_visibility()
         # Request the orientation cube visibility status with a small delay
@@ -465,7 +461,7 @@ class Viewer(wx.Panel):
                     except Exception:
                         pass
                     self._cube_render_observer_tag = None
-                self.UpdateRender()
+            self.UpdateRender()
 
     def _ShowOrientationCube(self):
         """
@@ -3345,7 +3341,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveVolume(mask_3d_actor)
 
         if flag:
-            if not self.view_angle:
+            if not self.surface_added:
                 proj = prj.Project()
                 modality = str(getattr(proj, "modality", "CT")).upper()
                 if modality in ["MRI", "MR"]:
@@ -3359,6 +3355,8 @@ class Viewer(wx.Panel):
             # matrix for the 3D mask editor (fixes #1086 – "Edit in 3D" without a
             # surface generated first).
             self.ren.GetActiveCamera().ParallelProjectionOn()
+
+        self.UpdateRender()
 
     def remove_mask_preview(self, mask_3d_actor):
         self.ren.RemoveVolume(mask_3d_actor)
