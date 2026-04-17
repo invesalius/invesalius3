@@ -149,6 +149,7 @@ class MeasurementManager:
     def __init__(self):
         self.current = None
         self.measures = MeasureData()
+        self._editing_annotation = False
         self._bind_events()
 
     def _bind_events(self):
@@ -174,6 +175,11 @@ class MeasurementManager:
         """Handle edit requests (e.g. double click in GUI list)."""
         if index < 0 or index >= len(self.measures):
             return
+
+        # Prevent re-entry while a dialog is already open
+        if self._editing_annotation:
+            return
+
         m, mr = self.measures[index]
 
         # Synchronize visualization: only update the slice where this measurement lives.
@@ -195,37 +201,43 @@ class MeasurementManager:
 
             from invesalius.gui.dialogs import AnnotationDialog
 
-            dlg = AnnotationDialog()
-            dlg.txt_annotation.SetValue(m.value)  # Pre-fill with existing text
-            result = dlg.ShowModal()
-            annotation_text = dlg.GetValue()
-            dlg.Destroy()
+            # Set flag to prevent re-entry
+            self._editing_annotation = True
+            try:
+                dlg = AnnotationDialog()
+                dlg.txt_annotation.SetValue(m.value)  # Pre-fill with existing text
+                result = dlg.ShowModal()
+                annotation_text = dlg.GetValue()
+                dlg.Destroy()
 
-            if result == wx.ID_OK and annotation_text and annotation_text != m.value:
-                m.value = annotation_text
-                mr.SetText(annotation_text)
+                if result == wx.ID_OK and annotation_text and annotation_text != m.value:
+                    m.value = annotation_text
+                    mr.SetText(annotation_text)
 
-                # Update GUI list
-                loc_ = LOCATION[m.location]
-                Publisher.sendMessage(
-                    "Update measurement info in GUI",
-                    index=m.index,
-                    name=m.name,
-                    colour=m.colour,
-                    location=loc_,
-                    type_=TYPE[m.type],
-                    value=annotation_text,
-                )
+                    # Update GUI list
+                    loc_ = LOCATION[m.location]
+                    Publisher.sendMessage(
+                        "Update measurement info in GUI",
+                        index=m.index,
+                        name=m.name,
+                        colour=m.colour,
+                        location=loc_,
+                        type_=TYPE[m.type],
+                        value=annotation_text,
+                    )
 
-                # Redraw
-                if m.location == const.SURFACE:
-                    Publisher.sendMessage("Render volume viewer")
-                else:
-                    Publisher.sendMessage("Redraw canvas")
+                    # Redraw
+                    if m.location == const.SURFACE:
+                        Publisher.sendMessage("Render volume viewer")
+                    else:
+                        Publisher.sendMessage("Redraw canvas")
 
-                # Mark project as modified
-                session = ses.Session()
-                session.ChangeProject()
+                    # Mark project as modified
+                    session = ses.Session()
+                    session.ChangeProject()
+            finally:
+                # Always clear the flag, even if an exception occurs
+                self._editing_annotation = False
 
     def _load_measurements(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
         for i in measurement_dict:

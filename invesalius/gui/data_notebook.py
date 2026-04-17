@@ -2025,6 +2025,8 @@ class MeasuresListCtrlPanel(InvListCtrl):
     ):
         super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
+        self._last_edit_index = None
+        self._last_edit_time = 0
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
@@ -2068,10 +2070,17 @@ class MeasuresListCtrlPanel(InvListCtrl):
         evt.Skip()
 
     def OnDblClickItem(self, evt):
+        import time
+
         item_idx, flag = self.HitTest(evt.GetPosition())
         if item_idx > -1:
-            Publisher.sendMessage("Edit measurement", index=item_idx)
-        evt.Skip()
+            current_time = time.time()
+            # Prevent duplicate edit calls within 500ms for the same item
+            if self._last_edit_index != item_idx or current_time - self._last_edit_time > 0.5:
+                self._last_edit_index = item_idx
+                self._last_edit_time = current_time
+                Publisher.sendMessage("Edit measurement", index=item_idx)
+        # Don't call evt.Skip() to prevent the event from propagating to OnItemActivated
 
     def __init_evt(self):
         Publisher.subscribe(self.AddItem_, "Update measurement info in GUI")
@@ -2091,8 +2100,16 @@ class MeasuresListCtrlPanel(InvListCtrl):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
 
     def OnItemActivated(self, evt):
+        import time
+
         # Kept for redundancy on some platforms
-        Publisher.sendMessage("Edit measurement", index=evt.GetIndex())
+        item_idx = evt.GetIndex()
+        current_time = time.time()
+        # Prevent duplicate edit calls within 500ms for the same item
+        if self._last_edit_index != item_idx or current_time - self._last_edit_time > 0.5:
+            self._last_edit_index = item_idx
+            self._last_edit_time = current_time
+            Publisher.sendMessage("Edit measurement", index=item_idx)
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
