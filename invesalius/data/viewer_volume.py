@@ -3226,12 +3226,7 @@ class Viewer(wx.Panel):
             actor.Modified()
             ren.ResetCameraClippingRange()
 
-            proj = prj.Project()
-            modality = str(getattr(proj, "modality", "CT")).upper()
-            if modality in ["MRI", "MR"]:
-                self.SetViewAngle(const.VOL_BACK)
-            else:
-                self.SetViewAngle(const.VOL_FRONT)
+            self.SetViewAngle(const.VOL_FRONT)
             self.view_angle = 1
         else:
             # Force actor to update its bounds before repositioning
@@ -3301,12 +3296,7 @@ class Viewer(wx.Panel):
             volume.Modified()
             self.ren.ResetCameraClippingRange()
 
-            proj = prj.Project()
-            modality = str(getattr(proj, "modality", "CT")).upper()
-            if modality in ["MRI", "MR"]:
-                self.SetViewAngle(const.VOL_BACK)
-            else:
-                self.SetViewAngle(const.VOL_FRONT)
+            self.SetViewAngle(const.VOL_FRONT)
             self.view_angle = 1
         else:
             # Force volume to update its bounds before repositioning
@@ -3342,12 +3332,7 @@ class Viewer(wx.Panel):
 
         if flag:
             if not self.view_angle:
-                proj = prj.Project()
-                modality = str(getattr(proj, "modality", "CT")).upper()
-                if modality in ["MRI", "MR"]:
-                    self.SetViewAngle(const.VOL_BACK)
-                else:
-                    self.SetViewAngle(const.VOL_FRONT)
+                self.SetViewAngle(const.VOL_FRONT)
                 self.view_angle = 1
 
             # Match the parallel projection used by AddSurface/LoadVolume so that
@@ -3572,11 +3557,27 @@ class Viewer(wx.Panel):
 
         cam.SetFocalPoint(0, 0, 0)
 
-        # proj = prj.Project()
-        # orig_orien = proj.original_orientation
+        proj = prj.Project()
+        modality = str(getattr(proj, "modality", "CT")).upper()
+        orientation = getattr(proj, "original_orientation", const.AXIAL)
 
-        xv, yv, zv = const.VOLUME_POSITION[const.AXIAL][0][view]
-        xp, yp, zp = const.VOLUME_POSITION[const.AXIAL][1][view]
+        # In MRI, the coordinates are often flipped 180 degrees compared to CT convention
+        # We remap the visual requests (Front, Back, etc.) to the underlying coordinate systems.
+        if modality in ["MRI", "MR"]:
+            mri_mapping = {
+                const.VOL_FRONT: const.VOL_BACK,
+                const.VOL_BACK: const.VOL_FRONT,
+                const.VOL_LEFT: const.VOL_RIGHT,
+                const.VOL_RIGHT: const.VOL_LEFT,
+            }
+            view = mri_mapping.get(view, view)
+
+        # Ensure orientation is valid; fallback to AXIAL if not defined in constants
+        if orientation not in const.VOLUME_POSITION:
+            orientation = const.AXIAL
+
+        xv, yv, zv = const.VOLUME_POSITION[orientation][0][view]
+        xp, yp, zp = const.VOLUME_POSITION[orientation][1][view]
 
         cam.SetViewUp(xv, yv, zv)
         cam.SetPosition(xp, yp, zp)

@@ -235,41 +235,41 @@ AXIAL_VOLUME_CAM_POSITION = {
 }
 
 SAGITAL_VOLUME_CAM_VIEW_UP = {
-    VOL_FRONT: (0, -1, 0),
-    VOL_BACK: (0, -1, 0),
-    VOL_RIGHT: (0, -1, 1),
-    VOL_LEFT: (0, -1, 1),
-    VOL_TOP: (1, -1, 0),
-    VOL_BOTTOM: (-1, 1, 0),
-    VOL_ISO: (0, -1, 0),
+    VOL_FRONT: (0, 0, 1),
+    VOL_BACK: (0, 0, 1),
+    VOL_RIGHT: (0, 0, 1),
+    VOL_LEFT: (0, 0, 1),
+    VOL_TOP: (0, 1, 0),
+    VOL_BOTTOM: (0, -1, 0),
+    VOL_ISO: (0, 0, 1),
 }
 SAGITAL_VOLUME_CAM_POSITION = {
-    VOL_FRONT: (-1, 0, 0),
-    VOL_BACK: (1, 0, 0),
-    VOL_RIGHT: (0, 0, 1),
-    VOL_LEFT: (0, 0, -1),
-    VOL_TOP: (0, -1, 0),
-    VOL_BOTTOM: (0, 1, 0),
-    VOL_ISO: (-1, -0.5, -0.5),
+    VOL_FRONT: (0, -1, 0),
+    VOL_BACK: (0, 1, 0),
+    VOL_RIGHT: (-1, 0, 0),
+    VOL_LEFT: (1, 0, 0),
+    VOL_TOP: (0, 0, 1),
+    VOL_BOTTOM: (0, 0, -1),
+    VOL_ISO: (0.5, -1, 0.5),
 }
 
 CORONAL_VOLUME_CAM_VIEW_UP = {
-    VOL_FRONT: (0, -1, 0),
-    VOL_BACK: (0, -1, 0),
-    VOL_RIGHT: (0, -1, 0),
-    VOL_LEFT: (0, -1, 0),
+    VOL_FRONT: (0, 0, 1),
+    VOL_BACK: (0, 0, 1),
+    VOL_RIGHT: (0, 0, 1),
+    VOL_LEFT: (0, 0, 1),
     VOL_TOP: (0, 1, 0),
     VOL_BOTTOM: (0, -1, 0),
-    VOL_ISO: (0, -1, 0),
+    VOL_ISO: (0, 0, 1),
 }
 CORONAL_VOLUME_CAM_POSITION = {
-    VOL_FRONT: (0, 0, -1),
-    VOL_BACK: (0, 0, 1),
+    VOL_FRONT: (0, -1, 0),
+    VOL_BACK: (0, 1, 0),
     VOL_RIGHT: (-1, 0, 0),
     VOL_LEFT: (1, 0, 0),
-    VOL_TOP: (0, -1, 0),
-    VOL_BOTTOM: (0, 1, 0),
-    VOL_ISO: (0.5, -0.5, -1),
+    VOL_TOP: (0, 0, 1),
+    VOL_BOTTOM: (0, 0, -1),
+    VOL_ISO: (0.5, -1, 0.5),
 }
 
 VOLUME_POSITION = {
