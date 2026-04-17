@@ -2037,10 +2037,8 @@ class MeasuresListCtrlPanel(InvListCtrl):
         if image != -1:
             self.dict_visibility[item] = image
 
-        if self.IsSelected(item):
-            super().SetItemImage(item, image, info)
-        else:
-            super().SetItemImage(item, 0, info)
+        # Always show the visibility icon, regardless of selection state
+        super().SetItemImage(item, image, info)
 
     def OnClickItem(self, evt):
         self._click_check = False
@@ -2160,20 +2158,9 @@ class MeasuresListCtrlPanel(InvListCtrl):
         # Note: DON'T rename to OnItemSelected!!!
         # Otherwise the parent's method will be overwritten and other
         # things will stop working, e.g.: OnCheckItem
-
-        # last_index = evt.Index
-        #  Publisher.sendMessage('Change measurement selected',
-        #  last_index)
-
-        item = evt.GetIndex()
-        if item in self.dict_visibility:
-            super().SetItemImage(item, self.dict_visibility[item])
-
         evt.Skip()
 
     def OnItemDeselected_(self, evt):
-        item = evt.GetIndex()
-        super().SetItemImage(item, 0)
         evt.Skip()
 
     def GetSelected(self):
