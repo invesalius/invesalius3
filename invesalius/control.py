@@ -91,6 +91,7 @@ class Controller:
         Publisher.subscribe(self.OnShowDialogSaveProject, "Show save dialog")
 
         Publisher.subscribe(self.LoadRaycastingPreset, "Load raycasting preset")
+        Publisher.subscribe(self.LoadRaycastingColorPreset, "Load raycasting color preset")
         Publisher.subscribe(self.SaveRaycastingPreset, "Save raycasting preset")
         Publisher.subscribe(self.OnOpenDicomGroup, "Open DICOM group")
         Publisher.subscribe(self.OnOpenBitmapFiles, "Open bitmap files")
@@ -1419,6 +1420,9 @@ class Controller:
         else:
             prj.Project().raycasting_preset = 0
             Publisher.sendMessage("Update raycasting preset")
+
+    def LoadRaycastingColorPreset(self, preset_name):
+        prj.Project().SetRaycastColorPreset(preset_name)
 
     def SaveRaycastingPreset(self, preset_name):
         preset = prj.Project().raycasting_preset

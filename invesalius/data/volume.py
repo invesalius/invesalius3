@@ -127,6 +127,7 @@ class Volume:
     def __bind_events(self):
         Publisher.subscribe(self.OnHideVolume, "Hide raycasting volume")
         Publisher.subscribe(self.OnUpdatePreset, "Update raycasting preset")
+        Publisher.subscribe(self.OnSetColorPreset, "Set raycasting color preset")
         Publisher.subscribe(self.OnSetCurve, "Set raycasting curve")
         Publisher.subscribe(self.OnSetWindowLevel, "Set raycasting wwwl")
         Publisher.subscribe(self.Refresh, "Set raycasting refresh")
@@ -262,6 +263,29 @@ class Volume:
             self.opacity_transfer_func = None
             self.color_transfer = None
             Publisher.sendMessage("Render volume viewer")
+
+    def OnSetColorPreset(self, preset):
+        if not self.exist or not self.color_transfer:
+            return
+
+        r = preset["Red"]
+        g = preset["Green"]
+        b = preset["Blue"]
+        colors = list(zip(r, g, b))
+
+        self.color_transfer.RemoveAllPoints()
+
+        scale = self.scale
+        ww = self.ww if self.ww is not None else self.config["ww"]
+        wl = self.TranslateScale(scale, self.wl if self.wl is not None else self.config["wl"])
+        
+        init = wl - ww / 2.0
+        inc = ww / (len(colors) - 1.0)
+        
+        for n, rgb in enumerate(colors):
+            self.color_transfer.AddRGBPoint(init + n * inc, *[i / 255.0 for i in rgb])
+            
+        Publisher.sendMessage("Render volume viewer")
 
     def OnFlipVolume(self, axis):
         print("Flipping Volume")
