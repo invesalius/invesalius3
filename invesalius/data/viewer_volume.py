@@ -437,7 +437,7 @@ class Viewer(wx.Panel):
         if status:
             # When no 3D surface exists yet, force the canonical front camera so
             # the cube starts with "A" (anterior) facing the viewer.
-            if not self.surface_added:
+            if not self.view_angle:
                 self.SetViewAngle(const.VOL_FRONT)
 
             # FORCE RE-CREATION to fix "1st click" and "2nd click" synchronization issues
@@ -3341,7 +3341,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveVolume(mask_3d_actor)
 
         if flag:
-            if not self.surface_added:
+            if not self.view_angle:
                 proj = prj.Project()
                 modality = str(getattr(proj, "modality", "CT")).upper()
                 if modality in ["MRI", "MR"]:
