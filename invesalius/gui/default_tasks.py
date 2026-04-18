@@ -350,7 +350,7 @@ class UpperTaskPanel(wx.Panel):
         self.image_list = image_list
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(fold_panel, 1, wx.GROW | wx.EXPAND)
+        sizer.Add(fold_panel, 0, wx.EXPAND)
         self.sizer = sizer
         self.SetStateProjectClose()
         self.SetSizerAndFit(sizer)
@@ -361,6 +361,12 @@ class UpperTaskPanel(wx.Panel):
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(1))
         else:
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
+
+        self.ResizeFPB()
+        # On macOS, native controls finalize their preferred sizes after the
+        # first event loop tick. A deferred call ensures the FoldPanelBar
+        # measures the true content heights and eliminates the white void.
+        wx.CallAfter(self.ResizeFPB)
 
     def __bind_events(self):
         session = ses.Session()
@@ -404,6 +410,7 @@ class UpperTaskPanel(wx.Panel):
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(1))
         for item in self.enable_items:
             item.Enable()
+        wx.CallAfter(self.ResizeFPB)
 
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
@@ -425,10 +432,7 @@ class UpperTaskPanel(wx.Panel):
         # Check if the fold panel item is visually expanded
         is_expanded = item.IsExpanded()
 
-        if is_expanded:
-            y_needed = 240 if sys.platform != "win32" else 230
-        else:
-            y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
+        y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
 
         self.fold_panel.SetMinSize((-1, y_needed))
         self.fold_panel.SetSize((-1, y_needed))
