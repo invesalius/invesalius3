@@ -1471,7 +1471,7 @@ class NewMask(wx.Dialog):
         thresh = (thresh_min, thresh_max)
         proj = prj.Project()
         if thresh in proj.threshold_modes.values():
-            preset_name = proj.threshold_modes.get_key(thresh)[0]
+            preset_name = proj.threshold_modes.get_key(thresh)
             index = self.thresh_list.index(preset_name)
             self.combo_thresh.SetSelection(index)
         else:
