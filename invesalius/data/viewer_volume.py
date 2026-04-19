@@ -3602,7 +3602,6 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-
     def UpdateRender(self):
         self._UpdateOrientationCubeZTextRotation()
         self.interactor.Render()
