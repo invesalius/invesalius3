@@ -3558,19 +3558,18 @@ class Viewer(wx.Panel):
         cam.SetFocalPoint(0, 0, 0)
 
         proj = prj.Project()
-        modality = str(getattr(proj, "modality", "CT")).upper()
         orientation = getattr(proj, "original_orientation", const.AXIAL)
 
-        # In MRI, the coordinates are often flipped 180 degrees compared to CT convention
+        # In Sagittal scans, the Z-spacing growth order is often backward, reversing the physical sides.
         # We remap the visual requests (Front, Back, etc.) to the underlying coordinate systems.
-        if modality in ["MRI", "MR"]:
-            mri_mapping = {
+        if orientation == const.SAGITAL:
+            sagital_mapping = {
                 const.VOL_FRONT: const.VOL_BACK,
                 const.VOL_BACK: const.VOL_FRONT,
                 const.VOL_LEFT: const.VOL_RIGHT,
                 const.VOL_RIGHT: const.VOL_LEFT,
             }
-            view = mri_mapping.get(view, view)
+            view = sagital_mapping.get(view, view)
 
         # Ensure orientation is valid; fallback to AXIAL if not defined in constants
         if orientation not in const.VOLUME_POSITION:
@@ -3612,8 +3611,15 @@ class Viewer(wx.Panel):
         # R (Right), L (Left), T (Top), B (Bottom).
         # InVesalius AXIAL orientation: VOL_FRONT camera is at (0, -1, 0), so the
         # Y-minus face faces the viewer → A. X-axis → L/R. Z-axis → T/B.
-        cube.SetXPlusFaceText("L")
-        cube.SetXMinusFaceText("R")
+        proj = prj.Project()
+        orientation = getattr(proj, "original_orientation", const.AXIAL)
+
+        if orientation == const.SAGITAL:
+            cube.SetXPlusFaceText("R")
+            cube.SetXMinusFaceText("L")
+        else:
+            cube.SetXPlusFaceText("L")
+            cube.SetXMinusFaceText("R")
         cube.SetYPlusFaceText("P")
         cube.SetYMinusFaceText("A")
         cube.SetZPlusFaceText("T")
