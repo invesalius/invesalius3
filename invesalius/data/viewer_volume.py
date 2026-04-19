@@ -504,10 +504,17 @@ class Viewer(wx.Panel):
             cube.GetZPlusFaceProperty().SetColor(0.1, 0.1, 0.7)  # T – Top
             cube.GetZMinusFaceProperty().SetColor(0.1, 0.1, 0.7)  # B – Bottom
             cube.GetTextEdgesProperty().SetColor(0.5, 0.5, 0.5)
+
             cube.SetXPlusFaceText(_("L"))
             cube.SetXMinusFaceText(_("R"))
-            cube.SetYPlusFaceText(_("P"))
-            cube.SetYMinusFaceText(_("A"))
+
+            proj = prj.Project()
+            if proj.original_orientation == const.SAGITAL:
+                cube.SetYPlusFaceText(_("A"))
+                cube.SetYMinusFaceText(_("P"))
+            else:
+                cube.SetYPlusFaceText(_("P"))
+                cube.SetYMinusFaceText(_("A"))
             # Use built-in face text for T/B.
             # SetZFaceTextRotation applies the SAME angle to both Z faces; since T (+Z)
             # and B (-Z) have opposite normals, +90 makes T upright but B upside-down.
@@ -3558,7 +3565,7 @@ class Viewer(wx.Panel):
         cam.SetFocalPoint(0, 0, 0)
 
         proj = prj.Project()
-        orientation = getattr(proj, "original_orientation", const.AXIAL)
+        orientation = proj.original_orientation
 
         # In Sagittal scans, the Z-spacing growth order is often backward, reversing the physical sides.
         # We remap the visual requests (Front, Back, etc.) to the underlying coordinate systems.
@@ -3566,8 +3573,6 @@ class Viewer(wx.Panel):
             sagital_mapping = {
                 const.VOL_FRONT: const.VOL_BACK,
                 const.VOL_BACK: const.VOL_FRONT,
-                const.VOL_LEFT: const.VOL_RIGHT,
-                const.VOL_RIGHT: const.VOL_LEFT,
             }
             view = sagital_mapping.get(view, view)
 
@@ -3597,53 +3602,6 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def ShowOrientationCube(self):
-        cube = vtkAnnotatedCubeActor()
-        cube.GetXMinusFaceProperty().SetColor(1, 0, 0)
-        cube.GetXPlusFaceProperty().SetColor(1, 0, 0)
-        cube.GetYMinusFaceProperty().SetColor(0, 1, 0)
-        cube.GetYPlusFaceProperty().SetColor(0, 1, 0)
-        cube.GetZMinusFaceProperty().SetColor(0, 0, 1)
-        cube.GetZPlusFaceProperty().SetColor(0, 0, 1)
-        cube.GetTextEdgesProperty().SetColor(0, 0, 0)
-
-        # Face labels as specified in the issue: A (Anterior/front), P (Posterior/back),
-        # R (Right), L (Left), T (Top), B (Bottom).
-        # InVesalius AXIAL orientation: VOL_FRONT camera is at (0, -1, 0), so the
-        # Y-minus face faces the viewer → A. X-axis → L/R. Z-axis → T/B.
-        proj = prj.Project()
-        orientation = getattr(proj, "original_orientation", const.AXIAL)
-
-        if orientation == const.SAGITAL:
-            cube.SetXPlusFaceText("R")
-            cube.SetXMinusFaceText("L")
-        else:
-            cube.SetXPlusFaceText("L")
-            cube.SetXMinusFaceText("R")
-        cube.SetYPlusFaceText("P")
-        cube.SetYMinusFaceText("A")
-        cube.SetZPlusFaceText("T")
-        cube.SetZMinusFaceText("B")
-        # Keep A/P/L/R exactly as-is; only rotate Z-face text so T/B render upright.
-        if hasattr(cube, "SetZFaceTextRotation"):
-            cube.SetZFaceTextRotation(90)
-
-        axes = vtkAxesActor()
-        axes.SetShaftTypeToCylinder()
-        axes.SetTipTypeToCone()
-        axes.SetXAxisLabelText("X")
-        axes.SetYAxisLabelText("Y")
-        axes.SetZAxisLabelText("Z")
-        # axes.SetNormalizedLabelPosition(.5, .5, .5)
-
-        orientation_widget = vtkOrientationMarkerWidget()
-        orientation_widget.SetOrientationMarker(cube)
-        orientation_widget.SetViewport(0.85, 0.85, 1.0, 1.0)
-        # orientation_widget.SetOrientationMarker(axes)
-        orientation_widget.SetInteractor(self.interactor)
-        orientation_widget.SetEnabled(1)
-        orientation_widget.On()
-        orientation_widget.InteractiveOff()
 
     def UpdateRender(self):
         self._UpdateOrientationCubeZTextRotation()
