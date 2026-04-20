@@ -505,14 +505,15 @@ class Viewer(wx.Panel):
             cube.GetZMinusFaceProperty().SetColor(0.1, 0.1, 0.7)  # B – Bottom
             cube.GetTextEdgesProperty().SetColor(0.5, 0.5, 0.5)
 
-            cube.SetXPlusFaceText(_("L"))
-            cube.SetXMinusFaceText(_("R"))
-
             proj = prj.Project()
             if proj.original_orientation == const.SAGITAL:
+                cube.SetXPlusFaceText(_("R"))
+                cube.SetXMinusFaceText(_("L"))
                 cube.SetYPlusFaceText(_("A"))
                 cube.SetYMinusFaceText(_("P"))
             else:
+                cube.SetXPlusFaceText(_("L"))
+                cube.SetXMinusFaceText(_("R"))
                 cube.SetYPlusFaceText(_("P"))
                 cube.SetYMinusFaceText(_("A"))
             # Use built-in face text for T/B.
