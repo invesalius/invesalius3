@@ -1704,6 +1704,68 @@ class SurfacesListCtrlPanel(InvListCtrl):
         self.current_color = [int(255 * c) for c in surface.colour][:3]
         self.current_transparency = int(100 * surface.transparency)
 
+    def OnClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = self.HitTest(evt.GetPosition())
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 0:
+                self._click_check = True
+                item = self.GetItem(item_idx, 0)
+                flag = not bool(item.GetImage())
+                self.SetItemImage(item_idx, int(flag))
+                self.OnCheckItem(item_idx, flag)
+                return
+            elif column_clicked == 1:
+                self.OnChangeColor(item_idx)
+                return
+            elif column_clicked == 2:
+                # Open rename dialog when clicking Name column
+                self.ShowRenameDialog(item_idx)
+                return
+            elif column_clicked in (3, 4):
+                # Highlight surface when clicking Volume or Area columns
+                global_surface_id = None
+                for surface_id, local_pos in self.surface_list_index.items():
+                    if local_pos == item_idx:
+                        global_surface_id = surface_id
+                        break
+                if global_surface_id is not None:
+                    Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
+                return
+            elif column_clicked == 5:
+                self.OnChangeTransparency(item_idx)
+                return
+        evt.Skip()
+
+    def ShowRenameDialog(self, item_idx):
+        """Show a dialog to rename the surface."""
+        import wx
+
+        # Get current name (Col 2 for surfaces)
+        current_name = self.GetItemText(item_idx, 2)
+
+        # Show rename dialog
+        dlg = wx.TextEntryDialog(self, _("Enter new name:"), _("Rename Surface"), value=current_name)
+
+        if dlg.ShowModal() == wx.ID_OK:
+            new_name = dlg.GetValue()
+            if new_name and new_name != current_name:
+                # Update the list
+                self.SetItem(item_idx, 2, new_name)
+                
+                # Find global ID
+                global_surface_id = None
+                for surface_id, local_pos in self.surface_list_index.items():
+                    if local_pos == item_idx:
+                        global_surface_id = surface_id
+                        break
+                
+                if global_surface_id is not None:
+                    Publisher.sendMessage("Change surface name", index=global_surface_id, name=new_name)
+
+        dlg.Destroy()
+
     def OnChangeColor(self, item_idx):
         global_surface_id = None
         for surface_id, local_pos in self.surface_list_index.items():
@@ -2127,9 +2189,13 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 if "Annotation" in item_type:
                     # For annotations, clicking Value column opens edit dialog
                     Publisher.sendMessage("Edit measurement", index=item_idx)
-                    return
-            elif column_clicked == 5:
-                self.OnChangeTransparency(item_idx)
+                else:
+                    # For non-annotations, clicking Value column rotates/highlights
+                    Publisher.sendMessage("Show measurement position", index=item_idx)
+                return
+            elif column_clicked in (2, 3):
+                # Clicking Location or Type column rotates/highlights
+                Publisher.sendMessage("Show measurement position", index=item_idx)
                 return
         evt.Skip()
 
