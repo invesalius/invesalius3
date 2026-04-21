@@ -507,8 +507,22 @@ class Viewer(wx.Panel):
 
             proj = prj.Project()
             if proj.original_orientation == const.SAGITAL:
-                cube.SetXPlusFaceText(_("R"))
-                cube.SetXMinusFaceText(_("L"))
+                x_plus, x_minus = "L", "R"
+                patient_orient = getattr(proj, "patient_orientation", None)
+
+                if patient_orient is not None and len(patient_orient) == 6:
+                    row_y, row_z = patient_orient[1], patient_orient[2]
+                    col_y, col_z = patient_orient[4], patient_orient[5]
+                    normal_x = (row_y * col_z) - (row_z * col_y)
+
+                    if normal_x < 0:
+                        x_plus, x_minus = "R", "L"
+                else:
+                    # Maintainer fallback request if patient_orientation is missing
+                    x_plus, x_minus = "R", "L"
+
+                cube.SetXPlusFaceText(_(x_plus))
+                cube.SetXMinusFaceText(_(x_minus))
                 cube.SetYPlusFaceText(_("A"))
                 cube.SetYMinusFaceText(_("P"))
             else:
@@ -3575,6 +3589,21 @@ class Viewer(wx.Panel):
                 const.VOL_FRONT: const.VOL_BACK,
                 const.VOL_BACK: const.VOL_FRONT,
             }
+            patient_orient = getattr(proj, "patient_orientation", None)
+
+            if patient_orient is not None and len(patient_orient) == 6:
+                row_y, row_z = patient_orient[1], patient_orient[2]
+                col_y, col_z = patient_orient[4], patient_orient[5]
+                normal_x = (row_y * col_z) - (row_z * col_y)
+
+                if normal_x < 0:
+                    sagital_mapping[const.VOL_RIGHT] = const.VOL_LEFT
+                    sagital_mapping[const.VOL_LEFT] = const.VOL_RIGHT
+            else:
+                # Maintainer fallback request to apply inversion if orientation is missing
+                sagital_mapping[const.VOL_RIGHT] = const.VOL_LEFT
+                sagital_mapping[const.VOL_LEFT] = const.VOL_RIGHT
+
             view = sagital_mapping.get(view, view)
 
         # Ensure orientation is valid; fallback to AXIAL if not defined in constants
