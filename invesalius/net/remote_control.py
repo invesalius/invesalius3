@@ -29,7 +29,6 @@ from invesalius.pubsub import pub as Publisher
 logger = logging.getLogger(__name__)
 
 
-
 class RemoteControl:
     def __init__(self, remote_host):
         self._remote_host = remote_host

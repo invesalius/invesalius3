@@ -35,9 +35,7 @@ from invesalius import inv_paths
 from invesalius.utils import deep_merge_dict
 
 LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "log_config.json")
-DEFAULT_LOGFILE = os.path.join(
-    inv_paths.USER_LOG_DIR, "invesalius.log"
-)
+DEFAULT_LOGFILE = os.path.join(inv_paths.USER_LOG_DIR, "invesalius.log")
 
 actionDictionary00 = {
     "TypeError": "invLogger._logger.error('raise TypeError')",
@@ -255,9 +253,21 @@ class InvesaliusLogger:  # metaclass=Singleton):
                             self._logger.info(msg)
                 if addFileHandler:
                     if append_log_file:
-                        fh = logging.handlers.RotatingFileHandler(os.path.abspath(logging_file), "a", maxBytes=5*1024*1024, backupCount=5, encoding=None)
+                        fh = logging.handlers.RotatingFileHandler(
+                            os.path.abspath(logging_file),
+                            "a",
+                            maxBytes=5 * 1024 * 1024,
+                            backupCount=5,
+                            encoding=None,
+                        )
                     else:
-                        fh = logging.handlers.RotatingFileHandler(os.path.abspath(logging_file), "w", maxBytes=5*1024*1024, backupCount=5, encoding=None)
+                        fh = logging.handlers.RotatingFileHandler(
+                            os.path.abspath(logging_file),
+                            "w",
+                            maxBytes=5 * 1024 * 1024,
+                            backupCount=5,
+                            encoding=None,
+                        )
 
                     fh.setFormatter(formatter)
                     self._logger.addHandler(fh)

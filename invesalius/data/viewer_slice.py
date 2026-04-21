@@ -17,8 +17,8 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-import logging
 import collections
+import logging
 import os
 import sys
 

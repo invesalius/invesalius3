@@ -1,5 +1,5 @@
-import logging
 import itertools
+import logging
 import multiprocessing
 import os
 import pathlib
@@ -688,7 +688,9 @@ class SubpartSegmentProcess(SegmentProcess):
                     f"Segmentation data range: [{final_segmentation.min()}, {final_segmentation.max()}]"
                 )
                 logger.debug(f"Segmentation unique values: {len(np.unique(final_segmentation))}")
-                logger.debug(f"Non-zero segmentation pixels: {np.count_nonzero(final_segmentation)}")
+                logger.debug(
+                    f"Non-zero segmentation pixels: {np.count_nonzero(final_segmentation)}"
+                )
 
                 probability_array = np.memmap(
                     self._prob_array_filename,
@@ -857,7 +859,9 @@ class SubpartSegmentProcess(SegmentProcess):
                 name = std_name(rec["LabelName"])
                 binmask = (seg == lid).astype(np.uint8) * 255
                 if not np.any(binmask):
-                    logger.debug(f"No voxels found for label ID {lid} ('{name}'). Skipping mask creation.")
+                    logger.debug(
+                        f"No voxels found for label ID {lid} ('{name}'). Skipping mask creation."
+                    )
                     continue
 
                 m = slc.Slice().create_new_mask(

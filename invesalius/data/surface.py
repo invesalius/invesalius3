@@ -1420,7 +1420,9 @@ class SurfaceManager:
                 self._export_surface(temp_file, filetype, convert_to_world)
             except ValueError:
                 if wx.GetApp() is None:
-                    logger.error("It was not possible to export the surface because the surface is empty")
+                    logger.error(
+                        "It was not possible to export the surface because the surface is empty"
+                    )
                 else:
                     wx.MessageBox(
                         _("It was not possible to export the surface because the surface is empty"),
@@ -1449,7 +1451,8 @@ class SurfaceManager:
                 if wx.GetApp() is None:
                     logger.error(
                         "It was not possible to export the surface because you don't have permission to write to %s folder: %s",
-                        dirpath, err
+                        dirpath,
+                        err,
                     )
                 else:
                     dlg = dialogs.ErrorMessageBox(
@@ -1508,7 +1511,9 @@ class SurfaceManager:
                 }
 
                 mask = proj.mask_dict[index]
-                logger.debug("Mask range: %s - %s, name: %s", mask.matrix.min(), mask.matrix.max(), mask.name)
+                logger.debug(
+                    "Mask range: %s - %s, name: %s", mask.matrix.min(), mask.matrix.max(), mask.name
+                )
                 slice_ = slc.Slice()
 
                 Publisher.sendMessage(

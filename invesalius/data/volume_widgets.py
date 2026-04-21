@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import logging
+
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper

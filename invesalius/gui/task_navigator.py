@@ -50,6 +50,8 @@ try:
 except ImportError:
     import wx.lib.hyperlink as hl
 
+import logging
+
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as slice_
@@ -65,8 +67,6 @@ from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import NavigationHub
 from invesalius.navigation.robot import RobotObjective
 from invesalius.pubsub import pub as Publisher
-
-import logging
 
 logger = logging.getLogger(__name__)
 

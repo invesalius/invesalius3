@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import sys
@@ -23,8 +24,6 @@ from invesalius.navigation.tracker import Tracker
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
-
-import logging
 
 logger = logging.getLogger(__name__)
 

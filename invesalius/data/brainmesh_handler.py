@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 import pyacvd
 
@@ -47,7 +48,6 @@ import invesalius.project as prj
 from invesalius.data.converters import to_vtk
 
 logger = logging.getLogger(__name__)
-
 
 
 class Brain:

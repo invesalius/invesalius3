@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import logging
+
 import matplotlib.pyplot as plt
 import nibabel as nb
 import numpy as np
@@ -34,7 +35,6 @@ from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 logger = logging.getLogger(__name__)
-
 
 
 class TaskPanel(wx.Panel):

@@ -39,7 +39,6 @@ from invesalius.pubsub import pub as Publisher
 logger = logging.getLogger(__name__)
 
 
-
 class EditionHistoryNode:
     def __init__(self, index, orientation, array, clean=False):
         self.index = index

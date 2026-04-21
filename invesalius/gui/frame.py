@@ -17,8 +17,8 @@
 #    detalhes.
 # --------------------------------------------------------------------
 
-import logging
 import errno
+import logging
 import os.path
 import platform
 import subprocess

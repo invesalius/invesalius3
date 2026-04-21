@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 # from math import cos, sin
+import logging
 import os
 import queue
 import sys
@@ -108,8 +109,6 @@ from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d
 from invesalius.pubsub import pub as Publisher
-
-import logging
 
 logger = logging.getLogger(__name__)
 

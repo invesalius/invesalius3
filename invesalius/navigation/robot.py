@@ -33,7 +33,6 @@ from invesalius.utils import Singleton
 logger = logging.getLogger(__name__)
 
 
-
 class RobotObjective(Enum):
     NONE = 0
     TRACK_TARGET = 1

@@ -1,10 +1,10 @@
 import logging
+
 import gdcm
 
 import invesalius.utils as utils
 
 logger = logging.getLogger(__name__)
-
 
 
 class DicomNet:

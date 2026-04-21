@@ -28,7 +28,6 @@ from invesalius.pubsub import pub as Publisher
 logger = logging.getLogger(__name__)
 
 
-
 class SerialPortConnection(threading.Thread):
     def __init__(self, com_port, baud_rate, serial_port_queue, event, sleep_nav):
         """

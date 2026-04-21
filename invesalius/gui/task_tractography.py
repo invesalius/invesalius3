@@ -61,7 +61,6 @@ from invesalius.pubsub import pub as Publisher
 logger = logging.getLogger(__name__)
 
 
-
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)

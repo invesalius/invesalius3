@@ -1303,7 +1303,9 @@ class Slice(metaclass=utils.Singleton):
                 continue
             mask = mask_dict[mask_index]
             if mask.matrix.max() < 127:
-                logger.debug(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels available")
+                logger.debug(
+                    f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels available"
+                )
                 continue
 
             surface_parameters = surface_template.copy()

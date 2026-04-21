@@ -1,7 +1,7 @@
-import logging
 import dataclasses
 import functools
 import io
+import logging
 import math
 import types
 from typing import Any, Callable, List, Literal, Sequence, cast
@@ -16,7 +16,6 @@ from tinygrad.helpers import DEBUG, all_same, flatten, getenv, make_tuple, prod
 from tinygrad.tensor import ReductionStr, Tensor, _broadcast_shape
 
 logger = logging.getLogger(__name__)
-
 
 
 def dtype_parse(onnx_dtype: int) -> DType:

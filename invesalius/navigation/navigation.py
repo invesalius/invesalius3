@@ -54,7 +54,6 @@ from invesalius.utils import Singleton
 logger = logging.getLogger(__name__)
 
 
-
 class NavigationHub(metaclass=Singleton):
     """
     Class to initialize and store references to navigation components.

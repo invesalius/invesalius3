@@ -11,7 +11,6 @@ import invesalius.data.coregistration as dcr
 logger = logging.getLogger(__name__)
 
 
-
 class mTMS:
     def __init__(self):
         # TODO: create dialog to input mtms_path and vi

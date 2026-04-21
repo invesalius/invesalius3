@@ -219,7 +219,9 @@ class PolhemusTrackerConnection(TrackerConnection):
                 connection = self.PolhemusUSBConnection()
                 lib_mode = "usb"
                 if not connection:
-                    logger.warning("Could not connect with Polhemus USB, trying serial connection...")
+                    logger.warning(
+                        "Could not connect with Polhemus USB, trying serial connection..."
+                    )
 
                     if reconfigure:
                         self.ConfigureCOMPort()
@@ -259,7 +261,10 @@ class PolhemusTrackerConnection(TrackerConnection):
                 )
         except Exception:
             connection = None
-            logger.error("Could not connect to Polhemus via wrapper without error: Import failed.", exc_info=True)
+            logger.error(
+                "Could not connect to Polhemus via wrapper without error: Import failed.",
+                exc_info=True,
+            )
 
         return connection
 

@@ -37,7 +37,6 @@ from invesalius.utils import Singleton
 logger = logging.getLogger(__name__)
 
 
-
 # Only one tracker will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
 class Tracker(metaclass=Singleton):

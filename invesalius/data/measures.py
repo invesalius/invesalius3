@@ -285,7 +285,9 @@ class MeasurementManager:
                     mr.complete_polygon()
 
                 mr.set_density_values(m.min, m.max, m.mean, m.std, m.area, m.perimeter)
-                logger.debug("Measurements: min=%s, max=%s, mean=%s, std=%s", m.min, m.max, m.mean, m.std)
+                logger.debug(
+                    "Measurements: min=%s, max=%s, mean=%s, std=%s", m.min, m.max, m.mean, m.std
+                )
                 mr._need_calc = False
                 self.measures.append((m, mr))
                 mr.set_measurement(m)
