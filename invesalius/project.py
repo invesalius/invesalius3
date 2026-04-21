@@ -66,6 +66,7 @@ class Project(metaclass=Singleton):
         self.window = ""
         self.level = ""
         self.affine = ""
+        self.patient_orientation = None
 
         # Masks (vtkImageData)
         self.mask_dict = TwoWaysDictionary()
@@ -241,6 +242,7 @@ class Project(metaclass=Singleton):
             "scalar_range": self.threshold_range,
             "spacing": self.spacing,
             "affine": self.affine,
+            "patient_orientation": self.patient_orientation,
             "image_fiducials": self.image_fiducials.tolist(),
             "active_image_version": slice_.Slice().current_image_label,
         }
@@ -416,6 +418,8 @@ class Project(metaclass=Singleton):
 
         if project.get("affine", ""):
             self.affine = project["affine"]
+
+        self.patient_orientation = project.get("patient_orientation", None)
 
         try:
             self.image_fiducials = np.asarray(project["image_fiducials"])

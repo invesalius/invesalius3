@@ -594,18 +594,24 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         )
 
     def OnSelectColour(self, evt):
+        surface_index = self.combo_surface_name.GetSelection()
+        if surface_index == -1:
+            return
         colour = [value / 255.0 for value in evt.GetValue()]
         Publisher.sendMessage(
             "Set surface colour",
-            surface_index=self.combo_surface_name.GetSelection(),
+            surface_index=surface_index,
             colour=colour,
         )
 
     def OnTransparency(self, evt):
+        surface_index = self.combo_surface_name.GetSelection()
+        if surface_index == -1:
+            return
         transparency = evt.GetInt() / float(MAX_TRANSPARENCY)
         Publisher.sendMessage(
             "Set surface transparency",
-            surface_index=self.combo_surface_name.GetSelection(),
+            surface_index=surface_index,
             transparency=transparency,
         )
 
