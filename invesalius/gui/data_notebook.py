@@ -98,10 +98,10 @@ class NotebookPanel(wx.Panel):
         book.Refresh()
         self.book = book
         self.navigation_on = False
-
         self.__bind_events()
 
     def __bind_events(self):
+        self.book.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
         Publisher.subscribe(self._FoldSurface, "Fold surface task")
         Publisher.subscribe(self._FoldSurface, "Fold surface page")
         Publisher.subscribe(self._FoldMeasure, "Fold measure task")
@@ -110,10 +110,21 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._FoldImage, "Fold image page")
         Publisher.subscribe(self._OnNavigationStatus, "Navigation status")
 
+    def OnPageChanging(self, evt):
+        if self.navigation_on:
+            target_page = evt.GetSelection()
+            if target_page in (self.IMAGE_PAGE_INDEX, self.MASK_PAGE_INDEX):
+                evt.Veto()
+                return
+        evt.Skip()
+
     def _FoldImage(self):
         """
         Fold Images notebook page.
         """
+        if self.navigation_on:
+            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
+            return
         self.book.SetSelection(self.IMAGE_PAGE_INDEX)
 
     def _FoldSurface(self):
@@ -140,6 +151,7 @@ class NotebookPanel(wx.Panel):
     def _OnNavigationStatus(self, nav_status, vis_status):
         self.navigation_on = bool(nav_status)
         self.book.GetPage(self.MASK_PAGE_INDEX).Enable(not self.navigation_on)
+        self.book.GetPage(self.IMAGE_PAGE_INDEX).Enable(not self.navigation_on)
         if self.navigation_on:
             self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
