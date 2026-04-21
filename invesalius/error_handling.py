@@ -373,9 +373,9 @@ def show_error_dialog(message: str, exception: Optional[InVesaliusException] = N
     """
     if wx.GetApp() is None:
         # No GUI available, just print the error
-        print(f"ERROR: {message}")
+        logger.debug(f"ERROR: {message}")
         if exception and exception.details.get("traceback"):
-            print(exception.details["traceback"])
+            logger.debug(exception.details["traceback"])
         return
 
     # Create a dialog with details that can be expanded
@@ -691,8 +691,8 @@ def global_exception_handler(exctype, value, tb):
         )
     else:
         # No GUI available, just print the error
-        print(f"CRITICAL ERROR: {str(value)}")
-        print(f"A crash report has been created at: {crash_report_path}")
+        logger.debug(f"CRITICAL ERROR: {str(value)}")
+        logger.debug(f"A crash report has been created at: {crash_report_path}")
 
 
 # Set the global exception handler

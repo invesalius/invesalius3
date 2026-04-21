@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
 import gdcm
@@ -26,6 +27,9 @@ from vtkmodules.vtkCommonCore import (
     vtkPoints,
 )
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkImageData, vtkPolyData, vtkTriangle
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     import os
@@ -236,5 +240,5 @@ def convert_custom_bin_to_vtk(filename: "str | bytes | os.PathLike[str]") -> Opt
 
         return polydata
     else:
-        print("File does not exists")
+        logger.debug("File does not exists")
         return None

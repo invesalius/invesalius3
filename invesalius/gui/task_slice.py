@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import logging
 import os
 import sys
 
@@ -42,6 +43,9 @@ from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 from invesalius.i18n import tr as _
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 BTN_NEW = wx.NewIdRef()
 
@@ -963,7 +967,7 @@ class EditionTools(wx.Panel):
         Publisher.sendMessage("Set edition brush size", size=self.spin.GetValue())
 
     def OnContextMenu(self, evt):
-        print("Context")
+        logger.debug("Context")
         menu = wx.Menu()
         mm_item = menu.AppendRadioItem(MENU_UNIT_MM, "mm")
         um_item = menu.AppendRadioItem(MENU_UNIT_UM, "µm")
@@ -1212,7 +1216,7 @@ class WatershedTool(EditionTools):
         Publisher.sendMessage("Set watershed brush size", size=self.spin.GetValue())
 
     def OnContextMenu(self, evt):
-        print("Context")
+        logger.debug("Context")
         menu = wx.Menu()
         mm_item = menu.AppendRadioItem(MENU_UNIT_MM, "mm")
         um_item = menu.AppendRadioItem(MENU_UNIT_UM, "µm")

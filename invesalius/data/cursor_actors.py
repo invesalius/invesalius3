@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import math
 
 import numpy
@@ -32,6 +33,9 @@ from vtkmodules.vtkRenderingCore import (
 )
 
 import invesalius.constants as const
+
+logger = logging.getLogger(__name__)
+
 
 ORIENTATION = {"AXIAL": 2, "CORONAL": 1, "SAGITAL": 0}
 
@@ -339,7 +343,7 @@ class CursorRectangle(CursorBase):
         """
         Function to plot the Retangle
         """
-        print("Building rectangle cursor", self.orientation)
+        logger.debug("Building rectangle cursor", self.orientation)
         r = self.radius
         if self.unit == "µm":
             r /= 1000.0

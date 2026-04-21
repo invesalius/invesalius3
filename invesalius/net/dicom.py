@@ -1,6 +1,10 @@
+import logging
 import gdcm
 
 import invesalius.utils as utils
+
+logger = logging.getLogger(__name__)
+
 
 
 class DicomNet:
@@ -166,7 +170,7 @@ class DicomNet:
         const char *call=NULL, 
         const char *outputdir=NULL)"""
 
-        print(
+        logger.debug(
             ">>>>>",
             self.address,
             int(self.port),
@@ -187,7 +191,7 @@ class DicomNet:
             "/home/phamorim/Desktop/",
         )
 
-        print("BAIXOUUUUUUUU")
+        logger.debug("BAIXOUUUUUUUU")
         # ret = gdcm.DataSetArrayType()
 
         # cnf.CFind(self.address, int(self.port), theQuery, ret, self.aetitle,\

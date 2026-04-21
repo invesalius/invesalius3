@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------
+import logging
 import os
 import pathlib
 import shutil
@@ -23,6 +24,7 @@ import sys
 import tempfile
 
 HOME_DIR = pathlib.Path().home()
+logger = logging.getLogger(__name__)
 CONF_DIR = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", HOME_DIR.joinpath(".config")))
 USER_INV_DIR = CONF_DIR.joinpath("invesalius")
 USER_PRESET_DIR = USER_INV_DIR.joinpath("presets")
@@ -103,9 +105,10 @@ def create_conf_folders() -> None:
 def copy_old_files() -> None:
     for f in OLD_USER_INV_DIR.glob("*"):
         if f.is_file():
-            print(
-                shutil.copy(
-                    f,
-                    USER_INV_DIR.joinpath(str(f).replace(str(OLD_USER_INV_DIR) + "/", "")),
+                logger.info(
+                    "Copied: %s",
+                    shutil.copy(
+                        f,
+                        USER_INV_DIR.joinpath(str(f).replace(str(OLD_USER_INV_DIR) + "/", "")),
+                    )
                 )
-            )

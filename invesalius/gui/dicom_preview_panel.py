@@ -20,6 +20,7 @@
 # -*- coding: UTF-8 -*-
 
 # TODO: To create a beautiful API
+import logging
 import sys
 import time
 
@@ -39,6 +40,9 @@ from invesalius.data import converters, imagedata_utils
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 if sys.platform == "win32":
     try:
@@ -553,7 +557,7 @@ class DicomPreviewSlice(wx.Panel):
             if isinstance(dicom.image.thumbnail_path, list):
                 _slice = 0
                 for thumbnail in dicom.image.thumbnail_path:
-                    print(thumbnail)
+                    logger.debug(thumbnail)
                     info = DicomInfo(
                         n, dicom, _("Image %d") % (n), f"{dicom.image.position[2]:.2f}", _slice
                     )
@@ -588,7 +592,7 @@ class DicomPreviewSlice(wx.Panel):
             if isinstance(dicom.image.thumbnail_path, list):
                 _slice = 0
                 for thumbnail in dicom.image.thumbnail_path:
-                    print(thumbnail)
+                    logger.debug(thumbnail)
                     info = DicomInfo(
                         n, dicom, _("Image %d") % int(n), f"{dicom.image.position[2]:.2f}", _slice
                     )

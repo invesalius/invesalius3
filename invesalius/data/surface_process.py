@@ -1,6 +1,9 @@
+import logging
 import os
 import tempfile
 import time
+
+logger = logging.getLogger(__name__)
 
 try:
     import queue
@@ -183,7 +186,7 @@ def create_surface_piece(
     start = time.perf_counter()
     contour.Update()
     duration = time.perf_counter() - start
-    print(f"[PERF] Extraction (vtkContourFilter): {duration:.4f}s")
+    logger.debug(f"[PERF] Extraction (vtkContourFilter): {duration:.4f}s")
 
     polydata = contour.GetOutput()
     del image
@@ -195,8 +198,8 @@ def create_surface_piece(
     writer.SetFileName(filename)
     writer.Write()
 
-    print("Writing piece", roi, "to", filename)
-    print("MY PID MC", os.getpid())
+    logger.debug(f"Writing piece {roi} to {filename}")
+    logger.debug(f"MY PID MC {os.getpid()}")
     os.close(fd)
     return filename
 
@@ -216,7 +219,7 @@ def join_process_surface(
         try:
             msg_queue.put_nowait(msg)
         except queue.Full as e:
-            print(e)
+            logger.error(e)
 
     log_fd, log_path = tempfile.mkstemp("vtkoutput.txt")
     fow = vtkFileOutputWindow()
@@ -241,7 +244,7 @@ def join_process_surface(
     start = time.perf_counter()
     polydata_append.Update()
     duration = time.perf_counter() - start
-    print(f"[PERF] Joining surface pieces: {duration:.4f}s")
+    logger.debug(f"[PERF] Joining surface pieces: {duration:.4f}s")
     #  polydata_append.GetOutput().ReleaseDataFlagOn()
     polydata = polydata_append.GetOutput()
     # polydata.Register(None)
@@ -260,7 +263,7 @@ def join_process_surface(
     start = time.perf_counter()
     clean.Update()
     duration = time.perf_counter() - start
-    print(f"[PERF] Cleaning merged surface: {duration:.4f}s")
+    logger.debug(f"[PERF] Cleaning merged surface: {duration:.4f}s")
 
     del polydata
     polydata = clean.GetOutput()
@@ -316,7 +319,7 @@ def join_process_surface(
             mesh, options["angle"], options["max distance"], options["min weight"], options["steps"]
         )
         duration = time.perf_counter() - start
-        print(f"[PERF] Context Aware smoothing: {duration:.4f}s")
+        logger.debug(f"[PERF] Context Aware smoothing: {duration:.4f}s")
         #  polydata = mesh.to_vtk()
 
         #  polydata.SetSource(None)
@@ -348,7 +351,7 @@ def join_process_surface(
     #  del smoother
 
     if not decimate_reduction:
-        print("Decimating", decimate_reduction)
+        logger.debug(f"Decimating {decimate_reduction}")
         send_message("Decimating ...")
         decimation = vtkQuadricDecimation()
         #  decimation.ReleaseDataFlagOn()
@@ -364,7 +367,7 @@ def join_process_surface(
         start = time.perf_counter()
         decimation.Update()
         duration = time.perf_counter() - start
-        print(f"[PERF] Decimating: {duration:.4f}s")
+        logger.debug(f"[PERF] Decimating: {duration:.4f}s")
         del polydata
         polydata = decimation.GetOutput()
         # polydata.Register(None)
@@ -405,7 +408,7 @@ def join_process_surface(
         start = time.perf_counter()
         filled_polydata.Update()
         duration = time.perf_counter() - start
-        print(f"[PERF] Filling holes: {duration:.4f}s")
+        logger.debug(f"[PERF] Filling holes: {duration:.4f}s")
         #  filled_polydata.GetOutput().ReleaseDataFlagOn()
         del polydata
         polydata = filled_polydata.GetOutput()
@@ -467,6 +470,6 @@ def join_process_surface(
     writer.Write()
     del writer
 
-    print("MY PID", os.getpid())
+    logger.debug(f"MY PID {os.getpid()}")
     os.close(fd)
     return filename, {"volume": volume, "area": area}

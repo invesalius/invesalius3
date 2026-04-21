@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -26,6 +27,9 @@ import invesalius.data.bases as db
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.utils import Singleton
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from invesalius.navigation.navigation import Navigation
@@ -40,7 +44,8 @@ class IterativeClosestPoint(metaclass=Singleton):
 
         try:
             self.LoadState()
-        except:  # noqa: E722
+        except Exception:
+            logger.exception("Caught exception")
             ses.Session().DeleteStateFile()
 
     def SaveState(self) -> None:

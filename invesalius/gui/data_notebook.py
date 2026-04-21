@@ -17,6 +17,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import logging
 import os
 import pathlib
 import sys
@@ -36,6 +37,9 @@ import invesalius.session as ses
 from invesalius import inv_paths, project
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 (
     BTN_NEW,
@@ -2462,9 +2466,9 @@ class AnnotationsListCtrlPanel(wx.ListCtrl):
     def OnCheckItem(self, index, flag):
         # TODO: use pubsub to communicate to models
         if flag:
-            print("checked, ", index)
+            logger.debug("checked, ", index)
         else:
-            print("unchecked, ", index)
+            logger.debug("unchecked, ", index)
 
     def InsertNewItem(self, index=0, name="Axial 1", type_="2d", value="bla", colour=None):
         self.InsertItem(index, "")

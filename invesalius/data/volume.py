@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import logging
 import os
 import plistlib
 import weakref
@@ -48,6 +49,9 @@ import invesalius.session as ses
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 Kernels = {
     "Basic Smooth 5x5": [
@@ -195,22 +199,22 @@ class Volume:
         self.LoadVolume()
 
     def OnHideVolume(self):
-        print("Hide Volume")
+        logger.debug("Hide Volume")
         self.volume.SetVisibility(0)
         if self.plane and self.plane_on:
             self.plane.Disable()
         Publisher.sendMessage("Render volume viewer")
 
     def OnShowVolume(self):
-        print("Show volume")
+        logger.debug("Show volume")
         if self.exist:
-            print("Volume exists")
+            logger.debug("Volume exists")
             self.volume.SetVisibility(1)
             if self.plane and self.plane_on:
                 self.plane.Enable()
             Publisher.sendMessage("Render volume viewer")
         else:
-            print("Volume doesnt exit")
+            logger.debug("Volume doesnt exit")
             Publisher.sendMessage("Load raycasting preset", preset_name=const.RAYCASTING_LABEL)
             self.LoadConfig()
             self.LoadVolume()
@@ -264,7 +268,7 @@ class Volume:
             Publisher.sendMessage("Render volume viewer")
 
     def OnFlipVolume(self, axis):
-        print("Flipping Volume")
+        logger.debug("Flipping Volume")
         self.loaded_image = False
         del self.image
         self.image = None

@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import sys
 
 import matplotlib.pyplot as plt
@@ -34,6 +35,9 @@ import invesalius.utils as utils
 from invesalius.data.slice_ import Slice
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 
 class TaskPanel(wx.Panel):
@@ -195,7 +199,7 @@ class InnerTaskPanel(wx.Panel):
         if zero_value in self.slc.aux_matrices_colours["color_overlay"]:
             self.slc.aux_matrices_colours["color_overlay"][zero_value] = (0.0, 0.0, 0.0, 0.0)
         else:
-            print("Zero value not found in color_overlay. No data is set as transparent.")
+            logger.debug("Zero value not found in color_overlay. No data is set as transparent.")
 
         Publisher.sendMessage("Reload actual slice")
 
@@ -322,7 +326,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
         self.combo_surface_name.SetSelection(i)
         # transparency = 100*surface.transparency
-        # print("Button color: ", colour)
+        # logger.debug("Button color: ", colour)
         self.button_colour.SetColour(colour)
         # self.slider_transparency.SetValue(int(transparency))
         #  Publisher.sendMessage('Update surface data', (index))

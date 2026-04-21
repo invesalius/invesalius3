@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 from enum import Enum
 
 import numpy as np
@@ -28,6 +29,9 @@ import invesalius.session as ses
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
+
+logger = logging.getLogger(__name__)
+
 
 
 class RobotObjective(Enum):
@@ -182,14 +186,14 @@ class Robot(metaclass=Singleton):
         # Ensure we fetch the robot-side config early so features like the force/pressure
         # overlay can be initialized without requiring the Preferences dialog to be opened.
         Publisher.sendMessage("Neuronavigation to Robot: Request config")
-        print("Connected to robot")
+        logger.debug("Connected to robot")
 
     def InitializeRobot(self):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
         )
-        print("Robot initialized")
+        logger.debug("Robot initialized")
 
     def GetCoilName(self):
         return self.coil_name

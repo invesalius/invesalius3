@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import math
 import os
 import tempfile
@@ -41,6 +42,9 @@ import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.data import vtk_utils as vtk_utils
 from invesalius.i18n import tr as _
+
+logger = logging.getLogger(__name__)
+
 
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
@@ -566,7 +570,7 @@ def get_LUT_value(data: np.ndarray, window: int, level: int) -> np.ndarray:
 def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True):
     # based on https://docs.monai.io/en/latest/_modules/monai/transforms/intensity/array.html#ScaleIntensity
 
-    print(a_min, a_max, b_min, b_max, clip)
+    logger.debug(a_min, a_max, b_min, b_max, clip)
     img = (img - a_min) / (a_max - a_min)
     img = img * (b_max - b_min) + b_min
 

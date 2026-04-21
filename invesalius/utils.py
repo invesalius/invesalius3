@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 import collections.abc
 import locale
+import logging
 import math
 import platform
 import re
@@ -31,6 +32,8 @@ import numpy as np
 from packaging.version import Version
 
 import invesalius
+
+logger = logging.getLogger(__name__)
 
 
 def format_time(value: str) -> str:
@@ -82,7 +85,7 @@ def debug(error_str: str) -> None:
 
     session = Session()
     if session.GetConfig("debug"):
-        print(error_str)
+        logger.debug(error_str)
 
 
 def next_copy_name(original_name: str, names_list: List[str]) -> str:
@@ -270,13 +273,13 @@ def calculate_resizing_tofitmemory(x_size, y_size, n_slices, byte):
             ram_total = psutil.phymem_usage().total
             swap_free = psutil.virtmem_usage().free
     except Exception:
-        print("Exception! psutil version < 0.3 (not recommended)")
+        logger.warning("Exception! psutil version < 0.3 (not recommended)")
         ram_total = psutil.TOTAL_PHYMEM  # this is for psutil < 0.3
         ram_free = 0.8 * psutil.TOTAL_PHYMEM
         swap_free = psutil.avail_virtmem()
 
-    print("RAM_FREE=", ram_free)
-    print("RAM_TOTAL=", ram_total)
+    logger.debug("RAM_FREE=%s", ram_free)
+    logger.debug("RAM_TOTAL=%s", ram_total)
 
     if sys.platform == "win32":
         if platform.architecture()[0] == "32bit":
@@ -328,7 +331,7 @@ def UpdateCheck() -> None:
         msgdlg.Show()
         # msgdlg.Destroy()
 
-    print("Checking updates...")
+    logger.info("Checking updates...")
 
     # Check if a language has been set.
     session = ses.Session()
@@ -358,7 +361,7 @@ def UpdateCheck() -> None:
             return
 
         if last_ver > actual_ver:
-            print("  ...New update found!!! -> version:", last)
+            logger.info("New update found! -> version: %s", last)
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
 
@@ -395,7 +398,7 @@ def timing(f):
         start = time.time()
         result = f(*args, **kwargs)
         end = time.time()
-        print(f"{f.__name__} elapsed time: {end - start}")
+        logger.debug("%s elapsed time: %s", f.__name__, end - start)
         return result
 
     return wrapper

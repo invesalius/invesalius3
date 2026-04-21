@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import pyacvd
 
@@ -44,6 +45,9 @@ import invesalius.data.slice_ as sl
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 from invesalius.data.converters import to_vtk
+
+logger = logging.getLogger(__name__)
+
 
 
 class Brain:
@@ -485,7 +489,7 @@ def downsample(inp):
     clus.cluster(3000)
     Remesh = clus.create_mesh()
 
-    # print(Remesh)
+    # logger.debug(Remesh)
 
     # Remesh = vtkIsotropicDiscreteRemeshing()
     # Remesh.SetInput(surface)

@@ -21,6 +21,7 @@
 import json
 import logging
 import logging.config
+import logging.handlers
 import os
 import sys
 from datetime import datetime
@@ -35,7 +36,7 @@ from invesalius.utils import deep_merge_dict
 
 LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "log_config.json")
 DEFAULT_LOGFILE = os.path.join(
-    inv_paths.USER_LOG_DIR, datetime.now().strftime("invlog-%Y_%m_%d-%I_%M_%S_%p.log")
+    inv_paths.USER_LOG_DIR, "invesalius.log"
 )
 
 actionDictionary00 = {
@@ -145,12 +146,12 @@ class InvesaliusLogger:  # metaclass=Singleton):
 
     def ReadConfigFile(self, fPath=LOG_CONFIG_PATH):
         try:
-            print(fPath, os.path.abspath(fPath))
+            self._logger.debug(f"{fPath} {os.path.abspath(fPath)}")
             self._read_config_from_json(fPath)
-            print("Reading Log config file ", fPath)
-            print(self._config)
+            self._logger.debug(f"Reading Log config file {fPath}")
+            self._logger.debug(self._config)
         except Exception as e1:
-            print("Error reading config file in ReadConfigFile:", e1)
+            self._logger.error(f"Error reading config file in ReadConfigFile: {e1}")
         return True
 
     def WriteConfigFile(self):
@@ -166,7 +167,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
             config_dict = json.load(config_file)
             self._config = deep_merge_dict(self._config.copy(), config_dict)
         except Exception as e1:
-            print("Error in _read_config_from_json:", e1)
+            self._logger.error(f"Error in _read_config_from_json: {e1}")
 
     def getLogger(self, lname=__name__):
         # logger = logging.getLogger(lname)
@@ -191,14 +192,14 @@ class InvesaliusLogger:  # metaclass=Singleton):
         append_log_file = self._config["append_log_file"]
         logging_file = self._config["logging_file"]
         logging_file = os.path.abspath(logging_file)
-        print("logging_file:", logging_file)
+        self._logger.debug(f"logging_file: {logging_file}")
         console_logging = self._config["console_logging"]
         # console_logging_level = self._config["console_logging_level"]
 
         self._logger.setLevel(self._config["base_logging_level"])
 
         if (self._frame is None) & (console_logging != 0):
-            print("Initiating console logging ...")
+            self._logger.debug("Initiating console logging ...")
             # self._frame = ConsoleLogFrame(self.getLogger())
 
             formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
@@ -207,18 +208,18 @@ class InvesaliusLogger:  # metaclass=Singleton):
             ch.setFormatter(formatter)
             self._logger.addHandler(ch)
 
-            print("Initiated console logging ...")
+            self._logger.debug("Initiated console logging ...")
             self._logger.info("Initiated console logging ...")
 
         msg = f"file_logging: {file_logging}, console_logging: {console_logging}"
-        print(msg)
+        self._logger.debug(msg)
 
         self._logger.info(msg)
         self._logger.info("configureLogging called ...")
         self.logMessage("info", msg)
 
         if file_logging:
-            # print('file_logging called ...')
+            # logger.debug('file_logging called ...')
             self._logger.info("file_logging called ...")
             file_logging_level = getattr(
                 logging, const.LOGGING_LEVEL_TYPES[file_logging_level].upper(), None
@@ -250,13 +251,13 @@ class InvesaliusLogger:  # metaclass=Singleton):
                             self._logger.info(msg)
                             self._logger.removeHandler(handler)
                             msg = f"Removed existing FILE handler {handler.baseFilename}"
-                            print(msg)
+                            self._logger.debug(msg)
                             self._logger.info(msg)
                 if addFileHandler:
-                    if os.path.exists(logging_file) & append_log_file:
-                        fh = logging.FileHandler(os.path.abspath(logging_file), "a", encoding=None)
+                    if append_log_file:
+                        fh = logging.handlers.RotatingFileHandler(os.path.abspath(logging_file), "a", maxBytes=5*1024*1024, backupCount=5, encoding=None)
                     else:
-                        fh = logging.FileHandler(os.path.abspath(logging_file), "w", encoding=None)
+                        fh = logging.handlers.RotatingFileHandler(os.path.abspath(logging_file), "w", maxBytes=5*1024*1024, backupCount=5, encoding=None)
 
                     fh.setFormatter(formatter)
                     self._logger.addHandler(fh)
@@ -312,7 +313,7 @@ def error_handling_decorator01(func: Callable[[str], None]):
         try:
             msg = f"Function {func.__name__} called"
             invLogger._logger.info(msg)
-            # print(f"{func.__name__} called")
+            # logger.debug(f"{func.__name__} called")
             func(*args, **kwargs)
         except Exception as e:
             invLogger._logger.error(f"Exception {e} encountered in Function {func.__name__} call")
@@ -347,7 +348,7 @@ def error_handling_decorator03(errorList: Dict[str, str]):
             msg = f"Function {func.__name__} called"
             invLogger._logger.info(msg)
             keys = [key for key in errorList]
-            print("keys:", keys)
+            invLogger._logger.debug(f"keys: {keys}")
             values = [errorList[key] for key in errorList]
             # keys, values = zip(*errorList.items())
             invLogger._logger.error(keys)
@@ -356,7 +357,7 @@ def error_handling_decorator03(errorList: Dict[str, str]):
                 func(*args, **kwargs)
             except (TypeError, ZeroDivisionError) as e:  # keys as e: #
                 invLogger._logger.error(f"Exception {e} found in {func.__name__} call")
-                # print('e:',e, type(e).__name__) #, e.__str__, e.args)
+                # logger.debug('e:',e, type(e).__name__) #, e.__str__, e.args)
                 exec(errorList[type(e).__name__])
             # else:
             # invLogger._logger.error(f"{func.__name__} ran successfully.")
@@ -374,7 +375,7 @@ def get_decorator(errors=(Exception,), default_value=""):
             try:
                 return func(*args, **kwargs)
             except errors:
-                print("Got error! ")  # , repr(e)
+                invLogger._logger.error("Got error! ")  # , repr(e)
                 return default_value
 
         return new_func

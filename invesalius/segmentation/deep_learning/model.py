@@ -1,7 +1,11 @@
+import logging
 from collections import OrderedDict
 
 import torch
 import torch.nn as nn
+
+logger = logging.getLogger(__name__)
+
 
 SIZE = 48
 
@@ -130,7 +134,7 @@ def main():
     model = Unet3D()
     model.to(dev)
     model.eval()
-    print(next(model.parameters()).is_cuda)  # True
+    logger.debug(next(model.parameters()).is_cuda)  # True
     img = torch.randn(1, SIZE, SIZE, SIZE, 1).to(dev)
     out = model(img)
     dot = torchviz.make_dot(
@@ -138,7 +142,7 @@ def main():
     )
     dot.render("unet", format="png")
     torch.save(model, "model.pth")
-    print(dot)
+    logger.debug(dot)
 
 
 if __name__ == "__main__":

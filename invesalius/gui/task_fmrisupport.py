@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import matplotlib.pyplot as plt
 import nibabel as nb
 import numpy as np
@@ -31,6 +32,9 @@ import invesalius.utils as utils
 from invesalius.data.slice_ import Slice
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 
 class TaskPanel(wx.Panel):
@@ -225,6 +229,6 @@ class InnerTaskPanel(wx.Panel):
         if zero_value in self.slc.aux_matrices_colours["color_overlay"]:
             self.slc.aux_matrices_colours["color_overlay"][zero_value] = (0.0, 0.0, 0.0, 0.0)
         else:
-            print("Zero value not found in color_overlay. No data is set as transparent.")
+            logger.debug("Zero value not found in color_overlay. No data is set as transparent.")
 
         Publisher.sendMessage("Reload actual slice")

@@ -187,7 +187,7 @@ class TinyGradInference:
                 or (isinstance(device, str) and "cuda" in device.lower())
             )
         ):
-            print("*" * 100)
+            logger.debug("*" * 100)
             # Check if CUDA is available for ONNX Runtime
             available_providers = ort.get_available_providers() if ONNX_AVAILABLE else []
             self.use_gpu = "CUDAExecutionProvider" in available_providers

@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import logging
 import os
 import sys
 
@@ -39,6 +40,9 @@ from invesalius import inv_paths
 from invesalius.gui.widgets.inv_spinctrl import InvSpinCtrl
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 # INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 MIN_TRANSPARENCY = 0
@@ -436,12 +440,12 @@ class SurfaceTools(wx.Panel):
             self.EndSeeding()
 
     def StartSeeding(self):
-        print("Start Seeding")
+        logger.debug("Start Seeding")
         Publisher.sendMessage("Enable style", style=const.VOLUME_STATE_SEED)
         Publisher.sendMessage("Create surface by seeding - start")
 
     def EndSeeding(self):
-        print("End Seeding")
+        logger.debug("End Seeding")
         Publisher.sendMessage("Disable style", style=const.VOLUME_STATE_SEED)
         Publisher.sendMessage("Create surface by seeding - end")
 
@@ -581,7 +585,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
         self.combo_surface_name.SetSelection(i)
         transparency = 100 * surface.transparency
-        # print("Button color: ", colour)
+        # logger.debug("Button color: ", colour)
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(int(transparency))
         #  Publisher.sendMessage('Update surface data', (index))
@@ -686,4 +690,4 @@ class QualityAdjustment(wx.Panel):
         self.SetAutoLayout(1)
 
     def OnComboQuality(self, evt):
-        print(f"TODO: Send Signal - Change surface quality: {evt.GetString()}")
+        logger.debug(f"TODO: Send Signal - Change surface quality: {evt.GetString()}")

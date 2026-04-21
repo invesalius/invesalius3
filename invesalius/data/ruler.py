@@ -6,6 +6,7 @@
 # Last Modified Date: 16th March 2023
 #
 # -----------------------------------------------------------------------------------
+import logging
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -14,6 +15,9 @@ import wx
 
 import invesalius.constants as const
 import invesalius.project as project
+
+logger = logging.getLogger(__name__)
+
 
 E_SHAPED = TOP_OR_LEFT = 0
 C_SHAPED = BOTTOM_OR_RIGHT = 1
@@ -83,7 +87,7 @@ class Ruler(ABC):
             float: Height of viewport in mm
         """
         camera = self.slice_data.renderer.GetActiveCamera()
-        # print(f"Viewport Height in Millimeters: {camera.GetParallelScale() * 2}")
+        # logger.debug(f"Viewport Height in Millimeters: {camera.GetParallelScale() * 2}")
         return camera.GetParallelScale() * 2
 
     def GetWindowSize(self):

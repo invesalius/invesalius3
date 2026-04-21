@@ -1,3 +1,4 @@
+import logging
 import itertools
 import multiprocessing
 import os
@@ -23,6 +24,9 @@ from invesalius.segmentation.deep_learning.fastsurfer_subpart.pipeline import ru
 from invesalius.utils import new_name_by_pattern
 
 from . import utils
+
+logger = logging.getLogger(__name__)
+
 
 SIZE = 48
 
@@ -241,8 +245,8 @@ def segment_torch_jit(
 
     from .model import WrapModel
 
-    print(f"\n\n\n{image_spacing}\n\n\n")
-    print("Patch size:", patch_size)
+    logger.debug(f"\n\n\n{image_spacing}\n\n\n")
+    logger.debug("Patch size:", patch_size)
 
     if resize_by_spacing:
         old_shape = image.shape
@@ -625,7 +629,7 @@ class SubpartSegmentProcess(SegmentProcess):
         # create temporary directory for output
         with tempfile.TemporaryDirectory() as temp_output_dir:
             try:
-                print("Starting subpart prediction pipeline...")
+                logger.debug("Starting subpart prediction pipeline...")
 
                 comm_array = np.memmap(
                     self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+"
@@ -680,11 +684,11 @@ class SubpartSegmentProcess(SegmentProcess):
                 final_segmentation = np.asarray(resampled_segmentation_img.dataobj)
                 final_segmentation = np.fliplr(np.swapaxes(final_segmentation, 0, 2))
 
-                print(
+                logger.debug(
                     f"Segmentation data range: [{final_segmentation.min()}, {final_segmentation.max()}]"
                 )
-                print(f"Segmentation unique values: {len(np.unique(final_segmentation))}")
-                print(f"Non-zero segmentation pixels: {np.count_nonzero(final_segmentation)}")
+                logger.debug(f"Segmentation unique values: {len(np.unique(final_segmentation))}")
+                logger.debug(f"Non-zero segmentation pixels: {np.count_nonzero(final_segmentation)}")
 
                 probability_array = np.memmap(
                     self._prob_array_filename,
@@ -845,7 +849,7 @@ class SubpartSegmentProcess(SegmentProcess):
         for category in self.selected_mask_types:
             regions = pick_regions(category)
             if not regions:
-                print(f"No regions found for category '{category}'. Skipping.")
+                logger.debug(f"No regions found for category '{category}'. Skipping.")
                 continue
 
             for rec in regions:
@@ -853,7 +857,7 @@ class SubpartSegmentProcess(SegmentProcess):
                 name = std_name(rec["LabelName"])
                 binmask = (seg == lid).astype(np.uint8) * 255
                 if not np.any(binmask):
-                    print(f"No voxels found for label ID {lid} ('{name}'). Skipping mask creation.")
+                    logger.debug(f"No voxels found for label ID {lid} ('{name}'). Skipping mask creation.")
                     continue
 
                 m = slc.Slice().create_new_mask(

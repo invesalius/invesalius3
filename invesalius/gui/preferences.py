@@ -24,6 +24,10 @@ from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Preferences(wx.Dialog):
     def __init__(
@@ -1558,7 +1562,8 @@ class ObjectTab(wx.Panel):
 
                 msg = _("Object file successfully loaded")
                 wx.MessageBox(msg, _("InVesalius 3"))
-        except:
+        except Exception:
+            logger.exception("Object registration file incompatible.")
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage("Update status text in GUI", label="")
 
@@ -2223,7 +2228,7 @@ class TrackerTab(wx.Panel):
 
     def OnTogglePressureSensor(self, evt):
         if not self.robot.robot_init_config:
-            print("Robot init config not loaded")
+            logger.debug("Robot init config not loaded")
             Publisher.sendMessage("Neuronavigation to Robot: Request config")
             self.chk_enable_pressure.SetValue(False)
             return

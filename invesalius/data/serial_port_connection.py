@@ -17,12 +17,16 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import queue
 import threading
 import time
 
 from invesalius import constants
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 
 class SerialPortConnection(threading.Thread):
@@ -46,24 +50,24 @@ class SerialPortConnection(threading.Thread):
 
     def Connect(self):
         if self.com_port is None:
-            print("Serial port init error: COM port is unset.")
+            logger.debug("Serial port init error: COM port is unset.")
             return False
         try:
             import serial
 
             self.connection = serial.Serial(self.com_port, baudrate=self.baud_rate, timeout=0)
-            print(f"Connection to port {self.com_port} opened.")
+            logger.debug(f"Connection to port {self.com_port} opened.")
 
             Publisher.sendMessage("Serial port connection", state=True)
             return True
         except Exception:
-            print(f"Serial port init error: Connecting to port {self.com_port} failed.")
+            logger.debug(f"Serial port init error: Connecting to port {self.com_port} failed.")
             return False
 
     def Disconnect(self):
         if self.connection:
             self.connection.close()
-            print(f"Connection to port {self.com_port} closed.")
+            logger.debug(f"Connection to port {self.com_port} closed.")
 
             Publisher.sendMessage("Serial port connection", state=False)
 
@@ -72,11 +76,11 @@ class SerialPortConnection(threading.Thread):
             self.connection.send_break(constants.PULSE_DURATION_IN_MILLISECONDS / 1000)
             Publisher.sendMessage("Serial port pulse triggered")
         except Exception:
-            print("Error: Serial port could not be written into.")
+            logger.debug("Error: Serial port could not be written into.")
 
     def run(self):
         if self.connection is None:
-            print("Serial port thread exiting: No active connection.")
+            logger.debug("Serial port thread exiting: No active connection.")
             return
 
         while not self.event.is_set():
@@ -85,7 +89,7 @@ class SerialPortConnection(threading.Thread):
                 lines = self.connection.readlines()
                 has_data = bool(lines)
             except Exception:
-                print("Error: Serial port could not be read.")
+                logger.debug("Error: Serial port could not be read.")
                 has_data = False
 
             if self.stylusplh:

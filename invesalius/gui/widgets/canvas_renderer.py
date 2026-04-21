@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import sys
 from abc import ABC, abstractmethod
 from typing import (
@@ -39,6 +40,9 @@ from typing_extensions import Self
 from vtkmodules.vtkRenderingCore import vtkActor2D, vtkCoordinate, vtkImageMapper
 
 from invesalius.data import converters
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from vtkmodules.vtkRenderingCore import vtkRenderer
@@ -137,19 +141,19 @@ class CanvasRendererCTX:
     def unsubscribe_event(self, event: str, callback: Callable) -> None:
         for n, cb in enumerate(self._callback_events[event]):
             if cb() == callback:
-                print("removed")
+                logger.debug("removed")
                 self._callback_events[event].pop(n)
                 return
 
     def propagate_event(self, root: Optional["CanvasObjects"], event: CanvasEvent) -> None:
-        print("propagating", event.event_name, "from", root)
+        logger.debug("propagating", event.event_name, "from", root)
         node = root
         callback_name = f"on_{event.event_name}"
         while node:
             try:
                 getattr(node, callback_name)(event)
             except AttributeError as e:
-                print("errror", node, e)
+                logger.debug("errror", node, e)
             node = node.parent
 
     def _init_canvas(self) -> None:
@@ -206,7 +210,7 @@ class CanvasRendererCTX:
                 obj = i.is_over(x, y)
                 self._over_obj = obj
                 if obj:
-                    print("is over at", n, i)
+                    logger.debug("is over at", n, i)
                     return True
             except AttributeError:
                 pass
@@ -1244,7 +1248,7 @@ class Polygon(CanvasHandlerBase):
     def on_select(self, evt: CanvasEvent) -> None:
         mx, my = evt.position
         self.interactive = True
-        print("on_select", self.interactive)
+        logger.debug("on_select", self.interactive)
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
             self._last_position = (x, y, z)

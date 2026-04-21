@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import datetime
+import logging
 import os
 import plistlib
 import shutil
@@ -38,6 +39,8 @@ from invesalius.gui.dialogs import ErrorMessageBox
 from invesalius.presets import Presets
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, TwoWaysDictionary, debug, decode
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from invesalius.data.mask import Mask
@@ -644,7 +647,7 @@ def Extract_(
             tar.extract(member, path=folder)
             filelist.append(fname)
         else:
-            print(f"Skipping potential unsafe file: {member.name}")
+            logger.warning("Skipping potential unsafe file: %s", member.name)
     # tar.list(verbose=True)
     tar.close()
     return filelist
