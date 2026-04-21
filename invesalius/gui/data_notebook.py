@@ -1731,7 +1731,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
                         global_surface_id = surface_id
                         break
                 if global_surface_id is not None:
-                    Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
+                    Publisher.sendMessage(
+                        "Change surface selected", surface_index=global_surface_id
+                    )
                 return
             elif column_clicked == 5:
                 self.OnChangeTransparency(item_idx)
@@ -1746,7 +1748,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
         current_name = self.GetItemText(item_idx, 2)
 
         # Show rename dialog
-        dlg = wx.TextEntryDialog(self, _("Enter new name:"), _("Rename Surface"), value=current_name)
+        dlg = wx.TextEntryDialog(
+            self, _("Enter new name:"), _("Rename Surface"), value=current_name
+        )
 
         if dlg.ShowModal() == wx.ID_OK:
             new_name = dlg.GetValue()
@@ -1762,7 +1766,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
                         break
                 
                 if global_surface_id is not None:
-                    Publisher.sendMessage("Change surface name", index=global_surface_id, name=new_name)
+                    Publisher.sendMessage(
+                        "Change surface name", index=global_surface_id, name=new_name
+                    )
 
         dlg.Destroy()
 
