@@ -3615,7 +3615,7 @@ class Viewer(wx.Panel):
 
         # Dynamically correct Isometric camera pointing on Sagittal datasets
         if orientation == const.SAGITAL and view == const.VOL_ISO:
-            yp = 1  # Sagittal maps Anterior to Y=+1 natively 
+            yp = 1  # Sagittal maps Anterior to Y=+1 natively
 
             patient_orient = getattr(proj, "patient_orientation", None)
             if patient_orient is not None and len(patient_orient) == 6:
@@ -3623,7 +3623,9 @@ class Viewer(wx.Panel):
                 col_y, col_z = patient_orient[4], patient_orient[5]
                 normal_x = (row_y * col_z) - (row_z * col_y)
                 if normal_x < 0:
-                    xp = -xp  # Flip X to see the 'L' side instead of the 'R' side on inverted arrays
+                    xp = (
+                        -xp
+                    )  # Flip X to see the 'L' side instead of the 'R' side on inverted arrays
             else:
                 # Maintainer fallback: apply inversion if orientation is missing
                 xp = -xp
