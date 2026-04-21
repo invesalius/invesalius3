@@ -1757,14 +1757,14 @@ class SurfacesListCtrlPanel(InvListCtrl):
             if new_name and new_name != current_name:
                 # Update the list
                 self.SetItem(item_idx, 2, new_name)
-                
+
                 # Find global ID
                 global_surface_id = None
                 for surface_id, local_pos in self.surface_list_index.items():
                     if local_pos == item_idx:
                         global_surface_id = surface_id
                         break
-                
+
                 if global_surface_id is not None:
                     Publisher.sendMessage(
                         "Change surface name", index=global_surface_id, name=new_name
