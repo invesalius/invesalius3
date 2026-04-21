@@ -56,6 +56,7 @@ import invesalius.project as project
 import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius.data.ruler import GenericLeftRuler
+from invesalius.data.visualization.marker_visualizer import MarkerHighlightX
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.gui.widgets.inv_spinctrl import InvFloatSpinCtrl, InvSpinCtrl
 from invesalius.i18n import tr as _
@@ -188,78 +189,6 @@ class ContourMIPConfig(wx.Panel):
         else:
             self.border_spin.Disable()
             self.txt_mip_border.Disable()
-
-
-# ---------------------------------------------------------------------------
-# Lightweight canvas drawable: orange X mark shown at the selected marker's
-# world position on each 2D slice view.  (Stage 2 – marker highlight overlay)
-# ---------------------------------------------------------------------------
-from invesalius.gui.widgets.canvas_renderer import CanvasHandlerBase as _CanvasHandlerBase
-
-
-class _MarkerHighlightX(_CanvasHandlerBase):
-    """A red 'X' mark drawn at a 3-D world position on the slice canvas.
-
-    The X mark is only visible on the slice where the marker was created,
-    ensuring precise spatial awareness of the marker's location.
-    """
-
-    _COLOUR = (255, 0, 0, 255)  # bright red for maximum visibility
-    _SIZE = 7  # half-width of X mark (14px total span)
-    _LINE_WIDTH = 2  # line thickness
-
-    def __init__(self, position=(0, 0, 0)):
-        super().__init__(parent=None)
-        self.position = position
-        self.layer = 99  # draw on top of everything
-        self.visible = True
-        self.sagittal_slice = None  # slice index for sagittal view
-        self.coronal_slice = None  # slice index for coronal view
-        self.axial_slice = None  # slice index for axial view
-
-    def draw_to_canvas(self, gc, canvas):
-        """Draw the X mark only on the slice where the marker was created."""
-        if not self.visible:
-            return
-
-        viewer = canvas.viewer
-
-        # Check if we're on the correct slice for this orientation
-        if viewer.slice_data is not None:
-            current_slice = viewer.slice_data.number
-
-            # Only draw if we're on the exact slice where the marker was created
-            if viewer.orientation == "AXIAL":
-                if self.axial_slice is None or current_slice != self.axial_slice:
-                    return
-            elif viewer.orientation == "CORONAL":
-                if self.coronal_slice is None or current_slice != self.coronal_slice:
-                    return
-            elif viewer.orientation == "SAGITAL":
-                if self.sagittal_slice is None or current_slice != self.sagittal_slice:
-                    return
-
-        # Project 3D marker position to 2D screen coordinates
-        px, py = self._3d_to_2d(canvas.evt_renderer, self.position)
-        scale = viewer.GetContentScaleFactor()
-        size = self._SIZE * scale
-
-        # Draw an X mark using canvas.draw_line() method
-        # Line from top-left to bottom-right
-        canvas.draw_line(
-            (px - size, py - size),
-            (px + size, py + size),
-            colour=self._COLOUR,
-            width=self._LINE_WIDTH,
-        )
-
-        # Line from top-right to bottom-left
-        canvas.draw_line(
-            (px + size, py - size),
-            (px - size, py + size),
-            colour=self._COLOUR,
-            width=self._LINE_WIDTH,
-        )
 
 
 class Viewer(wx.Panel):
@@ -1887,7 +1816,7 @@ class Viewer(wx.Panel):
         if self.canvas is not None:
             pos = list(marker.position)
             if self._marker_highlight is None:
-                self._marker_highlight = _MarkerHighlightX(position=pos)
+                self._marker_highlight = MarkerHighlightX(position=pos)
             else:
                 self._marker_highlight.position = pos
 
