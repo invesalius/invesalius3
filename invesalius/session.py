@@ -279,7 +279,7 @@ class Session(metaclass=Singleton):
 
         # Do not reading project status from the config file, since there
         # isn't a recover session tool in InVesalius yet.
-        self.project_status = 3
+        self._config["project_status"] = 3
 
     def _read_config_from_ini(self, config_filename: str) -> None:
         file = codecs.open(config_filename, "rb", SESSION_ENCODING)

@@ -833,6 +833,11 @@ class Controller:
     def LoadProject(self, create_default_mask=True, end_busy_cursor=True):
         proj = prj.Project()
 
+        if not proj.threshold_range or not hasattr(proj, 'matrix_shape'):
+            if end_busy_cursor:
+                Publisher.sendMessage("End busy cursor")
+            return
+
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
         const.THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
