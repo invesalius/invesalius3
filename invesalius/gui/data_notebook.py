@@ -2192,6 +2192,9 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 # Check if this is an annotation (column 3 contains the type)
                 item_type = self.GetItemText(item_idx, 3)
                 if "Annotation" in item_type:
+                    # Select the row first so the user knows which annotation is being edited
+                    self.Select(item_idx)
+                    self.Focus(item_idx)
                     # For annotations, clicking Value column opens edit dialog
                     Publisher.sendMessage("Edit measurement", index=item_idx)
                 else:
@@ -2398,6 +2401,10 @@ class MeasuresListCtrlPanel(InvListCtrl):
             dialog_title = _("Rename Annotation")
         else:
             dialog_title = _("Rename Measurement")
+
+        # Select the row first so the user can orient themselves before the dialog opens
+        self.Select(item_idx)
+        self.Focus(item_idx)
 
         # Show rename dialog
         dlg = wx.TextEntryDialog(self, _("Enter new name:"), dialog_title, value=current_name)
