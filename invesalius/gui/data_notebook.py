@@ -2188,7 +2188,6 @@ class MeasuresListCtrlPanel(InvListCtrl):
             elif column_clicked == 1:
                 # Clicking anywhere in the Name column (including color icon) opens rename dialog
                 self.ShowRenameDialog(item_idx)
-                return
             elif column_clicked == 4:
                 # Check if this is an annotation (column 3 contains the type)
                 item_type = self.GetItemText(item_idx, 3)
@@ -2198,11 +2197,9 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 else:
                     # For non-annotations, clicking Value column rotates/highlights
                     Publisher.sendMessage("Show measurement position", index=item_idx)
-                return
             elif column_clicked in (2, 3):
                 # Clicking Location or Type column rotates/highlights
                 Publisher.sendMessage("Show measurement position", index=item_idx)
-                return
         evt.Skip()
 
     def OnDblClickItem(self, evt):
@@ -2768,8 +2765,9 @@ class ImagePage(wx.Panel):
         if self.list_ctrl.GetItemCount() > 0:
             active_label = proj.active_image_version
             active_idx = 0
+            target_text = _("Original") if active_label == "original" else active_label
             for i in range(self.list_ctrl.GetItemCount()):
-                if self.list_ctrl.GetItemText(i, 1) == active_label:
+                if self.list_ctrl.GetItemText(i, 1) == target_text:
                     active_idx = i
                     break
 
@@ -2811,8 +2809,9 @@ class ImagesListCtrl(InvListCtrl):
 
     def SelectLabel(self, label):
         """Update active image icons for a given label without triggering a switch event."""
+        target_text = _("Original") if label == "original" else label
         for i in range(self.GetItemCount()):
-            if self.GetItemText(i, 1) == label:
+            if self.GetItemText(i, 1) == target_text:
                 self.SetItemImage(i, 1)
             else:
                 self.SetItemImage(i, 0)
