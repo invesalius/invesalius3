@@ -2633,6 +2633,41 @@ class AnnotationsListCtrlPanel(wx.ListCtrl):
 # ---------------------------------------------------------------------------
 
 
+class ImageButtonControlPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
+        self.parent = parent
+        self.__init_gui()
+
+    def __init_gui(self):
+        from invesalius import inv_paths
+        import os
+        import wx.lib.platebtn as pbtn
+
+        BMP_REMOVE = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
+        )
+
+        self.btn_remove = pbtn.PlateButton(
+            self,
+            wx.ID_ANY,
+            "",
+            BMP_REMOVE,
+            style=pbtn.PB_STYLE_DEFAULT | pbtn.PB_STYLE_NOBG | pbtn.PB_STYLE_SQUARE,
+        )
+        self.btn_remove.SetToolTip(_("Remove Filtered Image"))
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(self.btn_remove, 0, wx.ALL | wx.EXPAND, 1)
+        self.SetSizer(sizer)
+
+        self.btn_remove.Bind(wx.EVT_BUTTON, self.OnRemove)
+
+    def OnRemove(self, evt):
+        from invesalius.pubsub import pub as Publisher
+        Publisher.sendMessage("Remove image version")
+
+
 class ImagePage(wx.Panel):
     """Notebook page that manages image versions (original + filtered).
 
@@ -2654,6 +2689,7 @@ class ImagePage(wx.Panel):
 
     def _init_gui(self):
         self.list_ctrl = ImagesListCtrl(self)
+        self.buttonctrl = ImageButtonControlPanel(self)
         self.list_ctrl.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.list_ctrl.InsertColumn(1, _("Image"), width=175)
         self.list_ctrl.InsertColumn(2, _("Info"), width=80)
@@ -2663,6 +2699,7 @@ class ImagePage(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
         self.SetSizer(sizer)
         self.Fit()
 
@@ -2694,11 +2731,39 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self._on_project_loaded, "Load slice to viewer")
         Publisher.subscribe(self._on_filter_done, "Image filter done")
         Publisher.subscribe(self._on_close, "Close project data")
+        Publisher.subscribe(self._on_remove_image_version, "Remove image version")
 
         # New bindings for syncing with ImageFilterDialog
         Publisher.subscribe(self._on_get_image_labels, "Get image labels")
         Publisher.subscribe(self._on_set_active_image, "Set active image")
         Publisher.subscribe(self._on_update_selection, "Update image version selection")
+
+    def _on_remove_image_version(self):
+        idx = self.list_ctrl.GetFirstSelected()
+        if idx <= 0:
+            return
+
+        proj = Project()
+        if idx < len(proj.image_versions):
+            label, mat = proj.image_versions.pop(idx)
+            proj.image_versions_meta.pop(label, None)
+            
+            if hasattr(mat, "filename") and mat.filename:
+                import os
+                try:
+                    os.remove(mat.filename)
+                except OSError:
+                    pass
+                    
+            if proj.active_image_version == label:
+                Publisher.sendMessage("Switch active image by label", label="original")
+                
+            self.list_ctrl.DeleteItem(idx)
+            self.list_ctrl.SetItemImage(0, 1)
+            self.list_ctrl.Select(0)
+            self.list_ctrl.Focus(0)
+            self.list_ctrl.OnSelectionChanged(None, 0)
+
 
     def _on_update_selection(self, label):
         """Update the list choice without triggering a matrix switch (already done by Slice)."""
@@ -2848,3 +2913,43 @@ class ImagesListCtrl(InvListCtrl):
     def __bind_events_wx(self):
         """Not called due to name-mangling — binding is done in __init__ instead."""
         pass
+
+    def OnDblClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = self.HitTest(evt.GetPosition())
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 1 and item_idx > 0:
+                # Deselect all previously selected items
+                for i in range(self.GetItemCount()):
+                    self.Select(i, False)
+                
+                # Programmatically select and focus the double-clicked item
+                self.Select(item_idx)
+                self.Focus(item_idx)
+                self.OnSelectionChanged(None, item_idx)
+                
+                self.ShowRenameDialog(item_idx)
+        evt.Skip()
+
+    def ShowRenameDialog(self, item_idx):
+        import wx
+        current_name = self.GetItemText(item_idx, 1)
+        dlg = wx.TextEntryDialog(
+            self, _("Enter new name:"), _("Rename Image"), value=current_name
+        )
+        if dlg.ShowModal() == wx.ID_OK:
+            new_name = dlg.GetValue()
+            if new_name and new_name != current_name:
+                self.SetItem(item_idx, 1, new_name)
+                
+                proj = Project()
+                if item_idx < len(proj.image_versions):
+                    old_label, mat = proj.image_versions[item_idx]
+                    proj.image_versions[item_idx] = (new_name, mat)
+                    if old_label in proj.image_versions_meta:
+                        proj.image_versions_meta[new_name] = proj.image_versions_meta.pop(old_label)
+                    if proj.active_image_version == old_label:
+                        proj.active_image_version = new_name
+                        Publisher.sendMessage("Switch active image by label", label=new_name)
+        dlg.Destroy()
