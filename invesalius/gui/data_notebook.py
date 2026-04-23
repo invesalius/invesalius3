@@ -2192,6 +2192,10 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 # Check if this is an annotation (column 3 contains the type)
                 item_type = self.GetItemText(item_idx, 3)
                 if "Annotation" in item_type:
+                    # Deselect any old selections
+                    for i in self.GetSelected():
+                        self.Select(i, False)
+
                     # Select the row first so the user knows which annotation is being edited
                     self.Select(item_idx)
                     self.Focus(item_idx)
@@ -2401,6 +2405,10 @@ class MeasuresListCtrlPanel(InvListCtrl):
             dialog_title = _("Rename Annotation")
         else:
             dialog_title = _("Rename Measurement")
+
+        # Deselect any old selections
+        for i in self.GetSelected():
+            self.Select(i, False)
 
         # Select the row first so the user can orient themselves before the dialog opens
         self.Select(item_idx)
