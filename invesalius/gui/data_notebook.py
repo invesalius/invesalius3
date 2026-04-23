@@ -2665,6 +2665,7 @@ class ImageButtonControlPanel(wx.Panel):
 
     def OnRemove(self, evt):
         from invesalius.pubsub import pub as Publisher
+
         Publisher.sendMessage("Remove image version")
 
 
@@ -2747,23 +2748,23 @@ class ImagePage(wx.Panel):
         if idx < len(proj.image_versions):
             label, mat = proj.image_versions.pop(idx)
             proj.image_versions_meta.pop(label, None)
-            
+
             if hasattr(mat, "filename") and mat.filename:
                 import os
+
                 try:
                     os.remove(mat.filename)
                 except OSError:
                     pass
-                    
+
             if proj.active_image_version == label:
                 Publisher.sendMessage("Switch active image by label", label="original")
-                
+
             self.list_ctrl.DeleteItem(idx)
             self.list_ctrl.SetItemImage(0, 1)
             self.list_ctrl.Select(0)
             self.list_ctrl.Focus(0)
             self.list_ctrl.OnSelectionChanged(None, 0)
-
 
     def _on_update_selection(self, label):
         """Update the list choice without triggering a matrix switch (already done by Slice)."""
@@ -2923,26 +2924,25 @@ class ImagesListCtrl(InvListCtrl):
                 # Deselect all previously selected items
                 for i in range(self.GetItemCount()):
                     self.Select(i, False)
-                
+
                 # Programmatically select and focus the double-clicked item
                 self.Select(item_idx)
                 self.Focus(item_idx)
                 self.OnSelectionChanged(None, item_idx)
-                
+
                 self.ShowRenameDialog(item_idx)
         evt.Skip()
 
     def ShowRenameDialog(self, item_idx):
         import wx
+
         current_name = self.GetItemText(item_idx, 1)
-        dlg = wx.TextEntryDialog(
-            self, _("Enter new name:"), _("Rename Image"), value=current_name
-        )
+        dlg = wx.TextEntryDialog(self, _("Enter new name:"), _("Rename Image"), value=current_name)
         if dlg.ShowModal() == wx.ID_OK:
             new_name = dlg.GetValue()
             if new_name and new_name != current_name:
                 self.SetItem(item_idx, 1, new_name)
-                
+
                 proj = Project()
                 if item_idx < len(proj.image_versions):
                     old_label, mat = proj.image_versions[item_idx]
