@@ -2640,9 +2640,11 @@ class ImageButtonControlPanel(wx.Panel):
         self.__init_gui()
 
     def __init_gui(self):
-        from invesalius import inv_paths
         import os
+
         import wx.lib.platebtn as pbtn
+
+        from invesalius import inv_paths
 
         BMP_REMOVE = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
