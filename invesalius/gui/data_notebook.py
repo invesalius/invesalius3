@@ -2742,20 +2742,49 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self._on_update_selection, "Update image version selection")
 
     def _on_remove_image_version(self):
+        import wx
+
         idx = self.list_ctrl.GetFirstSelected()
-        if idx <= 0:
+        if idx < 0:
+            return
+
+        if idx == 0:
+            wx.MessageBox(
+                _("Deleting the original image is not allowed."), _("Error"), wx.ICON_ERROR | wx.OK
+            )
             return
 
         proj = Project()
         if idx < len(proj.image_versions):
+            label, mat = proj.image_versions[idx]
+
+            dlg = wx.MessageDialog(
+                self,
+                _("Are you sure you want to delete the image version '%s'?") % label,
+                _("Delete image version"),
+                wx.ICON_WARNING | wx.YES_NO | wx.NO_DEFAULT,
+            )
+
+            if dlg.ShowModal() != wx.ID_YES:
+                return
+
+            Publisher.sendMessage("Bake masks for image", label=label, matrix=mat)
+
             label, mat = proj.image_versions.pop(idx)
             proj.image_versions_meta.pop(label, None)
 
             if hasattr(mat, "filename") and mat.filename:
                 import os
 
+                filename = mat.filename
+                if hasattr(mat, "_mmap"):
+                    try:
+                        mat._mmap.close()
+                    except Exception:
+                        pass
+
                 try:
-                    os.remove(mat.filename)
+                    os.remove(filename)
                 except OSError:
                     pass
 

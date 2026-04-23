@@ -179,8 +179,8 @@ class Slice(metaclass=utils.Singleton):
 
         proj = Project()
         is_filtered = False
-        for l, mat in proj.image_versions:
-            if mat is value and l != "original":
+        for lbl, mat in proj.image_versions:
+            if mat is value and lbl != "original":
                 is_filtered = True
                 break
 
@@ -247,6 +247,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.__apply_image_filter, "Apply image filter")
         Publisher.subscribe(self.__switch_active_image, "Switch active image")
         Publisher.subscribe(self.__switch_active_image_by_label, "Switch active image by label")
+        Publisher.subscribe(self.__bake_masks_for_image, "Bake masks for image")
         Publisher.subscribe(self.__clean_current_mask, "Clean current mask")
 
         Publisher.subscribe(self.__export_slice, "Export slice")
@@ -1123,12 +1124,20 @@ class Slice(metaclass=utils.Singleton):
         ):
             return self.buffer_slices[orientation].mask
         n = slice_number + 1
+
+        target_matrix = self.matrix
+        if self.current_mask:
+            derived = getattr(self.current_mask, "derived_from", "Original")
+            proj = Project()
+            for lbl, mat in proj.image_versions:
+                if lbl == derived:
+                    target_matrix = mat
+                    break
+
         if orientation == "AXIAL":
             if self.current_mask.matrix[n, 0, 0] == 0:
                 mask = self.current_mask.matrix[n, 1:, 1:]
-                mask[:] = self.do_threshold_to_a_slice(
-                    self.get_image_slice(orientation, slice_number), mask
-                )
+                mask[:] = self.do_threshold_to_a_slice(target_matrix[slice_number], mask)
                 self.current_mask.matrix[n, 0, 0] = 1
             n_mask = np.array(
                 self.current_mask.matrix[n, 1:, 1:],
@@ -1138,9 +1147,7 @@ class Slice(metaclass=utils.Singleton):
         elif orientation == "CORONAL":
             if self.current_mask.matrix[0, n, 0] == 0:
                 mask = self.current_mask.matrix[1:, n, 1:]
-                mask[:] = self.do_threshold_to_a_slice(
-                    self.get_image_slice(orientation, slice_number), mask
-                )
+                mask[:] = self.do_threshold_to_a_slice(target_matrix[:, slice_number, :], mask)
                 self.current_mask.matrix[0, n, 0] = 1
             n_mask = np.array(
                 self.current_mask.matrix[1:, n, 1:],
@@ -1150,9 +1157,7 @@ class Slice(metaclass=utils.Singleton):
         elif orientation == "SAGITAL":
             if self.current_mask.matrix[0, 0, n] == 0:
                 mask = self.current_mask.matrix[1:, 1:, n]
-                mask[:] = self.do_threshold_to_a_slice(
-                    self.get_image_slice(orientation, slice_number), mask
-                )
+                mask[:] = self.do_threshold_to_a_slice(target_matrix[:, :, slice_number], mask)
                 self.current_mask.matrix[0, 0, n] = 1
             n_mask = np.array(
                 self.current_mask.matrix[1:, 1:, n],
@@ -1645,23 +1650,41 @@ class Slice(metaclass=utils.Singleton):
         m[mask == 254] = 254
         return m.astype("uint8")
 
-    def do_threshold_to_all_slices(self, mask=None):
+    def do_threshold_to_all_slices(self, mask=None, target_matrix=None):
         """
         Apply threshold to all slices.
 
         Params:
             - mask: the mask where result of the threshold will be stored.If
               None, it'll be the current mask.
+            - target_matrix: the image matrix to apply the threshold to. If None,
+              it will try to look up the image the mask was derived from.
         """
         if mask is None:
             mask = self.current_mask
+
+        if target_matrix is None:
+            target_matrix = self.matrix
+            derived = getattr(mask, "derived_from", "Original")
+            proj = Project()
+            for lbl, mat in proj.image_versions:
+                if lbl == derived:
+                    target_matrix = mat
+                    break
+
         for n in range(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
                 mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(
-                    self.matrix[n - 1], m, mask.threshold_range
+                    target_matrix[n - 1], m, mask.threshold_range
                 )
                 mask.matrix[n, 0, 0] = 1
+
+        # After evaluating all axial slices, the entire volume is fully evaluated.
+        # Mark coronal and sagittal slices as evaluated too, to prevent them from being
+        # incorrectly re-evaluated and corrupted by get_mask_slice when scrolling.
+        mask.matrix[0, 1:, 0] = 1
+        mask.matrix[0, 0, 1:] = 1
 
         mask.matrix.flush()
 
@@ -2241,6 +2264,19 @@ class Slice(metaclass=utils.Singleton):
         finally:
             wx.EndBusyCursor()
 
+    def __bake_masks_for_image(self, label, matrix):
+        """Force full evaluation of masks derived from the specified image label."""
+        import wx
+
+        wx.BeginBusyCursor()
+        try:
+            proj = Project()
+            for mask in proj.mask_dict.values():
+                if getattr(mask, "derived_from", "Original") == label:
+                    self.do_threshold_to_all_slices(mask=mask, target_matrix=matrix)
+        finally:
+            wx.EndBusyCursor()
+
     def __switch_active_image_by_label(self, label):
         """Find an image version by label and switch to it if not already active."""
         if label == self.current_image_label:
@@ -2251,8 +2287,8 @@ class Slice(metaclass=utils.Singleton):
         wx.BeginBusyCursor()
         try:
             proj = Project()
-            for l, mat in proj.image_versions:
-                if l == label:
+            for lbl, mat in proj.image_versions:
+                if lbl == label:
                     self.current_image_label = label
                     if label == "original":
                         # Restore _matrix to the original memmap stored in image_versions
