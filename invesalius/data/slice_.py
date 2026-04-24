@@ -492,7 +492,14 @@ class Slice(metaclass=utils.Singleton):
         self.SetMaskColour(mask.index, mask.colour)
 
     def __add_mask_thresh(self, mask_name, thresh, colour):
-        mask = self.create_new_mask(name=mask_name, threshold_range=thresh, colour=colour)
+        # Pass the currently active image label so that any new mask created while
+        # a filtered image is active is correctly linked to that filtered version.
+        # Without this, subsequent masks always default to "Original" even when a
+        # filtered image is displayed, causing thresholding to use the wrong data.
+        derived_from = getattr(self, "current_image_label", "original")
+        mask = self.create_new_mask(
+            name=mask_name, threshold_range=thresh, colour=colour, derived_from=derived_from
+        )
         self.SetMaskColour(mask.index, mask.colour)
         # self.SelectCurrentMask(mask.index) # This is already called by create_new_mask -> _add_mask_into_proj
         Publisher.sendMessage("Reload actual slice")
@@ -2274,6 +2281,7 @@ class Slice(metaclass=utils.Singleton):
             for mask in proj.mask_dict.values():
                 if getattr(mask, "derived_from", "Original") == label:
                     self.do_threshold_to_all_slices(mask=mask, target_matrix=matrix)
+                    mask.was_edited = True
         finally:
             wx.EndBusyCursor()
 
