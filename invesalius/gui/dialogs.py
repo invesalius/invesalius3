@@ -560,18 +560,34 @@ def ShowSaveAsProjectDialog(default_filename: str) -> tuple[str | None, bool]:
     current_dir = os.path.abspath(".")
 
     session = ses.Session()
-    last_directory = session.GetConfig("last_directory_inv3", "")
 
-    # Never pre-fill with the temp backup directory: if the user recovered
-    # from a crash, last_directory may point inside the backup folder.
-    # Reset it so the dialog opens somewhere sensible instead.
-    if last_directory and "temp_backup" in str(last_directory):
-        last_directory = ""
+    # Try to use the project's original directory first
+    default_dir = ""
+
+    # Don't use project_path if it's a temporary project (not yet saved)
+    # temp_item is True for: newly imported DICOM, recovered backups, etc.
+    if not session.temp_item:
+        project_path = session.GetState("project_path")
+        if (
+            project_path
+            and isinstance(project_path, tuple)
+            and len(project_path) == 2
+            and project_path[0]
+        ):
+            default_dir = project_path[0]
+
+    # Fallback to last used directory if no valid project directory
+    if not default_dir:
+        default_dir = session.GetConfig("last_directory_inv3", "")
+
+    # Never pre-fill with the temp backup directory
+    if default_dir and "temp_backup" in str(default_dir):
+        default_dir = ""
 
     dlg = wx.FileDialog(
         None,
         _("Save project as..."),  # title
-        last_directory,  # last used directory
+        default_dir,  # default directory
         default_filename,
         WILDCARD_INV_SAVE,
         wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
