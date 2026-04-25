@@ -2493,9 +2493,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             return
 
         if self.config.target == "3D":
-            bstruct = np.array(
-                generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
-            )
+            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
             self.viewer.slice_.do_threshold_to_all_slices()
             cp_mask = self.viewer.slice_.current_mask.matrix.copy()
         else:
@@ -2780,9 +2778,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.do_threshold_to_all_slices()
             mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
-            bstruct = np.array(
-                generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
-            )
+            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
 
             # Zero the previous selection and re-fill for EVERY seed on the full mask.
             self.config.mask.matrix[1:, 1:, 1:][:] = 0
@@ -2914,9 +2910,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         # connectivity instead of being clipped to a rectangular bounding box.
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
-        bstruct = np.array(
-            generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
-        )
+        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
         self.viewer.slice_.do_threshold_to_all_slices()
 
         if self.config.mask is None:
