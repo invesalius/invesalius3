@@ -2701,8 +2701,6 @@ class SelectPartConfig(metaclass=utils.Singleton):
         # Stores the list of (x, y, z) voxels that were clicked so the selection
         # can be multi-part and re-evaluated when the threshold changes.
         self.seeds = []
-        # Stores the list of 3-D ROI boundaries (tuple of 3 slices) for each seed.
-        self.rois = []
 
 
 class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
@@ -2778,43 +2776,26 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         wx.BeginBusyCursor()
         try:
-            thresh_0, thresh_1 = threshold_range
-
-            # Get active image matrix (Original/Filtered).
-            img_matrix = self.viewer.slice_.matrix
+            # Re-threshold the current mask so the source data is fresh.
+            self.viewer.slice_.do_threshold_to_all_slices()
+            mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
             bstruct = np.array(
                 generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
             )
 
-            # Zero the previous selection and re-fill for EVERY seed.
+            # Zero the previous selection and re-fill for EVERY seed on the full mask.
             self.config.mask.matrix[1:, 1:, 1:][:] = 0
 
-            for (x, y, z), (roi_z, roi_y, roi_x) in zip(self.config.seeds, self.config.rois):
-                # Check if current image version still works for this ROI
-                if (
-                    roi_z.stop > img_matrix.shape[0]
-                    or roi_y.stop > img_matrix.shape[1]
-                    or roi_x.stop > img_matrix.shape[2]
-                ):
-                    continue
-
-                img_roi = img_matrix[roi_z, roi_y, roi_x]
-
-                # Localize seed coordinate to the ROI box.
-                seed_loc = (x - roi_x.start, y - roi_y.start, z - roi_z.start)
-                out_roi = self.config.mask.matrix[1:, 1:, 1:][roi_z, roi_y, roi_x]
-
-                # Safety Guard: Ensure localized seed fits within the ROI block.
-                if not (
-                    0 <= seed_loc[2] < img_roi.shape[0]
-                    and 0 <= seed_loc[1] < img_roi.shape[1]
-                    and 0 <= seed_loc[0] < img_roi.shape[2]
-                ):
-                    continue
-
+            for x, y, z in self.config.seeds:
                 floodfill.floodfill_threshold(
-                    img_roi, (seed_loc,), thresh_0, thresh_1, self.fill_value, bstruct, out_roi
+                    mask,
+                    ((x, y, z),),
+                    self.t0,
+                    self.t1,
+                    self.fill_value,
+                    bstruct,
+                    self.config.mask.matrix[1:, 1:, 1:],
                 )
 
             self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
@@ -2912,7 +2893,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
-        # Guard: out-of-bounds click – Rust floodfill extension can't handle negatives.
+        # Guard: out-of-bounds click – floodfill extension can't handle negatives.
         mask_shape = self.viewer.slice_.current_mask.matrix.shape
         if x < 0 or y < 0 or z < 0:
             return
@@ -2920,8 +2901,6 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             return
 
         # Reset stale config.mask when the user has switched to a different image version.
-        # Without this, the old filtered-image selection mask is reused on the original
-        # image (or vice-versa), producing wrong / mixed-data results.
         current_label = getattr(self.viewer.slice_, "current_image_label", "original")
         if self.config.mask is not None:
             config_label = getattr(self.config.mask, "derived_from", "original")
@@ -2930,81 +2909,26 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 self.viewer.slice_.to_show_aux = ""
                 self.config.mask = None
 
-        # Identify the 2-D connected component (bone blob) the user clicked.
-        # We use its width and height to define a 'Shape-Aware' 3-D ROI.
-        from scipy.ndimage import find_objects, label
+        # Use the full current mask matrix as the flood-fill source.
+        # This matches master's proven approach and correctly follows anatomical
+        # connectivity instead of being clipped to a rectangular bounding box.
+        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
-        # Get the actual voxel matrix and the project's current threshold range.
-        mask_matrix = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
-        thresh_0, thresh_1 = self.viewer.slice_.current_mask.threshold_range
+        bstruct = np.array(
+            generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
+        )
+        self.viewer.slice_.do_threshold_to_all_slices()
 
-        # Extract the 2-D voxel slice corresponding to the user's click.
-        # This avoids resampling errors and ensures the search box is accurate.
-        if self.orientation == "AXIAL":
-            voxel_2d = mask_matrix[z, :, :]
-            r, c = y, x
-        elif self.orientation == "CORONAL":
-            voxel_2d = mask_matrix[:, y, :]
-            r, c = z, x
-        else:  # SAGITAL
-            voxel_2d = mask_matrix[:, :, x]
-            r, c = z, y
+        if self.config.mask is None:
+            self._create_new_mask()
 
-        # Threshold the 2-D voxel slice to find the connected bone blob.
-        binary_2d = np.zeros(voxel_2d.shape, dtype=np.uint8)
-        binary_2d[(voxel_2d >= thresh_0) & (voxel_2d <= thresh_1)] = 1
-
-        # Identify the component the user clicked.
-        labeled_2d, _ncomp = label(binary_2d)
-        comp_id = labeled_2d[r, c]
-        if comp_id == 0:
-            return  # Clicked non-bone background
-
-        # Get the voxel-space bounds of the clicked bone blob.
-        objs = find_objects(labeled_2d)
-        blob_r, blob_c = objs[comp_id - 1]
-
-        # Construct a 3-D ROI with moderate padding (45 voxels) for curvature,
-        # and a generous vertical range (150 voxels). This isolates the
-        # structure (e.g. skull, rib) perfectly without clipping or leaking.
-        _P = 45
-        _Z_P = 150
-
-        if self.orientation == "AXIAL":
-            roi_z = slice(max(0, z - _Z_P), min(mask_matrix.shape[0], z + _Z_P + 1))
-            roi_y = slice(max(0, blob_r.start - _P), min(mask_matrix.shape[1], blob_r.stop + _P))
-            roi_x = slice(max(0, blob_c.start - _P), min(mask_matrix.shape[2], blob_c.stop + _P))
-        elif self.orientation == "CORONAL":
-            roi_y = slice(max(0, y - _Z_P), min(mask_matrix.shape[1], y + _Z_P + 1))
-            roi_z = slice(max(0, blob_r.start - _P), min(mask_matrix.shape[0], blob_r.stop + _P))
-            roi_x = slice(max(0, blob_c.start - _P), min(mask_matrix.shape[2], blob_c.stop + _P))
-        else:  # SAGITAL
-            roi_x = slice(max(0, x - _Z_P), min(mask_matrix.shape[2], x + _Z_P + 1))
-            roi_z = slice(max(0, blob_r.start - _P), min(mask_matrix.shape[0], blob_r.stop + _P))
-            roi_y = slice(max(0, blob_c.start - _P), min(mask_matrix.shape[1], blob_c.stop + _P))
+        # Track seed for multi-click threshold re-evaluation.
+        self.config.seeds.append((x, y, z))
 
         wx.BeginBusyCursor()
         try:
-            self.config.rois.append((roi_z, roi_y, roi_x))
-            self.config.seeds.append((x, y, z))
-
-            bstruct = np.array(
-                generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
-            )
-
-            # Get active image matrix (Original/Filtered).
-            img_matrix = self.viewer.slice_.matrix
-            img_roi = img_matrix[roi_z, roi_y, roi_x]
-
-            if self.config.mask is None:
-                self._create_new_mask()
-
-            # Localize seed coordinate to the ROI box.
-            seed_loc = (x - roi_x.start, y - roi_y.start, z - roi_z.start)
-            out_roi = self.config.mask.matrix[1:, 1:, 1:][roi_z, roi_y, roi_x]
-
             if iren.GetControlKey():
-                # On Ctrl+Click remove from mask and attempt to prune seed list
+                # On Ctrl+Click: remove this connected part from the selection.
                 floodfill.floodfill_threshold(
                     self.config.mask.matrix[1:, 1:, 1:],
                     ((x, y, z),),
@@ -3014,14 +2938,18 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                     bstruct,
                     self.config.mask.matrix[1:, 1:, 1:],
                 )
-                # Cleanup lists to avoid unbounded growth on many removal clicks
-                # (Simple reset for now; robust pruning requires distance checks)
+                # Prune seed list to avoid unbounded growth.
                 if len(self.config.seeds) > 50:
                     self.config.seeds = []
-                    self.config.rois = []
             else:
                 floodfill.floodfill_threshold(
-                    img_roi, (seed_loc,), thresh_0, thresh_1, self.fill_value, bstruct, out_roi
+                    mask,
+                    ((x, y, z),),
+                    self.t0,
+                    self.t1,
+                    self.fill_value,
+                    bstruct,
+                    self.config.mask.matrix[1:, 1:, 1:],
                 )
 
             self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
@@ -3032,7 +2960,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.config.mask.was_edited = True
         Publisher.sendMessage("Reload actual slice")
 
-        # Bug 1 fix: also update the 3D Mask Preview to show selection in red
+        # Also update the 3D Mask Preview to show selection in red.
         if ses.Session().mask_3d_preview and self.config.mask:
             if self.config.mask.volume is None:
                 self.config.mask.imagedata = self.config.mask.as_vtkimagedata()
