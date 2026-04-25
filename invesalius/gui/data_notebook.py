@@ -2655,7 +2655,7 @@ class ImageButtonControlPanel(wx.Panel):
             wx.ID_ANY,
             "",
             BMP_REMOVE,
-            style=pbtn.PB_STYLE_DEFAULT | pbtn.PB_STYLE_NOBG | pbtn.PB_STYLE_SQUARE,
+            style=pbtn.PB_STYLE_DEFAULT | pbtn.PB_STYLE_SQUARE,
         )
         self.btn_remove.SetToolTip(_("Remove Filtered Image"))
 
