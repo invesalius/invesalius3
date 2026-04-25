@@ -2902,7 +2902,9 @@ class ImagePage(wx.Panel):
 
 class ImagesListCtrl(InvListCtrl):
     def __init__(self, parent, size=wx.DefaultSize):
-        super().__init__(parent, size=size, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN)
+        super().__init__(
+            parent, size=size, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN
+        )
         # Bind selection event directly here — the double-underscore __bind_events_wx
         # in the parent uses name-mangling and cannot be overridden from a subclass.
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
