@@ -642,7 +642,7 @@ class InvListCtrl(wx.ListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
     ):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
         self.__bind_events_wx()
@@ -737,7 +737,7 @@ class MasksListCtrlPanel(InvListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
     ):
         super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
@@ -1614,7 +1614,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
         category="General",
     ):
         super().__init__(parent, ID, pos, size, style=style)
@@ -2151,7 +2151,7 @@ class MeasuresListCtrlPanel(InvListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
     ):
         super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
@@ -2554,7 +2554,7 @@ class AnnotationsListCtrlPanel(wx.ListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
     ):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
         self._click_check = False
@@ -2691,7 +2691,7 @@ class ImagePage(wx.Panel):
     # ------------------------------------------------------------------
 
     def _init_gui(self):
-        self.list_ctrl = ImagesListCtrl(self)
+        self.list_ctrl = ImagesListCtrl(self, size=wx.Size(256, 150))
         self.buttonctrl = ImageButtonControlPanel(self)
         self.list_ctrl.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.list_ctrl.InsertColumn(1, _("Image"), width=175)
@@ -2701,7 +2701,7 @@ class ImagePage(wx.Panel):
         self._init_image_list()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.list_ctrl, 0, wx.EXPAND)
         sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
         self.SetSizer(sizer)
         self.Fit()
@@ -2901,8 +2901,8 @@ class ImagePage(wx.Panel):
 
 
 class ImagesListCtrl(InvListCtrl):
-    def __init__(self, parent):
-        super().__init__(parent, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN)
+    def __init__(self, parent, size=wx.DefaultSize):
+        super().__init__(parent, size=size, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN)
         # Bind selection event directly here — the double-underscore __bind_events_wx
         # in the parent uses name-mangling and cannot be overridden from a subclass.
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
