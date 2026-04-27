@@ -8041,6 +8041,33 @@ class ImageFilterDialog(wx.Dialog):
             self, -1, value=1.0, min_value=0.1, max_value=10.0, increment=0.1
         )
 
+        # Dimension selection
+        self.rb_dimension = wx.RadioBox(
+            self,
+            -1,
+            _("Dimension:"),
+            choices=[_("3D"), _("2D")],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS,
+        )
+        self.rb_dimension.SetSelection(0)
+
+        # Orientation selection (only for 2D)
+        self.lbl_orientation = wx.StaticText(self, -1, _("Orientation:"))
+        self.cb_orientation = wx.ComboBox(
+            self,
+            -1,
+            choices=[_("Axial"), _("Coronal"), _("Sagittal")],
+            style=wx.CB_READONLY,
+        )
+        self.cb_orientation.SetSelection(0)
+        if sys.platform != "win32":
+            self.cb_orientation.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        # Hide orientation initially (since default is 3D)
+        self.lbl_orientation.Hide()
+        self.cb_orientation.Hide()
+
         # Buttons
         self.btn_apply = wx.Button(self, wx.ID_APPLY, _("Apply"))
         self.btn_close = wx.Button(self, wx.ID_CLOSE, _("Close"))
@@ -8059,6 +8086,17 @@ class ImageFilterDialog(wx.Dialog):
         sizer.Add(self.lbl_param, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         sizer.AddSpacer(5)
         sizer.Add(self.spin_param, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(12)
+        sizer.Add(self.rb_dimension, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(12)
+
+        # We need a sizer for orientation so we can easily hide/show it without breaking layout
+        self.orientation_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.orientation_sizer.Add(self.lbl_orientation, 0, wx.EXPAND)
+        self.orientation_sizer.AddSpacer(5)
+        self.orientation_sizer.Add(self.cb_orientation, 0, wx.EXPAND)
+        sizer.Add(self.orientation_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+
         sizer.AddSpacer(15)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -8074,6 +8112,7 @@ class ImageFilterDialog(wx.Dialog):
     def _bind_events(self):
         self.cb_volume.Bind(wx.EVT_COMBOBOX, self._on_select_volume)
         self.cb_filter.Bind(wx.EVT_COMBOBOX, self._on_select_filter)
+        self.rb_dimension.Bind(wx.EVT_RADIOBOX, self._on_select_dimension)
         self.btn_apply.Bind(wx.EVT_BUTTON, self._on_apply)
         self.btn_close.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
         self.Bind(wx.EVT_CLOSE, self._on_close)
@@ -8124,15 +8163,40 @@ class ImageFilterDialog(wx.Dialog):
         self.GetSizer().Layout()
         self.Fit()
 
+    def _on_select_dimension(self, evt):
+        sel = self.rb_dimension.GetSelection()
+        if sel == 1:  # 2D
+            self.lbl_orientation.Show()
+            self.cb_orientation.Show()
+        else:  # 3D
+            self.lbl_orientation.Hide()
+            self.cb_orientation.Hide()
+        self.GetSizer().Layout()
+        self.Fit()
+
     def _on_apply(self, evt):
         sel = self.cb_filter.GetSelection()
         # 0->Despeckle(4), 1->BorderDetection(5), 2->Mean(2), 3->Median(1)
         filter_map = {0: 4, 1: 5, 2: 2, 3: 1}
         filter_type = filter_map.get(sel, 4)
         value = self.spin_param.GetValue()
+
+        dimension_idx = self.rb_dimension.GetSelection()
+        dimension = "2D" if dimension_idx == 1 else "3D"
+
+        orientation_idx = self.cb_orientation.GetSelection()
+        orientations = ["Axial", "Coronal", "Sagittal"]
+        orientation = orientations[orientation_idx]
+
         self.btn_apply.Disable()
         self.btn_apply.SetLabel(_("Applying..."))
-        Publisher.sendMessage("Apply image filter", filter_type=filter_type, value=value)
+        Publisher.sendMessage(
+            "Apply image filter",
+            filter_type=filter_type,
+            value=value,
+            dimension=dimension,
+            orientation=orientation,
+        )
 
     def _on_filter_done(self):
         if self.btn_apply:

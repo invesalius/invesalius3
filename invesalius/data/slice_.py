@@ -2065,7 +2065,7 @@ class Slice(metaclass=utils.Singleton):
     def update_selected_masks(self, indices):
         self.selected_mask_indices = indices
 
-    def __apply_image_filter(self, filter_type, value):
+    def __apply_image_filter(self, filter_type, value, dimension="3D", orientation="Axial"):
         if self.matrix is None:
             return
 
@@ -2104,20 +2104,58 @@ class Slice(metaclass=utils.Singleton):
             dtype = matrix.dtype
 
             try:
-                if filter_type == 0:  # Gaussian Blur
-                    result = filters.gaussian_blur_filter(matrix, sigma=value)
-                elif filter_type == 1:  # Median Filter
-                    result = filters.median_blur_filter(matrix, value)
-                elif filter_type == 2:  # Mean Filter
-                    result = filters.mean_blur_filter(matrix, value)
-                elif filter_type == 3:  # Sharpening
-                    result = filters.sharpening_filter(matrix, value)
-                elif filter_type == 4:  # Despeckle
-                    result = filters.despeckle_filter(matrix, value)
-                elif filter_type == 5:  # Border Detection
-                    result = filters.border_detection_filter(matrix, value=value)
-                else:
-                    return
+                if dimension == "3D":
+                    if filter_type == 0:  # Gaussian Blur
+                        result = filters.gaussian_blur_filter(matrix, sigma=value)
+                    elif filter_type == 1:  # Median Filter
+                        result = filters.median_blur_filter(matrix, value)
+                    elif filter_type == 2:  # Mean Filter
+                        result = filters.mean_blur_filter(matrix, value)
+                    elif filter_type == 3:  # Sharpening
+                        result = filters.sharpening_filter(matrix, value)
+                    elif filter_type == 4:  # Despeckle
+                        result = filters.despeckle_filter(matrix, value)
+                    elif filter_type == 5:  # Border Detection
+                        result = filters.border_detection_filter(matrix, value=value)
+                    else:
+                        return
+                else:  # 2D filtering
+                    axis_map = {"Axial": 0, "Coronal": 1, "Sagittal": 2}
+                    axis = axis_map.get(orientation, 0)
+
+                    result = np.zeros_like(matrix)
+                    for i in range(matrix.shape[axis]):
+                        # Extract the 2D slice
+                        if axis == 0:
+                            slice_2d = matrix[i, :, :]
+                        elif axis == 1:
+                            slice_2d = matrix[:, i, :]
+                        else:
+                            slice_2d = matrix[:, :, i]
+
+                        # Apply filter to the 2D slice
+                        if filter_type == 0:
+                            res_2d = filters.gaussian_blur_filter(slice_2d, sigma=value)
+                        elif filter_type == 1:
+                            res_2d = filters.median_blur_filter(slice_2d, value)
+                        elif filter_type == 2:
+                            res_2d = filters.mean_blur_filter(slice_2d, value)
+                        elif filter_type == 3:
+                            res_2d = filters.sharpening_filter(slice_2d, value)
+                        elif filter_type == 4:
+                            res_2d = filters.despeckle_filter(slice_2d, value)
+                        elif filter_type == 5:
+                            res_2d = filters.border_detection_filter(slice_2d, value=value)
+                        else:
+                            return
+
+                        # Place it back
+                        if axis == 0:
+                            result[i, :, :] = res_2d
+                        elif axis == 1:
+                            result[:, i, :] = res_2d
+                        else:
+                            result[:, :, i] = res_2d
 
                 # Don't set self.matrix here - that would overwrite self._matrix
                 # (the original image). Instead, stash the result for _after_filter.
@@ -2125,12 +2163,12 @@ class Slice(metaclass=utils.Singleton):
             finally:
                 import wx
 
-                wx.CallAfter(self._after_filter, filter_type, value)
+                wx.CallAfter(self._after_filter, filter_type, value, dimension, orientation)
 
         thread = threading.Thread(target=_run_filter, daemon=True)
         thread.start()
 
-    def _after_filter(self, filter_type=None, value=None):
+    def _after_filter(self, filter_type=None, value=None, dimension="3D", orientation="Axial"):
         """Called on the main thread after filter completes."""
         self._is_filtering = False
 
@@ -2176,6 +2214,8 @@ class Slice(metaclass=utils.Singleton):
                 "applied_filter": fname,
                 "sigma_smooth": str(value),
                 "derived": derived_from,
+                "dimension": dimension,
+                "orientation": orientation,
             }
 
         import wx

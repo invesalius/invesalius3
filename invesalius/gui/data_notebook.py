@@ -2908,6 +2908,7 @@ class ImagesListCtrl(InvListCtrl):
         # Bind selection event directly here — the double-underscore __bind_events_wx
         # in the parent uses name-mangling and cannot be overridden from a subclass.
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
+        self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnRightClick)
 
     def OnCheckItem(self, index, flag):
         """Handle single-click on the eye icon (column 0).
@@ -2943,6 +2944,61 @@ class ImagesListCtrl(InvListCtrl):
 
             label, _ = proj.image_versions[idx]
             Publisher.sendMessage("Switch active image by label", label=label)
+
+    def OnRightClick(self, evt):
+        self.right_clicked_idx = evt.GetIndex()
+        if self.right_clicked_idx < 0:
+            return
+
+        menu = wx.Menu()
+        prop_item = menu.Append(wx.ID_ANY, _("Properties"))
+        self.Bind(wx.EVT_MENU, self.OnShowProperties, prop_item)
+
+        self.PopupMenu(menu)
+        menu.Destroy()
+
+    def OnShowProperties(self, evt):
+        proj = Project()
+        if not (0 <= self.right_clicked_idx < len(proj.image_versions)):
+            return
+
+        label, _mat = proj.image_versions[self.right_clicked_idx]
+
+        # Original image has no metadata
+        if label == "original":
+            wx.MessageBox(
+                _("This is the original unfiltered image."),
+                _("Image Properties"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+            return
+
+        meta = getattr(proj, "image_versions_meta", {}).get(label)
+        if not meta:
+            wx.MessageBox(
+                _("No properties found for this image."),
+                _("Image Properties"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+            return
+
+        # Construct properties string
+        filter_name = meta.get("applied_filter", _("Unknown"))
+        derived = meta.get("derived", _("Unknown"))
+
+        msg = f"{_('Filter Applied')}: {filter_name}\n"
+        msg += f"{_('Derived From')}: {derived}\n"
+
+        # Add filter-specific parameters if they exist
+        if "sigma_smooth" in meta:
+            msg += f"{_('Parameter (Sigma/Kernel/Value)')}: {meta['sigma_smooth']}\n"
+
+        if "dimension" in meta:
+            msg += f"{_('Dimension')}: {meta['dimension']}\n"
+            if meta["dimension"] == "2D" and "orientation" in meta:
+                msg += f"{_('Orientation')}: {meta['orientation']}\n"
+
+        wx.MessageBox(msg, _("Image Properties"), wx.OK | wx.ICON_INFORMATION)
 
     def __bind_events_wx(self):
         """Not called due to name-mangling — binding is done in __init__ instead."""
