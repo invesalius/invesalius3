@@ -36,7 +36,9 @@ def despeckle_filter(matrix: np.ndarray, value: float) -> np.ndarray:
     return ndimage.gaussian_filter(matrix, sigma=value)
 
 
-def border_detection_filter(matrix: np.ndarray, value: float = 1.0, normalize: bool = True) -> np.ndarray:
+def border_detection_filter(
+    matrix: np.ndarray, value: float = 1.0, normalize: bool = True
+) -> np.ndarray:
     """Sobel gradient magnitude with Gaussian pre-smoothing.
     Uses 'value' as the sigma for the pre-smoothing step to control noise sensitivity.
     """
