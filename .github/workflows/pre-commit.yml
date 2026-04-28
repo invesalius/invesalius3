@@ -10,7 +10,9 @@ jobs:
       with:
         python-version: 3.12
     - name: Setup Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@v1
+      with:
+        toolchain: stable
     - id: file_changes
       uses: trilom/file-changes-action@v1.2.4
       with:
