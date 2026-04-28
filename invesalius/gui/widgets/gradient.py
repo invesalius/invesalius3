@@ -729,6 +729,7 @@ class GradientCtrl(wx.Panel):
         """
         v = self.spin_min.GetValue()
         self.SetMinValue(v)
+        self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
         self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
     def OnMaxMouseWheel(self, e: wx.SpinEvent) -> None:
@@ -737,6 +738,7 @@ class GradientCtrl(wx.Panel):
         """
         v = self.spin_max.GetValue()
         self.SetMaxValue(v)
+        self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
         self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
     def SetColour(self, colour: Sequence[SupportsInt]) -> None:

@@ -34,8 +34,9 @@ import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
-from invesalius import inv_paths, project
+from invesalius import inv_paths
 from invesalius.i18n import tr as _
+from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
 logger = logging.getLogger(__name__)
@@ -70,9 +71,10 @@ LOCATION = {
 
 # Panel that initializes notebook and related tabs
 class NotebookPanel(wx.Panel):
-    MASK_PAGE_INDEX = 0
-    SURFACE_PAGE_INDEX = 1
-    MEASURE_PAGE_INDEX = 2
+    IMAGE_PAGE_INDEX = 0
+    MASK_PAGE_INDEX = 1
+    SURFACE_PAGE_INDEX = 2
+    MEASURE_PAGE_INDEX = 3
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -84,6 +86,8 @@ class NotebookPanel(wx.Panel):
         if sys.platform != "win32":
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
+        self.image_page = ImagePage(book)
+        book.AddPage(self.image_page, _("Images"))
         book.AddPage(MaskPage(book), _("Masks"))
         book.AddPage(SurfacePage(book), _("3D surfaces"))
         book.AddPage(MeasurePage(book), _("Measures"))
@@ -98,16 +102,34 @@ class NotebookPanel(wx.Panel):
         book.Refresh()
         self.book = book
         self.navigation_on = False
-
         self.__bind_events()
 
     def __bind_events(self):
+        self.book.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
         Publisher.subscribe(self._FoldSurface, "Fold surface task")
         Publisher.subscribe(self._FoldSurface, "Fold surface page")
         Publisher.subscribe(self._FoldMeasure, "Fold measure task")
         Publisher.subscribe(self._FoldMask, "Fold mask task")
         Publisher.subscribe(self._FoldMask, "Fold mask page")
+        Publisher.subscribe(self._FoldImage, "Fold image page")
         Publisher.subscribe(self._OnNavigationStatus, "Navigation status")
+
+    def OnPageChanging(self, evt):
+        if self.navigation_on:
+            target_page = evt.GetSelection()
+            if target_page in (self.IMAGE_PAGE_INDEX, self.MASK_PAGE_INDEX):
+                evt.Veto()
+                return
+        evt.Skip()
+
+    def _FoldImage(self):
+        """
+        Fold Images notebook page.
+        """
+        if self.navigation_on:
+            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
+            return
+        self.book.SetSelection(self.IMAGE_PAGE_INDEX)
 
     def _FoldSurface(self):
         """
@@ -133,6 +155,7 @@ class NotebookPanel(wx.Panel):
     def _OnNavigationStatus(self, nav_status, vis_status):
         self.navigation_on = bool(nav_status)
         self.book.GetPage(self.MASK_PAGE_INDEX).Enable(not self.navigation_on)
+        self.book.GetPage(self.IMAGE_PAGE_INDEX).Enable(not self.navigation_on)
         if self.navigation_on:
             self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
@@ -388,7 +411,7 @@ class MaskPage(wx.Panel):
         self.create_category("General")
 
         if not clear_project:
-            mask_dict = project.Project().mask_dict
+            mask_dict = Project().mask_dict
             for i in sorted(mask_dict.keys()):
                 mask = mask_dict[i]
                 self.AddMask(mask)
@@ -623,7 +646,7 @@ class InvListCtrl(wx.ListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
     ):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
         self.__bind_events_wx()
@@ -718,7 +741,7 @@ class MasksListCtrlPanel(InvListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
     ):
         super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
@@ -740,6 +763,24 @@ class MasksListCtrlPanel(InvListCtrl):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.OnSelectMaskName, "Select mask name in combo")
+
+    def OnSelectMaskName(self, index):
+        """Programmatically synchronize the list selection and eye icons"""
+        # Temporarily unbind to avoid infinite loops when we programmatically select
+        self.Unbind(wx.EVT_LIST_ITEM_SELECTED)
+        self.Unbind(wx.EVT_LIST_ITEM_DESELECTED)
+
+        for global_idx, local_pos in self.mask_list_index.items():
+            if global_idx == index:
+                self.SetItemState(local_pos, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+                self.SetItemImage(local_pos, 1)  # Eye icon ON
+            else:
+                self.SetItemState(local_pos, 0, wx.LIST_STATE_SELECTED)
+                self.SetItemImage(local_pos, 0)  # Eye icon OFF
+
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_selection_changed)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_selection_changed)
 
     def on_selection_changed(self, evt):
         """Handle selection changes in the mask list"""
@@ -752,6 +793,11 @@ class MasksListCtrlPanel(InvListCtrl):
             Publisher.sendMessage("Show mask", index=global_idx, value=True)
             if global_idx in self.mask_list_index:
                 self.current_index = self.mask_list_index[global_idx]
+            # Switch background image to match the mask's derived source
+            if hasattr(self, "category"):
+                Publisher.sendMessage("Update mask selection state", category=self.category)
+            mask = Project().mask_dict[global_idx]
+            Publisher.sendMessage("Switch active image by label", label=mask.derived_from)
 
         if evt:
             evt.Skip()
@@ -880,11 +926,13 @@ class MasksListCtrlPanel(InvListCtrl):
         self.InsertColumn(1, "", wx.LIST_FORMAT_CENTER)
         self.InsertColumn(2, _("Name"))
         self.InsertColumn(3, _("Threshold"), wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(4, _("Derived"))
 
         self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 25)
         self.SetColumnWidth(2, 95)
         self.SetColumnWidth(3, 90)
+        self.SetColumnWidth(4, 90)
 
         # Set tooltip to inform users about color clicking
         self.SetToolTip(_("Change mask color"))
@@ -938,7 +986,18 @@ class MasksListCtrlPanel(InvListCtrl):
 
         Publisher.sendMessage("Show mask", index=global_idx, value=flag)
 
-    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
+        # Switch background image to match the mask's source (Original vs Filtered)
+        mask = Project().mask_dict[global_idx]
+        Publisher.sendMessage("Switch active image by label", label=mask.derived_from)
+
+    def InsertNewItem(
+        self,
+        index=0,
+        label=_("Mask"),
+        threshold="(1000, 4500)",
+        colour=None,
+        derived_from="original",
+    ):
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
 
@@ -947,6 +1006,7 @@ class MasksListCtrlPanel(InvListCtrl):
         self.SetItem(index, 1, "", imageId=image_index)
         self.SetItem(index, 2, label)
         self.SetItem(index, 3, threshold)
+        self.SetItem(index, 4, _("Original") if derived_from == "original" else derived_from)
         #  self.SetItemImage(index, 1)
         #  for key in self.mask_list_index.keys():
         #  if key != index:
@@ -957,7 +1017,9 @@ class MasksListCtrlPanel(InvListCtrl):
         if mask.index not in self.mask_list_index:
             local_position = len(self.mask_list_index)
             self.mask_list_index[mask.index] = local_position
-            self.InsertNewItem(local_position, mask.name, str(mask.threshold_range), mask.colour)
+            self.InsertNewItem(
+                local_position, mask.name, str(mask.threshold_range), mask.colour, mask.derived_from
+            )
 
             # Set checkbox state based on mask.is_shown
             if mask.is_shown:
@@ -1258,7 +1320,7 @@ class SurfacePage(wx.Panel):
 
         if not clear_project:
             self.create_category("General")
-            surface_dict = project.Project().surface_dict
+            surface_dict = Project().surface_dict
             for i in sorted(surface_dict.keys()):
                 surface = surface_dict[i]
                 self.AddSurface(surface)
@@ -1467,7 +1529,7 @@ class SurfaceButtonControlPanel(wx.Panel):
             WILDCARD_SAVE_3D,
         )
 
-        project_obj = project.Project()
+        project_obj = Project()
         n_surface = 0
 
         for index in project_obj.surface_dict:
@@ -1556,7 +1618,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
         category="General",
     ):
         super().__init__(parent, ID, pos, size, style=style)
@@ -1645,6 +1707,74 @@ class SurfacesListCtrlPanel(InvListCtrl):
     def update_current_surface_data(self, surface):
         self.current_color = [int(255 * c) for c in surface.colour][:3]
         self.current_transparency = int(100 * surface.transparency)
+
+    def OnClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = self.HitTest(evt.GetPosition())
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 0:
+                self._click_check = True
+                item = self.GetItem(item_idx, 0)
+                flag = not bool(item.GetImage())
+                self.SetItemImage(item_idx, int(flag))
+                self.OnCheckItem(item_idx, flag)
+                return
+            elif column_clicked == 1:
+                self.OnChangeColor(item_idx)
+                return
+            elif column_clicked == 2:
+                # Open rename dialog when clicking Name column
+                self.ShowRenameDialog(item_idx)
+                return
+            elif column_clicked in (3, 4):
+                # Highlight surface when clicking Volume or Area columns
+                global_surface_id = None
+                for surface_id, local_pos in self.surface_list_index.items():
+                    if local_pos == item_idx:
+                        global_surface_id = surface_id
+                        break
+                if global_surface_id is not None:
+                    Publisher.sendMessage(
+                        "Change surface selected", surface_index=global_surface_id
+                    )
+                return
+            elif column_clicked == 5:
+                self.OnChangeTransparency(item_idx)
+                return
+        evt.Skip()
+
+    def ShowRenameDialog(self, item_idx):
+        """Show a dialog to rename the surface."""
+        import wx
+
+        # Get current name (Col 2 for surfaces)
+        current_name = self.GetItemText(item_idx, 2)
+
+        # Show rename dialog
+        dlg = wx.TextEntryDialog(
+            self, _("Enter new name:"), _("Rename Surface"), value=current_name
+        )
+
+        if dlg.ShowModal() == wx.ID_OK:
+            new_name = dlg.GetValue()
+            if new_name and new_name != current_name:
+                # Update the list
+                self.SetItem(item_idx, 2, new_name)
+
+                # Find global ID
+                global_surface_id = None
+                for surface_id, local_pos in self.surface_list_index.items():
+                    if local_pos == item_idx:
+                        global_surface_id = surface_id
+                        break
+
+                if global_surface_id is not None:
+                    Publisher.sendMessage(
+                        "Change surface name", index=global_surface_id, name=new_name
+                    )
+
+        dlg.Destroy()
 
     def OnChangeColor(self, item_idx):
         global_surface_id = None
@@ -1767,7 +1897,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         # Get the surface from the project
-        proj = project.Project()
+        proj = Project()
         if global_surface_id not in proj.surface_dict:
             return
 
@@ -2025,7 +2155,7 @@ class MeasuresListCtrlPanel(InvListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
     ):
         super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
@@ -2062,17 +2192,25 @@ class MeasuresListCtrlPanel(InvListCtrl):
             elif column_clicked == 1:
                 # Clicking anywhere in the Name column (including color icon) opens rename dialog
                 self.ShowRenameDialog(item_idx)
-                return
             elif column_clicked == 4:
                 # Check if this is an annotation (column 3 contains the type)
                 item_type = self.GetItemText(item_idx, 3)
                 if "Annotation" in item_type:
+                    # Deselect any old selections
+                    for i in self.GetSelected():
+                        self.Select(i, False)
+
+                    # Select the row first so the user knows which annotation is being edited
+                    self.Select(item_idx)
+                    self.Focus(item_idx)
                     # For annotations, clicking Value column opens edit dialog
                     Publisher.sendMessage("Edit measurement", index=item_idx)
-                    return
-            elif column_clicked == 5:
-                self.OnChangeTransparency(item_idx)
-                return
+                else:
+                    # For non-annotations, clicking Value column rotates/highlights
+                    Publisher.sendMessage("Show measurement position", index=item_idx)
+            elif column_clicked in (2, 3):
+                # Clicking Location or Type column rotates/highlights
+                Publisher.sendMessage("Show measurement position", index=item_idx)
         evt.Skip()
 
     def OnDblClickItem(self, evt):
@@ -2272,6 +2410,14 @@ class MeasuresListCtrlPanel(InvListCtrl):
         else:
             dialog_title = _("Rename Measurement")
 
+        # Deselect any old selections
+        for i in self.GetSelected():
+            self.Select(i, False)
+
+        # Select the row first so the user can orient themselves before the dialog opens
+        self.Select(item_idx)
+        self.Focus(item_idx)
+
         # Show rename dialog
         dlg = wx.TextEntryDialog(self, _("Enter new name:"), dialog_title, value=current_name)
 
@@ -2412,7 +2558,7 @@ class AnnotationsListCtrlPanel(wx.ListCtrl):
         ID=-1,
         pos=wx.DefaultPosition,
         size=wx.DefaultSize,
-        style=wx.LC_REPORT | wx.LC_EDIT_LABELS,
+        style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.BORDER_SUNKEN,
     ):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=style)
         self._click_check = False
@@ -2484,3 +2630,419 @@ class AnnotationsListCtrlPanel(wx.ListCtrl):
         )
         for data in dict:
             self.InsertNewItem(data[0], data[1], data[2], data[3])
+
+
+# ---------------------------------------------------------------------------
+# Images Tab — lists original and filtered image versions
+# ---------------------------------------------------------------------------
+
+
+class ImageButtonControlPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
+        self.parent = parent
+        self.__init_gui()
+
+    def __init_gui(self):
+        import os
+
+        import wx.lib.platebtn as pbtn
+
+        from invesalius import inv_paths
+
+        BMP_REMOVE = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
+        )
+
+        self.btn_remove = pbtn.PlateButton(
+            self,
+            wx.ID_ANY,
+            "",
+            BMP_REMOVE,
+            style=pbtn.PB_STYLE_DEFAULT | pbtn.PB_STYLE_SQUARE,
+        )
+        self.btn_remove.SetToolTip(_("Remove Filtered Image"))
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(self.btn_remove, 0, wx.ALL | wx.EXPAND, 1)
+        self.SetSizer(sizer)
+
+        self.btn_remove.Bind(wx.EVT_BUTTON, self.OnRemove)
+
+    def OnRemove(self, evt):
+        from invesalius.pubsub import pub as Publisher
+
+        Publisher.sendMessage("Remove image version")
+
+
+class ImagePage(wx.Panel):
+    """Notebook page that manages image versions (original + filtered).
+
+    Mirrors the Masks tab pattern.  A new row is added each time a filter
+    is applied.  Selecting a row swaps the active volume matrix so the
+    viewers update immediately.  The first row ("Original") is always
+    present and cannot be removed.
+    """
+
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        self._entries = []  # list of (label, numpy_array)
+        self._init_gui()
+        self._bind_events()
+
+    # ------------------------------------------------------------------
+    # GUI setup
+    # ------------------------------------------------------------------
+
+    def _init_gui(self):
+        self.list_ctrl = ImagesListCtrl(self, size=wx.Size(256, 150))
+        self.buttonctrl = ImageButtonControlPanel(self)
+        self.list_ctrl.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
+        self.list_ctrl.InsertColumn(1, _("Image"), width=175)
+        self.list_ctrl.InsertColumn(2, _("Info"), width=80)
+        self.list_ctrl.SetColumnWidth(0, 25)
+
+        self._init_image_list()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.list_ctrl, 0, wx.EXPAND)
+        sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
+        self.SetSizer(sizer)
+        self.Fit()
+
+    def _init_image_list(self):
+        import os
+
+        from invesalius import inv_paths
+
+        self.imagelist = wx.ImageList(16, 16)
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
+        bitmap.SetWidth(16)
+        bitmap.SetHeight(16)
+        self.imagelist.Add(bitmap)
+
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
+        bitmap = wx.Bitmap(image.Scale(16, 16))
+        bitmap.SetWidth(16)
+        bitmap.SetHeight(16)
+        self.imagelist.Add(bitmap)
+
+        self.list_ctrl.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
+
+    # ------------------------------------------------------------------
+    # Events
+    # ------------------------------------------------------------------
+
+    def _bind_events(self):
+        Publisher.subscribe(self._on_project_loaded, "Load slice to viewer")
+        Publisher.subscribe(self._on_filter_done, "Image filter done")
+        Publisher.subscribe(self._on_close, "Close project data")
+        Publisher.subscribe(self._on_remove_image_version, "Remove image version")
+
+        # New bindings for syncing with ImageFilterDialog
+        Publisher.subscribe(self._on_get_image_labels, "Get image labels")
+        Publisher.subscribe(self._on_set_active_image, "Set active image")
+        Publisher.subscribe(self._on_update_selection, "Update image version selection")
+
+    def _on_remove_image_version(self):
+        import wx
+
+        idx = self.list_ctrl.GetFirstSelected()
+        if idx < 0:
+            return
+
+        if idx == 0:
+            wx.MessageBox(
+                _("Deleting the original image is not allowed."), _("Error"), wx.ICON_ERROR | wx.OK
+            )
+            return
+
+        proj = Project()
+        if idx < len(proj.image_versions):
+            label, mat = proj.image_versions[idx]
+
+            dlg = wx.MessageDialog(
+                self,
+                _("Are you sure you want to delete the image version '%s'?") % label,
+                _("Delete image version"),
+                wx.ICON_WARNING | wx.YES_NO | wx.NO_DEFAULT,
+            )
+
+            if dlg.ShowModal() != wx.ID_YES:
+                return
+
+            Publisher.sendMessage("Bake masks for image", label=label, matrix=mat)
+
+            label, mat = proj.image_versions.pop(idx)
+            proj.image_versions_meta.pop(label, None)
+
+            if hasattr(mat, "filename") and mat.filename:
+                import os
+
+                filename = mat.filename
+                if hasattr(mat, "_mmap"):
+                    try:
+                        mat._mmap.close()
+                    except Exception:
+                        pass
+
+                try:
+                    os.remove(filename)
+                except OSError:
+                    pass
+
+            if proj.active_image_version == label:
+                Publisher.sendMessage("Switch active image by label", label="original")
+
+            self.list_ctrl.DeleteItem(idx)
+            self.list_ctrl.SetItemImage(0, 1)
+            self.list_ctrl.Select(0)
+            self.list_ctrl.Focus(0)
+            self.list_ctrl.OnSelectionChanged(None, 0)
+
+    def _on_update_selection(self, label):
+        """Update the list choice without triggering a matrix switch (already done by Slice)."""
+        self.list_ctrl.SelectLabel(label)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def add_entry(self, label, matrix):
+        """Add a new image version entry."""
+        # Entries are now stored in Project().image_versions
+        idx = self.list_ctrl.GetItemCount()
+        info = _("Original") if idx == 0 else _("Filtered")
+        self.list_ctrl.InsertItem(idx, "")
+        self.list_ctrl.SetItemImage(idx, 0)
+        self.list_ctrl.SetItem(idx, 1, _("Original") if label == "original" else label)
+        self.list_ctrl.SetItem(idx, 2, info)
+        # Ensure only the new item has the eye icon (radio behavior)
+        for i in range(self.list_ctrl.GetItemCount()):
+            self.list_ctrl.SetItemImage(i, 0)
+        self.list_ctrl.SetItemImage(idx, 1)
+
+        # Auto-select the newly added item (triggers _on_select if it was checked)
+        self.list_ctrl.Select(idx)
+        self.list_ctrl.Focus(idx)
+
+    def clear(self):
+        self.list_ctrl.DeleteAllItems()
+        # Project().image_versions should be cleared by Project close logic
+
+    # ------------------------------------------------------------------
+    # Handlers
+    # ------------------------------------------------------------------
+
+    def _on_get_image_labels(self):
+        """Provide a list of current image labels and active index to the requester."""
+        proj = Project()
+        labels = [lbl for lbl, _ in proj.image_versions]
+
+        # Find currently active index (the one with the visible eye icon)
+        active_idx = 0
+        for i in range(self.list_ctrl.GetItemCount()):
+            item = self.list_ctrl.GetItem(i)
+            if item.GetImage() == 1:
+                active_idx = i
+                break
+
+        Publisher.sendMessage("Update image filter combobox", labels=labels, active_idx=active_idx)
+
+    def _on_set_active_image(self, index):
+        """Programmatically switch the active image (e.g., from combo box)."""
+        if 0 <= index < self.list_ctrl.GetItemCount():
+            self.list_ctrl.Select(index)
+            self.list_ctrl.Focus(index)
+
+    def _on_project_loaded(self, *args, **kwargs):
+        """Called when a new project is loaded — populate version list from project."""
+        import invesalius.data.slice_ as slice_module
+
+        self.clear()
+        proj = Project()
+        slc = slice_module.Slice()
+
+        # Ensure Original is present if loading a fresh project
+        if not proj.image_versions and slc.matrix is not None:
+            proj.image_versions.append(("original", slc.matrix.copy()))
+
+        # Add all entries without auto-selecting (eye icons are reset in add_entry)
+        for label, matrix in proj.image_versions:
+            idx = self.list_ctrl.GetItemCount()
+            info = _("Original") if idx == 0 else _("Filtered")
+            self.list_ctrl.InsertItem(idx, "")
+            self.list_ctrl.SetItemImage(idx, 0)  # start hidden
+            self.list_ctrl.SetItem(idx, 1, _("Original") if label == "original" else label)
+            self.list_ctrl.SetItem(idx, 2, info)
+
+        # After all entries are loaded, activate the previously active version
+        if self.list_ctrl.GetItemCount() > 0:
+            active_label = proj.active_image_version
+            active_idx = 0
+            target_text = _("Original") if active_label == "original" else active_label
+            for i in range(self.list_ctrl.GetItemCount()):
+                if self.list_ctrl.GetItemText(i, 1) == target_text:
+                    active_idx = i
+                    break
+
+            for i in range(self.list_ctrl.GetItemCount()):
+                self.list_ctrl.SetItemImage(i, 0)
+            self.list_ctrl.SetItemImage(active_idx, 1)
+            self.list_ctrl.Select(active_idx)
+            self.list_ctrl.Focus(active_idx)
+
+    def _on_filter_done(self):
+        """Called after a filter is applied — add the latest project version to the list."""
+        proj = Project()
+        if proj.image_versions:
+            label, matrix = proj.image_versions[-1]
+            self.add_entry(label, matrix)
+
+    def _on_close(self):
+        wx.CallAfter(self.clear)
+
+
+class ImagesListCtrl(InvListCtrl):
+    def __init__(self, parent, size=wx.DefaultSize):
+        super().__init__(
+            parent, size=size, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN
+        )
+        # Bind selection event directly here — the double-underscore __bind_events_wx
+        # in the parent uses name-mangling and cannot be overridden from a subclass.
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
+        self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnRightClick)
+
+    def OnCheckItem(self, index, flag):
+        """Handle single-click on the eye icon (column 0).
+        Always switch to the clicked item — never allow un-checking.
+        """
+        # Make this item active regardless of its previous state
+        for i in range(self.GetItemCount()):
+            self.SetItemImage(i, 0)
+        self.SetItemImage(index, 1)
+        self.Select(index)
+        self.Focus(index)
+        self.OnSelectionChanged(None, index)
+
+    def SelectLabel(self, label):
+        """Update active image icons for a given label without triggering a switch event."""
+        target_text = _("Original") if label == "original" else label
+        for i in range(self.GetItemCount()):
+            if self.GetItemText(i, 1) == target_text:
+                self.SetItemImage(i, 1)
+            else:
+                self.SetItemImage(i, 0)
+
+    def OnSelectionChanged(self, evt, manual_index=None):
+        idx = evt.GetIndex() if evt else manual_index
+        if idx is None:
+            return
+        proj = Project()
+        if 0 <= idx < len(proj.image_versions):
+            # Update icons: set all to invisible (0), then active to visible (1)
+            for i in range(self.GetItemCount()):
+                self.SetItemImage(i, 0)
+            self.SetItemImage(idx, 1)
+
+            label, _ = proj.image_versions[idx]
+            Publisher.sendMessage("Switch active image by label", label=label)
+
+    def OnRightClick(self, evt):
+        self.right_clicked_idx = evt.GetIndex()
+        if self.right_clicked_idx < 0:
+            return
+
+        menu = wx.Menu()
+        prop_item = menu.Append(wx.ID_ANY, _("Properties"))
+        self.Bind(wx.EVT_MENU, self.OnShowProperties, prop_item)
+
+        self.PopupMenu(menu)
+        menu.Destroy()
+
+    def OnShowProperties(self, evt):
+        proj = Project()
+        if not (0 <= self.right_clicked_idx < len(proj.image_versions)):
+            return
+
+        label, _mat = proj.image_versions[self.right_clicked_idx]
+
+        # Original image has no metadata
+        if label == "original":
+            wx.MessageBox(
+                _("This is the original unfiltered image."),
+                _("Image Properties"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+            return
+
+        meta = getattr(proj, "image_versions_meta", {}).get(label)
+        if not meta:
+            wx.MessageBox(
+                _("No properties found for this image."),
+                _("Image Properties"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+            return
+
+        # Construct properties string
+        filter_name = meta.get("applied_filter", _("Unknown"))
+        derived = meta.get("derived", _("Unknown"))
+
+        msg = f"{_('Filter Applied')}: {filter_name}\n"
+        msg += f"{_('Derived From')}: {derived}\n"
+
+        # Add filter-specific parameters if they exist
+        if "sigma_smooth" in meta:
+            msg += f"{_('Parameter (Sigma/Kernel/Value)')}: {meta['sigma_smooth']}\n"
+
+        if "dimension" in meta:
+            msg += f"{_('Dimension')}: {meta['dimension']}\n"
+            if meta["dimension"] == "2D" and "orientation" in meta:
+                msg += f"{_('Orientation')}: {meta['orientation']}\n"
+
+        wx.MessageBox(msg, _("Image Properties"), wx.OK | wx.ICON_INFORMATION)
+
+    def __bind_events_wx(self):
+        """Not called due to name-mangling — binding is done in __init__ instead."""
+        pass
+
+    def OnDblClickItem(self, evt):
+        self._click_check = False
+        item_idx, flag = self.HitTest(evt.GetPosition())
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 1 and item_idx > 0:
+                # Deselect all previously selected items
+                for i in range(self.GetItemCount()):
+                    self.Select(i, False)
+
+                # Programmatically select and focus the double-clicked item
+                self.Select(item_idx)
+                self.Focus(item_idx)
+                self.OnSelectionChanged(None, item_idx)
+
+                self.ShowRenameDialog(item_idx)
+        evt.Skip()
+
+    def ShowRenameDialog(self, item_idx):
+        import wx
+
+        current_name = self.GetItemText(item_idx, 1)
+        dlg = wx.TextEntryDialog(self, _("Enter new name:"), _("Rename Image"), value=current_name)
+        if dlg.ShowModal() == wx.ID_OK:
+            new_name = dlg.GetValue()
+            if new_name and new_name != current_name:
+                self.SetItem(item_idx, 1, new_name)
+
+                proj = Project()
+                if item_idx < len(proj.image_versions):
+                    old_label, mat = proj.image_versions[item_idx]
+                    proj.image_versions[item_idx] = (new_name, mat)
+                    if old_label in proj.image_versions_meta:
+                        proj.image_versions_meta[new_name] = proj.image_versions_meta.pop(old_label)
+                    if proj.active_image_version == old_label:
+                        proj.active_image_version = new_name
+                        Publisher.sendMessage("Switch active image by label", label=new_name)
+        dlg.Destroy()

@@ -563,18 +563,34 @@ def ShowSaveAsProjectDialog(default_filename: str) -> tuple[str | None, bool]:
     current_dir = os.path.abspath(".")
 
     session = ses.Session()
-    last_directory = session.GetConfig("last_directory_inv3", "")
 
-    # Never pre-fill with the temp backup directory: if the user recovered
-    # from a crash, last_directory may point inside the backup folder.
-    # Reset it so the dialog opens somewhere sensible instead.
-    if last_directory and "temp_backup" in str(last_directory):
-        last_directory = ""
+    # Try to use the project's original directory first
+    default_dir = ""
+
+    # Don't use project_path if it's a temporary project (not yet saved)
+    # temp_item is True for: newly imported DICOM, recovered backups, etc.
+    if not session.temp_item:
+        project_path = session.GetState("project_path")
+        if (
+            project_path
+            and isinstance(project_path, tuple)
+            and len(project_path) == 2
+            and project_path[0]
+        ):
+            default_dir = project_path[0]
+
+    # Fallback to last used directory if no valid project directory
+    if not default_dir:
+        default_dir = session.GetConfig("last_directory_inv3", "")
+
+    # Never pre-fill with the temp backup directory
+    if default_dir and "temp_backup" in str(default_dir):
+        default_dir = ""
 
     dlg = wx.FileDialog(
         None,
         _("Save project as..."),  # title
-        last_directory,  # last used directory
+        default_dir,  # default directory
         default_filename,
         WILDCARD_INV_SAVE,
         wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
@@ -7970,3 +7986,233 @@ class AnnotationDialog(wx.Dialog):
     def GetValue(self):
         """Return the annotation text entered by the user."""
         return self.txt_annotation.GetValue().strip()
+
+
+class ImageFilterDialog(wx.Dialog):
+    """Floating non-modal dialog for applying image filters.
+    Supports: Despeckle (Gaussian), Border Detection (Sobel), Mean, Median.
+    """
+
+    def __init__(self):
+        wx.Dialog.__init__(
+            self,
+            wx.GetApp().GetTopWindow(),
+            -1,
+            _("Image Filters"),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT,
+        )
+        self._init_gui()
+        self._on_select_filter()
+        self._bind_events()
+
+    def _init_gui(self):
+        import sys
+
+        from invesalius.gui.widgets.inv_spinctrl import InvFloatSpinCtrl
+
+        # Volume selection dropdown
+        lbl_volume = wx.StaticText(self, -1, _("Apply filter to:"))
+        self.cb_volume = wx.ComboBox(
+            self,
+            -1,
+            choices=[],
+            style=wx.CB_READONLY,
+        )
+        if sys.platform != "win32":
+            self.cb_volume.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        # Filter type dropdown
+        lbl_filter = wx.StaticText(self, -1, _("Filter type:"))
+        self.cb_filter = wx.ComboBox(
+            self,
+            -1,
+            choices=[
+                _("Despeckle (Gaussian)"),
+                _("Border Detection (Sobel)"),
+                _("Mean"),
+                _("Median"),
+            ],
+            style=wx.CB_READONLY,
+        )
+        self.cb_filter.SetSelection(0)
+        if sys.platform != "win32":
+            self.cb_filter.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        # Parameter label changes based on selected filter
+        self.lbl_param = wx.StaticText(self, -1, _("Sigma:"))
+        self.spin_param = InvFloatSpinCtrl(
+            self, -1, value=1.0, min_value=0.1, max_value=10.0, increment=0.1
+        )
+
+        # Dimension selection
+        self.rb_dimension = wx.RadioBox(
+            self,
+            -1,
+            _("Dimension:"),
+            choices=[_("3D"), _("2D")],
+            majorDimension=2,
+            style=wx.RA_SPECIFY_COLS,
+        )
+        self.rb_dimension.SetSelection(0)
+
+        # Orientation selection (only for 2D)
+        self.lbl_orientation = wx.StaticText(self, -1, _("Orientation:"))
+        self.cb_orientation = wx.ComboBox(
+            self,
+            -1,
+            choices=[_("Axial"), _("Coronal"), _("Sagittal")],
+            style=wx.CB_READONLY,
+        )
+        self.cb_orientation.SetSelection(0)
+        if sys.platform != "win32":
+            self.cb_orientation.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        # Hide orientation initially (since default is 3D)
+        self.lbl_orientation.Hide()
+        self.cb_orientation.Hide()
+
+        # Buttons
+        self.btn_apply = wx.Button(self, wx.ID_APPLY, _("Apply"))
+        self.btn_close = wx.Button(self, wx.ID_CLOSE, _("Close"))
+
+        # Layout
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddSpacer(10)
+        sizer.Add(lbl_volume, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(5)
+        sizer.Add(self.cb_volume, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(12)
+        sizer.Add(lbl_filter, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(5)
+        sizer.Add(self.cb_filter, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(12)
+        sizer.Add(self.lbl_param, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(5)
+        sizer.Add(self.spin_param, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(12)
+        sizer.Add(self.rb_dimension, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sizer.AddSpacer(12)
+
+        # We need a sizer for orientation so we can easily hide/show it without breaking layout
+        self.orientation_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.orientation_sizer.Add(self.lbl_orientation, 0, wx.EXPAND)
+        self.orientation_sizer.AddSpacer(5)
+        self.orientation_sizer.Add(self.cb_orientation, 0, wx.EXPAND)
+        sizer.Add(self.orientation_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+
+        sizer.AddSpacer(15)
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer.Add(self.btn_apply, 0)
+        btn_sizer.AddSpacer(8)
+        btn_sizer.Add(self.btn_close, 0)
+        sizer.Add(btn_sizer, 0, wx.ALIGN_CENTER | wx.ALL, 8)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+    def _bind_events(self):
+        self.cb_volume.Bind(wx.EVT_COMBOBOX, self._on_select_volume)
+        self.cb_filter.Bind(wx.EVT_COMBOBOX, self._on_select_filter)
+        self.rb_dimension.Bind(wx.EVT_RADIOBOX, self._on_select_dimension)
+        self.btn_apply.Bind(wx.EVT_BUTTON, self._on_apply)
+        self.btn_close.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+
+        Publisher.subscribe(self._on_filter_done, "Image filter done")
+        Publisher.subscribe(self._on_update_combobox, "Update image filter combobox")
+
+        # Request initial list of image labels to populate the cb_volume
+        wx.CallAfter(Publisher.sendMessage, "Get image labels")
+
+    def _on_update_combobox(self, labels, active_idx):
+        self.cb_volume.Clear()
+        self.cb_volume.AppendItems(labels)
+        if 0 <= active_idx < len(labels):
+            self.cb_volume.SetSelection(active_idx)
+
+    def _on_select_volume(self, evt):
+        idx = self.cb_volume.GetSelection()
+        Publisher.sendMessage("Set active image", index=idx)
+
+    def _on_select_filter(self, evt=None):
+        """Update the parameter label and spin range to match the chosen filter."""
+        sel = self.cb_filter.GetSelection()
+        if sel == 0:  # Despeckle (Gaussian)
+            self.lbl_param.SetLabel(_("Sigma:"))
+            self.spin_param.SetRange(0.1, 10.0)
+            self.spin_param.SetIncrement(0.1)
+            if self.spin_param.GetValue() > 10.0:
+                self.spin_param.SetValue(1.0)
+        elif sel == 1:  # Border Detection (Sobel)
+            self.lbl_param.SetLabel(_("Pre-smooth sigma:"))
+            self.spin_param.SetRange(0.1, 10.0)
+            self.spin_param.SetIncrement(0.1)
+            if self.spin_param.GetValue() > 10.0:
+                self.spin_param.SetValue(1.0)
+        elif sel == 2:  # Mean
+            self.lbl_param.SetLabel(_("Kernel size:"))
+            self.spin_param.SetRange(3, 15)
+            self.spin_param.SetIncrement(2)
+            if self.spin_param.GetValue() < 3:
+                self.spin_param.SetValue(3)
+        elif sel == 3:  # Median
+            self.lbl_param.SetLabel(_("Kernel size:"))
+            self.spin_param.SetRange(3, 15)
+            self.spin_param.SetIncrement(2)
+            if self.spin_param.GetValue() < 3:
+                self.spin_param.SetValue(3)
+        self.GetSizer().Layout()
+        self.Fit()
+
+    def _on_select_dimension(self, evt):
+        sel = self.rb_dimension.GetSelection()
+        if sel == 1:  # 2D
+            self.lbl_orientation.Show()
+            self.cb_orientation.Show()
+        else:  # 3D
+            self.lbl_orientation.Hide()
+            self.cb_orientation.Hide()
+        self.GetSizer().Layout()
+        self.Fit()
+
+    def _on_apply(self, evt):
+        sel = self.cb_filter.GetSelection()
+        # 0->Despeckle(4), 1->BorderDetection(5), 2->Mean(2), 3->Median(1)
+        filter_map = {0: 4, 1: 5, 2: 2, 3: 1}
+        filter_type = filter_map.get(sel, 4)
+        value = self.spin_param.GetValue()
+
+        dimension_idx = self.rb_dimension.GetSelection()
+        dimension = "2D" if dimension_idx == 1 else "3D"
+
+        orientation_idx = self.cb_orientation.GetSelection()
+        orientations = ["Axial", "Coronal", "Sagittal"]
+        orientation = orientations[orientation_idx]
+
+        self.btn_apply.Disable()
+        self.btn_apply.SetLabel(_("Applying..."))
+        Publisher.sendMessage(
+            "Apply image filter",
+            filter_type=filter_type,
+            value=value,
+            dimension=dimension,
+            orientation=orientation,
+        )
+
+    def _on_filter_done(self):
+        if self.btn_apply:
+            self.btn_apply.SetLabel(_("Apply"))
+            self.btn_apply.Enable()
+        # Refresh volume list in case a new filtered version was created
+        wx.CallAfter(Publisher.sendMessage, "Get image labels")
+
+    def _on_close(self, evt):
+        try:
+            Publisher.unsubscribe(self._on_filter_done, "Image filter done")
+            Publisher.unsubscribe(self._on_update_combobox, "Update image filter combobox")
+        except Exception:
+            pass
+        evt.Skip()
+        self.Destroy()
