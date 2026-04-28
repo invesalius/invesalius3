@@ -311,10 +311,10 @@ class PatientGroup:
             axis = ORIENT_MAP[group_key[0]]  # based on orientation
             for index in range(len(sorted_list) - 1):
                 current = sorted_list[index]
-                # next = sorted_list[index + 1]
+                next_item = sorted_list[index + 1]
 
                 pos_current = current.image.position[axis]
-                pos_next = current.image.position[axis]
+                pos_next = next_item.image.position[axis]
                 spacing = current.image.spacing
 
                 if (pos_next - pos_current) <= (spacing[2] * 2):
