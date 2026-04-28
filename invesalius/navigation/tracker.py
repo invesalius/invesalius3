@@ -213,7 +213,11 @@ class Tracker(metaclass=Singleton):
 
             # Skip duplicate readings — if the tracker has not updated yet,
             # the raw coordinate will be identical to the previous one.
-            if prev_coord_raw is not None and coord_raw is not None and np.array_equal(coord_raw, prev_coord_raw):
+            if (
+                prev_coord_raw is not None
+                and coord_raw is not None
+                and np.array_equal(coord_raw, prev_coord_raw)
+            ):
                 attempts += 1
                 sleep(sample_delay)
                 continue
