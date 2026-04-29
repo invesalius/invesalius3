@@ -40,6 +40,9 @@ class SerialPortConnection(threading.Thread):
         self.serial_port_queue = serial_port_queue
         self.event = event
         self.sleep_nav = sleep_nav
+        self._trigger_active = False
+        self._last_trigger_time = 0.0
+        self._trigger_cooldown = 0.15
 
     def Connect(self):
         if self.com_port is None:
@@ -80,19 +83,31 @@ class SerialPortConnection(threading.Thread):
             trigger_on = False
             try:
                 lines = self.connection.readlines()
-                if lines:
-                    trigger_on = True
+                has_data = bool(lines)
             except Exception:
                 print("Error: Serial port could not be read.")
+                has_data = False
 
             if self.stylusplh:
-                trigger_on = True
+                has_data = True
                 self.stylusplh = False
 
-            try:
-                self.serial_port_queue.put_nowait(trigger_on)
-            except queue.Full:
-                print("Error: Serial port queue full.")
+            now = time.monotonic()
+            # Debounce serial input: emit only on rising edge and respect a cooldown.
+            if has_data and not self._trigger_active:
+                if now - self._last_trigger_time >= self._trigger_cooldown:
+                    trigger_on = True
+                    self._last_trigger_time = now
+                self._trigger_active = True
+            elif not has_data:
+                self._trigger_active = False
+
+            if trigger_on:
+                try:
+                    self.serial_port_queue.put_nowait(True)
+                except queue.Full:
+                    # Drop duplicate trigger if consumer has not yet processed the previous one.
+                    pass
 
             time.sleep(self.sleep_nav)
 

@@ -179,6 +179,9 @@ class Robot(metaclass=Singleton):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Pressure set point", pressure=pressure_setpoint
         )
+        # Ensure we fetch the robot-side config early so features like the force/pressure
+        # overlay can be initialized without requiring the Preferences dialog to be opened.
+        Publisher.sendMessage("Neuronavigation to Robot: Request config")
         print("Connected to robot")
 
     def InitializeRobot(self):
@@ -266,6 +269,18 @@ class Robot(metaclass=Singleton):
 
     def OnRobotInitialConfig(self, config):
         self.robot_init_config = config
+        if not config:
+            return
+
+        # Make sure the Volume viewer force/pressure overlay is turned on/off based
+        # on the robot config, even if the GUI checkbox was never toggled.
+        enabled = bool(config.get("use_pressure_sensor", False))
+        Publisher.sendMessage("Set visibility robot force visualizer", visible=enabled)
+
+        # Some robot backends only start streaming feedback after an explicit update.
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Update config", use_pressure_sensor=enabled
+        )
 
     def UnsetTarget(self, marker):
         self.target = None

@@ -321,4 +321,5 @@ class GenericLeftRulerVolume(RulerVolume):
             (x_text, y_text),
             font=self.GetFont(self.font_size),
             txt_colour=(r * 255, g * 255, b * 255),
+            add_background=True,
         )

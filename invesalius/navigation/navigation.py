@@ -19,6 +19,7 @@
 
 import queue
 import threading
+import time
 from time import sleep
 
 import numpy as np
@@ -137,85 +138,68 @@ class UpdateNavigationScene(threading.Thread):
         self.event = event
         self.neuronavigation_api = neuronavigation_api
         self.navigation = Navigation()
+        self._last_render = 0.0
+        self._render_interval = max(self.sle, 1.0 / 100.0)
+        self._slice_render_interval = max(self.sle, 1.0 / 10.0)
+        self._loop_sleep = max(self.sle, 1.0 / 120.0)
+        self._last_pose_update = 0.0
+        self._last_dispatch = 0.0
+        self._dispatch_pending = False
+        self._last_slice_render = 0.0
 
-    def run(self):
-        while not self.event.is_set():
-            got_coords = False
-            try:
-                coords, marker_visibilities, m_imgs = self.coord_queue.get_nowait()
-                got_coords = True
+    def _dispatch_updates(
+        self,
+        *,
+        update_pose,
+        render,
+        slice_render,
+        coord,
+        probe_visible,
+        probe_coord,
+        probe_m_img,
+        coil_visible,
+        main_coil,
+        coords,
+        m_imgs,
+        tracts_payload,
+        trigger_on,
+        enorm_data,
+    ):
+        try:
+            if tracts_payload is not None:
+                bundle, affine_vtk, coord_offset, coord_offset_w = tracts_payload
+                Publisher.sendMessage("Remove tracts")
+                Publisher.sendMessage(
+                    "Update tracts",
+                    root=bundle,
+                    affine_vtk=affine_vtk,
+                    coord_offset=coord_offset,
+                    coord_offset_w=coord_offset_w,
+                )
 
-                probe_visible = marker_visibilities[0]
-                coil_visible = any(marker_visibilities[2:])  # is any coil visible?
+            if trigger_on:
+                Publisher.sendMessage("Create marker", marker_type=MarkerType.COIL_POSE)
 
-                main_coil = self.navigation.main_coil
-                track_this = main_coil if self.navigation.track_coil else "probe"
-                # choose which object to track in slices and viewer_volume pointer
-                coord = coords[track_this]
-
-                # Remove probe, so that coords/m_imgs only contain coils
-                probe_coord = coords.pop("probe")
-                probe_m_img = m_imgs.pop("probe")
-
-                # use of CallAfter is mandatory otherwise crashes the wx interface
-                if self.view_tracts:
-                    bundle, affine_vtk, coord_offset, coord_offset_w = (
-                        self.tracts_queue.get_nowait()
-                    )
-                    # TODO: Check if possible to combine the Remove tracts with Update tracts in a single command
-                    wx.CallAfter(Publisher.sendMessage, "Remove tracts")
-                    wx.CallAfter(
-                        Publisher.sendMessage,
-                        "Update tracts",
-                        root=bundle,
-                        affine_vtk=affine_vtk,
-                        coord_offset=coord_offset,
-                        coord_offset_w=coord_offset_w,
-                    )
-                    self.tracts_queue.task_done()
-
-                if self.serial_port_enabled:
-                    trigger_on = self.serial_port_queue.get_nowait()
-                    if trigger_on:
-                        wx.CallAfter(
-                            Publisher.sendMessage, "Create marker", marker_type=MarkerType.COIL_POSE
-                        )
-                    self.serial_port_queue.task_done()
-
-                # TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
-                # see the red cross in the position of the offset marker
-
-                # Update the slice viewers to show the current position of the tracked object.
-                wx.CallAfter(Publisher.sendMessage, "Update slices position", position=coord[:3])
-
-                # Update the cross position to the current position of the tracked object, so that, e.g., when a
-                # new marker is created, it is created in the current position of the object.
-                wx.CallAfter(Publisher.sendMessage, "Set cross focal point", position=coord)
-
-                wx.CallAfter(
-                    Publisher.sendMessage,
+            if update_pose:
+                Publisher.sendMessage("Update slices position", position=coord[:3])
+                Publisher.sendMessage("Set cross focal point", position=coord)
+                Publisher.sendMessage(
                     "Update volume viewer pointer",
                     position=[coord[0], -coord[1], coord[2]],
                 )
 
                 if coil_visible:
-                    # Check pubsub "Update coil pose" dependencies
-                    wx.CallAfter(
-                        Publisher.sendMessage, "Update coil poses", m_imgs=m_imgs, coords=coords
-                    )
-                    wx.CallAfter(  # LUKATODO: this is just for viewer_volume... which will be updated later to support multicoil (target, tracts & efield)
-                        Publisher.sendMessage,
+                    Publisher.sendMessage("Update coil poses", m_imgs=m_imgs, coords=coords)
+                    Publisher.sendMessage(
                         "Update coil pose",
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
                     )
-                    wx.CallAfter(
-                        Publisher.sendMessage,
+                    Publisher.sendMessage(
                         "From Neuronavigation: Send coil pose",
                         coord=list(coords[main_coil]),
                     )
-                    wx.CallAfter(
-                        Publisher.sendMessage,
+                    Publisher.sendMessage(
                         "Update object arrow matrix",
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
@@ -223,45 +207,120 @@ class UpdateNavigationScene(threading.Thread):
                     )
 
                     if self.e_field_loaded:
-                        wx.CallAfter(
-                            Publisher.sendMessage,
+                        Publisher.sendMessage(
                             "Update point location for e-field calculation",
                             m_img=m_imgs[main_coil],
                             coord=coords[main_coil],
                             queue_IDs=self.e_field_IDs_queue,
                         )
-                        try:
-                            enorm_data = self.e_field_norms_queue.get_nowait()
-                            wx.CallAfter(
-                                Publisher.sendMessage,
+                        if enorm_data is not None:
+                            Publisher.sendMessage(
                                 "Get enorm",
                                 enorm_data=enorm_data,
                                 plot_vector=self.plot_efield_vectors,
                             )
-                        except queue.Empty:
-                            pass
-                        else:
-                            self.e_field_norms_queue.task_done()
 
                 if probe_visible:
-                    wx.CallAfter(
-                        Publisher.sendMessage,
+                    Publisher.sendMessage(
                         "Update probe pose",
                         m_img=probe_m_img,
                         coord=probe_coord,
                     )
 
-                # Render the volume viewer and the slice viewers.
-                wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
-                wx.CallAfter(Publisher.sendMessage, "Update slice viewer")
+            if render:
+                Publisher.sendMessage("Render volume viewer")
+                if slice_render:
+                    Publisher.sendMessage("Update slice viewer")
+        finally:
+            self._dispatch_pending = False
 
-                self.coord_queue.task_done()
-
+    def run(self):
+        while not self.event.is_set():
+            try:
+                coords, marker_visibilities, m_imgs = self.coord_queue.get_nowait()
             except queue.Empty:
-                if got_coords:
-                    self.coord_queue.task_done()
+                sleep(self._loop_sleep)
+                continue
 
-            sleep(self.sle)
+            probe_visible = marker_visibilities[0]
+            coil_visible = any(marker_visibilities[2:])  # is any coil visible?
+
+            main_coil = self.navigation.main_coil
+            track_this = main_coil if self.navigation.track_coil else "probe"
+            # choose which object to track in slices and viewer_volume pointer
+            coord = coords[track_this]
+
+            # Remove probe, so that coords/m_imgs only contain coils
+            probe_coord = coords.pop("probe")
+            probe_m_img = m_imgs.pop("probe")
+
+            # use of CallAfter is mandatory otherwise crashes the wx interface
+            tracts_payload = None
+            if self.view_tracts:
+                try:
+                    bundle, affine_vtk, coord_offset, coord_offset_w = (
+                        self.tracts_queue.get_nowait()
+                    )
+                except queue.Empty:
+                    pass
+                else:
+                    tracts_payload = (bundle, affine_vtk, coord_offset, coord_offset_w)
+                    self.tracts_queue.task_done()
+
+            trigger_on = False
+            if self.serial_port_enabled:
+                try:
+                    trigger_on = self.serial_port_queue.get_nowait()
+                except queue.Empty:
+                    trigger_on = False
+                else:
+                    self.serial_port_queue.task_done()
+
+            now = time.monotonic()
+            update_pose = now - self._last_pose_update >= self._render_interval
+            render = now - self._last_render >= self._render_interval
+            slice_render = render and (now - self._last_slice_render >= self._slice_render_interval)
+            enorm_data = None
+            if update_pose and coil_visible and self.e_field_loaded:
+                try:
+                    enorm_data = self.e_field_norms_queue.get_nowait()
+                except queue.Empty:
+                    pass
+                else:
+                    self.e_field_norms_queue.task_done()
+
+            if update_pose:
+                self._last_pose_update = now
+            if render:
+                self._last_render = now
+            if slice_render:
+                self._last_slice_render = now
+
+            if update_pose or render or tracts_payload is not None or trigger_on:
+                if not self._dispatch_pending and now - self._last_dispatch >= self._loop_sleep:
+                    self._last_dispatch = now
+                    self._dispatch_pending = True
+                    wx.CallAfter(
+                        self._dispatch_updates,
+                        update_pose=update_pose,
+                        render=render,
+                        slice_render=slice_render,
+                        coord=coord,
+                        probe_visible=probe_visible,
+                        probe_coord=probe_coord,
+                        probe_m_img=probe_m_img,
+                        coil_visible=coil_visible,
+                        main_coil=main_coil,
+                        coords=coords,
+                        m_imgs=m_imgs,
+                        tracts_payload=tracts_payload,
+                        trigger_on=trigger_on,
+                        enorm_data=enorm_data,
+                    )
+
+            self.coord_queue.task_done()
+
+            sleep(self._loop_sleep)
 
 
 class Navigation(metaclass=Singleton):
@@ -310,7 +369,6 @@ class Navigation(metaclass=Singleton):
         # Sleep parameters
         session = ses.Session()
         sleep_nav = session.GetConfig("sleep_nav", const.SLEEP_NAVIGATION)
-
         self.sleep_nav = sleep_nav
 
         self.seed_offset = const.SEED_OFFSET

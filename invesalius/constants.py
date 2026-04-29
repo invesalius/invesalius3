@@ -235,41 +235,41 @@ AXIAL_VOLUME_CAM_POSITION = {
 }
 
 SAGITAL_VOLUME_CAM_VIEW_UP = {
-    VOL_FRONT: (0, -1, 0),
-    VOL_BACK: (0, -1, 0),
-    VOL_RIGHT: (0, -1, 1),
-    VOL_LEFT: (0, -1, 1),
-    VOL_TOP: (1, -1, 0),
-    VOL_BOTTOM: (-1, 1, 0),
-    VOL_ISO: (0, -1, 0),
+    VOL_FRONT: (0, 0, 1),
+    VOL_BACK: (0, 0, 1),
+    VOL_RIGHT: (0, 0, 1),
+    VOL_LEFT: (0, 0, 1),
+    VOL_TOP: (0, 1, 0),
+    VOL_BOTTOM: (0, -1, 0),
+    VOL_ISO: (0, 0, 1),
 }
 SAGITAL_VOLUME_CAM_POSITION = {
-    VOL_FRONT: (-1, 0, 0),
-    VOL_BACK: (1, 0, 0),
-    VOL_RIGHT: (0, 0, 1),
-    VOL_LEFT: (0, 0, -1),
-    VOL_TOP: (0, -1, 0),
-    VOL_BOTTOM: (0, 1, 0),
-    VOL_ISO: (-1, -0.5, -0.5),
+    VOL_FRONT: (0, -1, 0),
+    VOL_BACK: (0, 1, 0),
+    VOL_RIGHT: (-1, 0, 0),
+    VOL_LEFT: (1, 0, 0),
+    VOL_TOP: (0, 0, 1),
+    VOL_BOTTOM: (0, 0, -1),
+    VOL_ISO: (0.5, -1, 0.5),
 }
 
 CORONAL_VOLUME_CAM_VIEW_UP = {
-    VOL_FRONT: (0, -1, 0),
-    VOL_BACK: (0, -1, 0),
-    VOL_RIGHT: (0, -1, 0),
-    VOL_LEFT: (0, -1, 0),
+    VOL_FRONT: (0, 0, 1),
+    VOL_BACK: (0, 0, 1),
+    VOL_RIGHT: (0, 0, 1),
+    VOL_LEFT: (0, 0, 1),
     VOL_TOP: (0, 1, 0),
     VOL_BOTTOM: (0, -1, 0),
-    VOL_ISO: (0, -1, 0),
+    VOL_ISO: (0, 0, 1),
 }
 CORONAL_VOLUME_CAM_POSITION = {
-    VOL_FRONT: (0, 0, -1),
-    VOL_BACK: (0, 0, 1),
+    VOL_FRONT: (0, -1, 0),
+    VOL_BACK: (0, 1, 0),
     VOL_RIGHT: (-1, 0, 0),
     VOL_LEFT: (1, 0, 0),
-    VOL_TOP: (0, -1, 0),
-    VOL_BOTTOM: (0, 1, 0),
-    VOL_ISO: (0.5, -0.5, -1),
+    VOL_TOP: (0, 0, 1),
+    VOL_BOTTOM: (0, 0, -1),
+    VOL_ISO: (0.5, -1, 0.5),
 }
 
 VOLUME_POSITION = {
@@ -632,6 +632,7 @@ ID_MASK_3D_EDIT = wx.NewIdRef()
 
 ID_GOTO_SLICE = wx.NewIdRef()
 ID_GOTO_COORD = wx.NewIdRef()
+ID_ORIENTATION_CUBE = wx.NewIdRef()
 
 ID_MANUAL_WWWL = wx.NewIdRef()
 ID_DICOM_TAGS = wx.NewIdRef()
@@ -660,6 +661,7 @@ STATE_REGISTRATION = 1013
 STATE_MASK_3D_EDIT = 1014
 STATE_MEASURE_ANNOTATION = 1015
 STATE_MEASURE_CURVED_LINEAR = 1016
+STATE_SSAO = 1017
 
 SLICE_STATE_CROSS = 3006
 SLICE_STATE_SCROLL = 3007
@@ -760,6 +762,8 @@ LOGFILE = 7
 # Marker shapes
 LANDMARK_MARKER_SHAPE = 10
 FIDUCIAL_MARKER_SHAPE = 11
+# SSAO
+SSAO_ENABLED = 12
 
 # Marker shape options
 MARKER_SHAPE_BALL = 0
@@ -1055,8 +1059,8 @@ TREKKER_CONFIG = {
 }
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
-CURRENT_MARKER_FILE_VERSION = 4
-SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3, 4]
+CURRENT_MARKER_FILE_VERSION = 5
+SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3, 4, 5]
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 
 # Motor mapping visualization

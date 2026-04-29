@@ -21,17 +21,13 @@ import os
 import pathlib
 import sys
 
-try:
-    import Image
-except ImportError:
-    from PIL import Image
-
 import wx
 import wx.grid
 
 #  import invesalius.gui.widgets.listctrl as listmix
 import wx.lib.platebtn as pbtn
 import wx.lib.scrolledpanel as scrolled
+from PIL import Image
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
@@ -70,6 +66,10 @@ LOCATION = {
 
 # Panel that initializes notebook and related tabs
 class NotebookPanel(wx.Panel):
+    MASK_PAGE_INDEX = 0
+    SURFACE_PAGE_INDEX = 1
+    MEASURE_PAGE_INDEX = 2
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -85,7 +85,7 @@ class NotebookPanel(wx.Panel):
         book.AddPage(MeasurePage(book), _("Measures"))
         # book.AddPage(AnnotationsListCtrlPanel(book), _("Notes"))
 
-        book.SetSelection(0)
+        book.SetSelection(self.MASK_PAGE_INDEX)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(book, 0, wx.EXPAND)
@@ -93,6 +93,7 @@ class NotebookPanel(wx.Panel):
 
         book.Refresh()
         self.book = book
+        self.navigation_on = False
 
         self.__bind_events()
 
@@ -102,24 +103,34 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._FoldMeasure, "Fold measure task")
         Publisher.subscribe(self._FoldMask, "Fold mask task")
         Publisher.subscribe(self._FoldMask, "Fold mask page")
+        Publisher.subscribe(self._OnNavigationStatus, "Navigation status")
 
     def _FoldSurface(self):
         """
         Fold surface notebook page.
         """
-        self.book.SetSelection(1)
+        self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
     def _FoldMeasure(self):
         """
         Fold measure notebook page.
         """
-        self.book.SetSelection(2)
+        self.book.SetSelection(self.MEASURE_PAGE_INDEX)
 
     def _FoldMask(self):
         """
         Fold mask notebook page.
         """
-        self.book.SetSelection(0)
+        if self.navigation_on:
+            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
+            return
+        self.book.SetSelection(self.MASK_PAGE_INDEX)
+
+    def _OnNavigationStatus(self, nav_status, vis_status):
+        self.navigation_on = bool(nav_status)
+        self.book.GetPage(self.MASK_PAGE_INDEX).Enable(not self.navigation_on)
+        if self.navigation_on:
+            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
 
 class MeasurePage(wx.Panel):
@@ -478,18 +489,11 @@ class ButtonControlPanel(wx.Panel):
             os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"), wx.BITMAP_TYPE_PNG
         )
         BMP_IMPORT = wx.Bitmap(
-            os.path.join(inv_paths.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG
+            os.path.join(inv_paths.ICON_DIR, "mask_import_original_min.png"), wx.BITMAP_TYPE_PNG
         )
-        export_icon_path = os.path.join(inv_paths.ICON_DIR, "surface_export.png")
-        image = wx.Image(export_icon_path, wx.BITMAP_TYPE_PNG)
-        if not image.HasAlpha():
-            image.InitAlpha()
-        # Scale rigidly to 22x22 to match exactly with the 'object_add.png' import icon size.
-        # This prevents PlateButton from clipping transparent corners of large images.
-        image = image.Scale(22, 22, wx.IMAGE_QUALITY_HIGH)
-        BMP_EXPORT = image.ConvertToBitmap()
-        if not BMP_EXPORT.IsOk():
-            print("Failed to load export icon:", export_icon_path)
+        BMP_EXPORT = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "mask_export_original_min.png"), wx.BITMAP_TYPE_PNG
+        )
 
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -691,12 +695,14 @@ class InvListCtrl(wx.ListCtrl):
         ctrl.SelectAll()
 
     def get_column_clicked(self, position):
-        epx, epy = position
-        wpx, wpy = self.GetPosition()
+        """Return the column index at the given client-relative position.
+        evt.GetPosition() is already client-relative, so no offset subtraction is needed.
+        """
+        epx = position[0]
         width_sum = 0
         for i in range(self.GetColumnCount()):
             width_sum += self.GetColumnWidth(i)
-            if (epx - wpx) <= width_sum:
+            if epx <= width_sum:
                 return i
         return -1
 
@@ -733,10 +739,16 @@ class MasksListCtrlPanel(InvListCtrl):
 
     def on_selection_changed(self, evt):
         """Handle selection changes in the mask list"""
-        if hasattr(self, "category"):
-            Publisher.sendMessage("Update mask selection state", category=self.category)
-        else:
-            print("Selection changed but 'category' attribute not found on self.")
+        # Authoritatively switch the current mask when selection changes in the list.
+        # This ensures 3D preview and project state stay in sync with list highlight.
+        selected_indices = self.GetSelected()
+        if len(selected_indices) == 1:
+            global_idx = selected_indices[0]
+            Publisher.sendMessage("Change mask selected", index=global_idx)
+            Publisher.sendMessage("Show mask", index=global_idx, value=True)
+            if global_idx in self.mask_list_index:
+                self.current_index = self.mask_list_index[global_idx]
+
         if evt:
             evt.Skip()
 
@@ -914,19 +926,13 @@ class MasksListCtrlPanel(InvListCtrl):
                 break
 
         if global_idx == -1:
-            print(f" OnCheckItem: global_idx not found for local index {index}")
             return
-
-        print(f" OnCheckItem: global_idx = {global_idx}")
 
         if flag:
             Publisher.sendMessage("Change mask selected", index=global_idx)
             self.current_index = index
 
         Publisher.sendMessage("Show mask", index=global_idx, value=flag)
-
-        # Also trigger selection update since this affects the overall selection state
-        self.on_selection_changed(None)
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)", colour=None):
         image = self.CreateColourBitmap(colour)
@@ -948,6 +954,15 @@ class MasksListCtrlPanel(InvListCtrl):
             local_position = len(self.mask_list_index)
             self.mask_list_index[mask.index] = local_position
             self.InsertNewItem(local_position, mask.name, str(mask.threshold_range), mask.colour)
+
+            # Set checkbox state based on mask.is_shown
+            if mask.is_shown:
+                self.SetItemImage(local_position, 1)  # Checked
+                # Trigger the show mask message to enable menu items
+                Publisher.sendMessage("Show mask", index=mask.index, value=True)
+            else:
+                self.SetItemImage(local_position, 0)  # Unchecked
+                Publisher.sendMessage("Show mask", index=mask.index, value=False)
 
     def EditMaskThreshold(self, global_mask_id, threshold_range):
         if global_mask_id in self.mask_list_index:
@@ -1298,8 +1313,11 @@ class SurfacePage(wx.Panel):
             for key in list(listctrl.surface_list_index.keys()):
                 show = (key in index_list) and visibility
                 local_idx = listctrl.surface_list_index[key]
-                listctrl.SetItemImage(local_idx, int(show))
-                if listctrl.GetItemImage(local_idx) != int(show):
+                # InvListCtrl/SurfacesListCtrlPanel does not expose GetItemImage in all builds.
+                # Read the current image through GetItem and only publish when visibility changes.
+                current_img = listctrl.GetItem(local_idx, 0).GetImage()
+                if current_img != int(show):
+                    listctrl.SetItemImage(local_idx, int(show))
                     Publisher.sendMessage("Show surface", index=key, visibility=show)
 
 
@@ -1323,9 +1341,12 @@ class SurfaceButtonControlPanel(wx.Panel):
         BMP_DUPLICATE = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_duplicate.png"), wx.BITMAP_TYPE_PNG
         )
-        BMP_OPEN = wx.Bitmap(os.path.join(inv_paths.ICON_DIR, "load_mesh.png"), wx.BITMAP_TYPE_PNG)
+        BMP_OPEN = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_import_original_min.png"), wx.BITMAP_TYPE_PNG
+        )
+
         BMP_EXPORT = wx.Bitmap(
-            os.path.join(inv_paths.ICON_DIR, "surface_export.png"), wx.BITMAP_TYPE_PNG
+            os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"), wx.BITMAP_TYPE_PNG
         )
 
         # Plate buttons based on previous bitmaps
@@ -1547,6 +1568,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         self.current_transparency = 0
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
+        self.item_images = {}  # maps row index -> image index (0 or 1)
 
     def __init_evt(self):
         pass
@@ -1601,7 +1623,16 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         surface_context_menu.AppendSeparator()
 
-        delete_id = surface_context_menu.Append(start_idx + 3, _("Delete"))
+        properties_id = surface_context_menu.Append(start_idx + 3, _("Properties"))
+        surface_context_menu.Bind(
+            wx.EVT_MENU,
+            lambda evt: self.OnShowProperties(surface_index=global_surface_id),
+            properties_id,
+        )
+
+        surface_context_menu.AppendSeparator()
+
+        delete_id = surface_context_menu.Append(start_idx + 4, _("Delete"))
         surface_context_menu.Bind(wx.EVT_MENU, self.delete_surface, delete_id)
 
         self.PopupMenu(surface_context_menu)
@@ -1716,6 +1747,74 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
         self.RemoveSurfaces()
 
+    def OnShowProperties(self, event=None, surface_index=None):
+        """Show properties for the selected surface"""
+        if surface_index is None:
+            local_idx = self.GetFocusedItem()
+            global_surface_id = None
+            for g_id, l_id in self.surface_list_index.items():
+                if l_id == local_idx:
+                    global_surface_id = g_id
+                    break
+        else:
+            global_surface_id = surface_index
+
+        if global_surface_id is None:
+            return
+
+        # Get the surface from the project
+        proj = project.Project()
+        if global_surface_id not in proj.surface_dict:
+            return
+
+        surface = proj.surface_dict[global_surface_id]
+        polydata = surface.polydata
+
+        # Show progress window
+        progress = dlg.CalculateSurfacePropertiesProgressWindow()
+        wx.SafeYield()
+
+        try:
+            # Calculate properties
+            num_triangles = polydata.GetNumberOfCells()
+            num_points = polydata.GetNumberOfPoints()
+            progress.Update()
+
+            # Calculate edges using vtkExtractEdges
+            from vtkmodules.vtkFiltersCore import vtkExtractEdges
+
+            edges_filter = vtkExtractEdges()
+            edges_filter.SetInputData(polydata)
+            edges_filter.Update()
+            num_edges = edges_filter.GetOutput().GetNumberOfLines()
+            progress.Update()
+
+            # Calculate shells using vtkConnectivityFilter
+            from vtkmodules.vtkFiltersCore import vtkConnectivityFilter
+
+            connectivity_filter = vtkConnectivityFilter()
+            connectivity_filter.SetInputData(polydata)
+            connectivity_filter.SetExtractionModeToAllRegions()
+            connectivity_filter.Update()
+            num_shells = connectivity_filter.GetNumberOfExtractedRegions()
+            progress.Update()
+
+            # Format the message
+            message = (
+                f"Surface: {surface.name}\n\n"
+                f"Number of triangles: {num_triangles:,}\n"
+                f"Number of points: {num_points:,}\n"
+                f"Number of edges: {num_edges:,}\n"
+                f"Number of shells: {num_shells:,}"
+            )
+
+        finally:
+            # Close progress window
+            progress.Close()
+
+        # Show message box
+        wx.MessageBox(message, _("Surface Properties"), wx.OK | wx.ICON_INFORMATION)
+
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
         # Delete key
@@ -1733,7 +1832,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         if selected_items:
             Publisher.sendMessage("Remove surfaces", surface_indexes=selected_items)
-            Publisher.sendMessage("Repopulate surfaces")
+            # Defer rebuild to avoid destroying list controls in the same
+            # native event cycle that triggered the deletion (macOS crash).
+            wx.CallAfter(Publisher.sendMessage, "Repopulate surfaces")
         else:
             dlg.SurfaceSelectionRequiredForRemoval()
 
@@ -1892,6 +1993,22 @@ class SurfacesListCtrlPanel(InvListCtrl):
                 self.imagelist.Replace(image_index, image)
                 self.RefreshItem(local_pos)
 
+    def GetItemImage(self, idx):
+        """
+        Return the image index (0 = hidden, 1 = visible) for the given row.
+        Defaults to 0 if not set.
+        """
+        return self.item_images.get(idx, 0)
+
+    def SetItemImage(self, idx, img_idx):
+        """
+        Set the image index for a row and store it internally.
+        """
+        # Call parent method (actual UI update)
+        super().SetItemImage(idx, img_idx)
+        # Store the state (0 or 1)
+        self.item_images[idx] = img_idx
+
 
 # -------------------------------------------------
 # -------------------------------------------------
@@ -1908,12 +2025,68 @@ class MeasuresListCtrlPanel(InvListCtrl):
     ):
         super().__init__(parent, ID, pos, size, style=style)
         self._click_check = False
+        self._last_edit_index = None
+        self._last_edit_time = 0
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
         self.__bind_events_wx()
         self._list_index = {}
         self._bmp_idx_to_name = {}
+        self.dict_visibility = {}
+
+    def SetItemImage(self, item, image, info=0):
+        if image != -1:
+            self.dict_visibility[item] = image
+
+        # Always show the visibility icon, regardless of selection state
+        super().SetItemImage(item, image, info)
+
+    def OnClickItem(self, evt):
+        self._click_check = False
+        pos_x = evt.GetPosition()[0]
+        item_idx, flag = self.HitTest(evt.GetPosition())
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            if column_clicked == 0:
+                self._click_check = True
+                current_vis = self.dict_visibility.get(item_idx, 1)
+                flag = not bool(current_vis)
+                self.SetItemImage(item_idx, int(flag))
+                self.OnCheckItem(item_idx, flag)
+                return
+            elif column_clicked == 1:
+                # Clicking anywhere in the Name column (including color icon) opens rename dialog
+                self.ShowRenameDialog(item_idx)
+                return
+            elif column_clicked == 4:
+                # Check if this is an annotation (column 3 contains the type)
+                item_type = self.GetItemText(item_idx, 3)
+                if "Annotation" in item_type:
+                    # For annotations, clicking Value column opens edit dialog
+                    Publisher.sendMessage("Edit measurement", index=item_idx)
+                    return
+            elif column_clicked == 5:
+                self.OnChangeTransparency(item_idx)
+                return
+        evt.Skip()
+
+    def OnDblClickItem(self, evt):
+        import time
+
+        item_idx, flag = self.HitTest(evt.GetPosition())
+        if item_idx > -1:
+            column_clicked = self.get_column_clicked(evt.GetPosition())
+            # Only display position for Location, Type, and Value columns (2, 3, 4)
+            # Name column (1) and visibility column (0) don't trigger position display
+            if column_clicked in (2, 3, 4):
+                current_time = time.time()
+                # Prevent duplicate calls within 500ms for the same item
+                if self._last_edit_index != item_idx or current_time - self._last_edit_time > 0.5:
+                    self._last_edit_index = item_idx
+                    self._last_edit_time = current_time
+                    Publisher.sendMessage("Show measurement position", index=item_idx)
+        # Don't call evt.Skip() to prevent the event from propagating to OnItemActivated
 
     def __init_evt(self):
         Publisher.subscribe(self.AddItem_, "Update measurement info in GUI")
@@ -1927,11 +2100,25 @@ class MeasuresListCtrlPanel(InvListCtrl):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected_)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClickItem)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
 
     def OnItemActivated(self, evt):
-        Publisher.sendMessage("Edit measurement", index=evt.GetIndex())
+        import time
+
+        # Kept for redundancy on some platforms
+        # This event is triggered by double-click on some platforms
+        # We handle it the same way as OnDblClickItem
+        item_idx = evt.GetIndex()
+        current_time = time.time()
+        # Prevent duplicate calls within 500ms for the same item
+        if self._last_edit_index != item_idx or current_time - self._last_edit_time > 0.5:
+            self._last_edit_index = item_idx
+            self._last_edit_time = current_time
+            # Display position in slices/3D
+            Publisher.sendMessage("Show measurement position", index=item_idx)
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -1947,12 +2134,16 @@ class MeasuresListCtrlPanel(InvListCtrl):
 
             old_dict = self._list_index
             new_dict = {}
+            new_vis = {}
             j = 0
             for i in old_dict:
                 if i != measure_index:
                     new_dict[j] = old_dict[i]
+                    if i in self.dict_visibility:
+                        new_vis[j] = self.dict_visibility[i]
                     j += 1
             self._list_index = new_dict
+            self.dict_visibility = new_vis
 
     def RemoveMeasurements(self):
         """
@@ -1967,13 +2158,19 @@ class MeasuresListCtrlPanel(InvListCtrl):
         if selected_items:
             for index in selected_items:
                 new_dict = {}
+                new_vis = {}
                 self.DeleteItem(index)
                 for i in old_dict:
                     if i < index:
                         new_dict[i] = old_dict[i]
+                        if i in self.dict_visibility:
+                            new_vis[i] = self.dict_visibility[i]
                     if i > index:
                         new_dict[i - 1] = old_dict[i]
+                        if i in self.dict_visibility:
+                            new_vis[i - 1] = self.dict_visibility[i]
                 old_dict = new_dict
+                self.dict_visibility = new_vis
             self._list_index = new_dict
             Publisher.sendMessage("Remove measurements", indexes=selected_items)
         else:
@@ -1983,15 +2180,15 @@ class MeasuresListCtrlPanel(InvListCtrl):
         self.DeleteAllItems()
         self._list_index = {}
         self._bmp_idx_to_name = {}
+        self.dict_visibility = {}
 
     def OnItemSelected_(self, evt):
         # Note: DON'T rename to OnItemSelected!!!
         # Otherwise the parent's method will be overwritten and other
         # things will stop working, e.g.: OnCheckItem
+        evt.Skip()
 
-        # last_index = evt.Index
-        #  Publisher.sendMessage('Change measurement selected',
-        #  last_index)
+    def OnItemDeselected_(self, evt):
         evt.Skip()
 
     def GetSelected(self):
@@ -2054,6 +2251,35 @@ class MeasuresListCtrlPanel(InvListCtrl):
                 "Change measurement name", index=evt.GetIndex(), name=evt.GetLabel()
             )
         evt.Skip()
+
+    def ShowRenameDialog(self, item_idx):
+        """Show a dialog to rename the measurement/annotation."""
+        import wx
+
+        # Get current name
+        current_name = self.GetItemText(item_idx, 1)
+
+        # Get type to determine dialog title (column 3 contains the type)
+        item_type = self.GetItemText(item_idx, 3)
+
+        # Set appropriate dialog title based on type
+        if "Annotation" in item_type:
+            dialog_title = _("Rename Annotation")
+        else:
+            dialog_title = _("Rename Measurement")
+
+        # Show rename dialog
+        dlg = wx.TextEntryDialog(self, _("Enter new name:"), dialog_title, value=current_name)
+
+        if dlg.ShowModal() == wx.ID_OK:
+            new_name = dlg.GetValue()
+            if new_name and new_name != current_name:
+                # Update the list
+                self.SetItem(item_idx, 1, new_name)
+                # Send message to update backend
+                Publisher.sendMessage("Change measurement name", index=item_idx, name=new_name)
+
+        dlg.Destroy()
 
     def OnCheckItem(self, index, flag):
         Publisher.sendMessage("Show measurement", index=index, visibility=flag)
@@ -2136,6 +2362,14 @@ class MeasuresListCtrlPanel(InvListCtrl):
         self.SetItem(index, 3, type_)
         self.SetItem(index, 4, value)
         self.SetItemImage(index, 1)
+
+        # Deselect any old selections
+        for i in self.GetSelected():
+            self.Select(i, False)
+
+        # Select the newly added item automatically
+        self.Select(index, True)
+
         self.Refresh()
 
     def UpdateItemInfo(

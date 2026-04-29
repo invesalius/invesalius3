@@ -171,6 +171,12 @@ class Text:
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
+        # Add shadow and background for better visibility on bright regions
+        property.SetShadow(1)
+        property.SetShadowOffset(1, -1)
+
+        property.SetBackgroundColor(0, 0, 0)
+        property.SetBackgroundOpacity(0.35)
         self.property = property
 
         mapper = vtkTextMapper()
@@ -275,6 +281,12 @@ class TextZero:
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
+        # Add shadow and background for better visibility on bright regions
+        property.SetShadow(1)
+        property.SetShadowOffset(1, -1)
+
+        property.SetBackgroundColor(0, 0, 0)
+        property.SetBackgroundOpacity(0.35)
         self.property = property
 
         actor = vtkTextActor()
@@ -359,7 +371,7 @@ class TextZero:
                 x -= w
             if self.bottom_pos:
                 y += h
-        canvas.draw_text(self.text, (x, y), font=font)
+        canvas.draw_text(self.text, (x, y), font=font, add_background=True)
 
 
 def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:

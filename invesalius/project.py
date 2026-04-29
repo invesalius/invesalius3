@@ -64,6 +64,7 @@ class Project(metaclass=Singleton):
         self.window = ""
         self.level = ""
         self.affine = ""
+        self.patient_orientation = None
 
         # Masks (vtkImageData)
         self.mask_dict = TwoWaysDictionary()
@@ -238,6 +239,7 @@ class Project(metaclass=Singleton):
             "scalar_range": self.threshold_range,
             "spacing": self.spacing,
             "affine": self.affine,
+            "patient_orientation": self.patient_orientation,
             "image_fiducials": self.image_fiducials.tolist(),
         }
 
@@ -343,7 +345,19 @@ class Project(metaclass=Singleton):
             if filelist[f].endswith(".plist"):
                 os.remove(f)
 
-    def OpenPlistProject(self, filename):
+    def OpenPlistProject(self, filename, progress_callback=None):
+        """
+        Open a .inv3 project file.
+        
+        Args:
+            filename: Path to the .inv3 file
+            progress_callback: Optional callback function(value, message) for progress updates
+                              Should return False to cancel loading
+        """
+        if progress_callback:
+            if not progress_callback(5, _("Extracting project archive...")):
+                return False
+
         if not const.VTK_WARNING:
             log_path = os.path.join(inv_paths.USER_LOG_DIR, "vtkoutput.txt")
             fow = vtkFileOutputWindow()
@@ -351,17 +365,35 @@ class Project(metaclass=Singleton):
             ow = vtkOutputWindow()
             ow.SetInstance(fow)
 
+        if progress_callback:
+            if not progress_callback(15, _("Extracting files...")):
+                return False
+
         filelist = Extract(filename, tempfile.mkdtemp())
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
-        self.load_from_folder(dirpath)
 
-    def load_from_folder(self, dirpath):
+        if progress_callback:
+            if not progress_callback(25, _("Loading project data...")):
+                return False
+
+        return self.load_from_folder(dirpath, progress_callback)
+
+    def load_from_folder(self, dirpath, progress_callback=None):
         """
         Loads invesalius3 project files from dipath.
+        
+        Args:
+            dirpath: Directory containing extracted project files
+            progress_callback: Optional callback function(value, message) for progress updates
+                              Should return False to cancel loading
         """
         import invesalius.data.mask as msk
         import invesalius.data.measures as ms
         import invesalius.data.surface as srf
+
+        if progress_callback:
+            if not progress_callback(30, _("Reading project metadata...")):
+                return False
 
         # Opening the main file from invesalius 3 project
         main_plist = os.path.join(dirpath, "main.plist")
@@ -373,6 +405,10 @@ class Project(metaclass=Singleton):
             from invesalius.gui.dialogs import ImportOldFormatInvFile
 
             ImportOldFormatInvFile()
+
+        if progress_callback:
+            if not progress_callback(40, _("Loading project information...")):
+                return False
 
         # case info
         self.name = project["name"]
@@ -394,14 +430,28 @@ class Project(metaclass=Singleton):
         if project.get("affine", ""):
             self.affine = project["affine"]
 
+        self.patient_orientation = project.get("patient_orientation", None)
+
         try:
             self.image_fiducials = np.asarray(project["image_fiducials"])
         except KeyError:
             pass
 
+        if progress_callback:
+            if not progress_callback(55, _("Loading image data...")):
+                return False
+
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()
-        for index in sorted(project.get("masks", []), key=lambda x: int(x)):
+        masks = project.get("masks", [])
+        total_masks = len(masks)
+        
+        for idx, index in enumerate(sorted(masks, key=lambda x: int(x))):
+            if progress_callback:
+                progress = 60 + int((idx / max(total_masks, 1)) * 15)
+                if not progress_callback(progress, _("Loading mask {} of {}...").format(idx + 1, total_masks)):
+                    return False
+
             filename = project["masks"][index]
             filepath = os.path.join(dirpath, filename)
             m = msk.Mask()
@@ -410,14 +460,30 @@ class Project(metaclass=Singleton):
             m.index = len(self.mask_dict)
             self.mask_dict[m.index] = m
 
+        if progress_callback:
+            if not progress_callback(75, _("Loading surfaces...")):
+                return False
+
         # Opening the surfaces
         self.surface_dict: dict[int, srf.Surface] = {}
-        for index in sorted(project.get("surfaces", []), key=lambda x: int(x)):
+        surfaces = project.get("surfaces", [])
+        total_surfaces = len(surfaces)
+        
+        for idx, index in enumerate(sorted(surfaces, key=lambda x: int(x))):
+            if progress_callback:
+                progress = 75 + int((idx / max(total_surfaces, 1)) * 15)
+                if not progress_callback(progress, _("Loading surface {} of {}...").format(idx + 1, total_surfaces)):
+                    return False
+
             filename = project["surfaces"][index]
             filepath = os.path.join(dirpath, filename)
             s = srf.Surface(int(index))
             s.OpenPList(filepath)
             self.surface_dict[s.index] = s
+
+        if progress_callback:
+            if not progress_callback(90, _("Loading measurements...")):
+                return False
 
         # Opening the measurements
         self.measurement_dict = {}
@@ -449,6 +515,12 @@ class Project(metaclass=Singleton):
                     logger.warning(f"Failed to load DICOM metadata: {e}")
         else:
             logger.debug("No DICOM metadata found in project (legacy format)")
+
+        if progress_callback:
+            if not progress_callback(95, _("Finalizing project load...")):
+                return False
+
+        return True
 
     def create_project_file(
         self,
@@ -548,7 +620,9 @@ class Project(metaclass=Singleton):
                 s.do_threshold_to_all_slices(mask)
 
                 mask_data = mask.matrix[1:, 1:, 1:]
-                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask_data), 0, 2), None)
+                # Normalize mask data to uint8 with values {0, 255}
+                mask_data = (mask_data > 127).astype('uint8') * 255
+                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask_data), 0, 2), np.eye(4))
                 mask_nifti.header.set_zooms(s.spacing)
                 if filename.lower().endswith(".nii"):
                     basename = filename[:-4]
