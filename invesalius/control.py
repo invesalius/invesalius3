@@ -574,7 +574,7 @@ class Controller:
             self.LoadProject(end_busy_cursor=False)
 
             session = ses.Session()
-            session.OpenProject(filepath)
+            session.OpenProject(path)  # Use absolute path, not original filepath
             Publisher.sendMessage("Enable state project", state=True)
             
             # Complete - dialog will auto-hide at 100%

@@ -24,6 +24,7 @@ import tempfile
 import gdcm
 import imageio
 import numpy as np
+import scipy.ndimage as ndimage
 from scipy.ndimage import shift, zoom
 from skimage.color import rgb2gray
 from skimage.measure import label
