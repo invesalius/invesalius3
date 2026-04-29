@@ -1207,6 +1207,7 @@ class ObjectTab(wx.Panel):
         robot_coil_name = event.GetEventObject().GetStringSelection()
         self.robot.SetCoilName(robot_coil_name)
         Publisher.sendMessage("Coil selection done", done=True)
+        Publisher.sendMessage("Update robot buttons")
 
     def AddCoilButton(self, coil_name, show_button=True):
         if self.no_coils_lbl is not None:

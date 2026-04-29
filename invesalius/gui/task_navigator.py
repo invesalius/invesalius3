@@ -2730,7 +2730,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Combobox for choosing the main coil (ie. the coil which to track with pointer and to use for marker creation)
         robot_coil = self.robot.GetCoilName()
         init_choices = [
-            f"{coil} (robo)" if coil == robot_coil else coil
+            f"{coil} (robot)" if coil == robot_coil else coil
             for coil in self.navigation.coil_registrations
         ]
 
@@ -3547,7 +3547,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             select_main_coil.Clear()
             robot_coil = self.robot.GetCoilName()
             choices = [
-                f"{coil} (robo)" if coil == robot_coil else coil
+                f"{coil} (robot)" if coil == robot_coil else coil
                 for coil in self.navigation.coil_registrations
             ]
             select_main_coil.AppendItems(choices)
