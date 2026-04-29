@@ -460,6 +460,10 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
     def OnWindowLevelMove(self, obj, evt):
         if self.changing_wwwl:
+            # Check if volume rendering is active before processing window/level changes
+            if not self.viewer.raycasting_volume:
+                return
+
             mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
             diff_x = mouse_x - self.last_x
             diff_y = mouse_y - self.last_y

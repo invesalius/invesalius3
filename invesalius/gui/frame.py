@@ -733,6 +733,8 @@ class Frame(wx.Frame):
             self.SwapAxes(axes)
         elif id == const.ID_REORIENT_IMG:
             self.OnReorientImg()
+        elif id == const.ID_IMAGE_FILTER:
+            self.OnImageFilter()
         elif id == wx.ID_UNDO:
             self.OnUndo()
         elif id == wx.ID_REDO:
@@ -780,6 +782,8 @@ class Frame(wx.Frame):
 
         elif id == const.ID_REORIENT_IMG:
             self.OnReorientImg()
+        elif id == const.ID_IMAGE_FILTER:
+            self.OnImageFilter()
 
         elif id == const.ID_REMOVE_MASK_PART:
             self.OnRemoveMaskParts()
@@ -1110,6 +1114,12 @@ class Frame(wx.Frame):
     def OnCleanMask(self):
         Publisher.sendMessage("Clean current mask")
         Publisher.sendMessage("Reload actual slice")
+
+    def OnImageFilter(self):
+        from invesalius.gui.dialogs import ImageFilterDialog
+
+        dlg = ImageFilterDialog()
+        dlg.Show()
 
     def OnReorientImg(self):
         Publisher.sendMessage("Enable style", style=const.SLICE_STATE_REORIENT)
@@ -1598,6 +1608,8 @@ class MenuBar(wx.MenuBar):
         image_menu.Append(wx.NewIdRef(), _("Swap axes"), swap_axes_menu)
 
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _("Reorient image\tCtrl+Shift+O"))
+        image_menu.Append(const.ID_IMAGE_FILTER, _("Filter"))
+
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
         planning_menu = wx.Menu()

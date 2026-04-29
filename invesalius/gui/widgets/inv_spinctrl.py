@@ -38,6 +38,7 @@ class InvSpinCtrl(wx.Panel):
     ):
         super().__init__(parent, id, size=size)
 
+        style = style | wx.TE_PROCESS_ENTER
         self._textctrl = wx.TextCtrl(self, -1, style=style)
         self._spinbtn: Optional[wx.SpinButton] = None
         if spin_button and wx.Platform != "__WXGTK__":
@@ -69,6 +70,7 @@ class InvSpinCtrl(wx.Panel):
     def __bind_events(self) -> None:
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
         self._textctrl.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
+        self._textctrl.Bind(wx.EVT_TEXT_ENTER, self.OnEnter)
         if self._spinbtn:
             self._spinbtn.Bind(wx.EVT_SPIN_UP, self.OnSpinUp)
             self._spinbtn.Bind(wx.EVT_SPIN_DOWN, self.OnSpinDown)
@@ -160,6 +162,12 @@ class InvSpinCtrl(wx.Panel):
         self.raise_event()
         evt.Skip()
 
+    def OnEnter(self, evt: wx.Event) -> None:
+        value = self._textctrl.GetValue()
+        self.SetValue(value)
+        self.raise_event()
+        evt.Skip()
+
     def OnSpinDown(self, evt: wx.SpinEvent) -> None:
         self.SetValue(self.GetValue() - self._increment)
         self.raise_event()
@@ -191,6 +199,7 @@ class InvFloatSpinCtrl(wx.Panel):
     ):
         super().__init__(parent, id, size=size)
 
+        style = style | wx.TE_PROCESS_ENTER
         self._textctrl = wx.TextCtrl(self, -1, style=style)
         self._spinbtn: Optional[wx.SpinButton] = None
         if spin_button and wx.Platform != "__WXGTK__":
@@ -223,6 +232,7 @@ class InvFloatSpinCtrl(wx.Panel):
     def __bind_events(self) -> None:
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
         self._textctrl.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
+        self._textctrl.Bind(wx.EVT_TEXT_ENTER, self.OnEnter)
         if self._spinbtn:
             self._spinbtn.Bind(wx.EVT_SPIN_UP, self.OnSpinUp)
             self._spinbtn.Bind(wx.EVT_SPIN_DOWN, self.OnSpinDown)
@@ -322,6 +332,12 @@ class InvFloatSpinCtrl(wx.Panel):
         evt.Skip()
 
     def OnKillFocus(self, evt: wx.FocusEvent) -> None:
+        value = self._textctrl.GetValue()
+        self.SetValue(value)
+        self.raise_event()
+        evt.Skip()
+
+    def OnEnter(self, evt: wx.Event) -> None:
         value = self._textctrl.GetValue()
         self.SetValue(value)
         self.raise_event()

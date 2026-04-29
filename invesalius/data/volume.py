@@ -302,6 +302,10 @@ class Volume:
         Publisher.sendMessage("Set volume window and level text", ww=ww, wl=wl)
 
     def OnSetRelativeWindowLevel(self, diff_wl, diff_ww):
+        # Defensive check: ensure ww and wl are initialized (volume rendering must be active)
+        if self.ww is None or self.wl is None:
+            return
+
         ww = self.ww + diff_ww
         wl = self.wl + diff_wl
         Publisher.sendMessage("Set volume window and level text", ww=ww, wl=wl)

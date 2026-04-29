@@ -411,9 +411,14 @@ class Session(metaclass=Singleton):
             final_filename = "auto_backup.inv3"
             final_path = backup_dir / final_filename
 
-            # Save current project to the staging location
+            # Save current project to the staging location.
+            # compress=False: uncompressed tar writes ~110MB in <0.5s on NVMe.
+            # Gzip compression (compress=True) was causing the multi-second UI
+            # freeze — it provides no real benefit for crash-recovery backups
+            # where write speed is critical. Manual saves still use their own
+            # compression setting.
             proj = prj.Project()
-            proj.SavePlistProject(str(backup_dir), staging_filename, compress=True)
+            proj.SavePlistProject(str(backup_dir), staging_filename, compress=False)
 
             # Atomically promote staging → final (old backup preserved if
             # SavePlistProject raised an exception above)

@@ -4,8 +4,8 @@ import os
 import pathlib
 import tempfile
 import traceback
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Tuple
 
 import nibabel.processing
 import numpy as np
@@ -68,12 +68,12 @@ def run_cranioplasty_implant():
     Publisher.sendMessage("Reload actual slice")
 
 
-patch_type = Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]
+patch_type = tuple[tuple[int, int], tuple[int, int], tuple[int, int]]
 
 
 def gen_patches(
     image: np.ndarray, patch_size: int, overlap: int
-) -> Generator[Tuple[float, np.ndarray, patch_type], None, None]:
+) -> Generator[tuple[float, np.ndarray, patch_type], None, None]:
     overlap = int(patch_size * overlap / 100)
     sz, sy, sx = image.shape
     slices_x = [i for i in range(0, sx, patch_size - overlap) if i + patch_size <= sx]
@@ -310,7 +310,23 @@ class SegmentProcess(ctx.Process):
     ):
         multiprocessing.Process.__init__(self)
 
-        self._image_filename = image.filename
+        # Ensure the image is backed by a real file on disk.
+        # np.memmap.filename can be None if the array was created from a buffer
+        # (e.g. the original CT image before any filter is applied).
+        # Plain ndarrays don't have .filename at all.
+        # In either case, write the data to a temporary file so _image_filename is
+        # always a valid path for the subprocess that loads it via np.memmap.
+        _img_filename = getattr(image, "filename", None)
+        if _img_filename is None:
+            fd_img, _img_filename = tempfile.mkstemp(suffix=".dat")
+            os.close(fd_img)
+            _tmp_img = np.memmap(_img_filename, dtype=image.dtype, mode="w+", shape=image.shape)
+            _tmp_img[:] = image[:]
+            _tmp_img.flush()
+            # Keep the reference alive so the file isn't GC'd
+            self._tmp_image_memmap = _tmp_img
+
+        self._image_filename = _img_filename
         self._image_dtype = image.dtype
         self._image_shape = image.shape
 
@@ -450,15 +466,27 @@ class SegmentProcess(ctx.Process):
         if self.create_new_mask:
             if self.mask is None:
                 name = new_name_by_pattern("brainseg_mri_t1")
-                self.mask = slc.Slice().create_new_mask(name=name)
+                self.mask = slc.Slice().create_new_mask(
+                    name=name, derived_from=getattr(slc.Slice(), "current_image_label", "Original")
+                )
         else:
             self.mask = slc.Slice().current_mask
             if self.mask is None:
                 name = new_name_by_pattern("brainseg_mri_t1")
-                self.mask = slc.Slice().create_new_mask(name=name)
+                self.mask = slc.Slice().create_new_mask(
+                    name=name, derived_from=getattr(slc.Slice(), "current_image_label", "Original")
+                )
 
         self.mask.was_edited = True
         self.mask.matrix[1:, 1:, 1:] = (self._probability_array >= threshold) * 255
+
+        # Mark all slices as fully "edited" (flag=2) so the lazy-evaluation
+        # scrolling viewer doesn't try to overwrite the AI output with a standard threshold
+        self.mask.matrix[:, 0, 0] = 2
+        self.mask.matrix[0, :, 0] = 2
+        self.mask.matrix[0, 0, :] = 2
+        self.mask.matrix.flush()
+
         self.mask.modified(True)
 
     def get_completion(self):
@@ -711,7 +739,9 @@ class SubpartSegmentProcess(SegmentProcess):
         # Whole brain fallback
         if not self.selected_mask_types:
             mask = slc.Slice().create_new_mask(
-                name=new_name_by_pattern("whole_brain"), add_to_project=True
+                name=new_name_by_pattern("whole_brain"),
+                add_to_project=True,
+                derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
             )
             mask.was_edited = True
             mask.matrix[1:, 1:, 1:] = (seg > 0).astype(np.uint8) * 255
@@ -857,7 +887,9 @@ class SubpartSegmentProcess(SegmentProcess):
                     continue
 
                 m = slc.Slice().create_new_mask(
-                    name=new_name_by_pattern(f"{category}_{name}"), add_to_project=True
+                    name=new_name_by_pattern(f"{category}_{name}"),
+                    add_to_project=True,
+                    derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
                 )
                 m.color = color(rec)
                 m.was_edited = True

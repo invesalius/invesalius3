@@ -1064,6 +1064,25 @@ class SurfaceManager:
         t_init = time.time()
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
+
+        # If the mask was derived from a filtered image, ensure we use that image's data and filename
+        force_from_binary = False
+        if hasattr(mask, "derived_from") and mask.derived_from != "original":
+            proj = prj.Project()
+            found = False
+            for label, mat in proj.image_versions:
+                if label == mask.derived_from:
+                    matrix = mat
+                    # Ensure filename_img points to the .dat file for the surface_process workers
+                    if hasattr(mat, "filename"):
+                        filename_img = mat.filename
+                    found = True
+                    break
+            if not found:
+                # The filtered image was deleted! We cannot use its image data for sub-voxel interpolation.
+                # We MUST force the surface generator to use the fully baked binary mask data instead.
+                force_from_binary = True
+
         spacing = slice_.spacing
 
         mask_temp_file = mask.temp_file
@@ -1168,7 +1187,7 @@ class SurfaceManager:
                         smooth_iterations,
                         language,
                         flip_image,
-                        algorithm != "Default",
+                        force_from_binary or (algorithm != "Default"),
                         algorithm,
                         imagedata_resolution,
                         fill_border_holes,
@@ -1255,7 +1274,7 @@ class SurfaceManager:
                         smooth_iterations,
                         language,
                         flip_image,
-                        algorithm != "Default",
+                        force_from_binary or (algorithm != "Default"),
                         algorithm,
                         imagedata_resolution,
                         fill_border_holes,

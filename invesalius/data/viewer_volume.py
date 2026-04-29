@@ -504,10 +504,32 @@ class Viewer(wx.Panel):
             cube.GetZPlusFaceProperty().SetColor(0.1, 0.1, 0.7)  # T – Top
             cube.GetZMinusFaceProperty().SetColor(0.1, 0.1, 0.7)  # B – Bottom
             cube.GetTextEdgesProperty().SetColor(0.5, 0.5, 0.5)
-            cube.SetXPlusFaceText(_("L"))
-            cube.SetXMinusFaceText(_("R"))
-            cube.SetYPlusFaceText(_("P"))
-            cube.SetYMinusFaceText(_("A"))
+
+            proj = prj.Project()
+            if proj.original_orientation == const.SAGITAL:
+                x_plus, x_minus = "L", "R"
+                patient_orient = getattr(proj, "patient_orientation", None)
+
+                if patient_orient is not None and len(patient_orient) == 6:
+                    row_y, row_z = patient_orient[1], patient_orient[2]
+                    col_y, col_z = patient_orient[4], patient_orient[5]
+                    normal_x = (row_y * col_z) - (row_z * col_y)
+
+                    if normal_x < 0:
+                        x_plus, x_minus = "R", "L"
+                else:
+                    # Maintainer fallback request if patient_orientation is missing
+                    x_plus, x_minus = "R", "L"
+
+                cube.SetXPlusFaceText(_(x_plus))
+                cube.SetXMinusFaceText(_(x_minus))
+                cube.SetYPlusFaceText(_("A"))
+                cube.SetYMinusFaceText(_("P"))
+            else:
+                cube.SetXPlusFaceText(_("L"))
+                cube.SetXMinusFaceText(_("R"))
+                cube.SetYPlusFaceText(_("P"))
+                cube.SetYMinusFaceText(_("A"))
             # Use built-in face text for T/B.
             # SetZFaceTextRotation applies the SAME angle to both Z faces; since T (+Z)
             # and B (-Z) have opposite normals, +90 makes T upright but B upside-down.
@@ -3226,12 +3248,7 @@ class Viewer(wx.Panel):
             actor.Modified()
             ren.ResetCameraClippingRange()
 
-            proj = prj.Project()
-            modality = str(getattr(proj, "modality", "CT")).upper()
-            if modality in ["MRI", "MR"]:
-                self.SetViewAngle(const.VOL_BACK)
-            else:
-                self.SetViewAngle(const.VOL_FRONT)
+            self.SetViewAngle(const.VOL_FRONT)
             self.view_angle = 1
         else:
             # Force actor to update its bounds before repositioning
@@ -3301,12 +3318,7 @@ class Viewer(wx.Panel):
             volume.Modified()
             self.ren.ResetCameraClippingRange()
 
-            proj = prj.Project()
-            modality = str(getattr(proj, "modality", "CT")).upper()
-            if modality in ["MRI", "MR"]:
-                self.SetViewAngle(const.VOL_BACK)
-            else:
-                self.SetViewAngle(const.VOL_FRONT)
+            self.SetViewAngle(const.VOL_FRONT)
             self.view_angle = 1
         else:
             # Force volume to update its bounds before repositioning
@@ -3342,12 +3354,7 @@ class Viewer(wx.Panel):
 
         if flag:
             if not self.view_angle:
-                proj = prj.Project()
-                modality = str(getattr(proj, "modality", "CT")).upper()
-                if modality in ["MRI", "MR"]:
-                    self.SetViewAngle(const.VOL_BACK)
-                else:
-                    self.SetViewAngle(const.VOL_FRONT)
+                self.SetViewAngle(const.VOL_FRONT)
                 self.view_angle = 1
 
             # Match the parallel projection used by AddSurface/LoadVolume so that
@@ -3572,11 +3579,56 @@ class Viewer(wx.Panel):
 
         cam.SetFocalPoint(0, 0, 0)
 
-        # proj = prj.Project()
-        # orig_orien = proj.original_orientation
+        proj = prj.Project()
+        orientation = proj.original_orientation
 
-        xv, yv, zv = const.VOLUME_POSITION[const.AXIAL][0][view]
-        xp, yp, zp = const.VOLUME_POSITION[const.AXIAL][1][view]
+        # In Sagittal scans, the Z-spacing growth order is often backward, reversing the physical sides.
+        # We remap the visual requests (Front, Back, etc.) to the underlying coordinate systems.
+        if orientation == const.SAGITAL:
+            sagital_mapping = {
+                const.VOL_FRONT: const.VOL_BACK,
+                const.VOL_BACK: const.VOL_FRONT,
+            }
+            patient_orient = getattr(proj, "patient_orientation", None)
+
+            if patient_orient is not None and len(patient_orient) == 6:
+                row_y, row_z = patient_orient[1], patient_orient[2]
+                col_y, col_z = patient_orient[4], patient_orient[5]
+                normal_x = (row_y * col_z) - (row_z * col_y)
+
+                if normal_x < 0:
+                    sagital_mapping[const.VOL_RIGHT] = const.VOL_LEFT
+                    sagital_mapping[const.VOL_LEFT] = const.VOL_RIGHT
+            else:
+                # Maintainer fallback request to apply inversion if orientation is missing
+                sagital_mapping[const.VOL_RIGHT] = const.VOL_LEFT
+                sagital_mapping[const.VOL_LEFT] = const.VOL_RIGHT
+
+            view = sagital_mapping.get(view, view)
+
+        # Ensure orientation is valid; fallback to AXIAL if not defined in constants
+        if orientation not in const.VOLUME_POSITION:
+            orientation = const.AXIAL
+
+        xv, yv, zv = const.VOLUME_POSITION[orientation][0][view]
+        xp, yp, zp = const.VOLUME_POSITION[orientation][1][view]
+
+        # Dynamically correct Isometric camera pointing on Sagittal datasets
+        if orientation == const.SAGITAL and view == const.VOL_ISO:
+            yp = 1  # Sagittal maps Anterior to Y=+1 natively
+
+            patient_orient = getattr(proj, "patient_orientation", None)
+            if patient_orient is not None and len(patient_orient) == 6:
+                row_y, row_z = patient_orient[1], patient_orient[2]
+                col_y, col_z = patient_orient[4], patient_orient[5]
+                normal_x = (row_y * col_z) - (row_z * col_y)
+                if normal_x < 0:
+                    xp = (
+                        -xp
+                    )  # Flip X to see the 'L' side instead of the 'R' side on inverted arrays
+            else:
+                # Maintainer fallback: apply inversion if orientation is missing
+                xp = -xp
 
         cam.SetViewUp(xv, yv, zv)
         cam.SetPosition(xp, yp, zp)
@@ -3596,47 +3648,6 @@ class Viewer(wx.Panel):
 
         if not self.nav_status:
             self.UpdateRender()
-
-    def ShowOrientationCube(self):
-        cube = vtkAnnotatedCubeActor()
-        cube.GetXMinusFaceProperty().SetColor(1, 0, 0)
-        cube.GetXPlusFaceProperty().SetColor(1, 0, 0)
-        cube.GetYMinusFaceProperty().SetColor(0, 1, 0)
-        cube.GetYPlusFaceProperty().SetColor(0, 1, 0)
-        cube.GetZMinusFaceProperty().SetColor(0, 0, 1)
-        cube.GetZPlusFaceProperty().SetColor(0, 0, 1)
-        cube.GetTextEdgesProperty().SetColor(0, 0, 0)
-
-        # Face labels as specified in the issue: A (Anterior/front), P (Posterior/back),
-        # R (Right), L (Left), T (Top), B (Bottom).
-        # InVesalius AXIAL orientation: VOL_FRONT camera is at (0, -1, 0), so the
-        # Y-minus face faces the viewer → A. X-axis → L/R. Z-axis → T/B.
-        cube.SetXPlusFaceText("L")
-        cube.SetXMinusFaceText("R")
-        cube.SetYPlusFaceText("P")
-        cube.SetYMinusFaceText("A")
-        cube.SetZPlusFaceText("T")
-        cube.SetZMinusFaceText("B")
-        # Keep A/P/L/R exactly as-is; only rotate Z-face text so T/B render upright.
-        if hasattr(cube, "SetZFaceTextRotation"):
-            cube.SetZFaceTextRotation(90)
-
-        axes = vtkAxesActor()
-        axes.SetShaftTypeToCylinder()
-        axes.SetTipTypeToCone()
-        axes.SetXAxisLabelText("X")
-        axes.SetYAxisLabelText("Y")
-        axes.SetZAxisLabelText("Z")
-        # axes.SetNormalizedLabelPosition(.5, .5, .5)
-
-        orientation_widget = vtkOrientationMarkerWidget()
-        orientation_widget.SetOrientationMarker(cube)
-        orientation_widget.SetViewport(0.85, 0.85, 1.0, 1.0)
-        # orientation_widget.SetOrientationMarker(axes)
-        orientation_widget.SetInteractor(self.interactor)
-        orientation_widget.SetEnabled(1)
-        orientation_widget.On()
-        orientation_widget.InteractiveOff()
 
     def UpdateRender(self):
         self._UpdateOrientationCubeZTextRotation()
