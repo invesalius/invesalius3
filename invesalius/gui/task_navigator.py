@@ -2169,6 +2169,8 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.UpdateTractsVisualization, "Update tracts visualization")
 
+        Publisher.subscribe(self.UpdateRobotButtons, "Update robot buttons")
+
         # Externally press/unpress and enable/disable buttons.
         Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
 
@@ -2339,12 +2341,24 @@ class ControlPanel(wx.Panel):
         #   - Target mode is on
         #   - Robot is connected
         #   - The name of the coil attached to robot is being tracked
+        robot_coil = self.robot.GetCoilName()
+        if self.navigation.n_coils > 1:
+            coil_check = (robot_coil is not None) and (robot_coil == self.navigation.main_coil)
+        else:
+            coil_check = True
+
         track_target_button_enabled = (
             self.nav_status
             and self.target_selected
             and self.target_mode
             and self.robot.IsConnected()
+            and coil_check
         )
+
+        if not track_target_button_enabled and self.robot_track_target_button.GetValue():
+            self.robot_track_target_button.SetValue(False)
+            self.OnRobotTrackTargetButton()
+
         self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
 
         # Enable 'move away' robot button if robot is connected.
@@ -3560,6 +3574,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             main_coil = main_coil[:-8]
         self.navigation.SetMainCoil(main_coil)
         ctrl.SetSelection(choice)
+        Publisher.sendMessage("Update robot buttons")
 
     def ChangeLabel(self, evt):
         list_index = self.marker_list_ctrl.GetFocusedItem()
