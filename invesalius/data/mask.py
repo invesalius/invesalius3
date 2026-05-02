@@ -435,6 +435,33 @@ class Mask:
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = np.memmap(self.temp_file, mode="w+", dtype="uint8", shape=shape)
 
+    def _recreate_mask_matrix(self, new_shape):
+        """
+        Recreates the mask matrix with a new shape, preserving the temp file.
+        Used when image dimensions change (e.g., after reorientation).
+
+        Parameters:
+            new_shape(int, int, int): The new shape for the mask matrix.
+        """
+        old_temp_file = self.temp_file
+        old_temp_fd = self.temp_fd
+
+        new_temp_fd, new_temp_file = tempfile.mkstemp()
+        new_matrix = np.memmap(new_temp_file, mode="w+", dtype="uint8", shape=new_shape)
+        new_matrix[:] = 0
+
+        del self.matrix
+
+        try:
+            os.close(old_temp_fd)
+            os.remove(old_temp_file)
+        except (OSError, ValueError):
+            pass
+
+        self.temp_fd = new_temp_fd
+        self.temp_file = new_temp_file
+        self.matrix = new_matrix
+
     def modified(self, all_volume=False):
         if all_volume:
             self.matrix[0] = 1

@@ -2419,6 +2419,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         for buffer_ in self.viewer.slice_.buffer_slices.values():
             buffer_.discard_vtk_image()
             buffer_.discard_image()
+            buffer_.discard_vtk_mask()
+            buffer_.discard_mask()
 
 
 class FFillConfig(metaclass=utils.Singleton):
