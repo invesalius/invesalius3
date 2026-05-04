@@ -15,8 +15,11 @@ Usage
 """
 
 import json
+import logging
 import shutil
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -76,8 +79,8 @@ class ShortcutManager:
                 data = json.load(fh)
             self._shortcuts = {entry["action_id"]: entry for entry in data.get("shortcuts", [])}
         except Exception as exc:
-            print(f"[ShortcutManager] Failed to load {user_path}: {exc}")
-            print("[ShortcutManager] Falling back to bundled defaults.")
+            logger.error(f"Failed to load {user_path}: {exc}")
+            logger.info("Falling back to bundled defaults.")
             self._load_defaults()
 
         self._loaded = True
@@ -98,7 +101,7 @@ class ShortcutManager:
             with open(user_path, "w", encoding="utf-8") as fh:
                 json.dump(data, fh, indent=2, ensure_ascii=False)
         except Exception as exc:
-            print(f"[ShortcutManager] Failed to save shortcuts: {exc}")
+            logger.error(f"Failed to save shortcuts: {exc}")
 
     def reset_all(self) -> None:
         """Reset every shortcut to its factory default and save."""
@@ -179,9 +182,7 @@ class ShortcutManager:
             shutil.copy2(_DEFAULT_JSON, user_path)
         else:
             # Bundled file missing — write a minimal valid JSON so we don't crash.
-            print(
-                "[ShortcutManager] Bundled shortcuts.json not found; " "creating empty user file."
-            )
+            logger.warning("Bundled shortcuts.json not found; creating empty user file.")
             with open(user_path, "w", encoding="utf-8") as fh:
                 json.dump({"shortcuts": []}, fh, indent=2)
 
@@ -192,7 +193,7 @@ class ShortcutManager:
                 data = json.load(fh)
             self._shortcuts = {entry["action_id"]: entry for entry in data.get("shortcuts", [])}
         except Exception as exc:
-            print(f"[ShortcutManager] Cannot load bundled defaults either: {exc}")
+            logger.critical(f"Cannot load bundled defaults either: {exc}")
             self._shortcuts = {}
 
     def _find_conflict(self, action_id: str, key_string: str) -> str | None:
