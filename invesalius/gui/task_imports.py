@@ -17,11 +17,8 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 import wx
+import wx.lib.agw.foldpanelbar as fpb
 
-try:
-    import wx.lib.agw.foldpanelbar as fpb
-except ModuleNotFoundError:
-    import wx.lib.foldpanelbar as fpb
 import invesalius.gui.task_efield as efield
 import invesalius.gui.task_exporter as exporter
 import invesalius.gui.task_fmrisupport as fmrisupport
@@ -29,6 +26,7 @@ import invesalius.gui.task_importer as importer
 import invesalius.gui.task_slice as slice_
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tractography as tractography
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 
@@ -160,10 +158,7 @@ class FoldPanel(wx.Panel):
 class InnerFoldPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        try:
-            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
-        except AttributeError:
-            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         fold_panel = fpb.FoldPanelBar(
             self, -1, wx.DefaultPosition, wx.DefaultSize, 0, fpb.FPB_SINGLE_FOLD
         )
@@ -188,6 +183,7 @@ class InnerFoldPanel(wx.Panel):
             (_("Tractography"), tractography.TaskPanel),
             (_("E-Field"), efield.TaskPanel),
             (_("fMRI support"), fmrisupport.TaskPanel),
+            # (_("MEP mapping"), mepmapping.TaskPanel), # TODO: Add marker file import and export colored stl
         ]
 
         style = fpb.CaptionBarStyle()
@@ -203,7 +199,7 @@ class InnerFoldPanel(wx.Panel):
                 "%d. %s" % (i + 1, name), collapsed=True, foldIcons=image_list
             )
             fold_panel.ApplyCaptionStyle(item, style)
-            col = style.GetFirstColour()
+            # col = style.GetFirstColour()
 
             # Add panel to FoldPanel
             fold_panel.AddFoldPanelWindow(
@@ -258,7 +254,7 @@ class InnerFoldPanel(wx.Panel):
 
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
-        closed = evt.GetFoldStatus()
+        # closed = evt.GetFoldStatus()
 
         if id == self.__id_slice:
             Publisher.sendMessage("Retrieve task slice style")

@@ -16,3 +16,4 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+from .__version__ import __version__  # noqa: F401

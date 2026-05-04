@@ -54,7 +54,7 @@ class SelectionEvent(wx.PyCommandEvent):
 
 class PreviewEvent(wx.PyCommandEvent):
     def __init__(self, evtType, id):
-        super(PreviewEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
     def GetSelectID(self):
         return self.SelectedID
@@ -77,10 +77,10 @@ class PreviewEvent(wx.PyCommandEvent):
 
 class SerieEvent(PreviewEvent):
     def __init__(self, evtType, id):
-        super(SerieEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
 
-class BitmapInfo(object):
+class BitmapInfo:
     """
     Keep the informations and the image used by preview.
     """
@@ -108,7 +108,7 @@ class BitmapInfo(object):
 
 class DicomPaintPanel(wx.Panel):
     def __init__(self, parent):
-        super(DicomPaintPanel, self).__init__(parent)
+        super().__init__(parent)
         self._bind_events()
         self.image = None
         self.last_size = (10, 10)
@@ -157,7 +157,7 @@ class Preview(wx.Panel):
     """
 
     def __init__(self, parent):
-        super(Preview, self).__init__(parent)
+        super().__init__(parent)
         # Will it be white?
         self.select_on = False
         self.bitmap_info = None
@@ -280,7 +280,7 @@ class BitmapPreviewSeries(wx.Panel):
     """A dicom series preview panel"""
 
     def __init__(self, parent):
-        super(BitmapPreviewSeries, self).__init__(parent)
+        super().__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
         self.displayed_position = 0
@@ -367,7 +367,7 @@ class BitmapPreviewSeries(wx.Panel):
 
     def RemovePanel(self, data):
         for p, f in zip(self.previews, self.files):
-            if p.bitmap_info != None:
+            if p.bitmap_info is not None:
                 if data in p.bitmap_info.data[0]:
                     self.files.remove(f)
                     p.Hide()
@@ -380,7 +380,7 @@ class BitmapPreviewSeries(wx.Panel):
                     self.Layout()
 
         for n, p in enumerate(self.previews):
-            if p.bitmap_info != None:
+            if p.bitmap_info is not None:
                 if p.IsShown():
                     p.bitmap_info.pos = n
 
@@ -509,6 +509,70 @@ class SingleImagePreview(wx.Panel):
         self.Layout()
         self.Update()
 
+    def Reposition(self):
+        """
+        Fit the preview image to viewport while maintaining aspect ratio.
+        Based on the working implementation from 2D slice viewers.
+        """
+        if self.actor is None or self.renderer is None:
+            return
+
+        ren = self.renderer
+        cam = ren.GetActiveCamera()
+
+        # Get actor bounds to calculate center
+        bounds = self.actor.GetBounds()
+        if bounds is None:
+            return
+
+        # Calculate image center (2D image, so z=0)
+        center_x = (bounds[0] + bounds[1]) * 0.5
+        center_y = (bounds[2] + bounds[3]) * 0.5
+
+        # Calculate image dimensions
+        width = bounds[1] - bounds[0]
+        height = bounds[3] - bounds[2]
+
+        # Get viewport dimensions
+        viewport_width, viewport_height = ren.GetSize()
+
+        # Safety check - if viewport not ready, retry later
+        if viewport_width <= 10 or viewport_height <= 10 or width <= 0 or height <= 0:
+            wx.CallLater(50, self.Reposition)
+            return
+
+        # Ensure parallel projection is enabled for 2D viewing
+        cam.ParallelProjectionOn()
+
+        # Set camera to look at center from above (standard 2D view)
+        # For 2D images, focal point and position should use z=0
+        cam.SetFocalPoint(center_x, center_y, 0.0)
+        cam.SetPosition(center_x, center_y, 1000.0)
+        # Keep ViewUp normal - image is already flipped by vtkImageFlip
+        cam.SetViewUp(0, 1, 0)
+
+        # Calculate scale to fit image in viewport
+        # ParallelScale is half the height of the view in world coordinates
+        viewport_aspect = viewport_width / viewport_height
+        image_aspect = width / height
+
+        if viewport_aspect > image_aspect:
+            # Viewport is wider than image - fit to height
+            scale = height / 2.0
+        else:
+            # Viewport is taller than image - fit to width
+            scale = (width / viewport_aspect) / 2.0
+
+        # Add small margin (2%)
+        scale *= 1.02
+
+        # Apply scale
+        cam.SetParallelScale(scale)
+        ren.ResetCameraClippingRange()
+
+        # Render
+        self.interactor.Render()
+
     def __init_gui(self):
         self.panel = wx.Panel(self, -1)
 
@@ -548,7 +612,7 @@ class SingleImagePreview(wx.Panel):
         Publisher.subscribe(self.ShowBlackSlice, "Show black slice in single preview image")
 
     def ShowBitmapByPosition(self, pos):
-        if pos != None:
+        if pos is not None:
             self.ShowSlice(int(pos))
 
     def OnSlider(self, evt):
@@ -612,8 +676,10 @@ class SingleImagePreview(wx.Panel):
 
         # PLOT IMAGE INTO VIEWER
         self.actor.SetInputData(colorer.GetOutput())
-        self.renderer.ResetCamera()
-        self.interactor.Render()
+
+        # Use deferred repositioning to ensure viewport is properly sized
+        # Same approach as 2D slice viewers
+        wx.CallLater(100, self.Reposition)
 
         # Setting slider position
         self.slider.SetValue(0)
@@ -629,7 +695,7 @@ class SingleImagePreview(wx.Panel):
         value1 = ""
         value2 = ""
 
-        value = "%s\n%s" % (value1, value2)
+        value = f"{value1}\n{value2}"
         self.text_image_location.SetValue(value)
 
         # self.text_patient.SetValue(value)
@@ -658,8 +724,10 @@ class SingleImagePreview(wx.Panel):
 
         # PLOT IMAGE INTO VIEWER
         self.actor.SetInputData(colorer.GetOutput())
-        self.renderer.ResetCamera()
-        self.interactor.Render()
+
+        # Use deferred repositioning to ensure viewport is properly sized
+        # Same approach as 2D slice viewers
+        wx.CallLater(100, self.Reposition)
 
         # Setting slider position
         self.slider.SetValue(index)

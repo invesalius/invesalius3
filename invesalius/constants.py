@@ -19,7 +19,6 @@
 
 import itertools
 import sys
-from typing import Dict, List, Optional, Tuple, Union
 
 import psutil
 import wx
@@ -38,6 +37,7 @@ INVESALIUS_ACTUAL_FORMAT_VERSION = 1.1
 MEASURE_NAME_PATTERN = _("M %d")
 MEASURE_LINEAR = 101
 MEASURE_ANGULAR = 102
+ANNOTATION_NAME_PATTERN = _("Annotation %d")
 
 DEFAULT_MEASURE_COLOUR = (1, 0, 0)
 DEFAULT_MEASURE_BG_COLOUR = (250 / 255.0, 247 / 255.0, 218 / 255.0)
@@ -110,6 +110,8 @@ LINEAR = 6
 ANGULAR = 7
 DENSITY_ELLIPSE = 8
 DENSITY_POLYGON = 9
+ANNOTATION = 10
+CURVED_LINEAR = 11
 
 # Colour representing each orientation
 ORIENTATION_COLOUR = {
@@ -182,8 +184,8 @@ CROP_PAN = 13
 
 # Color Table from Slice
 # NumberOfColors, SaturationRange, HueRange, ValueRange
-SLICE_COLOR_TABLE: Dict[
-    str, Tuple[Optional[int], Tuple[int, int], Tuple[float, float], Tuple[int, int]]
+SLICE_COLOR_TABLE: dict[
+    str, tuple[int | None, tuple[int, int], tuple[float, float], tuple[int, int]]
 ] = {
     _("Default "): (None, (0, 0), (0, 0), (0, 1)),
     _("Hue"): (None, (1, 1), (0, 1), (1, 1)),
@@ -232,41 +234,41 @@ AXIAL_VOLUME_CAM_POSITION = {
 }
 
 SAGITAL_VOLUME_CAM_VIEW_UP = {
-    VOL_FRONT: (0, -1, 0),
-    VOL_BACK: (0, -1, 0),
-    VOL_RIGHT: (0, -1, 1),
-    VOL_LEFT: (0, -1, 1),
-    VOL_TOP: (1, -1, 0),
-    VOL_BOTTOM: (-1, 1, 0),
-    VOL_ISO: (0, -1, 0),
+    VOL_FRONT: (0, 0, 1),
+    VOL_BACK: (0, 0, 1),
+    VOL_RIGHT: (0, 0, 1),
+    VOL_LEFT: (0, 0, 1),
+    VOL_TOP: (0, 1, 0),
+    VOL_BOTTOM: (0, -1, 0),
+    VOL_ISO: (0, 0, 1),
 }
 SAGITAL_VOLUME_CAM_POSITION = {
-    VOL_FRONT: (-1, 0, 0),
-    VOL_BACK: (1, 0, 0),
-    VOL_RIGHT: (0, 0, 1),
-    VOL_LEFT: (0, 0, -1),
-    VOL_TOP: (0, -1, 0),
-    VOL_BOTTOM: (0, 1, 0),
-    VOL_ISO: (-1, -0.5, -0.5),
+    VOL_FRONT: (0, -1, 0),
+    VOL_BACK: (0, 1, 0),
+    VOL_RIGHT: (-1, 0, 0),
+    VOL_LEFT: (1, 0, 0),
+    VOL_TOP: (0, 0, 1),
+    VOL_BOTTOM: (0, 0, -1),
+    VOL_ISO: (0.5, -1, 0.5),
 }
 
 CORONAL_VOLUME_CAM_VIEW_UP = {
-    VOL_FRONT: (0, -1, 0),
-    VOL_BACK: (0, -1, 0),
-    VOL_RIGHT: (0, -1, 0),
-    VOL_LEFT: (0, -1, 0),
+    VOL_FRONT: (0, 0, 1),
+    VOL_BACK: (0, 0, 1),
+    VOL_RIGHT: (0, 0, 1),
+    VOL_LEFT: (0, 0, 1),
     VOL_TOP: (0, 1, 0),
     VOL_BOTTOM: (0, -1, 0),
-    VOL_ISO: (0, -1, 0),
+    VOL_ISO: (0, 0, 1),
 }
 CORONAL_VOLUME_CAM_POSITION = {
-    VOL_FRONT: (0, 0, -1),
-    VOL_BACK: (0, 0, 1),
+    VOL_FRONT: (0, -1, 0),
+    VOL_BACK: (0, 1, 0),
     VOL_RIGHT: (-1, 0, 0),
     VOL_LEFT: (1, 0, 0),
-    VOL_TOP: (0, -1, 0),
-    VOL_BOTTOM: (0, 1, 0),
-    VOL_ISO: (0.5, -0.5, -1),
+    VOL_TOP: (0, 0, 1),
+    VOL_BOTTOM: (0, 0, -1),
+    VOL_ISO: (0.5, -1, 0.5),
 }
 
 VOLUME_POSITION = {
@@ -290,7 +292,7 @@ THRESHOLD_OUTVALUE = 0
 MASK_NAME_PATTERN = _("Mask %d")
 MASK_OPACITY = 0.40
 # MASK_OPACITY = 0.35
-MASK_COLOUR: List[List[float]] = [
+MASK_COLOUR: list[list[float]] = [
     [0.33, 1, 0.33],
     [1, 1, 0.33],
     [0.33, 0.91, 1],
@@ -312,7 +314,7 @@ MASK_COLOUR: List[List[float]] = [
 
 MEASURE_COLOUR = itertools.cycle([[1, 0, 0], [1, 0.4, 0], [0, 0, 1], [1, 0, 1], [0, 0.6, 0]])
 
-SURFACE_COLOUR: List[Tuple[float, float, float]] = [
+SURFACE_COLOUR: list[tuple[float, float, float]] = [
     (0.33, 1, 0.33),
     (1, 1, 0.33),
     (0.33, 0.91, 1),
@@ -374,7 +376,7 @@ SURFACE_SPACE_INV = 1
 SURFACE_SPACE_CHOICES = [_("world/scanner space"), _("InVesalius space")]
 
 # Imagedata - window and level presets
-WINDOW_LEVEL: Dict[str, Union[Tuple[int, int], Tuple[None, None]]] = {
+WINDOW_LEVEL: dict[str, tuple[int, int] | tuple[None, None]] = {
     _("Abdomen"): (350, 50),
     _("Bone"): (2000, 300),
     _("Brain posterior fossa"): (120, 40),
@@ -599,10 +601,13 @@ ID_SWAP_YZ = wx.NewIdRef()
 
 ID_BOOLEAN_MASK = wx.NewIdRef()
 ID_CLEAN_MASK = wx.NewIdRef()
+ID_IMAGE_FILTERS = wx.NewIdRef()
 
+ID_IMAGE_FILTER = wx.NewIdRef()
 ID_REORIENT_IMG = wx.NewIdRef()
 ID_FLOODFILL_MASK = wx.NewIdRef()
 ID_FILL_HOLE_AUTO = wx.NewIdRef()
+ID_FILL_HOLE_MANUALLY = wx.NewIdRef()
 ID_REMOVE_MASK_PART = wx.NewIdRef()
 ID_SELECT_MASK_PART = wx.NewIdRef()
 ID_MANUAL_SEGMENTATION = wx.NewIdRef()
@@ -611,19 +616,24 @@ ID_THRESHOLD_SEGMENTATION = wx.NewIdRef()
 ID_FLOODFILL_SEGMENTATION = wx.NewIdRef()
 ID_FLOODFILL_SEGMENTATION = wx.NewIdRef()
 ID_SEGMENTATION_BRAIN = wx.NewIdRef()
+ID_SEGMENTATION_SUBPART = wx.NewIdRef()
 ID_SEGMENTATION_TRACHEA = wx.NewIdRef()
 ID_SEGMENTATION_MANDIBLE_CT = wx.NewIdRef()
+ID_PLANNING_CRANIOPLASTY = wx.NewIdRef()
 ID_CROP_MASK = wx.NewIdRef()
 ID_DENSITY_MEASURE = wx.NewIdRef()
 ID_MASK_DENSITY_MEASURE = wx.NewIdRef()
 ID_CREATE_SURFACE = wx.NewIdRef()
+ID_REMOVE_NON_VISIBLE_FACES = wx.NewIdRef()
 ID_CREATE_MASK = wx.NewIdRef()
 ID_MASK_3D_PREVIEW = wx.NewIdRef()
 ID_MASK_3D_RELOAD = wx.NewIdRef()
 ID_MASK_3D_AUTO_RELOAD = wx.NewIdRef()
+ID_MASK_3D_EDIT = wx.NewIdRef()
 
 ID_GOTO_SLICE = wx.NewIdRef()
 ID_GOTO_COORD = wx.NewIdRef()
+ID_ORIENTATION_CUBE = wx.NewIdRef()
 
 ID_MANUAL_WWWL = wx.NewIdRef()
 
@@ -648,6 +658,10 @@ STATE_MEASURE_DENSITY_ELLIPSE = 1010
 STATE_MEASURE_DENSITY_POLYGON = 1011
 STATE_NAVIGATION = 1012
 STATE_REGISTRATION = 1013
+STATE_MASK_3D_EDIT = 1014
+STATE_MEASURE_ANNOTATION = 1015
+STATE_MEASURE_CURVED_LINEAR = 1016
+STATE_SSAO = 1017
 
 SLICE_STATE_CROSS = 3006
 SLICE_STATE_SCROLL = 3007
@@ -675,6 +689,8 @@ TOOL_STATES = [
     STATE_MEASURE_ANGLE,
     STATE_MEASURE_DENSITY_ELLIPSE,
     STATE_MEASURE_DENSITY_POLYGON,
+    STATE_MEASURE_ANNOTATION,
+    STATE_MEASURE_CURVED_LINEAR,
     STATE_NAVIGATION,
     STATE_REGISTRATION,
 ]
@@ -717,6 +733,8 @@ STYLE_LEVEL = {
     STATE_MEASURE_DENSITY_ELLIPSE: 2,
     STATE_MEASURE_DENSITY_POLYGON: 2,
     STATE_MEASURE_DENSITY: 2,
+    STATE_MEASURE_ANNOTATION: 2,
+    STATE_MEASURE_CURVED_LINEAR: 2,
     STATE_WL: 2,
     STATE_SPIN: 2,
     STATE_ZOOM: 2,
@@ -727,6 +745,8 @@ STYLE_LEVEL = {
     STATE_REGISTRATION: 3,
     # Override all other states when in navigation mode.
     STATE_NAVIGATION: 4,
+    # TODO(Henrique): check whether we need to override the previous states
+    STATE_MASK_3D_EDIT: 3,
 }
 
 # ------------ Prefereces options key ------------
@@ -734,6 +754,20 @@ RENDERING = 0
 SURFACE_INTERPOLATION = 1
 LANGUAGE = 2
 SLICE_INTERPOLATION = 3
+# Logging
+LOGGING = 4
+LOGGING_LEVEL = 5
+APPEND_LOG_FILE = 6
+LOGFILE = 7
+# Marker shapes
+LANDMARK_MARKER_SHAPE = 10
+FIDUCIAL_MARKER_SHAPE = 11
+# SSAO
+SSAO_ENABLED = 12
+
+# Marker shape options
+MARKER_SHAPE_BALL = 0
+MARKER_SHAPE_CROSS = 1
 
 
 # ------------ Logging options key------------
@@ -786,6 +820,8 @@ BOOLEAN_XOR = 4
 
 # -------------- User interface ---------------------
 
+FOLD_PANEL_EXTRA_HEIGHT = 40
+
 # The column order in the marker panel
 #
 ID_COLUMN = 0
@@ -795,9 +831,34 @@ LABEL_COLUMN = 3
 TARGET_COLUMN = 4
 Z_OFFSET_COLUMN = 5
 POINT_OF_INTEREST_TARGET_COLUMN = 6
-X_COLUMN = 7
-Y_COLUMN = 8
-Z_COLUMN = 9
+MEP_COLUMN = 7
+UUID = 8
+X_COLUMN = 9
+Y_COLUMN = 10
+Z_COLUMN = 11
+
+# The column order in the brain marker panel
+#
+BRAIN_ID_COLUMN = 0
+BRAIN_SESSION_COLUMN = 1
+BRAIN_MARKER_TYPE_COLUMN = 2
+BRAIN_LABEL_COLUMN = 3
+BRAIN_MEP_COLUMN = 4
+BRAIN_X_MTMS = 5
+BRAIN_Y_MTMS = 6
+BRAIN_R_MTMS = 7
+BRAIN_INTENSITY_MTMS = 8
+BRAIN_UUID = 9
+
+# Page order in the coregistration panel
+
+IMPORTS_PAGE = 0
+HEAD_PAGE = 1
+IMAGE_PAGE = 2
+TRACKER_PAGE = 3
+REFINE_PAGE = 4
+STYLUS_PAGE = 5
+STIMULATOR_PAGE = 6
 
 # ------------ Navigation defaults -------------------
 
@@ -821,7 +882,7 @@ DEBUGTRACKAPPROACH = 10
 DEFAULT_TRACKER = SELECT
 
 NDICOMPORT = b"COM1"
-NDI_IP = ["P9-13715.local", "P9-13719.local"]
+NDI_IP = ["P9-13715.local", "P9-13719.local", "P9-25026.local", "P9-13835.local"]
 
 TRACKERS = [
     _("Claron MicronTracker"),
@@ -965,8 +1026,8 @@ SEED_RADIUS = 1.5
 
 # Efield Visualization
 EFIELD_MAX_RANGE_SCALE = 0.90
-CORTEX_COLOR = 190
-EFIELD_ROI_SIZE = 20
+CORTEX_COLOR = (190, 190, 190)
+EFIELD_ROI_SIZE = 40
 
 # Note that the sleep parameters can be set in the preferences dialog in the UI. The values here are default values,
 # selected to be a conservative compromise between frame rate and responsiveness, leaning towards responsiveness even
@@ -998,9 +1059,86 @@ TREKKER_CONFIG = {
 }
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
-CURRENT_MARKER_FILE_VERSION = 3
-SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3]
+CURRENT_MARKER_FILE_VERSION = 5
+SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3, 4, 5]
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
+
+# Motor mapping visualization
+
+DEFAULT_MEP_CONFIG_PARAMS = {
+    "mep_enabled": False,
+    "threshold_down": 0,
+    "range_up": 1,
+    "mep_colormap": "Viridis",
+    "gaussian_sharpness": 1.0,
+    "gaussian_radius": 3,
+    "dimensions_size": 80,
+    "colormap_range_uv": {"min": 50, "low": 200, "mid": 600, "max": 1000},
+}
+
+
+MEP_COLORMAP_DEFINITIONS = {
+    "BlueCyanYellowRed": {  # Blue, Cyan, Yellow, Red
+        "min": (0.0, 0.0, 1.0),
+        "low": (0.0, 1.0, 1.0),
+        "mid": (1.0, 1.0, 0.0),
+        "max": (1.0, 0.0, 0.0),
+    },
+    "GreenYellowOrangeRed": {  # Green, Yellow, Orange, Red
+        "min": (0.0, 1.0, 0.0),
+        "low": (1.0, 1.0, 0.0),
+        "mid": (1.0, 0.647, 0.0),
+        "max": (1.0, 0.0, 0.0),
+    },
+    "PurpleBlueGreenYellow": {  # Purple, Blue, Green, Yellow
+        "min": (0.5, 0.0, 0.5),
+        "low": (0.0, 0.0, 1.0),
+        "mid": (0.0, 1.0, 0.0),
+        "max": (1.0, 1.0, 0.0),
+    },
+    "BlackGrayWhiteRed": {  # Black, Gray, White, Red (grayscale with highlight)
+        "min": (0.0, 0.0, 0.0),
+        "low": (0.5, 0.5, 0.5),
+        "mid": (1.0, 1.0, 1.0),
+        "max": (1.0, 0.0, 0.0),
+    },
+    "Viridis": {  # Viridis (perceptually uniform)
+        "min": (0.267, 0.004, 0.329),
+        "low": (0.192, 0.408, 0.556),
+        "mid": (0.137, 0.718, 0.475),
+        "max": (0.993, 0.906, 0.144),
+    },
+    "Grayscale": {  # Grayscale (often used for CT/MRI)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.25, 0.25, 0.25),  # Dark Gray
+        "mid": (0.75, 0.75, 0.75),  # Light Gray
+        "max": (1.0, 1.0, 1.0),  # White
+    },
+    "HotMetal": {  # Hot Metal (useful for highlighting hot spots)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.5, 0.0, 0.0),  # Dark Red
+        "mid": (1.0, 0.5, 0.0),  # Orange
+        "max": (1.0, 1.0, 1.0),  # White
+    },
+    "Rainbow": {  # Rainbow (although not perceptually uniform, still common)
+        "min": (0.0, 0.0, 1.0),  # Blue
+        "low": (0.0, 1.0, 0.0),  # Green
+        "mid": (1.0, 1.0, 0.0),  # Yellow
+        "max": (1.0, 0.0, 0.0),  # Red
+    },
+    "Bone": {  # Bone (specifically designed for CT bone visualization)
+        "min": (0.0, 0.0, 0.0),  # Black
+        "low": (0.388, 0.224, 0.0),  # Brown
+        "mid": (0.902, 0.827, 0.631),  # Beige
+        "max": (1.0, 1.0, 1.0),  # White
+    },
+    "InvertedGrayscale": {  # Inverted Grayscale (sometimes used for PET)
+        "min": (1.0, 1.0, 1.0),  # White
+        "low": (0.75, 0.75, 0.75),  # Light Gray
+        "mid": (0.25, 0.25, 0.25),  # Dark Gray
+        "max": (0.0, 0.0, 0.0),  # Black
+    },
+}
 
 # Keycodes for moving markers using the keyboard
 MOVE_MARKER_LEFT_KEYCODE = 65  # A
@@ -1042,11 +1180,23 @@ BAUD_RATE_DEFAULT_SELECTION = 4
 PULSE_DURATION_IN_MILLISECONDS = 0.2
 
 # Robot
-ROBOT_ElFIN_IP = ["192.168.200.251", "143.107.220.251", "169.254.153.251", "127.0.0.1"]
-ROBOT_DOBOT_IP = ["192.168.1.6"]
+ROBOT_IPS = [
+    "192.168.200.251",
+    "143.107.220.251",
+    "169.254.153.251",
+    "127.0.0.1",
+    "192.168.1.6",
+    "169.254.128.103",
+]
 
 MTMS_RADIUS = 15
 
 # Pedal
 KEYSTROKE_PEDAL_ENABLED = True
 KEYSTROKE_PEDAL_KEY = wx.WXK_F21
+
+# Mask 3D Edit modes
+
+MASK_3D_EDIT_INCLUDE = 0
+MASK_3D_EDIT_EXCLUDE = 1
+MASK_3D_EDIT_OP_NAME = [_("Include Inside"), _("Exclude Inside")]

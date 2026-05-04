@@ -40,25 +40,30 @@ class SerialPortConnection(threading.Thread):
         self.serial_port_queue = serial_port_queue
         self.event = event
         self.sleep_nav = sleep_nav
+        self._trigger_active = False
+        self._last_trigger_time = 0.0
+        self._trigger_cooldown = 0.15
 
     def Connect(self):
         if self.com_port is None:
             print("Serial port init error: COM port is unset.")
-            return
+            return False
         try:
             import serial
 
             self.connection = serial.Serial(self.com_port, baudrate=self.baud_rate, timeout=0)
-            print("Connection to port {} opened.".format(self.com_port))
+            print(f"Connection to port {self.com_port} opened.")
 
             Publisher.sendMessage("Serial port connection", state=True)
-        except:
-            print("Serial port init error: Connecting to port {} failed.".format(self.com_port))
+            return True
+        except Exception:
+            print(f"Serial port init error: Connecting to port {self.com_port} failed.")
+            return False
 
     def Disconnect(self):
         if self.connection:
             self.connection.close()
-            print("Connection to port {} closed.".format(self.com_port))
+            print(f"Connection to port {self.com_port} closed.")
 
             Publisher.sendMessage("Serial port connection", state=False)
 
@@ -66,27 +71,43 @@ class SerialPortConnection(threading.Thread):
         try:
             self.connection.send_break(constants.PULSE_DURATION_IN_MILLISECONDS / 1000)
             Publisher.sendMessage("Serial port pulse triggered")
-        except:
+        except Exception:
             print("Error: Serial port could not be written into.")
 
     def run(self):
+        if self.connection is None:
+            print("Serial port thread exiting: No active connection.")
+            return
+
         while not self.event.is_set():
             trigger_on = False
             try:
                 lines = self.connection.readlines()
-                if lines:
-                    trigger_on = True
-            except:
+                has_data = bool(lines)
+            except Exception:
                 print("Error: Serial port could not be read.")
+                has_data = False
 
             if self.stylusplh:
-                trigger_on = True
+                has_data = True
                 self.stylusplh = False
 
-            try:
-                self.serial_port_queue.put_nowait(trigger_on)
-            except queue.Full:
-                print("Error: Serial port queue full.")
+            now = time.monotonic()
+            # Debounce serial input: emit only on rising edge and respect a cooldown.
+            if has_data and not self._trigger_active:
+                if now - self._last_trigger_time >= self._trigger_cooldown:
+                    trigger_on = True
+                    self._last_trigger_time = now
+                self._trigger_active = True
+            elif not has_data:
+                self._trigger_active = False
+
+            if trigger_on:
+                try:
+                    self.serial_port_queue.put_nowait(True)
+                except queue.Full:
+                    # Drop duplicate trigger if consumer has not yet processed the previous one.
+                    pass
 
             time.sleep(self.sleep_nav)
 

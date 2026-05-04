@@ -27,7 +27,7 @@ class Pizza(object):
         self.__bind_events()
 
     def __bind_events(self):
-        Publisher.subscribe(self.RemovePiece, 'Eat piece of pizza')
+        Publisher.subscribe(self.RemovePiece, "Eat piece of pizza")
 
     def RemovePiece(self, pubsub_evt):
         person = pubsub_evt
@@ -38,13 +38,13 @@ class Pizza(object):
             print(f"{person.name} is hungry!")
 
 
-class Person():
+class Person:
     def __init__(self, name):
         self.name = name
         self.pizza = Pizza()
 
     def EatPieceOfPizza(self):
-        Publisher.sendMessage('Eat piece of pizza', pubsub_evt=self)
+        Publisher.sendMessage("Eat piece of pizza", pubsub_evt=self)
 
 
 print("Initial state:")

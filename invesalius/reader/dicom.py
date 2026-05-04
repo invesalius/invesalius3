@@ -17,9 +17,9 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # ---------------------------------------------------------------------
-# import gdcm
-import sys
 import time
+
+import gdcm
 
 import invesalius.constants as const
 import invesalius.utils as utils
@@ -325,28 +325,15 @@ class Parser:
 
         DICOM standard tag (0x0008, 0x0050) was used.
         """
+        return ""
         # data = self.data_image[0x008][0x050]
-        return ""
-        if data:
-            try:
-                value = int(str(data))
-            except ValueError:  # Problem in the other\iCatDanielaProjeto
-                value = 0
-            return value
-        return ""
-
-    def GetAcquisitionTime(self):
-        """
-        Return string containing the acquisition time using the
-        format "hh:mm:ss".
-        Return "" (empty string) if not set.
-
-        DICOM standard tag (0x0008,0x0032) was used.
-        """
-        data = self.data_image[str(0x008)][str(0x032)]
-        if (data) and (data != ""):
-            return self.__format_time(str(data))
-        return ""
+        # if data:
+        #     try:
+        #         value = int(str(data))
+        #     except ValueError:  # Problem in the other\iCatDanielaProjeto
+        #         value = 0
+        #     return value
+        # return ""
 
     def GetPatientAdmittingDiagnosis(self):
         """
@@ -782,22 +769,6 @@ class Parser:
             return data
         return ""
 
-    def GetProtocolName(self):
-        """
-        Return string containing the protocal name
-        used in the acquisition
-
-        DICOM standard tag (0x0018, 0x1030) was used.
-        """
-        try:
-            data = self.data_image[str(0x0018)][str(0x1030)]
-        except KeyError:
-            return None
-
-        if data:
-            return data
-        return None
-
     def GetImageType(self):
         """
         Return list containing strings related to image origin.
@@ -850,23 +821,6 @@ class Parser:
         """
         try:
             data = self.data_image[str(0x0008)][str(0x0018)]
-        except KeyError:
-            return ""
-
-        if data:
-            return data
-        return ""
-
-    def GetStudyInstanceUID(self):
-        """
-        Return string containing Unique Identifier of the
-        Study Instance.
-        Return "" if field is not defined.
-
-        Critical DICOM Tag (0x0020,0x000D). Cannot be edited.
-        """
-        try:
-            data = self.data_image[str(0x0020)][str(0x000D)]
         except KeyError:
             return ""
 
@@ -1646,11 +1600,10 @@ class DicomWriter:
     """
 
     def __init__(self):
-        self.reader = ""
         self.anony = gdcm.Anonymizer()
         self.path = ""
-        self.new_dicom = vtkgdcm.vtkGDCMImageWriter()
-        reader = self.reader = gdcm.Reader()
+        self.new_dicom = vtkgdcm.vtkGDCMImageWriter()  # noqa: F821
+        self.reader = gdcm.Reader()
 
     def SetFileName(self, path):
         """
@@ -1693,7 +1646,7 @@ class DicomWriter:
         self.anony.SetFile(self.reader.GetFile())
 
     def Save(self):
-        reader = self.reader
+        # reader = self.reader
 
         writer = gdcm.Writer()
         writer.SetFile(self.reader.GetFile())
@@ -1728,7 +1681,7 @@ class DicomWriter:
         """
         Set slice location value requeries float type
         """
-        self.anony.Replace(gdcm.Tag(0x0020, 0x1041), str(number))
+        self.anony.Replace(gdcm.Tag(0x0020, 0x1041), str(location))
 
     def SetImagePosition(self, position):
         """
@@ -1842,7 +1795,7 @@ if __name__ == "__main__":
             # print info
 
 
-class Dicom(object):
+class Dicom:
     def __init__(self):
         pass
 
@@ -1867,7 +1820,7 @@ class Dicom(object):
         self.acquisition.SetParser(self.parser)
 
 
-class Patient(object):
+class Patient:
     def __init__(self):
         pass
 
@@ -1880,7 +1833,7 @@ class Patient(object):
         self.physician = parser.GetPhysicianReferringName()
 
 
-class Acquisition(object):
+class Acquisition:
     def __init__(self):
         pass
 
@@ -1901,7 +1854,7 @@ class Acquisition(object):
         self.sop_class_uid = parser.GetSOPClassUID()
 
 
-class Image(object):
+class Image:
     def __init__(self):
         pass
 

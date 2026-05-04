@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
-import importlib
 import multiprocessing
-import os
-import pathlib
-import subprocess
-import sys
-import tempfile
 import time
+from typing import Dict
 
 import numpy as np
 import wx
@@ -17,12 +12,7 @@ import invesalius.data.slice_ as slc
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from invesalius.segmentation.deep_learning import segment, utils
-
-HAS_THEANO = bool(importlib.util.find_spec("theano"))
-HAS_PLAIDML = bool(importlib.util.find_spec("plaidml"))
-PLAIDML_DEVICES = {}
-TORCH_DEVICES = {}
+from invesalius.segmentation.deep_learning import segment
 
 try:
     import torch
@@ -30,6 +20,13 @@ try:
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
+
+try:
+    import tinygrad
+
+    HAS_TINYGRAD = True
+except ImportError:
+    HAS_TINYGRAD = False
 
 if HAS_TORCH:
     TORCH_DEVICES = {}
@@ -40,20 +37,23 @@ if HAS_TORCH:
             TORCH_DEVICES[name] = device_id
     TORCH_DEVICES["CPU"] = "cpu"
 
-
-if HAS_PLAIDML:
-    with multiprocessing.Pool(1) as p:
-        try:
-            PLAIDML_DEVICES = p.apply(utils.get_plaidml_devices)
-        except Exception as err:
-            print(err)
-            PLAIDML_DEVICES = {}
-            HAS_PLAIDML = False
+if HAS_TINYGRAD:
+    TINYGRAD_DEVICES = {}
+    for device in list(tinygrad.Device.get_available_devices()):
+        TINYGRAD_DEVICES[device] = device
+    if "DSP" in TINYGRAD_DEVICES.keys():
+        del TINYGRAD_DEVICES["DSP"]
 
 
 class DeepLearningSegmenterDialog(wx.Dialog):
     def __init__(
-        self, parent, title, has_torch=True, has_plaidml=True, has_theano=True, segmenter=None
+        self,
+        parent,
+        title,
+        auto_segment=False,
+        has_torch=True,
+        has_tinygrad=True,
+        segmenter=None,
     ):
         wx.Dialog.__init__(
             self,
@@ -65,14 +65,17 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         backends = []
         if HAS_TORCH and has_torch:
             backends.append("Pytorch")
-        if HAS_PLAIDML and has_plaidml:
-            backends.append("PlaidML")
-        if HAS_THEANO and has_theano:
-            backends.append("Theano")
+        if HAS_TORCH and has_tinygrad:
+            backends.append("Tinygrad")
         self.segmenter = segmenter
-        #  self.pg_dialog = None
-        self.torch_devices = TORCH_DEVICES
-        self.plaidml_devices = PLAIDML_DEVICES
+
+        if HAS_TORCH:
+            self.torch_devices: Dict[str, str] = TORCH_DEVICES
+
+        if HAS_TINYGRAD:
+            self.tinygrad_devices: Dict[str, str] = TINYGRAD_DEVICES
+
+        self.auto_segment = auto_segment
 
         self.backends = backends
 
@@ -92,7 +95,36 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.OnSetBackend()
         self.HideProgress()
 
+        if self.auto_segment:
+            self.OnSegment(self)
+
     def _init_gui(self):
+        from invesalius.project import Project
+
+        proj = Project()
+        self.img_labels = (
+            [lbl for lbl, _ in proj.image_versions] if proj.image_versions else ["original"]
+        )
+        # Translate for display only — raw labels are stored in self.img_labels for pubsub
+        display_labels = [_("Original") if lbl == "original" else lbl for lbl in self.img_labels]
+
+        self.lbl_input = wx.StaticText(self, -1, _("Input image"))
+        self.cb_input = wx.ComboBox(
+            self,
+            wx.ID_ANY,
+            choices=display_labels,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        current_lbl = (
+            slc.Slice().current_image_label
+            if hasattr(slc.Slice(), "current_image_label")
+            else "original"
+        )
+        if current_lbl in self.img_labels:
+            self.cb_input.SetSelection(self.img_labels.index(current_lbl))
+        elif self.img_labels:
+            self.cb_input.SetSelection(0)
+
         self.cb_backends = wx.ComboBox(
             self,
             wx.ID_ANY,
@@ -103,21 +135,25 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         w, h = self.CalcSizeFromTextSize("MM" * (1 + max(len(i) for i in self.backends)))
         self.cb_backends.SetMinClientSize((w, -1))
         self.chk_use_gpu = wx.CheckBox(self, wx.ID_ANY, _("Use GPU"))
-        if HAS_TORCH or HAS_PLAIDML:
+        choices = []
+        value = ""
+
+        if HAS_TORCH or HAS_TINYGRAD:
             if HAS_TORCH:
                 choices = list(self.torch_devices.keys())
                 value = choices[0]
             else:
-                choices = list(self.plaidml_devices.keys())
+                choices = list(self.tinygrad_devices.keys())
                 value = choices[0]
-            self.lbl_device = wx.StaticText(self, -1, _("Device"))
-            self.cb_devices = wx.ComboBox(
-                self,
-                wx.ID_ANY,
-                choices=choices,
-                value=value,
-                style=wx.CB_DROPDOWN | wx.CB_READONLY,
-            )
+
+        self.lbl_device = wx.StaticText(self, -1, _("Device"))
+        self.cb_devices = wx.ComboBox(
+            self,
+            wx.ID_ANY,
+            choices=choices,
+            value=value,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
         self.sld_threshold = wx.Slider(self, wx.ID_ANY, 75, 0, 100)
         w, h = self.CalcSizeFromTextSize("M" * 20)
         self.sld_threshold.SetMinClientSize((w, -1))
@@ -144,10 +180,16 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.btn_stop.Disable()
         self.btn_close = wx.Button(self, wx.ID_CLOSE)
 
-        self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
+        self.txt_threshold.SetValue(f"{self.sld_threshold.GetValue():3d}%")
 
     def _do_layout(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        sizer_input = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_input.Add(self.lbl_input, 0, wx.ALIGN_CENTER, 0)
+        sizer_input.Add(self.cb_input, 1, wx.LEFT, 5)
+        main_sizer.Add(sizer_input, 0, wx.ALL | wx.EXPAND, 5)
+
         sizer_3 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_backends = wx.BoxSizer(wx.HORIZONTAL)
         label_1 = wx.StaticText(self, wx.ID_ANY, _("Backend"))
@@ -156,7 +198,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         main_sizer.Add(sizer_backends, 0, wx.ALL | wx.EXPAND, 5)
         main_sizer.Add(self.chk_use_gpu, 0, wx.ALL, 5)
         sizer_devices = wx.BoxSizer(wx.HORIZONTAL)
-        if HAS_TORCH or HAS_PLAIDML:
+        if HAS_TORCH or HAS_TINYGRAD:
             sizer_devices.Add(self.lbl_device, 0, wx.ALIGN_CENTER, 0)
             sizer_devices.Add(self.cb_devices, 1, wx.LEFT, 5)
         main_sizer.Add(sizer_devices, 0, wx.ALL | wx.EXPAND, 5)
@@ -193,6 +235,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.Centre()
 
     def _set_events(self):
+        self.cb_input.Bind(wx.EVT_COMBOBOX, self.OnSetImage)
         self.cb_backends.Bind(wx.EVT_COMBOBOX, self.OnSetBackend)
         self.sld_threshold.Bind(wx.EVT_SCROLL, self.OnScrollThreshold)
         self.txt_threshold.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
@@ -215,6 +258,11 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         width, height = dc.GetTextExtent(text)
         return width, height
 
+    def OnSetImage(self, evt=None):
+        idx = self.cb_input.GetSelection()
+        label = self.img_labels[idx] if 0 <= idx < len(self.img_labels) else "original"
+        Publisher.sendMessage("Switch active image by label", label=label)
+
     def OnSetBackend(self, evt=None):
         if self.cb_backends.GetValue().lower() == "pytorch":
             if HAS_TORCH:
@@ -225,27 +273,25 @@ class DeepLearningSegmenterDialog(wx.Dialog):
                 self.lbl_device.Show()
                 self.cb_devices.Show()
             self.chk_use_gpu.Hide()
-        elif self.cb_backends.GetValue().lower() == "plaidml":
-            if HAS_PLAIDML:
-                choices = list(self.plaidml_devices.keys())
+        elif self.cb_backends.GetValue().lower() == "tinygrad":
+            if HAS_TINYGRAD:
+                choices = list(self.tinygrad_devices)
                 self.cb_devices.Clear()
                 self.cb_devices.SetItems(choices)
                 self.cb_devices.SetValue(choices[0])
                 self.lbl_device.Show()
                 self.cb_devices.Show()
             self.chk_use_gpu.Hide()
+
         else:
-            if HAS_PLAIDML:
-                self.lbl_device.Hide()
-                self.cb_devices.Hide()
-            self.chk_use_gpu.Show()
+            raise TypeError("Wrong backend")
 
         self.main_sizer.Fit(self)
         self.main_sizer.SetSizeHints(self)
 
     def OnScrollThreshold(self, evt):
-        value = self.sld_threshold.GetValue()
-        self.txt_threshold.SetValue("{:3d}%".format(self.sld_threshold.GetValue()))
+        # value = self.sld_threshold.GetValue()
+        self.txt_threshold.SetValue(f"{self.sld_threshold.GetValue():3d}%")
         if self.segmented:
             self.apply_segment_threshold()
 
@@ -257,7 +303,7 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         except ValueError:
             value = self.sld_threshold.GetValue()
         self.sld_threshold.SetValue(value)
-        self.txt_threshold.SetValue("{:3d}%".format(value))
+        self.txt_threshold.SetValue(f"{value:3d}%")
 
         if self.segmented:
             self.apply_segment_threshold()
@@ -273,19 +319,22 @@ class DeepLearningSegmenterDialog(wx.Dialog):
                 device_id = self.torch_devices[self.cb_devices.GetValue()]
             except (KeyError, AttributeError):
                 device_id = "cpu"
-        else:
+        elif backend.lower() == "tinygrad":
             try:
-                device_id = self.plaidml_devices[self.cb_devices.GetValue()]
+                device_id = self.tinygrad_devices[self.cb_devices.GetValue()]
             except (KeyError, AttributeError):
-                device_id = "llvm_cpu.0"
+                device_id = tinygrad.Device.DEFAULT
+        else:
+            raise TypeError("Wrong backend")
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
-        prob_threshold = self.sld_threshold.GetValue() / 100.0
+        # prob_threshold = self.sld_threshold.GetValue() / 100.0
         self.btn_close.Disable()
         self.btn_stop.Enable()
         self.btn_segment.Disable()
         self.chk_new_mask.Disable()
+        self.chk_apply_wwwl.Disable()
 
         window_width = slc.Slice().window_width
         window_level = slc.Slice().window_level
@@ -334,12 +383,25 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.btn_stop.Disable()
         self.btn_segment.Disable()
         self.chk_new_mask.Disable()
+        self.sld_threshold.Disable()
+        self.txt_threshold.Disable()
+        self.cb_backends.Disable()
+        self.cb_devices.Disable()
+        self.overlap.Disable()
+        self.chk_apply_wwwl.Disable()
+        self.chk_use_gpu.Disable()
+
         self.elapsed_time_timer.Stop()
         self.apply_segment_threshold()
 
+        if self.auto_segment:
+            self.OnClose(self)
+            Publisher.sendMessage("Brain segmentation completed")
+
     def SetProgress(self, progress):
-        self.progress.SetValue(int(progress * 100))
-        wx.GetApp().Yield()
+        if self.progress and self.progress.IsBeingDeleted() is False:
+            self.progress.SetValue(int(progress * 100))
+            wx.GetApp().Yield()
 
     def OnTickTimer(self, evt):
         fmt = "%H:%M:%S"
@@ -363,11 +425,12 @@ class DeepLearningSegmenterDialog(wx.Dialog):
                 return
 
             progress = self.ps.get_completion()
-            if progress == np.Inf:
-                progress = 1
+            if progress == np.inf or progress >= 1.0:
+                progress = 1.0
                 self.AfterSegment()
-            progress = max(0, min(progress, 1))
-            self.SetProgress(float(progress))
+            else:
+                progress = max(0.0, min(progress, 1.0))
+            self.SetProgress(progress)
 
     def OnClose(self, evt):
         #  self.segmenter.stop = True
@@ -395,18 +458,205 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.lbl_time.Show()
         self.main_sizer.Fit(self)
         self.main_sizer.SetSizeHints(self)
+        self.Update()
 
 
 class BrainSegmenterDialog(DeepLearningSegmenterDialog):
-    def __init__(self, parent):
+    def __init__(self, parent, auto_segment=False):
         super().__init__(
             parent=parent,
             title=_("Brain segmentation"),
             has_torch=True,
-            has_plaidml=True,
-            has_theano=True,
+            has_tinygrad=True,
             segmenter=segment.BrainSegmentProcess,
+            auto_segment=auto_segment,
         )
+
+
+class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
+    def __init__(self, parent, auto_segment=False):
+        self.mask_types = {
+            "cortical": _("Cortical"),
+            "subcortical": _("Subcortical"),
+            "white_matter": _("White Matter"),
+            "cerebellum": _("Cerebellum"),
+            "ventricles": _("Ventricles"),
+            "brain_stem": _("Brain Stem"),
+            "choroid_plexus": _("Choroid Plexus"),
+        }
+
+        self.selected_mask_types = []
+
+        super().__init__(
+            parent=parent,
+            title=_("Brain subpart Segmentation"),
+            has_torch=True,
+            has_tinygrad=True,
+            segmenter=segment.SubpartSegmentProcess,
+            auto_segment=auto_segment,
+        )
+
+    def _init_gui(self):
+        """Override _init_gui to add
+        specific UI elements"""
+        super()._init_gui()
+
+        mask_types_box = wx.StaticBox(self, -1, _("Mask Types to Generate"))
+        self.mask_types_sizer = wx.StaticBoxSizer(mask_types_box, wx.VERTICAL)
+
+        self.chk_whole_brain = wx.CheckBox(self, wx.ID_ANY, _("Whole Brain"))
+        self.chk_whole_brain.SetValue(True)
+        self.chk_whole_brain.Disable()
+
+        self.separator = wx.StaticLine(self)
+        self.mask_checkboxes = {}
+        for mask_id, mask_label in self.mask_types.items():
+            self.mask_checkboxes[mask_id] = wx.CheckBox(self, wx.ID_ANY, mask_label)
+            self.mask_checkboxes[mask_id].SetValue(False)
+
+    def _do_layout(self):
+        """Override _do_layout to arrange FastSurferCNN specific UI elements"""
+        super()._do_layout()
+
+        # if hasattr(self, "cb_backends"):
+        #     sizer_item = self.main_sizer.GetItem(0)
+        #     if sizer_item:
+        #         self.main_sizer.Detach(sizer_item)
+        #         self.cb_backends.Hide()
+
+        # if hasattr(self, "lbl_device") and hasattr(self, "cb_devices"):
+        #     try:
+        #         for i, item in enumerate(self.main_sizer.GetChildren()):
+        #             if item.GetWindow() == self.lbl_device:
+        #                 self.main_sizer.Detach(item)
+        #                 self.lbl_device.Hide()
+        #             elif item.GetWindow() == self.cb_devices:
+        #                 self.main_sizer.Detach(item)
+        #                 self.cb_devices.Hide()
+        #     except:
+        #         self.lbl_device.Hide()
+        #         self.cb_devices.Hide()
+
+        #
+
+        if hasattr(self, "overlap"):
+            overlap_index = -1
+            for i, item in enumerate(self.main_sizer.GetChildren()):
+                if item.GetWindow() == self.overlap:
+                    overlap_index = i
+                    break
+
+            if overlap_index >= 0:
+                self.mask_types_sizer.Add(self.chk_whole_brain, 0, wx.ALL, 5)
+                self.mask_types_sizer.Add(self.separator, 0, wx.EXPAND | wx.ALL, 5)
+
+                for checkbox in self.mask_checkboxes.values():
+                    self.mask_types_sizer.Add(checkbox, 0, wx.ALL, 5)
+
+                self.main_sizer.Insert(
+                    overlap_index + 1, self.mask_types_sizer, 0, wx.ALL | wx.EXPAND, 5
+                )
+            else:
+                # Fallback - just add to the main sizer
+                self.main_sizer.Add(self.mask_types_sizer, 0, wx.ALL | wx.EXPAND, 5)
+
+        self.main_sizer.Fit(self)
+        self.Layout()
+
+    def OnSegment(self, evt):
+        self.selected_mask_types = [
+            mask_id for mask_id, checkbox in self.mask_checkboxes.items() if checkbox.GetValue()
+        ]
+
+        self.ShowProgress()
+        self.t0 = time.time()
+        self.elapsed_time_timer.Start(1000)
+
+        image = slc.Slice().matrix
+        backend = self.cb_backends.GetValue()
+        create_new_mask = self.chk_new_mask.GetValue()
+
+        if backend.lower() == "pytorch":
+            try:
+                device_id = self.torch_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = "cpu"
+            use_gpu = True if "cpu" not in device_id.lower() else False
+        elif backend.lower() == "tinygrad":
+            try:
+                device_id = self.tinygrad_devices[self.cb_devices.GetValue()]
+                if device_id == "GPU":
+                    device_id = "cuda"
+            except (KeyError, AttributeError):
+                device_id = "cpu"
+            use_gpu = "cuda" in device_id.lower()
+        else:
+            # Fallback for unknown backends
+            device_id = "cpu"
+            use_gpu = False
+        overlap = self.overlap_options[self.overlap.GetSelection()]
+        apply_wwwl = self.chk_apply_wwwl.GetValue()
+        window_width = slc.Slice().window_width
+        window_level = slc.Slice().window_level
+
+        self.btn_close.Disable()
+        self.btn_stop.Enable()
+        self.btn_segment.Disable()
+        self.chk_new_mask.Disable()
+        self.chk_use_gpu.Disable()
+        self.overlap.Disable()
+        self.cb_backends.Disable()
+        self.cb_devices.Disable()
+
+        for checkbox in self.mask_checkboxes.values():
+            checkbox.Disable()
+
+        # Start segmentation
+        try:
+            self.ps = self.segmenter(
+                image,
+                create_new_mask,
+                backend,
+                device_id,
+                use_gpu,
+                overlap,
+                apply_wwwl,
+                window_width,
+                window_level,
+                selected_mask_types=self.selected_mask_types,
+            )
+            self.ps.start()
+        except (multiprocessing.ProcessError, OSError, ValueError) as err:
+            self.OnStop(None)
+            self.HideProgress()
+            dlg = dialogs.ErrorMessageBox(
+                None,
+                _("It was not possible to start Subpart segmentation because:") + "\n" + str(err),
+                _("FastSurfer segmentation error"),
+            )
+            dlg.ShowModal()
+
+    def AfterSegment(self):
+        super().AfterSegment()
+
+        for checkbox in self.mask_checkboxes.values():
+            checkbox.Enable()
+
+    def apply_segment_threshold(self):
+        threshold = self.sld_threshold.GetValue() / 100.0
+        self.ps.apply_segment_threshold(threshold)
+        slc.Slice().discard_all_buffers()
+        Publisher.sendMessage("Reload actual slice")
+
+    def OnStop(self, evt):
+        super().OnStop(evt)
+
+        for checkbox in self.mask_checkboxes.values():
+            checkbox.Enable()
+
+        # self.cb_backends.Enable()
+        # self.cb_devices.Enable()
+        # self.HideProgress()
 
 
 class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
@@ -415,8 +665,6 @@ class TracheaSegmenterDialog(DeepLearningSegmenterDialog):
             parent=parent,
             title=_("Trachea segmentation"),
             has_torch=True,
-            has_plaidml=False,
-            has_theano=False,
             segmenter=segment.TracheaSegmentProcess,
         )
 
@@ -427,8 +675,6 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
             parent=parent,
             title=_("Mandible segmentation (CT)"),
             has_torch=True,
-            has_plaidml=False,
-            has_theano=False,
             segmenter=segment.MandibleCTSegmentProcess,
         )
 
@@ -481,14 +727,11 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
             except (KeyError, AttributeError):
                 device_id = "cpu"
         else:
-            try:
-                device_id = self.plaidml_devices[self.cb_devices.GetValue()]
-            except (KeyError, AttributeError):
-                device_id = "llvm_cpu.0"
+            raise TypeError("Wrong backend")
         apply_wwwl = self.chk_apply_wwwl.GetValue()
         create_new_mask = self.chk_new_mask.GetValue()
         use_gpu = self.chk_use_gpu.GetValue()
-        prob_threshold = self.sld_threshold.GetValue() / 100.0
+        # prob_threshold = self.sld_threshold.GetValue() / 100.0
         resize_by_spacing = self.chk_apply_resize_by_spacing.GetValue()
 
         self.btn_close.Disable()
@@ -533,3 +776,123 @@ class MandibleSegmenterDialog(DeepLearningSegmenterDialog):
     def OnStop(self, evt):
         super().OnStop(evt)
         self.chk_apply_resize_by_spacing.Enable()
+
+
+class ImplantSegmenterDialog(DeepLearningSegmenterDialog):
+    def __init__(self, parent):
+        super().__init__(
+            parent=parent,
+            title=_("Implant prediction (CT)"),
+            has_torch=True,
+            segmenter=segment.ImplantCTSegmentProcess,
+        )
+
+    def _init_gui(self):
+        super()._init_gui()
+
+        self.patch_txt = wx.StaticText(self, label="Patch size:")
+
+        patch_size = [
+            "48",
+            "96",
+            "160",
+            "192",
+            "240",
+            "288",
+            "320",
+            "336",
+            "384",
+            "432",
+            "480",
+            "528",
+        ]
+
+        self.patch_cmb = wx.ComboBox(self, choices=patch_size, value="480")
+
+        self.path_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.path_sizer.Add(self.patch_txt, 0, wx.EXPAND | wx.ALL, 5)
+        self.path_sizer.Add(self.patch_cmb, 2, wx.EXPAND | wx.ALL, 5)
+
+        self.method = wx.RadioBox(
+            self,
+            -1,
+            "Method:",
+            wx.DefaultPosition,
+            wx.DefaultSize,
+            ["Binary", "Gray"],
+            2,
+            wx.HORIZONTAL | wx.ALIGN_LEFT | wx.NO_BORDER,
+        )
+
+        self.method_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.method_sizer.Add(self.method, 2, wx.ALL, 5)
+
+        self.Layout()
+        self.Centre()
+
+    def _do_layout(self):
+        super()._do_layout()
+        self.main_sizer.Insert(8, self.path_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        self.main_sizer.Insert(9, self.method_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+    def OnSegment(self, evt):
+        self.ShowProgress()
+        self.t0 = time.time()
+        self.elapsed_time_timer.Start(1000)
+        image = slc.Slice().matrix
+        backend = self.cb_backends.GetValue()
+        if backend.lower() == "pytorch":
+            try:
+                device_id = self.torch_devices[self.cb_devices.GetValue()]
+            except (KeyError, AttributeError):
+                device_id = "cpu"
+        else:
+            raise TypeError("Wrong backend")
+        apply_wwwl = self.chk_apply_wwwl.GetValue()
+        create_new_mask = self.chk_new_mask.GetValue()
+        use_gpu = self.chk_use_gpu.GetValue()
+        # prob_threshold = self.sld_threshold.GetValue() / 100.0
+        method = self.method.GetSelection()
+
+        self.btn_close.Disable()
+        self.btn_stop.Enable()
+        self.btn_segment.Disable()
+        self.chk_new_mask.Disable()
+
+        window_width = slc.Slice().window_width
+        window_level = slc.Slice().window_level
+
+        overlap = self.overlap_options[self.overlap.GetSelection()]
+
+        patch_size = int(self.patch_cmb.GetValue())
+
+        try:
+            self.ps = self.segmenter(
+                image,
+                create_new_mask,
+                backend,
+                device_id,
+                use_gpu,
+                overlap,
+                apply_wwwl,
+                window_width,
+                window_level,
+                method=method,
+                patch_size=patch_size,
+                resize_by_spacing=True,
+                image_spacing=slc.Slice().spacing,
+            )
+            self.ps.start()
+        except (multiprocessing.ProcessError, OSError, ValueError) as err:
+            self.OnStop(None)
+            self.HideProgress()
+            dlg = dialogs.ErrorMessageBox(
+                None,
+                "It was not possible to start brain segmentation because:" + "\n" + str(err),
+                "Brain segmentation error",
+                #  wx.ICON_ERROR | wx.OK,
+            )
+            dlg.ShowModal()
+
+    def OnStop(self, evt):
+        super().OnStop(evt)

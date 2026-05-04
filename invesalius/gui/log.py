@@ -24,13 +24,14 @@ import logging.config
 import os
 import sys
 from datetime import datetime
+from functools import wraps
 from typing import Callable, Dict, List
 
 import wx
 
 import invesalius.constants as const
 from invesalius import inv_paths
-from invesalius.utils import Singleton, deep_merge_dict
+from invesalius.utils import deep_merge_dict
 
 LOG_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "log_config.json")
 DEFAULT_LOGFILE = os.path.join(
@@ -52,13 +53,13 @@ class ConsoleLogHandler(logging.StreamHandler):
 
     def emit(self, record):
         msg = self.format(record)
-        stream = self.stream
+        # stream = self.stream
         if invLogger._config["console_logging"] == 1:
             self.textctrl.WriteText(msg + "\n")
             self.flush()
 
 
-class ConsoleRedirectText(object):
+class ConsoleRedirectText:
     def __init__(self, textctrl):
         self.out = textctrl
 
@@ -161,7 +162,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
 
     def _read_config_from_json(self, json_filename):
         try:
-            config_file = open(json_filename, "r")
+            config_file = open(json_filename)
             config_dict = json.load(config_file)
             self._config = deep_merge_dict(self._config.copy(), config_dict)
         except Exception as e1:
@@ -192,11 +193,11 @@ class InvesaliusLogger:  # metaclass=Singleton):
         logging_file = os.path.abspath(logging_file)
         print("logging_file:", logging_file)
         console_logging = self._config["console_logging"]
-        console_logging_level = self._config["console_logging_level"]
+        # console_logging_level = self._config["console_logging_level"]
 
         self._logger.setLevel(self._config["base_logging_level"])
 
-        if (self._frame == None) & (console_logging != 0):
+        if (self._frame is None) & (console_logging != 0):
             print("Initiating console logging ...")
             # self._frame = ConsoleLogFrame(self.getLogger())
 
@@ -209,7 +210,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
             print("Initiated console logging ...")
             self._logger.info("Initiated console logging ...")
 
-        msg = "file_logging: {}, console_logging: {}".format(file_logging, console_logging)
+        msg = f"file_logging: {file_logging}, console_logging: {console_logging}"
         print(msg)
 
         self._logger.info(msg)
@@ -242,17 +243,13 @@ class InvesaliusLogger:  # metaclass=Singleton):
                             # os.path.samefile(logging_file,handler.baseFilename): #it doesn't seem to work
                             handler.setLevel(file_logging_level)
                             addFileHandler = False
-                            msg = "No change in log file name {}.".format(logging_file)
+                            msg = f"No change in log file name {logging_file}."
                             self._logger.info(msg)
                         else:
-                            msg = (
-                                "Closing current log file {} as new log file {} requested.".format(
-                                    handler.baseFilename, logging_file
-                                )
-                            )
+                            msg = f"Closing current log file {handler.baseFilename} as new log file {logging_file} requested."
                             self._logger.info(msg)
                             self._logger.removeHandler(handler)
-                            msg = "Removed existing FILE handler {}".format(handler.baseFilename)
+                            msg = f"Removed existing FILE handler {handler.baseFilename}"
                             print(msg)
                             self._logger.info(msg)
                 if addFileHandler:
@@ -263,7 +260,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
 
                     fh.setFormatter(formatter)
                     self._logger.addHandler(fh)
-                    msg = "Added file handler {}".format(logging_file)
+                    msg = f"Added file handler {logging_file}"
                     self._logger.info(msg)
         else:
             self.closeFileLogging()
@@ -271,7 +268,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
     def closeFileLogging(self):
         for handler in self._logger.handlers:
             if isinstance(handler, logging.FileHandler):
-                msg = "Removed file handler {}".format(handler.baseFilename)
+                msg = f"Removed file handler {handler.baseFilename}"
                 self._logger.info(msg)
                 # handler.flush()
                 self._logger.removeHandler(handler)
@@ -282,7 +279,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
                 self._logger.info("Removed stream handler")
                 # handler.flush()
                 self._logger.removeHandler(handler)
-        if self._frame != None:
+        if self._frame is not None:
             self._frame = None
 
     def closeLogging(self):
@@ -296,7 +293,7 @@ class InvesaliusLogger:  # metaclass=Singleton):
 
 def call_tracking_decorator(function: Callable[[str], None]):
     def wrapper_accepting_arguments(*args):
-        msg = "Function {} called".format(function.__name__)
+        msg = f"Function {function.__name__} called"
         invLogger._logger.info(msg)
         function(*args)
 
@@ -305,7 +302,6 @@ def call_tracking_decorator(function: Callable[[str], None]):
 
 #####################################################################################
 #  Decorators for error handling
-from functools import wraps
 
 
 def error_handling_decorator01(func: Callable[[str], None]):
@@ -314,7 +310,7 @@ def error_handling_decorator01(func: Callable[[str], None]):
     )  # adds the functionality of copying over the function name, docstring, arguments list, etc.
     def wrapper_function(*args, **kwargs):
         try:
-            msg = "Function {} called".format(func.__name__)
+            msg = f"Function {func.__name__} called"
             invLogger._logger.info(msg)
             # print(f"{func.__name__} called")
             func(*args, **kwargs)
@@ -328,7 +324,7 @@ def error_handling_decorator01(func: Callable[[str], None]):
 def error_handling_decorator02(errorList: List[str]):
     def Inner(func):
         def wrapper(*args, **kwargs):
-            msg = "Function {} called".format(func.__name__)
+            msg = f"Function {func.__name__} called"
             invLogger._logger.info(msg)
             try:
                 func(*args, **kwargs)
@@ -348,7 +344,7 @@ def error_handling_decorator02(errorList: List[str]):
 def error_handling_decorator03(errorList: Dict[str, str]):
     def Inner(func):
         def wrapper(*args, **kwargs):
-            msg = "Function {} called".format(func.__name__)
+            msg = f"Function {func.__name__} called"
             invLogger._logger.info(msg)
             keys = [key for key in errorList]
             print("keys:", keys)
@@ -377,7 +373,7 @@ def get_decorator(errors=(Exception,), default_value=""):
         def new_func(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
-            except errors as e:
+            except errors:
                 print("Got error! ")  # , repr(e)
                 return default_value
 

@@ -355,6 +355,24 @@ class CanvasRendererCTX:
         evt.Skip()
 
     def OnLeftButtonRelease(self, evt: wx.KeyEvent) -> None:
+        try:
+            x, y = self.viewer.get_vtk_mouse_position()
+        except AttributeError:
+            evt.Skip()
+            return
+
+        if self._drag_obj and hasattr(self._drag_obj, "on_drag_end"):
+            evt_obj = CanvasEvent(
+                "drag_end",
+                self._drag_obj,
+                (x, y),
+                self.viewer,
+                self.evt_renderer,
+                control_down=evt.ControlDown(),
+                alt_down=evt.AltDown(),
+                shift_down=evt.ShiftDown(),
+            )
+            self.propagate_event(self._drag_obj, evt_obj)
         self._over_obj = None
         self._drag_obj = None
         evt.Skip()
@@ -421,7 +439,7 @@ class CanvasRendererCTX:
 
         self._ordered_draw_list = sorted(self._follow_draw_list(), key=lambda x: x[0])
         for (
-            l,
+            _,
             d,
         ) in (
             self._ordered_draw_list
@@ -745,15 +763,17 @@ class CanvasRendererCTX:
         pos: Tuple[float, float],
         font: Optional[wx.Font] = None,
         txt_colour: Tuple[int, int, int] = (255, 255, 255),
+        add_background: bool = False,
     ) -> None:
         """
-        Draw text.
+        Draw text with optional shadow and background for better visibility.
 
         Params:
             text: an unicode text.
             pos: (x, y) top left position.
             font: if None it'll use the default gui font.
             txt_colour: RGB text colour
+            add_background: if True, adds semi-transparent background and shadow
         """
         if self.gc is None:
             return None
@@ -769,6 +789,24 @@ class CanvasRendererCTX:
             t = t.strip()
             _py = -py
             _px = px
+
+            if add_background:
+                # Calculate text size for background
+                w, h = self.calc_text_size(t, font)
+                padding = 2
+
+                # Draw semi-transparent black background
+                bg_brush = gc.CreateBrush(wx.Brush(wx.Colour(0, 0, 0, 89)))  # 35% opacity = 89/255
+                gc.SetBrush(bg_brush)
+                gc.SetPen(wx.TRANSPARENT_PEN)
+                gc.DrawRectangle(_px - padding, _py - padding, w + 2 * padding, h + 2 * padding)
+
+                # Draw shadow (offset text in black)
+                shadow_font = gc.CreateFont(font, (0, 0, 0))
+                gc.SetFont(shadow_font)
+                gc.DrawText(t, _px + 1, _py - 1)
+
+            # Draw main text
             gc.SetFont(_font)
             gc.DrawText(t, _px, _py)
 
@@ -1077,6 +1115,12 @@ class CircleHandler(CanvasHandlerBase):
 
         return True
 
+    def on_drag_end(self, evt: CanvasEvent) -> Literal[True]:
+        """Called when the mouse drag ends.
+
+        This is here to allow parents to handle the event through propagation."""
+        pass
+
 
 class Polygon(CanvasHandlerBase):
     def __init__(
@@ -1210,6 +1254,10 @@ class Polygon(CanvasHandlerBase):
     def on_deselect(self, evt: wx.Event) -> Literal[True]:
         self.interactive = False
         return True
+
+    def on_drag_end(self, evt: "CanvasEvent") -> None:
+        """No-op: drag_end is handled by the parent PolygonSelectCanvas."""
+        pass
 
     @overload
     def convex_hull(

@@ -21,7 +21,6 @@
 
 # TODO: To create a beautiful API
 import sys
-import tempfile
 import time
 
 import wx
@@ -38,6 +37,7 @@ import invesalius.reader.dicom_reader as dicom_reader
 import invesalius.utils as utils
 from invesalius.data import converters, imagedata_utils
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 if sys.platform == "win32":
@@ -88,7 +88,7 @@ class SelectionEvent(wx.PyCommandEvent):
 
 class PreviewEvent(wx.PyCommandEvent):
     def __init__(self, evtType, id):
-        super(PreviewEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
     def GetSelectID(self):
         return self.SelectedID
@@ -111,10 +111,10 @@ class PreviewEvent(wx.PyCommandEvent):
 
 class SerieEvent(PreviewEvent):
     def __init__(self, evtType, id):
-        super(SerieEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
 
-class DicomInfo(object):
+class DicomInfo:
     """
     Keep the informations and the image used by preview.
     """
@@ -145,7 +145,7 @@ class DicomInfo(object):
 
 class DicomPaintPanel(wx.Panel):
     def __init__(self, parent):
-        super(DicomPaintPanel, self).__init__(parent)
+        super().__init__(parent)
         self._bind_events()
         self.image = None
         self.last_size = (10, 10)
@@ -194,7 +194,7 @@ class Preview(wx.Panel):
     """
 
     def __init__(self, parent):
-        super(Preview, self).__init__(parent)
+        super().__init__(parent)
         # Will it be white?
         self.select_on = False
         self.dicom_info = None
@@ -275,10 +275,8 @@ class Preview(wx.Panel):
     def OnEnter(self, evt):
         if not self.select_on:
             # c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
-            try:
-                c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
-            except AttributeError:
-                c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+            c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
+
             self.SetBackgroundColour(c)
 
     def OnLeave(self, evt):
@@ -291,7 +289,7 @@ class Preview(wx.Panel):
         if evt.shiftDown:
             shift_pressed = True
 
-        dicom_id = self.dicom_info.id
+        # dicom_id = self.dicom_info.id
         self.select_on = True
         self.dicom_info.selected = True
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
@@ -345,7 +343,7 @@ class DicomPreviewSeries(wx.Panel):
     """A dicom series preview panel"""
 
     def __init__(self, parent):
-        super(DicomPreviewSeries, self).__init__(parent)
+        super().__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
         # self.sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -484,7 +482,7 @@ class DicomPreviewSlice(wx.Panel):
     """A dicom preview panel"""
 
     def __init__(self, parent):
-        super(DicomPreviewSlice, self).__init__(parent)
+        super().__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
         self.displayed_position = 0
@@ -535,7 +533,7 @@ class DicomPreviewSlice(wx.Panel):
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
 
     def SetDicomDirectory(self, directory):
-        utils.debug("Setting Dicom Directory %s" % directory)
+        utils.debug(f"Setting Dicom Directory {directory}")
         self.directory = directory
         self.series = dicom_reader.GetSeries(directory)[0]
 
@@ -557,7 +555,7 @@ class DicomPreviewSlice(wx.Panel):
                 for thumbnail in dicom.image.thumbnail_path:
                     print(thumbnail)
                     info = DicomInfo(
-                        n, dicom, _("Image %d") % (n), "%.2f" % (dicom.image.position[2]), _slice
+                        n, dicom, _("Image %d") % (n), f"{dicom.image.position[2]:.2f}", _slice
                     )
                     self.files.append(info)
                     n += 1
@@ -567,7 +565,7 @@ class DicomPreviewSlice(wx.Panel):
                     n,
                     dicom,
                     _("Image %d") % (dicom.image.number),
-                    "%.2f" % (dicom.image.position[2]),
+                    f"{dicom.image.position[2]:.2f}",
                 )
                 self.files.append(info)
                 n += 1
@@ -592,7 +590,7 @@ class DicomPreviewSlice(wx.Panel):
                 for thumbnail in dicom.image.thumbnail_path:
                     print(thumbnail)
                     info = DicomInfo(
-                        n, dicom, _("Image %d") % int(n), "%.2f" % (dicom.image.position[2]), _slice
+                        n, dicom, _("Image %d") % int(n), f"{dicom.image.position[2]:.2f}", _slice
                     )
                     self.files.append(info)
                     n += 1
@@ -602,7 +600,7 @@ class DicomPreviewSlice(wx.Panel):
                     n,
                     dicom,
                     _("Image %d") % int(dicom.image.number),
-                    "%.2f" % (dicom.image.position[2]),
+                    f"{dicom.image.position[2]:.2f}",
                 )
                 self.files.append(info)
                 n += 1
@@ -778,6 +776,70 @@ class SingleImagePreview(wx.Panel):
         self.canvas.draw_list.append(self.text_patient)
         self.canvas.draw_list.append(self.text_acquisition)
 
+    def Reposition(self):
+        """
+        Fit the preview image to viewport while maintaining aspect ratio.
+        Based on the working implementation from 2D slice viewers.
+        """
+        if self.actor is None or self.renderer is None:
+            return
+
+        ren = self.renderer
+        cam = ren.GetActiveCamera()
+
+        # Get actor bounds to calculate center
+        bounds = self.actor.GetBounds()
+        if bounds is None:
+            return
+
+        # Calculate image center (2D image, so z=0)
+        center_x = (bounds[0] + bounds[1]) * 0.5
+        center_y = (bounds[2] + bounds[3]) * 0.5
+
+        # Calculate image dimensions
+        width = bounds[1] - bounds[0]
+        height = bounds[3] - bounds[2]
+
+        # Get viewport dimensions
+        viewport_width, viewport_height = ren.GetSize()
+
+        # Safety check - if viewport not ready, retry later
+        if viewport_width <= 10 or viewport_height <= 10 or width <= 0 or height <= 0:
+            wx.CallLater(50, self.Reposition)
+            return
+
+        # Ensure parallel projection is enabled for 2D viewing
+        cam.ParallelProjectionOn()
+
+        # Set camera to look at center from above (standard 2D view)
+        # For 2D images, focal point and position should use z=0
+        cam.SetFocalPoint(center_x, center_y, 0.0)
+        cam.SetPosition(center_x, center_y, 1000.0)
+        # Keep ViewUp normal - image is already flipped by vtkImageFlip
+        cam.SetViewUp(0, 1, 0)
+
+        # Calculate scale to fit image in viewport
+        # ParallelScale is half the height of the view in world coordinates
+        viewport_aspect = viewport_width / viewport_height
+        image_aspect = width / height
+
+        if viewport_aspect > image_aspect:
+            # Viewport is wider than image - fit to height
+            scale = height / 2.0
+        else:
+            # Viewport is taller than image - fit to width
+            scale = (width / viewport_aspect) / 2.0
+
+        # Add small margin (2%)
+        scale *= 1.02
+
+        # Apply scale
+        cam.SetParallelScale(scale)
+        ren.ResetCameraClippingRange()
+
+        # Render
+        self.interactor.Render()
+
     def __init_gui(self):
         slider = wx.Slider(
             self, id=-1, value=0, minValue=0, maxValue=99, style=wx.SL_HORIZONTAL | wx.SL_AUTOTICKS
@@ -881,7 +943,7 @@ class SingleImagePreview(wx.Panel):
         else:
             value2 = ""
 
-        value = "%s\n%s" % (value1, value2)
+        value = f"{value1}\n{value2}"
         self.text_image_location.SetValue(value)
 
         ## Text related to patient/ acquisiiton data
@@ -939,8 +1001,10 @@ class SingleImagePreview(wx.Panel):
 
         # PLOT IMAGE INTO VIEWER
         self.actor.SetInputData(flip.GetOutput())
-        self.renderer.ResetCamera()
-        self.interactor.Render()
+
+        # Use deferred repositioning to ensure viewport is properly sized
+        # Same approach as 2D slice viewers
+        wx.CallLater(100, self.Reposition)
 
         # Setting slider position
         self.slider.SetValue(index)

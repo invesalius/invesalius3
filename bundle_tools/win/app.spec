@@ -13,9 +13,16 @@ print("SOURCE_DIR", SOURCE_DIR)
 
 from PyInstaller.utils.hooks import get_module_file_attribute, collect_dynamic_libs
 from PyInstaller.compat import is_win
+from PyInstaller.utils.hooks import collect_all
+
+tinygrad_data, tinygrad_binaries, tinygrad_hiddenimports = collect_all("tinygrad")
+onnx_data, onnx_binaries, onnx_hiddenimports = collect_all("onnxruntime")
+
+invesalius_cy_data, invesalius_cy_binaries, invesalius_cy_hiddenimports = collect_all("invesalius_cy")
 
 python_dir = os.path.dirname(sys.executable)
-site_packages = os.path.join(python_dir,'Lib','site-packages')
+venv_dir = os.path.dirname(python_dir) 
+site_packages = os.path.join(venv_dir,'Lib','site-packages') #because Lib is inside .venv directory
 
 
 def check_extension(item): 
@@ -59,19 +66,19 @@ for v in vtk_files:
         dest_dir = os.path.dirname(v.replace(site_packages,''))[1:]
         libraries.append((v, dest_dir))
 
-#add interpolation module (pyinstaller not take automatically)
-libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_cy',\
-    'interpolation.*.pyd'))[0],'invesalius_cy'))
+#add invesalius_rs module (Rust extension - pyinstaller not take automatically)
+libraries.append((glob.glob(os.path.join(SOURCE_DIR,'invesalius_rs', 
+    '_native.*.pyd'))[0],'invesalius_rs')) #.pyd files built by maturin
 
 #add plaidml modules and files
-#libraries.append((os.path.join(python_dir,'library','bin','plaidml.dll'),'library\\bin'))
+#libraries.append((os.path.join(venv_dir,'library','bin','plaidml.dll'),'library\\bin'))
 #
-#plaidml_files = get_all_files(os.path.join(python_dir,'share','plaidml'))
+#plaidml_files = get_all_files(os.path.join(venv_dir,'share','plaidml'))
 #
 #for v in plaidml_files:
 #    if not(check_extension(v)):
 #        #take only folder name and remove first '\\'
-#        dest_dir = os.path.dirname(v.replace(python_dir,''))[1:]
+#        dest_dir = os.path.dirname(v.replace(venv_dir,''))[1:]
 #        libraries.append((v, dest_dir))
 #
 #
@@ -131,6 +138,16 @@ for sd in sample_data:
     dest_dir = os.path.dirname(sd)
     data_files.append((sd,dest_dir))
 
+
+# Add FastSurfer LUT and auxiliary file
+fastsurfer_dir = os.path.join(
+    'invesalius',
+    'segmentation',
+    'deep_learning',
+    'fastsurfer_subpart'
+)
+data_files.append((os.path.join(fastsurfer_dir,'LUT.tsv'),fastsurfer_dir))
+
 #---------------------------------------------------------------------------------
 
 block_cipher = None
@@ -147,12 +164,12 @@ block_cipher = None
 
 a = Analysis(['app.py'],
              pathex=[SOURCE_DIR],
-             binaries=libraries,
-             datas=data_files,
+             binaries=libraries + tinygrad_binaries + onnx_binaries + invesalius_cy_binaries,
+             datas=data_files + tinygrad_data + onnx_data + invesalius_cy_data,
              hiddenimports=['scipy._lib.messagestream','skimage.restoration._denoise',\
                             'scipy.linalg', 'scipy.linalg.blas', 'scipy.interpolate',\
                             'pywt._extensions._cwt','skimage.filters.rank.core_cy_3d',\
-                            'encodings','setuptools'], #,'keras','plaidml.keras','plaidml.keras.backend'
+                            'encodings','setuptools','tinygrad'] + tinygrad_hiddenimports + onnx_hiddenimports + invesalius_cy_hiddenimports, #,'keras','plaidml.keras','plaidml.keras.backend'
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -187,4 +204,9 @@ coll = COLLECT(exe,
 
 
 #print("1 >>>>>>>>>> ",a.zipped_data)
+
 #print("2 >>>>>>>>>> ",a.pure)
+
+
+
+

@@ -49,12 +49,12 @@ class Editor:
         self.lut = vtkLookupTable()
         self.lut_original = vtkLookupTable()
         self.image_color = vtkImageMapToColors()
-        self.blend = blend = vtkImageBlend()
-        self.map = map = vtkImageMapper()
+        self.blend = vtkImageBlend()
+        self.map = vtkImageMapper()
 
-        self.actor = actor = vtkImageActor()
-        self.actor2 = actor2 = vtkImageActor()
-        self.actor3 = actor3 = vtkImageActor()
+        self.actor = vtkImageActor()
+        self.actor2 = vtkImageActor()
+        self.actor3 = vtkImageActor()
 
         self.image_color_o = vtkImageMapToColors()
 
@@ -84,7 +84,7 @@ class Editor:
         istyle.AddObserver("LeftButtonReleaseEvent", self.Release)
         istyle.AddObserver("MouseMoveEvent", self.Moved)
 
-        pick = self.pick = vtkCellPicker()
+        self.pick = vtkCellPicker()
 
     def SetActor(self, actor):
         self.actor = actor
@@ -220,7 +220,7 @@ class Editor:
         Extracted equation.
         http://www.mathopenref.com/chord.html
         """
-        extent = self.image.GetWholeExtent()
+        # extent = self.image.GetWholeExtent()
         cursor = self.cursor
         b = [0, 0, 0, 0, 0, 0]
         self.actor.GetDisplayBounds(b)
@@ -244,7 +244,7 @@ class Editor:
             operation = self.PixelThresholdLevel
         try:
             [operation(*o(k, yi)) for k, yi in cursor.GetPoints()]
-        except:
+        except Exception:
             pass
         # if extent[0] <= k+xc <= extent[1] \
         # and extent[2] <= yi+yc <=extent[3]]

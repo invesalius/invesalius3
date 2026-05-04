@@ -50,7 +50,7 @@ EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
 
 class SelectEvent(wx.PyCommandEvent):
     def __init__(self, evtType, id):
-        super(SelectEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
     def GetSelectID(self):
         return self.SelectedID
@@ -194,7 +194,7 @@ class InnerPanel(wx.Panel):
             group = max(group.GetGroups(), key=lambda g: g.nslices)
 
         slice_amont = group.nslices
-        if (self.first_image_selection != None) and (
+        if (self.first_image_selection is not None) and (
             self.first_image_selection != self.last_image_selection
         ):
             slice_amont = (self.last_image_selection) - self.first_image_selection
@@ -282,7 +282,7 @@ class TextPanel(wx.Panel):
         # print ">>>>>>>>>>>>",dir(self.tree)
         patients = pubsub_evt.data
 
-        first = 0
+        # first = 0
         self.idserie_treeitem = {}
 
         for patient in patients.keys():
@@ -315,17 +315,17 @@ class TextPanel(wx.Panel):
                 n_amount_images = n_amount_images + patients[patient][se]["n_images"]
 
             tree.SetItemPyData(parent, patient)
-            tree.SetItemText(parent, "%s" % p_id, 1)
-            tree.SetItemText(parent, "%s" % age, 2)
-            tree.SetItemText(parent, "%s" % gender, 3)
-            tree.SetItemText(parent, "%s" % study_description, 4)
-            tree.SetItemText(parent, "%s" % "", 5)
-            tree.SetItemText(parent, "%s" % date + " " + time, 6)
-            tree.SetItemText(parent, "%s" % str(n_amount_images), 7)
-            tree.SetItemText(parent, "%s" % institution, 8)
-            tree.SetItemText(parent, "%s" % birthdate, 9)
-            tree.SetItemText(parent, "%s" % acession_number, 10)
-            tree.SetItemText(parent, "%s" % physician, 11)
+            tree.SetItemText(parent, f"{p_id}", 1)
+            tree.SetItemText(parent, f"{age}", 2)
+            tree.SetItemText(parent, f"{gender}", 3)
+            tree.SetItemText(parent, f"{study_description}", 4)
+            tree.SetItemText(parent, "{}".format(""), 5)
+            tree.SetItemText(parent, f"{date}" + " " + time, 6)
+            tree.SetItemText(parent, f"{str(n_amount_images)}", 7)
+            tree.SetItemText(parent, f"{institution}", 8)
+            tree.SetItemText(parent, f"{birthdate}", 9)
+            tree.SetItemText(parent, f"{acession_number}", 10)
+            tree.SetItemText(parent, f"{physician}", 11)
 
             for series in patients[patient].keys():
                 serie_description = patients[patient][series]["serie_description"]
@@ -337,11 +337,11 @@ class TextPanel(wx.Panel):
                 child = tree.AppendItem(parent, series)
                 tree.SetItemPyData(child, series)
 
-                tree.SetItemText(child, "%s" % serie_description, 0)
+                tree.SetItemText(child, f"{serie_description}", 0)
                 # tree.SetItemText(child, "%s" % dicom.acquisition.protocol_name, 4)
-                tree.SetItemText(child, "%s" % modality, 5)
-                tree.SetItemText(child, "%s" % date + " " + time, 6)
-                tree.SetItemText(child, "%s" % n_images, 7)
+                tree.SetItemText(child, f"{modality}", 5)
+                tree.SetItemText(child, f"{date}" + " " + time, 6)
+                tree.SetItemText(child, f"{n_images}", 7)
 
                 self.idserie_treeitem[(patient, series)] = child
 
@@ -722,7 +722,7 @@ class NodesPanel(wx.Panel):
         evt.Skip()
 
     def OnButtonRemove(self, evt):
-        if self.selected_item != None and self.selected_item != 0:
+        if self.selected_item is not None and self.selected_item != 0:
             self.tree_node.DeleteItem(self.selected_item)
             self.hosts.pop(self.selected_item)
             self.selected_item = None
@@ -751,7 +751,7 @@ class NodesPanel(wx.Panel):
                     self.tree_node.SetItem(key, 4, _("error"))
 
     def RightButton(self, evt):
-        event.Skip()
+        evt.Skip()
 
     def OnItemSelected(self, evt):
         self.selected_item = evt.m_itemIndex

@@ -23,6 +23,7 @@ import configparser as ConfigParser
 import json
 import os
 from json.decoder import JSONDecodeError
+from pathlib import Path
 from random import randint
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
@@ -30,15 +31,38 @@ from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, deep_merge_dict
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
 CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.json")
 OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.cfg")
 
 STATE_PATH = os.path.join(inv_paths.USER_INV_DIR, "state.json")
 
 SESSION_ENCODING = "utf8"
+
+CONFIG_INIT = {
+    "mode": "",
+    "project_status": "",
+    "debug": False,
+    "debug_efield": False,
+    "language": "",
+    "random_id": randint(0, pow(10, 16)),
+    "surface_interpolation": 1,
+    "rendering": 0,
+    "slice_interpolation": 0,
+    "auto_reload_preview": False,
+    "recent_projects": [
+        (str(inv_paths.SAMPLE_DIR), "Cranium.inv3"),
+    ],
+    "last_dicom_folder": "",
+    "file_logging": 0,
+    "file_logging_level": 0,
+    "append_log_file": 0,
+    "logging_file": "",
+    "console_logging": 0,
+    "console_logging_level": 0,
+    "robot": {
+        "robot_ip_options": "",
+    },
+}
 
 
 # Only one session will be initialized per time. Therefore, we use
@@ -59,6 +83,20 @@ class Session(metaclass=Singleton):
             "console_logging_level": 0,
         }
         self._exited_successfully_last_time = not self._ReadState()
+        # If the state file was saved intentionally via "Store session", the
+        # last exit was NOT a crash — override the flag so the recovery dialog
+        # is never shown for a deliberate Store-session exit.
+        if self._state.get("stored_session"):
+            self._exited_successfully_last_time = True
+        # Unsaved changes tracking
+        self._has_unsaved_changes = False
+        self._auto_backup_path: Union[str, None] = None
+        # Backup debounce: prevent many concurrent backup threads when the
+        # user is painting quickly. At most one backup every 3 seconds.
+        import threading
+        import time
+        self._backup_lock = threading.Lock()
+        self._last_backup_time = 0.0
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -67,29 +105,23 @@ class Session(metaclass=Singleton):
     def CreateConfig(self) -> None:
         import invesalius.constants as const
 
-        self._config = {
-            "mode": const.MODE_RP,
-            "project_status": const.PROJECT_STATUS_CLOSED,
-            "debug": False,
-            "debug_efield": False,
-            "language": "",
-            "random_id": randint(0, pow(10, 16)),
-            "surface_interpolation": 1,
-            "rendering": 0,
-            "slice_interpolation": 0,
-            "auto_reload_preview": False,
-            "recent_projects": [
-                (str(inv_paths.SAMPLE_DIR), "Cranium.inv3"),
-            ],
-            "last_dicom_folder": "",
-            "file_logging": 0,
-            "file_logging_level": 0,
-            "append_log_file": 0,
-            "logging_file": "",
-            "console_logging": 0,
-            "console_logging_level": 0,
-        }
+        self._config = CONFIG_INIT
+        self._config["mode"] = const.MODE_RP
+        self._config["project_status"] = const.PROJECT_STATUS_CLOSED
+        self._config["robot"] = {"robot_ip_options": const.ROBOT_IPS}
+
         self.WriteConfigFile()
+
+    def CheckConfig(self) -> None:
+        if self._config["language"] != "":
+            import invesalius.constants as const
+
+            config_init = CONFIG_INIT
+            config_init["mode"] = const.MODE_RP
+            config_init["project_status"] = const.PROJECT_STATUS_CLOSED
+            config_init["robot"] = {"robot_ip_options": const.ROBOT_IPS}
+            self._config = deep_merge_dict(config_init, self._config.copy())
+            self.WriteConfigFile()
 
     def CreateState(self) -> None:
         self._state: Dict[str, Any] = {}
@@ -110,20 +142,14 @@ class Session(metaclass=Singleton):
         self.WriteConfigFile()
 
     def GetConfig(self, key: str, default_value: Any = None) -> Any:
-        if key in self._config:
-            return self._config[key]
-        else:
-            return default_value
+        return self._config.get(key, default_value)
 
     def SetState(self, key: str, value: Any) -> None:
         self._state[key] = value
         self.WriteStateFile()
 
     def GetState(self, key: str, default_value: Any = None) -> Any:
-        if key in self._state:
-            return self._state[key]
-        else:
-            return default_value
+        return self._state.get(key, default_value)
 
     def IsOpen(self) -> bool:
         import invesalius.constants as const
@@ -138,6 +164,8 @@ class Session(metaclass=Singleton):
         self.SetConfig("project_status", const.PROJECT_STATUS_CLOSED)
         # self.mode = const.MODE_RP
         self.temp_item = False
+        # Reset unsaved changes flag so a clean close is not mistaken for a crash
+        self._has_unsaved_changes = False
 
     def SaveProject(self, path: Union[Tuple[()], Tuple[str, str]] = ()) -> None:
         import invesalius.constants as const
@@ -150,12 +178,30 @@ class Session(metaclass=Singleton):
             self.temp_item = False
 
         self.SetConfig("project_status", const.PROJECT_STATUS_OPENED)
+        # Clear unsaved changes flag after successful save
+        self._has_unsaved_changes = False
+        # Remove auto-backup if it exists
+        self.RemoveAutoBackup()
 
     def ChangeProject(self) -> None:
         import invesalius.constants as const
+        import time
 
         debug("Session.ChangeProject")
         self.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
+        # Mark project as having unsaved changes
+        self._has_unsaved_changes = True
+
+        # Debounced backup: spawn at most one backup thread every 3 seconds
+        # to avoid race conditions when painting many rapid brush strokes.
+        if self.IsOpen():
+            now = time.time()
+            if now - self._last_backup_time >= 3.0:
+                self._last_backup_time = now
+                from threading import Thread
+                backup_thread = Thread(target=self._safe_create_backup)
+                backup_thread.daemon = True
+                backup_thread.start()
 
     def CreateProject(self, filename: str) -> None:
         import invesalius.constants as const
@@ -178,13 +224,26 @@ class Session(metaclass=Singleton):
 
         debug("Session.OpenProject")
 
-        # Add item to recent projects list
+        # Add item to recent projects list (only if not an auto-backup file)
         project_path = os.path.split(filepath)
-        self._add_to_recent_projects(project_path)
+        if "temp_backup" not in str(filepath):
+            self._add_to_recent_projects(project_path)
 
         # Set session info
         self.SetState("project_path", project_path)
         self.SetConfig("project_status", const.PROJECT_STATUS_OPENED)
+        # If opened from a backup, mark as temp_item so SaveProject forces a
+        # "Save As" dialog — this prevents the save from writing back into the
+        # temp backup folder, which is then immediately deleted by RemoveAutoBackup.
+        # Also clear the last saved directory so the Save-As dialog doesn't
+        # pre-fill with the backup temp path.
+        if "temp_backup" in str(filepath):
+            self.temp_item = True
+            self._config["last_directory_inv3"] = ""
+        # Reset unsaved-changes flag: any ChangeProject() calls that fired
+        # during LoadProject() (slice setup, etc.) should not count as
+        # user-initiated modifications.
+        self._has_unsaved_changes = False
 
     def WriteConfigFile(self) -> None:
         self._write_to_json(self._config, CONFIG_PATH)
@@ -193,7 +252,9 @@ class Session(metaclass=Singleton):
         self._write_to_json(self._state, STATE_PATH)
 
     def _write_to_json(self, config_dict: dict, config_filename: "str | Path") -> None:
-        with open(config_filename, "w") as config_file:
+        config_path = Path(config_filename)
+        config_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure parent dir exists
+        with open(config_path, "w") as config_file:
             json.dump(config_dict, config_file, sort_keys=True, indent=4)
 
     def _add_to_recent_projects(self, item: Tuple[str, str]) -> None:
@@ -282,6 +343,13 @@ class Session(metaclass=Singleton):
             except Exception as e2:
                 debug(str(e2))
                 return False
+        # Clean up any auto-backup entries that may have been added to the
+        # recent-projects list before this fix was applied.
+        recent = self.GetConfig("recent_projects")
+        if recent:
+            cleaned = [p for p in recent if "temp_backup" not in str(p)]
+            if len(cleaned) != len(recent):
+                self._config["recent_projects"] = cleaned
         self.WriteConfigFile()
         return True
 
@@ -289,6 +357,7 @@ class Session(metaclass=Singleton):
         success = False
         if os.path.exists(STATE_PATH):
             print("Restoring a previous state...")
+            print("State file found.", STATE_PATH)
 
             state_file = open(STATE_PATH)
             try:
@@ -306,6 +375,86 @@ class Session(metaclass=Singleton):
 
         return success
 
+    def HasUnsavedChanges(self) -> bool:
+        """Check if the project has unsaved changes."""
+        return self._has_unsaved_changes
+
+    def _safe_create_backup(self) -> None:
+        """Thread-safe wrapper: acquire lock before writing the backup file
+        so concurrent brush-stroke threads don't corrupt each other's writes."""
+        with self._backup_lock:
+            self.CreateAutoBackup()
+
+    def CreateAutoBackup(self) -> bool:
+        """
+        Create (or overwrite) the auto-backup of the current project.
+        Uses an atomic write pattern (write to temp file, then os.replace)
+        so a crash mid-write never corrupts the last good backup.
+        Returns True if backup was created successfully.
+        """
+        import invesalius.project as prj
+
+        try:
+            # Get current project
+            project_path = self.GetState("project_path")
+            if not project_path:
+                return False
+
+            # Create backup directory
+            backup_dir = Path(inv_paths.USER_INV_DIR) / "temp_backup"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+
+            # Write to a staging file first so that a crash mid-write never
+            # corrupts the last good backup (auto_backup.inv3).
+            staging_filename = "auto_backup_staging.inv3"
+            staging_path = backup_dir / staging_filename
+            final_filename = "auto_backup.inv3"
+            final_path = backup_dir / final_filename
+
+            # Save current project to the staging location.
+            # compress=False: uncompressed tar writes ~110MB in <0.5s on NVMe.
+            # Gzip compression (compress=True) was causing the multi-second UI
+            # freeze — it provides no real benefit for crash-recovery backups
+            # where write speed is critical. Manual saves still use their own
+            # compression setting.
+            proj = prj.Project()
+            proj.SavePlistProject(str(backup_dir), staging_filename, compress=False)
+
+            # Atomically promote staging → final (old backup preserved if
+            # SavePlistProject raised an exception above)
+            os.replace(str(staging_path), str(final_path))
+
+            self._auto_backup_path = str(final_path)
+            self.SetState("auto_backup_path", str(final_path))
+
+            debug(f"Auto-backup updated: {final_path}")
+            return True
+
+        except Exception as e:
+            debug(f"Failed to create auto-backup: {e}")
+            return False
+
+    def RemoveAutoBackup(self) -> None:
+        """Remove the auto-backup file if it exists."""
+        if self._auto_backup_path and os.path.exists(self._auto_backup_path):
+            try:
+                os.remove(self._auto_backup_path)
+                debug(f"Auto-backup removed: {self._auto_backup_path}")
+            except Exception as e:
+                debug(f"Failed to remove auto-backup: {e}")
+        
+        self._auto_backup_path = None
+        self.SetState("auto_backup_path", None)
+
+    def GetAutoBackupPath(self) -> Union[str, None]:
+        """Get the path to the auto-backup file if it exists."""
+        backup_path = self.GetState("auto_backup_path")
+        if backup_path and os.path.exists(backup_path):
+            return backup_path
+        return None
+
     def _Exit(self) -> None:
         self.CloseProject()
-        self.DeleteStateFile()
+        # Only delete state file if no unsaved changes (for crash recovery)
+        if not self._has_unsaved_changes:
+            self.DeleteStateFile()

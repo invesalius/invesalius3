@@ -1,6 +1,6 @@
 import os
 import tempfile
-import weakref
+import time
 
 try:
     import queue
@@ -24,8 +24,7 @@ from vtkmodules.vtkImagingGeneral import vtkImageGaussianSmooth
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 
 import invesalius.data.converters as converters
-from invesalius.i18n import tr as _
-from invesalius_cy import cy_mesh
+import invesalius_rs as cy_mesh
 
 
 # TODO: Code duplicated from file {imagedata_utils.py}.
@@ -37,7 +36,7 @@ def ResampleImage3D(imagedata, value):
     extent = imagedata.GetExtent()
     size = imagedata.GetDimensions()
 
-    width = float(size[0])
+    # width = float(size[0])
     height = float(size[1] / value)
 
     resolution = (height / (extent[1] - extent[0]) + 1) * spacing[1]
@@ -53,12 +52,12 @@ def ResampleImage3D(imagedata, value):
 def pad_image(image, pad_value, pad_bottom, pad_top):
     dz, dy, dx = image.shape
     z_iadd = 0
-    z_eadd = 0
+    # z_eadd = 0
     if pad_bottom:
         z_iadd = 1
         dz += 1
     if pad_top:
-        z_eadd = 1
+        # z_eadd = 1
         dz += 1
     new_shape = dz, dy + 2, dx + 2
 
@@ -181,7 +180,10 @@ def create_surface_piece(
     #  contour.ComputeGradientsOn()
     #  contour.ComputeNormalsOn()
     contour.ReleaseDataFlagOn()
+    start = time.perf_counter()
     contour.Update()
+    duration = time.perf_counter() - start
+    print(f"[PERF] Extraction (vtkContourFilter): {duration:.4f}s")
 
     polydata = contour.GetOutput()
     del image
@@ -236,7 +238,10 @@ def join_process_surface(
         del reader
         del polydata
 
+    start = time.perf_counter()
     polydata_append.Update()
+    duration = time.perf_counter() - start
+    print(f"[PERF] Joining surface pieces: {duration:.4f}s")
     #  polydata_append.GetOutput().ReleaseDataFlagOn()
     polydata = polydata_append.GetOutput()
     # polydata.Register(None)
@@ -247,12 +252,15 @@ def join_process_surface(
     clean = vtkCleanPolyData()
     #  clean.ReleaseDataFlagOn()
     #  clean.GetOutput().ReleaseDataFlagOn()
-    clean_ref = weakref.ref(clean)
+    # clean_ref = weakref.ref(clean)
     #  clean_ref().AddObserver("ProgressEvent", lambda obj,evt:
     #  UpdateProgress(clean_ref(), _("Creating 3D surface...")))
     clean.SetInputData(polydata)
     clean.PointMergingOn()
+    start = time.perf_counter()
     clean.Update()
+    duration = time.perf_counter() - start
+    print(f"[PERF] Cleaning merged surface: {duration:.4f}s")
 
     del polydata
     polydata = clean.GetOutput()
@@ -262,7 +270,7 @@ def join_process_surface(
     if algorithm == "ca_smoothing":
         send_message("Calculating normals ...")
         normals = vtkPolyDataNormals()
-        normals_ref = weakref.ref(normals)
+        # normals_ref = weakref.ref(normals)
         #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
         #  UpdateProgress(normals_ref(), _("Creating 3D surface...")))
         normals.SetInputData(polydata)
@@ -280,7 +288,7 @@ def join_process_surface(
         clean = vtkCleanPolyData()
         #  clean.ReleaseDataFlagOn()
         #  clean.GetOutput().ReleaseDataFlagOn()
-        clean_ref = weakref.ref(clean)
+        # clean_ref = weakref.ref(clean)
         #  clean_ref().AddObserver("ProgressEvent", lambda obj,evt:
         #  UpdateProgress(clean_ref(), _("Creating 3D surface...")))
         clean.SetInputData(polydata)
@@ -303,9 +311,12 @@ def join_process_surface(
 
         send_message("Context Aware smoothing ...")
         mesh = cy_mesh.Mesh(polydata)
+        start = time.perf_counter()
         cy_mesh.ca_smoothing(
             mesh, options["angle"], options["max distance"], options["min weight"], options["steps"]
         )
+        duration = time.perf_counter() - start
+        print(f"[PERF] Context Aware smoothing: {duration:.4f}s")
         #  polydata = mesh.to_vtk()
 
         #  polydata.SetSource(None)
@@ -343,14 +354,17 @@ def join_process_surface(
         #  decimation.ReleaseDataFlagOn()
         decimation.SetInputData(polydata)
         decimation.SetTargetReduction(decimate_reduction)
-        decimation_ref = weakref.ref(decimation)
+        # decimation_ref = weakref.ref(decimation)
         #  decimation_ref().AddObserver("ProgressEvent", lambda obj,evt:
         #  UpdateProgress(decimation_ref(), _("Creating 3D surface...")))
         # decimation.PreserveTopologyOn()
         # decimation.SplittingOff()
         # decimation.BoundaryVertexDeletionOff()
         #  decimation.GetOutput().ReleaseDataFlagOn()
+        start = time.perf_counter()
         decimation.Update()
+        duration = time.perf_counter() - start
+        print(f"[PERF] Decimating: {duration:.4f}s")
         del polydata
         polydata = decimation.GetOutput()
         # polydata.Register(None)
@@ -365,7 +379,7 @@ def join_process_surface(
         conn = vtkPolyDataConnectivityFilter()
         conn.SetInputData(polydata)
         conn.SetExtractionModeToLargestRegion()
-        conn_ref = weakref.ref(conn)
+        # conn_ref = weakref.ref(conn)
         #  conn_ref().AddObserver("ProgressEvent", lambda obj,evt:
         #  UpdateProgress(conn_ref(), _("Creating 3D surface...")))
         conn.Update()
@@ -385,10 +399,13 @@ def join_process_surface(
         #  filled_polydata.ReleaseDataFlagOn()
         filled_polydata.SetInputData(polydata)
         filled_polydata.SetHoleSize(300)
-        filled_polydata_ref = weakref.ref(filled_polydata)
+        # filled_polydata_ref = weakref.ref(filled_polydata)
         #  filled_polydata_ref().AddObserver("ProgressEvent", lambda obj,evt:
         #  UpdateProgress(filled_polydata_ref(), _("Creating 3D surface...")))
+        start = time.perf_counter()
         filled_polydata.Update()
+        duration = time.perf_counter() - start
+        print(f"[PERF] Filling holes: {duration:.4f}s")
         #  filled_polydata.GetOutput().ReleaseDataFlagOn()
         del polydata
         polydata = filled_polydata.GetOutput()

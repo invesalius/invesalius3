@@ -21,7 +21,7 @@ import threading
 from math import cos, sin
 from random import uniform
 from time import sleep
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import wx
@@ -35,12 +35,22 @@ if TYPE_CHECKING:
     from invesalius.data.tracker_connection import TrackerConnection
 
 
+def _safe_call_after(func, *args, **kwargs):
+    """Call *func* on the main thread only if the wx.App still exists."""
+    if wx.GetApp() is not None:
+        wx.CallAfter(func, *args, **kwargs)
+
+
 class TrackerCoordinates:
     def __init__(self):
         self.coord: Optional[np.ndarray] = None
         self.marker_visibilities = [False, False, False]
         self.previous_marker_visibilities = self.marker_visibilities
         self.nav_status = False
+        self._pending_pose_update = False
+        self._pending_sensors_update = False
+        self._pose_update_data = None
+        self._sensor_update_data = None
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -52,39 +62,45 @@ class TrackerCoordinates:
     def SetCoordinates(self, coord, marker_visibilities: List[bool]) -> None:
         self.coord = coord
         self.marker_visibilities = marker_visibilities
-        if not self.nav_status:
-            wx.CallAfter(
-                Publisher.sendMessage,
-                "From Neuronavigation: Update tracker poses",
-                poses=self.coord.tolist(),
-                visibilities=self.marker_visibilities,
-            )
-            if self.previous_marker_visibilities != self.marker_visibilities:
-                wx.CallAfter(
-                    Publisher.sendMessage,
-                    "Sensors ID",
-                    marker_visibilities=self.marker_visibilities,
-                )
-                wx.CallAfter(Publisher.sendMessage, "Render volume viewer")
-                self.previous_marker_visibilities = self.marker_visibilities
+        if self.coord is None:
+            return
+
+        self._pose_update_data = (
+            self.coord.tolist(),
+            list(self.marker_visibilities),
+        )
+        if not self._pending_pose_update:
+            self._pending_pose_update = True
+            _safe_call_after(self._dispatch_pose_update)
+
+        if self.previous_marker_visibilities != self.marker_visibilities:
+            self._sensor_update_data = list(self.marker_visibilities)
+            if not self._pending_sensors_update:
+                self._pending_sensors_update = True
+                _safe_call_after(self._dispatch_sensors_update)
+            self.previous_marker_visibilities = self.marker_visibilities
 
     def GetCoordinates(self) -> Tuple[Optional[np.ndarray], List[bool]]:
-        if self.nav_status:
-            wx.CallAfter(
-                Publisher.sendMessage,
-                "From Neuronavigation: Update tracker poses",
-                poses=self.coord.tolist(),
-                visibilities=self.marker_visibilities,
-            )
-            if self.previous_marker_visibilities != self.marker_visibilities:
-                wx.CallAfter(
-                    Publisher.sendMessage,
-                    "Sensors ID",
-                    marker_visibilities=self.marker_visibilities,
-                )
-                self.previous_marker_visibilities = self.marker_visibilities
-
         return self.coord, self.marker_visibilities
+
+    def _dispatch_pose_update(self) -> None:
+        self._pending_pose_update = False
+        if self._pose_update_data is None:
+            return
+        poses, visibilities = self._pose_update_data
+        Publisher.sendMessage(
+            "From Neuronavigation: Update tracker poses",
+            poses=poses,
+            visibilities=visibilities,
+        )
+
+    def _dispatch_sensors_update(self) -> None:
+        self._pending_sensors_update = False
+        if self._sensor_update_data is None:
+            return
+        Publisher.sendMessage("Sensors ID", marker_visibilities=self._sensor_update_data)
+        if not self.nav_status:
+            Publisher.sendMessage("Render volume viewer")
 
 
 def GetCoordinatesForThread(
@@ -254,14 +270,17 @@ def PolarisCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_m
     trans_ref = np.array(ref[6:9]).astype(float)
     coord2 = np.hstack((trans_ref, angles_ref))
 
-    obj = trck.obj.decode(const.FS_ENCODE).split(",")
-    angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
-    trans_obj = np.array(obj[6:9]).astype(float)
-    coord3 = np.hstack((trans_obj, angles_obj))
+    obj_coords = []
+    for i in range(trck.objs.size()):
+        obj = trck.objs[i].decode(const.FS_ENCODE).split(",")
+        angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
+        trans_obj = np.array(obj[6:9]).astype(float)
+        obj_coords.append(np.hstack((trans_obj, angles_obj)))
 
-    coord = np.vstack([coord1, coord2, coord3])
+    coord = np.vstack([coord1, coord2, *obj_coords])
+    marker_visibilities = [trck.probeID, trck.refID] + list(trck.objIDs)
 
-    return coord, [trck.probeID, trck.refID, trck.objID]
+    return coord, marker_visibilities
 
 
 def CameraCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode):
@@ -538,6 +557,9 @@ def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, r
     coord4 = np.array(
         [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
     )
+    coord5 = np.array(
+        [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
+    )
 
     sleep(0.15)
 
@@ -555,9 +577,9 @@ def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, r
 
     # Always make the markers visible when using debug tracker; this enables registration, as it
     # is not possible to registering without markers.
-    marker_visibilities = [True, True, True]
+    marker_visibilities = [True, True, True, True, True]
 
-    return np.vstack([coord1, coord2, coord3, coord4]), marker_visibilities
+    return np.vstack([coord1, coord2, coord3, coord4, coord5]), marker_visibilities
 
 
 def coordinates_to_transformation_matrix(
@@ -621,7 +643,7 @@ def dynamic_reference(probe, reference):
     # a: rotation of plane (X, Y) around Z axis (azimuth)
     # b: rotation of plane (X', Z) around Y' axis (elevation)
     # a: rotation of plane (Y', Z') around X'' axis (roll)
-    m_rot = np.mat(
+    m_rot = np.asmatrix(
         [
             [
                 cos(a) * cos(b),

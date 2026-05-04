@@ -19,37 +19,50 @@
 
 # -*- coding: UTF-8 -*-
 
+import pathlib
 import sys
-import pathlib 
+
 
 def edit_file(path, date, commit_hash, nightly):
     """
-    This code inserts the date and hash of the last commit into dialogs.py so that 
+    This code inserts the date and hash of the last commit into dialogs.py so that
     the user can provide this information (about window) in any support request.
     """
 
-    file = open(path,"r")
+    file = open(path, "r")
     content = file.read()
     file.close()
 
-    #path = invesalius/gui/dialog.py
+    # path = invesalius/gui/dialog.py
     to_replace = "info.Version = const.INVESALIUS_VERSION"
 
     if nightly:
-        new_content = to_replace + " + '(Nightly)' + '\\n' + 'Release date: '+ '"\
-                                 + date + "'+'\\n Commit hash: " + commit_hash[0:9] + "...'"
+        new_content = (
+            to_replace
+            + " + '(Nightly)' + '\\n' + 'Release date: '+ '"
+            + date
+            + "'+'\\n Commit hash: "
+            + commit_hash[0:9]
+            + "...'"
+        )
     else:
-        new_content = to_replace + "+ '\\n' + 'Release date: '+ '"\
-                                 + date + "'+'\\n Commit hash: " + commit_hash[0:9] + "...'"
- 
-    
+        new_content = (
+            to_replace
+            + "+ '\\n' + 'Release date: '+ '"
+            + date
+            + "'+'\\n Commit hash: "
+            + commit_hash[0:9]
+            + "...'"
+        )
+
     content = content.replace(to_replace, new_content)
 
-    file = open(path,"w")
+    file = open(path, "w")
     file.write(content)
     file.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     path = pathlib.Path(sys.argv[1])
     date = sys.argv[2]
     commit_hash = sys.argv[3]

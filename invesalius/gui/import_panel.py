@@ -21,7 +21,6 @@ import wx.gizmos as gizmos
 import wx.lib.splitter as spl
 
 import invesalius.constants as const
-import invesalius.gui.dialogs as dlg
 import invesalius.gui.dicom_preview_panel as dpp
 import invesalius.reader.dicom_grouper as dcm
 from invesalius.i18n import tr as _
@@ -42,7 +41,7 @@ EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
 
 class SelectEvent(wx.PyCommandEvent):
     def __init__(self, evtType, id):
-        super(SelectEvent, self).__init__(evtType, id)
+        super().__init__(evtType, id)
 
     def GetSelectID(self):
         return self.SelectedID
@@ -167,7 +166,9 @@ class InnerPanel(wx.Panel):
 
     def OnDblClickTextPanel(self, evt):
         group = evt.GetItemData()
-        self.LoadDicom(group)
+        if group:  # Only proceed if we have valid data
+            self.LoadDicom(group)
+        # If group is None, do nothing (root item was clicked)
 
     def OnClickOk(self, evt):
         group = self.text_panel.GetSelection()
@@ -178,12 +179,23 @@ class InnerPanel(wx.Panel):
         Publisher.sendMessage("Cancel DICOM load")
 
     def LoadDicom(self, group):
+        if not group:
+            return  # Return early if group is None or invalid
+
         interval = self.combo_interval.GetSelection()
         if not isinstance(group, dcm.DicomGroup):
-            group = max(group.GetGroups(), key=lambda g: g.nslices)
+            # Ensure group has GetGroups method
+            if hasattr(group, "GetGroups") and callable(group.GetGroups):
+                groups = group.GetGroups()
+                if groups:  # Check if groups list is not empty
+                    group = max(groups, key=lambda g: g.nslices)
+                else:
+                    return  # No valid groups available
+            else:
+                return  # Object doesn't have GetGroups method
 
         slice_amont = group.nslices
-        if (self.first_image_selection != None) and (
+        if (self.first_image_selection is not None) and (
             self.first_image_selection != self.last_image_selection
         ):
             slice_amont = (self.last_image_selection) - self.first_image_selection
@@ -191,7 +203,7 @@ class InnerPanel(wx.Panel):
             if slice_amont == 0:
                 slice_amont = group.nslices
 
-        nslices_result = slice_amont / (interval + 1)
+        # nslices_result = slice_amont / (interval + 1)
         Publisher.sendMessage(
             "Open DICOM group",
             group=group,
@@ -273,7 +285,7 @@ class TextPanel(wx.Panel):
             ngroups = patient.ngroups
             dicom = patient.GetDicomSample()
             title = dicom.patient.name + " (%d series)" % (ngroups)
-            date_time = "%s %s" % (dicom.acquisition.date, dicom.acquisition.time)
+            date_time = f"{dicom.acquisition.date} {dicom.acquisition.time}"
 
             parent = tree.AppendItem(self.root, title)
 
@@ -282,17 +294,17 @@ class TextPanel(wx.Panel):
                 first += 1
 
             tree.SetItemPyData(parent, patient)
-            tree.SetItemText(parent, "%s" % dicom.patient.id, 1)
-            tree.SetItemText(parent, "%s" % dicom.patient.age, 2)
-            tree.SetItemText(parent, "%s" % dicom.patient.gender, 3)
-            tree.SetItemText(parent, "%s" % dicom.acquisition.study_description, 4)
-            tree.SetItemText(parent, "%s" % dicom.acquisition.modality, 5)
-            tree.SetItemText(parent, "%s" % date_time, 6)
-            tree.SetItemText(parent, "%s" % patient.nslices, 7)
-            tree.SetItemText(parent, "%s" % dicom.acquisition.institution, 8)
-            tree.SetItemText(parent, "%s" % dicom.patient.birthdate, 9)
-            tree.SetItemText(parent, "%s" % dicom.acquisition.accession_number, 10)
-            tree.SetItemText(parent, "%s" % dicom.patient.physician, 11)
+            tree.SetItemText(parent, f"{dicom.patient.id}", 1)
+            tree.SetItemText(parent, f"{dicom.patient.age}", 2)
+            tree.SetItemText(parent, f"{dicom.patient.gender}", 3)
+            tree.SetItemText(parent, f"{dicom.acquisition.study_description}", 4)
+            tree.SetItemText(parent, f"{dicom.acquisition.modality}", 5)
+            tree.SetItemText(parent, f"{date_time}", 6)
+            tree.SetItemText(parent, f"{patient.nslices}", 7)
+            tree.SetItemText(parent, f"{dicom.acquisition.institution}", 8)
+            tree.SetItemText(parent, f"{dicom.patient.birthdate}", 9)
+            tree.SetItemText(parent, f"{dicom.acquisition.accession_number}", 10)
+            tree.SetItemText(parent, f"{dicom.patient.physician}", 11)
 
             group_list = patient.GetGroups()
             for n, group in enumerate(group_list):
@@ -301,11 +313,11 @@ class TextPanel(wx.Panel):
                 child = tree.AppendItem(parent, group.title)
                 tree.SetItemPyData(child, group)
 
-                tree.SetItemText(child, "%s" % group.title, 0)
-                tree.SetItemText(child, "%s" % dicom.acquisition.protocol_name, 4)
-                tree.SetItemText(child, "%s" % dicom.acquisition.modality, 5)
-                tree.SetItemText(child, "%s" % date_time, 6)
-                tree.SetItemText(child, "%s" % group.nslices, 7)
+                tree.SetItemText(child, f"{group.title}", 0)
+                tree.SetItemText(child, f"{dicom.acquisition.protocol_name}", 4)
+                tree.SetItemText(child, f"{dicom.acquisition.modality}", 5)
+                tree.SetItemText(child, f"{date_time}", 6)
+                tree.SetItemText(child, f"{group.nslices}", 7)
 
                 self.idserie_treeitem[(dicom.patient.id, dicom.acquisition.serie_number)] = child
 
@@ -454,8 +466,8 @@ class SeriesPanel(wx.Panel):
         self.Update()
 
     def OnSelectSerie(self, evt):
-        serie = evt.GetItemData()
-        data = evt.GetItemData()
+        # serie = evt.GetItemData()
+        # data = evt.GetItemData()
 
         my_evt = SelectEvent(myEVT_SELECT_SERIE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())

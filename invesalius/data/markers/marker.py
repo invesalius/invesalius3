@@ -1,6 +1,7 @@
 import copy
 import dataclasses
 import uuid
+from datetime import datetime
 from enum import Enum
 
 import invesalius.data.imagedata_utils as imagedata_utils
@@ -45,7 +46,7 @@ class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
 
-    version: int = 3
+    version: int = 5
     marker_id: int = 0
     x: float = 0
     y: float = 0
@@ -64,9 +65,9 @@ class Marker:
     is_target: bool = False
     is_point_of_interest: bool = False
     session_id: int = 1
-    x_cortex: float = 0
-    y_cortex: float = 0
-    z_cortex: float = 0
+    x_cortex: float = dataclasses.field(default=None)
+    y_cortex: float = dataclasses.field(default=None)
+    z_cortex: float = dataclasses.field(default=None)
     alpha_cortex: float = dataclasses.field(default=None)
     beta_cortex: float = dataclasses.field(default=None)
     gamma_cortex: float = dataclasses.field(default=None)
@@ -75,6 +76,13 @@ class Marker:
     z_offset: float = 0.0
     visualization: dict = dataclasses.field(default_factory=dict)
     marker_uuid: str = ""
+    # #TODO: add a reference to original coil marker to relate it to MEP
+    # in micro Volts (but scale in milli Volts for display)
+    mep_value: float = dataclasses.field(default=None)
+    brain_target_list: list = dataclasses.field(default_factory=list)
+    timestamp: str = dataclasses.field(
+        default_factory=lambda: datetime.now().isoformat(timespec="seconds")
+    )
 
     # x, y, z can be jointly accessed as position
     @property
@@ -160,10 +168,14 @@ class Marker:
         res = [
             field.name
             for field in dataclasses.fields(cls)
-            if (field.name != "version" and field.name != "marker_uuid")
+            if (
+                field.name != "version"
+                and field.name != "marker_uuid"
+                and field.name != "visualization"
+            )
         ]
         res.extend(["x_world", "y_world", "z_world", "alpha_world", "beta_world", "gamma_world"])
-        return "\t".join(map(lambda x: '"%s"' % x, res))
+        return "\t".join(map(lambda x: f'"{x}"', res))
 
     def to_csv_row(self):
         """Serialize to excel-friendly tab-separated string"""
@@ -178,11 +190,11 @@ class Marker:
                 continue
 
             if field.type is str:
-                res += '"%s"\t' % getattr(self, field.name)
+                res += f'"{getattr(self, field.name)}"\t'
             elif field.type is MarkerType:
-                res += "%s\t" % getattr(self, field.name).value
+                res += f"{getattr(self, field.name).value}\t"
             else:
-                res += "%s\t" % str(getattr(self, field.name))
+                res += f"{str(getattr(self, field.name))}\t"
 
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
             # Add world coordinates (in addition to the internal ones).
@@ -202,6 +214,46 @@ class Marker:
         )
         return res
 
+    def to_brain_targets_dict(self):
+        if self.alpha is not None and self.beta is not None and self.gamma is not None:
+            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                position=self.position,
+                orientation=self.orientation,
+            )
+        else:
+            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                position=self.position,
+                orientation=[0, 0, 0],
+            )
+        position_world = (
+            position_world.tolist() if hasattr(position_world, "tolist") else list(position_world)
+        )
+        orientation_world = (
+            orientation_world.tolist()
+            if hasattr(orientation_world, "tolist")
+            else list(orientation_world)
+        )
+
+        return {
+            "position": self.position,
+            "orientation": self.orientation,
+            "colour": self.colour,
+            "size": self.size,
+            "label": self.label,
+            "is_target": self.is_target,
+            "marker_type": self.marker_type.value,
+            "session_id": self.session_id,
+            "mep_value": self.mep_value,
+            "marker_uuid": self.marker_uuid,
+            "timestamp": self.timestamp,
+            "x_mtms": self.x_mtms,
+            "y_mtms": self.y_mtms,
+            "r_mtms": self.r_mtms,
+            "intensity_mtms": self.intensity_mtms,
+            "position_world": position_world,
+            "orientation_world": orientation_world,
+        }
+
     def to_dict(self):
         return {
             "position": self.position,
@@ -217,6 +269,10 @@ class Marker:
             "cortex_position_orientation": self.cortex_position_orientation,
             "z_rotation": self.z_rotation,
             "z_offset": self.z_offset,
+            "mep_value": self.mep_value,
+            "brain_target_list": self.brain_target_list,
+            "marker_uuid": self.marker_uuid,
+            "timestamp": self.timestamp,
         }
 
     def from_dict(self, d):
@@ -245,20 +301,10 @@ class Marker:
             else:
                 marker_type = MarkerType.COIL_TARGET.value
 
-        if all(
-            [
-                k in d
-                for k in [
-                    "x_cortex",
-                    "y_cortex",
-                    "z_cortex",
-                    "alpha_cortex",
-                    "beta_cortex",
-                    "gamma_cortex",
-                ]
-            ]
-        ):
-            cortex_position_orientation = [
+        cortex_position_orientation = (
+            d["cortex_position_orientation"]
+            if "cortex_position_orientation" in d
+            else [
                 d["x_cortex"],
                 d["y_cortex"],
                 d["z_cortex"],
@@ -266,12 +312,15 @@ class Marker:
                 d["beta_cortex"],
                 d["gamma_cortex"],
             ]
-        else:
-            cortex_position_orientation = [None, None, None, None, None, None]
+        )
 
         z_offset = d.get("z_offset", 0.0)
         z_rotation = d.get("z_rotation", 0.0)
         is_point_of_interest = d.get("is_point_of_interest", False)
+        mep_value = d.get("mep_value", None)
+        brain_target_list = d.get("brain_target_list", [])
+        marker_uuid = d.get("marker_uuid", "")
+        timestamp = d.get("timestamp", "")
 
         self.size = d["size"]
         self.label = d["label"]
@@ -287,6 +336,10 @@ class Marker:
         self.cortex_position_orientation = cortex_position_orientation
         self.z_offset = z_offset
         self.z_rotation = z_rotation
+        self.mep_value = mep_value
+        self.brain_target_list = brain_target_list
+        self.marker_uuid = marker_uuid
+        self.timestamp = timestamp
 
         return self
 

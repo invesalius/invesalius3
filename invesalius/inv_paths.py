@@ -52,7 +52,7 @@ LOCALE_DIR = INV_TOP_DIR.joinpath("locale")
 
 # Inside the windows executable
 if hasattr(sys, "frozen") and (
-    sys.frozen == "windows_exe" or sys.frozen == "console_exe"  # type: ignore
+    getattr(sys, "frozen") == "windows_exe" or getattr(sys, "frozen") == "console_exe"
 ):
     abs_path = INV_TOP_DIR.parent.resolve()
     ICON_DIR = abs_path.joinpath("icons")

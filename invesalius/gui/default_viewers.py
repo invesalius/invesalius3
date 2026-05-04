@@ -20,7 +20,10 @@ import os
 import sys
 
 import wx
+import wx.aui
 import wx.lib.agw.fourwaysplitter as fws
+import wx.lib.colourselect as csel
+import wx.lib.platebtn as pbtn
 
 import invesalius.constants as const
 import invesalius.data.viewer_slice as slice_viewer
@@ -156,7 +159,44 @@ class Panel(wx.Panel):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self.OnRestore)
 
     def __bind_events(self):
+        Publisher.subscribe(self.OnSetTargetMode, "Set target mode")
+        Publisher.subscribe(self.OnStartNavigation, "Start navigation")
+        Publisher.subscribe(self.UpdateViewerCaption, "Update viewer caption")
         Publisher.subscribe(self._Exit, "Exit")
+
+    def UpdateViewerCaption(self, viewer_name: str, caption: str):
+        """Update the caption of a viewer pane.
+
+        Args:
+            viewer_name (str): The name of the viewer pane to update.
+            caption (str): The new caption to set for the viewer pane.
+        """
+        self.aui_manager.GetPane(viewer_name).Caption(caption)
+        self.Refresh()
+
+    def OnSetTargetMode(self, enabled=True):
+        if enabled:
+            self.MaximizeViewerVolume()
+        else:
+            self.RestoreViewerVolume()
+
+    def OnStartNavigation(self):
+        self.MaximizeViewerVolume()
+
+    def RestoreViewerVolume(self):
+        self.aui_manager.RestoreMaximizedPane()
+        Publisher.sendMessage("Hide raycasting widget")
+        self.aui_manager.Update()
+
+    def MaximizeViewerVolume(self):
+        # Restore volume viewer to make sure it is not already maximized before attempting to maximize it
+        # to fix the issue with panes locking into the maximized state where they cannot be restored
+        self.RestoreViewerVolume()
+        self.aui_manager.MaximizePane(
+            self.aui_manager.GetAllPanes()[-1]
+        )  # Viewer volume is the last pane
+        Publisher.sendMessage("Show raycasting widget")
+        self.aui_manager.Update()
 
     def OnMaximize(self, evt):
         if evt.GetPane().name == self.s4.name:
@@ -166,89 +206,13 @@ class Panel(wx.Panel):
         if evt.GetPane().name == self.s4.name:
             Publisher.sendMessage("Hide raycasting widget")
 
-    def __init_four_way_splitter(self):
-        splitter = fws.FourWaySplitter(self, style=wx.SP_LIVE_UPDATE)
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(splitter, 1, wx.EXPAND)
-        self.SetSizer(sizer)
-
-        p1 = slice_viewer.Viewer(self, "AXIAL")
-        splitter.AppendWindow(p1)
-
-        p2 = slice_viewer.Viewer(self, "CORONAL")
-        splitter.AppendWindow(p2)
-
-        p3 = slice_viewer.Viewer(self, "SAGITAL")
-        splitter.AppendWindow(p3)
-
-        p4 = volume_viewer.Viewer(self)
-        splitter.AppendWindow(p4)
-
     def _Exit(self):
         self.aui_manager.UnInit()
-
-    def __init_mix(self):
-        aui_manager = wx.aui.AuiManager()
-        aui_manager.SetManagedWindow(self)
-
-        splitter = fws.FourWaySplitter(self, style=wx.SP_LIVE_UPDATE)
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(splitter, 1, wx.EXPAND)
-        self.SetSizer(sizer)
-
-        p1 = slice_viewer.Viewer(self, "AXIAL")
-        aui_manager.AddPane(
-            p1,
-            wx.aui.AuiPaneInfo()
-            .Name("Axial Slice")
-            .Caption(_("Axial slice"))
-            .MaximizeButton(True)
-            .CloseButton(False),
-        )
-
-        p2 = slice_viewer.Viewer(self, "CORONAL")
-        aui_manager.AddPane(
-            p2,
-            wx.aui.AuiPaneInfo()
-            .Name("Coronal Slice")
-            .Caption(_("Coronal slice"))
-            .MaximizeButton(True)
-            .CloseButton(False),
-        )
-
-        p3 = slice_viewer.Viewer(self, "SAGITAL")
-        aui_manager.AddPane(
-            p3,
-            wx.aui.AuiPaneInfo()
-            .Name("Sagittal Slice")
-            .Caption(_("Sagittal slice"))
-            .MaximizeButton(True)
-            .CloseButton(False),
-        )
-
-        # p4 = volume_viewer.Viewer(self)
-        aui_manager.AddPane(
-            VolumeViewerCover,
-            wx.aui.AuiPaneInfo()
-            .Name("Volume")
-            .Caption(_("Volume"))
-            .MaximizeButton(True)
-            .CloseButton(False),
-        )
-
-        splitter.AppendWindow(p1)
-        splitter.AppendWindow(p2)
-        splitter.AppendWindow(p3)
-        splitter.AppendWindow(p4)
-
-        aui_manager.Update()
 
 
 class VolumeInteraction(wx.Panel):
     def __init__(self, parent, id):
-        super(VolumeInteraction, self).__init__(parent, id)
+        super().__init__(parent, id)
         self.can_show_raycasting_widget = 0
         self.__init_aui_manager()
         # sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -351,12 +315,6 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager.UnInit()
 
 
-import wx.lib.buttons as btn
-import wx.lib.colourselect as csel
-import wx.lib.platebtn as pbtn
-
-from invesalius.pubsub import pub as Publisher
-
 RAYCASTING_TOOLS = wx.NewIdRef()
 
 ID_TO_NAME = {}
@@ -398,7 +356,27 @@ class VolumeToolPanel(wx.Panel):
         BMP_3D_STEREO = wx.Bitmap(
             str(inv_paths.ICON_DIR.joinpath("3D_glasses.png")), wx.BITMAP_TYPE_PNG
         )
-        BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
+        # BMP_TARGET = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("target.png")), wx.BITMAP_TYPE_PNG)
+
+        # SSAO BUTTON - Icons for enabled/disabled states
+        BMP_SSAO_DISABLED = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("ssao_icon_off.png")), wx.BITMAP_TYPE_PNG
+        )
+        BMP_SSAO_ENABLED = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("ssao_icon_on.png")), wx.BITMAP_TYPE_PNG
+        )
+
+        # Scale icons to 24x24
+        img_disabled = BMP_SSAO_DISABLED.ConvertToImage()
+        img_disabled = img_disabled.Scale(24, 24, wx.IMAGE_QUALITY_HIGH)
+        BMP_SSAO_DISABLED = wx.Bitmap(img_disabled)
+
+        img_enabled = BMP_SSAO_ENABLED.ConvertToImage()
+        img_enabled = img_enabled.Scale(24, 24, wx.IMAGE_QUALITY_HIGH)
+        BMP_SSAO_ENABLED = wx.Bitmap(img_enabled)
+
+        self.BMP_SSAO_DISABLED = BMP_SSAO_DISABLED
+        self.BMP_SSAO_ENABLED = BMP_SSAO_ENABLED
 
         self.button_raycasting = pbtn.PlateButton(
             self, -1, "", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
@@ -414,6 +392,16 @@ class VolumeToolPanel(wx.Panel):
         self.button_slice_plane.SetToolTip("Slices into 3D")
         # self.button_target = pbtn.PlateButton(self, -1,"", BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE, size=ICON_SIZE)
         # self.button_target.Enable(0)
+
+        # SSAO BUTTON - Initialize with icon based on preference
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+        initial_icon = BMP_SSAO_ENABLED if ssao_enabled else BMP_SSAO_DISABLED
+        self.button_ssao = pbtn.PlateButton(
+            self, -1, "", initial_icon, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        self.button_ssao.SetToolTip("Screen Space Ambient Occlusion (SSAO)")
+        self.ssao_button_state = ssao_enabled
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1], wx.BITMAP_TYPE_PNG)
@@ -440,6 +428,7 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(self.button_view, 0, wx.TOP | wx.BOTTOM, 1)
         sizer.Add(self.button_slice_plane, 0, wx.TOP | wx.BOTTOM, 1)
         sizer.Add(self.button_stereo, 0, wx.TOP | wx.BOTTOM, 1)
+        sizer.Add(self.button_ssao, 0, wx.TOP | wx.BOTTOM, 1)
         # sizer.Add(self.button_target, 0, wx.TOP | wx.BOTTOM, 1)
         #  sizer.Add(self.button_3d_mask, 0, wx.TOP | wx.BOTTOM, 1)
 
@@ -464,6 +453,7 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.ChangeButtonColour, "Change volume viewer gui colour")
         Publisher.subscribe(self.DisablePreset, "Close project data")
         Publisher.subscribe(self.Uncheck, "Uncheck image plane menu")
+        Publisher.subscribe(self.OnSSAOPreferenceChanged, "SSAO preference changed")
 
     def DisablePreset(self):
         self.off_item.Check(1)
@@ -474,6 +464,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
+        self.button_ssao.Bind(wx.EVT_BUTTON, self.OnButtonSSAO)
         # self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonRaycasting(self, evt):
@@ -657,5 +648,25 @@ class VolumeToolPanel(wx.Panel):
         self.Refresh()
 
     def OnSelectColour(self, evt):
-        colour = c = [i / 255.0 for i in evt.GetValue()]
+        colour = [i / 255.0 for i in evt.GetValue()]
         Publisher.sendMessage("Change volume viewer background colour", colour=colour)
+
+    def OnButtonSSAO(self, evt):
+        self.ssao_button_state = not self.ssao_button_state
+
+        if self.ssao_button_state:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_ENABLED)
+            Publisher.sendMessage("Enable SSAO")
+        else:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_DISABLED)
+            Publisher.sendMessage("Disable SSAO")
+
+        self.button_ssao.Refresh()
+
+    def OnSSAOPreferenceChanged(self, enabled):
+        self.ssao_button_state = enabled
+        if enabled:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_ENABLED)
+        else:
+            self.button_ssao.SetBitmapLabel(self.BMP_SSAO_DISABLED)
+        self.button_ssao.Refresh()

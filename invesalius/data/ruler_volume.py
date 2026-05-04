@@ -145,8 +145,8 @@ class RulerVolume(ABC):
         Returns:
             tuple: (image width in mm, image height in mm)
         """
-        initial_orientation = (0, 0, 1)  # up direction is z-axis
-        initial_rotational_axis = (0, 1, 0)  # y-axis
+        # initial_orientation = (0, 0, 1)  # up direction is z-axis
+        # initial_rotational_axis = (0, 1, 0)  # y-axis
         bounds = self.viewer_volume.surface.GetBounds()
         bounds_matrix = np.abs(
             np.array([bounds[0] - bounds[1], bounds[2] - bounds[3], bounds[4] - bounds[5]])
@@ -321,4 +321,5 @@ class GenericLeftRulerVolume(RulerVolume):
             (x_text, y_text),
             font=self.GetFont(self.font_size),
             txt_colour=(r * 255, g * 255, b * 255),
+            add_background=True,
         )

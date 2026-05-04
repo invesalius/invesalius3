@@ -25,10 +25,12 @@ import sys
 import time
 import traceback
 from functools import wraps
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional
 
 import numpy as np
 from packaging.version import Version
+
+import invesalius
 
 
 def format_time(value: str) -> str:
@@ -58,14 +60,14 @@ def format_date(value: str) -> str:
     try:
         if len(sp1) > 1:
             if len(sp1[0]) <= 2:
-                data = time.strptime(value, "%D.%M.%Y")
+                data = time.strptime(value, "%d.%m.%Y")
             else:
-                data = time.strptime(value, "%Y.%M.%d")
+                data = time.strptime(value, "%Y.%m.%d")
         elif len(value.split("//")) > 1:
-            data = time.strptime(value, "%D/%M/%Y")
+            data = time.strptime(value, "%d/%m/%Y")
         else:
-            data = time.strptime(value, "%Y%M%d")
-        return time.strftime("%d/%M/%Y", data)
+            data = time.strptime(value, "%Y%m%d")
+        return time.strftime("%d/%m/%Y", data)
 
     except ValueError:
         return ""
@@ -102,11 +104,11 @@ def next_copy_name(original_name: str, names_list: List[str]) -> str:
             # yes, lets check if it ends with a number
             if isinstance(eval(parts[-1]), int):
                 last_index = int(parts[-1]) - 1
-                first_copy = "%s copy" % parts[0]
+                first_copy = f"{parts[0]} copy"
             # no... well, so will build the copy name from zero
             else:
                 last_index = -1
-                first_copy = "%s copy" % original_name
+                first_copy = f"{original_name} copy"
                 # apparently this isthe new copy name, check it
                 if first_copy not in names_list:
                     return first_copy
@@ -115,7 +117,7 @@ def next_copy_name(original_name: str, names_list: List[str]) -> str:
             # no, apparently there are no copies, as
             # separator was not found -- returned ("", " copy#", "")
             last_index = -1
-            first_copy = "%s copy" % original_name
+            first_copy = f"{original_name} copy"
 
             # apparently this isthe new copy name, check it
             if first_copy not in names_list:
@@ -191,7 +193,8 @@ class TwoWaysDictionary(dict):
         """
         Find the key (first) with the given value
         """
-        return self.get_keys(value)[0]
+        keys = self.get_keys(value)
+        return keys[0] if keys else None
 
     def get_keys(self, value):
         """
@@ -202,14 +205,14 @@ class TwoWaysDictionary(dict):
     def remove(self, key):
         try:
             self.pop(key)
-        except TypeError:
-            debug("TwoWaysDictionary: no item")
+        except KeyError:
+            debug("TwoWaysDictionary: key not found")
 
     def get_value(self, key):
         """
         Find the value given a key.
         """
-        return self[key]
+        return self.get(key, None)
 
 
 # DEPRECATED
@@ -298,98 +301,6 @@ def calculate_resizing_tofitmemory(x_size, y_size, n_slices, byte):
     return round(resize, 2)
 
 
-# DEPRECATED
-def predict_memory(nfiles: int, x: int, y: int, p: int) -> Tuple[float, float]:
-    """
-    Predict how much memory will be used, giving the following
-    information:
-        nfiles: number of dicom files
-        x, y: dicom image size
-        p: bits allocated for each pixel sample
-    """
-    m = nfiles * (x * y * p)
-    # physical_memory in Byte
-    physical_memory = get_physical_memory()
-
-    if sys.platform == "win32":
-        if platform.architecture()[0] == "32bit":
-            # (314859200 = 300 MB)
-            # (26999999 = 25 MB)
-            # case occupy more than 300 MB image is reduced to 1.5,
-            # and 25 MB each image is resized 0.04.
-            if m >= 314859200:
-                porcent = 1.5 + (m - 314859200) / 26999999 * 0.04
-            else:
-                return (x, y)
-        else:  # 64 bits architecture
-            # 2147483648 byte = 2.0 GB
-            # 4294967296 byte = 4.0 GB
-
-            if (physical_memory <= 2147483648) and (nfiles <= 1200):
-                porcent = 1.5 + (m - 314859200) / 26999999 * 0.04
-
-            elif (physical_memory <= 2147483648) and (nfiles > 1200):
-                porcent = 1.5 + (m - 314859200) / 26999999 * 0.05
-
-            elif (
-                (physical_memory > 2147483648)
-                and (physical_memory <= 4294967296)
-                and (nfiles <= 1200)
-            ):
-                porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
-
-            else:
-                return (x, y)
-
-        return (x / porcent, y / porcent)
-
-    elif sys.platform.startswith("linux"):
-        if platform.architecture()[0] == "32bit":
-            # 839000000 = 800 MB
-            if (m <= 839000000) and (physical_memory <= 2147483648):
-                return (x, y)
-            elif (m > 839000000) and (physical_memory <= 2147483648) and (nfiles <= 1200):
-                porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
-            else:
-                return (x, y)
-
-        else:
-            if (m <= 839000000) and (physical_memory <= 2147483648):
-                return (x, y)
-            elif (m > 839000000) and (physical_memory <= 2147483648) and (nfiles <= 1200):
-                porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
-            else:
-                return (x, y)
-
-        return (x / porcent, y / porcent)
-
-    elif sys.platform == "darwin":
-        return (x / 2, y / 2)
-    raise Exception("Platform not supported")
-
-
-# def convert_bytes(bytes):
-#    if bytes >= 1073741824:
-#        return str(bytes / 1024 / 1024 / 1024) + ' GB'
-#    elif bytes >= 1048576:
-#        return str(bytes / 1024 / 1024) + ' MB'
-#    elif bytes >= 1024:
-#        return str(bytes / 1024) + ' KB'
-#    elif bytes < 1024:
-#        return str(bytes) + ' bytes'
-
-
-# DEPRECATED
-def get_physical_memory():
-    """
-    Return physical memory in bytes
-    """
-    sg = sigar.open()
-    mem = sg.mem()
-    sg.close()
-    return int(mem.total())
-
-
 def get_system_encoding() -> Optional[str]:
     if sys.platform == "win32":
         return locale.getdefaultlocale()[1]
@@ -398,14 +309,7 @@ def get_system_encoding() -> Optional[str]:
 
 
 def UpdateCheck() -> None:
-    try:
-        from urllib.parse import urlencode
-        from urllib.request import Request, urlopen
-    except ImportError:
-        from urllib import urlencode
-
-        from urllib2 import Request, urlopen
-
+    import requests
     import wx
 
     import invesalius.session as ses
@@ -436,32 +340,25 @@ def UpdateCheck() -> None:
         import invesalius.constants as const
 
         url = "https://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
-        headers = {"User-Agent": "Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)"}
         data: Any = {
             "update_protocol_version": "1",
-            "invesalius_version": const.INVESALIUS_VERSION,
+            "invesalius_version": invesalius.__version__,
             "platform": sys.platform,
             "architecture": platform.architecture()[0],
             "language": lang,
             "random_id": random_id,
         }
-        data = urlencode(data).encode("utf8")
-        req = Request(url, data, headers)
-        try:
-            response = urlopen(req, timeout=10)
-        except Exception:
-            return
-        last = response.readline().rstrip().decode("utf8")
-        url = response.readline().rstrip().decode("utf8")
+        response = requests.post(url, data=data, verify=False)
+        last, url = response.text.split()
 
         try:
             last_ver = Version(last)
-            actual_ver = Version(const.INVESALIUS_VERSION)
+            actual_ver = Version(invesalius.__version__)
         except (ValueError, AttributeError):
             return
 
         if last_ver > actual_ver:
-            print("  ...New update found!!! -> version:", last)  # , ", url=",url
+            print("  ...New update found!!! -> version:", last)
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
 

@@ -10,7 +10,7 @@ import invesalius.project as prj
 from invesalius import inv_paths
 
 
-class ActorFactory(object):
+class ActorFactory:
     def __init__(self):
         pass
 
@@ -171,8 +171,11 @@ class ActorFactory(object):
         arrow.SetArrowOriginToDefault()
         arrow.SetTipResolution(40)
         arrow.SetShaftResolution(40)
-        arrow.SetShaftRadius(0.05)
-        arrow.SetTipRadius(0.15)
+        shaft_radius, tip_radius = (0.05, 0.15)
+        if length_multiplier < 1:
+            shaft_radius, tip_radius = (0.01, 0.03)
+        arrow.SetShaftRadius(shaft_radius)
+        arrow.SetTipRadius(tip_radius)
         arrow.SetTipLength(0.35)
 
         mapper = vtk.vtkPolyDataMapper()
@@ -205,6 +208,9 @@ class ActorFactory(object):
 
         # Apply the transform to the actor.
         actor.SetUserTransform(transform)
+
+        # Set transparency (opacity) for the arrow actor
+        actor.GetProperty().SetOpacity(0.3)
 
         return actor
 
@@ -268,6 +274,60 @@ class ActorFactory(object):
 
         prop = vtk.vtkProperty()
         prop.SetColor(colour)
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.SetProperty(prop)
+
+        transform = vtk.vtkTransform()
+        transform.Translate(position)
+        actor.SetUserTransform(transform)
+
+        return actor
+
+    def CreateCross(self, position, colour=[1.0, 1.0, 0.0], size=2):
+        """
+        Create a cross-shaped actor for fiducial markers.
+        This provides a distinctive visual compared to ball-shaped landmarks.
+        """
+        # Create three lines forming a 3D cross (X, Y, Z axes)
+        points = vtk.vtkPoints()
+        lines = vtk.vtkCellArray()
+
+        # Cross arms scale
+        s = size * 2
+
+        # Line 1: X axis
+        points.InsertNextPoint(-s, 0, 0)
+        points.InsertNextPoint(s, 0, 0)
+        lines.InsertNextCell(2)
+        lines.InsertCellPoint(0)
+        lines.InsertCellPoint(1)
+
+        # Line 2: Y axis
+        points.InsertNextPoint(0, -s, 0)
+        points.InsertNextPoint(0, s, 0)
+        lines.InsertNextCell(2)
+        lines.InsertCellPoint(2)
+        lines.InsertCellPoint(3)
+
+        # Line 3: Z axis
+        points.InsertNextPoint(0, 0, -s)
+        points.InsertNextPoint(0, 0, s)
+        lines.InsertNextCell(2)
+        lines.InsertCellPoint(4)
+        lines.InsertCellPoint(5)
+
+        polydata = vtk.vtkPolyData()
+        polydata.SetPoints(points)
+        polydata.SetLines(lines)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(polydata)
+
+        prop = vtk.vtkProperty()
+        prop.SetColor(colour)
+        prop.SetLineWidth(3)
 
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)

@@ -27,17 +27,17 @@ import weakref
 
 import numpy as np
 from scipy import ndimage
-from vtkmodules.util import numpy_support
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.session as ses
-from invesalius.data.volume import VolumeMask
+import invesalius.utils as utils
+import invesalius_rs as floodfill
+from invesalius.data.volume_mask import VolumeMask
 from invesalius.pubsub import pub as Publisher
-from invesalius_cy import floodfill
 
 
-class EditionHistoryNode(object):
+class EditionHistoryNode:
     def __init__(self, index, orientation, array, clean=False):
         self.index = index
         self.orientation = orientation
@@ -75,7 +75,7 @@ class EditionHistoryNode(object):
         os.remove(self.filename)
 
 
-class EditionHistory(object):
+class EditionHistory:
     def __init__(self, size=50):
         self.history = []
         self.index = -1
@@ -223,10 +223,30 @@ class Mask:
         self.volume = None
         self.auto_update_mask = True
         self.modified_time = 0
+        self.derived_from = "original"
         self.__bind_events()
         self._modified_callbacks = []
 
         self.history = EditionHistory()
+
+    @property
+    def category(self):
+        if self.name.lower().startswith("cortical"):
+            return "Cortical"
+        elif self.name.lower().startswith("subcortical"):
+            return "Subcortical"
+        elif self.name.lower().startswith("ventricles"):
+            return "Ventricles"
+        elif self.name.lower().startswith("white_matter"):
+            return "White matter"
+        elif self.name.lower().startswith("cerebellum"):
+            return "Cerebellum"
+        elif self.name.lower().startswith("brain_stem"):
+            return "Brain stem"
+        elif self.name.lower().startswith("choroid_plexus"):
+            return "Choroid plexus"
+        else:
+            return "General"
 
     def __bind_events(self):
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
@@ -292,13 +312,12 @@ class Mask:
             if update_volume_viewer:
                 Publisher.sendMessage("Render volume viewer")
 
-    def SavePlist(self, dir_temp, filelist):
+    def SavePlist(self, dir_temp, filelist, save_temp_files=None):
         mask = {}
-        filename = "mask_%d" % self.index
-        mask_filename = "%s.dat" % filename
-        mask_filepath = os.path.join(dir_temp, mask_filename)
+        filename = f"mask_{self.index}"
+        mask_filename = f"{filename}.dat"
+        # Map the live mask data file into the archive — never add to save_temp_files
         filelist[self.temp_file] = mask_filename
-        # self._save_mask(mask_filepath)
 
         mask["index"] = self.index
         mask["name"] = self.name
@@ -310,15 +329,18 @@ class Mask:
         mask["mask_file"] = mask_filename
         mask["mask_shape"] = self.matrix.shape
         mask["edited"] = self.was_edited
+        mask["derived_from"] = self.derived_from
 
         plist_filename = filename + ".plist"
-        # plist_filepath = os.path.join(dir_temp, plist_filename)
 
         temp_fd, temp_plist = tempfile.mkstemp()
         with open(temp_plist, "w+b") as f:
             plistlib.dump(mask, f)
 
         filelist[temp_plist] = plist_filename
+        # The plist metadata file is safe to delete once save is complete
+        if save_temp_files is not None:
+            save_temp_files.add(temp_plist)
         os.close(temp_fd)
 
         return plist_filename
@@ -337,6 +359,7 @@ class Mask:
         mask_file = mask["mask_file"]
         shape = mask["mask_shape"]
         self.was_edited = mask.get("edited", False)
+        self.derived_from = mask.get("derived_from", "original")
 
         dirpath = os.path.abspath(os.path.split(filename)[0])
         path = os.path.join(dirpath, mask_file)
@@ -353,6 +376,11 @@ class Mask:
         elif axis == 2:
             submatrix[:] = submatrix[:, :, ::-1]
             self.matrix[0, 0, 1::] = self.matrix[0, 0, :0:-1]
+
+        if self.volume:
+            self.imagedata = self.as_vtkimagedata()
+            self.volume.change_imagedata()
+
         self.modified()
 
     def OnSwapVolumeAxes(self, axes):
@@ -367,6 +395,13 @@ class Mask:
         shutil.copyfile(self.temp_file, filename)
 
     def _open_mask(self, filename, shape, dtype="uint8"):
+        if not os.path.exists(filename):
+            raise FileNotFoundError(
+                f"Mask data file not found: '{filename}'.\n"
+                "This can happen if InVesalius was force-closed and the temporary "
+                "mask file was deleted by the operating system. "
+                "Please create a new mask."
+            )
         self.temp_file = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
@@ -467,7 +502,8 @@ class Mask:
             bstruct = ndimage.generate_binary_structure(3, CON3D[conn])
 
             imask = ~(matrix > 127)
-            labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
+            labels, nlabels = ndimage.label(imask, bstruct, output=np.uint32)
+            labels = np.asarray(labels, dtype=np.uint32, order="C")
 
             if nlabels == 0:
                 return
@@ -488,7 +524,8 @@ class Mask:
             cp_mask = matrix.copy()
 
             imask = ~(matrix > 127)
-            labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
+            labels, nlabels = ndimage.label(imask, bstruct, output=np.uint32)
+            labels = np.asarray(labels, dtype=np.uint32, order="C")
 
             if nlabels == 0:
                 return

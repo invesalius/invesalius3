@@ -23,7 +23,7 @@ from functools import partial
 import numpy as np
 
 try:
-    import Trekker
+    import Trekker  # noqa: F401
 
     has_trekker = True
 except ImportError:
@@ -35,24 +35,17 @@ try:
 
     mTMS()
     has_mTMS = True
-except:
+except Exception:
     has_mTMS = False
 
 import wx
-
-try:
-    import wx.lib.agw.foldpanelbar as fpb
-except ImportError:
-    import wx.lib.foldpanelbar as fpb
-
 import wx.lib.masked.numctrl
 
 import invesalius.constants as const
 import invesalius.data.brainmesh_handler as brain
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
-from invesalius import inv_paths, utils
-from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
+from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import Navigation
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
@@ -84,10 +77,7 @@ class TaskPanel(wx.Panel):
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent, navigation):
         wx.Panel.__init__(self, parent)
-        try:
-            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
-        except AttributeError:
-            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
         self.__bind_events()
 
         self.SetBackgroundColour(default_colour)
@@ -106,9 +96,16 @@ class InnerTaskPanel(wx.Panel):
         #  Check box to enable e-field visualization
         enable_efield = wx.CheckBox(self, -1, _("Enable E-field"))
         enable_efield.SetValue(False)
-        enable_efield.Enable(1)
+        enable_efield.Enable(True)
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
+
+        efield_for_targeting = wx.CheckBox(self, -1, _("E-fields for targeting"))
+        efield_for_targeting.SetValue(False)
+        efield_for_targeting.Enable(True)
+        efield_for_targeting.Bind(
+            wx.EVT_CHECKBOX, partial(self.OnEfieldsForTargeting, ctrl=efield_for_targeting)
+        )
 
         # plot_vectors = wx.CheckBox(self, -1, _('Plot Efield vectors'))
         # plot_vectors.SetValue(False)
@@ -117,28 +114,28 @@ class InnerTaskPanel(wx.Panel):
 
         show_area = wx.CheckBox(self, -1, _("Show area above threshold"))
         show_area.SetValue(False)
-        show_area.Enable(1)
+        show_area.Enable(True)
         show_area.Bind(
             wx.EVT_CHECKBOX, partial(self.OnEnableShowAreaAboveThreshold, ctrl=show_area)
         )
 
         efield_tools = wx.CheckBox(self, -1, _("Enable Efield targeting tools"))
         efield_tools.SetValue(False)
-        efield_tools.Enable(1)
+        efield_tools.Enable(True)
         efield_tools.Bind(
             wx.EVT_CHECKBOX, partial(self.OnEnableEfieldTargetingTools, ctrl=efield_tools)
         )
 
         efield_cortex_markers = wx.CheckBox(self, -1, _("View cortex Markers"))
         efield_cortex_markers.SetValue(True)
-        efield_cortex_markers.Enable(1)
+        efield_cortex_markers.Enable(True)
         efield_cortex_markers.Bind(
             wx.EVT_CHECKBOX, partial(self.OnViewCortexMarkers, ctrl=efield_cortex_markers)
         )
 
         efield_save_automatically = wx.CheckBox(self, -1, _("Save Automatically"))
         efield_save_automatically.SetValue(False)
-        efield_save_automatically.Enable(1)
+        efield_save_automatically.Enable(True)
         efield_save_automatically.Bind(
             wx.EVT_CHECKBOX, partial(self.OnSaveEfieldAutomatically, ctrl=efield_save_automatically)
         )
@@ -146,7 +143,7 @@ class InnerTaskPanel(wx.Panel):
         tooltip2 = _("Load Brain Json config")
         btn_act2 = wx.Button(self, -1, _("Load Config"), size=wx.Size(100, 23))
         btn_act2.SetToolTip(tooltip2)
-        btn_act2.Enable(1)
+        btn_act2.Enable(True)
         btn_act2.Bind(wx.EVT_BUTTON, self.OnAddConfig)
 
         tooltip = _("Save Efield")
@@ -163,7 +160,7 @@ class InnerTaskPanel(wx.Panel):
 
         text_sleep = wx.StaticText(self, -1, _("Sleep (s):"))
         spin_sleep = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
-        spin_sleep.Enable(1)
+        spin_sleep.Enable(True)
         spin_sleep.SetRange(0.05, 10.0)
         spin_sleep.SetValue(self.sleep_nav)
         spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
@@ -171,7 +168,7 @@ class InnerTaskPanel(wx.Panel):
 
         text_threshold = wx.StaticText(self, -1, _("Threshold:"))
         spin_threshold = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
-        spin_threshold.Enable(1)
+        spin_threshold.Enable(True)
         spin_threshold.SetRange(0.1, 1)
         spin_threshold.SetValue(const.EFIELD_MAX_RANGE_SCALE)
         spin_threshold.Bind(wx.EVT_TEXT, partial(self.OnSelectThreshold, ctrl=spin_threshold))
@@ -179,7 +176,7 @@ class InnerTaskPanel(wx.Panel):
 
         text_ROI_size = wx.StaticText(self, -1, _("ROI size:"))
         spin_ROI_size = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.01)
-        spin_ROI_size.Enable(1)
+        spin_ROI_size.Enable(True)
         spin_ROI_size.SetValue(const.EFIELD_ROI_SIZE)
         spin_ROI_size.Bind(wx.EVT_TEXT, partial(self.OnSelectROISize, ctrl=spin_ROI_size))
         spin_ROI_size.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectROISize, ctrl=spin_ROI_size))
@@ -196,7 +193,7 @@ class InnerTaskPanel(wx.Panel):
 
         value = str(0)
         tooltip = _("dt(\u03bc s)")
-        self.input_dt = wx.TextCtrl(self, value=str(60), size=wx.Size(60, -1), style=wx.TE_CENTRE)
+        self.input_dt = wx.TextCtrl(self, value=str(1), size=wx.Size(60, -1), style=wx.TE_CENTRE)
         self.input_dt.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         self.input_dt.SetBackgroundColour("WHITE")
         self.input_dt.SetEditable(1)
@@ -341,6 +338,7 @@ class InnerTaskPanel(wx.Panel):
         line_cortex_markers = wx.BoxSizer(wx.HORIZONTAL)
         line_cortex_markers.Add(efield_cortex_markers, 1, wx.LEFT | wx.RIGHT, 2)
         line_cortex_markers.Add(efield_save_automatically, 1, wx.LEFT | wx.RIGHT, 2)
+        line_cortex_markers.Add(efield_for_targeting, 1, wx.LEFT | wx.RIGHT, 2)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL)
@@ -388,6 +386,8 @@ class InnerTaskPanel(wx.Panel):
             dI_per_dt=self.dIperdt_list,
         )
         Publisher.sendMessage("Update status in GUI", value=0, label="Ready")
+        self.Send_dI_per_dt_to_report(self.dIperdt_list, self.ci, self.co)
+        self.Send_meshes_coil_paths_to_report()
 
     def OnEnableEfield(self, evt, ctrl):
         efield_enabled = ctrl.GetValue()
@@ -456,7 +456,7 @@ class InnerTaskPanel(wx.Panel):
                 self.combo_change_coil.Insert(coil_name, elements)
 
     def OnComboCoil(self, evt):
-        coil_name = evt.GetString()
+        # coil_name = evt.GetString()
         coil_index = evt.GetSelection()
         if coil_index == 6:
             coil_set = True
@@ -470,6 +470,8 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.efield_coil(
             coil_model_path=coil_model_path, coil_set=coil_set
         )
+        self.coil = coil_model_path
+        self.Send_meshes_coil_paths_to_report()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         if nav_status:
@@ -523,12 +525,8 @@ class InnerTaskPanel(wx.Panel):
 
         proj = prj.Project()
         timestamp = time.localtime(time.time())
-        stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-        )
-        stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-            timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-        )
+        stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+        stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
         sep = "-"
         if self.path_meshes is None:
             import os
@@ -563,12 +561,8 @@ class InnerTaskPanel(wx.Panel):
 
             proj = prj.Project()
             timestamp = time.localtime(time.time())
-            stamp_date = "{:0>4d}{:0>2d}{:0>2d}".format(
-                timestamp.tm_year, timestamp.tm_mon, timestamp.tm_mday
-            )
-            stamp_time = "{:0>2d}{:0>2d}{:0>2d}".format(
-                timestamp.tm_hour, timestamp.tm_min, timestamp.tm_sec
-            )
+            stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+            stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
             sep = "-"
             if self.path_meshes is None:
                 import os
@@ -615,6 +609,7 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+        self.Send_dI_per_dt_to_report(self.input_coils, self.ci, self.co)
 
     def OnEnterMtmsCoords(self, evt):
         input_coord_str = self.input_coord.GetValue()
@@ -624,8 +619,8 @@ class InnerTaskPanel(wx.Panel):
     def SenddI(self, dIs):
         self.OnChangeCoil(self.multilocus_coil[6], True)
         input_dt = 1 / (float(self.input_dt.GetValue()) * 1e-6)
-        dIs[1] = -dIs[1]
-        dIs[2] = -dIs[2]
+        # dIs[1] = -dIs[1]
+        # dIs[2] = -dIs[2]
         self.input_coils = dIs
         self.input_coils = np.array(self.input_coils) * input_dt
         self.input_coil1.SetValue(str(dIs[0]))
@@ -637,9 +632,31 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+        self.Send_dI_per_dt_to_report(self.input_coils, self.ci, self.co)
+
+    def OnEfieldsForTargeting(self, evt, ctrl):
+        if ctrl.GetValue():
+            self.navigation.neuronavigation_api.set_dIperdt(
+                dIperdt=[1, 1, 1, 1, 1],
+            )
+            self.Send_dI_per_dt_to_report([1, 1, 1, 1, 1], self.ci, self.co)
 
     def GetIds(self, dIs):
         self.SenddI(dIs)
 
     def OnReset(self, evt):
         Publisher.sendMessage("Get targets Ids for mtms", target1_origin=[0, 0], target2=[0, 0])
+
+    def Send_dI_per_dt_to_report(self, diperdt, ci, co):
+        Publisher.sendMessage(
+            "Get diperdt used in efield calculation", diperdt=diperdt, ci=self.ci, co=self.co
+        )
+
+    def Send_meshes_coil_paths_to_report(self):
+        Publisher.sendMessage(
+            "Get path meshes",
+            path_meshes=self.path_meshes,
+            cortex_file=self.cortex_file,
+            meshes_file=self.meshes_file,
+            coilmodel=self.coil,
+        )

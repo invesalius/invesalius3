@@ -1,0 +1,281 @@
+import json
+import os
+import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import call, mock_open
+
+import pytest
+
+import invesalius.constants as const
+from invesalius import inv_paths
+from invesalius.session import CONFIG_PATH, STATE_PATH, Session
+
+session = Session()
+
+
+@pytest.fixture(autouse=True)
+def isolate_config_files(tmp_path, monkeypatch):
+    """Redirect config and state file paths to a temp directory so tests
+    never touch the user's real ~/.config/invesalius/config.json or state.json.
+    This prevents running pytest from corrupting the user's InVesalius config."""
+    import invesalius.session as ses_module
+
+    tmp_config = str(tmp_path / "config.json")
+    tmp_state = str(tmp_path / "state.json")
+    monkeypatch.setattr(ses_module, "CONFIG_PATH", tmp_config)
+    monkeypatch.setattr(ses_module, "STATE_PATH", tmp_state)
+    yield
+
+
+def test_set_and_get_config():
+    session.SetConfig("debug", True)
+    assert session.GetConfig("debug") == True
+
+
+def test_write_config_file(mocker):
+    import invesalius.session as ses_module
+
+    mock_file = mock_open()
+    mocker.patch("builtins.open", mock_file)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json_dump = mocker.patch("json.dump")
+    session._config = {"debug": True, "language": "en", "file_logging": 1}
+    session.WriteConfigFile()
+    mock_file.assert_called_once_with(Path(ses_module.CONFIG_PATH), "w")
+    mock_json_dump.assert_called_once_with(
+        {"debug": True, "language": "en", "file_logging": 1},
+        mock_file(),
+        sort_keys=True,
+        indent=4,
+    )
+
+
+def test_create_config(mocker):
+    mock_write_config = mocker.patch.object(session, "WriteConfigFile")
+    session.CreateConfig()
+    assert session._config["mode"] == const.MODE_RP
+    assert session._config["project_status"] == const.PROJECT_STATUS_CLOSED
+    assert session._config["debug"] is False
+    assert session._config["debug_efield"] is False
+    assert session._config["language"] == ""
+    assert isinstance(session._config["random_id"], int)
+    assert session._config["surface_interpolation"] == 1
+    assert session._config["rendering"] == 0
+    assert session._config["slice_interpolation"] == 0
+    assert session._config["auto_reload_preview"] is False
+    assert session._config["recent_projects"] == [(str(inv_paths.SAMPLE_DIR), "Cranium.inv3")]
+    assert session._config["last_dicom_folder"] == ""
+    assert session._config["file_logging"] == 0
+    assert session._config["file_logging_level"] == 0
+    assert session._config["append_log_file"] == 0
+    assert session._config["logging_file"] == ""
+    assert session._config["console_logging"] == 0
+    assert session._config["console_logging_level"] == 0
+    mock_write_config.assert_called_once()
+
+
+def test_read_state(mocker):
+    test_data = {"dummykey": "dummyValue"}
+    mock_file = mock_open(read_data=json.dumps(test_data))
+    mocker.patch("builtins.open", mock_file)
+    mocker.patch("json.load", return_value=test_data)
+    mocker.patch("os.path.exists", return_value=True)
+    success = session._ReadState()
+    session._state = test_data
+    assert session.GetState("dummykey") == "dummyValue"
+    assert success is True
+
+
+def test_create_state(mocker):
+    import invesalius.session as ses_module
+
+    mock_state_json = mock_open()
+    mocker.patch("builtins.open", mock_state_json)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json_dump = mocker.patch("json.dump")
+    session.CreateState()
+    mock_state_json.assert_called_once_with(Path(ses_module.STATE_PATH), "w")
+    mock_json_dump.assert_called_once_with({}, mock_state_json(), sort_keys=True, indent=4)
+
+
+def test_set_and_get_state(mocker):
+    import invesalius.session as ses_module
+
+    mock_file = mock_open()
+    mocker.patch("builtins.open", mock_file)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json = mocker.patch("json.dump")
+    session.SetState("test_key", "test_value")
+    mock_file.assert_called_once_with(Path(ses_module.STATE_PATH), "w")
+    mock_json.assert_called_once_with(
+        {"test_key": "test_value"}, mock_file(), sort_keys=True, indent=4
+    )
+
+
+def test_delete_state_file(mocker):
+    import invesalius.session as ses_module
+
+    mocker.patch("os.path.exists", return_value=True)
+    mock_remove = mocker.patch("os.remove")
+    session.DeleteStateFile()
+    mock_remove.assert_called_once_with(ses_module.STATE_PATH)
+
+
+def test_delete_state_file_not_exist(mocker):
+    mocker.patch("os.path.exists", return_value=False)
+    mock_remove = mocker.patch("os.remove")
+    session.DeleteStateFile()
+    mock_remove.assert_not_called()
+
+
+def test_close_project(mocker):
+    mock_set_state = mocker.patch.object(session, "SetState")
+    mock_set_config = mocker.patch.object(session, "SetConfig")
+    session.CloseProject()
+    mock_set_state.assert_called_once_with("project_path", None)
+    mock_set_config.assert_called_once_with("project_status", const.PROJECT_STATUS_CLOSED)
+
+
+def test_save_project(mocker):
+    """Ensure SaveProject sets the project state and updates the config."""
+    mock_set_state = mocker.patch.object(session, "SetState")
+    mock_set_config = mocker.patch.object(session, "SetConfig")
+    mocker.patch.object(
+        session, "GetConfig", return_value=[["/dummy/path", "dummy.inv"]]
+    )  # Ensures its not None
+    # Patch RemoveAutoBackup to avoid it calling SetState a second time
+    mocker.patch.object(session, "RemoveAutoBackup")
+    project_path = ("path", "project.inv")
+    session.SaveProject(project_path)
+    mock_set_state.assert_any_call("project_path", project_path)
+    mock_set_config.assert_has_calls(
+        [
+            call("recent_projects", mocker.ANY),  # Ensures recent projects were updated
+            call("project_status", const.PROJECT_STATUS_OPENED),
+        ],
+        any_order=True,
+    )
+    assert mock_set_config.call_count == 2
+
+
+def test_change_project(mocker):
+    mock_set_config = mocker.patch.object(session, "SetConfig")
+    # Patch IsOpen so no backup thread is spawned during the test
+    mocker.patch.object(session, "IsOpen", return_value=False)
+    session._has_unsaved_changes = False
+    session.ChangeProject()
+    mock_set_config.assert_called_once_with("project_status", const.PROJECT_STATUS_CHANGED)
+    assert session._has_unsaved_changes is True
+
+
+def test_has_unsaved_changes_after_change(mocker):
+    """HasUnsavedChanges should return True after ChangeProject is called."""
+    mocker.patch.object(session, "SetConfig")
+    mocker.patch.object(session, "IsOpen", return_value=False)
+    session._has_unsaved_changes = False
+    assert session.HasUnsavedChanges() is False
+    session.ChangeProject()
+    assert session.HasUnsavedChanges() is True
+
+
+def test_unsaved_changes_cleared_on_save(mocker):
+    """SaveProject should clear the unsaved-changes flag."""
+    mocker.patch.object(session, "SetState")
+    mocker.patch.object(session, "SetConfig")
+    mocker.patch.object(session, "GetConfig", return_value=[["/dummy/path", "dummy.inv"]])
+    mocker.patch.object(session, "RemoveAutoBackup")
+    session._has_unsaved_changes = True
+    session.SaveProject(("path", "project.inv"))
+    assert session.HasUnsavedChanges() is False
+
+
+def test_unsaved_changes_cleared_on_close(mocker):
+    """CloseProject should reset the unsaved-changes flag."""
+    mocker.patch.object(session, "SetState")
+    mocker.patch.object(session, "SetConfig")
+    session._has_unsaved_changes = True
+    session.CloseProject()
+    assert session.HasUnsavedChanges() is False
+
+
+def test_create_project(mocker):
+    mock_set_state = mocker.patch.object(session, "SetState")
+    mock_set_config = mocker.patch.object(session, "SetConfig")
+    session.CreateProject("new_project.inv")
+    mock_set_state.assert_called_once()
+    mock_set_config.assert_called_once_with("project_status", const.PROJECT_STATUS_NEW)
+
+
+def test_open_project(mocker):
+    mock_set_state = mocker.patch.object(session, "SetState")
+    mock_set_config = mocker.patch.object(session, "SetConfig")
+    mocker.patch.object(session, "GetConfig", return_value=[["/existing/path", "existing.inv"]])
+    project_path = "/path/dummy.inv"
+    session.OpenProject(project_path)
+    mock_set_state.assert_called_once_with("project_path", ("/path", "dummy.inv"))
+
+    mock_set_config.assert_has_calls(
+        [
+            call("recent_projects", mocker.ANY),
+            call("project_status", const.PROJECT_STATUS_OPENED),  # Ensures project was opened
+        ],
+        any_order=True,
+    )
+
+    assert mock_set_config.call_count == 2
+
+
+def test_open_backup_project_sets_temp_item(mocker):
+    """Opening a backup file should set temp_item=True so saves are redirected
+    through a proper Save-As dialog rather than writing back to the temp folder.
+    This is the Case 2 regression test."""
+    mocker.patch.object(session, "SetState")
+    mocker.patch.object(session, "SetConfig")
+    mocker.patch.object(session, "GetConfig", return_value=[])
+    session.temp_item = False
+    backup_path = "/home/user/.invesalius/temp_backup/auto_backup.inv3"
+    session.OpenProject(backup_path)
+    assert session.temp_item is True
+
+
+def test_open_normal_project_does_not_set_temp_item(mocker):
+    """Opening a regular (non-backup) project should NOT set temp_item=True."""
+    mocker.patch.object(session, "SetState")
+    mocker.patch.object(session, "SetConfig")
+    mocker.patch.object(session, "GetConfig", return_value=[])
+    session.temp_item = False
+    normal_path = "/home/user/projects/MyBrain.inv3"
+    session.OpenProject(normal_path)
+    assert session.temp_item is False
+
+
+def test_stored_session_treated_as_successful_exit(mocker):
+    """Case 3 regression test: if the state file has stored_session=True,
+    ExitedSuccessfullyLastTime() must return True so the crash-recovery dialog
+    is NOT shown on the next launch after a deliberate 'Store session' exit."""
+    test_state = {
+        "stored_session": True,
+        "project_path": ["/home/user/projects", "MyBrain.inv3"],
+    }
+    mocker.patch("os.path.exists", return_value=True)
+    mock_file = mock_open(read_data=json.dumps(test_state))
+    mocker.patch("builtins.open", mock_file)
+    mocker.patch("json.load", return_value=test_state)
+    # Simulate Session.__init__ reading the state
+    session._state = {}
+    session._exited_successfully_last_time = not session._ReadState()
+    if session._state.get("stored_session"):
+        session._exited_successfully_last_time = True
+    assert session.ExitedSuccessfullyLastTime() is True
+
+
+def test_read_state_with_corrupted_json(mocker):
+    mocker.patch("os.path.exists", return_value=True)
+    mock_file = mock_open(read_data="corrupted data")
+    mocker.patch("builtins.open", mock_file)
+    mocker.patch("json.load", side_effect=json.JSONDecodeError("Expecting value", "", 0))
+    mock_delete = mocker.patch.object(session, "DeleteStateFile")
+    success = session._ReadState()
+    assert success is False
+    mock_delete.assert_called_once()

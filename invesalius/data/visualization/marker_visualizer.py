@@ -2,7 +2,8 @@ import vtk
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
-from invesalius.data.markers.marker import Marker, MarkerType
+import invesalius.session as ses
+from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
 
 
@@ -76,9 +77,12 @@ class MarkerVisualizer:
         Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.SetTargetTransparency, "Set target transparency")
         Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
-        Publisher.subscribe(self.UpdateVectorField, "Update vector field")
+        Publisher.subscribe(self.UpdateBrainTargets, "Update brain targets")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.UpdateTargetMode, "Set target mode")
+        Publisher.subscribe(
+            self.UpdateVectorFieldAssemblyVisibility, "Set vector field assembly visibility"
+        )
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -86,13 +90,20 @@ class MarkerVisualizer:
     def UpdateTargetMode(self, enabled=False):
         self.is_target_mode = enabled
 
-    def UpdateVectorField(self):
+    def UpdateVectorFieldAssemblyVisibility(self, enabled=False):
+        self.vector_field_assembly.SetVisibility(enabled)
+        # If not navigating, render the scene.
+        if not self.is_navigating:
+            self.interactor.Render()
+
+    def UpdateBrainTargets(self, brain_targets):
         """
         Update the vector field assembly to reflect the current vector field.
         """
         # Create a new vector field assembly.
-        new_vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
-
+        new_vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly(
+            brain_targets
+        )
         # Replace the old vector field assembly with the new one.
         self.actor_factory.ReplaceActor(
             self.renderer, self.vector_field_assembly, new_vector_field_assembly
@@ -113,28 +124,32 @@ class MarkerVisualizer:
         """
         position = marker.position
         orientation = marker.orientation
-
-        position_flipped = list(position)
-        position_flipped[1] = -position_flipped[1]
-
-        position = marker.position
-        orientation = marker.orientation
         marker_id = marker.marker_id
         marker_type = marker.marker_type
         colour = marker.colour
         size = marker.size
         cortex_marker = marker.cortex_position_orientation
-
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
 
-        # For 'fiducial' type markers, create a ball. TODO: This could be changed to something more distinctive.
-        if marker_type == MarkerType.FIDUCIAL:
-            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
+        # Get marker shape preferences from session
+        session = ses.Session()
 
-        # For 'landmark' type markers, create a ball.
+        # For 'fiducial' type markers, use user preference (ball or cross).
+        if marker_type == MarkerType.FIDUCIAL:
+            fiducial_shape = session.GetConfig("fiducial_marker_shape", const.MARKER_SHAPE_CROSS)
+            if fiducial_shape == const.MARKER_SHAPE_CROSS:
+                actor = self.actor_factory.CreateCross(position_flipped, colour, size)
+            else:
+                actor = self.actor_factory.CreateBall(position_flipped, colour, size)
+
+        # For 'landmark' type markers, use user preference (ball or cross).
         elif marker_type == MarkerType.LANDMARK:
-            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
+            landmark_shape = session.GetConfig("landmark_marker_shape", const.MARKER_SHAPE_BALL)
+            if landmark_shape == const.MARKER_SHAPE_CROSS:
+                actor = self.actor_factory.CreateCross(position_flipped, colour, size)
+            else:
+                actor = self.actor_factory.CreateBall(position_flipped, colour, size)
 
         # For 'brain target' type markers, create an arrow.
         elif marker_type == MarkerType.BRAIN_TARGET:
@@ -247,20 +262,20 @@ class MarkerVisualizer:
 
     def DeleteMarkers(self, markers):
         for marker in markers:
-            actor = marker.visualization["actor"]
+            actor = marker.visualization.get("actor")
             self.renderer.RemoveActor(actor)
 
         if not self.is_navigating:
             self.interactor.Render()
 
     def DeleteMarker(self, marker):
-        actor = marker.visualization["actor"]
+        actor = marker.visualization.get("actor")
         self.renderer.RemoveActor(actor)
         if not self.is_navigating:
             self.interactor.Render()
 
     def SetNewColor(self, marker, new_color):
-        actor = marker.visualization["actor"]
+        actor = marker.visualization.get("actor")
         actor.GetProperty().SetColor([round(s / 255.0, 3) for s in new_color])
 
         if not self.is_navigating:
@@ -278,7 +293,7 @@ class MarkerVisualizer:
         orientation = marker.orientation
         colour = marker.colour
 
-        actor = marker.visualization["actor"]
+        actor = marker.visualization.get("actor")
         highlighted = marker.visualization["highlighted"]
 
         position_flipped = list(position)
@@ -352,7 +367,7 @@ class MarkerVisualizer:
         actor = marker.visualization["actor"]
         highlighted = marker.visualization["highlighted"]
 
-        vtk_colors = vtk.vtkNamedColors()
+        # vtk_colors = vtk.vtkNamedColors()
         if state:
             # Change the color of the marker.
             actor.GetProperty().SetColor(self.COIL_AT_TARGET_COLOR)
@@ -447,13 +462,13 @@ class MarkerVisualizer:
 
         # If the marker is a coil target, show the vector field assembly and update its position and orientation,
         # otherwise, hide the vector field assembly.
-        if marker_type == MarkerType.COIL_TARGET:
-            self.vector_field_assembly.SetVisibility(1)
-
-            self.vector_field_assembly.SetPosition(position_flipped)
-            self.vector_field_assembly.SetOrientation(orientation)
-        else:
-            self.vector_field_assembly.SetVisibility(0)
+        # if marker_type == MarkerType.COIL_TARGET:
+        #     self.vector_field_assembly.SetVisibility(1)
+        #
+        #     self.vector_field_assembly.SetPosition(position_flipped)
+        #     self.vector_field_assembly.SetOrientation(orientation)
+        # else:
+        #     self.vector_field_assembly.SetVisibility(0)
 
         # Return early if the marker is a target and the coil is at the target.
         #
@@ -468,8 +483,8 @@ class MarkerVisualizer:
         self.actor_factory.ScaleActor(actor, self.HIGHLIGHTED_MARKER_SCALING_FACTOR)
 
         # Set the marker visible when highlighted even if it's hidden.
-        if marker.visualization["hidden"]:
-            actor.SetVisibility(1)
+        # if marker.visualization["hidden"]:
+        #    actor.SetVisibility(1)
 
         # If the marker is a coil target, create a perpendicular line from the coil to the brain surface.
         if marker_type == MarkerType.COIL_TARGET:

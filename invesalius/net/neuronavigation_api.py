@@ -67,13 +67,14 @@ class NeuronavigationApi(metaclass=Singleton):
         assert self._hasmethod(connection, "update_focus")
         assert self._hasmethod(connection, "set_callback__stimulation_pulse_received")
         assert self._hasmethod(connection, "set_callback__set_vector_field")
+        assert self._hasmethod(connection, "set_callback__update_coil_target")
 
     def __bind_events(self):
         Publisher.subscribe(self.start_navigation, "Start navigation")
         Publisher.subscribe(self.stop_navigation, "Stop navigation")
         Publisher.subscribe(self.update_target_mode, "Set target mode")
         Publisher.subscribe(self.update_coil_at_target, "Coil at target")
-        Publisher.subscribe(self.update_tracker_poses, "From Neuronavigation: Update tracker poses")
+        # Publisher.subscribe(self.update_tracker_poses, "From Neuronavigation: Update tracker poses")
         Publisher.subscribe(self.update_target_orientation, "Update target orientation")
         # Publisher.subscribe(self.connect_to_robot, "Neuronavigation to Robot: Connect to robot")
         # Publisher.subscribe(self.set_target, "Neuronavigation to Robot: Set target")
@@ -317,6 +318,7 @@ class NeuronavigationApi(metaclass=Singleton):
         # connection.set_callback__update_robot_transformation_matrix(
         #     self.update_robot_transformation_matrix
         # )
+        connection.set_callback__update_coil_target(self.update_coil_target)
         connection.set_callback__set_vector_field(self.set_vector_field)
 
     def add_pedal_callback(self, name, callback, remove_when_released=False):
@@ -334,11 +336,38 @@ class NeuronavigationApi(metaclass=Singleton):
     def open_orientation_dialog(self, target_id):
         wx.CallAfter(Publisher.sendMessage, "Open marker orientation dialog", marker_id=target_id)
 
-    def stimulation_pulse_received(self):
+    def stimulation_pulse_received(self, targets, mep):
         # TODO: If marker should not be created always when receiving a stimulation pulse, add the logic here.
+        brain_targets = []
+        for target in targets:
+            brain_targets.append(
+                {
+                    "position": [target.displacement_y, -target.displacement_x, -15],
+                    "orientation": [0, 0, -target.rotation_angle],
+                    "color": [0, 0, 1],
+                    "length": target.intensity / 100,
+                    "mtms": [
+                        target.displacement_x,
+                        target.displacement_y,
+                        target.rotation_angle,
+                        target.intensity,
+                    ],
+                    "mep": mep,
+                }
+            )
+        wx.CallAfter(Publisher.sendMessage, "Set brain targets", brain_targets=brain_targets)
         wx.CallAfter(Publisher.sendMessage, "Create marker", marker_type=MarkerType.COIL_POSE)
 
     def set_vector_field(self, vector_field):
+        # Modify vector_field to swap x and y coordinates and adjust z orientation to match mTMS
+        for vector in vector_field:
+            # Swap x and y in the position
+            vector["position"][0], vector["position"][1] = (
+                vector["position"][1],
+                -vector["position"][0],
+            )
+            # Reverse the z orientation
+            vector["orientation"][2] = -vector["orientation"][2]
         wx.CallAfter(Publisher.sendMessage, "Set vector field", vector_field=vector_field)
 
     def update_robot_status(self, status):
@@ -372,4 +401,11 @@ class NeuronavigationApi(metaclass=Singleton):
             Publisher.sendMessage,
             "Robot to Neuronavigation: Update robot transformation matrix",
             data=matrix,
+        )
+
+    def update_coil_target(self, coil_target):
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "NeuroSimo to Neuronavigation: Update coil target",
+            coil_target=coil_target,
         )

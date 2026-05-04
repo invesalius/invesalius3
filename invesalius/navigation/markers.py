@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import uuid
+from typing import List, Union
 
 import invesalius.session as ses
 from invesalius.data.markers.marker import Marker, MarkerType
@@ -28,19 +29,19 @@ from invesalius.utils import Singleton
 
 
 class MarkersControl(metaclass=Singleton):
-    def __init__(self, robot):
-        self.list = []
+    def __init__(self, robot: Robot) -> None:
+        self.list: List[Marker] = []
         self.nav_status = False
         self.transformator = MarkerTransformator()
         self.robot = robot
 
-    def SaveState(self):
+    def SaveState(self) -> None:
         state = [marker.to_dict() for marker in self.list]
 
         session = ses.Session()
         session.SetState("markers", state)
 
-    def LoadState(self):
+    def LoadState(self) -> None:
         session = ses.Session()
         state = session.GetState("markers")
 
@@ -51,7 +52,7 @@ class MarkersControl(metaclass=Singleton):
             marker = Marker().from_dict(d)
             self.AddMarker(marker, render=False)
 
-    def AddMarker(self, marker, render=True, focus=False):
+    def AddMarker(self, marker: Marker, render: bool = True, focus: bool = False) -> None:
         """
         Given a marker object, add it to the list of markers and render the new marker.
 
@@ -76,18 +77,20 @@ class MarkersControl(metaclass=Singleton):
                 orientation=marker.orientation,
             )
 
+        if marker.mep_value:
+            Publisher.sendMessage("Update marker mep", marker=marker)
+
         if render:  # this behavior could be misleading
             self.SaveState()
 
-    def Clear(self):
+    def Clear(self) -> None:
         marker_ids = [marker.marker_id for marker in self.list]
         self.DeleteMultiple(marker_ids)
 
     # Note: Unlike parameter render in AddMarker, for DeleteMarker, render=False should
     #       currently not be used outside this class.
-    def DeleteMarker(self, marker_id, render=True):
+    def DeleteMarker(self, marker_id: int, render: bool = True) -> None:
         marker = self.list[marker_id]
-
         if marker.is_target:
             self.UnsetTarget(marker_id)
         if marker.is_point_of_interest:
@@ -104,7 +107,10 @@ class MarkersControl(metaclass=Singleton):
 
             self.SaveState()
 
-    def DeleteMultiple(self, marker_ids):
+        if marker.mep_value:
+            Publisher.sendMessage("Redraw MEP mapping")
+
+    def DeleteMultiple(self, marker_ids: List[int]) -> None:
         markers = []
         for m_id in sorted(marker_ids, reverse=True):
             markers.append(self.list[m_id])
@@ -117,7 +123,7 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def SetTarget(self, marker_id, check_for_previous=True):
+    def SetTarget(self, marker_id: int, check_for_previous: bool = True) -> None:
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.
@@ -147,12 +153,12 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def SetPointOfInterest(self, marker_id):
+    def SetPointOfInterest(self, marker_id: int) -> None:
         # Find the previous point of interest
         prev_poi = self.FindPointOfInterest()
 
         # If the new point of interest is same as the previous do nothing
-        if prev_poi.marker_id == marker_id:
+        if prev_poi is not None and prev_poi.marker_id == marker_id:
             return
 
         # Unset the previous point of interest
@@ -167,7 +173,7 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def UnsetTarget(self, marker_id):
+    def UnsetTarget(self, marker_id: int) -> None:
         marker = self.list[marker_id]
         marker.is_target = False
 
@@ -176,7 +182,7 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def UnsetPointOfInterest(self, marker_id):
+    def UnsetPointOfInterest(self, marker_id: int) -> None:
         marker = self.list[marker_id]
         marker.is_point_of_interest = False
 
@@ -185,7 +191,7 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def FindTarget(self):
+    def FindTarget(self) -> Union[None, Marker]:
         """
         Return the marker currently selected as target (there
         should be at most one).
@@ -196,20 +202,34 @@ class MarkersControl(metaclass=Singleton):
 
         return None
 
-    def FindPointOfInterest(self):
+    def FindLabel(self, label) -> Union[None, Marker]:
+        """
+        Return a list of markers with the given label.
+        If no markers are found, return None.
+        """
+        matching_markers = [marker for marker in self.list if marker.label == label]
+
+        return matching_markers if matching_markers else None
+
+    def FindPointOfInterest(self) -> Union[None, Marker]:
         for marker in self.list:
             if marker.is_point_of_interest:
                 return marker
 
         return None
 
-    def ChangeLabel(self, marker, new_label):
+    def ChangeLabel(self, marker: Marker, new_label: str) -> None:
         marker.label = str(new_label)
         Publisher.sendMessage("Update marker label", marker=marker)
+        self.SaveState()
+
+    def ChangeMEP(self, marker: Marker, new_mep: float) -> None:
+        marker.mep_value = new_mep
+        Publisher.sendMessage("Update marker mep", marker=marker)
 
         self.SaveState()
 
-    def ChangeColor(self, marker, new_color):
+    def ChangeColor(self, marker: Marker, new_color: List[float]) -> None:
         """
         :param marker: instance of Marker
         :param new_color: digital 8-bit per channel rgb
@@ -220,7 +240,7 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def GetNextMarkerLabel(self):
+    def GetNextMarkerLabel(self) -> str:
         """
         Return a label for the next marker that is not already in use, in the form 'New marker N',
         where N is a number.
@@ -234,8 +254,8 @@ class MarkersControl(metaclass=Singleton):
 
         return label
 
-    def DeleteBrainTargets(self):
-        def find_brain_target():
+    def DeleteBrainTargets(self) -> None:
+        def find_brain_target() -> Union[None, Marker]:
             for marker in self.list:
                 if marker.marker_type == MarkerType.BRAIN_TARGET:
                     return marker
@@ -244,13 +264,13 @@ class MarkersControl(metaclass=Singleton):
         condition = True
         while condition:
             brain_target = find_brain_target()
-            if find_brain_target() is not None:
+            if brain_target is not None and find_brain_target() is not None:
                 self.DeleteMarker(brain_target.marker_id)
             else:
                 condition = False
 
     # Note: these functions only support selection of a single marker at the moment.
-    def SelectMarker(self, marker_id):
+    def SelectMarker(self, marker_id: int) -> None:
         marker = self.list[marker_id]
 
         # Marker transformator needs to know which marker is selected so it can react to keyboard events.
@@ -259,12 +279,12 @@ class MarkersControl(metaclass=Singleton):
         # Highlight marker in viewer volume.
         Publisher.sendMessage("Highlight marker", marker=marker)
 
-    def DeselectMarker(self):
+    def DeselectMarker(self) -> None:
         # Marker transformator needs to know that no marker is selected so it can stop reacting to
         # keyboard events.
         self.transformator.UpdateSelectedMarker(None)
 
-    def CreateCoilTargetFromLandmark(self, marker):
+    def CreateCoilTargetFromLandmark(self, marker: Marker, label: str = None) -> None:
         new_marker = marker.duplicate()
 
         self.transformator.ProjectToScalp(
@@ -274,11 +294,40 @@ class MarkersControl(metaclass=Singleton):
             opposite_side=True,
         )
         new_marker.marker_type = MarkerType.COIL_TARGET
+        if not label:
+            new_marker.label = self.GetNextMarkerLabel()
+        else:
+            new_marker.label = label
+
+        self.AddMarker(new_marker)
+
+    def CreateCoilTargetFromBrainTarget(self, marker: Marker) -> None:
+        new_marker = Marker()
+
+        new_marker.position = marker["position"]
+        new_marker.orientation = marker["orientation"]
+        new_marker.marker_type = MarkerType.COIL_TARGET
+
+        # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
+        new_marker.marker_id = len(self.list)
+        # Create an uuid for the marker
+        new_marker.marker_uuid = str(uuid.uuid4())
+        # Set the visualization attribute to an empty dictionary.
+        new_marker.visualization = {}
+        # Unset the is_target attribute.
+        new_marker.is_target = False
+
+        self.transformator.ProjectToScalp(
+            marker=new_marker,
+            # We are projecting the marker that is on the brain surface; hence, project to the opposite side
+            # of the scalp because the normal vectors are unreliable on the brain side of the scalp.
+            opposite_side=True,
+        )
         new_marker.label = self.GetNextMarkerLabel()
 
         self.AddMarker(new_marker)
 
-    def CreateCoilTargetFromCoilPose(self, marker):
+    def CreateCoilTargetFromCoilPose(self, marker: Marker) -> None:
         new_marker = marker.duplicate()
 
         new_marker.marker_type = MarkerType.COIL_TARGET

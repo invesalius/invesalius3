@@ -22,7 +22,6 @@ import os
 import tempfile
 import time
 from concurrent import futures
-from typing import Optional
 
 import numpy as np
 import wx
@@ -59,11 +58,12 @@ import invesalius.data.watershed_process as watershed_process
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 import invesalius.utils as utils
+import invesalius_rs as floodfill
 from invesalius.data.imagedata_utils import get_LUT_value, get_LUT_value_255
 from invesalius.data.measures import CircleDensityMeasure, MeasureData, PolygonDensityMeasure
+from invesalius.i18n import tr
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from invesalius_cy import floodfill
 
 # import invesalius.project as prj
 
@@ -104,6 +104,9 @@ class BaseImageInteractorStyle(vtkInteractorStyleImage):
         self.AddObserver("MiddleButtonPressEvent", self.OnMiddleButtonPressEvent)
         self.AddObserver("MiddleButtonReleaseEvent", self.OnMiddleButtonReleaseEvent)
 
+        self.AddObserver("MouseMoveEvent", self.OnStatusbarMouseMove)
+        self.AddObserver("LeaveEvent", self.OnStatusbarLeave)
+
     def OnPressLeftButton(self, evt, obj):
         self.left_pressed = True
 
@@ -122,6 +125,12 @@ class BaseImageInteractorStyle(vtkInteractorStyleImage):
 
     def OnMiddleButtonReleaseEvent(self, evt, obj):
         self.middle_pressed = False
+
+    def OnStatusbarMouseMove(self, evt, obj):
+        self.viewer.UpdateStatusbarInfo()
+
+    def OnStatusbarLeave(self, evt, obj):
+        Publisher.sendMessage("Clear statusbar image info")
 
     def GetMousePosition(self):
         mx, my = self.viewer.get_vtk_mouse_position()
@@ -294,7 +303,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
 
         viewer = self.viewer
         iren = viewer.interactor
-        operation = self.config.operation
+        # operation = self.config.operation
 
         viewer._set_editor_cursor_visibility(1)
 
@@ -316,6 +325,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         self.edit_mask_pixel(
             self.fill_value, index, cursor.GetPixels(), position, radius, viewer.orientation
         )
+        viewer._flush_buffer = True
 
         try:
             self.after_brush_click()
@@ -341,7 +351,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = self.GetMousePosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
-        operation = self.config.operation
+        # operation = self.config.operation
 
         wx, wy, wz = viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         slice_data.cursor.SetPosition((wx, wy, wz))
@@ -357,6 +367,7 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
             self.edit_mask_pixel(
                 self.fill_value, index, cursor.GetPixels(), position, radius, viewer.orientation
             )
+            viewer._flush_buffer = True
             try:
                 self.after_brush_move()
             except AttributeError:
@@ -411,8 +422,8 @@ class BaseImageEditionInteractorStyle(DefaultInteractorStyle):
                 py = position / matrix.shape[1]
                 px = position % matrix.shape[1]
             elif orientation == "SAGITAL":
-                sx = spacing[2]
-                sy = spacing[1]
+                sx = spacing[2]  # noqa: F841
+                sy = spacing[1]  # noqa: F841
                 py = position / matrix.shape[1]
                 px = position % matrix.shape[1]
 
@@ -679,7 +690,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
     def OnWindowLevelMove(self, obj, evt):
         if self.left_pressed:
-            iren = obj.GetInteractor()
+            # iren = obj.GetInteractor()
             mouse_x, mouse_y = self.GetMousePosition()
             self.acum_achange_window += mouse_x - self.last_x
             self.acum_achange_level += mouse_y - self.last_y
@@ -760,13 +771,25 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=True)
+        # Set crosshair cursor for better measurement accuracy
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
 
     def CleanUp(self):
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         self.picker.PickFromListOff()
         Publisher.sendMessage("Remove incomplete measurements")
+        # Restore default cursor when exiting measurement mode
+        self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
     def OnInsertMeasurePoint(self, obj, evt):
+        if self._type == const.CURVED_LINEAR:
+            from invesalius.gui.utils import show_warning
+
+            show_warning(
+                _("Curved Ruler"), _("This measurement can only be performed on the 3D surface.")
+            )
+            return
+
         slice_number = self.slice_data.number
         x, y, z = self._get_pos_clicked()
         mx, my = self.GetMousePosition()
@@ -782,6 +805,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 self.creating = None
                 self.viewer.scroll_enabled = True
             else:
+                prop = self.picker.GetViewProp()
+                polydata = None
+                if prop and hasattr(prop, "GetMapper") and prop.GetMapper():
+                    polydata = prop.GetMapper().GetInput()
+
                 Publisher.sendMessage(
                     "Add measurement point",
                     position=(x, y, z),
@@ -789,6 +817,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     location=ORIENTATIONS[self.orientation],
                     slice_number=slice_number,
                     radius=self.radius,
+                    polydata=polydata,
                 )
                 n = len(m.points) - 1
                 self.creating = n, m, mr
@@ -801,8 +830,12 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.selected = selected
             self.viewer.scroll_enabled = False
         else:
-            if self.picker.GetViewProp():
-                renderer = self.viewer.slice_data.renderer
+            prop = self.picker.GetViewProp()
+            if prop:
+                polydata = None
+                if hasattr(prop, "GetMapper") and prop.GetMapper():
+                    polydata = prop.GetMapper().GetInput()
+
                 Publisher.sendMessage(
                     "Add measurement point",
                     position=(x, y, z),
@@ -810,6 +843,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     location=ORIENTATIONS[self.orientation],
                     slice_number=slice_number,
                     radius=self.radius,
+                    polydata=polydata,
                 )
                 Publisher.sendMessage(
                     "Add measurement point",
@@ -818,12 +852,17 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                     location=ORIENTATIONS[self.orientation],
                     slice_number=slice_number,
                     radius=self.radius,
+                    polydata=polydata,
                 )
 
-                n, (m, mr) = 1, self.measures.measures[self._ori][slice_number][-1]
-                self.creating = n, m, mr
-                self.viewer.UpdateCanvas()
-                self.viewer.scroll_enabled = False
+                try:
+                    n, (m, mr) = 1, self.measures.measures[self._ori][slice_number][-1]
+                    self.creating = n, m, mr
+                    self.viewer.UpdateCanvas()
+                    self.viewer.scroll_enabled = False
+                except IndexError:
+                    # Failsafe if MeasurementManager failed to append the measure point
+                    self.creating = None
 
     def OnReleaseMeasurePoint(self, obj, evt):
         if self.selected:
@@ -860,14 +899,16 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             if self._verify_clicked_display(mx, my):
                 self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_HAND))
             else:
-                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
+                # Restore crosshair cursor when not hovering over a point (measurement mode is active)
+                self.viewer.interactor.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
 
     def OnLeaveMeasureInteractor(self, obj, evt):
         if self.creating or self.selected:
-            n, m, mr = self.creating
-            if not mr.IsComplete():
-                Publisher.sendMessage("Remove incomplete measurements")
-            self.creating = None
+            if self.creating:
+                n, m, mr = self.creating
+                if not mr.IsComplete():
+                    Publisher.sendMessage("Remove incomplete measurements")
+                self.creating = None
             self.selected = None
             self.viewer.UpdateCanvas()
             self.viewer.scroll_enabled = True
@@ -914,12 +955,69 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         return None
 
 
+class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self.state_code = const.STATE_MEASURE_CURVED_LINEAR
+        self._type = const.CURVED_LINEAR
+
+    def _bind_events(self):
+        super()._bind_events()
+        # Bind double-click to finalize multi-point geodesic measurement
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnFinalizeCurved)
+
+    def SetUp(self):
+        super().SetUp()
+        # In 3D view, we want to pick surfaces
+        if self.orientation == "VOLUME":
+            for actor in self.viewer.slice_data.surface_actors:
+                self.picker.AddPickList(self.viewer.slice_data.surface_actors[actor])
+            self.picker.PickFromListOn()
+
+    def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+        super().CleanUp()
+
+    def OnFinalizeCurved(self, evt):
+        """Finalize multi-point curved measurement on double-click."""
+        multi = ses.Session().GetConfig("geodesic_multi_point", False)
+        if multi and self.creating:
+            Publisher.sendMessage("Finalize measurement")
+            self.creating = None
+            self.viewer.scroll_enabled = True
+        evt.Skip()
+
+
 class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
     def __init__(self, viewer):
         LinearMeasureInteractorStyle.__init__(self, viewer)
         self._type = const.ANGULAR
 
-        self.state_code = const.STATE_MEASURE_ANGLE
+
+class AnnotationInteractorStyle(LinearMeasureInteractorStyle):
+    """
+    Interactor style for placing annotations.
+    """
+
+    def __init__(self, viewer):
+        LinearMeasureInteractorStyle.__init__(self, viewer)
+        self.state_code = const.STATE_MEASURE_ANNOTATION
+        self._type = const.ANNOTATION
+
+    def OnInsertMeasurePoint(self, obj, evt):
+        was_creating = self.creating is not None
+        super().OnInsertMeasurePoint(obj, evt)
+
+        # If it was creating, and now it's not, the rubber-banding finished (second click)
+        if was_creating and self.creating is None:
+            slice_number = self.slice_data.number
+            try:
+                m, mr = self.measures.measures[self._ori][slice_number][-1]
+                Publisher.sendMessage(
+                    "Show annotation dialog", m=m, mr=mr, location=ORIENTATIONS[self.orientation]
+                )
+            except (IndexError, KeyError):
+                pass
 
 
 class DensityMeasureStyle(DefaultInteractorStyle):
@@ -988,7 +1086,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         return (x, y, z)
 
     def _pick_position(self):
-        iren = self.viewer.interactor
+        # iren = self.viewer.interactor
         mx, my = self.GetMousePosition()
         return (mx, my)
 
@@ -1098,7 +1196,8 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
         iren = self.viewer.interactor
         mouse_x, mouse_y = iren.GetLastEventPosition()
         ren = iren.FindPokedRenderer(mouse_x, mouse_y)
-        ren.ResetCamera()
+        slice_data = self.viewer.get_slice_data(ren)
+        self.viewer.Reposition(slice_data)
         iren.Render()
 
 
@@ -1176,10 +1275,8 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     def OnUnZoom(self, evt):
         mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
         ren = self.viewer.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        # slice_data = self.get_slice_data(ren)
-        ren.ResetCamera()
-        ren.ResetCameraClippingRange()
-        # self.Reposition(slice_data)
+        slice_data = self.viewer.get_slice_data(ren)
+        self.viewer.Reposition(slice_data)
         self.viewer.interactor.Render()
 
 
@@ -1204,10 +1301,8 @@ class ZoomSLInteractorStyle(vtkInteractorStyleRubberBandZoom):
     def OnUnZoom(self, evt):
         mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
         ren = self.viewer.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        # slice_data = self.get_slice_data(ren)
-        ren.ResetCamera()
-        ren.ResetCameraClippingRange()
-        # self.Reposition(slice_data)
+        slice_data = self.viewer.get_slice_data(ren)
+        self.viewer.Reposition(slice_data)
         self.viewer.interactor.Render()
 
 
@@ -1238,7 +1333,7 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
             max = self.viewer.slice_.GetMaxSliceNumber(self.viewer.orientation)
 
             position = self.viewer.interactor.GetLastEventPosition()
-            scroll_position = self.viewer.scroll.GetThumbPosition()
+            # scroll_position = self.viewer.scroll.GetThumbPosition()
 
             if (position[1] > self.last_position) and (self.acum_achange_slice > min):
                 self.acum_achange_slice -= 1
@@ -1406,7 +1501,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         viewer.slice_.edit_mask_pixel(
             operation, cursor.GetPixels(), position, radius, viewer.orientation
         )
-        # viewer._flush_buffer = True
+        viewer._flush_buffer = True
 
         # TODO: To create a new function to reload images to viewer.
         viewer.OnScrollBar()
@@ -1453,6 +1548,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             viewer.slice_.edit_mask_pixel(
                 operation, cursor.GetPixels(), position, radius, viewer.orientation
             )
+            viewer._flush_buffer = True
 
             viewer.OnScrollBar(update3D=False)
 
@@ -1470,7 +1566,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
     def EOnScrollForward(self, evt, obj):
         iren = self.viewer.interactor
-        viewer = self.viewer
+        # viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -1488,7 +1584,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
     def EOnScrollBackward(self, evt, obj):
         iren = self.viewer.interactor
-        viewer = self.viewer
+        # viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -1505,7 +1601,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             self.OnScrollBackward(obj, evt)
 
 
-class WatershedProgressWindow(object):
+class WatershedProgressWindow:
     def __init__(self, process):
         self.process = process
         self.title = "InVesalius 3"
@@ -1608,7 +1704,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_data.cursor.Show(0)
 
     def SetUp(self):
-        mask = self.viewer.slice_.current_mask.matrix
+        # mask = self.viewer.slice_.current_mask.matrix
         self._create_mask()
         self.viewer.slice_.to_show_aux = "watershed"
         self.viewer.OnScrollBar()
@@ -1694,7 +1790,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
     def WOnScrollBackward(self, obj, evt):
         iren = self.viewer.interactor
-        viewer = self.viewer
+        # viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -1712,7 +1808,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
     def WOnScrollForward(self, obj, evt):
         iren = self.viewer.interactor
-        viewer = self.viewer
+        # viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = self.GetMousePosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -1765,12 +1861,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         n = self.viewer.slice_data.number
         self.edit_mask_pixel(operation, n, cursor.GetPixels(), position, radius, self.orientation)
-        if self.orientation == "AXIAL":
-            mask = self.matrix[n, :, :]
-        elif self.orientation == "CORONAL":
-            mask = self.matrix[:, n, :]
-        elif self.orientation == "SAGITAL":
-            mask = self.matrix[:, :, n]
+        # if self.orientation == "AXIAL":
+        #     mask = self.matrix[n, :, :]
+        # elif self.orientation == "CORONAL":
+        #     mask = self.matrix[:, n, :]
+        # elif self.orientation == "SAGITAL":
+        #     mask = self.matrix[:, :, n]
         # TODO: To create a new function to reload images to viewer.
         viewer.OnScrollBar()
 
@@ -1815,12 +1911,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             self.edit_mask_pixel(
                 operation, n, cursor.GetPixels(), position, radius, self.orientation
             )
-            if self.orientation == "AXIAL":
-                mask = self.matrix[n, :, :]
-            elif self.orientation == "CORONAL":
-                mask = self.matrix[:, n, :]
-            elif self.orientation == "SAGITAL":
-                mask = self.matrix[:, :, n]
+            # if self.orientation == "AXIAL":
+            #     mask = self.matrix[n, :, :]
+            # elif self.orientation == "CORONAL":
+            #     mask = self.matrix[:, n, :]
+            # elif self.orientation == "SAGITAL":
+            #     mask = self.matrix[:, :, n]
             # TODO: To create a new function to reload images to viewer.
             viewer.OnScrollBar(update3D=False)
 
@@ -1934,8 +2030,8 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
             elif orientation == "SAGITAL":
-                sx = spacing[2]
-                sy = spacing[1]
+                sx = spacing[2]  # noqa: F841
+                sy = spacing[1]  # noqa: F841
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
 
@@ -2149,7 +2245,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             self._rotate()
         else:
             # Getting mouse position
-            iren = self.viewer.interactor
+            # iren = self.viewer.interactor
             mx, my = self.GetMousePosition()
 
             # Getting center value
@@ -2195,7 +2291,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Reload actual slice")
 
     def _move_center_rot(self):
-        iren = self.viewer.interactor
+        # iren = self.viewer.interactor
         mx, my = self.GetMousePosition()
 
         icx, icy, icz = self.viewer.slice_.center
@@ -2216,7 +2312,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
     def _rotate(self):
         # Getting mouse position
-        iren = self.viewer.interactor
+        # iren = self.viewer.interactor
         mx, my = self.GetMousePosition()
 
         cx, cy, cz = self.viewer.slice_.center
@@ -2250,7 +2346,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self._discard_buffers()
         if self.viewer.slice_.current_mask:
             self.viewer.slice_.current_mask.clear_history()
-        Publisher.sendMessage("Reload actual slice %s" % self.viewer.orientation)
+        Publisher.sendMessage(f"Reload actual slice {self.viewer.orientation}")
         self.p0 = self.get_image_point_coord(x, y, z)
 
     def get_image_point_coord(self, x, y, z):
@@ -2377,11 +2473,18 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             self.dlg_ffill = None
 
     def OnFFClick(self, obj, evt):
+        # Lazily repopulate the buffer slice if it was cleared by an image switch.
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
+            slice_number = self.slice_data.number
+            n_mask = self.viewer.slice_.get_mask_slice(self.orientation, slice_number)
+            self.viewer.slice_.buffer_slices[self.orientation].mask = n_mask
+            self.viewer.slice_.buffer_slices[self.orientation].index = slice_number
+
         if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
-        viewer = self.viewer
-        iren = viewer.interactor
+        # viewer = self.viewer
+        # iren = viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
@@ -2407,9 +2510,10 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                 bstruct = np.zeros((3, 3, 1), dtype="uint8")
                 bstruct[:, :, 0] = _bstruct
 
+        print("FloodFillMaskInteractorStyle", self.t0, self.t1)
         if self.config.target == "2D":
-            floodfill.floodfill_threshold(
-                mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask
+            floodfill.floodfill_threshold_inplace(
+                mask, ((x, y, z),), self.t0, self.t1, self.fill_value, bstruct
             )
             b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
             index = self.viewer.slice_.buffer_slices[self.orientation].index
@@ -2425,14 +2529,13 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         else:
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
-                    floodfill.floodfill_threshold,
+                    floodfill.floodfill_threshold_inplace,
                     mask,
-                    [[x, y, z]],
+                    ((x, y, z),),
                     self.t0,
                     self.t1,
                     self.fill_value,
                     bstruct,
-                    mask,
                 )
 
                 dlg = wx.ProgressDialog(
@@ -2595,6 +2698,9 @@ class SelectPartConfig(metaclass=utils.Singleton):
         self.con_3d = 6
         self.dlg_visible = False
         self.mask_name = ""
+        # Stores the list of (x, y, z) voxels that were clicked so the selection
+        # can be multi-part and re-evaluated when the threshold changes.
+        self.seeds = []
 
 
 class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
@@ -2625,6 +2731,17 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnSelect)
 
     def SetUp(self):
+        # Clear the active selection whenever the threshold slider moves so that
+        # previously-selected voxels do not remain highlighted as red after the
+        # bone range changes (fixing the 'red in background' confusion).
+        # While the threshold slider is being dragged, temporarily hide the
+        # red overlay (re-evaluating the full 3-D flood fill on every tick
+        # would be too slow).
+        Publisher.subscribe(self._preview_threshold_change, "Changing threshold values")
+        # When the slider is released, re-run the flood fill from the stored
+        # seed so the selection dynamically follows the new bone boundary.
+        Publisher.subscribe(self._reeval_selection_on_threshold_change, "Set threshold values")
+
         if not self.config.dlg_visible:
             import invesalius.data.mask as mask
 
@@ -2635,7 +2752,72 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.dlg = dialogs.SelectPartsOptionsDialog(self.config)
             self.dlg.Show()
 
+    def _preview_threshold_change(self, threshold_range):
+        """While the threshold slider is being dragged, hide the red overlay.
+
+        Re-running a full 3-D flood fill on every slider tick is too expensive.
+        We temporarily suppress the aux display; it will be restored by
+        _reeval_selection_on_threshold_change when the slider is released.
+        """
+        if self.config.mask is not None and self.viewer.slice_.to_show_aux == "SELECT":
+            self.viewer.slice_.to_show_aux = ""
+            Publisher.sendMessage("Reload actual slice")
+
+    def _reeval_selection_on_threshold_change(self, threshold_range):
+        """Re-run the 3-D flood fill for ALL stored seeds after a threshold change.
+
+        This makes the red highlights dynamically follow all selected bones:
+        - If the seed voxels are still within the new bone range, their full
+          connected components are recomputed within their ROIs and shown in red.
+        - If a seed falls out of range, that part disappears until the range is restored.
+        """
+        if self.config.mask is None or not self.config.seeds:
+            return
+
+        wx.BeginBusyCursor()
+        try:
+            # Re-threshold the current mask so the source data is fresh.
+            self.viewer.slice_.do_threshold_to_all_slices()
+            mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+
+            bstruct = np.array(
+                generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8"
+            )
+
+            # Zero the previous selection and re-fill for EVERY seed on the full mask.
+            self.config.mask.matrix[1:, 1:, 1:][:] = 0
+
+            for x, y, z in self.config.seeds:
+                floodfill.floodfill_threshold(
+                    mask,
+                    ((x, y, z),),
+                    self.t0,
+                    self.t1,
+                    self.fill_value,
+                    bstruct,
+                    self.config.mask.matrix[1:, 1:, 1:],
+                )
+
+            self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
+            self.viewer.slice_.to_show_aux = "SELECT"
+        finally:
+            wx.EndBusyCursor()
+        self.config.mask.was_edited = True
+        Publisher.sendMessage("Reload actual slice")
+
     def CleanUp(self):
+        # Unsubscribe threshold-change listeners first (safe even if not yet subscribed)
+        try:
+            Publisher.unsubscribe(self._preview_threshold_change, "Changing threshold values")
+        except Exception:
+            pass
+        try:
+            Publisher.unsubscribe(
+                self._reeval_selection_on_threshold_change, "Set threshold values"
+            )
+        except Exception:
+            pass
+
         if self.dlg is None:
             return
 
@@ -2648,17 +2830,62 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         if self.config.mask:
             if dialog_return == wx.OK:
+                # Capture old mask before selection changes, so we can hide its 3D preview
+                old_mask = self.viewer.slice_.current_mask
+
+                if ses.Session().mask_3d_preview:
+                    self.config.mask.imagedata = self.config.mask.as_vtkimagedata()
+                    self.config.mask.create_3d_preview()
+                    # Ensure final colour is set BEFORE any render (fixes color flash)
+                    self.config.mask.volume.set_colour(self.config.mask.colour)
+
                 self.config.mask.name = self.config.mask_name
-                self.viewer.slice_._add_mask_into_proj(self.config.mask)
+                # Avoid triggering an immediate "Show mask" (and thus a render) while adding:
+                self.viewer.slice_._add_mask_into_proj(self.config.mask, show=False)
                 self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
                 Publisher.sendMessage("Change mask selected", index=self.config.mask.index)
 
-            del self.viewer.slice_.aux_matrices["SELECT"]
+                if ses.Session().mask_3d_preview:
+                    # Load new actor FIRST, then remove old one — avoids black-flash frame
+                    Publisher.sendMessage(
+                        "Load mask preview", mask_3d_actor=self.config.mask.volume._actor, flag=True
+                    )
+                    # Safely detach the old mask's 3D preview from the renderer.
+                    # We do not destroy the volume data because the mask is still in the project.
+                    if old_mask is not None and old_mask.volume is not None:
+                        Publisher.sendMessage(
+                            "Remove mask preview", mask_3d_actor=old_mask.volume._actor
+                        )
+
+                # Now that actors are ready, trigger the final visibility and render
+                Publisher.sendMessage("Show mask", index=self.config.mask.index, value=True)
+                Publisher.sendMessage("Render volume viewer")
+            else:
+                if (
+                    ses.Session().mask_3d_preview
+                    and hasattr(self.config.mask, "volume")
+                    and self.config.mask.volume is not None
+                ):
+                    Publisher.sendMessage(
+                        "Remove mask preview", mask_3d_actor=self.config.mask.volume._actor
+                    )
+                    Publisher.sendMessage("Render volume viewer")
+
+            # Use pop() with default to safely handle the case where the user
+            # clicked OK without first clicking on a region (SELECT never created).
+            self.viewer.slice_.aux_matrices.pop("SELECT", None)
             self.viewer.slice_.to_show_aux = ""
             Publisher.sendMessage("Reload actual slice")
             self.config.mask = None
 
     def OnSelect(self, obj, evt):
+        # Lazily repopulate the buffer slice if it was cleared by an image switch.
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
+            slice_number = self.slice_data.number
+            n_mask = self.viewer.slice_.get_mask_slice(self.orientation, slice_number)
+            self.viewer.slice_.buffer_slices[self.orientation].mask = n_mask
+            self.viewer.slice_.buffer_slices[self.orientation].index = slice_number
+
         if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
@@ -2666,6 +2893,25 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
+        # Guard: out-of-bounds click – floodfill extension can't handle negatives.
+        mask_shape = self.viewer.slice_.current_mask.matrix.shape
+        if x < 0 or y < 0 or z < 0:
+            return
+        if z >= mask_shape[0] - 1 or y >= mask_shape[1] - 1 or x >= mask_shape[2] - 1:
+            return
+
+        # Reset stale config.mask when the user has switched to a different image version.
+        current_label = getattr(self.viewer.slice_, "current_image_label", "original")
+        if self.config.mask is not None:
+            config_label = getattr(self.config.mask, "derived_from", "original")
+            if config_label != current_label:
+                self.viewer.slice_.aux_matrices.pop("SELECT", None)
+                self.viewer.slice_.to_show_aux = ""
+                self.config.mask = None
+
+        # Use the full current mask matrix as the flood-fill source.
+        # This matches master's proven approach and correctly follows anatomical
+        # connectivity instead of being clipped to a rectangular bounding box.
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
         bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype="uint8")
@@ -2674,35 +2920,64 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         if self.config.mask is None:
             self._create_new_mask()
 
-        if iren.GetControlKey():
-            floodfill.floodfill_threshold(
-                self.config.mask.matrix[1:, 1:, 1:],
-                [[x, y, z]],
-                254,
-                255,
-                0,
-                bstruct,
-                self.config.mask.matrix[1:, 1:, 1:],
-            )
-        else:
-            floodfill.floodfill_threshold(
-                mask,
-                [[x, y, z]],
-                self.t0,
-                self.t1,
-                self.fill_value,
-                bstruct,
-                self.config.mask.matrix[1:, 1:, 1:],
-            )
+        # Track seed for multi-click threshold re-evaluation.
+        self.config.seeds.append((x, y, z))
 
-        self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
-        self.viewer.slice_.to_show_aux = "SELECT"
+        wx.BeginBusyCursor()
+        try:
+            if iren.GetControlKey():
+                # On Ctrl+Click: remove this connected part from the selection.
+                floodfill.floodfill_threshold(
+                    self.config.mask.matrix[1:, 1:, 1:],
+                    ((x, y, z),),
+                    254,
+                    255,
+                    0,
+                    bstruct,
+                    self.config.mask.matrix[1:, 1:, 1:],
+                )
+                # Prune seed list to avoid unbounded growth.
+                if len(self.config.seeds) > 50:
+                    self.config.seeds = []
+            else:
+                floodfill.floodfill_threshold(
+                    mask,
+                    ((x, y, z),),
+                    self.t0,
+                    self.t1,
+                    self.fill_value,
+                    bstruct,
+                    self.config.mask.matrix[1:, 1:, 1:],
+                )
+
+            self.viewer.slice_.aux_matrices["SELECT"] = self.config.mask.matrix[1:, 1:, 1:]
+            self.viewer.slice_.to_show_aux = "SELECT"
+        finally:
+            wx.EndBusyCursor()
 
         self.config.mask.was_edited = True
         Publisher.sendMessage("Reload actual slice")
 
+        # Also update the 3D Mask Preview to show selection in red.
+        if ses.Session().mask_3d_preview and self.config.mask:
+            if self.config.mask.volume is None:
+                self.config.mask.imagedata = self.config.mask.as_vtkimagedata()
+                self.config.mask.create_3d_preview()
+                self.config.mask.volume.set_colour((1.0, 0.0, 0.0))
+                Publisher.sendMessage(
+                    "Load mask preview", mask_3d_actor=self.config.mask.volume._actor, flag=True
+                )
+            else:
+                self.config.mask._update_imagedata(update_volume_viewer=False)
+            Publisher.sendMessage("Render volume viewer")
+
     def _create_new_mask(self):
-        mask = self.viewer.slice_.create_new_mask(show=False, add_to_project=False)
+        # Pass current_image_label so the new mask is correctly tagged as derived
+        # from the active image (Original or Filtered), not always "Original".
+        current_label = getattr(self.viewer.slice_, "current_image_label", tr("Original"))
+        mask = self.viewer.slice_.create_new_mask(
+            show=False, add_to_project=False, derived_from=current_label
+        )
         mask.was_edited = True
         mask.matrix[0, :, :] = 1
         mask.matrix[:, 0, :] = 1
@@ -2719,8 +2994,8 @@ class FFillSegmentationConfig(metaclass=utils.Singleton):
         self.con_2d = 4
         self.con_3d = 6
 
-        self.t0: Optional[int] = None
-        self.t1: Optional[int] = None
+        self.t0: int | None = None
+        self.t1: int | None = None
 
         self.fill_value = 254
 
@@ -2775,6 +3050,13 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             self.config.dlg = None
 
     def OnFFClick(self, obj, evt):
+        # Lazily repopulate the buffer slice if it was cleared by an image switch.
+        if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
+            slice_number = self.slice_data.number
+            n_mask = self.viewer.slice_.get_mask_slice(self.orientation, slice_number)
+            self.viewer.slice_.buffer_slices[self.orientation].mask = n_mask
+            self.viewer.slice_.buffer_slices[self.orientation].index = slice_number
+
         if self.viewer.slice_.buffer_slices[self.orientation].mask is None:
             return
 
@@ -2796,8 +3078,8 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage("Reload actual slice")
 
     def do_2d_seg(self):
-        viewer = self.viewer
-        iren = viewer.interactor
+        # viewer = self.viewer
+        # iren = viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
         x, y = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
@@ -2847,7 +3129,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             )
             bstruct = bstruct.reshape((1, 3, 3))
 
-            floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask)
+            floodfill.floodfill_threshold(image, ((x, y, 0),), t0, t1, 1, bstruct, out_mask)
 
         mask[out_mask.astype("bool")] = self.config.fill_value
 
@@ -2865,8 +3147,8 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.current_mask.save_history(index, self.orientation, mask, b_mask)
 
     def do_3d_seg(self):
-        viewer = self.viewer
-        iren = viewer.interactor
+        # viewer = self.viewer
+        # iren = viewer.interactor
         mouse_x, mouse_y = self.GetMousePosition()
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
@@ -2915,7 +3197,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             out_mask = np.zeros_like(mask)
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
-                    floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask
+                    floodfill.floodfill_threshold, image, ((x, y, z),), t0, t1, 1, bstruct, out_mask
                 )
 
                 self.config.dlg.panel_ffill_progress.Enable()
@@ -2960,7 +3242,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             t0 = mean - var * self.config.confid_mult
             t1 = mean + var * self.config.confid_mult
 
-            floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+            floodfill.floodfill_threshold(image, ((x, y, z),), t0, t1, 1, bstruct, out_mask)
 
             bool_mask[out_mask == 1] = True
 
@@ -2979,6 +3261,9 @@ class Styles:
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
         const.STATE_MEASURE_DENSITY_ELLIPSE: DensityMeasureEllipseStyle,
         const.STATE_MEASURE_DENSITY_POLYGON: DensityMeasurePolygonStyle,
+        const.STATE_MEASURE_ANNOTATION: AnnotationInteractorStyle,
+        const.STATE_MEASURE_ANNOTATION: AnnotationInteractorStyle,
+        const.STATE_MEASURE_CURVED_LINEAR: CurvedMeasureInteractorStyle,
         const.STATE_NAVIGATION: NavigationInteractorStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,

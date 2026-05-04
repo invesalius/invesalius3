@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # transformations.py
 
 # Copyright (c) 2006-2015, Christoph Gohlke
@@ -193,10 +192,8 @@ True
 
 """
 
-from __future__ import division, print_function
-
 import math
-from typing import Any, Sequence, Union
+from typing import Sequence, Union
 
 import numpy
 import numpy.typing
@@ -703,7 +700,7 @@ def shear_from_matrix(matrix):
     w, V = numpy.linalg.eig(M33)
     i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-4)[0]
     if len(i) < 2:
-        raise ValueError("no two linear independent eigenvectors found %s" % w)
+        raise ValueError(f"no two linear independent eigenvectors found {w}")
     V = numpy.real(V[:, i]).squeeze().T
     lenorm = -1.0
     for i0, i1 in ((0, 1), (0, 2), (1, 2)):
@@ -1502,7 +1499,7 @@ def random_quaternion(rand=None):
 
     """
     if rand is None:
-        rand = numpy.random.rand(3)
+        rand = numpy.random.default_rng().random(3)
     else:
         assert len(rand) == 3
     r1 = numpy.sqrt(1.0 - rand[0])
@@ -1530,7 +1527,7 @@ def random_rotation_matrix(rand=None):
     return quaternion_matrix(random_quaternion(rand))
 
 
-class Arcball(object):
+class Arcball:
     """Virtual Trackball Control.
 
     >>> ball = Arcball()
@@ -1816,7 +1813,7 @@ def random_vector(size):
     False
 
     """
-    return numpy.random.random(size)
+    return numpy.random.default_rng().random(size)
 
 
 def vector_product(v0, v1, axis=0):
@@ -1940,7 +1937,7 @@ def _import_module(name, package=None, warn=True, prefix="_py_", ignore="_"):
             module = import_module("." + name, package=package)
     except ImportError:
         if warn:
-            warnings.warn("failed to import module %s" % name)
+            warnings.warn(f"failed to import module {name}")
     else:
         for attr in dir(module):
             if ignore and attr.startswith(ignore):
@@ -1958,7 +1955,7 @@ def _import_module(name, package=None, warn=True, prefix="_py_", ignore="_"):
 
 if __name__ == "__main__":
     import doctest
-    import random  # used in doctests
+    import random  # used in doctests  # noqa: F401
 
     numpy.set_printoptions(suppress=True, precision=5)
     doctest.testmod()
