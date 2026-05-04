@@ -42,6 +42,7 @@ class Preferences(wx.Dialog):
 
         self.visualization_tab = VisualizationTab(self.book)
         self.language_tab = LanguageTab(self.book)
+        self.shortcuts_tab = ShortcutsTab(self.book)
         if self.have_log_tab == 1:
             self.logging_tab = LoggingTab(self.book)
 
@@ -68,6 +69,7 @@ class Preferences(wx.Dialog):
             self.book.AddPage(self.object_tab, _("TMS Coil"))
 
         self.book.AddPage(self.language_tab, _("Language"))
+        self.book.AddPage(self.shortcuts_tab, _("Shortcuts"))
         if self.have_log_tab == 1:
             self.book.AddPage(self.logging_tab, _("Logging"))
 
@@ -124,6 +126,8 @@ class Preferences(wx.Dialog):
 
         values.update(lang)
         values.update(viewer)
+        shortcuts = self.shortcuts_tab.GetSelection()
+        values.update(shortcuts)
 
         # Add navigation tab preferences (includes marker shapes)
         if hasattr(self, "navigation_tab"):
@@ -2305,3 +2309,188 @@ class LanguageTab(wx.Panel):
         locales = self.lg.GetLocalesKey()
         selection = locales.index(language)
         self.cmb_lang.SetSelection(int(selection))
+
+
+class ShortcutsTab(wx.Panel):
+
+    """
+    Preferences tab for viewing and remapping keyboard shortcuts.
+    Users can reassign any shortcut, reset individual ones, or
+    reset all to factory defaults. Changes take effect on next restart.
+    """
+    
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        from invesalius.gui.shortcut_manager import ShortcutManager
+
+        self.sm = ShortcutManager()
+        self._changes_made = False  # track if user changed anything
+
+        # List control showing all shortcuts
+        self.list = wx.ListCtrl(
+            self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN
+        )
+        self.list.InsertColumn(0, _("Category"), width=120)
+        self.list.InsertColumn(1, _("Action"), width=200)
+        self.list.InsertColumn(2, _("Shortcut"), width=120)
+
+        self._populate_list()
+
+        # Buttons
+        btn_edit = wx.Button(self, label=_("Reassign"))
+        btn_reset_one = wx.Button(self, label=_("Reset selected"))
+        btn_reset_all = wx.Button(self, label=_("Reset all to defaults"))
+
+        btn_edit.Bind(wx.EVT_BUTTON, self.OnReassign)
+        btn_reset_one.Bind(wx.EVT_BUTTON, self.OnResetOne)
+        btn_reset_all.Bind(wx.EVT_BUTTON, self.OnResetAll)
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer.Add(btn_edit, 0, wx.ALL, 5)
+        btn_sizer.Add(btn_reset_one, 0, wx.ALL, 5)
+        btn_sizer.AddStretchSpacer()
+        btn_sizer.Add(btn_reset_all, 0, wx.ALL, 5)
+
+        # Info label at bottom
+        info_label = wx.StaticText(
+            self,
+            label=_(
+                "Note: Shortcut changes take effect the next time InVesalius starts."
+            ),
+        )
+        info_label.SetForegroundColour(wx.Colour(100, 100, 100))
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.list, 1, wx.EXPAND | wx.ALL, 10)
+        main_sizer.Add(info_label, 0, wx.LEFT | wx.BOTTOM, 10)
+        main_sizer.Add(btn_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        self.SetSizerAndFit(main_sizer)
+        self.Layout()
+
+    def _populate_list(self):
+        self.list.DeleteAllItems()
+        self._action_ids = []
+        for entry in self.sm.all_shortcuts():
+            idx = self.list.InsertItem(
+                self.list.GetItemCount(), entry.get("category", "")
+            )
+            self.list.SetItem(idx, 1, entry.get("label", ""))
+            self.list.SetItem(idx, 2, entry.get("current", ""))
+            self._action_ids.append(entry["action_id"])
+
+    def OnReassign(self, evt):
+        idx = self.list.GetFirstSelected()
+        if idx == -1:
+            wx.MessageBox(_("Please select a shortcut to reassign."), _("InVesalius"))
+            return
+        action_id = self._action_ids[idx]
+        label = self.list.GetItemText(idx, 1)
+
+        dlg = KeyCaptureDialog(self, label)
+        if dlg.ShowModal() == wx.ID_OK:
+            new_key = dlg.GetKey()
+            if new_key:
+                try:
+                    self.sm.set_shortcut(action_id, new_key)
+                    self.list.SetItem(idx, 2, new_key)
+                    self._changes_made = True
+                except ValueError as e:
+                    wx.MessageBox(str(e), _("Conflict"))
+        dlg.Destroy()
+
+    def OnResetOne(self, evt):
+        idx = self.list.GetFirstSelected()
+        if idx == -1:
+            wx.MessageBox(_("Please select a shortcut to reset."), _("InVesalius"))
+            return
+        action_id = self._action_ids[idx]
+        self.sm.reset_one(action_id)
+        default = self.sm._shortcuts[action_id]["default"]
+        self.list.SetItem(idx, 2, default)
+        self._changes_made = True
+
+    def OnResetAll(self, evt):
+        if (
+            wx.MessageBox(
+                _("Reset all shortcuts to defaults?"),
+                _("InVesalius"),
+                wx.YES_NO | wx.NO_DEFAULT,
+            )
+            == wx.YES
+        ):
+            self.sm.reset_all()
+            self._populate_list()
+            self._changes_made = True
+
+    def GetSelection(self):
+        self.sm.save()
+        if self._changes_made:
+            wx.MessageBox(
+                _("Shortcut changes will take effect the next time InVesalius starts."),
+                _("Shortcuts"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+            self._changes_made = False
+        return {}
+
+    def LoadSelection(self, values):
+        self._populate_list()
+
+
+class KeyCaptureDialog(wx.Dialog):
+    """
+    Dialog that captures a key combination from the user.
+    Press any key combination to set it as the new shortcut.
+    """
+
+    def __init__(self, parent, action_label):
+        wx.Dialog.__init__(self, parent, title=_("Reassign Shortcut"))
+        self._key = ""
+
+        msg = wx.StaticText(self, label=_("Press a key combination for:\n") + action_label)
+        self.key_display = wx.TextCtrl(self, style=wx.TE_READONLY | wx.TE_CENTRE)
+        self.key_display.SetMinSize((200, -1))
+
+        btn_ok = wx.Button(self, wx.ID_OK, _("Assign"))
+        btn_cancel = wx.Button(self, wx.ID_CANCEL, _("Cancel"))
+        btn_sizer = wx.StdDialogButtonSizer()
+        btn_sizer.AddButton(btn_ok)
+        btn_sizer.AddButton(btn_cancel)
+        btn_sizer.Realize()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(msg, 0, wx.ALL | wx.ALIGN_CENTER, 10)
+        sizer.Add(self.key_display, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
+        self.SetSizerAndFit(sizer)
+
+        self.key_display.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+        self.key_display.SetFocus()
+
+    def OnKeyDown(self, evt):
+        keycode = evt.GetKeyCode()
+        modifiers = evt.GetModifiers()
+
+        parts = []
+        if modifiers & wx.MOD_CONTROL:
+            parts.append("Ctrl")
+        if modifiers & wx.MOD_SHIFT:
+            parts.append("Shift")
+        if modifiers & wx.MOD_ALT:
+            parts.append("Alt")
+
+        if keycode in (wx.WXK_CONTROL, wx.WXK_SHIFT, wx.WXK_ALT):
+            return
+
+        if hasattr(wx, 'GetKeyName'):
+            key_name = wx.GetKeyName(keycode)
+        else:
+            key_name = chr(keycode) if 32 <= keycode <= 126 else str(keycode)
+
+        parts.append(key_name.upper() if len(key_name) == 1 else key_name)
+        self._key = "+".join(parts)
+        self.key_display.SetValue(self._key)
+
+    def GetKey(self):
+        return self._key

@@ -1,0 +1,187 @@
+{
+  "_comment": "InVesalius keyboard shortcuts registry. Edit 'current' to remap. Do not change 'action_id' or 'category'.",
+  "shortcuts": [
+    {
+      "action_id": "import_dicom",
+      "label": "Import DICOM",
+      "category": "File",
+      "default": "Ctrl+I",
+      "current": "Ctrl+I"
+    },
+    {
+      "action_id": "open_project",
+      "label": "Open project",
+      "category": "File",
+      "default": "Ctrl+O",
+      "current": "Ctrl+O"
+    },
+    {
+      "action_id": "save_project",
+      "label": "Save project",
+      "category": "File",
+      "default": "Ctrl+S",
+      "current": "Ctrl+S"
+    },
+    {
+      "action_id": "save_project_as",
+      "label": "Save project as",
+      "category": "File",
+      "default": "Ctrl+Shift+S",
+      "current": "Ctrl+Shift+S"
+    },
+    {
+      "action_id": "exit",
+      "label": "Exit",
+      "category": "File",
+      "default": "Ctrl+Q",
+      "current": "Ctrl+Q"
+    },
+    {
+      "action_id": "undo",
+      "label": "Undo",
+      "category": "Edit",
+      "default": "Ctrl+Z",
+      "current": "Ctrl+Z"
+    },
+    {
+      "action_id": "redo",
+      "label": "Redo",
+      "category": "Edit",
+      "default": "Ctrl+Y",
+      "current": "Ctrl+Y"
+    },
+    {
+      "action_id": "goto_slice",
+      "label": "Go to slice",
+      "category": "Edit",
+      "default": "Ctrl+G",
+      "current": "Ctrl+G"
+    },
+    {
+      "action_id": "new_mask",
+      "label": "New mask",
+      "category": "Mask",
+      "default": "Ctrl+Shift+M",
+      "current": "Ctrl+Shift+M"
+    },
+    {
+      "action_id": "boolean_operations",
+      "label": "Boolean operations",
+      "category": "Mask",
+      "default": "Ctrl+Shift+B",
+      "current": "Ctrl+Shift+B"
+    },
+    {
+      "action_id": "clean_mask",
+      "label": "Clean mask",
+      "category": "Mask",
+      "default": "Ctrl+Shift+A",
+      "current": "Ctrl+Shift+A"
+    },
+    {
+      "action_id": "fill_holes_manually",
+      "label": "Fill holes manually",
+      "category": "Mask",
+      "default": "Ctrl+Shift+H",
+      "current": "Ctrl+Shift+H"
+    },
+    {
+      "action_id": "fill_holes_auto",
+      "label": "Fill holes automatically",
+      "category": "Mask",
+      "default": "Ctrl+Shift+J",
+      "current": "Ctrl+Shift+J"
+    },
+    {
+      "action_id": "remove_mask_parts",
+      "label": "Remove mask parts",
+      "category": "Mask",
+      "default": "Ctrl+Shift+K",
+      "current": "Ctrl+Shift+K"
+    },
+    {
+      "action_id": "select_mask_parts",
+      "label": "Select mask parts",
+      "category": "Mask",
+      "default": "Ctrl+Shift+L",
+      "current": "Ctrl+Shift+L"
+    },
+    {
+      "action_id": "mask_3d_preview",
+      "label": "Mask 3D preview enable",
+      "category": "Mask",
+      "default": "Ctrl+Shift+P",
+      "current": "Ctrl+Shift+P"
+    },
+    {
+      "action_id": "mask_3d_auto_reload",
+      "label": "Mask 3D auto reload",
+      "category": "Mask",
+      "default": "Ctrl+Shift+D",
+      "current": "Ctrl+Shift+D"
+    },
+    {
+      "action_id": "mask_3d_reload",
+      "label": "Mask 3D reload",
+      "category": "Mask",
+      "default": "Ctrl+Shift+R",
+      "current": "Ctrl+Shift+R"
+    },
+    {
+      "action_id": "threshold_segmentation",
+      "label": "Threshold segmentation",
+      "category": "Segmentation",
+      "default": "Ctrl+Shift+T",
+      "current": "Ctrl+Shift+T"
+    },
+    {
+      "action_id": "manual_segmentation",
+      "label": "Manual segmentation",
+      "category": "Segmentation",
+      "default": "Ctrl+Shift+E",
+      "current": "Ctrl+Shift+E"
+    },
+    {
+      "action_id": "watershed_segmentation",
+      "label": "Watershed segmentation",
+      "category": "Segmentation",
+      "default": "Ctrl+Shift+W",
+      "current": "Ctrl+Shift+W"
+    },
+    {
+      "action_id": "region_growing",
+      "label": "Region growing",
+      "category": "Segmentation",
+      "default": "Ctrl+Shift+G",
+      "current": "Ctrl+Shift+G"
+    },
+    {
+      "action_id": "new_surface",
+      "label": "New surface",
+      "category": "Surface",
+      "default": "Ctrl+Shift+C",
+      "current": "Ctrl+Shift+C"
+    },
+    {
+      "action_id": "reorient_image",
+      "label": "Reorient image",
+      "category": "Image",
+      "default": "Ctrl+Shift+O",
+      "current": "Ctrl+Shift+O"
+    },
+    {
+      "action_id": "navigation_mode",
+      "label": "TMS Navigation mode",
+      "category": "Mode",
+      "default": "Ctrl+T",
+      "current": "Ctrl+T"
+    },
+    {
+      "action_id": "dbs_mode",
+      "label": "Deep Brain Stimulation mode",
+      "category": "Mode",
+      "default": "Ctrl+B",
+      "current": "Ctrl+B"
+    }
+  ]
+}
