@@ -1467,6 +1467,7 @@ class MenuBar(wx.MenuBar):
         file_menu = wx.Menu()
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, sm.get_menu_label("import_dicom", _("Import DICOM...")))
+        # app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
         file_menu.Append(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
         app(const.ID_PROJECT_OPEN, sm.get_menu_label("open_project", _("Open project...")))
         app(const.ID_PROJECT_SAVE, sm.get_menu_label("save_project", _("Save project")))
@@ -1475,6 +1476,13 @@ class MenuBar(wx.MenuBar):
         app(const.ID_PROJECT_PROPERTIES, _("Project properties"))
         app(const.ID_PROJECT_CLOSE, _("Close project"))
         file_menu.AppendSeparator()
+        # app(const.ID_PROJECT_INFO, _("Project Information..."))
+        # file_menu.AppendSeparator()
+        # app(const.ID_SAVE_SCREENSHOT, _("Save Screenshot"))
+        # app(const.ID_PRINT_SCREENSHOT, _("Print Screenshot"))
+        # file_menu.AppendSeparator()
+        # app(1, "C:\InvData\sample.inv")
+        # file_menu.AppendSeparator()
         app(const.ID_EXIT, sm.get_menu_label("exit", _("Exit")))
 
         file_edit = wx.Menu()
@@ -1483,6 +1491,7 @@ class MenuBar(wx.MenuBar):
         file_edit.Append(const.ID_GOTO_SLICE, sm.get_menu_label("goto_slice", _("Go to slice ...")))
         file_edit.Append(const.ID_GOTO_COORD, _("Go to scanner coord ...\t")).Enable(False)
 
+        # app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
 
         # Tool menu
@@ -1622,19 +1631,49 @@ class MenuBar(wx.MenuBar):
         tools_menu.Append(-1, _("Segmentation"), segmentation_menu)
         tools_menu.Append(-1, _("Surface"), surface_menu)
 
+        # Add separator before debug tools
         tools_menu.AppendSeparator()
+
+        # Add log viewer and error handling test menu items
         tools_menu.Append(ID_SHOW_LOG_VIEWER, _("Show Log Viewer"))
         tools_menu.Append(ID_INTERACTIVE_SHELL, _("Interactive Shell"))
 
         self.tools_menu = tools_menu
 
-        #View
+        # View
         self.view_menu = view_menu = wx.Menu()
         view_menu.Append(const.ID_VIEW_INTERPOLATED, _("Interpolated slices"), "", wx.ITEM_CHECK)
 
         v = self.SliceInterpolationStatus()
         self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
         self.actived_interpolated_slices = self.view_menu
+
+        # view_tool_menu = wx.Menu()
+        # app = view_tool_menu.Append
+        # app(const.ID_TOOL_PROJECT, "Project Toolbar")
+        # app(const.ID_TOOL_LAYOUT, "Layout Toolbar")
+        # app(const.ID_TOOL_OBJECT, "Object Toolbar")
+        # app(const.ID_TOOL_SLICE, "Slice Toolbar")
+
+        # view_layout_menu = wx.Menu()
+        # app = view_layout_menu.Append
+        # app(const.ID_TASK_BAR, "Task Bar")
+        # app(const.ID_VIEW_FOUR, "Four View")
+
+        # view_menu = wx.Menu()
+        # app = view_menu.Append
+        # appm = view_menu.Append
+        # appm(-1, "Toolbars",view_tool_menu)
+        # appm(-1, "Layout", view_layout_menu)
+        # view_menu.AppendSeparator()
+        # app(const.ID_VIEW_FULL, "Fullscreen\tCtrl+F")
+        # view_menu.AppendSeparator()
+        # app(const.ID_VIEW_TEXT, "2D & 3D Text")
+        # view_menu.AppendSeparator()
+        # app(const.ID_VIEW_3D_BACKGROUND, "3D Background Colour")
+
+        # TOOLS
+        # tools_menu = wx.Menu()
 
         # Options
         options_menu = wx.Menu()
@@ -1655,6 +1694,8 @@ class MenuBar(wx.MenuBar):
             "",
             wx.ITEM_CHECK,
         )
+
+        # Under development
         self.mode_dbs.Enable(0)
         mode_menu.Append(-1, _("Navigation Mode"), nav_menu)
 
@@ -1669,8 +1710,14 @@ class MenuBar(wx.MenuBar):
         # HELP
         help_menu = wx.Menu()
         help_menu.Append(const.ID_START, _("Getting started..."))
+        # help_menu.Append(108, "User Manual...")
         help_menu.AppendSeparator()
         help_menu.Append(const.ID_ABOUT, _("About..."))
+        # help_menu.Append(107, "Check For Updates Now...")
+
+        # if platform.system() == 'Darwin':
+        # wx.App.SetMacAboutMenuItemId(const.ID_ABOUT)
+        # wx.App.SetMacExitMenuItemId(const.ID_EXIT)
 
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
@@ -1678,12 +1725,12 @@ class MenuBar(wx.MenuBar):
         self.Append(view_menu, _("View"))
         self.Append(tools_menu, _("Tools"))
         self.Append(plugins_menu, _("Plugins"))
+        # self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
 
         plugins_menu.Bind(wx.EVT_MENU, self.OnPluginMenu)
-
 
     def OnPluginMenu(self, evt):
         id = evt.GetId()
