@@ -1484,7 +1484,7 @@ class ObjectTab(wx.Panel):
 
         try:
             if filename:
-                with open(filename, "r") as text_file:
+                with open(filename) as text_file:
                     data = [s.split("\t") for s in text_file.readlines()]
 
                 registration_coordinates = np.array(data[1:]).astype(np.float32)
@@ -1562,7 +1562,7 @@ class ObjectTab(wx.Panel):
 
                 msg = _("Object file successfully loaded")
                 wx.MessageBox(msg, _("InVesalius 3"))
-        except:
+        except Exception:
             wx.MessageBox(_("Object registration file incompatible."), _("InVesalius 3"))
             Publisher.sendMessage("Update status text in GUI", label="")
 
@@ -2181,7 +2181,7 @@ class TrackerTab(wx.Panel):
         try:
             if hasattr(self.robot, "SetPressureSetpoint"):
                 self.robot.SetPressureSetpoint(value)
-        except Exception as e:
+        except Exception:
             pass
 
     def OnSetRecommendedPressure(self, event):
@@ -2201,7 +2201,7 @@ class TrackerTab(wx.Panel):
         try:
             if hasattr(self.robot, "SetPressureSetpoint"):
                 self.robot.SetPressureSetpoint(value)
-        except Exception as e:
+        except Exception:
             pass
 
     def _update_pressure_controls_state(self, slider_enabled: bool):
@@ -2312,13 +2312,12 @@ class LanguageTab(wx.Panel):
 
 
 class ShortcutsTab(wx.Panel):
-
     """
     Preferences tab for viewing and remapping keyboard shortcuts.
     Users can reassign any shortcut, reset individual ones, or
     reset all to factory defaults. Changes take effect on next restart.
     """
-    
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         from invesalius.gui.shortcut_manager import ShortcutManager
@@ -2327,9 +2326,7 @@ class ShortcutsTab(wx.Panel):
         self._changes_made = False  # track if user changed anything
 
         # List control showing all shortcuts
-        self.list = wx.ListCtrl(
-            self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN
-        )
+        self.list = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN)
         self.list.InsertColumn(0, _("Category"), width=120)
         self.list.InsertColumn(1, _("Action"), width=200)
         self.list.InsertColumn(2, _("Shortcut"), width=120)
@@ -2354,9 +2351,7 @@ class ShortcutsTab(wx.Panel):
         # Info label at bottom
         info_label = wx.StaticText(
             self,
-            label=_(
-                "Note: Shortcut changes take effect the next time InVesalius starts."
-            ),
+            label=_("Note: Shortcut changes take effect the next time InVesalius starts."),
         )
         info_label.SetForegroundColour(wx.Colour(100, 100, 100))
 
@@ -2372,9 +2367,7 @@ class ShortcutsTab(wx.Panel):
         self.list.DeleteAllItems()
         self._action_ids = []
         for entry in self.sm.all_shortcuts():
-            idx = self.list.InsertItem(
-                self.list.GetItemCount(), entry.get("category", "")
-            )
+            idx = self.list.InsertItem(self.list.GetItemCount(), entry.get("category", ""))
             self.list.SetItem(idx, 1, entry.get("label", ""))
             self.list.SetItem(idx, 2, entry.get("current", ""))
             self._action_ids.append(entry["action_id"])
@@ -2483,7 +2476,7 @@ class KeyCaptureDialog(wx.Dialog):
         if keycode in (wx.WXK_CONTROL, wx.WXK_SHIFT, wx.WXK_ALT):
             return
 
-        if hasattr(wx, 'GetKeyName'):
+        if hasattr(wx, "GetKeyName"):
             key_name = wx.GetKeyName(keycode)
         else:
             key_name = chr(keycode) if 32 <= keycode <= 126 else str(keycode)

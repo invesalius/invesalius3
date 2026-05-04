@@ -15,10 +15,8 @@ Usage
 """
 
 import json
-import os
 import shutil
 from pathlib import Path
-
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -27,16 +25,19 @@ from pathlib import Path
 # The bundled default lives next to this file (invesalius/gui/shortcuts.json).
 _DEFAULT_JSON = Path(__file__).parent / "shortcuts.json"
 
+
 # The user-editable copy lives in the InVesalius config directory so it
 # survives reinstalls.  We import inv_paths lazily to avoid circular imports.
 def _user_json_path() -> Path:
     from invesalius import inv_paths  # noqa: PLC0415
+
     return Path(inv_paths.USER_INV_DIR) / "shortcuts.json"
 
 
 # ---------------------------------------------------------------------------
 # ShortcutManager
 # ---------------------------------------------------------------------------
+
 
 class ShortcutManager:
     """
@@ -51,7 +52,7 @@ class ShortcutManager:
     def __new__(cls):
         if cls._instance is None:
             obj = super().__new__(cls)
-            obj._shortcuts = {}   # action_id -> dict entry from JSON
+            obj._shortcuts = {}  # action_id -> dict entry from JSON
             obj._loaded = False
             cls._instance = obj
         return cls._instance
@@ -71,12 +72,9 @@ class ShortcutManager:
             self._seed_user_file(user_path)
 
         try:
-            with open(user_path, "r", encoding="utf-8") as fh:
+            with open(user_path, encoding="utf-8") as fh:
                 data = json.load(fh)
-            self._shortcuts = {
-                entry["action_id"]: entry
-                for entry in data.get("shortcuts", [])
-            }
+            self._shortcuts = {entry["action_id"]: entry for entry in data.get("shortcuts", [])}
         except Exception as exc:
             print(f"[ShortcutManager] Failed to load {user_path}: {exc}")
             print("[ShortcutManager] Falling back to bundled defaults.")
@@ -131,9 +129,7 @@ class ShortcutManager:
         self._ensure_loaded()
         conflict = self._find_conflict(action_id, key_string)
         if conflict:
-            raise ValueError(
-                f"Key '{key_string}' is already used by '{conflict}'."
-            )
+            raise ValueError(f"Key '{key_string}' is already used by '{conflict}'.")
         if action_id in self._shortcuts:
             self._shortcuts[action_id]["current"] = key_string
 
@@ -184,8 +180,7 @@ class ShortcutManager:
         else:
             # Bundled file missing — write a minimal valid JSON so we don't crash.
             print(
-                "[ShortcutManager] Bundled shortcuts.json not found; "
-                "creating empty user file."
+                "[ShortcutManager] Bundled shortcuts.json not found; " "creating empty user file."
             )
             with open(user_path, "w", encoding="utf-8") as fh:
                 json.dump({"shortcuts": []}, fh, indent=2)
@@ -193,12 +188,9 @@ class ShortcutManager:
     def _load_defaults(self) -> None:
         """Load directly from the bundled default file (fallback)."""
         try:
-            with open(_DEFAULT_JSON, "r", encoding="utf-8") as fh:
+            with open(_DEFAULT_JSON, encoding="utf-8") as fh:
                 data = json.load(fh)
-            self._shortcuts = {
-                entry["action_id"]: entry
-                for entry in data.get("shortcuts", [])
-            }
+            self._shortcuts = {entry["action_id"]: entry for entry in data.get("shortcuts", [])}
         except Exception as exc:
             print(f"[ShortcutManager] Cannot load bundled defaults either: {exc}")
             self._shortcuts = {}

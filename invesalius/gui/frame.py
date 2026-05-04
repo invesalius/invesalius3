@@ -45,9 +45,9 @@ from invesalius import inv_paths
 from invesalius.data.slice_ import Slice
 from invesalius.gui import project_properties
 from invesalius.gui.interactive_shell import InteractiveShellFrame
+from invesalius.gui.shortcut_manager import ShortcutManager
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-from invesalius.gui.shortcut_manager import ShortcutManager
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
@@ -219,7 +219,7 @@ class Frame(wx.Frame):
         is_shell_focused = False
 
         # Check if the focus is on a text entry field
-        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
+        if focused and isinstance(focused, wx.TextCtrl | wx.ComboBox):
             is_search_field = True
 
         # Check if the shell is focused
@@ -244,11 +244,7 @@ class Frame(wx.Frame):
             event.Skip()
             return
 
-        if (
-            current_key == clean_mask_key
-            and not is_search_field
-            and not is_shell_focused
-        ):
+        if current_key == clean_mask_key and not is_search_field and not is_shell_focused:
             if hasattr(self, "clean_mask_menu") and self.clean_mask_menu.IsEnabled():
                 self.OnCleanMask()
             event.Skip()
@@ -1500,7 +1496,9 @@ class MenuBar(wx.MenuBar):
         # Mask Menu
         mask_menu = wx.Menu()
 
-        self.new_mask_menu = mask_menu.Append(const.ID_CREATE_MASK, sm.get_menu_label("new_mask", _("New")))
+        self.new_mask_menu = mask_menu.Append(
+            const.ID_CREATE_MASK, sm.get_menu_label("new_mask", _("New"))
+        )
         self.new_mask_menu.Enable(False)
 
         self.bool_op_menu = mask_menu.Append(
@@ -1508,18 +1506,22 @@ class MenuBar(wx.MenuBar):
         )
         self.bool_op_menu.Enable(False)
 
-        self.clean_mask_menu = mask_menu.Append(const.ID_CLEAN_MASK, sm.get_menu_label("clean_mask", _("Clean Mask")))
+        self.clean_mask_menu = mask_menu.Append(
+            const.ID_CLEAN_MASK, sm.get_menu_label("clean_mask", _("Clean Mask"))
+        )
         self.clean_mask_menu.Enable(False)
 
         mask_menu.AppendSeparator()
 
         self.fill_hole_mask_menu = mask_menu.Append(
-            const.ID_FLOODFILL_MASK, sm.get_menu_label("fill_holes_manually", _("Fill holes manually"))
+            const.ID_FLOODFILL_MASK,
+            sm.get_menu_label("fill_holes_manually", _("Fill holes manually")),
         )
         self.fill_hole_mask_menu.Enable(False)
 
         self.fill_hole_auto_menu = mask_menu.Append(
-            const.ID_FILL_HOLE_AUTO, sm.get_menu_label("fill_holes_auto", _("Fill holes automatically"))
+            const.ID_FILL_HOLE_AUTO,
+            sm.get_menu_label("fill_holes_auto", _("Fill holes automatically")),
         )
         self.fill_hole_mask_menu.Enable(False)
 
@@ -1545,12 +1547,18 @@ class MenuBar(wx.MenuBar):
         mask_preview_menu = wx.Menu()
 
         self.mask_preview = mask_preview_menu.Append(
-            const.ID_MASK_3D_PREVIEW, sm.get_menu_label("mask_3d_preview", _("Enable")), "", wx.ITEM_CHECK
+            const.ID_MASK_3D_PREVIEW,
+            sm.get_menu_label("mask_3d_preview", _("Enable")),
+            "",
+            wx.ITEM_CHECK,
         )
         self.mask_preview.Enable(False)
 
         self.mask_auto_reload = mask_preview_menu.Append(
-            const.ID_MASK_3D_AUTO_RELOAD, sm.get_menu_label("mask_3d_auto_reload", _("Auto reload")), "", wx.ITEM_CHECK
+            const.ID_MASK_3D_AUTO_RELOAD,
+            sm.get_menu_label("mask_3d_auto_reload", _("Auto reload")),
+            "",
+            wx.ITEM_CHECK,
         )
 
         session = ses.Session()
@@ -1569,27 +1577,35 @@ class MenuBar(wx.MenuBar):
         # Segmentation Menu
         segmentation_menu = wx.Menu()
         self.threshold_segmentation = segmentation_menu.Append(
-            const.ID_THRESHOLD_SEGMENTATION, sm.get_menu_label("threshold_segmentation", _("Threshold"))
+            const.ID_THRESHOLD_SEGMENTATION,
+            sm.get_menu_label("threshold_segmentation", _("Threshold")),
         )
         self.manual_segmentation = segmentation_menu.Append(
-            const.ID_MANUAL_SEGMENTATION, sm.get_menu_label("manual_segmentation", _("Manual segmentation"))
+            const.ID_MANUAL_SEGMENTATION,
+            sm.get_menu_label("manual_segmentation", _("Manual segmentation")),
         )
         self.watershed_segmentation = segmentation_menu.Append(
-            const.ID_WATERSHED_SEGMENTATION, sm.get_menu_label("watershed_segmentation", _("Watershed"))
+            const.ID_WATERSHED_SEGMENTATION,
+            sm.get_menu_label("watershed_segmentation", _("Watershed")),
         )
         self.ffill_segmentation = segmentation_menu.Append(
-            const.ID_FLOODFILL_SEGMENTATION, sm.get_menu_label("region_growing", _("Region growing"))
+            const.ID_FLOODFILL_SEGMENTATION,
+            sm.get_menu_label("region_growing", _("Region growing")),
         )
         self.ffill_segmentation.Enable(False)
         segmentation_menu.AppendSeparator()
         segmentation_menu.Append(const.ID_SEGMENTATION_BRAIN, _("Brain segmentation (MRI T1)"))
-        segmentation_menu.Append(const.ID_SEGMENTATION_SUBPART, _("Brain subpart segmentation (MRI T1)"))
+        segmentation_menu.Append(
+            const.ID_SEGMENTATION_SUBPART, _("Brain subpart segmentation (MRI T1)")
+        )
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
 
         # Surface Menu
         surface_menu = wx.Menu()
-        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, sm.get_menu_label("new_surface", _("New")))
+        self.create_surface = surface_menu.Append(
+            const.ID_CREATE_SURFACE, sm.get_menu_label("new_surface", _("New"))
+        )
         self.create_surface.Enable(False)
 
         self.remove_non_visible = surface_menu.Append(
@@ -1606,14 +1622,20 @@ class MenuBar(wx.MenuBar):
         flip_menu.Append(const.ID_FLIP_Z, _("Top - Bottom")).Enable(False)
 
         swap_axes_menu = wx.Menu()
-        swap_axes_menu.Append(const.ID_SWAP_XY, _("From Right-Left to Anterior-Posterior")).Enable(False)
+        swap_axes_menu.Append(const.ID_SWAP_XY, _("From Right-Left to Anterior-Posterior")).Enable(
+            False
+        )
         swap_axes_menu.Append(const.ID_SWAP_XZ, _("From Right-Left to Top-Bottom")).Enable(False)
-        swap_axes_menu.Append(const.ID_SWAP_YZ, _("From Anterior-Posterior to Top-Bottom")).Enable(False)
+        swap_axes_menu.Append(const.ID_SWAP_YZ, _("From Anterior-Posterior to Top-Bottom")).Enable(
+            False
+        )
 
         image_menu.Append(wx.NewIdRef(), _("Flip"), flip_menu)
         image_menu.Append(wx.NewIdRef(), _("Swap axes"), swap_axes_menu)
 
-        reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, sm.get_menu_label("reorient_image", _("Reorient image")))
+        reorient_menu = image_menu.Append(
+            const.ID_REORIENT_IMG, sm.get_menu_label("reorient_image", _("Reorient image"))
+        )
         image_menu.Append(const.ID_IMAGE_FILTER, _("Filter"))
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
