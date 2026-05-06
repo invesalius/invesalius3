@@ -2729,20 +2729,20 @@ class ReorientImageDialog(wx.Dialog):
     def _on_update_combobox(self, labels, active_idx=0):
         # Prevent triggering events while rebuilding
         self.cb_volume.Unbind(wx.EVT_COMBOBOX)
-        
+
         self.cb_volume.Clear()
         for label in labels:
             if label == "original":
                 self.cb_volume.Append(_("Original"))
             else:
                 self.cb_volume.Append(label)
-                
+
         if self.cb_volume.GetCount() > 0:
             if 0 <= active_idx < self.cb_volume.GetCount():
                 self.cb_volume.SetSelection(active_idx)
             else:
                 self.cb_volume.SetSelection(0)
-                
+
         self.cb_volume.Bind(wx.EVT_COMBOBOX, self._on_select_volume)
 
     def _on_select_volume(self, evt):
