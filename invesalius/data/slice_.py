@@ -1142,12 +1142,7 @@ class Slice(metaclass=utils.Singleton):
         if orientation == "AXIAL":
             if self.current_mask.matrix[n, 0, 0] == 0:
                 mask = self.current_mask.matrix[n, 1:, 1:]
-                if np.any(self.q_orientation[1::]):
-                    image_slice = self.buffer_slices[orientation].image
-                    if image_slice is None:
-                        image_slice = self.get_image_slice(orientation, slice_number)
-                else:
-                    image_slice = target_matrix[slice_number]
+                image_slice = target_matrix[slice_number]
                 mask[:] = self.do_threshold_to_a_slice(image_slice, mask)
                 self.current_mask.matrix[n, 0, 0] = 1
             n_mask = np.array(
@@ -1158,12 +1153,7 @@ class Slice(metaclass=utils.Singleton):
         elif orientation == "CORONAL":
             if self.current_mask.matrix[0, n, 0] == 0:
                 mask = self.current_mask.matrix[1:, n, 1:]
-                if np.any(self.q_orientation[1::]):
-                    image_slice = self.buffer_slices[orientation].image
-                    if image_slice is None:
-                        image_slice = self.get_image_slice(orientation, slice_number)
-                else:
-                    image_slice = target_matrix[:, slice_number, :]
+                image_slice = target_matrix[:, slice_number, :]
                 mask[:] = self.do_threshold_to_a_slice(image_slice, mask)
                 self.current_mask.matrix[0, n, 0] = 1
             n_mask = np.array(
@@ -1174,12 +1164,7 @@ class Slice(metaclass=utils.Singleton):
         elif orientation == "SAGITAL":
             if self.current_mask.matrix[0, 0, n] == 0:
                 mask = self.current_mask.matrix[1:, 1:, n]
-                if np.any(self.q_orientation[1::]):
-                    image_slice = self.buffer_slices[orientation].image
-                    if image_slice is None:
-                        image_slice = self.get_image_slice(orientation, slice_number)
-                else:
-                    image_slice = target_matrix[:, :, slice_number]
+                image_slice = target_matrix[:, :, slice_number]
                 mask[:] = self.do_threshold_to_a_slice(image_slice, mask)
                 self.current_mask.matrix[0, 0, n] = 1
             n_mask = np.array(
@@ -1935,11 +1920,29 @@ class Slice(metaclass=utils.Singleton):
         os.close(temp_fd)
         os.remove(temp_file)
 
+        # Flush the reoriented image matrix to disk
+        if hasattr(self.matrix, "flush"):
+            self.matrix.flush()
+        if hasattr(self, "matrix_filename"):
+            try:
+                fd = os.open(self.matrix_filename, os.O_RDWR)
+                os.fsync(fd)
+                os.close(fd)
+            except (OSError, AttributeError):
+                pass
+
         self.q_orientation = np.array((1, 0, 0, 0))
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
         proj = Project()
         new_shape = self.matrix.shape
+
+        # Update image_versions to point to the reoriented matrix
+        if proj.image_versions:
+            for i, (label, mat) in enumerate(proj.image_versions):
+                if label == "original" or mat is self._matrix:
+                    proj.image_versions[i] = (label, self.matrix)
+                    break
 
         for mask in proj.mask_dict.values():
             new_mask_shape = (new_shape[0] + 1, new_shape[1] + 1, new_shape[2] + 1)
@@ -1947,6 +1950,8 @@ class Slice(metaclass=utils.Singleton):
                 mask._recreate_mask_matrix(new_mask_shape)
 
             mask.matrix[:] = 0
+            mask.matrix.flush()
+            os.fsync(mask.temp_fd)
             mask.clear_history()
 
         for o in self.buffer_slices:

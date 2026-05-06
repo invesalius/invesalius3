@@ -446,10 +446,6 @@ class Mask:
         old_temp_file = self.temp_file
         old_temp_fd = self.temp_fd
 
-        new_temp_fd, new_temp_file = tempfile.mkstemp()
-        new_matrix = np.memmap(new_temp_file, mode="w+", dtype="uint8", shape=new_shape)
-        new_matrix[:] = 0
-
         del self.matrix
 
         try:
@@ -457,6 +453,12 @@ class Mask:
             os.remove(old_temp_file)
         except (OSError, ValueError):
             pass
+
+        new_temp_fd, new_temp_file = tempfile.mkstemp()
+        new_matrix = np.memmap(new_temp_file, mode="w+", dtype="uint8", shape=new_shape)
+        new_matrix[:] = 0
+        new_matrix.flush()
+        os.fsync(new_temp_fd)
 
         self.temp_fd = new_temp_fd
         self.temp_file = new_temp_file
