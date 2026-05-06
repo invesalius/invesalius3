@@ -2651,6 +2651,9 @@ class ReorientImageDialog(wx.Dialog):
             self.interp_method.Append(txt, im_code)
         self.interp_method.SetValue(interp_methods_choices[2][0])
 
+        lbl_volume = wx.StaticText(self, -1, _("Apply reorientation to:"))
+        self.cb_volume = wx.ComboBox(self, -1, choices=[], style=wx.CB_READONLY)
+
         self.anglex = wx.TextCtrl(self, -1, "0.0")
         self.angley = wx.TextCtrl(self, -1, "0.0")
         self.anglez = wx.TextCtrl(self, -1, "0.0")
@@ -2671,6 +2674,9 @@ class ReorientImageDialog(wx.Dialog):
             ]
         )
 
+        sizer.Add(lbl_volume, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 5)
+        sizer.Add(self.cb_volume, 0, wx.EXPAND | wx.ALL, 5)
+
         sizer.Add(
             wx.StaticText(self, -1, _("Interpolation method:")),
             0,
@@ -2688,9 +2694,13 @@ class ReorientImageDialog(wx.Dialog):
     def _bind_events(self) -> None:
         Publisher.subscribe(self._update_angles, "Update reorient angles")
         Publisher.subscribe(self._close_dialog, "Close reorient dialog")
+        Publisher.subscribe(self._on_update_combobox, "Update image filter combobox")
+        # Request initial list of image labels to populate the cb_volume
+        wx.CallAfter(Publisher.sendMessage, "Get image labels")
 
     def _bind_events_wx(self) -> None:
         self.interp_method.Bind(wx.EVT_COMBOBOX, self.OnSelect)
+        self.cb_volume.Bind(wx.EVT_COMBOBOX, self._on_select_volume)
 
         self.anglex.Bind(wx.EVT_KILL_FOCUS, self.OnLostFocus)
         self.angley.Bind(wx.EVT_KILL_FOCUS, self.OnLostFocus)
@@ -2716,10 +2726,37 @@ class ReorientImageDialog(wx.Dialog):
         Publisher.sendMessage("Apply reorientation")
         self.Close()
 
+    def _on_update_combobox(self, labels, active_idx=0):
+        # Prevent triggering events while rebuilding
+        self.cb_volume.Unbind(wx.EVT_COMBOBOX)
+        
+        self.cb_volume.Clear()
+        for label in labels:
+            if label == "original":
+                self.cb_volume.Append(_("Original"))
+            else:
+                self.cb_volume.Append(label)
+                
+        if self.cb_volume.GetCount() > 0:
+            if 0 <= active_idx < self.cb_volume.GetCount():
+                self.cb_volume.SetSelection(active_idx)
+            else:
+                self.cb_volume.SetSelection(0)
+                
+        self.cb_volume.Bind(wx.EVT_COMBOBOX, self._on_select_volume)
+
+    def _on_select_volume(self, evt):
+        idx = self.cb_volume.GetSelection()
+        Publisher.sendMessage("Set active image", index=idx)
+
     def OnClose(self, evt: wx.CloseEvent) -> None:
         self._closed = True
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_REORIENT)
         Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
+        try:
+            Publisher.unsubscribe(self._on_update_combobox, "Update image filter combobox")
+        except Exception:
+            pass
         self.Destroy()
 
     def OnSelect(self, evt: wx.CommandEvent) -> None:

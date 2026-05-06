@@ -1939,8 +1939,9 @@ class Slice(metaclass=utils.Singleton):
 
         # Update image_versions to point to the reoriented matrix
         if proj.image_versions:
+            current_label = getattr(self, "current_image_label", "original")
             for i, (label, mat) in enumerate(proj.image_versions):
-                if label == "original" or mat is self._matrix:
+                if label == current_label or mat is self.matrix:
                     proj.image_versions[i] = (label, self.matrix)
                     break
 
