@@ -2726,7 +2726,7 @@ class ReorientImageDialog(wx.Dialog):
         Publisher.sendMessage("Apply reorientation")
         self.Close()
 
-    def _on_update_combobox(self, labels, active_idx=0):
+    def _on_update_combobox(self, labels, active_idx):
         # Prevent triggering events while rebuilding
         self.cb_volume.Unbind(wx.EVT_COMBOBOX)
 
