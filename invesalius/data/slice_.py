@@ -1946,12 +1946,48 @@ class Slice(metaclass=utils.Singleton):
 
         for mask in proj.mask_dict.values():
             new_mask_shape = (new_shape[0] + 1, new_shape[1] + 1, new_shape[2] + 1)
-            if mask.matrix.shape != new_mask_shape:
-                mask._recreate_mask_matrix(new_mask_shape)
 
-            mask.matrix[:] = 0
-            mask.matrix.flush()
-            os.fsync(mask.temp_fd)
+            # If mask was manually edited, transform it along with the image
+            if mask.was_edited:
+                # Create temporary file for mask transformation
+                mask_temp_fd, mask_temp_file = tempfile.mkstemp()
+                mask_copy = np.memmap(
+                    mask_temp_file, shape=mask.matrix.shape, dtype=mask.matrix.dtype, mode="w+"
+                )
+                mask_copy[:] = mask.matrix
+
+                # Recreate mask matrix with new shape if needed
+                if mask.matrix.shape != new_mask_shape:
+                    mask._recreate_mask_matrix(new_mask_shape)
+
+                # Apply the same transformation to the mask
+                # Use nearest neighbor interpolation to preserve discrete mask values
+                transforms.apply_view_matrix_transform(
+                    mask_copy,
+                    self.spacing,
+                    M,
+                    0,
+                    "AXIAL",
+                    0,  # 0 = nearest neighbor interpolation
+                    0,
+                    mask.matrix,
+                )
+
+                del mask_copy
+                os.close(mask_temp_fd)
+                os.remove(mask_temp_file)
+
+                mask.matrix.flush()
+                os.fsync(mask.temp_fd)
+            else:
+                # For threshold-based masks, just resize and clear
+                if mask.matrix.shape != new_mask_shape:
+                    mask._recreate_mask_matrix(new_mask_shape)
+
+                mask.matrix[:] = 0
+                mask.matrix.flush()
+                os.fsync(mask.temp_fd)
+
             mask.clear_history()
 
         for o in self.buffer_slices:
