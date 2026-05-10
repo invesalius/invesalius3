@@ -21,7 +21,6 @@ import sys
 
 import wx
 import wx.aui
-import wx.lib.agw.fourwaysplitter as fws
 import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
 
