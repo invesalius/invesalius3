@@ -1258,10 +1258,19 @@ class ObjectTab(wx.Panel):
             self.session.SetConfig("coil_registrations", self.coil_registrations)
 
             for btn, *junk in list(self.coil_btns.values()):
+                self.inner_sel_sizer.Detach(btn)
                 btn.Destroy()
             self.coil_btns.clear()
 
             self.config_txt.SetLabel(_("None"))
+
+            if self.no_coils_lbl is None:
+                self.no_coils_lbl = wx.StaticText(
+                    self, -1, _("No coils found in config.json. Create or load new coils below.")
+                )
+                self.inner_sel_sizer.Add(self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
+            else:
+                self.no_coils_lbl.Show()
         else:
             # Reset (enable and unpress) all coil-buttons
             for btn, *junk in self.coil_btns.values():
@@ -1987,12 +1996,13 @@ class TrackerTab(wx.Panel):
         else:
             self.n_coils = 1
 
-        clear_all = self.n_coils < old_n_coils
-
         if self.n_coils != old_n_coils:  # if n_coils was changed reset connection
+            clear_all = True
             tracker_id = self.tracker.tracker_id
             self.tracker.DisconnectTracker()
             self.tracker.SetTracker(tracker_id, n_coils=self.n_coils)
+        else:
+            clear_all = False
 
         ctrl.SetSelection(self.n_coils - 1)
         Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils, clear_all=clear_all)
@@ -2015,7 +2025,7 @@ class TrackerTab(wx.Panel):
         self.tracker.SetTracker(choice, n_coils=self.n_coils)
         Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
         Publisher.sendMessage("Tracker changed")
-        Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils, clear_all=False)
+        Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils, clear_all=True)
         Publisher.sendMessage("Coil selection done", done=False)
         ctrl.SetSelection(self.tracker.tracker_id)
         Publisher.sendMessage("End busy cursor")
