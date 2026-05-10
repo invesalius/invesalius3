@@ -62,6 +62,7 @@ VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range
 
 # Custom IDs for our new menu items
 [ID_SHOW_LOG_VIEWER, ID_INTERACTIVE_SHELL] = [wx.NewIdRef() for number in range(2)]
+[ID_PERSPECTIVE_SAVE, ID_PERSPECTIVE_LOAD, ID_PERSPECTIVE_RESET] = [wx.NewIdRef() for number in range(3)]
 
 WILDCARD_EXPORT_SLICE = (
     "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
@@ -854,6 +855,12 @@ class Frame(wx.Frame):
             self.OnShowLogViewer(evt)
         elif id == ID_INTERACTIVE_SHELL:
             self.OnInteractiveShell(evt)
+        elif id == ID_PERSPECTIVE_SAVE:
+            self.OnPerspectiveSave(evt)
+        elif id == ID_PERSPECTIVE_LOAD:
+            self.OnPerspectiveLoad(evt)
+        elif id == ID_PERSPECTIVE_RESET:
+            self.OnPerspectiveReset(evt)
 
         # Handle task panel toggle
         elif id == const.ID_TASK_BAR:
@@ -865,6 +872,67 @@ class Frame(wx.Frame):
 
             # Force focus on main window to ensure UI updates properly
             self.SetFocus()
+
+    def OnPerspectiveSave(self, evt):
+        pers_string = self.aui_manager.SavePerspective()
+        
+        # Also save the internal perspective of the 3D viewers (Data pane)
+        data_pane = self.aui_manager.GetPane("Data")
+        if data_pane.IsOk() and hasattr(data_pane.window, "aui_manager"):
+            viewers_pers = data_pane.window.aui_manager.SavePerspective()
+        else:
+            viewers_pers = ""
+            
+        session = ses.Session()
+        session.SetConfig("perspective", pers_string)
+        session.SetConfig("perspective_viewers", viewers_pers)
+
+    def OnPerspectiveLoad(self, evt):
+        session = ses.Session()
+        pers_string = session.GetConfig("perspective")
+        viewers_pers = session.GetConfig("perspective_viewers")
+        
+        if pers_string:
+            # Save current visibility state
+            visible_panes = {pane.name: pane.IsShown() for pane in self.aui_manager.GetAllPanes()}
+            self.aui_manager.LoadPerspective(pers_string)
+            # Restore visibility state
+            for pane in self.aui_manager.GetAllPanes():
+                if pane.name in visible_panes:
+                    pane.Show(visible_panes[pane.name])
+            self.aui_manager.Update()
+            
+        if viewers_pers:
+            data_pane = self.aui_manager.GetPane("Data")
+            if data_pane.IsOk() and hasattr(data_pane.window, "aui_manager"):
+                v_mgr = data_pane.window.aui_manager
+                v_visible = {pane.name: pane.IsShown() for pane in v_mgr.GetAllPanes()}
+                v_mgr.LoadPerspective(viewers_pers)
+                for pane in v_mgr.GetAllPanes():
+                    if pane.name in v_visible:
+                        pane.Show(v_visible[pane.name])
+                v_mgr.Update()
+
+    def OnPerspectiveReset(self, evt):
+        if hasattr(self, "perspective_all"):
+            # Save current visibility state
+            visible_panes = {pane.name: pane.IsShown() for pane in self.aui_manager.GetAllPanes()}
+            self.aui_manager.LoadPerspective(self.perspective_all)
+            # Restore visibility state
+            for pane in self.aui_manager.GetAllPanes():
+                if pane.name in visible_panes:
+                    pane.Show(visible_panes[pane.name])
+            self.aui_manager.Update()
+            
+        data_pane = self.aui_manager.GetPane("Data")
+        if data_pane.IsOk() and hasattr(data_pane.window, "perspective_all"):
+            v_mgr = data_pane.window.aui_manager
+            v_visible = {pane.name: pane.IsShown() for pane in v_mgr.GetAllPanes()}
+            v_mgr.LoadPerspective(data_pane.window.perspective_all)
+            for pane in v_mgr.GetAllPanes():
+                if pane.name in v_visible:
+                    pane.Show(v_visible[pane.name])
+            v_mgr.Update()
 
     def _HideTask(self):
         """
@@ -1643,6 +1711,15 @@ class MenuBar(wx.MenuBar):
         self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
 
         self.actived_interpolated_slices = self.view_menu
+
+        # Perspectives
+        perspectives_menu = wx.Menu()
+        perspectives_menu.Append(ID_PERSPECTIVE_SAVE, _("Save Current Perspective"))
+        perspectives_menu.Append(ID_PERSPECTIVE_LOAD, _("Load Saved Perspective"))
+        perspectives_menu.Append(ID_PERSPECTIVE_RESET, _("Reset to Default"))
+        
+        view_menu.AppendSeparator()
+        view_menu.Append(-1, _("Perspectives"), perspectives_menu)
 
         # view_tool_menu = wx.Menu()
         # app = view_tool_menu.Append
