@@ -241,11 +241,19 @@ class Project(metaclass=Singleton):
             "window_level": self.level,
             "scalar_range": self.threshold_range,
             "spacing": self.spacing,
-            "affine": self.affine,
-            "patient_orientation": self.patient_orientation,
             "image_fiducials": self.image_fiducials.tolist(),
-            "active_image_version": slice_.Slice().current_image_label,
         }
+        
+        # Add optional fields only if they are not None (plistlib doesn't support None)
+        if self.affine is not None:
+            project["affine"] = self.affine.tolist() if hasattr(self.affine, 'tolist') else self.affine
+        if self.patient_orientation is not None:
+            project["patient_orientation"] = self.patient_orientation
+        
+        # Add active_image_version if it exists
+        current_label = getattr(slice_.Slice(), 'current_image_label', None)
+        if current_label is not None:
+            project["active_image_version"] = current_label
 
         # Saving the main matrix containing the slices
         matrix = {
