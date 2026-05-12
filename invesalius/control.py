@@ -95,8 +95,8 @@ class Controller:
         Publisher.subscribe(self.OnOpenDicomGroup, "Open DICOM group")
         Publisher.subscribe(self.OnOpenBitmapFiles, "Open bitmap files")
         Publisher.subscribe(self.OnOpenOtherFiles, "Open other files")
-        Publisher.subscribe(self.Progress, "Update dicom load")
-        Publisher.subscribe(self.Progress, "Update bitmap load")
+        Publisher.subscribe(self.OnUpdateDicomLoad, "Update dicom load")
+        Publisher.subscribe(self.OnUpdateBitmapLoad, "Update bitmap load")
         Publisher.subscribe(self.OnLoadImportPanel, "End dicom load")
         Publisher.subscribe(self.OnLoadImportBitmapPanel, "End bitmap load")
         Publisher.subscribe(self.OnCancelImport, "Cancel DICOM load")
@@ -138,12 +138,19 @@ class Controller:
         proj.spacing = spacing
 
     def OnCancelImport(self) -> None:
-        # self.cancel_import = True
-        Publisher.sendMessage("Hide import panel")
+        # Note: Do NOT send "Hide import panel" here. During a scan-phase cancel,
+        # the Import pane was never shown, so touching the AUI manager while the
+        # progress dialog is still alive causes macOS to grey out the sidebar.
+        # The DICOM thumbnail panel's Cancel button (import_panel.py) sends
+        # "Hide import panel" directly when it actually needs to close.
+        Publisher.sendMessage("End busy cursor")
+        Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
     def OnCancelImportBitmap(self) -> None:
         # self.cancel_import = True
         Publisher.sendMessage("Hide import bitmap panel")
+        Publisher.sendMessage("End busy cursor")
+        Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
     ###########################
     ###########################
@@ -679,6 +686,7 @@ class Controller:
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
         Publisher.sendMessage("End busy cursor")
+        Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
     def StartImportPanel(self, path: "str | Path") -> None:
         # retrieve DICOM files split into groups
@@ -686,24 +694,36 @@ class Controller:
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
         Publisher.sendMessage("End busy cursor")
+        Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
-    def Progress(self, data: Optional[Sequence[int]]) -> None:
+    def OnUpdateDicomLoad(self, data: Optional[Sequence[int]]) -> None:
+        self.Progress(data, "Cancel DICOM load")
+
+    def OnUpdateBitmapLoad(self, data: Optional[Sequence[int]]) -> None:
+        self.Progress(data, "Cancel bitmap load")
+
+    def Progress(self, data: Optional[Sequence[int]], cancel_msg: str = "Cancel DICOM load") -> None:
         if data:
             message = _("Loading file %d of %d ...") % (data[0], data[1])
             if not (self.progress_dialog):
                 self.progress_dialog = vtk_utils.ProgressDialog(
-                    parent=self.frame, maximum=data[1], abort=True
+                    parent=self.frame, maximum=data[1], abort=True, cancel_msg=cancel_msg
                 )
             else:
-                if not (self.progress_dialog.Update(data[0], message)):
+                update_result = self.progress_dialog.Update(data[0], message)
+                if not update_result:
                     self.progress_dialog.Close()
                     self.progress_dialog = None
-                    Publisher.sendMessage("Begin busy cursor")
+                    Publisher.sendMessage("End busy cursor")
+                    Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
         else:
             # Is None if user canceled the load
             if self.progress_dialog is not None:
                 self.progress_dialog.Close()
                 self.progress_dialog = None
+
+            Publisher.sendMessage("End busy cursor")
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
     def OnLoadImportPanel(self, patient_series: Optional[List]) -> None:
         ok = self.LoadImportPanel(patient_series)

@@ -153,7 +153,6 @@ class Frame(wx.Frame):
         """
         sub = Publisher.subscribe
         sub(self._BeginBusyCursor, "Begin busy cursor")
-        sub(self._ShowContentPanel, "Cancel DICOM load")
         sub(self._EndBusyCursor, "End busy cursor")
         sub(self._HideContentPanel, "Hide content panel")
         sub(self._HideImportPanel, "Hide import panel")
@@ -442,11 +441,12 @@ class Frame(wx.Frame):
 
     def _EndBusyCursor(self):
         """
-        End busy cursor.
-        Note: _BeginBusyCursor should have been called previously.
+        End busy cursor, draining all stacked BeginBusyCursor calls.
+        wx.BeginBusyCursor is reference-counted; each Begin needs a matching End.
         """
         try:
-            wx.EndBusyCursor()
+            while wx.IsBusy():
+                wx.EndBusyCursor()
         except wx.PyAssertionError:
             # no matching wxBeginBusyCursor() for wxEndBusyCursor()
             pass

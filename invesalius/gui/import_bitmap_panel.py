@@ -160,7 +160,7 @@ class InnerPanel(wx.Panel):
         parm.ShowModal()
 
     def OnClickCancel(self, evt):
-        Publisher.sendMessage("Cancel DICOM load")
+        Publisher.sendMessage("Cancel bitmap load")
 
 
 class TextPanel(wx.Panel):
