@@ -1441,6 +1441,8 @@ class Controller:
     ):
         p = prj.Project()
         project_folder = tempfile.mkdtemp()
+        image_file = os.path.join(project_folder, "matrix.dat")
+        image_mmap = image_utils.array2memmap(image, image_file)
         p.create_project_file(
             name,
             spacing,
@@ -1448,7 +1450,7 @@ class Controller:
             orientation,
             window_width,
             window_level,
-            image,
+            image=image_mmap,
             folder=project_folder,
         )
         err_msg = ""
