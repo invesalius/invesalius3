@@ -2089,6 +2089,7 @@ class Slice(metaclass=utils.Singleton):
         import os as _os
 
         _os.fsync(new_fd)
+        _os.close(new_fd)
         del swapped
 
         # Close and remove the old matrix file, replace with new one
@@ -2112,6 +2113,14 @@ class Slice(metaclass=utils.Singleton):
         # Also swap every image version (filtered images) so that mask
         # threshold evaluation always uses the correctly swapped data.
         proj = Project()
+
+        # Update project metadata so save/load uses the new file and shape.
+        # Without this, saving after a swap would archive the old (pre-swap)
+        # matrix file and the wrong shape, causing an error on reopen.
+        proj.matrix_filename = new_filename
+        proj.matrix_shape = new_shape
+        proj.spacing = self.spacing
+        # matrix_dtype stays the same
         for i, (label, mat) in enumerate(proj.image_versions):
             swapped_ver = np.array(mat.swapaxes(axis0, axis1))
             ver_fd, ver_filename = _tempfile.mkstemp()
@@ -2119,6 +2128,7 @@ class Slice(metaclass=utils.Singleton):
             ver_mat[:] = swapped_ver
             ver_mat.flush()
             _os.fsync(ver_fd)
+            _os.close(ver_fd)
             del swapped_ver
             # Clean up the old temp file for this image version
             old_ver_filename = getattr(mat, "filename", None)

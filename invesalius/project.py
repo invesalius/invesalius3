@@ -673,7 +673,13 @@ def Compress(
         if ".." in sanit_name or os.path.isabs(sanit_name):
             continue
 
+
         if not os.path.exists(name):
+            if sanit_name == "matrix.dat" or sanit_name.startswith("matrix"):
+                raise FileNotFoundError(
+                    f"Critical project file missing during save: {name} "
+                    f"(target: {sanit_name}). The project cannot be saved without this file."
+                )
             utils.debug(f"Warning: Skipping missing file during compression: {name}")
             continue
 
