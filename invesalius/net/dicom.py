@@ -1,16 +1,18 @@
 import gdcm
 from datetime import datetime
 from pydicom.dataset import Dataset
-from pynetdicom import AE, debug_logger
+from pynetdicom import AE, debug_logger, evt, build_role, AllStoragePresentationContexts
 from pynetdicom.sop_class import (
     Verification,
     PatientRootQueryRetrieveInformationModelFind,
+    PatientRootQueryRetrieveInformationModelGet,
+    CTImageStorage,
 )
+import os
 
 import invesalius.utils as utils
 
-debug_logger()
-
+debug_logger()  
 
 class DicomNet:
     def __init__(self, address: str, port: int, aetitle_call: str, aetitle: str):
@@ -190,6 +192,47 @@ class DicomNet:
                             }
         assoc.release()
         return patients
+
+    def RunCGet(self, QueryRetrieveLevel, PatientID, StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, directory="../Data/"):
+        def handle_store(event):
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            ds = event.dataset
+            ds.file_meta = event.file_meta
+            filename = f"{directory}/{ds.SOPInstanceUID}.dcm"
+            ds.save_as(filename)
+            return 0x0000
+
+        handlers = [(evt.EVT_C_STORE, handle_store)]
+
+        ae = AE(ae_title=self.aetitle_call)
+
+        ae.add_requested_context(PatientRootQueryRetrieveInformationModelGet)
+        ae.add_requested_context(CTImageStorage)
+
+        role = build_role(CTImageStorage, scp_role=True)
+
+        ds = Dataset()
+        ds.QueryRetrieveLevel = QueryRetrieveLevel
+        ds.PatientID = PatientID
+        ds.StudyInstanceUID = StudyInstanceUID
+        ds.SeriesInstanceUID = SeriesInstanceUID
+        ds.SOPInstanceUID = SOPInstanceUID
+
+        assoc = ae.associate(self.address, self.port, ext_neg=[role], evt_handlers=handlers, ae_title=self.aetitle)
+
+        # Use the C-GET service to send the identifier
+        responses = assoc.send_c_get(
+            ds, PatientRootQueryRetrieveInformationModelGet)
+        for (status, identifier) in responses:
+            if status:
+                print(f"C-GET query status: 0x{status.Status:04x}")
+            else:
+                print(responses)
+                print('Connection timed out, was aborted or received invalid response')
+
+        if assoc and assoc.is_established:
+            assoc.release()
 
     def RunCMove(self, values):
         ds = gdcm.DataSet()
