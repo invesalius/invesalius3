@@ -3,8 +3,8 @@
     "RemoteAccessAllowed": true,
     "AuthenticationEnabled": false,
     "DicomModalities": {
-        "PYNETDICOM": [
-            "PYNETDICOM",
+        "INVESALIUS": [
+            "INVESALIUS",
             "0.0.0.0",
             "11120"
         ]
