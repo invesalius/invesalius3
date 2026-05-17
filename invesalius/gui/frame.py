@@ -45,6 +45,7 @@ from invesalius import inv_paths
 from invesalius.data.slice_ import Slice
 from invesalius.gui import project_properties
 from invesalius.gui.interactive_shell import InteractiveShellFrame
+from invesalius.gui.shortcut_manager import ShortcutManager
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -122,6 +123,9 @@ class Frame(wx.Frame):
 
         self._show_navigator_message = True
         self.edit_data_notebook_label = False
+
+        # Load shortcut registry before building menus so get_menu_label() works
+        ShortcutManager().load()
 
         # to control check and unckeck of menu view -> interpolated_slices
         main_menu = MenuBar(self)
@@ -214,28 +218,32 @@ class Frame(wx.Frame):
         is_shell_focused = False
 
         # Check if the focus is on a text entry field
-        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
+        if focused and isinstance(focused, wx.TextCtrl | wx.ComboBox):
             is_search_field = True
 
         # Check if the shell is focused
         if focused and isinstance(focused, wx.py.shell.Shell):
             is_shell_focused = True
 
-        # If it is CTRL+S, CTRL+Shift+S, or CTRL+Q, skip this event
-        if modifiers & wx.MOD_CONTROL:
-            unicode = event.GetUnicodeKey()
-            if unicode in (ord("s"), ord("S"), ord("q"), ord("Q")):
-                event.Skip()
-                return
+        # Handle save, save_as, exit and clean_mask dynamically from shortcut registry
+        sm = ShortcutManager()
+        save_key = sm.get_shortcut("save_project")
+        save_as_key = sm.get_shortcut("save_project_as")
+        exit_key = sm.get_shortcut("exit")
+        clean_mask_key = sm.get_shortcut("clean_mask")
 
-        # Handle Ctrl+Shift+A for clearing mask (should work at any time, even outside edit mode)
-        if (
-            modifiers == (wx.MOD_CONTROL | wx.MOD_SHIFT)
-            and keycode == ord("A")
-            and not is_search_field
-            and not is_shell_focused
-        ):
-            # Only clear mask if a mask is available (menu is enabled)
+        current_key = ""
+        if modifiers & wx.MOD_CONTROL:
+            if modifiers & wx.MOD_SHIFT:
+                current_key = "Ctrl+Shift+" + chr(event.GetUnicodeKey()).upper()
+            else:
+                current_key = "Ctrl+" + chr(event.GetUnicodeKey()).upper()
+
+        if current_key in (save_key, save_as_key, exit_key):
+            event.Skip()
+            return
+
+        if current_key == clean_mask_key and not is_search_field and not is_shell_focused:
             if hasattr(self, "clean_mask_menu") and self.clean_mask_menu.IsEnabled():
                 self.OnCleanMask()
             event.Skip()
@@ -1441,6 +1449,7 @@ class MenuBar(wx.MenuBar):
         """
         Create all menu and submenus, and add them to self.
         """
+        sm = ShortcutManager()
         # TODO: This definetely needs improvements... ;)
 
         # Import Others Files
@@ -1453,12 +1462,12 @@ class MenuBar(wx.MenuBar):
         # FILE
         file_menu = wx.Menu()
         app = file_menu.Append
-        app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
+        app(const.ID_DICOM_IMPORT, sm.get_menu_label("import_dicom", _("Import DICOM...")))
         # app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
         file_menu.Append(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
-        app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
-        app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
-        app(const.ID_PROJECT_SAVE_AS, _("Save project as...\tCtrl+Shift+S"))
+        app(const.ID_PROJECT_OPEN, sm.get_menu_label("open_project", _("Open project...")))
+        app(const.ID_PROJECT_SAVE, sm.get_menu_label("save_project", _("Save project")))
+        app(const.ID_PROJECT_SAVE_AS, sm.get_menu_label("save_project_as", _("Save project as...")))
         app(const.ID_EXPORT_SLICE, _("Export project"))
         app(const.ID_PROJECT_PROPERTIES, _("Project properties"))
         app(const.ID_PROJECT_CLOSE, _("Close project"))
@@ -1470,13 +1479,12 @@ class MenuBar(wx.MenuBar):
         # file_menu.AppendSeparator()
         # app(1, "C:\InvData\sample.inv")
         # file_menu.AppendSeparator()
-        app(const.ID_EXIT, _("Exit\tCtrl+Q"))
+        app(const.ID_EXIT, sm.get_menu_label("exit", _("Exit")))
 
         file_edit = wx.Menu()
-
-        file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
-        file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
-        file_edit.Append(const.ID_GOTO_SLICE, _("Go to slice ...\tCtrl+G"))
+        file_edit.Append(wx.ID_UNDO, sm.get_menu_label("undo", _("Undo"))).Enable(False)
+        file_edit.Append(wx.ID_REDO, sm.get_menu_label("redo", _("Redo"))).Enable(False)
+        file_edit.Append(const.ID_GOTO_SLICE, sm.get_menu_label("goto_slice", _("Go to slice ...")))
         file_edit.Append(const.ID_GOTO_COORD, _("Go to scanner coord ...\t")).Enable(False)
 
         # app(const.ID_EDIT_LIST, "Show Undo List...")
@@ -1488,38 +1496,44 @@ class MenuBar(wx.MenuBar):
         # Mask Menu
         mask_menu = wx.Menu()
 
-        self.new_mask_menu = mask_menu.Append(const.ID_CREATE_MASK, _("New\tCtrl+Shift+M"))
+        self.new_mask_menu = mask_menu.Append(
+            const.ID_CREATE_MASK, sm.get_menu_label("new_mask", _("New"))
+        )
         self.new_mask_menu.Enable(False)
 
         self.bool_op_menu = mask_menu.Append(
-            const.ID_BOOLEAN_MASK, _("Boolean operations\tCtrl+Shift+B")
+            const.ID_BOOLEAN_MASK, sm.get_menu_label("boolean_operations", _("Boolean operations"))
         )
         self.bool_op_menu.Enable(False)
 
-        self.clean_mask_menu = mask_menu.Append(const.ID_CLEAN_MASK, _("Clean Mask\tCtrl+Shift+A"))
+        self.clean_mask_menu = mask_menu.Append(
+            const.ID_CLEAN_MASK, sm.get_menu_label("clean_mask", _("Clean Mask"))
+        )
         self.clean_mask_menu.Enable(False)
 
         mask_menu.AppendSeparator()
 
         self.fill_hole_mask_menu = mask_menu.Append(
-            const.ID_FLOODFILL_MASK, _("Fill holes manually\tCtrl+Shift+H")
+            const.ID_FLOODFILL_MASK,
+            sm.get_menu_label("fill_holes_manually", _("Fill holes manually")),
         )
         self.fill_hole_mask_menu.Enable(False)
 
         self.fill_hole_auto_menu = mask_menu.Append(
-            const.ID_FILL_HOLE_AUTO, _("Fill holes automatically\tCtrl+Shift+J")
+            const.ID_FILL_HOLE_AUTO,
+            sm.get_menu_label("fill_holes_auto", _("Fill holes automatically")),
         )
         self.fill_hole_mask_menu.Enable(False)
 
         mask_menu.AppendSeparator()
 
         self.remove_mask_part_menu = mask_menu.Append(
-            const.ID_REMOVE_MASK_PART, _("Remove parts\tCtrl+Shift+K")
+            const.ID_REMOVE_MASK_PART, sm.get_menu_label("remove_mask_parts", _("Remove parts"))
         )
         self.remove_mask_part_menu.Enable(False)
 
         self.select_mask_part_menu = mask_menu.Append(
-            const.ID_SELECT_MASK_PART, _("Select parts\tCtrl+Shift+L")
+            const.ID_SELECT_MASK_PART, sm.get_menu_label("select_mask_parts", _("Select parts"))
         )
         self.select_mask_part_menu.Enable(False)
 
@@ -1533,12 +1547,18 @@ class MenuBar(wx.MenuBar):
         mask_preview_menu = wx.Menu()
 
         self.mask_preview = mask_preview_menu.Append(
-            const.ID_MASK_3D_PREVIEW, _("Enable") + "\tCtrl+Shift+P", "", wx.ITEM_CHECK
+            const.ID_MASK_3D_PREVIEW,
+            sm.get_menu_label("mask_3d_preview", _("Enable")),
+            "",
+            wx.ITEM_CHECK,
         )
         self.mask_preview.Enable(False)
 
         self.mask_auto_reload = mask_preview_menu.Append(
-            const.ID_MASK_3D_AUTO_RELOAD, _("Auto reload") + "\tCtrl+Shift+D", "", wx.ITEM_CHECK
+            const.ID_MASK_3D_AUTO_RELOAD,
+            sm.get_menu_label("mask_3d_auto_reload", _("Auto reload")),
+            "",
+            wx.ITEM_CHECK,
         )
 
         session = ses.Session()
@@ -1548,7 +1568,7 @@ class MenuBar(wx.MenuBar):
         self.mask_auto_reload.Enable(False)
 
         self.mask_preview_reload = mask_preview_menu.Append(
-            const.ID_MASK_3D_RELOAD, _("Reload") + "\tCtrl+Shift+R"
+            const.ID_MASK_3D_RELOAD, sm.get_menu_label("mask_3d_reload", _("Reload"))
         )
         self.mask_preview_reload.Enable(False)
 
@@ -1557,16 +1577,20 @@ class MenuBar(wx.MenuBar):
         # Segmentation Menu
         segmentation_menu = wx.Menu()
         self.threshold_segmentation = segmentation_menu.Append(
-            const.ID_THRESHOLD_SEGMENTATION, _("Threshold\tCtrl+Shift+T")
+            const.ID_THRESHOLD_SEGMENTATION,
+            sm.get_menu_label("threshold_segmentation", _("Threshold")),
         )
         self.manual_segmentation = segmentation_menu.Append(
-            const.ID_MANUAL_SEGMENTATION, _("Manual segmentation\tCtrl+Shift+E")
+            const.ID_MANUAL_SEGMENTATION,
+            sm.get_menu_label("manual_segmentation", _("Manual segmentation")),
         )
         self.watershed_segmentation = segmentation_menu.Append(
-            const.ID_WATERSHED_SEGMENTATION, _("Watershed\tCtrl+Shift+W")
+            const.ID_WATERSHED_SEGMENTATION,
+            sm.get_menu_label("watershed_segmentation", _("Watershed")),
         )
         self.ffill_segmentation = segmentation_menu.Append(
-            const.ID_FLOODFILL_SEGMENTATION, _("Region growing\tCtrl+Shift+G")
+            const.ID_FLOODFILL_SEGMENTATION,
+            sm.get_menu_label("region_growing", _("Region growing")),
         )
         self.ffill_segmentation.Enable(False)
         segmentation_menu.AppendSeparator()
@@ -1579,7 +1603,9 @@ class MenuBar(wx.MenuBar):
 
         # Surface Menu
         surface_menu = wx.Menu()
-        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, ("New\tCtrl+Shift+C"))
+        self.create_surface = surface_menu.Append(
+            const.ID_CREATE_SURFACE, sm.get_menu_label("new_surface", _("New"))
+        )
         self.create_surface.Enable(False)
 
         self.remove_non_visible = surface_menu.Append(
@@ -1607,9 +1633,10 @@ class MenuBar(wx.MenuBar):
         image_menu.Append(wx.NewIdRef(), _("Flip"), flip_menu)
         image_menu.Append(wx.NewIdRef(), _("Swap axes"), swap_axes_menu)
 
-        reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _("Reorient image\tCtrl+Shift+O"))
+        reorient_menu = image_menu.Append(
+            const.ID_REORIENT_IMG, sm.get_menu_label("reorient_image", _("Reorient image"))
+        )
         image_menu.Append(const.ID_IMAGE_FILTER, _("Filter"))
-
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
 
         planning_menu = wx.Menu()
@@ -1641,7 +1668,6 @@ class MenuBar(wx.MenuBar):
 
         v = self.SliceInterpolationStatus()
         self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
-
         self.actived_interpolated_slices = self.view_menu
 
         # view_tool_menu = wx.Menu()
@@ -1671,7 +1697,7 @@ class MenuBar(wx.MenuBar):
         # TOOLS
         # tools_menu = wx.Menu()
 
-        # OPTIONS
+        # Options
         options_menu = wx.Menu()
         options_menu.Append(const.ID_PREFERENCES, _("Preferences"))
 
@@ -1680,20 +1706,23 @@ class MenuBar(wx.MenuBar):
         nav_menu = wx.Menu()
         nav_menu.Append(
             const.ID_MODE_NAVIGATION,
-            _("Transcranial Magnetic Stimulation Mode\tCtrl+T"),
+            sm.get_menu_label("navigation_mode", _("Transcranial Magnetic Stimulation Mode")),
             "",
             wx.ITEM_CHECK,
         )
-        # Under development
         self.mode_dbs = nav_menu.Append(
-            const.ID_MODE_DBS, _("Deep Brain Stimulation Mode\tCtrl+B"), "", wx.ITEM_CHECK
+            const.ID_MODE_DBS,
+            sm.get_menu_label("dbs_mode", _("Deep Brain Stimulation Mode")),
+            "",
+            wx.ITEM_CHECK,
         )
+
+        # Under development
         self.mode_dbs.Enable(0)
         mode_menu.Append(-1, _("Navigation Mode"), nav_menu)
 
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
-
         self.actived_navigation_mode = self.mode_menu
 
         plugins_menu = wx.Menu()
