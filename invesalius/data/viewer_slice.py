@@ -1516,11 +1516,29 @@ class Viewer(wx.Panel):
 
             if 0 <= vx < dx and 0 <= vy < dy and 0 <= vz < dz:
                 voxel_value = matrix[vz, vy, vx]
-                info = (
-                    f"Window: {self.orientation.capitalize()}  |  "
-                    f"Pos: ({int(px)}, {int(py)})  Slice: {slice_number}  |  "
-                    f"Value: {voxel_value}"
+                #info = (
+                #    f"Window: {self.orientation.capitalize()}  |  "
+                #    f"Pos: ({int(px)}, {int(py)})  Slice: {slice_number}  |  "
+                #    f"Value: {voxel_value}"
+                #)
+
+                info = _(
+                    "Window: {window}  |  "
+                    "Pos: ({px}, {py})  Slice: {slice}  |  "
+                    "Value: {value}"
+                ).format(
+                    window=self.orientation.capitalize(),
+                    px=int(px),
+                    py=int(py),
+                    slice=slice_number,
+                    value=voxel_value,
                 )
+
+
+
+
+
+
                 Publisher.sendMessage("Update statusbar image info", info=info)
         except Exception:
             pass
