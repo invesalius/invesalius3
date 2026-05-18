@@ -3488,7 +3488,7 @@ msgstr "Nome do paciente"
 #: invesalius/gui/import_network_panel.py:247
 #: invesalius/gui/import_panel.py:247
 msgid "Patient ID"
-msgstr "ID Paciente"
+msgstr "ID do Paciente"
 
 #: invesalius/gui/import_network_panel.py:248
 #: invesalius/gui/import_panel.py:248
@@ -3578,7 +3578,7 @@ msgstr "Verifica status"
 
 #: invesalius/gui/import_network_panel.py:749
 msgid "ok"
-msgstr "OK"
+msgstr "ok"
 
 #: invesalius/gui/import_network_panel.py:751
 msgid "error"
@@ -4158,7 +4158,7 @@ msgstr "visível antes de exportá-la."
 
 #: invesalius/gui/task_fmrisupport.py:81
 msgid "Select Modalities / File"
-msgstr "Select Modalities / Arquivo"
+msgstr "Selecionar Modalidades / Arquivo"
 
 #: invesalius/gui/task_fmrisupport.py:84
 msgid "Load Nifti image"
