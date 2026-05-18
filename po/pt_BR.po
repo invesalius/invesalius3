@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-17 12:10-0300\n"
+"POT-Creation-Date: 2026-05-18 10:36-0300\n"
 "PO-Revision-Date: 2019-02-25 12:52+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
 "Language-Team: Portuguese (Brazil) (http://www.transifex.com/invesalius/"
@@ -553,7 +553,8 @@ msgstr "Falha ao ler o arquivo NIfTI."
 
 #: invesalius/control.py:279
 msgid "No volume loaded. Please load a volume before importing a mask."
-msgstr "Nenhum volume carregado. Carregue um volume antes de importar uma máscara."
+msgstr ""
+"Nenhum volume carregado. Carregue um volume antes de importar uma máscara."
 
 #: invesalius/control.py:316
 msgid "Mask imported successfully."
@@ -624,8 +625,8 @@ msgid ""
 "invesalius.\n"
 "do you want to convert it to grayscale?"
 msgstr ""
-"Esta é uma imagem RGB. É necessário convertê-la para tons de cinza para "
-"abri-la no InVesalius.\n"
+"Esta é uma imagem RGB. É necessário convertê-la para tons de cinza para abri-"
+"la no InVesalius.\n"
 "Deseja convertê-la para tons de cinza?"
 
 #: invesalius/control.py:1203
@@ -861,6 +862,7 @@ msgstr "Exportação concluída com sucesso."
 #: invesalius/data/surface.py:1487
 msgid "Export success"
 msgstr "Exportação bem-sucedida"
+
 #: invesalius/data/viewer_slice.py:91
 msgid "Number of slices used to compound the visualization."
 msgstr "Número de fatias usadas para compor a visualização"
@@ -1170,7 +1172,9 @@ msgstr "Copiar tudo"
 
 #: invesalius/enhanced_logging.py:573
 msgid "Custom time range filtering will be implemented in a future version."
-msgstr "A filtragem personalizada por intervalo de tempo será implementada em uma versão futura."
+msgstr ""
+"A filtragem personalizada por intervalo de tempo será implementada em uma "
+"versão futura."
 
 #: invesalius/enhanced_logging.py:574
 msgid "Not Implemented"
@@ -1463,7 +1467,9 @@ msgstr "Nova superfície"
 
 #: invesalius/gui/data_notebook.py:1513
 msgid ".3MF import is coming soon. This feature is under active development."
-msgstr "A importação de .3MF estará disponível em breve. Este recurso está em desenvolvimento ativo."
+msgstr ""
+"A importação de .3MF estará disponível em breve. Este recurso está em "
+"desenvolvimento ativo."
 
 #: invesalius/gui/data_notebook.py:1514
 msgid "Feature Coming Soon"
@@ -1471,7 +1477,8 @@ msgstr "Recurso disponível em breve"
 
 #: invesalius/gui/data_notebook.py:1537
 msgid "You need to create a surface and make it visible before exporting it."
-msgstr "Você precisa criar uma superfície e torná-la visível antes de exportá-la."
+msgstr ""
+"Você precisa criar uma superfície e torná-la visível antes de exportá-la."
 
 #: invesalius/gui/data_notebook.py:1538 invesalius/gui/preferences.py:1329
 #: invesalius/gui/preferences.py:1342 invesalius/gui/preferences.py:1560
@@ -1904,8 +1911,8 @@ msgid ""
 "File was created in a newer InVesalius version. Some functionalities may not "
 "work correctly."
 msgstr ""
-"O arquivo foi criado em uma versão mais recente do InVesalius. Algumas funcionalidades "
-"podem não funcionar corretamente."
+"O arquivo foi criado em uma versão mais recente do InVesalius. Algumas "
+"funcionalidades podem não funcionar corretamente."
 
 #: invesalius/gui/dialogs.py:969
 msgid "There are no Bitmap, JPEG, PNG or TIFF files in the selected folder."
@@ -1921,11 +1928,14 @@ msgstr "Arquivo inválido."
 
 #: invesalius/gui/dialogs.py:984
 msgid "Warning! Pixel values are smaller than 8 (possible float values).\n"
-msgstr "Aviso! Os valores de pixel são menores que 8 (possíveis valores em ponto flutuante).\n"
+msgstr ""
+"Aviso! Os valores de pixel são menores que 8 (possíveis valores em ponto "
+"flutuante).\n"
 
 #: invesalius/gui/dialogs.py:985
 msgid "Pixel values have been rescaled from 0-255 for compatibility."
-msgstr "Os valores de pixel foram redimensionados de 0 a 255 para compatibilidade."
+msgstr ""
+"Os valores de pixel foram redimensionados de 0 a 255 para compatibilidade."
 
 #: invesalius/gui/dialogs.py:995
 msgid "Warning! InVesalius has limited support to Analyze format.\n"
@@ -1933,9 +1943,10 @@ msgstr "Atenção! InVesalius tem suporte limitado ao formato Analyze.\n"
 
 #: invesalius/gui/dialogs.py:996
 msgid "Slices may be wrongly oriented and functions may not work properly."
-msgstr "As fatias podem estar orientadas incorretamente e as funções podem não funcionar adequadamente."
-"Fatias podem estar orientadas erroneamente e a função pode não ser executada "
-"corretamente."
+msgstr ""
+"As fatias podem estar orientadas incorretamente e as funções podem não "
+"funcionar adequadamente.Fatias podem estar orientadas erroneamente e a "
+"função pode não ser executada corretamente."
 
 #: invesalius/gui/dialogs.py:1006
 msgid "A mask is needed to create a surface."
@@ -1963,7 +1974,9 @@ msgstr "Nenhuma superície foi selecionada para duplicação."
 
 #: invesalius/gui/dialogs.py:1066
 msgid "No surfaces exist, therefore cannot create a seeded surface."
-msgstr "Não existem superfícies, portanto não é possível criar uma superfície semeada."
+msgstr ""
+"Não existem superfícies, portanto não é possível criar uma superfície "
+"semeada."
 
 #: invesalius/gui/dialogs.py:1076
 msgid "No surfaces exist, therefore cannot split surfaces."
@@ -1971,7 +1984,9 @@ msgstr "Não existem superfícies, portanto não é possível dividir superfíci
 
 #: invesalius/gui/dialogs.py:1086
 msgid "No surfaces exist, therefore cannot select the largest surface."
-msgstr "Não existem superfícies, portanto não é possível selecionar a maior superfície."
+msgstr ""
+"Não existem superfícies, portanto não é possível selecionar a maior "
+"superfície."
 
 #: invesalius/gui/dialogs.py:1096
 #, python-brace-format
@@ -2060,7 +2075,9 @@ msgstr "Para melhor precisão do ICP, recomenda-se realizar"
 
 #: invesalius/gui/dialogs.py:1267
 msgid "the refine registration using the scalp surface with only"
-msgstr "o refinamento do registro usando a superfície do couro cabeludo contendo apenas"
+msgstr ""
+"o refinamento do registro usando a superfície do couro cabeludo contendo "
+"apenas"
 
 #: invesalius/gui/dialogs.py:1269
 msgid "the outer shell."
@@ -2486,7 +2503,7 @@ msgstr "voxels"
 
 #: invesalius/gui/dialogs.py:3973
 msgid "Mask density"
-msgstr "Máscara density"
+msgstr "Densidade da máscara"
 
 #: invesalius/gui/dialogs.py:3990
 msgid "Calculate"
@@ -2525,7 +2542,8 @@ msgid ""
 "Choose the coil index in coord_raw. Choose 0 for static mode, 2 for dynamic "
 "mode and 3 onwards for multiple coils."
 msgstr ""
-"Escolha o índice da bobina em coord_raw. Escolha 0 para modo estático, 2 para modo dinâmico e 3 em diante para múltiplas bobinas."
+"Escolha o índice da bobina em coord_raw. Escolha 0 para modo estático, 2 "
+"para modo dinâmico e 3 em diante para múltiplas bobinas."
 
 #: invesalius/gui/dialogs.py:4167
 msgid "Choose the FASTRAK sensor port"
@@ -3018,35 +3036,40 @@ msgid ""
 "It's not possible to run brain segmenter because your system doesn't have "
 "the following modules installed:"
 msgstr ""
-"Não é possível executar o segmentador cerebral porque o seu sistema não possui os seguintes módulos instalados:"
+"Não é possível executar o segmentador cerebral porque o seu sistema não "
+"possui os seguintes módulos instalados:"
 
 #: invesalius/gui/frame.py:1175
 msgid ""
 "It's not possible to run subpart segmentation because your system doesn't "
 "have the following modules installed:"
 msgstr ""
-"Não é possível executar a segmentação de subpartes porque o seu sistema não possui os seguintes módulos instalados:"
+"Não é possível executar a segmentação de subpartes porque o seu sistema não "
+"possui os seguintes módulos instalados:"
 
 #: invesalius/gui/frame.py:1194
 msgid ""
 "It's not possible to run trachea segmenter because your system doesn't have "
 "the following modules installed:"
 msgstr ""
-"Não é possível executar o segmentador de traqueia porque o seu sistema não possui os seguintes módulos instalados:"
+"Não é possível executar o segmentador de traqueia porque o seu sistema não "
+"possui os seguintes módulos instalados:"
 
 #: invesalius/gui/frame.py:1213
 msgid ""
 "It's not possible to run implant prediction because your system doesn't have "
 "the following modules installed:"
 msgstr ""
-"Não é possível executar a predição de implantes porque o seu sistema não possui os seguintes módulos instalados:"
+"Não é possível executar a predição de implantes porque o seu sistema não "
+"possui os seguintes módulos instalados:"
 
 #: invesalius/gui/frame.py:1232
 msgid ""
 "It's not possible to run mandible segmenter because your system doesn't have "
 "the following modules installed:"
 msgstr ""
-"Não é possível executar o segmentador de mandíbula porque o seu sistema não possui os seguintes módulos instalados:"
+"Não é possível executar o segmentador de mandíbula porque o seu sistema não "
+"possui os seguintes módulos instalados:"
 
 #: invesalius/gui/frame.py:1448
 msgid "Analyze 7.5"
@@ -3078,7 +3101,7 @@ msgstr "Salvar projeto\tCtrl+S"
 
 #: invesalius/gui/frame.py:1461
 msgid "Save project as...\tCtrl+Shift+S"
-msgstr "Salvar project as...	Ctrl+Shift+S"
+msgstr "Salvar project as...\tCtrl+Shift+S"
 
 #: invesalius/gui/frame.py:1462
 msgid "Export project"
@@ -3114,7 +3137,7 @@ msgstr "Ir para coordenadas do scanner...\t"
 
 #: invesalius/gui/frame.py:1491
 msgid "New\tCtrl+Shift+M"
-msgstr "Novo\tCtrl+Shift+M"
+msgstr "Nova\tCtrl+Shift+M"
 
 #: invesalius/gui/frame.py:1495
 msgid "Boolean operations\tCtrl+Shift+B"
@@ -3187,6 +3210,10 @@ msgstr "Segmentação de subpartes do cérebro (MRI T1)"
 #: invesalius/gui/frame.py:1577
 msgid "Trachea segmentation (CT)"
 msgstr "Segmentação da traqueia (TC)"
+
+#: invesalius/gui/frame.py:1582
+msgid "New\tCtrl+Shift+C"
+msgstr "Nova\tCtrl+Shift+C"
 
 #: invesalius/gui/frame.py:1586
 msgid "Remove non-visible faces"
@@ -3652,7 +3679,8 @@ msgstr " Opções de registro no console"
 
 #: invesalius/gui/preferences.py:483
 msgid "Note: Using too low sleep times can result in Invesalius crashing!"
-msgstr "Nota: Usar tempos de espera muito baixos pode fazer o InVesalius travar!"
+msgstr ""
+"Nota: Usar tempos de espera muito baixos pode fazer o InVesalius travar!"
 
 #: invesalius/gui/preferences.py:486
 msgid "Navigation Sleep (s):"
@@ -3744,7 +3772,7 @@ msgstr "Nova configuração de bobina TMS"
 
 #: invesalius/gui/preferences.py:1026
 msgid "New"
-msgstr "Nova"
+msgstr "Novo"
 
 #: invesalius/gui/preferences.py:1031
 msgid "Load TMS coil configuration from an OBR file"
@@ -3775,11 +3803,14 @@ msgid ""
 "TMS coil selection ({len(navigation.coil_registrations)} out of {navigation."
 "n_coils})"
 msgstr ""
-"Seleção de bobina TMS ({len(navigation.coil_registrations)} de {navigation.n_coils})"
+"Seleção de bobina TMS ({len(navigation.coil_registrations)} de {navigation."
+"n_coils})"
 
 #: invesalius/gui/preferences.py:1131
 msgid "No coils found in config.json. Create or load new coils below."
-msgstr "Nenhuma bobina encontrada em config.json. Crie ou carregue novas bobinas abaixo."
+msgstr ""
+"Nenhuma bobina encontrada em config.json. Crie ou carregue novas bobinas "
+"abaixo."
 
 #: invesalius/gui/preferences.py:1140
 msgid "Robot coil selection"
@@ -3795,7 +3826,8 @@ msgid ""
 "Cannot select this coil, its index (obj_id = {obj_id}) conflicts with "
 "selected coil: {conflicting_coil_name}"
 msgstr ""
-"Não é possível selecionar esta bobina, seu índice (obj_id = {obj_id}) entra em conflito com a bobina selecionada: {conflicting_coil_name}"
+"Não é possível selecionar esta bobina, seu índice (obj_id = {obj_id}) entra "
+"em conflito com a bobina selecionada: {conflicting_coil_name}"
 
 #: invesalius/gui/preferences.py:1340
 msgid ""
@@ -3803,14 +3835,17 @@ msgid ""
 "does not match the selected tracker [{const.TRACKERS[self.tracker.tracker_id "
 "- 1]}]"
 msgstr ""
-"Não é possível selecionar esta bobina, seu rastreador [{const.TRACKERS[obj_tracker_id - 1]}] não corresponde ao rastreador selecionado [{const.TRACKERS[self.tracker.tracker_id - 1]}]"
+"Não é possível selecionar esta bobina, seu rastreador [{const."
+"TRACKERS[obj_tracker_id - 1]}] não corresponde ao rastreador selecionado "
+"[{const.TRACKERS[self.tracker.tracker_id - 1]}]"
 
 #: invesalius/gui/preferences.py:1425 invesalius/gui/preferences.py:1506
 msgid ""
 "A registration with this name already exists. Enter a new name or overwrite "
 "an old coil registration"
 msgstr ""
-"Já existe um registro com este nome. Insira um novo nome ou sobrescreva um registro antigo de bobina"
+"Já existe um registro com este nome. Insira um novo nome ou sobrescreva um "
+"registro antigo de bobina"
 
 #: invesalius/gui/preferences.py:1427 invesalius/gui/preferences.py:1508
 msgid "Warning: Coil Name Conflict"
@@ -4270,7 +4305,8 @@ msgid ""
 "Ready for navigation with {self.navigation.n_coils} coil{'' if self."
 "navigation.n_coils == 1 else 's'}!"
 msgstr ""
-"Pronto para navegação com {self.navigation.n_coils} bobina{'' if self.navigation.n_coils == 1 else 's'}!"
+"Pronto para navegação com {self.navigation.n_coils} bobina{'' if self."
+"navigation.n_coils == 1 else 's'}!"
 
 #: invesalius/gui/task_navigator.py:1727
 msgid "Edit coil registration in Preferences"
@@ -4303,7 +4339,8 @@ msgstr "Mostrar sonda"
 
 #: invesalius/gui/task_navigator.py:1985
 msgid "Enable serial port communication to trigger pulse and create markers"
-msgstr "Ativar comunicação pela porta serial para disparar pulso e criar marcadores"
+msgstr ""
+"Ativar comunicação pela porta serial para disparar pulso e criar marcadores"
 
 #: invesalius/gui/task_navigator.py:2000
 msgid "Control E-Field"
@@ -4430,11 +4467,10 @@ msgid "No data selected."
 msgstr "Nenhum dado selecionado."
 
 #: invesalius/gui/task_navigator.py:3504
-#: invesalius/gui/task_navigator.py:3569
 msgid "No 3D surface was created."
 msgstr "Nenhuma superfície 3D foi criada."
 
-#: invesalius/gui/task_navigator.py:3576
+#: invesalius/gui/task_navigator.py:3569
 msgid "TMS coil not registered."
 msgstr "Bobina TMS não registrada."
 
@@ -4574,7 +4610,8 @@ msgstr "Opções avançadas"
 
 #: invesalius/gui/task_surface.py:312
 msgid "Automatically select largest disconnected region and create new surface"
-msgstr "Selecionar automaticamente a maior região desconexa e criar nova superfície"
+msgstr ""
+"Selecionar automaticamente a maior região desconexa e criar nova superfície"
 
 #: invesalius/gui/task_surface.py:313
 msgid "Select largest surface"
@@ -4583,7 +4620,9 @@ msgstr "Selecionar maior superfície"
 #: invesalius/gui/task_surface.py:321
 msgid ""
 "Automatically select disconnected regions and create a new surface per region"
-msgstr "Selecionar automaticamente regiões desconexas e criar uma nova superfície por região"
+msgstr ""
+"Selecionar automaticamente regiões desconexas e criar uma nova superfície "
+"por região"
 
 #: invesalius/gui/task_surface.py:322
 msgid "Split all disconnected surfaces"
@@ -4591,7 +4630,9 @@ msgstr "Dividir todas as superfícies desconexas"
 
 #: invesalius/gui/task_surface.py:330
 msgid "Manually insert seeds of regions of interest and create a new surface"
-msgstr "Inserir manualmente sementes de regiões de interesse e criar uma nova superfície"
+msgstr ""
+"Inserir manualmente sementes de regiões de interesse e criar uma nova "
+"superfície"
 
 #: invesalius/gui/task_surface.py:331
 msgid "Select regions of interest..."
@@ -4818,7 +4859,8 @@ msgid ""
 "No. of coils to track is {self.n_coils}, but no. of coils registered is "
 "{len(self.coil_registrations)}"
 msgstr ""
-"O número de bobinas a rastrear é {self.n_coils}, mas o número de bobinas registradas é {len(self.coil_registrations)}"
+"O número de bobinas a rastrear é {self.n_coils}, mas o número de bobinas "
+"registradas é {len(self.coil_registrations)}"
 
 #: invesalius/navigation/navigation.py:621
 #, python-brace-format
@@ -4826,8 +4868,9 @@ msgid ""
 "Coil index {obj_id} for coil {coil_name} is out of range of current Tracker! "
 "Change the coil index in Preferences - TMS Coil tab"
 msgstr ""
-"O índice da bobina {obj_id} para a bobina {coil_name} está fora do intervalo do rastreador atual! "
-"Altere o índice da bobina em Preferências - aba Bobina TMS"
+"O índice da bobina {obj_id} para a bobina {coil_name} está fora do intervalo "
+"do rastreador atual! Altere o índice da bobina em Preferências - aba Bobina "
+"TMS"
 
 #: invesalius/navigation/robot.py:137 invesalius/navigation/robot.py:155
 msgid "Unable to connect to the robot."

@@ -1579,7 +1579,7 @@ class MenuBar(wx.MenuBar):
 
         # Surface Menu
         surface_menu = wx.Menu()
-        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, ("New\tCtrl+Shift+C"))
+        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, _("New\tCtrl+Shift+C"))
         self.create_surface.Enable(False)
 
         self.remove_non_visible = surface_menu.Append(
