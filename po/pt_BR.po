@@ -3744,7 +3744,7 @@ msgstr "Nova configuração de bobina TMS"
 
 #: invesalius/gui/preferences.py:1026
 msgid "New"
-msgstr "Novo"
+msgstr "Nova"
 
 #: invesalius/gui/preferences.py:1031
 msgid "Load TMS coil configuration from an OBR file"
@@ -4127,7 +4127,7 @@ msgstr "Select Modalities / Arquivo"
 
 #: invesalius/gui/task_fmrisupport.py:84
 msgid "Load Nifti image"
-msgstr "Carregar Nifti image"
+msgstr "Carregar imagem NIfTI"
 
 #: invesalius/gui/task_fmrisupport.py:96
 msgid "Select Colormap"
@@ -4151,7 +4151,7 @@ msgstr "Selecionar arquivos NIfTI para reconstrução"
 
 #: invesalius/gui/task_importer.py:83 invesalius/gui/task_navigator.py:474
 msgid "Import NIFTI images..."
-msgstr "Importar NIFTI images..."
+msgstr "Importar imagens NIfTI..."
 
 #: invesalius/gui/task_importer.py:102 invesalius/gui/task_navigator.py:484
 msgid "Open an existing InVesalius project..."
