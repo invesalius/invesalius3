@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-18 13:28-0300\n"
+"POT-Creation-Date: 2026-05-18 13:35-0300\n"
 "PO-Revision-Date: 2019-02-25 12:52+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
 "Language-Team: Portuguese (Brazil) (http://www.transifex.com/invesalius/"
@@ -1087,7 +1087,8 @@ msgstr "Erro ao exportar imagem"
 #, python-brace-format
 msgid ""
 "Window: {window}  |  Pos: ({px}, {py})  Slice: {slice}  |  Value: {value}"
-msgstr "Janela: {window}  |  Pos: ({px}, {py})  Fatia: {slice}  |  Valor: {value}"
+msgstr ""
+"Janela: {window}  |  Pos: ({px}, {py})  Fatia: {slice}  |  Valor: {value}"
 
 #: invesalius/data/viewer_volume.py:1862 invesalius/data/viewer_volume.py:2620
 #: invesalius/gui/task_efield.py:541 invesalius/gui/task_efield.py:577
@@ -3012,6 +3013,10 @@ msgstr "Pré-visualizar bitmap que serão reconstruídos"
 #: invesalius/gui/frame.py:591
 msgid "You have unsaved changes. What would you like to do?"
 msgstr "Você tem alterações não salvas. O que deseja fazer?"
+
+#: invesalius/gui/frame.py:595
+msgid "InVesalius 3 - Unsaved Changes"
+msgstr "InVesalius 3 - Alterações não salvas"
 
 #: invesalius/gui/frame.py:597
 msgid "Save and Exit"
