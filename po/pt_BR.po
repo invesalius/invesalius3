@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-18 13:35-0300\n"
+"POT-Creation-Date: 2026-05-18 16:01-0300\n"
 "PO-Revision-Date: 2019-02-25 12:52+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
 "Language-Team: Portuguese (Brazil) (http://www.transifex.com/invesalius/"
@@ -3094,6 +3094,10 @@ msgstr "NIfTI 1"
 msgid "PAR/REC"
 msgstr "PAR/REC"
 
+#: invesalius/gui/frame.py:1451
+msgid "TIFF,BMP,JPG or PNG (micro-CT)"
+msgstr "TIFF,BMP,JPG ou PNG (micro-CT)"
+
 #: invesalius/gui/frame.py:1456
 msgid "Import DICOM...\tCtrl+I"
 msgstr "Importar DICOM...\tCtrl+I"
@@ -5044,6 +5048,9 @@ msgstr ""
 "Máscara: {} voxels\n"
 "\n"
 "As máscaras devem corresponder exatamente às dimensões do volume."
+
+#~ msgid "TIFF,BMP,JPG or PNG (CT)"
+#~ msgstr "TIFF,BMP,JPG ou PNG (CT)"
 
 #~ msgid "Debug tracker"
 #~ msgstr "Depurar rastreador"

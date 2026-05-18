@@ -1448,7 +1448,7 @@ class MenuBar(wx.MenuBar):
         others_file_menu.Append(const.ID_ANALYZE_IMPORT, _("Analyze 7.5"))
         others_file_menu.Append(const.ID_NIFTI_IMPORT, _("NIfTI 1"))
         others_file_menu.Append(const.ID_PARREC_IMPORT, _("PAR/REC"))
-        others_file_menu.Append(const.ID_TIFF_JPG_PNG, "TIFF,BMP,JPG or PNG (\xb5CT)")
+        others_file_menu.Append(const.ID_TIFF_JPG_PNG, _("TIFF,BMP,JPG or PNG (micro-CT)"))
 
         # FILE
         file_menu = wx.Menu()
