@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-18 10:36-0300\n"
+"POT-Creation-Date: 2026-05-18 13:28-0300\n"
 "PO-Revision-Date: 2019-02-25 12:52+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
 "Language-Team: Portuguese (Brazil) (http://www.transifex.com/invesalius/"
@@ -1082,6 +1082,12 @@ msgstr "O InVesalius não conseguiu exportar esta imagem"
 #: invesalius/data/viewer_slice.py:1097 invesalius/data/viewer_volume.py:1005
 msgid "Export picture error"
 msgstr "Erro ao exportar imagem"
+
+#: invesalius/data/viewer_slice.py:1526
+#, python-brace-format
+msgid ""
+"Window: {window}  |  Pos: ({px}, {py})  Slice: {slice}  |  Value: {value}"
+msgstr "Janela: {window}  |  Pos: ({px}, {py})  Fatia: {slice}  |  Valor: {value}"
 
 #: invesalius/data/viewer_volume.py:1862 invesalius/data/viewer_volume.py:2620
 #: invesalius/gui/task_efield.py:541 invesalius/gui/task_efield.py:577
