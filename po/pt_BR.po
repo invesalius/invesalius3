@@ -3244,7 +3244,7 @@ msgstr "Anterior - Posterior"
 
 #: invesalius/gui/frame.py:1596
 msgid "Top - Bottom"
-msgstr "Topo - Base"
+msgstr "Superior - Inferior"
 
 #: invesalius/gui/frame.py:1599
 msgid "From Right-Left to Anterior-Posterior"
@@ -3252,11 +3252,11 @@ msgstr "De Direita-Esquerda para Anterior-Posterior"
 
 #: invesalius/gui/frame.py:1602
 msgid "From Right-Left to Top-Bottom"
-msgstr "De Direita-Esquerda para Topo-Base"
+msgstr "De Direita-Esquerda para Superior-Inferior"
 
 #: invesalius/gui/frame.py:1603
 msgid "From Anterior-Posterior to Top-Bottom"
-msgstr "De Anterior-Posterior para Topo-Base"
+msgstr "De Anterior-Posterior para Superior-Inferior"
 
 #: invesalius/gui/frame.py:1607
 msgid "Flip"
