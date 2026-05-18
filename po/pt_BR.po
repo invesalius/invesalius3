@@ -2722,11 +2722,11 @@ msgstr "Publicando superfícies no painel..."
 
 #: invesalius/gui/dialogs.py:6333
 msgid "Go to slice ..."
-msgstr "Ir para o corte..."
+msgstr "Ir para a fatia..."
 
 #: invesalius/gui/dialogs.py:6374
 msgid "Slice number"
-msgstr "Número do corte"
+msgstr "Número da fatia"
 
 #: invesalius/gui/dialogs.py:6542
 msgid "Go to scanner coord..."
@@ -3129,7 +3129,7 @@ msgstr "Refazer\tCtrl+Y"
 
 #: invesalius/gui/frame.py:1479
 msgid "Go to slice ...\tCtrl+G"
-msgstr "Ir para o corte...\tCtrl+G"
+msgstr "Ir para a fatia...\tCtrl+G"
 
 #: invesalius/gui/frame.py:1480
 msgid "Go to scanner coord ...\t"
@@ -3650,7 +3650,7 @@ msgstr "Visualização 2D"
 
 #: invesalius/gui/preferences.py:237
 msgid "Slice Interpolation "
-msgstr "Interpolação de cortes "
+msgstr "Interpolação de fatias "
 
 #: invesalius/gui/preferences.py:241 invesalius/gui/task_navigator.py:3001
 #: invesalius/gui/task_navigator.py:3578
