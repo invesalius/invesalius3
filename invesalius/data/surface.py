@@ -70,6 +70,7 @@ import invesalius.data.imagedata_utils as iu
 import invesalius.data.polydata_utils as pu
 import invesalius.data.slice_ as sl
 import invesalius.data.surface_process as surface_process
+import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utl
@@ -612,36 +613,12 @@ class SurfaceManager:
         self.CreateSurfaceFromFile(filename)
 
     def CreateSurfaceFromFile(self, filename):
-        scalar = False
-        if filename.lower().endswith(".stl"):
-            reader = vtkSTLReader()
-        elif filename.lower().endswith(".ply"):
-            reader = vtkPLYReader()
-            scalar = True
-        elif filename.lower().endswith(".obj"):
-            reader = vtkOBJReader()
-        elif filename.lower().endswith(".vtp"):
-            reader = vtkXMLPolyDataReader()
-            scalar = True
-        else:
-            wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+        polydata, scalar = vtk_utils.load_polydata_from_file(filename)
+        if polydata is None:
             return
 
-        if _has_win32api:
-            reader.SetFileName(win32api.GetShortPathName(filename).encode(const.FS_ENCODE))
-        else:
-            reader.SetFileName(filename.encode(const.FS_ENCODE))
-
-        reader.Update()
-        polydata = reader.GetOutput()
-
-        if polydata.GetNumberOfPoints() == 0:
-            wx.MessageBox(
-                _("InVesalius was not able to import this surface"), _("Import surface error")
-            )
-        else:
-            name = os.path.splitext(os.path.split(filename)[-1])[0]
-            self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
+        name = os.path.splitext(os.path.split(filename)[-1])[0]
+        self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
     def UpdateConvertToInvFlag(self, convert_to_inv=False):
         self.convert_to_inv = convert_to_inv
