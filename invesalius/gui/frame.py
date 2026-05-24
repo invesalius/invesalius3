@@ -62,6 +62,9 @@ VIEW_TOOLS = [ID_LAYOUT, ID_TEXT, ID_RULER] = [wx.NewIdRef() for number in range
 
 # Custom IDs for our new menu items
 [ID_SHOW_LOG_VIEWER, ID_INTERACTIVE_SHELL] = [wx.NewIdRef() for number in range(2)]
+[ID_PERSPECTIVE_SAVE, ID_PERSPECTIVE_LOAD, ID_PERSPECTIVE_RESET] = [
+    wx.NewIdRef() for number in range(3)
+]
 
 WILDCARD_EXPORT_SLICE = (
     "HDF5 (*.hdf5)|*.hdf5|NIfTI 1 (*.nii)|*.nii|Compressed NIfTI (*.nii.gz)|*.nii.gz"
@@ -214,7 +217,7 @@ class Frame(wx.Frame):
         is_shell_focused = False
 
         # Check if the focus is on a text entry field
-        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
+        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):  # noqa: UP038
             is_search_field = True
 
         # Check if the shell is focused
@@ -855,6 +858,14 @@ class Frame(wx.Frame):
         elif id == ID_INTERACTIVE_SHELL:
             self.OnInteractiveShell(evt)
 
+        # Perspective actions
+        elif id == ID_PERSPECTIVE_SAVE:
+            self.OnPerspectiveSave(evt)
+        elif id == ID_PERSPECTIVE_LOAD:
+            self.OnPerspectiveLoad(evt)
+        elif id == ID_PERSPECTIVE_RESET:
+            self.OnPerspectiveReset(evt)
+
         # Handle task panel toggle
         elif id == const.ID_TASK_BAR:
             task_pane = self.aui_manager.GetPane("Tasks")
@@ -865,6 +876,83 @@ class Frame(wx.Frame):
 
             # Force focus on main window to ensure UI updates properly
             self.SetFocus()
+
+    def OnPerspectiveSave(self, evt):
+        """Save the current layout of both the main window and the internal viewers panel."""
+        pers_string = self.aui_manager.SavePerspective()
+
+        # Also save the internal perspective of the 3D viewers (Data pane)
+        data_pane = self.aui_manager.GetPane("Data")
+        viewers_pers = ""
+        if data_pane.window and hasattr(data_pane.window, "aui_manager"):
+            viewers_pers = data_pane.window.aui_manager.SavePerspective()
+
+        session = ses.Session()
+        session.SetConfig("perspective", pers_string)
+        session.SetConfig("perspective_viewers", viewers_pers)
+
+        wx.MessageBox(
+            _("Current perspective saved successfully."),
+            _("Perspective Saved"),
+            wx.OK | wx.ICON_INFORMATION,
+        )
+
+    def OnPerspectiveLoad(self, evt):
+        """Load a previously saved layout, preserving current pane visibility."""
+        session = ses.Session()
+        pers_string = session.GetConfig("perspective")
+        if pers_string:
+            # Save current visibility state of all panes
+            visibility = {}
+            for pane in self.aui_manager.GetAllPanes():
+                visibility[pane.name] = pane.IsShown()
+
+            self.aui_manager.LoadPerspective(pers_string)
+
+            # Restore visibility so loaded DICOM viewers stay visible
+            for pane in self.aui_manager.GetAllPanes():
+                if pane.name in visibility:
+                    pane.Show(visibility[pane.name])
+            self.aui_manager.Update()
+
+            # Also load the internal viewers perspective
+            viewers_pers = session.GetConfig("perspective_viewers")
+            if viewers_pers:
+                data_pane = self.aui_manager.GetPane("Data")
+                if data_pane.window and hasattr(data_pane.window, "aui_manager"):
+                    data_pane.window.aui_manager.LoadPerspective(viewers_pers)
+                    data_pane.window.aui_manager.Update()
+        else:
+            wx.MessageBox(
+                _("No saved perspective found. Use 'Save Current Perspective' first."),
+                _("No Perspective"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+
+    def OnPerspectiveReset(self, evt):
+        """Reset to the default layout captured at startup, preserving pane visibility."""
+        # Save current visibility state of all panes
+        visibility = {}
+        for pane in self.aui_manager.GetAllPanes():
+            visibility[pane.name] = pane.IsShown()
+
+        self.aui_manager.LoadPerspective(self.perspective_all)
+
+        # Restore visibility so loaded DICOM viewers stay visible
+        for pane in self.aui_manager.GetAllPanes():
+            if pane.name in visibility:
+                pane.Show(visibility[pane.name])
+        self.aui_manager.Update()
+
+        # Also reset the internal viewers perspective
+        data_pane = self.aui_manager.GetPane("Data")
+        if (
+            data_pane.window
+            and hasattr(data_pane.window, "aui_manager")
+            and hasattr(data_pane.window, "perspective_all")
+        ):
+            data_pane.window.aui_manager.LoadPerspective(data_pane.window.perspective_all)
+            data_pane.window.aui_manager.Update()
 
     def _HideTask(self):
         """
@@ -1643,6 +1731,14 @@ class MenuBar(wx.MenuBar):
         self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
 
         self.actived_interpolated_slices = self.view_menu
+
+        # Perspectives submenu
+        perspectives_menu = wx.Menu()
+        perspectives_menu.Append(ID_PERSPECTIVE_SAVE, _("Save Current Perspective"))
+        perspectives_menu.Append(ID_PERSPECTIVE_LOAD, _("Load Saved Perspective"))
+        perspectives_menu.Append(ID_PERSPECTIVE_RESET, _("Reset to Default"))
+        view_menu.AppendSeparator()
+        view_menu.AppendSubMenu(perspectives_menu, _("Perspectives"))
 
         # view_tool_menu = wx.Menu()
         # app = view_tool_menu.Append
