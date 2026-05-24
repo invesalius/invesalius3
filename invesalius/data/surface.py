@@ -1401,6 +1401,8 @@ class SurfaceManager:
         Set actor transparency (oposite to opacity) according to given actor
         index and value.
         """
+        if surface_index not in self.actors_dict:
+            return
         self.actors_dict[surface_index].GetProperty().SetOpacity(1 - transparency)
         # Update value in project's surface_dict
         proj = prj.Project()
@@ -1409,6 +1411,8 @@ class SurfaceManager:
 
     def SetActorColour(self, surface_index, colour):
         """ """
+        if surface_index not in self.actors_dict:
+            return
         self.actors_dict[surface_index].GetProperty().SetColor(colour[:3])
         # Update value in project's surface_dict
         proj = prj.Project()
