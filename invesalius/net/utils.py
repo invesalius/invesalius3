@@ -35,7 +35,7 @@ def download_url_to_file(
             f.write(buffer)
             if hash:
                 calc_hash.update(buffer)
-            if callback is not None:
+            if callback is not None and file_size is not None::
                 callback(100 * total_downloaded / file_size)
         f.close()
         if hash is not None:
