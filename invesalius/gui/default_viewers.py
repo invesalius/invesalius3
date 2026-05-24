@@ -324,6 +324,7 @@ TOOL_STATE = {}
 ID_TO_ITEMSLICEMENU = {}
 ID_TO_ITEM_3DSTEREO = {}
 ID_TO_STEREO_NAME = {}
+ID_TO_COLOUR_PRESET_NAME = {}
 
 ICON_SIZE = (32, 32)
 
@@ -377,11 +378,19 @@ class VolumeToolPanel(wx.Panel):
 
         self.BMP_SSAO_DISABLED = BMP_SSAO_DISABLED
         self.BMP_SSAO_ENABLED = BMP_SSAO_ENABLED
+        BMP_COLOUR_PRESET = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("object_colour.png")), wx.BITMAP_TYPE_PNG
+        )
 
         self.button_raycasting = pbtn.PlateButton(
             self, -1, "", BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
         self.button_raycasting.SetToolTip("Raycasting view")
+
+        self.button_raycasting_colour = pbtn.PlateButton(
+            self, -1, "", BMP_COLOUR_PRESET, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        self.button_raycasting_colour.SetToolTip(_("Color Selection"))
         self.button_stereo = pbtn.PlateButton(
             self, -1, "", BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
         )
@@ -425,6 +434,7 @@ class VolumeToolPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.button_colour, 0, wx.ALL, sp)
         sizer.Add(self.button_raycasting, 0, wx.TOP | wx.BOTTOM, 1)
+        sizer.Add(self.button_raycasting_colour, 0, wx.TOP | wx.BOTTOM, 1)
         sizer.Add(self.button_view, 0, wx.TOP | wx.BOTTOM, 1)
         sizer.Add(self.button_slice_plane, 0, wx.TOP | wx.BOTTOM, 1)
         sizer.Add(self.button_stereo, 0, wx.TOP | wx.BOTTOM, 1)
@@ -461,6 +471,7 @@ class VolumeToolPanel(wx.Panel):
     def __bind_events_wx(self):
         self.button_slice_plane.Bind(wx.EVT_LEFT_DOWN, self.OnButtonSlicePlane)
         self.button_raycasting.Bind(wx.EVT_LEFT_DOWN, self.OnButtonRaycasting)
+        self.button_raycasting_colour.Bind(wx.EVT_LEFT_DOWN, self.OnButtonRaycastingColour)
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
@@ -470,6 +481,10 @@ class VolumeToolPanel(wx.Panel):
     def OnButtonRaycasting(self, evt):
         # MENU RELATED TO RAYCASTING TYPES
         self.button_raycasting.PopupMenu(self.menu_raycasting)
+
+    def OnButtonRaycastingColour(self, evt):
+        # MENU RELATED TO RAYCASTING COLOURS
+        self.button_raycasting_colour.PopupMenu(self.menu_raycasting_colour)
 
     def OnButtonStereo(self, evt):
         self.button_stereo.PopupMenu(self.stereo_menu)
@@ -523,6 +538,20 @@ class VolumeToolPanel(wx.Panel):
         if sys.platform != "win32":
             submenu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)
         menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)
+
+        # MENU RELATED TO RAYCASTING COLOURS
+        menu = self.menu_raycasting_colour = wx.Menu()
+        color_presets = [
+            filename.name.split(".")[0]
+            for filename in inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY.glob("*.plist")
+        ]
+        color_presets.sort()
+        for name in color_presets:
+            id = wx.NewIdRef()
+            item = menu.Append(id, name, kind=wx.ITEM_RADIO)
+            ID_TO_COLOUR_PRESET_NAME[id] = name
+
+        menu.Bind(wx.EVT_MENU, self.OnMenuRaycastingColour)
 
         # VOLUME VIEW ANGLE BUTTON
         menu = wx.Menu()
@@ -638,6 +667,13 @@ class VolumeToolPanel(wx.Panel):
                 Publisher.sendMessage("Enable raycasting tool", tool_name=ID_TO_TOOL[id], flag=0)
                 TOOL_STATE[id] = False
                 item.Check(0)
+
+    def OnMenuRaycastingColour(self, evt):
+        """Events from raycasting colour menu."""
+        id = evt.GetId()
+        if id in ID_TO_COLOUR_PRESET_NAME.keys():
+            name = ID_TO_COLOUR_PRESET_NAME[id]
+            Publisher.sendMessage("Load raycasting color preset", preset_name=name)
 
     def OnMenuView(self, evt):
         """Events from button menus."""
