@@ -1037,6 +1037,12 @@ EFIELD_ROI_SIZE = 40
 SLEEP_NAVIGATION = 0.1
 SLEEP_COORDINATES = 0.1
 
+# Delay between consecutive tracker coordinate samples when computing the median
+# for calibration. Without this delay, the sampling loop runs faster than the
+# tracker's update rate, causing duplicate readings that defeat the purpose of
+# median filtering. See: https://github.com/invesalius/invesalius3/issues/380
+SLEEP_BETWEEN_TRACKER_SAMPLES = 0.01
+
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
 # the max_sampling_step can be set to something different as well. Above 100 is probably not necessary

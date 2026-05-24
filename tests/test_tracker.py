@@ -98,7 +98,9 @@ def test_get_tracker_coordinates(mocker, tracker):
 
     assert visibilities == (True, True, True)
     assert np.allclose(coord_avg, np.array([1.5, 2.5, -3.5]), atol=1e-6)
-    assert np.allclose(coord_raw_avg, np.array([[1.5, 2.5, -3.5], [4.5, 5.5, 6.5]]), atol=1e-6)
+    # coord_raw_avg should contain the unmodified raw coordinates (no Z-flip).
+    # The Z-flip is only applied to coord_avg (the processed coordinate).
+    assert np.allclose(coord_raw_avg, np.array([[1.5, 2.5, 3.5], [4.5, 5.5, 6.5]]), atol=1e-6)
 
 
 def test_set_tracker(mocker, tracker):
