@@ -17,9 +17,14 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
+
 from vtkmodules.vtkFiltersSources import vtkPlaneSource
 from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkCellPicker, vtkPolyDataMapper
+
+logger = logging.getLogger(__name__)
+
 
 AXIAL, SAGITAL, CORONAL = 0, 1, 2
 PLANE_DATA = {AXIAL: ["z", (0, 0, 1)], SAGITAL: ["x", (1, 0, 0)], CORONAL: ["y", (0, 1, 0)]}
@@ -67,7 +72,7 @@ class Plane:
         else:
             self.Update()
             if self.widget.GetEnabled():
-                print("send signal - update slice info in panel and in 2d")
+                logger.debug("send signal - update slice info in panel and in 2d")
 
     def SetInput(self, imagedata):
         axes = PLANE_DATA[self.orientation][0]  # "x", "y" or "z"

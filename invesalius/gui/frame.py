@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------
 
 import errno
+import logging
 import os.path
 import platform
 import subprocess
@@ -47,6 +48,9 @@ from invesalius.gui import project_properties
 from invesalius.gui.interactive_shell import InteractiveShellFrame
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 try:
     from wx.adv import TaskBarIcon as wx_TaskBarIcon
@@ -667,7 +671,7 @@ class Frame(wx.Frame):
                 import traceback
 
                 traceback.print_exc()
-                print(f"Error cleaning up log viewer: {e}")
+                logger.debug(f"Error cleaning up log viewer: {e}")
 
             if status == 1:
                 Publisher.sendMessage("Exit session")
@@ -1276,7 +1280,7 @@ class Frame(wx.Frame):
             enhanced_logging.show_log_viewer(self)
 
         except Exception as e:
-            print(f"Error showing log viewer: {e}")
+            logger.debug(f"Error showing log viewer: {e}")
             import traceback
 
             traceback.print_exc()
@@ -1730,10 +1734,10 @@ class MenuBar(wx.MenuBar):
         if id != const.ID_PLUGINS_SHOW_PATH:
             try:
                 plugin_name = self._plugins_menu_ids[id]["name"]
-                print("Loading plugin:", plugin_name)
+                logger.debug("Loading plugin:", plugin_name)
                 Publisher.sendMessage("Load plugin", plugin_name=plugin_name)
             except KeyError:
-                print("Invalid plugin")
+                logger.debug("Invalid plugin")
         evt.Skip()
 
     def SliceInterpolationStatus(self):
@@ -2084,7 +2088,7 @@ class ProjectToolBar(AuiToolBar):
             # Forward to parent's menu click handler
             wx.PostEvent(self.parent, evt)
         except Exception as e:
-            print(f"Error handling toolbar click: {e}")
+            logger.debug(f"Error handling toolbar click: {e}")
             import traceback
 
             traceback.print_exc()

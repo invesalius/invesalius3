@@ -50,6 +50,8 @@ try:
 except ImportError:
     import wx.lib.hyperlink as hl
 
+import logging
+
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as slice_
@@ -65,6 +67,8 @@ from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import NavigationHub
 from invesalius.navigation.robot import RobotObjective
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
 
 BTN_NEW = wx.NewIdRef()
 BTN_IMPORT_LOCAL = wx.NewIdRef()
@@ -2841,7 +2845,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
         try:
             self.markers.LoadState()
-        except:
+        except Exception:
+            logger.exception("Failed to load state in task_navigator.py")
             self.session.DeleteStateFile()  # Delete state file if it is erroneous
 
         # Add all lines into main sizer
@@ -2943,7 +2948,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         deleted_marker_uuid = marker.marker_uuid
         idx = self.__find_marker_index(deleted_marker_id)
         self.marker_list_ctrl.DeleteItem(idx)
-        print("_DeleteMarker:", deleted_marker_uuid)
+        logger.debug("_DeleteMarker:", deleted_marker_uuid)
 
         # Delete the marker from itemDataMap
         for key, data in self.itemDataMap.items():
@@ -2988,7 +2993,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             try:
                 self.itemDataMap.pop(key)
             except KeyError:
-                print("Invalid itemDataMap key:", key)
+                logger.debug("Invalid itemDataMap key:", key)
 
         for idx in range(self.marker_list_ctrl.GetItemCount()):
             self.marker_list_ctrl.SetItem(idx, const.ID_COLUMN, str(idx))
@@ -4091,11 +4096,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             if self.navigation.coil_at_target:
                 self.mTMS.UpdateTarget(coil_pose, brain_target)
                 # wx.CallAfter(Publisher.sendMessage, 'Send brain target to mTMS API', coil_pose=coil_pose, brain_target=brain_target)
-                print("Send brain target to mTMS API")
+                logger.debug("Send brain target to mTMS API")
             else:
-                print("The coil is not at the target")
+                logger.debug("The coil is not at the target")
         else:
-            print("Target not set")
+            logger.debug("Target not set")
 
     def OnSessionChanged(self, evt, ctrl):
         value = ctrl.GetValue()

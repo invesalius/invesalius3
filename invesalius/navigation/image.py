@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 from typing import Any, Dict, Sequence, Union
 
 import numpy as np
@@ -27,6 +28,8 @@ import invesalius.project as prj
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
 
 
 class Image:
@@ -67,7 +70,7 @@ class Image:
         self.fiducials[fiducial_index, :] = position
         self.UpdateFiducialMarker(fiducial_index)
 
-        print(f"Image fiducial {fiducial_index} set to coordinates {position}")
+        logger.debug(f"Image fiducial {fiducial_index} set to coordinates {position}")
         ses.Session().ChangeProject()
         self.SaveState()
 
@@ -136,7 +139,8 @@ class Image:
                 self.load_from_state = False
                 try:
                     self.LoadState()
-                except:
+                except Exception:
+                    logger.exception("Failed to load state in image.py")
                     ses.Session.DeleteStateFile()
                     self.LoadProject()  # Load project if failed to load from state
             else:

@@ -21,6 +21,7 @@
 import codecs
 import configparser as ConfigParser
 import json
+import logging
 import os
 from json.decoder import JSONDecodeError
 from pathlib import Path
@@ -30,6 +31,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, deep_merge_dict
+
+logger = logging.getLogger(__name__)
 
 CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.json")
 OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.cfg")
@@ -130,9 +133,9 @@ class Session(metaclass=Singleton):
     def DeleteStateFile(self) -> None:
         if os.path.exists(STATE_PATH):
             os.remove(STATE_PATH)
-            print("Successfully deleted state file.")
+            logger.info("Successfully deleted state file.")
         else:
-            print("State file does not exist.")
+            logger.debug("State file does not exist.")
 
     def ExitedSuccessfullyLastTime(self) -> bool:
         return self._exited_successfully_last_time
@@ -356,8 +359,8 @@ class Session(metaclass=Singleton):
     def _ReadState(self) -> bool:
         success = False
         if os.path.exists(STATE_PATH):
-            print("Restoring a previous state...")
-            print("State file found.", STATE_PATH)
+            logger.info("Restoring a previous state...")
+            logger.info("State file found: %s", STATE_PATH)
 
             state_file = open(STATE_PATH)
             try:
@@ -365,7 +368,7 @@ class Session(metaclass=Singleton):
                 success = True
 
             except JSONDecodeError:
-                print("State file is corrupted. Deleting...")
+                logger.warning("State file is corrupted. Deleting...")
 
                 state_file.close()
                 self.DeleteStateFile()

@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import logging
 import sys
 
 from wx import ID_OK
@@ -23,6 +24,8 @@ from wx import ID_OK
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 from invesalius import inv_paths
+
+logger = logging.getLogger(__name__)
 
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
@@ -46,11 +49,11 @@ class TrackerConnection:
             self.connection.Close()
             self.connection = False
             self.lib_mode = "wrapper"
-            print("Tracker disconnected.")
+            logger.info("Tracker disconnected.")
         except Exception:
             self.connection = True
             self.lib_mode = "error"
-            print("The tracker could not be disconnected.")
+            logger.error("The tracker could not be disconnected.", exc_info=True)
 
     def IsConnected(self):
         # TODO: It would be cleaner to compare self.connection to None here; however, currently it can also have
@@ -117,7 +120,7 @@ class OptitrackTrackerConnection(TrackerConnection):
 
             self.connection = connection
         else:
-            print("Could not connect to Optitrack tracker.")
+            logger.error("Could not connect to Optitrack tracker.")
             lib_mode = "error"
 
         self.lib_mode = lib_mode
@@ -152,13 +155,13 @@ class ClaronTrackerConnection(TrackerConnection):
 
             if connection.GetIdentifyingCamera():
                 connection.Run()
-                print("MicronTracker camera identified.")
+                logger.info("MicronTracker camera identified.")
 
                 self.connection = connection
 
         except ImportError:
             lib_mode = "error"
-            print("The ClaronTracker library is not installed.")
+            logger.error("The ClaronTracker library is not installed.")
 
         self.lib_mode = lib_mode
 
@@ -194,7 +197,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                 "baud_rate": baud_rate,
             }
         else:
-            print("Could not connect to Polhemus tracker.")
+            logger.error("Could not connect to Polhemus tracker.")
 
         dialog.Destroy()
 
@@ -211,12 +214,14 @@ class PolhemusTrackerConnection(TrackerConnection):
             connection = self.PolhemusWrapperConnection()
             lib_mode = "wrapper"
             if not connection:
-                print("Could not connect with Polhemus wrapper, trying USB connection...")
+                logger.warning("Could not connect with Polhemus wrapper, trying USB connection...")
 
                 connection = self.PolhemusUSBConnection()
                 lib_mode = "usb"
                 if not connection:
-                    print("Could not connect with Polhemus USB, trying serial connection...")
+                    logger.warning(
+                        "Could not connect with Polhemus USB, trying serial connection..."
+                    )
 
                     if reconfigure:
                         self.ConfigureCOMPort()
@@ -224,7 +229,7 @@ class PolhemusTrackerConnection(TrackerConnection):
                     lib_mode = "serial"
         except Exception:
             lib_mode = "error"
-            print("Could not connect to Polhemus by any method.")
+            logger.error("Could not connect to Polhemus by any method.", exc_info=True)
 
         self.connection = connection
         self.lib_mode = lib_mode
@@ -251,12 +256,15 @@ class PolhemusTrackerConnection(TrackerConnection):
                     sleep(0.175)
             else:
                 connection = None
-                print(
+                logger.warning(
                     "Could not connect to Polhemus via wrapper without error: Initialize is False."
                 )
         except Exception:
             connection = None
-            print("Could not connect to Polhemus via wrapper without error: Import failed.")
+            logger.error(
+                "Could not connect to Polhemus via wrapper without error: Import failed.",
+                exc_info=True,
+            )
 
         return connection
 
@@ -289,11 +297,11 @@ class PolhemusTrackerConnection(TrackerConnection):
             data = connection.readlines()
             if not data:
                 connection = None
-                print("Could not connect to Polhemus serial without error.")
+                logger.warning("Could not connect to Polhemus serial without error.")
 
         except Exception:
             connection = None
-            print("Could not connect to Polhemus tracker.")
+            logger.error("Could not connect to Polhemus tracker.", exc_info=True)
 
         return connection
 
@@ -330,10 +338,10 @@ class PolhemusTrackerConnection(TrackerConnection):
             data = connection.read(endpoint.bEndpointAddress, endpoint.wMaxPacketSize)
             if not data:
                 connection = None
-                print("Could not connect to Polhemus USB without error.")
+                logger.warning("Could not connect to Polhemus USB without error.")
 
         except Exception:
-            print("Could not connect to Polhemus USB with error.")
+            logger.error("Could not connect to Polhemus USB with error.", exc_info=True)
 
         return connection
 
@@ -347,11 +355,11 @@ class PolhemusTrackerConnection(TrackerConnection):
                 self.lib_mode = "wrapper"
 
             self.connection = False
-            print("Tracker disconnected.")
+            logger.info("Tracker disconnected.")
         except Exception:
             self.connection = True
             self.lib_mode = "error"
-            print("The tracker could not be disconnected.")
+            logger.error("The tracker could not be disconnected.", exc_info=True)
 
 
 class CameraTrackerConnection(TrackerConnection):
@@ -367,13 +375,13 @@ class CameraTrackerConnection(TrackerConnection):
 
             connection = cam.camera()
             connection.Initialize()
-            print("Connected to camera tracking device.")
+            logger.info("Connected to camera tracking device.")
 
             lib_mode = "wrapper"
 
             self.connection = connection
         except Exception:
-            print("Could not connect to camera tracker.")
+            logger.error("Could not connect to camera tracker.", exc_info=True)
             lib_mode = "error"
 
         self.lib_mode = lib_mode
@@ -403,7 +411,7 @@ class PolarisTrackerConnection(TrackerConnection):
             }
         else:
             self.lib_mode = None
-            print("Could not connect to polaris tracker.")
+            logger.error("Could not connect to polaris tracker.")
 
         dialog.Destroy()
 
@@ -433,15 +441,15 @@ class PolarisTrackerConnection(TrackerConnection):
 
             if connection.Initialize(com_port, probe_dir, ref_dir, obj_dirs) != 0:
                 lib_mode = None
-                print("Could not connect to polaris tracker.")
+                logger.error("Could not connect to polaris tracker.")
             else:
-                print("Connected to polaris tracking device.")
+                logger.info("Connected to polaris tracking device.")
                 self.connection = connection
 
         except Exception:
             lib_mode = "error"
             connection = None
-            print("Could not connect to polaris tracker.")
+            logger.error("Could not connect to polaris tracker.", exc_info=True)
 
         self.lib_mode = lib_mode
 
@@ -469,7 +477,7 @@ class PolarisP4TrackerConnection(TrackerConnection):
             }
         else:
             self.lib_mode = None
-            print("Could not connect to Polaris P4 tracker.")
+            logger.error("Could not connect to Polaris P4 tracker.")
 
         dialog.Destroy()
 
@@ -493,14 +501,14 @@ class PolarisP4TrackerConnection(TrackerConnection):
             if connection.Initialize(com_port, probe_dir, ref_dir, obj_dir) != 0:
                 connection = None
                 lib_mode = None
-                print("Could not connect to Polaris P4 tracker.")
+                logger.error("Could not connect to Polaris P4 tracker.")
             else:
-                print("Connect to Polaris P4 tracking device.")
+                logger.info("Connected to Polaris P4 tracking device.")
 
         except Exception:
             lib_mode = "error"
             connection = None
-            print("Could not connect to Polaris P4 tracker.")
+            logger.error("Could not connect to Polaris P4 tracker.", exc_info=True)
 
         self.connection = connection
         self.lib_mode = lib_mode
@@ -519,12 +527,12 @@ class DebugTrackerRandomConnection(TrackerConnection):
     def Connect(self):
         self.connection = True
         self.lib_mode = "debug"
-        print("Debug device (random) started.")
+        logger.info("Debug device (random) started.")
 
     def Disconnect(self):
         self.connection = False
         self.lib_mode = "debug"
-        print("Debug tracker (random) disconnected.")
+        logger.info("Debug tracker (random) disconnected.")
 
 
 class DebugTrackerApproachConnection(TrackerConnection):
@@ -537,12 +545,12 @@ class DebugTrackerApproachConnection(TrackerConnection):
     def Connect(self):
         self.connection = True
         self.lib_mode = "debug"
-        print("Debug device (approach) started.")
+        logger.info("Debug device (approach) started.")
 
     def Disconnect(self):
         self.connection = False
         self.lib_mode = "debug"
-        print("Debug tracker (approach) disconnected.")
+        logger.info("Debug tracker (approach) disconnected.")
 
 
 TRACKER_CONNECTION_CLASSES = {

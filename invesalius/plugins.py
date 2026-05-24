@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------
 
 import glob
+import logging
 import importlib.util
 import json
 import pathlib
@@ -28,6 +29,8 @@ from typing import TYPE_CHECKING
 
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     import os
@@ -75,7 +78,7 @@ class PluginManager:
                         "enable_startup": enable_startup,
                     }
             except Exception as err:
-                print(f"It was not possible to load plugin. Error: {err}")
+                logger.error("It was not possible to load plugin. Error: %s", err, exc_info=True)
 
         Publisher.sendMessage("Add plugins menu items", items=self.plugins)
 

@@ -20,6 +20,7 @@
 
 import datetime
 import itertools
+import logging
 import os
 import random
 import sys
@@ -106,6 +107,8 @@ from invesalius.gui.widgets.inv_spinctrl import InvFloatSpinCtrl, InvSpinCtrl
 from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from invesalius.data.mask import Mask
@@ -3114,7 +3117,7 @@ class PanelFFillThreshold(wx.Panel):
     def OnSlideChanged(self, evt: wx.Event) -> None:
         self.config.t0 = int(self.threshold.GetMinValue())
         self.config.t1 = int(self.threshold.GetMaxValue())
-        print(self.config.t0, self.config.t1)
+        logger.debug("Threshold changed: %s, %s", self.config.t0, self.config.t1)
 
 
 class PanelFFillDynamic(wx.Panel):
@@ -3415,7 +3418,7 @@ class FFillOptionsDialog(wx.Dialog):
             self.config.con_3d = 26
 
     def OnClose(self, evt: wx.CloseEvent) -> None:
-        print("ONCLOSE")
+        logger.debug("PanelFFillDynamic ONCLOSE")
         if self.config.dlg_visible:
             Publisher.sendMessage("Disable style", style=const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
@@ -4086,7 +4089,7 @@ class MaskDensityDialog(wx.Dialog):
         self.max_density.SetValue(str(_max))
         self.std_density.SetValue(str(_std))
 
-        print(">>>> Area of mask", slc.calc_mask_area(mask))
+        logger.debug("Area of mask: %s", slc.calc_mask_area(mask))
 
 
 class ObjectCalibrationDialog(wx.Dialog):
@@ -4959,13 +4962,13 @@ class ICPCorregistrationDialog(wx.Dialog):
         self.SetProgress(0.5)
 
         if self.icp_mode == 0:
-            print("Affine mode")
+            logger.info("Affine mode")
             icp.GetLandmarkTransform().SetModeToAffine()
         elif self.icp_mode == 1:
-            print("Similarity mode")
+            logger.info("Similarity mode")
             icp.GetLandmarkTransform().SetModeToSimilarity()
         elif self.icp_mode == 2:
-            print("Rigid mode")
+            logger.info("Rigid mode")
             icp.GetLandmarkTransform().SetModeToRigidBody()
 
         # icp.DebugOn()
@@ -5599,7 +5602,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         brain_target_actor.GetProperty().SetColor([1, 1, 0])
         self.brain_target_actor_list.append(brain_target_actor)
 
-        print("Adding brain markers")
+        logger.info("Adding brain markers")
 
     def LoadTarget(self) -> vtkActor:
         coord_flip = list(self.marker)
@@ -6032,7 +6035,7 @@ class CreateBrainTargetDialog(wx.Dialog):
                 brain_target_actor.PickableOff()
                 brain_target_actor.GetProperty().SetColor([1, 1, 0])
                 self.brain_target_actor_list.append(brain_target_actor)
-                print("Adding brain markers")
+                logger.info("Adding brain markers")
 
     def OnSendMtms(self, evt: wx.CommandEvent | None = None) -> None:
         vtkmat = self.marker_actor.GetMatrix()
@@ -6283,7 +6286,7 @@ class SurfaceProgressWindow:
         self.dlg.Show()
 
     def WasCancelled(self) -> bool:
-        #  print("Cancelled?", self.dlg.WasCancelled())
+        #  logger.debug("Cancelled?", self.dlg.WasCancelled())
         return self.dlg.WasCancelled()
 
     def Update(self, msg: str | None = None, value=None) -> None:
@@ -7241,7 +7244,7 @@ class ConfigurePolarisDialog(wx.Dialog):
                 desc_list.append(p.description)
             port_selec = [i for i, e in enumerate(desc_list) if "NDI" in e]
 
-        # print("Here is the chosen port: {} with id {}".format(port_selec[0], port_selec[1]))
+        # logger.debug("Here is the chosen port: {} with id {}".format(port_selec[0], port_selec[1]))
 
         return port_list, port_selec
 

@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import threading
 from math import cos, sin
 from random import uniform
@@ -30,6 +31,9 @@ import invesalius.constants as const
 import invesalius.data.transformations as tr
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from invesalius.data.tracker_connection import TrackerConnection
@@ -131,7 +135,7 @@ def GetCoordinatesForThread(
         }
         coord, marker_visibilities = getcoord[tracker_id](tracker_connection, tracker_id, ref_mode)
     else:
-        print("Select Tracker")
+        logger.debug("Select Tracker")
 
     return coord, marker_visibilities
 
@@ -474,7 +478,7 @@ def PolhemusSerialCoord(tracker_connection: "TrackerConnection", tracker_id: int
     lines = trck.readlines()
 
     if lines is None:
-        print("The Polhemus is not connected!")
+        logger.debug("The Polhemus is not connected!")
     else:
         data = lines[0]
         data = data.replace(str.encode("-"), str.encode(" -"))

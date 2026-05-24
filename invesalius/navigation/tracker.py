@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import threading
 from typing import Dict, List, Optional, Tuple, cast
 
@@ -32,6 +33,8 @@ import invesalius.session as ses
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
+
+logger = logging.getLogger(__name__)
 
 
 # Only one tracker will be initialized per time. Therefore, we use
@@ -55,7 +58,8 @@ class Tracker(metaclass=Singleton):
 
         try:
             self.LoadState()
-        except:  # noqa: E722
+        except Exception:
+            logger.exception("Caught exception")
             ses.Session().DeleteStateFile()
 
     def SaveState(self) -> None:
@@ -173,12 +177,12 @@ class Tracker(metaclass=Singleton):
                 self.tracker_id = 0
 
                 Publisher.sendMessage("Update status text in GUI", label=_("Tracker disconnected"))
-                print("Tracker disconnected!")
+                logger.debug("Tracker disconnected!")
             else:
                 Publisher.sendMessage(
                     "Update status text in GUI", label=_("Tracker still connected")
                 )
-                print("Tracker still connected!")
+                logger.debug("Tracker still connected!")
 
     def IsTrackerInitialized(self) -> bool:
         return bool(self.tracker_connection and self.tracker_id and self.tracker_connected)
@@ -244,7 +248,7 @@ class Tracker(metaclass=Singleton):
             coord_raw, 1
         )
 
-        print(f"Set tracker fiducial {fiducial_index} to coordinates {coord[0:3]}.")
+        logger.debug(f"Set tracker fiducial {fiducial_index} to coordinates {coord[0:3]}.")
 
         self.SaveState()
 

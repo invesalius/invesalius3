@@ -18,12 +18,15 @@
 #    detalhes.
 # -------------------------------------------------------------------------
 
+import logging
 import time
 
 import socketio
 import wx
 
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
 
 
 class RemoteControl:
@@ -33,11 +36,11 @@ class RemoteControl:
         self._sio = None
 
     def _on_connect(self):
-        print("Connected to {}".format(self._remote_host))
+        logger.debug("Connected to {}".format(self._remote_host))
         self._connected = True
 
     def _on_disconnect(self):
-        print("Disconnected")
+        logger.debug("Disconnected")
         self._connected = False
 
     def _to_neuronavigation(self, msg):
@@ -46,7 +49,7 @@ class RemoteControl:
         if data is None:
             data = {}
 
-        # print("Received an event into topic '{}' with data {}".format(topic, str(data)))
+        # logger.debug("Received an event into topic '{}' with data {}".format(topic, str(data)))
         Publisher.sendMessage_no_hook(topicName=topic, **data)
 
     def _to_neuronavigation_wrapper(self, msg):
@@ -65,11 +68,11 @@ class RemoteControl:
         self._sio.emit("restart_robot_main_loop")
 
         while not self._connected:
-            print("Connecting...")
+            logger.debug("Connecting...")
             time.sleep(1.0)
 
         def _emit(topic, data):
-            # print("Emitting data {} to topic {}".format(data, topic))
+            # logger.debug("Emitting data {} to topic {}".format(data, topic))
             try:
                 if isinstance(topic, str):
                     self._sio.emit(

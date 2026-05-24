@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import time
 from functools import partial
 from threading import Thread
@@ -26,6 +27,9 @@ import wx
 import invesalius.constants as const
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug
+
+logger = logging.getLogger(__name__)
+
 
 HAS_PEDAL_CONNECTION = True
 try:
@@ -133,7 +137,7 @@ class MidiPedal(Thread, metaclass=Singleton):
             state = False
 
         else:
-            print("Unknown message type received from MIDI device")
+            logger.debug("Unknown message type received from MIDI device")
             return
 
         Publisher.sendMessage("Pedal state changed", state=state)
@@ -157,7 +161,7 @@ class MidiPedal(Thread, metaclass=Singleton):
 
             Publisher.sendMessage("Pedal connection", state=True)
 
-            print("Connected to MIDI device")
+            logger.debug("Connected to MIDI device")
 
     def _check_disconnected(self):
         if self._midi_in is not None:
@@ -166,7 +170,7 @@ class MidiPedal(Thread, metaclass=Singleton):
 
                 Publisher.sendMessage("Pedal connection", state=False)
 
-                print("Disconnected from MIDI device")
+                logger.debug("Disconnected from MIDI device")
 
     def _update_midi_inputs(self):
         self._midi_inputs = mido.get_input_names()

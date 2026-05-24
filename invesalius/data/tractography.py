@@ -21,6 +21,7 @@
 # Contributions: Dogu Baran Aydogan
 # Initial date: 8 May 2020
 
+import logging
 import queue
 import threading
 import time
@@ -37,6 +38,9 @@ from vtkmodules.vtkFiltersCore import vtkTubeFilter
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as img_utils
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 # Nice print for arrays
 # np.set_printoptions(precision=2)
@@ -120,7 +124,7 @@ def create_branch(out_list, n_block):
     branch = vtkMultiBlockDataSet()
 
     # create tracts only when at least one was computed
-    # print("Len outlist in root: ", len(out_list))
+    # logger.debug("Len outlist in root: ", len(out_list))
     # TODO: check if this if statement is required, because we should
     #  call this function only when tracts exist
     if not out_list.count(None) == len(out_list):
@@ -190,9 +194,9 @@ def compute_and_visualize_tracts(trekker, position, affine, affine_vtk, n_tracts
         alpha = (n_param - 1) * (255 - 51) / (10 - 1) + 51
         trekker.minFODamp(n_param * 0.01)
 
-        # print("seed example: {}".format(seed_trk))
+        # logger.debug("seed example: {}".format(seed_trk))
         trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
-        # print("trk list len: ", len(trekker.run()))
+        # logger.debug("trk list len: ", len(trekker.run()))
         trk_list = trekker.run()
         n_tracts += len(trk_list)
         if len(trk_list):
@@ -268,15 +272,15 @@ class ComputeTractsThread(threading.Thread):
         n_tracts = 0
 
         # Compute the tracts
-        # print('ComputeTractsThread: event {}'.format(self.event.is_set()))
+        # logger.debug('ComputeTractsThread: event {}'.format(self.event.is_set()))
         while not self.event.is_set():
             try:
-                # print("Computing tracts")
+                # logger.debug("Computing tracts")
                 # get from the queue the coordinates, coregistration transformation matrix, and flipped matrix
-                # print("Here")
+                # logger.debug("Here")
                 m_img_flip = self.coord_tracts_queue.get_nowait()
                 # coord, m_img, m_img_flip = self.coord_queue.get_nowait()
-                # print('ComputeTractsThread: get {}'.format(count))
+                # logger.debug('ComputeTractsThread: get {}'.format(count))
 
                 # TODO: Remove this is not needed
                 # 20200402: in this new refactored version the m_img comes different than the position
@@ -293,15 +297,15 @@ class ComputeTractsThread(threading.Thread):
                 dist = abs(np.linalg.norm(p_old - np.asarray(coord_offset)))
                 p_old = coord_offset.copy()
 
-                # print("p_new_shape", coord_offset.shape)
-                # print("m_img_flip_shape", m_img_flip.shape)
+                # logger.debug("p_new_shape", coord_offset.shape)
+                # logger.debug("m_img_flip_shape", m_img_flip.shape)
                 seed_trk = img_utils.convert_world_to_voxel(coord_offset, affine)
                 coord_offset_w = np.hstack((coord_offset, 1.0)).reshape([4, 1])
                 # Juuso's
                 # seed_trk = np.array([[-8.49, -8.39, 2.5]])
                 # Baran M1
                 # seed_trk = np.array([[27.53, -77.37, 46.42]])
-                # print("Seed: {}".format(seed))
+                # logger.debug("Seed: {}".format(seed))
 
                 # set the seeds for trekker, one seed is repeated n_threads times
                 # trekker has internal multiprocessing approach done in C. Here the number of available threads is give,
@@ -313,7 +317,7 @@ class ComputeTractsThread(threading.Thread):
                 trk_list = trekker.run()
 
                 if len(trk_list) > 2:
-                    # print("dist: {}".format(dist))
+                    # logger.debug("dist: {}".format(dist))
                     if dist >= seed_radius:
                         # when moving the coil further than the seed_radius restart the bundle computation
                         bundle = vtkMultiBlockDataSet()
@@ -343,15 +347,15 @@ class ComputeTractsThread(threading.Thread):
                 # than visualizing old data
                 # self.visualization_queue.put_nowait([coord, m_img, bundle])
                 self.tracts_queue.put_nowait((bundle, affine_vtk, coord_offset, coord_offset_w))
-                # print('ComputeTractsThread: put {}'.format(count))
+                # logger.debug('ComputeTractsThread: put {}'.format(count))
 
                 self.coord_tracts_queue.task_done()
                 # self.coord_queue.task_done()
-                # print('ComputeTractsThread: done {}'.format(count))
+                # logger.debug('ComputeTractsThread: done {}'.format(count))
 
             # if no coordinates pass
             except queue.Empty:
-                # print("Empty queue in tractography")
+                # logger.debug("Empty queue in tractography")
                 pass
             # if queue is full mark as done (may not be needed in this new "nowait" method)
             except queue.Full:
@@ -511,8 +515,8 @@ class ComputeTractsACTThread(threading.Thread):
                 # seed_trk = np.array([[-8.49, -8.39, 2.5]])
                 # Baran M1
                 # seed_trk = np.array([[27.53, -77.37, 46.42]])
-                # print("Given: {}".format(seed_trk.shape))
-                # print("Seed: {}".format(seed))
+                # logger.debug("Given: {}".format(seed_trk.shape))
+                # logger.debug("Seed: {}".format(seed))
                 # joonas seed that has good tracts
                 # seed_trk = np.array([[29.12, -13.33, 31.65]])
                 # seed_trk_img = np.array([[117, 127, 161]])
@@ -628,7 +632,7 @@ def set_trekker_parameters(trekker, params):
         n_threads = params["numb_threads"]
 
     trekker.numberOfThreads(n_threads)
-    # print("Trekker config updated: n_threads, {}; seed_max, {}".format(n_threads, params['seed_max']))
+    # logger.debug("Trekker config updated: n_threads, {}; seed_max, {}".format(n_threads, params['seed_max']))
     return trekker, n_threads
 
 

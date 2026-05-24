@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 # from math import cos, sin
+import logging
 import os
 import queue
 import sys
@@ -108,6 +109,8 @@ from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
 
 if sys.platform == "win32":
     try:
@@ -378,7 +381,7 @@ class Viewer(wx.Panel):
             renderer = renwin.GetNextItem()
             self.renderers.append(renderer)
 
-        print(len(self.renderers))
+        logger.debug(len(self.renderers))
 
         Publisher.sendMessage("Press target mode button", pressed=False)
         self._update_fps_visibility()
@@ -444,7 +447,8 @@ class Viewer(wx.Panel):
             if self.orientation_widget:
                 try:
                     self.orientation_widget.SetEnabled(0)
-                except:
+                except Exception:
+                    logger.exception("Error disabling orientation widget")
                     pass
                 self.orientation_widget = None
 
@@ -1118,7 +1122,7 @@ class Viewer(wx.Panel):
         self.angle_threshold = angle
 
     def OnUpdateDistanceThreshold(self, dist_threshold):
-        print("updated to ", dist_threshold)
+        logger.debug("updated to ", dist_threshold)
         self.distance_threshold = dist_threshold
 
     def OnUpdateRobotWarning(self, robot_warning):
@@ -1526,7 +1530,7 @@ class Viewer(wx.Panel):
 
         self.coil_visualizer.AddTargetCoil(self.m_target)
 
-        print(f"Target updated to coordinates {coord}")
+        logger.debug(f"Target updated to coordinates {coord}")
 
     def CreateVTKObjectMatrix(self, direction, orientation):
         m_img = dco.coordinates_to_transformation_matrix(
@@ -1571,7 +1575,7 @@ class Viewer(wx.Panel):
         try:
             surface = proj.surface_dict[0].polydata
         except KeyError:
-            print("There is not any surface created")
+            logger.debug("There is not any surface created")
             return barycenter
 
         polydata = surface
@@ -2788,7 +2792,7 @@ class Viewer(wx.Panel):
                     closestPoint = point
                     pointnormal = np.array(self.peel_normals.GetTuple(cellId))
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
-                    # print('the angle:', angle)
+                    # logger.debug('the angle:', angle)
 
                     self.ren.AddActor(self.obj_projection_arrow_actor)
                     self.ren.AddActor(self.object_orientation_torus_actor)

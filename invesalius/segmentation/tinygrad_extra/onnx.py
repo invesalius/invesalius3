@@ -1,6 +1,7 @@
 import dataclasses
 import functools
 import io
+import logging
 import math
 import types
 from typing import Any, Callable, List, Literal, Sequence, cast
@@ -13,6 +14,8 @@ from tinygrad.device import is_dtype_supported
 from tinygrad.dtype import ConstType, DType, ImageDType, dtypes
 from tinygrad.helpers import DEBUG, all_same, flatten, getenv, make_tuple, prod
 from tinygrad.tensor import ReductionStr, Tensor, _broadcast_shape
+
+logger = logging.getLogger(__name__)
 
 
 def dtype_parse(onnx_dtype: int) -> DType:
@@ -204,7 +207,7 @@ def to_python_const(t: Any, op: str, idx: int) -> list[ConstType] | ConstType | 
     global cache_misses
     ret = _cached_to_python_const(t)
     if (info := _cached_to_python_const.cache_info()).misses > cache_misses and DEBUG >= 3:
-        print(f"Cache miss for {t}")
+        logger.debug(f"Cache miss for {t}")
         cache_misses = info.misses
     return ret
 
@@ -311,15 +314,15 @@ class OnnxRunner:
                 opts["intermediate_tensors"] = self.graph_values
 
             if debug >= 1:
-                print(f"{node.num}: op '{node.op}' opt {opts}")
+                logger.debug(f"{node.num}: op '{node.op}' opt {opts}")
             if debug >= 2 and node.inputs:
-                print(
+                logger.debug(
                     "\tinputs:\n" + "\n".join(f"\t\t{x} - {i!r}" for x, i in zip(node.inputs, inps))
                 )
             ret = self._dispatch_op(node.op, inps, opts)
             ret = ret if isinstance(ret, tuple) else (ret,)
             if debug >= 2:
-                print(
+                logger.debug(
                     "\toutputs:\n"
                     + "\n".join(f"\t\t{x} - {o!r}" for x, o in zip(node.outputs, ret))
                 )

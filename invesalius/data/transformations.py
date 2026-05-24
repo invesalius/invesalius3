@@ -192,11 +192,15 @@ True
 
 """
 
+import logging
 import math
 from typing import Sequence, Union
 
 import numpy
 import numpy.typing
+
+logger = logging.getLogger(__name__)
+
 
 __version__ = "2015.07.18"
 __docformat__ = "restructuredtext en"
@@ -1132,7 +1136,7 @@ def euler_from_matrix(matrix, axes="sxyz"):
     >>> for axes in _AXES2TUPLE.keys():
     ...    R0 = euler_matrix(axes=axes, *angles)
     ...    R1 = euler_matrix(axes=axes, *euler_from_matrix(R0, axes))
-    ...    if not numpy.allclose(R0, R1): print(axes, "failed")
+    ...    if not numpy.allclose(R0, R1): logger.debug(axes, "failed")
 
     """
     try:
@@ -1878,7 +1882,7 @@ def inverse_matrix(matrix):
     >>> for size in range(1, 7):
     ...     M0 = numpy.random.rand(size, size)
     ...     M1 = inverse_matrix(M0)
-    ...     if not numpy.allclose(M1, numpy.linalg.inv(M0)): print(size)
+    ...     if not numpy.allclose(M1, numpy.linalg.inv(M0)): logger.debug(size)
 
     """
     return numpy.linalg.inv(matrix)

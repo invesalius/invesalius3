@@ -31,6 +31,9 @@ from torch.utils.data import Dataset
 from . import misc
 from .misc import Config
 
+logger = logging.getLogger(__name__)
+
+
 SUPPORTED_OUTPUT_FILE_FORMATS = ("mgz", "nii", "nii.gz")
 LOGGER = logging.getLogger(__name__)
 
@@ -703,7 +706,7 @@ def scalecrop(
 
     # clip
     data_new = np.clip(data_new, dst_min, dst_max)
-    print("Output:   min: " + format(data_new.min()) + "  max: " + format(data_new.max()))
+    logger.debug("Output:   min: " + format(data_new.min()) + "  max: " + format(data_new.max()))
 
     return data_new
 
@@ -976,7 +979,7 @@ def conform(
             raise
         dtype_codes = mghformat.data_type_codes.code.keys()
         codes = set(k.name for k in dtype_codes if isinstance(k, np.dtype))
-        print(
+        logger.debug(
             f"The data type '{dtype}' is not recognized for MGH images, "
             f"switching to '{new_img.get_data_dtype()}' (supported: {tuple(codes)})."
         )
@@ -988,7 +991,7 @@ def reduce_to_aseg(data_inseg: np.ndarray) -> np.ndarray:
     """
     Reduce the input segmentation to a simpler segmentation.
     """
-    print("Reducing to aseg ...")
+    logger.debug("Reducing to aseg ...")
     # replace 2000... with 42
     data_inseg[data_inseg >= 2000] = 42
     # replace 1000... with 3
@@ -1000,13 +1003,13 @@ def create_mask(aseg_data, dnum, enum):
     """
     Create dilated mask.
     """
-    print("Creating dilated mask ...")
+    logger.debug("Creating dilated mask ...")
 
     # treat lateral orbital frontal and parsorbitalis special to avoid capturing too much of eye nerve
     lat_orb_front_mask = np.logical_or(aseg_data == 2012, aseg_data == 1012)
     parsorbitalis_mask = np.logical_or(aseg_data == 2019, aseg_data == 1019)
     frontal_mask = np.logical_or(lat_orb_front_mask, parsorbitalis_mask)
-    print("Frontal region special treatment: ", format(np.sum(frontal_mask)))
+    logger.debug("Frontal region special treatment: ", format(np.sum(frontal_mask)))
 
     # reduce to binary
     datab = aseg_data > 0
@@ -1016,10 +1019,10 @@ def create_mask(aseg_data, dnum, enum):
 
     labels = label(datab)
     assert labels.max() != 0
-    print(f"  Found {labels.max()} connected component(s)!")
+    logger.debug(f"  Found {labels.max()} connected component(s)!")
 
     if labels.max() > 1:
-        print("  Selecting largest component!")
+        logger.debug("  Selecting largest component!")
         datab = labels == np.argmax(np.bincount(labels.flat)[1:]) + 1
 
     # add frontal regions back to mask
@@ -1067,6 +1070,6 @@ def flip_wm_islands(aseg_data: np.ndarray) -> np.ndarray:
     flip_data = aseg_data.copy()
     flip_data[rhswap] = lh_wm
     flip_data[lhswap] = rh_wm
-    print(f"FlipWM: rh {rhswap.sum()} and lh {lhswap.sum()} flipped.")
+    logger.debug(f"FlipWM: rh {rhswap.sum()} and lh {lhswap.sum()} flipped.")
 
     return flip_data

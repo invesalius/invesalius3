@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import queue
 import threading
 import time
@@ -49,6 +50,8 @@ from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
+
+logger = logging.getLogger(__name__)
 
 
 class NavigationHub(metaclass=Singleton):
@@ -708,7 +711,7 @@ class Navigation(metaclass=Singleton):
                     affine_vtk,
                     img_shift,
                 )
-                # print("Appending the tract computation thread!")
+                # logger.debug("Appending the tract computation thread!")
                 queues = [self.coord_tracts_queue, self.tracts_queue]
                 if self.enable_act:
                     jobs_list.append(
