@@ -1,0 +1,12 @@
+{
+    "Name": "ORTHANC",
+    "RemoteAccessAllowed": true,
+    "AuthenticationEnabled": false,
+    "DicomModalities": {
+        "INVESALIUS": [
+            "INVESALIUS",
+            "0.0.0.0",
+            "11120"
+        ]
+    }
+}
