@@ -381,11 +381,18 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
+
+
+
+
+
+
+
+
     def SetTargetTransparency(self, marker, transparent):
         actor = marker.visualization["actor"]
         if transparent:
-            actor.GetProperty().SetOpacity(1)
-            # actor.GetProperty().SetOpacity(0.4)
+            actor.GetProperty().SetOpacity(0.4)
         else:
             actor.GetProperty().SetOpacity(1)
 
