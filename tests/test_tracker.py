@@ -107,6 +107,9 @@ def test_set_tracker(mocker, tracker):
     mocker.patch(
         "invesalius.data.tracker_connection.CreateTrackerConnection", return_value=mock_tracker_conn
     )
+    
+    mocker.patch.object(tracker, "SaveState")
+    
     with patch.object(threading.Thread, "start"):
         tracker.SetTracker(tracker_id=const.DEBUGTRACKAPPROACH)
 
