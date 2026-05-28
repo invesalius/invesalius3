@@ -4303,7 +4303,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             cortex_position_orientation=cortex_position_orientation,
             mep_value=mep_value,
         )
-        self.markers.AddMarker(marker, render=True, focus=True)
+        self.markers.AddMarker(marker, render=True, focus=self.nav_status)
 
     # Given a string, try to parse it as an integer, float, or string.
     #
@@ -4550,6 +4550,16 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         if label is None:
             label = self.GetNextMarkerLabel()
+
+        # Fallback to current slice position when current_position is [0,0,0] and navigation is inactive
+        if position is None and self.current_position == [0, 0, 0] and not self.nav_status:
+            sl = slice_.Slice()
+            spacing = sl.spacing
+            position = [
+                sl.buffer_slices["SAGITAL"].index * spacing[0],
+                sl.buffer_slices["CORONAL"].index * spacing[1],
+                sl.buffer_slices["AXIAL"].index * spacing[2],
+            ]
 
         marker = Marker()
         marker.position = position or self.current_position

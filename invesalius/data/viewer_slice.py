@@ -1821,6 +1821,20 @@ class Viewer(wx.Panel):
         if self.orientation != "AXIAL":
             return
 
+        # Validate marker position is within volume bounds
+        if not hasattr(self, "slice_") or self.slice_ is None:
+            return
+        if not hasattr(self.slice_, "matrix") or self.slice_.matrix is None:
+            return
+
+        try:
+            vx, vy, vz = self.get_voxel_coord_by_world_pos(marker.x, marker.y, marker.z)
+            dz, dy, dx = self.slice_.matrix.shape
+            if not (0 <= vx < dx and 0 <= vy < dy and 0 <= vz < dz):
+                return
+        except Exception:
+            return
+
         if not self.nav_status:
             Publisher.sendMessage(
                 "Set cross focal point", position=[marker.x, marker.y, marker.z, None, None, None]
