@@ -1739,9 +1739,8 @@ def LoadDictionary(filename):
     """
     import pickle
 
-    fp = open(filename, "rb")
-    info = pickle.load(fp)
-    fp.close()
+    with open(filename, "rb") as fp:
+        info = pickle.load(fp)
     return info
 
 
