@@ -561,6 +561,10 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.surface_list[index][0] = name
         self.combo_surface_name.SetString(index, name)
 
+        if self.combo_surface_name.GetSelection() == index:
+            self.combo_surface_name.SetSelection(-1)
+            self.combo_surface_name.SetSelection(index)
+
     def InsertNewSurface(self, surface):
         index = surface.index
         name = surface.name
