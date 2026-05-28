@@ -284,6 +284,9 @@ class MarkersControl(metaclass=Singleton):
         # keyboard events.
         self.transformator.UpdateSelectedMarker(None)
 
+        # Unhighlight marker in viewer volume and 2D slice viewers.
+        Publisher.sendMessage("Unhighlight marker")
+
     def CreateCoilTargetFromLandmark(self, marker: Marker, label: str = None) -> None:
         new_marker = marker.duplicate()
 

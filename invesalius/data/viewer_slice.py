@@ -24,6 +24,7 @@ import sys
 import wx
 from vtkmodules.vtkFiltersGeneral import vtkCursor3D
 from vtkmodules.vtkFiltersHybrid import vtkRenderLargeImage
+from vtkmodules.vtkFiltersSources import vtkRegularPolygonSource
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleImage
 from vtkmodules.vtkIOExport import vtkPOVExporter
 from vtkmodules.vtkIOImage import (
@@ -248,6 +249,7 @@ class Viewer(wx.Panel):
         # VTK pipeline and actors
         self.__config_interactor()
         self.cross_actor = vtkActor()
+        self.marker_indicator_actor = None
 
         self.__bind_events()
         self.__bind_events_wx()
@@ -1015,6 +1017,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateCross, "Update cross pos")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.OnHighlightMarker, "Highlight marker")
+        Publisher.subscribe(self.OnUnhighlightMarker, "Unhighlight marker")
 
     def RefreshViewer(self):
         self.Refresh()
@@ -1138,6 +1141,7 @@ class Viewer(wx.Panel):
         self.cursor = None
         self.wl_text = None
         self.pick = vtkWorldPointPicker()
+        self.marker_indicator_actor = None
 
     def OnSetInteractorStyle(self, style):
         self.SetInteractorStyle(style)
@@ -1273,6 +1277,7 @@ class Viewer(wx.Panel):
         self.slice_data.SetCursor(self.__create_cursor())
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines()
+        self.__build_marker_indicator()
 
         self.canvas = CanvasRendererCTX(
             self, self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation
@@ -1813,18 +1818,56 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
+    def __build_marker_indicator(self):
+        """Build a small sphere actor used to highlight the selected marker position on 2D slices."""
+        from vtkmodules.vtkFiltersSources import vtkSphereSource
+        
+        renderer = self.slice_data.overlay_renderer
+
+        # Create a sphere so it appears circular regardless of the slice orientation
+        sphere_source = vtkSphereSource()
+        sphere_source.SetRadius(3.0)
+        sphere_source.SetThetaResolution(16)
+        sphere_source.SetPhiResolution(16)
+        self._marker_indicator_source = sphere_source
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputConnection(sphere_source.GetOutputPort())
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(1.0, 1.0, 0.0)  # Yellow
+        actor.GetProperty().SetOpacity(0.85)
+        actor.VisibilityOff()
+        actor.PickableOff()
+
+        self.marker_indicator_actor = actor
+        renderer.AddActor(actor)
+
     def OnHighlightMarker(self, marker):
-        """Synchronize slice viewers to the selected marker's position."""
+        """Synchronize slice viewers to the selected marker's position and show marker indicator."""
         if marker is None:
             return
 
-        if self.orientation != "AXIAL":
-            return
-
+        # Move the cross focal point and scroll slices to the marker position.
         if not self.nav_status:
             Publisher.sendMessage(
                 "Set cross focal point", position=[marker.x, marker.y, marker.z, None, None, None]
             )
+
+        # Show the marker indicator circle at the marker's world position.
+        if self.marker_indicator_actor is not None:
+            self.marker_indicator_actor.SetPosition(marker.x, marker.y, marker.z)
+            self.marker_indicator_actor.VisibilityOn()
+            if not self.nav_status:
+                self.UpdateRender()
+
+    def OnUnhighlightMarker(self):
+        """Hide the marker indicator on 2D slices when a marker is deselected."""
+        if self.marker_indicator_actor is not None:
+            self.marker_indicator_actor.VisibilityOff()
+            if not self.nav_status:
+                self.UpdateRender()
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"
