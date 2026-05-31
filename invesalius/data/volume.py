@@ -29,6 +29,7 @@ from vtkmodules.vtkImagingStatistics import vtkImageAccumulate
 from vtkmodules.vtkInteractionWidgets import vtkImagePlaneWidget
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
+    vtkCellPicker,
     vtkColorTransferFunction,
     vtkPolyDataMapper,
     vtkVolume,
@@ -758,16 +759,36 @@ class CutPlane:
         self.plane_widget = plane_widget = vtkImagePlaneWidget()
         plane_widget.SetInputData(self.img)
         plane_widget.SetPlaneOrientationToXAxes()
+
+        plane_widget.RestrictPlaneToVolumeOff()
+        picker = vtkCellPicker()
+        picker.SetTolerance(0.005)
+        picker.PickFromListOn()
+        plane_widget.SetPicker(picker)
+
         # plane_widget.SetResliceInterpolateToLinear()
-        plane_widget.TextureVisibilityOff()
+        plane_widget.TextureVisibilityOn()
+        plane_widget.GetTexturePlaneProperty().SetOpacity(0.02)
         # Set left mouse button to move and rotate plane
         plane_widget.SetLeftButtonAction(1)
+
+        # Set plane outline color to green
+        plane_property = plane_widget.GetPlaneProperty()
+        plane_property.SetColor(0, 0.8, 0)
+
+        # Set selected plane outline color to green
+        selected_plane_property = plane_widget.GetSelectedPlaneProperty()
+        selected_plane_property.SetColor(0, 0.8, 0)
+
         # SetColor margin to green
         margin_property = plane_widget.GetMarginProperty()
         margin_property.SetColor(0, 0.8, 0)
         # Disable cross
         cursor_property = plane_widget.GetCursorProperty()
         cursor_property.SetOpacity(0)
+
+        # Synchronize widget geometry and internal picker bounds immediately
+        plane_widget.UpdatePlacement()
         self.plane_source = plane_source = vtkPlaneSource()
         plane_source.SetOrigin(plane_widget.GetOrigin())
         plane_source.SetPoint1(plane_widget.GetPoint1())
@@ -794,6 +815,9 @@ class CutPlane:
         self.p2 = plane_widget.GetPoint2()
         self.normal = plane_widget.GetNormal()
 
+        # Reset camera clipping range to make sure the widget is pickable immediately
+        Publisher.sendMessage("Reset cam clipping range")
+
     def SetVolumeMapper(self, volume_mapper):
         self.volume_mapper = volume_mapper
         self.volume_mapper.AddClippingPlane(self.plane)
@@ -814,6 +838,7 @@ class CutPlane:
         self.plane_widget.On()
         self.plane_actor.VisibilityOn()
         self.volume_mapper.AddClippingPlane(self.plane)
+        Publisher.sendMessage("Reset cam clipping range")
         Publisher.sendMessage("Render volume viewer")
 
     def Disable(self):

@@ -3664,6 +3664,10 @@ class Viewer(wx.Panel):
 
     def SetWidgetInteractor(self, widget=None):
         widget.SetInteractor(self.interactor._Iren)
+        if hasattr(widget, "SetDefaultRenderer"):
+            widget.SetDefaultRenderer(self.ren)
+        if hasattr(widget, "SetCurrentRenderer"):
+            widget.SetCurrentRenderer(self.ren)
 
     def AppendActor(self, actor):
         self.ren.AddActor(actor)
