@@ -338,6 +338,7 @@ class Viewer(wx.Panel):
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
+        self.last_efield_cell_id = None
         self.colors_init = vtkUnsignedCharArray()
         self.plot_no_connection = False
 
@@ -1774,7 +1775,20 @@ class Viewer(wx.Panel):
         Actor.GetProperty().SetColor(color)
         return Actor
 
+    def HasEfieldVectorData(self):
+        return (
+            self.efield_mesh is not None
+            and self.e_field_norms is not None
+            and getattr(self, "Id_list", None) is not None
+            and len(self.Id_list) > 0
+            and getattr(self, "Idmax", None) is not None
+            and getattr(self, "max_efield_array", None) is not None
+        )
+
     def MaxEfieldActor(self):
+        if not self.HasEfieldVectorData():
+            return
+
         vtk_colors = vtkNamedColors()
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
@@ -1791,6 +1805,9 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.ball_max_vector)
 
     def CoGEfieldActor(self):
+        if not self.HasEfieldVectorData():
+            return
+
         vtk_colors = vtkNamedColors()
         if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
             self.ren.RemoveActor(self.GoGEfieldVector)
@@ -1799,9 +1816,15 @@ class Viewer(wx.Panel):
         [self.cell_id_indexes_above_threshold, self.positions_above_threshold] = (
             self.GetIndexesAboveThreshold(self.efield_threshold)
         )
+        if not self.cell_id_indexes_above_threshold:
+            return
+
         self.center_gravity_position = self.FindCenterofGravity(
             self.cell_id_indexes_above_threshold, self.positions_above_threshold
         )
+        if self.center_gravity_position is None:
+            return
+
         self.GoGEfieldVector = self.DrawVectors(
             self.center_gravity_position, orientation, vtk_colors.GetColor3d("Blue")
         )
@@ -1906,6 +1929,13 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.SpreadEfieldFactorTextActor.actor)
 
     def CalculateDistanceMaxEfieldCoGE(self):
+        if (
+            getattr(self, "center_gravity_position", None) is None
+            or getattr(self, "position_max", None) is None
+            or self.SpreadEfieldFactorTextActor is None
+        ):
+            return
+
         self.distance_efield = distance.euclidean(self.center_gravity_position, self.position_max)
         self.SpreadEfieldFactorTextActor.SetValue(
             "Spread distance: " + str(f"{self.distance_efield:04.2f}")
@@ -2247,6 +2277,7 @@ class Viewer(wx.Panel):
     def UpdateEfieldROISize(self, data):
         self.efield_ROISize = data
         self.radius_list.Reset()
+        self.last_efield_cell_id = None
 
     def EnableEfieldTools(self, enable):
         self.efield_tools = enable
@@ -2258,9 +2289,16 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
 
     def FindCenterofGravity(self, cell_id_indexes, positions):
+        if not cell_id_indexes or not positions:
+            return None
+
         weights = []
         for index, value in enumerate(cell_id_indexes):
             weights.append(self.e_field_norms[index])
+        sum_weights = sum(weights)
+        if sum_weights == 0:
+            return None
+
         x_weighted = []
         y_weighted = []
         z_weighted = []
@@ -2271,7 +2309,6 @@ class Viewer(wx.Panel):
         sum_x = sum(x_weighted)
         sum_y = sum(y_weighted)
         sum_z = sum(z_weighted)
-        sum_weights = sum(weights)
 
         center_gravity_x = sum_x / sum_weights
         center_gravity_y = sum_y / sum_weights
@@ -2290,6 +2327,16 @@ class Viewer(wx.Panel):
     def DetectClustersEfieldSpread(self, points):
         from sklearn.cluster import DBSCAN
         from sklearn.metrics import pairwise_distances
+
+        if (
+            points is None
+            or len(points) == 0
+            or self.distance_efield is None
+            or self.ClusterEfieldTextActor is None
+            or getattr(self, "Id_list", None) is None
+            or len(self.Id_list) == 0
+        ):
+            return
 
         points = np.array(points) if isinstance(points, list) else points
         dbscan = DBSCAN(eps=5, min_samples=1).fit(points)
@@ -2436,6 +2483,7 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = None
         self.e_field_norms = None
         self.e_field_norms_to_save = None
+        self.last_efield_cell_id = None
         self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
         self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.target_radius_list = []
@@ -2474,6 +2522,7 @@ class Viewer(wx.Panel):
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
+        closestCellId = None
         # if find intersection , calculate angle and add actors
         if intersectingCellIds.GetNumberOfIds() != 0:
             for i in range(intersectingCellIds.GetNumberOfIds()):
@@ -2915,7 +2964,7 @@ class Viewer(wx.Panel):
     def UpdateArrowPose(self, m_img, coord, flag):
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
 
-        if flag:
+        if flag and self.efield_mesh is None:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
