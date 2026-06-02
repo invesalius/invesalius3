@@ -2164,11 +2164,6 @@ class Viewer(wx.Panel):
         # self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, "Update efield vis")
 
-    def FindClosestValueEfieldEdges(self, arr, threshold):
-        closest_value = min(arr, key=lambda x: abs(x - threshold))
-        closest_index = np.argmin(np.abs(arr - closest_value))
-        return closest_index
-
     def CreateEfieldScalarPolyData(self):
         values = np.asarray(self.e_field_norms, dtype=float)
         n_points = self.efield_mesh.GetNumberOfPoints()
@@ -2230,7 +2225,7 @@ class Viewer(wx.Panel):
         edge_mapper.SetInputData(bcf.GetContourEdgesOutput())
         edge_mapper.SetLookupTable(second_lut)
         edge_mapper.SetScalarRange(self.efield_min, self.efield_max)
-        edge_mapper.ScalarVisibilityOn()
+        edge_mapper.ScalarVisibilityOff()
         edge_mapper.SetResolveCoincidentTopologyToPolygonOffset()
 
         self.edge_actor = vtkActor()
@@ -2256,6 +2251,17 @@ class Viewer(wx.Panel):
         self.show_efield_edges = enable
         if not enable:
             self.RemoveEfieldEdges()
+            self.Refresh()
+            return
+
+        if (
+            self.e_field_norms is not None
+            and self.efield_mesh is not None
+            and self.radius_list.GetNumberOfIds() != 0
+            and not self.tracts_status
+            and self.actor_tracts is None
+        ):
+            self.CalculateEdgesEfield()
             self.Refresh()
 
     def GetIndexesAboveThreshold(self, threshold):
@@ -2606,8 +2612,14 @@ class Viewer(wx.Panel):
         except queue.Full:
             pass
 
-    def UpdateTractSeedBasedEfield(self, coord_tracts_queue):
+    def UpdateTractSeedBasedEfield(self, coord_tracts_queue, fallback_m_img=None):
         if getattr(self, "position_max", None) is None:
+            if fallback_m_img is not None:
+                try:
+                    coord_tracts_queue.clear()
+                    coord_tracts_queue.put_nowait(fallback_m_img)
+                except queue.Full:
+                    pass
             return
 
         orientation = [0, 0, 0]

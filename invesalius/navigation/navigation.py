@@ -263,6 +263,7 @@ class UpdateNavigationScene(threading.Thread):
                             Publisher.sendMessage,
                             "Update tract seed based efield",
                             coord_tracts_queue=self.navigation.coord_tracts_queue,
+                            fallback_m_img=m_imgs[main_coil],
                         )
                     bundle, affine_vtk, coord_offset, coord_offset_w = (
                         self.tracts_queue.get_nowait()
