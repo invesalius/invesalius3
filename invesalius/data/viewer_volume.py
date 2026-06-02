@@ -1785,8 +1785,25 @@ class Viewer(wx.Panel):
             and getattr(self, "max_efield_array", None) is not None
         )
 
+    def RemoveEfieldTargetingActors(self):
+        if self.max_efield_vector is not None:
+            self.ren.RemoveActor(self.max_efield_vector)
+            self.max_efield_vector = None
+        if self.ball_max_vector is not None:
+            self.ren.RemoveActor(self.ball_max_vector)
+            self.ball_max_vector = None
+        if self.GoGEfieldVector is not None:
+            self.ren.RemoveActor(self.GoGEfieldVector)
+            self.GoGEfieldVector = None
+        if self.ball_GoGEfieldVector is not None:
+            self.ren.RemoveActor(self.ball_GoGEfieldVector)
+            self.ball_GoGEfieldVector = None
+        self.position_max = None
+        self.center_gravity_position = None
+
     def MaxEfieldActor(self):
         if not self.HasEfieldVectorData():
+            self.RemoveEfieldTargetingActors()
             return
 
         vtk_colors = vtkNamedColors()
@@ -1806,6 +1823,7 @@ class Viewer(wx.Panel):
 
     def CoGEfieldActor(self):
         if not self.HasEfieldVectorData():
+            self.RemoveEfieldTargetingActors()
             return
 
         vtk_colors = vtkNamedColors()
@@ -2134,6 +2152,7 @@ class Viewer(wx.Panel):
             self.colors_init.InsertTuple(i, color)
 
     def ReturnToDefaultColorActor(self):
+        self.RemoveEfieldTargetingActors()
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         wx.CallAfter(Publisher.sendMessage, "Initialize color array")
         wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
@@ -2498,13 +2517,7 @@ class Viewer(wx.Panel):
         self.mtms_coord = []
         # self.diperdt = None
 
-        if self.max_efield_vector and self.ball_max_vector is not None:
-            self.ren.RemoveActor(self.max_efield_vector)
-            self.ren.RemoveActor(self.ball_max_vector)
-
-        if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
-            self.ren.RemoveActor(self.GoGEfieldVector)
-            self.ren.RemoveActor(self.ball_GoGEfieldVector)
+        self.RemoveEfieldTargetingActors()
 
         if self.vectorfield_actor is not None:
             self.ren.RemoveActor(self.vectorfield_actor)
