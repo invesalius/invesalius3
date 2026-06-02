@@ -23,11 +23,16 @@ from functools import partial
 import numpy as np
 
 try:
-    import Trekker  # noqa: F401
+    import Trekker.Trekker as Trekker  # noqa: F401
 
     has_trekker = True
 except ImportError:
-    has_trekker = False
+    try:
+        import Trekker  # noqa: F401
+
+        has_trekker = hasattr(Trekker, "initialize")
+    except ImportError:
+        has_trekker = False
 
 try:
     # TODO: the try-except could be done inside the mTMS() method call
@@ -118,6 +123,11 @@ class InnerTaskPanel(wx.Panel):
         show_area.Bind(
             wx.EVT_CHECKBOX, partial(self.OnEnableShowAreaAboveThreshold, ctrl=show_area)
         )
+
+        show_edges = wx.CheckBox(self, -1, _("Show E-field contours"))
+        show_edges.SetValue(False)
+        show_edges.Enable(True)
+        show_edges.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfieldEdges, ctrl=show_edges))
 
         efield_tools = wx.CheckBox(self, -1, _("Enable Efield targeting tools"))
         efield_tools.SetValue(False)
@@ -337,6 +347,7 @@ class InnerTaskPanel(wx.Panel):
 
         line_cortex_markers = wx.BoxSizer(wx.HORIZONTAL)
         line_cortex_markers.Add(efield_cortex_markers, 1, wx.LEFT | wx.RIGHT, 2)
+        line_cortex_markers.Add(show_edges, 1, wx.LEFT | wx.RIGHT, 2)
         line_cortex_markers.Add(efield_save_automatically, 1, wx.LEFT | wx.RIGHT, 2)
         line_cortex_markers.Add(efield_for_targeting, 1, wx.LEFT | wx.RIGHT, 2)
 
@@ -431,6 +442,10 @@ class InnerTaskPanel(wx.Panel):
     def OnEnableShowAreaAboveThreshold(self, evt, ctrl):
         enable = ctrl.GetValue()
         Publisher.sendMessage("Show area above threshold", enable=enable)
+
+    def OnEnableEfieldEdges(self, evt, ctrl):
+        enable = ctrl.GetValue()
+        Publisher.sendMessage("Show Efield contours", enable=enable)
 
     def OnEnableEfieldTargetingTools(self, evt, ctrl):
         enable = ctrl.GetValue()

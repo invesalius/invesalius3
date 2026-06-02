@@ -350,7 +350,10 @@ class Viewer(wx.Panel):
         self.GoGEfieldVector = None
         self.vectorfield_actor = None
         self.efield_scalar_bar = None
+        self.edge_fill_actor = None
         self.edge_actor = None
+        self.show_efield_edges = False
+        self.tracts_status = False
         # self.dummy_efield_coil_actor = None
         self.target_at_cortex = None
         self.SpreadEfieldFactorTextActor = None
@@ -737,6 +740,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateEfieldROISize, "Update Efield ROI size")
         Publisher.subscribe(self.SetEfieldTargetAtCortex, "Set as Efield target at cortex")
         Publisher.subscribe(self.EnableShowEfieldAboveThreshold, "Show area above threshold")
+        Publisher.subscribe(self.ShowEfieldContours, "Show Efield contours")
         Publisher.subscribe(self.EnableEfieldTools, "Enable Efield tools")
         Publisher.subscribe(self.ClearTargetAtCortex, "Clear efield target at cortex")
         Publisher.subscribe(self.CoGEforCortexMarker, "Get Cortex position")
@@ -749,6 +753,7 @@ class Viewer(wx.Panel):
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
+        Publisher.subscribe(self.UpdateTractSeedBasedEfield, "Update tract seed based efield")
         Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
 
         # SSAO related
@@ -2103,7 +2108,7 @@ class Viewer(wx.Panel):
         wx.CallAfter(Publisher.sendMessage, "Initialize color array")
         wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
 
-    def CreateLUTTableForEfield(self, min, max):
+    def CreateLUTTableForEfield(self, min, max, highlight_threshold=False):
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
@@ -2112,11 +2117,12 @@ class Viewer(wx.Panel):
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
         n = lut.GetNumberOfTableValues()
         threshold = self.efield_threshold
-        highlight_rgb = (255, 165, 0)
-        for i in range(n):
-            norm_val = i / (n - 1)
-        if norm_val >= threshold:
-            lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)  # Set to orange
+        if highlight_threshold:
+            highlight_rgb = (255, 165, 0)
+            for i in range(n):
+                norm_val = i / (n - 1)
+                if norm_val >= threshold:
+                    lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)
         return lut
 
     def GetEfieldMaxMin(self, e_field_norms):
@@ -2133,59 +2139,94 @@ class Viewer(wx.Panel):
         closest_index = np.argmin(np.abs(arr - closest_value))
         return closest_index
 
+    def CreateEfieldScalarPolyData(self):
+        values = np.asarray(self.e_field_norms, dtype=float)
+        n_points = self.efield_mesh.GetNumberOfPoints()
+
+        scalars = vtkDoubleArray()
+        scalars.SetName("EFieldNorm")
+        scalars.SetNumberOfComponents(1)
+        scalars.SetNumberOfTuples(n_points)
+        scalars.FillComponent(0, self.efield_min)
+
+        if len(values) == n_points:
+            for point_id, value in enumerate(values):
+                scalars.SetValue(point_id, value)
+        else:
+            for point_id, value in zip(self.Id_list, values):
+                scalars.SetValue(point_id, value)
+
+        scalar_polydata = vtkPolyData()
+        scalar_polydata.DeepCopy(self.efield_mesh)
+        scalar_polydata.GetPointData().SetScalars(scalars)
+        return scalar_polydata
+
     def CalculateEdgesEfield(self):
-        if self.edge_actor is not None:
-            self.ren.RemoveViewProp(self.edge_actor)
+        self.RemoveEfieldEdges()
+        if self.efield_max <= self.efield_min:
+            return
+
         named_colors = vtkNamedColors()
         second_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
-        second_lut.SetNumberOfTableValues(5)
+        scalar_polydata = self.CreateEfieldScalarPolyData()
 
         bcf = vtkBandedPolyDataContourFilter()
-        bcf.SetInputData(self.efield_mesh)
+        bcf.SetInputData(scalar_polydata)
         bcf.ClippingOn()
+        bcf.SetScalarModeToValue()
 
-        lower_edge = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_min)
-        middle_edge = self.FindClosestValueEfieldEdges(
-            np.array(self.e_field_norms), self.efield_max * 0.2
-        )
-        middle_edge1 = self.FindClosestValueEfieldEdges(
-            np.array(self.e_field_norms), self.efield_max * 0.7
-        )
-        upper_edge = self.FindClosestValueEfieldEdges(
-            np.array(self.e_field_norms), self.efield_max * 0.9
-        )
-        lower_edge = self.efield_mesh.GetPoint(lower_edge)
-        middle_edge = self.efield_mesh.GetPoint(middle_edge)
-        middle_edge1 = self.efield_mesh.GetPoint(middle_edge1)
-        upper_edge = self.efield_mesh.GetPoint(upper_edge)
-
-        edges = [lower_edge, middle_edge, middle_edge1, upper_edge]
-        for i in range(len(edges)):
-            bcf.SetValue(i, edges[i][2])
-        bcf.SetScalarModeToIndex()
+        value_range = self.efield_max - self.efield_min
+        contour_values = [
+            self.efield_min,
+            #self.efield_min + value_range * 0.2,
+            self.efield_min + value_range * 0.7,
+            self.efield_min + value_range * 0.9,
+        ]
+        for i, value in enumerate(contour_values):
+            bcf.SetValue(i, value)
         bcf.GenerateContourEdgesOn()
+        bcf.Update()
+
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(bcf.GetOutputPort())
         mapper.SetLookupTable(second_lut)
         mapper.SetScalarModeToUsePointData()
+        mapper.SetScalarRange(self.efield_min, self.efield_max)
 
-        actor = vtkActor()
-        actor.SetMapper(mapper)
+        self.edge_fill_actor = vtkActor()
+        self.edge_fill_actor.SetMapper(mapper)
 
         edge_mapper = vtkPolyDataMapper()
         edge_mapper.SetInputData(bcf.GetContourEdgesOutput())
+        edge_mapper.SetLookupTable(second_lut)
+        edge_mapper.SetScalarRange(self.efield_min, self.efield_max)
+        edge_mapper.ScalarVisibilityOn()
         edge_mapper.SetResolveCoincidentTopologyToPolygonOffset()
 
         self.edge_actor = vtkActor()
         self.edge_actor.SetMapper(edge_mapper)
         self.edge_actor.GetProperty().SetColor(named_colors.GetColor3d("Black"))
         self.edge_actor.GetProperty().SetLineWidth(3.0)
-        actor.GetProperty().SetOpacity(0)
-        self.ren.AddViewProp(actor)
+        self.edge_fill_actor.GetProperty().SetOpacity(0)
+        self.ren.AddViewProp(self.edge_fill_actor)
         self.ren.AddViewProp(self.edge_actor)
 
         self.efield_scalar_bar.SetLookupTable(self.efield_lut)
         self.ren.AddActor2D(self.efield_scalar_bar)
+
+    def RemoveEfieldEdges(self):
+        if self.edge_actor is not None:
+            self.ren.RemoveViewProp(self.edge_actor)
+            self.edge_actor = None
+        if self.edge_fill_actor is not None:
+            self.ren.RemoveViewProp(self.edge_fill_actor)
+            self.edge_fill_actor = None
+
+    def ShowEfieldContours(self, enable):
+        self.show_efield_edges = enable
+        if not enable:
+            self.RemoveEfieldEdges()
+            self.Refresh()
 
     def GetIndexesAboveThreshold(self, threshold):
         cell_id_indexes = []
@@ -2441,18 +2482,29 @@ class Viewer(wx.Panel):
                 distance = np.linalg.norm(point - p1)
                 if distance < closestDist:
                     closestDist = distance
+                    closestCellId = cellId
                     # closestPoint = point
                     # pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
                     # angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
-                    self.FindPointsAroundRadiusEfield(cellId)
-                    self.radius_list.Sort()
+            if closestCellId is not None and closestCellId != self.last_efield_cell_id:
+                self.FindPointsAroundRadiusEfield(closestCellId)
+                self.radius_list.Sort()
+                self.last_efield_cell_id = closestCellId
         else:
             self.radius_list.Reset()
+            self.last_efield_cell_id = None
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            self.efield_lut = self.CreateLUTTableForEfield(0, self.efield_max)
-            self.CalculateEdgesEfield()
+            self.efield_lut = self.CreateLUTTableForEfield(0, self.efield_max, highlight_threshold=self.enableefieldabovethreshold)
+            if (
+                not self.show_efield_edges
+                or self.tracts_status
+                or self.actor_tracts is not None
+            ):
+                self.RemoveEfieldEdges()
+            else:
+                self.CalculateEdgesEfield()
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(const.CORTEX_COLOR[0])
             for h in range(len(self.Id_list)):
@@ -2504,6 +2556,18 @@ class Viewer(wx.Panel):
                 if np.all(self.old_coord != coord):
                     self.e_field_IDs_queue.put_nowait(self.radius_list)
                 self.old_coord = np.array([coord])
+        except queue.Full:
+            pass
+
+    def UpdateTractSeedBasedEfield(self, coord_tracts_queue):
+        if getattr(self, "position_max", None) is None:
+            return
+
+        orientation = [0, 0, 0]
+        m_img = tr.compose_matrix(angles=np.radians(orientation), translate=self.position_max)
+        try:
+            coord_tracts_queue.clear()
+            coord_tracts_queue.put_nowait(m_img)
         except queue.Full:
             pass
 
@@ -2881,6 +2945,8 @@ class Viewer(wx.Panel):
             self.object_orientation_torus_actor = None
 
     def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
+        self.tracts_status = True
+        self.RemoveEfieldEdges()
         mapper = vtkCompositePolyDataMapper()
         mapper.SetInputDataObject(root)
 
@@ -2898,6 +2964,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.actor_tracts)
             self.actor_tracts = None
             self.Refresh()
+        self.tracts_status = False
 
     def __bind_events_wx(self):
         # self.Bind(wx.EVT_SIZE, self.OnSize)

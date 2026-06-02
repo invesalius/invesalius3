@@ -258,6 +258,8 @@ class UpdateNavigationScene(threading.Thread):
             tracts_payload = None
             if self.view_tracts:
                 try:
+                    if self.e_field_loaded:
+                        wx.CallAfter(Publisher.sendMessage, "Update tract seed based efield",coord_tracts_queue=self.navigation.coord_tracts_queue)
                     bundle, affine_vtk, coord_offset, coord_offset_w = (
                         self.tracts_queue.get_nowait()
                     )

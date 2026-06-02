@@ -471,7 +471,7 @@ class CoordinateCorregistrate(threading.Thread):
                     m_img_flip = m_img.copy()
                     m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                if can_push_tracts:
+                if can_push_tracts and not self.e_field_loaded:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
                 if can_push_efield:
                     self.efield_queue.put_nowait([m_img, coord])
