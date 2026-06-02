@@ -2208,7 +2208,7 @@ class Viewer(wx.Panel):
         value_range = self.efield_max - self.efield_min
         contour_values = [
             self.efield_min,
-            #self.efield_min + value_range * 0.2,
+            # self.efield_min + value_range * 0.2,
             self.efield_min + value_range * 0.7,
             self.efield_min + value_range * 0.9,
         ]
@@ -2545,12 +2545,10 @@ class Viewer(wx.Panel):
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            self.efield_lut = self.CreateLUTTableForEfield(0, self.efield_max, highlight_threshold=self.enableefieldabovethreshold)
-            if (
-                not self.show_efield_edges
-                or self.tracts_status
-                or self.actor_tracts is not None
-            ):
+            self.efield_lut = self.CreateLUTTableForEfield(
+                0, self.efield_max, highlight_threshold=self.enableefieldabovethreshold
+            )
+            if not self.show_efield_edges or self.tracts_status or self.actor_tracts is not None:
                 self.RemoveEfieldEdges()
             else:
                 self.CalculateEdgesEfield()
