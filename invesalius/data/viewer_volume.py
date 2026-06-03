@@ -1804,6 +1804,11 @@ class Viewer(wx.Panel):
         self.position_max_revision = None
         self.center_gravity_position = None
 
+    def RemoveEfieldVectorActor(self):
+        if self.vectorfield_actor is not None:
+            self.ren.RemoveActor(self.vectorfield_actor)
+            self.vectorfield_actor = None
+
     def MaxEfieldActor(self):
         if not self.HasEfieldVectorData():
             self.RemoveEfieldTargetingActors()
@@ -1962,8 +1967,7 @@ class Viewer(wx.Panel):
 
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
-        if self.vectorfield_actor is not None:
-            self.ren.RemoveActor(self.vectorfield_actor)
+        self.RemoveEfieldVectorActor()
         points = vtkPoints()
         vectors = vtkDoubleArray()
         vectors.SetNumberOfComponents(3)
@@ -2527,9 +2531,7 @@ class Viewer(wx.Panel):
         # self.diperdt = None
 
         self.RemoveEfieldTargetingActors()
-
-        if self.vectorfield_actor is not None:
-            self.ren.RemoveActor(self.vectorfield_actor)
+        self.RemoveEfieldVectorActor()
 
         if self.efield_scalar_bar is not None:
             self.ren.RemoveActor(self.efield_scalar_bar)
@@ -2596,8 +2598,7 @@ class Viewer(wx.Panel):
                 self.colors_init.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(self.colors_init)
             wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
-            if self.vectorfield_actor is not None:
-                self.ren.RemoveActor(self.vectorfield_actor)
+            self.RemoveEfieldVectorActor()
             wx.CallAfter(Publisher.sendMessage, "Show max Efield actor")
             wx.CallAfter(Publisher.sendMessage, "Show CoG Efield actor")
             if self.efield_tools:
@@ -2994,6 +2995,7 @@ class Viewer(wx.Panel):
 
         if self.nav_status:
             self.pTarget = self.CenterOfMass()
+            self.RemoveEfieldVectorActor()
 
         self.camera_show_object = None
         self._update_fps_visibility()
