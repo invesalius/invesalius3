@@ -362,6 +362,7 @@ class Navigation(metaclass=Singleton):
         self.e_field_loaded = False
         self.plot_efield_vectors = False
         self.debug_efield_enorm = None
+        self.e_field_revision = 0
 
         # Tractography parameters
         self.trk_inp = None
@@ -672,6 +673,7 @@ class Navigation(metaclass=Singleton):
                     self.target,
                     icp,
                     self.e_field_loaded,
+                    self,
                 )
             )
 
@@ -796,3 +798,6 @@ class Navigation(metaclass=Singleton):
             self.plot_efield_vectors,
         ]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
+
+    def MarkEfieldParametersChanged(self):
+        self.e_field_revision += 1

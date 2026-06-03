@@ -1,4 +1,4 @@
-90  # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
@@ -2174,6 +2174,15 @@ class Viewer(wx.Panel):
                     lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)
         return lut
 
+    def UpdateEfieldScalarBar(self):
+        if self.efield_scalar_bar is None or self.efield_lut is None:
+            return
+
+        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
+        self.efield_scalar_bar.Modified()
+        if not self.ren.HasViewProp(self.efield_scalar_bar):
+            self.ren.AddActor2D(self.efield_scalar_bar)
+
     def GetEfieldMaxMin(self, e_field_norms):
         self.e_field_norms = e_field_norms
         max = np.amax(self.e_field_norms)
@@ -2255,8 +2264,7 @@ class Viewer(wx.Panel):
         self.ren.AddViewProp(self.edge_fill_actor)
         self.ren.AddViewProp(self.edge_actor)
 
-        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
-        self.ren.AddActor2D(self.efield_scalar_bar)
+        self.UpdateEfieldScalarBar()
 
     def RemoveEfieldEdges(self):
         if self.edge_actor is not None:
@@ -2567,6 +2575,7 @@ class Viewer(wx.Panel):
             self.efield_lut = self.CreateLUTTableForEfield(
                 0, self.efield_max, highlight_threshold=self.enableefieldabovethreshold
             )
+            self.UpdateEfieldScalarBar()
             if not self.show_efield_edges or self.tracts_status or self.actor_tracts is not None:
                 self.RemoveEfieldEdges()
             else:

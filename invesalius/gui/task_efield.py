@@ -485,6 +485,7 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.efield_coil(
             coil_model_path=coil_model_path, coil_set=coil_set
         )
+        self.navigation.MarkEfieldParametersChanged()
         self.coil = coil_model_path
         self.Send_meshes_coil_paths_to_report()
 
@@ -624,6 +625,7 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+        self.navigation.MarkEfieldParametersChanged()
         self.Send_dI_per_dt_to_report(self.input_coils, self.ci, self.co)
 
     def OnEnterMtmsCoords(self, evt):
@@ -647,6 +649,7 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+        self.navigation.MarkEfieldParametersChanged()
         self.Send_dI_per_dt_to_report(self.input_coils, self.ci, self.co)
 
     def OnEfieldsForTargeting(self, evt, ctrl):
@@ -654,6 +657,7 @@ class InnerTaskPanel(wx.Panel):
             self.navigation.neuronavigation_api.set_dIperdt(
                 dIperdt=[1, 1, 1, 1, 1],
             )
+            self.navigation.MarkEfieldParametersChanged()
             self.Send_dI_per_dt_to_report([1, 1, 1, 1, 1], self.ci, self.co)
 
     def GetIds(self, dIs):
