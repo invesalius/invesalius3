@@ -8250,3 +8250,161 @@ class ImageFilterDialog(wx.Dialog):
             pass
         evt.Skip()
         self.Destroy()
+
+
+class GridConfigDialog(wx.Dialog):
+    """Dialog for configuring the creation of a target grid around a coil target.
+
+    Allows the user to select the grid type (rectangular or circular),
+    configure dimensions and spacing, and preview the grid layout.
+    """
+
+    # Default values for the grid configuration.
+    DEFAULT_SPACING = 5.0
+    DEFAULT_ROWS = 3
+    DEFAULT_COLS = 3
+    DEFAULT_RINGS = 2
+    DEFAULT_POINTS_PER_RING = 6
+
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent, -1, _("Target Grid Configuration"))
+        self._build_widgets()
+        self.CenterOnScreen()
+
+    def _build_widgets(self):
+        # --- Grid type selection ---
+        self.rb_rectangular = wx.RadioButton(self, label=_("Rectangular"), style=wx.RB_GROUP)
+        self.rb_circular = wx.RadioButton(self, label=_("Circular"))
+        self.rb_rectangular.SetValue(True)
+
+        type_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, _("Grid type")), wx.HORIZONTAL)
+        type_sizer.Add(self.rb_rectangular, 0, wx.ALL, 5)
+        type_sizer.Add(self.rb_circular, 0, wx.ALL, 5)
+
+        # --- Rectangular grid options ---
+        self.sb_rectangular = wx.StaticBox(self, -1, _("Rectangular grid options"))
+        rect_sizer = wx.StaticBoxSizer(self.sb_rectangular, wx.VERTICAL)
+
+        rect_grid = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=5)
+        rect_grid.AddGrowableCol(1, 1)
+
+        rect_grid.Add(wx.StaticText(self, -1, _("Rows:")), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.spin_rows = wx.SpinCtrl(
+            self, -1, value=str(self.DEFAULT_ROWS), min=1, max=100, size=(70, -1)
+        )
+        rect_grid.Add(self.spin_rows, 0, wx.EXPAND)
+
+        rect_grid.Add(wx.StaticText(self, -1, _("Columns:")), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.spin_cols = wx.SpinCtrl(
+            self, -1, value=str(self.DEFAULT_COLS), min=1, max=100, size=(70, -1)
+        )
+        rect_grid.Add(self.spin_cols, 0, wx.EXPAND)
+
+        rect_sizer.Add(rect_grid, 0, wx.EXPAND | wx.ALL, 5)
+
+        # --- Circular grid options ---
+        self.sb_circular = wx.StaticBox(self, -1, _("Circular grid options"))
+        circ_sizer = wx.StaticBoxSizer(self.sb_circular, wx.VERTICAL)
+
+        circ_grid = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=5)
+        circ_grid.AddGrowableCol(1, 1)
+
+        circ_grid.Add(wx.StaticText(self, -1, _("Rings:")), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.spin_rings = wx.SpinCtrl(
+            self, -1, value=str(self.DEFAULT_RINGS), min=1, max=50, size=(70, -1)
+        )
+        circ_grid.Add(self.spin_rings, 0, wx.EXPAND)
+
+        circ_grid.Add(
+            wx.StaticText(self, -1, _("Points per ring:")), 0, wx.ALIGN_CENTER_VERTICAL
+        )
+        self.spin_points_per_ring = wx.SpinCtrl(
+            self, -1, value=str(self.DEFAULT_POINTS_PER_RING), min=2, max=100, size=(70, -1)
+        )
+        circ_grid.Add(self.spin_points_per_ring, 0, wx.EXPAND)
+
+        circ_sizer.Add(circ_grid, 0, wx.EXPAND | wx.ALL, 5)
+
+        # --- Spacing (common to both grid types) ---
+        spacing_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        spacing_sizer.Add(
+            wx.StaticText(self, -1, _("Spacing (mm):")), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5
+        )
+        self.spin_spacing = wx.SpinCtrlDouble(
+            self,
+            -1,
+            value=str(self.DEFAULT_SPACING),
+            min=0.1,
+            max=100.0,
+            inc=0.5,
+            size=(70, -1),
+        )
+        self.spin_spacing.SetDigits(1)
+        spacing_sizer.Add(self.spin_spacing, 0, wx.ALL, 5)
+
+        # --- Buttons ---
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetDefault()
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        btn_sizer = wx.StdDialogButtonSizer()
+        btn_sizer.AddButton(btn_ok)
+        btn_sizer.AddButton(btn_cancel)
+        btn_sizer.Realize()
+
+        # --- Main layout ---
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(type_sizer, 0, wx.EXPAND | wx.ALL, 10)
+        main_sizer.Add(rect_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        main_sizer.Add(circ_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        main_sizer.Add(spacing_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        main_sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+        # --- Bind events ---
+        self.rb_rectangular.Bind(wx.EVT_RADIOBUTTON, self._on_grid_type_changed)
+        self.rb_circular.Bind(wx.EVT_RADIOBUTTON, self._on_grid_type_changed)
+
+        # Initialize visibility: show rectangular, hide circular.
+        self._update_grid_type_visibility()
+
+    def _on_grid_type_changed(self, evt):
+        """Handle grid type radio button change."""
+        self._update_grid_type_visibility()
+        self.Layout()
+        self.Fit()
+
+    def _update_grid_type_visibility(self):
+        """Show/hide grid option panels based on the selected grid type."""
+        is_rectangular = self.rb_rectangular.GetValue()
+
+        # Enable/disable rectangular controls.
+        self.spin_rows.Enable(is_rectangular)
+        self.spin_cols.Enable(is_rectangular)
+
+        # Enable/disable circular controls.
+        self.spin_rings.Enable(not is_rectangular)
+        self.spin_points_per_ring.Enable(not is_rectangular)
+
+    def GetGridConfig(self):
+        """Return the grid configuration as a dictionary.
+
+        :return: A dictionary with keys: 'type', 'rows', 'cols', 'rings',
+                 'points_per_ring', 'spacing'.
+        """
+        if self.rb_rectangular.GetValue():
+            grid_type = "rectangular"
+        else:
+            grid_type = "circular"
+
+        return {
+            "type": grid_type,
+            "rows": self.spin_rows.GetValue(),
+            "cols": self.spin_cols.GetValue(),
+            "rings": self.spin_rings.GetValue(),
+            "points_per_ring": self.spin_points_per_ring.GetValue(),
+            "spacing": self.spin_spacing.GetValue(),
+        }
+
