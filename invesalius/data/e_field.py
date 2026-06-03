@@ -98,20 +98,15 @@ class Visualize_E_field_Thread(threading.Thread):
                             if self.debug:
                                 enorm = self.enorm_debug
                             else:
-                                if self.plot_vectors:
-                                    enorm = self.neuronavigation_api.update_efield_vectorROIMax(
-                                        position=cp,
-                                        orientation=coord[3:],
-                                        T_rot=T_rot,
-                                        id_list=id_list,
-                                    )
-                                else:
-                                    enorm = self.neuronavigation_api.update_efield(
-                                        position=cp, orientation=coord[3:], T_rot=T_rot
-                                    )
+                                enorm = self.neuronavigation_api.update_efield_vectorROIMax(
+                                    position=cp,
+                                    orientation=coord[3:],
+                                    T_rot=T_rot,
+                                    id_list=id_list,
+                                )
                             try:
                                 self.e_field_norms_queue.put_nowait(
-                                    [T_rot, cp, coord, enorm, id_list]
+                                    [T_rot, cp, coord, enorm, id_list, revision]
                                 )
 
                             except queue.Full:
