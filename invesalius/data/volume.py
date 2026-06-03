@@ -756,13 +756,16 @@ class CutPlane:
         Publisher.subscribe(self.Disable, "Disable Cut Plane")
 
     def Create(self):
+        picker_tolerance = 0.005
+        plane_color = (0, 0.8, 0)
+
         self.plane_widget = plane_widget = vtkImagePlaneWidget()
         plane_widget.SetInputData(self.img)
         plane_widget.SetPlaneOrientationToXAxes()
 
         plane_widget.RestrictPlaneToVolumeOff()
         picker = vtkCellPicker()
-        picker.SetTolerance(0.005)
+        picker.SetTolerance(picker_tolerance)
         picker.PickFromListOn()
         plane_widget.SetPicker(picker)
 
@@ -774,15 +777,15 @@ class CutPlane:
 
         # Set plane outline color to green
         plane_property = plane_widget.GetPlaneProperty()
-        plane_property.SetColor(0, 0.8, 0)
+        plane_property.SetColor(*plane_color)
 
         # Set selected plane outline color to green
         selected_plane_property = plane_widget.GetSelectedPlaneProperty()
-        selected_plane_property.SetColor(0, 0.8, 0)
+        selected_plane_property.SetColor(*plane_color)
 
         # SetColor margin to green
         margin_property = plane_widget.GetMarginProperty()
-        margin_property.SetColor(0, 0.8, 0)
+        margin_property.SetColor(*plane_color)
         # Disable cross
         cursor_property = plane_widget.GetCursorProperty()
         cursor_property.SetOpacity(0)
