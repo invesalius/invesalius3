@@ -476,9 +476,7 @@ class CoordinateCorregistrate(threading.Thread):
                 if can_push_tracts and not self.e_field_loaded:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
                 if can_push_efield:
-                    self.efield_queue.put_nowait(
-                        [m_img, coord, self.navigation.e_field_revision]
-                    )
+                    self.efield_queue.put_nowait([m_img, coord, self.navigation.e_field_revision])
             except queue.Full:
                 pass
 

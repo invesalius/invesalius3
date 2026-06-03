@@ -2606,9 +2606,7 @@ class Viewer(wx.Panel):
                 if self.positions_above_threshold is not None:
                     self.DetectClustersEfieldSpread(self.positions_above_threshold)
             if (
-                self.enableefieldabovethreshold
-                and self.cell_id_indexes_above_threshold is not None
-            ):
+                self.enableefieldabovethreshold and self.cell_id_indexes_above_threshold is not None):
                 self.SegmentEfieldMax(self.cell_id_indexes_above_threshold)
             self.ShowEfieldAtCortexTarget()
             if self.plot_no_connection:

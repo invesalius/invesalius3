@@ -570,7 +570,9 @@ class ComputeTractsACTThread(threading.Thread):
                         # of tracts to reduce the overhead
                         bundle = vtkMultiBlockDataSet()
                         # required input is Nx3 array
-                        seed_coordinates = prepare_seed_coordinates(seed_trk_r_world_sampled[::2, :])
+                        seed_coordinates = prepare_seed_coordinates(
+                            seed_trk_r_world_sampled[::2, :]
+                        )
                         n_tracts, n_branches = 0, 0
                     else:
                         # if the bundle exists compute all tracts requested
