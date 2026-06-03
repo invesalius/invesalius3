@@ -24,6 +24,7 @@ import numpy as np
 
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
+import vtk
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
 
@@ -86,8 +87,8 @@ class GridGenerator:
                 dx = (r - row_offset) * spacing
                 dy = (c - col_offset) * spacing
 
-                # Label follows the pattern: <ref_label><row>_<col>
-                label = f"{reference_marker.label}{r + 1}_{c + 1}"
+                # Label follows the pattern: <ref_label> <row>_<col>
+                label = f"{reference_marker.label} {r + 1}_{c + 1}"
 
                 new_marker = self._create_grid_point(
                     reference_marker=reference_marker,
@@ -135,8 +136,8 @@ class GridGenerator:
                 dx = radius * np.cos(angle)
                 dy = radius * np.sin(angle)
 
-                # Label follows the pattern: <ref_label><ring>_<point>
-                label = f"{reference_marker.label}{ring_idx}_{point_idx + 1}"
+                # Label follows the pattern: <ref_label> <ring>_<point>
+                label = f"{reference_marker.label} {ring_idx}_{point_idx + 1}"
 
                 new_marker = self._create_grid_point(
                     reference_marker=reference_marker,
@@ -240,28 +241,61 @@ class GridGenerator:
         marker.position = new_position
         marker.orientation = new_orientation
 
-    def _project_to_scalp(self, marker, z_rotation):
+    def _project_to_scalp(self, marker, z_rotation, smooth_radius=15.0):
         """Project a marker onto the smoothed scalp surface and orient it tangentially.
 
-        This replicates the logic from MarkerTransformator.ProjectToScalp, using the
-        smoothed scalp surface from SurfaceGeometry.
+        Instead of just using the normal of the closest point, this method averages
+        the normals of all points within a `smooth_radius` to provide a more stable
+        and robust orientation against local mesh irregularities.
 
         :param marker: The marker to project onto the scalp.
         :param z_rotation: The z_rotation value to apply after projection.
+        :param smooth_radius: Radius in mm to search for points to average normals.
         """
         # The markers have y-coordinate inverted compared to the 3D view.
         marker_position = list(marker.position)
         marker_position[1] = -marker_position[1]
 
-        closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
-            "scalp", marker_position
-        )
+        surface = self.surface_geometry.GetSmoothedScalpSurface()
+        if not surface:
+            return
+
+        polydata = surface["polydata"]
+        normals = surface["normals"]
+
+        point_locator = vtk.vtkPointLocator()
+        point_locator.SetDataSet(polydata)
+        point_locator.BuildLocator()
+
+        closest_point_id = point_locator.FindClosestPoint(marker_position)
+        closest_point = polydata.GetPoint(closest_point_id)
+
+        # Find points within radius to average normals for a smoother orientation
+        id_list = vtk.vtkIdList()
+        point_locator.FindPointsWithinRadius(smooth_radius, closest_point, id_list)
+
+        normal_data = normals.GetPointData().GetNormals()
+        
+        if id_list.GetNumberOfIds() > 0:
+            avg_normal = np.zeros(3)
+            for i in range(id_list.GetNumberOfIds()):
+                pt_id = id_list.GetId(i)
+                avg_normal += np.array(normal_data.GetTuple(pt_id))
+            
+            avg_normal /= id_list.GetNumberOfIds()
+            norm = np.linalg.norm(avg_normal)
+            if norm > 0:
+                closest_normal = avg_normal / norm
+            else:
+                closest_normal = normal_data.GetTuple(closest_point_id)
+        else:
+            closest_normal = normal_data.GetTuple(closest_point_id)
 
         # The reference direction vector that we want to align the normal to.
         # This was figured out by testing; (0, 0, 1) makes the coil point towards the brain.
         ref_vector = np.array([0, 0, 1])
 
-        # Normal at the closest point.
+        # Average Normal around the closest point.
         normal_vector = np.array(closest_normal)
 
         # Calculate the rotation axis (cross product) and angle (dot product).
