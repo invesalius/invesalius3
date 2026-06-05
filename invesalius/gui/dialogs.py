@@ -8315,9 +8315,7 @@ class GridConfigDialog(wx.Dialog):
         )
         circ_grid.Add(self.spin_rings, 0, wx.EXPAND)
 
-        circ_grid.Add(
-            wx.StaticText(self, -1, _("Points per ring:")), 0, wx.ALIGN_CENTER_VERTICAL
-        )
+        circ_grid.Add(wx.StaticText(self, -1, _("Points per ring:")), 0, wx.ALIGN_CENTER_VERTICAL)
         self.spin_points_per_ring = wx.SpinCtrl(
             self, -1, value=str(self.DEFAULT_POINTS_PER_RING), min=2, max=100, size=(70, -1)
         )
@@ -8407,4 +8405,3 @@ class GridConfigDialog(wx.Dialog):
             "points_per_ring": self.spin_points_per_ring.GetValue(),
             "spacing": self.spin_spacing.GetValue(),
         }
-

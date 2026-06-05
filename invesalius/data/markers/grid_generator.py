@@ -21,13 +21,12 @@ import uuid
 from typing import List
 
 import numpy as np
+import vtk
 
 import invesalius.data.coordinates as dco
 import invesalius.data.transformations as tr
-import vtk
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
-
 
 # Maximum grid dimension to prevent accidental creation of excessive markers.
 MAX_GRID_DIMENSION = 100
@@ -275,13 +274,13 @@ class GridGenerator:
         point_locator.FindPointsWithinRadius(smooth_radius, closest_point, id_list)
 
         normal_data = normals.GetPointData().GetNormals()
-        
+
         if id_list.GetNumberOfIds() > 0:
             avg_normal = np.zeros(3)
             for i in range(id_list.GetNumberOfIds()):
                 pt_id = id_list.GetId(i)
                 avg_normal += np.array(normal_data.GetTuple(pt_id))
-            
+
             avg_normal /= id_list.GetNumberOfIds()
             norm = np.linalg.norm(avg_normal)
             if norm > 0:
