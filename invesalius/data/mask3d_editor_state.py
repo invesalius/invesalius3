@@ -15,7 +15,7 @@ from invesalius_rs import mask_cut
 
 class Mask3DEditorState:
     """State manager for the 3D Mask Editor.
-    
+
     This class handles the core logic of managing mask 3D edits, such as storing
     polygons, determining depth/edit mode, and cutting the 3D volume.
     It decouples the heavy data operations from the VTK UI loop.
@@ -29,11 +29,11 @@ class Mask3DEditorState:
         self.depth_val = 1.0
         self.has_set_mask_preview = False
         self.resolution: tuple[int, int] = tuple(viewer.GetSize())
-        
+
         self.world_to_screen = None
         self.world_to_camera_coordinates = None
         self.clipping_range = None
-        
+
         self._bind_events()
 
     def _bind_events(self):
