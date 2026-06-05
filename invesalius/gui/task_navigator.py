@@ -3187,6 +3187,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
+            # 'Create target grid' menu item for coil targets.
+            grid_menu_item = menu_id.Append(unique_menu_id + 19, _("Create target grid"))
+            menu_id.Bind(wx.EVT_MENU, self.OnCreateTargetGrid, grid_menu_item)
+
             mep_menu_item = menu_id.Append(unique_menu_id + 4, _("Change MEP value"))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP, mep_menu_item)
             if is_active_target:
@@ -3200,10 +3204,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             else:
                 target_menu_item = menu_id.Append(unique_menu_id + 7, _("Set as target"))
                 menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
-
-            # 'Create target grid' menu item for coil targets.
-            grid_menu_item = menu_id.Append(unique_menu_id + 19, _("Create target grid"))
-            menu_id.Bind(wx.EVT_MENU, self.OnCreateTargetGrid, grid_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
         if is_coil_pose:
