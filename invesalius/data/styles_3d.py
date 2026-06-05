@@ -35,8 +35,8 @@ import invesalius.constants as const
 import invesalius.data.slice_ as slc
 import invesalius.project as prj
 import invesalius.session as ses
-from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.data.mask3d_editor_state import Mask3DEditorState
+from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
 from invesalius_rs import mask_cut

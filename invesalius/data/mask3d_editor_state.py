@@ -2,6 +2,7 @@ import numpy as np
 import numpy.typing as npt
 import wx
 from skimage.draw import polygon2mask
+from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
@@ -10,7 +11,6 @@ from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
 from invesalius_rs import mask_cut
-from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 
 class Mask3DEditorState:
@@ -179,7 +179,11 @@ class Mask3DEditorState:
         slice = slc.Slice()
         sx, sy, sz = slice.spacing
 
-        if self.clipping_range is None or self.world_to_screen is None or self.world_to_camera_coordinates is None:
+        if (
+            self.clipping_range is None
+            or self.world_to_screen is None
+            or self.world_to_camera_coordinates is None
+        ):
             return
 
         near, far = self.clipping_range
