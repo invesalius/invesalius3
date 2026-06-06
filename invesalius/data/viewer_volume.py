@@ -3178,6 +3178,7 @@ class Viewer(wx.Panel):
             const.FILETYPE_VTP,
             const.FILETYPE_PLY,
             const.FILETYPE_STL_ASCII,
+            const.FILETYPE_3MF,
         ):
             if _has_win32api:
                 utils.touch(filename)

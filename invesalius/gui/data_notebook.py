@@ -1507,14 +1507,6 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
         if filename:
-            # Guard clause for 3MF format (not yet implemented)
-            if filename.lower().endswith(".3mf"):
-                wx.MessageBox(
-                    _(".3MF import is coming soon. This feature is under active development."),
-                    _("Feature Coming Soon"),
-                    wx.OK | wx.ICON_INFORMATION,
-                )
-                return
             Publisher.sendMessage("Import surface file", filename=filename)
 
     def OnExportSurface(self):

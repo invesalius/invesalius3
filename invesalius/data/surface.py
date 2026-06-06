@@ -52,8 +52,15 @@ from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader, vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYReader, vtkPLYWriter
 from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
+from vtkmodules.util.numpy_support import vtk_to_numpy
 
 from invesalius.pubsub import pub as Publisher
+
+try:
+    import lib3mf
+    _has_lib3mf = True
+except ImportError:
+    _has_lib3mf = False
 
 if sys.platform == "win32":
     try:
@@ -623,6 +630,126 @@ class SurfaceManager:
         elif filename.lower().endswith(".vtp"):
             reader = vtkXMLPolyDataReader()
             scalar = True
+        elif filename.lower().endswith(".3mf"):
+            if not _has_lib3mf:
+                wx.MessageBox(
+                    _("Lib3MF library not available. Cannot import 3MF files."),
+                    _("Import surface error")
+                )
+                return
+            
+            progress = wx.ProgressDialog(
+                _("Importing 3MF file"),
+                _("Reading 3MF file..."),
+                maximum=100,
+                parent=None,
+                style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE
+            )
+            
+            try:
+                keep_going, skip = progress.Update(10, _("Reading 3MF file..."))
+                if not keep_going:
+                    progress.Destroy()
+                    return
+                wx.Yield()
+                
+                wrapper = lib3mf.Wrapper()
+                model = wrapper.CreateModel()
+                reader_3mf = model.QueryReader('3mf')
+                reader_3mf.ReadFromFile(filename)
+                
+                keep_going, skip = progress.Update(20, _("Analyzing 3MF structure..."))
+                if not keep_going:
+                    progress.Destroy()
+                    return
+                wx.Yield()
+                
+                build_items = model.GetBuildItems()
+                base_name = os.path.splitext(os.path.split(filename)[-1])[0]
+                
+                idx = 0
+                total_items = build_items.Count()
+                
+                while build_items.MoveNext():
+                    build_item = build_items.GetCurrent()
+                    object_resource = build_item.GetObjectResource()
+                    
+                    if object_resource.IsMeshObject():
+                        mesh_object = model.GetMeshObjectByID(object_resource.GetResourceID())
+                        
+                        vertex_count = mesh_object.GetVertexCount()
+                        triangle_count = mesh_object.GetTriangleCount()
+                        
+                        percent_start = 20 + (idx * 60 // max(total_items, 1))
+                        keep_going, skip = progress.Update(
+                            percent_start, 
+                            _("Loading mesh {}/{}: {} vertices, {} triangles...").format(
+                                idx + 1, total_items, vertex_count, triangle_count
+                            )
+                        )
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        wx.Yield()
+                        
+                        points = vtkPoints()
+                        points.SetNumberOfPoints(vertex_count)
+                        
+                        for i in range(vertex_count):
+                            vertex = mesh_object.GetVertex(i)
+                            points.SetPoint(i, vertex.Coordinates[0], vertex.Coordinates[1], vertex.Coordinates[2])
+                        
+                        percent_mid = percent_start + 20
+                        keep_going, skip = progress.Update(percent_mid, _("Processing triangles for mesh {}/{}...").format(idx + 1, total_items))
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        wx.Yield()
+                        
+                        triangles = vtkCellArray()
+                        for i in range(triangle_count):
+                            triangle_obj = mesh_object.GetTriangle(i)
+                            triangle = vtkTriangle()
+                            triangle.GetPointIds().SetId(0, triangle_obj.Indices[0])
+                            triangle.GetPointIds().SetId(1, triangle_obj.Indices[1])
+                            triangle.GetPointIds().SetId(2, triangle_obj.Indices[2])
+                            triangles.InsertNextCell(triangle)
+                        
+                        percent_end = percent_start + 40
+                        keep_going, skip = progress.Update(percent_end, _("Creating surface {}/{}...").format(idx + 1, total_items))
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        wx.Yield()
+                        
+                        polydata = vtkPolyData()
+                        polydata.SetPoints(points)
+                        polydata.SetPolys(triangles)
+                        
+                        try:
+                            surface_name = object_resource.GetName()
+                            if not surface_name:
+                                surface_name = f"{base_name}_{idx + 1}" if total_items > 1 else base_name
+                        except:
+                            surface_name = f"{base_name}_{idx + 1}" if total_items > 1 else base_name
+                        
+                        if polydata.GetNumberOfPoints() > 0:
+                            self.CreateSurfaceFromPolydata(polydata, name=surface_name, scalar=False)
+                        
+                        idx += 1
+                
+                progress.Update(100, _("Import complete."))
+                wx.Yield()
+                progress.Destroy()
+                return
+                
+            except Exception as e:
+                progress.Destroy()
+                wx.MessageBox(
+                    _("Failed to import 3MF file: {}").format(str(e)),
+                    _("Import surface error")
+                )
+                return
         else:
             wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
@@ -1421,6 +1548,7 @@ class SurfaceManager:
             const.FILETYPE_VTP: ".vtp",
             const.FILETYPE_PLY: ".ply",
             const.FILETYPE_STL_ASCII: ".stl",
+            const.FILETYPE_3MF: ".3mf",
         }
         if filetype in ftype_prefix:
             temp_fd, temp_file = tempfile.mkstemp(suffix=ftype_prefix[filetype])
@@ -1622,6 +1750,110 @@ class SurfaceManager:
             #   writer = vtkVRMLExporter()
             # elif filetype == const.FILETYPE_OBJ:
             #   writer = vtkOBJExporter()
+
+            elif filetype == const.FILETYPE_3MF:
+                if not _has_lib3mf:
+                    progress.Destroy()
+                    wx.MessageBox(
+                        "Lib3MF library not available. Cannot export 3MF files.",
+                        "Export error"
+                    )
+                    return
+                
+                try:
+                    from ctypes import c_float, c_uint32
+                    
+                    wrapper = lib3mf.Wrapper()
+                    model = wrapper.CreateModel()
+                    model.SetUnit(lib3mf.ModelUnit.MilliMeter)
+                    
+                    keep_going, skip = progress.Update(20, "Preparing 3MF export...")
+                    if not keep_going:
+                        progress.Destroy()
+                        return
+                    wx.Yield()
+                    
+                    visible_surfaces = []
+                    for index in proj.surface_dict:
+                        surface = proj.surface_dict[index]
+                        if surface.is_shown:
+                            visible_surfaces.append((surface.polydata, surface.name, surface.colour, 1 - surface.transparency))
+                    
+                    if not visible_surfaces:
+                        progress.Destroy()
+                        return
+                    
+                    num_surfaces = len(visible_surfaces)
+                    for surf_idx, (surf_polydata, surf_name, surf_colour, surf_opacity) in enumerate(visible_surfaces):
+                        percent_start = 20 + (surf_idx * 60 // num_surfaces)
+                        keep_going, skip = progress.Update(percent_start, f"Processing surface {surf_idx + 1}/{num_surfaces}...")
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        wx.Yield()
+                        
+                        if convert_to_world:
+                            surf_polydata = self.ConvertPolydataToInv(surf_polydata, inverse=True)
+                        
+                        points_vtk = surf_polydata.GetPoints()
+                        n_points = points_vtk.GetNumberOfPoints()
+                        
+                        points_array = vtk_to_numpy(points_vtk.GetData())
+                        
+                        mesh_object = model.AddMeshObject()
+                        mesh_object.SetName(surf_name if surf_name else f"Surface_{surf_idx + 1}")
+                        
+                        for i in range(n_points):
+                            pos = lib3mf.Position()
+                            pos.Coordinates = (c_float * 3)(float(points_array[i, 0]), float(points_array[i, 1]), float(points_array[i, 2]))
+                            mesh_object.AddVertex(pos)
+                        
+                        polys = surf_polydata.GetPolys()
+                        polys.InitTraversal()
+                        id_list = vtkIdList()
+                        
+                        while polys.GetNextCell(id_list):
+                            if id_list.GetNumberOfIds() == 3:
+                                tri = lib3mf.Triangle()
+                                tri.Indices = (c_uint32 * 3)(id_list.GetId(0), id_list.GetId(1), id_list.GetId(2))
+                                mesh_object.AddTriangle(tri)
+                        
+                        color_group = model.AddColorGroup()
+                        color = lib3mf.Color()
+                        color.Red = int(surf_colour[0] * 255)
+                        color.Green = int(surf_colour[1] * 255)
+                        color.Blue = int(surf_colour[2] * 255)
+                        color.Alpha = int(surf_opacity * 255)
+                        color_id = color_group.AddColor(color)
+                        
+                        mesh_object.SetObjectLevelProperty(
+                            color_group.GetResourceID(),
+                            color_id
+                        )
+                        
+                        model.AddBuildItem(mesh_object, wrapper.GetIdentityTransform())
+                    
+                    keep_going, skip = progress.Update(85, "Writing 3MF file...")
+                    if not keep_going:
+                        progress.Destroy()
+                        return
+                    wx.Yield()
+                    
+                    writer_3mf = model.QueryWriter('3mf')
+                    writer_3mf.WriteToFile(filename)
+                    
+                    progress.Update(100, "Export complete.")
+                    self.export_successful = True
+                    wx.Yield()
+                    return
+                    
+                except Exception as e:
+                    progress.Destroy()
+                    wx.MessageBox(
+                        f"Failed to export 3MF file: {str(e)}",
+                        "Export error"
+                    )
+                    return
 
             else:
                 progress.Destroy()
