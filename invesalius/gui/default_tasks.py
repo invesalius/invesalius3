@@ -275,8 +275,12 @@ class UpperTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, style=wx.CLIP_CHILDREN)
         fold_panel = fpb.FoldPanelBar(
-            self, -1, wx.DefaultPosition, wx.DefaultSize,
-            FPB_DEFAULT_STYLE | wx.CLIP_CHILDREN, fpb.FPB_SINGLE_FOLD
+            self,
+            -1,
+            wx.DefaultPosition,
+            wx.DefaultSize,
+            FPB_DEFAULT_STYLE | wx.CLIP_CHILDREN,
+            fpb.FPB_SINGLE_FOLD,
         )
 
         image_list = wx.ImageList(16, 16)
@@ -424,7 +428,6 @@ class UpperTaskPanel(wx.Panel):
         self.SetMinSize((-1, sizeNeeded))
         self.SetMaxSize((-1, sizeNeeded))
         self.SetSize((-1, sizeNeeded))
-        
 
         parent = self.GetParent()
         if parent:
