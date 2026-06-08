@@ -526,6 +526,7 @@ class SurfaceManager:
         cortex = config_dict["path_meshes"] + config_dict["cortex"]
         bmeshes = config_dict["bmeshes"]
         coil = config_dict["coil"]
+        coil_set = config_dict.get("coil_set", False)
         targeting_file = config_dict["targeting csv file"]
         dIperdt_list = []
         dIperdt = config_dict["dIperdts"]
@@ -590,6 +591,7 @@ class SurfaceManager:
                 cortex_file=cortex_save_file,
                 meshes_file=bmeshes_list,
                 coil=coil,
+                coil_set=coil_set,
                 ci=ci_list,
                 co=co_list,
                 dIperdt_list=dIperdt_list,

@@ -3831,8 +3831,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.markers.SetPointOfInterest(marker_id)
         Publisher.sendMessage(
-            "Send efield target position on brain",
-            marker_id=marker_id,
+            "Set as Efield target at cortex",
             position=position,
             orientation=orientation,
         )
