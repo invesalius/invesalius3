@@ -1,3 +1,6 @@
+from dataclasses import dataclass, field
+from typing import Any
+
 import numpy as np
 import numpy.typing as npt
 import wx
@@ -13,6 +16,7 @@ from invesalius.utils import vtkarray_to_numpy
 from invesalius_rs import mask_cut
 
 
+@dataclass
 class Mask3DEditorState:
     """State manager for the 3D Mask Editor.
 
@@ -21,19 +25,20 @@ class Mask3DEditorState:
     It decouples the heavy data operations from the VTK UI loop.
     """
 
-    def __init__(self, viewer):
-        self.viewer = viewer
-        self.mask_data = None
-        self.m3e_list: list[PolygonSelectCanvas] = []
-        self.edit_mode = const.MASK_3D_EDIT_INCLUDE
-        self.depth_val = 1.0
-        self.has_set_mask_preview = False
-        self.resolution: tuple[int, int] = tuple(viewer.GetSize())
+    viewer: Any
+    mask_data: npt.NDArray | None = None
+    m3e_list: list[PolygonSelectCanvas] = field(default_factory=list)
+    edit_mode: int = const.MASK_3D_EDIT_INCLUDE
+    depth_val: float = 1.0
+    has_set_mask_preview: bool = False
 
-        self.world_to_screen = None
-        self.world_to_camera_coordinates = None
-        self.clipping_range = None
+    resolution: tuple[int, int] = field(init=False)
+    world_to_screen: npt.NDArray | None = field(default=None, init=False)
+    world_to_camera_coordinates: npt.NDArray | None = field(default=None, init=False)
+    clipping_range: tuple[float, float] | None = field(default=None, init=False)
 
+    def __post_init__(self):
+        self.resolution = tuple(self.viewer.GetSize())
         self._bind_events()
 
     def _bind_events(self):
