@@ -205,7 +205,7 @@ class Tracker(metaclass=Singleton):
 
         prev_coord_raw: Optional[NDArray[np.float64]] = None
         collected: int = 0
-        max_attempts: int = n_samples * 10  # prevent infinite loop
+        max_attempts: int = n_samples * 3  # prevent infinite loop
         attempts: int = 0
 
         while collected < n_samples and attempts < max_attempts:
