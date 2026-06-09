@@ -3430,6 +3430,22 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.brain_targets_list_ctrl.SetSize((self.marker_list_ctrl.GetSize()[0], width))
         self.marker_list_ctrl.SetSize((self.marker_list_ctrl.GetSize()[0], width))
 
+    def __restore_default_marker_view(self):
+        """
+        Restore the marker list to its default view state.
+
+        This hides the brain targets list, disables the vector field assembly,
+        and resizes the marker list control to full height. Called when all
+        markers are deleted or when the last marker with brain targets is removed.
+        """
+        self.currently_focused_marker = None
+        Publisher.sendMessage("Set vector field assembly visibility", enabled=False)
+        self.brain_targets_list_ctrl.DeleteAllItems()
+        self.brain_targets_list_ctrl.Hide()
+        self.ResizeListCtrl(self.marker_list_height)
+        Publisher.sendMessage("Update navigation panel")
+        self.Update()
+
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
         idx = self.marker_list_ctrl.GetFocusedItem()
@@ -4177,9 +4193,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 return
         self.markers.Clear()
         self.itemDataMap.clear()
-        Publisher.sendMessage("Set vector field assembly visibility", enabled=False)
-        self.brain_targets_list_ctrl.DeleteAllItems()
-        self.brain_targets_list_ctrl.Hide()
+        self.__restore_default_marker_view()
 
     def OnDeleteFiducialMarker(self, label):
         indexes = []
@@ -4213,7 +4227,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             focus_index = min(indexes[0], remaining_count - 1)
             self.FocusOnMarker(focus_index)
         else:
-            self.currently_focused_marker = None  # disable focus if no markers left
+            # No markers left - restore the default view
+            self.__restore_default_marker_view()
 
     def OnDeleteSelectedBrainTarget(self, evt):
         if not self.currently_focused_marker:
