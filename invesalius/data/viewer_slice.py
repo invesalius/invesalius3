@@ -694,8 +694,9 @@ class Viewer(wx.Panel):
         SetFocalPoint call is required.
         :param position: list of 6 coordinates in vtk world coordinate system wx, wy, wz
         """
-        self.cross.SetFocalPoint(position[:3])
-        if not self.nav_status:
+        if hasattr(self, "cross"):
+            self.cross.SetFocalPoint(position[:3])
+        if not self.nav_status and hasattr(self, "slice_data") and self.slice_data:
             self.UpdateSlicesPosition(position[:3])
 
     def ScrollSlice(self, coord):
@@ -1516,16 +1517,14 @@ class Viewer(wx.Panel):
 
             if 0 <= vx < dx and 0 <= vy < dy and 0 <= vz < dz:
                 voxel_value = matrix[vz, vy, vx]
-                #info = (
+                # info = (
                 #    f"Window: {self.orientation.capitalize()}  |  "
                 #    f"Pos: ({int(px)}, {int(py)})  Slice: {slice_number}  |  "
                 #    f"Value: {voxel_value}"
-                #)
+                # )
 
                 info = _(
-                    "Window: {window}  |  "
-                    "Pos: ({px}, {py})  Slice: {slice}  |  "
-                    "Value: {value}"
+                    "Window: {window}  |  Pos: ({px}, {py})  Slice: {slice}  |  Value: {value}"
                 ).format(
                     window=self.orientation.capitalize(),
                     px=int(px),
@@ -1533,11 +1532,6 @@ class Viewer(wx.Panel):
                     slice=slice_number,
                     value=voxel_value,
                 )
-
-
-
-
-
 
                 Publisher.sendMessage("Update statusbar image info", info=info)
         except Exception:

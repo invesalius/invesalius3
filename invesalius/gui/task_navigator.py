@@ -3187,6 +3187,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
+            # 'Create target grid' menu item for coil targets.
+            grid_menu_item = menu_id.Append(unique_menu_id + 19, _("Create target grid"))
+            menu_id.Bind(wx.EVT_MENU, self.OnCreateTargetGrid, grid_menu_item)
+
             mep_menu_item = menu_id.Append(unique_menu_id + 4, _("Change MEP value"))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP, mep_menu_item)
             if is_active_target:
@@ -3516,6 +3520,43 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(list_index)
 
         self.markers.CreateCoilTargetFromCoilPose(marker)
+
+    def OnCreateTargetGrid(self, evt):
+        """Open the grid configuration dialog and create a target grid around the
+        currently focused coil target marker."""
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        if list_index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        marker = self.__get_marker(list_index)
+
+        if marker.marker_type != MarkerType.COIL_TARGET:
+            wx.MessageBox(_("Please select a coil target."), _("InVesalius 3"))
+            return
+
+        proj = prj.Project()
+        if not proj.surface_dict:
+            wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
+            return
+
+        # Show the grid configuration dialog.
+        grid_dlg = dlg.GridConfigDialog(self)
+        if grid_dlg.ShowModal() == wx.ID_OK:
+            config = grid_dlg.GetGridConfig()
+            try:
+                self.markers.CreateGridFromTarget(
+                    reference_marker=marker,
+                    grid_type=config["type"],
+                    rows=config.get("rows", 3),
+                    cols=config.get("cols", 3),
+                    rings=config.get("rings", 2),
+                    points_per_ring=config.get("points_per_ring", 6),
+                    spacing=config["spacing"],
+                )
+            except ValueError as e:
+                wx.MessageBox(str(e), _("InVesalius 3"), wx.OK | wx.ICON_ERROR)
+        grid_dlg.Destroy()
 
     def UpdateMainCoilCombobox(self, done):
         select_main_coil = self.select_main_coil
