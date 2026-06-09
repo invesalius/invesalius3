@@ -183,7 +183,7 @@ class Viewer(wx.Panel):
         # Render the target guide in a separate renderer, so that it can be
         # rendered on top of the volume.
         self.target_guide_renderer = vtkRenderer()
-
+        self.target_guide_renderer.SetInteractive(0)
         self.interactor.GetRenderWindow().AddRenderer(self.target_guide_renderer)
 
         canvas_renderer = vtkRenderer()
@@ -2975,7 +2975,6 @@ class Viewer(wx.Panel):
         self.SetInteractorStyle(new_state)
 
     def ResetCamClippingRange(self):
-        self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
     def SendActiveCamera(self):

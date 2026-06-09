@@ -690,6 +690,7 @@ class Volume:
 
         # Enable shading for SSAO compatibility (computes normals for volume raycasting)
         volume.GetProperty().ShadeOn()
+        volume.SetPickable(0)
 
         self.volume = volume
 
@@ -756,7 +757,7 @@ class CutPlane:
         Publisher.subscribe(self.Disable, "Disable Cut Plane")
 
     def Create(self):
-        picker_tolerance = 0.005
+        picker_tolerance = 0.025
         plane_color = (0, 0.8, 0)
 
         self.plane_widget = plane_widget = vtkImagePlaneWidget()
@@ -766,7 +767,7 @@ class CutPlane:
         plane_widget.RestrictPlaneToVolumeOff()
         picker = vtkCellPicker()
         picker.SetTolerance(picker_tolerance)
-        picker.PickFromListOn()
+        picker.PickFromListOff()
         plane_widget.SetPicker(picker)
 
         # plane_widget.SetResliceInterpolateToLinear()
@@ -803,6 +804,7 @@ class CutPlane:
         plane_actor.SetMapper(plane_mapper)
         plane_actor.GetProperty().BackfaceCullingOn()
         plane_actor.GetProperty().SetOpacity(0)
+        plane_actor.SetPickable(0)
         plane_widget.AddObserver("InteractionEvent", self.Update)
         Publisher.sendMessage("AppendActor", actor=self.plane_actor)
         Publisher.sendMessage("Set Widget Interactor", widget=self.plane_widget)
@@ -819,7 +821,9 @@ class CutPlane:
         self.normal = plane_widget.GetNormal()
 
         # Reset camera clipping range to make sure the widget is pickable immediately
+        Publisher.sendMessage("Render volume viewer")
         Publisher.sendMessage("Reset cam clipping range")
+        Publisher.sendMessage("Render volume viewer")
 
     def SetVolumeMapper(self, volume_mapper):
         self.volume_mapper = volume_mapper
@@ -841,6 +845,7 @@ class CutPlane:
         self.plane_widget.On()
         self.plane_actor.VisibilityOn()
         self.volume_mapper.AddClippingPlane(self.plane)
+        Publisher.sendMessage("Render volume viewer")
         Publisher.sendMessage("Reset cam clipping range")
         Publisher.sendMessage("Render volume viewer")
 
