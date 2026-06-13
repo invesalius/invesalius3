@@ -473,6 +473,7 @@ def PolhemusSerialCoord(tracker_connection: "TrackerConnection", tracker_id: int
     scale = 10.0 * np.array([1.0, 1.0, 1.0])
     lines = trck.readlines()
 
+    coord = None
     if lines is None:
         print("The Polhemus is not connected!")
     else:
