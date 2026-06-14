@@ -750,9 +750,31 @@ class SurfaceManager:
                                 f"{base_name}_{idx + 1}" if total_items > 1 else base_name
                             )
 
+                        surface_colour = None
+                        surface_transparency = None
+                        try:
+                            property_result = mesh_object.GetObjectLevelProperty()
+                            if property_result and len(property_result) == 3 and property_result[2]:
+                                resource_id, property_id, has_property = property_result
+                                color_group = model.GetColorGroupByID(resource_id)
+                                color = color_group.GetColor(property_id)
+
+                                surface_colour = (
+                                    color.Red / 255.0,
+                                    color.Green / 255.0,
+                                    color.Blue / 255.0,
+                                )
+                                surface_transparency = 1.0 - (color.Alpha / 255.0)
+                        except Exception:
+                            pass
+
                         if polydata.GetNumberOfPoints() > 0:
                             self.CreateSurfaceFromPolydata(
-                                polydata, name=surface_name, scalar=False
+                                polydata,
+                                name=surface_name,
+                                colour=surface_colour,
+                                transparency=surface_transparency,
+                                scalar=False,
                             )
 
                         idx += 1
