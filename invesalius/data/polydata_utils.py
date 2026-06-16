@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import sys
 from typing import Iterable, List
 
@@ -52,6 +53,9 @@ import invesalius.constants as const
 import invesalius.data.vtk_utils as vu
 from invesalius.i18n import tr as _
 from invesalius.utils import touch
+
+logger = logging.getLogger(__name__)
+
 
 if sys.platform == "win32":
     try:
@@ -112,7 +116,7 @@ def FillSurfaceHole(polydata: vtkPolyData) -> "vtkPolyData":
     Fill holes in the given polydata.
     """
     # Filter used to detect and fill holes. Only fill
-    print("Filling polydata")
+    logger.debug("Filling polydata")
     filled_polydata = vtkFillHolesFilter()
     filled_polydata.SetInputData(polydata)
     filled_polydata.SetHoleSize(500)

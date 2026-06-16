@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import logging
 import os
 
 import wx
@@ -30,6 +31,9 @@ import invesalius.constants as const
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 BTN_IMPORT_LOCAL = wx.NewIdRef()
 BTN_IMPORT_PACS = wx.NewIdRef()
@@ -244,7 +248,7 @@ class InnerTaskPanel(wx.Panel):
         event.Skip()
 
     def ImportPACS(self):
-        print("TODO: Send Signal - Import DICOM files from PACS")
+        logger.debug("TODO: Send Signal - Import DICOM files from PACS")
 
     #######
     def ImportDicom(self):

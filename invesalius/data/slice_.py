@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import logging
 import os
 import tempfile
 import threading
@@ -50,6 +51,9 @@ from invesalius.data.mask import Mask
 from invesalius.i18n import tr as _
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from vtkmodules.vtkCommonDataModel import vtkImageData
@@ -1360,7 +1364,9 @@ class Slice(metaclass=utils.Singleton):
                 continue
             mask = mask_dict[mask_index]
             if mask.matrix.max() < 127:
-                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels available")
+                logger.debug(
+                    f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels available"
+                )
                 continue
 
             surface_parameters = surface_template.copy()
@@ -1370,7 +1376,7 @@ class Slice(metaclass=utils.Singleton):
             surface_parameters["options"]["name"] = f"{mask.name}"
             surface_parameters["options"]["overwrite"] = False  # always create new surfaces
 
-            print(f"Creating surface for mask '{mask.name}' (index {mask_index})")
+            logger.debug(f"Creating surface for mask '{mask.name}' (index {mask_index})")
 
             try:
                 self.do_threshold_to_all_slices(mask)
@@ -1379,9 +1385,9 @@ class Slice(metaclass=utils.Singleton):
                 )
                 created_surfaces.append(mask_index)
             except Exception as e:
-                print(f"Failed to create surface for mask '{mask.name}': {str(e)}")
+                logger.debug(f"Failed to create surface for mask '{mask.name}': {str(e)}")
 
-        print(f"Successfully created surfaces for {len(created_surfaces)} masks")
+        logger.debug(f"Successfully created surfaces for {len(created_surfaces)} masks")
         Publisher.sendMessage("Surfaces creation completed", created_count=len(created_surfaces))
 
     def GetOutput(self):

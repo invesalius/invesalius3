@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import os
 
 import wx
@@ -28,6 +29,9 @@ from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.session import Session
+
+logger = logging.getLogger(__name__)
+
 
 ID_BTN_MEASURE_LINEAR = wx.NewIdRef()
 ID_BTN_MEASURE_ANGULAR = wx.NewIdRef()
@@ -133,7 +137,7 @@ class InnerTaskPanel(wx.Panel):
         self.Fit()
 
     def OnTextAnnotation(self, evt=None):
-        print("TODO: Send Signal - Add text annotation (both 2d and 3d)")
+        logger.debug("TODO: Send Signal - Add text annotation (both 2d and 3d)")
 
     def OnLinkLinearMeasure(self):
         Publisher.sendMessage("Enable style", style=constants.STATE_MEASURE_DISTANCE)

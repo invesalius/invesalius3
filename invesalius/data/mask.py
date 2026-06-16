@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import os
 import plistlib
 import random
@@ -36,6 +37,8 @@ import invesalius_rs as floodfill
 from invesalius.data.volume_mask import VolumeMask
 from invesalius.pubsub import pub as Publisher
 
+logger = logging.getLogger(__name__)
+
 
 class EditionHistoryNode:
     def __init__(self, index, orientation, array, clean=False):
@@ -48,7 +51,7 @@ class EditionHistoryNode:
 
     def _save_array(self, array):
         np.save(self.filename, array)
-        print("Saving history", self.index, self.orientation, self.filename, self.clean)
+        logger.debug("Saving history", self.index, self.orientation, self.filename, self.clean)
 
     def commit_history(self, mvolume):
         array = np.load(self.filename)
@@ -67,10 +70,10 @@ class EditionHistoryNode:
         elif self.orientation == "VOLUME":
             mvolume[:] = array
 
-        print("applying to", self.orientation, "at slice", self.index)
+        logger.debug("applying to", self.orientation, "at slice", self.index)
 
     def __del__(self):
-        print("Removing", self.filename)
+        logger.debug("Removing", self.filename)
         os.close(self.fd)
         os.remove(self.filename)
 
@@ -102,7 +105,7 @@ class EditionHistory:
         self.history.append(node)
         self.index += 1
 
-        print("INDEX", self.index, len(self.history), self.history)
+        logger.debug("INDEX", self.index, len(self.history), self.history)
         Publisher.sendMessage("Enable undo", value=True)
         Publisher.sendMessage("Enable redo", value=False)
 
@@ -138,7 +141,7 @@ class EditionHistory:
 
         if self.index == 0:
             Publisher.sendMessage("Enable undo", value=False)
-        print("AT", self.index, len(self.history), self.history[self.index].filename)
+        logger.debug("AT", self.index, len(self.history), self.history[self.index].filename)
 
     def redo(self, mvolume, actual_slices=None):
         h = self.history
@@ -173,7 +176,7 @@ class EditionHistory:
 
         if self.index == len(h) - 1:
             Publisher.sendMessage("Enable redo", value=False)
-        print("AT", self.index, len(h), h[self.index].filename)
+        logger.debug("AT", self.index, len(h), h[self.index].filename)
 
     def _reload_slice(self, index):
         Publisher.sendMessage(
@@ -253,9 +256,9 @@ class Mask:
         Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
 
     def as_vtkimagedata(self):
-        print("Converting to VTK")
+        logger.debug("Converting to VTK")
         vimg = converters.to_vtk_mask(self.matrix, self.spacing)
-        print("Converted")
+        logger.debug("Converted")
         return vimg
 
     def set_colour(self, colour):

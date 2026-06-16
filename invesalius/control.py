@@ -630,8 +630,8 @@ class Controller:
                 prj.Project().SavePlistProject(dirpath, filename, compress)
             except PermissionError as err:
                 if wx.GetApp() is None:
-                    print(
-                        f"Error: Permission denied, you don't have permission to write at {dirpath}"
+                    logger.error(
+                        "Error: Permission denied, you don't have permission to write at %s", dirpath
                     )
                 else:
                     dlg = dialogs.ErrorMessageBox(

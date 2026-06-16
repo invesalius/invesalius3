@@ -1042,7 +1042,7 @@ class EnhancedLogger:
                     config = json.load(f)
                     self._config = deep_merge_dict(self._config.copy(), config)
         except Exception as e:
-            print(f"Error reading log config: {e}")
+            logger.debug(f"Error reading log config: {e}")
 
     def _write_config(self) -> None:
         """Write the logging configuration to the config file."""
@@ -1050,7 +1050,7 @@ class EnhancedLogger:
             with open(LOG_CONFIG_PATH, "w") as f:
                 json.dump(self._config, f, indent=4)
         except Exception as e:
-            print(f"Error writing log config: {e}")
+            logger.debug(f"Error writing log config: {e}")
 
     def _configure_logging(self) -> None:
         """Configure logging based on the configuration."""
@@ -1095,7 +1095,7 @@ class EnhancedLogger:
             )
 
         except Exception as e:
-            print(f"Error configuring logging: {e}")
+            logger.debug(f"Error configuring logging: {e}")
             import traceback
 
             traceback.print_exc()
@@ -1226,7 +1226,7 @@ class EnhancedLogger:
                 # Log the cleanup
                 self._logger.info("Cleaning up enhanced logger resources")
         except Exception as e:
-            print(f"Error during enhanced logger cleanup: {e}")
+            logger.debug(f"Error during enhanced logger cleanup: {e}")
 
 
 # Create the enhanced logger instance

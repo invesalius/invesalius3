@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 
+import logging
 import math
 import sys
 import textwrap
@@ -30,6 +31,8 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import math_utils
+
+logger = logging.getLogger(__name__)
 from invesalius.gui.widgets.canvas_renderer import (
     CanvasHandlerBase,
     Ellipse,
@@ -269,7 +272,9 @@ class MeasurementManager:
                     mr.complete_polygon()
 
                 mr.set_density_values(m.min, m.max, m.mean, m.std, m.area, m.perimeter)
-                print(m.min, m.max, m.mean, m.std)
+                logger.debug(
+                    "Measurements: min=%s, max=%s, mean=%s, std=%s", m.min, m.max, m.mean, m.std
+                )
                 mr._need_calc = False
                 self.measures.append((m, mr))
                 mr.set_measurement(m)
@@ -1922,7 +1927,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
 
     def _update_gui_info(self):
         msg = ("Update measurement info in GUI",)
-        print(msg)
+        logger.debug(msg)
         if self._measurement:
             m = self._measurement
             Publisher.sendMessage(
@@ -2189,7 +2194,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
                 self._dist_tbox = [i - j for i, j in zip(self.text_box.position, p)]
             else:
                 self.text_box.position = [i + j for i, j in zip(self._dist_tbox, p)]
-                print("text box position", self.text_box.position)
+                logger.debug("text box position: %s", self.text_box.position)
 
         session = ses.Session()
         session.ChangeProject()
@@ -2208,7 +2213,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         #  self._dist_tbox = [j-i for i,j in zip(p, self.text_box.position)]
 
     def insert_point(self, point):
-        print("insert points", len(self.points))
+        logger.debug("insert points: %s", len(self.points))
         self.polygon.append_point(point)
         self.points.append(point)
 
@@ -2275,7 +2280,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         )
         mask = arr[:, :, 0] >= 128
 
-        print("mask sum", mask.sum())
+        logger.debug("mask sum: %s", mask.sum())
 
         if DEBUG_DENSITY:
             try:
@@ -2326,10 +2331,10 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         elif self.orientation == "SAGITAL":
             points = [(y, z) for (x, y, z) in self.points]
         area = math_utils.calc_polygon_area(points)
-        print("Points", points)
-        print("xv = %s;" % [i[0] for i in points])
-        print("yv = %s;" % [i[1] for i in points])
-        print("Area", area)
+        logger.debug("Points: %s", points)
+        logger.debug("xv = %s;", [i[0] for i in points])
+        logger.debug("yv = %s;", [i[1] for i in points])
+        logger.debug("Area: %s", area)
         return area
 
     def calc_perimeter(self) -> float:
@@ -2340,10 +2345,10 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         elif self.orientation == "SAGITAL":
             points = [(y, z) for (x, y, z) in self.points]
         area = math_utils.calc_polygon_perimeter(points)
-        print("Points", points)
-        print("xv = %s;" % [i[0] for i in points])
-        print("yv = %s;" % [i[1] for i in points])
-        print("Perimeter", area)
+        logger.debug("Points: %s", points)
+        logger.debug("xv = %s;", [i[0] for i in points])
+        logger.debug("yv = %s;", [i[1] for i in points])
+        logger.debug("Perimeter: %s", area)
         return area
 
     def get_bounds(self):
@@ -2356,7 +2361,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         min_z = min(self.points, key=lambda x: x[2])[2]
         max_z = max(self.points, key=lambda x: x[2])[2]
 
-        print(self.points)
+        logger.debug(self.points)
 
         return (min_x, min_y, min_z, max_x, max_y, max_z)
 
@@ -2428,7 +2433,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
 
     def _update_gui_info(self):
         msg = ("Update measurement info in GUI",)
-        print(msg)
+        logger.debug(msg)
         if self._measurement:
             m = self._measurement
             Publisher.sendMessage(

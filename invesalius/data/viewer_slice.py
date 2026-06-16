@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import collections
+import logging
 import os
 import sys
 
@@ -61,6 +62,9 @@ from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.gui.widgets.inv_spinctrl import InvFloatSpinCtrl, InvSpinCtrl
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 if sys.platform == "win32":
     try:
@@ -679,10 +683,10 @@ class Viewer(wx.Panel):
         coord = self.calcultate_scroll_position(px, py)
         # Debugging coordinates. For a 1.0 spacing axis the coord and position is the same,
         # but for a spacing dimension =! 1, the coord and position are different
-        # print("\nPosition: {}".format(position))
-        # print("Scroll position: {}".format(coord))
-        # print("Slice actor bounds: {}".format(self.slice_data.actor.GetBounds()))
-        # print("Scroll from int of position: {}\n".format([round(s) for s in position]))
+        # logger.debug("\nPosition: {}".format(position))
+        # logger.debug("Scroll position: {}".format(coord))
+        # logger.debug("Slice actor bounds: {}".format(self.slice_data.actor.GetBounds()))
+        # logger.debug("Scroll from int of position: {}\n".format([round(s) for s in position]))
 
         # this call did not affect the working code
         # self.cross.SetFocalPoint(coord)

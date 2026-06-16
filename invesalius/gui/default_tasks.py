@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import sys
 
 import wx
@@ -33,6 +34,9 @@ import invesalius.gui.task_surface as surface
 import invesalius.session as ses
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
+
 
 FPB_DEFAULT_STYLE = 2621440
 
@@ -294,7 +298,7 @@ class UpperTaskPanel(wx.Panel):
         session = ses.Session()
         mode = session.GetConfig("mode")
 
-        print("Mode: ", mode)
+        logger.debug("Mode: ", mode)
 
         if mode == const.MODE_RP:
             tasks = [

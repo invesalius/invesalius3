@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import multiprocessing
 import os
 import tempfile
@@ -64,6 +65,8 @@ from invesalius.data.measures import CircleDensityMeasure, MeasureData, PolygonD
 from invesalius.i18n import tr
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
 
 # import invesalius.project as prj
 
@@ -576,7 +579,7 @@ class TractsInteractorStyle(CrossInteractorStyle):
         # self.state_code = const.SLICE_STATE_TRACTS
 
         self.viewer = viewer
-        # print("Im fucking brilliant!")
+        # logger.debug("Im fucking brilliant!")
         self.tracts = None
 
         # data_dir = b'C:\Users\deoliv1\OneDrive\data\dti'
@@ -606,12 +609,12 @@ class TractsInteractorStyle(CrossInteractorStyle):
     def OnTractsMove(self, obj, evt):
         # The user moved the mouse with left button pressed
         if self.left_pressed:
-            # print("OnTractsMove interactor style")
+            # logger.debug("OnTractsMove interactor style")
             # iren = obj.GetInteractor()
             self.ChangeTracts(True)
 
     def OnTractsMouseClick(self, obj, evt):
-        # print("Single mouse click")
+        # logger.debug("Single mouse click")
         # self.tracts = dtr.compute_and_visualize_tracts(self.tracker, self.seed, self.left_pressed)
         self.ChangeTracts(True)
 
@@ -621,7 +624,7 @@ class TractsInteractorStyle(CrossInteractorStyle):
         # self.ChangeCrossPosition(iren)
 
     def ChangeTracts(self, pressed):
-        # print("Trying to compute tracts")
+        # logger.debug("Trying to compute tracts")
         self.tracts = dtr.compute_and_visualize_tracts(
             self.tracker, self.seed, self.affine_vtk, pressed
         )
@@ -1097,7 +1100,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
 
     def OnInsertPoint(self, evt):
         mouse_x, mouse_y = evt.position
-        print("OnInsertPoint", evt.position)
+        logger.debug("OnInsertPoint: %s", evt.position)
         n = self.viewer.slice_data.number
         pos = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
 
@@ -1143,7 +1146,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
             m = self._last_measure
             if len(m.points) >= 3:
                 n = self.viewer.slice_data.number
-                print(self.viewer.draw_by_slice_number[n], m)
+                logger.debug("Insert polygon: %s, %s", self.viewer.draw_by_slice_number[n], m)
                 self.viewer.draw_by_slice_number[n].remove(m)
                 m.complete_polygon()
                 self._last_measure = None
@@ -1745,7 +1748,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if self.matrix is not None:
             self.matrix = None
             os.remove(self.temp_file)
-            print("deleting", self.temp_file)
+            logger.debug("deleting: %s", self.temp_file)
 
     def _set_cursor(self):
         if self.config.cursor_type == const.BRUSH_SQUARE:
@@ -2364,7 +2367,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         tcoord = np.array((z, y, x, 1)).dot(M)
         tcoord = tcoord[:3] / tcoord[3]
 
-        #  print (z, y, x), tcoord
+        #  logger.debug(z, y, x), tcoord
         return tcoord
 
     def _set_reorientation_angles(self, angles):
@@ -2512,7 +2515,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                 bstruct = np.zeros((3, 3, 1), dtype="uint8")
                 bstruct[:, :, 0] = _bstruct
 
-        print("FloodFillMaskInteractorStyle", self.t0, self.t1)
+        logger.debug("FloodFillMaskInteractorStyle: %s, %s", self.t0, self.t1)
         if self.config.target == "2D":
             floodfill.floodfill_threshold_inplace(
                 mask, ((x, y, z),), self.t0, self.t1, self.fill_value, bstruct
@@ -3107,7 +3110,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
             elif self.config.method == "dynamic":
                 if self.config.use_ww_wl:
-                    print("Using WW&WL")
+                    logger.debug("Using WW&WL")
                     ww = self.viewer.slice_.window_width
                     wl = self.viewer.slice_.window_level
                     image = get_LUT_value_255(image, ww, wl)
@@ -3165,7 +3168,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
             elif self.config.method == "dynamic":
                 if self.config.use_ww_wl:
-                    print("Using WW&WL")
+                    logger.debug("Using WW&WL")
                     ww = self.viewer.slice_.window_width
                     wl = self.viewer.slice_.window_level
                     image = get_LUT_value_255(image, ww, wl)

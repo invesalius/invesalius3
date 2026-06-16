@@ -17,9 +17,12 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # ---------------------------------------------------------------------
+import logging
 import time
 
 import gdcm
+
+logger = logging.getLogger(__name__)
 
 import invesalius.constants as const
 import invesalius.utils as utils
@@ -1236,7 +1239,7 @@ class Parser:
         try:
             data = data.encode(encoding, errors="surrogateescape").decode(encoding)
         except Exception as err:
-            print(err)
+            logger.exception(err)
         return data
 
     def GetPatientID(self):
@@ -1508,7 +1511,7 @@ class Parser:
         try:
             data = data.encode(encoding, errors="surrogateescape").decode(encoding)
         except Exception as err:
-            print(err)
+            logger.exception(err)
 
         if data == "None":
             return _("unnamed")
@@ -1767,22 +1770,22 @@ if __name__ == "__main__":
 
         parser = Parser()
         if parser.SetFileName(filename):
-            print("p:", parser.GetPatientName())
-            print("l:", parser.GetImageLocation())
-            print("o:", parser.GetImagePatientOrientation())
-            print("t:", parser.GetImageThickness())
-            print("s:", parser.GetPixelSpacing())
-            print("x:", parser.GetDimensionX())
-            print("y:", parser.GetDimensionY())
-            print("z:", parser.GetDimensionZ())
+            logger.debug(f"p: {parser.GetPatientName()}")
+            logger.debug(f"l: {parser.GetImageLocation()}")
+            logger.debug(f"o: {parser.GetImagePatientOrientation()}")
+            logger.debug(f"t: {parser.GetImageThickness()}")
+            logger.debug(f"s: {parser.GetPixelSpacing()}")
+            logger.debug(f"x: {parser.GetDimensionX()}")
+            logger.debug(f"y: {parser.GetDimensionY()}")
+            logger.debug(f"z: {parser.GetDimensionZ()}")
         else:
-            print("--------------------------------------------------")
+            logger.debug("--------------------------------------------------")
             total -= 1
             fail_count += 1
 
-    print("\nREPORT:")
-    print("failed: ", fail_count)
-    print("sucess: ", total)
+    logger.debug("\\nREPORT:")
+    logger.debug(f"failed:  {fail_count}")
+    logger.debug(f"sucess:  {total}")
 
     # Example of how to use auxiliary functions
     total = 38

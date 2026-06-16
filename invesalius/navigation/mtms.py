@@ -1,3 +1,4 @@
+import logging
 import random
 import time
 
@@ -6,6 +7,8 @@ import pandas as pd
 import win32com.client
 
 import invesalius.data.coregistration as dcr
+
+logger = logging.getLogger(__name__)
 
 
 class mTMS:
@@ -36,7 +39,7 @@ class mTMS:
             offset = self.GetOffset(distance)
             mTMS_target, mTMS_index_target = self.FindmTMSParameters(offset)
             if not len(mTMS_index_target[0]):
-                print("Not possible to stimulate the target: ", offset)
+                logger.debug("Not possible to stimulate the target: ", offset)
                 return False
         return True
 
@@ -73,7 +76,7 @@ class mTMS:
             }
             self.df = self.df.append(pd.DataFrame([new_row], columns=self.df.columns))
         else:
-            print("Target is not valid. The offset is: ", offset)
+            logger.debug("Target is not valid. The offset is: ", offset)
 
     def GetOffset(self, distance):
         offset_xy = [int(np.round(x)) for x in distance[:2]]
@@ -98,23 +101,23 @@ class mTMS:
     def SendToMTMS(self, target):
         # Manipulate intensity
         self.intensity = self.vi.GetControlValue("Get Intensity")
-        print("Intensity: ", str(self.intensity))
+        logger.debug("Intensity: ", str(self.intensity))
         # self.vi.SetControlValue('New Intensity', 40)
         # self.vi.SetControlValue('Set Intensity', True)
 
         # Update the Pulse - parameters row and wait until the change has been processed
         self.vi.SetControlValue("New Pulse-parameters row", int(target))
         self.vi.SetControlValue("Set Pulse-parameters row", True)
-        print("Updating brain target: ", int(target))
+        logger.debug("Updating brain target: ", int(target))
         while self.vi.GetControlValue("Set Pulse-parameters row"):
             pass
         time.sleep(0.3)
-        print("Charging capacitors...")
+        logger.debug("Charging capacitors...")
         while not self.vi.GetControlValue("Get Ready to stimulate"):
             pass
         # TODO: remove stimulation from here. The user should use the mtms interface to perform the stimuli
         # Stimulate
-        print("Stimulating")
+        logger.debug("Stimulating")
         self.vi.SetControlValue("Stimulate", True)
 
     def SaveSequence(self):

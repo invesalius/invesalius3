@@ -19,6 +19,7 @@
 
 import functools
 import gc
+import logging
 import multiprocessing
 import os
 import plistlib
@@ -54,6 +55,8 @@ from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
 
 if sys.platform == "win32":
     try:
@@ -383,7 +386,7 @@ class SurfaceManager:
         proj = prj.Project()
         index = self.last_surface_index
         # if index not in proj.surface_dict:
-        #     print(f"[Error] Surface index {index} not found in surface_dict.")
+        #     logger.debug(f"[Error] Surface index {index} not found in surface_dict.")
         #     return
         if not hasattr(proj, "surface_dict") or not proj.surface_dict:
             dialogs.LargestSurfaceNotExist()
@@ -454,7 +457,7 @@ class SurfaceManager:
                 surface_index = self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
                 return surface_index
         else:
-            print("File does not exists")
+            logger.error("File does not exist: %s", filename)
             return
 
     def CoverttoMetersPolydata(self, polydata):
@@ -762,7 +765,7 @@ class SurfaceManager:
             area = measured_polydata.GetSurfaceArea()
             surface.volume = volume
             surface.area = area
-            print(">>>>", surface.volume)
+            logger.debug("Surface volume: %s", surface.volume)
         else:
             surface.volume = volume
             surface.area = area
@@ -862,7 +865,7 @@ class SurfaceManager:
     def _show_surface(
         self, surface_filename, surface_measures, overwrite, surface_name, colour, category, dialog
     ):
-        print(surface_filename, surface_measures)
+        logger.debug("Surface file: %s, measures: %s", surface_filename, surface_measures)
         reader = vtkXMLPolyDataReader()
         reader.SetFileName(surface_filename)
         reader.Update()
@@ -962,7 +965,7 @@ class SurfaceManager:
     def decimate_polydata(self, polydata, reduction=0.7):
         """Reduce the number of triangles by `reduction` (0.5 = 50%)."""
         if polydata.GetNumberOfPoints() == 0:
-            print("Input mesh empty, skipping.")
+            logger.warning("Input mesh empty, skipping.")
             return polydata
 
         # Step 1: Decimate to reduce complexity
@@ -975,7 +978,7 @@ class SurfaceManager:
         output = decimator.GetOutput()
         # SAFETY CHECK
         if output.GetNumberOfPoints() == 0:
-            print("Decimation produced empty mesh. Returning original.")
+            logger.warning("Decimation produced empty mesh. Returning original.")
             return polydata
 
         # Clean up any inconsistencies in mesh
@@ -984,7 +987,7 @@ class SurfaceManager:
         cleaner.Update()
         cleaned = cleaner.GetOutput()
         if cleaned.GetNumberOfPoints() == 0:
-            print("Cleaning produced empty mesh.")
+            logger.warning("Cleaning produced empty mesh.")
             return output
 
         # Step 3: Smooth out the remaining vertices
@@ -995,7 +998,7 @@ class SurfaceManager:
 
         smoothed = smoother.GetOutput()
         if smoothed.GetNumberOfPoints() == 0:
-            print("Smoothing produced empty mesh. Returning original.")
+            logger.warning("Smoothing produced empty mesh. Returning original.")
             return cleaned
 
         return smoothed
@@ -1101,7 +1104,7 @@ class SurfaceManager:
 
         fill_border_holes = surface_parameters["options"].get("fill_border_holes", True)
 
-        print(surface_parameters)
+        logger.debug("Surface parameters: %s", surface_parameters)
 
         mode = "CONTOUR"  # 'GRAYSCALE'
         min_value, max_value = mask.threshold_range
@@ -1161,7 +1164,7 @@ class SurfaceManager:
         manager = multiprocessing.Manager()
         msg_queue = manager.Queue(1)
 
-        print("Resolution", imagedata_resolution)
+        logger.debug("Resolution: %s", imagedata_resolution)
 
         # If InVesalius is running without GUI
         if wx.GetApp() is None:
@@ -1169,7 +1172,7 @@ class SurfaceManager:
                 init = i * piece_size
                 end = init + piece_size + o_piece
                 roi = slice(init, end)
-                print("new_piece", roi)
+                logger.debug("New piece: %s", roi)
                 f = pool.apply_async(
                     surface_process.create_surface_piece,
                     args=(
@@ -1221,8 +1224,7 @@ class SurfaceManager:
             try:
                 surface_filename, surface_measures = f.get()
             except Exception:
-                print(_("InVesalius was not able to create the surface"))
-                print(traceback.print_exc())
+                logger.error("InVesalius was not able to create the surface", exc_info=True)
                 return
 
             reader = vtkXMLPolyDataReader()
@@ -1256,7 +1258,7 @@ class SurfaceManager:
                 init = i * piece_size
                 end = init + piece_size + o_piece
                 roi = slice(init, end)
-                print("new_piece", roi)
+                logger.debug("New piece: %s", roi)
                 f = pool.apply_async(
                     surface_process.create_surface_piece,
                     args=(
@@ -1329,7 +1331,7 @@ class SurfaceManager:
                     wx.Yield()
 
             t_end = time.time()
-            print(f"Elapsed time - {t_end - t_init}")
+            logger.info("Surface creation elapsed time: %.2f seconds", t_end - t_init)
             sp.Close()
             if sp.error:
                 dlg = GMD.GenericMessageDialog(None, sp.error, "Exception!", wx.OK | wx.ICON_ERROR)
@@ -1439,7 +1441,9 @@ class SurfaceManager:
                 self._export_surface(temp_file, filetype, convert_to_world)
             except ValueError:
                 if wx.GetApp() is None:
-                    print("It was not possible to export the surface because the surface is empty")
+                    logger.error(
+                        "It was not possible to export the surface because the surface is empty"
+                    )
                 else:
                     wx.MessageBox(
                         _("It was not possible to export the surface because the surface is empty"),
@@ -1453,7 +1457,7 @@ class SurfaceManager:
             # Checks if file exists and is not empty
             if not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0:
                 if wx.GetApp() is None:
-                    print("Export cancelled or resulted in empty file.")
+                    logger.warning("Export cancelled or resulted in empty file.")
                 else:
                     wx.MessageBox(
                         _("Export cancelled by user"),
@@ -1466,10 +1470,10 @@ class SurfaceManager:
             except PermissionError as err:
                 dirpath = os.path.split(filename)[0]
                 if wx.GetApp() is None:
-                    print(
-                        _(
-                            f"It was not possible to export the surface because you don't have permission to write to {dirpath} folder: {err}"
-                        )
+                    logger.error(
+                        "It was not possible to export the surface because you don't have permission to write to %s folder: %s",
+                        dirpath,
+                        err,
                     )
                 else:
                     dlg = dialogs.ErrorMessageBox(
@@ -1528,7 +1532,9 @@ class SurfaceManager:
                 }
 
                 mask = proj.mask_dict[index]
-                print(mask.matrix.min(), mask.matrix.max(), mask.name)
+                logger.debug(
+                    "Mask range: %s - %s, name: %s", mask.matrix.min(), mask.matrix.max(), mask.name
+                )
                 slice_ = slc.Slice()
 
                 Publisher.sendMessage(
@@ -1544,7 +1550,7 @@ class SurfaceManager:
 
             # Displays one surface at a time and export
             for index in proj.surface_dict.keys():
-                print(proj.surface_dict[index].name)
+                logger.debug("Exporting surface: %s", proj.surface_dict[index].name)
                 proj.surface_dict[index].is_shown = True
                 self._export_surface(
                     os.path.join(folder, str(index) + ".stl"), const.FILETYPE_STL, False
@@ -1669,4 +1675,4 @@ class SurfaceManager:
                     progress.Destroy()
                     progress_destroyed = True
                 except Exception as e:
-                    print(f"Could not destroy progress dialog: {e}")
+                    logger.warning("Could not destroy progress dialog: %s", e)

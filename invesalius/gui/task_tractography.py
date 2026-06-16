@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import time
 from functools import partial
 
@@ -61,6 +62,8 @@ import invesalius.project as prj
 import invesalius.utils as utils
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+
+logger = logging.getLogger(__name__)
 
 
 class TaskPanel(wx.Panel):
@@ -415,7 +418,7 @@ class InnerTaskPanel(wx.Panel):
                 self.tp.running = False
 
             t_end = time.time()
-            print(f"Elapsed time - {t_end - t_init}")
+            logger.debug(f"Elapsed time - {t_end - t_init}")
             self.tp.Close()
             if self.tp.error:
                 dlgg = GMD.GenericMessageDialog(
@@ -479,7 +482,7 @@ class InnerTaskPanel(wx.Panel):
                     self.TrekkerCallback(completed_future)
 
                 t_end = time.time()
-                print(f"Elapsed time - {t_end - t_init}")
+                logger.debug(f"Elapsed time - {t_end - t_init}")
                 self.tp.Close()
                 if self.tp.error:
                     dlgg = GMD.GenericMessageDialog(
@@ -498,7 +501,7 @@ class InnerTaskPanel(wx.Panel):
 
     def TrekkerCallback(self, trekker):
         self.tp.running = False
-        print("Import Complete")
+        logger.debug("Import Complete")
         if trekker is not None:
             self.trekker = trekker.result()
             self.trekker, n_threads = dti.set_trekker_parameters(self.trekker, self.trekker_cfg)
@@ -541,7 +544,7 @@ class InnerTaskPanel(wx.Panel):
                         self.tp.running = False
 
                     t_end = time.time()
-                    print(f"Elapsed time - {t_end - t_init}")
+                    logger.debug(f"Elapsed time - {t_end - t_init}")
                     self.tp.Close()
                     if self.tp.error:
                         dlgg = GMD.GenericMessageDialog(
@@ -619,7 +622,7 @@ class InnerTaskPanel(wx.Panel):
         # It updates when cross updates
         # pass
         if self.view_tracts and not self.nav_status:
-            # print("Running during navigation")
+            # logger.debug("Running during navigation")
             coord_flip = list(position[:3])
             coord_flip[1] = -coord_flip[1]
             dti.compute_and_visualize_tracts(
