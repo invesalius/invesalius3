@@ -42,6 +42,7 @@ from invesalius.pubsub import pub as Publisher
 BTN_MASK = wx.NewIdRef()
 BTN_PICTURE = wx.NewIdRef()
 BTN_SURFACE = wx.NewIdRef()
+BTN_TEXTURE = wx.NewIdRef()
 BTN_REPORT = wx.NewIdRef()
 BTN_REQUEST_RP = wx.NewIdRef()
 
@@ -147,6 +148,20 @@ class InnerTaskPanel(wx.Panel):
         link_export_surface.UpdateLink()
         link_export_surface.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkExportSurface)
 
+        tooltip = _("Export 3D surface from volume rendering...")
+        link_export_textured_surface = hl.HyperLinkCtrl(
+            self, -1, _("Export 3D surface from volume rendering...")
+        )
+        self.link_export_textured_surface = link_export_textured_surface
+        link_export_textured_surface.SetUnderlines(False, False, False)
+        link_export_textured_surface.SetBold(True)
+        link_export_textured_surface.SetColours("BLACK", "BLACK", "BLACK")
+        link_export_textured_surface.SetBackgroundColour(self.GetBackgroundColour())
+        link_export_textured_surface.SetToolTip(tooltip)
+        link_export_textured_surface.AutoBrowse(False)
+        link_export_textured_surface.UpdateLink()
+        link_export_textured_surface.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkExportTexturedSurface)
+
         # tooltip = _("Export 3D mask (voxels)")
         # link_export_mask = hl.HyperLinkCtrl(self, -1,_("Export mask..."))
         # link_export_mask.SetUnderlines(False, False, False)
@@ -206,6 +221,13 @@ class InnerTaskPanel(wx.Panel):
             self, BTN_SURFACE, "", BMP_EXPORT_SURFACE, style=button_style
         )
         button_surface.SetBackgroundColour(self.GetBackgroundColour())
+        self.button_surface = button_surface
+
+        button_textured_surface = pbtn.PlateButton(
+            self, BTN_TEXTURE, "", BMP_EXPORT_SURFACE, style=button_style
+        )
+        button_textured_surface.SetBackgroundColour(self.GetBackgroundColour())
+        self.button_textured_surface = button_textured_surface
         # button_mask = pbtn.PlateButton(self, BTN_MASK, "",
         #                                BMP_EXPORT_MASK,
         #                                style=button_style)
@@ -222,7 +244,7 @@ class InnerTaskPanel(wx.Panel):
         flag_link = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
         flag_button = wx.EXPAND | wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=2, vgap=0)
+        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany(
             [
@@ -230,6 +252,8 @@ class InnerTaskPanel(wx.Panel):
                 (button_picture, 0, flag_button),
                 (link_export_surface, 1, flag_link, 3),
                 (button_surface, 0, flag_button),
+                (link_export_textured_surface, 1, flag_link, 3),
+                (button_textured_surface, 0, flag_button),
             ]
         )
         # (link_export_mask, 1, flag_link, 3),
@@ -248,6 +272,11 @@ class InnerTaskPanel(wx.Panel):
         self.Fit()
         self.sizer = main_sizer
         self.__init_menu()
+
+        session = ses.Session()
+        if session.GetConfig("mode") == const.MODE_NAVIGATOR:
+            self.link_export_textured_surface.Hide()
+            self.button_textured_surface.Hide()
 
     def __init_menu(self):
         menu = wx.Menu()
@@ -402,9 +431,74 @@ class InnerTaskPanel(wx.Panel):
             self.OnLinkExportPicture()
         elif id == BTN_SURFACE:
             self.OnLinkExportSurface()
+        elif id == BTN_TEXTURE:
+            self.OnLinkExportTexturedSurface()
         elif id == BTN_REPORT:
             self.OnLinkReport()
         elif id == BTN_REQUEST_RP:
             self.OnLinkRequestRP()
         else:  # id == BTN_MASK:
             self.OnLinkExportMask()
+
+    def OnLinkExportTexturedSurface(self, evt=None):
+        import invesalius.data.surface_texture  # noqa: F401
+
+        # Check if Volume Rendering is active
+        project = proj.Project()
+        config = project.raycasting_preset
+        if not config:
+            dlg = wx.MessageDialog(
+                None,
+                _("You need to enable Volume Rendering before exporting a textured surface."),
+                "InVesalius 3",
+                wx.OK | wx.ICON_INFORMATION,
+            )
+            try:
+                dlg.ShowModal()
+            finally:
+                dlg.Destroy()
+            return
+
+        # Show File Save Dialog with Format choice in the type dropdown
+        session = ses.Session()
+        last_directory = session.GetConfig("last_directory_3d_surface", "")
+        project_name = pathlib.Path(project.name).stem
+
+        wildcard_choices = ["Wavefront OBJ (*.obj)|*.obj", "VRML (*.wrl)|*.wrl"]
+        wildcard = "|".join(wildcard_choices)
+
+        dlg_save = wx.FileDialog(
+            None,
+            _("Save textured 3D surface as..."),
+            last_directory,
+            project_name,
+            wildcard,
+            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+        )
+        dlg_save.SetFilterIndex(0)  # Default OBJ
+
+        if dlg_save.ShowModal() == wx.ID_OK:
+            filename = dlg_save.GetPath()
+            format_index = dlg_save.GetFilterIndex()
+            export_format = "OBJ" if format_index == 0 else "VRML"
+            ext = "obj" if format_index == 0 else "wrl"
+
+            if sys.platform != "win32":
+                if filename.split(".")[-1].lower() != ext:
+                    filename = filename + "." + ext
+
+            last_directory = os.path.split(filename)[0]
+            session.SetConfig("last_directory_3d_surface", last_directory)
+
+            dlg_save.Destroy()
+
+            # Trigger export via pubsub (caught in surface_texture.py)
+            # No surface_index needed - Pipeline 2 auto-generates from VR
+            Publisher.sendMessage(
+                "Export textured surface",
+                format=export_format,
+                filename=filename,
+                parent=self.GetTopLevelParent(),
+            )
+        else:
+            dlg_save.Destroy()

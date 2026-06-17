@@ -685,7 +685,8 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
         self.viewer.on_wl = False
         Publisher.sendMessage("Toggle toolbar item", _id=self.state_code, value=False)
         if self.viewer.wl_text is not None:
-            self.viewer.canvas.draw_list.remove(self.viewer.wl_text)
+            if self.viewer.wl_text in self.viewer.canvas.draw_list:
+                self.viewer.canvas.draw_list.remove(self.viewer.wl_text)
             self.viewer.UpdateCanvas()
 
     def OnWindowLevelMove(self, obj, evt):

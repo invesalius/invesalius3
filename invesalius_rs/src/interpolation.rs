@@ -2,36 +2,19 @@ use ndarray::ArrayView3;
 use num_traits::NumCast;
 use std::f64::consts::PI;
 
-// Helper function to get value with boundary wrapping
+// Helper function to get value with boundary clamping (prevents edge bleeding)
 fn get_value<T: Copy + Into<f64>>(v: ArrayView3<T>, x: isize, y: isize, z: isize) -> T {
     let dims = v.shape();
     let dz = dims[0] as isize;
     let dy = dims[1] as isize;
     let dx = dims[2] as isize;
 
-    let mut z_idx = z;
-    let mut y_idx = y;
-    let mut x_idx = x;
+    // FIX: Clamp indices to the boundaries instead of wrapping them
+    let z_idx = z.clamp(0, dz - 1) as usize;
+    let y_idx = y.clamp(0, dy - 1) as usize;
+    let x_idx = x.clamp(0, dx - 1) as usize;
 
-    if x_idx < 0 {
-        x_idx += dx;
-    } else if x_idx >= dx {
-        x_idx -= dx;
-    }
-
-    if y_idx < 0 {
-        y_idx += dy;
-    } else if y_idx >= dy {
-        y_idx -= dy;
-    }
-
-    if z_idx < 0 {
-        z_idx += dz;
-    } else if z_idx >= dz {
-        z_idx -= dz;
-    }
-
-    v[[z_idx as usize, y_idx as usize, x_idx as usize]]
+    v[[z_idx, y_idx, x_idx]]
 }
 
 fn cubic_interpolate(p: [f64; 4], x: f64) -> f64 {

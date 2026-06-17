@@ -1,5 +1,7 @@
 use pyo3::prelude::*;
 
+mod count_regions;
+mod count_regions_py;
 mod floodfill;
 mod floodfill_py;
 mod interpolation;
@@ -9,11 +11,11 @@ mod mesh;
 mod mesh_py;
 mod mips;
 mod mips_py;
+mod texture;
+mod texture_py;
 mod transforms;
 mod transforms_py;
 mod types;
-mod count_regions;
-mod count_regions_py;
 
 /// InVesalius Rust extension module
 #[pymodule]
@@ -30,7 +32,10 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(floodfill_py::jump_flooding, m)?)?;
 
     // Floodfill voronoi function
-    m.add_function(wrap_pyfunction!(floodfill_py::floodfill_voronoi_inplace, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        floodfill_py::floodfill_voronoi_inplace,
+        m
+    )?)?;
 
     // MIPS functions
     m.add_function(wrap_pyfunction!(mips_py::mida, m)?)?;
@@ -52,6 +57,11 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Count regions function
     m.add_function(wrap_pyfunction!(count_regions_py::count_regions, m)?)?;
+
+    // Texture generation functions
+    m.add_function(wrap_pyfunction!(texture_py::generate_surface_texture, m)?)?;
+    m.add_function(wrap_pyfunction!(texture_py::generate_tcoords, m)?)?;
+    m.add_function(wrap_pyfunction!(texture_py::generate_tcoords_hf, m)?)?;
 
     Ok(())
 }
