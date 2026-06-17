@@ -8022,6 +8022,114 @@ class AnnotationDialog(wx.Dialog):
         return self.txt_annotation.GetValue().strip()
 
 
+class StartupDialog(wx.Dialog):
+    """
+    Startup dialog shown when InVesalius launches.
+    Guides users to their next action: import DICOM, open project, or start empty.
+    """
+
+    # Action constants
+    ACTION_IMPORT_DICOM = 1
+    ACTION_OPEN_PROJECT = 2
+    ACTION_EMPTY_SESSION = 3
+    ACTION_CANCEL = 0
+
+    def __init__(self, parent=None):
+        if parent is None:
+            parent = wx.GetApp().GetTopWindow()
+
+        wx.Dialog.__init__(
+            self,
+            parent,
+            -1,
+            _("InVesalius 3"),
+            style=wx.DEFAULT_DIALOG_STYLE,
+        )
+
+        self.action = self.ACTION_CANCEL
+        self._init_gui()
+        self.Centre()
+
+    def _init_gui(self):
+        """Initialize the dialog GUI."""
+        # Main vertical sizer
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Welcome message
+        label = wx.StaticText(self, -1, _("What would you like to do?"))
+        sizer.Add(label, 0, wx.ALIGN_CENTRE | wx.ALL, 10)
+
+        # Import DICOM button
+        btn_import = wx.Button(self, -1, _("Import DICOM files"))
+        btn_import.Bind(wx.EVT_BUTTON, self.OnImportDicom)
+        sizer.Add(btn_import, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Import DICOM description
+        desc_import = wx.StaticText(self, -1, _("Load medical images from DICOM files or folders"))
+        desc_import.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        sizer.Add(desc_import, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Open project button
+        btn_open = wx.Button(self, -1, _("Open existing project"))
+        btn_open.Bind(wx.EVT_BUTTON, self.OnOpenProject)
+        sizer.Add(btn_open, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Open project description
+        desc_open = wx.StaticText(self, -1, _("Open a previously saved InVesalius project (.inv3)"))
+        desc_open.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        sizer.Add(desc_open, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Empty session button
+        btn_empty = wx.Button(self, -1, _("Start with empty session"))
+        btn_empty.Bind(wx.EVT_BUTTON, self.OnEmptySession)
+        sizer.Add(btn_empty, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Empty session description
+        desc_empty = wx.StaticText(self, -1, _("Start InVesalius without loading any data"))
+        desc_empty.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        sizer.Add(desc_empty, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Separator
+        sizer.Add(wx.StaticLine(self), 0, wx.EXPAND | wx.ALL, 5)
+
+        # Standard button sizer with Cancel button
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+    def OnImportDicom(self, evt):
+        """Handle Import DICOM action."""
+        self.action = self.ACTION_IMPORT_DICOM
+        self.EndModal(wx.ID_OK)
+
+    def OnOpenProject(self, evt):
+        """Handle Open Project action."""
+        self.action = self.ACTION_OPEN_PROJECT
+        self.EndModal(wx.ID_OK)
+
+    def OnEmptySession(self, evt):
+        """Handle Empty Session action."""
+        self.action = self.ACTION_EMPTY_SESSION
+        self.EndModal(wx.ID_OK)
+
+    def GetAction(self):
+        """
+        Get the selected action.
+
+        Returns:
+            One of ACTION_IMPORT_DICOM, ACTION_OPEN_PROJECT, ACTION_EMPTY_SESSION, or ACTION_CANCEL
+        """
+        return self.action
+
+
 class ImageFilterDialog(wx.Dialog):
     """Floating non-modal dialog for applying image filters.
     Supports: Despeckle (Gaussian), Border Detection (Sobel), Mean, Median.
