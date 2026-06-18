@@ -126,8 +126,7 @@ def merge_label_maps(
         missing = expected - got
         extra = got - expected
         raise ValueError(
-            f"Part mismatch for '{composite_task}'. missing={sorted(missing)} "
-            f"extra={sorted(extra)}"
+            f"Part mismatch for '{composite_task}'. missing={sorted(missing)} extra={sorted(extra)}"
         )
 
     parts = spec["parts"]
@@ -135,8 +134,7 @@ def merge_label_maps(
     for name in parts:
         if part_predictions[name].shape != shape:
             raise ValueError(
-                f"Shape mismatch: part '{name}' is {part_predictions[name].shape}, "
-                f"expected {shape}"
+                f"Shape mismatch: part '{name}' is {part_predictions[name].shape}, expected {shape}"
             )
 
     remaps = _build_remaps(composite_task)
