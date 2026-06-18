@@ -2241,21 +2241,30 @@ class ControlPanel(wx.Panel):
                         self.robot_buttons["clean_errors_" + robot_ID],
                     ]
                 )
-                static_box_sizer.Add(robot_grid_sizer)
+                static_box_sizer.Add(robot_grid_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)
                 self.robot_buttons_panel[robot_ID].SetSizerAndFit(static_box_sizer)
-                self.robot_buttons_sizers.Add(self.robot_buttons_panel[robot_ID], 0, wx.EXPAND, 10)
-                self.UpdateRobotButtons(robot_ID)
+                self.robot_buttons_sizers.Add(
+                    self.robot_buttons_panel[robot_ID], 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 2
+                )
+
+                # Refresh layout after dynamically adding robot buttons.
+                # Skip during __init__ when self.sizer has not been assigned yet.
+                if hasattr(self, "sizer"):
+                    self.scroll_panel.FitInside()
+                    self.scroll_panel.SetupScrolling(scroll_x=False, scroll_y=True)
+                    self.scroll_panel.Layout()
+                    self.Layout()
 
     def ShowSecondRobotButtons(self, state=True):
-        # self._create_toggle_robot_button()
+        self._create_toggle_robot_button()
         list_robot_id = list(self.robot_buttons_panel.keys())
         if len(list_robot_id) > 1:
             robot_panel = self.robot_buttons_panel[list_robot_id[1]]
             robot_panel.Show(state)
             self.scroll_panel.FitInside()
             self.scroll_panel.SetupScrolling(scroll_x=False, scroll_y=True)
+            self.scroll_panel.Layout()
             self.Layout()
-            self.SetSizerAndFit(self.sizer)
 
     # Toggle Button Helpers
     def UpdateToggleButton(self, ctrl, state=None):
