@@ -24,6 +24,7 @@ class DicomNet:
         self.SetAETitle(aetitle)
         self.search_word = ""
         self.search_type = "patient"
+        self.directory = "../Data" 
 
     def __call__(self):
         return self
@@ -196,16 +197,7 @@ class DicomNet:
         return patients
 
     def RunCGet(self, QueryRetrieveLevel, PatientID, StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, directory="../Data/"):
-        def handle_store(event):
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            ds = event.dataset
-            ds.file_meta = event.file_meta
-            filename = f"{directory}/{ds.SOPInstanceUID}.dcm"
-            ds.save_as(filename)
-            return 0x0000
-
-        handlers = [(evt.EVT_C_STORE, handle_store)]
+        handlers = [(evt.EVT_C_STORE, self._handle_store)]
 
         ae = AE(ae_title=self.aetitle_call)
 
@@ -237,16 +229,7 @@ class DicomNet:
             assoc.release()
 
     def RunCMove(self, QueryRetrieveLevel, PatientID, StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, directory="../Data/"):
-        def handle_store(event):
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            ds = event.dataset
-            ds.file_meta = event.file_meta
-            filename = f"{directory}/{ds.SOPInstanceUID}.dcm"
-            ds.save_as(filename)
-            return 0x0000
-
-        handlers = [(evt.EVT_C_STORE, handle_store)]
+        handlers = [(evt.EVT_C_STORE, self._handle_store)]
 
         ae = AE(ae_title=self.aetitle_call)
 
@@ -277,6 +260,15 @@ class DicomNet:
             assoc.release()
         
         scp.shutdown()
+
+    def _handle_store(self, event):
+        if not os.path.exists(self.directory):
+            os.makedirs(self.directory)
+        ds = event.dataset
+        ds.file_meta = event.file_meta
+        filename = f"{self.directory}/{ds.SOPInstanceUID}.dcm"
+        ds.save_as(filename)
+        return 0x0000
 
     def _date_format(self, date):
         date = date.split(".")[0] if "." in date else date
