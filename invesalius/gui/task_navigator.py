@@ -2375,6 +2375,11 @@ class ControlPanel(wx.Panel):
         #   - Target mode is on
         #   - Robot is connected
         #   - The name of the coil attached to robot is being tracked
+
+        # Ensure buttons exist for this robot (they may have been created
+        # dynamically after the panel was initialised, e.g. robot_2).
+        self._create_toggle_robot_button()
+
         robot = self.robot.GetRobot(robot_ID)
         if robot is not None:
             robot_is_connected = robot.IsConnected()
@@ -2584,7 +2589,6 @@ class ControlPanel(wx.Panel):
     def OnSimultaneousButton(self, evt=None, ctrl=None):
         enabled = ctrl.GetValue()
         if enabled:
-
             Publisher.sendMessage("Reset targets")
 
             self.simultaneous_mode_button.Enable(True)
