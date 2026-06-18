@@ -29,4 +29,17 @@ def test_c_get():
         aetitle_call="INVESALIUS",
         aetitle="ORTHANC"
     )
+    # Manually added data to the orthanc server...
     results = dn.RunCGet('IMAGE', '1422', '1.2.840.113704.1.111.3452.1134393493.8', '1.2.840.113704.1.111.4564.1134393955.20', '1.2.840.113704.1.111.3896.1134394062.5263')
+
+@pytest.mark.skip(reason="Requires a running DICOM server")
+def test_c_move():
+    dn = DicomNet(
+        address="127.0.0.1",
+        port=4242,
+        aetitle_call="INVESALIUS",
+        aetitle="ORTHANC"
+    )
+    # Manually added data to the orthanc server...
+    results = dn.RunCMove('IMAGE', '1422', '1.2.840.113704.1.111.3452.1134393493.8', '1.2.840.113704.1.111.4564.1134393955.20', '1.2.840.113704.1.111.3896.1134394062.5263')
+    

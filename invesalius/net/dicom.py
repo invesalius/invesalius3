@@ -1,18 +1,20 @@
 import gdcm
 from datetime import datetime
 from pydicom.dataset import Dataset
-from pynetdicom import AE, debug_logger, evt, build_role, AllStoragePresentationContexts
+from pynetdicom import AE, debug_logger, evt, build_role, AllStoragePresentationContexts, StoragePresentationContexts
 from pynetdicom.sop_class import (
     Verification,
     PatientRootQueryRetrieveInformationModelFind,
     PatientRootQueryRetrieveInformationModelGet,
+    PatientRootQueryRetrieveInformationModelMove,
     CTImageStorage,
 )
 import os
+import time
 
 import invesalius.utils as utils
 
-debug_logger()  
+debug_logger()      
 
 class DicomNet:
     def __init__(self, address: str, port: int, aetitle_call: str, aetitle: str):
@@ -234,74 +236,47 @@ class DicomNet:
         if assoc and assoc.is_established:
             assoc.release()
 
-    def RunCMove(self, values):
-        ds = gdcm.DataSet()
+    def RunCMove(self, QueryRetrieveLevel, PatientID, StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, directory="../Data/"):
+        def handle_store(event):
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            ds = event.dataset
+            ds.file_meta = event.file_meta
+            filename = f"{directory}/{ds.SOPInstanceUID}.dcm"
+            ds.save_as(filename)
+            return 0x0000
 
-        # for v in values:
+        handlers = [(evt.EVT_C_STORE, handle_store)]
 
-        tg_patient = gdcm.Tag(0x0010, 0x0020)
-        tg_serie = gdcm.Tag(0x0020, 0x000E)
+        ae = AE(ae_title=self.aetitle_call)
 
-        de_patient = gdcm.DataElement(tg_patient)
-        de_serie = gdcm.DataElement(tg_serie)
+        ae.add_requested_context(PatientRootQueryRetrieveInformationModelMove)
+        ae.supported_contexts = StoragePresentationContexts
+        
+        scp = ae.start_server(("0.0.0.0", 11120), block=False, evt_handlers=handlers)
 
-        patient_id = str(values[0])
-        serie_id = str(values[1])
+        ds = Dataset()
+        ds.QueryRetrieveLevel = QueryRetrieveLevel
+        ds.PatientID = PatientID
+        ds.StudyInstanceUID = StudyInstanceUID
+        ds.SeriesInstanceUID = SeriesInstanceUID
+        ds.SOPInstanceUID = SOPInstanceUID
 
-        de_patient.SetByteValue(patient_id, gdcm.VL(len(patient_id)))
-        de_serie.SetByteValue(serie_id, gdcm.VL(len(serie_id)))
 
-        ds.Insert(de_patient)
-        ds.Insert(de_serie)
+        assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)
 
-        cnf = gdcm.CompositeNetworkFunctions()
-        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
-        # ret = gdcm.DataSetArrayType()
+        responses = assoc.send_c_move(ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove)
+        for (status, identifier) in responses:
+            if status:
+                print(f"C-MOVE query status: 0x{status.Status:04x}")
+            else:
+                print(responses)
+                print('Connection timed out, was aborted or received invalid response')
 
-        """
-        CMove (const char *remote, 
-        uint16_t portno, 
-        const BaseRootQuery *query, 
-
-        uint16_t portscp, 
-        const char *aetitle=NULL, 
-        const char *call=NULL, 
-        const char *outputdir=NULL)"""
-
-        print(
-            ">>>>>",
-            self.address,
-            int(self.port),
-            theQuery,
-            11112,
-            self.aetitle,
-            self.aetitle_call,
-            "/home/phamorim/Desktop/output/",
-        )
-
-        cnf.CMove(
-            self.address,
-            int(self.port),
-            theQuery,
-            11112,
-            self.aetitle,
-            self.aetitle_call,
-            "/home/phamorim/Desktop/",
-        )
-
-        print("BAIXOUUUUUUUU")
-        # ret = gdcm.DataSetArrayType()
-
-        # cnf.CFind(self.address, int(self.port), theQuery, ret, self.aetitle,\
-        #          self.aetitle_call)
-
-        # print "aetitle",self.aetitle
-        # print "call",self.aetitle_call
-        # print "Baixados..........."
-
-        # for r in ret:
-        #    print r
-        #    print "\n"
+        if assoc and assoc.is_established:
+            assoc.release()
+        
+        scp.shutdown()
 
     def _date_format(self, date):
         date = date.split(".")[0] if "." in date else date

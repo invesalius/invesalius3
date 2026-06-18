@@ -1,10 +1,11 @@
-version: '3.1'
 services:
   orthanc:
     image: jodogne/orthanc-plugins:1.12.1
     ports:
       - 4242:4242
       - 8042:8042
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./orthanc.json:/etc/orthanc/orthanc.json:ro
     restart: always
