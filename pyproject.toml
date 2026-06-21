@@ -107,7 +107,7 @@ python-source = "."
 # Python packages to include
 python-packages = ["invesalius", "invesalius_rs"]
 # Strip the library for minimum file size
-strip = true
+strip = false
 
 [tool.uv]
 cache-keys = [{ file = "pyproject.toml" }, { file = "invesalius_rs/src/**/*.rs" }, { file = "invesalius_rs/Cargo.toml" }, { file = "invesalius_rs/Cargo.lock" }]
