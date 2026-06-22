@@ -458,79 +458,120 @@ class Robots(metaclass=Singleton):
                 self.distance_coils = None
                 self.brake_vector = {}
 
-    def CalculateCoilDistance(self):
-        while not self._stop_event.is_set():
-            coils_name = self.GetAllCoilsRobots()
-            if not all(coils_name):
-                return
+    def ComputeCoilsOBBLocal(self):
+        self.coils_obb_local = {}
+        for coil_name, reg in self.navigation.coil_registrations.items():
+            if not reg.get("fiducials") or not reg.get("orientations"):
+                continue
+            left_fiducial = reg["fiducials"][0]
+            right_fiducial = reg["fiducials"][1]
+            anterior_fiducial = reg["fiducials"][2]
+            init_coord_coil = reg["fiducials"][3]
+            init_coil_angle = reg["orientations"][3]
+            
+            left, right, anterior = map(np.array, [left_fiducial, right_fiducial, anterior_fiducial])
+            init_coord_coil = np.array(init_coord_coil, dtype=float)
+            init_coil_angle = np.array(init_coil_angle, dtype=float)
 
-            obbs_world = {}  # OBB vertices in world frame for each robot
-            coords_all = {}  # Store coords for each robot
-            matrix_tracker_to_robot = {}
+            center_P_clean = (left + right) / 2.0
+            u_vector = right - left
+            v_vector = anterior - center_P_clean
+
+            R_world_to_marker = Rotation.from_euler("ZYX", init_coil_angle, degrees=True).as_matrix().T
+
+            half_u = u_vector / 2.0
+            half_v = v_vector
+
+            normal = np.cross(half_u, half_v)
+            normal_norm = np.linalg.norm(normal)
+            if normal_norm > 1e-9:
+                normal_unit = normal / normal_norm
+            else:
+                normal_unit = np.array([0.0, 0.0, 1.0])
+            half_n = normal_unit * COIL_HALF_THICKNESS
+
+            obb_center_local = R_world_to_marker @ (center_P_clean - init_coord_coil)
+            obb_axes_local = np.array([
+                R_world_to_marker @ half_u,
+                R_world_to_marker @ half_v,
+                R_world_to_marker @ half_n,
+            ])
+            self.coils_obb_local[coil_name] = (obb_center_local, obb_axes_local)
+
+    def CalculateCoilDistance(self):
+        self.ComputeCoilsOBBLocal()
+
+        while not self._stop_event.is_set():
+            coils_name = list(self.navigation.coil_registrations.keys())
+            if len(coils_name) < 2:
+                self._stop_event.wait(0.1)
+                continue
+
+            obbs_world = {}
             skip = False
 
-            for coil_name in coils_name:
-                robot = self.GetRobotByCoil(coil_name=coil_name)
+            coords, _ = self.tracker.TrackerCoordinates.GetCoordinates()
 
-                # Skip if OBB was not computed for this coil
-                if robot.obb_local is None:
+            for coil_name in coils_name:
+                if coil_name not in self.coils_obb_local:
                     skip = True
                     break
 
-                # Get tracker coordinates
-                coords, _ = robot.tracker.TrackerCoordinates.GetCoordinates()
+                obb_local = self.coils_obb_local[coil_name]
+                obj_id = self.navigation.coil_registrations[coil_name].get("obj_id", None)
+                if obj_id is None or obj_id >= len(coords) or coords[obj_id] is None:
+                    skip = True
+                    break
 
-                pose_coil_atual = coords[robot.obj_ID_Tracker]
-
+                pose_coil_atual = coords[obj_id]
                 t_atual = pose_coil_atual[:3]
                 angles_atual = pose_coil_atual[3:]
 
                 R_atual = Rotation.from_euler("ZYX", angles_atual, degrees=True).as_matrix()
 
-                # Transform OBB from marker-local to world coordinates
-                obb_center_local, obb_axes_local = robot.obb_local
+                obb_center_local, obb_axes_local = obb_local
                 obb_center_world = R_atual @ obb_center_local + t_atual
-                obb_axes_world = (R_atual @ obb_axes_local.T).T  # each row is a half-axis in world
+                obb_axes_world = (R_atual @ obb_axes_local.T).T
 
-                # Build the 8 vertices of the OBB
                 vertices = obb_vertices_from_center_axes(obb_center_world, obb_axes_world)
-                obbs_world[robot.robot_name] = vertices
-
-                # Extract the correct rotation matrix from the Tracker-to-Robot mapping
-                if robot.matrix_tracker_to_robot is not None:
-                    try:
-                        # The matrix might be a flattened list or (48, 1) shape from JSON
-                        mat = np.array(robot.matrix_tracker_to_robot).reshape(-1, 4)
-                        if mat.shape[0] == 12:
-                            # Third matrix in the (12, 4) stack is the affine matrix (tracker to robot coordinates)
-                            rotation_matrix = mat[8:11, 0:3]
-                        else:
-                            # Standard 4x4 affine matrix
-                            rotation_matrix = mat[:3, :3]
-                    except ValueError:
-                        rotation_matrix = np.eye(3)
-                else:
-                    rotation_matrix = np.eye(3)
-                
-                matrix_tracker_to_robot[robot.robot_name] = rotation_matrix
+                obbs_world[coil_name] = vertices
 
             if skip or len(obbs_world) < 2:
-                return
+                self._stop_event.wait(0.1)
+                continue
 
-            # Use GJK to compute minimum distance between the two OBBs
+            coil_1 = coils_name[0]
+            coil_2 = coils_name[1]
+
             min_distance, closest_pt_1, closest_pt_2 = gjk_distance(
-                obbs_world["robot_1"], obbs_world["robot_2"]
+                obbs_world[coil_1], obbs_world[coil_2]
             )
 
-            # Head/subject coordinate (tracker index 1)
-            subject_pos = coords[1][:3]
+            subject_pos = coords[1][:3] if len(coords) > 1 and coords[1] is not None else np.array([0,0,0])
 
             v1_tracker = self.CalculateBrakeVector(closest_pt_1, closest_pt_2, subject_pos)
             v2_tracker = self.CalculateBrakeVector(closest_pt_2, closest_pt_1, subject_pos)
 
             brake_vectors = {}
-            brake_vectors["robot_1"] = matrix_tracker_to_robot["robot_1"] @ v1_tracker if v1_tracker is not None else None
-            brake_vectors["robot_2"] = matrix_tracker_to_robot["robot_2"] @ v2_tracker if v2_tracker is not None else None
+            for robot_name, robot in self.GetAllRobots().items():
+                if robot.matrix_tracker_to_robot is not None:
+                    try:
+                        mat = np.array(robot.matrix_tracker_to_robot).reshape(-1, 4)
+                        if mat.shape[0] == 12:
+                            rotation_matrix = mat[8:11, 0:3]
+                        else:
+                            rotation_matrix = mat[:3, :3]
+                    except ValueError:
+                        rotation_matrix = np.eye(3)
+                else:
+                    rotation_matrix = np.eye(3)
+
+                if robot.coil_name == coil_1:
+                    brake_vectors[robot_name] = rotation_matrix @ v1_tracker if v1_tracker is not None else None
+                elif robot.coil_name == coil_2:
+                    brake_vectors[robot_name] = rotation_matrix @ v2_tracker if v2_tracker is not None else None
+                else:
+                    brake_vectors[robot_name] = None
 
             min_distance = 0.5 if min_distance == 0.0 else min_distance
 
@@ -687,16 +728,17 @@ class Robots(metaclass=Singleton):
         return all(allReady)
 
     def UpdateCoilsDistance(self):
-        if self.RobotCoilAssociation and len(self.RobotCoilAssociation) > 1: #TODO Improve this logic because we can use just one robot and two coils
+        if self.navigation.n_coils > 1:
             with self._lock:
                 distance = self.distance_coils
                 brake = dict(self.brake_vector)
             if distance is not None:
                 robots = self.GetAllRobots()
                 for robot_ID in robots.keys():
-                    Publisher.sendMessage(
-                        "Neuronavigation to Robot: Dynamically update distance coils",
-                        distance=distance,
-                        brake_vector=list(brake[robot_ID]),
-                        robot_ID=robot_ID,
-                    )
+                    if robot_ID in brake and brake[robot_ID] is not None:
+                        Publisher.sendMessage(
+                            "Neuronavigation to Robot: Dynamically update distance coils",
+                            distance=distance,
+                            brake_vector=list(brake[robot_ID]),
+                            robot_ID=robot_ID,
+                        )
