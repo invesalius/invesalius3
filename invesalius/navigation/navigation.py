@@ -196,13 +196,16 @@ class UpdateNavigationScene(threading.Thread):
                 # TODO: If using the view_tracts substitute the raw coord from the offset coordinate, so the user
                 # see the red cross in the position of the offset marker
 
+                # Update the cross position to the current position of the tracked object, so that, e.g., when a
+                # new marker is created, it is created in the current position of the object.
+                #
+                # Note: This is done regardless of multitarget mode, as the current position and orientation
+                # need to be always up-to-date for marker creation.
+                wx.CallAfter(Publisher.sendMessage, "Set cross focal point", position=coord)
+
                 # Update the slice viewers to show the current position of the tracked object.
                 if not self.navigation.multitarget:
                     wx.CallAfter(Publisher.sendMessage, "Update slices position", position=coord[:3])
-
-                    # Update the cross position to the current position of the tracked object, so that, e.g., when a
-                    # new marker is created, it is created in the current position of the object.
-                    wx.CallAfter(Publisher.sendMessage, "Set cross focal point", position=coord)
 
                     wx.CallAfter(
                         Publisher.sendMessage,
