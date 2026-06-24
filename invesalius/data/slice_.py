@@ -360,6 +360,9 @@ class Slice(metaclass=utils.Singleton):
 
     def OnRemoveMasks(self, mask_indexes):
         proj = Project()
+        from invesalius.data.commands import RemoveMaskCommand
+        from invesalius.data.history_manager import HistoryManager
+        
         for item in mask_indexes:
             # if the deleted mask is the current mask, cleans the current mask
             # and discard from buffer all datas related to mask.
@@ -372,11 +375,16 @@ class Slice(metaclass=utils.Singleton):
 
                 Publisher.sendMessage("Show mask", index=item, value=False)
                 Publisher.sendMessage("Reload actual slice")
-            proj.RemoveMask(item)
+            
+            cmd = RemoveMaskCommand(item, proj.mask_dict[item])
+            HistoryManager().execute_command(cmd)
 
     def OnDuplicateMasks(self, mask_indexes):
         proj = Project()
         mask_dict = proj.mask_dict
+        from invesalius.data.commands import DuplicateMaskCommand
+        from invesalius.data.history_manager import HistoryManager
+
         for index in mask_indexes:
             original_mask = mask_dict[index]
             # compute copy name
@@ -384,8 +392,12 @@ class Slice(metaclass=utils.Singleton):
             names_list = [mask_dict[i].name for i in mask_dict.keys()]
             new_name = utils.next_copy_name(name, names_list)
 
-            copy_mask = original_mask.copy(new_name)
-            self._add_mask_into_proj(copy_mask)
+            # copy dictionary
+            new_mask = original_mask.copy()
+            new_mask.name = new_name
+            
+            cmd = DuplicateMaskCommand(index, new_mask)
+            HistoryManager().execute_command(cmd)
 
     def OnEnableStyle(self, style):
         if style in const.SLICE_STYLES:
@@ -1564,12 +1576,12 @@ class Slice(metaclass=utils.Singleton):
             mask: A mask object.
             show: indicate if the mask will be shown.
         """
-        proj = Project()
-        index = proj.AddMask(mask)
-        mask.index = index
-
-        ## update gui related to mask
-        Publisher.sendMessage("Add mask", mask=mask)
+    def _add_mask_into_proj(self, mask, show=True):
+        from invesalius.data.commands import AddMaskCommand
+        from invesalius.data.history_manager import HistoryManager
+        
+        cmd = AddMaskCommand(mask)
+        HistoryManager().execute_command(cmd)
 
         if show:
             Publisher.sendMessage("Change mask selected", index=mask.index)
