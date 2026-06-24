@@ -265,7 +265,10 @@ class Mask:
             Publisher.sendMessage("Render volume viewer")
 
     def save_history(self, index, orientation, array, p_array, clean=False):
-        self.history.new_node(index, orientation, array, p_array, clean)
+        from invesalius.data.commands import MaskEditCommand
+        from invesalius.data.history_manager import HistoryManager
+        cmd = MaskEditCommand(self, index, orientation, array, p_array, clean)
+        HistoryManager().execute_command(cmd)
 
     def undo_history(self, actual_slices):
         self.history.undo(self.matrix, actual_slices)
