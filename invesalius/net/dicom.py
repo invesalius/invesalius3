@@ -17,7 +17,7 @@ import invesalius.utils as utils
 debug_logger()      
 
 class DicomNet:
-    def __init__(self, address: str, port: int, aetitle_call: str, aetitle: str):
+    def __init__(self, address: str, port: int, aetitle: str, aetitle_call: str="INVESALIUS"):
         self.SetHost(address)
         self.SetPort(port)
         self.SetAETitleCall(aetitle_call)
@@ -57,7 +57,8 @@ class DicomNet:
         """run CEcho to check if the server is alive."""
 
         try:
-            ae = AE()
+            print(self.port, self.address, self.aetitle, "echo")
+            ae = AE(self.aetitle_call)
             ae.add_requested_context(Verification)
 
             assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)

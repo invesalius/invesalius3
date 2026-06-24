@@ -62,6 +62,8 @@ CONFIG_INIT = {
     "robot": {
         "robot_ip_options": "",
     },
+    "server_aetitle": "INVESALIUS",
+    "server_port": 5000,
 }
 
 

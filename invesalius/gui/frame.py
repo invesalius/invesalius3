@@ -37,6 +37,7 @@ import invesalius.gui.import_bitmap_panel as imp_bmp
 import invesalius.gui.import_panel as imp
 import invesalius.gui.log as log
 import invesalius.gui.preferences as preferences
+import invesalius.gui.dicom_server_panel as dicom_server
 
 #  import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
@@ -699,6 +700,8 @@ class Frame(wx.Frame):
             self.ShowPreferences()
         elif id == const.ID_DICOM_NETWORK:
             self.ShowRetrieveDicomPanel()
+        elif id == const.ID_DICOM_SERVER:
+            self.ShowDicomServer()
         elif id in (const.ID_FLIP_X, const.ID_FLIP_Y, const.ID_FLIP_Z):
             axis = {const.ID_FLIP_X: 2, const.ID_FLIP_Y: 1, const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
@@ -896,6 +899,18 @@ class Frame(wx.Frame):
         aui_manager = self.aui_manager
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
         self.mw.SetPosition(pos)
+
+    def ShowDicomServer(self):
+        """ Show dicom server dialog. """
+
+        dicom_server_dialog = dicom_server.DicomServer(self)
+        if dicom_server_dialog.ShowModal() == wx.ID_OK:
+
+            dicom_server_dialog.Destroy()
+
+            session = ses.Session()
+            session.SetConfig('server_aetitle', dicom_server_dialog.ae_title)
+            session.SetConfig('server_port', dicom_server_dialog.port)
 
     def ShowPreferences(self, page=0):
         preferences_dialog = preferences.Preferences(self, page)
@@ -1632,6 +1647,12 @@ class MenuBar(wx.MenuBar):
         # TOOLS
         # tools_menu = wx.Menu()
 
+        # NETWORK
+        network_settings_menu = wx.Menu()
+        network_settings_menu.Append(const.ID_DICOM_SERVER, _("Dicom Server"))
+        #network_settings_menu.Append(const.ID_DICOM_NODE, _("Node"))
+        #network_settings_menu.Append(const.ID_DICOM_QUERY, _("Query"))
+
         # OPTIONS
         options_menu = wx.Menu()
         options_menu.Append(const.ID_PREFERENCES, _("Preferences"))
@@ -1683,6 +1704,7 @@ class MenuBar(wx.MenuBar):
         self.Append(options_menu, _("Options"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
+        self.Append(network_settings_menu, _("Network Settings"))
 
         plugins_menu.Bind(wx.EVT_MENU, self.OnPluginMenu)
 
