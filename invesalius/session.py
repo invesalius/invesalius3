@@ -82,6 +82,10 @@ class Session(metaclass=Singleton):
             "console_logging": 0,
             "console_logging_level": 0,
         }
+        
+        from invesalius.data.command import UndoManager
+        self.undo_manager = UndoManager()
+        
         self._exited_successfully_last_time = not self._ReadState()
         # If the state file was saved intentionally via "Store session", the
         # last exit was NOT a crash — override the flag so the recovery dialog
