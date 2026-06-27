@@ -17,17 +17,23 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import os
 import time
 from functools import partial
 
 import numpy as np
 
 try:
-    import Trekker  # noqa: F401
+    import Trekker.Trekker as Trekker  # noqa: F401
 
     has_trekker = True
 except ImportError:
-    has_trekker = False
+    try:
+        import Trekker  # noqa: F401
+
+        has_trekker = hasattr(Trekker, "initialize")
+    except ImportError:
+        has_trekker = False
 
 try:
     # TODO: the try-except could be done inside the mTMS() method call
@@ -37,6 +43,8 @@ try:
     has_mTMS = True
 except Exception:
     has_mTMS = False
+
+MTMS_DIDT_COUNT = 5
 
 import wx
 import wx.lib.masked.numctrl
@@ -88,6 +96,7 @@ class InnerTaskPanel(wx.Panel):
         self.meshes_file = None
         self.multilocus_coil = None
         self.coil = None
+        self.coil_set = False
         self.ci = None
         self.co = None
         self.sleep_nav = const.SLEEP_NAVIGATION
@@ -118,6 +127,11 @@ class InnerTaskPanel(wx.Panel):
         show_area.Bind(
             wx.EVT_CHECKBOX, partial(self.OnEnableShowAreaAboveThreshold, ctrl=show_area)
         )
+
+        show_edges = wx.CheckBox(self, -1, _("Show E-field contours"))
+        show_edges.SetValue(False)
+        show_edges.Enable(True)
+        show_edges.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfieldEdges, ctrl=show_edges))
 
         efield_tools = wx.CheckBox(self, -1, _("Enable Efield targeting tools"))
         efield_tools.SetValue(False)
@@ -337,6 +351,7 @@ class InnerTaskPanel(wx.Panel):
 
         line_cortex_markers = wx.BoxSizer(wx.HORIZONTAL)
         line_cortex_markers.Add(efield_cortex_markers, 1, wx.LEFT | wx.RIGHT, 2)
+        line_cortex_markers.Add(show_edges, 1, wx.LEFT | wx.RIGHT, 2)
         line_cortex_markers.Add(efield_save_automatically, 1, wx.LEFT | wx.RIGHT, 2)
         line_cortex_markers.Add(efield_for_targeting, 1, wx.LEFT | wx.RIGHT, 2)
 
@@ -376,11 +391,13 @@ class InnerTaskPanel(wx.Panel):
             self.Init_efield()
 
     def Init_efield(self):
+        coil_set = self.coil_set or self.IsMultilocusCoilset(self.coil)
+        self.coil_set = coil_set
         self.navigation.neuronavigation_api.initialize_efield(
             cortex_model_path=self.cortex_file,
             mesh_models_paths=self.meshes_file,
             coil_model_path=self.coil,
-            coil_set=False,
+            coil_set=coil_set,
             conductivities_inside=self.ci,
             conductivities_outside=self.co,
             dI_per_dt=self.dIperdt_list,
@@ -432,6 +449,10 @@ class InnerTaskPanel(wx.Panel):
         enable = ctrl.GetValue()
         Publisher.sendMessage("Show area above threshold", enable=enable)
 
+    def OnEnableEfieldEdges(self, evt, ctrl):
+        enable = ctrl.GetValue()
+        Publisher.sendMessage("Show Efield contours", enable=enable)
+
     def OnEnableEfieldTargetingTools(self, evt, ctrl):
         enable = ctrl.GetValue()
         Publisher.sendMessage("Enable Efield tools", enable=enable)
@@ -458,19 +479,39 @@ class InnerTaskPanel(wx.Panel):
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()
         coil_index = evt.GetSelection()
-        if coil_index == 6:
-            coil_set = True
-        else:
-            coil_set = False
+        coil_set = coil_index == len(self.multilocus_coil) - 1
         self.OnChangeCoil(self.multilocus_coil[coil_index], coil_set)
         # self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
         # Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
+
+    def IsMultilocusCoilset(self, coil_model_path):
+        if not coil_model_path or not self.multilocus_coil:
+            return False
+        coil_model_path = os.path.normpath(coil_model_path)
+        coilset_path = os.path.normpath(self.multilocus_coil[-1])
+        return coil_model_path == coilset_path
+
+    def IsMtmsCoilSelected(self):
+        return self.coil_set or self.IsMultilocusCoilset(self.coil)
+
+    def SelectMultilocusCoilset(self):
+        if not self.multilocus_coil:
+            return False
+        self.OnChangeCoil(self.multilocus_coil[-1], True)
+        return True
+
+    def GetUnitdIPerdt(self):
+        if self.IsMtmsCoilSelected():
+            return [1] * MTMS_DIDT_COUNT
+        return [1]
 
     def OnChangeCoil(self, coil_model_path, coil_set):
         self.navigation.neuronavigation_api.efield_coil(
             coil_model_path=coil_model_path, coil_set=coil_set
         )
+        self.navigation.MarkEfieldParametersChanged()
         self.coil = coil_model_path
+        self.coil_set = coil_set
         self.Send_meshes_coil_paths_to_report()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -499,13 +540,16 @@ class InnerTaskPanel(wx.Panel):
         self.surface_index = surface_index_cortex
         Publisher.sendMessage("Get Actor", surface_index=self.surface_index)
 
-    def OnGetEfieldPaths(self, path_meshes, cortex_file, meshes_file, coil, ci, co, dIperdt_list):
+    def OnGetEfieldPaths(
+        self, path_meshes, cortex_file, meshes_file, coil, ci, co, dIperdt_list, coil_set=False
+    ):
         self.path_meshes = path_meshes
         self.cortex_file = cortex_file
         self.meshes_file = meshes_file
         self.ci = ci
         self.co = co
         self.coil = coil
+        self.coil_set = coil_set
         self.dIperdt_list = dIperdt_list
 
     def OnGetMultilocusCoils(self, multilocus_coil_list):
@@ -609,6 +653,7 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+        self.navigation.MarkEfieldParametersChanged()
         self.Send_dI_per_dt_to_report(self.input_coils, self.ci, self.co)
 
     def OnEnterMtmsCoords(self, evt):
@@ -617,7 +662,12 @@ class InnerTaskPanel(wx.Panel):
         Publisher.sendMessage("Send mtms coords", mtms_coord=input_coord)
 
     def SenddI(self, dIs):
-        self.OnChangeCoil(self.multilocus_coil[6], True)
+        if not self.IsMtmsCoilSelected() and not self.SelectMultilocusCoilset():
+            return
+        dIs = list(dIs)
+        if len(dIs) != MTMS_DIDT_COUNT:
+            print(f"Expected {MTMS_DIDT_COUNT} mTMS dI values, got {len(dIs)}")
+            return
         input_dt = 1 / (float(self.input_dt.GetValue()) * 1e-6)
         # dIs[1] = -dIs[1]
         # dIs[2] = -dIs[2]
@@ -632,14 +682,17 @@ class InnerTaskPanel(wx.Panel):
         self.navigation.neuronavigation_api.set_dIperdt(
             dIperdt=self.input_coils,
         )
+        self.navigation.MarkEfieldParametersChanged()
         self.Send_dI_per_dt_to_report(self.input_coils, self.ci, self.co)
 
     def OnEfieldsForTargeting(self, evt, ctrl):
         if ctrl.GetValue():
+            dIperdt = self.GetUnitdIPerdt()
             self.navigation.neuronavigation_api.set_dIperdt(
-                dIperdt=[1, 1, 1, 1, 1],
+                dIperdt=dIperdt,
             )
-            self.Send_dI_per_dt_to_report([1, 1, 1, 1, 1], self.ci, self.co)
+            self.navigation.MarkEfieldParametersChanged()
+            self.Send_dI_per_dt_to_report(dIperdt, self.ci, self.co)
 
     def GetIds(self, dIs):
         self.SenddI(dIs)

@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 import itertools
 import os
+import re
 import time
 from functools import partial
 from typing import Optional
@@ -2790,6 +2791,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnMarkerFocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.SetCameraToFocusOnMarker)
+        marker_list_ctrl.Bind(wx.EVT_CHAR_HOOK, self.OnMarkerListKeyDown)
 
         self.marker_list_ctrl = marker_list_ctrl
         self.column_sorter = ColumnSorterMixin.__init__(
@@ -2834,6 +2836,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         brain_targets_list_ctrl.Bind(
             wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDownBrainTargets
         )
+        brain_targets_list_ctrl.Bind(wx.EVT_CHAR_HOOK, self.OnBrainTargetsKeyDown)
         self.brain_targets_list_ctrl = brain_targets_list_ctrl
         # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
         try:
@@ -2920,6 +2923,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             selection.append(next)
             next = self.marker_list_ctrl.GetNextSelected(next)
 
+        return selection
+
+    def __get_selected_brain_targets(self):
+        """Returns a (possibly empty) list of the selected items in the brain targets list control."""
+        selection = []
+        next = self.brain_targets_list_ctrl.GetFirstSelected()
+        while next != -1:
+            selection.append(next)
+            next = self.brain_targets_list_ctrl.GetNextSelected(next)
         return selection
 
     def __delete_multiple_markers(self, indexes):
@@ -3175,6 +3187,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Show 'Set as target'/'Unset target' menu item only if the marker is a coil target.
         if is_coil_target:
+            # 'Create target grid' menu item for coil targets.
+            grid_menu_item = menu_id.Append(unique_menu_id + 19, _("Create target grid"))
+            menu_id.Bind(wx.EVT_MENU, self.OnCreateTargetGrid, grid_menu_item)
+
             mep_menu_item = menu_id.Append(unique_menu_id + 4, _("Change MEP value"))
             menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEP, mep_menu_item)
             if is_active_target:
@@ -3273,40 +3289,64 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         menu_id.Destroy()
 
     def OnMouseRightDownBrainTargets(self, evt):
-        focused_marker_idx = self.brain_targets_list_ctrl.GetFocusedItem()
-        focused_marker = self.currently_focused_marker.brain_target_list[focused_marker_idx]
-        self.focused_brain_marker = focused_marker
-        unique_menu_id = 1
+        if not self.currently_focused_marker:
+            return
 
-        # Check if the currently focused marker is the active target.
-        is_active_target = focused_marker["is_target"]
+        selected_indices = self.__get_selected_brain_targets()
+        selection_count = len(selected_indices)
+
+        # For single selection, set the focused brain marker for single-item actions.
+        if selection_count == 1:
+            focused_marker_idx = selected_indices[0]
+            focused_marker = self.currently_focused_marker.brain_target_list[focused_marker_idx]
+            self.focused_brain_marker = focused_marker
+        elif selection_count == 0:
+            # Fall back to the focused item if nothing is explicitly selected.
+            focused_marker_idx = self.brain_targets_list_ctrl.GetFocusedItem()
+            if focused_marker_idx != -1:
+                focused_marker = self.currently_focused_marker.brain_target_list[focused_marker_idx]
+                self.focused_brain_marker = focused_marker
+                selection_count = 1
 
         # Create the context menu.
         menu_id = wx.Menu()
 
-        edit_id = menu_id.Append(unique_menu_id, _("Change label"))  # Use non-zero ID
-        menu_id.Bind(wx.EVT_MENU, self.ChangeLabelBrainTarget, edit_id)
+        # Single-item actions: only shown when exactly 1 target is selected.
+        if selection_count == 1:
+            edit_id = menu_id.Append(wx.ID_ANY, _("Change label"))
+            menu_id.Bind(wx.EVT_MENU, self.ChangeLabelBrainTarget, edit_id)
 
-        delete_id = menu_id.Append(unique_menu_id + 2, _("Delete"))
-        menu_id.Bind(wx.EVT_MENU, self.OnDeleteSelectedBrainTarget, delete_id)
-
-        menu_id.AppendSeparator()
-
-        mep_menu_item = menu_id.Append(unique_menu_id + 3, _("Change MEP value"))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEPBrainTarget, mep_menu_item)
-
-        create_coil_target_menu_item = menu_id.Append(unique_menu_id + 4, _("Create coil target"))
-        menu_id.Bind(
-            wx.EVT_MENU, self.OnCreateCoilTargetFromBrainTargets, create_coil_target_menu_item
-        )
-
-        if has_mTMS:
-            send_brain_target_menu_item = menu_id.Append(
-                unique_menu_id + 5, _("Send brain target to mTMS")
+        # Delete option — label adapts to count.
+        if selection_count == 1:
+            delete_id = menu_id.Append(wx.ID_ANY, _("Delete target"))
+            menu_id.Bind(wx.EVT_MENU, self.OnDeleteSelectedBrainTarget, delete_id)
+        elif selection_count > 1:
+            delete_id = menu_id.Append(
+                wx.ID_ANY, _("Delete selected targets (%d)") % selection_count
             )
-            menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu_item)
+            menu_id.Bind(wx.EVT_MENU, self.OnDeleteSelectedBrainTarget, delete_id)
 
-        menu_id.AppendSeparator()
+        # "Delete all" is always available.
+        delete_all_id = menu_id.Append(wx.ID_ANY, _("Delete all targets"))
+        menu_id.Bind(wx.EVT_MENU, self.OnDeleteAllBrainTargets, delete_all_id)
+
+        # Single-item actions below the separator.
+        if selection_count == 1:
+            menu_id.AppendSeparator()
+
+            mep_menu_item = menu_id.Append(wx.ID_ANY, _("Change MEP value"))
+            menu_id.Bind(wx.EVT_MENU, self.OnMenuChangeMEPBrainTarget, mep_menu_item)
+
+            create_coil_target_menu_item = menu_id.Append(wx.ID_ANY, _("Create coil target"))
+            menu_id.Bind(
+                wx.EVT_MENU, self.OnCreateCoilTargetFromBrainTargets, create_coil_target_menu_item
+            )
+
+            if has_mTMS:
+                send_brain_target_menu_item = menu_id.Append(
+                    wx.ID_ANY, _("Send brain target to mTMS")
+                )
+                menu_id.Bind(wx.EVT_MENU, self.OnSendBrainTarget, send_brain_target_menu_item)
 
         self.PopupMenu(menu_id)
         menu_id.Destroy()
@@ -3389,6 +3429,22 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.marker_list_ctrl.SetMinSize((self.marker_list_ctrl.GetSize()[0], width))
         self.brain_targets_list_ctrl.SetSize((self.marker_list_ctrl.GetSize()[0], width))
         self.marker_list_ctrl.SetSize((self.marker_list_ctrl.GetSize()[0], width))
+
+    def __restore_default_marker_view(self):
+        """
+        Restore the marker list to its default view state.
+
+        This hides the brain targets list, disables the vector field assembly,
+        and resizes the marker list control to full height. Called when all
+        markers are deleted or when the last marker with brain targets is removed.
+        """
+        self.currently_focused_marker = None
+        Publisher.sendMessage("Set vector field assembly visibility", enabled=False)
+        self.brain_targets_list_ctrl.DeleteAllItems()
+        self.brain_targets_list_ctrl.Hide()
+        self.ResizeListCtrl(self.marker_list_height)
+        Publisher.sendMessage("Update navigation panel")
+        self.Update()
 
     # Called when a marker on the list gets the focus by the user left-clicking on it.
     def OnMarkerFocused(self, evt):
@@ -3481,6 +3537,43 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.markers.CreateCoilTargetFromCoilPose(marker)
 
+    def OnCreateTargetGrid(self, evt):
+        """Open the grid configuration dialog and create a target grid around the
+        currently focused coil target marker."""
+        list_index = self.marker_list_ctrl.GetFocusedItem()
+        if list_index == -1:
+            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+            return
+
+        marker = self.__get_marker(list_index)
+
+        if marker.marker_type != MarkerType.COIL_TARGET:
+            wx.MessageBox(_("Please select a coil target."), _("InVesalius 3"))
+            return
+
+        proj = prj.Project()
+        if not proj.surface_dict:
+            wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
+            return
+
+        # Show the grid configuration dialog.
+        grid_dlg = dlg.GridConfigDialog(self)
+        if grid_dlg.ShowModal() == wx.ID_OK:
+            config = grid_dlg.GetGridConfig()
+            try:
+                self.markers.CreateGridFromTarget(
+                    reference_marker=marker,
+                    grid_type=config["type"],
+                    rows=config.get("rows", 3),
+                    cols=config.get("cols", 3),
+                    rings=config.get("rings", 2),
+                    points_per_ring=config.get("points_per_ring", 6),
+                    spacing=config["spacing"],
+                )
+            except ValueError as e:
+                wx.MessageBox(str(e), _("InVesalius 3"), wx.OK | wx.ICON_ERROR)
+        grid_dlg.Destroy()
+
     def UpdateMainCoilCombobox(self, done):
         select_main_coil = self.select_main_coil
         if done:
@@ -3549,6 +3642,22 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             if current_uuid == target_uuid:
                 self.itemDataMap[key][const.TARGET_COLUMN] = "Yes"
 
+    @staticmethod
+    def _make_copy_label(original_label: str, existing_labels: list[str]) -> str:
+        """Generate a duplicate label that avoids stacking, e.g. 'M (copy)', 'M (copy 2)'."""
+        # Strip an existing " (copy)" or " (copy N)" suffix so we always work from the base.
+        base = re.sub(r" \(copy(?: \d+)?\)$", "", original_label)
+
+        candidate = f"{base} (copy)"
+        if candidate not in existing_labels:
+            return candidate
+
+        # Find the next available number.
+        n = 2
+        while f"{base} (copy {n})" in existing_labels:
+            n += 1
+        return f"{base} (copy {n})"
+
     def _DuplicateMarker(
         self, marker_idx: Optional[int] = None, duplicate_brain_target_list: bool = True
     ) -> None:
@@ -3576,13 +3685,23 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(marker_idx)
         new_marker = marker.duplicate()
 
-        # Update duplicate attributes
-        new_marker.label = f"{new_marker.label} (copy)"
+        # Generate a unique copy label that avoids stacking.
+        existing_labels = [m.label for m in self.markers.list]
+        new_marker.label = self._make_copy_label(new_marker.label, existing_labels)
+
         if not duplicate_brain_target_list:
             new_marker.brain_target_list = []
+        else:
+            # Regenerate UUIDs for each brain target to avoid collisions with the original.
+            for brain_target in new_marker.brain_target_list:
+                brain_target["marker_uuid"] = str(uuid.uuid4())
 
         # Add the new marker
         self.markers.AddMarker(new_marker, render=True, focus=True)
+
+        # Scroll the marker list to ensure the duplicated marker is visible.
+        new_index = self.marker_list_ctrl.GetItemCount() - 1
+        self.marker_list_ctrl.EnsureVisible(new_index)
 
         # Update target if necessary
         if set_target:
@@ -3591,12 +3710,51 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 self.markers.UnsetTarget(current_target.marker_id)
             self.markers.SetTarget(new_marker.marker_id)
 
+        # Force brain target visualization refresh to ensure correct rendering.
+        if new_marker.brain_target_list:
+            self.OnMarkerFocused(evt=None)
+
+    def OnMarkerListKeyDown(self, evt):
+        """Handle keyboard shortcuts on the marker list (Ctrl/Cmd+D to duplicate)."""
+        key_code = evt.GetKeyCode()
+        if (
+            key_code in (ord("D"), ord("d"))
+            and (evt.ControlDown() or evt.CmdDown())
+            and not evt.ShiftDown()
+        ):
+            # Handle Ctrl+D for duplication
+            self.OnMenuDuplicateMarker(None)
+
+        # Always skip the event to allow other handlers (like menu accelerators) to process it
+        evt.Skip()
+
     def OnMenuDuplicateMarker(self, evt):
         marker_idx = self.marker_list_ctrl.GetFocusedItem()
         if marker_idx == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
             return
-        self._DuplicateMarker(marker_idx)
+
+        marker = self.__get_marker(marker_idx)
+
+        # If the marker has brain targets, ask the user whether to duplicate them.
+        if marker.brain_target_list:
+            dlg_confirm = wx.MessageDialog(
+                self,
+                _("Duplicate associated brain targets as well?"),
+                _("Duplicate Marker"),
+                wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION,
+            )
+            result = dlg_confirm.ShowModal()
+            dlg_confirm.Destroy()
+
+            if result == wx.ID_CANCEL:
+                return
+
+            duplicate_brain_targets = result == wx.ID_YES
+            self._DuplicateMarker(marker_idx, duplicate_brain_target_list=duplicate_brain_targets)
+        else:
+            # No brain targets — duplicate directly without prompting.
+            self._DuplicateMarker(marker_idx)
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.indexes_saved_lists = []
@@ -3730,8 +3888,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.markers.SetPointOfInterest(marker_id)
         Publisher.sendMessage(
-            "Send efield target position on brain",
-            marker_id=marker_id,
+            "Set as Efield target at cortex",
             position=position,
             orientation=orientation,
         )
@@ -3824,6 +3981,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         if marker_coil.brain_target_list:
             self.marker_list_ctrl.SetItemBackgroundColour(list_index, wx.Colour(251, 243, 226))
+            self.marker_list_ctrl.SetItemTextColour(list_index, wx.Colour(0, 0, 0))
         self.OnMarkerFocused(evt=None)
         self.markers.SaveState()
         dialog.Destroy()
@@ -3885,6 +4043,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         # Update the marker list control.
         if marker.brain_target_list:
             self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(251, 243, 226))
+            self.marker_list_ctrl.SetItemTextColour(idx, wx.Colour(0, 0, 0))
         else:
             self.marker_list_ctrl.SetItemBackgroundColour(idx, "white")
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, "")
@@ -4034,9 +4193,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 return
         self.markers.Clear()
         self.itemDataMap.clear()
-        Publisher.sendMessage("Set vector field assembly visibility", enabled=False)
-        self.brain_targets_list_ctrl.DeleteAllItems()
-        self.brain_targets_list_ctrl.Hide()
+        self.__restore_default_marker_view()
 
     def OnDeleteFiducialMarker(self, label):
         indexes = []
@@ -4070,22 +4227,80 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             focus_index = min(indexes[0], remaining_count - 1)
             self.FocusOnMarker(focus_index)
         else:
-            self.currently_focused_marker = None  # disable focus if no markers left
+            # No markers left - restore the default view
+            self.__restore_default_marker_view()
 
     def OnDeleteSelectedBrainTarget(self, evt):
-        list_index = self.brain_targets_list_ctrl.GetFocusedItem()
-        if list_index == -1:
-            wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+        if not self.currently_focused_marker:
             return
+
+        selected_indices = self.__get_selected_brain_targets()
+
+        # Fall back to the focused item if nothing is explicitly selected (single-click compat).
+        if not selected_indices:
+            focused = self.brain_targets_list_ctrl.GetFocusedItem()
+            if focused == -1:
+                wx.MessageBox(_("No data selected."), _("InVesalius 3"))
+                return
+            selected_indices = [focused]
+
+        # Confirmation dialog for bulk deletion (more than 1 target).
+        if len(selected_indices) > 1:
+            msg = _("Delete %d brain targets?") % len(selected_indices)
+            result = dlg.ShowConfirmationDialog(msg=msg)
+            if result != wx.ID_OK:
+                return
+
+        # Collect UUIDs of all selected brain targets.
+        uuids_to_delete = set()
+        for idx in selected_indices:
+            uuid = self.brain_targets_list_ctrl.GetItemText(idx, const.BRAIN_UUID)
+            uuids_to_delete.add(uuid)
+
+        # Filter out the deleted entries in one pass.
         brain_target_list = self.currently_focused_marker.brain_target_list
-        target_uuid = self.brain_targets_list_ctrl.GetItemText(list_index, const.BRAIN_UUID)
-        # Remove entry with the specified UUID
-        markers = [
-            marker for marker in brain_target_list if marker.get("marker_uuid") != target_uuid
+        self.currently_focused_marker.brain_target_list = [
+            marker
+            for marker in brain_target_list
+            if marker.get("marker_uuid") not in uuids_to_delete
         ]
-        self.currently_focused_marker.brain_target_list = markers
         self.OnMarkerFocused(evt=None)
         self.markers.SaveState()
+
+    def OnDeleteAllBrainTargets(self, evt):
+        """Delete all brain targets for the currently focused parent marker."""
+        if not self.currently_focused_marker:
+            return
+
+        target_count = len(self.currently_focused_marker.brain_target_list)
+        if target_count == 0:
+            return
+
+        msg = _("Delete all %d brain targets?") % target_count
+        result = dlg.ShowConfirmationDialog(msg=msg)
+        if result != wx.ID_OK:
+            return
+
+        self.currently_focused_marker.brain_target_list = []
+        self.OnMarkerFocused(evt=None)
+        self.markers.SaveState()
+
+    def OnBrainTargetsKeyDown(self, evt):
+        """Handle keyboard shortcuts for the brain targets sub-list."""
+        if not self.brain_targets_list_ctrl.HasFocus():
+            evt.Skip()
+            return
+
+        key_code = evt.GetKeyCode()
+
+        if key_code == wx.WXK_DELETE or key_code == wx.WXK_BACK:
+            self.OnDeleteSelectedBrainTarget(evt)
+        elif key_code in (ord("A"), ord("a")) and (evt.ControlDown() or evt.CmdDown()):
+            # Select all items in the brain targets list.
+            for i in range(self.brain_targets_list_ctrl.GetItemCount()):
+                self.brain_targets_list_ctrl.Select(i)
+        else:
+            evt.Skip()
 
     def GetNextMarkerLabel(self):
         return self.markers.GetNextMarkerLabel()
@@ -4392,7 +4607,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             label = self.GetNextMarkerLabel()
 
         marker = Marker()
-
         marker.position = position or self.current_position
         marker.orientation = orientation or self.current_orientation
 
@@ -4458,6 +4672,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         if marker.brain_target_list:
             self.marker_list_ctrl.SetItemBackgroundColour(num_items, wx.Colour(251, 243, 226))
+            self.marker_list_ctrl.SetItemTextColour(num_items, wx.Colour(0, 0, 0))
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 

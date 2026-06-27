@@ -20,6 +20,7 @@
 import os
 import queue
 import sys
+import time
 
 import numpy as np
 import wx
@@ -73,6 +74,7 @@ from vtkmodules.vtkIOImage import (
 from vtkmodules.vtkRenderingAnnotation import vtkAnnotatedCubeActor, vtkAxesActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
+    vtkAssembly,
     vtkCompositePolyDataMapper,
     vtkPointPicker,
     vtkPolyDataMapper,
@@ -113,8 +115,10 @@ if sys.platform == "win32":
 
         _has_win32api = True
     except ImportError:
+        win32api = None  # type: ignore[assignment]
         _has_win32api = False
 else:
+    win32api = None  # type: ignore[assignment]
     _has_win32api = False
 
 PROP_MEASURE = 0.8
@@ -138,11 +142,24 @@ class Viewer(wx.Panel):
 
         self.static_markers_efield = []
         self.plot_vector = None
+        self.efield_data_revision = None
+        self.position_max_revision = None
         self.style = None
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor = interactor
         self.interactor.SetRenderWhenDisabled(True)
+
+        self._fps_last_time = time.monotonic()
+        self._fps_frames = 0
+        self.fps_text = vtku.Text()
+        self.fps_text.SetSize(const.TEXT_SIZE_SMALL)
+        self.fps_text.SetPosition(
+            (const.TEXT_POS_LEFT_UP[0], min(0.995, const.TEXT_POS_LEFT_UP[1] + 0.02))
+        )
+        self.fps_text.SetValue("FPS: --")
+        self._fps_text_visible = True
+        self.nav_status = False
 
         self.enable_style(const.STATE_DEFAULT)
 
@@ -193,21 +210,16 @@ class Viewer(wx.Panel):
             self.text.SetSize(int(round(font_size, 0)))
         self.ren.AddActor(self.text.actor)
 
+        self.ren.AddActor(self.fps_text.actor)
+        self.fps_text.Hide()
+
         #  self.polygon = Polygon(None, is_3d=False)
 
         # Enable canvas for ruler to be drawn
         self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer)
         self.prev_view_port_height = None
-        # self.canvas.draw_list.append(self.text)
-        # self.canvas.draw_list.append(self.polygon)
-        # axes = vtkAxesActor()
-        # axes.SetXAxisLabelText('x')
-        # axes.SetYAxisLabelText('y')
-        # axes.SetZAxisLabelText('z')
-        # axes.SetTotalLength(50, 50, 50)
-        #
-        # self.ren.AddActor(axes)
         self.ruler = None
+        self.orientation_widget = None  # VTK orientation cube widget
 
         self.slice_plane = None
 
@@ -236,8 +248,6 @@ class Viewer(wx.Panel):
 
         self.use_volumetric_camera = False
         self.camera_show_object = None
-
-        self.nav_status = False
 
         # Pointer is the ball that is shown to indicate the 3D point in the volume viewer that corresponds to the
         # selected slice positions. The same pointer is also used to show the point selected from the 3D viewer by
@@ -275,6 +285,12 @@ class Viewer(wx.Panel):
         self.dummy_ref_actor = None
         self.dummy_obj_actor = None
         self.target_mode = False
+        self._target_camera_last_update = 0.0
+        self._target_camera_update_interval = 1.0 / 20.0
+        self._target_guide_last_update = 0.0
+        self._target_guide_update_interval = 1.0 / 20.0
+        self._target_guide_deadband = 2.0
+        self._target_guide_last_signature = None
 
         # Set the angle and distance thresholds.
         session = ses.Session()
@@ -324,6 +340,7 @@ class Viewer(wx.Panel):
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
+        self.last_efield_cell_id = None
         self.colors_init = vtkUnsignedCharArray()
         self.plot_no_connection = False
 
@@ -336,7 +353,10 @@ class Viewer(wx.Panel):
         self.GoGEfieldVector = None
         self.vectorfield_actor = None
         self.efield_scalar_bar = None
+        self.edge_fill_actor = None
         self.edge_actor = None
+        self.show_efield_edges = False
+        self.tracts_status = False
         # self.dummy_efield_coil_actor = None
         self.target_at_cortex = None
         self.SpreadEfieldFactorTextActor = None
@@ -348,6 +368,11 @@ class Viewer(wx.Panel):
         self.save_automatically = False
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
+
+        # SSAO state tracking
+        self.ssao_enabled = False
+        self.ssao_pass = None
+        self.ssao_before_measurement = False  # Track SSAO state before entering measurement mode
 
         # self.renderers = (self.target_guide_renderer, ren, canvas_renderer)
 
@@ -362,6 +387,18 @@ class Viewer(wx.Panel):
         print(len(self.renderers))
 
         Publisher.sendMessage("Press target mode button", pressed=False)
+        self._update_fps_visibility()
+        # Request the orientation cube visibility status with a small delay
+        # to ensure the interactor has time to initialize during app startup.
+        wx.CallLater(1000, Publisher.sendMessage, "Send orientation cube visibility status")
+
+    def _update_fps_visibility(self):
+        show_fps = (
+            self._fps_text_visible
+            and self.nav_status
+            and getattr(self, "state", None) == const.STATE_NAVIGATION
+        )
+        self.fps_text.Show(show_fps)
 
     def UpdateCanvas(self):
         if self.canvas is not None:
@@ -395,6 +432,182 @@ class Viewer(wx.Panel):
 
     def OnShowRuler(self):
         self.ShowRuler()
+
+    def OnShowOrientationCube(self, status):
+        """
+        Receive the requested visibility state for the orientation cube.
+        """
+        # Track the intended state to handle retry loop cancellation
+        self._cube_request_on = status
+
+        if status:
+            # When no 3D surface exists yet, force the canonical front camera so
+            # the cube starts with "A" (anterior) facing the viewer.
+            if not self.view_angle:
+                self.SetViewAngle(const.VOL_FRONT)
+
+            # FORCE RE-CREATION to fix "1st click" and "2nd click" synchronization issues
+            if self.orientation_widget:
+                try:
+                    self.orientation_widget.SetEnabled(0)
+                except:
+                    pass
+                self.orientation_widget = None
+
+            self._cube_retries = 0
+            self._ShowOrientationCube()
+        else:
+            if self.orientation_widget:
+                self.orientation_widget.SetEnabled(0)
+                # Remove renderer observer so we stop updating a hidden cube.
+                tag = getattr(self, "_cube_render_observer_tag", None)
+                if tag is not None:
+                    try:
+                        self.ren.RemoveObserver(tag)
+                    except Exception:
+                        pass
+                    self._cube_render_observer_tag = None
+            self.UpdateRender()
+
+    def _ShowOrientationCube(self):
+        """
+        Build and enable the 3D orientation cube (anatomical directions).
+        """
+        if not getattr(self, "_cube_request_on", False):
+            return
+
+        if not self.interactor:
+            wx.CallLater(100, self._ShowOrientationCube)
+            return
+
+        if not self.interactor.GetInitialized():
+            # Interactor not ready yet – retry up to 200 times (approx 20s total).
+            # Force a render attempt to trigger initialization.
+            self.interactor.Render()
+            retries = getattr(self, "_cube_retries", 0)
+            if retries < 200:
+                self._cube_retries = retries + 1
+                wx.CallLater(100, self._ShowOrientationCube)
+            else:
+                import logging
+
+                logging.warning("Orientation cube failed to initialize: Interactor timeout")
+                Publisher.sendMessage("Set orientation cube state", status=False)
+                self._cube_retries = 0
+            return
+
+        try:
+            # Build the annotated cube actor with anatomical labels.
+            cube = vtkAnnotatedCubeActor()
+
+            # Canonical anatomical mapping:
+            # X axis -> Left/Right, Y axis -> Posterior/Anterior, Z axis -> Top/Bottom.
+            # With VOL_FRONT camera (0, -1, 0), the Y- face is visible => "A".
+            cube.GetXPlusFaceProperty().SetColor(0.7, 0.1, 0.1)  # L – Left
+            cube.GetXMinusFaceProperty().SetColor(0.7, 0.1, 0.1)  # R – Right
+            cube.GetYPlusFaceProperty().SetColor(0.1, 0.7, 0.1)  # P – Posterior
+            cube.GetYMinusFaceProperty().SetColor(0.1, 0.7, 0.1)  # A – Anterior
+            cube.GetZPlusFaceProperty().SetColor(0.1, 0.1, 0.7)  # T – Top
+            cube.GetZMinusFaceProperty().SetColor(0.1, 0.1, 0.7)  # B – Bottom
+            cube.GetTextEdgesProperty().SetColor(0.5, 0.5, 0.5)
+
+            proj = prj.Project()
+            if proj.original_orientation == const.SAGITAL:
+                x_plus, x_minus = "L", "R"
+                patient_orient = getattr(proj, "patient_orientation", None)
+
+                if patient_orient is not None and len(patient_orient) == 6:
+                    row_y, row_z = patient_orient[1], patient_orient[2]
+                    col_y, col_z = patient_orient[4], patient_orient[5]
+                    normal_x = (row_y * col_z) - (row_z * col_y)
+
+                    if normal_x < 0:
+                        x_plus, x_minus = "R", "L"
+                else:
+                    # Maintainer fallback request if patient_orientation is missing
+                    x_plus, x_minus = "R", "L"
+
+                cube.SetXPlusFaceText(_(x_plus))
+                cube.SetXMinusFaceText(_(x_minus))
+                cube.SetYPlusFaceText(_("A"))
+                cube.SetYMinusFaceText(_("P"))
+            else:
+                cube.SetXPlusFaceText(_("L"))
+                cube.SetXMinusFaceText(_("R"))
+                cube.SetYPlusFaceText(_("P"))
+                cube.SetYMinusFaceText(_("A"))
+            # Use built-in face text for T/B.
+            # SetZFaceTextRotation applies the SAME angle to both Z faces; since T (+Z)
+            # and B (-Z) have opposite normals, +90 makes T upright but B upside-down.
+            # _UpdateOrientationCubeZTextRotation() switches between +90 and -90 on
+            # every render based on the camera's Z position relative to the focal point,
+            # so whichever Z face is currently visible always appears upright.
+            cube.SetZPlusFaceText(_("T"))
+            cube.SetZMinusFaceText(_("B"))
+            cube.SetZFaceTextRotation(90)  # initial default; updated dynamically
+            # Store reference so _UpdateOrientationCubeZTextRotation can reach the actor.
+            self._orientation_cube_actor = cube
+
+            # Wrap in vtkAssembly to ensure the orientation is preserved.
+            assembly = vtkAssembly()
+            assembly.AddPart(cube)
+
+            widget = vtkOrientationMarkerWidget()
+            widget.SetOrientationMarker(assembly)
+            widget.SetViewport(0.85, 0.0, 1.0, 0.15)  # Bottom-right corner
+            widget.SetInteractor(self.interactor)
+            widget.SetEnabled(1)
+            widget.InteractiveOff()  # Fixed position – does not move with mouse
+            self.orientation_widget = widget
+
+            # Reset retries once successfully shown
+            self._cube_retries = 0
+
+            # Add a renderer StartEvent observer so _UpdateOrientationCubeZTextRotation
+            # is called before EVERY render — including those from VTK mouse-rotation
+            # events that bypass InVesalius's UpdateRender().  Without this, the
+            # Z-face text rotation can get stuck at the wrong value whenever the cube
+            # is first created (skull may have just changed the focal point) and not
+            # get corrected until the next Publisher-triggered render.
+            existing_tag = getattr(self, "_cube_render_observer_tag", None)
+            if existing_tag is not None:
+                try:
+                    self.ren.RemoveObserver(existing_tag)
+                except Exception:
+                    pass
+            self._cube_render_observer_tag = self.ren.AddObserver(
+                "StartEvent", lambda *_: self._UpdateOrientationCubeZTextRotation()
+            )
+
+            self._UpdateOrientationCubeZTextRotation()
+            self.UpdateRender()
+        except Exception as e:
+            import logging
+
+            logging.error("Failed to show orientation cube: %s", e)
+
+    def _UpdateOrientationCubeZTextRotation(self):
+        """
+        Dynamically keep Z-face letters (T/B) upright by switching
+        SetZFaceTextRotation between +90 and -90 based on the camera position.
+
+        Reason: vtkAnnotatedCubeActor exposes only ONE Z-face rotation value
+        that applies identically to both the T (+Z) and B (-Z) faces.  Because
+        those faces have opposite normals, +90 makes T upright but leaves B
+        rotated 180°, while -90 does the reverse.  We resolve this by switching
+        the value on every render so that whichever face the camera is looking
+        at always appears upright.
+        """
+        cube = getattr(self, "_orientation_cube_actor", None)
+        if cube is None:
+            return
+        camera = self.ren.GetActiveCamera()
+        cam_z = camera.GetPosition()[2]
+        focal_z = camera.GetFocalPoint()[2]
+        # Camera above focal point → T face is towards camera → use +90
+        # Camera below focal point → B face is towards camera → use -90
+        rotation = 90 if cam_z >= focal_z else -90
+        cube.SetZFaceTextRotation(rotation)
 
     def OnInteractorEvent(self, sender, event):
         if self.canvas and self.ruler and self.ruler in self.canvas.draw_list:
@@ -445,7 +658,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnShowRuler, "Show rulers on viewers")
         Publisher.subscribe(self.OnHideRuler, "Hide rulers on viewers")
         Publisher.subscribe(self.OnRulerVisibilityStatus, "Receive ruler visibility status")
+        Publisher.subscribe(self.OnShowOrientationCube, "Show orientation cube")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.FocusCamera, "Focus volume camera")
 
         Publisher.subscribe(self.RemoveAllActors, "Remove all volume actors")
 
@@ -528,6 +743,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateEfieldROISize, "Update Efield ROI size")
         Publisher.subscribe(self.SetEfieldTargetAtCortex, "Set as Efield target at cortex")
         Publisher.subscribe(self.EnableShowEfieldAboveThreshold, "Show area above threshold")
+        Publisher.subscribe(self.ShowEfieldContours, "Show Efield contours")
         Publisher.subscribe(self.EnableEfieldTools, "Enable Efield tools")
         Publisher.subscribe(self.ClearTargetAtCortex, "Clear efield target at cortex")
         Publisher.subscribe(self.CoGEforCortexMarker, "Get Cortex position")
@@ -540,7 +756,13 @@ class Viewer(wx.Panel):
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
+        Publisher.subscribe(self.UpdateTractSeedBasedEfield, "Update tract seed based efield")
         Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
+
+        # SSAO related
+        Publisher.subscribe(self._EnableSSAO, "Enable SSAO")
+        Publisher.subscribe(self._DisableSSAO, "Disable SSAO")
+        Publisher.subscribe(self._ApplySSAOAfterProjectLoad, "Project loaded successfully")
 
     def get_vtk_mouse_position(self):
         """
@@ -745,7 +967,7 @@ class Viewer(wx.Panel):
             Publisher.sendMessage("Begin busy cursor")
             if _has_win32api:
                 utils.touch(filename)
-                win_filename = win32api.GetShortPathName(filename)
+                win_filename = win32api.GetShortPathName(filename)  # type: ignore
                 self._export_picture(orientation, win_filename, filetype)
             else:
                 self._export_picture(orientation, filename, filetype)
@@ -792,6 +1014,15 @@ class Viewer(wx.Panel):
             )
 
     def OnCloseProject(self):
+        # Disable the orientation cube widget cleanly to prevent visualization
+        # artifacts across projects, but leave the object intact so the Python
+        # GC can clean it up safely during application exit without segfaulting.
+        if self.orientation_widget is not None:
+            try:
+                self.orientation_widget.SetEnabled(0)
+            except Exception:
+                pass
+
         if self.raycasting_volume:
             self.raycasting_volume = False
 
@@ -809,17 +1040,30 @@ class Viewer(wx.Panel):
 
     def OnHideText(self):
         self.text.Hide()
+        self._fps_text_visible = False
+        self._update_fps_visibility()
         self.UpdateRender()
 
     def OnShowText(self):
         if self.on_wl:
             self.text.Show()
-            self.UpdateRender()
+        self._fps_text_visible = True
+        self._update_fps_visibility()
+        self.UpdateRender()
 
     def AddActors(self, actors):
         "Inserting actors"
+        if not actors:
+            return
+        from vtkmodules.vtkRenderingCore import vtkActor2D
+
         for actor in actors:
-            self.ren.AddActor(actor)
+            if actor is None:
+                continue
+            if isinstance(actor, vtkActor2D):
+                self.ren.AddActor2D(actor)
+            else:
+                self.ren.AddActor(actor)
 
     def RemoveVolume(self):
         volumes = self.ren.GetVolumes()
@@ -832,8 +1076,15 @@ class Viewer(wx.Panel):
 
     def RemoveActors(self, actors):
         "Remove a list of actors"
+        from vtkmodules.vtkRenderingCore import vtkActor2D
+
         for actor in actors:
-            self.ren.RemoveActor(actor)
+            if actor is None:
+                continue
+            if isinstance(actor, vtkActor2D):
+                self.ren.RemoveActor2D(actor)
+            else:
+                self.ren.RemoveActor(actor)
 
     def AddPointReference(self, position, radius=1, colour=(1, 0, 0)):
         """
@@ -1019,6 +1270,9 @@ class Viewer(wx.Panel):
         self.robot_warnings_text = robot_warnings_text
 
         self.CreateTargetGuide()
+        self._target_camera_last_update = 0.0
+        self._target_guide_last_update = 0.0
+        self._target_guide_last_signature = None
 
         self.ren.ResetCamera()
         self.SetCameraTarget()
@@ -1058,6 +1312,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.robot_warnings_text.actor)
 
         self.camera_show_object = None
+        self._target_guide_last_signature = None
         if self.actor_peel:
             if self.object_orientation_torus_actor:
                 self.object_orientation_torus_actor.SetVisibility(1)
@@ -1082,6 +1337,7 @@ class Viewer(wx.Panel):
     def OnUpdateCoilPose(self, m_img, coord):
         # vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
+            now = time.monotonic()
             distance_to_target = distance.euclidean(
                 coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
             )
@@ -1091,13 +1347,14 @@ class Viewer(wx.Panel):
             if self.distance_text is not None:
                 self.distance_text.SetValue(formatted_distance)
 
-            self.ren.ResetCamera()
-            self.SetCameraTarget()
-            if distance_to_target > 100:
-                distance_to_target = 100
-            # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
-            # the distance between 1 and 100 mm
-            self.ren.GetActiveCamera().Zoom((-0.0404 * distance_to_target) + 5.0404)
+            if now - self._target_camera_last_update >= self._target_camera_update_interval:
+                self.ren.ResetCamera()
+                self.SetCameraTarget()
+                zoom_distance = min(distance_to_target, 100)
+                # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
+                # the distance between 1 and 100 mm
+                self.ren.GetActiveCamera().Zoom((-0.0404 * zoom_distance) + 5.0404)
+                self._target_camera_last_update = now
 
             is_under_distance_threshold = distance_to_target <= self.distance_threshold
 
@@ -1135,10 +1392,6 @@ class Viewer(wx.Panel):
                 distance_to_target[5] = -const.ARROW_UPPER_LIMIT
             coordrz_arrow = const.ARROW_SCALE * distance_to_target[5]
 
-            if self.guide_arrow_actors is not None:
-                for actor in self.guide_arrow_actors:
-                    self.target_guide_renderer.RemoveActor(actor)
-
             if (
                 self.angle_threshold * const.ARROW_SCALE
                 > coordrx_arrow
@@ -1149,22 +1402,6 @@ class Viewer(wx.Panel):
             else:
                 is_under_x_angle_threshold = False
                 self.guide_coil_actors[0].GetProperty().SetColor(1, 1, 1)
-
-            offset = 5
-
-            arrow_roll_x1 = self.actor_factory.CreateArrow(
-                [-55, -35, offset], [-55, -35, offset - coordrx_arrow]
-            )
-            arrow_roll_x1.RotateX(-60)
-            arrow_roll_x1.RotateZ(180)
-            arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
-
-            arrow_roll_x2 = self.actor_factory.CreateArrow(
-                [55, -35, offset], [55, -35, offset + coordrx_arrow]
-            )
-            arrow_roll_x2.RotateX(-60)
-            arrow_roll_x2.RotateZ(180)
-            arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
 
             if (
                 self.angle_threshold * const.ARROW_SCALE
@@ -1177,22 +1414,6 @@ class Viewer(wx.Panel):
                 is_under_z_angle_threshold = False
                 self.guide_coil_actors[1].GetProperty().SetColor(1, 1, 1)
 
-            offset = -35
-
-            arrow_yaw_z1 = self.actor_factory.CreateArrow(
-                [-55, offset, 0], [-55, offset - coordrz_arrow, 0]
-            )
-            arrow_yaw_z1.SetPosition(0, -150, 0)
-            arrow_yaw_z1.RotateZ(180)
-            arrow_yaw_z1.GetProperty().SetColor(0, 1, 0)
-
-            arrow_yaw_z2 = self.actor_factory.CreateArrow(
-                [55, offset, 0], [55, offset + coordrz_arrow, 0]
-            )
-            arrow_yaw_z2.SetPosition(0, -150, 0)
-            arrow_yaw_z2.RotateZ(180)
-            arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
-
             if (
                 self.angle_threshold * const.ARROW_SCALE
                 > coordry_arrow
@@ -1203,24 +1424,6 @@ class Viewer(wx.Panel):
             else:
                 is_under_y_angle_threshold = False
                 self.guide_coil_actors[2].GetProperty().SetColor(1, 1, 1)
-
-            offset = 38
-            arrow_pitch_y1 = self.actor_factory.CreateArrow(
-                [0, 65, offset], [0, 65, offset + coordry_arrow]
-            )
-            arrow_pitch_y1.SetPosition(0, -300, 0)
-            arrow_pitch_y1.RotateY(90)
-            arrow_pitch_y1.RotateZ(180)
-            arrow_pitch_y1.GetProperty().SetColor(1, 0, 0)
-
-            offset = 5
-            arrow_pitch_y2 = self.actor_factory.CreateArrow(
-                [0, -55, offset], [0, -55, offset - coordry_arrow]
-            )
-            arrow_pitch_y2.SetPosition(0, -300, 0)
-            arrow_pitch_y2.RotateY(90)
-            arrow_pitch_y2.RotateZ(180)
-            arrow_pitch_y2.GetProperty().SetColor(1, 0, 0)
 
             # Combine all the conditions to check if the coil is at the target.
             coil_at_target = (
@@ -1235,17 +1438,82 @@ class Viewer(wx.Panel):
                 Publisher.sendMessage, "From Neuronavigation: Coil at target", state=coil_at_target
             )
 
-            self.guide_arrow_actors = (
-                arrow_roll_x1,
-                arrow_roll_x2,
-                arrow_yaw_z1,
-                arrow_yaw_z2,
-                arrow_pitch_y1,
-                arrow_pitch_y2,
+            guide_signature = (
+                int(round(coordrx_arrow / self._target_guide_deadband)),
+                int(round(coordry_arrow / self._target_guide_deadband)),
+                int(round(coordrz_arrow / self._target_guide_deadband)),
             )
+            should_update_guide = (
+                guide_signature != self._target_guide_last_signature
+                and now - self._target_guide_last_update >= self._target_guide_update_interval
+            )
+            if should_update_guide:
+                if self.guide_arrow_actors is not None:
+                    for actor in self.guide_arrow_actors:
+                        self.target_guide_renderer.RemoveActor(actor)
 
-            for ind in self.guide_arrow_actors:
-                self.target_guide_renderer.AddActor(ind)
+                offset = 5
+                arrow_roll_x1 = self.actor_factory.CreateArrow(
+                    [-55, -35, offset], [-55, -35, offset - coordrx_arrow]
+                )
+                arrow_roll_x1.RotateX(-60)
+                arrow_roll_x1.RotateZ(180)
+                arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
+
+                arrow_roll_x2 = self.actor_factory.CreateArrow(
+                    [55, -35, offset], [55, -35, offset + coordrx_arrow]
+                )
+                arrow_roll_x2.RotateX(-60)
+                arrow_roll_x2.RotateZ(180)
+                arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
+
+                offset = -35
+                arrow_yaw_z1 = self.actor_factory.CreateArrow(
+                    [-55, offset, 0], [-55, offset - coordrz_arrow, 0]
+                )
+                arrow_yaw_z1.SetPosition(0, -150, 0)
+                arrow_yaw_z1.RotateZ(180)
+                arrow_yaw_z1.GetProperty().SetColor(0, 1, 0)
+
+                arrow_yaw_z2 = self.actor_factory.CreateArrow(
+                    [55, offset, 0], [55, offset + coordrz_arrow, 0]
+                )
+                arrow_yaw_z2.SetPosition(0, -150, 0)
+                arrow_yaw_z2.RotateZ(180)
+                arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
+
+                offset = 38
+                arrow_pitch_y1 = self.actor_factory.CreateArrow(
+                    [0, 65, offset], [0, 65, offset + coordry_arrow]
+                )
+                arrow_pitch_y1.SetPosition(0, -300, 0)
+                arrow_pitch_y1.RotateY(90)
+                arrow_pitch_y1.RotateZ(180)
+                arrow_pitch_y1.GetProperty().SetColor(1, 0, 0)
+
+                offset = 5
+                arrow_pitch_y2 = self.actor_factory.CreateArrow(
+                    [0, -55, offset], [0, -55, offset - coordry_arrow]
+                )
+                arrow_pitch_y2.SetPosition(0, -300, 0)
+                arrow_pitch_y2.RotateY(90)
+                arrow_pitch_y2.RotateZ(180)
+                arrow_pitch_y2.GetProperty().SetColor(1, 0, 0)
+
+                self.guide_arrow_actors = (
+                    arrow_roll_x1,
+                    arrow_roll_x2,
+                    arrow_yaw_z1,
+                    arrow_yaw_z2,
+                    arrow_pitch_y1,
+                    arrow_pitch_y2,
+                )
+
+                for ind in self.guide_arrow_actors:
+                    self.target_guide_renderer.AddActor(ind)
+
+                self._target_guide_last_signature = guide_signature
+                self._target_guide_last_update = now
 
     def OnUnsetTarget(self, marker):
         self.DisableTargetMode()
@@ -1409,6 +1677,37 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
+    def FocusCamera(self, position):
+        """
+        Orbit the camera around the current focal point (the skull's center)
+        so that the measurement exactly faces the screen, without shifting the skull.
+        """
+        cam = self.ren.GetActiveCamera()
+
+        center = np.array(cam.GetFocalPoint())
+        old_pos = np.array(cam.GetPosition())
+        target = np.array(position)
+
+        # Calculate distance from camera to center to maintain zoom level
+        distance = np.linalg.norm(old_pos - center)
+
+        # Vector from center of the volume pointing outward toward the measurement
+        direction = target - center
+        dir_norm = np.linalg.norm(direction)
+
+        if dir_norm > 0:
+            direction = direction / dir_norm
+
+            # Orbit to the new position while staring back at the center
+            new_pos = center + direction * distance
+
+            cam.SetPosition(new_pos[0], new_pos[1], new_pos[2])
+            cam.SetViewUp(0, 0, 1)
+            self.ren.ResetCameraClippingRange()
+
+        if not self.nav_status:
+            self.UpdateRender()
+
     def ObjectArrowLocation(self, m_img, coord):
         # m_img[:3, 0] is from posterior to anterior direction of the coil
         # m_img[:3, 1] is from left to right direction of the coil
@@ -1478,12 +1777,49 @@ class Viewer(wx.Panel):
         Actor.GetProperty().SetColor(color)
         return Actor
 
+    def HasEfieldVectorData(self):
+        return (
+            self.efield_mesh is not None
+            and self.e_field_norms is not None
+            and getattr(self, "Id_list", None) is not None
+            and len(self.Id_list) > 0
+            and getattr(self, "Idmax", None) is not None
+            and getattr(self, "max_efield_array", None) is not None
+        )
+
+    def RemoveEfieldTargetingActors(self):
+        if self.max_efield_vector is not None:
+            self.ren.RemoveActor(self.max_efield_vector)
+            self.max_efield_vector = None
+        if self.ball_max_vector is not None:
+            self.ren.RemoveActor(self.ball_max_vector)
+            self.ball_max_vector = None
+        if self.GoGEfieldVector is not None:
+            self.ren.RemoveActor(self.GoGEfieldVector)
+            self.GoGEfieldVector = None
+        if self.ball_GoGEfieldVector is not None:
+            self.ren.RemoveActor(self.ball_GoGEfieldVector)
+            self.ball_GoGEfieldVector = None
+        self.position_max = None
+        self.position_max_revision = None
+        self.center_gravity_position = None
+
+    def RemoveEfieldVectorActor(self):
+        if self.vectorfield_actor is not None:
+            self.ren.RemoveActor(self.vectorfield_actor)
+            self.vectorfield_actor = None
+
     def MaxEfieldActor(self):
+        if not self.HasEfieldVectorData():
+            self.RemoveEfieldTargetingActors()
+            return
+
         vtk_colors = vtkNamedColors()
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
             self.ren.RemoveActor(self.ball_max_vector)
         self.position_max = self.efield_mesh.GetPoint(self.Idmax)
+        self.position_max_revision = self.efield_data_revision
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
         self.max_efield_vector = self.DrawVectors(
             self.position_max, orientation, vtk_colors.GetColor3d("Red")
@@ -1495,17 +1831,24 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.ball_max_vector)
 
     def CoGEfieldActor(self):
+        if not self.HasEfieldVectorData():
+            self.RemoveEfieldTargetingActors()
+            return
+
         vtk_colors = vtkNamedColors()
         if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
             self.ren.RemoveActor(self.GoGEfieldVector)
             self.ren.RemoveActor(self.ball_GoGEfieldVector)
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
-        [self.cell_id_indexes_above_threshold, self.positions_above_threshold] = (
-            self.GetIndexesAboveThreshold(self.efield_threshold)
-        )
+        if not self.cell_id_indexes_above_threshold:
+            return
+
         self.center_gravity_position = self.FindCenterofGravity(
             self.cell_id_indexes_above_threshold, self.positions_above_threshold
         )
+        if self.center_gravity_position is None:
+            return
+
         self.GoGEfieldVector = self.DrawVectors(
             self.center_gravity_position, orientation, vtk_colors.GetColor3d("Blue")
         )
@@ -1610,6 +1953,13 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.SpreadEfieldFactorTextActor.actor)
 
     def CalculateDistanceMaxEfieldCoGE(self):
+        if (
+            getattr(self, "center_gravity_position", None) is None
+            or getattr(self, "position_max", None) is None
+            or self.SpreadEfieldFactorTextActor is None
+        ):
+            return
+
         self.distance_efield = distance.euclidean(self.center_gravity_position, self.position_max)
         self.SpreadEfieldFactorTextActor.SetValue(
             "Spread distance: " + str(f"{self.distance_efield:04.2f}")
@@ -1617,8 +1967,7 @@ class Viewer(wx.Panel):
 
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
-        if self.vectorfield_actor is not None:
-            self.ren.RemoveActor(self.vectorfield_actor)
+        self.RemoveEfieldVectorActor()
         points = vtkPoints()
         vectors = vtkDoubleArray()
         vectors.SetNumberOfComponents(3)
@@ -1808,11 +2157,12 @@ class Viewer(wx.Panel):
             self.colors_init.InsertTuple(i, color)
 
     def ReturnToDefaultColorActor(self):
+        self.RemoveEfieldTargetingActors()
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         wx.CallAfter(Publisher.sendMessage, "Initialize color array")
         wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
 
-    def CreateLUTTableForEfield(self, min, max):
+    def CreateLUTTableForEfield(self, min, max, highlight_threshold=False):
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
@@ -1821,80 +2171,130 @@ class Viewer(wx.Panel):
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
         n = lut.GetNumberOfTableValues()
         threshold = self.efield_threshold
-        highlight_rgb = (255, 165, 0)
-        for i in range(n):
-            norm_val = i / (n - 1)
-        if norm_val >= threshold:
-            lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)  # Set to orange
+        if highlight_threshold:
+            highlight_rgb = (255, 165, 0)
+            for i in range(n):
+                norm_val = i / (n - 1)
+                if norm_val >= threshold:
+                    lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)
         return lut
+
+    def UpdateEfieldScalarBar(self):
+        if self.efield_scalar_bar is None or self.efield_lut is None:
+            return
+
+        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
+        self.efield_scalar_bar.Modified()
+        if not self.ren.HasViewProp(self.efield_scalar_bar):
+            self.ren.AddActor2D(self.efield_scalar_bar)
 
     def GetEfieldMaxMin(self, e_field_norms):
         self.e_field_norms = e_field_norms
-        max = np.amax(self.e_field_norms)
-        min = np.amin(self.e_field_norms)
-        self.efield_min = min
-        self.efield_max = max
+        efield_max = np.amax(self.e_field_norms)
+        efield_min = np.amin(self.e_field_norms)
+        self.efield_min = efield_min
+        self.efield_max = efield_max
         # self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, "Update efield vis")
 
-    def FindClosestValueEfieldEdges(self, arr, threshold):
-        closest_value = min(arr, key=lambda x: abs(x - threshold))
-        closest_index = np.argmin(np.abs(arr - closest_value))
-        return closest_index
+    def CreateEfieldScalarPolyData(self):
+        values = np.asarray(self.e_field_norms, dtype=float)
+        n_points = self.efield_mesh.GetNumberOfPoints()
+
+        scalars = vtkDoubleArray()
+        scalars.SetName("EFieldNorm")
+        scalars.SetNumberOfComponents(1)
+        scalars.SetNumberOfTuples(n_points)
+        scalars.FillComponent(0, self.efield_min)
+
+        if len(values) == n_points:
+            for point_id, value in enumerate(values):
+                scalars.SetValue(point_id, value)
+        else:
+            for point_id, value in zip(self.Id_list, values):
+                scalars.SetValue(point_id, value)
+
+        scalar_polydata = vtkPolyData()
+        scalar_polydata.DeepCopy(self.efield_mesh)
+        scalar_polydata.GetPointData().SetScalars(scalars)
+        return scalar_polydata
 
     def CalculateEdgesEfield(self):
-        if self.edge_actor is not None:
-            self.ren.RemoveViewProp(self.edge_actor)
+        self.RemoveEfieldEdges()
+        if self.efield_max <= self.efield_min:
+            return
+
         named_colors = vtkNamedColors()
         second_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
-        second_lut.SetNumberOfTableValues(5)
+        scalar_polydata = self.CreateEfieldScalarPolyData()
 
         bcf = vtkBandedPolyDataContourFilter()
-        bcf.SetInputData(self.efield_mesh)
+        bcf.SetInputData(scalar_polydata)
         bcf.ClippingOn()
+        bcf.SetScalarModeToValue()
 
-        lower_edge = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_min)
-        middle_edge = self.FindClosestValueEfieldEdges(
-            np.array(self.e_field_norms), self.efield_max * 0.2
-        )
-        middle_edge1 = self.FindClosestValueEfieldEdges(
-            np.array(self.e_field_norms), self.efield_max * 0.7
-        )
-        upper_edge = self.FindClosestValueEfieldEdges(
-            np.array(self.e_field_norms), self.efield_max * 0.9
-        )
-        lower_edge = self.efield_mesh.GetPoint(lower_edge)
-        middle_edge = self.efield_mesh.GetPoint(middle_edge)
-        middle_edge1 = self.efield_mesh.GetPoint(middle_edge1)
-        upper_edge = self.efield_mesh.GetPoint(upper_edge)
-
-        edges = [lower_edge, middle_edge, middle_edge1, upper_edge]
-        for i in range(len(edges)):
-            bcf.SetValue(i, edges[i][2])
-        bcf.SetScalarModeToIndex()
+        value_range = self.efield_max - self.efield_min
+        contour_values = [
+            self.efield_min,
+            # self.efield_min + value_range * 0.2,
+            self.efield_min + value_range * 0.7,
+            self.efield_min + value_range * 0.9,
+        ]
+        for i, value in enumerate(contour_values):
+            bcf.SetValue(i, value)
         bcf.GenerateContourEdgesOn()
+        bcf.Update()
+
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(bcf.GetOutputPort())
         mapper.SetLookupTable(second_lut)
         mapper.SetScalarModeToUsePointData()
+        mapper.SetScalarRange(self.efield_min, self.efield_max)
 
-        actor = vtkActor()
-        actor.SetMapper(mapper)
+        self.edge_fill_actor = vtkActor()
+        self.edge_fill_actor.SetMapper(mapper)
 
         edge_mapper = vtkPolyDataMapper()
         edge_mapper.SetInputData(bcf.GetContourEdgesOutput())
+        edge_mapper.SetLookupTable(second_lut)
+        edge_mapper.SetScalarRange(self.efield_min, self.efield_max)
+        edge_mapper.ScalarVisibilityOff()
         edge_mapper.SetResolveCoincidentTopologyToPolygonOffset()
 
         self.edge_actor = vtkActor()
         self.edge_actor.SetMapper(edge_mapper)
         self.edge_actor.GetProperty().SetColor(named_colors.GetColor3d("Black"))
         self.edge_actor.GetProperty().SetLineWidth(3.0)
-        actor.GetProperty().SetOpacity(0)
-        self.ren.AddViewProp(actor)
+        self.edge_fill_actor.GetProperty().SetOpacity(0)
+        self.ren.AddViewProp(self.edge_fill_actor)
         self.ren.AddViewProp(self.edge_actor)
 
-        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
-        self.ren.AddActor2D(self.efield_scalar_bar)
+        self.UpdateEfieldScalarBar()
+
+    def RemoveEfieldEdges(self):
+        if self.edge_actor is not None:
+            self.ren.RemoveViewProp(self.edge_actor)
+            self.edge_actor = None
+        if self.edge_fill_actor is not None:
+            self.ren.RemoveViewProp(self.edge_fill_actor)
+            self.edge_fill_actor = None
+
+    def ShowEfieldContours(self, enable):
+        self.show_efield_edges = enable
+        if not enable:
+            self.RemoveEfieldEdges()
+            self.Refresh()
+            return
+
+        if (
+            self.e_field_norms is not None
+            and self.efield_mesh is not None
+            and self.radius_list.GetNumberOfIds() != 0
+            and not self.tracts_status
+            and self.actor_tracts is None
+        ):
+            self.CalculateEdgesEfield()
+            self.Refresh()
 
     def GetIndexesAboveThreshold(self, threshold):
         cell_id_indexes = []
@@ -1915,6 +2315,7 @@ class Viewer(wx.Panel):
     def UpdateEfieldROISize(self, data):
         self.efield_ROISize = data
         self.radius_list.Reset()
+        self.last_efield_cell_id = None
 
     def EnableEfieldTools(self, enable):
         self.efield_tools = enable
@@ -1926,9 +2327,16 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
 
     def FindCenterofGravity(self, cell_id_indexes, positions):
+        if not cell_id_indexes or not positions:
+            return None
+
         weights = []
         for index, value in enumerate(cell_id_indexes):
             weights.append(self.e_field_norms[index])
+        sum_weights = sum(weights)
+        if sum_weights == 0:
+            return None
+
         x_weighted = []
         y_weighted = []
         z_weighted = []
@@ -1939,7 +2347,6 @@ class Viewer(wx.Panel):
         sum_x = sum(x_weighted)
         sum_y = sum(y_weighted)
         sum_z = sum(z_weighted)
-        sum_weights = sum(weights)
 
         center_gravity_x = sum_x / sum_weights
         center_gravity_y = sum_y / sum_weights
@@ -1958,6 +2365,16 @@ class Viewer(wx.Panel):
     def DetectClustersEfieldSpread(self, points):
         from sklearn.cluster import DBSCAN
         from sklearn.metrics import pairwise_distances
+
+        if (
+            points is None
+            or len(points) == 0
+            or self.distance_efield is None
+            or self.ClusterEfieldTextActor is None
+            or getattr(self, "Id_list", None) is None
+            or len(self.Id_list) == 0
+        ):
+            return
 
         points = np.array(points) if isinstance(points, list) else points
         dbscan = DBSCAN(eps=5, min_samples=1).fit(points)
@@ -2104,6 +2521,7 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = None
         self.e_field_norms = None
         self.e_field_norms_to_save = None
+        self.last_efield_cell_id = None
         self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
         self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.target_radius_list = []
@@ -2112,16 +2530,8 @@ class Viewer(wx.Panel):
         self.mtms_coord = []
         # self.diperdt = None
 
-        if self.max_efield_vector and self.ball_max_vector is not None:
-            self.ren.RemoveActor(self.max_efield_vector)
-            self.ren.RemoveActor(self.ball_max_vector)
-
-        if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
-            self.ren.RemoveActor(self.GoGEfieldVector)
-            self.ren.RemoveActor(self.ball_GoGEfieldVector)
-
-        if self.vectorfield_actor is not None:
-            self.ren.RemoveActor(self.vectorfield_actor)
+        self.RemoveEfieldTargetingActors()
+        self.RemoveEfieldVectorActor()
 
         if self.efield_scalar_bar is not None:
             self.ren.RemoveActor(self.efield_scalar_bar)
@@ -2142,6 +2552,7 @@ class Viewer(wx.Panel):
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
+        closestCellId = None
         # if find intersection , calculate angle and add actors
         if intersectingCellIds.GetNumberOfIds() != 0:
             for i in range(intersectingCellIds.GetNumberOfIds()):
@@ -2150,52 +2561,57 @@ class Viewer(wx.Panel):
                 distance = np.linalg.norm(point - p1)
                 if distance < closestDist:
                     closestDist = distance
+                    closestCellId = cellId
                     # closestPoint = point
                     # pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
                     # angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
-                    self.FindPointsAroundRadiusEfield(cellId)
-                    self.radius_list.Sort()
+            if closestCellId is not None and closestCellId != self.last_efield_cell_id:
+                self.FindPointsAroundRadiusEfield(closestCellId)
+                self.radius_list.Sort()
+                self.last_efield_cell_id = closestCellId
         else:
             self.radius_list.Reset()
+            self.last_efield_cell_id = None
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            self.efield_lut = self.CreateLUTTableForEfield(0, self.efield_max)
-            self.CalculateEdgesEfield()
+            self.efield_lut = self.CreateLUTTableForEfield(
+                0, self.efield_max, highlight_threshold=self.enableefieldabovethreshold
+            )
+            [self.cell_id_indexes_above_threshold, self.positions_above_threshold] = (
+                self.GetIndexesAboveThreshold(self.efield_threshold)
+            )
+            self.UpdateEfieldScalarBar()
+            if not self.show_efield_edges or self.tracts_status or self.actor_tracts is not None:
+                self.RemoveEfieldEdges()
+            else:
+                self.CalculateEdgesEfield()
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(const.CORTEX_COLOR[0])
             for h in range(len(self.Id_list)):
                 dcolor = 3 * [0.0]
                 index_id = self.Id_list[h]
-                if self.plot_vector:
-                    self.efield_lut.GetColor(self.e_field_norms[h], dcolor)
-                else:
-                    self.efield_lut.GetColor(self.e_field_norms[index_id], dcolor)
+                self.efield_lut.GetColor(self.e_field_norms[h], dcolor)
                 color = 3 * [0.0]
                 for j in range(0, 3):
                     color[j] = int(255.0 * dcolor[j])
                 self.colors_init.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(self.colors_init)
             wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
-            if self.vectorfield_actor is not None:
-                self.ren.RemoveActor(self.vectorfield_actor)
-            if self.plot_vector:
-                wx.CallAfter(Publisher.sendMessage, "Show max Efield actor")
-                wx.CallAfter(Publisher.sendMessage, "Show CoG Efield actor")
-                if self.efield_tools:
-                    wx.CallAfter(Publisher.sendMessage, "Show distance between Max and CoG Efield")
-                    if self.positions_above_threshold is not None:
-                        self.DetectClustersEfieldSpread(self.positions_above_threshold)
-                if (
-                    self.enableefieldabovethreshold
-                    and self.cell_id_indexes_above_threshold is not None
-                ):
-                    self.SegmentEfieldMax(self.cell_id_indexes_above_threshold)
-                self.ShowEfieldAtCortexTarget()
-                if self.plot_no_connection:
-                    wx.CallAfter(Publisher.sendMessage, "Show Efield vectors")
-                    self.plot_vector = False
-                    self.plot_no_connection = False
+            self.RemoveEfieldVectorActor()
+            wx.CallAfter(Publisher.sendMessage, "Show max Efield actor")
+            wx.CallAfter(Publisher.sendMessage, "Show CoG Efield actor")
+            if self.efield_tools:
+                wx.CallAfter(Publisher.sendMessage, "Show distance between Max and CoG Efield")
+                if self.positions_above_threshold is not None:
+                    self.DetectClustersEfieldSpread(self.positions_above_threshold)
+            if self.enableefieldabovethreshold and self.cell_id_indexes_above_threshold is not None:
+                self.SegmentEfieldMax(self.cell_id_indexes_above_threshold)
+            self.ShowEfieldAtCortexTarget()
+            if self.plot_no_connection:
+                wx.CallAfter(Publisher.sendMessage, "Show Efield vectors")
+                self.plot_vector = False
+                self.plot_no_connection = False
         else:
             wx.CallAfter(Publisher.sendMessage, "Recolor again")
 
@@ -2213,6 +2629,34 @@ class Viewer(wx.Panel):
                 if np.all(self.old_coord != coord):
                     self.e_field_IDs_queue.put_nowait(self.radius_list)
                 self.old_coord = np.array([coord])
+        except queue.Full:
+            pass
+
+    def UpdateTractSeedBasedEfield(
+        self, coord_tracts_queue, fallback_m_img=None, current_revision=None
+    ):
+        if (
+            getattr(self, "position_max", None) is None
+            or self.position_max_revision != current_revision
+        ):
+            if fallback_m_img is not None:
+                try:
+                    m_img_flip = fallback_m_img.copy()
+                    m_img_flip[1, -1] = -m_img_flip[1, -1]
+                    coord_tracts_queue.clear()
+                    coord_tracts_queue.put_nowait(m_img_flip)
+                except queue.Full:
+                    pass
+            return
+
+        if not np.all(np.isfinite(self.position_max)):
+            return
+
+        orientation = [0, 0, 0]
+        m_img = tr.compose_matrix(angles=np.radians(orientation), translate=self.position_max)
+        try:
+            coord_tracts_queue.clear()
+            coord_tracts_queue.put_nowait(m_img)
         except queue.Full:
             pass
 
@@ -2245,105 +2689,121 @@ class Viewer(wx.Panel):
         T_rot = T_rot.tolist()  # to list
         Publisher.sendMessage("Send coil position and rotation", T_rot=T_rot, cp=cp, m_img=m_img)
 
-    def GetEnorm(self, enorm_data, plot_vector):
+    def GetEnorm(self, enorm_data, plot_vector, current_revision=None):
+        result_revision = enorm_data[5] if len(enorm_data) > 5 else current_revision
+        if current_revision is not None and result_revision != current_revision:
+            self.RemoveEfieldTargetingActors()
+            return
+
+        if enorm_data[3] is None:
+            self.RemoveEfieldTargetingActors()
+            return
+
         self.e_field_col1 = []
         self.e_field_col2 = []
         self.e_field_col3 = []
         session = ses.Session()
         self.plot_vector = plot_vector
+        self.efield_data_revision = result_revision
         self.coil_position_Trot = enorm_data[0]
         self.coil_position = enorm_data[1]
         self.efield_coords = enorm_data[2]
         self.Id_list = enorm_data[4]
-        if self.plot_vector:
-            if session.GetConfig("debug_efield"):
-                self.e_field_norms = enorm_data[3][self.Id_list, 0]
-                self.e_field_col1 = enorm_data[3][self.Id_list, 1]
-                self.e_field_col2 = enorm_data[3][self.Id_list, 2]  # LUKATODO: is this a typo?
-                self.e_field_col3 = enorm_data[3][self.Id_list, 3]
-                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
-                max = np.array(self.e_field_norms).argmax()
-                self.max_efield_array = [
-                    self.e_field_col1[max],
-                    self.e_field_col2[max],
-                    self.e_field_col3[max],
-                ]
-                self.e_field_norms_to_save = enorm_data[3][:, 0]
-                self.e_field_col1_to_save = enorm_data[3][:, 1]
-                self.e_field_col2_to_save = enorm_data[3][:, 2]
-                self.e_field_col3_to_save = enorm_data[3][:, 3]
-            else:
-                self.e_field_norms_to_save = enorm_data[3].enorm
-                self.e_field_norms = enorm_data[3].enorm
-                self.e_field_norms = [self.e_field_norms[i] for i in self.Id_list]
-                self.e_field_col1 = enorm_data[3].column1
-                self.e_field_col2 = enorm_data[3].column2
-                self.e_field_col3 = enorm_data[3].column3
-                self.e_field_col1_to_save = enorm_data[3].column1
-                self.e_field_col2_to_save = enorm_data[3].column2
-                self.e_field_col3_to_save = enorm_data[3].column3
-                if len(self.e_field_col1) > 1:
-                    K = len(self.e_field_norms_to_save)
-                    col1 = np.asarray(self.e_field_col1, dtype=float)
-                    col2 = np.asarray(self.e_field_col2, dtype=float)
-                    col3 = np.asarray(self.e_field_col3, dtype=float)
-                    N = col1.size // K
-                    if N > 1:
-                        self.e_field_col1 = col1.reshape(N, -1).sum(axis=0)
-                        self.e_field_col2 = col2.reshape(N, -1).sum(axis=0)
-                        self.e_field_col3 = col3.reshape(N, -1).sum(axis=0)
-
-                    self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
-                    self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
-                    self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
-
-                self.max_efield_array = enorm_data[3].mvector
-                self.Idmax = enorm_data[3].maxindex  # self.Id_list[enorm_data[3].maxindex]
-                if self.save_automatically and self.plot_no_connection:
-                    import time
-
-                    import invesalius.gui.dialogs as dlg
-                    import invesalius.project as prj
-
-                    proj = prj.Project()
-                    timestamp = time.localtime(time.time())
-                    stamp_date = (
-                        f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
-                    )
-                    stamp_time = (
-                        f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
-                    )
-                    sep = "-"
-
-                    if self.path_meshes is None:
-                        import os
-
-                        current_folder_path = os.getcwd()
-                    else:
-                        current_folder_path = self.path_meshes
-
-                    parts = [current_folder_path, "/", stamp_date, stamp_time, proj.name, "Efield"]
-                    default_filename = sep.join(parts) + ".csv"
-
-                    filename = dlg.ShowLoadSaveDialog(
-                        message=_("Save markers as..."),
-                        wildcard="(*.csv)|*.csv",
-                        style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                        default_filename=default_filename,
-                    )
-
-                    if not filename:
-                        return
-
-                    Publisher.sendMessage(
-                        "Save Efield data",
-                        filename=filename,
-                        plot_efield_vectors=self.plot_efield_vectors,
-                        marker_id=self.list_index_efield_vectors,
-                    )
+        if session.GetConfig("debug_efield"):
+            self.e_field_norms = enorm_data[3][self.Id_list, 0]
+            self.e_field_col1 = enorm_data[3][self.Id_list, 1]
+            self.e_field_col2 = enorm_data[3][self.Id_list, 2]  # LUKATODO: is this a typo?
+            self.e_field_col3 = enorm_data[3][self.Id_list, 3]
+            self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
+            max_idx = np.array(self.e_field_norms).argmax()
+            self.max_efield_array = [
+                self.e_field_col1[max_idx],
+                self.e_field_col2[max_idx],
+                self.e_field_col3[max_idx],
+            ]
+            self.e_field_norms_to_save = enorm_data[3][:, 0]
+            self.e_field_col1_to_save = enorm_data[3][:, 1]
+            self.e_field_col2_to_save = enorm_data[3][:, 2]
+            self.e_field_col3_to_save = enorm_data[3][:, 3]
         else:
-            self.e_field_norms = enorm_data[3]
-            self.Idmax = np.array(self.e_field_norms).argmax()
+            if not hasattr(enorm_data[3], "enorm") or not hasattr(enorm_data[3], "mvector"):
+                self.RemoveEfieldTargetingActors()
+                return
+
+            self.e_field_norms_to_save = enorm_data[3].enorm
+            if len(self.e_field_norms_to_save) == 0:
+                self.RemoveEfieldTargetingActors()
+                return
+            if self.Id_list and max(self.Id_list) >= len(self.e_field_norms_to_save):
+                self.RemoveEfieldTargetingActors()
+                return
+
+            self.e_field_norms = [self.e_field_norms_to_save[i] for i in self.Id_list]
+            self.e_field_col1 = enorm_data[3].column1
+            self.e_field_col2 = enorm_data[3].column2
+            self.e_field_col3 = enorm_data[3].column3
+            self.e_field_col1_to_save = enorm_data[3].column1
+            self.e_field_col2_to_save = enorm_data[3].column2
+            self.e_field_col3_to_save = enorm_data[3].column3
+            if len(self.e_field_col1) > 1:
+                K = len(self.e_field_norms_to_save)
+                col1 = np.asarray(self.e_field_col1, dtype=float)
+                col2 = np.asarray(self.e_field_col2, dtype=float)
+                col3 = np.asarray(self.e_field_col3, dtype=float)
+                N = col1.size // K
+                if N > 1:
+                    self.e_field_col1 = col1.reshape(N, -1).sum(axis=0)
+                    self.e_field_col2 = col2.reshape(N, -1).sum(axis=0)
+                    self.e_field_col3 = col3.reshape(N, -1).sum(axis=0)
+
+                self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
+                self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
+                self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
+
+            self.max_efield_array = enorm_data[3].mvector
+            self.Idmax = enorm_data[3].maxindex
+            if self.save_automatically and self.plot_no_connection:
+                import time
+
+                import invesalius.gui.dialogs as dlg
+                import invesalius.project as prj
+
+                proj = prj.Project()
+                timestamp = time.localtime(time.time())
+                stamp_date = (
+                    f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+                )
+                stamp_time = (
+                    f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
+                )
+                sep = "-"
+
+                if self.path_meshes is None:
+                    import os
+
+                    current_folder_path = os.getcwd()
+                else:
+                    current_folder_path = self.path_meshes
+
+                parts = [current_folder_path, "/", stamp_date, stamp_time, proj.name, "Efield"]
+                default_filename = sep.join(parts) + ".csv"
+
+                filename = dlg.ShowLoadSaveDialog(
+                    message=_("Save markers as..."),
+                    wildcard="(*.csv)|*.csv",
+                    style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                    default_filename=default_filename,
+                )
+
+                if not filename:
+                    return
+
+                Publisher.sendMessage(
+                    "Save Efield data",
+                    filename=filename,
+                    plot_efield_vectors=self.plot_efield_vectors,
+                    marker_id=self.list_index_efield_vectors,
+                )
         self.GetEfieldMaxMin(self.e_field_norms)
 
     def SaveEfieldData(self, filename, plot_efield_vectors, marker_id):
@@ -2532,8 +2992,10 @@ class Viewer(wx.Panel):
 
         if self.nav_status:
             self.pTarget = self.CenterOfMass()
+            self.RemoveEfieldVectorActor()
 
         self.camera_show_object = None
+        self._update_fps_visibility()
         if not self.nav_status:
             self.UpdateRender()
 
@@ -2559,7 +3021,7 @@ class Viewer(wx.Panel):
     def UpdateArrowPose(self, m_img, coord, flag):
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
 
-        if flag:
+        if flag and self.efield_mesh is None:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
@@ -2589,6 +3051,8 @@ class Viewer(wx.Panel):
             self.object_orientation_torus_actor = None
 
     def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
+        self.tracts_status = True
+        self.RemoveEfieldEdges()
         mapper = vtkCompositePolyDataMapper()
         mapper.SetInputDataObject(root)
 
@@ -2606,6 +3070,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.actor_tracts)
             self.actor_tracts = None
             self.Refresh()
+        self.tracts_status = False
 
     def __bind_events_wx(self):
         # self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -2625,6 +3090,26 @@ class Viewer(wx.Panel):
         imsave("/tmp/polygon.png", arr)
 
     def SetInteractorStyle(self, state):
+        # Check if we're entering or exiting a measurement state
+        measurement_states = {
+            const.STATE_MEASURE_DISTANCE,
+            const.STATE_MEASURE_ANGLE,
+            const.STATE_MEASURE_CURVED_LINEAR,
+            const.STATE_MEASURE_ANNOTATION,
+        }
+
+        entering_measurement = state in measurement_states
+        exiting_measurement = (
+            hasattr(self, "state")
+            and self.state in measurement_states
+            and state not in measurement_states
+        )
+
+        # Temporarily disable SSAO when entering measurement mode
+        if entering_measurement and self.ssao_enabled:
+            self.ssao_before_measurement = True
+            self._DisableSSAO()
+
         cleanup = getattr(self.style, "CleanUp", None)
         if cleanup:
             self.style.CleanUp()
@@ -2643,6 +3128,12 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
         self.state = state
+        self._update_fps_visibility()
+
+        # Re-enable SSAO when exiting measurement mode (if it was enabled before)
+        if exiting_measurement and self.ssao_before_measurement:
+            self.ssao_before_measurement = False
+            self._EnableSSAO()
 
     def enable_style(self, style):
         if styles.Styles.has_style(style):
@@ -2724,7 +3215,7 @@ class Viewer(wx.Panel):
         ):
             if _has_win32api:
                 utils.touch(filename)
-                win_filename = win32api.GetShortPathName(filename)
+                win_filename = win32api.GetShortPathName(filename)  # type: ignore
                 self._export_surface(win_filename, filetype)
             else:
                 self._export_surface(filename, filetype)
@@ -2873,6 +3364,10 @@ class Viewer(wx.Panel):
             if self.on_wl:
                 self.text.Show()
 
+            # Disable SSAO when volume rendering is shown (SSAO is only for surfaces)
+            if self.ssao_enabled:
+                self._DisableSSAO()
+
     def OnHideRaycasting(self):
         self.raycasting_volume = False
         self.text.Hide()
@@ -2880,11 +3375,32 @@ class Viewer(wx.Panel):
         # self._check_and_set_ball_visibility()
 
     def OnSize(self, evt):
-        self.UpdateRender()
-        self.Refresh()
-        self.interactor.UpdateWindowUI()
-        self.interactor.Update()
-        evt.Skip()
+        """Handle window resize event to reposition camera for current view"""
+        evt.Skip()  # Allow other handlers to process the event first
+
+        # Defer camera repositioning until after the window has fully resized
+        # This ensures we get the correct viewport dimensions
+        if hasattr(self, "view_angle") and self.view_angle is not None:
+            wx.CallAfter(self._DeferredRepositionCamera)
+
+    def _DeferredRepositionCamera(self):
+        """Reposition camera after window resize is complete"""
+        try:
+            # Force render window to update its size
+            render_window = self.interactor.GetRenderWindow()
+            if render_window:
+                render_window.Modified()
+                # Give VTK a moment to update internal state
+                render_window.Render()
+
+            # Now reposition with correct viewport dimensions
+            self.RepositionCamera(self.view_angle)
+
+            if not self.nav_status:
+                self.UpdateRender()
+        except Exception:
+            # If repositioning fails, just skip it
+            pass
 
     def ChangeBackgroundColour(self, colour):
         self.ren.SetBackground(colour[:3])
@@ -2897,27 +3413,36 @@ class Viewer(wx.Panel):
 
         self.surface_added = True
 
+        # make camera projection to parallel (do this early)
+        self.ren.GetActiveCamera().ParallelProjectionOn()
+
         if not self.view_angle:
+            # Force actor to update its bounds before repositioning
+            actor.Modified()
+            ren.ResetCameraClippingRange()
+
             self.SetViewAngle(const.VOL_FRONT)
             self.view_angle = 1
         else:
+            # Force actor to update its bounds before repositioning
+            actor.Modified()
             ren.ResetCamera()
             ren.ResetCameraClippingRange()
-
-            # XXX: This is a hack to get some decent initial settings for the camera, needed when
-            #   a session is restored when a target is already set. (When unsetting the target, the
-            #   camera settings will be restored from self.stored_camera_settings, hence we need
-            #   to ensure that these settings can be used.)
             self.stored_camera_settings = self.GetCameraSettings()
         if not self.nav_status:
             self.UpdateRender()
 
-        # make camera projection to parallel
-        self.ren.GetActiveCamera().ParallelProjectionOn()
-
         # use the 3D surface actor for measurement calculations
         self.surface = actor
+
         self.EnableRuler()
+
+        # Apply SSAO if enabled in preferences (for newly created surfaces)
+        # Note: For .inv3 file loading, _ApplySSAOAfterProjectLoad will handle it
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+        if ssao_enabled and not self.ssao_enabled:
+            self._EnableSSAO()
 
     def RemoveSurface(self, actor):
         # Remove the actor from the renderer.
@@ -2942,6 +3467,10 @@ class Viewer(wx.Panel):
         # self._to_show_ball += 1
         # self._check_and_set_ball_visibility()
 
+        # Disable SSAO when volume rendering is loaded (SSAO is only for surfaces)
+        if self.ssao_enabled:
+            self._DisableSSAO()
+
         self.light = self.ren.GetLights().GetNextItem()
 
         self.ren.AddVolume(volume)
@@ -2954,16 +3483,25 @@ class Viewer(wx.Panel):
 
         self.ren.SetBackground(colour)
 
+        # make camera projection to parallel (do this early)
+        self.ren.GetActiveCamera().ParallelProjectionOn()
+
         if not (self.view_angle):
+            # Force volume to update its bounds before repositioning
+            volume.Modified()
+            self.ren.ResetCameraClippingRange()
+
             self.SetViewAngle(const.VOL_FRONT)
+            self.view_angle = 1
         else:
+            # Force volume to update its bounds before repositioning
+            volume.Modified()
             self.ren.ResetCamera()
             self.ren.ResetCameraClippingRange()
+            # Apply improved camera positioning for better fit-to-view
+            self.RepositionCamera(const.VOL_FRONT)
         if not self.nav_status:
             self.UpdateRender()
-
-        # make camera projection to parallel
-        self.ren.GetActiveCamera().ParallelProjectionOn()
 
         # if there is no 3D surface, use the volume render for measurement calculation
         if not self.surface_added:
@@ -2998,6 +3536,8 @@ class Viewer(wx.Panel):
             # surface generated first).
             self.ren.GetActiveCamera().ParallelProjectionOn()
 
+        self.UpdateRender()
+
     def remove_mask_preview(self, mask_3d_actor):
         self.ren.RemoveVolume(mask_3d_actor)
 
@@ -3026,67 +3566,386 @@ class Viewer(wx.Panel):
         camera.SetViewAngle(settings["view_angle"])
         camera.SetParallelScale(settings["parallel_scale"])
 
-    def SetViewAngle(self, view):
+    def RepositionCamera(self, view):
+        """
+        Adjust camera scaling for optimal fit-to-view of 3D objects.
+        Similar to the 2D slice Reposition() method from #1299, but adapted for 3D rendering.
+        """
         cam = self.ren.GetActiveCamera()
+
+        # Get viewport dimensions first - if not ready, we can't reposition
+        viewport_width, viewport_height = self.ren.GetSize()
+
+        if viewport_width <= 0 or viewport_height <= 0:
+            # Viewport not ready yet, skip repositioning
+            return
+
+        # Get all actors in the scene to compute combined bounds
+        actors = self.ren.GetActors()
+        volumes = self.ren.GetVolumes()
+
+        # Collect all bounds
+        all_bounds = []
+
+        actors.InitTraversal()
+        actor = actors.GetNextItem()
+        while actor:
+            # Force actor to compute bounds if needed
+            actor.Modified()
+            bounds = actor.GetBounds()
+            if bounds and len(bounds) == 6 and bounds[0] != bounds[1]:  # Valid bounds
+                all_bounds.append(bounds)
+            actor = actors.GetNextItem()
+
+        volumes.InitTraversal()
+        volume = volumes.GetNextItem()
+        while volume:
+            # Force volume to compute bounds if needed
+            volume.Modified()
+            bounds = volume.GetBounds()
+            if bounds and len(bounds) == 6 and bounds[0] != bounds[1]:  # Valid bounds
+                all_bounds.append(bounds)
+            volume = volumes.GetNextItem()
+
+        # If no valid bounds, nothing to reposition
+        if not all_bounds:
+            return
+
+        # Compute combined bounding box
+        x_min = min(b[0] for b in all_bounds)
+        x_max = max(b[1] for b in all_bounds)
+        y_min = min(b[2] for b in all_bounds)
+        y_max = max(b[3] for b in all_bounds)
+        z_min = min(b[4] for b in all_bounds)
+        z_max = max(b[5] for b in all_bounds)
+
+        x_size = x_max - x_min
+        y_size = y_max - y_min
+        z_size = z_max - z_min
+
+        viewport_aspect = viewport_width / viewport_height
+
+        # Determine which dimensions are visible based on camera position
+        # This maps the 3D bounding box to the 2D viewport plane
+        cam_pos = cam.GetPosition()
+
+        # Normalize camera position to determine primary viewing direction
+        import math
+
+        cam_dist = math.sqrt(cam_pos[0] ** 2 + cam_pos[1] ** 2 + cam_pos[2] ** 2)
+        if cam_dist == 0:
+            return
+
+        cam_dir = [cam_pos[0] / cam_dist, cam_pos[1] / cam_dist, cam_pos[2] / cam_dist]
+
+        # Determine visible dimensions based on dominant camera direction
+        # For orthogonal views, use the two dimensions perpendicular to view direction
+        abs_x, abs_y, abs_z = abs(cam_dir[0]), abs(cam_dir[1]), abs(cam_dir[2])
+
+        # Check if this is explicitly ISO view FIRST
+        is_iso_view = (view == const.VOL_ISO) if hasattr(const, "VOL_ISO") else False
+
+        # Check if this is an oblique view by checking camera direction
+        is_oblique = (
+            not (abs_y > abs_x and abs_y > abs_z)
+            and not (abs_x > abs_y and abs_x > abs_z)
+            and not (abs_z > abs_x and abs_z > abs_y)
+        )
+
+        # For ISO view, ALWAYS use projection-based calculation regardless of camera direction
+        if is_iso_view or is_oblique:
+            # Oblique view (ISO): Account for all three dimensions
+            # In isometric view, the object is rotated so all dimensions contribute to what's visible
+            # For a full body (tall object), the height is critical and gets projected at an angle
+
+            # Calculate the 3D diagonal - this represents the maximum extent in any direction
+            diagonal_3d = math.sqrt(x_size**2 + y_size**2 + z_size**2)
+
+            # For width and height, use a conservative estimate
+            # Width sees contribution from X and Y dimensions
+            # Height sees contribution from Y and Z dimensions (critical for tall objects)
+            width = math.sqrt(x_size**2 + y_size**2)
+            height = math.sqrt(y_size**2 + z_size**2)
+
+            # Ensure we use at least the diagonal for the larger dimension
+            # This prevents clipping for elongated objects
+            max_dim = max(width, height)
+            if max_dim < diagonal_3d * 0.8:
+                # If our estimate is too small, use a larger value
+                if width > height:
+                    width = diagonal_3d * 0.85
+                else:
+                    height = diagonal_3d * 0.85
+        elif abs_y > abs_x and abs_y > abs_z:
+            width = x_size
+            height = z_size
+        elif abs_x > abs_y and abs_x > abs_z:
+            # Looking along X-axis (RIGHT/LEFT): sees YZ plane
+            width = y_size
+            height = z_size
+        elif abs_z > abs_x and abs_z > abs_y:
+            # Looking along Z-axis (TOP/BOTTOM): sees XY plane
+            width = x_size
+            height = y_size
+
+        if width <= 0 or height <= 0:
+            return
+
+        # Calculate object aspect ratio
+        object_aspect = width / height
+
+        # Compute proper parallel scale for optimal fit
+        # ParallelScale is half the height of the view in world coordinates
+        scale_x = (width / viewport_aspect) / 2.0
+        scale_y = height / 2.0
+
+        # Use maximum scale to fill viewport as much as possible
+        scale = max(scale_x, scale_y)
+
+        # Adaptive margin based on aspect ratio difference
+        aspect_ratio_diff = abs(object_aspect - viewport_aspect) / max(
+            object_aspect, viewport_aspect
+        )
+
+        # Apply margins based on view type (is_iso_view and is_oblique were calculated earlier)
+        if is_iso_view or is_oblique:
+            # ISO/oblique views: use moderate margins
+            # The dimension calculation already accounts for the rotation
+            if viewport_aspect >= 1.8:
+                margin = 1.25  # Very wide displays
+            elif viewport_aspect >= 1.5:
+                margin = 1.28  # Wide displays (3:2)
+            elif viewport_aspect >= 1.3:
+                margin = 1.26  # Moderate displays (4:3)
+            elif viewport_aspect >= 1.0:
+                margin = 1.25  # Square displays
+            else:
+                margin = 1.30  # Narrow/portrait displays
+
+            # Additional safety for very small viewports
+            if viewport_height < 400:
+                margin *= 1.10  # Add 10% extra margin for small windows
+        elif aspect_ratio_diff < 0.1:
+            # Very similar aspect ratios - moderate margin to prevent edge clipping
+            margin = 1.15
+        elif aspect_ratio_diff < 0.3:
+            # Moderate difference - reasonable margin
+            margin = 1.20
+        else:
+            # Large difference - larger margin
+            margin = 1.25
+
+        scale *= margin
+
+        # Apply the calculated scale
+        cam.SetParallelScale(scale)
+        self.ren.ResetCameraClippingRange()
+
+    def SetViewAngle(self, view):
+        # Store the current view angle for resize handling
+        self.view_angle = view
+
+        cam = self.ren.GetActiveCamera()
+
+        # Enable parallel projection for consistent scaling
+        cam.ParallelProjectionOn()
+
         cam.SetFocalPoint(0, 0, 0)
 
-        # proj = prj.Project()
-        # orig_orien = proj.original_orientation
+        proj = prj.Project()
+        orientation = proj.original_orientation
 
-        xv, yv, zv = const.VOLUME_POSITION[const.AXIAL][0][view]
-        xp, yp, zp = const.VOLUME_POSITION[const.AXIAL][1][view]
+        # In Sagittal scans, the Z-spacing growth order is often backward, reversing the physical sides.
+        # We remap the visual requests (Front, Back, etc.) to the underlying coordinate systems.
+        if orientation == const.SAGITAL:
+            sagital_mapping = {
+                const.VOL_FRONT: const.VOL_BACK,
+                const.VOL_BACK: const.VOL_FRONT,
+            }
+            patient_orient = getattr(proj, "patient_orientation", None)
+
+            if patient_orient is not None and len(patient_orient) == 6:
+                row_y, row_z = patient_orient[1], patient_orient[2]
+                col_y, col_z = patient_orient[4], patient_orient[5]
+                normal_x = (row_y * col_z) - (row_z * col_y)
+
+                if normal_x < 0:
+                    sagital_mapping[const.VOL_RIGHT] = const.VOL_LEFT
+                    sagital_mapping[const.VOL_LEFT] = const.VOL_RIGHT
+            else:
+                # Maintainer fallback request to apply inversion if orientation is missing
+                sagital_mapping[const.VOL_RIGHT] = const.VOL_LEFT
+                sagital_mapping[const.VOL_LEFT] = const.VOL_RIGHT
+
+            view = sagital_mapping.get(view, view)
+
+        # Ensure orientation is valid; fallback to AXIAL if not defined in constants
+        if orientation not in const.VOLUME_POSITION:
+            orientation = const.AXIAL
+
+        xv, yv, zv = const.VOLUME_POSITION[orientation][0][view]
+        xp, yp, zp = const.VOLUME_POSITION[orientation][1][view]
+
+        # Dynamically correct Isometric camera pointing on Sagittal datasets
+        if orientation == const.SAGITAL and view == const.VOL_ISO:
+            yp = 1  # Sagittal maps Anterior to Y=+1 natively
+
+            patient_orient = getattr(proj, "patient_orientation", None)
+            if patient_orient is not None and len(patient_orient) == 6:
+                row_y, row_z = patient_orient[1], patient_orient[2]
+                col_y, col_z = patient_orient[4], patient_orient[5]
+                normal_x = (row_y * col_z) - (row_z * col_y)
+                if normal_x < 0:
+                    xp = (
+                        -xp
+                    )  # Flip X to see the 'L' side instead of the 'R' side on inverted arrays
+            else:
+                # Maintainer fallback: apply inversion if orientation is missing
+                xp = -xp
 
         cam.SetViewUp(xv, yv, zv)
         cam.SetPosition(xp, yp, zp)
 
         self.ren.ResetCameraClippingRange()
         self.ren.ResetCamera()
+
+        # Apply improved camera positioning for better fit-to-view
+        # Note: We need to ensure the render window is properly initialized
+        # before calculating optimal scale
+        try:
+            self.RepositionCamera(view)
+        except Exception:
+            # If repositioning fails (e.g., viewport not ready),
+            # the ResetCamera() above will still provide a reasonable view
+            pass
+
         if not self.nav_status:
             self.UpdateRender()
 
-    def ShowOrientationCube(self):
-        cube = vtkAnnotatedCubeActor()
-        cube.GetXMinusFaceProperty().SetColor(1, 0, 0)
-        cube.GetXPlusFaceProperty().SetColor(1, 0, 0)
-        cube.GetYMinusFaceProperty().SetColor(0, 1, 0)
-        cube.GetYPlusFaceProperty().SetColor(0, 1, 0)
-        cube.GetZMinusFaceProperty().SetColor(0, 0, 1)
-        cube.GetZPlusFaceProperty().SetColor(0, 0, 1)
-        cube.GetTextEdgesProperty().SetColor(0, 0, 0)
-
-        # anatomic labelling
-        cube.SetXPlusFaceText("A")
-        cube.SetXMinusFaceText("P")
-        cube.SetYPlusFaceText("L")
-        cube.SetYMinusFaceText("R")
-        cube.SetZPlusFaceText("S")
-        cube.SetZMinusFaceText("I")
-
-        axes = vtkAxesActor()
-        axes.SetShaftTypeToCylinder()
-        axes.SetTipTypeToCone()
-        axes.SetXAxisLabelText("X")
-        axes.SetYAxisLabelText("Y")
-        axes.SetZAxisLabelText("Z")
-        # axes.SetNormalizedLabelPosition(.5, .5, .5)
-
-        orientation_widget = vtkOrientationMarkerWidget()
-        orientation_widget.SetOrientationMarker(cube)
-        orientation_widget.SetViewport(0.85, 0.85, 1.0, 1.0)
-        # orientation_widget.SetOrientationMarker(axes)
-        orientation_widget.SetInteractor(self.interactor)
-        orientation_widget.SetEnabled(1)
-        orientation_widget.On()
-        orientation_widget.InteractiveOff()
-
     def UpdateRender(self):
+        self._UpdateOrientationCubeZTextRotation()
         self.interactor.Render()
+        if self.fps_text.actor.GetVisibility():
+            end = time.monotonic()
+            self._fps_frames += 1
+            elapsed = end - self._fps_last_time
+            if elapsed >= 0.5:
+                fps = self._fps_frames / elapsed
+                self._fps_last_time = end
+                self._fps_frames = 0
+                self.fps_text.SetValue(f"FPS: {fps:0.1f}")
 
     def SetWidgetInteractor(self, widget=None):
         widget.SetInteractor(self.interactor._Iren)
 
     def AppendActor(self, actor):
         self.ren.AddActor(actor)
+
+    def _EnableSSAO(self):
+        if self.ssao_enabled:
+            return
+
+        # Don't enable SSAO during measurement mode (it interferes with picking)
+        measurement_states = {
+            const.STATE_MEASURE_DISTANCE,
+            const.STATE_MEASURE_ANGLE,
+            const.STATE_MEASURE_CURVED_LINEAR,
+            const.STATE_MEASURE_ANNOTATION,
+        }
+        if hasattr(self, "state") and self.state in measurement_states:
+            # Remember that user wants SSAO enabled, so it will be restored after measurement
+            self.ssao_before_measurement = True
+            return
+
+        # SSAO should only be applied to surfaces, not volume rendering
+        if not self.surface_added or self.raycasting_volume:
+            return
+
+        render_window = self.interactor.GetRenderWindow()
+
+        if not render_window:
+            return
+
+        if render_window.GetNeverRendered():
+            return
+
+        try:
+            from vtkmodules.vtkRenderingOpenGL2 import (
+                vtkCameraPass,
+                vtkRenderStepsPass,
+                vtkSSAOPass,
+            )
+
+            basic_passes = vtkRenderStepsPass()
+
+            ssao = vtkSSAOPass()
+            ssao.SetRadius(0.5)
+            ssao.SetBias(0.01)
+            ssao.SetKernelSize(128)
+
+            ssao.SetDelegatePass(basic_passes)
+
+            camera_pass = vtkCameraPass()
+            camera_pass.SetDelegatePass(ssao)
+
+            self.ren.SetPass(camera_pass)
+            self.ssao_pass = camera_pass
+            self.ssao_enabled = True
+
+            # Don't save to config here - only Preferences dialog should save
+            # session = ses.Session()
+            # session.SetConfig("ssao_enabled", True)
+
+            self.UpdateRender()
+
+        except (ImportError, AttributeError):
+            pass
+
+    def _DisableSSAO(self):
+        if not self.ssao_enabled:
+            return
+
+        self.ren.SetPass(None)
+        self.ssao_pass = None
+        self.ssao_enabled = False
+
+        # Don't save to config here - only Preferences dialog should save
+        # session = ses.Session()
+        # session.SetConfig("ssao_enabled", False)
+
+        self.UpdateRender()
+
+    def _ApplySSAOAfterProjectLoad(self):
+        """Apply SSAO after project is fully loaded from .inv3 file"""
+        # Check if SSAO is enabled in preferences
+        session = ses.Session()
+        ssao_enabled = session.GetConfig("ssao_enabled", False)
+
+        # Only apply if enabled in preferences, surface exists, and not already enabled
+        if (
+            ssao_enabled
+            and self.surface_added
+            and not self.ssao_enabled
+            and not self.raycasting_volume
+        ):
+            # Use a timer to retry SSAO application after the window has been rendered
+            # This is needed because when loading from .inv3, the render window may not be ready yet
+            import wx
+
+            wx.CallLater(500, self._RetryEnableSSAO)  # Retry after 500ms
+
+    def _RetryEnableSSAO(self):
+        """Retry enabling SSAO after a delay to ensure render window is ready"""
+        render_window = self.interactor.GetRenderWindow()
+        if render_window:
+            if not render_window.GetNeverRendered():
+                # Render window is ready, apply SSAO
+                self._EnableSSAO()
+            else:
+                # Render window still not rendered, retry again after another delay
+                import wx
+
+                wx.CallLater(500, self._RetryEnableSSAO)
 
     def Reposition3DPlane(self, plane_label):
         if not self.surface_added and not self.raycasting_volume:

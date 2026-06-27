@@ -140,6 +140,7 @@ class Volume:
         Publisher.subscribe(self.ResetRayCasting, "Reset Raycasting")
 
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
+        Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
 
     def ResetRayCasting(self):
         if self.exist:
@@ -164,14 +165,22 @@ class Volume:
             Publisher.sendMessage("Disable volume cut menu")
             Publisher.sendMessage("Unload volume", volume=self.volume)
 
-            del self.image
-            del self.imagedata
-            del self.final_imagedata
-            del self.volume
-            del self.color_transfer
-            del self.opacity_transfer_func
-            del self.volume_properties
-            del self.volume_mapper
+            if hasattr(self, "image"):
+                del self.image
+            if hasattr(self, "imagedata"):
+                del self.imagedata
+            if hasattr(self, "final_imagedata"):
+                del self.final_imagedata
+            if hasattr(self, "volume"):
+                del self.volume
+            if hasattr(self, "color_transfer"):
+                del self.color_transfer
+            if hasattr(self, "opacity_transfer_func"):
+                del self.opacity_transfer_func
+            if hasattr(self, "volume_properties"):
+                del self.volume_properties
+            if hasattr(self, "volume_mapper"):
+                del self.volume_mapper
             self.volume = None
             self.exist = False
             self.loaded_image = False
@@ -230,14 +239,22 @@ class Volume:
             Publisher.sendMessage("Change volume viewer gui colour", colour=colour)
         else:
             Publisher.sendMessage("Unload volume", volume=self.volume)
-            del self.image
-            del self.imagedata
-            del self.final_imagedata
-            del self.volume
-            del self.color_transfer
-            del self.opacity_transfer_func
-            del self.volume_properties
-            del self.volume_mapper
+            if hasattr(self, "image"):
+                del self.image
+            if hasattr(self, "imagedata"):
+                del self.imagedata
+            if hasattr(self, "final_imagedata"):
+                del self.final_imagedata
+            if hasattr(self, "volume"):
+                del self.volume
+            if hasattr(self, "color_transfer"):
+                del self.color_transfer
+            if hasattr(self, "opacity_transfer_func"):
+                del self.opacity_transfer_func
+            if hasattr(self, "volume_properties"):
+                del self.volume_properties
+            if hasattr(self, "volume_mapper"):
+                del self.volume_mapper
             self.volume = None
             self.exist = False
             self.loaded_image = False
@@ -253,6 +270,16 @@ class Volume:
         del self.image
         self.image = None
         self.to_reload = True
+
+    def OnSwapVolumeAxes(self, axes):
+        self.loaded_image = False
+        del self.image
+        self.image = None
+        self.to_reload = True
+        if self.exist:
+            self.exist = None
+            self.LoadVolume()
+            Publisher.sendMessage("Render volume viewer")
 
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
@@ -286,6 +313,10 @@ class Volume:
         Publisher.sendMessage("Set volume window and level text", ww=ww, wl=wl)
 
     def OnSetRelativeWindowLevel(self, diff_wl, diff_ww):
+        # Defensive check: ensure ww and wl are initialized (volume rendering must be active)
+        if self.ww is None or self.wl is None:
+            return
+
         ww = self.ww + diff_ww
         wl = self.wl + diff_wl
         Publisher.sendMessage("Set volume window and level text", ww=ww, wl=wl)
@@ -655,6 +686,10 @@ class Volume:
         volume = vtkVolume()
         volume.SetMapper(volume_mapper)
         volume.SetProperty(volume_properties)
+
+        # Enable shading for SSAO compatibility (computes normals for volume raycasting)
+        volume.GetProperty().ShadeOn()
+
         self.volume = volume
 
         colour = self.GetBackgroundColour()

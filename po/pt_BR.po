@@ -13,2637 +13,5148 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-02-22 08:53-0300\n"
+"POT-Creation-Date: 2026-05-18 16:01-0300\n"
 "PO-Revision-Date: 2019-02-25 12:52+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Portuguese (Brazil) (http://www.transifex.com/invesalius/invesalius3/language/pt_BR/)\n"
+"Language-Team: Portuguese (Brazil) (http://www.transifex.com/invesalius/"
+"invesalius3/language/pt_BR/)\n"
+"Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
-#: bitmap_preview_panel.py:25 dicom_preview_panel.py:57
-#, python-format
-msgid "Image size: %d x %d"
-msgstr "Tamanho da imagem: %d x %d"
-
-#: bitmap_preview_panel.py:26 dicom_preview_panel.py:58
-#, python-format
-msgid "Spacing: %.2f"
-msgstr "Espaçamento: %.2f"
-
-#: bitmap_preview_panel.py:27 dicom_preview_panel.py:59
-#, python-format
-msgid "Location: %.2f"
-msgstr "Localização: %.2f"
-
-#: bitmap_preview_panel.py:29 dicom_preview_panel.py:61
-#, python-format
-msgid ""
-"%s %s\n"
-"Made in InVesalius"
-msgstr "%s %s\n Criado com InVesalius"
-
-#: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
-#: dicom_preview_panel.py:200 dicom_preview_panel.py:201 frame.py:935
-msgid "Image"
-msgstr "Imagem"
-
-#: bitmap_preview_panel.py:447 bitmap_preview_panel.py:448 constants.py:225
-#: constants.py:313 control.py:496 dialogs.py:1096 dialogs.py:1109
-#: dicom_preview_panel.py:715 dicom_preview_panel.py:716 presets.py:32
-#: presets.py:50 presets.py:106 presets.py:137
-msgid "Bone"
-msgstr "Osso"
-
-#: bitmap_preview_panel.py:515 dicom_preview_panel.py:783
-msgid "Auto-play"
-msgstr "Reproduzir"
-
-#: clut_raycasting.py:535
-#, python-format
-msgid "Value: %-6d"
-msgstr "Valor: %-6d"
-
-#: clut_raycasting.py:536
-#, python-format
-msgid "Alpha: %-.3f"
-msgstr "Alfa: %-.3f"
-
-#: constants.py:36
+#: invesalius/constants.py:37
 #, python-format
 msgid "M %d"
 msgstr "M %d"
 
-#: constants.py:48 constants.py:441 constants.py:443
+#: invesalius/constants.py:40
+#, python-format
+msgid "Annotation %d"
+msgstr "Anotação %d"
+
+#: invesalius/constants.py:50 invesalius/constants.py:467
+#: invesalius/constants.py:469
 msgid " Off"
 msgstr " Desabilitado"
 
-#: constants.py:49
+#: invesalius/constants.py:51
 msgid "Red-blue"
 msgstr "Vermelho e azul"
 
-#: constants.py:50
+#: invesalius/constants.py:52
 msgid "CristalEyes"
 msgstr "CristalEyes"
 
-#: constants.py:51
+#: invesalius/constants.py:53
 msgid "Interlaced"
 msgstr "Entrelaçado"
 
-#: constants.py:52 constants.py:389 constants.py:752
+#: invesalius/constants.py:54 invesalius/constants.py:413
+#: invesalius/constants.py:982
 msgid "Left"
 msgstr "Esquerda"
 
-#: constants.py:53 constants.py:388 constants.py:753
+#: invesalius/constants.py:55 invesalius/constants.py:412
+#: invesalius/constants.py:988
 msgid "Right"
 msgstr "Direita"
 
-#: constants.py:54
+#: invesalius/constants.py:56
 msgid "Dresden"
 msgstr "Dresden"
 
-#: constants.py:55
+#: invesalius/constants.py:57
 msgid "Checkboard"
 msgstr "Checkboard"
 
-#: constants.py:56
+#: invesalius/constants.py:58
 msgid "Anaglyph"
 msgstr "Anaglifo"
 
-#: constants.py:116
+#: invesalius/constants.py:124
 msgid "Keep all slices"
 msgstr "Manter todas as fatias"
 
-#: constants.py:116
+#: invesalius/constants.py:125
 msgid "Skip 1 for each 2 slices"
 msgstr "Pular 1 a cada 2 fatias"
 
-#: constants.py:117
+#: invesalius/constants.py:126
 msgid "Skip 2 for each 3 slices"
 msgstr "Pular 2 a cada 3 fatias"
 
-#: constants.py:117
+#: invesalius/constants.py:127
 msgid "Skip 3 for each 4 slices"
 msgstr "Pular 3 a cada 4 fatias"
 
-#: constants.py:118
+#: invesalius/constants.py:128
 msgid "Skip 4 for each 5 slices"
 msgstr "Pular 4 a cada 5 fatias"
 
-#: constants.py:118
+#: invesalius/constants.py:129
 msgid "Skip 5 for each 6 slices"
 msgstr "Pular 5 a cada 6 fatias"
 
-#: constants.py:175 slice_menu.py:102 slice_menu.py:109
+#: invesalius/constants.py:190 invesalius/gui/widgets/slice_menu.py:95
+#: invesalius/gui/widgets/slice_menu.py:101
 msgid "Default "
 msgstr "Padrão "
 
-#: constants.py:176
+#: invesalius/constants.py:191
 msgid "Hue"
 msgstr "Matiz"
 
-#: constants.py:177
+#: invesalius/constants.py:192
 msgid "Saturation"
 msgstr "Saturação"
 
-#: constants.py:178
+#: invesalius/constants.py:193
 msgid "Desert"
 msgstr "Deserto"
 
-#: constants.py:179
+#: invesalius/constants.py:194
 msgid "Rainbow"
 msgstr "Arco-íris"
 
-#: constants.py:180
+#: invesalius/constants.py:195
 msgid "Ocean"
 msgstr "Oceano"
 
-#: constants.py:181
+#: invesalius/constants.py:196
 msgid "Inverse Gray"
 msgstr "Cinza invertido"
 
-#: constants.py:231
+#: invesalius/constants.py:286 invesalius/constants.py:381
+#: invesalius/control.py:858 invesalius/gui/bitmap_preview_panel.py:442
+#: invesalius/gui/bitmap_preview_panel.py:443 invesalius/gui/dialogs.py:1407
+#: invesalius/gui/dialogs.py:1421 invesalius/gui/dicom_preview_panel.py:718
+#: invesalius/gui/dicom_preview_panel.py:719 invesalius/presets.py:37
+#: invesalius/presets.py:57 invesalius/presets.py:109 invesalius/presets.py:142
+msgid "Bone"
+msgstr "Osso"
+
+#: invesalius/constants.py:292
 #, python-format
 msgid "Mask %d"
 msgstr "Máscara %d"
 
-#: constants.py:287 task_surface.py:50
+#: invesalius/constants.py:348 invesalius/gui/task_surface.py:52
 msgid "Draw"
 msgstr "Desenhar"
 
-#: constants.py:287 styles.py:67 task_slice.py:890 task_surface.py:50
+#: invesalius/constants.py:348 invesalius/data/styles.py:84
+#: invesalius/gui/task_slice.py:1102 invesalius/gui/task_surface.py:52
 msgid "Erase"
 msgstr "Apagar"
 
-#: constants.py:287 data_notebook.py:467 dialogs.py:2948 task_surface.py:50
+#: invesalius/constants.py:348 invesalius/gui/data_notebook.py:924
+#: invesalius/gui/dialogs.py:3566 invesalius/gui/task_surface.py:52
 msgid "Threshold"
 msgstr "Limiar"
 
-#: constants.py:299 constants.py:304
+#: invesalius/constants.py:360 invesalius/constants.py:366
 msgid "Low"
 msgstr "Baixa"
 
-#: constants.py:300 constants.py:304
+#: invesalius/constants.py:361 invesalius/constants.py:366
 msgid "Medium"
 msgstr "Média"
 
-#: constants.py:301 constants.py:304
+#: invesalius/constants.py:362 invesalius/constants.py:366
 msgid "High"
 msgstr "Alta"
 
-#: constants.py:302 constants.py:303 constants.py:304 task_slice.py:187
+#: invesalius/constants.py:363 invesalius/constants.py:365
+#: invesalius/constants.py:366 invesalius/data/surface.py:1521
+#: invesalius/gui/task_navigator.py:844 invesalius/gui/task_navigator.py:898
+#: invesalius/gui/task_slice.py:193 invesalius/gui/task_slice.py:256
 msgid "Optimal *"
 msgstr "Ótima *"
 
-#: constants.py:309
+#: invesalius/constants.py:371
 #, python-format
 msgid "Surface %d"
 msgstr "Superfície %d"
 
-#: constants.py:312
+#: invesalius/constants.py:376
+msgid "world/scanner space"
+msgstr "Espaço do mundo/scanner"
+
+#: invesalius/constants.py:376
+msgid "InVesalius space"
+msgstr "Espaço do InVesalius"
+
+#: invesalius/constants.py:380
 msgid "Abdomen"
 msgstr "Abdômen"
 
-#: constants.py:314
+#: invesalius/constants.py:382
 msgid "Brain posterior fossa"
 msgstr "Fossa posterior do Cérebro"
 
-#: constants.py:315
+#: invesalius/constants.py:383
 msgid "Brain"
 msgstr "Cérebro"
 
-#: constants.py:316 control.py:498 dialogs.py:1797 dialogs.py:1800
-#: dialogs.py:1808 dialogs.py:1883 slice_menu.py:59 slice_menu.py:71
+#: invesalius/constants.py:384 invesalius/control.py:860
+#: invesalius/gui/dialogs.py:2274 invesalius/gui/dialogs.py:2279
+#: invesalius/gui/dialogs.py:2291 invesalius/gui/dialogs.py:2367
+#: invesalius/gui/widgets/slice_menu.py:60
+#: invesalius/gui/widgets/slice_menu.py:69
 msgid "Default"
 msgstr "Padrão"
 
-#: constants.py:317
+#: invesalius/constants.py:385
 msgid "Emphysema"
 msgstr "Enfisema"
 
-#: constants.py:318
+#: invesalius/constants.py:386
 msgid "Ischemia - Hard, non contrast"
-msgstr ""
+msgstr "Isquemia - duro, sem contraste"
 
-#: constants.py:319
+#: invesalius/constants.py:387
 msgid "Ischemia - Soft, non contrast"
-msgstr ""
+msgstr "Isquemia - suave, sem contraste"
 
-#: constants.py:320
+#: invesalius/constants.py:388
 msgid "Larynx"
 msgstr "Laringe"
 
-#: constants.py:321
+#: invesalius/constants.py:389
 msgid "Liver"
 msgstr "Fígado"
 
-#: constants.py:322
+#: invesalius/constants.py:390
 msgid "Lung - Soft"
 msgstr "Pulmão - Mole"
 
-#: constants.py:323
+#: invesalius/constants.py:391
 msgid "Lung - Hard"
 msgstr "Pulmão - Duro"
 
-#: constants.py:324
+#: invesalius/constants.py:392
 msgid "Mediastinum"
 msgstr "Mediastino"
 
-#: constants.py:325 control.py:499 slice_menu.py:66 slice_menu.py:71
+#: invesalius/constants.py:393 invesalius/control.py:861
+#: invesalius/gui/widgets/slice_menu.py:65
+#: invesalius/gui/widgets/slice_menu.py:69
 msgid "Manual"
 msgstr "Manual"
 
-#: constants.py:326
+#: invesalius/constants.py:394
 msgid "Pelvis"
 msgstr "Pélvis"
 
-#: constants.py:327
+#: invesalius/constants.py:395
 msgid "Sinus"
 msgstr "Seio"
 
-#: constants.py:328
+#: invesalius/constants.py:396
 msgid "Vasculature - Hard"
 msgstr "Vasculatura - Duro"
 
-#: constants.py:329
+#: invesalius/constants.py:397
 msgid "Vasculature - Soft"
 msgstr "Vasculatura - Mole"
 
-#: constants.py:330
+#: invesalius/constants.py:398
 msgid "Contour"
 msgstr "Contorno"
 
-#: constants.py:384
+#: invesalius/constants.py:408
 msgid "Front"
 msgstr "Frente"
 
-#: constants.py:385
+#: invesalius/constants.py:409
 msgid "Back"
 msgstr "Atrás"
 
-#: constants.py:386
+#: invesalius/constants.py:410
 msgid "Top"
 msgstr "Topo"
 
-#: constants.py:387
+#: invesalius/constants.py:411
 msgid "Bottom"
 msgstr "Base"
 
-#: constants.py:390
+#: invesalius/constants.py:414
 msgid "Isometric"
 msgstr "Isométrica"
 
-#: constants.py:397
+#: invesalius/constants.py:422
 msgid "Airways"
 msgstr "Vias aéreas"
 
-#: constants.py:398
+#: invesalius/constants.py:423
 msgid "Airways II"
 msgstr "Vias aéreas II"
 
-#: constants.py:399
+#: invesalius/constants.py:424
 msgid "Black & White"
 msgstr "Preto e branco"
 
-#: constants.py:400
+#: invesalius/constants.py:425
 msgid "Bone + Skin"
 msgstr "Osso + Pele"
 
-#: constants.py:401
+#: invesalius/constants.py:426
 msgid "Bone + Skin II"
 msgstr "Osso + Pele II"
 
-#: constants.py:402
+#: invesalius/constants.py:427
 msgid "Dark bone"
 msgstr "Osso escuro"
 
-#: constants.py:403
+#: invesalius/constants.py:428
 msgid "Glossy"
 msgstr "Brilhante"
 
-#: constants.py:404
+#: invesalius/constants.py:429
 msgid "Glossy II"
 msgstr "Brilhante II"
 
-#: constants.py:405
+#: invesalius/constants.py:430
 msgid "Gold bone"
 msgstr "Osso dourado"
 
-#: constants.py:406
+#: invesalius/constants.py:431
 msgid "High contrast"
 msgstr "Contraste alto"
 
-#: constants.py:407
+#: invesalius/constants.py:432
 msgid "Low contrast"
 msgstr "Contraste baixo"
 
-#: constants.py:408 constants.py:416
+#: invesalius/constants.py:433 invesalius/constants.py:441
 msgid "Soft on white"
 msgstr "Mole sobre branco"
 
-#: constants.py:409
+#: invesalius/constants.py:434
 msgid "Mid contrast"
 msgstr "Contraste médio"
 
-#: constants.py:410
+#: invesalius/constants.py:435
 msgid "MIP"
 msgstr "MIP"
 
-#: constants.py:411
+#: invesalius/constants.py:436
 msgid "No shading"
 msgstr "Sem sombreamento"
 
-#: constants.py:412
+#: invesalius/constants.py:437
 msgid "Pencil"
 msgstr "Lápis"
 
-#: constants.py:413
+#: invesalius/constants.py:438
 msgid "Red on white"
 msgstr "Vermelho sobre branco"
 
-#: constants.py:414
+#: invesalius/constants.py:439
 msgid "Skin on blue"
 msgstr "Pele sobre azul"
 
-#: constants.py:415
+#: invesalius/constants.py:440
 msgid "Skin on blue II"
 msgstr "Pele sobre azul II"
 
-#: constants.py:417
+#: invesalius/constants.py:442
 msgid "Soft + Skin"
 msgstr "Mole + Pele"
 
-#: constants.py:418
+#: invesalius/constants.py:443
 msgid "Soft + Skin II"
 msgstr "Mole + Pele II"
 
-#: constants.py:419
+#: invesalius/constants.py:444
 msgid "Soft + Skin III"
 msgstr "Mole + Pele III"
 
-#: constants.py:420
+#: invesalius/constants.py:445
 msgid "Soft on blue"
 msgstr "Mole sobre azul"
 
-#: constants.py:421
+#: invesalius/constants.py:446
 msgid "Soft"
 msgstr "Mole"
 
-#: constants.py:422
+#: invesalius/constants.py:447
 msgid "Standard"
 msgstr "Padrão"
 
-#: constants.py:423
+#: invesalius/constants.py:448
 msgid "Vascular"
 msgstr "Vascular"
 
-#: constants.py:424
+#: invesalius/constants.py:449
 msgid "Vascular II"
 msgstr "Vascular II"
 
-#: constants.py:425
+#: invesalius/constants.py:450
 msgid "Vascular III"
 msgstr "Vascular III"
 
-#: constants.py:426
+#: invesalius/constants.py:451
 msgid "Vascular IV"
 msgstr "Vascular IV"
 
-#: constants.py:427
+#: invesalius/constants.py:452
 msgid "Yellow bone"
 msgstr "Osso amarelo"
 
-#: constants.py:444 volume.py:670
+#: invesalius/constants.py:470 invesalius/data/volume.py:710
 msgid "Cut plane"
 msgstr "Plano de corte"
 
-#: constants.py:702
-msgid "Select tracker:"
-msgstr "Selecione o rastreador:"
-
-#: constants.py:702
+#: invesalius/constants.py:888
 msgid "Claron MicronTracker"
 msgstr "Claron MicronTracker"
 
-#: constants.py:703
+#: invesalius/constants.py:889
 msgid "Polhemus FASTRAK"
 msgstr "Polhemus FASTRAK"
 
-#: constants.py:703
+#: invesalius/constants.py:890
 msgid "Polhemus ISOTRAK II"
 msgstr "Polhemus ISOTRAK II"
 
-#: constants.py:704
+#: invesalius/constants.py:891
 msgid "Polhemus PATRIOT"
 msgstr "Polhemus PATRIOT"
 
-#: constants.py:704
-msgid "Debug tracker"
-msgstr "Depurar rastreador"
+#: invesalius/constants.py:892
+msgid "Camera tracker"
+msgstr "Rastreador de câmera"
 
-#: constants.py:705
-msgid "Disconnect tracker"
-msgstr "Desconectar rastreador"
+#: invesalius/constants.py:893
+msgid "NDI Polaris"
+msgstr "NDI Polaris"
 
-#: constants.py:710
+#: invesalius/constants.py:894
+msgid "NDI Polaris P4"
+msgstr "NDI Polaris P4"
+
+#: invesalius/constants.py:895
+msgid "Optitrack"
+msgstr "Optitrack"
+
+#: invesalius/constants.py:896
+msgid "Debug tracker (random)"
+msgstr "Depurar rastreador (aleatório)"
+
+#: invesalius/constants.py:897
+msgid "Debug tracker (approach)"
+msgstr "Depurar rastreador (aproximado)"
+
+#: invesalius/constants.py:903
 msgid "Static ref."
 msgstr "Ref. estática"
 
-#: constants.py:710
+#: invesalius/constants.py:903
 msgid "Dynamic ref."
 msgstr "Ref. dinâmica"
 
-#: constants.py:713
+#: invesalius/constants.py:904
+msgid "Sensor 3"
+msgstr "Sensor 3"
+
+#: invesalius/constants.py:904
+msgid "Sensor 4"
+msgstr "Sensor 4"
+
+#: invesalius/constants.py:908
 msgid "Select coil:"
 msgstr "Selecione a bobina:"
 
-#: constants.py:713
+#: invesalius/constants.py:908
 msgid "Neurosoft Figure-8"
-msgstr ""
+msgstr "Neurosoft Figure-8"
 
-#: constants.py:714
+#: invesalius/constants.py:908
 msgid "Magstim 70 mm"
-msgstr ""
+msgstr "Magstim 70 mm"
 
-#: constants.py:714
+#: invesalius/constants.py:908
 msgid "Nexstim"
-msgstr ""
+msgstr "Nexstim"
 
-#: constants.py:724
-msgid "LEI"
-msgstr "OEI"
-
-#: constants.py:725
-msgid "REI"
-msgstr "ODI"
-
-#: constants.py:726
-msgid "NAI"
-msgstr "NAI"
-
-#: constants.py:732
+#: invesalius/constants.py:926
 msgid "Select left ear in image"
 msgstr "Selecionar orelha esquerda na imagem"
 
-#: constants.py:733
+#: invesalius/constants.py:933
 msgid "Select right ear in image"
 msgstr "Selecionar orelha direita na imagem"
 
-#: constants.py:734
+#: invesalius/constants.py:940
 msgid "Select nasion in image"
 msgstr "Selecionar naso na imagem"
 
-#: constants.py:736
-msgid "LET"
-msgstr "OER"
-
-#: constants.py:737
-msgid "RET"
-msgstr "ODR"
-
-#: constants.py:738
-msgid "NAT"
-msgstr "NAR"
-
-#: constants.py:739
-msgid "SET"
-msgstr "SET"
-
-#: constants.py:741
+#: invesalius/constants.py:950
 msgid "Select left ear with spatial tracker"
 msgstr "Selecionar orelha esquerda com o rastreador"
 
-#: constants.py:742
+#: invesalius/constants.py:957
 msgid "Select right ear with spatial tracker"
 msgstr "Selecionar orelha direita com o rastreador"
 
-#: constants.py:743
+#: invesalius/constants.py:964
 msgid "Select nasion with spatial tracker"
 msgstr "Selecionar naso com o rastreador"
 
-#: constants.py:744
-msgid "Show set coordinates in image"
-msgstr "Exibir coordenadas setadas na imagem"
-
-#: constants.py:754
-msgid "Anterior"
-msgstr ""
-
-#: constants.py:755
-msgid "Center"
-msgstr ""
-
-#: constants.py:756
-msgid "Fixed"
-msgstr ""
-
-#: constants.py:758
+#: invesalius/constants.py:983
 msgid "Select left object fiducial"
-msgstr ""
+msgstr "Selecionar fiducial esquerdo do objeto"
 
-#: constants.py:759
+#: invesalius/constants.py:989
 msgid "Select right object fiducial"
-msgstr ""
+msgstr "Selecionar fiducial direito do objeto"
 
-#: constants.py:760
+#: invesalius/constants.py:994
+msgid "Anterior"
+msgstr "Anterior"
+
+#: invesalius/constants.py:995
 msgid "Select anterior object fiducial"
-msgstr ""
+msgstr "Selecionar fiducial anterior do objeto"
 
-#: constants.py:761
-msgid "Select object center"
-msgstr ""
+#: invesalius/constants.py:1000
+msgid "Fixed"
+msgstr "Fixo"
 
-#: constants.py:762
+#: invesalius/constants.py:1001
 msgid "Attach sensor to object"
-msgstr ""
+msgstr "Anexar sensor ao objeto"
 
-#: control.py:390
+#: invesalius/constants.py:1064
+msgid "Marker scanner coord files (*.mkss)|*.mkss"
+msgstr "Arquivos de coordenadas do scanner de marcadores (*.mkss)|*.mkss"
+
+#: invesalius/constants.py:1202
+msgid "Include Inside"
+msgstr "Incluir interior"
+
+#: invesalius/constants.py:1202
+msgid "Exclude Inside"
+msgstr "Excluir interior"
+
+#: invesalius/control.py:259
+msgid "Import NIfTI Mask"
+msgstr "Importar máscara NIfTI"
+
+#: invesalius/control.py:274
+msgid "Failed to read NIfTI file."
+msgstr "Falha ao ler o arquivo NIfTI."
+
+#: invesalius/control.py:279
+msgid "No volume loaded. Please load a volume before importing a mask."
+msgstr ""
+"Nenhum volume carregado. Carregue um volume antes de importar uma máscara."
+
+#: invesalius/control.py:316
+msgid "Mask imported successfully."
+msgstr "Máscara importada com sucesso."
+
+#: invesalius/control.py:320
+msgid "Error importing mask"
+msgstr "Erro ao importar máscara"
+
+#: invesalius/control.py:335
+msgid "Export Mask as NIfTI"
+msgstr "Exportar máscara como NIfTI"
+
+#: invesalius/control.py:392
+msgid "Error exporting mask"
+msgstr "Erro ao exportar máscara"
+
+#: invesalius/control.py:415
+msgid "Invalid file type"
+msgstr "Tipo de arquivo inválido"
+
+#: invesalius/control.py:416
+msgid "Please select an InVesalius project file (.inv3)."
+msgstr "Selecione um arquivo de projeto do InVesalius (.inv3)."
+
+#: invesalius/control.py:546
+msgid "Project loading was cancelled."
+msgstr "O carregamento do projeto foi cancelado."
+
+#: invesalius/control.py:547
+msgid "Load Cancelled"
+msgstr "Carregamento cancelado"
+
+#: invesalius/control.py:553
+msgid "Initializing project..."
+msgstr "Inicializando projeto..."
+
+#: invesalius/control.py:575
+msgid "Loading project into interface..."
+msgstr "Carregando projeto na interface..."
+
+#: invesalius/control.py:588
+msgid "Project loaded successfully!"
+msgstr "Projeto carregado com sucesso!"
+
+#: invesalius/control.py:598
+msgid "Error loading project: {}"
+msgstr "Erro ao carregar projeto: {}"
+
+#: invesalius/control.py:599
+msgid "Load Error"
+msgstr "Erro de carregamento"
+
+#: invesalius/control.py:679 invesalius/data/surface.py:835
+#: invesalius/gui/dialogs.py:6625 invesalius/gui/frame.py:1871
+#: invesalius/gui/preferences.py:1295 invesalius/gui/preferences.py:1997
+msgid "Ready"
+msgstr "Pronto"
+
+#: invesalius/control.py:707
 #, python-format
 msgid "Loading file %d of %d ..."
 msgstr "Carregando arquivo %d de %d ..."
 
-#: control.py:840
+#: invesalius/control.py:1201
+msgid ""
+"this is a rgb image, it's necessary to convert to grayscale to open on "
+"invesalius.\n"
+"do you want to convert it to grayscale?"
+msgstr ""
+"Esta é uma imagem RGB. É necessário convertê-la para tons de cinza para abri-"
+"la no InVesalius.\n"
+"Deseja convertê-la para tons de cinza?"
+
+#: invesalius/control.py:1203
+msgid "Confirm"
+msgstr "Confirmar"
+
+#: invesalius/control.py:1328
 msgid "Fix gantry tilt applying the degrees below"
 msgstr "Corrigir inclinação (gantry tilt) aplicando o seguinte valor"
 
-#: data_notebook.py:49 measures.py:23
+#: invesalius/data/imagedata_utils.py:102
+#: invesalius/data/imagedata_utils.py:307
+#: invesalius/data/imagedata_utils.py:425
+msgid "Generating multiplanar visualization..."
+msgstr "Gerando visualização multiplanar..."
+
+#: invesalius/data/markers/surface_geometry.py:262
+msgid ""
+"A new highest scalp surface was identified. Do you want to update the "
+"smoothed surface?"
+msgstr ""
+"Uma nova superfície mais externa do couro cabeludo foi identificada. Deseja "
+"atualizar a superfície suavizada?"
+
+#: invesalius/data/measures.py:43 invesalius/gui/data_notebook.py:52
 msgid "Linear"
 msgstr "Linear"
 
-#: data_notebook.py:50 measures.py:24
+#: invesalius/data/measures.py:44 invesalius/gui/data_notebook.py:53
 msgid "Angular"
 msgstr "Angular"
 
-#: data_notebook.py:51 measures.py:25 measures.py:1133
+#: invesalius/data/measures.py:45 invesalius/data/measures.py:1934
+#: invesalius/gui/data_notebook.py:54
 msgid "Density Ellipse"
-msgstr ""
+msgstr "Elipse de densidade"
 
-#: data_notebook.py:52 measures.py:26 measures.py:1572
+#: invesalius/data/measures.py:46 invesalius/data/measures.py:2440
+#: invesalius/gui/data_notebook.py:55
 msgid "Density Polygon"
-msgstr ""
+msgstr "Polígono de densidade"
 
-#: data_notebook.py:55 measures.py:29
+#: invesalius/data/measures.py:47 invesalius/gui/data_notebook.py:56
+msgid "Annotation"
+msgstr "Anotação"
+
+#: invesalius/data/measures.py:48 invesalius/gui/data_notebook.py:57
+msgid "Curved Linear"
+msgstr "Linear curvo"
+
+#: invesalius/data/measures.py:52 invesalius/gui/data_notebook.py:61
+#: invesalius/gui/dialogs.py:8086
 msgid "3D"
 msgstr "3D"
 
-#: data_notebook.py:56 dialogs.py:2285 dialogs.py:2461 dialogs.py:2483
-#: dialogs.py:3712 measures.py:30
+#: invesalius/data/measures.py:53 invesalius/gui/data_notebook.py:62
+#: invesalius/gui/dialogs.py:2828 invesalius/gui/dialogs.py:3007
+#: invesalius/gui/dialogs.py:3034 invesalius/gui/dialogs.py:6345
+#: invesalius/gui/dialogs.py:8097 invesalius/gui/project_properties.py:28
 msgid "Axial"
 msgstr "Axial"
 
-#: data_notebook.py:57 dialogs.py:2285 dialogs.py:2461 dialogs.py:2484
-#: dialogs.py:3713 measures.py:31
+#: invesalius/data/measures.py:54 invesalius/gui/data_notebook.py:63
+#: invesalius/gui/dialogs.py:2828 invesalius/gui/dialogs.py:3007
+#: invesalius/gui/dialogs.py:3034 invesalius/gui/dialogs.py:6346
+#: invesalius/gui/dialogs.py:8097 invesalius/gui/project_properties.py:29
 msgid "Coronal"
 msgstr "Coronal"
 
-#: data_notebook.py:58 measures.py:32
+#: invesalius/data/measures.py:55 invesalius/gui/data_notebook.py:64
+#: invesalius/gui/dialogs.py:8097
 msgid "Sagittal"
 msgstr "Sagital"
 
-#: data_notebook.py:73
-msgid "Masks"
-msgstr "Máscaras"
+#: invesalius/data/measures.py:1902 invesalius/data/measures.py:2407
+#, python-brace-format
+msgid "Area: {self._area:.3f}\n"
+msgstr "Área: {self._area:.3f}\n"
 
-#: data_notebook.py:74
-msgid "3D surfaces"
-msgstr "Superfícies 3D"
+#: invesalius/data/polydata_utils.py:218
+msgid "Analysing selected regions..."
+msgstr "Analisando regiões selecionadas..."
 
-#: data_notebook.py:75
-msgid "Measures"
-msgstr "Medições"
+#: invesalius/data/polydata_utils.py:276
+msgid "Splitting disconnected regions..."
+msgstr "Separando regiões desconexas..."
 
-#: data_notebook.py:171
-msgid "Create a new measure"
-msgstr ""
+#: invesalius/data/record_coords.py:57
+msgid "Save coords as..."
+msgstr "Salvar coordenadas como..."
 
-#: data_notebook.py:178
-msgid "Remove measure"
-msgstr ""
+#: invesalius/data/record_coords.py:58
+msgid "Coordinates files (*.csv)|*.csv"
+msgstr "Arquivos de coordenadas (*.csv)|*.csv"
 
-#: data_notebook.py:184
-msgid "Duplicate measure"
-msgstr ""
+#: invesalius/data/slice_.py:1802 invesalius/gui/dialogs.py:2569
+msgid "Union"
+msgstr "União"
 
-#: data_notebook.py:197 frame.py:1512
-msgid "Measure distance"
-msgstr "Medir distância"
+#: invesalius/data/slice_.py:1803
+msgid "Diff"
+msgstr "Diff"
 
-#: data_notebook.py:200 frame.py:1518
-msgid "Measure angle"
-msgstr "Medir ângulo"
+#: invesalius/data/slice_.py:1804 invesalius/gui/dialogs.py:2571
+msgid "Intersection"
+msgstr "Intersecção"
 
-#: data_notebook.py:289
-msgid "Create a new mask"
-msgstr ""
+#: invesalius/data/slice_.py:1805
+msgid "XOR"
+msgstr "XOR"
 
-#: data_notebook.py:295
-msgid "Remove mask"
-msgstr ""
+#: invesalius/data/slice_.py:2361 invesalius/gui/data_notebook.py:2812
+#: invesalius/gui/data_notebook.py:2870
+msgid "Filtered"
+msgstr "Filtrado"
 
-#: data_notebook.py:301
-msgid "Duplicate mask"
-msgstr ""
+#: invesalius/data/styles.py:85 invesalius/gui/task_slice.py:1102
+msgid "Foreground"
+msgstr "Objeto"
 
-#: data_notebook.py:466 data_notebook.py:818 data_notebook.py:1093
-#: data_notebook.py:1290
-msgid "Name"
-msgstr "Nome"
+#: invesalius/data/styles.py:86 invesalius/gui/task_slice.py:1102
+msgid "Background"
+msgstr "Fundo"
 
-#: data_notebook.py:537 frame.py:936
-msgid "Mask"
-msgstr "Máscara"
+#: invesalius/data/styles.py:789 invesalius/gui/frame.py:2358
+#: invesalius/gui/task_tools.py:155
+msgid "Curved Ruler"
+msgstr "Régua curva"
 
-#: data_notebook.py:629
-msgid "Create a new surface"
-msgstr ""
+#: invesalius/data/styles.py:789
+msgid "This measurement can only be performed on the 3D surface."
+msgstr "Esta medição só pode ser realizada na superfície 3D."
 
-#: data_notebook.py:635
-msgid "Remove surface"
-msgstr ""
+#: invesalius/data/styles.py:1608
+msgid "Applying watershed ..."
+msgstr "Aplicando watershed ..."
 
-#: data_notebook.py:641
-msgid "Duplicate surface"
-msgstr ""
+#: invesalius/data/styles.py:2459 invesalius/gui/dialogs.py:1755
+#: invesalius/gui/dialogs.py:2039
+msgid "Fill holes"
+msgstr "Preencher buracos"
 
-#: data_notebook.py:647
-msgid "Import a surface file into InVesalius"
-msgstr ""
+#: invesalius/data/styles.py:2460
+msgid "Fill hole"
+msgstr "Fechar buraco"
 
-#: data_notebook.py:675 task_surface.py:162
-msgid "New surface"
-msgstr "Nova superfície"
+#: invesalius/data/styles.py:2461
+msgid "Filling hole ..."
+msgstr "Fechando buraco ..."
 
-#: data_notebook.py:819
-msgid "Volume (mm³)"
-msgstr "Volume (mm³)"
+#: invesalius/data/styles.py:2586
+msgid "Remove parts"
+msgstr "Remover partes"
 
-#: data_notebook.py:820
-msgid "Area (mm²)"
-msgstr "Área (mm²)"
+#: invesalius/data/styles.py:2587
+msgid "Remove part"
+msgstr "Remover parte"
 
-#: data_notebook.py:821
-msgid "Transparency"
-msgstr "Transparência"
+#: invesalius/data/styles.py:2588
+msgid "Removing part ..."
+msgstr "Removendo parte ..."
 
-#: data_notebook.py:1094
-msgid "Location"
-msgstr "Local"
+#: invesalius/data/styles.py:3030 invesalius/gui/dialogs.py:3517
+msgid "Region growing"
+msgstr "Crescimento de região"
 
-#: data_notebook.py:1095 data_notebook.py:1291 import_bitmap_panel.py:202
-msgid "Type"
-msgstr "Tipo"
+#: invesalius/data/styles.py:3031
+msgid "Segmenting ..."
+msgstr "Segmentando ..."
 
-#: data_notebook.py:1096 data_notebook.py:1292
-msgid "Value"
-msgstr "Valor"
+#: invesalius/data/surface.py:449 invesalius/data/surface.py:640
+#: invesalius/data/vtk_utils.py:434 invesalius/gui/dialogs.py:4287
+msgid "InVesalius was not able to import this surface"
+msgstr "O InVesalius não conseguiu importar esta superfície"
 
-#: default_tasks.py:154
-msgid "Data"
-msgstr "Dados"
+#: invesalius/data/surface.py:449 invesalius/data/surface.py:627
+#: invesalius/data/surface.py:640 invesalius/data/vtk_utils.py:417
+#: invesalius/data/vtk_utils.py:434 invesalius/gui/dialogs.py:4287
+#: invesalius/gui/dialogs.py:4348
+msgid "Import surface error"
+msgstr "Erro de importação de superfície"
 
-#: default_tasks.py:246 default_tasks.py:252
-msgid "Load data"
-msgstr "Carregue os dados"
+#: invesalius/data/surface.py:627 invesalius/data/vtk_utils.py:417
+msgid "File format not reconized by InVesalius"
+msgstr "Formato de arquivo não reconhecido pelo InVesalius"
 
-#: default_tasks.py:247 default_tasks.py:253 default_tasks.py:282
-msgid "Select region of interest"
-msgstr "Selecione a região de interesse"
-
-#: default_tasks.py:248 default_tasks.py:254 default_tasks.py:284
-msgid "Configure 3D surface"
-msgstr "Configure a superfície 3D"
-
-#: default_tasks.py:249 default_tasks.py:255
-msgid "Export data"
-msgstr "Exporte os dados"
-
-#: default_tasks.py:256 default_tasks.py:325
-msgid "Navigation system"
-msgstr "Sistema de navegação"
-
-#: default_viewers.py:85 default_viewers.py:182 task_exporter.py:253
-msgid "Axial slice"
-msgstr "Fatia axial"
-
-#: default_viewers.py:90 default_viewers.py:188 task_exporter.py:254
-msgid "Coronal slice"
-msgstr "Fatia coronal"
-
-#: default_viewers.py:95 default_viewers.py:194 task_exporter.py:255
-msgid "Sagittal slice"
-msgstr "Fatia sagital"
-
-#: default_viewers.py:101 default_viewers.py:200 task_exporter.py:256
-msgid "Volume"
-msgstr "Volume"
-
-#: default_viewers.py:495
-msgid "Preset name"
-msgstr "Nome do pré-ajuste"
-
-#: default_viewers.py:530 frame.py:1011
-msgid "Tools"
-msgstr "Ferramentas"
-
-#: dialogs.py:104
-msgid "Value will be applied."
-msgstr "O valor será aplicado."
-
-#: dialogs.py:108
-msgid "Value will not be applied."
-msgstr "O valor não será aplicado."
-
-#: dialogs.py:147
+#: invesalius/data/surface.py:1059
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
-"If you want to work with 3D surfaces or volume rendering, \n"
-"it is recommended to reduce the medical images resolution."
-msgstr "O InVesalius está sendo executado sobre um sistema operacional de 32 bits\nou não dispõe de memória suficiente. Se você deseja trabalhar com superfícies 3D\nou renderização volumétrica, recomenda-se diminuir a resolução das imagens médicas."
-
-#: dialogs.py:161
-msgid "Percentage of original resolution"
-msgstr "Porcentagem da resolução original"
-
-#: dialogs.py:209
-msgid "Loading DICOM files"
-msgstr "Carregando arquivos DICOM"
-
-#: dialogs.py:248
-msgid "InVesalius project (*.inv3)|*.inv3"
-msgstr "Projeto do InVesalius (*.inv3)|*.inv3"
-
-#: dialogs.py:249
-msgid "InVesalius project compressed (*.inv3)|*.inv3"
+"It's not possible to create a surface because there is not any voxel "
+"selected on mask"
 msgstr ""
+"Não é possível criar uma superfície porque não há nenhum voxel selecionado "
+"na máscara"
 
-#: dialogs.py:277
-msgid "Open InVesalius 3 project..."
-msgstr "Abrir projeto do InVesalius 3"
+#: invesalius/data/surface.py:1061
+msgid "Create surface warning"
+msgstr "Aviso de criação de superfície"
 
-#: dialogs.py:319
-msgid "Choose a DICOM folder:"
-msgstr "Selecione uma pasta DICOM:"
+#: invesalius/data/surface.py:1222
+msgid "InVesalius was not able to create the surface"
+msgstr "O InVesalius não conseguiu criar a superfície"
 
-#: dialogs.py:362
-msgid "Choose a folder with TIFF, BMP, JPG or PNG:"
-msgstr "Selecionar uma pasta com TIFF, BMP, JPG ou PNG:"
+#: invesalius/data/surface.py:1290
+msgid "Creating 3D surface..."
+msgstr "Criando superfície 3D..."
 
-#: dialogs.py:396
-msgid "Import Analyze 7.5 file"
-msgstr "Importar arquivo Analyze 7.5"
+#: invesalius/data/surface.py:1443
+msgid "It was not possible to export the surface because the surface is empty"
+msgstr "Não foi possível exportar a superfície porque ela está vazia"
 
-#: dialogs.py:402
-msgid "Import NIFTi 1 file"
-msgstr "Importar arquivo NIFTi 1"
+#: invesalius/data/surface.py:1444 invesalius/data/surface.py:1458
+#: invesalius/data/surface.py:1475
+msgid "Export surface error"
+msgstr "Erro de exportação de superfície"
 
-#: dialogs.py:405
-msgid "Import PAR/REC file"
-msgstr "Importar arquivo PAR/REC"
+#: invesalius/data/surface.py:1457
+msgid "Export cancelled by user"
+msgstr "Exportação cancelada pelo usuário"
 
-#: dialogs.py:441
-msgid "Import surface file"
+#: invesalius/data/surface.py:1469
+#, python-brace-format
+msgid ""
+"It was not possible to export the surface because you don't have permission "
+"to write to {dirpath} folder: {err}"
 msgstr ""
+"Não foi possível exportar a superfície porque você não tem permissão para "
+"escrever na pasta {dirpath}: {err}"
 
-#: dialogs.py:476
-msgid "Save project as..."
-msgstr "Salvar projeto como..."
+#: invesalius/data/surface.py:1486
+msgid "Export completed successfully."
+msgstr "Exportação concluída com sucesso."
 
-#: dialogs.py:513
+#: invesalius/data/surface.py:1487
+msgid "Export success"
+msgstr "Exportação bem-sucedida"
+
+#: invesalius/data/viewer_slice.py:91
+msgid "Number of slices used to compound the visualization."
+msgstr "Número de fatias usadas para compor a visualização"
+
+#: invesalius/data/viewer_slice.py:107
+msgid ""
+"Controls the sharpness of the contour. The greater the value, the sharper "
+"the contour."
+msgstr ""
+"Controla a nitidez do contorno. Quanto maior o valor, maior a nítidez do "
+"contorno."
+
+#: invesalius/data/viewer_slice.py:119
+msgid "Inverted order"
+msgstr "Ordem invertida"
+
+#: invesalius/data/viewer_slice.py:123
+msgid ""
+"If checked, the slices are traversed in descending order to compound the "
+"visualization instead of ascending order."
+msgstr ""
+"Se selecionado, as fatias são percorridas em ordem decrescente para compor a "
+"visualização em vez de ordem crescente."
+
+#: invesalius/data/viewer_slice.py:133
+msgid "Number of slices"
+msgstr "Número de fatias"
+
+#: invesalius/data/viewer_slice.py:135
+msgid "Sharpness"
+msgstr "Nitidez"
+
+#: invesalius/data/viewer_slice.py:397 invesalius/data/viewer_slice.py:401
+#: invesalius/data/viewer_slice.py:447 invesalius/data/viewer_slice.py:449
+#: invesalius/data/viewer_slice.py:461 invesalius/data/viewer_slice.py:470
+#: invesalius/data/viewer_slice.py:479 invesalius/data/viewer_slice.py:488
+#: invesalius/data/viewer_slice.py:498 invesalius/data/viewer_slice.py:507
+#: invesalius/data/viewer_slice.py:516 invesalius/data/viewer_slice.py:525
+#: invesalius/data/viewer_volume.py:530
+msgid "R"
+msgstr "D"
+
+#: invesalius/data/viewer_slice.py:397 invesalius/data/viewer_slice.py:401
+#: invesalius/data/viewer_slice.py:447 invesalius/data/viewer_slice.py:449
+#: invesalius/data/viewer_slice.py:461 invesalius/data/viewer_slice.py:470
+#: invesalius/data/viewer_slice.py:479 invesalius/data/viewer_slice.py:488
+#: invesalius/data/viewer_slice.py:498 invesalius/data/viewer_slice.py:507
+#: invesalius/data/viewer_slice.py:516 invesalius/data/viewer_slice.py:525
+#: invesalius/data/viewer_volume.py:529
+msgid "L"
+msgstr "E"
+
+#: invesalius/data/viewer_slice.py:397 invesalius/data/viewer_slice.py:399
+#: invesalius/data/viewer_slice.py:447 invesalius/data/viewer_slice.py:451
+#: invesalius/data/viewer_slice.py:461 invesalius/data/viewer_slice.py:470
+#: invesalius/data/viewer_slice.py:479 invesalius/data/viewer_slice.py:488
+#: invesalius/data/viewer_slice.py:535 invesalius/data/viewer_slice.py:544
+#: invesalius/data/viewer_slice.py:553 invesalius/data/viewer_slice.py:562
+#: invesalius/data/viewer_volume.py:526 invesalius/data/viewer_volume.py:532
+msgid "A"
+msgstr "A"
+
+#: invesalius/data/viewer_slice.py:397 invesalius/data/viewer_slice.py:399
+#: invesalius/data/viewer_slice.py:447 invesalius/data/viewer_slice.py:451
+#: invesalius/data/viewer_slice.py:461 invesalius/data/viewer_slice.py:470
+#: invesalius/data/viewer_slice.py:479 invesalius/data/viewer_slice.py:488
+#: invesalius/data/viewer_slice.py:535 invesalius/data/viewer_slice.py:544
+#: invesalius/data/viewer_slice.py:553 invesalius/data/viewer_slice.py:562
+#: invesalius/data/viewer_volume.py:527 invesalius/data/viewer_volume.py:531
+msgid "P"
+msgstr "P"
+
+#: invesalius/data/viewer_slice.py:399 invesalius/data/viewer_slice.py:401
+#: invesalius/data/viewer_slice.py:449 invesalius/data/viewer_slice.py:451
+#: invesalius/data/viewer_slice.py:498 invesalius/data/viewer_slice.py:507
+#: invesalius/data/viewer_slice.py:516 invesalius/data/viewer_slice.py:525
+#: invesalius/data/viewer_slice.py:535 invesalius/data/viewer_slice.py:544
+#: invesalius/data/viewer_slice.py:553 invesalius/data/viewer_slice.py:562
+#: invesalius/data/viewer_volume.py:539
+msgid "T"
+msgstr "S"
+
+#: invesalius/data/viewer_slice.py:399 invesalius/data/viewer_slice.py:401
+#: invesalius/data/viewer_slice.py:449 invesalius/data/viewer_slice.py:451
+#: invesalius/data/viewer_slice.py:498 invesalius/data/viewer_slice.py:507
+#: invesalius/data/viewer_slice.py:516 invesalius/data/viewer_slice.py:525
+#: invesalius/data/viewer_slice.py:535 invesalius/data/viewer_slice.py:544
+#: invesalius/data/viewer_slice.py:553 invesalius/data/viewer_slice.py:562
+#: invesalius/data/viewer_volume.py:540
+msgid "B"
+msgstr "I"
+
+#: invesalius/data/viewer_slice.py:464 invesalius/data/viewer_slice.py:473
+#: invesalius/data/viewer_slice.py:482 invesalius/data/viewer_slice.py:491
+msgid "AL"
+msgstr "AE"
+
+#: invesalius/data/viewer_slice.py:464 invesalius/data/viewer_slice.py:473
+#: invesalius/data/viewer_slice.py:482 invesalius/data/viewer_slice.py:491
+msgid "RA"
+msgstr "DA"
+
+#: invesalius/data/viewer_slice.py:464 invesalius/data/viewer_slice.py:473
+#: invesalius/data/viewer_slice.py:482 invesalius/data/viewer_slice.py:491
+msgid "PR"
+msgstr "PD"
+
+#: invesalius/data/viewer_slice.py:464 invesalius/data/viewer_slice.py:473
+#: invesalius/data/viewer_slice.py:482 invesalius/data/viewer_slice.py:491
+msgid "LP"
+msgstr "EP"
+
+#: invesalius/data/viewer_slice.py:467 invesalius/data/viewer_slice.py:476
+#: invesalius/data/viewer_slice.py:485 invesalius/data/viewer_slice.py:494
+msgid "LA"
+msgstr "EA"
+
+#: invesalius/data/viewer_slice.py:467 invesalius/data/viewer_slice.py:476
+#: invesalius/data/viewer_slice.py:485 invesalius/data/viewer_slice.py:494
+msgid "AR"
+msgstr "AD"
+
+#: invesalius/data/viewer_slice.py:467 invesalius/data/viewer_slice.py:476
+#: invesalius/data/viewer_slice.py:485 invesalius/data/viewer_slice.py:494
+msgid "RP"
+msgstr "DP"
+
+#: invesalius/data/viewer_slice.py:467 invesalius/data/viewer_slice.py:476
+#: invesalius/data/viewer_slice.py:485 invesalius/data/viewer_slice.py:494
+msgid "PL"
+msgstr "PE"
+
+#: invesalius/data/viewer_slice.py:501 invesalius/data/viewer_slice.py:510
+#: invesalius/data/viewer_slice.py:519 invesalius/data/viewer_slice.py:528
+msgid "TL"
+msgstr "SE"
+
+#: invesalius/data/viewer_slice.py:501 invesalius/data/viewer_slice.py:510
+#: invesalius/data/viewer_slice.py:519 invesalius/data/viewer_slice.py:528
+msgid "RT"
+msgstr "DS"
+
+#: invesalius/data/viewer_slice.py:501 invesalius/data/viewer_slice.py:510
+#: invesalius/data/viewer_slice.py:519 invesalius/data/viewer_slice.py:528
+msgid "BR"
+msgstr "ID"
+
+#: invesalius/data/viewer_slice.py:501 invesalius/data/viewer_slice.py:510
+#: invesalius/data/viewer_slice.py:519 invesalius/data/viewer_slice.py:528
+msgid "LB"
+msgstr "EI"
+
+#: invesalius/data/viewer_slice.py:504 invesalius/data/viewer_slice.py:513
+#: invesalius/data/viewer_slice.py:522 invesalius/data/viewer_slice.py:531
+msgid "LT"
+msgstr "ES"
+
+#: invesalius/data/viewer_slice.py:504 invesalius/data/viewer_slice.py:513
+#: invesalius/data/viewer_slice.py:522 invesalius/data/viewer_slice.py:531
+msgid "TR"
+msgstr "SD"
+
+#: invesalius/data/viewer_slice.py:504 invesalius/data/viewer_slice.py:513
+#: invesalius/data/viewer_slice.py:522 invesalius/data/viewer_slice.py:531
+msgid "RB"
+msgstr "DI"
+
+#: invesalius/data/viewer_slice.py:504 invesalius/data/viewer_slice.py:513
+#: invesalius/data/viewer_slice.py:522 invesalius/data/viewer_slice.py:531
+msgid "BL"
+msgstr "IE"
+
+#: invesalius/data/viewer_slice.py:538 invesalius/data/viewer_slice.py:547
+#: invesalius/data/viewer_slice.py:556 invesalius/data/viewer_slice.py:565
+msgid "TA"
+msgstr "SA"
+
+#: invesalius/data/viewer_slice.py:538 invesalius/data/viewer_slice.py:547
+#: invesalius/data/viewer_slice.py:556 invesalius/data/viewer_slice.py:565
+msgid "PT"
+msgstr "PS"
+
+#: invesalius/data/viewer_slice.py:538 invesalius/data/viewer_slice.py:547
+#: invesalius/data/viewer_slice.py:556 invesalius/data/viewer_slice.py:565
+msgid "BP"
+msgstr "IP"
+
+#: invesalius/data/viewer_slice.py:538 invesalius/data/viewer_slice.py:547
+#: invesalius/data/viewer_slice.py:556 invesalius/data/viewer_slice.py:565
+msgid "AB"
+msgstr "AI"
+
+#: invesalius/data/viewer_slice.py:541 invesalius/data/viewer_slice.py:550
+#: invesalius/data/viewer_slice.py:559 invesalius/data/viewer_slice.py:568
+msgid "AT"
+msgstr "AS"
+
+#: invesalius/data/viewer_slice.py:541 invesalius/data/viewer_slice.py:550
+#: invesalius/data/viewer_slice.py:559 invesalius/data/viewer_slice.py:568
+msgid "TP"
+msgstr "SP"
+
+#: invesalius/data/viewer_slice.py:541 invesalius/data/viewer_slice.py:550
+#: invesalius/data/viewer_slice.py:559 invesalius/data/viewer_slice.py:568
+msgid "PB"
+msgstr "PI"
+
+#: invesalius/data/viewer_slice.py:541 invesalius/data/viewer_slice.py:550
+#: invesalius/data/viewer_slice.py:559 invesalius/data/viewer_slice.py:568
+msgid "BA"
+msgstr "IA"
+
+#: invesalius/data/viewer_slice.py:1097 invesalius/data/viewer_volume.py:1005
+msgid "InVesalius was not able to export this picture"
+msgstr "O InVesalius não conseguiu exportar esta imagem"
+
+#: invesalius/data/viewer_slice.py:1097 invesalius/data/viewer_volume.py:1005
+msgid "Export picture error"
+msgstr "Erro ao exportar imagem"
+
+#: invesalius/data/viewer_slice.py:1526
+#, python-brace-format
+msgid ""
+"Window: {window}  |  Pos: ({px}, {py})  Slice: {slice}  |  Value: {value}"
+msgstr ""
+"Janela: {window}  |  Pos: ({px}, {py})  Fatia: {slice}  |  Valor: {value}"
+
+#: invesalius/data/viewer_volume.py:1862 invesalius/data/viewer_volume.py:2620
+#: invesalius/gui/task_efield.py:541 invesalius/gui/task_efield.py:577
+#: invesalius/gui/task_navigator.py:4467
 msgid "Save markers as..."
 msgstr "Salvar marcadores como..."
 
-#: dialogs.py:516 dialogs.py:577
-msgid "Markers files (*.mks)|*.mks"
+#: invesalius/data/volume.py:544 invesalius/data/volume.py:594
+msgid "Rendering volume..."
+msgstr "Renderizando volume..."
+
+#: invesalius/data/vtk_utils.py:59
+msgid "Loading DICOM files"
+msgstr "Carregando arquivos DICOM"
+
+#: invesalius/enhanced_logging.py:219
+msgid "InVesalius Enhanced Log Viewer"
+msgstr "Visualizador Avançado de Logs do InVesalius"
+
+#: invesalius/enhanced_logging.py:237
+msgid "Level:"
+msgstr "Nível:"
+
+#: invesalius/enhanced_logging.py:245
+msgid "Component:"
+msgstr "Componente:"
+
+#: invesalius/enhanced_logging.py:251
+msgid "Time:"
+msgstr "Tempo:"
+
+#: invesalius/enhanced_logging.py:270
+msgid "Search:"
+msgstr "Pesquisar:"
+
+#: invesalius/enhanced_logging.py:277
+#: invesalius/gui/import_network_panel.py:489
+msgid "Search"
+msgstr "Pesquisar"
+
+#: invesalius/enhanced_logging.py:280 invesalius/enhanced_logging.py:368
+msgid "Clear"
+msgstr "Limpar"
+
+#: invesalius/enhanced_logging.py:315
+msgid "Time"
+msgstr "Tempo"
+
+#: invesalius/enhanced_logging.py:316
+msgid "Level"
+msgstr "Nível"
+
+#: invesalius/enhanced_logging.py:317
+msgid "Component"
+msgstr "Componente"
+
+#: invesalius/enhanced_logging.py:318
+msgid "Message"
+msgstr "Mensagem"
+
+#: invesalius/enhanced_logging.py:319 invesalius/gui/frame.py:1716
+msgid "File"
+msgstr "Arquivo"
+
+#: invesalius/enhanced_logging.py:320
+msgid "Line"
+msgstr "Linha"
+
+#: invesalius/enhanced_logging.py:339
+msgid "Details:"
+msgstr "Detalhes:"
+
+#: invesalius/enhanced_logging.py:362
+msgid "Auto refresh"
+msgstr "Atualização automática"
+
+#: invesalius/enhanced_logging.py:365
+msgid "Refresh"
+msgstr "Atualizar"
+
+#: invesalius/enhanced_logging.py:371
+msgid "Export"
+msgstr "Exportar"
+
+#: invesalius/enhanced_logging.py:374
+msgid "Copy All"
+msgstr "Copiar tudo"
+
+#: invesalius/enhanced_logging.py:573
+msgid "Custom time range filtering will be implemented in a future version."
+msgstr ""
+"A filtragem personalizada por intervalo de tempo será implementada em uma "
+"versão futura."
+
+#: invesalius/enhanced_logging.py:574
+msgid "Not Implemented"
+msgstr "Não implementado"
+
+#: invesalius/enhanced_logging.py:756
+msgid "Are you sure you want to clear all logs?"
+msgstr "Tem certeza de que deseja limpar todos os logs?"
+
+#: invesalius/enhanced_logging.py:757
+msgid "Confirm Clear"
+msgstr "Confirmar limpeza"
+
+#: invesalius/enhanced_logging.py:771
+msgid "Export logs"
+msgstr "Exportar logs"
+
+#: invesalius/enhanced_logging.py:802
+msgid "Logs exported successfully."
+msgstr "Logs exportados com sucesso."
+
+#: invesalius/enhanced_logging.py:803
+msgid "Export Complete"
+msgstr "Exportação concluída"
+
+#: invesalius/enhanced_logging.py:809
+#, python-brace-format
+msgid "Error exporting logs: {0}"
+msgstr "Erro ao exportar logs: {0}"
+
+#: invesalius/enhanced_logging.py:810
+msgid "Export Error"
+msgstr "Erro de exportação"
+
+#: invesalius/enhanced_logging.py:831
+msgid "Log Record Details"
+msgstr "Detalhes do registro de log"
+
+#: invesalius/enhanced_logging.py:873
+msgid "Basic Info"
+msgstr "Informações básicas"
+
+#: invesalius/enhanced_logging.py:874
+msgid "Exception Info"
+msgstr "Informações da exceção"
+
+#: invesalius/enhanced_logging.py:876 invesalius/error_handling.py:579
+msgid "Details"
+msgstr "Detalhes"
+
+#: invesalius/enhanced_logging.py:911
+msgid "Source Context"
+msgstr "Contexto da origem"
+
+#: invesalius/enhanced_logging.py:921
+msgid "Copy to Clipboard"
+msgstr "Copiar para a área de transferência"
+
+#: invesalius/enhanced_logging.py:947
+msgid "Record details copied to clipboard."
+msgstr "Detalhes do registro copiados para a área de transferência."
+
+#: invesalius/enhanced_logging.py:948 invesalius/enhanced_logging.py:993
+msgid "Copy Complete"
+msgstr "Cópia concluída"
+
+#: invesalius/enhanced_logging.py:979
+msgid "No log records to copy."
+msgstr "Não há registros de log para copiar."
+
+#: invesalius/enhanced_logging.py:979
+msgid "Copy Failed"
+msgstr "Falha ao copiar"
+
+#: invesalius/enhanced_logging.py:992
+msgid "Log records copied to clipboard."
+msgstr "Registros de log copiados para a área de transferência."
+
+#: invesalius/error_handling.py:385 invesalius/error_handling.py:513
+#: invesalius/gui/data_notebook.py:2753
+msgid "Error"
+msgstr "Erro"
+
+#: invesalius/error_handling.py:594
+msgid "Traceback"
+msgstr "Rastreamento de erro"
+
+#: invesalius/error_handling.py:615
+msgid "System Info"
+msgstr "Informações do sistema"
+
+#: invesalius/error_handling.py:623
+msgid "Create Crash Report"
+msgstr "Criar relatório de falha"
+
+#: invesalius/error_handling.py:650
+#, python-brace-format
+msgid ""
+"Crash report created at:\n"
+"\n"
+"{0}"
 msgstr ""
 
-#: dialogs.py:543
-msgid "Save coords as..."
+#: invesalius/error_handling.py:651
+msgid "Crash Report Created"
+msgstr "Relatório de falha criado"
+
+#: invesalius/error_handling.py:687
+#, python-brace-format
+msgid ""
+"An unhandled error occurred. A crash report has been created at:\n"
+"\n"
+"{0}"
 msgstr ""
+"Ocorreu um erro não tratado. Um relatório de falha foi criado em:\n"
+"\n"
+"{0}"
 
-#: dialogs.py:546
-msgid "Coordinates files (*.csv)|*.csv"
+#: invesalius/gui/bitmap_preview_panel.py:27
+#: invesalius/gui/dicom_preview_panel.py:61
+#, python-format
+msgid "Image size: %d x %d"
+msgstr "Tamanho da imagem: %d x %d"
+
+#: invesalius/gui/bitmap_preview_panel.py:28
+#: invesalius/gui/dicom_preview_panel.py:62
+#, python-format
+msgid "Spacing: %.2f"
+msgstr "Espaçamento: %.2f"
+
+#: invesalius/gui/bitmap_preview_panel.py:29
+#: invesalius/gui/dicom_preview_panel.py:63
+#, python-format
+msgid "Location: %.2f"
+msgstr "Localização: %.2f"
+
+#: invesalius/gui/bitmap_preview_panel.py:31
+#: invesalius/gui/dicom_preview_panel.py:65
+#, python-format
+msgid ""
+"%s %s\n"
+"Made in InVesalius"
 msgstr ""
+"%s %s\n"
+" Criado com InVesalius"
 
-#: dialogs.py:574
-msgid "Load markers"
-msgstr "Carregar marcadores"
+#: invesalius/gui/bitmap_preview_panel.py:170
+#: invesalius/gui/bitmap_preview_panel.py:171
+#: invesalius/gui/data_notebook.py:2697
+#: invesalius/gui/dicom_preview_panel.py:207
+#: invesalius/gui/dicom_preview_panel.py:208 invesalius/gui/frame.py:1623
+#: invesalius/gui/task_navigator.py:338
+msgid "Image"
+msgstr "Imagem"
 
-#: dialogs.py:603
-msgid "Save object registration as..."
+#: invesalius/gui/bitmap_preview_panel.py:586
+#: invesalius/gui/dicom_preview_panel.py:851
+msgid "Auto-play"
+msgstr "Reproduzir"
+
+#: invesalius/gui/data_notebook.py:86
+msgid "Images"
+msgstr "Imagens"
+
+#: invesalius/gui/data_notebook.py:87
+msgid "Masks"
+msgstr "Máscaras"
+
+#: invesalius/gui/data_notebook.py:88
+msgid "3D surfaces"
+msgstr "Superfícies 3D"
+
+#: invesalius/gui/data_notebook.py:89
+msgid "Measures"
+msgstr "Medições"
+
+#: invesalius/gui/data_notebook.py:207
+msgid "Create a new measure"
+msgstr "Criar uma nova medida"
+
+#: invesalius/gui/data_notebook.py:212
+msgid "Remove measure"
+msgstr "Remover medida"
+
+#: invesalius/gui/data_notebook.py:217
+msgid "Duplicate measure"
+msgstr "Duplicar medida"
+
+#: invesalius/gui/data_notebook.py:229 invesalius/gui/frame.py:2236
+msgid "Measure distance"
+msgstr "Medir distância"
+
+#: invesalius/gui/data_notebook.py:230 invesalius/gui/frame.py:2252
+msgid "Measure angle"
+msgstr "Medir ângulo"
+
+#: invesalius/gui/data_notebook.py:526
+msgid "Create a new mask"
+msgstr "Criar uma nova máscara"
+
+#: invesalius/gui/data_notebook.py:531
+msgid "Remove mask"
+msgstr "Remover máscara"
+
+#: invesalius/gui/data_notebook.py:536
+msgid "Duplicate mask"
+msgstr "Duplicar máscara"
+
+#: invesalius/gui/data_notebook.py:541
+msgid "Import mask"
+msgstr "Importar máscara"
+
+#: invesalius/gui/data_notebook.py:546
+msgid "Export mask"
+msgstr "Exportar máscara"
+
+#: invesalius/gui/data_notebook.py:808 invesalius/gui/data_notebook.py:1669
+#: invesalius/gui/task_navigator.py:3175
+msgid "Change color"
+msgstr "Alterar cor"
+
+#: invesalius/gui/data_notebook.py:811 invesalius/gui/data_notebook.py:1683
+#: invesalius/gui/task_navigator.py:3183
+msgid "Duplicate"
+msgstr "Duplicar"
+
+#: invesalius/gui/data_notebook.py:816 invesalius/gui/data_notebook.py:1697
+#: invesalius/gui/task_navigator.py:2706 invesalius/gui/task_navigator.py:3178
+msgid "Delete"
+msgstr "Excluir"
+
+#: invesalius/gui/data_notebook.py:821
+msgid "Export as NIfTI"
+msgstr "Exportar como NIfTI"
+
+#: invesalius/gui/data_notebook.py:866
+msgid "Delete mask?"
+msgstr "Excluir máscara?"
+
+#: invesalius/gui/data_notebook.py:923 invesalius/gui/data_notebook.py:1999
+#: invesalius/gui/data_notebook.py:2348 invesalius/gui/data_notebook.py:2573
+#: invesalius/gui/project_properties.py:66
+msgid "Name"
+msgstr "Nome"
+
+#: invesalius/gui/data_notebook.py:925
+msgid "Derived"
+msgstr "Derivada"
+
+#: invesalius/gui/data_notebook.py:934
+msgid "Change mask color"
+msgstr "Alterar cor da máscara"
+
+#: invesalius/gui/data_notebook.py:992 invesalius/gui/frame.py:1624
+msgid "Mask"
+msgstr "Máscara"
+
+#: invesalius/gui/data_notebook.py:1005 invesalius/gui/data_notebook.py:2812
+#: invesalius/gui/data_notebook.py:2815 invesalius/gui/data_notebook.py:2870
+#: invesalius/gui/data_notebook.py:2873 invesalius/gui/data_notebook.py:2880
+#: invesalius/gui/data_notebook.py:2927
+#: invesalius/gui/deep_learning_seg_dialog.py:109
+#: invesalius/gui/dialogs.py:2736
+msgid "Original"
+msgstr "Original"
+
+#: invesalius/gui/data_notebook.py:1419
+msgid "Create a new surface"
+msgstr "Criar uma nova superfície"
+
+#: invesalius/gui/data_notebook.py:1424
+msgid "Remove surface"
+msgstr "Remover superfície"
+
+#: invesalius/gui/data_notebook.py:1429
+msgid "Duplicate surface"
+msgstr "Duplicar superfície"
+
+#: invesalius/gui/data_notebook.py:1434
+msgid "Import a surface file into InVesalius"
+msgstr "Importar um arquivo de superfície para o InVesalius"
+
+#: invesalius/gui/data_notebook.py:1439
+msgid "Export surface"
+msgstr "Exportar superfície"
+
+#: invesalius/gui/data_notebook.py:1470 invesalius/gui/task_surface.py:168
+msgid "New surface"
+msgstr "Nova superfície"
+
+#: invesalius/gui/data_notebook.py:1513
+msgid ".3MF import is coming soon. This feature is under active development."
 msgstr ""
+"A importação de .3MF estará disponível em breve. Este recurso está em "
+"desenvolvimento ativo."
 
-#: dialogs.py:606 dialogs.py:637
+#: invesalius/gui/data_notebook.py:1514
+msgid "Feature Coming Soon"
+msgstr "Recurso disponível em breve"
+
+#: invesalius/gui/data_notebook.py:1537
+msgid "You need to create a surface and make it visible before exporting it."
+msgstr ""
+"Você precisa criar uma superfície e torná-la visível antes de exportá-la."
+
+#: invesalius/gui/data_notebook.py:1538 invesalius/gui/preferences.py:1329
+#: invesalius/gui/preferences.py:1342 invesalius/gui/preferences.py:1560
+#: invesalius/gui/preferences.py:1562 invesalius/gui/task_navigator.py:393
+#: invesalius/gui/task_navigator.py:403 invesalius/gui/task_navigator.py:415
+#: invesalius/gui/task_navigator.py:1699 invesalius/gui/task_navigator.py:2245
+#: invesalius/gui/task_navigator.py:3498 invesalius/gui/task_navigator.py:3504
+#: invesalius/gui/task_navigator.py:3514 invesalius/gui/task_navigator.py:3545
+#: invesalius/gui/task_navigator.py:3556 invesalius/gui/task_navigator.py:3566
+#: invesalius/gui/task_navigator.py:3569 invesalius/gui/task_navigator.py:3624
+#: invesalius/gui/task_navigator.py:3677 invesalius/gui/task_navigator.py:3783
+#: invesalius/gui/task_navigator.py:3794 invesalius/gui/task_navigator.py:3966
+#: invesalius/gui/task_navigator.py:4034 invesalius/gui/task_navigator.py:4051
+#: invesalius/gui/task_navigator.py:4084 invesalius/gui/task_navigator.py:4159
+#: invesalius/gui/task_navigator.py:4188 invesalius/gui/task_navigator.py:4391
+#: invesalius/gui/task_navigator.py:4425 invesalius/gui/task_navigator.py:4488
+#: invesalius/gui/task_tractography.py:437
+#: invesalius/gui/task_tractography.py:485
+#: invesalius/gui/task_tractography.py:490
+#: invesalius/gui/task_tractography.py:554
+#: invesalius/gui/task_tractography.py:559
+#: invesalius/gui/task_tractography.py:563
+#: invesalius/gui/task_tractography.py:601
+#: invesalius/navigation/navigation.py:602
+#: invesalius/navigation/navigation.py:623 invesalius/navigation/robot.py:137
+#: invesalius/navigation/robot.py:141 invesalius/navigation/robot.py:155
+msgid "InVesalius 3"
+msgstr "InVesalius 3"
+
+#: invesalius/gui/data_notebook.py:1551 invesalius/gui/task_exporter.py:323
+msgid "Save 3D surface as..."
+msgstr "Salvar superfície 3D como..."
+
+#: invesalius/gui/data_notebook.py:1562 invesalius/gui/task_exporter.py:334
+msgid "Export in"
+msgstr "Exportar em"
+
+#: invesalius/gui/data_notebook.py:1676
+msgid "Change transparency"
+msgstr "Alterar transparência"
+
+#: invesalius/gui/data_notebook.py:1688 invesalius/gui/data_notebook.py:2954
+msgid "Properties"
+msgstr "Propriedades"
+
+#: invesalius/gui/data_notebook.py:1752 invesalius/gui/data_notebook.py:2418
+#: invesalius/gui/data_notebook.py:3029
+msgid "Enter new name:"
+msgstr "Digite o novo nome:"
+
+#: invesalius/gui/data_notebook.py:1752
+msgid "Rename Surface"
+msgstr "Renomear superfície"
+
+#: invesalius/gui/data_notebook.py:1875
+msgid "Delete surface?"
+msgstr "Excluir superfície?"
+
+#: invesalius/gui/data_notebook.py:1946
+msgid "Surface Properties"
+msgstr "Propriedades da superfície"
+
+#: invesalius/gui/data_notebook.py:2000
+msgid "Volume (mm³)"
+msgstr "Volume (mm³)"
+
+#: invesalius/gui/data_notebook.py:2001
+msgid "Area (mm²)"
+msgstr "Área (mm²)"
+
+#: invesalius/gui/data_notebook.py:2002
+msgid "Transparency"
+msgstr "Transparência"
+
+#: invesalius/gui/data_notebook.py:2349
+msgid "Location"
+msgstr "Local"
+
+#: invesalius/gui/data_notebook.py:2350 invesalius/gui/data_notebook.py:2574
+#: invesalius/gui/import_bitmap_panel.py:205
+msgid "Type"
+msgstr "Tipo"
+
+#: invesalius/gui/data_notebook.py:2351 invesalius/gui/data_notebook.py:2575
+msgid "Value"
+msgstr "Valor"
+
+#: invesalius/gui/data_notebook.py:2405
+msgid "Rename Annotation"
+msgstr "Renomear anotação"
+
+#: invesalius/gui/data_notebook.py:2407
+msgid "Rename Measurement"
+msgstr "Renomear medição"
+
+#: invesalius/gui/data_notebook.py:2660
+msgid "Remove Filtered Image"
+msgstr "Remover imagem filtrada"
+
+#: invesalius/gui/data_notebook.py:2698
+msgid "Info"
+msgstr "Informação"
+
+#: invesalius/gui/data_notebook.py:2753
+msgid "Deleting the original image is not allowed."
+msgstr "Não é permitido excluir a imagem original."
+
+#: invesalius/gui/data_notebook.py:2763
+#, python-format
+msgid "Are you sure you want to delete the image version '%s'?"
+msgstr "Tem certeza de que deseja excluir a versão da imagem '%s'?"
+
+#: invesalius/gui/data_notebook.py:2764
+msgid "Delete image version"
+msgstr "Excluir versão da imagem"
+
+#: invesalius/gui/data_notebook.py:2970
+msgid "This is the original unfiltered image."
+msgstr "Esta é a imagem original sem filtro."
+
+#: invesalius/gui/data_notebook.py:2971 invesalius/gui/data_notebook.py:2980
+#: invesalius/gui/data_notebook.py:3001
+msgid "Image Properties"
+msgstr "Propriedades da imagem"
+
+#: invesalius/gui/data_notebook.py:2979
+msgid "No properties found for this image."
+msgstr "Nenhuma propriedade encontrada para esta imagem."
+
+#: invesalius/gui/data_notebook.py:2986 invesalius/gui/data_notebook.py:2987
+msgid "Unknown"
+msgstr "Desconhecido"
+
+#: invesalius/gui/data_notebook.py:3029
+msgid "Rename Image"
+msgstr "Renomear imagem"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:111
+msgid "Input image"
+msgstr "Imagem de entrada"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:137
+msgid "Use GPU"
+msgstr "Usar GPU"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:149
+msgid "Device"
+msgstr "Dispositivo"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:163
+#: invesalius/gui/task_slice.py:101
+msgid "Create new mask"
+msgstr "Nome da nova máscara:"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:165
+msgid "Apply WW&WL"
+msgstr "Aplicar WW e WL"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:170
+msgid "Overlap"
+msgstr "Sobreposição"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:176
+#: invesalius/gui/dialogs.py:3283
+msgid "Elapsed time:"
+msgstr "Tempo decorrido:"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:177
+#: invesalius/gui/dialogs.py:3284
+msgid "00:00:00"
+msgstr "00:00:00"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:178
+msgid "Segment"
+msgstr "Segmentar"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:179
+msgid "Stop"
+msgstr "Parar"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:195
+msgid "Backend"
+msgstr "Backend"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:206
+msgid "Level of certainty"
+msgstr "Nível de certeza"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:468
+msgid "Brain segmentation"
+msgstr "Segmentação cerebral"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:479
+msgid "Cortical"
+msgstr "Cortical"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:480
+msgid "Subcortical"
+msgstr "Subcortical"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:481
+msgid "White Matter"
+msgstr "Substância branca"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:482
+msgid "Cerebellum"
+msgstr "Cerebelo"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:483
+msgid "Ventricles"
+msgstr "Ventrículos"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:484
+msgid "Brain Stem"
+msgstr "Tronco encefálico"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:485
+msgid "Choroid Plexus"
+msgstr "Plexo coroide"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:492
+msgid "Brain subpart Segmentation"
+msgstr "Segmentação de subpartes do cérebro"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:504
+msgid "Mask Types to Generate"
+msgstr "Tipos de máscara a gerar"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:507
+msgid "Whole Brain"
+msgstr "Cérebro inteiro"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:634
+msgid "It was not possible to start Subpart segmentation because:"
+msgstr "Não foi possível iniciar a segmentação de subpartes porque:"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:635
+msgid "FastSurfer segmentation error"
+msgstr "Erro na segmentação FastSurfer"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:666
+msgid "Trachea segmentation"
+msgstr "Segmentação da traqueia"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:676 invesalius/gui/frame.py:1578
+msgid "Mandible segmentation (CT)"
+msgstr "Segmentação da mandíbula (TC)"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:684
+msgid "Resize by spacing"
+msgstr "Redimensionar por espaçamento"
+
+#: invesalius/gui/deep_learning_seg_dialog.py:785
+msgid "Implant prediction (CT)"
+msgstr "Predição de implante (TC)"
+
+#: invesalius/gui/default_tasks.py:183
+msgid "Data"
+msgstr "Dados"
+
+#: invesalius/gui/default_tasks.py:301 invesalius/gui/task_imports.py:179
+msgid "Load data"
+msgstr "Carregue os dados"
+
+#: invesalius/gui/default_tasks.py:302 invesalius/gui/default_tasks.py:344
+#: invesalius/gui/task_imports.py:180 invesalius/gui/task_imports.py:221
+msgid "Select region of interest"
+msgstr "Selecione a região de interesse"
+
+#: invesalius/gui/default_tasks.py:303 invesalius/gui/default_tasks.py:346
+#: invesalius/gui/task_imports.py:181 invesalius/gui/task_imports.py:223
+msgid "Configure 3D surface"
+msgstr "Configure a superfície 3D"
+
+#: invesalius/gui/default_tasks.py:304 invesalius/gui/task_imports.py:182
+msgid "Export data"
+msgstr "Exporte os dados"
+
+#: invesalius/gui/default_tasks.py:309
+msgid "Imports Section"
+msgstr "Seção de importação"
+
+#: invesalius/gui/default_tasks.py:310
+msgid "Navigation Section"
+msgstr "Seção de navegação"
+
+#: invesalius/gui/default_viewers.py:92 invesalius/gui/task_exporter.py:255
+msgid "Axial slice"
+msgstr "Fatia axial"
+
+#: invesalius/gui/default_viewers.py:103 invesalius/gui/task_exporter.py:256
+msgid "Coronal slice"
+msgstr "Fatia coronal"
+
+#: invesalius/gui/default_viewers.py:114 invesalius/gui/task_exporter.py:257
+msgid "Sagittal slice"
+msgstr "Fatia sagital"
+
+#: invesalius/gui/default_viewers.py:127 invesalius/gui/task_exporter.py:258
+msgid "Volume"
+msgstr "Volume"
+
+#: invesalius/gui/default_viewers.py:484
+msgid "Preset name"
+msgstr "Nome do pré-ajuste"
+
+#: invesalius/gui/default_viewers.py:516 invesalius/gui/frame.py:1719
+msgid "Tools"
+msgstr "Ferramentas"
+
+#: invesalius/gui/dialogs.py:170
+msgid "Value will be applied."
+msgstr "O valor será aplicado."
+
+#: invesalius/gui/dialogs.py:174
+msgid "Value will not be applied."
+msgstr "O valor não será aplicado."
+
+#: invesalius/gui/dialogs.py:214
+msgid ""
+"InVesalius is running on a 32-bit operating system or has insufficient "
+"memory. \n"
+"If you want to work with 3D surfaces or volume rendering, \n"
+"it is recommended to reduce the medical images resolution."
+msgstr ""
+"O InVesalius está sendo executado sobre um sistema operacional de 32 bits\n"
+"ou não dispõe de memória suficiente. Se você deseja trabalhar com "
+"superfícies 3D\n"
+"ou renderização volumétrica, recomenda-se diminuir a resolução das imagens "
+"médicas."
+
+#: invesalius/gui/dialogs.py:230
+msgid "Percentage of original resolution"
+msgstr "Porcentagem da resolução original"
+
+#: invesalius/gui/dialogs.py:281
+msgid "InVesalius project (*.inv3)|*.inv3"
+msgstr "Projeto do InVesalius (*.inv3)|*.inv3"
+
+#: invesalius/gui/dialogs.py:283
+msgid "InVesalius project compressed (*.inv3)|*.inv3"
+msgstr "Projeto InVesalius compactado (*.inv3)|*.inv3"
+
+#: invesalius/gui/dialogs.py:311
+msgid "Open InVesalius 3 project..."
+msgstr "Abrir projeto do InVesalius 3"
+
+#: invesalius/gui/dialogs.py:353
+msgid "Choose a DICOM folder:"
+msgstr "Selecione uma pasta DICOM:"
+
+#: invesalius/gui/dialogs.py:391
+msgid "Choose a folder with TIFF, BMP, JPG or PNG:"
+msgstr "Selecionar uma pasta com TIFF, BMP, JPG ou PNG:"
+
+#: invesalius/gui/dialogs.py:447
+msgid "Import PAR/REC file"
+msgstr "Importar arquivo PAR/REC"
+
+#: invesalius/gui/dialogs.py:450
+msgid "Import Analyze 7.5 file"
+msgstr "Importar arquivo Analyze 7.5"
+
+#: invesalius/gui/dialogs.py:491
+msgid "Import surface file"
+msgstr "Importar arquivo de superfície"
+
+#: invesalius/gui/dialogs.py:501
+msgid "File coordinate space"
+msgstr "Espaço de coordenadas do arquivo"
+
+#: invesalius/gui/dialogs.py:544
+msgid "Was the imported mesh created by InVesalius?"
+msgstr "A malha importada foi criada pelo InVesalius?"
+
+#: invesalius/gui/dialogs.py:589
+msgid "Save project as..."
+msgstr "Salvar projeto como..."
+
+#: invesalius/gui/dialogs.py:620
+msgid "Load debug CSV Enorm file"
+msgstr "Carregar arquivo CSV Enorm de depuração"
+
+#: invesalius/gui/dialogs.py:623
+msgid "(*.csv)|*.csv"
+msgstr "(*.csv)|*.csv"
+
+#: invesalius/gui/dialogs.py:670
+msgid "Load File"
+msgstr "Carregar arquivo"
+
+#: invesalius/gui/dialogs.py:673 invesalius/gui/preferences.py:1478
+#: invesalius/gui/preferences.py:1592
 msgid "Registration files (*.obr)|*.obr"
-msgstr ""
+msgstr "Arquivos de registro (*.obr)|*.obr"
 
-#: dialogs.py:634
-msgid "Load object registration"
-msgstr ""
+#: invesalius/gui/dialogs.py:721
+msgid "Import json file"
+msgstr "Importar arquivo JSON"
 
-#: dialogs.py:704 utils.py:388
+#: invesalius/gui/dialogs.py:795
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr "Uma nova versão do InVesalius está disponível. Você gostaria de abrir a página de download?"
+msgstr ""
+"Uma nova versão do InVesalius está disponível. Você gostaria de abrir a "
+"página de download?"
 
-#: dialogs.py:705 utils.py:389
+#: invesalius/gui/dialogs.py:797
 msgid "Invesalius Update"
 msgstr "Atualização do InVesalius"
 
-#: dialogs.py:767 dialogs.py:1215 dialogs.py:1240
+#: invesalius/gui/dialogs.py:935 invesalius/gui/dialogs.py:1530
+#: invesalius/gui/dialogs.py:1554
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr "O projeto %s foi modificado.\n Deseja salvar as alterações?"
+msgstr ""
+"O projeto %s foi modificado.\n"
+" Deseja salvar as alterações?"
 
-#: dialogs.py:781
+#: invesalius/gui/dialogs.py:949
 #, python-format
 msgid "%s is an empty folder."
 msgstr "%s é uma pasta vazia."
 
-#: dialogs.py:795
+#: invesalius/gui/dialogs.py:960
 msgid ""
-"File was created in a newer InVesalius version. Some functionalities may not"
-" work correctly."
+"File was created in a newer InVesalius version. Some functionalities may not "
+"work correctly."
 msgstr ""
+"O arquivo foi criado em uma versão mais recente do InVesalius. Algumas "
+"funcionalidades podem não funcionar corretamente."
 
-#: dialogs.py:805
+#: invesalius/gui/dialogs.py:969
 msgid "There are no Bitmap, JPEG, PNG or TIFF files in the selected folder."
-msgstr "Não existem arquivos Bitmap, JPEG, PNG ou TIFF  na pasta selecionada."
+msgstr "Não existem arquivos Bitmap, JPEG, PNG ou TIFF na pasta selecionada."
 
-#: dialogs.py:807
+#: invesalius/gui/dialogs.py:971
 msgid "There are no DICOM files in the selected folder."
 msgstr "Não há arquivos DICOM na pasta selecionada."
 
-#: dialogs.py:809
+#: invesalius/gui/dialogs.py:973
 msgid "Invalid file."
-msgstr ""
+msgstr "Arquivo inválido."
 
-#: dialogs.py:822
+#: invesalius/gui/dialogs.py:984
+msgid "Warning! Pixel values are smaller than 8 (possible float values).\n"
+msgstr ""
+"Aviso! Os valores de pixel são menores que 8 (possíveis valores em ponto "
+"flutuante).\n"
+
+#: invesalius/gui/dialogs.py:985
+msgid "Pixel values have been rescaled from 0-255 for compatibility."
+msgstr ""
+"Os valores de pixel foram redimensionados de 0 a 255 para compatibilidade."
+
+#: invesalius/gui/dialogs.py:995
 msgid "Warning! InVesalius has limited support to Analyze format.\n"
 msgstr "Atenção! InVesalius tem suporte limitado ao formato Analyze.\n"
 
-#: dialogs.py:823
+#: invesalius/gui/dialogs.py:996
 msgid "Slices may be wrongly oriented and functions may not work properly."
-msgstr "Fatias podem estar orientadas erroneamente e a função pode não ser executada corretamente."
+msgstr ""
+"As fatias podem estar orientadas incorretamente e as funções podem não "
+"funcionar adequadamente.Fatias podem estar orientadas erroneamente e a "
+"função pode não ser executada corretamente."
 
-#: dialogs.py:835
+#: invesalius/gui/dialogs.py:1006
 msgid "A mask is needed to create a surface."
 msgstr "É necessário ter uma máscara para criar uma superfície."
 
-#: dialogs.py:846
+#: invesalius/gui/dialogs.py:1016
 msgid "No mask was selected for removal."
 msgstr "Nenhuma máscara foi selecionada para remoção."
 
-#: dialogs.py:857
+#: invesalius/gui/dialogs.py:1026
 msgid "No surface was selected for removal."
 msgstr "Nenhuma superfície foi selecionada para remoção."
 
-#: dialogs.py:869
+#: invesalius/gui/dialogs.py:1036
 msgid "No measure was selected for removal."
 msgstr "Nenhum medida foi selecionada para remoção."
 
-#: dialogs.py:880
+#: invesalius/gui/dialogs.py:1046
 msgid "No mask was selected for duplication."
 msgstr "Nenhuma máscara foi selecionada para duplicação."
 
-#: dialogs.py:893
+#: invesalius/gui/dialogs.py:1056
 msgid "No surface was selected for duplication."
 msgstr "Nenhuma superície foi selecionada para duplicação."
 
-#: dialogs.py:906
-msgid "Fiducials are invalid. Select all coordinates."
+#: invesalius/gui/dialogs.py:1066
+msgid "No surfaces exist, therefore cannot create a seeded surface."
 msgstr ""
+"Não existem superfícies, portanto não é possível criar uma superfície "
+"semeada."
 
-#: dialogs.py:918
-msgid "Perform coil registration before navigation."
+#: invesalius/gui/dialogs.py:1076
+msgid "No surfaces exist, therefore cannot split surfaces."
+msgstr "Não existem superfícies, portanto não é possível dividir superfícies."
+
+#: invesalius/gui/dialogs.py:1086
+msgid "No surfaces exist, therefore cannot select the largest surface."
 msgstr ""
+"Não existem superfícies, portanto não é possível selecionar a maior "
+"superfície."
 
-#: dialogs.py:940
+#: invesalius/gui/dialogs.py:1096
+#, python-brace-format
+msgid "Surface index {index} does not exist."
+msgstr "O índice da superfície {index} não existe."
+
+#: invesalius/gui/dialogs.py:1128
 msgid "No tracking device selected"
 msgstr "Dispositivo de rastreamento não selecionado."
 
-#: dialogs.py:942
+#: invesalius/gui/dialogs.py:1130
+msgid "Probe marker is not visible."
+msgstr "O marcador da sonda não está visível."
+
+#: invesalius/gui/dialogs.py:1132
+msgid "Coil marker is not visible."
+msgstr "O marcador da bobina não está visível."
+
+#: invesalius/gui/dialogs.py:1134
+msgid "Head marker is not visible."
+msgstr "O marcador da cabeça não está visível."
+
+#: invesalius/gui/dialogs.py:1136
 msgid " is not installed."
 msgstr "não está instalado."
 
-#: dialogs.py:944
+#: invesalius/gui/dialogs.py:1138
 msgid " disconnected."
 msgstr "desconectado."
 
-#: dialogs.py:946
+#: invesalius/gui/dialogs.py:1140
 msgid " is not connected."
 msgstr "não está conectado."
 
-#: dialogs.py:960
-msgid "The TXT file is invalid."
-msgstr "O TXT não é válido."
+#: invesalius/gui/dialogs.py:1154
+msgid "No connection to E-field library"
+msgstr "Sem conexão com a biblioteca de campo elétrico"
 
-#: dialogs.py:972
-msgid "No data selected"
-msgstr "Dado não selecionado"
+#: invesalius/gui/dialogs.py:1166
+msgid "No Efield data to save"
+msgstr "Não há dados de campo elétrico para salvar"
 
-#: dialogs.py:984
-msgid "Do you really want to delete all markers?"
+#: invesalius/gui/dialogs.py:1178
+msgid "The CSV Enorm file is not loaded."
+msgstr "O arquivo CSV Enorm não foi carregado."
+
+#: invesalius/gui/dialogs.py:1191
+msgid "The fiducial registration error is: "
+msgstr "O erro de registro fiducial é: "
+
+#: invesalius/gui/dialogs.py:1194
+msgid "Would you like to improve accuracy?"
+msgstr "Deseja melhorar a precisão?"
+
+#: invesalius/gui/dialogs.py:1212
+msgid "Points to scalp distance: "
+msgstr "Distância dos pontos ao couro cabeludo: "
+
+#: invesalius/gui/dialogs.py:1216
+msgid "Distance before refine: "
+msgstr "Distância antes do refinamento: "
+
+#: invesalius/gui/dialogs.py:1230
+msgid "The last point is more than 20 mm away from the surface"
+msgstr "O último ponto está a mais de 20 mm da superfície"
+
+#: invesalius/gui/dialogs.py:1232
+msgid "Please, create a new point."
+msgstr "Por favor, crie um novo ponto."
+
+#: invesalius/gui/dialogs.py:1244
+msgid "The distribution of the transformed points looks wrong."
+msgstr "A distribuição dos pontos transformados parece incorreta."
+
+#: invesalius/gui/dialogs.py:1246
+msgid "It is recommended to remove the points and redone the acquisition"
+msgstr "Recomenda-se remover os pontos e refazer a aquisição"
+
+#: invesalius/gui/dialogs.py:1263
+msgid "The selected surface contains inner structures."
+msgstr "A superfície selecionada contém estruturas internas."
+
+#: invesalius/gui/dialogs.py:1265
+msgid "For better ICP accuracy, it is recommended to perform"
+msgstr "Para melhor precisão do ICP, recomenda-se realizar"
+
+#: invesalius/gui/dialogs.py:1267
+msgid "the refine registration using the scalp surface with only"
 msgstr ""
+"o refinamento do registro usando a superfície do couro cabeludo contendo "
+"apenas"
 
-#: dialogs.py:996
-msgid "Target deleted"
-msgstr ""
+#: invesalius/gui/dialogs.py:1269
+msgid "the outer shell."
+msgstr "a camada externa."
 
-#: dialogs.py:1007
-msgid "New target selected"
-msgstr ""
+#: invesalius/gui/dialogs.py:1271
+msgid "You can clean the surface using:"
+msgstr "Você pode limpar a superfície usando:"
 
-#: dialogs.py:1018
-msgid "Sorry, you cannot use 'TARGET' ID"
-msgstr ""
+#: invesalius/gui/dialogs.py:1273
+msgid "Tools \\u2192 Surface \\u2192 Remove Non-Visible Faces."
+msgstr "Ferramentas\\u2192 Superfície \\u2192 Remover Faces Não Visíveis."
 
-#: dialogs.py:1029
+#: invesalius/gui/dialogs.py:1295 invesalius/gui/task_navigator.py:3172
+#: invesalius/gui/task_navigator.py:3312
 msgid "Change label"
 msgstr "Editar ID do marcador"
 
-#: dialogs.py:1080
+#: invesalius/gui/dialogs.py:1305
+msgid "Enter the MEP value (uV)"
+msgstr "Insira o valor de MEP (µV)"
+
+#: invesalius/gui/dialogs.py:1319
+msgid "The value entered is not a number."
+msgstr "O valor inserido não é um número."
+
+#: invesalius/gui/dialogs.py:1332
+msgid "Proceed?"
+msgstr "Prosseguir?"
+
+#: invesalius/gui/dialogs.py:1391
 msgid "New mask name:"
 msgstr "Nome da nova máscara:"
 
-#: dialogs.py:1084
+#: invesalius/gui/dialogs.py:1395
 msgid "Name the mask to be created"
 msgstr "Nome da máscara a ser criada"
 
-#: dialogs.py:1091
+#: invesalius/gui/dialogs.py:1402
 msgid "Threshold preset:"
 msgstr "Pré-ajuste de limiar:"
 
-#: dialogs.py:1177 presets.py:46 presets.py:64 presets.py:120 presets.py:151
-#: slice_menu.py:127 slice_menu.py:261 task_slice.py:568 task_slice.py:570
-#: task_slice.py:582 task_slice.py:584 task_slice.py:625 task_slice.py:628
+#: invesalius/gui/dialogs.py:1494 invesalius/gui/task_slice.py:651
+#: invesalius/gui/task_slice.py:653 invesalius/gui/task_slice.py:665
+#: invesalius/gui/task_slice.py:667 invesalius/gui/task_slice.py:707
+#: invesalius/gui/task_slice.py:710 invesalius/gui/widgets/slice_menu.py:115
+#: invesalius/gui/widgets/slice_menu.py:244 invesalius/presets.py:51
+#: invesalius/presets.py:71 invesalius/presets.py:123 invesalius/presets.py:156
 msgid "Custom"
 msgstr "Personalizado"
 
-#: dialogs.py:1192
+#: invesalius/gui/dialogs.py:1509
 #, python-format
 msgid "%s does not exist."
 msgstr "%s não existe."
 
-#: dialogs.py:1203
+#: invesalius/gui/dialogs.py:1519
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr "São necessários mais arquivos DICOM para a reconstrução 3D."
 
-#: dialogs.py:1264
-msgid "(c) 2007-2019 Center for Information Technology Renato Archer - CTI"
-msgstr ""
+#: invesalius/gui/dialogs.py:1577
+msgid "(c) 2007-"
+msgstr "(c) 2007-"
 
-#: dialogs.py:1265
+#: invesalius/gui/dialogs.py:1581
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
+"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
+"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
+"creating physical models of a patient's anatomy using additive manufacturing "
+"(3D printing) technologies. The software is developed by Center for "
+"Information Technology Renato Archer (CTI), National Council for Scientific "
+"and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
+" InVesalius must be used only for research. The Center for Information "
+"Technology Renato Archer is not responsible for damages caused by the use of "
+"this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
-msgstr "O InVesalius é um programa para reconstrução 3D de \nimagens médicas a partir de uma sequência de imagens \nDICOM 2D, obtidas com equipamentos de TC ou RM. O InVesalius permite a exportação de volumes 3D ou superfícies para a criação de modelos físicos da anatomia de um paciente utilizando as tecnologias de manufatura aditiva (impressão 3D). Este software é desenvolvido pelo Centro de Tecnologia da Informação Renato Archer (CTI), Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq) e Ministério da Saúde brasileiro.\n\nInVesalius deve ser utilizado apenas para pesquisa. O Centro de Tecnologia da Informação Renato Archer não se responsabiliza por qualquer dano causado pelo uso deste software.\n\n Contato: invesalius@cti.gov.br"
+msgstr ""
+"O InVesalius é um programa para reconstrução 3D de \n"
+"imagens médicas a partir de uma sequência de imagens \n"
+"DICOM 2D, obtidas com equipamentos de TC ou RM. O InVesalius permite a "
+"exportação de volumes 3D ou superfícies para a criação de modelos físicos da "
+"anatomia de um paciente utilizando as tecnologias de manufatura aditiva "
+"(impressão 3D). Este software é desenvolvido pelo Centro de Tecnologia da "
+"Informação Renato Archer (CTI), Conselho Nacional de Desenvolvimento "
+"Científico e Tecnológico (CNPq) e Ministério da Saúde brasileiro.\n"
+"\n"
+"InVesalius deve ser utilizado apenas para pesquisa. O Centro de Tecnologia "
+"da Informação Renato Archer não se responsabiliza por qualquer dano causado "
+"pelo uso deste software.\n"
+"\n"
+" Contato: invesalius@cti.gov.br"
 
-#: dialogs.py:1273
+#: invesalius/gui/dialogs.py:1598
 msgid "GNU GPL (General Public License) version 2"
 msgstr "GNU GPL (Licença Pública Geral) versão 2"
 
-#: dialogs.py:1328
+#: invesalius/gui/dialogs.py:1658
 msgid "Save raycasting preset as:"
 msgstr "Salvar pré-ajuste de raycasting como:"
 
-#: dialogs.py:1375 dialogs.py:1644
+#: invesalius/gui/dialogs.py:1698 invesalius/gui/dialogs.py:1972
 msgid "New surface name:"
 msgstr "Nome da nova superfície:"
 
-#: dialogs.py:1379 dialogs.py:1648
+#: invesalius/gui/dialogs.py:1702 invesalius/gui/dialogs.py:1976
 msgid "Name the surface to be created"
 msgstr "Nome da superfície a ser criada"
 
-#: dialogs.py:1386 dialogs.py:1655
+#: invesalius/gui/dialogs.py:1709 invesalius/gui/dialogs.py:1983
 msgid "Mask of reference:"
 msgstr "Máscara de referência:"
 
-#: dialogs.py:1403 dialogs.py:1675
+#: invesalius/gui/dialogs.py:1726 invesalius/gui/dialogs.py:2007
 msgid "Surface quality:"
 msgstr "Qualidade da superfície:"
 
-#: dialogs.py:1432 dialogs.py:1706 styles.py:1956
-msgid "Fill holes"
-msgstr "Preencher buracos"
-
-#: dialogs.py:1435 dialogs.py:1709
+#: invesalius/gui/dialogs.py:1758 invesalius/gui/dialogs.py:2042
 msgid "Keep largest region"
 msgstr "Manter maior região"
 
-#: dialogs.py:1475
+#: invesalius/gui/dialogs.py:1798
 msgid "BMP image"
 msgstr "Imagem BMP"
 
-#: dialogs.py:1476
+#: invesalius/gui/dialogs.py:1800
 msgid "JPG image"
 msgstr "Imagem JPG"
 
-#: dialogs.py:1477
+#: invesalius/gui/dialogs.py:1802
 msgid "PNG image"
 msgstr "Imagem PNG"
 
-#: dialogs.py:1478
+#: invesalius/gui/dialogs.py:1804
 msgid "PostScript document"
 msgstr "Documento PostScript"
 
-#: dialogs.py:1479
+#: invesalius/gui/dialogs.py:1806
 msgid "POV-Ray file"
 msgstr "Arquivo POV-Ray"
 
-#: dialogs.py:1480
+#: invesalius/gui/dialogs.py:1808
 msgid "TIFF image"
 msgstr "Imagem TIFF"
 
-#: dialogs.py:1530
+#: invesalius/gui/dialogs.py:1867
 msgid "Surface generation options"
 msgstr "Opções de geração de superfície"
 
-#: dialogs.py:1560
+#: invesalius/gui/dialogs.py:1901
 msgid "Surface creation"
 msgstr "Criação de superfície"
 
-#: dialogs.py:1593
+#: invesalius/gui/dialogs.py:1918
 msgid "Surface creation options"
 msgstr "Opções de criação de superfície"
 
-#: dialogs.py:1599
+#: invesalius/gui/dialogs.py:1924
 msgid "Surface creation method"
 msgstr "Método de criação de superfície"
 
-#: dialogs.py:1703 preferences.py:225
+#: invesalius/gui/dialogs.py:2036
 msgid "Fill border holes"
-msgstr ""
+msgstr "Preencher buracos de borda"
 
-#: dialogs.py:1757 frame.py:1013
+#: invesalius/gui/dialogs.py:2231 invesalius/gui/frame.py:1722
 msgid "Options"
 msgstr "Opções"
 
-#: dialogs.py:1773
+#: invesalius/gui/dialogs.py:2247
 msgid "Angle:"
 msgstr "Ângulo"
 
-#: dialogs.py:1775
+#: invesalius/gui/dialogs.py:2249
 msgid "Max. distance:"
 msgstr "Distância máxima"
 
-#: dialogs.py:1777
+#: invesalius/gui/dialogs.py:2251
 msgid "Min. weight:"
 msgstr "Peso mínimo"
 
-#: dialogs.py:1779
+#: invesalius/gui/dialogs.py:2253
 msgid "N. steps:"
 msgstr "Número de passos"
 
-#: dialogs.py:1798 dialogs.py:1834 dialogs.py:1879
+#: invesalius/gui/dialogs.py:2275 invesalius/gui/dialogs.py:2319
+#: invesalius/gui/dialogs.py:2363
 msgid "Context aware smoothing"
 msgstr "Suavização sensível ao contexto"
 
-#: dialogs.py:1799
+#: invesalius/gui/dialogs.py:2276
 msgid "Binary"
 msgstr "Binário"
 
-#: dialogs.py:1817
+#: invesalius/gui/dialogs.py:2302
 msgid ""
 "It is not possible to use the Default method because the mask was edited."
 msgstr "Não é possível usar o método Padrão porque a máscara foi editada."
 
-#: dialogs.py:1820
+#: invesalius/gui/dialogs.py:2306
 msgid "Method:"
 msgstr "Método"
 
-#: dialogs.py:1952 dialogs.py:2999
+#: invesalius/gui/dialogs.py:2443 invesalius/gui/dialogs.py:3614
 msgid "Method"
 msgstr "Método"
 
-#: dialogs.py:1975
+#: invesalius/gui/dialogs.py:2474
 msgid "Gaussian sigma"
 msgstr "Sigma da gaussiana"
 
-#: dialogs.py:1995 task_slice.py:308
+#: invesalius/gui/dialogs.py:2498 invesalius/gui/task_slice.py:380
 msgid "Watershed"
 msgstr "Watershed"
 
-#: dialogs.py:2039
+#: invesalius/gui/dialogs.py:2543
 msgid "Boolean operations"
 msgstr "Operações booleanas"
 
-#: dialogs.py:2067 slice_.py:1347
-msgid "Union"
-msgstr "União"
-
-#: dialogs.py:2068
+#: invesalius/gui/dialogs.py:2570
 msgid "Difference"
 msgstr "Diferença"
 
-#: dialogs.py:2069 slice_.py:1349
-msgid "Intersection"
-msgstr "Intersecção"
-
-#: dialogs.py:2070
+#: invesalius/gui/dialogs.py:2572
 msgid "Exclusive disjunction"
 msgstr "Disjunção exclusiva"
 
-#: dialogs.py:2091
+#: invesalius/gui/dialogs.py:2594
 msgid "Mask 1"
 msgstr "Máscara 1"
 
-#: dialogs.py:2093
+#: invesalius/gui/dialogs.py:2596
 msgid "Operation"
 msgstr "Operação"
 
-#: dialogs.py:2095
+#: invesalius/gui/dialogs.py:2598
 msgid "Mask 2"
 msgstr "Máscara 2"
 
-#: dialogs.py:2123
+#: invesalius/gui/dialogs.py:2627
 msgid "Image reorientation"
 msgstr "Reorientação da imagem"
 
-#: dialogs.py:2142
+#: invesalius/gui/dialogs.py:2644
 msgid "Nearest Neighbour"
-msgstr ""
+msgstr "Vizinho mais próximo"
 
-#: dialogs.py:2143
+#: invesalius/gui/dialogs.py:2645
 msgid "Trilinear"
-msgstr ""
+msgstr "Trilinear"
 
-#: dialogs.py:2144
+#: invesalius/gui/dialogs.py:2646
 msgid "Tricubic"
-msgstr ""
+msgstr "Tricúbico"
 
-#: dialogs.py:2145
+#: invesalius/gui/dialogs.py:2647
 msgid "Lanczos (experimental)"
-msgstr ""
+msgstr "Lanczos (experimental)"
 
-#: dialogs.py:2155
+#: invesalius/gui/dialogs.py:2654
+msgid "Apply reorientation to:"
+msgstr "Aplicar reorientação a:"
+
+#: invesalius/gui/dialogs.py:2661 invesalius/gui/dialogs.py:6986
+#: invesalius/gui/dialogs.py:8109 invesalius/gui/dialogs.py:8240
 msgid "Apply"
 msgstr "Aplicar"
 
-#: dialogs.py:2161
+#: invesalius/gui/dialogs.py:2668
 msgid "Angle X"
 msgstr "Ângulo X"
 
-#: dialogs.py:2164
+#: invesalius/gui/dialogs.py:2670
 msgid "Angle Y"
 msgstr "Ângulo Y"
 
-#: dialogs.py:2167
+#: invesalius/gui/dialogs.py:2672
 msgid "Angle Z"
 msgstr "Ângulo Z"
 
-#: dialogs.py:2171
+#: invesalius/gui/dialogs.py:2681
 msgid "Interpolation method:"
-msgstr ""
+msgstr "Método de interpolação:"
 
-#: dialogs.py:2251 dialogs.py:2256
+#: invesalius/gui/dialogs.py:2796
 msgid "Create project from bitmap"
 msgstr "Criar projeto a partir de bitmap"
 
-#: dialogs.py:2281
+#: invesalius/gui/dialogs.py:2820
 msgid "Project name:"
 msgstr "Nome do projeto:"
 
-#: dialogs.py:2284
+#: invesalius/gui/dialogs.py:2826
 msgid "Slices orientation:"
 msgstr "Orientação das fatias:"
 
-#: dialogs.py:2285 dialogs.py:2461 dialogs.py:2485 dialogs.py:3714
+#: invesalius/gui/dialogs.py:2828 invesalius/gui/dialogs.py:3007
+#: invesalius/gui/dialogs.py:3034 invesalius/gui/dialogs.py:6347
+#: invesalius/gui/project_properties.py:30
 msgid "Sagital"
 msgstr "Sagital"
 
-#: dialogs.py:2289
+#: invesalius/gui/dialogs.py:2837
 msgid "Spacing (mm):"
 msgstr "Espaçamento (mm)"
 
-#: dialogs.py:2310
+#: invesalius/gui/dialogs.py:2852
 msgid "X:"
 msgstr "X:"
 
-#: dialogs.py:2315
+#: invesalius/gui/dialogs.py:2857
 msgid "Y:"
 msgstr "Y:"
 
-#: dialogs.py:2319
+#: invesalius/gui/dialogs.py:2862
 msgid "Z:"
 msgstr "Z:"
 
-#: dialogs.py:2404
+#: invesalius/gui/dialogs.py:2948
 msgid ""
 "All bitmaps files must be the same \n"
 " width and height size."
-msgstr "Todos os arquivos bitmap devem\nter as mesmas dimensões."
+msgstr ""
+"Todos os arquivos bitmap devem\n"
+"ter as mesmas dimensões."
 
-#: dialogs.py:2417
+#: invesalius/gui/dialogs.py:2965
 msgid "2D - Actual slice"
 msgstr "2D - Fatia atual"
 
-#: dialogs.py:2418
+#: invesalius/gui/dialogs.py:2966
 msgid "3D - All slices"
 msgstr "3D - Todas as fatias"
 
-#: dialogs.py:2452
+#: invesalius/gui/dialogs.py:2999
 msgid "2D Connectivity"
 msgstr "Conectividade 2D"
 
-#: dialogs.py:2464
+#: invesalius/gui/dialogs.py:3012 invesalius/gui/project_properties.py:77
 msgid "Orientation"
 msgstr "Orientação"
 
-#: dialogs.py:2507
+#: invesalius/gui/dialogs.py:3055
 msgid "3D Connectivity"
 msgstr "Conectividade 3D"
 
-#: dialogs.py:2577 dialogs.py:2639 task_slice.py:909
+#: invesalius/gui/dialogs.py:3135 invesalius/gui/dialogs.py:3207
+#: invesalius/gui/task_slice.py:1123
 msgid "Use WW&WL"
 msgstr "Considerar brilho e contraste"
 
-#: dialogs.py:2601
+#: invesalius/gui/dialogs.py:3156
 msgid "Deviation"
 msgstr "Desvio"
 
-#: dialogs.py:2603
+#: invesalius/gui/dialogs.py:3159
 msgid "Min:"
 msgstr "Min:"
 
-#: dialogs.py:2606
+#: invesalius/gui/dialogs.py:3167
 msgid "Max:"
 msgstr "Max:"
 
-#: dialogs.py:2668
+#: invesalius/gui/dialogs.py:3237
 msgid "Multiplier"
 msgstr "Multiplicador"
 
-#: dialogs.py:2671
+#: invesalius/gui/dialogs.py:3246
 msgid "Iterations"
 msgstr "Iteração"
 
-#: dialogs.py:2755 dialogs.py:2978 dialogs.py:3256
+#: invesalius/gui/dialogs.py:3370 invesalius/gui/dialogs.py:3604
+#: invesalius/gui/dialogs.py:3894
 msgid "Parameters"
 msgstr "Parâmetro"
 
-#: dialogs.py:2814 dialogs.py:2817
+#: invesalius/gui/dialogs.py:3431
 msgid "Select mask parts"
-msgstr "javascript:;Selecionar partes da máscara"
+msgstr "Selecionar partes da máscara"
 
-#: dialogs.py:2844
+#: invesalius/gui/dialogs.py:3460
 msgid "Target mask name"
 msgstr "Nome da máscara resultante"
 
-#: dialogs.py:2896 styles.py:2305
-msgid "Region growing"
-msgstr "Crescimento de região"
-
-#: dialogs.py:2948
+#: invesalius/gui/dialogs.py:3566
 msgid "Dynamic"
 msgstr "Dinâmico"
 
-#: dialogs.py:2948
+#: invesalius/gui/dialogs.py:3566
 msgid "Confidence"
 msgstr "Confidência"
 
-#: dialogs.py:3101
+#: invesalius/gui/dialogs.py:3739
 msgid "Crop mask"
 msgstr "Cortar máscara"
 
-#: dialogs.py:3139
+#: invesalius/gui/dialogs.py:3771
 msgid "Axial:"
 msgstr "Axial:"
 
-#: dialogs.py:3141 dialogs.py:3151 dialogs.py:3161
+#: invesalius/gui/dialogs.py:3773 invesalius/gui/dialogs.py:3785
+#: invesalius/gui/dialogs.py:3799
 msgid " - "
 msgstr "-"
 
-#: dialogs.py:3149
+#: invesalius/gui/dialogs.py:3781
 msgid "Sagital:"
 msgstr "Sagital:"
 
-#: dialogs.py:3159
+#: invesalius/gui/dialogs.py:3795
 msgid "Coronal:"
 msgstr "Coronal:"
 
-#: dialogs.py:3267
+#: invesalius/gui/dialogs.py:3906
 msgid "Max hole size"
 msgstr "Tamanho máximo do buraco"
 
-#: dialogs.py:3269
+#: invesalius/gui/dialogs.py:3912
 msgid "voxels"
 msgstr "voxels"
 
-#: dialogs.py:3328 dialogs.py:3331
+#: invesalius/gui/dialogs.py:3973
 msgid "Mask density"
-msgstr ""
+msgstr "Densidade da máscara"
 
-#: dialogs.py:3347
+#: invesalius/gui/dialogs.py:3990
 msgid "Calculate"
-msgstr ""
+msgstr "Calcular"
 
-#: dialogs.py:3357
+#: invesalius/gui/dialogs.py:4001
 msgid "Mask:"
-msgstr ""
+msgstr "Máscara:"
 
-#: dialogs.py:3364
+#: invesalius/gui/dialogs.py:4013
 msgid "Mean:"
-msgstr ""
+msgstr "Média:"
 
-#: dialogs.py:3367
+#: invesalius/gui/dialogs.py:4016
 msgid "Minimun:"
-msgstr ""
+msgstr "Mínimo:"
 
-#: dialogs.py:3370
+#: invesalius/gui/dialogs.py:4022
 msgid "Maximun:"
-msgstr ""
+msgstr "Máximo:"
 
-#: dialogs.py:3373
+#: invesalius/gui/dialogs.py:4028
 msgid "Standard deviation:"
-msgstr ""
+msgstr "Desvio padrão:"
 
-#: dialogs.py:3409
+#: invesalius/gui/dialogs.py:4071
 msgid "Calculating "
-msgstr ""
+msgstr "Calculando "
 
-#: dialogs.py:3444 dialogs.py:3448
+#: invesalius/gui/dialogs.py:4116
 msgid "Object calibration"
-msgstr ""
+msgstr "Calibração de objeto"
 
-#: dialogs.py:3467
-msgid "Choose the object reference mode"
+#: invesalius/gui/dialogs.py:4141
+msgid ""
+"Choose the coil index in coord_raw. Choose 0 for static mode, 2 for dynamic "
+"mode and 3 onwards for multiple coils."
 msgstr ""
+"Escolha o índice da bobina em coord_raw. Escolha 0 para modo estático, 2 "
+"para modo dinâmico e 3 em diante para múltiplas bobinas."
 
-#: dialogs.py:3477
+#: invesalius/gui/dialogs.py:4167
+msgid "Choose the FASTRAK sensor port"
+msgstr "Escolha a porta do sensor FASTRAK"
+
+#: invesalius/gui/dialogs.py:4187
+msgid "Reset all fiducials"
+msgstr "Redefinir todos os fiduciais"
+
+#: invesalius/gui/dialogs.py:4188 invesalius/gui/task_efield.py:254
+msgid "Reset"
+msgstr "Redefinir"
+
+#: invesalius/gui/dialogs.py:4193
 msgid "Registration done"
-msgstr ""
+msgstr "Registro concluído"
 
-#: dialogs.py:3479
+#: invesalius/gui/dialogs.py:4194 invesalius/gui/dialogs.py:4622
+#: invesalius/gui/dialogs.py:5090 invesalius/gui/dialogs.py:5309
 msgid "Done"
-msgstr ""
+msgstr "Concluído"
 
-#: dialogs.py:3522
+#: invesalius/gui/dialogs.py:4236
+msgid "Name the coil:"
+msgstr "Nomeie a bobina:"
+
+#: invesalius/gui/dialogs.py:4237
+msgid "coil1"
+msgstr "bobina1"
+
+#: invesalius/gui/dialogs.py:4271
 msgid "Would like to use InVesalius default object?"
-msgstr ""
+msgstr "Deseja usar o objeto padrão do InVesalius?"
 
-#: dialogs.py:3553 surface.py:315 viewer_volume.py:1147
-msgid "File format not reconized by InVesalius"
-msgstr ""
+#: invesalius/gui/dialogs.py:4348
+msgid "File format not recognized by InVesalius"
+msgstr "Arquivo format not recognized by InVesalius"
 
-#: dialogs.py:3553 dialogs.py:3572 surface.py:315 surface.py:327
-#: viewer_volume.py:1147 viewer_volume.py:1163
-msgid "Import surface error"
-msgstr ""
+#: invesalius/gui/dialogs.py:4551
+msgid "Refine Corregistration"
+msgstr "Refinar co-registro"
 
-#: dialogs.py:3572 surface.py:327 viewer_volume.py:1163
-msgid "InVesalius was not able to import this surface"
-msgstr ""
+#: invesalius/gui/dialogs.py:4569 invesalius/gui/dialogs.py:5216
+msgid "Select the surface:"
+msgstr "Selecione a superfície:"
 
-#: dialogs.py:3681
+#: invesalius/gui/dialogs.py:4570
+msgid "Registration mode:"
+msgstr "Modo de registro:"
+
+#: invesalius/gui/dialogs.py:4590
+msgid "Choose the registration mode:"
+msgstr "Escolha o modo de registro:"
+
+#: invesalius/gui/dialogs.py:4596
+msgid "Affine"
+msgstr "Afim"
+
+#: invesalius/gui/dialogs.py:4596
+msgid "Similarity"
+msgstr "Similaridade"
+
+#: invesalius/gui/dialogs.py:4596
+msgid "RigidBody"
+msgstr "Corpo rígido"
+
+#: invesalius/gui/dialogs.py:4604
+msgid "Create point"
+msgstr "Criar ponto"
+
+#: invesalius/gui/dialogs.py:4607
+msgid "Continuous acquisition"
+msgstr "Aquisição contínua"
+
+#: invesalius/gui/dialogs.py:4613 invesalius/gui/dialogs.py:6983
+msgid "Reset points"
+msgstr "Redefinir pontos"
+
+#: invesalius/gui/dialogs.py:4616
+msgid "Apply registration"
+msgstr "Aplicar registro"
+
+#: invesalius/gui/dialogs.py:4621
+msgid "Refine done"
+msgstr "Refinamento concluído"
+
+#: invesalius/gui/dialogs.py:5049
+msgid "Set Efield Configuration"
+msgstr "Definir configuração de Efield"
+
+#: invesalius/gui/dialogs.py:5060
+msgid "Load Brain Meshes"
+msgstr "Carregar malhas cerebrais"
+
+#: invesalius/gui/dialogs.py:5061 invesalius/gui/dialogs.py:6999
+#: invesalius/gui/preferences.py:1032 invesalius/gui/task_fmrisupport.py:85
+#: invesalius/gui/task_navigator.py:2688
+msgid "Load"
+msgstr "Carregar"
+
+#: invesalius/gui/dialogs.py:5066 invesalius/gui/dialogs.py:5228
+msgid "Select the brain surface:"
+msgstr "Selecione a superfície do cérebro:"
+
+#: invesalius/gui/dialogs.py:5078
+msgid "Select the scalp surface:"
+msgstr "Selecione a superfície do couro cabeludo:"
+
+#: invesalius/gui/dialogs.py:5089 invesalius/gui/dialogs.py:5308
+msgid "Target orientation done"
+msgstr "Orientação do alvo concluída"
+
+#: invesalius/gui/dialogs.py:5178
+msgid "Set target Orientation"
+msgstr "Definir orientação do alvo"
+
+#: invesalius/gui/dialogs.py:5255
+msgid "Show scalp surface"
+msgstr "Mostrar superfície do couro cabeludo"
+
+#: invesalius/gui/dialogs.py:5258
+msgid "Show brain surface"
+msgstr "Mostrar superfície do cérebro"
+
+#: invesalius/gui/dialogs.py:5262
+msgid "Reset arrow orientation"
+msgstr "Redefinir orientação da seta"
+
+#: invesalius/gui/dialogs.py:5265
+msgid "Change view"
+msgstr "Mudar visualização"
+
+#: invesalius/gui/dialogs.py:5268
+msgid "Create random coil target grid"
+msgstr "Criar grade aleatória de alvos de bobina"
+
+#: invesalius/gui/dialogs.py:5271
+msgid "Create coil target grid"
+msgstr "Criar grade de alvos de bobina"
+
+#: invesalius/gui/dialogs.py:5274
+msgid "Create brain target grid"
+msgstr "Criar grade de alvos cerebrais"
+
+#: invesalius/gui/dialogs.py:5277
+msgid "Send to mTMS"
+msgstr "Enviar para mTMS"
+
+#: invesalius/gui/dialogs.py:5281
+msgid "Rotation X:"
+msgstr "Rotação X:"
+
+#: invesalius/gui/dialogs.py:5290
+msgid "Rotation Y:"
+msgstr "Rotação Y:"
+
+#: invesalius/gui/dialogs.py:5299
+msgid "Rotation Z:"
+msgstr "Rotação Z:"
+
+#: invesalius/gui/dialogs.py:6235
+msgid "Loading brain surface..."
+msgstr "Carregando superfície do cérebro..."
+
+#: invesalius/gui/dialogs.py:6257
+msgid "Smoothing the surface..."
+msgstr "Suavizando a superfície..."
+
+#: invesalius/gui/dialogs.py:6277
 msgid "Creating 3D surface ..."
-msgstr ""
+msgstr "Criando superfície 3D..."
 
-#: dialogs.py:3706
+#: invesalius/gui/dialogs.py:6302
+msgid "Publishing surfaces to Dashboard..."
+msgstr "Publicando superfícies no painel..."
+
+#: invesalius/gui/dialogs.py:6333
 msgid "Go to slice ..."
-msgstr ""
+msgstr "Ir para a fatia..."
 
-#: dialogs.py:3740
+#: invesalius/gui/dialogs.py:6374
 msgid "Slice number"
-msgstr ""
+msgstr "Número da fatia"
 
-#: dicom.py:1560 dicom.py:1564 dicom.py:1566
-msgid "unnamed"
-msgstr ""
+#: invesalius/gui/dialogs.py:6542
+msgid "Go to scanner coord..."
+msgstr "Ir para coordenadas do scanner..."
 
-#: dicom_preview_panel.py:426
+#: invesalius/gui/dialogs.py:6572
+msgid "Sagital coordinate:"
+msgstr "Coordenada sagital:"
+
+#: invesalius/gui/dialogs.py:6574
+msgid "Coronal coordinate:"
+msgstr "Coordenada coronal:"
+
+#: invesalius/gui/dialogs.py:6576
+msgid "Axial coordinate:"
+msgstr "Coordenada axial:"
+
+#: invesalius/gui/dialogs.py:6613
+msgid "Calculating the transformation ..."
+msgstr "Calculando a transformação..."
+
+#: invesalius/gui/dialogs.py:6636
+msgid "Select NIfTI volume"
+msgstr "Selecionar volume NIfTI"
+
+#: invesalius/gui/dialogs.py:6688
+msgid "Maximum pixel intensity is: "
+msgstr "Intensidade máxima de pixel é: "
+
+#: invesalius/gui/dialogs.py:6691
+msgid "Number of unique pixel intensities: "
+msgstr "Número de intensidades únicas de pixel: "
+
+#: invesalius/gui/dialogs.py:6694
+msgid "Would you like to rescale pixel values to 0-255?"
+msgstr "Deseja redimensionar os valores de pixel para 0–255?"
+
+#: invesalius/gui/dialogs.py:6712
+msgid "Configure Optitrack"
+msgstr "Configurar Optitrack"
+
+#: invesalius/gui/dialogs.py:6808
+msgid "Set tracker device"
+msgstr "Definir dispositivo de rastreamento"
+
+#: invesalius/gui/dialogs.py:6825 invesalius/gui/preferences.py:1672
+msgid "Choose the tracking device"
+msgstr "Selecionar dispositivo de rastreamento"
+
+#: invesalius/gui/dialogs.py:6832
+msgid "Select tracker:"
+msgstr "Selecione o rastreador:"
+
+#: invesalius/gui/dialogs.py:6874
+msgid "Set Robot IP"
+msgstr "Definir IP do robô"
+
+#: invesalius/gui/dialogs.py:6891 invesalius/gui/preferences.py:1719
+msgid "Choose or type the robot IP"
+msgstr "Escolha ou digite o IP do robô"
+
+#: invesalius/gui/dialogs.py:6892
+msgid "Select robot IP:"
+msgstr "Selecione o IP do robô:"
+
+#: invesalius/gui/dialogs.py:6941
+msgid "Create transformation matrix to robot space"
+msgstr "Criar matriz de transformação para o espaço do robô"
+
+#: invesalius/gui/dialogs.py:6968
+msgid "Poses acquisition for robot registration:"
+msgstr "Aquisição de poses para registro do robô:"
+
+#: invesalius/gui/dialogs.py:6970
+msgid "Single"
+msgstr "Único"
+
+#: invesalius/gui/dialogs.py:6973
+msgid "Continuous"
+msgstr "Contínuo"
+
+#: invesalius/gui/dialogs.py:6979
+msgid "0"
+msgstr "0"
+
+#: invesalius/gui/dialogs.py:6980
+msgid "Poses recorded"
+msgstr "Poses registradas"
+
+#: invesalius/gui/dialogs.py:6992
+msgid "Registration file"
+msgstr "Arquivo de registro"
+
+#: invesalius/gui/dialogs.py:6994 invesalius/gui/preferences.py:1038
+#: invesalius/gui/preferences.py:1587 invesalius/gui/preferences.py:1613
+#: invesalius/gui/task_navigator.py:2685
+msgid "Save"
+msgstr "Salvar"
+
+#: invesalius/gui/dialogs.py:7164
+msgid "Save robot transformation file as..."
+msgstr "Salvar robot transformation file as..."
+
+#: invesalius/gui/dialogs.py:7165 invesalius/gui/dialogs.py:7182
+msgid "Robot transformation files (*.rbtf)|*.rbtf"
+msgstr "Arquivos de transformação do robô (*.rbtf)|*.rbtf"
+
+#: invesalius/gui/dialogs.py:7181
+msgid "Load robot transformation"
+msgstr "Carregar transformação do robô"
+
+#: invesalius/gui/dialogs.py:7209
+msgid "Configure NDI Polaris"
+msgstr "Configurar NDI Polaris"
+
+#: invesalius/gui/dialogs.py:7373
+msgid "Select COM port"
+msgstr "Selecionar porta COM"
+
+#: invesalius/gui/dialogs.py:7474
+msgid "Set WW&WL manually"
+msgstr "Definir WW&WL manualmente"
+
+#: invesalius/gui/dialogs.py:7485
+msgid "Window Level"
+msgstr "Nível da janela"
+
+#: invesalius/gui/dialogs.py:7487
+msgid "WL"
+msgstr "WL"
+
+#: invesalius/gui/dialogs.py:7491
+msgid "Window Width"
+msgstr "Largura da janela"
+
+#: invesalius/gui/dialogs.py:7493
+msgid "WW"
+msgstr "WW"
+
+#: invesalius/gui/dialogs.py:7550
+msgid "Set spacing"
+msgstr "Definir espaçamento"
+
+#: invesalius/gui/dialogs.py:7591
+msgid ""
+"It was not possible to obtain the image spacings.\n"
+"Please set it correctly:"
+msgstr ""
+"Não foi possível obter o espaçamento da imagem.\n"
+"Defina-o corretamente:"
+
+#: invesalius/gui/dialogs.py:7667 invesalius/gui/task_tractography.py:118
+msgid "Create peel"
+msgstr "Criar casca"
+
+#: invesalius/gui/dialogs.py:7697
+msgid "From mask"
+msgstr "A partir da máscara"
+
+#: invesalius/gui/dialogs.py:7715
+msgid "From files"
+msgstr "A partir de arquivos"
+
+#: invesalius/gui/dialogs.py:7721
+msgid "Mask file"
+msgstr "Arquivo de máscara"
+
+#: invesalius/gui/dialogs.py:7723
+msgid "Choose mask file"
+msgstr "Escolher arquivo de máscara"
+
+#: invesalius/gui/dialogs.py:7839
+msgid "Choose file"
+msgstr "Escolher arquivo"
+
+#: invesalius/gui/dialogs.py:7927
+msgid "Loading Project"
+msgstr "Carregando projeto"
+
+#: invesalius/gui/dialogs.py:7928
+msgid "Preparing to load project..."
+msgstr "Preparando para carregar o projeto..."
+
+#: invesalius/gui/dialogs.py:7984
+msgid "Add Annotation"
+msgstr "Adicionar anotação"
+
+#: invesalius/gui/dialogs.py:7997
+msgid "Annotation:"
+msgstr "Anotação:"
+
+#: invesalius/gui/dialogs.py:8035
+msgid "Image Filters"
+msgstr "Filtros de imagem"
+
+#: invesalius/gui/dialogs.py:8048
+msgid "Apply filter to:"
+msgstr "Aplicar filtro a:"
+
+#: invesalius/gui/dialogs.py:8059
+msgid "Filter type:"
+msgstr "Tipo de filtro:"
+
+#: invesalius/gui/dialogs.py:8064
+msgid "Despeckle (Gaussian)"
+msgstr "Desgranular (Gaussiano)"
+
+#: invesalius/gui/dialogs.py:8065
+msgid "Border Detection (Sobel)"
+msgstr "Detecção de bordas (Sobel)"
+
+#: invesalius/gui/dialogs.py:8066
+msgid "Mean"
+msgstr "Média"
+
+#: invesalius/gui/dialogs.py:8067
+msgid "Median"
+msgstr "Mediana"
+
+#: invesalius/gui/dialogs.py:8076 invesalius/gui/dialogs.py:8177
+msgid "Sigma:"
+msgstr "Sigma:"
+
+#: invesalius/gui/dialogs.py:8085
+msgid "Dimension:"
+msgstr "Dimensão:"
+
+#: invesalius/gui/dialogs.py:8086
+msgid "2D"
+msgstr "2D"
+
+#: invesalius/gui/dialogs.py:8093
+msgid "Orientation:"
+msgstr "Orientação:"
+
+#: invesalius/gui/dialogs.py:8110
+msgid "Close"
+msgstr "Fechar"
+
+#: invesalius/gui/dialogs.py:8183
+msgid "Pre-smooth sigma:"
+msgstr "Sigma de pré-suavização:"
+
+#: invesalius/gui/dialogs.py:8189 invesalius/gui/dialogs.py:8195
+msgid "Kernel size:"
+msgstr "Tamanho do kernel:"
+
+#: invesalius/gui/dialogs.py:8229
+msgid "Applying..."
+msgstr "Aplicando..."
+
+#: invesalius/gui/dicom_preview_panel.py:426
 #, python-format
 msgid "%d images"
 msgstr "%d imagens"
 
-#: dicom_preview_panel.py:555 dicom_preview_panel.py:562
-#: dicom_preview_panel.py:587 dicom_preview_panel.py:594
+#: invesalius/gui/dicom_preview_panel.py:558
+#: invesalius/gui/dicom_preview_panel.py:567
+#: invesalius/gui/dicom_preview_panel.py:593
+#: invesalius/gui/dicom_preview_panel.py:602
 #, python-format
 msgid "Image %d"
 msgstr "Imagem %d"
 
-#: frame.py:190
+#: invesalius/gui/frame.py:309
 msgid "Data panel"
 msgstr "Painel de dados"
 
-#: frame.py:196
+#: invesalius/gui/frame.py:322
 msgid "Preview medical data to be reconstructed"
 msgstr "Visualizar os dados a reconstruir"
 
-#: frame.py:202
+#: invesalius/gui/frame.py:336
 msgid "Preview bitmap to be reconstructed"
 msgstr "Pré-visualizar bitmap que serão reconstruídos"
 
-#: frame.py:552
-msgid "Currently the Navigation mode is only working on Windows"
-msgstr ""
+#: invesalius/gui/frame.py:591
+msgid "You have unsaved changes. What would you like to do?"
+msgstr "Você tem alterações não salvas. O que deseja fazer?"
 
-#: frame.py:719
+#: invesalius/gui/frame.py:595
+msgid "InVesalius 3 - Unsaved Changes"
+msgstr "InVesalius 3 - Alterações não salvas"
+
+#: invesalius/gui/frame.py:597
+msgid "Save and Exit"
+msgstr "Salvar e sair"
+
+#: invesalius/gui/frame.py:597
+msgid "Discard and Exit"
+msgstr "Descartar e sair"
+
+#: invesalius/gui/frame.py:598
+msgid "Store session"
+msgstr "Salvar sessão"
+
+#: invesalius/gui/frame.py:625
+msgid "Are you sure you want to exit?"
+msgstr "Tem certeza de que deseja sair?"
+
+#: invesalius/gui/frame.py:899
+msgid "Currently the Navigation mode is only working on Windows"
+msgstr "No momento, o modo de navegação funciona apenas no Windows"
+
+#: invesalius/gui/frame.py:1133
 msgid "Fill holes automatically"
 msgstr "Fechar buracos automaticamente"
 
-#: frame.py:813
+#: invesalius/gui/frame.py:1156 invesalius/gui/task_navigator.py:956
+msgid ""
+"It's not possible to run brain segmenter because your system doesn't have "
+"the following modules installed:"
+msgstr ""
+"Não é possível executar o segmentador cerebral porque o seu sistema não "
+"possui os seguintes módulos instalados:"
+
+#: invesalius/gui/frame.py:1175
+msgid ""
+"It's not possible to run subpart segmentation because your system doesn't "
+"have the following modules installed:"
+msgstr ""
+"Não é possível executar a segmentação de subpartes porque o seu sistema não "
+"possui os seguintes módulos instalados:"
+
+#: invesalius/gui/frame.py:1194
+msgid ""
+"It's not possible to run trachea segmenter because your system doesn't have "
+"the following modules installed:"
+msgstr ""
+"Não é possível executar o segmentador de traqueia porque o seu sistema não "
+"possui os seguintes módulos instalados:"
+
+#: invesalius/gui/frame.py:1213
+msgid ""
+"It's not possible to run implant prediction because your system doesn't have "
+"the following modules installed:"
+msgstr ""
+"Não é possível executar a predição de implantes porque o seu sistema não "
+"possui os seguintes módulos instalados:"
+
+#: invesalius/gui/frame.py:1232
+msgid ""
+"It's not possible to run mandible segmenter because your system doesn't have "
+"the following modules installed:"
+msgstr ""
+"Não é possível executar o segmentador de mandíbula porque o seu sistema não "
+"possui os seguintes módulos instalados:"
+
+#: invesalius/gui/frame.py:1448
 msgid "Analyze 7.5"
 msgstr "Analyze 7.5"
 
-#: frame.py:814
+#: invesalius/gui/frame.py:1449
 msgid "NIfTI 1"
 msgstr "NIfTI 1"
 
-#: frame.py:815
+#: invesalius/gui/frame.py:1450
 msgid "PAR/REC"
 msgstr "PAR/REC"
 
-#: frame.py:821
+#: invesalius/gui/frame.py:1451
+msgid "TIFF,BMP,JPG or PNG (micro-CT)"
+msgstr "TIFF,BMP,JPG ou PNG (micro-CT)"
+
+#: invesalius/gui/frame.py:1456
 msgid "Import DICOM...\tCtrl+I"
 msgstr "Importar DICOM...\tCtrl+I"
 
-#: frame.py:823
+#: invesalius/gui/frame.py:1458
 msgid "Import other files..."
 msgstr "Importar outros arquivos..."
 
-#: frame.py:824
+#: invesalius/gui/frame.py:1459
 msgid "Open project...\tCtrl+O"
 msgstr "Abrir projeto...\tCtrl+O"
 
-#: frame.py:825
+#: invesalius/gui/frame.py:1460
 msgid "Save project\tCtrl+S"
 msgstr "Salvar projeto\tCtrl+S"
 
-#: frame.py:826
+#: invesalius/gui/frame.py:1461
 msgid "Save project as...\tCtrl+Shift+S"
-msgstr ""
+msgstr "Salvar project as...\tCtrl+Shift+S"
 
-#: frame.py:827
+#: invesalius/gui/frame.py:1462
 msgid "Export project"
-msgstr ""
+msgstr "Exportar project"
 
-#: frame.py:828
+#: invesalius/gui/frame.py:1463
+msgid "Project properties"
+msgstr "Projeto properties"
+
+#: invesalius/gui/frame.py:1464
 msgid "Close project"
 msgstr "Fechar projeto"
 
-#: frame.py:837
+#: invesalius/gui/frame.py:1473
 msgid "Exit\tCtrl+Q"
 msgstr "Sair\tCtrl+Q"
 
-#: frame.py:849 frame.py:859
+#: invesalius/gui/frame.py:1477
 msgid "Undo\tCtrl+Z"
 msgstr "Desfazer\tCtrl+Z"
 
-#: frame.py:854 frame.py:860
+#: invesalius/gui/frame.py:1478
 msgid "Redo\tCtrl+Y"
 msgstr "Refazer\tCtrl+Y"
 
-#: frame.py:861
+#: invesalius/gui/frame.py:1479
 msgid "Go to slice ...\tCtrl+G"
-msgstr ""
+msgstr "Ir para a fatia...\tCtrl+G"
 
-#: frame.py:871
+#: invesalius/gui/frame.py:1480
+msgid "Go to scanner coord ...\t"
+msgstr "Ir para coordenadas do scanner...\t"
+
+#: invesalius/gui/frame.py:1491
 msgid "New\tCtrl+Shift+M"
-msgstr ""
+msgstr "Nova\tCtrl+Shift+M"
 
-#: frame.py:874
+#: invesalius/gui/frame.py:1495
 msgid "Boolean operations\tCtrl+Shift+B"
-msgstr ""
+msgstr "Operações booleanas\tCtrl+Shift+B"
 
-#: frame.py:877
+#: invesalius/gui/frame.py:1499
 msgid "Clean Mask\tCtrl+Shift+A"
 msgstr "Limpar máscara\tCtrl+Shift+A"
 
-#: frame.py:882
+#: invesalius/gui/frame.py:1505
 msgid "Fill holes manually\tCtrl+Shift+H"
-msgstr ""
+msgstr "Preencher buracos manualmente\tCtrl+Shift+H"
 
-#: frame.py:885
+#: invesalius/gui/frame.py:1510
 msgid "Fill holes automatically\tCtrl+Shift+J"
-msgstr ""
+msgstr "Preencher buracos automaticamente\tCtrl+Shift+J"
 
-#: frame.py:890
+#: invesalius/gui/frame.py:1517
 msgid "Remove parts\tCtrl+Shift+K"
-msgstr ""
+msgstr "Remover partes\tCtrl+Shift+K"
 
-#: frame.py:893
+#: invesalius/gui/frame.py:1522
 msgid "Select parts\tCtrl+Shift+L"
-msgstr ""
+msgstr "Selecionar partes\tCtrl+Shift+L"
 
-#: frame.py:898
+#: invesalius/gui/frame.py:1528
 msgid "Crop"
 msgstr "Cortar"
 
-#: frame.py:903
+#: invesalius/gui/frame.py:1536 invesalius/gui/preferences.py:228
+msgid "Enable"
+msgstr "Habilitar"
+
+#: invesalius/gui/frame.py:1541
+msgid "Auto reload"
+msgstr "Recarregamento automático"
+
+#: invesalius/gui/frame.py:1551
+msgid "Reload"
+msgstr "Recarregar"
+
+#: invesalius/gui/frame.py:1555
+msgid "Mask 3D Preview"
+msgstr "Pré-visualização 3D da máscara"
+
+#: invesalius/gui/frame.py:1560
 msgid "Threshold\tCtrl+Shift+T"
-msgstr ""
+msgstr "Limiar\tCtrl+Shift+T"
 
-#: frame.py:904
+#: invesalius/gui/frame.py:1563
 msgid "Manual segmentation\tCtrl+Shift+E"
-msgstr ""
+msgstr "Segmentação manual\tCtrl+Shift+E"
 
-#: frame.py:905
+#: invesalius/gui/frame.py:1566
 msgid "Watershed\tCtrl+Shift+W"
-msgstr ""
+msgstr "Watershed\tCtrl+Shift+W"
 
-#: frame.py:906
+#: invesalius/gui/frame.py:1569
 msgid "Region growing\tCtrl+Shift+G"
-msgstr ""
+msgstr "Crescimento de região\tCtrl+Shift+G"
 
-#: frame.py:919
+#: invesalius/gui/frame.py:1573
+msgid "Brain segmentation (MRI T1)"
+msgstr "Segmentação cerebral (MRI T1)"
+
+#: invesalius/gui/frame.py:1575
+msgid "Brain subpart segmentation (MRI T1)"
+msgstr "Segmentação de subpartes do cérebro (MRI T1)"
+
+#: invesalius/gui/frame.py:1577
+msgid "Trachea segmentation (CT)"
+msgstr "Segmentação da traqueia (TC)"
+
+#: invesalius/gui/frame.py:1582
+msgid "New\tCtrl+Shift+C"
+msgstr "Nova\tCtrl+Shift+C"
+
+#: invesalius/gui/frame.py:1586
+msgid "Remove non-visible faces"
+msgstr "Remover faces não visíveis"
+
+#: invesalius/gui/frame.py:1594
 msgid "Right - Left"
-msgstr ""
+msgstr "Direita - Esquerda"
 
-#: frame.py:920
+#: invesalius/gui/frame.py:1595
 msgid "Anterior - Posterior"
-msgstr ""
+msgstr "Anterior - Posterior"
 
-#: frame.py:921
+#: invesalius/gui/frame.py:1596
 msgid "Top - Bottom"
-msgstr ""
+msgstr "Superior - Inferior"
 
-#: frame.py:924
+#: invesalius/gui/frame.py:1599
 msgid "From Right-Left to Anterior-Posterior"
-msgstr ""
+msgstr "De Direita-Esquerda para Anterior-Posterior"
 
-#: frame.py:925
+#: invesalius/gui/frame.py:1602
 msgid "From Right-Left to Top-Bottom"
-msgstr ""
+msgstr "De Direita-Esquerda para Superior-Inferior"
 
-#: frame.py:926
+#: invesalius/gui/frame.py:1603
 msgid "From Anterior-Posterior to Top-Bottom"
-msgstr ""
+msgstr "De Anterior-Posterior para Superior-Inferior"
 
-#: frame.py:928
+#: invesalius/gui/frame.py:1607
 msgid "Flip"
-msgstr ""
+msgstr "Inverter"
 
-#: frame.py:929
+#: invesalius/gui/frame.py:1608
 msgid "Swap axes"
-msgstr ""
+msgstr "Trocar eixos"
 
-#: frame.py:931
-msgid "Mask Density measure"
-msgstr ""
+#: invesalius/gui/frame.py:1610
+msgid "Reorient image\tCtrl+Shift+O"
+msgstr "Reorientar imagem\tCtrl+Shift+O"
 
-#: frame.py:932
-msgid "Reorient image\tCtrl+Shift+R"
-msgstr "Reorientar imagem\tCtrl+Shift+R"
+#: invesalius/gui/frame.py:1611
+msgid "Filter"
+msgstr "Filtro"
 
-#: frame.py:937
+#: invesalius/gui/frame.py:1613
+msgid "Set WW&&WL manually"
+msgstr "Definir WW&&WL manualmente"
+
+#: invesalius/gui/frame.py:1616
+msgid "Cranioplasty"
+msgstr "Cranioplastia"
+
+#: invesalius/gui/frame.py:1619
+msgid "Mask density measure"
+msgstr "Medição de densidade da máscara"
+
+#: invesalius/gui/frame.py:1622
+msgid "Analysis"
+msgstr "Análise"
+
+#: invesalius/gui/frame.py:1625
+msgid "Planning"
+msgstr "Planejamento"
+
+#: invesalius/gui/frame.py:1626
 msgid "Segmentation"
 msgstr "Segmentação"
 
-#: frame.py:938 preferences.py:108
+#: invesalius/gui/frame.py:1627
 msgid "Surface"
 msgstr "Superfície"
 
-#: frame.py:942
+#: invesalius/gui/frame.py:1633
+msgid "Show Log Viewer"
+msgstr "Mostrar visualizador de logs"
+
+#: invesalius/gui/frame.py:1634
+msgid "Interactive Shell"
+msgstr "Shell interativo"
+
+#: invesalius/gui/frame.py:1640
 msgid "Interpolated slices"
 msgstr "Fatias interpoladas"
 
-#: frame.py:979
-msgid "Preferences..."
-msgstr "Preferências..."
-
-#: frame.py:984
-msgid "Transcranial Magnetic Stimulation Mode\tCtrl+T"
-msgstr ""
-
-#: frame.py:986
-msgid "Deep Brain Stimulation Mode\tCtrl+B"
-msgstr ""
-
-#: frame.py:988
-msgid "Navigation Mode"
-msgstr ""
-
-#: frame.py:997
-msgid "Getting started..."
-msgstr "Primeiros passos..."
-
-#: frame.py:1000
-msgid "About..."
-msgstr "Sobre..."
-
-#: frame.py:1008
-msgid "File"
-msgstr "Arquivo"
-
-#: frame.py:1009
-msgid "Edit"
-msgstr "Editar"
-
-#: frame.py:1010
-msgid "View"
-msgstr "Visualizar"
-
-#: frame.py:1014
-msgid "Mode"
-msgstr ""
-
-#: frame.py:1015
-msgid "Help"
-msgstr "Ajuda"
-
-#: frame.py:1160 surface.py:468 task_navigator.py:495 task_navigator.py:531
-#: task_navigator.py:925 task_navigator.py:951
-msgid "Ready"
-msgstr "Pronto"
-
-#: frame.py:1310
-msgid "Import DICOM files...\tCtrl+I"
-msgstr "Importar arquivos DICOM...\tCtrl+I"
-
-#: frame.py:1319
-msgid "Open InVesalius project..."
-msgstr "Abrir projeto InVesalius..."
-
-#: frame.py:1325
-msgid "Save InVesalius project"
-msgstr "Salvar projeto InVesalius"
-
-#: frame.py:1482
-msgid "Zoom"
-msgstr "Zoom"
-
-#: frame.py:1488
-msgid "Zoom based on selection"
-msgstr "Zoom baseado na seleção"
-
-#: frame.py:1494
-msgid "Rotate"
-msgstr "Rotacionar"
-
-#: frame.py:1500
-msgid "Move"
-msgstr "Mover"
-
-#: frame.py:1506
-msgid "Contrast"
-msgstr "Contraste"
-
-#: frame.py:1525
-msgid "Measure density ellipse"
-msgstr ""
-
-#: frame.py:1532
-msgid "Measure density polygon"
-msgstr ""
-
-#: frame.py:1682
-msgid "Scroll slices"
-msgstr "Alterar fatias"
-
-#: frame.py:1688
-msgid "Slices' cross intersection"
-msgstr "Cruz de interseção de fatias"
-
-#: frame.py:1867 frame.py:1938 frame.py:2116
-msgid "Hide task panel"
-msgstr "Esconder barra de tarefas"
-
-#: frame.py:1873 frame.py:1960 frame.py:2138
-msgid "Hide text"
-msgstr "Esconder texto"
-
-#: frame.py:1944 frame.py:2122
-msgid "Show task panel"
-msgstr "Exibir barra de tarefas"
-
-#: frame.py:1954 frame.py:2132
-msgid "Show text"
-msgstr "Exibir texto"
-
-#: frame.py:2035
-msgid "Undo"
-msgstr "Desfazer"
-
-#: frame.py:2042
-msgid "Redo"
-msgstr "Refazer"
-
-#: imagedata_utils.py:104 imagedata_utils.py:335 imagedata_utils.py:440
-#: imagedata_utils.py:533 imagedata_utils.py:633
-msgid "Generating multiplanar visualization..."
-msgstr "Gerando visualização multiplanar..."
-
-#: import_bitmap_panel.py:92 import_network_panel.py:101 import_panel.py:94
-msgid "Import"
-msgstr "Importar"
-
-#: import_bitmap_panel.py:201
-msgid "Path"
-msgstr "Caminho"
-
-#: import_bitmap_panel.py:203
-msgid "Width x Height"
-msgstr "Largura x Altura"
-
-#: import_bitmap_panel.py:210 import_network_panel.py:266 import_panel.py:251
-msgid "InVesalius Database"
-msgstr "Banco de dados InVesalius"
-
-#: import_network_panel.py:239 import_panel.py:224
-msgid "Patient name"
-msgstr "Nome do paciente"
-
-#: import_network_panel.py:240 import_panel.py:225
-msgid "Patient ID"
-msgstr "ID Paciente"
-
-#: import_network_panel.py:241 import_panel.py:226
-msgid "Age"
-msgstr "Idade"
-
-#: import_network_panel.py:242 import_panel.py:227
-msgid "Gender"
-msgstr "Sexo"
-
-#: import_network_panel.py:243 import_panel.py:228
-msgid "Study description"
-msgstr "Descrição do estudo"
-
-#: import_network_panel.py:244 import_panel.py:229
-msgid "Modality"
-msgstr "Modalidade"
-
-#: import_network_panel.py:245 import_panel.py:230
-msgid "Date acquired"
-msgstr "Data de aquisição"
-
-#: import_network_panel.py:246 import_panel.py:231
-msgid "# Images"
-msgstr "# Imagens"
-
-#: import_network_panel.py:247 import_panel.py:232
-msgid "Institution"
-msgstr "Instituição"
-
-#: import_network_panel.py:248 import_panel.py:233
-msgid "Date of birth"
-msgstr "Data de nascimento"
-
-#: import_network_panel.py:249 import_panel.py:234
-msgid "Accession Number"
-msgstr "Número de acesso"
-
-#: import_network_panel.py:250 import_panel.py:235
-msgid "Referring physician"
-msgstr "Médico"
-
-#: import_network_panel.py:497
-msgid "Word"
-msgstr "Termo"
-
-#: import_network_panel.py:504
-msgid "Search"
-msgstr "Pesquisar"
-
-#: import_network_panel.py:664
-msgid "Active"
-msgstr "Activo"
-
-#: import_network_panel.py:665
-msgid "Host"
-msgstr "Host"
-
-#: import_network_panel.py:666
-msgid "Port"
-msgstr "Porta"
-
-#: import_network_panel.py:667
-msgid "AETitle"
-msgstr "AETitle"
-
-#: import_network_panel.py:668
-msgid "Status"
-msgstr "Status"
-
-#: import_network_panel.py:698
-msgid "Add"
-msgstr "Adicionar"
-
-#: import_network_panel.py:699 task_navigator.py:1037
-msgid "Remove"
-msgstr "Remover"
-
-#: import_network_panel.py:700
-msgid "Check status"
-msgstr "Verifica status"
-
-#: import_network_panel.py:773
-msgid "ok"
-msgstr "OK"
-
-#: import_network_panel.py:775
-msgid "error"
-msgstr "Erro"
-
-#: language_dialog.py:97
-msgid "Language selection"
-msgstr "Seleção de idioma"
-
-#: language_dialog.py:141
-msgid "Choose user interface language"
-msgstr "Selecione o idioma"
-
-#: measures.py:1108 measures.py:1543
-#, python-format
-msgid ""
-"Area: %.3f\n"
-"Min: %.3f\n"
-"Max: %.3f\n"
-"Mean: %.3f\n"
-"Std: %.3f"
-msgstr ""
-
-#: polydata_utils.py:155
-msgid "Analysing selected regions..."
-msgstr "Analisando regiões selecionadas..."
-
-#: polydata_utils.py:211
-msgid "Splitting disconnected regions..."
-msgstr "Separando regiões desconexas..."
-
-#: preferences.py:17
+#: invesalius/gui/frame.py:1676 invesalius/gui/frame.py:2042
+#: invesalius/gui/preferences.py:34
 msgid "Preferences"
 msgstr "Preferências"
 
-#: preferences.py:46
-msgid "2D Visualization"
-msgstr "Visualização 2D"
+#: invesalius/gui/frame.py:1683
+msgid "Transcranial Magnetic Stimulation Mode\tCtrl+T"
+msgstr "Modo de Estimulação Magnética Transcraniana\tCtrl+T"
 
-#: preferences.py:47
-msgid "3D Visualization"
-msgstr "Visualização 3D"
+#: invesalius/gui/frame.py:1689
+msgid "Deep Brain Stimulation Mode\tCtrl+B"
+msgstr "Modo de Estimulação Cerebral Profunda\tCtrl+B"
 
-#: preferences.py:49 preferences.py:196
+#: invesalius/gui/frame.py:1692
+msgid "Navigation Mode"
+msgstr "Modo de navegação"
+
+#: invesalius/gui/frame.py:1700
+msgid "Open Plugins folder"
+msgstr "Abrir pasta de plugins"
+
+#: invesalius/gui/frame.py:1705
+msgid "Getting started..."
+msgstr "Primeiros passos..."
+
+#: invesalius/gui/frame.py:1708
+msgid "About..."
+msgstr "Sobre..."
+
+#: invesalius/gui/frame.py:1717
+msgid "Edit"
+msgstr "Editar"
+
+#: invesalius/gui/frame.py:1718
+msgid "View"
+msgstr "Visualizar"
+
+#: invesalius/gui/frame.py:1720
+msgid "Plugins"
+msgstr "Plugins"
+
+#: invesalius/gui/frame.py:1723
+msgid "Mode"
+msgstr "Modo"
+
+#: invesalius/gui/frame.py:1724
+msgid "Help"
+msgstr "Ajuda"
+
+#: invesalius/gui/frame.py:2015
+msgid "Import DICOM files...\tCtrl+I"
+msgstr "Importar arquivos DICOM...\tCtrl+I"
+
+#: invesalius/gui/frame.py:2026
+msgid "Open InVesalius project..."
+msgstr "Abrir projeto InVesalius..."
+
+#: invesalius/gui/frame.py:2034
+msgid "Save InVesalius project"
+msgstr "Salvar projeto InVesalius"
+
+#: invesalius/gui/frame.py:2196
+msgid "Zoom"
+msgstr "Zoom"
+
+#: invesalius/gui/frame.py:2204
+msgid "Zoom based on selection"
+msgstr "Zoom baseado na seleção"
+
+#: invesalius/gui/frame.py:2212
+msgid "Rotate"
+msgstr "Rotacionar"
+
+#: invesalius/gui/frame.py:2220
+msgid "Move"
+msgstr "Mover"
+
+#: invesalius/gui/frame.py:2228
+msgid "Contrast"
+msgstr "Contraste"
+
+#: invesalius/gui/frame.py:2244
+msgid "Measure curved distance on surface"
+msgstr "Medir distância curva na superfície"
+
+#: invesalius/gui/frame.py:2261
+msgid "Measure density ellipse"
+msgstr "Medir elipse de densidade"
+
+#: invesalius/gui/frame.py:2270
+msgid "Measure density polygon"
+msgstr "Medir polígono de densidade"
+
+#: invesalius/gui/frame.py:2279
+msgid "Add annotation"
+msgstr "Adicionar anotação"
+
+#: invesalius/gui/frame.py:2355 invesalius/gui/task_tools.py:149
+msgid "Two points"
+msgstr "Dois pontos"
+
+#: invesalius/gui/frame.py:2355 invesalius/gui/task_tools.py:149
+msgid "Multi-points"
+msgstr "Múltiplos pontos"
+
+#: invesalius/gui/frame.py:2358 invesalius/gui/task_tools.py:154
+msgid "Select curved measurement mode:"
+msgstr "Selecione o modo de medição curva:"
+
+#: invesalius/gui/frame.py:2448
+msgid "Scroll slices"
+msgstr "Alterar fatias"
+
+#: invesalius/gui/frame.py:2456
+msgid "Slices' cross intersection"
+msgstr "Cruz de interseção de fatias"
+
+#: invesalius/gui/frame.py:2647 invesalius/gui/frame.py:2735
+msgid "Hide task panel"
+msgstr "Esconder barra de tarefas"
+
+#: invesalius/gui/frame.py:2655 invesalius/gui/frame.py:2759
+msgid "Hide text"
+msgstr "Esconder texto"
+
+#: invesalius/gui/frame.py:2663
+msgid "Hide ruler"
+msgstr "Ocultar régua"
+
+#: invesalius/gui/frame.py:2671 invesalius/gui/frame.py:2815
+#: invesalius/gui/frame.py:2844
+msgid "Show orientation cube"
+msgstr "Mostrar cubo de orientação"
+
+#: invesalius/gui/frame.py:2743
+msgid "Show task panel"
+msgstr "Exibir barra de tarefas"
+
+#: invesalius/gui/frame.py:2753
+msgid "Show text"
+msgstr "Exibir texto"
+
+#: invesalius/gui/frame.py:2769
+msgid "Hide rulers"
+msgstr "Ocultar réguas"
+
+#: invesalius/gui/frame.py:2779
+msgid "Show rulers"
+msgstr "Mostrar réguas"
+
+#: invesalius/gui/frame.py:2802 invesalius/gui/frame.py:2844
+msgid "Hide orientation cube"
+msgstr "Ocultar cubo de orientação"
+
+#: invesalius/gui/frame.py:2947
+msgid "Undo"
+msgstr "Desfazer"
+
+#: invesalius/gui/frame.py:2956
+msgid "Redo"
+msgstr "Refazer"
+
+#: invesalius/gui/import_bitmap_panel.py:94
+#: invesalius/gui/import_network_panel.py:104 invesalius/gui/import_panel.py:95
+msgid "Import"
+msgstr "Importar"
+
+#: invesalius/gui/import_bitmap_panel.py:204
+msgid "Path"
+msgstr "Caminho"
+
+#: invesalius/gui/import_bitmap_panel.py:206
+msgid "Width x Height"
+msgstr "Largura x Altura"
+
+#: invesalius/gui/import_bitmap_panel.py:213
+#: invesalius/gui/import_network_panel.py:273
+#: invesalius/gui/import_panel.py:273
+msgid "InVesalius Database"
+msgstr "Banco de dados InVesalius"
+
+#: invesalius/gui/import_network_panel.py:246
+#: invesalius/gui/import_panel.py:246
+msgid "Patient name"
+msgstr "Nome do paciente"
+
+#: invesalius/gui/import_network_panel.py:247
+#: invesalius/gui/import_panel.py:247
+msgid "Patient ID"
+msgstr "ID do Paciente"
+
+#: invesalius/gui/import_network_panel.py:248
+#: invesalius/gui/import_panel.py:248
+msgid "Age"
+msgstr "Idade"
+
+#: invesalius/gui/import_network_panel.py:249
+#: invesalius/gui/import_panel.py:249
+msgid "Gender"
+msgstr "Sexo"
+
+#: invesalius/gui/import_network_panel.py:250
+#: invesalius/gui/import_panel.py:250
+msgid "Study description"
+msgstr "Descrição do estudo"
+
+#: invesalius/gui/import_network_panel.py:251
+#: invesalius/gui/import_panel.py:251 invesalius/gui/project_properties.py:71
+msgid "Modality"
+msgstr "Modalidade"
+
+#: invesalius/gui/import_network_panel.py:252
+#: invesalius/gui/import_panel.py:252
+msgid "Date acquired"
+msgstr "Data de aquisição"
+
+#: invesalius/gui/import_network_panel.py:253
+#: invesalius/gui/import_panel.py:253
+msgid "# Images"
+msgstr "# Imagens"
+
+#: invesalius/gui/import_network_panel.py:254
+#: invesalius/gui/import_panel.py:254
+msgid "Institution"
+msgstr "Instituição"
+
+#: invesalius/gui/import_network_panel.py:255
+#: invesalius/gui/import_panel.py:255
+msgid "Date of birth"
+msgstr "Data de nascimento"
+
+#: invesalius/gui/import_network_panel.py:256
+#: invesalius/gui/import_panel.py:256
+msgid "Accession Number"
+msgstr "Número de acesso"
+
+#: invesalius/gui/import_network_panel.py:257
+#: invesalius/gui/import_panel.py:257
+msgid "Referring physician"
+msgstr "Médico"
+
+#: invesalius/gui/import_network_panel.py:482
+msgid "Word"
+msgstr "Termo"
+
+#: invesalius/gui/import_network_panel.py:644
+msgid "Active"
+msgstr "Activo"
+
+#: invesalius/gui/import_network_panel.py:645
+msgid "Host"
+msgstr "Host"
+
+#: invesalius/gui/import_network_panel.py:646
+msgid "Port"
+msgstr "Porta"
+
+#: invesalius/gui/import_network_panel.py:647
+msgid "AETitle"
+msgstr "AETitle"
+
+#: invesalius/gui/import_network_panel.py:648
+msgid "Status"
+msgstr "Status"
+
+#: invesalius/gui/import_network_panel.py:678
+msgid "Add"
+msgstr "Adicionar"
+
+#: invesalius/gui/import_network_panel.py:679
+msgid "Remove"
+msgstr "Remover"
+
+#: invesalius/gui/import_network_panel.py:680
+msgid "Check status"
+msgstr "Verifica status"
+
+#: invesalius/gui/import_network_panel.py:749
+msgid "ok"
+msgstr "ok"
+
+#: invesalius/gui/import_network_panel.py:751
+msgid "error"
+msgstr "Erro"
+
+#: invesalius/gui/interactive_shell.py:81
+msgid "InVesalius Interactive Python Shell"
+msgstr "Shell interativo de Python do InVesalius"
+
+#: invesalius/gui/language_dialog.py:100
+msgid "Language selection"
+msgstr "Seleção de idioma"
+
+#: invesalius/gui/language_dialog.py:142
+msgid "Choose user interface language"
+msgstr "Selecione o idioma"
+
+#: invesalius/gui/preferences.py:48
+msgid "Visualization"
+msgstr "Visualização"
+
+#: invesalius/gui/preferences.py:66 invesalius/gui/task_navigator.py:181
+msgid "Navigation"
+msgstr "Navegação"
+
+#: invesalius/gui/preferences.py:67
+msgid "Tracker"
+msgstr "Rastreador"
+
+#: invesalius/gui/preferences.py:68 invesalius/gui/task_navigator.py:342
+msgid "TMS Coil"
+msgstr "TMS Bobina"
+
+#: invesalius/gui/preferences.py:70 invesalius/gui/preferences.py:2280
 msgid "Language"
 msgstr "Idioma"
 
-#: preferences.py:111
-msgid "Interpolation "
-msgstr "Interpolação "
+#: invesalius/gui/preferences.py:72
+msgid "Logging"
+msgstr "Registro de logs"
 
-#: preferences.py:119
-msgid "Volume rendering"
-msgstr "Renderização volumétrica"
+#: invesalius/gui/preferences.py:195
+msgid "3D Visualization"
+msgstr "Visualização 3D"
 
-#: preferences.py:122
-msgid "Rendering"
-msgstr "Renderização"
+#: invesalius/gui/preferences.py:196
+msgid "Surface Interpolation "
+msgstr "Interpolação de superfície"
 
-#: preferences.py:126
+#: invesalius/gui/preferences.py:209
+msgid "Volume Rendering"
+msgstr "Renderização de volume"
+
+#: invesalius/gui/preferences.py:213
 msgid "GPU (NVidia video cards only)"
 msgstr "GPU (Somente em placas de vídeo NVidia)"
 
-#: preferences.py:158
-msgid "Slices"
-msgstr "Fatias"
+#: invesalius/gui/preferences.py:222
+msgid "Screen Space Ambient Occlusion (SSAO)"
+msgstr "Oclusão de Ambiente do Espaço de Tela (SSAO)"
 
-#: preferences.py:161
-msgid "Interpolated "
-msgstr "Interpolada"
+#: invesalius/gui/preferences.py:228
+msgid "Disable"
+msgstr "Desabilitar"
 
-#: preferences.py:165 preferences.py:225
+#: invesalius/gui/preferences.py:236
+msgid "2D Visualization"
+msgstr "Visualização 2D"
+
+#: invesalius/gui/preferences.py:237
+msgid "Slice Interpolation "
+msgstr "Interpolação de fatias "
+
+#: invesalius/gui/preferences.py:241 invesalius/gui/task_navigator.py:3001
+#: invesalius/gui/task_navigator.py:3578
 msgid "Yes"
 msgstr "Sim"
 
-#: preferences.py:165 preferences.py:225
+#: invesalius/gui/preferences.py:241
 msgid "No"
 msgstr "Não"
 
-#: preferences.py:199
+#: invesalius/gui/preferences.py:316
+msgid "File Logging Options"
+msgstr "Arquivo Logging Options"
+
+#: invesalius/gui/preferences.py:339 invesalius/gui/preferences.py:385
+msgid " Logging Level "
+msgstr " Nível de registro "
+
+#: invesalius/gui/preferences.py:354
+msgid "File:"
+msgstr "Arquivo:"
+
+#: invesalius/gui/preferences.py:372
+msgid " Console Logging Options"
+msgstr " Opções de registro no console"
+
+#: invesalius/gui/preferences.py:483
+msgid "Note: Using too low sleep times can result in Invesalius crashing!"
+msgstr ""
+"Nota: Usar tempos de espera muito baixos pode fazer o InVesalius travar!"
+
+#: invesalius/gui/preferences.py:486
+msgid "Navigation Sleep (s):"
+msgstr "Tempo de espera da navegação (s):"
+
+#: invesalius/gui/preferences.py:495
+msgid "Coordinate Sleep (s):"
+msgstr "Tempo de espera de coordenadas (s):"
+
+#: invesalius/gui/preferences.py:522
+msgid "Sleep time configuration"
+msgstr "Configuração do tempo de espera"
+
+#: invesalius/gui/preferences.py:532
+msgid "Marker Shapes"
+msgstr "Formas de marcadores"
+
+#: invesalius/gui/preferences.py:534
+msgid "Landmarks: "
+msgstr "Pontos de referência: "
+
+#: invesalius/gui/preferences.py:538 invesalius/gui/preferences.py:549
+msgid "Ball"
+msgstr "Esfera"
+
+#: invesalius/gui/preferences.py:538 invesalius/gui/preferences.py:549
+msgid "Cross"
+msgstr "Cruz"
+
+#: invesalius/gui/preferences.py:545
+msgid "Fiducials: "
+msgstr "Fiduciais: "
+
+#: invesalius/gui/preferences.py:629
+msgid "TMS Motor Mapping"
+msgstr "Mapeamento motor por TMS"
+
+#: invesalius/gui/preferences.py:670 invesalius/gui/task_mepmapping.py:235
+msgid "Brain Surface:"
+msgstr "Brain Superfície:"
+
+#: invesalius/gui/preferences.py:679
+msgid "Gaussian Radius:"
+msgstr "Raio gaussiano:"
+
+#: invesalius/gui/preferences.py:704
+msgid "Gaussian Standard Deviation:"
+msgstr "Desvio padrão gaussiano:"
+
+#: invesalius/gui/preferences.py:727
+msgid "Dimensions size:"
+msgstr "Tamanho das dimensões:"
+
+#: invesalius/gui/preferences.py:750
+msgid "Select Colormap:"
+msgstr "Selecionar mapa de cores:"
+
+#: invesalius/gui/preferences.py:795
+msgid "Custom Colormap Ranges"
+msgstr "Intervalos personalizados do mapa de cores"
+
+#: invesalius/gui/preferences.py:799
+msgid "Min Value (uV):"
+msgstr "Valor mínimo (µV):"
+
+#: invesalius/gui/preferences.py:808
+msgid "Low Value (uV):"
+msgstr "Valor baixo (µV):"
+
+#: invesalius/gui/preferences.py:816
+msgid "Mid Value (uV):"
+msgstr "Valor médio (µV):"
+
+#: invesalius/gui/preferences.py:824
+msgid "Max Value (uV):"
+msgstr "Valor máximo (µV):"
+
+#: invesalius/gui/preferences.py:873
+msgid "Reset to defaults"
+msgstr "Restaurar padrões"
+
+#: invesalius/gui/preferences.py:1016
+msgid "Current Configuration:"
+msgstr "Configuração atual:"
+
+#: invesalius/gui/preferences.py:1025
+msgid "New TMS coil configuration"
+msgstr "Nova configuração de bobina TMS"
+
+#: invesalius/gui/preferences.py:1026
+msgid "New"
+msgstr "Novo"
+
+#: invesalius/gui/preferences.py:1031
+msgid "Load TMS coil configuration from an OBR file"
+msgstr "Carregar configuração de bobina TMS a partir de um arquivo OBR"
+
+#: invesalius/gui/preferences.py:1037
+msgid "Save TMS coil configuration to a file"
+msgstr "Salvar configuração de bobina TMS em um arquivo"
+
+#: invesalius/gui/preferences.py:1043
+msgid "TMS coil registration"
+msgstr "Registro de bobina TMS"
+
+#: invesalius/gui/preferences.py:1068
+msgid "Angle threshold (degrees):"
+msgstr "Limiar de ângulo (graus):"
+
+#: invesalius/gui/preferences.py:1080
+msgid "Distance threshold (mm):"
+msgstr "Limiar de distância (mm):"
+
+#: invesalius/gui/preferences.py:1108
+msgid "Settings"
+msgstr "Configurações"
+
+#: invesalius/gui/preferences.py:1121
+msgid ""
+"TMS coil selection ({len(navigation.coil_registrations)} out of {navigation."
+"n_coils})"
+msgstr ""
+"Seleção de bobina TMS ({len(navigation.coil_registrations)} de {navigation."
+"n_coils})"
+
+#: invesalius/gui/preferences.py:1131
+msgid "No coils found in config.json. Create or load new coils below."
+msgstr ""
+"Nenhuma bobina encontrada em config.json. Crie ou carregue novas bobinas "
+"abaixo."
+
+#: invesalius/gui/preferences.py:1140
+msgid "Robot coil selection"
+msgstr "Seleção de bobina do robô"
+
+#: invesalius/gui/preferences.py:1144
+msgid "Robot is connected. Coil attached to robot: "
+msgstr "O robô está conectado. Bobina conectada ao robô: "
+
+#: invesalius/gui/preferences.py:1327
+#, python-brace-format
+msgid ""
+"Cannot select this coil, its index (obj_id = {obj_id}) conflicts with "
+"selected coil: {conflicting_coil_name}"
+msgstr ""
+"Não é possível selecionar esta bobina, seu índice (obj_id = {obj_id}) entra "
+"em conflito com a bobina selecionada: {conflicting_coil_name}"
+
+#: invesalius/gui/preferences.py:1340
+msgid ""
+"Cannot select this coil, its tracker [{const.TRACKERS[obj_tracker_id - 1]}] "
+"does not match the selected tracker [{const.TRACKERS[self.tracker.tracker_id "
+"- 1]}]"
+msgstr ""
+"Não é possível selecionar esta bobina, seu rastreador [{const."
+"TRACKERS[obj_tracker_id - 1]}] não corresponde ao rastreador selecionado "
+"[{const.TRACKERS[self.tracker.tracker_id - 1]}]"
+
+#: invesalius/gui/preferences.py:1425 invesalius/gui/preferences.py:1506
+msgid ""
+"A registration with this name already exists. Enter a new name or overwrite "
+"an old coil registration"
+msgstr ""
+"Já existe um registro com este nome. Insira um novo nome ou sobrescreva um "
+"registro antigo de bobina"
+
+#: invesalius/gui/preferences.py:1427 invesalius/gui/preferences.py:1508
+msgid "Warning: Coil Name Conflict"
+msgstr "Aviso: conflito de nome de bobina"
+
+#: invesalius/gui/preferences.py:1478
+msgid "Load object registration"
+msgstr "Carregar registro de objeto"
+
+#: invesalius/gui/preferences.py:1556 invesalius/gui/preferences.py:1559
+msgid "Object file successfully loaded"
+msgstr "Arquivo de objeto carregado com sucesso"
+
+#: invesalius/gui/preferences.py:1562
+msgid "Object registration file incompatible."
+msgstr "Arquivo de registro de objeto incompatível."
+
+#: invesalius/gui/preferences.py:1571
+msgid "Select which coil registration to save"
+msgstr "Selecione qual registro de bobina salvar"
+
+#: invesalius/gui/preferences.py:1572
+msgid "Saving coil registration"
+msgstr "Salvando registro de bobina"
+
+#: invesalius/gui/preferences.py:1587
+msgid "Failed to save registration: No registration to save!"
+msgstr "Falha ao salvar registro: nenhum registro para salvar!"
+
+#: invesalius/gui/preferences.py:1591
+msgid "Save object registration as..."
+msgstr "Salvar registro de objeto como..."
+
+#: invesalius/gui/preferences.py:1613
+msgid "Object file successfully saved"
+msgstr "Arquivo de objeto salvo com sucesso"
+
+#: invesalius/gui/preferences.py:1653
+msgid "Choose the number of coils to track"
+msgstr "Escolha o número de bobinas a rastrear"
+
+#: invesalius/gui/preferences.py:1660
+msgid "Choose the number of coils to track:"
+msgstr "Escolha o número de bobinas a rastrear:"
+
+#: invesalius/gui/preferences.py:1663
+msgid "Select"
+msgstr "Selecionar"
+
+#: invesalius/gui/preferences.py:1679
+msgid "Choose the tracking device: "
+msgstr "Escolha o dispositivo de rastreamento: "
+
+#: invesalius/gui/preferences.py:1682
+msgid "Choose the navigation reference mode"
+msgstr "Escolha o modo de referência de navegação"
+
+#: invesalius/gui/preferences.py:1698
+msgid "Choose the navigation reference mode: "
+msgstr "Escolha o modo de referência de navegação: "
+
+#: invesalius/gui/preferences.py:1713
+msgid "Setup tracker"
+msgstr "Configurar rastreador"
+
+#: invesalius/gui/preferences.py:1716
+msgid "IP for robot device: "
+msgstr "IP do dispositivo robótico: "
+
+#: invesalius/gui/preferences.py:1735
+msgid "Select or type robot IP"
+msgstr "Selecione ou digite o IP do robô"
+
+#: invesalius/gui/preferences.py:1760
+msgid "Connect"
+msgstr "Conectar"
+
+#: invesalius/gui/preferences.py:1769
+msgid "Register"
+msgstr "Registrar"
+
+#: invesalius/gui/preferences.py:1775
+msgid "Robot is connected!"
+msgstr "O robô está conectado!"
+
+#: invesalius/gui/preferences.py:1784 invesalius/gui/preferences.py:2045
+msgid "Robot is not connected!"
+msgstr "O robô não está conectado!"
+
+#: invesalius/gui/preferences.py:1825
+msgid "Pressure setpoint (N):"
+msgstr "Ponto de ajuste de pressão (N):"
+
+#: invesalius/gui/preferences.py:1835
+#, python-brace-format
+msgid "Recommended: {value} N"
+msgstr "Recomendado: {value} N"
+
+#: invesalius/gui/preferences.py:1858
+msgid "Set the desired pressure/force setpoint"
+msgstr "Definir o ponto de ajuste de pressão/força desejado"
+
+#: invesalius/gui/preferences.py:1868
+msgid "Set 10 N"
+msgstr "Definir 10 N"
+
+#: invesalius/gui/preferences.py:1869
+msgid "Set pressure to the recommended 5.0 N"
+msgstr "Definir pressão para o valor recomendado de 5,0 N"
+
+#: invesalius/gui/preferences.py:1873
+msgid "Pressure Control"
+msgstr "Controle de pressão"
+
+#: invesalius/gui/preferences.py:1876
+msgid "Enable pressure sensor"
+msgstr "Ativar sensor de pressão"
+
+#: invesalius/gui/preferences.py:1908
+msgid "Setup robot"
+msgstr "Configurar robô"
+
+#: invesalius/gui/preferences.py:1988
+msgid "Configuring tracker ..."
+msgstr "Configurando rastreador..."
+
+#: invesalius/gui/preferences.py:2029
+msgid "Robot is not connected and invalid IP!"
+msgstr "O robô não está conectado e o IP é inválido!"
+
+#: invesalius/gui/preferences.py:2037
+msgid "Select or type robot IP:"
+msgstr "Selecione ou digite o IP do robô:"
+
+#: invesalius/gui/preferences.py:2062
+msgid "Please select or enter valid IP!"
+msgstr "Por favor, selecione ou insira um IP válido!"
+
+#: invesalius/gui/preferences.py:2070
+#, python-brace-format
+msgid "Do you really want to remove the IP '{current_ip}' from the list?"
+msgstr "Você realmente deseja remover o IP '{current_ip}' da lista?"
+
+#: invesalius/gui/preferences.py:2071
+msgid "Confirmation"
+msgstr "Confirmação"
+
+#: invesalius/gui/preferences.py:2090
+#, python-brace-format
+msgid ""
+"An error occurred while removing the IP:\n"
+"{e}"
+msgstr ""
+"Ocorreu um erro ao remover o IP:\n"
+"{e}"
+
+#: invesalius/gui/preferences.py:2100
+msgid "Trying to connect to robot..."
+msgstr "Tentando conectar ao robô..."
+
+#: invesalius/gui/preferences.py:2107
+msgid "Please select or enter valid IP before connecting!"
+msgstr "Por favor, selecione ou insira um IP válido antes de conectar!"
+
+#: invesalius/gui/preferences.py:2123
+msgid "Setup robot transformation matrix:"
+msgstr "Configurar matriz de transformação do robô:"
+
+#: invesalius/gui/preferences.py:2144
+#, python-brace-format
+msgid "{data} to robot on {self.robot.robot_ip}"
+msgstr "{data} para o robô em {self.robot.robot_ip}"
+
+#: invesalius/gui/preferences.py:2146
+#, python-brace-format
+msgid "{data} to robot"
+msgstr "{data} para o robô"
+
+#: invesalius/gui/preferences.py:2286
 msgid ""
 "Language settings will be applied \n"
 " the next time InVesalius starts."
-msgstr "Configurações de idioma terão efeito \nna próxima vez em que o InVesalius iniciar."
-
-#: presets.py:33 presets.py:51 presets.py:107 presets.py:138
-msgid "Soft Tissue"
-msgstr "Tecidos moles"
-
-#: presets.py:34 presets.py:52 presets.py:108 presets.py:139
-msgid "Enamel (Adult)"
-msgstr "Esmalte (Adulto)"
-
-#: presets.py:35 presets.py:53 presets.py:109 presets.py:140
-msgid "Enamel (Child)"
-msgstr "Esmalte (Criança)"
-
-#: presets.py:36 presets.py:54 presets.py:110 presets.py:141
-msgid "Compact Bone (Adult)"
-msgstr "Osso compacto (Adulto)"
-
-#: presets.py:37 presets.py:55 presets.py:111 presets.py:142
-msgid "Compact Bone (Child)"
-msgstr "Osso compacto (Criança)"
-
-#: presets.py:38 presets.py:56 presets.py:112 presets.py:143
-msgid "Spongial Bone (Adult)"
-msgstr "Osso esponjoso (Adulto)"
-
-#: presets.py:39 presets.py:57 presets.py:113 presets.py:144
-msgid "Spongial Bone (Child)"
-msgstr "Osso esponjoso (Criança)"
-
-#: presets.py:40 presets.py:58 presets.py:114 presets.py:145
-msgid "Muscle Tissue (Adult)"
-msgstr "Tecido muscular (Adulto)"
-
-#: presets.py:41 presets.py:59 presets.py:115 presets.py:146
-msgid "Muscle Tissue (Child)"
-msgstr "Tecido muscular (Criança)"
-
-#: presets.py:42 presets.py:60 presets.py:116 presets.py:147
-msgid "Fat Tissue (Adult)"
-msgstr "Tecido gorduroso (Adulto)"
-
-#: presets.py:43 presets.py:61 presets.py:117 presets.py:148
-msgid "Fat Tissue (Child)"
-msgstr "Tecido gorduroso (Criança)"
-
-#: presets.py:44 presets.py:62 presets.py:118 presets.py:149
-msgid "Skin Tissue (Adult)"
-msgstr "Tecido epitelial (Adulto)"
-
-#: presets.py:45 presets.py:63 presets.py:119 presets.py:150
-msgid "Skin Tissue (Child)"
-msgstr "Tecido epitelial (Criança)"
-
-#: slice_.py:1348
-msgid "Diff"
-msgstr "Diff"
-
-#: slice_.py:1350
-msgid "XOR"
-msgstr "XOR"
-
-#: slice_menu.py:36
-msgid "Normal"
-msgstr "Normal"
-
-#: slice_menu.py:37
-msgid "MaxIP"
-msgstr "MaxIP"
-
-#: slice_menu.py:38
-msgid "MinIP"
-msgstr "MinIP"
-
-#: slice_menu.py:39
-msgid "MeanIP"
-msgstr "MeanIP"
-
-#: slice_menu.py:40
-msgid "MIDA"
-msgstr "MIDA"
-
-#: slice_menu.py:41
-msgid "Contour MaxIP"
-msgstr "Contorno MaxIP"
-
-#: slice_menu.py:42
-msgid "Contour MIDA"
-msgstr "Contorno MIDA"
-
-#: slice_menu.py:160
-msgid "Window width and level"
-msgstr "Brilho e contraste"
-
-#: slice_menu.py:161
-msgid "Pseudo color"
 msgstr ""
+"As configurações de idioma serão aplicadas \n"
+"na próxima vez que o InVesalius for iniciado."
 
-#: slice_menu.py:162
-msgid "Projection type"
-msgstr "Tipo de projeção"
+#: invesalius/gui/project_properties.py:41
+msgid "Project Properties"
+msgstr "Propriedades do projeto"
 
-#: styles.py:68 task_slice.py:888
-msgid "Foreground"
-msgstr "Objeto"
+#: invesalius/gui/project_properties.py:56
+msgid "Other"
+msgstr "Outros"
 
-#: styles.py:69 task_slice.py:889
-msgid "Background"
-msgstr "Fundo"
+#: invesalius/gui/project_properties.py:83
+msgid "Spacing"
+msgstr "Espaçamento"
 
-#: styles.py:1122
-msgid "Applying watershed ..."
-msgstr "Aplicando watershed ..."
+#: invesalius/gui/task_efield.py:97
+msgid "Enable E-field"
+msgstr "Ativar campo E"
 
-#: styles.py:1957
-msgid "Fill hole"
-msgstr "Fechar buraco"
+#: invesalius/gui/task_efield.py:103
+msgid "E-fields for targeting"
+msgstr "Campos E para direcionamento"
 
-#: styles.py:1958
-msgid "Filling hole ..."
-msgstr "Fechando buraco ..."
+#: invesalius/gui/task_efield.py:115
+msgid "Show area above threshold"
+msgstr "Mostrar área acima do limiar"
 
-#: styles.py:2055
-msgid "Remove parts"
-msgstr "Remover partes"
+#: invesalius/gui/task_efield.py:122
+msgid "Enable Efield targeting tools"
+msgstr "Ativar ferramentas de direcionamento de Efield"
 
-#: styles.py:2056
-msgid "Remove part"
-msgstr "Remover parte"
+#: invesalius/gui/task_efield.py:129
+msgid "View cortex Markers"
+msgstr "Visualizar marcadores do córtex"
 
-#: styles.py:2057
-msgid "Removing part ..."
-msgstr "Removendo parte ..."
+#: invesalius/gui/task_efield.py:136
+msgid "Save Automatically"
+msgstr "Salvar automaticamente"
 
-#: styles.py:2306
-msgid "Segmenting ..."
-msgstr "Segmentando ..."
+#: invesalius/gui/task_efield.py:143
+msgid "Load Brain Json config"
+msgstr "Carregar configuração JSON do cérebro"
 
-#: surface.py:645
-msgid "InVesalius was not able to create the surface"
-msgstr ""
+#: invesalius/gui/task_efield.py:144
+msgid "Load Config"
+msgstr "Carregar configuração"
 
-#: surface.py:709
-msgid "Creating 3D surface..."
-msgstr "Criando superfície 3D..."
+#: invesalius/gui/task_efield.py:149 invesalius/gui/task_efield.py:150
+msgid "Save Efield"
+msgstr "Salvar Efield"
 
-#: task_exporter.py:115
+#: invesalius/gui/task_efield.py:155 invesalius/gui/task_efield.py:156
+msgid "Save All Efield"
+msgstr "Salvar todos os Efield"
+
+#: invesalius/gui/task_efield.py:161
+msgid "Sleep (s):"
+msgstr "Tempo de espera (s):"
+
+#: invesalius/gui/task_efield.py:169
+msgid "Threshold:"
+msgstr "Limiar:"
+
+#: invesalius/gui/task_efield.py:177
+msgid "ROI size:"
+msgstr "Tamanho da ROI:"
+
+#: invesalius/gui/task_efield.py:184
+msgid "Change coil:"
+msgstr "Trocar bobina:"
+
+#: invesalius/gui/task_efield.py:195
+msgid "dt(\\u03bc s)"
+msgstr "dt(µs)"
+
+#: invesalius/gui/task_efield.py:202 invesalius/gui/task_efield.py:303
+msgid "dI"
+msgstr "dI"
+
+#: invesalius/gui/task_efield.py:233
+msgid "mtms coords"
+msgstr "coordenadas mtms"
+
+#: invesalius/gui/task_efield.py:234
+msgid "mtms coords:"
+msgstr "coordenadas mtms:"
+
+#: invesalius/gui/task_efield.py:241 invesalius/gui/task_efield.py:242
+msgid "Enter mtms coord"
+msgstr "Inserir coordenada mtms"
+
+#: invesalius/gui/task_efield.py:247
+msgid "Enter Values"
+msgstr "Inserir valores"
+
+#: invesalius/gui/task_efield.py:248
+msgid "Enter"
+msgstr "Inserir"
+
+#: invesalius/gui/task_efield.py:253
+msgid "Reset Values"
+msgstr "Redefinir valores"
+
+#: invesalius/gui/task_exporter.py:128
 msgid "Export InVesalius screen to an image file"
 msgstr "Exportar tela do InVesalius para um arquivo de imagem"
 
-#: task_exporter.py:117
+#: invesalius/gui/task_exporter.py:129
 msgid "Export picture..."
 msgstr "Exportar imagem..."
 
-#: task_exporter.py:128
+#: invesalius/gui/task_exporter.py:139
 msgid "Export 3D surface"
 msgstr "Exportar superfície 3D"
 
-#: task_exporter.py:129
+#: invesalius/gui/task_exporter.py:140
 msgid "Export 3D surface..."
 msgstr "Exportar superfície 3D..."
 
-#: task_exporter.py:326
-msgid "Save 3D surface as..."
-msgstr "Salvar superfície 3D como..."
-
-#: task_exporter.py:350
-msgid "It was not possible to save the surface."
-msgstr ""
-
-#: task_exporter.py:351
-msgid "Error saving surface"
-msgstr ""
-
-#: task_exporter.py:357
+#: invesalius/gui/task_exporter.py:384
 msgid "You need to create a surface and make it "
 msgstr "É necessário criar uma superfície e torná-la "
 
-#: task_exporter.py:358
+#: invesalius/gui/task_exporter.py:384
 msgid "visible before exporting it."
 msgstr "visível antes de exportá-la."
 
-#: task_generic.py:65
+#: invesalius/gui/task_fmrisupport.py:81
+msgid "Select Modalities / File"
+msgstr "Selecionar Modalidades / Arquivo"
+
+#: invesalius/gui/task_fmrisupport.py:84
+msgid "Load Nifti image"
+msgstr "Carregar imagem NIfTI"
+
+#: invesalius/gui/task_fmrisupport.py:96
+msgid "Select Colormap"
+msgstr "Selecionar mapa de cores"
+
+#: invesalius/gui/task_generic.py:66
 msgid "Testing..."
 msgstr "Testando..."
 
-#: task_importer.py:71
-msgid "Select DICOM, Analyze, NIfTI or REC/PAR files to be reconstructed"
-msgstr "Selecionar arquivos DICOM, Analyze, NIfTI ou REC/PAR para serem reconstruídos"
+#: invesalius/gui/task_importer.py:71 invesalius/gui/task_navigator.py:462
+msgid "Select DICOM files to be reconstructed"
+msgstr "Selecionar arquivos DICOM para reconstrução"
 
-#: task_importer.py:72
-msgid "Import medical images..."
-msgstr "Importar imagens médicas..."
+#: invesalius/gui/task_importer.py:72 invesalius/gui/task_navigator.py:463
+msgid "Import DICOM images..."
+msgstr "Importar imagens DICOM..."
 
-#: task_importer.py:91
+#: invesalius/gui/task_importer.py:82 invesalius/gui/task_navigator.py:473
+msgid "Select NIFTI files to be reconstructed"
+msgstr "Selecionar arquivos NIfTI para reconstrução"
+
+#: invesalius/gui/task_importer.py:83 invesalius/gui/task_navigator.py:474
+msgid "Import NIFTI images..."
+msgstr "Importar imagens NIfTI..."
+
+#: invesalius/gui/task_importer.py:102 invesalius/gui/task_navigator.py:484
 msgid "Open an existing InVesalius project..."
 msgstr "Abrir um projeto InVesalius existente..."
 
-#: task_importer.py:92
+#: invesalius/gui/task_importer.py:103 invesalius/gui/task_navigator.py:485
 msgid "Open an existing project..."
 msgstr "Abrir um projeto existente..."
 
-#: task_navigator.py:80
-msgid "Select fiducials and navigate"
-msgstr "Selecionar fiduciais e navegar"
+#: invesalius/gui/task_imports.py:183
+msgid "Tractography"
+msgstr "Tractografia"
 
-#: task_navigator.py:151
-msgid "Neuronavigation"
-msgstr "Neuronavegação"
+#: invesalius/gui/task_imports.py:184
+msgid "E-Field"
+msgstr "Campo E"
 
-#: task_navigator.py:160
-msgid "Object registration"
-msgstr ""
+#: invesalius/gui/task_imports.py:185
+msgid "fMRI support"
+msgstr "Suporte a fMRI"
 
-#: task_navigator.py:168
-msgid "Extra tools"
-msgstr "Ferramentas extras"
+#: invesalius/gui/task_mepmapping.py:74
+msgid "Motor Mapping Configuration"
+msgstr "Configuração de mapeamento motor"
 
-#: task_navigator.py:177
-msgid "Deep Brain Stimulation"
-msgstr ""
+#: invesalius/gui/task_mepmapping.py:93
+msgid "Markers Import/Export:"
+msgstr "Importação/Exportação de marcadores:"
 
+#: invesalius/gui/task_navigator.py:173
+msgid "Coregistration"
+msgstr "Coregistro"
 
-#: task_navigator.py:187
-msgid "Vol. camera"
-msgstr ""
+#: invesalius/gui/task_navigator.py:336
+msgid "Imports"
+msgstr "Importações"
 
-#: task_navigator.py:194
-msgid "Enable external trigger for creating markers"
-msgstr "Habilitar trigger externo para criação de marcadores"
+#: invesalius/gui/task_navigator.py:337
+msgid "Head"
+msgstr "Cabeça"
 
-#: task_navigator.py:195
-msgid "Ext. trigger"
-msgstr ""
+#: invesalius/gui/task_navigator.py:339
+msgid "Patient"
+msgstr "Paciente"
 
-#: task_navigator.py:202
-msgid "Show and track TMS coil"
-msgstr ""
+#: invesalius/gui/task_navigator.py:340
+msgid "Refine"
+msgstr "Refinar"
 
-#: task_navigator.py:203
-msgid "Show coil"
-msgstr ""
+#: invesalius/gui/task_navigator.py:341
+msgid "Stylus"
+msgstr "Estilete"
 
-#: task_navigator.py:312
-msgid "Choose the tracking device"
-msgstr "Selecionar dispositivo de rastreamento"
+#: invesalius/gui/task_navigator.py:393
+msgid "Please import image first."
+msgstr "Por favor, importe a imagem primeiro."
 
-#: task_navigator.py:321
-msgid "Choose the navigation reference mode"
-msgstr "Selecionar modo de referência para navegação"
+#: invesalius/gui/task_navigator.py:403
+msgid "Please do the image registration first."
+msgstr "Por favor, realize primeiro o registro da imagem."
 
-#: task_navigator.py:355
+#: invesalius/gui/task_navigator.py:415
+msgid "Please do the tracker registration first."
+msgstr "Por favor, realize primeiro o registro do rastreador."
+
+#: invesalius/gui/task_navigator.py:1188
+msgid "Start Patient Registration"
+msgstr "Iniciar registro do paciente"
+
+#: invesalius/gui/task_navigator.py:1189
+msgid "Stop Patient Registration"
+msgstr "Parar registro do paciente"
+
+#: invesalius/gui/task_navigator.py:1237
+msgid "Current tracker: "
+msgstr "Rastreador atual: "
+
+#: invesalius/gui/task_navigator.py:1239 invesalius/gui/task_navigator.py:1448
+msgid "No tracker selected"
+msgstr "Nenhum rastreador selecionado"
+
+#: invesalius/gui/task_navigator.py:1477
+msgid "Image Fiducials:"
+msgstr "Fiduciais da imagem:"
+
+#: invesalius/gui/task_navigator.py:1488
+msgid "Tracker Fiducials:"
+msgstr "Fiduciais do rastreador:"
+
+#: invesalius/gui/task_navigator.py:1499
 msgid "FRE:"
-msgstr "FRE"
+msgstr "FRE:"
 
-#: task_navigator.py:358
+#: invesalius/gui/task_navigator.py:1500
 msgid "Fiducial registration error"
-msgstr "Erro de registro fiducial"
+msgstr "Erro de registro de fiduciais"
 
-#: task_navigator.py:367
+#: invesalius/gui/task_navigator.py:1616
+msgid "Calibrate stylus with head"
+msgstr "Calibrar estilete com a cabeça"
+
+#: invesalius/gui/task_navigator.py:1630
+msgid "Point stylus up relative to head, like so:"
+msgstr "Aponte o estilete para cima em relação à cabeça, assim:"
+
+#: invesalius/gui/task_navigator.py:1631
+msgid "Record"
+msgstr "Registrar"
+
+#: invesalius/gui/task_navigator.py:1699
+msgid "Probe or head not visible to tracker!"
+msgstr "Sonda ou cabeça não visível para o rastreador!"
+
+#: invesalius/gui/task_navigator.py:1720
+msgid ""
+"Ready for navigation with {self.navigation.n_coils} coil{'' if self."
+"navigation.n_coils == 1 else 's'}!"
+msgstr ""
+"Pronto para navegação com {self.navigation.n_coils} bobina{'' if self."
+"navigation.n_coils == 1 else 's'}!"
+
+#: invesalius/gui/task_navigator.py:1727
+msgid "Edit coil registration in Preferences"
+msgstr "Editar registro de bobina nas Preferências"
+
+#: invesalius/gui/task_navigator.py:1883 invesalius/gui/task_navigator.py:1884
+#: invesalius/gui/task_navigator.py:2265 invesalius/gui/task_navigator.py:2267
 msgid "Start navigation"
 msgstr "Iniciar navegação"
 
-#: task_navigator.py:368
-msgid "Navigate"
-msgstr "Navegar"
+#: invesalius/gui/task_navigator.py:1902
+msgid "Control Tractography"
+msgstr "Controlar tractografia"
 
-#: task_navigator.py:465
-msgid "Configuring tracker ..."
+#: invesalius/gui/task_navigator.py:1918
+msgid "Track coil"
+msgstr "Rastrear bobina"
+
+#: invesalius/gui/task_navigator.py:1934
+msgid "Allow triggering only if the coil is at the target"
+msgstr "Permitir disparo apenas se a bobina estiver no alvo"
+
+#: invesalius/gui/task_navigator.py:1952
+msgid "Show coil"
+msgstr "Mostrar bobina"
+
+#: invesalius/gui/task_navigator.py:1969
+msgid "Show probe"
+msgstr "Mostrar sonda"
+
+#: invesalius/gui/task_navigator.py:1985
+msgid "Enable serial port communication to trigger pulse and create markers"
 msgstr ""
+"Ativar comunicação pela porta serial para disparar pulso e criar marcadores"
 
-#: task_navigator.py:481
-msgid "Disconnecting tracker..."
-msgstr ""
+#: invesalius/gui/task_navigator.py:2000
+msgid "Control E-Field"
+msgstr "Controlar campo E"
 
-#: task_navigator.py:487
-msgid "Tracker disconnected successfully"
-msgstr ""
+#: invesalius/gui/task_navigator.py:2016
+msgid "Target mode"
+msgstr "Modo de alvo"
 
-#: task_navigator.py:502
-msgid "Disconnecting tracker ..."
-msgstr ""
+#: invesalius/gui/task_navigator.py:2031
+msgid "Track target with robot"
+msgstr "Rastrear alvo com robô"
 
-#: task_navigator.py:511
-msgid "Tracker disconnected"
-msgstr ""
+#: invesalius/gui/task_navigator.py:2050
+msgid "Move robot away from head"
+msgstr "Mover robô para longe da cabeça"
 
-#: task_navigator.py:515
-msgid "Tracker still connected"
-msgstr ""
+#: invesalius/gui/task_navigator.py:2069
+msgid "Free drive robot"
+msgstr "Movimentação livre do robô"
 
-#: task_navigator.py:614
-msgid "Stop neuronavigation"
-msgstr "Parar neuronavegação"
+#: invesalius/gui/task_navigator.py:2088
+msgid "Show TMS motor mapping on brain"
+msgstr "Mostrar mapeamento motor TMS no cérebro"
 
-#: task_navigator.py:694
-msgid "Start neuronavigation"
-msgstr "Iniciar neuronavegação"
+#: invesalius/gui/task_navigator.py:2245
+msgid "Invalid fiducials, select all coordinates."
+msgstr "Fiduciais inválidos, selecione todas as coordenadas."
 
-#: task_navigator.py:762
-msgid "Create new coil"
-msgstr ""
+#: invesalius/gui/task_navigator.py:2271 invesalius/gui/task_navigator.py:2273
+msgid "Stop navigation"
+msgstr "Parar navegação"
 
-#: task_navigator.py:763
-msgid "New"
-msgstr ""
-
-#: task_navigator.py:770
-msgid "Load coil configuration file"
-msgstr ""
-
-#: task_navigator.py:771 task_navigator.py:952 task_navigator.py:1025
-msgid "Load"
-msgstr "Carregar"
-
-#: task_navigator.py:778
-msgid "Save object registration file"
-msgstr ""
-
-#: task_navigator.py:779 task_navigator.py:963 task_navigator.py:1022
-msgid "Save"
-msgstr "Salvar"
-
-#: task_navigator.py:792
-msgid "Angle threshold [degrees]:"
-msgstr ""
-
-#: task_navigator.py:800
-msgid "Distance threshold [mm]:"
-msgstr ""
-
-#: task_navigator.py:808
-msgid "Timestamp interval [s]:"
-msgstr ""
-
-#: task_navigator.py:830
-msgid "Record coordinates"
-msgstr ""
-
-#: task_navigator.py:837
-msgid "Track object"
-msgstr ""
-
-#: task_navigator.py:952
-msgid "Object file successfully loaded"
-msgstr ""
-
-#: task_navigator.py:956
-msgid "Digitize all object fiducials before saving"
-msgstr ""
-
-#: task_navigator.py:956
-msgid "Save error"
-msgstr ""
-
-#: task_navigator.py:963
-msgid "Object file successfully saved"
-msgstr ""
-
-#: task_navigator.py:1013
+#: invesalius/gui/task_navigator.py:2678
 msgid "Create marker"
 msgstr "Criar marcador"
 
-#: task_navigator.py:1028
-msgid "Hide"
-msgstr "Ocultar"
+#: invesalius/gui/task_navigator.py:2691
+msgid "Hide all"
+msgstr "Ocultar tudo"
 
-#: task_navigator.py:1040
+#: invesalius/gui/task_navigator.py:2709
 msgid "Delete all"
-msgstr ""
+msgstr "Excluir tudo"
 
-#: task_navigator.py:1098
-msgid "Edit ID"
-msgstr "Editar ID"
+#: invesalius/gui/task_navigator.py:3190 invesalius/gui/task_navigator.py:3333
+msgid "Change MEP value"
+msgstr "Alterar valor de MEP"
 
-#: task_navigator.py:1100
-msgid "Edit color"
-msgstr ""
+#: invesalius/gui/task_navigator.py:3193
+msgid "Unset target"
+msgstr "Remover alvo"
 
-#: task_navigator.py:1103
+#: invesalius/gui/task_navigator.py:3197
+msgid "Set brain target"
+msgstr "Definir alvo cerebral"
+
+#: invesalius/gui/task_navigator.py:3201
 msgid "Set as target"
-msgstr ""
+msgstr "Definir como alvo"
 
-#: task_slice.py:92
+#: invesalius/gui/task_navigator.py:3208 invesalius/gui/task_navigator.py:3226
+#: invesalius/gui/task_navigator.py:3336
+msgid "Create coil target"
+msgstr "Criar alvo de bobina"
+
+#: invesalius/gui/task_navigator.py:3218
+msgid "Create brain target"
+msgstr "Criar alvo cerebral"
+
+#: invesalius/gui/task_navigator.py:3235 invesalius/gui/task_navigator.py:3343
+msgid "Send brain target to mTMS"
+msgstr "Enviar alvo cerebral para mTMS"
+
+#: invesalius/gui/task_navigator.py:3242
+msgid "Save Efield target Data"
+msgstr "Salvar dados de alvo de campo E"
+
+#: invesalius/gui/task_navigator.py:3247
+msgid "Clear saved Efield data"
+msgstr "Limpar dados salvos de campo E"
+
+#: invesalius/gui/task_navigator.py:3252
+msgid "Set as Efield target 1 (origin)"
+msgstr "Definir como alvo de campo E 1 (origem)"
+
+#: invesalius/gui/task_navigator.py:3257
+msgid "Set as Efield target 2"
+msgstr "Definir como alvo de campo E 2"
+
+#: invesalius/gui/task_navigator.py:3264
+msgid "Show vector field"
+msgstr "Mostrar campo vetorial"
+
+#: invesalius/gui/task_navigator.py:3271
+msgid "Remove Efield Cortex target"
+msgstr "Remover alvo cortical de campo E"
+
+#: invesalius/gui/task_navigator.py:3278
+msgid "Set as Efield Cortex target"
+msgstr "Definir como alvo cortical de campo E"
+
+#: invesalius/gui/task_navigator.py:3317
+msgid "Delete target"
+msgstr "Excluir alvo"
+
+#: invesalius/gui/task_navigator.py:3321
+#, python-format
+msgid "Delete selected targets (%d)"
+msgstr "Excluir alvos selecionados (%d)"
+
+#: invesalius/gui/task_navigator.py:3326
+msgid "Delete all targets"
+msgstr "Excluir todos os alvos"
+
+#: invesalius/gui/task_navigator.py:3498 invesalius/gui/task_navigator.py:3514
+#: invesalius/gui/task_navigator.py:3545 invesalius/gui/task_navigator.py:3556
+#: invesalius/gui/task_navigator.py:3566 invesalius/gui/task_navigator.py:3677
+#: invesalius/gui/task_navigator.py:3783 invesalius/gui/task_navigator.py:3794
+#: invesalius/gui/task_navigator.py:3966 invesalius/gui/task_navigator.py:4034
+#: invesalius/gui/task_navigator.py:4051 invesalius/gui/task_navigator.py:4084
+#: invesalius/gui/task_navigator.py:4159 invesalius/gui/task_navigator.py:4188
+msgid "No data selected."
+msgstr "Nenhum dado selecionado."
+
+#: invesalius/gui/task_navigator.py:3504
+msgid "No 3D surface was created."
+msgstr "Nenhuma superfície 3D foi criada."
+
+#: invesalius/gui/task_navigator.py:3569
+msgid "TMS coil not registered."
+msgstr "Bobina TMS não registrada."
+
+#: invesalius/gui/task_navigator.py:3624
+msgid "Marker index not valid."
+msgstr "Índice do marcador inválido."
+
+#: invesalius/gui/task_navigator.py:3686
+msgid "Duplicate associated brain targets as well?"
+msgstr "Duplicar também os alvos cerebrais associados?"
+
+#: invesalius/gui/task_navigator.py:3687
+msgid "Duplicate Marker"
+msgstr "Duplicar marcador"
+
+#: invesalius/gui/task_navigator.py:4135
+msgid "Delete all markers? Cannot be undone."
+msgstr "Excluir todos os marcadores? Esta ação não pode ser desfeita."
+
+#: invesalius/gui/task_navigator.py:4162
+msgid "Delete marker?"
+msgstr "Excluir marcador?"
+
+#: invesalius/gui/task_navigator.py:4162
+msgid "Delete markers?"
+msgstr "Excluir marcadores?"
+
+#: invesalius/gui/task_navigator.py:4194
+#, python-format
+msgid "Delete %d brain targets?"
+msgstr "Excluir %d alvos cerebrais?"
+
+#: invesalius/gui/task_navigator.py:4224
+#, python-format
+msgid "Delete all %d brain targets?"
+msgstr "Excluir todos os %d alvos cerebrais?"
+
+#: invesalius/gui/task_navigator.py:4391
+msgid "Unknown version of the markers file."
+msgstr "Versão desconhecida do arquivo de marcadores."
+
+#: invesalius/gui/task_navigator.py:4425
+msgid "Invalid markers file."
+msgstr "Arquivo de marcadores inválido."
+
+#: invesalius/gui/task_navigator.py:4440
+msgid "Load markers"
+msgstr "Carregar marcadores"
+
+#: invesalius/gui/task_navigator.py:4442
+msgid "Overwrite current image fiducials"
+msgstr "Sobrescrever fiduciais atuais da imagem"
+
+#: invesalius/gui/task_navigator.py:4488
+msgid "Error writing markers file."
+msgstr "Erro writing markers file."
+
+#: invesalius/gui/task_slice.py:100
 msgid "Create mask for slice segmentation and editing"
 msgstr "Criar máscara para segmentação e edição de fatia"
 
-#: task_slice.py:93
-msgid "Create new mask"
-msgstr "Nome da nova máscara:"
-
-#: task_slice.py:128
+#: invesalius/gui/task_slice.py:135
 msgid "Create surface"
 msgstr "Criar superfície"
 
-#: task_slice.py:129
+#: invesalius/gui/task_slice.py:136
 msgid "Overwrite last surface"
 msgstr "Sobrescrever anterior"
 
-#: task_slice.py:290
+#: invesalius/gui/task_slice.py:362
 msgid "Mask properties"
 msgstr "Propriedades da máscara"
 
-#: task_slice.py:298
+#: invesalius/gui/task_slice.py:371
 msgid "Manual edition"
 msgstr "Edição manual"
 
-#: task_slice.py:455
+#: invesalius/gui/task_slice.py:529
 msgid "Set predefined or manual threshold:"
 msgstr "Selecione ou edite o valor do limiar:"
 
-#: task_slice.py:683 task_slice.py:851
+#: invesalius/gui/task_slice.py:769 invesalius/gui/task_slice.py:1058
 msgid "Choose brush type, size or operation:"
 msgstr "Tipo, tamanho e operação do pincel:"
 
-#: task_slice.py:689 task_slice.py:857
+#: invesalius/gui/task_slice.py:777 invesalius/gui/task_slice.py:1068
 msgid "Circle"
 msgstr "Círculo"
 
-#: task_slice.py:693 task_slice.py:861
+#: invesalius/gui/task_slice.py:783 invesalius/gui/task_slice.py:1074
 msgid "Square"
 msgstr "Quadrado"
 
-#: task_slice.py:734
+#: invesalius/gui/task_slice.py:827
 msgid "Brush threshold range:"
 msgstr "Limiar do pincel:"
 
-#: task_slice.py:908
+#: invesalius/gui/task_slice.py:840
+msgid "Clear Polygons"
+msgstr "Limpar polígonos"
+
+#: invesalius/gui/task_slice.py:848
+msgid "Operation:"
+msgstr "Operação:"
+
+#: invesalius/gui/task_slice.py:854
+msgid "Depth:"
+msgstr "Profundidade:"
+
+#: invesalius/gui/task_slice.py:1122
 msgid "Overwrite mask"
 msgstr "Sobrescrever máscara"
 
-#: task_slice.py:918
+#: invesalius/gui/task_slice.py:1133
 msgid "Expand watershed to 3D"
 msgstr "Expandir watershed para 3D"
 
-#: task_surface.py:94
+#: invesalius/gui/task_surface.py:96
 msgid "Create 3D surface based on a mask"
 msgstr "Criar superfície 3D baseada em máscara"
 
-#: task_surface.py:95
+#: invesalius/gui/task_surface.py:97
 msgid "Create new 3D surface"
 msgstr "Criar nova superfície 3D"
 
-#: task_surface.py:116
+#: invesalius/gui/task_surface.py:118
 msgid "Next step"
 msgstr "Próximo passo"
 
-#: task_surface.py:242
+#: invesalius/gui/task_surface.py:248
 msgid "Surface properties"
 msgstr "Propriedades da superfície"
 
-#: task_surface.py:248
+#: invesalius/gui/task_surface.py:255
 msgid "Advanced options"
 msgstr "Opções avançadas"
 
-#: task_surface.py:303
-msgid ""
-"Automatically select largest disconnected region and create new surface"
-msgstr "Seleção automática de maior região desconexa e criação de nova superfície"
-
-#: task_surface.py:304
-msgid "Select largest surface"
-msgstr "Separar maior superfície"
-
-#: task_surface.py:312
-msgid ""
-"Automatically select disconnected regions and create a new surface per "
-"region"
+#: invesalius/gui/task_surface.py:312
+msgid "Automatically select largest disconnected region and create new surface"
 msgstr ""
+"Selecionar automaticamente a maior região desconexa e criar nova superfície"
 
-#: task_surface.py:313
+#: invesalius/gui/task_surface.py:313
+msgid "Select largest surface"
+msgstr "Selecionar maior superfície"
+
+#: invesalius/gui/task_surface.py:321
+msgid ""
+"Automatically select disconnected regions and create a new surface per region"
+msgstr ""
+"Selecionar automaticamente regiões desconexas e criar uma nova superfície "
+"por região"
+
+#: invesalius/gui/task_surface.py:322
 msgid "Split all disconnected surfaces"
-msgstr "Separar todas regiões desconexas"
+msgstr "Dividir todas as superfícies desconexas"
 
-#: task_surface.py:321
+#: invesalius/gui/task_surface.py:330
 msgid "Manually insert seeds of regions of interest and create a new surface"
 msgstr ""
+"Inserir manualmente sementes de regiões de interesse e criar uma nova "
+"superfície"
 
-#: task_surface.py:322
+#: invesalius/gui/task_surface.py:331
 msgid "Select regions of interest..."
 msgstr "Selecionar regiões de interesse..."
 
-#: task_surface.py:472
+#: invesalius/gui/task_surface.py:482
 msgid "Transparency:"
 msgstr "Transparência:"
 
-#: task_surface.py:621
+#: invesalius/gui/task_surface.py:649
 msgid "Decimate resolution:"
 msgstr "Resolução de decimação:"
 
-#: task_surface.py:631
+#: invesalius/gui/task_surface.py:657
 msgid "Smooth iterations:"
 msgstr "Iterações de suavização:"
 
-#: task_tools.py:67
+#: invesalius/gui/task_tools.py:66
 msgid "Measure distances"
 msgstr "Medir distâncias"
 
-#: task_tools.py:68
+#: invesalius/gui/task_tools.py:67
 msgid "Measure"
 msgstr "Medição"
 
-#: task_tools.py:71 task_tools.py:72
+#: invesalius/gui/task_tools.py:70 invesalius/gui/task_tools.py:71
 msgid "Add text annotations"
 msgstr "Adicionar anotações"
 
-#: trigger.py:46
-msgid "Connection with port COM1 failed"
-msgstr ""
+#: invesalius/gui/task_tools.py:105
+msgid "Measure angles"
+msgstr "Medir ângulos"
 
-#: trigger.py:46
-msgid "Communication error"
-msgstr ""
-
-#: viewer_slice.py:79
-msgid "Number of slices used to compound the visualization."
-msgstr "Número de fatias usadas para compor a visualização"
-
-#: viewer_slice.py:88
+#: invesalius/gui/task_tools.py:111
 msgid ""
-"Controls the sharpness of the contour. The greater the value, the sharper "
-"the contour."
-msgstr "Controla a nitidez do contorno. Quanto maior o valor, maior a nítidez do contorno."
+"Measure curved distance on surface\n"
+"Click to select: Two points or Multi-points"
+msgstr ""
+"Medir distância curva na superfície\n"
+"Clique para selecionar: dois pontos ou múltiplos pontos"
 
-#: viewer_slice.py:96
-msgid "Inverted order"
-msgstr "Ordem invertida"
+#: invesalius/gui/task_tractography.py:104
+msgid "Load FOD"
+msgstr "Carregar FOD"
 
-#: viewer_slice.py:97
+#: invesalius/gui/task_tractography.py:105
+msgid "FOD"
+msgstr "FOD"
+
+#: invesalius/gui/task_tractography.py:111
+msgid "Load Trekker configuration parameters"
+msgstr "Carregar parâmetros de configuração do Trekker"
+
+#: invesalius/gui/task_tractography.py:112
+msgid "Configure"
+msgstr "Configurar"
+
+#: invesalius/gui/task_tractography.py:119
+msgid "Peel"
+msgstr "Descamar"
+
+#: invesalius/gui/task_tractography.py:125
+msgid "Load anatomical labels"
+msgstr "Carregar rótulos anatômicos"
+
+#: invesalius/gui/task_tractography.py:126
+#: invesalius/gui/task_tractography.py:258
+msgid "ACT"
+msgstr "ACT"
+
+#: invesalius/gui/task_tractography.py:139
+msgid "Peeling depth (mm):"
+msgstr "Profundidade de remoção (mm):"
+
+#: invesalius/gui/task_tractography.py:150
+msgid "Number tracts:"
+msgstr "Número de tratos:"
+
+#: invesalius/gui/task_tractography.py:159
+msgid "Seed offset (mm):"
+msgstr "Deslocamento da semente (mm):"
+
+#: invesalius/gui/task_tractography.py:169
+msgid "Seed radius (mm):"
+msgstr "Raio da semente (mm):"
+
+#: invesalius/gui/task_tractography.py:188
+msgid "Brain opacity:"
+msgstr "Opacidade do cérebro:"
+
+#: invesalius/gui/task_tractography.py:244
+msgid "Enable tracts"
+msgstr "Ativar tratos"
+
+#: invesalius/gui/task_tractography.py:251
+msgid "Peel surface"
+msgstr "Descamar superfície"
+
+#: invesalius/gui/task_tractography.py:433
+msgid "Brain model loaded"
+msgstr "Modelo cerebral carregado"
+
+#: invesalius/gui/task_tractography.py:437
+msgid "Peeled surface created"
+msgstr "Superfície descamada criada"
+
+#: invesalius/gui/task_tractography.py:450
+msgid "Import Trekker FOD"
+msgstr "Importar FOD do Trekker"
+
+#: invesalius/gui/task_tractography.py:459
+#: invesalius/gui/task_tractography.py:528
+msgid "Busy"
+msgstr "Ocupado"
+
+#: invesalius/gui/task_tractography.py:485
+msgid "FOD Import successful"
+msgstr "Importação de FOD bem-sucedida"
+
+#: invesalius/gui/task_tractography.py:488
+msgid "Trekker initialization failed."
+msgstr "Falha na inicialização do Trekker."
+
+#: invesalius/gui/task_tractography.py:490
+msgid "Unable to load FOD."
+msgstr "Não foi possível carregar o FOD."
+
+#: invesalius/gui/task_tractography.py:508
+msgid "Trekker initialized"
+msgstr "Trekker inicializado"
+
+#: invesalius/gui/task_tractography.py:515
+msgid "Import anatomical labels"
+msgstr "Importar rótulos anatômicos"
+
+#: invesalius/gui/task_tractography.py:552
+msgid "Trekker ACT loaded"
+msgstr "ACT do Trekker carregado"
+
+#: invesalius/gui/task_tractography.py:554
+msgid "ACT Import successful"
+msgstr "Importação de ACT bem-sucedida"
+
+#: invesalius/gui/task_tractography.py:557
+msgid "ACT initialization failed."
+msgstr "Falha na inicialização do ACT."
+
+#: invesalius/gui/task_tractography.py:559
+msgid "Unable to load ACT."
+msgstr "Não foi possível carregar o ACT."
+
+#: invesalius/gui/task_tractography.py:563
+msgid "Load FOD image before the ACT."
+msgstr "Carregar imagem FOD antes do ACT."
+
+#: invesalius/gui/task_tractography.py:579
+msgid "Load Trekker configuration"
+msgstr "Carregar configuração do Trekker"
+
+#: invesalius/gui/task_tractography.py:579
+msgid "JSON file (*.json)|*.json"
+msgstr "Arquivo JSON (*.json)|*.json"
+
+#: invesalius/gui/task_tractography.py:596
+msgid "Trekker config loaded"
+msgstr "Configuração do Trekker carregada"
+
+#: invesalius/gui/task_tractography.py:601
+msgid "File incompatible, using default configuration."
+msgstr "Arquivo incompatible, using default configuration."
+
+#: invesalius/gui/widgets/clut_raycasting.py:549
+#, python-format
+msgid "Value: %-6d"
+msgstr "Valor: %-6d"
+
+#: invesalius/gui/widgets/clut_raycasting.py:550
+#, python-format
+msgid "Alpha: %-.3f"
+msgstr "Alfa: %-.3f"
+
+#: invesalius/gui/widgets/slice_menu.py:36
+msgid "Normal"
+msgstr "Normal"
+
+#: invesalius/gui/widgets/slice_menu.py:37
+msgid "MaxIP"
+msgstr "MaxIP"
+
+#: invesalius/gui/widgets/slice_menu.py:38
+msgid "MinIP"
+msgstr "MinIP"
+
+#: invesalius/gui/widgets/slice_menu.py:39
+msgid "MeanIP"
+msgstr "MeanIP"
+
+#: invesalius/gui/widgets/slice_menu.py:40
+msgid "MIDA"
+msgstr "MIDA"
+
+#: invesalius/gui/widgets/slice_menu.py:41
+msgid "Contour MaxIP"
+msgstr "Contorno MaxIP"
+
+#: invesalius/gui/widgets/slice_menu.py:42
+msgid "Contour MIDA"
+msgstr "Contorno MIDA"
+
+#: invesalius/gui/widgets/slice_menu.py:142
+msgid "Window width and level"
+msgstr "Brilho e contraste"
+
+#: invesalius/gui/widgets/slice_menu.py:143
+msgid "Pseudo color"
+msgstr "Pseudo cor"
+
+#: invesalius/gui/widgets/slice_menu.py:144
+msgid "Projection type"
+msgstr "Tipo de projeção"
+
+#: invesalius/navigation/navigation.py:600
 msgid ""
-"If checked, the slices are traversed in descending order to compound the "
-"visualization instead of ascending order."
-msgstr "Se selecionado, as fatias são percorridas em ordem decrescente para compor a visualização em vez de ordem crescente."
-
-#: viewer_slice.py:103
-msgid "Number of slices"
-msgstr "Número de fatias"
-
-#: viewer_slice.py:104
-msgid "Sharpness"
-msgstr "Nitidez"
-
-#: viewer_slice.py:363 viewer_slice.py:367 viewer_slice.py:417
-#: viewer_slice.py:419 viewer_slice.py:431 viewer_slice.py:440
-#: viewer_slice.py:449 viewer_slice.py:458 viewer_slice.py:469
-#: viewer_slice.py:478 viewer_slice.py:487 viewer_slice.py:496
-msgid "R"
-msgstr "D"
-
-#: viewer_slice.py:363 viewer_slice.py:367 viewer_slice.py:417
-#: viewer_slice.py:419 viewer_slice.py:431 viewer_slice.py:440
-#: viewer_slice.py:449 viewer_slice.py:458 viewer_slice.py:469
-#: viewer_slice.py:478 viewer_slice.py:487 viewer_slice.py:496
-msgid "L"
-msgstr "E"
-
-#: viewer_slice.py:363 viewer_slice.py:365 viewer_slice.py:417
-#: viewer_slice.py:421 viewer_slice.py:431 viewer_slice.py:440
-#: viewer_slice.py:449 viewer_slice.py:458 viewer_slice.py:507
-#: viewer_slice.py:516 viewer_slice.py:525 viewer_slice.py:534
-msgid "A"
-msgstr "A"
-
-#: viewer_slice.py:363 viewer_slice.py:365 viewer_slice.py:417
-#: viewer_slice.py:421 viewer_slice.py:431 viewer_slice.py:440
-#: viewer_slice.py:449 viewer_slice.py:458 viewer_slice.py:507
-#: viewer_slice.py:516 viewer_slice.py:525 viewer_slice.py:534
-msgid "P"
-msgstr "P"
-
-#: viewer_slice.py:365 viewer_slice.py:367 viewer_slice.py:419
-#: viewer_slice.py:421 viewer_slice.py:469 viewer_slice.py:478
-#: viewer_slice.py:487 viewer_slice.py:496 viewer_slice.py:507
-#: viewer_slice.py:516 viewer_slice.py:525 viewer_slice.py:534
-msgid "T"
-msgstr "S"
-
-#: viewer_slice.py:365 viewer_slice.py:367 viewer_slice.py:419
-#: viewer_slice.py:421 viewer_slice.py:469 viewer_slice.py:478
-#: viewer_slice.py:487 viewer_slice.py:496 viewer_slice.py:507
-#: viewer_slice.py:516 viewer_slice.py:525 viewer_slice.py:534
-msgid "B"
-msgstr "I"
-
-#: viewer_slice.py:434 viewer_slice.py:443 viewer_slice.py:452
-#: viewer_slice.py:461
-msgid "AL"
-msgstr "AE"
-
-#: viewer_slice.py:434 viewer_slice.py:443 viewer_slice.py:452
-#: viewer_slice.py:461
-msgid "RA"
-msgstr "DA"
-
-#: viewer_slice.py:434 viewer_slice.py:443 viewer_slice.py:452
-#: viewer_slice.py:461
-msgid "PR"
-msgstr "PD"
-
-#: viewer_slice.py:434 viewer_slice.py:443 viewer_slice.py:452
-#: viewer_slice.py:461
-msgid "LP"
-msgstr "EP"
-
-#: viewer_slice.py:437 viewer_slice.py:446 viewer_slice.py:455
-#: viewer_slice.py:464
-msgid "LA"
-msgstr "EA"
-
-#: viewer_slice.py:437 viewer_slice.py:446 viewer_slice.py:455
-#: viewer_slice.py:464
-msgid "AR"
-msgstr "AD"
-
-#: viewer_slice.py:437 viewer_slice.py:446 viewer_slice.py:455
-#: viewer_slice.py:464
-msgid "RP"
-msgstr "DP"
-
-#: viewer_slice.py:437 viewer_slice.py:446 viewer_slice.py:455
-#: viewer_slice.py:464
-msgid "PL"
-msgstr "PE"
-
-#: viewer_slice.py:472 viewer_slice.py:481 viewer_slice.py:490
-#: viewer_slice.py:499
-msgid "TL"
-msgstr "SE"
-
-#: viewer_slice.py:472 viewer_slice.py:481 viewer_slice.py:490
-#: viewer_slice.py:499
-msgid "RT"
-msgstr "DS"
-
-#: viewer_slice.py:472 viewer_slice.py:481 viewer_slice.py:490
-#: viewer_slice.py:499
-msgid "BR"
-msgstr "ID"
-
-#: viewer_slice.py:472 viewer_slice.py:481 viewer_slice.py:490
-#: viewer_slice.py:499
-msgid "LB"
-msgstr "EI"
-
-#: viewer_slice.py:475 viewer_slice.py:484 viewer_slice.py:493
-#: viewer_slice.py:502
-msgid "LT"
-msgstr "ES"
-
-#: viewer_slice.py:475 viewer_slice.py:484 viewer_slice.py:493
-#: viewer_slice.py:502
-msgid "TR"
-msgstr "SD"
-
-#: viewer_slice.py:475 viewer_slice.py:484 viewer_slice.py:493
-#: viewer_slice.py:502
-msgid "RB"
-msgstr "DI"
-
-#: viewer_slice.py:475 viewer_slice.py:484 viewer_slice.py:493
-#: viewer_slice.py:502
-msgid "BL"
-msgstr "IE"
-
-#: viewer_slice.py:510 viewer_slice.py:519 viewer_slice.py:528
-#: viewer_slice.py:537
-msgid "TA"
-msgstr "SA"
-
-#: viewer_slice.py:510 viewer_slice.py:519 viewer_slice.py:528
-#: viewer_slice.py:537
-msgid "PT"
-msgstr "PS"
-
-#: viewer_slice.py:510 viewer_slice.py:519 viewer_slice.py:528
-#: viewer_slice.py:537
-msgid "BP"
-msgstr "IP"
-
-#: viewer_slice.py:510 viewer_slice.py:519 viewer_slice.py:528
-#: viewer_slice.py:537
-msgid "AB"
-msgstr "AI"
-
-#: viewer_slice.py:513 viewer_slice.py:522 viewer_slice.py:531
-#: viewer_slice.py:540
-msgid "AT"
-msgstr "AS"
-
-#: viewer_slice.py:513 viewer_slice.py:522 viewer_slice.py:531
-#: viewer_slice.py:540
-msgid "TP"
-msgstr "SP"
-
-#: viewer_slice.py:513 viewer_slice.py:522 viewer_slice.py:531
-#: viewer_slice.py:540
-msgid "PB"
-msgstr "PI"
-
-#: viewer_slice.py:513 viewer_slice.py:522 viewer_slice.py:531
-#: viewer_slice.py:540
-msgid "BA"
-msgstr "IA"
-
-#: viewer_slice.py:963 viewer_volume.py:429
-msgid "InVesalius was not able to export this picture"
+"No. of coils to track is {self.n_coils}, but no. of coils registered is "
+"{len(self.coil_registrations)}"
 msgstr ""
+"O número de bobinas a rastrear é {self.n_coils}, mas o número de bobinas "
+"registradas é {len(self.coil_registrations)}"
 
-#: viewer_slice.py:963 viewer_volume.py:429
-msgid "Export picture error"
+#: invesalius/navigation/navigation.py:621
+#, python-brace-format
+msgid ""
+"Coil index {obj_id} for coil {coil_name} is out of range of current Tracker! "
+"Change the coil index in Preferences - TMS Coil tab"
 msgstr ""
+"O índice da bobina {obj_id} para a bobina {coil_name} está fora do intervalo "
+"do rastreador atual! Altere o índice da bobina em Preferências - aba Bobina "
+"TMS"
+
+#: invesalius/navigation/robot.py:137 invesalius/navigation/robot.py:155
+msgid "Unable to connect to the robot."
+msgstr "Não foi possível conectar ao robô."
+
+#: invesalius/navigation/robot.py:141
+msgid "Tracker is not connect."
+msgstr "O rastreador não está conectado."
+
+#: invesalius/navigation/tracker.py:158
+msgid "Disconnecting tracker ..."
+msgstr "Desconectando rastreador..."
+
+#: invesalius/navigation/tracker.py:175
+msgid "Tracker disconnected"
+msgstr "Rastreador desconectado"
+
+#: invesalius/navigation/tracker.py:179
+msgid "Tracker still connected"
+msgstr "Rastreador ainda conectado"
+
+#: invesalius/presets.py:38 invesalius/presets.py:58 invesalius/presets.py:110
+#: invesalius/presets.py:143
+msgid "Soft Tissue"
+msgstr "Tecidos moles"
+
+#: invesalius/presets.py:39 invesalius/presets.py:59 invesalius/presets.py:111
+#: invesalius/presets.py:144
+msgid "Enamel (Adult)"
+msgstr "Esmalte (Adulto)"
+
+#: invesalius/presets.py:40 invesalius/presets.py:60 invesalius/presets.py:112
+#: invesalius/presets.py:145
+msgid "Enamel (Child)"
+msgstr "Esmalte (Criança)"
+
+#: invesalius/presets.py:41 invesalius/presets.py:61 invesalius/presets.py:113
+#: invesalius/presets.py:146
+msgid "Compact Bone (Adult)"
+msgstr "Osso compacto (Adulto)"
+
+#: invesalius/presets.py:42 invesalius/presets.py:62 invesalius/presets.py:114
+#: invesalius/presets.py:147
+msgid "Compact Bone (Child)"
+msgstr "Osso compacto (Criança)"
+
+#: invesalius/presets.py:43 invesalius/presets.py:63 invesalius/presets.py:115
+#: invesalius/presets.py:148
+msgid "Spongial Bone (Adult)"
+msgstr "Osso esponjoso (Adulto)"
+
+#: invesalius/presets.py:44 invesalius/presets.py:64 invesalius/presets.py:116
+#: invesalius/presets.py:149
+msgid "Spongial Bone (Child)"
+msgstr "Osso esponjoso (Criança)"
+
+#: invesalius/presets.py:45 invesalius/presets.py:65 invesalius/presets.py:117
+#: invesalius/presets.py:150
+msgid "Muscle Tissue (Adult)"
+msgstr "Tecido muscular (Adulto)"
+
+#: invesalius/presets.py:46 invesalius/presets.py:66 invesalius/presets.py:118
+#: invesalius/presets.py:151
+msgid "Muscle Tissue (Child)"
+msgstr "Tecido muscular (Criança)"
+
+#: invesalius/presets.py:47 invesalius/presets.py:67 invesalius/presets.py:119
+#: invesalius/presets.py:152
+msgid "Fat Tissue (Adult)"
+msgstr "Tecido gorduroso (Adulto)"
+
+#: invesalius/presets.py:48 invesalius/presets.py:68 invesalius/presets.py:120
+#: invesalius/presets.py:153
+msgid "Fat Tissue (Child)"
+msgstr "Tecido gorduroso (Criança)"
+
+#: invesalius/presets.py:49 invesalius/presets.py:69 invesalius/presets.py:121
+#: invesalius/presets.py:154
+msgid "Skin Tissue (Adult)"
+msgstr "Tecido epitelial (Adulto)"
+
+#: invesalius/presets.py:50 invesalius/presets.py:70 invesalius/presets.py:122
+#: invesalius/presets.py:155
+msgid "Skin Tissue (Child)"
+msgstr "Tecido epitelial (Criança)"
+
+#: invesalius/project.py:355
+msgid "Extracting project archive..."
+msgstr "Extraindo arquivo do projeto..."
+
+#: invesalius/project.py:366
+msgid "Extracting files..."
+msgstr "Extraindo arquivos..."
+
+#: invesalius/project.py:373
+msgid "Loading project data..."
+msgstr "Carregando dados do projeto..."
+
+#: invesalius/project.py:392
+msgid "Reading project metadata..."
+msgstr "Lendo metadados do projeto..."
+
+#: invesalius/project.py:407
+msgid "Loading project information..."
+msgstr "Carregando informações do projeto..."
+
+#: invesalius/project.py:438
+msgid "Loading image data..."
+msgstr "Carregando dados de imagem..."
+
+#: invesalius/project.py:473
+msgid "Loading mask {} of {}..."
+msgstr "Carregando máscara {} de {}..."
+
+#: invesalius/project.py:494
+msgid "Loading surfaces..."
+msgstr "Carregando superfícies..."
+
+#: invesalius/project.py:505
+msgid "Loading surface {} of {}..."
+msgstr "Carregando superfície {} de {}..."
+
+#: invesalius/project.py:515
+msgid "Loading measurements..."
+msgstr "Carregando medidas..."
+
+#: invesalius/project.py:533
+msgid "Finalizing project load..."
+msgstr "Finalizando carregamento do projeto..."
+
+#: invesalius/reader/dicom.py:1505 invesalius/reader/dicom.py:1514
+#: invesalius/reader/dicom.py:1518
+msgid "unnamed"
+msgstr "sem nome"
+
+#: invesalius/reader/nifti_utils.py:49
+msgid "Mask data must be numeric, got dtype: {}"
+msgstr "Máscara data must be numeric, got dtype: {}"
+
+#: invesalius/reader/nifti_utils.py:52
+msgid "Mask data contains NaN values."
+msgstr "Máscara data contains NaN values."
+
+#: invesalius/reader/nifti_utils.py:55
+msgid "Mask must be 3D. Got {}D data."
+msgstr "Máscara must be 3D. Got {}D data."
+
+#: invesalius/reader/nifti_utils.py:75
+msgid ""
+"Dimension mismatch.\n"
+"\n"
+"Project: {} voxels\n"
+"Mask:    {} voxels\n"
+"\n"
+"Masks must match the volume dimensions exactly."
+msgstr ""
+"Incompatibilidade de dimensões.\n"
+"\n"
+"Projeto: {} voxels\n"
+"Máscara: {} voxels\n"
+"\n"
+"As máscaras devem corresponder exatamente às dimensões do volume."
+
+#~ msgid "TIFF,BMP,JPG or PNG (CT)"
+#~ msgstr "TIFF,BMP,JPG ou PNG (CT)"
+
+#~ msgid "Debug tracker"
+#~ msgstr "Depurar rastreador"
+
+#~ msgid "Disconnect tracker"
+#~ msgstr "Desconectar rastreador"
+
+#~ msgid "LEI"
+#~ msgstr "OEI"
+
+#~ msgid "REI"
+#~ msgstr "ODI"
+
+#~ msgid "NAI"
+#~ msgstr "NAI"
+
+#~ msgid "LET"
+#~ msgstr "OER"
+
+#~ msgid "RET"
+#~ msgstr "ODR"
+
+#~ msgid "NAT"
+#~ msgstr "NAR"
+
+#~ msgid "SET"
+#~ msgstr "SET"
+
+#~ msgid "Show set coordinates in image"
+#~ msgstr "Exibir coordenadas setadas na imagem"
+
+#~ msgid "Navigation system"
+#~ msgstr "Sistema de navegação"
+
+#~ msgid "Import NIFTi 1 file"
+#~ msgstr "Importar arquivo NIFTi 1"
+
+#~ msgid "The TXT file is invalid."
+#~ msgstr "O TXT não é válido."
+
+#~ msgid "No data selected"
+#~ msgstr "Dado não selecionado"
+
+#~ msgid "Reorient image\tCtrl+Shift+R"
+#~ msgstr "Reorientar imagem\tCtrl+Shift+R"
+
+#~ msgid "Preferences..."
+#~ msgstr "Preferências..."
+
+#~ msgid "Interpolation "
+#~ msgstr "Interpolação "
+
+#~ msgid "Volume rendering"
+#~ msgstr "Renderização volumétrica"
+
+#~ msgid "Rendering"
+#~ msgstr "Renderização"
+
+#~ msgid "Slices"
+#~ msgstr "Fatias"
+
+#~ msgid "Interpolated "
+#~ msgstr "Interpolada"
+
+#~ msgid "Select DICOM, Analyze, NIfTI or REC/PAR files to be reconstructed"
+#~ msgstr ""
+#~ "Selecionar arquivos DICOM, Analyze, NIfTI ou REC/PAR para serem "
+#~ "reconstruídos"
+
+#~ msgid "Import medical images..."
+#~ msgstr "Importar imagens médicas..."
+
+#~ msgid "Select fiducials and navigate"
+#~ msgstr "Selecionar fiduciais e navegar"
+
+#~ msgid "Neuronavigation"
+#~ msgstr "Neuronavegação"
+
+#~ msgid "Extra tools"
+#~ msgstr "Ferramentas extras"
+
+#~ msgid "Enable external trigger for creating markers"
+#~ msgstr "Habilitar trigger externo para criação de marcadores"
+
+#~ msgid "Navigate"
+#~ msgstr "Navegar"
+
+#~ msgid "Stop neuronavigation"
+#~ msgstr "Parar neuronavegação"
+
+#~ msgid "Start neuronavigation"
+#~ msgstr "Iniciar neuronavegação"
+
+#~ msgid "Hide"
+#~ msgstr "Ocultar"
+
+#~ msgid "Edit ID"
+#~ msgstr "Editar ID"
 
 #~ msgid "Save raycasting preset"
 #~ msgstr "Save raycasting preset"
 
 #~ msgid "Untitled"
 #~ msgstr "Untitled"
-
-#~ msgid "Import DICOM images..."
-#~ msgstr "Import DICOM files..."
 
 #~ msgid "Advanced editing tools"
 #~ msgstr "Advanced editing tools"

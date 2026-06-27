@@ -763,15 +763,17 @@ class CanvasRendererCTX:
         pos: Tuple[float, float],
         font: Optional[wx.Font] = None,
         txt_colour: Tuple[int, int, int] = (255, 255, 255),
+        add_background: bool = False,
     ) -> None:
         """
-        Draw text.
+        Draw text with optional shadow and background for better visibility.
 
         Params:
             text: an unicode text.
             pos: (x, y) top left position.
             font: if None it'll use the default gui font.
             txt_colour: RGB text colour
+            add_background: if True, adds semi-transparent background and shadow
         """
         if self.gc is None:
             return None
@@ -787,6 +789,24 @@ class CanvasRendererCTX:
             t = t.strip()
             _py = -py
             _px = px
+
+            if add_background:
+                # Calculate text size for background
+                w, h = self.calc_text_size(t, font)
+                padding = 2
+
+                # Draw semi-transparent black background
+                bg_brush = gc.CreateBrush(wx.Brush(wx.Colour(0, 0, 0, 89)))  # 35% opacity = 89/255
+                gc.SetBrush(bg_brush)
+                gc.SetPen(wx.TRANSPARENT_PEN)
+                gc.DrawRectangle(_px - padding, _py - padding, w + 2 * padding, h + 2 * padding)
+
+                # Draw shadow (offset text in black)
+                shadow_font = gc.CreateFont(font, (0, 0, 0))
+                gc.SetFont(shadow_font)
+                gc.DrawText(t, _px + 1, _py - 1)
+
+            # Draw main text
             gc.SetFont(_font)
             gc.DrawText(t, _px, _py)
 

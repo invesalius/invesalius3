@@ -21,6 +21,7 @@ import uuid
 from typing import List, Union
 
 import invesalius.session as ses
+from invesalius.data.markers.grid_generator import GridGenerator
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.marker_transformator import MarkerTransformator
 from invesalius.navigation.robot import Robot, RobotObjective
@@ -333,3 +334,46 @@ class MarkersControl(metaclass=Singleton):
         new_marker.marker_type = MarkerType.COIL_TARGET
 
         self.AddMarker(new_marker)
+
+    def CreateGridFromTarget(
+        self,
+        reference_marker: Marker,
+        grid_type: str,
+        rows: int = 3,
+        cols: int = 3,
+        rings: int = 2,
+        points_per_ring: int = 6,
+        spacing: float = 5.0,
+    ) -> List[Marker]:
+        """Create a grid of coil targets around a reference coil target.
+
+        The grid is generated on the smoothed scalp surface, with each target
+        oriented tangentially to the local surface normal and preserving the
+        z_rotation and z_offset from the reference target.
+
+        :param reference_marker: The coil target marker to use as the center of the grid.
+        :param grid_type: Type of grid layout: 'rectangular' or 'circular'.
+        :param rows: Number of rows (rectangular grid only).
+        :param cols: Number of columns (rectangular grid only).
+        :param rings: Number of concentric rings (circular grid only).
+        :param points_per_ring: Number of points per ring (circular grid only).
+        :param spacing: Distance between adjacent grid points in mm.
+        :return: List of newly created Marker objects.
+        """
+        grid_generator = GridGenerator(self.transformator.surface_geometry)
+
+        if grid_type == "rectangular":
+            new_markers = grid_generator.generate_rectangular_grid(
+                reference_marker, rows, cols, spacing
+            )
+        elif grid_type == "circular":
+            new_markers = grid_generator.generate_circular_grid(
+                reference_marker, rings, points_per_ring, spacing
+            )
+        else:
+            raise ValueError(f"Unknown grid type: {grid_type}")
+
+        for marker in new_markers:
+            self.AddMarker(marker)
+
+        return new_markers

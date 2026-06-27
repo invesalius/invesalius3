@@ -31,6 +31,7 @@ from scipy import ndimage
 import invesalius.constants as const
 import invesalius.data.converters as converters
 import invesalius.session as ses
+import invesalius.utils as utils
 import invesalius_rs as floodfill
 from invesalius.data.volume_mask import VolumeMask
 from invesalius.pubsub import pub as Publisher
@@ -222,6 +223,7 @@ class Mask:
         self.volume = None
         self.auto_update_mask = True
         self.modified_time = 0
+        self.derived_from = "original"
         self.__bind_events()
         self._modified_callbacks = []
 
@@ -310,13 +312,12 @@ class Mask:
             if update_volume_viewer:
                 Publisher.sendMessage("Render volume viewer")
 
-    def SavePlist(self, dir_temp, filelist):
+    def SavePlist(self, dir_temp, filelist, save_temp_files=None):
         mask = {}
         filename = f"mask_{self.index}"
         mask_filename = f"{filename}.dat"
-        # mask_filepath = os.path.join(dir_temp, mask_filename)
+        # Map the live mask data file into the archive — never add to save_temp_files
         filelist[self.temp_file] = mask_filename
-        # self._save_mask(mask_filepath)
 
         mask["index"] = self.index
         mask["name"] = self.name
@@ -328,15 +329,18 @@ class Mask:
         mask["mask_file"] = mask_filename
         mask["mask_shape"] = self.matrix.shape
         mask["edited"] = self.was_edited
+        mask["derived_from"] = self.derived_from
 
         plist_filename = filename + ".plist"
-        # plist_filepath = os.path.join(dir_temp, plist_filename)
 
         temp_fd, temp_plist = tempfile.mkstemp()
         with open(temp_plist, "w+b") as f:
             plistlib.dump(mask, f)
 
         filelist[temp_plist] = plist_filename
+        # The plist metadata file is safe to delete once save is complete
+        if save_temp_files is not None:
+            save_temp_files.add(temp_plist)
         os.close(temp_fd)
 
         return plist_filename
@@ -355,27 +359,28 @@ class Mask:
         mask_file = mask["mask_file"]
         shape = mask["mask_shape"]
         self.was_edited = mask.get("edited", False)
+        self.derived_from = mask.get("derived_from", "original")
 
         dirpath = os.path.abspath(os.path.split(filename)[0])
         path = os.path.join(dirpath, mask_file)
         self._open_mask(path, tuple(shape))
 
     def OnFlipVolume(self, axis):
-        submatrix = self.matrix[1:, 1:, 1:]
-        if axis == 0:
-            submatrix[:] = submatrix[::-1]
-            self.matrix[1::, 0, 0] = self.matrix[:0:-1, 0, 0]
-        elif axis == 1:
-            submatrix[:] = submatrix[:, ::-1]
-            self.matrix[0, 1::, 0] = self.matrix[0, :0:-1, 0]
-        elif axis == 2:
-            submatrix[:] = submatrix[:, :, ::-1]
-            self.matrix[0, 0, 1::] = self.matrix[0, 0, :0:-1]
+        # Note: slice_.py's OnFlipVolume already zeros matrix[:] and clears
+        # history for all masks before this handler runs.  Here we only need
+        # to update the VTK volume actor if a 3D mask preview is active.
+        # (fix for issue #1402)
+        if self.volume:
+            self.imagedata = self.as_vtkimagedata()
+            self.volume.change_imagedata()
+
         self.modified()
 
     def OnSwapVolumeAxes(self, axes):
-        axis0, axis1 = axes
-        self.matrix = self.matrix.swapaxes(axis0, axis1)
+        # Note: slice_.py's OnSwapVolumeAxes already zeros matrix[:] and clears
+        # history for all masks before this handler runs.  Here we only need
+        # to update the VTK volume actor if a 3D mask preview is active.
+        # (fix for issue #1402 — same class of bug as flip)
         if self.volume:
             self.imagedata = self.as_vtkimagedata()
             self.volume.change_imagedata()
@@ -385,6 +390,13 @@ class Mask:
         shutil.copyfile(self.temp_file, filename)
 
     def _open_mask(self, filename, shape, dtype="uint8"):
+        if not os.path.exists(filename):
+            raise FileNotFoundError(
+                f"Mask data file not found: '{filename}'.\n"
+                "This can happen if InVesalius was force-closed and the temporary "
+                "mask file was deleted by the operating system. "
+                "Please create a new mask."
+            )
         self.temp_file = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
@@ -417,6 +429,35 @@ class Mask:
         self.temp_fd, self.temp_file = tempfile.mkstemp()
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = np.memmap(self.temp_file, mode="w+", dtype="uint8", shape=shape)
+
+    def _recreate_mask_matrix(self, new_shape):
+        """
+        Recreates the mask matrix with a new shape, preserving the temp file.
+        Used when image dimensions change (e.g., after reorientation).
+
+        Parameters:
+            new_shape(int, int, int): The new shape for the mask matrix.
+        """
+        old_temp_file = self.temp_file
+        old_temp_fd = self.temp_fd
+
+        del self.matrix
+
+        try:
+            os.close(old_temp_fd)
+            os.remove(old_temp_file)
+        except (OSError, ValueError):
+            pass
+
+        new_temp_fd, new_temp_file = tempfile.mkstemp()
+        new_matrix = np.memmap(new_temp_file, mode="w+", dtype="uint8", shape=new_shape)
+        new_matrix[:] = 0
+        new_matrix.flush()
+        os.fsync(new_temp_fd)
+
+        self.temp_fd = new_temp_fd
+        self.temp_file = new_temp_file
+        self.matrix = new_matrix
 
     def modified(self, all_volume=False):
         if all_volume:

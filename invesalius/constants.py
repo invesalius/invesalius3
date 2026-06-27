@@ -19,7 +19,6 @@
 
 import itertools
 import sys
-from typing import Dict, List, Optional, Tuple, Union
 
 import psutil
 import wx
@@ -112,6 +111,7 @@ ANGULAR = 7
 DENSITY_ELLIPSE = 8
 DENSITY_POLYGON = 9
 ANNOTATION = 10
+CURVED_LINEAR = 11
 
 # Colour representing each orientation
 ORIENTATION_COLOUR = {
@@ -184,8 +184,8 @@ CROP_PAN = 13
 
 # Color Table from Slice
 # NumberOfColors, SaturationRange, HueRange, ValueRange
-SLICE_COLOR_TABLE: Dict[
-    str, Tuple[Optional[int], Tuple[int, int], Tuple[float, float], Tuple[int, int]]
+SLICE_COLOR_TABLE: dict[
+    str, tuple[int | None, tuple[int, int], tuple[float, float], tuple[int, int]]
 ] = {
     _("Default "): (None, (0, 0), (0, 0), (0, 1)),
     _("Hue"): (None, (1, 1), (0, 1), (1, 1)),
@@ -234,41 +234,41 @@ AXIAL_VOLUME_CAM_POSITION = {
 }
 
 SAGITAL_VOLUME_CAM_VIEW_UP = {
-    VOL_FRONT: (0, -1, 0),
-    VOL_BACK: (0, -1, 0),
-    VOL_RIGHT: (0, -1, 1),
-    VOL_LEFT: (0, -1, 1),
-    VOL_TOP: (1, -1, 0),
-    VOL_BOTTOM: (-1, 1, 0),
-    VOL_ISO: (0, -1, 0),
+    VOL_FRONT: (0, 0, 1),
+    VOL_BACK: (0, 0, 1),
+    VOL_RIGHT: (0, 0, 1),
+    VOL_LEFT: (0, 0, 1),
+    VOL_TOP: (0, 1, 0),
+    VOL_BOTTOM: (0, -1, 0),
+    VOL_ISO: (0, 0, 1),
 }
 SAGITAL_VOLUME_CAM_POSITION = {
-    VOL_FRONT: (-1, 0, 0),
-    VOL_BACK: (1, 0, 0),
-    VOL_RIGHT: (0, 0, 1),
-    VOL_LEFT: (0, 0, -1),
-    VOL_TOP: (0, -1, 0),
-    VOL_BOTTOM: (0, 1, 0),
-    VOL_ISO: (-1, -0.5, -0.5),
+    VOL_FRONT: (0, -1, 0),
+    VOL_BACK: (0, 1, 0),
+    VOL_RIGHT: (-1, 0, 0),
+    VOL_LEFT: (1, 0, 0),
+    VOL_TOP: (0, 0, 1),
+    VOL_BOTTOM: (0, 0, -1),
+    VOL_ISO: (0.5, -1, 0.5),
 }
 
 CORONAL_VOLUME_CAM_VIEW_UP = {
-    VOL_FRONT: (0, -1, 0),
-    VOL_BACK: (0, -1, 0),
-    VOL_RIGHT: (0, -1, 0),
-    VOL_LEFT: (0, -1, 0),
+    VOL_FRONT: (0, 0, 1),
+    VOL_BACK: (0, 0, 1),
+    VOL_RIGHT: (0, 0, 1),
+    VOL_LEFT: (0, 0, 1),
     VOL_TOP: (0, 1, 0),
     VOL_BOTTOM: (0, -1, 0),
-    VOL_ISO: (0, -1, 0),
+    VOL_ISO: (0, 0, 1),
 }
 CORONAL_VOLUME_CAM_POSITION = {
-    VOL_FRONT: (0, 0, -1),
-    VOL_BACK: (0, 0, 1),
+    VOL_FRONT: (0, -1, 0),
+    VOL_BACK: (0, 1, 0),
     VOL_RIGHT: (-1, 0, 0),
     VOL_LEFT: (1, 0, 0),
-    VOL_TOP: (0, -1, 0),
-    VOL_BOTTOM: (0, 1, 0),
-    VOL_ISO: (0.5, -0.5, -1),
+    VOL_TOP: (0, 0, 1),
+    VOL_BOTTOM: (0, 0, -1),
+    VOL_ISO: (0.5, -1, 0.5),
 }
 
 VOLUME_POSITION = {
@@ -292,7 +292,7 @@ THRESHOLD_OUTVALUE = 0
 MASK_NAME_PATTERN = _("Mask %d")
 MASK_OPACITY = 0.40
 # MASK_OPACITY = 0.35
-MASK_COLOUR: List[List[float]] = [
+MASK_COLOUR: list[list[float]] = [
     [0.33, 1, 0.33],
     [1, 1, 0.33],
     [0.33, 0.91, 1],
@@ -314,7 +314,7 @@ MASK_COLOUR: List[List[float]] = [
 
 MEASURE_COLOUR = itertools.cycle([[1, 0, 0], [1, 0.4, 0], [0, 0, 1], [1, 0, 1], [0, 0.6, 0]])
 
-SURFACE_COLOUR: List[Tuple[float, float, float]] = [
+SURFACE_COLOUR: list[tuple[float, float, float]] = [
     (0.33, 1, 0.33),
     (1, 1, 0.33),
     (0.33, 0.91, 1),
@@ -376,7 +376,7 @@ SURFACE_SPACE_INV = 1
 SURFACE_SPACE_CHOICES = [_("world/scanner space"), _("InVesalius space")]
 
 # Imagedata - window and level presets
-WINDOW_LEVEL: Dict[str, Union[Tuple[int, int], Tuple[None, None]]] = {
+WINDOW_LEVEL: dict[str, tuple[int, int] | tuple[None, None]] = {
     _("Abdomen"): (350, 50),
     _("Bone"): (2000, 300),
     _("Brain posterior fossa"): (120, 40),
@@ -604,7 +604,9 @@ ID_SWAP_YZ = wx.NewIdRef()
 
 ID_BOOLEAN_MASK = wx.NewIdRef()
 ID_CLEAN_MASK = wx.NewIdRef()
+ID_IMAGE_FILTERS = wx.NewIdRef()
 
+ID_IMAGE_FILTER = wx.NewIdRef()
 ID_REORIENT_IMG = wx.NewIdRef()
 ID_FLOODFILL_MASK = wx.NewIdRef()
 ID_FILL_HOLE_AUTO = wx.NewIdRef()
@@ -634,6 +636,7 @@ ID_MASK_3D_EDIT = wx.NewIdRef()
 
 ID_GOTO_SLICE = wx.NewIdRef()
 ID_GOTO_COORD = wx.NewIdRef()
+ID_ORIENTATION_CUBE = wx.NewIdRef()
 
 ID_MANUAL_WWWL = wx.NewIdRef()
 
@@ -660,6 +663,8 @@ STATE_NAVIGATION = 1012
 STATE_REGISTRATION = 1013
 STATE_MASK_3D_EDIT = 1014
 STATE_MEASURE_ANNOTATION = 1015
+STATE_MEASURE_CURVED_LINEAR = 1016
+STATE_SSAO = 1017
 
 SLICE_STATE_CROSS = 3006
 SLICE_STATE_SCROLL = 3007
@@ -688,6 +693,7 @@ TOOL_STATES = [
     STATE_MEASURE_DENSITY_ELLIPSE,
     STATE_MEASURE_DENSITY_POLYGON,
     STATE_MEASURE_ANNOTATION,
+    STATE_MEASURE_CURVED_LINEAR,
     STATE_NAVIGATION,
     STATE_REGISTRATION,
 ]
@@ -731,6 +737,7 @@ STYLE_LEVEL = {
     STATE_MEASURE_DENSITY_POLYGON: 2,
     STATE_MEASURE_DENSITY: 2,
     STATE_MEASURE_ANNOTATION: 2,
+    STATE_MEASURE_CURVED_LINEAR: 2,
     STATE_WL: 2,
     STATE_SPIN: 2,
     STATE_ZOOM: 2,
@@ -758,6 +765,8 @@ LOGFILE = 7
 # Marker shapes
 LANDMARK_MARKER_SHAPE = 10
 FIDUCIAL_MARKER_SHAPE = 11
+# SSAO
+SSAO_ENABLED = 12
 
 # Marker shape options
 MARKER_SHAPE_BALL = 0
@@ -1031,6 +1040,12 @@ EFIELD_ROI_SIZE = 40
 SLEEP_NAVIGATION = 0.1
 SLEEP_COORDINATES = 0.1
 
+# Delay between consecutive tracker coordinate samples when computing the median
+# for calibration. Without this delay, the sampling loop runs faster than the
+# tracker's update rate, causing duplicate readings that defeat the purpose of
+# median filtering. See: https://github.com/invesalius/invesalius3/issues/380
+SLEEP_BETWEEN_TRACKER_SAMPLES = 0.01
+
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
 # the max_sampling_step can be set to something different as well. Above 100 is probably not necessary
@@ -1053,8 +1068,8 @@ TREKKER_CONFIG = {
 }
 
 MARKER_FILE_MAGICK_STRING = "##INVESALIUS3_MARKER_FILE_"
-CURRENT_MARKER_FILE_VERSION = 4
-SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3, 4]
+CURRENT_MARKER_FILE_VERSION = 5
+SUPPORTED_MARKER_FILE_VERSIONS = [0, 1, 2, 3, 4, 5]
 WILDCARD_MARKER_FILES = _("Marker scanner coord files (*.mkss)|*.mkss")
 
 # Motor mapping visualization

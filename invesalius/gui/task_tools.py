@@ -27,9 +27,11 @@ import invesalius.constants as constants
 from invesalius import inv_paths
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+from invesalius.session import Session
 
 ID_BTN_MEASURE_LINEAR = wx.NewIdRef()
 ID_BTN_MEASURE_ANGULAR = wx.NewIdRef()
+ID_BTN_MEASURE_CURVED = wx.NewIdRef()
 ID_BTN_ANNOTATION = wx.NewIdRef()
 
 
@@ -100,35 +102,35 @@ class InnerTaskPanel(wx.Panel):
         button_measure_angular = pbtn.PlateButton(
             self, ID_BTN_MEASURE_ANGULAR, "", BMP_ANGLE, style=button_style
         )
+        button_measure_angular.SetToolTip(_("Measure angles"))
+
+        button_measure_curved = pbtn.PlateButton(
+            self, ID_BTN_MEASURE_CURVED, "", BMP_DISTANCE, style=button_style
+        )
+        button_measure_curved.SetToolTip(
+            _("Measure curved distance on surface\nClick to select: Two points or Multi-points")
+        )
 
         button_annotation = pbtn.PlateButton(
             self, ID_BTN_ANNOTATION, "", BMP_ANNOTATE, style=button_style
         )
 
-        # When using PlaneButton, it is necessary to bind events from parent win
+        # When using PlateButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
-        # Tags and grid sizer for fixed items
-        # flag_link = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
-        # flag_button = wx.EXPAND | wx.GROW
-
+        # Layout: row 0 has Measure label, linear btn, angular btn, curved btn
         sizer = wx.GridBagSizer(hgap=0, vgap=0)
         sizer.Add(txt_measure, pos=(0, 0), flag=wx.GROW | wx.EXPAND | wx.TOP, border=3)
         sizer.Add(button_measure_linear, pos=(0, 1), flag=wx.GROW | wx.EXPAND)
         sizer.Add(button_measure_angular, pos=(0, 2), flag=wx.GROW | wx.EXPAND)
+        sizer.Add(button_measure_curved, pos=(0, 3), flag=wx.GROW | wx.EXPAND)
         sizer.Add(txt_annotation, pos=(1, 0), flag=wx.GROW | wx.EXPAND)
         sizer.Add(button_annotation, pos=(1, 2), span=(2, 1), flag=wx.GROW | wx.EXPAND)
         sizer.AddGrowableCol(0)
 
-        # Add line sizers into main sizer
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(sizer, 0, wx.GROW | wx.EXPAND)
-        main_sizer.Fit(self)
-
         # Update main sizer and panel layout
         self.SetSizer(sizer)
         self.Fit()
-        self.sizer = main_sizer
 
     def OnTextAnnotation(self, evt=None):
         print("TODO: Send Signal - Add text annotation (both 2d and 3d)")
@@ -137,7 +139,28 @@ class InnerTaskPanel(wx.Panel):
         Publisher.sendMessage("Enable style", style=constants.STATE_MEASURE_DISTANCE)
 
     def OnLinkAngularMeasure(self):
-        Publisher.sendMessage("Enable style", style=constants.STATE_MEASURE_ANGLE)
+        Publisher.sendMessage("Enable style", style=constants.STATE_MEASURE_ANGULAR)
+
+    def OnLinkCurvedMeasure(self):
+        Publisher.sendMessage("Enable style", style=constants.STATE_MEASURE_CURVED_LINEAR)
+
+    def OnCurvedMeasureClick(self):
+        """Show a guaranteed modal dialog for curved ruler mode selection."""
+        choices = [_("Two points"), _("Multi-points")]
+        # Get the currently saved setting to pre-select the right choice
+        current_multi = Session().GetConfig("geodesic_multi_point", False)
+        dlg = wx.SingleChoiceDialog(
+            self,
+            _("Select curved measurement mode:"),
+            _("Curved Ruler"),
+            choices,
+        )
+        dlg.SetSelection(1 if current_multi else 0)
+        if dlg.ShowModal() == wx.ID_OK:
+            multi = dlg.GetSelection() == 1
+            Session().SetConfig("geodesic_multi_point", multi)
+            self.OnLinkCurvedMeasure()
+        dlg.Destroy()
 
     def OnButton(self, evt):
         id = evt.GetId()
@@ -146,5 +169,7 @@ class InnerTaskPanel(wx.Panel):
             self.OnLinkLinearMeasure()
         elif id == ID_BTN_MEASURE_ANGULAR:
             self.OnLinkAngularMeasure()
+        elif id == ID_BTN_MEASURE_CURVED:
+            self.OnCurvedMeasureClick()
         else:  # elif id == ID_BTN_ANNOTATION:
             self.OnTextAnnotation()

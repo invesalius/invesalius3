@@ -48,12 +48,18 @@ if TYPE_CHECKING:
 
 class ProgressDialog:
     def __init__(
-        self, parent: Optional[wx.Window], maximum: int, abort: bool = False, msg: str = ""
+        self,
+        parent: Optional[wx.Window],
+        maximum: int,
+        abort: bool = False,
+        msg: str = "",
+        cancel_msg: str = "Cancel DICOM load",
     ):
         self.title = "InVesalius 3"
         self.msg = msg if msg else _("Loading DICOM files")
         self.maximum = maximum
         self.current = 0
+        self.cancel_msg = cancel_msg
         self.style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME
         if abort:
             self.style = self.style | wx.PD_CAN_ABORT
@@ -66,7 +72,7 @@ class ProgressDialog:
         self.dlg.SetSize(wx.Size(250, 150))
 
     def Cancel(self, evt: wx.CommandEvent) -> None:
-        Publisher.sendMessage("Cancel DICOM load")
+        Publisher.sendMessage(self.cancel_msg)
 
     def Update(self, value: SupportsInt, message: str) -> Union[Tuple[bool, bool], bool]:
         if int(value) != self.maximum:
@@ -171,6 +177,12 @@ class Text:
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
+        # Add shadow and background for better visibility on bright regions
+        property.SetShadow(1)
+        property.SetShadowOffset(1, -1)
+
+        property.SetBackgroundColor(0, 0, 0)
+        property.SetBackgroundOpacity(0.35)
         self.property = property
 
         mapper = vtkTextMapper()
@@ -275,6 +287,12 @@ class TextZero:
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
+        # Add shadow and background for better visibility on bright regions
+        property.SetShadow(1)
+        property.SetShadowOffset(1, -1)
+
+        property.SetBackgroundColor(0, 0, 0)
+        property.SetBackgroundOpacity(0.35)
         self.property = property
 
         actor = vtkTextActor()
@@ -359,7 +377,7 @@ class TextZero:
                 x -= w
             if self.bottom_pos:
                 y += h
-        canvas.draw_text(self.text, (x, y), font=font)
+        canvas.draw_text(self.text, (x, y), font=font, add_background=True)
 
 
 def numpy_to_vtkMatrix4x4(affine: "np.ndarray") -> vtkMatrix4x4:

@@ -56,6 +56,7 @@ import invesalius.project as project
 import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius.data.ruler import GenericLeftRuler
+from invesalius.data.visualization.marker_visualizer import MarkerHighlightX
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.gui.widgets.inv_spinctrl import InvFloatSpinCtrl, InvSpinCtrl
 from invesalius.i18n import tr as _
@@ -245,6 +246,8 @@ class Viewer(wx.Panel):
         self.on_text = False
         # Newly added attribute for ruler
         self.ruler = None
+        # Marker highlight overlay (Stage 2)
+        self._marker_highlight = None
         # VTK pipeline and actors
         self.__config_interactor()
         self.cross_actor = vtkActor()
@@ -401,7 +404,6 @@ class Viewer(wx.Panel):
                 values = [_("R"), _("L"), _("T"), _("B")]
 
             left_text = self.left_text = vtku.TextZero()
-            left_text.ShadowOff()
             left_text.SetColour(colour)
             left_text.SetPosition(const.TEXT_POS_VCENTRE_LEFT)
             left_text.SetVerticalJustificationToCentered()
@@ -409,7 +411,6 @@ class Viewer(wx.Panel):
             left_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             right_text = self.right_text = vtku.TextZero()
-            right_text.ShadowOff()
             right_text.SetColour(colour)
             right_text.SetPosition(const.TEXT_POS_VCENTRE_RIGHT_ZERO)
             right_text.SetVerticalJustificationToCentered()
@@ -418,7 +419,6 @@ class Viewer(wx.Panel):
             right_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             up_text = self.up_text = vtku.TextZero()
-            up_text.ShadowOff()
             up_text.SetColour(colour)
             up_text.SetPosition(const.TEXT_POS_HCENTRE_UP)
             up_text.SetJustificationToCentered()
@@ -426,7 +426,6 @@ class Viewer(wx.Panel):
             up_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             down_text = self.down_text = vtku.TextZero()
-            down_text.ShadowOff()
             down_text.SetColour(colour)
             down_text.SetPosition(const.TEXT_POS_HCENTRE_DOWN_ZERO)
             down_text.SetJustificationToCentered()
@@ -573,15 +572,91 @@ class Viewer(wx.Panel):
 
     def Reposition(self, slice_data):
         """
-        Based on code of method Zoom in the
-        vtkInteractorStyleRubberBandZoom, the of
-        vtk 5.4.3
+        Fit the slice image to fill the viewport while maintaining aspect ratio.
         """
-        ren = slice_data.renderer
-        # size = ren.GetSize()
+        if slice_data is None or slice_data.renderer is None or slice_data.actor is None:
+            return
 
+        ren = slice_data.renderer
+        cam = ren.GetActiveCamera()
+        actor = slice_data.actor
+
+        # First, reset camera to center on the actor and get proper focal point
         ren.ResetCamera()
-        ren.GetActiveCamera().Zoom(1.0)
+
+        # Get image bounds in world coordinates
+        bounds = actor.GetBounds()
+        if bounds is None:
+            if not self.nav_status:
+                self.UpdateRender()
+            return
+
+        # For 2D slices, one dimension is always zero (the slice plane)
+        # We need to identify which two dimensions are actually visible
+        # based on the orientation
+        x_size = bounds[1] - bounds[0]
+        y_size = bounds[3] - bounds[2]
+        z_size = bounds[5] - bounds[4]
+
+        # Determine visible dimensions based on orientation
+        if self.orientation == "AXIAL":
+            # XY plane visible
+            width = x_size
+            height = y_size
+        elif self.orientation == "SAGITAL":
+            # YZ plane visible
+            width = y_size
+            height = z_size
+        else:  # CORONAL
+            # XZ plane visible
+            width = x_size
+            height = z_size
+
+        # Get viewport dimensions in pixels
+        viewport_width, viewport_height = ren.GetSize()
+
+        # Safety checks
+        if viewport_width <= 0 or viewport_height <= 0 or width <= 0 or height <= 0:
+            if not self.nav_status:
+                self.UpdateRender()
+            return
+
+        # Calculate viewport aspect ratio
+        viewport_aspect = viewport_width / viewport_height
+        image_aspect = width / height
+
+        # Compute proper parallel scale for optimal fit
+        # ParallelScale is half the height of the view in world coordinates
+
+        # Calculate both scales
+        scale_x = (width / viewport_aspect) / 2.0
+        scale_y = height / 2.0
+
+        # Use maximum scale to fill viewport as much as possible
+        # This ensures the image occupies maximum space
+        scale = max(scale_x, scale_y)
+
+        # Adaptive margin based on aspect ratio difference
+        # If aspect ratios are similar, use smaller margin
+        # If aspect ratios are very different, use larger margin
+        aspect_ratio_diff = abs(image_aspect - viewport_aspect) / max(image_aspect, viewport_aspect)
+
+        if aspect_ratio_diff < 0.1:
+            # Very similar aspect ratios - minimal margin
+            margin = 1.005
+        elif aspect_ratio_diff < 0.3:
+            # Moderate difference - small margin
+            margin = 1.01
+        else:
+            # Large difference - slightly larger margin to prevent "too close"
+            margin = 1.015
+
+        scale *= margin
+
+        # Apply the calculated scale
+        cam.SetParallelScale(scale)
+        ren.ResetCameraClippingRange()
+
         if not self.nav_status:
             self.UpdateRender()
 
@@ -622,8 +697,9 @@ class Viewer(wx.Panel):
         SetFocalPoint call is required.
         :param position: list of 6 coordinates in vtk world coordinate system wx, wy, wz
         """
-        self.cross.SetFocalPoint(position[:3])
-        if not self.nav_status:
+        if hasattr(self, "cross"):
+            self.cross.SetFocalPoint(position[:3])
+        if not self.nav_status and hasattr(self, "slice_data") and self.slice_data:
             self.UpdateSlicesPosition(position[:3])
 
     def ScrollSlice(self, coord):
@@ -943,6 +1019,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateCross, "Update cross pos")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.OnHighlightMarker, "Highlight marker")
+        Publisher.subscribe(self.OnUnhighlightMarker, "Unhighlight marker")
+        Publisher.subscribe(self.OnDeleteMarker, "Delete marker")
+        Publisher.subscribe(self.OnDeleteMarkers, "Delete markers")
 
     def RefreshViewer(self):
         self.Refresh()
@@ -1076,12 +1155,54 @@ class Viewer(wx.Panel):
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
 
+    def OnSize(self, evt):
+        """
+        Handle window resize events to maintain proper fit.
+        """
+        if self.slice_data:
+            wx.CallAfter(self.Reposition, self.slice_data)
+        if evt:
+            evt.Skip()
+
+    def _deferred_reposition(self):
+        """
+        Deferred repositioning to ensure window is fully initialized.
+
+        This is particularly important on Windows and macOS where the initial
+        window size may not be finalized when SetInput is called, leading to
+        incorrect camera positioning. Uses a timer to ensure AUI pane layout
+        is completely finished before repositioning.
+        """
+        if self.slice_data:
+            # Use a timer with a small delay to ensure AUI manager has
+            # completely finished laying out panes. CallAfter alone is not
+            # sufficient as the AUI manager may still be adjusting dimensions.
+            wx.CallLater(100, self._do_reposition)
+
+    def _do_reposition(self):
+        """
+        Actually perform the repositioning after layout is complete.
+
+        This is called after a delay to ensure the viewport has its final
+        dimensions from the AUI manager.
+        """
+        if self.slice_data:
+            # Force a layout update to ensure dimensions are current
+            self.Layout()
+            self.Update()
+
+            # Now reposition with correct viewport size
+            self.Reposition(self.slice_data)
+            if not self.nav_status:
+                self.UpdateRender()
+
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
         self.scroll.Bind(wx.EVT_SCROLL_THUMBTRACK, self.OnScrollBarRelease)
         # self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
+        self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, mask_dict):
         self.SetInput(mask_dict)
@@ -1169,7 +1290,7 @@ class Viewer(wx.Panel):
         # enough to show all slices.
         self.set_slice_number(max_slice_number - 1)
         self.__update_camera()
-        self.slice_data.renderer.ResetCamera()
+        self.Reposition(self.slice_data)
         self.interactor.GetRenderWindow().AddRenderer(self.slice_data.renderer)
         if not self.nav_status:
             self.UpdateRender()
@@ -1181,6 +1302,12 @@ class Viewer(wx.Panel):
 
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)
+
+        # Fix for Windows: Ensure proper repositioning after window is fully initialized
+        # On Windows, the initial Reposition may occur before the window has its final size,
+        # causing incorrect alignment. This deferred call ensures repositioning happens
+        # after the window layout is complete.
+        wx.CallAfter(self._deferred_reposition)
 
     def __build_cross_lines(self):
         renderer = self.slice_data.overlay_renderer
@@ -1396,11 +1523,22 @@ class Viewer(wx.Panel):
 
             if 0 <= vx < dx and 0 <= vy < dy and 0 <= vz < dz:
                 voxel_value = matrix[vz, vy, vx]
-                info = (
-                    f"Window: {self.orientation.capitalize()}  |  "
-                    f"Pos: ({int(px)}, {int(py)})  Slice: {slice_number}  |  "
-                    f"Value: {voxel_value}"
+                # info = (
+                #    f"Window: {self.orientation.capitalize()}  |  "
+                #    f"Pos: ({int(px)}, {int(py)})  Slice: {slice_number}  |  "
+                #    f"Value: {voxel_value}"
+                # )
+
+                info = _(
+                    "Window: {window}  |  Pos: ({px}, {py})  Slice: {slice}  |  Value: {value}"
+                ).format(
+                    window=self.orientation.capitalize(),
+                    px=int(px),
+                    py=int(py),
+                    slice=slice_number,
+                    value=voxel_value,
                 )
+
                 Publisher.sendMessage("Update statusbar image info", info=info)
         except Exception:
             pass
@@ -1618,7 +1756,47 @@ class Viewer(wx.Panel):
         elif (axis0, axis1) == (1, 0):
             cursor.SetSpacing((spacing[0], spacing[2], spacing[1]))
 
-        self.slice_data.renderer.ResetCamera()
+        # After axis swap, dimensions change, so we need to:
+        # 1. Update scroll bar range
+        # 2. Reset to middle slice (to avoid out-of-range indices)
+        # 3. Reposition camera for proper fit
+        # Use CallAfter to ensure data is fully updated before repositioning
+        wx.CallAfter(self._reposition_after_swap)
+
+    def _reposition_after_swap(self):
+        """
+        Helper method to reposition camera after axis swap.
+        Called via wx.CallAfter to ensure all data updates are complete.
+
+        After axis swap, the volume dimensions change, so we need to:
+        1. Update scroll bar to reflect new slice count
+        2. Reset to middle slice (to avoid out-of-range indices)
+        3. Ensure slice data is fully loaded with new bounds
+        4. Apply proper fit-to-view scaling
+        """
+        # Get the new maximum slice number for this orientation
+        max_slice_number = sl.Slice().GetMaxSliceNumber(self.orientation)
+
+        # Update scroll bar with new range
+        self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number + 1, max_slice_number + 1)
+
+        # Set to middle slice to ensure visibility
+        middle_slice = max_slice_number // 2
+        self.scroll.SetThumbPosition(middle_slice)
+
+        # Reload the slice at the new position - this updates actor input data
+        self.set_slice_number(middle_slice)
+
+        # Force actor to update its bounds with new data
+        self.slice_data.actor.Modified()
+        self.slice_data.renderer.ResetCameraClippingRange()
+
+        # Now apply proper fit-to-view scaling with updated bounds
+        # Reposition() will call ResetCamera() internally which will center the view
+        self.Reposition(self.slice_data)
+
+        if not self.nav_status:
+            self.UpdateRender()
 
     def GetCrossPos(self):
         spacing = self.slice_data.actor.GetInput().GetSpacing()
@@ -1636,17 +1814,83 @@ class Viewer(wx.Panel):
             self.UpdateRender()
 
     def OnHighlightMarker(self, marker):
-        """Synchronize slice viewers to the selected marker's position."""
+        """Synchronize slice viewers and show a highlight X mark at the marker position."""
         if marker is None:
             return
 
-        if self.orientation != "AXIAL":
-            return
-
+        # Synchronize slice position to marker location (Stage 1)
         if not self.nav_status:
             Publisher.sendMessage(
                 "Set cross focal point", position=[marker.x, marker.y, marker.z, None, None, None]
             )
+
+        # Stage 2: show an orange X mark overlay on the exact slice where marker was created
+        if self.canvas is not None:
+            pos = list(marker.position)
+            if self._marker_highlight is None:
+                self._marker_highlight = MarkerHighlightX(position=pos)
+            else:
+                self._marker_highlight.position = pos
+
+            # Compute the slice indices for all three orientations
+            # This ensures the marker only appears on the exact slice where it was created
+            # Use the marker's world coordinates directly to calculate slice indices
+            try:
+                # Get slice spacing from the slice object
+                slice_obj = sl.Slice()
+                spacing = slice_obj.spacing
+
+                # Calculate slice indices directly from world coordinates
+                # Each orientation uses a different axis:
+                # AXIAL: uses Z coordinate (pos[2])
+                # CORONAL: uses Y coordinate (pos[1])
+                # SAGITTAL: uses X coordinate (pos[0])
+                axial_slice = int(round(pos[2] / spacing[2]))
+                coronal_slice = int(round(pos[1] / spacing[1]))
+                sagittal_slice = int(round(pos[0] / spacing[0]))
+
+                self._marker_highlight.sagittal_slice = sagittal_slice
+                self._marker_highlight.coronal_slice = coronal_slice
+                self._marker_highlight.axial_slice = axial_slice
+            except Exception:
+                # Fallback: use current slice number if calculation fails
+                if self.slice_data is not None:
+                    if self.orientation == "AXIAL":
+                        self._marker_highlight.axial_slice = self.slice_data.number
+                    elif self.orientation == "CORONAL":
+                        self._marker_highlight.coronal_slice = self.slice_data.number
+                    elif self.orientation == "SAGITAL":
+                        self._marker_highlight.sagittal_slice = self.slice_data.number
+
+            if self._marker_highlight not in self.canvas.draw_list:
+                self.canvas.draw_list.append(self._marker_highlight)
+            self.canvas.modified = True
+            if not self.nav_status:
+                self.UpdateRender()
+
+    def OnUnhighlightMarker(self):
+        """Remove the X mark overlay when marker is deselected or deleted."""
+        if self._marker_highlight is not None and self.canvas is not None:
+            # Remove from draw list if present
+            if self._marker_highlight in self.canvas.draw_list:
+                self.canvas.draw_list.remove(self._marker_highlight)
+
+            # Hide the marker highlight
+            self._marker_highlight.visible = False
+            self._marker_highlight = None
+
+            # Mark canvas as modified and update
+            self.canvas.modified = True
+            if not self.nav_status:
+                self.UpdateRender()
+
+    def OnDeleteMarker(self, marker):
+        """Remove the X mark overlay when a marker is deleted."""
+        self.OnUnhighlightMarker()
+
+    def OnDeleteMarkers(self, markers):
+        """Remove the X mark overlay when markers are deleted."""
+        self.OnUnhighlightMarker()
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"

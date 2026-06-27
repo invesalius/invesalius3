@@ -315,6 +315,15 @@ class SurfaceManager:
         points_id_list = seeds
         index = self.last_surface_index
         proj = prj.Project()
+
+        if not hasattr(proj, "surface_dict") or not proj.surface_dict:
+            dialogs.SeedSurfaceNotExist()
+            return
+
+        if index not in proj.surface_dict:
+            dialogs.SurfaceIndexNotExist(index)
+            return
+
         surface = proj.surface_dict[index]
 
         new_polydata = pu.JoinSeedsParts(surface.polydata, points_id_list)
@@ -346,6 +355,15 @@ class SurfaceManager:
         """
         index = self.last_surface_index
         proj = prj.Project()
+
+        if not hasattr(proj, "surface_dict") or not proj.surface_dict:
+            dialogs.SplitSurfaceNotExist()
+            return
+
+        if index not in proj.surface_dict:
+            dialogs.SurfaceIndexNotExist(index)
+            return
+
         surface = proj.surface_dict[index]
 
         index_list = []
@@ -364,8 +382,15 @@ class SurfaceManager:
         """
         proj = prj.Project()
         index = self.last_surface_index
+        # if index not in proj.surface_dict:
+        #     print(f"[Error] Surface index {index} not found in surface_dict.")
+        #     return
+        if not hasattr(proj, "surface_dict") or not proj.surface_dict:
+            dialogs.LargestSurfaceNotExist()
+            return
+
         if index not in proj.surface_dict:
-            print(f"[Error] Surface index {index} not found in surface_dict.")
+            dialogs.SurfaceIndexNotExist(index)
             return
         progress_dialog = dialogs.SelectLargestSurfaceProgressWindow()
         progress_dialog.Update()
@@ -501,6 +526,7 @@ class SurfaceManager:
         cortex = config_dict["path_meshes"] + config_dict["cortex"]
         bmeshes = config_dict["bmeshes"]
         coil = config_dict["coil"]
+        coil_set = config_dict.get("coil_set", False)
         targeting_file = config_dict["targeting csv file"]
         dIperdt_list = []
         dIperdt = config_dict["dIperdts"]
@@ -565,6 +591,7 @@ class SurfaceManager:
                 cortex_file=cortex_save_file,
                 meshes_file=bmeshes_list,
                 coil=coil,
+                coil_set=coil_set,
                 ci=ci_list,
                 co=co_list,
                 dIperdt_list=dIperdt_list,
@@ -1039,6 +1066,25 @@ class SurfaceManager:
         t_init = time.time()
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
+
+        # If the mask was derived from a filtered image, ensure we use that image's data and filename
+        force_from_binary = False
+        if hasattr(mask, "derived_from") and mask.derived_from != "original":
+            proj = prj.Project()
+            found = False
+            for label, mat in proj.image_versions:
+                if label == mask.derived_from:
+                    matrix = mat
+                    # Ensure filename_img points to the .dat file for the surface_process workers
+                    if hasattr(mat, "filename"):
+                        filename_img = mat.filename
+                    found = True
+                    break
+            if not found:
+                # The filtered image was deleted! We cannot use its image data for sub-voxel interpolation.
+                # We MUST force the surface generator to use the fully baked binary mask data instead.
+                force_from_binary = True
+
         spacing = slice_.spacing
 
         mask_temp_file = mask.temp_file
@@ -1143,7 +1189,7 @@ class SurfaceManager:
                         smooth_iterations,
                         language,
                         flip_image,
-                        algorithm != "Default",
+                        force_from_binary or (algorithm != "Default"),
                         algorithm,
                         imagedata_resolution,
                         fill_border_holes,
@@ -1230,7 +1276,7 @@ class SurfaceManager:
                         smooth_iterations,
                         language,
                         flip_image,
-                        algorithm != "Default",
+                        force_from_binary or (algorithm != "Default"),
                         algorithm,
                         imagedata_resolution,
                         fill_border_holes,

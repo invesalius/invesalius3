@@ -38,9 +38,9 @@ dependencies = [
     "tinygrad==0.10.2",
     "torch>=2.3.1",
     "vtk==9.3.0",
-    "wxpython==4.2.2",
     "pynetdicom==2.0.2",
-    "pydicom==2.4.5"
+    "pydicom==2.4.5",
+    "wxpython==4.2.5",
 ]
 license = { file = "LICENSE.txt" }
 readme = { file = "README.md", content-type = "text/markdown" }

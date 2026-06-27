@@ -95,8 +95,8 @@ class Controller:
         Publisher.subscribe(self.OnOpenDicomGroup, "Open DICOM group")
         Publisher.subscribe(self.OnOpenBitmapFiles, "Open bitmap files")
         Publisher.subscribe(self.OnOpenOtherFiles, "Open other files")
-        Publisher.subscribe(self.Progress, "Update dicom load")
-        Publisher.subscribe(self.Progress, "Update bitmap load")
+        Publisher.subscribe(self.OnUpdateDicomLoad, "Update dicom load")
+        Publisher.subscribe(self.OnUpdateBitmapLoad, "Update bitmap load")
         Publisher.subscribe(self.OnLoadImportPanel, "End dicom load")
         Publisher.subscribe(self.OnLoadImportBitmapPanel, "End bitmap load")
         Publisher.subscribe(self.OnCancelImport, "Cancel DICOM load")
@@ -138,12 +138,19 @@ class Controller:
         proj.spacing = spacing
 
     def OnCancelImport(self) -> None:
-        # self.cancel_import = True
-        Publisher.sendMessage("Hide import panel")
+        # Note: Do NOT send "Hide import panel" here. During a scan-phase cancel,
+        # the Import pane was never shown, so touching the AUI manager while the
+        # progress dialog is still alive causes macOS to grey out the sidebar.
+        # The DICOM thumbnail panel's Cancel button (import_panel.py) sends
+        # "Hide import panel" directly when it actually needs to close.
+        Publisher.sendMessage("End busy cursor")
+        Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
     def OnCancelImportBitmap(self) -> None:
         # self.cancel_import = True
         Publisher.sendMessage("Hide import bitmap panel")
+        Publisher.sendMessage("End busy cursor")
+        Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
     ###########################
     ###########################
@@ -497,31 +504,105 @@ class Controller:
             dialog.InexistentPath(filepath)
 
     def OpenProject(self, filepath: "str | Path") -> None:
-        Publisher.sendMessage("Begin busy cursor")
+        """
+        Open a .inv3 project file with progress dialog and cancellation support.
+        
+        Args:
+            filepath: Path to the .inv3 project file
+        """
+        from invesalius.gui import dialogs
+        
         path = os.path.abspath(filepath)
 
-        proj = prj.Project()
-        proj.OpenPlistProject(path)
-        proj.SetAcquisitionModality(proj.modality)
-        self.Slice = sl.Slice()
-        self.Slice._open_image_matrix(
-            proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
-        )
+        # Show busy cursor during loading (main window)
+        Publisher.sendMessage("Begin busy cursor")
+        
+        # Create progress dialog (modal - cancel button remains clickable)
+        progress_dlg = dialogs.ProjectLoadProgressDialog()
+        
+        try:
+            proj = prj.Project()
+            
+            # Define progress callback
+            def progress_callback(value, message):
+                """Update progress dialog and check for cancellation."""
+                return progress_dlg.Update(value, message)
+            
+            # Load project with progress updates
+            result = proj.OpenPlistProject(path, progress_callback)
+            
+            # Check if loading was cancelled
+            if result is False or progress_dlg.WasCancelled():
+                progress_dlg.Close()
+                
+                # Clean up the partially loaded project
+                proj.Close()
+                
+                # End busy cursor
+                Publisher.sendMessage("End busy cursor")
+                
+                # Show cancellation message
+                wx.MessageBox(
+                    _("Project loading was cancelled."),
+                    _("Load Cancelled"),
+                    wx.OK | wx.ICON_INFORMATION
+                )
+                return
+            
+            # Update progress
+            if not progress_dlg.Update(96, _("Initializing project...")):
+                progress_dlg.Close()
+                proj.Close()
+                Publisher.sendMessage("End busy cursor")
+                return
+            
+            proj.SetAcquisitionModality(proj.modality)
+            self.Slice = sl.Slice()
+            self.Slice._open_image_matrix(
+                proj.matrix_filename, tuple(proj.matrix_shape), proj.matrix_dtype
+            )
 
-        self.Slice.window_level = proj.level
-        self.Slice.window_width = proj.window
-        if proj.affine:
-            self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
-        else:
-            self.Slice.affine = np.identity(4)
+            self.Slice.window_level = proj.level
+            self.Slice.window_width = proj.window
+            if proj.affine:
+                self.Slice.affine = np.asarray(proj.affine).reshape(4, 4)
+            else:
+                self.Slice.affine = np.identity(4)
 
-        Publisher.sendMessage("Update threshold limits list", threshold_range=proj.threshold_range)
+            Publisher.sendMessage("Update threshold limits list", threshold_range=proj.threshold_range)
 
-        self.LoadProject()
+            # Update progress
+            if not progress_dlg.Update(98, _("Loading project into interface...")):
+                progress_dlg.Close()
+                proj.Close()
+                Publisher.sendMessage("End busy cursor")
+                return
 
-        session = ses.Session()
-        session.OpenProject(filepath)
-        Publisher.sendMessage("Enable state project", state=True)
+            self.LoadProject(end_busy_cursor=False)
+
+            session = ses.Session()
+            session.OpenProject(path)  # Use absolute path, not original filepath
+            Publisher.sendMessage("Enable state project", state=True)
+            
+            # Complete - dialog will auto-hide at 100%
+            progress_dlg.Update(100, _("Project loaded successfully!"))
+            
+            # End busy cursor after successful load
+            Publisher.sendMessage("End busy cursor")
+            
+        except Exception as e:
+            # Handle any errors during loading
+            progress_dlg.Close()
+            Publisher.sendMessage("End busy cursor")
+            wx.MessageBox(
+                _("Error loading project: {}").format(str(e)),
+                _("Load Error"),
+                wx.OK | wx.ICON_ERROR
+            )
+        finally:
+            # Ensure progress dialog is closed
+            if progress_dlg.dlg:
+                progress_dlg.Close()
 
     def OnSaveProject(self, filepath: Optional["str | Path"]) -> None:
         self.SaveProject(filepath)
@@ -605,6 +686,7 @@ class Controller:
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
         Publisher.sendMessage("End busy cursor")
+        Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
     def StartImportPanel(self, path: "str | Path") -> None:
         # retrieve DICOM files split into groups
@@ -612,24 +694,36 @@ class Controller:
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
         Publisher.sendMessage("End busy cursor")
+        Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
-    def Progress(self, data: Optional[Sequence[int]]) -> None:
+    def OnUpdateDicomLoad(self, data: Optional[Sequence[int]]) -> None:
+        self.Progress(data, "Cancel DICOM load")
+
+    def OnUpdateBitmapLoad(self, data: Optional[Sequence[int]]) -> None:
+        self.Progress(data, "Cancel bitmap load")
+
+    def Progress(self, data: Optional[Sequence[int]], cancel_msg: str = "Cancel DICOM load") -> None:
         if data:
             message = _("Loading file %d of %d ...") % (data[0], data[1])
             if not (self.progress_dialog):
                 self.progress_dialog = vtk_utils.ProgressDialog(
-                    parent=self.frame, maximum=data[1], abort=True
+                    parent=self.frame, maximum=data[1], abort=True, cancel_msg=cancel_msg
                 )
             else:
-                if not (self.progress_dialog.Update(data[0], message)):
+                update_result = self.progress_dialog.Update(data[0], message)
+                if not update_result:
                     self.progress_dialog.Close()
                     self.progress_dialog = None
-                    Publisher.sendMessage("Begin busy cursor")
+                    Publisher.sendMessage("End busy cursor")
+                    Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
         else:
             # Is None if user canceled the load
             if self.progress_dialog is not None:
                 self.progress_dialog.Close()
                 self.progress_dialog = None
+
+            Publisher.sendMessage("End busy cursor")
+            Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
     def OnLoadImportPanel(self, patient_series: Optional[List]) -> None:
         ok = self.LoadImportPanel(patient_series)
@@ -756,7 +850,7 @@ class Controller:
 
     # -------------------------------------------------------------------------------------
 
-    def LoadProject(self, create_default_mask=True):
+    def LoadProject(self, create_default_mask=True, end_busy_cursor=True):
         proj = prj.Project()
 
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
@@ -833,7 +927,9 @@ class Controller:
         img_file = Path(outdir) / "proj_image.nii.gz"
         proj.export_project_to_nifti(img_file, save_masks=False)
 
-        Publisher.sendMessage("End busy cursor")
+        # End busy cursor only if it was started (not when using progress dialog)
+        if end_busy_cursor:
+            Publisher.sendMessage("End busy cursor")
         Publisher.sendMessage("Project loaded successfully")
 
     def CreateDicomProject(self, dicom, matrix, matrix_filename):
@@ -849,6 +945,7 @@ class Controller:
         # proj.imagedata = imagedata
         proj.dicom_sample = dicom
         proj.original_orientation = name_to_const[dicom.image.orientation_label]
+        proj.patient_orientation = dicom.acquisition.patient_orientation
         # Forcing to Axial
         #  proj.original_orientation = const.AXIAL
         proj.window = float(dicom.image.window)
@@ -1364,6 +1461,8 @@ class Controller:
     ):
         p = prj.Project()
         project_folder = tempfile.mkdtemp()
+        image_file = os.path.join(project_folder, "matrix.dat")
+        image_mmap = image_utils.array2memmap(image, image_file)
         p.create_project_file(
             name,
             spacing,
@@ -1371,7 +1470,7 @@ class Controller:
             orientation,
             window_width,
             window_level,
-            image,
+            image=image_mmap,
             folder=project_folder,
         )
         err_msg = ""
