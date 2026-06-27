@@ -38,6 +38,7 @@ import invesalius.gui.import_panel as imp
 import invesalius.gui.log as log
 import invesalius.gui.preferences as preferences
 import invesalius.gui.dicom_server_panel as dicom_server
+import invesalius.gui.dicom_nodes_panel as dicom_nodes
 
 #  import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
@@ -702,6 +703,8 @@ class Frame(wx.Frame):
             self.ShowRetrieveDicomPanel()
         elif id == const.ID_DICOM_SERVER:
             self.ShowDicomServer()
+        elif id == const.ID_DICOM_NODE:
+            self.ShowDicomNodes()
         elif id in (const.ID_FLIP_X, const.ID_FLIP_Y, const.ID_FLIP_Z):
             axis = {const.ID_FLIP_X: 2, const.ID_FLIP_Y: 1, const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
@@ -911,6 +914,13 @@ class Frame(wx.Frame):
             session = ses.Session()
             session.SetConfig('server_aetitle', dicom_server_dialog.ae_title)
             session.SetConfig('server_port', dicom_server_dialog.port)
+
+    def ShowDicomNodes(self):
+
+        dicom_nodes_dialog = dicom_nodes.DicomNodes(self)
+        if dicom_nodes_dialog.ShowModal() == wx.ID_OK:
+
+            dicom_nodes_dialog.Destroy()
 
     def ShowPreferences(self, page=0):
         preferences_dialog = preferences.Preferences(self, page)
@@ -1650,7 +1660,7 @@ class MenuBar(wx.MenuBar):
         # NETWORK
         network_settings_menu = wx.Menu()
         network_settings_menu.Append(const.ID_DICOM_SERVER, _("Dicom Server"))
-        #network_settings_menu.Append(const.ID_DICOM_NODE, _("Node"))
+        network_settings_menu.Append(const.ID_DICOM_NODE, _("Dicom Nodes"))
         #network_settings_menu.Append(const.ID_DICOM_QUERY, _("Query"))
 
         # OPTIONS
