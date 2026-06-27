@@ -916,12 +916,16 @@ class Frame(wx.Frame):
             session.SetConfig('server_port', dicom_server_dialog.port)
 
     def ShowDicomNodes(self):
+        """ Show dicom nodes dialog. """
 
         dicom_nodes_dialog = dicom_nodes.DicomNodes(self)
         if dicom_nodes_dialog.ShowModal() == wx.ID_OK:
 
             dicom_nodes_dialog.Destroy()
 
+            session = ses.Session()
+            session.SetConfig('nodes', dicom_nodes_dialog.nodes)
+            
     def ShowPreferences(self, page=0):
         preferences_dialog = preferences.Preferences(self, page)
         preferences_dialog.LoadPreferences()
