@@ -28,6 +28,7 @@ import sys
 import tempfile
 import time
 import traceback
+from collections import Counter
 
 import numpy as np
 import wx
@@ -670,6 +671,25 @@ class SurfaceManager:
 
                 idx = 0
                 total_items = build_items.Count()
+
+                if total_items > 20:
+                    progress.Destroy()
+                    response = wx.MessageBox(
+                        _(
+                            "You are about to import {} surfaces. This may take some time. Continue?"
+                        ).format(total_items),
+                        _("Confirm Import"),
+                        wx.YES_NO | wx.ICON_QUESTION,
+                    )
+                    if response != wx.YES:
+                        return
+                    progress = wx.ProgressDialog(
+                        _("Import surface"),
+                        _("Reading 3MF file..."),
+                        maximum=100,
+                        parent=None,
+                        style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE,
+                    )
 
                 while build_items.MoveNext():
                     build_item = build_items.GetCurrent()
@@ -1829,6 +1849,35 @@ class SurfaceManager:
                         progress.Destroy()
                         return
 
+                    if len(visible_surfaces) > 20:
+                        response = wx.MessageBox(
+                            _(
+                                "You are about to export {} surfaces. This may take some time. Continue?"
+                            ).format(len(visible_surfaces)),
+                            _("Confirm Export"),
+                            wx.YES_NO | wx.ICON_QUESTION,
+                        )
+                        if response != wx.YES:
+                            progress.Destroy()
+                            return
+
+                    # Deduplicate surface names
+                    # First pass: normalize empty/None names to Surface_N
+                    for i, (polydata, name, colour, opacity) in enumerate(visible_surfaces):
+                        if not name:
+                            visible_surfaces[i] = (polydata, f"Surface_{i + 1}", colour, opacity)
+
+                    # Second pass: add suffixes to duplicates
+                    names = [item[1] for item in visible_surfaces]
+                    name_counts = Counter(names)
+                    duplicates = {name: 0 for name, count in name_counts.items() if count > 1}
+
+                    for i, (polydata, name, colour, opacity) in enumerate(visible_surfaces):
+                        if name in duplicates:
+                            duplicates[name] += 1
+                            new_name = f"{name}_{duplicates[name]:02d}"
+                            visible_surfaces[i] = (polydata, new_name, colour, opacity)
+
                     num_surfaces = len(visible_surfaces)
                     for surf_idx, (
                         surf_polydata,
@@ -1871,11 +1920,11 @@ class SurfaceManager:
 
                         while polys.GetNextCell(id_list):
                             if id_list.GetNumberOfIds() == 3:
-                                tri = lib3mf.Triangle()
-                                tri.Indices = (c_uint32 * 3)(
-                                    id_list.GetId(0), id_list.GetId(1), id_list.GetId(2)
-                                )
-                                mesh_object.AddTriangle(tri)
+                                v0, v1, v2 = id_list.GetId(0), id_list.GetId(1), id_list.GetId(2)
+                                if v0 != v1 and v1 != v2 and v0 != v2:
+                                    tri = lib3mf.Triangle()
+                                    tri.Indices = (c_uint32 * 3)(v0, v1, v2)
+                                    mesh_object.AddTriangle(tri)
 
                         color_group = model.AddColorGroup()
                         color = lib3mf.Color()
