@@ -22,18 +22,23 @@ from typing import Iterable, List
 
 import numpy as np
 from vtkmodules.util import numpy_support
-from vtkmodules.vtkCommonCore import vtkIdList, vtkIdTypeArray
+from vtkmodules.vtkCommonCore import vtkIdList, vtkIdTypeArray, vtkVersion
 from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkSelection, vtkSelectionNode
 from vtkmodules.vtkFiltersCore import (
     vtkAppendPolyData,
     vtkCleanPolyData,
-    vtkIdFilter,
     vtkMassProperties,
     vtkPolyDataConnectivityFilter,
     vtkQuadricDecimation,
     vtkSmoothPolyDataFilter,
     vtkTriangleFilter,
 )
+
+if vtkVersion.GetVTKMajorVersion() >= 9.4:
+    from vtkmodules.vtkFiltersCore import vtkGenerateIds as vtkIdFilter
+else:
+    from vtkmodules.vtkFiltersCore import vtkIdFilter
+
 from vtkmodules.vtkFiltersExtraction import vtkExtractSelection
 from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
 from vtkmodules.vtkFiltersModeling import vtkFillHolesFilter
