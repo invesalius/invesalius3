@@ -54,6 +54,7 @@ WILDCARD_SAVE_3D = (
     "VRML (*.vrml)|*.vrml|"
     "VTK PolyData (*.vtp)|*.vtp|"
     "Wavefront (*.obj)|*.obj|"
+    "3MF (*.3mf)|*.3mf|"
     "X3D (*.x3d)|*.x3d"
 )
 
@@ -66,7 +67,8 @@ INDEX_TO_TYPE_3D = {
     5: const.FILETYPE_VRML,
     6: const.FILETYPE_VTP,
     7: const.FILETYPE_OBJ,
-    8: const.FILETYPE_X3D,
+    8: const.FILETYPE_3MF,
+    9: const.FILETYPE_X3D,
 }
 INDEX_TO_EXTENSION = {
     0: "iv",
@@ -77,7 +79,8 @@ INDEX_TO_EXTENSION = {
     5: "vrml",
     6: "vtp",
     7: "obj",
-    8: "x3d",
+    8: "3mf",
+    9: "x3d",
 }
 
 WILDCARD_SAVE_2D = (
