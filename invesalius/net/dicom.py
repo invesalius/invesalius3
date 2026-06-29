@@ -280,3 +280,7 @@ class DicomNet:
         time = time.split(".")[0] if "." in time else time
         time = datetime.strptime(time, "%H%M%S").strftime("%H:%M:%S")
         return time
+    
+    def __str__(self):
+        return "Address: %s\nPort: %s\nAETitle: %s\nAETitleCall: %s\nSearchWord: %s\nSearchType: %s\n" %\
+                (self.address, self.port, self.aetitle, self.aetitle_call, self.search_word, self.search_type)
