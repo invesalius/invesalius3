@@ -336,11 +336,8 @@ class MEPVisualizer:
 
     def UpdateMEPPoints(self):
         """
-        Updates or creates the point data with MEP values from a list of markers.
-
-        Args:
-            markers (List[Marker]): The list of marker objects to add/update points for.
-            clear_old (bool, default=False): If True, clears all existing points before updating.
+        Updates or creates the point data with MEP values from the active
+        marker list.
         """
         if not self._config_params["mep_enabled"]:
             return
@@ -387,11 +384,14 @@ class MEPVisualizer:
 
     def UpdateMEPPointsFromBrainTargets(self, marker_target, brain_target_list):
         """
-        Updates or creates the point data with MEP values from a list of markers.
+        Updates or creates the point data with MEP values from a list of brain
+        targets.
 
         Args:
-            markers (List[Marker]): The list of marker objects to add/update points for.
-            clear_old (bool, default=False): If True, clears all existing points before updating.
+            marker_target (Marker): The coil marker whose orientation is used
+                to position the MEP points.
+            brain_target_list (List[Marker]): The list of brain target markers
+                to add or update points for.
         """
         if not self._config_params["mep_enabled"]:
             return
