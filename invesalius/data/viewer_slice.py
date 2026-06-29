@@ -923,12 +923,12 @@ class Viewer(wx.Panel):
     def get_slice_pixel_coord_by_world_pos(self, wx, wy, wz):
         """
         Given the (wx, wy, wz) world position returns the pixel coordinate
-        of the slice at (that mx, my) position.
+        of the slice at that position.
 
         Parameters:
-            mx (int): x position.
-            my (int): y position
-            picker: the picker used to get calculate the pixel coordinate.
+            wx (float): x position in world coordinates.
+            wy (float): y position in world coordinates.
+            wz (float): z position in world coordinates.
 
         Returns:
             voxel_coordinate (x, y): voxel coordinate inside the matrix. Can
