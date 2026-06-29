@@ -79,7 +79,9 @@ class DicomNodes(wx.Dialog):
             if session.GetConfig('nodes') \
             else []
 
-        for node in nodes: self._add_row_to_grid(node)
+        for node in nodes: 
+            self._add_row_to_grid(node)
+            self._add_node(node)
 
     def _create_form_sizer(self):
         """ Create the form sizer. """
