@@ -27,7 +27,7 @@ class DicomNodes(wx.Dialog):
         self._load_values()
 
         # grid column size event handler
-        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_SIZE, self._on_size)
 
         # Add the grid table to the main sizer
         main_sizer.Add(self.__grid, 1, wx.EXPAND | wx.ALL, 5)
@@ -58,6 +58,11 @@ class DicomNodes(wx.Dialog):
         """ Add a node to the nodes list. """
         
         self.__nodes.append(node)
+    
+    def _remove_node(self, idx):
+        """ Remove a node from the nodes list. """
+
+        del self.__nodes[idx]
 
     @property
     def nodes(self):
@@ -102,14 +107,6 @@ class DicomNodes(wx.Dialog):
         form_sizer.Add(sizer3, 0, wx.ALL, 5)
         form_sizer.Add(sizer4, 0, wx.ALL, 5)
 
-
-        # Create the "Add" button
-        add_button = wx.Button(self, label="Add")
-        add_button.Bind(wx.EVT_BUTTON, self._on_add_button)
-
-        # Add the button to the form sizer
-        form_sizer.Add(add_button, 0, wx.ALL | wx.ALIGN_CENTER, 5)
-
         return form_sizer
 
     def _create_buttons_box_sizer(self):
@@ -117,12 +114,20 @@ class DicomNodes(wx.Dialog):
 
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        # wx.ID_CANCEL automatically closes the dialog and returns wx.ID_CANCEL
-        cancel_button = wx.Button(self, wx.ID_CANCEL, label="Cancel")
-        
-        # wx.ID_OK automatically closes the dialog and returns wx.ID_OK
-        save_button = wx.Button(self, wx.ID_OK, label="Save")
+        add_button = wx.Button(self, label="New")
+        add_button.Bind(wx.EVT_BUTTON, self._on_add_button)
 
+        remove_button = wx.Button(self, label="Remove")
+        remove_button.Bind(wx.EVT_BUTTON, self._on_remove_button)
+
+        save_button = wx.Button(self, wx.ID_OK, label="Save")
+        save_button.SetDefault()
+        
+        cancel_button = wx.Button(self, wx.ID_CANCEL, label="Cancel")
+
+        # Add buttons to sizer
+        button_sizer.Add(add_button, 0, wx.ALL, 5)
+        button_sizer.Add(remove_button, 0, wx.ALL, 5)
         button_sizer.Add(cancel_button, 0, wx.ALL, 5)
         button_sizer.Add(save_button, 0, wx.ALL, 5)
 
@@ -145,7 +150,7 @@ class DicomNodes(wx.Dialog):
 
         return grid
 
-    def set_grid_column_sizes(self):
+    def _set_grid_column_sizes(self):
         """ Set the column sizes based on the grid width. """
 
         width = self.__grid.GetClientSize()[0]  # Get grid width
@@ -155,10 +160,10 @@ class DicomNodes(wx.Dialog):
         for col in range(col_count):
             self.__grid.SetColSize(col, col_width)
 
-    def on_size(self, event):
+    def _on_size(self, event):
         """ Handler for the wx.EVT_SIZE event. """
 
-        self.set_grid_column_sizes()
+        self._set_grid_column_sizes()
         event.Skip()
 
     def _on_add_button(self, event):
@@ -187,6 +192,23 @@ class DicomNodes(wx.Dialog):
         self.__port_input.Clear()
         self.__aetitle_input.Clear()
         self.__description_input.Clear()
+
+    def _on_remove_button(self, event):
+        """ Handler for the "Remove" button. """
+        
+        selected_rows = self.__grid.GetSelectedRows()
+        print(selected_rows)
+
+        # removes in reverse order to avoid index errors
+        for row in (selected_rows):
+
+            # remove node row from the grid
+            self.__grid.DeleteRows(row)
+
+            # remove node row from the nodes list
+            self._remove_node(row)
+        
+        self.__grid.ClearSelection()
 
     def _add_row_to_grid(self, node):
         """ Add a row to the grid. """
