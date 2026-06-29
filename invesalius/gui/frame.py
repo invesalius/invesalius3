@@ -40,7 +40,7 @@ import invesalius.gui.preferences as preferences
 import invesalius.gui.dicom_server_panel as dicom_server
 import invesalius.gui.dicom_nodes_panel as dicom_nodes
 
-#  import invesalius.gui.import_network_panel as imp_net
+import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
 from invesalius import inv_paths
@@ -284,6 +284,7 @@ class Frame(wx.Frame):
         task_panel = tasks.Panel(self)
         import_panel = imp.Panel(self)
         import_bitmap_panel = imp_bmp.Panel(self)
+        import_network_panel = imp_net.Panel(self)
 
         # Add panels to manager
 
@@ -349,11 +350,18 @@ class Frame(wx.Frame):
             .CaptionVisible(True),
         )
 
-        #  ncaption = _("Retrieve DICOM from PACS")
-        #  aui_manager.AddPane(imp_net.Panel(self), wx.aui.AuiPaneInfo().
-        #  Name("Retrieve").Centre().Hide().
-        #  MaximizeButton(True).Floatable(True).
-        #  Caption(ncaption).CaptionVisible(True))
+        ncaption = _("Retrieve DICOM from PACS")
+        aui_manager.AddPane(
+            import_network_panel,
+            wx.aui.AuiPaneInfo().
+            Name("Retrieve").
+            Centre()
+            .Hide().
+            MaximizeButton(True).
+            Floatable(True).
+            Caption(ncaption).
+            CaptionVisible(True)
+        )
 
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
@@ -1486,7 +1494,7 @@ class MenuBar(wx.MenuBar):
         file_menu = wx.Menu()
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
-        # app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
+        app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
         file_menu.Append(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))

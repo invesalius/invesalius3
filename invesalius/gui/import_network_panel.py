@@ -641,6 +641,9 @@ class NodesPanel(wx.Panel):
     def __init_gui(self):
         self.tree_node = NodesTree(self)
 
+        if hasattr(self.tree_node, 'EnableCheckBoxes'):
+            self.tree_node.EnableCheckBoxes(True)
+
         self.tree_node.InsertColumn(0, _("Active"))
         self.tree_node.InsertColumn(1, _("Host"))
         self.tree_node.InsertColumn(2, _("Port"))
@@ -683,7 +686,7 @@ class NodesPanel(wx.Panel):
         sizer_btn.Add((90, 0), 0, wx.EXPAND | wx.HORIZONTAL)
         sizer_btn.Add(self.btn_add, 10)
         sizer_btn.Add(self.btn_remove, 10)
-        sizer_btn.Add(self.btn_check, 0, wx.ALIGN_CENTER_HORIZONTAL)
+        sizer_btn.Add(self.btn_check, 0, wx.ALIGN_CENTER)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.tree_node, 85, wx.GROW | wx.EXPAND)
