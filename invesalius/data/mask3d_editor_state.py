@@ -4,7 +4,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 import wx
-from skimage.draw import polygon2mask
+
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 import invesalius.constants as const
@@ -13,6 +13,7 @@ import invesalius.session as ses
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
+import invesalius_rs
 from invesalius_rs import mask_cut
 
 
@@ -154,7 +155,12 @@ class Mask3DEditorState:
                 coord.SetValue(world_pt)
                 px, py = coord.GetComputedDoubleDisplayValue(renderer)
                 display_points.append((px, py))
-            filters.append(polygon2mask((w, h), display_points))
+            
+            # Use the high-performance Rust Ray-Casting engine instead of skimage!
+            poly_array = np.array(display_points, dtype=np.float64) if display_points else np.zeros((0, 2), dtype=np.float64)
+            mask = invesalius_rs.polygon2mask_rs((w, h), poly_array)
+            filters.append(mask)
+            
         return filters
 
     def CutMaskFromPolygons(self):
