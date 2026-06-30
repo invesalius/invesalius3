@@ -1,0 +1,13 @@
+{
+    "Name": "ORTHANC",
+    "RemoteAccessAllowed": true,
+    "AuthenticationEnabled": false,
+    "GetRequestHandlerEnabled": true,
+    "DicomModalities": {
+        "INVESALIUS": [
+            "INVESALIUS",
+            "host.docker.internal", 
+            11120
+        ]
+    }
+}

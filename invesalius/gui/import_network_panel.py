@@ -25,6 +25,7 @@ import wx.gizmos as gizmos
 import wx.lib.mixins.listctrl as listmix
 import wx.lib.splitter as spl
 from wx.lib.mixins.listctrl import CheckListCtrlMixin
+from invesalius.gui.network.nodes_panel import NodesPanel
 
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
@@ -521,18 +522,16 @@ class FindPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnButtonFind, self.btn_find)
 
     def OnButtonFind(self, evt):
-        hosts = self.GetHostList()
+        pass
 
-        for key in hosts.keys():
-            if key != 0:
-                dn = dcm_net.DicomNet()
-                dn.SetHost(self.hosts[key][1])
-                dn.SetPort(self.hosts[key][2])
-                dn.SetAETitleCall(self.hosts[key][3])
-                dn.SetAETitle(self.hosts[0][3])
-                dn.SetSearchWord(self.find_txt.GetValue())
+        # dn = dcm_net.DicomNet()
+        # dn.SetHost(self.hosts[key][1])
+        # dn.SetPort(self.hosts[key][2])
+        # dn.SetAETitleCall(self.hosts[key][3])
+        # dn.SetAETitle(self.hosts[0][3])
+        # dn.SetSearchWord(self.find_txt.GetValue())
 
-                Publisher.sendMessage("Populate tree", dn.RunCFind())
+        # Publisher.sendMessage('Populate tree', dn.RunCFind())
 
     def SetHostsList(self, evt_pub):
         self.hosts = evt_pub.data
@@ -586,184 +585,3 @@ class HostFindPanel(wx.Panel):
 
     def SetSerie(self, serie):
         self.image_panel.dicom_preview.SetDicomGroup(serie)
-
-
-class NodesTree(
-    wx.ListCtrl, CheckListCtrlMixin, listmix.ListCtrlAutoWidthMixin, listmix.TextEditMixin
-):
-    def __init__(self, parent):
-        self.item = 0
-        self.col_locs = [0]
-        self.editorBgColour = wx.Colour(255, 255, 255, 255)
-        wx.ListCtrl.__init__(self, parent, -1, style=wx.LC_REPORT | wx.LC_HRULES)
-        listmix.CheckListCtrlMixin.__init__(self)
-        listmix.TextEditMixin.__init__(self)
-
-    def OnCheckItem(self, index, flag):
-        Publisher.sendMessage("Check item dict", [index, flag])
-
-    def OpenEditor(self, col, row):
-        if col >= 1 and col < 4:
-            listmix.TextEditMixin.OpenEditor(self, col, row)
-        else:
-            listmix.CheckListCtrlMixin.ToggleItem(self, self.item)
-
-    def SetSelected(self, item):
-        self.item = item
-
-    def SetDeselected(self, item):
-        self.item = item
-
-
-class NodesPanel(wx.Panel):
-    def __init__(self, parent):
-        self.selected_item = None
-        self.hosts = {}
-
-        wx.Panel.__init__(self, parent, -1)
-        self.__init_gui()
-        self.__bind_evt()
-
-    def __bind_evt(self):
-        self.Bind(wx.EVT_COMMAND_RIGHT_CLICK, self.RightButton, self.tree_node)
-        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected, self.tree_node)
-        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected, self.tree_node)
-        self.Bind(wx.EVT_BUTTON, self.OnButtonAdd, self.btn_add)
-        self.Bind(wx.EVT_BUTTON, self.OnButtonRemove, self.btn_remove)
-        self.Bind(wx.EVT_BUTTON, self.OnButtonCheck, self.btn_check)
-
-        self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.EndEdition, self.tree_node)
-
-        Publisher.subscribe(self.CheckItemDict, "Check item dict")
-        Publisher.subscribe(self.GetHostsList, "Get NodesPanel host list")
-        # Publisher.subscribe(self.UnCheckItemDict, "Uncheck item dict")
-
-    def __init_gui(self):
-        self.tree_node = NodesTree(self)
-
-        self.tree_node.InsertColumn(0, _("Active"))
-        self.tree_node.InsertColumn(1, _("Host"))
-        self.tree_node.InsertColumn(2, _("Port"))
-        self.tree_node.InsertColumn(3, _("AETitle"))
-        self.tree_node.InsertColumn(4, _("Status"))
-
-        self.tree_node.SetColumnWidth(0, 50)
-        self.tree_node.SetColumnWidth(1, 150)
-        self.tree_node.SetColumnWidth(2, 50)
-        self.tree_node.SetColumnWidth(3, 150)
-        self.tree_node.SetColumnWidth(4, 80)
-
-        self.hosts[0] = [True, "localhost", "", "invesalius"]
-        try:
-            index = self.tree_node.InsertItem(sys.maxsize, "")
-        except (OverflowError, AssertionError):
-            index = self.tree_node.InsertItem(sys.maxint, "")
-        self.tree_node.SetItem(index, 1, "localhost")
-        self.tree_node.SetItem(index, 2, "")
-        self.tree_node.SetItem(index, 3, "invesalius")
-        self.tree_node.SetItem(index, 4, "ok")
-        self.tree_node.CheckItem(index)
-        self.tree_node.SetItemBackgroundColour(index, wx.Colour(245, 245, 245))
-        # print ">>>>>>>>>>>>>>>>>>>>>", sys.maxint
-        # index = self.tree_node.InsertItem(sys.maxint, "")#adiciona vazio a coluna de check
-        # self.tree_node.SetItem(index, 1, "200.144.114.19")
-        # self.tree_node.SetItem(index, 2, "80")
-        # self.tree_node.SetItemData(index, 0)
-
-        # index2 = self.tree_node.InsertItem(sys.maxint, "")#adiciona vazio a coluna de check
-        # self.tree_node.SetItem(index2, 1, "200.144.114.19")
-        # self.tree_node.SetItem(index2, 2, "80")
-        # self.tree_node.SetItemData(index2, 0)
-
-        self.btn_add = wx.Button(self, -1, _("Add"))
-        self.btn_remove = wx.Button(self, -1, _("Remove"))
-        self.btn_check = wx.Button(self, -1, _("Check status"))
-
-        sizer_btn = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_btn.Add((90, 0), 0, wx.EXPAND | wx.HORIZONTAL)
-        sizer_btn.Add(self.btn_add, 10)
-        sizer_btn.Add(self.btn_remove, 10)
-        sizer_btn.Add(self.btn_check, 0, wx.ALIGN_CENTER_HORIZONTAL)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.tree_node, 85, wx.GROW | wx.EXPAND)
-        sizer.Add(sizer_btn, 15)
-        sizer.Fit(self)
-        self.SetSizer(sizer)
-        self.Layout()
-        self.Update()
-        self.SetAutoLayout(1)
-        self.sizer = sizer
-
-    def GetHostsList(self, pub_evt):
-        Publisher.sendMessage("Set FindPanel hosts list", self.hosts)
-
-    def EndEdition(self, evt):
-        index = evt.m_itemIndex
-        item = evt.m_item
-        col = item.GetColumn()
-        txt = item.GetText()
-
-        values = self.hosts[index]
-        values[col] = str(txt)
-        self.hosts[index] = values
-
-    def OnButtonAdd(self, evt):
-        # adiciona vazio a coluna de check
-        index = self.tree_node.InsertItem(sys.maxsize, "")
-
-        self.hosts[index] = [True, "localhost", "80", ""]
-        self.tree_node.SetItem(index, 1, "localhost")
-        self.tree_node.SetItem(index, 2, "80")
-        self.tree_node.SetItem(index, 3, "")
-        self.tree_node.CheckItem(index)
-
-    def OnLeftDown(self, evt):
-        evt.Skip()
-
-    def OnButtonRemove(self, evt):
-        if self.selected_item is not None and self.selected_item != 0:
-            self.tree_node.DeleteItem(self.selected_item)
-            self.hosts.pop(self.selected_item)
-            self.selected_item = None
-
-            k = self.hosts.keys()
-            tmp_cont = 0
-
-            tmp_host = {}
-            for x in k:
-                tmp_host[tmp_cont] = self.hosts[x]
-                tmp_cont += 1
-            self.hosts = tmp_host
-
-    def OnButtonCheck(self, evt):
-        for key in self.hosts.keys():
-            if key != 0:
-                dn = dcm_net.DicomNet()
-                dn.SetHost(self.hosts[key][1])
-                dn.SetPort(self.hosts[key][2])
-                dn.SetAETitleCall(self.hosts[key][3])
-                dn.SetAETitle(self.hosts[0][3])
-
-                if dn.RunCEcho():
-                    self.tree_node.SetItem(key, 4, _("ok"))
-                else:
-                    self.tree_node.SetItem(key, 4, _("error"))
-
-    def RightButton(self, evt):
-        evt.Skip()
-
-    def OnItemSelected(self, evt):
-        self.selected_item = evt.m_itemIndex
-        self.tree_node.SetSelected(evt.m_itemIndex)
-
-    def OnItemDeselected(self, evt):
-        if evt.m_itemIndex != 0:
-            self.tree_node.SetDeselected(evt.m_itemIndex)
-
-    def CheckItemDict(self, evt_pub):
-        index, flag = evt_pub.data
-        if index != 0:
-            self.hosts[index][0] = flag
-        else:
-            self.tree_node.CheckItem(0)

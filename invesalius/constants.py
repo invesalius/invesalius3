@@ -576,7 +576,8 @@ ID_FRAME = wx.NewIdRef()
     ID_NIFTI_IMPORT,
     ID_PARREC_IMPORT,
     ID_MODE_DBS,
-] = [wx.NewIdRef() for number in range(23)]
+    ID_DICOM_SERVER,
+] = [wx.NewIdRef() for number in range(24)]
 ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
 

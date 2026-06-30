@@ -37,8 +37,9 @@ import invesalius.gui.import_bitmap_panel as imp_bmp
 import invesalius.gui.import_panel as imp
 import invesalius.gui.log as log
 import invesalius.gui.preferences as preferences
+import invesalius.gui.dicom_server_panel as dicom_server
 
-#  import invesalius.gui.import_network_panel as imp_net
+import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
 from invesalius import inv_paths
@@ -282,6 +283,7 @@ class Frame(wx.Frame):
         task_panel = tasks.Panel(self)
         import_panel = imp.Panel(self)
         import_bitmap_panel = imp_bmp.Panel(self)
+        import_network_panel = imp_net.Panel(self)
 
         # Add panels to manager
 
@@ -347,11 +349,18 @@ class Frame(wx.Frame):
             .CaptionVisible(True),
         )
 
-        #  ncaption = _("Retrieve DICOM from PACS")
-        #  aui_manager.AddPane(imp_net.Panel(self), wx.aui.AuiPaneInfo().
-        #  Name("Retrieve").Centre().Hide().
-        #  MaximizeButton(True).Floatable(True).
-        #  Caption(ncaption).CaptionVisible(True))
+        ncaption = _("Retrieve DICOM from PACS")
+        aui_manager.AddPane(
+            import_network_panel,
+            wx.aui.AuiPaneInfo().
+            Name("Retrieve").
+            Centre()
+            .Hide().
+            MaximizeButton(True).
+            Floatable(True).
+            Caption(ncaption).
+            CaptionVisible(True)
+        )
 
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
@@ -726,6 +735,8 @@ class Frame(wx.Frame):
             self.ShowPreferences()
         elif id == const.ID_DICOM_NETWORK:
             self.ShowRetrieveDicomPanel()
+        elif id == const.ID_DICOM_SERVER:
+            self.ShowDicomServer()
         elif id in (const.ID_FLIP_X, const.ID_FLIP_Y, const.ID_FLIP_Z):
             axis = {const.ID_FLIP_X: 2, const.ID_FLIP_Y: 1, const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
@@ -927,6 +938,18 @@ class Frame(wx.Frame):
         aui_manager = self.aui_manager
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
         self.mw.SetPosition(pos)
+
+    def ShowDicomServer(self):
+        """ Show dicom server dialog. """
+
+        dicom_server_dialog = dicom_server.DicomServer(self)
+        if dicom_server_dialog.ShowModal() == wx.ID_OK:
+
+            dicom_server_dialog.Destroy()
+
+            session = ses.Session()
+            session.SetConfig('server_aetitle', dicom_server_dialog.ae_title)
+            session.SetConfig('server_port', dicom_server_dialog.port)
 
     def ShowPreferences(self, page=0):
         preferences_dialog = preferences.Preferences(self, page)
@@ -1457,7 +1480,7 @@ class MenuBar(wx.MenuBar):
         file_menu = wx.Menu()
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
-        # app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
+        app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
         file_menu.Append(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
@@ -1674,6 +1697,10 @@ class MenuBar(wx.MenuBar):
         # TOOLS
         # tools_menu = wx.Menu()
 
+        # NETWORK
+        network_settings_menu = wx.Menu()
+        network_settings_menu.Append(const.ID_DICOM_SERVER, _("Dicom Server"))
+
         # OPTIONS
         options_menu = wx.Menu()
         options_menu.Append(const.ID_PREFERENCES, _("Preferences"))
@@ -1725,6 +1752,7 @@ class MenuBar(wx.MenuBar):
         self.Append(options_menu, _("Options"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
+        self.Append(network_settings_menu, _("Network Settings"))
 
         plugins_menu.Bind(wx.EVT_MENU, self.OnPluginMenu)
 
