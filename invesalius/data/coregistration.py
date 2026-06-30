@@ -344,6 +344,7 @@ class CoordinateCorregistrate(threading.Thread):
         target,
         icp,
         e_field_loaded,
+        navigation,
     ):
         threading.Thread.__init__(self, name="CoordCoregObject")
         self.ref_mode_id = ref_mode_id
@@ -356,6 +357,7 @@ class CoordinateCorregistrate(threading.Thread):
         self.object_at_target_queue = queues[2]
         self.efield_queue = queues[3]
         self.e_field_loaded = e_field_loaded
+        self.navigation = navigation
         self.event = event
         self.sle = sle
         self._loop_sleep = max(self.sle, 1.0 / 120.0)
@@ -429,8 +431,9 @@ class CoordinateCorregistrate(threading.Thread):
                 coords = {"probe": coord_probe}
                 m_imgs = {"probe": m_img_probe}
 
-                # LUKATODO: this is an arbitrary coil, so efields/tracts work correctly with 1 coil but may bug out when using multiple
-                main_coil = next(iter(obj_datas))
+                main_coil = self.navigation.main_coil
+                if main_coil not in obj_datas:
+                    main_coil = next(iter(obj_datas))
                 for coil_name, obj_data in obj_datas.items():
                     if coil_name != main_coil:
                         obj_id = obj_data[0]

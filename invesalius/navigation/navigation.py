@@ -248,7 +248,10 @@ class UpdateNavigationScene(threading.Thread):
             main_coil = self.navigation.main_coil
             track_this = main_coil if self.navigation.track_coil else "probe"
             # choose which object to track in slices and viewer_volume pointer
-            coord = coords[track_this]
+            coord = coords.get(track_this, None)
+            if coord is None:
+                self.coord_queue.task_done()
+                continue
 
             # Remove probe, so that coords/m_imgs only contain coils
             probe_coord = coords.pop("probe")
@@ -665,6 +668,7 @@ class Navigation(metaclass=Singleton):
                     self.target,
                     icp,
                     self.e_field_loaded,
+                    self,
                 )
             )
 
