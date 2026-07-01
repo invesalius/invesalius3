@@ -166,7 +166,7 @@ class Robot(metaclass=Singleton):
     def IsConnected(self):
         return self.is_robot_connected
 
-    def IsReady(self):  # LUKATODO: use this check before enabling robot for navigation...
+    def IsReady(self):
         return self.IsConnected() and (self.coil_name in self.navigation.coil_registrations)
 
     def SetRobotIP(self, data):
@@ -196,6 +196,13 @@ class Robot(metaclass=Singleton):
 
     def SetCoilName(self, name):
         self.coil_name = name
+
+        coil_idx = self.navigation.coil_registrations[self.coil_name]["obj_id"]
+
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Set coil index",
+            data=coil_idx,
+        )
         self.SaveConfig("robot_coil", name)
 
     def SendTargetToRobot(self):
