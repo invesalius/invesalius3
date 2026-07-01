@@ -232,9 +232,13 @@ class Project(metaclass=Singleton):
             "scalar_range": self.threshold_range,
             "spacing": self.spacing,
             "affine": self.affine,
-            "patient_orientation": self.patient_orientation,
             "image_fiducials": self.image_fiducials.tolist(),
         }
+
+        # plistlib does not support None values, so only include
+        # patient_orientation when it has a value.
+        if self.patient_orientation is not None:
+            project["patient_orientation"] = self.patient_orientation
 
         # Saving the matrix containing the slices
         matrix = {
