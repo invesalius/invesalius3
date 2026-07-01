@@ -1209,6 +1209,49 @@ class ObjectTab(wx.Panel):
         Publisher.sendMessage("Coil selection done", done=True)
         Publisher.sendMessage("Update robot buttons")
 
+    def _GetTrackerFileName(self, obj_id):
+        """Get the tracker file name (e.g. ROM) for a given obj_id, if available.
+
+        For trackers like NDI Polaris, each coil has a ROM file that defines
+        the rigid body. The obj_id maps to the ROM file index as:
+        obj_id=2 -> obj_dirs[0], obj_id=3 -> obj_dirs[1], etc.
+
+        Returns the basename of the ROM file, or None if not available.
+        """
+        if obj_id is None:
+            return None
+        connection = self.tracker.tracker_connection
+        if connection is None or connection.configuration is None:
+            return None
+        obj_dirs = connection.configuration.get("obj_dirs", None)
+        if obj_dirs is None:
+            return None
+        rom_index = obj_id - 2
+        if 0 <= rom_index < len(obj_dirs):
+            return os.path.basename(obj_dirs[rom_index])
+        return None
+
+    def _BuildCoilTooltip(self, coil_name):
+        """Build a rich tooltip for a coil button showing tracker and visualization info."""
+        registration = self.coil_registrations.get(coil_name, {})
+        lines = [coil_name]
+
+        obj_id = registration.get("obj_id", None)
+        if obj_id is not None:
+            lines.append(f"Sensor index: {obj_id}")
+
+        # Tracker ROM file (only for trackers like NDI Polaris that use ROM files)
+        rom_name = self._GetTrackerFileName(obj_id)
+        if rom_name:
+            lines.append(f"Tracker file: {rom_name}")
+
+        # Visualization STL
+        stl_path = registration.get("path", None)
+        if stl_path:
+            lines.append(f"3D model: {os.path.basename(stl_path)}")
+
+        return "\n".join(lines)
+
     def AddCoilButton(self, coil_name, show_button=True):
         if self.no_coils_lbl is not None:
             self.no_coils_lbl.Destroy()  # Remove obsolete message
@@ -1217,7 +1260,7 @@ class ObjectTab(wx.Panel):
         # Create a new button with coil_name if it doesn't already exist
         if coil_name not in self.coil_btns:
             coil_btn = wx.ToggleButton(self, -1, coil_name[:8], size=wx.Size(88, 17))
-            coil_btn.SetToolTip(coil_name)
+            coil_btn.SetToolTip(self._BuildCoilTooltip(coil_name))
             coil_btn.Bind(
                 wx.EVT_TOGGLEBUTTON, lambda event, name=coil_name: self.OnSelectCoil(event, name)
             )
@@ -1268,7 +1311,9 @@ class ObjectTab(wx.Panel):
                 self.no_coils_lbl = wx.StaticText(
                     self, -1, _("No coils found in config.json. Create or load new coils below.")
                 )
-                self.inner_sel_sizer.Add(self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5)
+                self.inner_sel_sizer.Add(
+                    self.no_coils_lbl, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 5
+                )
             else:
                 self.no_coils_lbl.Show()
         else:

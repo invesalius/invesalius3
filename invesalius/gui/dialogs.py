@@ -4069,6 +4069,27 @@ class ObjectCalibrationDialog(wx.Dialog):
         self._init_pedal()
         self.InitializeObject()
 
+    def _GetROMBasename(self, obj_id):
+        """Get the ROM file basename (without extension) for a given obj_id.
+
+        For trackers like NDI Polaris, each coil has a ROM file. The obj_id
+        maps to the ROM file index as: obj_id=2 -> obj_dirs[0], etc.
+
+        Returns the basename without extension, or None if not available.
+        """
+        connection = self.tracker.tracker_connection
+        if connection is None or connection.configuration is None:
+            return None
+        obj_dirs = connection.configuration.get("obj_dirs", None)
+        if obj_dirs is None:
+            return None
+        rom_index = obj_id - 2
+        if 0 <= rom_index < len(obj_dirs):
+            basename = os.path.basename(obj_dirs[rom_index])
+            name, _ = os.path.splitext(basename)
+            return name
+        return None
+
     def _init_gui(self) -> None:
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
@@ -4094,7 +4115,11 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_id_map[label] = 0
 
         for i in range(2, max_obj_id):
-            label = _(f"Coil {i - 1}")
+            rom_name = self._GetROMBasename(i)
+            if rom_name:
+                label = f"{rom_name}"
+            else:
+                label = _(f"Coil {i - 1}")
             choices.append(label)
             self.obj_id_map[label] = i
 
@@ -4458,9 +4483,15 @@ class ObjectCalibrationDialog(wx.Dialog):
         self,
     ) -> tuple[np.ndarray, np.ndarray, int, bytes | None, vtkPolyData | None]:
         if self.n_coils > 1:
-            coil_name = self.choice_obj_id.GetValue().strip()
-            if not coil_name:
-                coil_name = "coil"
+            # Use the ROM file basename as the coil name if available,
+            # otherwise fall back to the ComboBox label (e.g. "Coil 1")
+            rom_name = self._GetROMBasename(self.obj_id)
+            if rom_name:
+                coil_name = rom_name
+            else:
+                coil_name = self.choice_obj_id.GetValue().strip()
+                if not coil_name:
+                    coil_name = "coil"
         else:
             coil_name = "default_coil"
 
