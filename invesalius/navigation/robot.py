@@ -207,10 +207,11 @@ class Robot(metaclass=Singleton):
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
-        if self.target is None or self.navigation.main_coil is not self.coil_name:
+        if self.target is None or self.navigation.main_coil != self.coil_name:
             return False
 
         navigation = self.navigation
+
         # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
         if navigation.m_change is None or self.coil_name not in self.navigation.obj_datas:
             return False

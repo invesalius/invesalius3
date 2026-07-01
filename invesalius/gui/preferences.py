@@ -1259,7 +1259,7 @@ class ObjectTab(wx.Panel):
 
         # Create a new button with coil_name if it doesn't already exist
         if coil_name not in self.coil_btns:
-            coil_btn = wx.ToggleButton(self, -1, coil_name[:8], size=wx.Size(88, 17))
+            coil_btn = wx.ToggleButton(self, -1, coil_name, size=wx.Size(120, 20))
             coil_btn.SetToolTip(self._BuildCoilTooltip(coil_name))
             coil_btn.Bind(
                 wx.EVT_TOGGLEBUTTON, lambda event, name=coil_name: self.OnSelectCoil(event, name)
