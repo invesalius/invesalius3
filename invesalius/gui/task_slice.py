@@ -719,10 +719,13 @@ class MaskProperties(wx.Panel):
         self.gradient.SetMaxRange(thresh_max)
 
     def OnComboName(self, evt):
-        # mask_name = evt.GetString()
         mask_index = evt.GetSelection()
         Publisher.sendMessage("Change mask selected", index=mask_index)
         Publisher.sendMessage("Show mask", index=mask_index, value=True)
+        # Switch background image to match the mask's source (mirrors eye-icon behaviour)
+        mask = Project().mask_dict.get(mask_index)
+        if mask is not None:
+            Publisher.sendMessage("Switch active image by label", label=mask.derived_from)
 
     def OnComboThresh(self, evt):
         (thresh_min, thresh_max) = Project().threshold_modes[evt.GetString()]

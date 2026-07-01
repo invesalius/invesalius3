@@ -1,4 +1,4 @@
-90  # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
@@ -142,6 +142,8 @@ class Viewer(wx.Panel):
 
         self.static_markers_efield = []
         self.plot_vector = None
+        self.efield_data_revision = None
+        self.position_max_revision = None
         self.style = None
         self.coil_sensor_spheres = []
         self.coil_sensor_sources = []
@@ -340,6 +342,7 @@ class Viewer(wx.Panel):
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
+        self.last_efield_cell_id = None
         self.colors_init = vtkUnsignedCharArray()
         self.plot_no_connection = False
 
@@ -352,7 +355,10 @@ class Viewer(wx.Panel):
         self.GoGEfieldVector = None
         self.vectorfield_actor = None
         self.efield_scalar_bar = None
+        self.edge_fill_actor = None
         self.edge_actor = None
+        self.show_efield_edges = False
+        self.tracts_status = False
         # self.dummy_efield_coil_actor = None
         self.target_at_cortex = None
         self.SpreadEfieldFactorTextActor = None
@@ -739,6 +745,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateEfieldROISize, "Update Efield ROI size")
         Publisher.subscribe(self.SetEfieldTargetAtCortex, "Set as Efield target at cortex")
         Publisher.subscribe(self.EnableShowEfieldAboveThreshold, "Show area above threshold")
+        Publisher.subscribe(self.ShowEfieldContours, "Show Efield contours")
         Publisher.subscribe(self.EnableEfieldTools, "Enable Efield tools")
         Publisher.subscribe(self.ClearTargetAtCortex, "Clear efield target at cortex")
         Publisher.subscribe(self.CoGEforCortexMarker, "Get Cortex position")
@@ -751,6 +758,7 @@ class Viewer(wx.Panel):
             self.EnableSaveAutomaticallyEfieldData, "Save automatically efield data"
         )
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
+        Publisher.subscribe(self.UpdateTractSeedBasedEfield, "Update tract seed based efield")
         Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
 
         # SSAO related
@@ -1810,12 +1818,49 @@ class Viewer(wx.Panel):
         Actor.GetProperty().SetColor(color)
         return Actor
 
+    def HasEfieldVectorData(self):
+        return (
+            self.efield_mesh is not None
+            and self.e_field_norms is not None
+            and getattr(self, "Id_list", None) is not None
+            and len(self.Id_list) > 0
+            and getattr(self, "Idmax", None) is not None
+            and getattr(self, "max_efield_array", None) is not None
+        )
+
+    def RemoveEfieldTargetingActors(self):
+        if self.max_efield_vector is not None:
+            self.ren.RemoveActor(self.max_efield_vector)
+            self.max_efield_vector = None
+        if self.ball_max_vector is not None:
+            self.ren.RemoveActor(self.ball_max_vector)
+            self.ball_max_vector = None
+        if self.GoGEfieldVector is not None:
+            self.ren.RemoveActor(self.GoGEfieldVector)
+            self.GoGEfieldVector = None
+        if self.ball_GoGEfieldVector is not None:
+            self.ren.RemoveActor(self.ball_GoGEfieldVector)
+            self.ball_GoGEfieldVector = None
+        self.position_max = None
+        self.position_max_revision = None
+        self.center_gravity_position = None
+
+    def RemoveEfieldVectorActor(self):
+        if self.vectorfield_actor is not None:
+            self.ren.RemoveActor(self.vectorfield_actor)
+            self.vectorfield_actor = None
+
     def MaxEfieldActor(self):
+        if not self.HasEfieldVectorData():
+            self.RemoveEfieldTargetingActors()
+            return
+
         vtk_colors = vtkNamedColors()
         if self.max_efield_vector and self.ball_max_vector is not None:
             self.ren.RemoveActor(self.max_efield_vector)
             self.ren.RemoveActor(self.ball_max_vector)
         self.position_max = self.efield_mesh.GetPoint(self.Idmax)
+        self.position_max_revision = self.efield_data_revision
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
         self.max_efield_vector = self.DrawVectors(
             self.position_max, orientation, vtk_colors.GetColor3d("Red")
@@ -1827,17 +1872,24 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.ball_max_vector)
 
     def CoGEfieldActor(self):
+        if not self.HasEfieldVectorData():
+            self.RemoveEfieldTargetingActors()
+            return
+
         vtk_colors = vtkNamedColors()
         if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
             self.ren.RemoveActor(self.GoGEfieldVector)
             self.ren.RemoveActor(self.ball_GoGEfieldVector)
         orientation = [self.max_efield_array[0], self.max_efield_array[1], self.max_efield_array[2]]
-        [self.cell_id_indexes_above_threshold, self.positions_above_threshold] = (
-            self.GetIndexesAboveThreshold(self.efield_threshold)
-        )
+        if not self.cell_id_indexes_above_threshold:
+            return
+
         self.center_gravity_position = self.FindCenterofGravity(
             self.cell_id_indexes_above_threshold, self.positions_above_threshold
         )
+        if self.center_gravity_position is None:
+            return
+
         self.GoGEfieldVector = self.DrawVectors(
             self.center_gravity_position, orientation, vtk_colors.GetColor3d("Blue")
         )
@@ -1942,6 +1994,13 @@ class Viewer(wx.Panel):
         self.ren.AddActor(self.SpreadEfieldFactorTextActor.actor)
 
     def CalculateDistanceMaxEfieldCoGE(self):
+        if (
+            getattr(self, "center_gravity_position", None) is None
+            or getattr(self, "position_max", None) is None
+            or self.SpreadEfieldFactorTextActor is None
+        ):
+            return
+
         self.distance_efield = distance.euclidean(self.center_gravity_position, self.position_max)
         self.SpreadEfieldFactorTextActor.SetValue(
             "Spread distance: " + str(f"{self.distance_efield:04.2f}")
@@ -1949,8 +2008,7 @@ class Viewer(wx.Panel):
 
     def EfieldVectors(self):
         vtk_colors = vtkNamedColors()
-        if self.vectorfield_actor is not None:
-            self.ren.RemoveActor(self.vectorfield_actor)
+        self.RemoveEfieldVectorActor()
         points = vtkPoints()
         vectors = vtkDoubleArray()
         vectors.SetNumberOfComponents(3)
@@ -2140,11 +2198,12 @@ class Viewer(wx.Panel):
             self.colors_init.InsertTuple(i, color)
 
     def ReturnToDefaultColorActor(self):
+        self.RemoveEfieldTargetingActors()
         self.efield_mesh.GetPointData().SetScalars(self.colors_init)
         wx.CallAfter(Publisher.sendMessage, "Initialize color array")
         wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
 
-    def CreateLUTTableForEfield(self, min, max):
+    def CreateLUTTableForEfield(self, min, max, highlight_threshold=False):
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
@@ -2153,80 +2212,130 @@ class Viewer(wx.Panel):
         colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
         n = lut.GetNumberOfTableValues()
         threshold = self.efield_threshold
-        highlight_rgb = (255, 165, 0)
-        for i in range(n):
-            norm_val = i / (n - 1)
-        if norm_val >= threshold:
-            lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)  # Set to orange
+        if highlight_threshold:
+            highlight_rgb = (255, 165, 0)
+            for i in range(n):
+                norm_val = i / (n - 1)
+                if norm_val >= threshold:
+                    lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)
         return lut
+
+    def UpdateEfieldScalarBar(self):
+        if self.efield_scalar_bar is None or self.efield_lut is None:
+            return
+
+        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
+        self.efield_scalar_bar.Modified()
+        if not self.ren.HasViewProp(self.efield_scalar_bar):
+            self.ren.AddActor2D(self.efield_scalar_bar)
 
     def GetEfieldMaxMin(self, e_field_norms):
         self.e_field_norms = e_field_norms
-        max = np.amax(self.e_field_norms)
-        min = np.amin(self.e_field_norms)
-        self.efield_min = min
-        self.efield_max = max
+        efield_max = np.amax(self.e_field_norms)
+        efield_min = np.amin(self.e_field_norms)
+        self.efield_min = efield_min
+        self.efield_max = efield_max
         # self.Idmax = np.array(self.e_field_norms).argmax()
         wx.CallAfter(Publisher.sendMessage, "Update efield vis")
 
-    def FindClosestValueEfieldEdges(self, arr, threshold):
-        closest_value = min(arr, key=lambda x: abs(x - threshold))
-        closest_index = np.argmin(np.abs(arr - closest_value))
-        return closest_index
+    def CreateEfieldScalarPolyData(self):
+        values = np.asarray(self.e_field_norms, dtype=float)
+        n_points = self.efield_mesh.GetNumberOfPoints()
+
+        scalars = vtkDoubleArray()
+        scalars.SetName("EFieldNorm")
+        scalars.SetNumberOfComponents(1)
+        scalars.SetNumberOfTuples(n_points)
+        scalars.FillComponent(0, self.efield_min)
+
+        if len(values) == n_points:
+            for point_id, value in enumerate(values):
+                scalars.SetValue(point_id, value)
+        else:
+            for point_id, value in zip(self.Id_list, values):
+                scalars.SetValue(point_id, value)
+
+        scalar_polydata = vtkPolyData()
+        scalar_polydata.DeepCopy(self.efield_mesh)
+        scalar_polydata.GetPointData().SetScalars(scalars)
+        return scalar_polydata
 
     def CalculateEdgesEfield(self):
-        if self.edge_actor is not None:
-            self.ren.RemoveViewProp(self.edge_actor)
+        self.RemoveEfieldEdges()
+        if self.efield_max <= self.efield_min:
+            return
+
         named_colors = vtkNamedColors()
         second_lut = self.CreateLUTTableForEfield(self.efield_min, self.efield_max)
-        second_lut.SetNumberOfTableValues(5)
+        scalar_polydata = self.CreateEfieldScalarPolyData()
 
         bcf = vtkBandedPolyDataContourFilter()
-        bcf.SetInputData(self.efield_mesh)
+        bcf.SetInputData(scalar_polydata)
         bcf.ClippingOn()
+        bcf.SetScalarModeToValue()
 
-        lower_edge = self.FindClosestValueEfieldEdges(np.array(self.e_field_norms), self.efield_min)
-        middle_edge = self.FindClosestValueEfieldEdges(
-            np.array(self.e_field_norms), self.efield_max * 0.2
-        )
-        middle_edge1 = self.FindClosestValueEfieldEdges(
-            np.array(self.e_field_norms), self.efield_max * 0.7
-        )
-        upper_edge = self.FindClosestValueEfieldEdges(
-            np.array(self.e_field_norms), self.efield_max * 0.9
-        )
-        lower_edge = self.efield_mesh.GetPoint(lower_edge)
-        middle_edge = self.efield_mesh.GetPoint(middle_edge)
-        middle_edge1 = self.efield_mesh.GetPoint(middle_edge1)
-        upper_edge = self.efield_mesh.GetPoint(upper_edge)
-
-        edges = [lower_edge, middle_edge, middle_edge1, upper_edge]
-        for i in range(len(edges)):
-            bcf.SetValue(i, edges[i][2])
-        bcf.SetScalarModeToIndex()
+        value_range = self.efield_max - self.efield_min
+        contour_values = [
+            self.efield_min,
+            # self.efield_min + value_range * 0.2,
+            self.efield_min + value_range * 0.7,
+            self.efield_min + value_range * 0.9,
+        ]
+        for i, value in enumerate(contour_values):
+            bcf.SetValue(i, value)
         bcf.GenerateContourEdgesOn()
+        bcf.Update()
+
         mapper = vtkPolyDataMapper()
         mapper.SetInputConnection(bcf.GetOutputPort())
         mapper.SetLookupTable(second_lut)
         mapper.SetScalarModeToUsePointData()
+        mapper.SetScalarRange(self.efield_min, self.efield_max)
 
-        actor = vtkActor()
-        actor.SetMapper(mapper)
+        self.edge_fill_actor = vtkActor()
+        self.edge_fill_actor.SetMapper(mapper)
 
         edge_mapper = vtkPolyDataMapper()
         edge_mapper.SetInputData(bcf.GetContourEdgesOutput())
+        edge_mapper.SetLookupTable(second_lut)
+        edge_mapper.SetScalarRange(self.efield_min, self.efield_max)
+        edge_mapper.ScalarVisibilityOff()
         edge_mapper.SetResolveCoincidentTopologyToPolygonOffset()
 
         self.edge_actor = vtkActor()
         self.edge_actor.SetMapper(edge_mapper)
         self.edge_actor.GetProperty().SetColor(named_colors.GetColor3d("Black"))
         self.edge_actor.GetProperty().SetLineWidth(3.0)
-        actor.GetProperty().SetOpacity(0)
-        self.ren.AddViewProp(actor)
+        self.edge_fill_actor.GetProperty().SetOpacity(0)
+        self.ren.AddViewProp(self.edge_fill_actor)
         self.ren.AddViewProp(self.edge_actor)
 
-        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
-        self.ren.AddActor2D(self.efield_scalar_bar)
+        self.UpdateEfieldScalarBar()
+
+    def RemoveEfieldEdges(self):
+        if self.edge_actor is not None:
+            self.ren.RemoveViewProp(self.edge_actor)
+            self.edge_actor = None
+        if self.edge_fill_actor is not None:
+            self.ren.RemoveViewProp(self.edge_fill_actor)
+            self.edge_fill_actor = None
+
+    def ShowEfieldContours(self, enable):
+        self.show_efield_edges = enable
+        if not enable:
+            self.RemoveEfieldEdges()
+            self.Refresh()
+            return
+
+        if (
+            self.e_field_norms is not None
+            and self.efield_mesh is not None
+            and self.radius_list.GetNumberOfIds() != 0
+            and not self.tracts_status
+            and self.actor_tracts is None
+        ):
+            self.CalculateEdgesEfield()
+            self.Refresh()
 
     def GetIndexesAboveThreshold(self, threshold):
         cell_id_indexes = []
@@ -2247,6 +2356,7 @@ class Viewer(wx.Panel):
     def UpdateEfieldROISize(self, data):
         self.efield_ROISize = data
         self.radius_list.Reset()
+        self.last_efield_cell_id = None
 
     def EnableEfieldTools(self, enable):
         self.efield_tools = enable
@@ -2258,9 +2368,16 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
 
     def FindCenterofGravity(self, cell_id_indexes, positions):
+        if not cell_id_indexes or not positions:
+            return None
+
         weights = []
         for index, value in enumerate(cell_id_indexes):
             weights.append(self.e_field_norms[index])
+        sum_weights = sum(weights)
+        if sum_weights == 0:
+            return None
+
         x_weighted = []
         y_weighted = []
         z_weighted = []
@@ -2271,7 +2388,6 @@ class Viewer(wx.Panel):
         sum_x = sum(x_weighted)
         sum_y = sum(y_weighted)
         sum_z = sum(z_weighted)
-        sum_weights = sum(weights)
 
         center_gravity_x = sum_x / sum_weights
         center_gravity_y = sum_y / sum_weights
@@ -2290,6 +2406,16 @@ class Viewer(wx.Panel):
     def DetectClustersEfieldSpread(self, points):
         from sklearn.cluster import DBSCAN
         from sklearn.metrics import pairwise_distances
+
+        if (
+            points is None
+            or len(points) == 0
+            or self.distance_efield is None
+            or self.ClusterEfieldTextActor is None
+            or getattr(self, "Id_list", None) is None
+            or len(self.Id_list) == 0
+        ):
+            return
 
         points = np.array(points) if isinstance(points, list) else points
         dbscan = DBSCAN(eps=5, min_samples=1).fit(points)
@@ -2436,6 +2562,7 @@ class Viewer(wx.Panel):
         self.coil_position_Trot = None
         self.e_field_norms = None
         self.e_field_norms_to_save = None
+        self.last_efield_cell_id = None
         self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
         self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.target_radius_list = []
@@ -2444,16 +2571,8 @@ class Viewer(wx.Panel):
         self.mtms_coord = []
         # self.diperdt = None
 
-        if self.max_efield_vector and self.ball_max_vector is not None:
-            self.ren.RemoveActor(self.max_efield_vector)
-            self.ren.RemoveActor(self.ball_max_vector)
-
-        if self.GoGEfieldVector and self.ball_GoGEfieldVector is not None:
-            self.ren.RemoveActor(self.GoGEfieldVector)
-            self.ren.RemoveActor(self.ball_GoGEfieldVector)
-
-        if self.vectorfield_actor is not None:
-            self.ren.RemoveActor(self.vectorfield_actor)
+        self.RemoveEfieldTargetingActors()
+        self.RemoveEfieldVectorActor()
 
         if self.efield_scalar_bar is not None:
             self.ren.RemoveActor(self.efield_scalar_bar)
@@ -2474,6 +2593,7 @@ class Viewer(wx.Panel):
 
     def ShowEfieldintheintersection(self, intersectingCellIds, p1, coil_norm, coil_dir):
         closestDist = 100
+        closestCellId = None
         # if find intersection , calculate angle and add actors
         if intersectingCellIds.GetNumberOfIds() != 0:
             for i in range(intersectingCellIds.GetNumberOfIds()):
@@ -2482,52 +2602,57 @@ class Viewer(wx.Panel):
                 distance = np.linalg.norm(point - p1)
                 if distance < closestDist:
                     closestDist = distance
+                    closestCellId = cellId
                     # closestPoint = point
                     # pointnormal = np.array(self.e_field_mesh_normals.GetTuple(cellId))
                     # angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
-                    self.FindPointsAroundRadiusEfield(cellId)
-                    self.radius_list.Sort()
+            if closestCellId is not None and closestCellId != self.last_efield_cell_id:
+                self.FindPointsAroundRadiusEfield(closestCellId)
+                self.radius_list.Sort()
+                self.last_efield_cell_id = closestCellId
         else:
             self.radius_list.Reset()
+            self.last_efield_cell_id = None
 
     def OnUpdateEfieldvis(self):
         if self.radius_list.GetNumberOfIds() != 0:
-            self.efield_lut = self.CreateLUTTableForEfield(0, self.efield_max)
-            self.CalculateEdgesEfield()
+            self.efield_lut = self.CreateLUTTableForEfield(
+                0, self.efield_max, highlight_threshold=self.enableefieldabovethreshold
+            )
+            [self.cell_id_indexes_above_threshold, self.positions_above_threshold] = (
+                self.GetIndexesAboveThreshold(self.efield_threshold)
+            )
+            self.UpdateEfieldScalarBar()
+            if not self.show_efield_edges or self.tracts_status or self.actor_tracts is not None:
+                self.RemoveEfieldEdges()
+            else:
+                self.CalculateEdgesEfield()
             self.colors_init.SetNumberOfComponents(3)
             self.colors_init.Fill(const.CORTEX_COLOR[0])
             for h in range(len(self.Id_list)):
                 dcolor = 3 * [0.0]
                 index_id = self.Id_list[h]
-                if self.plot_vector:
-                    self.efield_lut.GetColor(self.e_field_norms[h], dcolor)
-                else:
-                    self.efield_lut.GetColor(self.e_field_norms[index_id], dcolor)
+                self.efield_lut.GetColor(self.e_field_norms[h], dcolor)
                 color = 3 * [0.0]
                 for j in range(0, 3):
                     color[j] = int(255.0 * dcolor[j])
                 self.colors_init.InsertTuple(index_id, color)
             self.efield_mesh.GetPointData().SetScalars(self.colors_init)
             wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
-            if self.vectorfield_actor is not None:
-                self.ren.RemoveActor(self.vectorfield_actor)
-            if self.plot_vector:
-                wx.CallAfter(Publisher.sendMessage, "Show max Efield actor")
-                wx.CallAfter(Publisher.sendMessage, "Show CoG Efield actor")
-                if self.efield_tools:
-                    wx.CallAfter(Publisher.sendMessage, "Show distance between Max and CoG Efield")
-                    if self.positions_above_threshold is not None:
-                        self.DetectClustersEfieldSpread(self.positions_above_threshold)
-                if (
-                    self.enableefieldabovethreshold
-                    and self.cell_id_indexes_above_threshold is not None
-                ):
-                    self.SegmentEfieldMax(self.cell_id_indexes_above_threshold)
-                self.ShowEfieldAtCortexTarget()
-                if self.plot_no_connection:
-                    wx.CallAfter(Publisher.sendMessage, "Show Efield vectors")
-                    self.plot_vector = False
-                    self.plot_no_connection = False
+            self.RemoveEfieldVectorActor()
+            wx.CallAfter(Publisher.sendMessage, "Show max Efield actor")
+            wx.CallAfter(Publisher.sendMessage, "Show CoG Efield actor")
+            if self.efield_tools:
+                wx.CallAfter(Publisher.sendMessage, "Show distance between Max and CoG Efield")
+                if self.positions_above_threshold is not None:
+                    self.DetectClustersEfieldSpread(self.positions_above_threshold)
+            if self.enableefieldabovethreshold and self.cell_id_indexes_above_threshold is not None:
+                self.SegmentEfieldMax(self.cell_id_indexes_above_threshold)
+            self.ShowEfieldAtCortexTarget()
+            if self.plot_no_connection:
+                wx.CallAfter(Publisher.sendMessage, "Show Efield vectors")
+                self.plot_vector = False
+                self.plot_no_connection = False
         else:
             wx.CallAfter(Publisher.sendMessage, "Recolor again")
 
@@ -2545,6 +2670,34 @@ class Viewer(wx.Panel):
                 if np.all(self.old_coord != coord):
                     self.e_field_IDs_queue.put_nowait(self.radius_list)
                 self.old_coord = np.array([coord])
+        except queue.Full:
+            pass
+
+    def UpdateTractSeedBasedEfield(
+        self, coord_tracts_queue, fallback_m_img=None, current_revision=None
+    ):
+        if (
+            getattr(self, "position_max", None) is None
+            or self.position_max_revision != current_revision
+        ):
+            if fallback_m_img is not None:
+                try:
+                    m_img_flip = fallback_m_img.copy()
+                    m_img_flip[1, -1] = -m_img_flip[1, -1]
+                    coord_tracts_queue.clear()
+                    coord_tracts_queue.put_nowait(m_img_flip)
+                except queue.Full:
+                    pass
+            return
+
+        if not np.all(np.isfinite(self.position_max)):
+            return
+
+        orientation = [0, 0, 0]
+        m_img = tr.compose_matrix(angles=np.radians(orientation), translate=self.position_max)
+        try:
+            coord_tracts_queue.clear()
+            coord_tracts_queue.put_nowait(m_img)
         except queue.Full:
             pass
 
@@ -2577,105 +2730,121 @@ class Viewer(wx.Panel):
         T_rot = T_rot.tolist()  # to list
         Publisher.sendMessage("Send coil position and rotation", T_rot=T_rot, cp=cp, m_img=m_img)
 
-    def GetEnorm(self, enorm_data, plot_vector):
+    def GetEnorm(self, enorm_data, plot_vector, current_revision=None):
+        result_revision = enorm_data[5] if len(enorm_data) > 5 else current_revision
+        if current_revision is not None and result_revision != current_revision:
+            self.RemoveEfieldTargetingActors()
+            return
+
+        if enorm_data[3] is None:
+            self.RemoveEfieldTargetingActors()
+            return
+
         self.e_field_col1 = []
         self.e_field_col2 = []
         self.e_field_col3 = []
         session = ses.Session()
         self.plot_vector = plot_vector
+        self.efield_data_revision = result_revision
         self.coil_position_Trot = enorm_data[0]
         self.coil_position = enorm_data[1]
         self.efield_coords = enorm_data[2]
         self.Id_list = enorm_data[4]
-        if self.plot_vector:
-            if session.GetConfig("debug_efield"):
-                self.e_field_norms = enorm_data[3][self.Id_list, 0]
-                self.e_field_col1 = enorm_data[3][self.Id_list, 1]
-                self.e_field_col2 = enorm_data[3][self.Id_list, 2]  # LUKATODO: is this a typo?
-                self.e_field_col3 = enorm_data[3][self.Id_list, 3]
-                self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
-                max = np.array(self.e_field_norms).argmax()
-                self.max_efield_array = [
-                    self.e_field_col1[max],
-                    self.e_field_col2[max],
-                    self.e_field_col3[max],
-                ]
-                self.e_field_norms_to_save = enorm_data[3][:, 0]
-                self.e_field_col1_to_save = enorm_data[3][:, 1]
-                self.e_field_col2_to_save = enorm_data[3][:, 2]
-                self.e_field_col3_to_save = enorm_data[3][:, 3]
-            else:
-                self.e_field_norms_to_save = enorm_data[3].enorm
-                self.e_field_norms = enorm_data[3].enorm
-                self.e_field_norms = [self.e_field_norms[i] for i in self.Id_list]
-                self.e_field_col1 = enorm_data[3].column1
-                self.e_field_col2 = enorm_data[3].column2
-                self.e_field_col3 = enorm_data[3].column3
-                self.e_field_col1_to_save = enorm_data[3].column1
-                self.e_field_col2_to_save = enorm_data[3].column2
-                self.e_field_col3_to_save = enorm_data[3].column3
-                if len(self.e_field_col1) > 1:
-                    K = len(self.e_field_norms_to_save)
-                    col1 = np.asarray(self.e_field_col1, dtype=float)
-                    col2 = np.asarray(self.e_field_col2, dtype=float)
-                    col3 = np.asarray(self.e_field_col3, dtype=float)
-                    N = col1.size // K
-                    if N > 1:
-                        self.e_field_col1 = col1.reshape(N, -1).sum(axis=0)
-                        self.e_field_col2 = col2.reshape(N, -1).sum(axis=0)
-                        self.e_field_col3 = col3.reshape(N, -1).sum(axis=0)
-
-                    self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
-                    self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
-                    self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
-
-                self.max_efield_array = enorm_data[3].mvector
-                self.Idmax = enorm_data[3].maxindex  # self.Id_list[enorm_data[3].maxindex]
-                if self.save_automatically and self.plot_no_connection:
-                    import time
-
-                    import invesalius.gui.dialogs as dlg
-                    import invesalius.project as prj
-
-                    proj = prj.Project()
-                    timestamp = time.localtime(time.time())
-                    stamp_date = (
-                        f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
-                    )
-                    stamp_time = (
-                        f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
-                    )
-                    sep = "-"
-
-                    if self.path_meshes is None:
-                        import os
-
-                        current_folder_path = os.getcwd()
-                    else:
-                        current_folder_path = self.path_meshes
-
-                    parts = [current_folder_path, "/", stamp_date, stamp_time, proj.name, "Efield"]
-                    default_filename = sep.join(parts) + ".csv"
-
-                    filename = dlg.ShowLoadSaveDialog(
-                        message=_("Save markers as..."),
-                        wildcard="(*.csv)|*.csv",
-                        style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                        default_filename=default_filename,
-                    )
-
-                    if not filename:
-                        return
-
-                    Publisher.sendMessage(
-                        "Save Efield data",
-                        filename=filename,
-                        plot_efield_vectors=self.plot_efield_vectors,
-                        marker_id=self.list_index_efield_vectors,
-                    )
+        if session.GetConfig("debug_efield"):
+            self.e_field_norms = enorm_data[3][self.Id_list, 0]
+            self.e_field_col1 = enorm_data[3][self.Id_list, 1]
+            self.e_field_col2 = enorm_data[3][self.Id_list, 2]  # LUKATODO: is this a typo?
+            self.e_field_col3 = enorm_data[3][self.Id_list, 3]
+            self.Idmax = np.array(self.Id_list[np.array(self.e_field_norms).argmax()])
+            max_idx = np.array(self.e_field_norms).argmax()
+            self.max_efield_array = [
+                self.e_field_col1[max_idx],
+                self.e_field_col2[max_idx],
+                self.e_field_col3[max_idx],
+            ]
+            self.e_field_norms_to_save = enorm_data[3][:, 0]
+            self.e_field_col1_to_save = enorm_data[3][:, 1]
+            self.e_field_col2_to_save = enorm_data[3][:, 2]
+            self.e_field_col3_to_save = enorm_data[3][:, 3]
         else:
-            self.e_field_norms = enorm_data[3]
-            self.Idmax = np.array(self.e_field_norms).argmax()
+            if not hasattr(enorm_data[3], "enorm") or not hasattr(enorm_data[3], "mvector"):
+                self.RemoveEfieldTargetingActors()
+                return
+
+            self.e_field_norms_to_save = enorm_data[3].enorm
+            if len(self.e_field_norms_to_save) == 0:
+                self.RemoveEfieldTargetingActors()
+                return
+            if self.Id_list and max(self.Id_list) >= len(self.e_field_norms_to_save):
+                self.RemoveEfieldTargetingActors()
+                return
+
+            self.e_field_norms = [self.e_field_norms_to_save[i] for i in self.Id_list]
+            self.e_field_col1 = enorm_data[3].column1
+            self.e_field_col2 = enorm_data[3].column2
+            self.e_field_col3 = enorm_data[3].column3
+            self.e_field_col1_to_save = enorm_data[3].column1
+            self.e_field_col2_to_save = enorm_data[3].column2
+            self.e_field_col3_to_save = enorm_data[3].column3
+            if len(self.e_field_col1) > 1:
+                K = len(self.e_field_norms_to_save)
+                col1 = np.asarray(self.e_field_col1, dtype=float)
+                col2 = np.asarray(self.e_field_col2, dtype=float)
+                col3 = np.asarray(self.e_field_col3, dtype=float)
+                N = col1.size // K
+                if N > 1:
+                    self.e_field_col1 = col1.reshape(N, -1).sum(axis=0)
+                    self.e_field_col2 = col2.reshape(N, -1).sum(axis=0)
+                    self.e_field_col3 = col3.reshape(N, -1).sum(axis=0)
+
+                self.e_field_col1 = [self.e_field_col1[i] for i in self.Id_list]
+                self.e_field_col2 = [self.e_field_col2[i] for i in self.Id_list]
+                self.e_field_col3 = [self.e_field_col3[i] for i in self.Id_list]
+
+            self.max_efield_array = enorm_data[3].mvector
+            self.Idmax = enorm_data[3].maxindex
+            if self.save_automatically and self.plot_no_connection:
+                import time
+
+                import invesalius.gui.dialogs as dlg
+                import invesalius.project as prj
+
+                proj = prj.Project()
+                timestamp = time.localtime(time.time())
+                stamp_date = (
+                    f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
+                )
+                stamp_time = (
+                    f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
+                )
+                sep = "-"
+
+                if self.path_meshes is None:
+                    import os
+
+                    current_folder_path = os.getcwd()
+                else:
+                    current_folder_path = self.path_meshes
+
+                parts = [current_folder_path, "/", stamp_date, stamp_time, proj.name, "Efield"]
+                default_filename = sep.join(parts) + ".csv"
+
+                filename = dlg.ShowLoadSaveDialog(
+                    message=_("Save markers as..."),
+                    wildcard="(*.csv)|*.csv",
+                    style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                    default_filename=default_filename,
+                )
+
+                if not filename:
+                    return
+
+                Publisher.sendMessage(
+                    "Save Efield data",
+                    filename=filename,
+                    plot_efield_vectors=self.plot_efield_vectors,
+                    marker_id=self.list_index_efield_vectors,
+                )
         self.GetEfieldMaxMin(self.e_field_norms)
 
     def SaveEfieldData(self, filename, plot_efield_vectors, marker_id):
@@ -2864,6 +3033,7 @@ class Viewer(wx.Panel):
 
         if self.nav_status:
             self.pTarget = self.CenterOfMass()
+            self.RemoveEfieldVectorActor()
 
         self.camera_show_object = None
         self._update_fps_visibility()
@@ -2892,7 +3062,7 @@ class Viewer(wx.Panel):
     def UpdateArrowPose(self, m_img, coord, flag):
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
 
-        if flag:
+        if flag and self.efield_mesh is None:
             self.ren.RemoveActor(self.obj_projection_arrow_actor)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
@@ -2922,6 +3092,8 @@ class Viewer(wx.Panel):
             self.object_orientation_torus_actor = None
 
     def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
+        self.tracts_status = True
+        self.RemoveEfieldEdges()
         mapper = vtkCompositePolyDataMapper()
         mapper.SetInputDataObject(root)
 
@@ -2939,6 +3111,7 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.actor_tracts)
             self.actor_tracts = None
             self.Refresh()
+        self.tracts_status = False
 
     def __bind_events_wx(self):
         # self.Bind(wx.EVT_SIZE, self.OnSize)

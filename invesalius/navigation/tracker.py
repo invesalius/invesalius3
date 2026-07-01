@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import threading
+from time import sleep
 from typing import Dict, List, Optional, Tuple, cast
 
 import numpy as np
@@ -197,17 +198,47 @@ class Tracker(metaclass=Singleton):
         coord_raw_samples: Dict[int, NDArray[np.float64]] = {}
         coord_samples: Dict[int, NDArray[np.float64]] = {}
 
-        for i in range(n_samples):
+        # The delay between samples ensures each reading captures a genuinely
+        # updated coordinate from the tracker hardware.  Without this, the loop
+        # runs faster than the tracker's update rate (e.g. Optitrack at
+        # ~120-240 Hz), producing duplicate values that make np.median useless.
+        # See: https://github.com/invesalius/invesalius3/issues/380
+        sample_delay: float = const.SLEEP_BETWEEN_TRACKER_SAMPLES
+
+        prev_coord_raw: Optional[NDArray[np.float64]] = None
+        collected: int = 0
+        max_attempts: int = n_samples * 3  # prevent infinite loop
+        attempts: int = 0
+
+        while collected < n_samples and attempts < max_attempts:
             coord_raw, marker_visibilities = self.TrackerCoordinates.GetCoordinates()
+
+            # Skip duplicate readings — if the tracker has not updated yet,
+            # the raw coordinate will be identical to the previous one.
+            if (
+                prev_coord_raw is not None
+                and coord_raw is not None
+                and np.array_equal(coord_raw, prev_coord_raw)
+            ):
+                attempts += 1
+                sleep(sample_delay)
+                continue
 
             if ref_mode_id == const.DYNAMIC_REF:
                 coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
             else:
-                coord = coord_raw[0, :]
+                coord = coord_raw[0, :].copy()
                 coord[2] = -coord[2]
 
-            coord_raw_samples[i] = coord_raw
-            coord_samples[i] = coord
+            coord_raw_samples[collected] = coord_raw
+            coord_samples[collected] = coord
+            prev_coord_raw = coord_raw.copy() if coord_raw is not None else None
+            collected += 1
+            attempts += 1
+
+            # Sleep between samples to allow the tracker to refresh.
+            if collected < n_samples:
+                sleep(sample_delay)
 
         coord_raw_avg: NDArray[np.float64] = np.median(list(coord_raw_samples.values()), axis=0)
         coord_avg: NDArray[np.float64] = np.median(list(coord_samples.values()), axis=0)

@@ -371,7 +371,6 @@ class UpperTaskPanel(wx.Panel):
             Publisher.subscribe(self.OnFoldSurface, "Fold surface task")
             Publisher.subscribe(self.OnFoldExport, "Fold export task")
         Publisher.subscribe(self.OnEnableState, "Enable state project")
-        # Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
     def OnOverwrite(self, surface_parameters):
         self.overwrite = surface_parameters["options"]["overwrite"]
@@ -418,26 +417,3 @@ class UpperTaskPanel(wx.Panel):
             Publisher.sendMessage("Disable task slice style")
 
         evt.Skip()
-        wx.CallAfter(self.ResizeFPB)
-
-    def ResizeFPB(self):
-        item = self.enable_items[0]
-        # Check if the fold panel item is visually expanded
-        is_expanded = item.IsExpanded()
-
-        if is_expanded:
-            y_needed = 240 if sys.platform != "win32" else 230
-        else:
-            y_needed = self.fold_panel.GetPanelsLength(0, 0)[2]
-
-        self.fold_panel.SetMinSize((-1, y_needed))
-        self.fold_panel.SetSize((-1, y_needed))
-
-        # We must also tell the parent (LowerTaskPanel) to refresh its min size
-        # based on the new fold_panel size
-        self.SetMinSize((-1, y_needed))
-        self.SetSize((-1, y_needed))
-
-        parent = self.GetParent()
-        if parent:
-            parent.Layout()

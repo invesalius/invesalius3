@@ -218,6 +218,7 @@ class UpdateNavigationScene(threading.Thread):
                                 "Get enorm",
                                 enorm_data=enorm_data,
                                 plot_vector=self.plot_efield_vectors,
+                                current_revision=self.navigation.e_field_revision,
                             )
 
                 if probe_visible:
@@ -261,6 +262,14 @@ class UpdateNavigationScene(threading.Thread):
             tracts_payload = None
             if self.view_tracts:
                 try:
+                    if self.e_field_loaded:
+                        wx.CallAfter(
+                            Publisher.sendMessage,
+                            "Update tract seed based efield",
+                            coord_tracts_queue=self.navigation.coord_tracts_queue,
+                            fallback_m_img=m_imgs[main_coil],
+                            current_revision=self.navigation.e_field_revision,
+                        )
                     bundle, affine_vtk, coord_offset, coord_offset_w = (
                         self.tracts_queue.get_nowait()
                     )
@@ -358,6 +367,7 @@ class Navigation(metaclass=Singleton):
         self.e_field_loaded = False
         self.plot_efield_vectors = False
         self.debug_efield_enorm = None
+        self.e_field_revision = 0
 
         # Tractography parameters
         self.trk_inp = None
@@ -785,3 +795,6 @@ class Navigation(metaclass=Singleton):
             self.plot_efield_vectors,
         ]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
+
+    def MarkEfieldParametersChanged(self):
+        self.e_field_revision += 1

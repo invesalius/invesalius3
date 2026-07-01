@@ -18,7 +18,8 @@
 # --------------------------------------------------------------------------
 import os
 import tempfile
-from typing import TYPE_CHECKING, Literal, Optional, Tuple, Union
+import threading
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkLookupTable
@@ -37,6 +38,7 @@ from vtkmodules.vtkRenderingCore import (
 
 import invesalius.constants as const
 import invesalius.data.converters as converters
+import invesalius.data.filters as filters
 import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
 import invesalius.style as st
@@ -66,10 +68,10 @@ class SliceBuffer:
 
     def __init__(self):
         self.index: int = -1
-        self.image: Optional[np.ndarray] = None
-        self.mask: Optional[np.ndarray] = None
-        self.vtk_image: Optional[vtkImageData] = None
-        self.vtk_mask: Optional[vtkImageData] = None
+        self.image: np.ndarray | None = None
+        self.mask: np.ndarray | None = None
+        self.vtk_image: vtkImageData | None = None
+        self.vtk_mask: vtkImageData | None = None
 
     def discard_vtk_mask(self) -> None:
         self.vtk_mask = None
@@ -98,17 +100,15 @@ class Slice(metaclass=utils.Singleton):
     def __init__(self):
         self.selected_mask_indices = []
         self._matrix_filename = ""
-        self.current_mask: Optional[Mask] = None
+        self.current_mask: Mask | None = None
         self.blend_filter = None
-        self.histogram: Optional[np.ndarray] = None
-        self._matrix: Optional[np.ndarray] = None
+        self.histogram: np.ndarray | None = None
+        self._matrix: np.ndarray | None = None
         self._affine: np.ndarray = np.identity(4)
         self._n_tracts: int = 0
         self._tracker = None
         self.aux_matrices: dict[str, np.ndarray] = {}
-        self.aux_matrices_colours: dict[
-            str, dict[Union[int, float], Tuple[float, float, float]]
-        ] = {}
+        self.aux_matrices_colours: dict[str, dict[int | float, tuple[float, float, float]]] = {}
         self.state = const.STATE_DEFAULT
 
         self.to_show_aux = ""
@@ -139,29 +139,65 @@ class Slice(metaclass=utils.Singleton):
 
         self.values = None
         self.nodes = None
+        self.current_image_label = "original"
 
         self.from_ = OTHER
         self.__bind_events()
         self.opacity: float = 0.8
 
     @property
-    def matrix(self) -> Optional[np.ndarray]:
+    def matrix(self) -> np.ndarray | None:
+        from invesalius.project import Project
+
+        if hasattr(self, "current_image_label") and self.current_image_label != "original":
+            proj = Project()
+            for label, mat in proj.image_versions:
+                if label == self.current_image_label:
+                    return mat
         return self._matrix
+
+    @property
+    def matrix_filename(self) -> str:
+        from invesalius.project import Project
+
+        if hasattr(self, "current_image_label") and self.current_image_label != "original":
+            proj = Project()
+            for label, mat in proj.image_versions:
+                if label == self.current_image_label:
+                    if hasattr(mat, "filename"):
+                        return mat.filename
+        return self._matrix_filename
+
+    @matrix_filename.setter
+    def matrix_filename(self, value: str) -> None:
+        self._matrix_filename = value
 
     @matrix.setter
     def matrix(self, value: np.ndarray) -> None:
-        self._matrix = value
+        # Don't overwrite the original CT image if we're just switching to a filtered version
+        from invesalius.project import Project
+
+        proj = Project()
+        is_filtered = False
+        for lbl, mat in proj.image_versions:
+            if mat is value and lbl != "original":
+                is_filtered = True
+                break
+
+        if not is_filtered and not getattr(self, "_is_filtering", False):
+            self._matrix = value
+
         i, e = value.min(), value.max()
         r = int(e) - int(i)
-        self.histogram = np.histogram(self._matrix, r, (i, e))[0]
-        self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
+        self.histogram = np.histogram(value, r, (i, e))[0]
+        self.center = [(s * d / 2.0) for (d, s) in zip(value.shape[::-1], self.spacing)]
 
     @property
-    def spacing(self) -> Tuple[float, float, float]:
+    def spacing(self) -> tuple[float, float, float]:
         return self._spacing
 
     @spacing.setter
-    def spacing(self, value: Tuple[float, float, float]) -> None:
+    def spacing(self, value: tuple[float, float, float]) -> None:
         self._spacing = value
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
@@ -208,6 +244,10 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.__show_mask, "Show mask")
         Publisher.subscribe(self.__hide_current_mask, "Hide current mask")
         Publisher.subscribe(self.__show_current_mask, "Show current mask")
+        Publisher.subscribe(self.__apply_image_filter, "Apply image filter")
+        Publisher.subscribe(self.__switch_active_image, "Switch active image")
+        Publisher.subscribe(self.__switch_active_image_by_label, "Switch active image by label")
+        Publisher.subscribe(self.__bake_masks_for_image, "Bake masks for image")
         Publisher.subscribe(self.__clean_current_mask, "Clean current mask")
 
         Publisher.subscribe(self.__export_slice, "Export slice")
@@ -266,7 +306,7 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.do_threshold_to_all_slices, "Appy threshold all slices")
 
     def GetMaxSliceNumber(self, orientation: str) -> int:
-        shape: Tuple[int, int, int] = self.matrix.shape
+        shape: tuple[int, int, int] = self.matrix.shape
 
         # Because matrix indexing starts with 0 so the last slice is the shape
         # minu 1.
@@ -280,12 +320,11 @@ class Slice(metaclass=utils.Singleton):
 
     def discard_all_buffers(self) -> None:
         for buffer_ in self.buffer_slices.values():
-            buffer_.discard_vtk_mask()
-            buffer_.discard_mask()
+            buffer_.discard_buffer()  # resets index=-1 + clears all image/mask caches
 
     def get_world_to_invesalius_vtk_affine(
         self, inverse: bool = False
-    ) -> Tuple[np.ndarray, "vtkMatrix4x4", float]:
+    ) -> tuple[np.ndarray, "vtkMatrix4x4", float]:
         """
         Creates an affine matrix with img_shift adjustment and returns both the NumPy
         and VTK versions of the matrix, along with the img_shift value.
@@ -453,7 +492,14 @@ class Slice(metaclass=utils.Singleton):
         self.SetMaskColour(mask.index, mask.colour)
 
     def __add_mask_thresh(self, mask_name, thresh, colour):
-        mask = self.create_new_mask(name=mask_name, threshold_range=thresh, colour=colour)
+        # Pass the currently active image label so that any new mask created while
+        # a filtered image is active is correctly linked to that filtered version.
+        # Without this, subsequent masks always default to "Original" even when a
+        # filtered image is displayed, causing thresholding to use the wrong data.
+        derived_from = getattr(self, "current_image_label", "original")
+        mask = self.create_new_mask(
+            name=mask_name, threshold_range=thresh, colour=colour, derived_from=derived_from
+        )
         self.SetMaskColour(mask.index, mask.colour)
         # self.SelectCurrentMask(mask.index) # This is already called by create_new_mask -> _add_mask_into_proj
         Publisher.sendMessage("Reload actual slice")
@@ -1076,21 +1122,28 @@ class Slice(metaclass=utils.Singleton):
         """
         It gets the from actual mask the given slice from given orientation
         """
-        # It's necessary because the first position for each dimension from
-        # mask matrix is used as flags to control if the mask in the
-        # slice_number position has been generated.
         if (
             self.buffer_slices[orientation].index == slice_number
             and self.buffer_slices[orientation].mask is not None
         ):
             return self.buffer_slices[orientation].mask
         n = slice_number + 1
+
+        target_matrix = self.matrix
+        if self.current_mask:
+            derived = getattr(self.current_mask, "derived_from", "original")
+            if derived.lower() != "original":
+                proj = Project()
+                for lbl, mat in proj.image_versions:
+                    if lbl == derived:
+                        target_matrix = mat
+                        break
+
         if orientation == "AXIAL":
             if self.current_mask.matrix[n, 0, 0] == 0:
                 mask = self.current_mask.matrix[n, 1:, 1:]
-                mask[:] = self.do_threshold_to_a_slice(
-                    self.get_image_slice(orientation, slice_number), mask
-                )
+                image_slice = target_matrix[slice_number]
+                mask[:] = self.do_threshold_to_a_slice(image_slice, mask)
                 self.current_mask.matrix[n, 0, 0] = 1
             n_mask = np.array(
                 self.current_mask.matrix[n, 1:, 1:],
@@ -1100,9 +1153,8 @@ class Slice(metaclass=utils.Singleton):
         elif orientation == "CORONAL":
             if self.current_mask.matrix[0, n, 0] == 0:
                 mask = self.current_mask.matrix[1:, n, 1:]
-                mask[:] = self.do_threshold_to_a_slice(
-                    self.get_image_slice(orientation, slice_number), mask
-                )
+                image_slice = target_matrix[:, slice_number, :]
+                mask[:] = self.do_threshold_to_a_slice(image_slice, mask)
                 self.current_mask.matrix[0, n, 0] = 1
             n_mask = np.array(
                 self.current_mask.matrix[1:, n, 1:],
@@ -1112,9 +1164,8 @@ class Slice(metaclass=utils.Singleton):
         elif orientation == "SAGITAL":
             if self.current_mask.matrix[0, 0, n] == 0:
                 mask = self.current_mask.matrix[1:, 1:, n]
-                mask[:] = self.do_threshold_to_a_slice(
-                    self.get_image_slice(orientation, slice_number), mask
-                )
+                image_slice = target_matrix[:, :, slice_number]
+                mask[:] = self.do_threshold_to_a_slice(image_slice, mask)
                 self.current_mask.matrix[0, 0, n] = 1
             n_mask = np.array(
                 self.current_mask.matrix[1:, 1:, n],
@@ -1184,16 +1235,20 @@ class Slice(metaclass=utils.Singleton):
         proj = Project()
         if proj.mask_dict[index] == self.current_mask:
             self.current_mask.was_edited = False
-            # TODO: find out a better way to do threshold
+            # Threshold using the ACTIVE matrix for consistency with what the user sees.
             if slice_number is None:
                 for n, slice_ in enumerate(self.matrix):
-                    print(n)
                     m = np.ones(slice_.shape, self.current_mask.matrix.dtype)
                     m[slice_ < thresh_min] = 0
                     m[slice_ > thresh_max] = 0
                     m[m == 1] = 255
                     self.current_mask.matrix[n + 1, 1:, 1:] = m
+                    self.current_mask.matrix[n + 1, 0, 0] = 1
             else:
+                # Per-slice path: visual preview only (called when user drags
+                # threshold slider). Uses the currently-buffered image — this
+                # does NOT write to current_mask.matrix, so it does not cause
+                # the mask-modified-on-scroll bug (that is fixed in get_mask_slice).
                 slice_ = self.buffer_slices[orientation].image
                 if slice_ is not None:
                     self.buffer_slices[orientation].mask = (
@@ -1238,39 +1293,45 @@ class Slice(metaclass=utils.Singleton):
 
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."
-        if self.current_mask:
-            self.current_mask.is_shown = False
+        import wx
+
+        wx.BeginBusyCursor()
+        try:
+            if self.current_mask:
+                self.current_mask.is_shown = False
+                self.current_mask.on_show()
+
+            proj = Project()
+            future_mask = proj.GetMask(index)
+            future_mask.is_shown = True
+            self.current_mask = future_mask
+            # Update the current mask index because is some edge cases
+            # it will be incorrect after self.current_mask = future_mask
+            self.current_mask.index = index
             self.current_mask.on_show()
 
-        proj = Project()
-        future_mask = proj.GetMask(index)
-        future_mask.is_shown = True
-        self.current_mask = future_mask
-        # Update the current mask index because is some edge cases
-        # it will be incorrect after self.current_mask = future_mask
-        self.current_mask.index = index
-        self.current_mask.on_show()
+            colour = future_mask.colour
+            self.SetMaskColour(index, colour, update=True)
 
-        colour = future_mask.colour
-        self.SetMaskColour(index, colour, update=True)
+            self.buffer_slices = {
+                "AXIAL": SliceBuffer(),
+                "CORONAL": SliceBuffer(),
+                "SAGITAL": SliceBuffer(),
+            }
 
-        self.buffer_slices = {
-            "AXIAL": SliceBuffer(),
-            "CORONAL": SliceBuffer(),
-            "SAGITAL": SliceBuffer(),
-        }
-
-        Publisher.sendMessage(
-            "Set mask threshold in notebook",
-            index=index,
-            threshold_range=self.current_mask.threshold_range,
-        )
-        Publisher.sendMessage(
-            "Set threshold values in gradient",
-            threshold_range=self.current_mask.threshold_range,
-        )
-        Publisher.sendMessage("Select mask name in combo", index=index)
-        Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage(
+                "Set mask threshold in notebook",
+                index=index,
+                threshold_range=self.current_mask.threshold_range,
+            )
+            Publisher.sendMessage(
+                "Set threshold values in gradient",
+                threshold_range=self.current_mask.threshold_range,
+            )
+            Publisher.sendMessage("Select mask name in combo", index=index)
+            Publisher.sendMessage("Update slice viewer")
+        finally:
+            wx.EndBusyCursor()
 
     # ---------------------------------------------------------------------------
 
@@ -1445,6 +1506,7 @@ class Slice(metaclass=utils.Singleton):
         edition_threshold_range=None,
         add_to_project=True,
         show=True,
+        derived_from=None,
     ):
         """
         Creates a new mask and add it to project.
@@ -1465,23 +1527,32 @@ class Slice(metaclass=utils.Singleton):
         Returns:
             new_mask: The new mask object.
         """
-        future_mask = Mask()
-        future_mask.create_mask(self.matrix.shape)
-        future_mask.spacing = self.spacing
+        import wx
 
-        if name:
-            future_mask.name = name
-        if colour:
-            future_mask.colour = colour
-        if opacity:
-            future_mask.opacity = opacity
-        if edition_threshold_range:
-            future_mask.edition_threshold_range = edition_threshold_range
-        if threshold_range:
-            future_mask.threshold_range = threshold_range
+        wx.BeginBusyCursor()
+        try:
+            future_mask = Mask()
+            future_mask.create_mask(self.matrix.shape)
+            future_mask.spacing = self.spacing
 
-        if add_to_project:
-            self._add_mask_into_proj(future_mask, show=show)
+            if name:
+                future_mask.name = name
+            if colour:
+                future_mask.colour = colour
+            if opacity:
+                future_mask.opacity = opacity
+            if edition_threshold_range:
+                future_mask.edition_threshold_range = edition_threshold_range
+            if threshold_range:
+                future_mask.threshold_range = threshold_range
+
+            if derived_from:
+                future_mask.derived_from = derived_from
+
+            if add_to_project:
+                self._add_mask_into_proj(future_mask, show=show)
+        finally:
+            wx.EndBusyCursor()
 
         return future_mask
 
@@ -1587,22 +1658,35 @@ class Slice(metaclass=utils.Singleton):
         m[mask == 254] = 254
         return m.astype("uint8")
 
-    def do_threshold_to_all_slices(self, mask=None):
+    def do_threshold_to_all_slices(self, mask=None, target_matrix=None):
         """
         Apply threshold to all slices.
 
         Params:
             - mask: the mask where result of the threshold will be stored.If
               None, it'll be the current mask.
+            - target_matrix: the image matrix to apply the threshold to. If None,
+              it will try to look up the image the mask was derived from.
         """
         if mask is None:
             mask = self.current_mask
+
+        if target_matrix is None:
+            target_matrix = self.matrix
+            derived = getattr(mask, "derived_from", "Original")
+            proj = Project()
+            for lbl, mat in proj.image_versions:
+                if lbl == derived:
+                    target_matrix = mat
+                    break
+
         for n in range(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
                 mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(
-                    self.matrix[n - 1], m, mask.threshold_range
+                    target_matrix[n - 1], m, mask.threshold_range
                 )
+                mask.matrix[n, 0, 0] = 1
 
         mask.matrix.flush()
 
@@ -1830,13 +1914,76 @@ class Slice(metaclass=utils.Singleton):
         os.close(temp_fd)
         os.remove(temp_file)
 
+        # Flush the reoriented image matrix to disk
+        if hasattr(self.matrix, "flush"):
+            self.matrix.flush()
+        if hasattr(self, "matrix_filename"):
+            try:
+                fd = os.open(self.matrix_filename, os.O_RDWR)
+                os.fsync(fd)
+                os.close(fd)
+            except (OSError, AttributeError):
+                pass
+
         self.q_orientation = np.array((1, 0, 0, 0))
         self.center = [(s * d / 2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
-        self.__clean_current_mask()
-        if self.current_mask:
-            self.current_mask.matrix[:] = 0
-            self.current_mask.was_edited = False
+        proj = Project()
+        new_shape = self.matrix.shape
+
+        # Update image_versions to point to the reoriented matrix
+        if proj.image_versions:
+            current_label = getattr(self, "current_image_label", "original")
+            for i, (label, mat) in enumerate(proj.image_versions):
+                if label == current_label or mat is self.matrix:
+                    proj.image_versions[i] = (label, self.matrix)
+                    break
+
+        for mask in proj.mask_dict.values():
+            new_mask_shape = (new_shape[0] + 1, new_shape[1] + 1, new_shape[2] + 1)
+
+            # If mask was manually edited, transform it along with the image
+            if mask.was_edited:
+                # Create temporary file for mask transformation
+                mask_temp_fd, mask_temp_file = tempfile.mkstemp()
+                mask_copy = np.memmap(
+                    mask_temp_file, shape=mask.matrix.shape, dtype=mask.matrix.dtype, mode="w+"
+                )
+                mask_copy[:] = mask.matrix
+
+                # Recreate mask matrix with new shape if needed
+                if mask.matrix.shape != new_mask_shape:
+                    mask._recreate_mask_matrix(new_mask_shape)
+
+                # Apply the same transformation to the mask
+                # Use nearest neighbor interpolation to preserve discrete mask values
+                transforms.apply_view_matrix_transform(
+                    mask_copy,
+                    self.spacing,
+                    M,
+                    0,
+                    "AXIAL",
+                    0,  # 0 = nearest neighbor interpolation
+                    0,
+                    mask.matrix,
+                )
+
+                del mask_copy
+                os.close(mask_temp_fd)
+                os.remove(mask_temp_file)
+
+                mask.matrix.flush()
+                os.fsync(mask.temp_fd)
+            else:
+                # For threshold-based masks, just resize and clear
+                if mask.matrix.shape != new_mask_shape:
+                    mask._recreate_mask_matrix(new_mask_shape)
+
+                mask.matrix[:] = 0
+                mask.matrix.flush()
+                os.fsync(mask.temp_fd)
+
+            mask.clear_history()
 
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_buffer()
@@ -1883,18 +2030,144 @@ class Slice(metaclass=utils.Singleton):
         elif axis == 2:
             self.matrix[:] = self.matrix[:, :, ::-1]
 
+        # Flush the flipped image matrix to disk so it is consistent
+        # with any mask re-evaluation that follows.
+        if hasattr(self.matrix, "flush"):
+            self.matrix.flush()
+
+        # Also flip every image version (filtered images) so that mask
+        # threshold evaluation always uses the correctly flipped data.
+        proj = Project()
+        for i, (label, mat) in enumerate(proj.image_versions):
+            if mat is not self.matrix:
+                if axis == 0:
+                    mat[:] = mat[::-1]
+                elif axis == 1:
+                    mat[:] = mat[:, ::-1]
+                elif axis == 2:
+                    mat[:] = mat[:, :, ::-1]
+                if hasattr(mat, "flush"):
+                    mat.flush()
+
+        # Invalidate every mask so all slices are re-evaluated against the
+        # flipped image on next access.  Without this, do_threshold_to_all_slices
+        # (called by CreateSurfaceFromIndex) pre-marks coronal/sagittal sentinel
+        # flags as evaluated without actually computing them, so get_mask_slice
+        # returns stale data when the user scrolls those views.
+        # (fix for issue #1402, same approach as the #1387 reorientation fix)
+        for mask in proj.mask_dict.values():
+            mask.matrix[:] = 0
+            mask.matrix.flush()
+            if hasattr(mask, "temp_fd"):
+                try:
+                    import os as _os
+
+                    _os.fsync(mask.temp_fd)
+                except OSError:
+                    pass
+            mask.clear_history()
+
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
 
     def OnSwapVolumeAxes(self, axes):
         axis0, axis1 = axes
-        self.matrix = self.matrix.swapaxes(axis0, axis1)
+
+        # swapaxes() returns a view — the underlying memmap file is NOT updated.
+        # We must write the swapped data back in-place so that surface workers
+        # (which read the file directly) see the correct data.
+        swapped = np.array(self.matrix.swapaxes(axis0, axis1))  # contiguous copy
+        new_shape = swapped.shape
+
+        # Reopen the memmap with the new shape and write the swapped data
+        import tempfile as _tempfile
+
+        new_fd, new_filename = _tempfile.mkstemp()
+        new_mat = np.memmap(new_filename, dtype=self.matrix.dtype, mode="w+", shape=new_shape)
+        new_mat[:] = swapped
+        new_mat.flush()
+        import os as _os
+
+        _os.fsync(new_fd)
+        _os.close(new_fd)
+        del swapped
+
+        # Close and remove the old matrix file, replace with new one
+        old_filename = self._matrix_filename
+        del self._matrix
+        try:
+            _os.remove(old_filename)
+        except OSError:
+            pass
+
+        self._matrix_filename = new_filename
+        self._matrix = new_mat
+
         if (axis0, axis1) == (2, 1):
             self.spacing = self.spacing[1], self.spacing[0], self.spacing[2]
         elif (axis0, axis1) == (2, 0):
             self.spacing = self.spacing[2], self.spacing[1], self.spacing[0]
         elif (axis0, axis1) == (1, 0):
             self.spacing = self.spacing[0], self.spacing[2], self.spacing[1]
+
+        # Also swap every image version (filtered images) so that mask
+        # threshold evaluation always uses the correctly swapped data.
+        proj = Project()
+
+        # Update project metadata so save/load uses the new file and shape.
+        # Without this, saving after a swap would archive the old (pre-swap)
+        # matrix file and the wrong shape, causing an error on reopen.
+        proj.matrix_filename = new_filename
+        proj.matrix_shape = new_shape
+        proj.spacing = self.spacing
+        # matrix_dtype stays the same
+        for i, (label, mat) in enumerate(proj.image_versions):
+            swapped_ver = np.array(mat.swapaxes(axis0, axis1))
+            ver_fd, ver_filename = _tempfile.mkstemp()
+            ver_mat = np.memmap(ver_filename, dtype=mat.dtype, mode="w+", shape=swapped_ver.shape)
+            ver_mat[:] = swapped_ver
+            ver_mat.flush()
+            _os.fsync(ver_fd)
+            _os.close(ver_fd)
+            del swapped_ver
+            # Clean up the old temp file for this image version
+            old_ver_filename = getattr(mat, "filename", None)
+            del mat
+            if old_ver_filename and old_ver_filename != old_filename:
+                try:
+                    _os.remove(old_ver_filename)
+                except OSError:
+                    pass
+            proj.image_versions[i] = (label, ver_mat)
+
+        # Update original_orientation so the volume viewer camera is
+        # positioned correctly after the swap.
+        _swap_orientation = {
+            (2, 1): {const.CORONAL: const.SAGITAL, const.SAGITAL: const.CORONAL},
+            (2, 0): {const.AXIAL: const.SAGITAL, const.SAGITAL: const.AXIAL},
+            (1, 0): {const.AXIAL: const.CORONAL, const.CORONAL: const.AXIAL},
+        }
+        mapping = _swap_orientation.get((axis0, axis1), {})
+        proj.original_orientation = mapping.get(
+            proj.original_orientation, proj.original_orientation
+        )
+
+        # Invalidate every mask so all slices are re-evaluated against the
+        # swapped image on next access.  After a swap the image shape changes
+        # so the mask matrix must be recreated with the new shape.
+        for mask in proj.mask_dict.values():
+            new_mask_shape = (new_shape[0] + 1, new_shape[1] + 1, new_shape[2] + 1)
+            if mask.matrix.shape != new_mask_shape:
+                mask._recreate_mask_matrix(new_mask_shape)
+            else:
+                mask.matrix[:] = 0
+                mask.matrix.flush()
+                if hasattr(mask, "temp_fd"):
+                    try:
+                        _os.fsync(mask.temp_fd)
+                    except OSError:
+                        pass
+            mask.clear_history()
 
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
@@ -1975,6 +2248,312 @@ class Slice(metaclass=utils.Singleton):
 
     def update_selected_masks(self, indices):
         self.selected_mask_indices = indices
+
+    def __apply_image_filter(self, filter_type, value, dimension="3D", orientation="Axial"):
+        if self.matrix is None:
+            return
+
+        # Prevent starting a new filter while one is already running
+        if getattr(self, "_is_filtering", False):
+            return
+        self._is_filtering = True
+
+        # ------------------------------------------------------------------ #
+        # Guarantee that image_versions[0] is always the unfiltered original. #
+        # This must happen synchronously (on the main thread) before the       #
+        # filter thread starts, because the thread overwrites self.matrix.     #
+        # ------------------------------------------------------------------ #
+        proj = Project()
+        if not proj.image_versions:
+            # Store the original as a disk-backed memmap so that .filename
+            # is always valid when AI segmentation tools read it later.
+            orig = self._matrix
+            if isinstance(orig, np.memmap):
+                proj.image_versions.append(("original", orig))
+            else:
+                # Fallback: write to a temp file for consistent memmap semantics
+                import os
+                import tempfile
+
+                fd_o, temp_o = tempfile.mkstemp(suffix=".dat")
+                os.close(fd_o)
+                orig_mat = np.memmap(temp_o, shape=orig.shape, dtype=orig.dtype, mode="w+")
+                orig_mat[:] = orig[:]
+                orig_mat.flush()
+                proj.image_versions.append(("original", orig_mat))
+
+        def _run_filter():
+            # Use the current matrix to allow filter chaining
+            matrix = self.matrix
+            dtype = matrix.dtype
+
+            try:
+                if dimension == "3D":
+                    if filter_type == 0:  # Gaussian Blur
+                        result = filters.gaussian_blur_filter(matrix, sigma=value)
+                    elif filter_type == 1:  # Median Filter
+                        result = filters.median_blur_filter(matrix, value)
+                    elif filter_type == 2:  # Mean Filter
+                        result = filters.mean_blur_filter(matrix, value)
+                    elif filter_type == 3:  # Sharpening
+                        result = filters.sharpening_filter(matrix, value)
+                    elif filter_type == 4:  # Despeckle
+                        result = filters.despeckle_filter(matrix, value)
+                    elif filter_type == 5:  # Border Detection
+                        result = filters.border_detection_filter(matrix, value=value)
+                    else:
+                        return
+                else:  # 2D filtering
+                    axis_map = {"Axial": 0, "Coronal": 1, "Sagittal": 2}
+                    axis = axis_map.get(orientation, 0)
+
+                    result = np.zeros_like(matrix)
+                    for i in range(matrix.shape[axis]):
+                        # Extract the 2D slice
+                        if axis == 0:
+                            slice_2d = matrix[i, :, :]
+                        elif axis == 1:
+                            slice_2d = matrix[:, i, :]
+                        else:
+                            slice_2d = matrix[:, :, i]
+
+                        # Apply filter to the 2D slice
+                        if filter_type == 0:
+                            res_2d = filters.gaussian_blur_filter(slice_2d, sigma=value)
+                        elif filter_type == 1:
+                            res_2d = filters.median_blur_filter(slice_2d, value)
+                        elif filter_type == 2:
+                            res_2d = filters.mean_blur_filter(slice_2d, value)
+                        elif filter_type == 3:
+                            res_2d = filters.sharpening_filter(slice_2d, value)
+                        elif filter_type == 4:
+                            res_2d = filters.despeckle_filter(slice_2d, value)
+                        elif filter_type == 5:
+                            res_2d = filters.border_detection_filter(slice_2d, value=value)
+                        else:
+                            return
+
+                        # Place it back
+                        if axis == 0:
+                            result[i, :, :] = res_2d
+                        elif axis == 1:
+                            result[:, i, :] = res_2d
+                        else:
+                            result[:, :, i] = res_2d
+
+                # Don't set self.matrix here - that would overwrite self._matrix
+                # (the original image). Instead, stash the result for _after_filter.
+                self._pending_filter_result = result.astype(dtype)
+            finally:
+                import wx
+
+                wx.CallAfter(self._after_filter, filter_type, value, dimension, orientation)
+
+        thread = threading.Thread(target=_run_filter, daemon=True)
+        thread.start()
+
+    def _after_filter(self, filter_type=None, value=None, dimension="3D", orientation="Axial"):
+        """Called on the main thread after filter completes."""
+        self._is_filtering = False
+
+        # Add the new filtered version to the project
+        proj = Project()
+        filtered_label = _("Filtered")
+        n_filtered = sum(1 for lbl, _mat in proj.image_versions if lbl.startswith(filtered_label))
+        label = f"{filtered_label} {n_filtered + 1}"
+        # Write the filtered data to a temporary memmap disk file so that multi-core
+        # 3D surface generators can access it instead of silently falling back.
+        import os
+        import tempfile
+
+        # Get the result produced by the filter thread
+        result = getattr(self, "_pending_filter_result", None)
+        if result is None:
+            return
+        self._pending_filter_result = None
+
+        fd_v, temp_v = tempfile.mkstemp(suffix=".dat")
+        os.close(fd_v)
+        filtered_mat = np.memmap(temp_v, shape=result.shape, dtype=result.dtype, mode="w+")
+        filtered_mat[:] = result[:]
+        filtered_mat.flush()
+
+        proj.image_versions.append((label, filtered_mat))
+
+        if filter_type is not None:
+            # 0: Gaussian, 1: Median, 2: Mean, 3: Sharpen, 4: Despeckle, 5: Sobel
+            filter_names = {
+                0: "gaussian",
+                1: "median",
+                2: "mean",
+                3: "sharpen",
+                4: "despeckle",
+                5: "sobel",
+            }
+            fname = filter_names.get(filter_type, "unknown")
+            if not hasattr(proj, "image_versions_meta"):
+                proj.image_versions_meta = {}
+            derived_from = getattr(self, "current_image_label", "original")
+            proj.image_versions_meta[label] = {
+                "applied_filter": fname,
+                "sigma_smooth": str(value),
+                "derived": derived_from,
+                "dimension": dimension,
+                "orientation": orientation,
+            }
+
+        import wx
+
+        wx.BeginBusyCursor()
+        try:
+            # Update histogram and center for the filtered image.
+            # Previously this happened via the matrix setter in _run_filter, but now
+            # we bypass the setter there to protect self._matrix (the original image).
+            i, e = filtered_mat.min(), filtered_mat.max()
+            r = int(e) - int(i)
+            if r > 0:
+                self.histogram = np.histogram(filtered_mat, r, (i, e))[0]
+            self.center = [(s * d / 2.0) for (d, s) in zip(filtered_mat.shape[::-1], self.spacing)]
+
+            # Fix 1: Switch to the newly created filtered image label FIRST, so that
+            # any mask creation or viewer updates triggered below use the correct image matrix!
+            self.current_image_label = label
+
+            # Must discard cached VTK buffers so viewers re-read the updated matrix
+            self.discard_all_buffers()
+
+            # Create a new mask for the new filtered image
+            self.create_new_mask(name=None, show=True, derived_from=label)
+
+            # Fix 2: Commit the filtered state to the auto-backup SYNCHRONOUSLY.
+            #
+            # Why synchronous (blocking), not a background thread?
+            # ----------------------------------------------------------
+            # On macOS, Ctrl+C sends SIGINT which kills the process via the
+            # kernel (exit code 130 = 128 + SIGINT). Python's cleanup code
+            # (threading._shutdown, atexit) does NOT run. Both daemon AND
+            # non-daemon threads are killed immediately. The ONLY way to
+            # guarantee the backup is written before the process can die is
+            # to complete the write synchronously on the main thread.
+            #
+            # Why doesn't this freeze the UI for long?
+            # ----------------------------------------------------------
+            # CreateAutoBackup uses compress=False (uncompressed tar).
+            # Writing ~110MB of uncompressed data to NVMe SSD on M2:
+            # < 0.5 seconds — well within user-acceptable limits.
+            import invesalius.constants as const
+            import invesalius.session as ses
+
+            session = ses.Session()
+            session.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
+            session._has_unsaved_changes = True
+            session._last_backup_time = 0.0
+            # Blocking call — returns only after backup is fully on disk.
+            session._safe_create_backup()
+
+            Publisher.sendMessage("Reload actual slice")
+            Publisher.sendMessage("Update slice viewer")
+            Publisher.sendMessage("Refresh viewer")
+            Publisher.sendMessage("Render volume viewer")
+            Publisher.sendMessage("Image filter done")
+        finally:
+            wx.EndBusyCursor()
+
+    def __switch_active_image(self, matrix):
+        """Swap the active volume to a previously stored image version.
+
+        Called when the user selects a row in the Images notebook tab.
+        *matrix* is a numpy array previously snapshotted by ImagePage.
+        """
+        import wx
+
+        wx.BeginBusyCursor()
+        try:
+            if self.matrix is not None:
+                # Swap reference instead of overwriting memory to avoid corruption
+                self.matrix = matrix
+
+                # Invalidate threshold flags in the current mask to ensure stability
+                # across image versions.
+                # Synchronously re-threshold the entire volume so the background mask
+                # matches the new image immediately, preserving manual edits (254)
+                # and preventing lazy-evaluation partial-update stripe artifacts.
+                # Note: We skip re-thresholding if the mask has been manually edited (was_edited),
+                # because 3D edits use 0/255 values rather than 253/254 and would be destroyed.
+                if self.current_mask and not getattr(self.current_mask, "was_edited", False):
+                    self.current_mask.matrix[:, 0, 0] = 0
+                    self.current_mask.matrix[0, :, 0] = 0
+                    self.current_mask.matrix[0, 0, :] = 0
+                    self.current_mask.matrix.flush()
+                    self.do_threshold_to_all_slices(self.current_mask)
+
+                self.discard_all_buffers()
+                Publisher.sendMessage("Reload actual slice")
+                Publisher.sendMessage("Update slice viewer")
+                Publisher.sendMessage("Refresh viewer")
+                Publisher.sendMessage("Render volume viewer")
+        finally:
+            wx.EndBusyCursor()
+
+    def __bake_masks_for_image(self, label, matrix):
+        """Force full evaluation of masks derived from the specified image label."""
+        import wx
+
+        wx.BeginBusyCursor()
+        try:
+            proj = Project()
+            for mask in proj.mask_dict.values():
+                if getattr(mask, "derived_from", "Original") == label:
+                    self.do_threshold_to_all_slices(mask=mask, target_matrix=matrix)
+                    mask.was_edited = True
+        finally:
+            wx.EndBusyCursor()
+
+    def __switch_active_image_by_label(self, label):
+        """Find an image version by label and switch to it if not already active."""
+        if label == self.current_image_label:
+            return
+
+        import wx
+
+        wx.BeginBusyCursor()
+        try:
+            proj = Project()
+            for lbl, mat in proj.image_versions:
+                if lbl == label:
+                    self.current_image_label = label
+                    if label == "original":
+                        # Restore _matrix to the original memmap stored in image_versions
+                        # (which is the same object as _matrix or a disk-backed copy).
+                        # Do NOT call the matrix setter — it would re-check is_filtered
+                        # and may overwrite _matrix with a plain ndarray losing .filename.
+                        self._matrix = mat
+                    else:
+                        # For filtered versions call the setter to update histograms.
+                        self.matrix = mat
+
+                    # Maintainer fix: synchronize mask with the newly selected image view.
+                    # If the currently active mask doesn't belong to this image version,
+                    # search for one that does and switch to it BEFORE re-evaluating the volume.
+                    # This prevents the previous image's mask (along with its manual edits)
+                    # from being incorrectly re-thresholded against the new image matrix.
+                    if (
+                        self.current_mask
+                        and getattr(self.current_mask, "derived_from", "Original") != label
+                    ):
+                        for mask_idx, mask in proj.mask_dict.items():
+                            if getattr(mask, "derived_from", "Original") == label:
+                                Publisher.sendMessage("Change mask selected", index=mask_idx)
+                                Publisher.sendMessage("Select mask name in combo", index=mask_idx)
+                                Publisher.sendMessage("Show mask", index=mask_idx, value=True)
+                                break
+
+                    self.__switch_active_image(mat)
+                    Publisher.sendMessage("Update image version selection", label=label)
+
+                    break
+        finally:
+            wx.EndBusyCursor()
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:

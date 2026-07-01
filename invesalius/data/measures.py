@@ -182,20 +182,7 @@ class MeasurementManager:
             return
 
         m, mr = self.measures[index]
-
-        # Synchronize visualization: only update the slice where this measurement lives.
-        # Do NOT jump other slices — the maintainer wants each slice to stay in its current position.
-        if m.location != const.SURFACE:
-            loc_str = map_id_locations.get(m.location)
-            if loc_str:
-                Publisher.sendMessage(("Set scroll position", loc_str), index=m.slice_number)
-
-        if m.points:
-            x, y, z = m.points[0]
-
-            if m.location == const.SURFACE:
-                # Trigger the cleanly orbiting 3D camera rotation without the positioning sphere
-                Publisher.sendMessage("Focus volume camera", position=[x, y, z])
+        self._show_measurement_position(index)
 
         if m.type == const.ANNOTATION:
             import wx
