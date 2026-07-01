@@ -189,6 +189,7 @@ class Robot(metaclass=Singleton):
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
         )
+        self.SetCoilName(self.coil_name) if self.coil_name is not None else "default_coil"
         print("Robot initialized")
 
     def GetCoilName(self):
@@ -197,11 +198,14 @@ class Robot(metaclass=Singleton):
     def SetCoilName(self, name):
         self.coil_name = name
 
+        if self.coil_name not in self.navigation.coil_registrations:
+            return
+
         coil_idx = self.navigation.coil_registrations[self.coil_name]["obj_id"]
 
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set coil index",
-            data=coil_idx,
+            coil_idx=coil_idx,
         )
         self.SaveConfig("robot_coil", name)
 
