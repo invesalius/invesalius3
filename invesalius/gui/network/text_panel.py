@@ -1,0 +1,219 @@
+from invesalius.pubsub import pub as Publisher
+import wx.gizmos as gizmos
+import wx
+
+myEVT_SELECT_PATIENT = wx.NewEventType()
+EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
+
+
+class TextPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+
+        self._selected_by_user = True
+        self.__idserie_treeitem = {}
+        self.__idpatient_treeitem = {}
+
+        self.__init_gui()
+        self.__bind_events_wx()
+        self.__bind_pubsub_evt()
+
+    def __bind_pubsub_evt(self):
+        # Publisher.subscribe(self.SelectSeries, 'Select series in import panel')
+        Publisher.subscribe(self.Populate, "Populate tree")
+        Publisher.subscribe(self.SetHostsList, "Set FindPanel hosts list")
+
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+
+    def __init_gui(self):
+        tree = gizmos.TreeListCtrl(
+            self,
+            -1,
+            style=wx.TR_DEFAULT_STYLE
+            | wx.TR_HIDE_ROOT
+            | wx.TR_ROW_LINES
+            #  | wx.TR_COLUMN_LINES
+            | wx.TR_FULL_ROW_HIGHLIGHT
+            | wx.TR_SINGLE,
+        )
+
+        tree.AddColumn(_("Patient name"))
+        tree.AddColumn(_("Patient ID"))
+        tree.AddColumn(_("Age"))
+        tree.AddColumn(_("Gender"))
+        tree.AddColumn(_("Study description"))
+        tree.AddColumn(_("Modality"))
+        tree.AddColumn(_("Date acquired"))
+        tree.AddColumn(_("# Images"))
+        tree.AddColumn(_("Institution"))
+        tree.AddColumn(_("Date of birth"))
+        tree.AddColumn(_("Accession Number"))
+        tree.AddColumn(_("Referring physician"))
+
+        tree.SetMainColumn(0)  # the one with the tree in it...
+        tree.SetColumnWidth(0, 280)  # Patient name
+        tree.SetColumnWidth(1, 110)  # Patient ID
+        tree.SetColumnWidth(2, 40)  # Age
+        tree.SetColumnWidth(3, 60)  # Gender
+        tree.SetColumnWidth(4, 160)  # Study description
+        tree.SetColumnWidth(5, 70)  # Modality
+        tree.SetColumnWidth(6, 200)  # Date acquired
+        tree.SetColumnWidth(7, 70)  # Number Images
+        tree.SetColumnWidth(8, 130)  # Institution
+        tree.SetColumnWidth(9, 100)  # Date of birth
+        tree.SetColumnWidth(10, 140)  # Accession Number
+        tree.SetColumnWidth(11, 160)  # Referring physician
+
+        self.root = tree.AddRoot(_("InVesalius Database"))
+        self.tree = tree
+
+    def SelectSeries(self, group_index):
+        pass
+
+    def Populate(self, patients):
+
+        tree = self.tree
+
+        for patient in patients.keys():
+            
+            first_study = list(patients[patient].keys())[0]
+            first_serie = list(patients[patient][first_study].keys())[0]
+            title = patients[patient][first_study][first_serie]['name']
+            p = patients[patient][first_study][first_serie]
+
+            p_id = patient
+            age = p['age']
+            gender = p['gender']
+            study_description = p['study_description']
+            modality = p['modality']
+            date = p['acquisition_date']
+            time = p['acquisition_time']            
+            institution = p['institution']
+            birthdate = p['date_of_birth']
+            acession_number = p['acession_number']
+            physician = p['ref_physician']
+
+            parent = tree.AppendItem(self.root, str(title))
+
+            n_amount_images = 0 
+            for study in patients[patient]:
+                for serie in patients[patient][study]:
+                    n_amount_images  = n_amount_images + patients[patient][study][serie]['n_images']
+
+            parent = self.__idpatient_treeitem[patient] \
+                if patient in self.__idpatient_treeitem \
+                else tree.AppendItem(self.root, str(title))
+
+            tree.SetItemPyData(parent, patient)
+
+            tree.SetItemText(parent, p_id, 1)
+            tree.SetItemText(parent, age, 2)
+            tree.SetItemText(parent, gender, 3)
+            tree.SetItemText(parent, study_description, 4)
+            tree.SetItemText(parent, "", 5)
+            tree.SetItemText(parent, date + " " + time, 6)
+            tree.SetItemText(parent, institution, 8)
+            tree.SetItemText(parent, birthdate, 9)
+            tree.SetItemText(parent, acession_number, 10)
+            tree.SetItemText(parent, str(physician), 11)
+
+            self.__idpatient_treeitem[patient] = parent
+
+            for study in patients[patient].keys():
+                study_node = tree.AppendItem(parent, f"Study: {study[:8]}...")
+                tree.SetItemPyData(study_node, study)
+
+                for series in patients[patient][study].keys():
+                    serie_description = patients[patient][study][series]['serie_description']
+                    n_images =  patients[patient][study][series]['n_images']
+                    date =  patients[patient][study][series]['acquisition_date']
+                    time =  patients[patient][study][series]['acquisition_time'] 
+                    modality = patients[patient][study][series]['modality']
+
+                    child = self.__idserie_treeitem[(patient, series)] \
+                        if (patient, series) in self.__idserie_treeitem \
+                        else tree.AppendItem(parent, series)
+                    
+                    tree.SetItemPyData(child, series)
+
+                    tree.SetItemText(child, serie_description, 0)
+                    #tree.SetItemText(child, dicom.acquisition.protocol_name, 4)
+                    tree.SetItemText(child, modality, 5)
+                    tree.SetItemText(child, date + " " + time, 6)
+                    tree.SetItemText(child, str(n_images) , 7)
+                    tree.SetItemText(parent, str(n_amount_images), 7)
+
+                    self.__idserie_treeitem[(patient, series)] = child
+
+        tree.Expand(self.root)
+        tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
+    
+    def SetHostsList(self, evt_pub):
+        self.hosts = evt_pub.data
+
+    def GetHostList(self):
+        Publisher.sendMessage("Get NodesPanel host list")
+        return self.hosts
+
+    def OnSelChanged(self, evt):
+        item = self.tree.GetSelection()
+        if self._selected_by_user:
+            group = self.tree.GetItemPyData(item)
+            if isinstance(group, dcm.DicomGroup):
+                # Publisher.sendMessage('Load group into import panel',
+                #                            group)
+                pass
+
+            elif isinstance(group, dcm.PatientGroup):
+                id = group.GetDicomSample().patient.id
+                my_evt = SelectEvent(myEVT_SELECT_PATIENT, self.GetId())
+                my_evt.SetSelectedID(id)
+                self.GetEventHandler().ProcessEvent(my_evt)
+
+                # Publisher.sendMessage('Load patient into import panel',
+                #                            group)
+        else:
+            parent_id = self.tree.GetItemParent(item)
+            self.tree.Expand(parent_id)
+        evt.Skip()
+
+    def OnActivate(self, evt):
+        item = evt.GetItem()
+        item_parent = self.tree.GetItemParent(item)
+
+        patient_id = self.tree.GetItemPyData(item_parent)
+        serie_id = self.tree.GetItemPyData(item)
+
+        hosts = self.GetHostList()
+
+        for key in hosts.keys():
+            if key != 0:
+                dn = dcm_net.DicomNet()
+                dn.SetHost(self.hosts[key][1])
+                dn.SetPort(self.hosts[key][2])
+                dn.SetAETitleCall(self.hosts[key][3])
+                dn.SetAETitle(self.hosts[0][3])
+                dn.RunCMove((patient_id, serie_id))
+                # dn.SetSearchWord(self.find_txt.GetValue())
+
+                # Publisher.sendMessage('Populate tree', dn.RunCFind())
+
+        # my_evt = SelectEvent(myEVT_SELECT_SERIE_TEXT, self.GetId())
+        # my_evt.SetItemData(group)
+        # self.GetEventHandler().ProcessEvent(my_evt)
+
+    def OnSize(self, evt):
+        self.tree.SetSize(self.GetSize())
+
+    def SelectSerie(self, serie):
+        self._selected_by_user = False
+        item = self.__idserie_treeitem[serie]
+        self.tree.SelectItem(item)
+        self._selected_by_user = True
+
+    def GetSelection(self):
+        """Get selected item"""
+        item = self.tree.GetSelection()
+        group = self.tree.GetItemPyData(item)
+        return group
