@@ -25,8 +25,7 @@ import wx.gizmos as gizmos
 import wx.lib.mixins.listctrl as listmix
 import wx.lib.splitter as spl
 from wx.lib.mixins.listctrl import CheckListCtrlMixin
-from invesalius.gui.network.nodes_panel import NodesPanel
-from invesalius.gui.network.find_panel import FindPanel
+from invesalius.gui.network.host_find_panel import HostFindPanel
 
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
@@ -37,18 +36,8 @@ import invesalius.reader.dicom_grouper as dcm
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
-myEVT_SELECT_SERIE = wx.NewEventType()
-EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
-
-myEVT_SELECT_SLICE = wx.NewEventType()
-EVT_SELECT_SLICE = wx.PyEventBinder(myEVT_SELECT_SLICE, 1)
-
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
-
-myEVT_SELECT_SERIE_TEXT = wx.NewEventType()
-EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
-
 
 class SelectEvent(wx.PyCommandEvent):
     def __init__(self, evtType, id):
@@ -148,13 +137,10 @@ class InnerPanel(wx.Panel):
         self.last_image_selection = pubsub_evt.data[1]
 
     def _bind_events(self):
-        self.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
-        self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
         self.Bind(EVT_SELECT_PATIENT, self.OnSelectPatient)
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnClickOk)
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnClickCancel)
-        self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnDblClickTextPanel)
-
+        
     def ShowDicomPreview(self, pubsub_evt):
         dicom_groups = pubsub_evt.data
         self.patients.extend(dicom_groups)
@@ -424,48 +410,3 @@ class TextPanel(wx.Panel):
         item = self.tree.GetSelection()
         group = self.tree.GetItemPyData(item)
         return group
-
-class HostFindPanel(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent, -1)
-        self._init_ui()
-        self._bind_events()
-
-    def _init_ui(self):
-        splitter = spl.MultiSplitterWindow(self, style=wx.SP_LIVE_UPDATE)
-        splitter.SetOrientation(wx.HORIZONTAL)
-        self.splitter = splitter
-
-        # TODO: Rever isso
-        #  splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(splitter, 1, wx.EXPAND)
-        self.SetSizer(sizer)
-
-        self.image_panel = NodesPanel(splitter)
-        splitter.AppendWindow(self.image_panel, 500)
-
-        self.text_panel = FindPanel(splitter)
-        splitter.AppendWindow(self.text_panel, 750)
-
-        self.SetSizer(sizer)
-        sizer.Fit(self)
-
-        self.Layout()
-        self.Update()
-        self.SetAutoLayout(1)
-
-    def _bind_events(self):
-        self.text_panel.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
-        self.text_panel.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
-
-    def OnSelectSerie(self, evt):
-        evt.Skip()
-
-    def OnSelectSlice(self, evt):
-        self.image_panel.dicom_preview.ShowSlice(evt.GetSelectID())
-        evt.Skip()
-
-    def SetSerie(self, serie):
-        self.image_panel.dicom_preview.SetDicomGroup(serie)
