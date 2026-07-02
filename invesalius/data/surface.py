@@ -674,18 +674,18 @@ class SurfaceManager:
 
                 if total_items > 20:
                     progress.Destroy()
-                    response = wx.MessageBox(
-                        _(
-                            "You are about to import {} surfaces. This may take some time. Continue?"
-                        ).format(total_items),
-                        _("Confirm Import"),
-                        wx.YES_NO | wx.ICON_QUESTION,
-                    )
+                    msg = _(
+                        "You are about to import {} surfaces. This may take some time. Continue?"
+                    ).format(total_items)
+                    title = _("Confirm Import")
+                    response = wx.MessageBox(msg, title, wx.YES_NO | wx.ICON_QUESTION)
                     if response != wx.YES:
                         return
+                    import_msg = _("Import surface")
+                    reading_msg = _("Reading 3MF file...")
                     progress = wx.ProgressDialog(
-                        _("Import surface"),
-                        _("Reading 3MF file..."),
+                        import_msg,
+                        reading_msg,
                         maximum=100,
                         parent=None,
                         style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE,
@@ -1850,13 +1850,11 @@ class SurfaceManager:
                         return
 
                     if len(visible_surfaces) > 20:
-                        response = wx.MessageBox(
-                            _(
-                                "You are about to export {} surfaces. This may take some time. Continue?"
-                            ).format(len(visible_surfaces)),
-                            _("Confirm Export"),
-                            wx.YES_NO | wx.ICON_QUESTION,
-                        )
+                        msg = _(
+                            "You are about to export {} surfaces. This may take some time. Continue?"
+                        ).format(len(visible_surfaces))
+                        title = _("Confirm Export")
+                        response = wx.MessageBox(msg, title, wx.YES_NO | wx.ICON_QUESTION)
                         if response != wx.YES:
                             progress.Destroy()
                             return
