@@ -685,7 +685,7 @@ class SurfaceManager:
                         # Calculate progress range for this surface (20% to 80% total range)
                         progress_range = 60  # Total progress range for all surfaces
                         surface_progress_chunk = progress_range / max(total_items, 1)
-                        
+
                         percent_start = int(20 + (idx * surface_progress_chunk))
                         keep_going, skip = progress.Update(
                             percent_start,
