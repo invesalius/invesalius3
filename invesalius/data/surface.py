@@ -672,25 +672,6 @@ class SurfaceManager:
                 idx = 0
                 total_items = build_items.Count()
 
-                if total_items > 20:
-                    progress.Destroy()
-                    msg = _(
-                        "You are about to import {} surfaces. This may take some time. Continue?"
-                    ).format(total_items)
-                    title = _("Confirm Import")
-                    response = wx.MessageBox(msg, title, wx.YES_NO | wx.ICON_QUESTION)
-                    if response != wx.YES:
-                        return
-                    import_msg = _("Import surface")
-                    reading_msg = _("Reading 3MF file...")
-                    progress = wx.ProgressDialog(
-                        import_msg,
-                        reading_msg,
-                        maximum=100,
-                        parent=None,
-                        style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE,
-                    )
-
                 while build_items.MoveNext():
                     build_item = build_items.GetCurrent()
                     object_resource = build_item.GetObjectResource()
@@ -701,7 +682,11 @@ class SurfaceManager:
                         vertex_count = mesh_object.GetVertexCount()
                         triangle_count = mesh_object.GetTriangleCount()
 
-                        percent_start = 20 + (idx * 60 // max(total_items, 1))
+                        # Calculate progress range for this surface (20% to 80% total range)
+                        progress_range = 60  # Total progress range for all surfaces
+                        surface_progress_chunk = progress_range / max(total_items, 1)
+                        
+                        percent_start = int(20 + (idx * surface_progress_chunk))
                         keep_going, skip = progress.Update(
                             percent_start,
                             _("Loading mesh {}/{}: {} vertices, {} triangles...").format(
@@ -725,7 +710,7 @@ class SurfaceManager:
                                 vertex.Coordinates[2],
                             )
 
-                        percent_mid = percent_start + 20
+                        percent_mid = int(20 + (idx + 0.4) * surface_progress_chunk)
                         keep_going, skip = progress.Update(
                             percent_mid,
                             _("Processing triangles for mesh {}/{}...").format(
@@ -746,7 +731,7 @@ class SurfaceManager:
                             triangle.GetPointIds().SetId(2, triangle_obj.Indices[2])
                             triangles.InsertNextCell(triangle)
 
-                        percent_end = percent_start + 40
+                        percent_end = int(20 + (idx + 0.8) * surface_progress_chunk)
                         keep_going, skip = progress.Update(
                             percent_end, _("Creating surface {}/{}...").format(idx + 1, total_items)
                         )
@@ -1848,16 +1833,6 @@ class SurfaceManager:
                     if not visible_surfaces:
                         progress.Destroy()
                         return
-
-                    if len(visible_surfaces) > 20:
-                        msg = _(
-                            "You are about to export {} surfaces. This may take some time. Continue?"
-                        ).format(len(visible_surfaces))
-                        title = _("Confirm Export")
-                        response = wx.MessageBox(msg, title, wx.YES_NO | wx.ICON_QUESTION)
-                        if response != wx.YES:
-                            progress.Destroy()
-                            return
 
                     # Deduplicate surface names
                     # First pass: normalize empty/None names to Surface_N

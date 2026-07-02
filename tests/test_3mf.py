@@ -331,3 +331,26 @@ def test_vertex_coordinates_preserved(tmp_path: Path):
         ]
     
     assert np.allclose(original_points, imported_points, atol=1e-5)
+
+
+def test_large_surface_count_progress_calculation():
+    """Test that progress calculations stay within 0-100 for many surfaces."""
+    # Test the progress calculation logic for 25 surfaces
+    total_items = 25
+    progress_range = 60
+    surface_progress_chunk = progress_range / max(total_items, 1)
+    
+    for idx in range(total_items):
+        percent_start = int(20 + (idx * surface_progress_chunk))
+        percent_mid = int(20 + (idx + 0.4) * surface_progress_chunk)
+        percent_end = int(20 + (idx + 0.8) * surface_progress_chunk)
+        
+        # All values must be <= 80 (since 80-100 reserved for final processing)
+        assert 20 <= percent_start <= 80, f"Surface {idx}: start={percent_start} out of range"
+        assert 20 <= percent_mid <= 80, f"Surface {idx}: mid={percent_mid} out of range"
+        assert 20 <= percent_end <= 80, f"Surface {idx}: end={percent_end} out of range"
+    
+    # Verify last surface reaches close to 80%
+    last_idx = total_items - 1
+    last_end = int(20 + (last_idx + 0.8) * surface_progress_chunk)
+    assert 78 <= last_end <= 80, f"Last surface end={last_end} should be near 80%"
