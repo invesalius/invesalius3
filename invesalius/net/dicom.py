@@ -84,10 +84,10 @@ class DicomNet:
             return False
 
     def RunCFind(self):
-        ae = AE()
+        ae = AE(self.aetitle_call)
         ae.add_requested_context(PatientRootQueryRetrieveInformationModelFind)
 
-        assoc = ae.associate(self.address, int(self.port), ae_title=self.aetitle)
+        assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)
         if not assoc.is_established:
             return False
 
