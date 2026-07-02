@@ -12,6 +12,7 @@ keywords = [
 dependencies = [
     "h5py==3.11.0",
     "imageio==2.34.2",
+    "lib3mf==2.3.2",
     "matplotlib==3.9.0",
     "nibabel==5.2.1",
     "numpy==1.26.4",
@@ -189,6 +190,7 @@ module = [
     'sigar.*',
     'numpy.*',
     'invesalius_rs.*',
+    'lib3mf.*',
 ]
 ignore_missing_imports = true
 
