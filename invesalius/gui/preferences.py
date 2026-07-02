@@ -1231,6 +1231,42 @@ class ObjectTab(wx.Panel):
             return os.path.basename(obj_dirs[rom_index])
         return None
 
+    def _remap_polaris_obj_id(self, coil_name, coil_registration):
+        if coil_registration.get("tracker_id") != const.POLARIS:
+            return
+
+        tracker_file = coil_registration.get("tracker_file")
+        if not tracker_file:
+            return
+
+        connection = self.tracker.tracker_connection
+        if connection is None or connection.configuration is None:
+            return
+
+        obj_dirs = connection.configuration.get("obj_dirs", None)
+        if not obj_dirs:
+            return
+
+        for i, rom_path in enumerate(obj_dirs):
+            basename = os.path.basename(rom_path)
+            name, _ = os.path.splitext(basename)
+            if name == tracker_file or basename == tracker_file:
+                new_obj_id = i + 2
+                if new_obj_id != coil_registration.get("obj_id"):
+                    print(
+                        f"[{coil_name}] Remapping obj_id {coil_registration.get('obj_id')} -> {new_obj_id} based on ROM {tracker_file}"
+                    )
+                    coil_registration["obj_id"] = new_obj_id
+                return
+
+        wx.MessageBox(
+            _(
+                f"Warning: The associated ROM file '{tracker_file}' for coil '{coil_name}' was not found in the current Polaris configuration."
+            ),
+            _("InVesalius 3"),
+            wx.ICON_WARNING,
+        )
+
     def _BuildCoilTooltip(self, coil_name):
         """Build a rich tooltip for a coil button showing tracker and visualization info."""
         registration = self.coil_registrations.get(coil_name, {})
@@ -1334,6 +1370,11 @@ class ObjectTab(wx.Panel):
         self.ShowMulticoilGUI(multicoil_mode)
 
         self.coil_registrations = self.session.GetConfig("coil_registrations", {})
+
+        # Verify and remap polaris obj_ids before creating buttons
+        for coil_name in list(self.coil_registrations):
+            self._remap_polaris_obj_id(coil_name, self.coil_registrations[coil_name])
+
         # Add a button for each coil
         for coil_name in self.coil_registrations:
             self.AddCoilButton(coil_name, show_button=multicoil_mode)
@@ -1514,6 +1555,7 @@ class ObjectTab(wx.Panel):
                             "obj_id": obj_id,
                             "tracker_id": tracker_id,
                             "path": coil_path.decode(const.FS_ENCODE),
+                            "tracker_file": self._GetTrackerFileName(obj_id),
                         }
                         self.coil_registrations[coil_name] = coil_registration
                         self.session.SetConfig("coil_registrations", self.coil_registrations)
@@ -1552,7 +1594,12 @@ class ObjectTab(wx.Panel):
         try:
             if filename:
                 with open(filename, "r") as text_file:
-                    data = [s.split("\t") for s in text_file.readlines()]
+                    lines = [
+                        line
+                        for line in text_file.readlines()
+                        if line.strip() and line.strip() != "#"
+                    ]
+                    data = [s.split("\t") for s in lines]
 
                 registration_coordinates = np.array(data[1:]).astype(np.float32)
                 obj_fiducials = registration_coordinates[:, :3]
@@ -1560,14 +1607,23 @@ class ObjectTab(wx.Panel):
 
                 coil_name = data[0][0][2:]
                 coil_path = data[0][1].encode(const.FS_ENCODE)
-                tracker_id = int(data[0][3])
-                obj_id = int(data[0][-1])
+
+                if len(data[0]) >= 6:
+                    tracker_id = int(data[0][3])
+                    obj_id = int(data[0][5])
+                else:
+                    tracker_id = self.tracker.tracker_id
+                    obj_id = int(data[0][-1])
+
                 coil_name = "default_coil" if self.navigation.n_coils == 1 else coil_name
 
                 # Handle old OBR file which lacks coil_name and tracker information
                 if len(data[0]) < 6:
                     coil_name = "default_coil"
-                    tracker_id = self.tracker.tracker_id
+
+                tracker_file = None
+                if len(data[0]) >= 8 and data[0][6] == "ROM":
+                    tracker_file = data[0][7].strip()
 
                 if coil_name in self.coil_registrations and coil_name != "default_coil":
                     # Warn that we are overwriting an old registration
@@ -1600,6 +1656,11 @@ class ObjectTab(wx.Panel):
                         "tracker_id": tracker_id,
                         "path": coil_path.decode(const.FS_ENCODE),
                     }
+                    if tracker_file:
+                        coil_registration["tracker_file"] = tracker_file
+
+                    self._remap_polaris_obj_id(coil_name, coil_registration)
+
                     self.coil_registrations[coil_name] = coil_registration
                     self.session.SetConfig("coil_registrations", self.coil_registrations)
                     self.AddCoilButton(coil_name)  # Add a button for this coil to GUI
@@ -1679,6 +1740,10 @@ class ObjectTab(wx.Panel):
                 + "\t"
                 + str("%d" % coil_registration["obj_id"])
             )
+            tracker_file = coil_registration.get("tracker_file")
+            if tracker_file:
+                hdr += "\tROM\t" + tracker_file
+
             data = np.hstack([coil_registration["fiducials"], coil_registration["orientations"]])
             np.savetxt(filename, data, fmt="%.4f", delimiter="\t", newline="\n", header=hdr)
             wx.MessageBox(_("Object file successfully saved"), _("Save"))
