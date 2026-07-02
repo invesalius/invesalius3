@@ -218,8 +218,8 @@ class TextPanel(wx.Panel):
         wx.Panel.__init__(self, parent, -1)
 
         self._selected_by_user = True
-        self.idserie_treeitem = {}
-        self.treeitem_idpatient = {}
+        self.__idserie_treeitem = {}
+        self.__idpatient_treeitem = {}
 
         self.__init_gui()
         self.__bind_events_wx()
@@ -282,7 +282,6 @@ class TextPanel(wx.Panel):
 
         tree = self.tree
 
-        self.idserie_treeitem = {}
         for patient in patients.keys():
             
             first_study = list(patients[patient].keys())[0]
@@ -309,41 +308,50 @@ class TextPanel(wx.Panel):
                 for serie in patients[patient][study]:
                     n_amount_images  = n_amount_images + patients[patient][study][serie]['n_images']
 
+            parent = self.__idpatient_treeitem[patient] \
+                if patient in self.__idpatient_treeitem \
+                else tree.AppendItem(self.root, str(title))
+
             tree.SetItemPyData(parent, patient)
+
             tree.SetItemText(parent, p_id, 1)
             tree.SetItemText(parent, age, 2)
             tree.SetItemText(parent, gender, 3)
             tree.SetItemText(parent, study_description, 4)
             tree.SetItemText(parent, "", 5)
             tree.SetItemText(parent, date + " " + time, 6)
-            tree.SetItemText(parent, str(n_amount_images), 7)
             tree.SetItemText(parent, institution, 8)
             tree.SetItemText(parent, birthdate, 9)
             tree.SetItemText(parent, acession_number, 10)
-            tree.SetItemText(parent, '', 11)
+            tree.SetItemText(parent, str(physician), 11)
 
+            self.__idpatient_treeitem[patient] = parent
 
-            for study_id in patients[patient].keys():
-                study_node = tree.AppendItem(parent, f"Study: {study_id[:8]}...")
-                tree.SetItemPyData(study_node, study_id)
+            for study in patients[patient].keys():
+                study_node = tree.AppendItem(parent, f"Study: {study[:8]}...")
+                tree.SetItemPyData(study_node, study)
 
-                for series_id in patients[patient][study_id].keys():
-                    serie_description = patients[patient][study_id][series_id]['serie_description']
-                    n_images =  patients[patient][study_id][series_id]['n_images']
-                    date =  patients[patient][study_id][series_id]['acquisition_date']
-                    time =  patients[patient][study_id][series_id]['acquisition_time'] 
-                    modality = patients[patient][study_id][series_id]['modality']
+                for series in patients[patient][study].keys():
+                    serie_description = patients[patient][study][series]['serie_description']
+                    n_images =  patients[patient][study][series]['n_images']
+                    date =  patients[patient][study][series]['acquisition_date']
+                    time =  patients[patient][study][series]['acquisition_time'] 
+                    modality = patients[patient][study][series]['modality']
 
-                    child = tree.AppendItem(parent, series_id)
-                    tree.SetItemPyData(child, series_id)
+                    child = self.__idserie_treeitem[(patient, series)] \
+                        if (patient, series) in self.__idserie_treeitem \
+                        else tree.AppendItem(parent, series)
+                    
+                    tree.SetItemPyData(child, series)
 
                     tree.SetItemText(child, serie_description, 0)
                     #tree.SetItemText(child, dicom.acquisition.protocol_name, 4)
                     tree.SetItemText(child, modality, 5)
                     tree.SetItemText(child, date + " " + time, 6)
                     tree.SetItemText(child, str(n_images) , 7)
+                    tree.SetItemText(parent, str(n_amount_images), 7)
 
-                    self.idserie_treeitem[(patient, series_id)] = child
+                    self.__idserie_treeitem[(patient, series)] = child
 
         tree.Expand(self.root)
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
@@ -407,7 +415,7 @@ class TextPanel(wx.Panel):
 
     def SelectSerie(self, serie):
         self._selected_by_user = False
-        item = self.idserie_treeitem[serie]
+        item = self.__idserie_treeitem[serie]
         self.tree.SelectItem(item)
         self._selected_by_user = True
 
