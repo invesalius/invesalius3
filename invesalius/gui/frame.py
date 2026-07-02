@@ -34,12 +34,10 @@ import invesalius.gui.default_tasks as tasks
 import invesalius.gui.default_viewers as viewers
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.import_bitmap_panel as imp_bmp
+import invesalius.gui.import_network_panel as imp_net
 import invesalius.gui.import_panel as imp
 import invesalius.gui.log as log
 import invesalius.gui.preferences as preferences
-import invesalius.gui.dicom_server_panel as dicom_server
-
-import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
 from invesalius import inv_paths
@@ -352,14 +350,14 @@ class Frame(wx.Frame):
         ncaption = _("Retrieve DICOM from PACS")
         aui_manager.AddPane(
             import_network_panel,
-            wx.aui.AuiPaneInfo().
-            Name("Retrieve").
-            Centre()
-            .Hide().
-            MaximizeButton(True).
-            Floatable(True).
-            Caption(ncaption).
-            CaptionVisible(True)
+            wx.aui.AuiPaneInfo()
+            .Name("Retrieve")
+            .Centre()
+            .Hide()
+            .MaximizeButton(True)
+            .Floatable(True)
+            .Caption(ncaption)
+            .CaptionVisible(True),
         )
 
         # Add toolbars to manager
@@ -735,8 +733,6 @@ class Frame(wx.Frame):
             self.ShowPreferences()
         elif id == const.ID_DICOM_NETWORK:
             self.ShowRetrieveDicomPanel()
-        elif id == const.ID_DICOM_SERVER:
-            self.ShowDicomServer()
         elif id in (const.ID_FLIP_X, const.ID_FLIP_Y, const.ID_FLIP_Z):
             axis = {const.ID_FLIP_X: 2, const.ID_FLIP_Y: 1, const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
@@ -939,18 +935,6 @@ class Frame(wx.Frame):
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
         self.mw.SetPosition(pos)
 
-    def ShowDicomServer(self):
-        """ Show dicom server dialog. """
-
-        dicom_server_dialog = dicom_server.DicomServer(self)
-        if dicom_server_dialog.ShowModal() == wx.ID_OK:
-
-            dicom_server_dialog.Destroy()
-
-            session = ses.Session()
-            session.SetConfig('server_aetitle', dicom_server_dialog.ae_title)
-            session.SetConfig('server_port', dicom_server_dialog.port)
-
     def ShowPreferences(self, page=0):
         preferences_dialog = preferences.Preferences(self, page)
         preferences_dialog.LoadPreferences()
@@ -979,6 +963,8 @@ class Frame(wx.Frame):
             console_logging_level = values.get(const.CONSOLE_LOGGING_LEVEL, 0)
             logging = values.get(const.LOGGING, 0)
             logging_level = values.get(const.LOGGING_LEVEL, 0)
+            server_aetitle = values[const.SERVER_AETITLE]
+            server_port = values[const.SERVER_PORT]
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
@@ -998,6 +984,8 @@ class Frame(wx.Frame):
             session.SetConfig("logging_level", logging_level)
             session.SetConfig("append_log_file", append_log_file)
             session.SetConfig("logging_file", logging_file)
+            session.SetConfig("server_aetitle", server_aetitle)
+            session.SetConfig("server_port", server_port)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
@@ -1697,10 +1685,6 @@ class MenuBar(wx.MenuBar):
         # TOOLS
         # tools_menu = wx.Menu()
 
-        # NETWORK
-        network_settings_menu = wx.Menu()
-        network_settings_menu.Append(const.ID_DICOM_SERVER, _("Dicom Server"))
-
         # OPTIONS
         options_menu = wx.Menu()
         options_menu.Append(const.ID_PREFERENCES, _("Preferences"))
@@ -1752,7 +1736,6 @@ class MenuBar(wx.MenuBar):
         self.Append(options_menu, _("Options"))
         self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
-        self.Append(network_settings_menu, _("Network Settings"))
 
         plugins_menu.Bind(wx.EVT_MENU, self.OnPluginMenu)
 

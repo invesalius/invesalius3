@@ -1,30 +1,39 @@
-import gdcm
+import os
+import time
 from datetime import datetime
+
+import gdcm
 from pydicom.dataset import Dataset
-from pynetdicom import AE, debug_logger, evt, build_role, AllStoragePresentationContexts, StoragePresentationContexts
+from pynetdicom import (
+    AE,
+    AllStoragePresentationContexts,
+    StoragePresentationContexts,
+    build_role,
+    debug_logger,
+    evt,
+)
 from pynetdicom.sop_class import (
-    Verification,
+    CTImageStorage,
     PatientRootQueryRetrieveInformationModelFind,
     PatientRootQueryRetrieveInformationModelGet,
     PatientRootQueryRetrieveInformationModelMove,
-    CTImageStorage,
+    Verification,
 )
-import os
-import time
 
 import invesalius.utils as utils
 
-debug_logger()      
+debug_logger()
+
 
 class DicomNet:
-    def __init__(self, address: str, port: int, aetitle: str, aetitle_call: str="INVESALIUS"):
+    def __init__(self, address: str, port: int, aetitle: str, aetitle_call: str = "INVESALIUS"):
         self.SetHost(address)
         self.SetPort(port)
         self.SetAETitleCall(aetitle_call)
         self.SetAETitle(aetitle)
         self.search_word = ""
         self.search_type = "patient"
-        self.directory = "../Data" 
+        self.directory = "../Data"
 
     def __call__(self):
         return self
@@ -98,7 +107,9 @@ class DicomNet:
         patient_ds.PatientName = f"*{self.search_word}*"
         patient_ds.PatientID = ""
 
-        patient_response = assoc.send_c_find(patient_ds, PatientRootQueryRetrieveInformationModelFind)
+        patient_response = assoc.send_c_find(
+            patient_ds, PatientRootQueryRetrieveInformationModelFind
+        )
         for patient_status, patient_identifier in patient_response:
             if patient_status and patient_status.Status in (0xFF00, 0xFF01):
                 patient_id = patient_identifier.get("PatientID")
@@ -112,12 +123,14 @@ class DicomNet:
             study_ds.QueryRetrieveLevel = "STUDY"
             study_ds.PatientID = patientId
             study_ds.StudyInstanceUID = ""
-            study_response = assoc.send_c_find(study_ds, PatientRootQueryRetrieveInformationModelFind)
+            study_response = assoc.send_c_find(
+                study_ds, PatientRootQueryRetrieveInformationModelFind
+            )
             for study_status, study_identifier in study_response:
                 if study_status and study_status.Status in (0xFF00, 0xFF01):
                     patients[patientId][(study_identifier.get("StudyInstanceUID", None))] = {}
 
-            for study_id in patients[patientId].keys():            
+            for study_id in patients[patientId].keys():
                 series_ds = Dataset()
                 series_ds.QueryRetrieveLevel = "SERIES"
                 series_ds.PatientID = patientId
@@ -128,7 +141,9 @@ class DicomNet:
                 )
                 for series_status, series_identifier in series_response:
                     if series_status and series_status.Status in (0xFF00, 0xFF01):
-                        patients[patientId][study_id][series_identifier.get("SeriesInstanceUID", None)] = {}
+                        patients[patientId][study_id][
+                            series_identifier.get("SeriesInstanceUID", None)
+                        ] = {}
 
                 for serie_id in patients[patientId][study_id].keys():
                     image_ds = Dataset()
@@ -197,7 +212,15 @@ class DicomNet:
         assoc.release()
         return patients
 
-    def RunCGet(self, QueryRetrieveLevel, PatientID, StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, directory="../Data/"):
+    def RunCGet(
+        self,
+        QueryRetrieveLevel,
+        PatientID,
+        StudyInstanceUID,
+        SeriesInstanceUID,
+        SOPInstanceUID,
+        directory="../Data/",
+    ):
         handlers = [(evt.EVT_C_STORE, self._handle_store)]
 
         ae = AE(ae_title=self.aetitle_call)
@@ -214,29 +237,38 @@ class DicomNet:
         ds.SeriesInstanceUID = SeriesInstanceUID
         ds.SOPInstanceUID = SOPInstanceUID
 
-        assoc = ae.associate(self.address, self.port, ext_neg=[role], evt_handlers=handlers, ae_title=self.aetitle)
+        assoc = ae.associate(
+            self.address, self.port, ext_neg=[role], evt_handlers=handlers, ae_title=self.aetitle
+        )
 
         # Use the C-GET service to send the identifier
-        responses = assoc.send_c_get(
-            ds, PatientRootQueryRetrieveInformationModelGet)
-        for (status, identifier) in responses:
+        responses = assoc.send_c_get(ds, PatientRootQueryRetrieveInformationModelGet)
+        for status, identifier in responses:
             if status:
                 print(f"C-GET query status: 0x{status.Status:04x}")
             else:
                 print(responses)
-                print('Connection timed out, was aborted or received invalid response')
+                print("Connection timed out, was aborted or received invalid response")
 
         if assoc and assoc.is_established:
             assoc.release()
 
-    def RunCMove(self, QueryRetrieveLevel, PatientID, StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, directory="../Data/"):
+    def RunCMove(
+        self,
+        QueryRetrieveLevel,
+        PatientID,
+        StudyInstanceUID,
+        SeriesInstanceUID,
+        SOPInstanceUID,
+        directory="../Data/",
+    ):
         handlers = [(evt.EVT_C_STORE, self._handle_store)]
 
         ae = AE(ae_title=self.aetitle_call)
 
         ae.add_requested_context(PatientRootQueryRetrieveInformationModelMove)
         ae.supported_contexts = StoragePresentationContexts
-        
+
         scp = ae.start_server(("0.0.0.0", 11120), block=False, evt_handlers=handlers)
 
         ds = Dataset()
@@ -246,20 +278,21 @@ class DicomNet:
         ds.SeriesInstanceUID = SeriesInstanceUID
         ds.SOPInstanceUID = SOPInstanceUID
 
-
         assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)
 
-        responses = assoc.send_c_move(ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove)
-        for (status, identifier) in responses:
+        responses = assoc.send_c_move(
+            ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove
+        )
+        for status, identifier in responses:
             if status:
                 print(f"C-MOVE query status: 0x{status.Status:04x}")
             else:
                 print(responses)
-                print('Connection timed out, was aborted or received invalid response')
+                print("Connection timed out, was aborted or received invalid response")
 
         if assoc and assoc.is_established:
             assoc.release()
-        
+
         scp.shutdown()
 
     def _handle_store(self, event):
@@ -280,7 +313,16 @@ class DicomNet:
         time = time.split(".")[0] if "." in time else time
         time = datetime.strptime(time, "%H%M%S").strftime("%H:%M:%S")
         return time
-    
+
     def __str__(self):
-        return "Address: %s\nPort: %s\nAETitle: %s\nAETitleCall: %s\nSearchWord: %s\nSearchType: %s\n" %\
-                (self.address, self.port, self.aetitle, self.aetitle_call, self.search_word, self.search_type)
+        return (
+            "Address: %s\nPort: %s\nAETitle: %s\nAETitleCall: %s\nSearchWord: %s\nSearchType: %s\n"
+            % (
+                self.address,
+                self.port,
+                self.aetitle,
+                self.aetitle_call,
+                self.search_word,
+                self.search_type,
+            )
+        )

@@ -750,11 +750,13 @@ STYLE_LEVEL = {
     STATE_MASK_3D_EDIT: 3,
 }
 
-# ------------ Prefereces options key ------------
+# ------------ Preferences options key ------------
 RENDERING = 0
 SURFACE_INTERPOLATION = 1
 LANGUAGE = 2
 SLICE_INTERPOLATION = 3
+SERVER_AETITLE = 4
+SERVER_PORT = 5
 # Logging
 LOGGING = 4
 LOGGING_LEVEL = 5

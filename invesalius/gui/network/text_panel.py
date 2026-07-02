@@ -1,6 +1,7 @@
-from invesalius.pubsub import pub as Publisher
-import wx.gizmos as gizmos
 import wx
+import wx.gizmos as gizmos
+
+from invesalius.pubsub import pub as Publisher
 
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
@@ -72,38 +73,38 @@ class TextPanel(wx.Panel):
         pass
 
     def Populate(self, patients):
-
         tree = self.tree
 
         for patient in patients.keys():
-            
             first_study = list(patients[patient].keys())[0]
             first_serie = list(patients[patient][first_study].keys())[0]
-            title = patients[patient][first_study][first_serie]['name']
+            title = patients[patient][first_study][first_serie]["name"]
             p = patients[patient][first_study][first_serie]
 
             p_id = patient
-            age = p['age']
-            gender = p['gender']
-            study_description = p['study_description']
-            modality = p['modality']
-            date = p['acquisition_date']
-            time = p['acquisition_time']            
-            institution = p['institution']
-            birthdate = p['date_of_birth']
-            acession_number = p['acession_number']
-            physician = p['ref_physician']
+            age = p["age"]
+            gender = p["gender"]
+            study_description = p["study_description"]
+            modality = p["modality"]
+            date = p["acquisition_date"]
+            time = p["acquisition_time"]
+            institution = p["institution"]
+            birthdate = p["date_of_birth"]
+            acession_number = p["acession_number"]
+            physician = p["ref_physician"]
 
             parent = tree.AppendItem(self.root, str(title))
 
-            n_amount_images = 0 
+            n_amount_images = 0
             for study in patients[patient]:
                 for serie in patients[patient][study]:
-                    n_amount_images  = n_amount_images + patients[patient][study][serie]['n_images']
+                    n_amount_images = n_amount_images + patients[patient][study][serie]["n_images"]
 
-            parent = self.__idpatient_treeitem[patient] \
-                if patient in self.__idpatient_treeitem \
+            parent = (
+                self.__idpatient_treeitem[patient]
+                if patient in self.__idpatient_treeitem
                 else tree.AppendItem(self.root, str(title))
+            )
 
             tree.SetItemPyData(parent, patient)
 
@@ -125,30 +126,32 @@ class TextPanel(wx.Panel):
                 tree.SetItemPyData(study_node, study)
 
                 for series in patients[patient][study].keys():
-                    serie_description = patients[patient][study][series]['serie_description']
-                    n_images =  patients[patient][study][series]['n_images']
-                    date =  patients[patient][study][series]['acquisition_date']
-                    time =  patients[patient][study][series]['acquisition_time'] 
-                    modality = patients[patient][study][series]['modality']
+                    serie_description = patients[patient][study][series]["serie_description"]
+                    n_images = patients[patient][study][series]["n_images"]
+                    date = patients[patient][study][series]["acquisition_date"]
+                    time = patients[patient][study][series]["acquisition_time"]
+                    modality = patients[patient][study][series]["modality"]
 
-                    child = self.__idserie_treeitem[(patient, series)] \
-                        if (patient, series) in self.__idserie_treeitem \
+                    child = (
+                        self.__idserie_treeitem[(patient, series)]
+                        if (patient, series) in self.__idserie_treeitem
                         else tree.AppendItem(parent, series)
-                    
+                    )
+
                     tree.SetItemPyData(child, series)
 
                     tree.SetItemText(child, serie_description, 0)
-                    #tree.SetItemText(child, dicom.acquisition.protocol_name, 4)
+                    # tree.SetItemText(child, dicom.acquisition.protocol_name, 4)
                     tree.SetItemText(child, modality, 5)
                     tree.SetItemText(child, date + " " + time, 6)
-                    tree.SetItemText(child, str(n_images) , 7)
+                    tree.SetItemText(child, str(n_images), 7)
                     tree.SetItemText(parent, str(n_amount_images), 7)
 
                     self.__idserie_treeitem[(patient, series)] = child
 
         tree.Expand(self.root)
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
-    
+
     def SetHostsList(self, evt_pub):
         self.hosts = evt_pub.data
 

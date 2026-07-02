@@ -25,8 +25,6 @@ import wx.gizmos as gizmos
 import wx.lib.mixins.listctrl as listmix
 import wx.lib.splitter as spl
 from wx.lib.mixins.listctrl import CheckListCtrlMixin
-from invesalius.gui.network.host_find_panel import HostFindPanel
-from invesalius.gui.network.text_panel import TextPanel
 
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
@@ -34,9 +32,10 @@ import invesalius.net.dicom as dcm_net
 
 # import invesalius.gui.dicom_preview_panel as dpp
 import invesalius.reader.dicom_grouper as dcm
+from invesalius.gui.network.host_find_panel import HostFindPanel
+from invesalius.gui.network.text_panel import TextPanel
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
-
 
 myEVT_SELECT_SERIE = wx.NewEventType()
 EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
@@ -50,6 +49,7 @@ EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
 
 myEVT_SELECT_SERIE_TEXT = wx.NewEventType()
 EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
+
 
 class Panel(wx.Panel):
     def __init__(self, parent):
@@ -65,6 +65,7 @@ class Panel(wx.Panel):
         self.Layout()
         self.Update()
         self.SetAutoLayout(1)
+
 
 # Inner fold panel
 class InnerPanel(wx.Panel):
@@ -137,7 +138,7 @@ class InnerPanel(wx.Panel):
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnClickOk)
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnClickCancel)
         self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnDblClickTextPanel)
-        
+
     def ShowDicomPreview(self, pubsub_evt):
         dicom_groups = pubsub_evt.data
         self.patients.extend(dicom_groups)
