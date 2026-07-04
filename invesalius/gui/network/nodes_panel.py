@@ -30,7 +30,9 @@ class NodesPanel(wx.Panel):
         self.__find_input.SetHint(_("Enter patient name"))
         self.__btn_find = wx.Button(self, label="Search")
         self.__find_status = wx.StaticText(self, label="")
-        
+
+        self.__check_button = wx.Button(self, label="Check status")
+
         find_sizer = self._create_find_box_sizer()
         buttons_sizer = self._create_buttons_box_sizer()
 
@@ -60,7 +62,7 @@ class NodesPanel(wx.Panel):
         self.__description_input = wx.TextCtrl(self, size=(225, -1))
 
         self.__description_input.SetHint(_("My local server"))
-        
+
         form_sizer = self._create_form_sizer()
 
         # Add the form sizer to the main sizer
@@ -87,17 +89,17 @@ class NodesPanel(wx.Panel):
 
         self.__find_status.SetLabel("Searching...")
         self.__btn_find.Disable()
-        
+
         dn.RunCFind(self._on_search_done)
 
     def _on_search_done(self, patients, error):
         self.__btn_find.Enable()
-        
+
         if error:
             self.__find_status.SetLabel(f"Error: {error}")
             self.__find_status.SetForegroundColour(wx.RED)
             return
-        
+
         if patients:
             self.__find_status.SetLabel(f"Found {len(patients)} patients")
             self.__find_status.SetForegroundColour(wx.GREEN)
@@ -105,7 +107,6 @@ class NodesPanel(wx.Panel):
         else:
             self.__find_status.SetLabel("No patients found")
             self.__find_status.SetForegroundColour(wx.BLUE)
-
 
     def _add_node(self, node):
         """Add a node to the nodes list."""
@@ -135,7 +136,9 @@ class NodesPanel(wx.Panel):
             else None
         )
 
-        self.__selected_index = self.__nodes.index(self.__selected_node) if self.__selected_node else None
+        self.__selected_index = (
+            self.__nodes.index(self.__selected_node) if self.__selected_node else None
+        )
 
         if self.__selected_index is not None:
             self.__list_ctrl.CheckItem(self.__selected_index, True)
@@ -151,15 +154,14 @@ class NodesPanel(wx.Panel):
         find_sizer.Add(self.__btn_find, 0, wx.ALL, 5)
         find_sizer.Add(self.__find_status, 0, wx.ALL, 5)
 
-        return find_sizer        
+        return find_sizer
 
     def _create_buttons_box_sizer(self):
         """Create the buttons."""
 
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        check_button = wx.Button(self, label="Check status")
-        check_button.Bind(wx.EVT_BUTTON, self._on_button_check)
+        self.__check_button.Bind(wx.EVT_BUTTON, self._on_button_check)
 
         add_button = wx.Button(self, label="New")
         add_button.Bind(wx.EVT_BUTTON, self._on_add_button)
@@ -168,7 +170,7 @@ class NodesPanel(wx.Panel):
         remove_button.Bind(wx.EVT_BUTTON, self._on_remove_button)
 
         # Add buttons to sizer
-        button_sizer.Add(check_button, 0, wx.ALL, 5)
+        button_sizer.Add(self.__check_button, 0, wx.ALL, 5)
         button_sizer.Add(add_button, 0, wx.ALL, 5)
         button_sizer.Add(remove_button, 0, wx.ALL, 5)
 
@@ -222,10 +224,24 @@ class NodesPanel(wx.Panel):
             self.__selected_node["aetitle"],
         )
 
-        ok = dn.RunCEcho()
-        self.__list_ctrl.SetItem(self.__selected_index, 5, _("ok")) if ok\
-            else self.__list_ctrl.SetItem(self.__selected_index, 5, _("error"))
-        
+        self.__list_ctrl.SetItem(self.__selected_index, 5, "Checking ...")
+        self.__check_button.Disable()
+
+        dn.RunCEcho(self._on_check_done)
+
+    def _on_check_done(self, check, error):
+        if error:
+            self.__list_ctrl.SetItem(self.__selected_index, 5, _("error"))
+            self.__list_ctrl.SetItemTextColour(self.__selected_index, wx.RED)
+
+            return
+
+        elif check:
+            self.__list_ctrl.SetItem(self.__selected_index, 5, _("ok"))
+            self.__list_ctrl.SetItemTextColour(self.__selected_index, wx.GREEN)
+
+        self.__check_button.Enable()
+
     def _on_item_deselected(self, evt):
         """unchecked item handler"""
 

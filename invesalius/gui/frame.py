@@ -156,7 +156,7 @@ class Frame(wx.Frame):
         sub(self._HideContentPanel, "Hide content panel")
         sub(self._HideImportPanel, "Hide import panel")
         sub(self._HideTask, "Hide task panel")
-        sub(self._HideImportNetwork, 'Hide import network panel')
+        sub(self._HideImportNetwork, "Hide import network panel")
         sub(self._ShowTask, "Show task panel")
         sub(self._SetProjectName, "Set project name")
         sub(self._ShowContentPanel, "Show content panel")
@@ -490,7 +490,7 @@ class Frame(wx.Frame):
         aui_manager.Update()
 
     def _HideImportNetwork(self):
-        """ Hide import network panel. """
+        """Hide import network panel."""
 
         aui_manager = self.aui_manager
         aui_manager.GetPane("Retrieve").Show(0)
@@ -997,7 +997,7 @@ class Frame(wx.Frame):
             session.SetConfig("logging_file", logging_file)
             session.SetConfig("server_aetitle", server_aetitle)
             session.SetConfig("server_port", server_port)
-            session.SetConfig('store_path', store_path)
+            session.SetConfig("store_path", store_path)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")

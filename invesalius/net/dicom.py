@@ -1,12 +1,11 @@
 import os
-import time
-from datetime import datetime
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
-
-import wx
+from datetime import datetime
 
 import gdcm
+import wx
 from pydicom.dataset import Dataset
 from pynetdicom import (
     AE,
@@ -35,8 +34,8 @@ class DicomNet:
         self.SetPort(port)
         self.SetAETitleCall(aetitle_call)
         self.SetAETitle(aetitle)
-        self.port_call = ''
-        self.store_path = ''
+        self.port_call = ""
+        self.store_path = ""
         self.search_word = ""
         self.search_type = "patient"
         self._executor = ThreadPoolExecutor(max_workers=os.cpu_count())
@@ -73,15 +72,20 @@ class DicomNet:
         if value == "None" and tag != (0x0008, 0x103E):
             value = ""
         return value
-    
+
     # Async Wrappers
-    # def RunCEcho(self, callback=None):
-    #     def _task():
-    #         result = self.__RunCEcho()
-    #         if callback:
-    #             callback(result)
-        
-    #     self._executor.submit(_task)
+
+    def RunCEcho(self, callback=None):
+        def _task():
+            try:
+                result = self.__RunCEcho()
+                if callback:
+                    wx.CallAfter(callback, result, None)
+            except Exception as e:
+                if callback:
+                    wx.CallAfter(callback, None, str(e))
+
+        self._executor.submit(_task)
 
     def RunCFind(self, callback=None):
         def _task():
@@ -92,27 +96,32 @@ class DicomNet:
             except Exception as e:
                 if callback:
                     wx.CallAfter(callback, None, str(e))
-        self._executor.submit(_task)
 
-    # def RunCMove(self, data, callback=None):
-    #     def _task():
-    #         result = self.__RunCMove(data)
-    #         if callback:
-    #             callback(result)
-        
-    #     self._executor.submit(_task)
+        self._executor.submit(_task)
 
     # def RunCGet(self, data, callback=None):
     #     def _task():
     #         result = self.__RunCGet(data)
     #         if callback:
     #             callback(result)
-        
+
     #     self._executor.submit(_task)
+
+    def RunCMove(self, data, callback=None):
+        def _task():
+            try:
+                result = self.__RunCMove(data)
+                if callback:
+                    wx.CallAfter(callback, result, None)
+            except Exception as e:
+                if callback:
+                    wx.CallAfter(callback, None, str(e))
+
+        self._executor.submit(_task)
 
     # Sync Methods
 
-    def RunCEcho(self):
+    def __RunCEcho(self):
         """run CEcho to check if the server is alive."""
 
         try:
@@ -303,10 +312,7 @@ class DicomNet:
         if assoc and assoc.is_established:
             assoc.release()
 
-    def RunCMove(
-        self,
-        data
-    ):
+    def __RunCMove(self, data):
         handlers = [(evt.EVT_C_STORE, self._handle_store)]
 
         ae = AE(ae_title=self.aetitle_call)
@@ -317,21 +323,20 @@ class DicomNet:
         scp = ae.start_server(("0.0.0.0", 11120), block=False, evt_handlers=handlers)
 
         ds = Dataset()
-        if data['type'] == 'series':
-            ds.SeriesInstanceUID = data['series']
-            ds.StudyInstanceUID = data['study']
-            ds.PatientInstanceUID = data['patient']
-        
-        elif data['type'] == 'study':
-            ds.StudyInstanceUID = data['study']
-            ds.PatientInstanceUID = data['patient']
-        
-        elif data['type'] == 'patient':
-            ds.PatientInstanceUID = data['patient']
-        
-        ds.QueryRetrieveLevel = data['type']
+        if data["type"] == "series":
+            ds.SeriesInstanceUID = data["series"]
+            ds.StudyInstanceUID = data["study"]
+            ds.PatientInstanceUID = data["patient"]
+
+        elif data["type"] == "study":
+            ds.StudyInstanceUID = data["study"]
+            ds.PatientInstanceUID = data["patient"]
+
+        elif data["type"] == "patient":
+            ds.PatientInstanceUID = data["patient"]
+
+        ds.QueryRetrieveLevel = data["type"]
         # ds.SOPInstanceUID = SOPInstanceUID
-            
 
         assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)
 

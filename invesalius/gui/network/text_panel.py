@@ -1,9 +1,9 @@
 import wx
 import wx.gizmos as gizmos
 
-from invesalius.pubsub import pub as Publisher
 import invesalius.net.dicom as dcm_net
 import invesalius.session as ses
+from invesalius.pubsub import pub as Publisher
 
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
@@ -19,21 +19,21 @@ class TextPanel(wx.Panel):
         self.__idstudy_treeitem = {}
 
         session = ses.Session()
-        self.__selected = session.GetConfig('selected_node') \
-            if session.GetConfig('selected_node') \
-            else None
+        self.__selected = (
+            session.GetConfig("selected_node") if session.GetConfig("selected_node") else None
+        )
 
-        self.__server_aetitle = session.GetConfig('server_aetitle') \
-            if session.GetConfig('server_aetitle') \
-            else None
+        self.__server_aetitle = (
+            session.GetConfig("server_aetitle") if session.GetConfig("server_aetitle") else None
+        )
 
-        self.__server_port = session.GetConfig('server_port') \
-            if session.GetConfig('server_port') \
-            else None
+        self.__server_port = (
+            session.GetConfig("server_port") if session.GetConfig("server_port") else None
+        )
 
-        self.__store_path = session.GetConfig('store_path') \
-            if session.GetConfig('store_path') \
-            else None
+        self.__store_path = (
+            session.GetConfig("store_path") if session.GetConfig("store_path") else None
+        )
 
         self.__tree = self.__init_gui()
         self.__root = self.__tree.AddRoot(_("InVesalius Database"))
@@ -94,7 +94,7 @@ class TextPanel(wx.Panel):
         pass
 
     def Populate(self, patients):
-        """ Populate tree. """
+        """Populate tree."""
 
         for patient in patients.keys():
             first_study = list(patients[patient].keys())[0]
@@ -143,15 +143,16 @@ class TextPanel(wx.Panel):
 
             for study in patients[patient].keys():
                 study_images = sum(
-                    patients[patient][study][serie]["n_images"] 
+                    patients[patient][study][serie]["n_images"]
                     for serie in patients[patient][study]
                 )
-
 
                 study_node = self.__tree.AppendItem(parent, f"Study: {study[:8]}...")
                 study_key = (patient, study)
 
-                self.__tree.SetItemPyData(study_node, {"type": "study", "study": study, "patient": patient})
+                self.__tree.SetItemPyData(
+                    study_node, {"type": "study", "study": study, "patient": patient}
+                )
 
                 self.__idstudy_treeitem[study_key] = study_node
 
@@ -167,9 +168,12 @@ class TextPanel(wx.Panel):
                         self.__idserie_treeitem.get(child_key)
                         if child_key in self.__idserie_treeitem
                         else self.__tree.AppendItem(study_node, series)
-                    )   
+                    )
 
-                    self.__tree.SetItemPyData(child, {"type": "series", "patient": patient, "study": study, "series": series})
+                    self.__tree.SetItemPyData(
+                        child,
+                        {"type": "series", "patient": patient, "study": study, "series": series},
+                    )
                     self.__tree.SetItemText(child, serie_description, 0)
                     # tree.SetItemText(child, dicom.acquisition.protocol_name, 4)
                     self.__tree.SetItemText(child, modality, 5)
@@ -211,21 +215,19 @@ class TextPanel(wx.Panel):
         evt.Skip()
 
     def OnActivate(self, evt):
-
         item = evt.GetItem()
 
         data = self.__tree.GetItemPyData(item)
-            
+
         if data:
             if self.__selected is None:
-
                 wx.MessageBox(_("Please select a node"), _("Error"), wx.OK | wx.ICON_ERROR)
                 return
-        
+
             dn = dcm_net.DicomNet(
-                self.__selected['ipaddress'],
-                int(self.__selected['port']),
-                self.__selected['aetitle'],
+                self.__selected["ipaddress"],
+                int(self.__selected["port"]),
+                self.__selected["aetitle"],
             )
             dn.SetPortCall(self.__server_port)
             dn.SetStorePath(self.__store_path)
