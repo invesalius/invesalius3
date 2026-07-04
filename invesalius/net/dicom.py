@@ -31,9 +31,10 @@ class DicomNet:
         self.SetPort(port)
         self.SetAETitleCall(aetitle_call)
         self.SetAETitle(aetitle)
+        self.port_call = ''
+        self.store_path = ''
         self.search_word = ""
         self.search_type = "patient"
-        self.directory = "../Data"
 
     def __call__(self):
         return self
@@ -49,6 +50,12 @@ class DicomNet:
 
     def SetAETitle(self, ae_title: str):
         self.aetitle = ae_title
+
+    def SetPortCall(self, port):
+        self.port_call = port
+
+    def SetStorePath(self, path):
+        self.store_path = path
 
     def SetSearchWord(self, word: str):
         self.search_word = word
@@ -255,12 +262,7 @@ class DicomNet:
 
     def RunCMove(
         self,
-        QueryRetrieveLevel,
-        PatientID,
-        StudyInstanceUID,
-        SeriesInstanceUID,
-        SOPInstanceUID,
-        directory="../Data/",
+        data
     ):
         handlers = [(evt.EVT_C_STORE, self._handle_store)]
 
@@ -272,11 +274,21 @@ class DicomNet:
         scp = ae.start_server(("0.0.0.0", 11120), block=False, evt_handlers=handlers)
 
         ds = Dataset()
-        ds.QueryRetrieveLevel = QueryRetrieveLevel
-        ds.PatientID = PatientID
-        ds.StudyInstanceUID = StudyInstanceUID
-        ds.SeriesInstanceUID = SeriesInstanceUID
-        ds.SOPInstanceUID = SOPInstanceUID
+        if data['type'] == 'series':
+            ds.SeriesInstanceUID = data['series']
+            ds.StudyInstanceUID = data['study']
+            ds.PatientInstanceUID = data['patient']
+        
+        elif data['type'] == 'study':
+            ds.StudyInstanceUID = data['study']
+            ds.PatientInstanceUID = data['patient']
+        
+        elif data['type'] == 'patient':
+            ds.PatientInstanceUID = data['patient']
+        
+        ds.QueryRetrieveLevel = data['type']
+        # ds.SOPInstanceUID = SOPInstanceUID
+            
 
         assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)
 
@@ -296,11 +308,11 @@ class DicomNet:
         scp.shutdown()
 
     def _handle_store(self, event):
-        if not os.path.exists(self.directory):
-            os.makedirs(self.directory)
+        if not os.path.exists(self.store_path):
+            os.makedirs(self.store_path)
         ds = event.dataset
         ds.file_meta = event.file_meta
-        filename = f"{self.directory}/{ds.SOPInstanceUID}.dcm"
+        filename = f"{self.store_path}/{ds.SOPInstanceUID}.dcm"
         ds.save_as(filename)
         return 0x0000
 

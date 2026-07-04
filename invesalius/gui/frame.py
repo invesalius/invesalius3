@@ -975,6 +975,7 @@ class Frame(wx.Frame):
             logging_level = values.get(const.LOGGING_LEVEL, 0)
             server_aetitle = values[const.SERVER_AETITLE]
             server_port = values[const.SERVER_PORT]
+            store_path = values[const.STORE_PATH]
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
@@ -996,6 +997,7 @@ class Frame(wx.Frame):
             session.SetConfig("logging_file", logging_file)
             session.SetConfig("server_aetitle", server_aetitle)
             session.SetConfig("server_port", server_port)
+            session.SetConfig('store_path', store_path)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
