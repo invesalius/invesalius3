@@ -34,7 +34,8 @@ class DicomNet:
         self.SetPort(port)
         self.SetAETitleCall(aetitle_call)
         self.SetAETitle(aetitle)
-        self.port_call = ""
+        self.server_aetitle = ""
+        self.port_call = 0
         self.store_path = ""
         self.search_word = ""
         self.search_type = "patient"
@@ -55,10 +56,13 @@ class DicomNet:
     def SetAETitle(self, ae_title: str):
         self.aetitle = ae_title
 
-    def SetPortCall(self, port):
+    def ServerAETitle(self, server_aetitle: str):
+        self.server_aetitle = server_aetitle
+
+    def SetPortCall(self, port: int):
         self.port_call = port
 
-    def SetStorePath(self, path):
+    def SetStorePath(self, path: str):
         self.store_path = path
 
     def SetSearchWord(self, word: str):
@@ -341,7 +345,7 @@ class DicomNet:
         assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)
 
         responses = assoc.send_c_move(
-            ds, self.aetitle_call, PatientRootQueryRetrieveInformationModelMove
+            ds, self.server_aetitle, PatientRootQueryRetrieveInformationModelMove
         )
         for status, identifier in responses:
             if status:

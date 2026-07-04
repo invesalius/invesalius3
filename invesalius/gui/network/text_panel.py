@@ -24,15 +24,15 @@ class TextPanel(wx.Panel):
         )
 
         self.__server_aetitle = (
-            session.GetConfig("server_aetitle") if session.GetConfig("server_aetitle") else None
+            session.GetConfig("server_aetitle") if session.GetConfig("server_aetitle") else ""
         )
 
         self.__server_port = (
-            session.GetConfig("server_port") if session.GetConfig("server_port") else None
+            session.GetConfig("server_port") if session.GetConfig("server_port") else ""
         )
 
         self.__store_path = (
-            session.GetConfig("store_path") if session.GetConfig("store_path") else None
+            session.GetConfig("store_path") if session.GetConfig("store_path") else ""
         )
 
         self.__tree = self.__init_gui()
@@ -229,7 +229,8 @@ class TextPanel(wx.Panel):
                 int(self.__selected["port"]),
                 self.__selected["aetitle"],
             )
-            dn.SetPortCall(self.__server_port)
+            dn.ServerAETitle(self.__server_aetitle)
+            dn.SetPortCall(int(self.__server_port))
             dn.SetStorePath(self.__store_path)
 
             dn.RunCMove(data)
