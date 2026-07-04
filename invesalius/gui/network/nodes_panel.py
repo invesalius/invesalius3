@@ -28,9 +28,10 @@ class NodesPanel(wx.Panel):
 
         self.__find_input = wx.TextCtrl(self, size=(225, -1))
         self.__find_input.SetHint(_("Enter patient name"))
+        self.__btn_find = wx.Button(self, label="Search")
+        self.__find_status = wx.StaticText(self, label="")
         
         find_sizer = self._create_find_box_sizer()
-
         buttons_sizer = self._create_buttons_box_sizer()
 
         hor = wx.BoxSizer(wx.HORIZONTAL)
@@ -84,7 +85,27 @@ class NodesPanel(wx.Panel):
         )
         dn.SetSearchWord(self.__find_input.GetValue())
 
-        Publisher.sendMessage("Populate tree", patients=dn.RunCFind())
+        self.__find_status.SetLabel("Searching...")
+        self.__btn_find.Disable()
+        
+        dn.RunCFind(self._on_search_done)
+
+    def _on_search_done(self, patients, error):
+        self.__btn_find.Enable()
+        
+        if error:
+            self.__find_status.SetLabel(f"Error: {error}")
+            self.__find_status.SetForegroundColour(wx.RED)
+            return
+        
+        if patients:
+            self.__find_status.SetLabel(f"Found {len(patients)} patients")
+            self.__find_status.SetForegroundColour(wx.GREEN)
+            Publisher.sendMessage("Populate tree", patients=patients)
+        else:
+            self.__find_status.SetLabel("No patients found")
+            self.__find_status.SetForegroundColour(wx.BLUE)
+
 
     def _add_node(self, node):
         """Add a node to the nodes list."""
@@ -124,13 +145,13 @@ class NodesPanel(wx.Panel):
 
         find_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        btn_find = wx.Button(self, label="Search")
-        btn_find.Bind(wx.EVT_BUTTON, self._on_button_find)
+        self.__btn_find.Bind(wx.EVT_BUTTON, self._on_button_find)
 
         find_sizer.Add(self.__find_input, 0, wx.ALL, 5)
-        find_sizer.Add(btn_find, 0, wx.ALL, 5)
+        find_sizer.Add(self.__btn_find, 0, wx.ALL, 5)
+        find_sizer.Add(self.__find_status, 0, wx.ALL, 5)
 
-        return find_sizer
+        return find_sizer        
 
     def _create_buttons_box_sizer(self):
         """Create the buttons."""

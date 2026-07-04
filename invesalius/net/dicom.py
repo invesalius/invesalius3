@@ -1,6 +1,10 @@
 import os
 import time
 from datetime import datetime
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
+import wx
 
 import gdcm
 from pydicom.dataset import Dataset
@@ -35,6 +39,7 @@ class DicomNet:
         self.store_path = ''
         self.search_word = ""
         self.search_type = "patient"
+        self._executor = ThreadPoolExecutor(max_workers=os.cpu_count())
 
     def __call__(self):
         return self
@@ -68,6 +73,44 @@ class DicomNet:
         if value == "None" and tag != (0x0008, 0x103E):
             value = ""
         return value
+    
+    # Async Wrappers
+    # def RunCEcho(self, callback=None):
+    #     def _task():
+    #         result = self.__RunCEcho()
+    #         if callback:
+    #             callback(result)
+        
+    #     self._executor.submit(_task)
+
+    def RunCFind(self, callback=None):
+        def _task():
+            try:
+                result = self.__RunCFind()
+                if callback:
+                    wx.CallAfter(callback, result, None)
+            except Exception as e:
+                if callback:
+                    wx.CallAfter(callback, None, str(e))
+        self._executor.submit(_task)
+
+    # def RunCMove(self, data, callback=None):
+    #     def _task():
+    #         result = self.__RunCMove(data)
+    #         if callback:
+    #             callback(result)
+        
+    #     self._executor.submit(_task)
+
+    # def RunCGet(self, data, callback=None):
+    #     def _task():
+    #         result = self.__RunCGet(data)
+    #         if callback:
+    #             callback(result)
+        
+    #     self._executor.submit(_task)
+
+    # Sync Methods
 
     def RunCEcho(self):
         """run CEcho to check if the server is alive."""
@@ -99,7 +142,7 @@ class DicomNet:
             print("Unexpected error:", e)
             return False
 
-    def RunCFind(self):
+    def __RunCFind(self):
         ae = AE(self.aetitle_call)
         ae.add_requested_context(PatientRootQueryRetrieveInformationModelFind)
 
