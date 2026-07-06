@@ -353,25 +353,31 @@ class DicomNet:
 
         if assoc and assoc.is_established:
             assoc.release()
-
-        scp.shutdown()
-
-        raise RuntimeError('Association rejected, aborted or never connected')
+            scp.shutdown()
+        else:
+            raise RuntimeError('Association rejected, aborted or never connected')
 
     def _handle_store(self, event):
-        ds = event.dataset
-        ds.file_meta = event.file_meta
 
-        dest = self._current_dest
+        try:
+            ds = event.dataset
+            ds.file_meta = event.file_meta
+
+            dest = self._current_dest
+            
+            if not os.path.exists(dest):
+                os.makedirs(dest)
+
+            filename = f"{dest}/{ds.SOPInstanceUID}.dcm"
+
+            ds.save_as(filename, write_like_original=False)
+            
+            return 0x0000
         
-        if not os.path.exists(dest):
-            os.makedirs(dest)
+        except Exception as e:
+            return 0xC001
 
-        filename = f"{dest}/{ds.SOPInstanceUID}.dcm"
 
-        ds.save_as(filename, write_like_original=False)
-
-        return 0x0000
 
     def _date_format(self, date):
         date = date.split(".")[0] if "." in date else date

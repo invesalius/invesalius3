@@ -4,6 +4,7 @@ import invesalius.constants as const
 import invesalius.session as ses
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from invesalius.pubsub import pub as Publisher
+from invesalius import inv_paths
 
 
 class DicomServerPanel(wx.Panel):
@@ -65,7 +66,7 @@ class DicomServerPanel(wx.Panel):
 
         path = session.GetConfig("store_path")\
             if session.GetConfig("store_path")\
-            else ""
+            else str(inv_paths.USER_DICOM_DIR)
 
         server_ip = session.GetConfig('server_ip') \
             if session.GetConfig('server_ip') \

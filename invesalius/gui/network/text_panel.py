@@ -13,31 +13,16 @@ class TextPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
 
-        self._selected_by_user = True
         self.__idserie_treeitem = {}
         self.__idpatient_treeitem = {}
         self.__idstudy_treeitem = {}
+        self.__selected = None
+        self.__server_ip = None
+        self.__server_aetitle = None
+        self.__server_port = None
+        self.__store_path = None
 
-        session = ses.Session()
-        self.__selected = (
-            session.GetConfig("selected_node") if session.GetConfig("selected_node") else None
-        )
-
-        self.__server_ip = session.GetConfig('server_ip') \
-            if session.GetConfig('server_ip') \
-            else None
-
-        self.__server_aetitle = (
-            session.GetConfig("server_aetitle") if session.GetConfig("server_aetitle") else ""
-        )
-
-        self.__server_port = (
-            session.GetConfig("server_port") if session.GetConfig("server_port") else ""
-        )
-
-        self.__store_path = (
-            session.GetConfig("store_path") if session.GetConfig("store_path") else str(inv_paths.USER_DICOM_DIR)
-        )
+        self.__session = ses.Session()
 
         self.__tree = self.__init_gui()
         self.__root = self.__tree.AddRoot(_("InVesalius Database"))
@@ -96,6 +81,28 @@ class TextPanel(wx.Panel):
 
     def SelectSeries(self, group_index):
         pass
+
+    def _load_values(self):
+
+        self.__selected = self.__session.GetConfig('selected_node') \
+            if self.__session.GetConfig('selected_node') \
+            else None
+
+        self.__server_ip = self.__session.GetConfig('server_ip') \
+            if self.__session.GetConfig('server_ip') \
+            else '0.0.0.0'
+
+        self.__server_aetitle = self.__session.GetConfig('server_aetitle') \
+            if self.__session.GetConfig('server_aetitle') \
+            else 'PYNETDICOM'
+
+        self.__server_port = self.__session.GetConfig('server_port') \
+            if self.__session.GetConfig('server_port') \
+            else 11120
+
+        self.__store_path = self.__session.GetConfig('store_path') \
+            if self.__session.GetConfig('store_path') \
+            else str(inv_paths.USER_DICOM_DIR)
 
     def Populate(self, patients):
         """Populate tree."""
@@ -221,6 +228,8 @@ class TextPanel(wx.Panel):
     def OnActivate(self, evt):
         item = evt.GetItem()
 
+        self._load_values()
+
         data = self.__tree.GetItemPyData(item)
 
         dest = ""
@@ -238,13 +247,6 @@ class TextPanel(wx.Panel):
         if data:
             if self.__selected is None:
                 wx.MessageBox(_("Please select a node"), _("Error"), wx.OK | wx.ICON_ERROR)
-                return
-
-            if self.__server_aetitle is None or \
-                self.__server_port is None or \
-                self.__server_ip is None:
-
-                wx.MessageBox(_("Please configure the server"), _("Error"), wx.OK | wx.ICON_ERROR)
                 return
 
             dn = dcm_net.DicomNet(
