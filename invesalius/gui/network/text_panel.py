@@ -1,9 +1,9 @@
 import wx
 import wx.gizmos as gizmos
-
 import invesalius.net.dicom as dcm_net
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
+import os
 
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
@@ -22,6 +22,10 @@ class TextPanel(wx.Panel):
         self.__selected = (
             session.GetConfig("selected_node") if session.GetConfig("selected_node") else None
         )
+
+        self.__server_ip = session.GetConfig('server_ip') \
+            if session.GetConfig('server_ip') \
+            else None
 
         self.__server_aetitle = (
             session.GetConfig("server_aetitle") if session.GetConfig("server_aetitle") else ""
@@ -219,9 +223,28 @@ class TextPanel(wx.Panel):
 
         data = self.__tree.GetItemPyData(item)
 
+        dest = ""
+
+        if data['type'] == 'patient':
+            dest = f"{self.__store_path}/{data['patient']}"
+        elif data['type'] == 'study':
+            dest = f"{self.__store_path}/{data['patient']}/{data['study']}"
+        elif data['type'] == 'series':
+            dest = f"{self.__store_path}/{data['patient']}/{data['study']}/{data['series']}"
+        else:
+            wx.MessageBox(_("Unknown item type"), _("Error"), wx.OK | wx.ICON_ERROR)
+            return
+
         if data:
             if self.__selected is None:
                 wx.MessageBox(_("Please select a node"), _("Error"), wx.OK | wx.ICON_ERROR)
+                return
+
+            if self.__server_aetitle is None or \
+                self.__server_port is None or \
+                self.__server_ip is None:
+
+                wx.MessageBox(_("Please configure the server"), _("Error"), wx.OK | wx.ICON_ERROR)
                 return
 
             dn = dcm_net.DicomNet(
@@ -232,8 +255,20 @@ class TextPanel(wx.Panel):
             dn.ServerAETitle(self.__server_aetitle)
             dn.SetPortCall(int(self.__server_port))
             dn.SetStorePath(self.__store_path)
+            dn.SetIPCall(self.__server_ip)
 
-            dn.RunCMove(data)
+            try:
+
+                dn.RunCMove(data, dest, self.OnDone(dest))
+            
+            except Exception as e:
+                    
+                wx.MessageBox(str(e), _("Error"), wx.OK | wx.ICON_ERROR)
+                return
+
+    def OnDone(self, dest):
+        Publisher.sendMessage("Hide import network panel")
+        Publisher.sendMessage('Import directory', directory=dest, use_gui=False)
 
     def OnSize(self, evt):
         self.__tree.SetSize(self.GetSize())

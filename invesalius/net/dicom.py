@@ -25,16 +25,17 @@ from pynetdicom.sop_class import (
 
 import invesalius.utils as utils
 
-debug_logger()
+# debug_logger()
 
 
 class DicomNet:
     def __init__(self, address: str, port: int, aetitle: str, aetitle_call: str = "INVESALIUS"):
-        self.SetHost(address)
+        self.SetAddress(address)
         self.SetPort(port)
         self.SetAETitleCall(aetitle_call)
         self.SetAETitle(aetitle)
         self.server_aetitle = ""
+        self.ip_call = ''
         self.port_call = 0
         self.store_path = ""
         self.search_word = ""
@@ -44,7 +45,7 @@ class DicomNet:
     def __call__(self):
         return self
 
-    def SetHost(self, address: str):
+    def SetAddress(self, address: str):
         self.address = address
 
     def SetPort(self, port: int):
@@ -55,6 +56,9 @@ class DicomNet:
 
     def SetAETitle(self, ae_title: str):
         self.aetitle = ae_title
+
+    def SetIPCall(self, ip):
+        self.ip_call = ip
 
     def ServerAETitle(self, server_aetitle: str):
         self.server_aetitle = server_aetitle
@@ -111,10 +115,10 @@ class DicomNet:
 
     #     self._executor.submit(_task)
 
-    def RunCMove(self, data, callback=None):
+    def RunCMove(self, data, dest, callback=None):
         def _task():
             try:
-                result = self.__RunCMove(data)
+                result = self.__RunCMove(data, dest)
                 if callback:
                     wx.CallAfter(callback, result, None)
             except Exception as e:
@@ -129,7 +133,6 @@ class DicomNet:
         """run CEcho to check if the server is alive."""
 
         try:
-            print(self.port, self.address, self.aetitle, "echo")
             ae = AE(self.aetitle_call)
             ae.add_requested_context(Verification)
 
@@ -310,37 +313,32 @@ class DicomNet:
             if status:
                 print(f"C-GET query status: 0x{status.Status:04x}")
             else:
-                print(responses)
                 print("Connection timed out, was aborted or received invalid response")
 
         if assoc and assoc.is_established:
             assoc.release()
 
-    def __RunCMove(self, data):
+    def __RunCMove(self, data, dest):
         handlers = [(evt.EVT_C_STORE, self._handle_store)]
+
+        self._current_dest = dest
 
         ae = AE(ae_title=self.aetitle_call)
 
         ae.add_requested_context(PatientRootQueryRetrieveInformationModelMove)
         ae.supported_contexts = StoragePresentationContexts
 
-        scp = ae.start_server(("0.0.0.0", 11120), block=False, evt_handlers=handlers)
+        scp = ae.start_server((self.ip_call, int(self.port_call)), block=False, evt_handlers=handlers)
 
         ds = Dataset()
-        if data["type"] == "series":
-            ds.SeriesInstanceUID = data["series"]
-            ds.StudyInstanceUID = data["study"]
-            ds.PatientInstanceUID = data["patient"]
 
-        elif data["type"] == "study":
-            ds.StudyInstanceUID = data["study"]
-            ds.PatientInstanceUID = data["patient"]
+        ds.PatientID = data.get("patient", "")
+        ds.StudyInstanceUID = data.get("study", "")
+        ds.SeriesInstanceUID = data.get("series", "")
 
-        elif data["type"] == "patient":
-            ds.PatientInstanceUID = data["patient"]
+        print(self.ip_call, self.port_call)
 
         ds.QueryRetrieveLevel = data["type"]
-        # ds.SOPInstanceUID = SOPInstanceUID
 
         assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)
 
@@ -351,21 +349,28 @@ class DicomNet:
             if status:
                 print(f"C-MOVE query status: 0x{status.Status:04x}")
             else:
-                print(responses)
-                print("Connection timed out, was aborted or received invalid response")
+                raise RuntimeError('C-MOVE request failed')
 
         if assoc and assoc.is_established:
             assoc.release()
 
         scp.shutdown()
 
+        raise RuntimeError('Association rejected, aborted or never connected')
+
     def _handle_store(self, event):
-        if not os.path.exists(self.store_path):
-            os.makedirs(self.store_path)
         ds = event.dataset
         ds.file_meta = event.file_meta
-        filename = f"{self.store_path}/{ds.SOPInstanceUID}.dcm"
-        ds.save_as(filename)
+
+        dest = self._current_dest
+        
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+
+        filename = f"{dest}/{ds.SOPInstanceUID}.dcm"
+
+        ds.save_as(filename, write_like_original=False)
+
         return 0x0000
 
     def _date_format(self, date):

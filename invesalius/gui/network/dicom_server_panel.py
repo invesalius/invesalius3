@@ -17,6 +17,7 @@ class DicomServerPanel(wx.Panel):
             self, wx.ID_ANY, path="", message="Select a folder", style=wx.DIRP_USE_TEXTCTRL
         )
 
+        self.__ip_address = wx.TextCtrl(self)
         self.__ae_input = wx.TextCtrl(self)
         self.__port_input = wx.TextCtrl(self)
 
@@ -46,6 +47,7 @@ class DicomServerPanel(wx.Panel):
             const.SERVER_AETITLE: self.__ae_input.GetValue(),
             const.SERVER_PORT: self.__port_input.GetValue(),
             const.STORE_PATH: self.__path.GetPath(),
+            const.SERVER_IP: self.__ip_address.GetValue()
         }
 
     def _load_values(self):
@@ -53,19 +55,26 @@ class DicomServerPanel(wx.Panel):
 
         session = ses.Session()
 
-        ae_title = (
-            session.GetConfig("server_aetitle")
-            if session.GetConfig("server_aetitle")
-            else "INVESALIUS"
-        )
+        ae_title = session.GetConfig("server_aetitle")\
+                if session.GetConfig("server_aetitle")\
+                else "INVESALIUS"
 
-        port = session.GetConfig("server_port") if session.GetConfig("server_port") else 5000
+        port = session.GetConfig("server_port")\
+            if session.GetConfig("server_port")\
+            else 11120
 
-        path = session.GetConfig("store_path") if session.GetConfig("store_path") else ""
+        path = session.GetConfig("store_path")\
+            if session.GetConfig("store_path")\
+            else ""
+
+        server_ip = session.GetConfig('server_ip') \
+            if session.GetConfig('server_ip') \
+            else '0.0.0.0'
 
         self.__ae_input.SetValue(ae_title)
         self.__port_input.SetValue(str(port))
         self.__path.SetPath(path)
+        self.__ip_address.SetValue(server_ip)
 
     def _create_picker_sizer(self):
         static_box = wx.StaticBox(self, label="Path")
@@ -80,6 +89,9 @@ class DicomServerPanel(wx.Panel):
         """Create the form sizer"""
 
         form_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        form_sizer.Add(wx.StaticText(self, label="IP Address"), flag=wx.ALL, border=5)
+        form_sizer.Add(self.__ip_address, flag=wx.EXPAND|wx.ALL, border=5)
 
         form_sizer.Add(wx.StaticText(self, label="AE Title"), flag=wx.ALL, border=5)
         form_sizer.Add(self.__ae_input, flag=wx.EXPAND | wx.ALL, border=5)
