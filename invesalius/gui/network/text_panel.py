@@ -3,7 +3,7 @@ import wx.gizmos as gizmos
 import invesalius.net.dicom as dcm_net
 import invesalius.session as ses
 from invesalius.pubsub import pub as Publisher
-import os
+from invesalius import inv_paths
 
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
@@ -36,7 +36,7 @@ class TextPanel(wx.Panel):
         )
 
         self.__store_path = (
-            session.GetConfig("store_path") if session.GetConfig("store_path") else ""
+            session.GetConfig("store_path") if session.GetConfig("store_path") else str(inv_paths.USER_DICOM_DIR)
         )
 
         self.__tree = self.__init_gui()

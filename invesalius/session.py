@@ -66,6 +66,8 @@ CONFIG_INIT = {
     "server_port": 11120,
     'nodes': [],
     'selected_node': {},
+    'store_path': str(inv_paths.USER_DICOM_DIR),
+    'server_ip': ""
 }
 
 
