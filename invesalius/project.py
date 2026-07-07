@@ -241,8 +241,6 @@ class Project(metaclass=Singleton):
             "window_level": self.level,
             "scalar_range": self.threshold_range,
             "spacing": self.spacing,
-            "affine": self.affine,
-            "patient_orientation": self.patient_orientation,
             "image_fiducials": self.image_fiducials.tolist(),
         }
         
