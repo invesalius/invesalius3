@@ -2142,7 +2142,7 @@ class CalculateSurfacePropertiesProgressWindow:
         self.dlg = wx.ProgressDialog(title, message, parent=parent, style=style)
         self.dlg.Show()
 
-    def Update(self, msg: Optional[str] = None, value=None) -> None:
+    def Update(self, msg: str | None = None, value=None) -> None:
         if msg is None:
             self.dlg.Pulse()
         else:
@@ -7918,10 +7918,73 @@ class ProgressBarHandler(wx.ProgressDialog):
             super().Pulse(msg)
 
 
+class MaskProgressDialog:
+    """Progress dialog for mask import/export operations with cancellation support."""
+
+    def __init__(
+        self, title: str, message: str, maximum: int = 100, parent: wx.Window | None = None
+    ):
+        if parent is None:
+            parent = wx.GetApp().GetTopWindow()
+
+        self.cancelled = False
+        self.dlg = wx.ProgressDialog(
+            title,
+            message,
+            maximum=maximum,
+            parent=parent,
+            style=wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE,
+        )
+
+        # Force the dialog to paint before work starts
+        wx.SafeYield()
+
+    def Update(self, value: int, message: str = "") -> bool:
+        """
+        Update progress dialog.
+
+        Args:
+            value: Progress value (0-maximum)
+            message: Status message to display
+
+        Returns:
+            True if should continue, False if cancelled
+        """
+        if self.cancelled:
+            return False
+
+        try:
+            if message:
+                continue_op, skip = self.dlg.Update(value, message)
+            else:
+                continue_op, skip = self.dlg.Update(value)
+
+            if not continue_op:
+                self.cancelled = True
+                return False
+
+            return True
+        except Exception:
+            return False
+
+    def WasCancelled(self) -> bool:
+        """Check if user cancelled the operation."""
+        return self.cancelled
+
+    def Close(self) -> None:
+        """Close and destroy the progress dialog."""
+        try:
+            if self.dlg:
+                self.dlg.Destroy()
+                self.dlg = None
+        except Exception:
+            pass
+
+
 class ProjectLoadProgressDialog:
     """Progress dialog for loading .inv3 project files with cancellation support."""
 
-    def __init__(self, parent: Optional[wx.Window] = None):
+    def __init__(self, parent: wx.Window | None = None):
         if parent is None:
             parent = wx.GetApp().GetTopWindow()
 
