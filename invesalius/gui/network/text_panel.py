@@ -23,6 +23,7 @@ class TextPanel(wx.Panel):
         self.__server_aetitle = None
         self.__server_port = None
         self.__store_path = None
+        self.__progress_dialog = None
 
         self.__session = ses.Session()
 
@@ -79,7 +80,6 @@ class TextPanel(wx.Panel):
         tree.SetColumnWidth(9, 100)  # Date of birth
         tree.SetColumnWidth(10, 140)  # Accession Number
         tree.SetColumnWidth(11, 160)  # Referring physician
-        tree.SetColumnWidth(12, 200)  # c_move/c_get status
 
         return tree
 
@@ -153,7 +153,6 @@ class TextPanel(wx.Panel):
             self.__tree.SetItemText(parent, birthdate, 9)
             self.__tree.SetItemText(parent, acession_number, 10)
             self.__tree.SetItemText(parent, str(physician), 11)
-            self.__tree.SetItemText(parent, "don", 12) #status
 
             self.__idpatient_treeitem[patient] = parent
 
@@ -231,6 +230,22 @@ class TextPanel(wx.Panel):
             self.__tree.Expand(parent_id)
         evt.Skip()
 
+    def _update_progress(self, completed, total):
+        if not self.__progress_dialog:
+            return
+        
+        percentage = int((completed / total) * 100) if total > 0 else 0
+        
+        def _update():
+            if self.__progress_dialog:
+                keep_going, skip = self.__progress_dialog.Update(
+                    percentage, f"Downloading: {completed}/{total} images"
+                )
+                if not keep_going:
+                    raise RuntimeError("Download cancelled by user")
+        
+        wx.CallAfter(_update)
+
     def OnActivate(self, evt):
         item = evt.GetItem()
 
@@ -241,24 +256,25 @@ class TextPanel(wx.Panel):
         dest = pathlib.Path()
 
         if data['type'] == 'patient':
-            dest = self.__store_path.joinpath(data['patient'])
+            dest = self.__store_path/data['patient']
         elif data['type'] == 'study':
-            dest = self.__store_path.joinpath(data['patient'], data['study'])
+            dest = self.__store_path//data['patient']/data['study']
         elif data['type'] == 'series':
-            dest = self.__store_path.joinpath(data['patient'], data['study'], data['series'])
+            dest = self.__store_path/data['patient']/data['study']/data['series']
         else:
             wx.MessageBox(_("Unknown item type"), _("Error"), wx.OK | wx.ICON_ERROR)
             return
         
-        n_images = data['n_images']
-
+        n_images = data.get('n_images', 0)
         dest.mkdir(parents=True, exist_ok=True)
         found = len([f for f in dest.iterdir() if f.suffix == '.dcm'])
         
-        if not found < n_images:
-            self.OnDone(dest)
+        if found >= n_images:
+            wx.MessageBox("Images already downloaded!", "Info", wx.OK)
+            Publisher.sendMessage("Hide import network panel")
+            Publisher.sendMessage('Import directory', directory=str(dest), use_gui=False)
             return
-        
+            
         dn = dcm_net.DicomNet(
             self.__selected["ipaddress"],
             int(self.__selected["port"]),
@@ -268,33 +284,48 @@ class TextPanel(wx.Panel):
         dn.SetPortCall(int(self.__server_port))
         dn.SetStorePath(self.__store_path)
         dn.SetIPCall(self.__server_ip)
-
-        self.__tree.SetItemText(item, "Downloading...", 12) #status
+        
+        self.__progress_dialog = wx.ProgressDialog(
+            "Downloading DICOM Images",
+            f"Downloading {data['type']}...",
+            maximum=n_images,
+            parent=self,
+            style=wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_APP_MODAL
+        )
         
         try:
-            
-            dn.RunCMove(data, dest, lambda r, e: self.OnDone(dest, r, e, item))
+            dn.RunCMove(data, dest, self._update_progress, self._on_download_done)
         
         except Exception as e:
-                
-            self.__tree.SetItemText(item, "Failed", 12)
+            self._destroy_progress()    
             wx.MessageBox(str(e), _("Error"), wx.OK | wx.ICON_ERROR)
             return
 
-    def OnDone(self, dest, result=None, error=None, item=None):
+    def _on_download_done(self, dest, result=None, error=None):
+        self._destroy_progress()
+        
         if error:
-            if item:
-                self.__tree.SetItemText(item, "Failed", 12)
             wx.MessageBox(str(error), _("Error"), wx.OK | wx.ICON_ERROR)
             return
         
-        if item:
-            self.__tree.SetItemText(item, "Downloaded", 12)
-
-        wx.MessageBox("Download complete! Click OK to open.", "Test", wx.OK)
-    
+        dcm_files = [f for f in os.listdir(dest) if f.endswith('.dcm')]
+        
+        if not dcm_files:
+            wx.MessageBox("No DICOM files found!", "Error", wx.OK | wx.ICON_ERROR)
+            return
+        
+        # Pass the first DICOM file to import
+        first_dcm = os.path.join(dest, dcm_files[0])
+        
+        wx.MessageBox("Download complete!", "Success", wx.OK)
         Publisher.sendMessage("Hide import network panel")
-        Publisher.sendMessage('Import directory', directory=str(dest), use_gui=False)
+        Publisher.sendMessage('Import directory', directory=first_dcm, use_gui=False)
+
+    def _destroy_progress(self):
+        """Safely destroy progress dialog."""
+        if self.__progress_dialog:
+            wx.CallAfter(self.__progress_dialog.Destroy)
+            self.__progress_dialog = None
 
     def OnSize(self, evt):
         self.__tree.SetSize(self.GetSize())

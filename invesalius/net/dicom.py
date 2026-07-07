@@ -115,11 +115,10 @@ class DicomNet:
 
     #     self._executor.submit(_task)
 
-    def RunCMove(self, data, dest, callback=None):
-        print('here 2')
+    def RunCMove(self, data, dest, progress_callback, callback=None):
         def _task():
             try:
-                result = self.__RunCMove(data, dest)
+                result = self.__RunCMove(data, dest, progress_callback)
                 if callback:
                     wx.CallAfter(callback, dest, result, None)
             except Exception as e:
@@ -169,6 +168,7 @@ class DicomNet:
 
         patients = {}
 
+        #Patient Level
         patient_ds = Dataset()
         patient_ds.QueryRetrieveLevel = "PATIENT"
         patient_ds.PatientName = f"*{self.search_word}*"
@@ -184,7 +184,8 @@ class DicomNet:
                     continue
                 if patient_id not in patients:
                     patients[patient_id] = {}
-
+        
+        #Study Level
         for patientId in patients.keys():
             study_ds = Dataset()
             study_ds.QueryRetrieveLevel = "STUDY"
@@ -195,8 +196,11 @@ class DicomNet:
             )
             for study_status, study_identifier in study_response:
                 if study_status and study_status.Status in (0xFF00, 0xFF01):
-                    patients[patientId][(study_identifier.get("StudyInstanceUID", None))] = {}
-
+                    study_uid = study_identifier.get("StudyInstanceUID")
+                    if study_uid:
+                        patients[patientId][study_uid] = {}
+            
+            #Series Level
             for study_id in patients[patientId].keys():
                 series_ds = Dataset()
                 series_ds.QueryRetrieveLevel = "SERIES"
@@ -208,10 +212,27 @@ class DicomNet:
                 )
                 for series_status, series_identifier in series_response:
                     if series_status and series_status.Status in (0xFF00, 0xFF01):
-                        patients[patientId][study_id][
-                            series_identifier.get("SeriesInstanceUID", None)
-                        ] = {}
+                        series_uid = series_identifier.get("SeriesInstanceUID")
+                        if series_uid:
+                            patients[patientId][study_id][series_uid] = {
+                                "name": "",
+                                "age": "",
+                                "gender": "",
+                                "study_id": study_id,
+                                "study_description": "",
+                                "modality": "",
+                                "acquisition_time": "",
+                                "acquisition_date": "",
+                                "institution": "",
+                                "date_of_birth": "",
+                                "acession_number": "",
+                                "ref_physician": "",
+                                "serie_description": "",
+                                "n_images": 0, 
+                                "image_uids": []
+                            }
 
+                # IMAGE level
                 for serie_id in patients[patientId][study_id].keys():
                     image_ds = Dataset()
                     image_ds.QueryRetrieveLevel = "IMAGE"
@@ -231,51 +252,38 @@ class DicomNet:
                     image_ds.SeriesDescription = ""
                     image_ds.AcquisitionTime = ""
                     image_ds.AcquisitionDate = ""
-                    image_response = assoc.send_c_find(
-                        image_ds, PatientRootQueryRetrieveInformationModelFind
-                    )
+                    
+                    image_response = assoc.send_c_find(image_ds, PatientRootQueryRetrieveInformationModelFind)
+                    first_image = True
+
                     for image_status, image_identifier in image_response:
                         if image_status and image_status.Status in (0xFF00, 0xFF01):
-                            name = image_identifier.get("PatientName", None)
-                            age = image_identifier.get("PatientAge", None)
-                            age = age.rstrip("Y").lstrip("0") if age else ""
-                            gender = image_identifier.get("PatientSex", None)
-                            study_instance_uid = image_identifier.get("StudyInstanceUID", None)
-                            study_description = image_identifier.get("StudyDescription", None)
-                            modality = image_identifier.get("Modality", None)
-                            institution = image_identifier.get("InstitutionName", None)
-                            date_of_birth = image_identifier.get("PatientBirthDate", None)
-                            date_of_birth = (
-                                self._date_format(date_of_birth) if date_of_birth else ""
-                            )
-                            acession_number = image_identifier.get("AccessionNumber", None)
-                            ref_physician = image_identifier.get("ReferringPhysicianName", None)
-                            serie_description = image_identifier.get("SeriesDescription", None)
-                            acquisition_time = image_identifier.get("AcquisitionTime", None)
-                            acquisition_time = (
-                                self._time_format(acquisition_time) if acquisition_time else ""
-                            )
-                            acquisition_date = image_identifier.get("AcquisitionDate", None)
-                            acquisition_date = (
-                                self._date_format(acquisition_date) if acquisition_date else ""
-                            )
+                            if first_image:
+                                patients[patientId][study_id][serie_id] = {
+                                    "name": image_identifier.get("PatientName", ""),
+                                    "age": self._format_age(image_identifier.get("PatientAge", "")),
+                                    "gender": image_identifier.get("PatientSex", ""),
+                                    "study_id": image_identifier.get("StudyInstanceUID", study_id),
+                                    "study_description": image_identifier.get("StudyDescription", ""),
+                                    "modality": image_identifier.get("Modality", ""),
+                                    "acquisition_time": self._time_format(image_identifier.get("AcquisitionTime", "")),
+                                    "acquisition_date": self._date_format(image_identifier.get("AcquisitionDate", "")),
+                                    "institution": image_identifier.get("InstitutionName", ""),
+                                    "date_of_birth": self._date_format(image_identifier.get("PatientBirthDate", "")),
+                                    "acession_number": image_identifier.get("AccessionNumber", ""),
+                                    "ref_physician": image_identifier.get("ReferringPhysicianName", ""),
+                                    "serie_description": image_identifier.get("SeriesDescription", ""),
+                                    "n_images": 0,
+                                    "image_uids": []
+                                }
+                                first_image = False
+                            
+                            # Increment image count and store UID
+                            patients[patientId][study_id][serie_id]["n_images"] += 1
+                            sop_uid = image_identifier.get("SOPInstanceUID")
+                            if sop_uid:
+                                patients[patientId][study_id][serie_id]["image_uids"].append(sop_uid)
 
-                            patients[patientId][study_id][serie_id] = {
-                                "name": name,
-                                "age": age,
-                                "gender": gender,
-                                "study_id": study_instance_uid,
-                                "study_description": study_description,
-                                "modality": modality,
-                                "acquisition_time": acquisition_time,
-                                "acquisition_date": acquisition_date,
-                                "institution": institution,
-                                "date_of_birth": date_of_birth,
-                                "acession_number": acession_number,
-                                "ref_physician": ref_physician,
-                                "serie_description": serie_description,
-                                "n_images": 1,
-                            }
         assoc.release()
         return patients
 
@@ -319,45 +327,55 @@ class DicomNet:
         if assoc and assoc.is_established:
             assoc.release()
 
-    def __RunCMove(self, data, dest):
+    def __RunCMove(self, data, dest, progress_callback):
+        
         handlers = [(evt.EVT_C_STORE, self._handle_store)]
-
         self._current_dest = dest
 
         ae = AE(ae_title=self.aetitle_call)
-
         ae.add_requested_context(PatientRootQueryRetrieveInformationModelMove)
         ae.supported_contexts = StoragePresentationContexts
 
         scp = ae.start_server((self.ip_call, int(self.port_call)), block=False, evt_handlers=handlers)
 
         ds = Dataset()
-
         ds.PatientID = data.get("patient", "")
         ds.StudyInstanceUID = data.get("study", "")
         ds.SeriesInstanceUID = data.get("series", "")
-
-        print(self.ip_call, self.port_call)
-
         ds.QueryRetrieveLevel = data["type"]
 
         assoc = ae.associate(self.address, self.port, ae_title=self.aetitle)
 
-        responses = assoc.send_c_move(
-            ds, self.server_aetitle, PatientRootQueryRetrieveInformationModelMove
-        )
-        for status, identifier in responses:
-            if status:
-                print(f"C-MOVE query status: 0x{status.Status:04x}")
-            else:
-                raise RuntimeError('C-MOVE request failed')
+        if not assoc.is_established:
+            scp.shutdown()
+            raise RuntimeError("Failed to establish association")
 
-        if assoc and assoc.is_established:
+        total_images = data.get('n_images', 0)
+        completed = 0
+        
+        try:
+            wx.CallAfter(progress_callback, 0, total_images)
+
+            responses = assoc.send_c_move(
+                ds, self.server_aetitle, PatientRootQueryRetrieveInformationModelMove
+            )
+            
+            for status, identifier in responses:
+                if status and status.Status in (0xFF00, 0xFF01):
+                    completed += 1
+                    wx.CallAfter(progress_callback, completed, total_images)
+                elif status and status.Status == 0x0000:
+                        break
+                else:
+                    raise RuntimeError('C-MOVE failed with status: 0x{0:04x}'.format(status.Status))
+        
+        except Exception as e:
+            raise e
+        
+        finally:
             assoc.release()
             scp.shutdown()
-        else:
-            raise RuntimeError('Association rejected, aborted or never connected')
-
+        
     def _handle_store(self, event):
 
         try:
@@ -369,13 +387,14 @@ class DicomNet:
             if not os.path.exists(dest):
                 os.makedirs(dest)
 
-            filename = dest.joinpath(f'{ds.SOPInstanceUID}.dcm')
+            filename = os.path.join(dest, f'{ds.SOPInstanceUID}.dcm')
 
             ds.save_as(filename, write_like_original=False)
             
             return 0x0000
         
         except Exception as e:
+            print(f"Error in _handle_store: {e}")
             return 0xC001
 
     def _date_format(self, date):
@@ -387,6 +406,12 @@ class DicomNet:
         time = time.split(".")[0] if "." in time else time
         time = datetime.strptime(time, "%H%M%S").strftime("%H:%M:%S")
         return time
+
+
+    def _format_age(self, age):
+        if not age:
+            return ""
+        return age.rstrip("Y").lstrip("0")
 
     def __str__(self):
         return (
