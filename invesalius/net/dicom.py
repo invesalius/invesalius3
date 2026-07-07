@@ -116,14 +116,15 @@ class DicomNet:
     #     self._executor.submit(_task)
 
     def RunCMove(self, data, dest, callback=None):
+        print('here 2')
         def _task():
             try:
                 result = self.__RunCMove(data, dest)
                 if callback:
-                    wx.CallAfter(callback, result, None)
+                    wx.CallAfter(callback, dest, result, None)
             except Exception as e:
                 if callback:
-                    wx.CallAfter(callback, None, str(e))
+                    wx.CallAfter(callback, dest, None, str(e))
 
         self._executor.submit(_task)
 
@@ -368,7 +369,7 @@ class DicomNet:
             if not os.path.exists(dest):
                 os.makedirs(dest)
 
-            filename = f"{dest}/{ds.SOPInstanceUID}.dcm"
+            filename = dest.joinpath(f'{ds.SOPInstanceUID}.dcm')
 
             ds.save_as(filename, write_like_original=False)
             
@@ -376,8 +377,6 @@ class DicomNet:
         
         except Exception as e:
             return 0xC001
-
-
 
     def _date_format(self, date):
         date = date.split(".")[0] if "." in date else date
