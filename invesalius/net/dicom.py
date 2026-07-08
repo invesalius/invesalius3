@@ -122,7 +122,6 @@ class DicomNet:
             except Exception as e:
                 if callback:
                     wx.CallAfter(callback, dest, None, str(e))
-
         self._executor.submit(_task)
 
     # Sync Methods
@@ -402,7 +401,9 @@ class DicomNet:
         completed = 0
 
         try:
-            wx.CallAfter(progress_callback, 0, total_images)
+            if progress_callback(0, total_images):
+                logger.info("Download cancelled by user")
+                raise RuntimeError("CANCELLED")
 
             responses = assoc.send_c_move(
                 ds, self.server_aetitle, PatientRootQueryRetrieveInformationModelMove
@@ -411,7 +412,10 @@ class DicomNet:
             for status, identifier in responses:
                 if status and status.Status in (0xFF00, 0xFF01):
                     completed += 1
-                    wx.CallAfter(progress_callback, completed, total_images)
+                    if progress_callback(completed, total_images):
+                        logger.info("Download cancelled by user")
+                        assoc.abort()
+                        raise RuntimeError("CANCELLED")
                 elif status and status.Status == 0x0000:
                     logger.info(f"C-MOVE completed: {completed}/{total_images} images")
                     break
@@ -419,11 +423,17 @@ class DicomNet:
                     raise RuntimeError("C-MOVE failed with status: 0x{0:04x}".format(status.Status))
 
         except Exception as e:
-            raise e
+            if str(e) == "CANCELLED":
+                self._cleanup_partial_files(dest)
+                logger.info("C-MOVE cancelled - partial files cleaned up")
+            
+            logger.error(f"C-MOVE failed: {e}", exc_info=True)
+            raise
 
         finally:
             assoc.release()
             scp.shutdown()
+            logger.debug("C-MOVE resources released")
 
     def _handle_store(self, event):
         try:
@@ -441,6 +451,15 @@ class DicomNet:
         except Exception as e:
             logger.error(f"Error saving DICOM: {e}")
             return 0xC001
+
+    def _cleanup_partial_files(self, dest):
+        try:
+            import shutil
+            if os.path.exists(dest):
+                shutil.rmtree(dest)
+                logger.info(f"Removed partial download: {dest}")
+        except Exception as e:
+            logger.error(f"Failed to clean up partial files: {e}")
 
     def _date_format(self, date):
         date = date.split(".")[0] if "." in date else date
