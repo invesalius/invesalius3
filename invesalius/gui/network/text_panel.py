@@ -1,11 +1,13 @@
+import os
+import pathlib
+
 import wx
 import wx.gizmos as gizmos
+
 import invesalius.net.dicom as dcm_net
 import invesalius.session as ses
-from invesalius.pubsub import pub as Publisher
 from invesalius import inv_paths
-import pathlib
-import os
+from invesalius.pubsub import pub as Publisher
 
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
@@ -87,26 +89,35 @@ class TextPanel(wx.Panel):
         pass
 
     def _load_values(self):
-
-        self.__selected = self.__session.GetConfig('selected_node') \
-            if self.__session.GetConfig('selected_node') \
+        self.__selected = (
+            self.__session.GetConfig("selected_node")
+            if self.__session.GetConfig("selected_node")
             else None
+        )
 
-        self.__server_ip = self.__session.GetConfig('server_ip') \
-            if self.__session.GetConfig('server_ip') \
-            else '0.0.0.0'
+        self.__server_ip = (
+            self.__session.GetConfig("server_ip")
+            if self.__session.GetConfig("server_ip")
+            else "0.0.0.0"
+        )
 
-        self.__server_aetitle = self.__session.GetConfig('server_aetitle') \
-            if self.__session.GetConfig('server_aetitle') \
-            else 'INVESALIUS'
+        self.__server_aetitle = (
+            self.__session.GetConfig("server_aetitle")
+            if self.__session.GetConfig("server_aetitle")
+            else "INVESALIUS"
+        )
 
-        self.__server_port = self.__session.GetConfig('server_port') \
-            if self.__session.GetConfig('server_port') \
+        self.__server_port = (
+            self.__session.GetConfig("server_port")
+            if self.__session.GetConfig("server_port")
             else 11120
+        )
 
-        self.__store_path = pathlib.Path(self.__session.GetConfig('store_path')) \
-            if self.__session.GetConfig('store_path') \
+        self.__store_path = (
+            pathlib.Path(self.__session.GetConfig("store_path"))
+            if self.__session.GetConfig("store_path")
             else inv_paths.USER_DICOM_DIR
+        )
 
     def Populate(self, patients):
         """Populate tree."""
@@ -140,7 +151,9 @@ class TextPanel(wx.Panel):
                 else self.__tree.AppendItem(self.__root, str(title))
             )
 
-            self.__tree.SetItemPyData(parent, {"type": "patient", "patient": patient, "n_images": n_amount_images})
+            self.__tree.SetItemPyData(
+                parent, {"type": "patient", "patient": patient, "n_images": n_amount_images}
+            )
 
             self.__tree.SetItemText(parent, p_id, 1)
             self.__tree.SetItemText(parent, age, 2)
@@ -166,7 +179,8 @@ class TextPanel(wx.Panel):
                 study_key = (patient, study)
 
                 self.__tree.SetItemPyData(
-                    study_node, {"type": "study", "study": study, "patient": patient, "n_images": study_images}
+                    study_node,
+                    {"type": "study", "study": study, "patient": patient, "n_images": study_images},
                 )
 
                 self.__idstudy_treeitem[study_key] = study_node
@@ -187,7 +201,13 @@ class TextPanel(wx.Panel):
 
                     self.__tree.SetItemPyData(
                         child,
-                        {"type": "series", "patient": patient, "study": study, "series": series, "n_images": n_images},
+                        {
+                            "type": "series",
+                            "patient": patient,
+                            "study": study,
+                            "series": series,
+                            "n_images": n_images,
+                        },
                     )
                     self.__tree.SetItemText(child, serie_description, 0)
                     # tree.SetItemText(child, dicom.acquisition.protocol_name, 4)
@@ -233,9 +253,9 @@ class TextPanel(wx.Panel):
     def _update_progress(self, completed, total):
         if not self.__progress_dialog:
             return
-        
+
         percentage = int((completed / total) * 100) if total > 0 else 0
-        
+
         def _update():
             if self.__progress_dialog:
                 keep_going, skip = self.__progress_dialog.Update(
@@ -243,7 +263,7 @@ class TextPanel(wx.Panel):
                 )
                 if not keep_going:
                     raise RuntimeError("Download cancelled by user")
-        
+
         wx.CallAfter(_update)
 
     def OnActivate(self, evt):
@@ -255,26 +275,26 @@ class TextPanel(wx.Panel):
 
         dest = pathlib.Path()
 
-        if data['type'] == 'patient':
-            dest = self.__store_path/data['patient']
-        elif data['type'] == 'study':
-            dest = self.__store_path//data['patient']/data['study']
-        elif data['type'] == 'series':
-            dest = self.__store_path/data['patient']/data['study']/data['series']
+        if data["type"] == "patient":
+            dest = self.__store_path / data["patient"]
+        elif data["type"] == "study":
+            dest = self.__store_path // data["patient"] / data["study"]
+        elif data["type"] == "series":
+            dest = self.__store_path / data["patient"] / data["study"] / data["series"]
         else:
             wx.MessageBox(_("Unknown item type"), _("Error"), wx.OK | wx.ICON_ERROR)
             return
-        
-        n_images = data.get('n_images', 0)
+
+        n_images = data.get("n_images", 0)
         dest.mkdir(parents=True, exist_ok=True)
-        found = len([f for f in dest.iterdir() if f.suffix == '.dcm'])
-        
+        found = len([f for f in dest.iterdir() if f.suffix == ".dcm"])
+
         if found >= n_images:
             wx.MessageBox("Images already downloaded!", "Info", wx.OK)
             Publisher.sendMessage("Hide import network panel")
-            Publisher.sendMessage('Import directory', directory=str(dest), use_gui=False)
+            Publisher.sendMessage("Import directory", directory=str(dest), use_gui=False)
             return
-            
+
         dn = dcm_net.DicomNet(
             self.__selected["ipaddress"],
             int(self.__selected["port"]),
@@ -284,42 +304,42 @@ class TextPanel(wx.Panel):
         dn.SetPortCall(int(self.__server_port))
         dn.SetStorePath(self.__store_path)
         dn.SetIPCall(self.__server_ip)
-        
+
         self.__progress_dialog = wx.ProgressDialog(
             "Downloading DICOM Images",
             f"Downloading {data['type']}...",
             maximum=n_images,
             parent=self,
-            style=wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_APP_MODAL
+            style=wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_APP_MODAL,
         )
-        
+
         try:
             dn.RunCMove(data, dest, self._update_progress, self._on_download_done)
-        
+
         except Exception as e:
-            self._destroy_progress()    
+            self._destroy_progress()
             wx.MessageBox(str(e), _("Error"), wx.OK | wx.ICON_ERROR)
             return
 
     def _on_download_done(self, dest, result=None, error=None):
         self._destroy_progress()
-        
+
         if error:
             wx.MessageBox(str(error), _("Error"), wx.OK | wx.ICON_ERROR)
             return
-        
-        dcm_files = [f for f in os.listdir(dest) if f.endswith('.dcm')]
-        
+
+        dcm_files = [f for f in os.listdir(dest) if f.endswith(".dcm")]
+
         if not dcm_files:
             wx.MessageBox("No DICOM files found!", "Error", wx.OK | wx.ICON_ERROR)
             return
-        
+
         # Pass the first DICOM file to import
         first_dcm = os.path.join(dest, dcm_files[0])
-        
+
         wx.MessageBox("Download complete!", "Success", wx.OK)
         Publisher.sendMessage("Hide import network panel")
-        Publisher.sendMessage('Import directory', directory=first_dcm, use_gui=False)
+        Publisher.sendMessage("Import directory", directory=first_dcm, use_gui=False)
 
     def _destroy_progress(self):
         """Safely destroy progress dialog."""

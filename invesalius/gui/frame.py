@@ -538,10 +538,10 @@ class Frame(wx.Frame):
         aui_manager.Update()
 
     def _ShowImportNetwork(self):
-        """ Show viewers and task, hide import panel. """
+        """Show viewers and task, hide import panel."""
 
         Publisher.sendMessage("Close Project")
-        
+
         Publisher.sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Retrieve").Show(1)
@@ -1000,7 +1000,7 @@ class Frame(wx.Frame):
             session.SetConfig("server_aetitle", server_aetitle)
             session.SetConfig("server_port", server_port)
             session.SetConfig("store_path", store_path)
-            session.SetConfig('server_ip', server_ip)
+            session.SetConfig("server_ip", server_ip)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
