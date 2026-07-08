@@ -319,7 +319,7 @@ class TextPanel(wx.Panel):
         )
 
         try:
-            dn.RunCMove(data, dest, self._update_progress, self._on_download_done)
+            dn.RunCGet(data, str(dest), self._update_progress, self._on_download_done)
 
         except Exception as e:
             self._destroy_progress()
@@ -348,11 +348,11 @@ class TextPanel(wx.Panel):
             return
 
         # Pass the first DICOM file to import
-        first_dcm = os.path.join(dest, dcm_files[0])
+        # first_dcm = os.path.join(dest, dcm_files[0])
 
         wx.MessageBox("Download complete!", "Success", wx.OK)
         Publisher.sendMessage("Hide import network panel")
-        Publisher.sendMessage("Import directory", directory=first_dcm, use_gui=False)
+        Publisher.sendMessage("Import directory", directory=str(dest), use_gui=False)
 
     def _destroy_progress(self):
         """Safely destroy progress dialog."""

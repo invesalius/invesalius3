@@ -105,15 +105,18 @@ class DicomNet:
 
         self._executor.submit(_task)
 
-    # def RunCGet(self, data, callback=None):
-    #     def _task():
-    #         result = self.__RunCGet(data)
-    #         if callback:
-    #             callback(result)
+    def RunCGet(self, data, dest: str, progress_callback, callback=None):
+        def _task():
+            try:
+                result = self.__RunCGet(data, dest, progress_callback)
+                if callback:
+                    wx.CallAfter(callback, dest, result, None)
+            except Exception as e:
+                if callback:
+                    wx.CallAfter(callback, dest, None, str(e))
+        self._executor.submit(_task)
 
-    #     self._executor.submit(_task)
-
-    def RunCMove(self, data, dest, progress_callback, callback=None):
+    def RunCMove(self, data, dest: str, progress_callback, callback=None):
         def _task():
             try:
                 result = self.__RunCMove(data, dest, progress_callback)
@@ -320,50 +323,60 @@ class DicomNet:
             assoc.release()
             logger.debug("C-FIND association released")
 
-    def RunCGet(
+    def __RunCGet(
         self,
-        QueryRetrieveLevel,
-        PatientID,
-        StudyInstanceUID,
-        SeriesInstanceUID,
-        SOPInstanceUID,
-        directory="../Data/",
+        data, dest, progress_callback
     ):
-        logger.info(f"Starting C-GET for patient: {PatientID}")
+        logger.info(f"Starting C-GET for patient: {data.get('patient', 'unknown')}")
+        logger.debug(f"Destination: {dest}")
+
+        handlers = [(evt.EVT_C_STORE, self._handle_store)]
+        self._current_dest = dest
+
+        ae = AE(ae_title=self.aetitle_call)
+        ae.add_requested_context(PatientRootQueryRetrieveInformationModelGet)
+        ae.add_requested_context(CTImageStorage)
+
+        role = build_role(CTImageStorage, scp_role=True)
+
+        ds = Dataset()
+        ds.PatientID = data.get("patient", "")
+        ds.StudyInstanceUID = data.get("study", "")
+        ds.SeriesInstanceUID = data.get("series", "")
+        ds.QueryRetrieveLevel = data["type"]
+
+        assoc = ae.associate(self.address, self.port, ext_neg=[role], evt_handlers=handlers, ae_title=self.aetitle)
+
+        # Use the C-GET service to send the identifier
+        total_images = data.get("n_images", 0)
+        completed = 0
 
         try:
-
-            handlers = [(evt.EVT_C_STORE, self._handle_store)]
-
-            ae = AE(ae_title=self.aetitle_call)
-
-            ae.add_requested_context(PatientRootQueryRetrieveInformationModelGet)
-            ae.add_requested_context(CTImageStorage)
-
-            role = build_role(CTImageStorage, scp_role=True)
-
-            ds = Dataset()
-            ds.QueryRetrieveLevel = QueryRetrieveLevel
-            ds.PatientID = PatientID
-            ds.StudyInstanceUID = StudyInstanceUID
-            ds.SeriesInstanceUID = SeriesInstanceUID
-            ds.SOPInstanceUID = SOPInstanceUID
-
-            assoc = ae.associate(
-                self.address, self.port, ext_neg=[role], evt_handlers=handlers, ae_title=self.aetitle
-            )
-
-            # Use the C-GET service to send the identifier
+            if progress_callback(0, total_images):
+                logger.info("Download cancelled by user")
+                raise RuntimeError("CANCELLED")
+            
             responses = assoc.send_c_get(ds, PatientRootQueryRetrieveInformationModelGet)
 
             for status, identifier in responses:
                 if status and status.Status in (0xFF00, 0xFF01):
-                    logger.info(f"C-GET: query status: 0x{status.Status:04x}")
+                    completed += 1
+                    if progress_callback(completed, total_images):
+                        logger.info("Download cancelled by user")
+                        assoc.abort()
+                        raise RuntimeError("CANCELLED")
+                elif status and status.Status == 0x0000:
+                    logger.info(f"C-GET completed: {completed}/{total_images} images")
+                    break
                 else:
-                    logger.warning("C-GET: Connection timed out, was aborted or received invalid response")
-  
+                    raise RuntimeError("C-GET failed with status: 0x{0:04x}".format(status.Status))
+
         except Exception as e:
-            logger.error(f"C-GET failed: {e}", exc_info=True)
+            if str(e):
+                self._cleanup_partial_files(dest)
+                logger.info("C-GET cancelled - partial files cleaned up")
+            logger.error(f"C-MOVE failed: {e}", exc_info=True)
+            raise
 
         finally:
             if assoc and assoc.is_established:
