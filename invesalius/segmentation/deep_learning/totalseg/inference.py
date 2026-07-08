@@ -243,6 +243,7 @@ def run(
     modality: str | None = None,
     step_size: float = 0.5,
     progress_callback: Callable[[float], None] | None = None,
+    output_layout: str = "input",
 ) -> np.ndarray:
     if modality is None:
         modality = sidecar.get("modality", "CT").lower()
@@ -272,5 +273,10 @@ def run(
         progress_callback=progress_callback,
     )
 
+    # postprocess returns ZYX (the layout the network ran in). "input" assumes
+    # the caller fed XYZ via load_nifti/load_volume_from_array, so transpose
+    # back. Callers already in ZYX (InVesalius wrapper) pass "zyx" to skip.
     pred_zyx = postprocess(pred, meta)
+    if output_layout == "zyx":
+        return pred_zyx
     return output_to_input_layout(pred_zyx)
