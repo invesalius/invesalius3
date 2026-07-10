@@ -1325,7 +1325,7 @@ class ObjectTab(wx.Panel):
 
         self.Layout()
 
-    def OnSetCoilCount(self, n_coils, clear_all=False, **kwargs):
+    def OnSetCoilCount(self, n_coils, clear_all=False):
         multicoil_mode = n_coils > 1
 
         if multicoil_mode:
