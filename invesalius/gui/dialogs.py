@@ -4167,12 +4167,12 @@ class ObjectCalibrationDialog(wx.Dialog):
             choices.append(label)
             self.obj_id_map[label] = 0
 
+        is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
         for i in range(2, max_obj_id):
-            rom_name = self._GetROMBasename(i)
-            if rom_name:
-                label = f"{rom_name}"
-            else:
-                label = _(f"Coil {i - 1}")
+            label = None
+            if is_polaris:
+                label = self._GetROMBasename(i)
+            label = label or _(f"Coil {i - 1}")
             choices.append(label)
             self.obj_id_map[label] = i
 
@@ -4538,15 +4538,15 @@ class ObjectCalibrationDialog(wx.Dialog):
         if self.n_coils > 1:
             # Use the ROM file basename as the coil name if available,
             # otherwise fall back to the ComboBox label (e.g. "Coil 1")
-            rom_name = self._GetROMBasename(self.obj_id)
-            if rom_name:
-                coil_name = rom_name
-            else:
-                coil_name = self.choice_obj_id.GetValue().strip()
-                if not coil_name:
-                    coil_name = "coil"
-        else:
+
             coil_name = "default_coil"
+
+            if self.n_coils > 1:
+                is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
+
+                rom_name = self._GetROMBasename(self.obj_id) if is_polaris else None
+
+                coil_name = rom_name or self.choice_obj_id.GetValue().strip() or "coil"
 
         return (
             coil_name,
