@@ -688,8 +688,6 @@ class Navigation(metaclass=Singleton):
                     jobs_list.append(self.serial_port_connection)
                 else:
                     # Connection failed - show error and disable serial port
-                    import wx
-
                     wx.MessageBox(
                         "Failed to connect to serial port. Navigation will continue without serial port support.",
                         "InVesalius 3",
