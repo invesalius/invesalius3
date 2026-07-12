@@ -21,7 +21,6 @@ import sys
 
 import wx
 import wx.aui
-import wx.lib.agw.fourwaysplitter as fws
 import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
 
@@ -153,6 +152,9 @@ class Panel(wx.Panel):
         session = ses.Session()
         if session.GetConfig("mode") != const.MODE_NAVIGATOR:
             Publisher.sendMessage("Hide target button")
+
+        # Save default perspective for reset functionality
+        self.perspective_all = self.aui_manager.SavePerspective()
 
     def __bind_events_wx(self):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_MAXIMIZE, self.OnMaximize)
