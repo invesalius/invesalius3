@@ -1744,8 +1744,15 @@ class SurfaceManager:
         else:
             polydata = pu.Merge(polydata_list)
 
+        # Phase 1: Basic structural validation
+        if polydata is None:
+            raise ValueError("Polydata is None.")
+
         if polydata.GetNumberOfPoints() == 0:
             raise ValueError("Polydata has zero points.")
+
+        if polydata.GetNumberOfCells() == 0:
+            raise ValueError("Polydata has zero cells.")
 
         # Initializing progress dialog
         progress = wx.ProgressDialog(
