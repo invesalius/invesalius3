@@ -4535,7 +4535,6 @@ class ObjectCalibrationDialog(wx.Dialog):
     def GetValue(
         self,
     ) -> tuple[np.ndarray, np.ndarray, int, bytes | None, vtkPolyData | None]:
-
         coil_name = "default_coil"
 
         if self.n_coils > 1:
