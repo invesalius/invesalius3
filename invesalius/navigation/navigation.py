@@ -249,7 +249,10 @@ class UpdateNavigationScene(threading.Thread):
             main_coil = self.navigation.main_coil
             track_this = main_coil if self.navigation.track_coil else "probe"
             # choose which object to track in slices and viewer_volume pointer
-            coord = coords[track_this]
+            coord = coords.get(track_this, None)
+            if coord is None:
+                self.coord_queue.task_done()
+                continue
 
             # Remove probe, so that coords/m_imgs only contain coils
             probe_coord = coords.pop("probe")
@@ -492,7 +495,7 @@ class Navigation(metaclass=Singleton):
     def SetLockToTarget(self, value):
         self.lock_to_target = value
 
-    def SetNoOfCoils(self, n_coils):
+    def SetNoOfCoils(self, n_coils, clear_all=False):
         self.n_coils = n_coils
         self.SaveConfig("n_coils", n_coils)
 
@@ -647,14 +650,6 @@ class Navigation(metaclass=Singleton):
 
             coreg_data = [self.m_change, self.r_stylus]
 
-            robot = Robot()
-            if robot.IsReady():
-                # Tell robot at which index (obj_id) to find its coil in (relevant when there are multiple coils)
-                Publisher.sendMessage(
-                    "Neuronavigation to Robot: Set coil index",
-                    data=self.coil_registrations[robot.GetCoilName()]["obj_id"],
-                )
-
             queues = [
                 self.coord_queue,
                 self.coord_tracts_queue,
@@ -693,8 +688,6 @@ class Navigation(metaclass=Singleton):
                     jobs_list.append(self.serial_port_connection)
                 else:
                     # Connection failed - show error and disable serial port
-                    import wx
-
                     wx.MessageBox(
                         "Failed to connect to serial port. Navigation will continue without serial port support.",
                         "InVesalius 3",

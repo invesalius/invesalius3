@@ -166,7 +166,7 @@ class Robot(metaclass=Singleton):
     def IsConnected(self):
         return self.is_robot_connected
 
-    def IsReady(self):  # LUKATODO: use this check before enabling robot for navigation...
+    def IsReady(self):
         return self.IsConnected() and (self.coil_name in self.navigation.coil_registrations)
 
     def SetRobotIP(self, data):
@@ -189,6 +189,7 @@ class Robot(metaclass=Singleton):
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
         )
+        self.SetCoilName(self.coil_name) if self.coil_name is not None else "default_coil"
         print("Robot initialized")
 
     def GetCoilName(self):
@@ -196,16 +197,27 @@ class Robot(metaclass=Singleton):
 
     def SetCoilName(self, name):
         self.coil_name = name
+
+        if self.coil_name not in self.navigation.coil_registrations:
+            return
+
+        coil_idx = self.navigation.coil_registrations[self.coil_name]["obj_id"]
+
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Set coil index",
+            coil_idx=coil_idx,
+        )
         self.SaveConfig("robot_coil", name)
 
     def SendTargetToRobot(self):
         # If the target is not set, return early.
-        if self.target is None:
+        if self.target is None or self.navigation.main_coil != self.coil_name:
             return False
 
         navigation = self.navigation
+
         # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
-        if navigation.m_change is None or navigation.obj_datas is None:
+        if navigation.m_change is None or self.coil_name not in self.navigation.obj_datas:
             return False
 
         # Compute the target in tracker coordinate system.

@@ -281,7 +281,7 @@ class CoilVisualizer:
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
 
-    def ResetCoilVisualizer(self, n_coils):
+    def ResetCoilVisualizer(self, n_coils, clear_all=False):
         self.RemoveCoil()  # Remove all coils
 
     def UpdateCoilPoses(self, m_imgs, coords):

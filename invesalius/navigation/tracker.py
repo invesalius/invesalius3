@@ -105,7 +105,9 @@ class Tracker(metaclass=Singleton):
         self.tracker_fiducials_raw = tracker_fiducials_raw
         self.m_tracker_fiducials_raw = m_tracker_fiducials_raw
 
-        self.SetTracker(tracker_id=self.tracker_id, configuration=configuration)
+        n_coils = session.GetConfig("navigation", {}).get("n_coils", 1)
+
+        self.SetTracker(tracker_id=self.tracker_id, n_coils=n_coils, configuration=configuration)
 
     def SetTracker(
         self, tracker_id: int, n_coils: int = 1, configuration: Optional[Dict[str, object]] = None
