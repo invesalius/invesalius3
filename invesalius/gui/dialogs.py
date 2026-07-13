@@ -4535,18 +4535,15 @@ class ObjectCalibrationDialog(wx.Dialog):
     def GetValue(
         self,
     ) -> tuple[np.ndarray, np.ndarray, int, bytes | None, vtkPolyData | None]:
+
+        coil_name = "default_coil"
+
         if self.n_coils > 1:
-            # Use the ROM file basename as the coil name if available,
-            # otherwise fall back to the ComboBox label (e.g. "Coil 1")
+            is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
 
-            coil_name = "default_coil"
+            rom_name = self._GetROMBasename(self.obj_id) if is_polaris else None
 
-            if self.n_coils > 1:
-                is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
-
-                rom_name = self._GetROMBasename(self.obj_id) if is_polaris else None
-
-                coil_name = rom_name or self.choice_obj_id.GetValue().strip() or "coil"
+            coil_name = rom_name or self.choice_obj_id.GetValue().strip() or "coil"
 
         return (
             coil_name,
