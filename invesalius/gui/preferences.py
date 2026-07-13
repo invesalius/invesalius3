@@ -2130,6 +2130,9 @@ class TrackerTab(wx.Panel):
         else:
             choice = None
 
+        # Stop navigation to avoid tracker to be disconnected while navigating
+        Publisher.sendMessage("Stop navigation")
+
         self.tracker.DisconnectTracker()
         self.tracker.ResetTrackerFiducials()
         self.tracker.SetTracker(choice, n_coils=self.n_coils)
