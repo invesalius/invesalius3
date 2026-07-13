@@ -33,6 +33,7 @@ import invesalius.constants as const
 import invesalius.gui.default_tasks as tasks
 import invesalius.gui.default_viewers as viewers
 import invesalius.gui.dialogs as dlg
+import invesalius.gui.dicom_tags_dialog as dicom_tags_dlg
 import invesalius.gui.import_bitmap_panel as imp_bmp
 import invesalius.gui.import_panel as imp
 import invesalius.gui.log as log
@@ -762,6 +763,9 @@ class Frame(wx.Frame):
             wwwl_dlg = dlg.ManualWWWLDialog(self)
             wwwl_dlg.Show()
 
+        elif id == const.ID_DICOM_TAGS:
+            self.OnShowDicomTags()
+
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
             Publisher.sendMessage("Disable actual style")
@@ -1136,6 +1140,42 @@ class Frame(wx.Frame):
         fdlg = dlg.FillHolesAutoDialog(_("Fill holes automatically"))
         fdlg.Show()
 
+    def OnShowDicomTags(self):
+        """Show DICOM tags information dialog."""
+        import invesalius.project as prj
+
+        proj = prj.Project()
+
+        # Check if metadata store is available (new approach)
+        if proj.metadata_store is not None:
+            # Use new MetadataStore approach
+            dialog = dicom_tags_dlg.DicomTagsDialog(self, metadata_store=proj.metadata_store)
+            dialog.ShowModal()
+            dialog.Destroy()
+            return
+
+        # Fallback to old approach for backward compatibility
+        from invesalius.reader import dicom_reader
+
+        if not dicom_reader.dict_file:
+            wx.MessageBox(
+                _("No DICOM data available. Please import DICOM files first."),
+                _("No DICOM Data"),
+                wx.OK | wx.ICON_INFORMATION,
+                self,
+            )
+            return
+
+        # Get the first available DICOM file's data
+        first_file = next(iter(dicom_reader.dict_file.keys()))
+        data_image = dicom_reader.dict_file[first_file]
+        tag_labels = dicom_reader.tag_labels
+
+        # Show the dialog with old data format
+        dialog = dicom_tags_dlg.DicomTagsDialog(self, data_image=data_image, tag_labels=tag_labels)
+        dialog.ShowModal()
+        dialog.Destroy()
+
     def OnRemoveMaskParts(self):
         Publisher.sendMessage("Enable style", style=const.SLICE_STATE_REMOVE_MASK_PARTS)
 
@@ -1409,6 +1449,7 @@ class MenuBar(wx.MenuBar):
             const.ID_CREATE_MASK,
             const.ID_GOTO_SLICE,
             const.ID_MANUAL_WWWL,
+            const.ID_DICOM_TAGS,
         ]
         self.__init_items()
         self.__bind_events()
@@ -1614,6 +1655,7 @@ class MenuBar(wx.MenuBar):
         image_menu.Append(const.ID_IMAGE_FILTER, _("Filter"))
 
         image_menu.Append(const.ID_MANUAL_WWWL, _("Set WW&&WL manually"))
+        image_menu.Append(const.ID_DICOM_TAGS, _("DICOM Tags..."))
 
         planning_menu = wx.Menu()
         planning_menu.Append(const.ID_PLANNING_CRANIOPLASTY, _("Cranioplasty"))
