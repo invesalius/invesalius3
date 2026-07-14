@@ -2647,9 +2647,14 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.robot_reset_errors_button)
         pressed = self.robot_reset_errors_button.GetValue()
         if pressed:
+            if self.robot.objective == RobotObjective.TRACK_TARGET:
+                self.robot.SetObjective(RobotObjective.NONE)
+
             Publisher.sendMessage(
                 "Neuronavigation to Robot: Reset errors",
             )
+
+            self.UpdateToggleButton(self.robot_reset_errors_button, False)
 
     # TMS Motor Mapping related
     # 'Motor Map' button
