@@ -2208,6 +2208,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.EnableRobotMoveAwayButton, "Enable move away button")
 
         Publisher.subscribe(self.EnableRobotFreeDriveButton, "Enable free drive button")
+        Publisher.subscribe(self.EnableRobotResetErrorsButton, "Enable reset errors button")
 
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
@@ -2387,6 +2388,10 @@ class ControlPanel(wx.Panel):
         # Enable 'free drive' robot button if robot is connected.
         free_drive_button_enabled = self.robot.IsConnected()
         self.EnableRobotFreeDriveButton(enabled=free_drive_button_enabled)
+
+        # Enable 'reset errors' robot button if robot is connected.
+        reset_errors_button_enabled = self.robot.IsConnected()
+        self.EnableRobotResetErrorsButton(enabled=reset_errors_button_enabled)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
@@ -2632,6 +2637,11 @@ class ControlPanel(wx.Panel):
             Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=True)
         else:
             Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
+
+    # 'Reset errors robot' button
+    def EnableRobotResetErrorsButton(self, enabled=False):
+        self.EnableToggleButton(self.robot_reset_errors_button, enabled)
+        self.UpdateToggleButton(self.robot_reset_errors_button)
 
     def OnRobotResetErrorsButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.robot_reset_errors_button)
