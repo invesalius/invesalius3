@@ -2084,6 +2084,25 @@ class ControlPanel(wx.Panel):
         )
         self.robot_free_drive_button = robot_free_drive_button
 
+        # Toggle button for reset error from robot
+        tooltip = _("Reset robot errors")
+        BMP_FREE_DRIVE = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("robot_clear_errors.png")), wx.BITMAP_TYPE_PNG
+        )
+        robot_reset_errors_button = wx.ToggleButton(
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        robot_reset_errors_button.SetBackgroundColour(GREY_COLOR)
+        robot_reset_errors_button.SetBitmap(BMP_FREE_DRIVE)
+        robot_reset_errors_button.SetToolTip(tooltip)
+        robot_reset_errors_button.SetValue(False)
+        robot_reset_errors_button.Enable(False)
+        robot_reset_errors_button.Bind(
+            wx.EVT_TOGGLEBUTTON,
+            partial(self.OnRobotResetErrorsButton, ctrl=robot_reset_errors_button),
+        )
+        self.robot_reset_errors_button = robot_reset_errors_button
+
         # Toggle button for displaying TMS motor mapping on brain
         tooltip = _("Show TMS motor mapping on brain")
         BMP_MOTOR_MAP = wx.Bitmap(
@@ -2132,7 +2151,7 @@ class ControlPanel(wx.Panel):
                 (robot_track_target_button),
                 (robot_move_away_button),
                 (robot_free_drive_button),
-                ((48, 48), 0),
+                (robot_reset_errors_button),
             ]
         )
 
@@ -2189,6 +2208,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.EnableRobotMoveAwayButton, "Enable move away button")
 
         Publisher.subscribe(self.EnableRobotFreeDriveButton, "Enable free drive button")
+        Publisher.subscribe(self.EnableRobotResetErrorsButton, "Enable reset errors button")
 
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
@@ -2368,6 +2388,10 @@ class ControlPanel(wx.Panel):
         # Enable 'free drive' robot button if robot is connected.
         free_drive_button_enabled = self.robot.IsConnected()
         self.EnableRobotFreeDriveButton(enabled=free_drive_button_enabled)
+
+        # Enable 'reset errors' robot button if robot is connected.
+        reset_errors_button_enabled = self.robot.IsConnected()
+        self.EnableRobotResetErrorsButton(enabled=reset_errors_button_enabled)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
@@ -2613,6 +2637,24 @@ class ControlPanel(wx.Panel):
             Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=True)
         else:
             Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
+
+    # 'Reset errors robot' button
+    def EnableRobotResetErrorsButton(self, enabled=False):
+        self.EnableToggleButton(self.robot_reset_errors_button, enabled)
+        self.UpdateToggleButton(self.robot_reset_errors_button)
+
+    def OnRobotResetErrorsButton(self, evt=None, ctrl=None):
+        self.UpdateToggleButton(self.robot_reset_errors_button)
+        pressed = self.robot_reset_errors_button.GetValue()
+        if pressed:
+            if self.robot.objective == RobotObjective.TRACK_TARGET:
+                self.robot.SetObjective(RobotObjective.NONE)
+
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Reset errors",
+            )
+
+            self.UpdateToggleButton(self.robot_reset_errors_button, False)
 
     # TMS Motor Mapping related
     # 'Motor Map' button

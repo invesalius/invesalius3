@@ -128,6 +128,7 @@ class Robot(metaclass=Singleton):
         if self.is_robot_connected:
             Publisher.sendMessage("Enable move away button", enabled=True)
             Publisher.sendMessage("Enable free drive button", enabled=True)
+            Publisher.sendMessage("Enable reset errors button", enabled=True)
         else:
             self.is_robot_connected = False
 
