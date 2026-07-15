@@ -284,6 +284,28 @@ class Inv3SplashScreen(SplashScreen):
         session.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
         session._has_unsaved_changes = True
 
+    def ShowStartupDialog(self):
+        """
+        Show the startup dialog to guide users to their next action.
+        """
+        from invesalius.gui.dialogs import StartupDialog
+
+        dlg = StartupDialog(self.main)
+        result = dlg.ShowModal()
+
+        if result == wx.ID_OK:
+            action = dlg.GetAction()
+
+            # Execute the selected action
+            if action == StartupDialog.ACTION_IMPORT_DICOM:
+                # Directly open the DICOM folder selection dialog
+                wx.CallAfter(Publisher.sendMessage, "Show import directory dialog")
+            elif action == StartupDialog.ACTION_OPEN_PROJECT:
+                wx.CallAfter(self.main.ShowOpenProject)
+            # For ACTION_EMPTY_SESSION or ACTION_CANCEL, just continue normally
+
+        dlg.Destroy()
+
     def CheckCrashRecovery(self):
         if not session.ExitedSuccessfullyLastTime():
             # Check for auto-backup
@@ -319,6 +341,8 @@ class Inv3SplashScreen(SplashScreen):
                 else:
                     # User chose to discard backup
                     session.RemoveAutoBackup()
+                    # Show startup dialog after discarding backup
+                    wx.CallAfter(self.ShowStartupDialog)
             else:
                 # No backup exists, but we crashed. Ask the user to re-open
                 project_path = session.GetState("project_path")
@@ -346,11 +370,17 @@ class Inv3SplashScreen(SplashScreen):
                         else:
                             # User canceled reopening last project
                             session.CloseProject()
+                            # Show startup dialog after canceling
+                            wx.CallAfter(self.ShowStartupDialog)
                     else:
                         utils.debug(f"File doesn't exist: {filepath}")
                         session.CloseProject()
+                        # Show startup dialog when file doesn't exist
+                        wx.CallAfter(self.ShowStartupDialog)
                 else:
                     session.CloseProject()
+                    # Show startup dialog when no project path
+                    wx.CallAfter(self.ShowStartupDialog)
         else:
             # Last exit was clean. Check if the user closed with "Store session"
             # — in which case we should silently reopen the project, not show any dialog.
@@ -362,6 +392,11 @@ class Inv3SplashScreen(SplashScreen):
                         wx.CallAfter(Publisher.sendMessage, "Open project", filepath=filepath)
                     else:
                         utils.debug(f"Stored session project not found: {filepath}")
+                        # Show startup dialog when stored session project not found
+                        wx.CallAfter(self.ShowStartupDialog)
+            else:
+                # Normal startup - show startup dialog if enabled
+                wx.CallAfter(self.ShowStartupDialog)
             # Start fresh state for this new session (clears stored_session flag too)
             session.CreateState()
 
