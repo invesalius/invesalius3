@@ -174,7 +174,9 @@ class Robot(metaclass=Singleton):
         if data is not None:
             self.robot_ip = data
 
-    def ConnectToRobot(self):
+    def ConnectToRobot(self, ip=None):
+        if ip is not None:
+            self.SetRobotIP()
         Publisher.sendMessage("Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip)
         pressure_setpoint = ses.Session().GetConfig("pressure_setpoint", 5.0)
         Publisher.sendMessage(

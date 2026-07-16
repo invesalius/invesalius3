@@ -2238,13 +2238,9 @@ class TrackerTab(wx.Panel):
 
     def OnRobotConnect(self, evt):
         if self.robot_ip is not None and self.verifyFormatIP(self.robot_ip):
-            self.robot.is_robot_connected = False
             self.status_text.SetLabelText(_("Trying to connect to robot..."))
             self.btn_rob_con.Hide()
-            self.robot.SetRobotIP(self.robot_ip)
-            Publisher.sendMessage(
-                "Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip
-            )
+            self.robot.ConnectRobot(self.robot_ip)
         else:
             self.status_text.SetLabelText(_("Please select or enter valid IP before connecting!"))
 
