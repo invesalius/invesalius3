@@ -2205,10 +2205,8 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.EnableRobotTrackTargetButton, "Enable robot button")
 
         Publisher.subscribe(self.PressRobotMoveAwayButton, "Press move away button")
-        Publisher.subscribe(self.EnableRobotMoveAwayButton, "Enable move away button")
 
-        Publisher.subscribe(self.EnableRobotFreeDriveButton, "Enable free drive button")
-        Publisher.subscribe(self.EnableRobotResetErrorsButton, "Enable reset errors button")
+        Publisher.subscribe(self.OnEnableRobotButtons, "Enable robot")
 
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
@@ -2574,6 +2572,11 @@ class ControlPanel(wx.Panel):
             self.robot.SetObjective(RobotObjective.NONE)
 
     # Robot-related buttons
+
+    def OnEnableRobotButtons(self, enabled=False):
+        self.EnableRobotMoveAwayButton(enabled=enabled)
+        self.EnableRobotFreeDriveButton(enabled=enabled)
+        self.EnableRobotResetErrorsButton(enabled=enabled)
 
     # 'Track target with robot' button
     def EnableRobotTrackTargetButton(self, enabled=False):

@@ -119,18 +119,26 @@ class Robot(metaclass=Singleton):
         return success
 
     def OnRobotConnectionStatus(self, data):
-        # TODO: Is this check necessary?
-        if not data:
-            return
-        if data == "Connected":
-            self.is_robot_connected = True
+        self.is_robot_connected = True if data == "Connected" else False
 
+        Publisher.sendMessage("Update robot status connection", status=data)
+        Publisher.sendMessage("Enable robot", enabled=self.is_robot_connected)
+
+        # Send to preference active robot connection status
         if self.is_robot_connected:
-            Publisher.sendMessage("Enable move away button", enabled=True)
-            Publisher.sendMessage("Enable free drive button", enabled=True)
-            Publisher.sendMessage("Enable reset errors button", enabled=True)
-        else:
-            self.is_robot_connected = False
+            if self.robot_ip not in self.robot_ip_options and self.robot_ip is not None:
+                self.robot_ip_options.append(self.robot_ip)
+
+            print("Connected to robot")
+
+            # Ensure we fetch the robot-side config early so features like the force/pressure
+            # overlay can be initialized without requiring the Preferences dialog to be opened.
+            Publisher.sendMessage("Neuronavigation to Robot: Request config")
+
+            pressure_setpoint = ses.Session().GetConfig("pressure_setpoint", 5.0)
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Pressure set point", pressure=pressure_setpoint
+            )
 
     def RegisterRobot(self):
         Publisher.sendMessage("End busy cursor")
@@ -176,16 +184,13 @@ class Robot(metaclass=Singleton):
 
     def ConnectToRobot(self, ip=None):
         if ip is not None:
-            self.SetRobotIP()
+            self.SetRobotIP(ip)
+
+        if self.IsConnected():
+            self.is_robot_connected = False
+            Publisher.sendMessage("Enable robot", enabled=self.is_robot_connected)
+
         Publisher.sendMessage("Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip)
-        pressure_setpoint = ses.Session().GetConfig("pressure_setpoint", 5.0)
-        Publisher.sendMessage(
-            "Neuronavigation to Robot: Pressure set point", pressure=pressure_setpoint
-        )
-        # Ensure we fetch the robot-side config early so features like the force/pressure
-        # overlay can be initialized without requiring the Preferences dialog to be opened.
-        Publisher.sendMessage("Neuronavigation to Robot: Request config")
-        print("Connected to robot")
 
     def InitializeRobot(self):
         Publisher.sendMessage(
