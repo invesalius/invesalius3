@@ -2006,20 +2006,11 @@ class TrackerTab(wx.Panel):
         # --- Toggle pressure sensor button ---
         self.chk_enable_pressure = wx.CheckBox(self, -1, _("Enable pressure sensor"))
 
-        # TODO: Refactoring
-        if getattr(self.robot, "robot_init_config", None):
-            use_pressure_sensor = self.robot.robot_init_config.get("use_pressure_sensor", False)
-        else:
-            Publisher.sendMessage("Neuronavigation to Robot: Request config")
-            use_pressure_sensor = False  # fallback default
+        use_pressure_sensor = self.robot.use_pressure_sensor
         self.chk_enable_pressure.SetValue(use_pressure_sensor)
         self.chk_enable_pressure.Bind(wx.EVT_CHECKBOX, self.OnTogglePressureSensor)
         self.chk_enable_pressure.Enable(self.robot.IsConnected())
         self._update_pressure_controls_state(self.robot.IsConnected() and use_pressure_sensor)
-        Publisher.sendMessage(
-            "Set visibility robot force visualizer",
-            visible=bool(self.robot.IsConnected() and use_pressure_sensor),
-        )
 
         # Row with label, slider, numeric value
         pressure_row = wx.BoxSizer(wx.HORIZONTAL)
@@ -2050,8 +2041,7 @@ class TrackerTab(wx.Panel):
         self.SetSizerAndFit(main_sizer)
         self.Layout()
 
-        # TODO refactoring
-        Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
+        self.robot.CheckConnection()  # Check if robot is connected and update GUI accordingly
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
@@ -2063,7 +2053,6 @@ class TrackerTab(wx.Panel):
             self.OnSetRobotTransformationMatrix,
             "Neuronavigation to Robot: Set robot transformation matrix",
         )
-        Publisher.subscribe(self.OnRobotConfigReceived, "Robot to Neuronavigation: Initial config")
 
     def LoadConfig(self):
         session = ses.Session()
@@ -2076,30 +2065,6 @@ class TrackerTab(wx.Panel):
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
         if self.matrix_tracker_to_robot is not None:
             self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
-
-    # TODO refactoring
-    def OnRobotConfigReceived(self, config):
-        # Update GUI checkbox with the actual value
-        # Keep a local copy as well: Preferences can be opened before the Robot
-        # singleton receives/stores the config.
-        try:
-            self.robot.robot_init_config = config
-        except Exception:
-            pass
-        use_pressure_sensor = config.get("use_pressure_sensor", False)
-        self.chk_enable_pressure.SetValue(use_pressure_sensor)
-        self._update_pressure_controls_state(self.robot.IsConnected() and use_pressure_sensor)
-        Publisher.sendMessage(
-            "Set visibility robot force visualizer",
-            visible=bool(self.robot.IsConnected() and use_pressure_sensor),
-        )
-        # If we're already connected, re-apply config so the robot starts
-        # streaming feedback even when the checkbox was checked by default.
-        if self.robot.IsConnected():
-            Publisher.sendMessage(
-                "Neuronavigation to Robot: Update config",
-                use_pressure_sensor=bool(use_pressure_sensor),
-            )
 
     def OnChooseNoOfCoils(self, evt, ctrl):
         old_n_coils = self.n_coils
@@ -2264,12 +2229,12 @@ class TrackerTab(wx.Panel):
         else:
             self.status_text.SetLabelText(_(f"{status} to robot"))
 
-    def EnableSensorPressure(self, enabled):
+    def EnableForceSensor(self, enabled):
         self.chk_enable_pressure.Enable(enabled)
-        self.chk_enable_pressure.SetValue(
-            self.robot.robot_init_config.get("use_pressure_sensor", False)
-        )
-        self._update_pressure_controls_state(enabled)
+
+        use_pressure_sensor = self.robot.use_pressure_sensor
+        self.chk_enable_pressure.SetValue(use_pressure_sensor)
+        self._update_pressure_controls_state(use_pressure_sensor and self.robot.IsConnected())
         self.Layout()
 
     def OnRobotEnabled(self, enabled=False):
@@ -2279,7 +2244,7 @@ class TrackerTab(wx.Panel):
         else:
             self.btn_rob_con.Hide()
 
-        self.EnableSensorPressure(enabled)
+        self.EnableForceSensor(enabled)
 
     def OnSetRobotTransformationMatrix(self, data):
         if self.robot.matrix_tracker_to_robot is not None:
@@ -2353,24 +2318,11 @@ class TrackerTab(wx.Panel):
         self.pressure_val_lbl.Refresh()
         self.pressure_rec_lbl.Refresh()
 
-    # TODO refactoring
     def OnTogglePressureSensor(self, evt):
-        if not self.robot.robot_init_config:
-            print("Robot init config not loaded")
-            Publisher.sendMessage("Neuronavigation to Robot: Request config")
-            self.chk_enable_pressure.SetValue(False)
-            return
-
         enabled = self.chk_enable_pressure.GetValue()
         self._update_pressure_controls_state(enabled)
 
-        self.robot.robot_init_config["use_pressure_sensor"] = enabled
-
-        Publisher.sendMessage("Set visibility robot force visualizer", visible=enabled)
-        # Send message to robot-side configuration
-        Publisher.sendMessage(
-            "Neuronavigation to Robot: Update config", use_pressure_sensor=enabled
-        )
+        self.robot.UpdatePressureActiveState(enabled, notify_robot=True)
 
     def _apply_pressure_color(self, value: float):
         # Red above threshold

@@ -46,14 +46,14 @@ class Robot(metaclass=Singleton):
         self.enabled_in_gui = False
 
         self.coil_name = None
-
+        self.use_pressure_sensor = False
         self.is_robot_connected = False
         self.robot_ip = None
         self.robot_ip_options = []
         self.matrix_tracker_to_robot = None
         self.robot_coregistration_dialog = None
         self.target = None
-        self.robot_init_config = None
+        self.robot_init_config = {}
 
         self.objective = RobotObjective.NONE
         self.target = None
@@ -69,6 +69,8 @@ class Robot(metaclass=Singleton):
             self.InitializeRobot()
 
         self.__bind_events()
+
+        Publisher.sendMessage("Neuronavigation to Robot: Request config")
 
     def __bind_events(self):
         Publisher.subscribe(
@@ -93,6 +95,7 @@ class Robot(metaclass=Singleton):
                 "robot_ip": self.robot_ip,
                 "robot_ip_options": self.robot_ip_options,
                 "tracker_to_robot": self.matrix_tracker_to_robot.tolist(),
+                "use_pressure_sensor": self.use_pressure_sensor,
             }
             if self.coil_name is not None:
                 state["robot_coil"] = self.coil_name
@@ -110,6 +113,7 @@ class Robot(metaclass=Singleton):
 
         self.robot_ip = state.get("robot_ip", None)
         self.robot_ip_options = state.get("robot_ip_options", [])
+        self.use_pressure_sensor = state.get("use_pressure_sensor", False)
 
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
         if self.matrix_tracker_to_robot is not None:
@@ -135,11 +139,6 @@ class Robot(metaclass=Singleton):
             # Ensure we fetch the robot-side config early so features like the force/pressure
             # overlay can be initialized without requiring the Preferences dialog to be opened.
             Publisher.sendMessage("Neuronavigation to Robot: Request config")
-
-            pressure_setpoint = ses.Session().GetConfig("pressure_setpoint", 5.0)
-            Publisher.sendMessage(
-                "Neuronavigation to Robot: Pressure set point", pressure=pressure_setpoint
-            )
 
     def RegisterRobot(self):
         Publisher.sendMessage("End busy cursor")
@@ -289,19 +288,29 @@ class Robot(metaclass=Singleton):
             Publisher.sendMessage("Press move away button", pressed=False)
 
     def OnRobotInitialConfig(self, config):
-        self.robot_init_config = config
         if not config:
             return
 
-        # Make sure the Volume viewer force/pressure overlay is turned on/off based
-        # on the robot config, even if the GUI checkbox was never toggled.
-        enabled = bool(config.get("use_pressure_sensor", False))
-        Publisher.sendMessage("Set visibility robot force visualizer", visible=enabled)
+        self.robot_init_config = config
+        self.UpdatePressureActiveState(config.get("use_pressure_sensor", False))
 
-        # Some robot backends only start streaming feedback after an explicit update.
-        Publisher.sendMessage(
-            "Neuronavigation to Robot: Update config", use_pressure_sensor=enabled
-        )
+    def UpdatePressureActiveState(self, active, notify_robot=False):
+        self.use_pressure_sensor = active
+        self.SaveConfig("use_pressure_sensor", self.use_pressure_sensor)
+
+        Publisher.sendMessage("Set visibility robot force visualizer", visible=active)
+
+        if active:
+            pressure_setpoint = ses.Session().GetConfig("pressure_setpoint", 5.0)
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Pressure set point", pressure=pressure_setpoint
+            )
+
+        if notify_robot:
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Update config",
+                use_pressure_sensor=self.use_pressure_sensor,
+            )
 
     def UnsetTarget(self, marker):
         self.target = None
@@ -319,3 +328,6 @@ class Robot(metaclass=Singleton):
 
     def SetPressureSetpoint(self, pressure):
         Publisher.sendMessage("Neuronavigation to Robot: Pressure set point", pressure=pressure)
+
+    def CheckConnection(self):
+        Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
