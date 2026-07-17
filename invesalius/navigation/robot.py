@@ -121,10 +121,11 @@ class Robot(metaclass=Singleton):
     def OnRobotConnectionStatus(self, data):
         self.is_robot_connected = True if data == "Connected" else False
 
+        # Send to preference active robot connection status
         Publisher.sendMessage("Update robot status connection", status=data)
         Publisher.sendMessage("Enable robot", enabled=self.is_robot_connected)
 
-        # Send to preference active robot connection status
+        # If the robot is connected, we add the robot IP to the list of options if it's not already there, and request the robot-side config.
         if self.is_robot_connected:
             if self.robot_ip not in self.robot_ip_options and self.robot_ip is not None:
                 self.robot_ip_options.append(self.robot_ip)

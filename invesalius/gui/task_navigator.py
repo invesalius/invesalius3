@@ -2251,13 +2251,12 @@ class ControlPanel(wx.Panel):
             ctrl.SetBackgroundColour(self.RED_COLOR)
 
     def EnableToggleButton(self, ctrl, state):
-        # Check if the button state is not changed, if so, return early. This is to prevent
-        # unnecessary updates to the button.
-        if ctrl.IsEnabled() == state:
-            return
-
+        # Always call ctrl.Enable(state) — on Windows, SetBackgroundColour/SetValue
+        # can silently re-enable a disabled native ToggleButton, so we must ensure
+        # Enable() is called even if the internal flag hasn't changed.
         ctrl.Enable(state)
-        ctrl.SetBackgroundColour(self.GREY_COLOR)
+        if not state:
+            ctrl.SetBackgroundColour(self.GREY_COLOR)
 
     # Navigation
     def OnStartNavigation(self):
@@ -2347,6 +2346,7 @@ class ControlPanel(wx.Panel):
         self.PressShowCoilButton(pressed=done)
 
     # Robot
+    # TODO refactor
     def OnRobotStatus(self, data):
         if data:
             self.Layout()
@@ -2379,17 +2379,16 @@ class ControlPanel(wx.Panel):
 
         self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
 
+        robot_connected = self.robot.IsConnected()
+
         # Enable 'move away' robot button if robot is connected.
-        move_away_button_enabled = self.robot.IsConnected()
-        self.EnableRobotMoveAwayButton(enabled=move_away_button_enabled)
+        self.EnableRobotMoveAwayButton(enabled=robot_connected)
 
         # Enable 'free drive' robot button if robot is connected.
-        free_drive_button_enabled = self.robot.IsConnected()
-        self.EnableRobotFreeDriveButton(enabled=free_drive_button_enabled)
+        self.EnableRobotFreeDriveButton(enabled=robot_connected)
 
         # Enable 'reset errors' robot button if robot is connected.
-        reset_errors_button_enabled = self.robot.IsConnected()
-        self.EnableRobotResetErrorsButton(enabled=reset_errors_button_enabled)
+        self.EnableRobotResetErrorsButton(enabled=robot_connected)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
@@ -2572,16 +2571,13 @@ class ControlPanel(wx.Panel):
             self.robot.SetObjective(RobotObjective.NONE)
 
     # Robot-related buttons
-
     def OnEnableRobotButtons(self, enabled=False):
-        self.EnableRobotMoveAwayButton(enabled=enabled)
-        self.EnableRobotFreeDriveButton(enabled=enabled)
-        self.EnableRobotResetErrorsButton(enabled=enabled)
+        self.UpdateRobotButtons()
 
     # 'Track target with robot' button
     def EnableRobotTrackTargetButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_track_target_button, enabled)
         self.UpdateToggleButton(self.robot_track_target_button)
+        self.EnableToggleButton(self.robot_track_target_button, enabled)
 
     def PressRobotTrackTargetButton(self, pressed):
         if pressed:
@@ -2607,8 +2603,8 @@ class ControlPanel(wx.Panel):
 
     # 'Move away' button
     def EnableRobotMoveAwayButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_move_away_button, enabled)
         self.UpdateToggleButton(self.robot_move_away_button)
+        self.EnableToggleButton(self.robot_move_away_button, enabled)
 
     def PressRobotMoveAwayButton(self, pressed):
         self.UpdateToggleButton(self.robot_move_away_button, pressed)
@@ -2630,8 +2626,8 @@ class ControlPanel(wx.Panel):
 
     # 'Free drive' button
     def EnableRobotFreeDriveButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_free_drive_button, enabled)
         self.UpdateToggleButton(self.robot_free_drive_button)
+        self.EnableToggleButton(self.robot_free_drive_button, enabled)
 
     def OnRobotFreeDriveButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.robot_free_drive_button)
@@ -2643,8 +2639,8 @@ class ControlPanel(wx.Panel):
 
     # 'Reset errors robot' button
     def EnableRobotResetErrorsButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_reset_errors_button, enabled)
         self.UpdateToggleButton(self.robot_reset_errors_button)
+        self.EnableToggleButton(self.robot_reset_errors_button, enabled)
 
     def OnRobotResetErrorsButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.robot_reset_errors_button)
