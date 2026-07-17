@@ -1766,7 +1766,6 @@ class TrackerTab(wx.Panel):
 
         self.tracker = tracker
         self.robot = robot
-        self.robot_ip = None
         self.matrix_tracker_to_robot = None
         self.n_coils = 1
         self.LoadConfig()
@@ -1856,18 +1855,18 @@ class TrackerTab(wx.Panel):
 
         if self.robot.robot_ip in self.robot.robot_ip_options:
             choice_IP.SetSelection(robot_ip_options.index(self.robot.robot_ip))
-            self.robot_ip = choice_IP.GetValue()
+            self.robot.robot_ip = choice_IP.GetValue()
 
         elif self.robot.robot_ip is not None:
             choice_IP.SetValue(self.robot.robot_ip)
-            self.robot_ip = choice_IP.GetValue()
+            self.robot.robot_ip = choice_IP.GetValue()
 
         elif choice_IP.IsTextEmpty() and choice_IP.IsListEmpty():
             choice_IP.ChangeValue(_("Select or type robot IP"))
 
         elif choice_IP.IsTextEmpty():
             choice_IP.SetSelection(0)
-            self.robot_ip = choice_IP.GetValue()
+            self.robot.robot_ip = choice_IP.GetValue()
 
         choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
         choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
@@ -2061,7 +2060,6 @@ class TrackerTab(wx.Panel):
         # TODO refactoring
         state = session.GetConfig("robot", {})
 
-        self.robot_ip = state.get("robot_ip", None)
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
         if self.matrix_tracker_to_robot is not None:
             self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
@@ -2150,15 +2148,16 @@ class TrackerTab(wx.Panel):
             ctrl.ChangeValue(msg_box)
         else:
             self.btn_rob_con.Hide()
-            self.robot_ip = robot_ip_input
-            if self.verifyFormatIP(self.robot_ip):
+            robot_ip = robot_ip_input
+            if self.verifyFormatIP(robot_ip):
+                self.robot.robot_ip = robot_ip
                 self.status_text.SetLabelText(_("Robot is not connected!"))
 
     def OnChoiceIP(self, evt, ctrl):
-        self.robot_ip = ctrl.GetStringSelection()
+        self.robot.robot_ip = ctrl.GetStringSelection()
 
     def OnAddIP(self, evt):
-        if self.robot_ip is not None:
+        if self.robot.robot_ip is not None:
             new_ip = self.choice_IP.GetValue()
 
             if new_ip is not None and self.verifyFormatIP(new_ip):
@@ -2172,7 +2171,7 @@ class TrackerTab(wx.Panel):
                 self.status_text.SetLabelText(_("Please select or enter valid IP!"))
 
     def OnRemoveIP(self, evt):
-        if self.robot_ip is not None:
+        if self.robot.robot_ip is not None:
             current_ip = self.choice_IP.GetValue()
 
             confirm_dlg = wx.MessageDialog(
@@ -2205,10 +2204,11 @@ class TrackerTab(wx.Panel):
             confirm_dlg.Destroy()
 
     def OnRobotConnect(self, evt):
-        if self.robot_ip is not None and self.verifyFormatIP(self.robot_ip):
+        robot_ip = self.robot.robot_ip
+        if robot_ip is not None and self.verifyFormatIP(robot_ip):
             self.status_text.SetLabelText(_("Trying to connect to robot..."))
             self.btn_rob_con.Hide()
-            self.robot.ConnectToRobot(self.robot_ip)
+            self.robot.ConnectToRobot(robot_ip)
         else:
             self.status_text.SetLabelText(_("Please select or enter valid IP before connecting!"))
 
