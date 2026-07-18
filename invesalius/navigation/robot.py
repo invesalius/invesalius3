@@ -331,3 +331,13 @@ class Robot(metaclass=Singleton):
 
     def CheckConnection(self):
         Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
+
+    def SetFreeDrive(self, enabled):
+        Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=enabled)
+
+    def ResetErrors(self):
+        if self.objective == RobotObjective.TRACK_TARGET:
+            self.SetObjective(RobotObjective.NONE)
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Reset errors",
+            )

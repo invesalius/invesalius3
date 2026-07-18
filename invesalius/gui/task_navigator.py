@@ -2183,7 +2183,6 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
 
-        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
 
         Publisher.subscribe(self.UpdateTractsVisualization, "Update tracts visualization")
@@ -2346,10 +2345,6 @@ class ControlPanel(wx.Panel):
         self.PressShowCoilButton(pressed=done)
 
     # Robot
-    # TODO refactor
-    def OnRobotStatus(self, data):
-        if data:
-            self.Layout()
 
     def UpdateRobotButtons(self):
         # Enable 'track target' robot button if:
@@ -2632,10 +2627,7 @@ class ControlPanel(wx.Panel):
     def OnRobotFreeDriveButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.robot_free_drive_button)
         pressed = self.robot_free_drive_button.GetValue()
-        if pressed:
-            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=True)
-        else:
-            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
+        self.robot.SetFreeDrive(pressed)
 
     # 'Reset errors robot' button
     def EnableRobotResetErrorsButton(self, enabled=False):
@@ -2646,13 +2638,7 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.robot_reset_errors_button)
         pressed = self.robot_reset_errors_button.GetValue()
         if pressed:
-            if self.robot.objective == RobotObjective.TRACK_TARGET:
-                self.robot.SetObjective(RobotObjective.NONE)
-
-            Publisher.sendMessage(
-                "Neuronavigation to Robot: Reset errors",
-            )
-
+            self.robot.ResetErrors()
             self.UpdateToggleButton(self.robot_reset_errors_button, False)
 
     # TMS Motor Mapping related
