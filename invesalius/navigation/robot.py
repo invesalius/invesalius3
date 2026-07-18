@@ -81,7 +81,6 @@ class Robot(metaclass=Singleton):
         )
         Publisher.subscribe(self.SetObjectiveByRobot, "Robot to Neuronavigation: Set objective")
         Publisher.subscribe(self.OnRobotInitialConfig, "Robot to Neuronavigation: Initial config")
-
         Publisher.subscribe(self.SetTarget, "Set target")
         Publisher.subscribe(self.UnsetTarget, "Unset target")
 
@@ -198,6 +197,7 @@ class Robot(metaclass=Singleton):
             data=self.matrix_tracker_to_robot.tolist(),
         )
         self.SetCoilName(self.coil_name) if self.coil_name is not None else "default_coil"
+        Publisher.sendMessage("Robot transformation matrix set")
         print("Robot initialized")
 
     def GetCoilName(self):

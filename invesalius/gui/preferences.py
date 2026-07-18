@@ -1766,7 +1766,7 @@ class TrackerTab(wx.Panel):
 
         self.tracker = tracker
         self.robot = robot
-        self.matrix_tracker_to_robot = None
+
         self.n_coils = 1
         self.LoadConfig()
 
@@ -1904,7 +1904,7 @@ class TrackerTab(wx.Panel):
         if self.robot.IsConnected():
             self.status_text.SetLabelText(_("Robot is connected!"))
 
-            if self.matrix_tracker_to_robot is None:
+            if self.robot.matrix_tracker_to_robot is None:
                 btn_rob_con.Show()
             else:
                 btn_rob_con.SetLabel("Register Again")
@@ -2044,25 +2044,15 @@ class TrackerTab(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
-
-        # TODO refactoring
         Publisher.subscribe(self.OnRobotEnabled, "Enable robot")
         Publisher.subscribe(self.OnRobotStatus, "Update robot status connection")
         Publisher.subscribe(
-            self.OnSetRobotTransformationMatrix,
-            "Neuronavigation to Robot: Set robot transformation matrix",
+            self.OnSetRobotTransformationMatrix, "Robot transformation matrix seted"
         )
 
     def LoadConfig(self):
         session = ses.Session()
         self.n_coils = session.GetConfig("navigation", {}).get("n_coils", 1)
-
-        # TODO refactoring
-        state = session.GetConfig("robot", {})
-
-        self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
-        if self.matrix_tracker_to_robot is not None:
-            self.matrix_tracker_to_robot = np.array(self.matrix_tracker_to_robot)
 
     def OnChooseNoOfCoils(self, evt, ctrl):
         old_n_coils = self.n_coils
@@ -2246,7 +2236,7 @@ class TrackerTab(wx.Panel):
 
         self.EnableForceSensor(enabled)
 
-    def OnSetRobotTransformationMatrix(self, data):
+    def OnSetRobotTransformationMatrix(self):
         if self.robot.matrix_tracker_to_robot is not None:
             self.status_text.SetLabelText("Robot is fully setup!")
             self.btn_rob_con.SetLabel("Register Again")
