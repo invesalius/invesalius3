@@ -2592,9 +2592,6 @@ class ControlPanel(wx.Panel):
             # objective set by another button; hence this check.
             if self.robot.objective == RobotObjective.TRACK_TARGET:
                 self.robot.SetObjective(RobotObjective.NONE)
-            Publisher.sendMessage(
-                "Robot to Neuronavigation: Update robot warning", robot_warning=""
-            )
 
     # 'Move away' button
     def EnableRobotMoveAwayButton(self, enabled=False):
@@ -2615,9 +2612,6 @@ class ControlPanel(wx.Panel):
             # objective set by another button; hence this check.
             if self.robot.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
                 self.robot.SetObjective(RobotObjective.NONE)
-            Publisher.sendMessage(
-                "Robot to Neuronavigation: Update robot warning", robot_warning=""
-            )
 
     # 'Free drive' button
     def EnableRobotFreeDriveButton(self, enabled=False):

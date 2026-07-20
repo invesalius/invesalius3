@@ -269,6 +269,11 @@ class Robot(metaclass=Singleton):
         self.objective = objective
         Publisher.sendMessage("Neuronavigation to Robot: Set objective", objective=objective.value)
 
+        if self.objective == RobotObjective.NONE:
+            Publisher.sendMessage(
+                "Robot to Neuronavigation: Update robot warning", robot_warning=""
+            )
+
     def SetObjectiveByRobot(self, objective):
         if objective is None:
             return
