@@ -2387,13 +2387,10 @@ class ControlPanel(wx.Panel):
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
+        self.robot.SetObjective(RobotObjective.NONE)
 
         # Update robot button state when target mode is changed.
         self.UpdateRobotButtons()
-
-        # Set robot objective to NONE when target mode is off.
-        if not enabled:
-            self.robot.SetObjective(RobotObjective.NONE)
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
@@ -2559,11 +2556,7 @@ class ControlPanel(wx.Panel):
     def OnTargetButton(self, evt=None):
         pressed = self.target_mode_button.GetValue()
         self.UpdateToggleButton(self.target_mode_button, pressed)
-
         Publisher.sendMessage("Set target mode", enabled=pressed)
-        if pressed:
-            # Set robot objective to NONE when target mode is enabled.
-            self.robot.SetObjective(RobotObjective.NONE)
 
     # Robot-related buttons
     def OnEnableRobotButtons(self, enabled=False):
