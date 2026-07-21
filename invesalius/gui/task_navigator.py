@@ -2183,7 +2183,6 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
 
-        Publisher.subscribe(self.OnRobotStatus, "Robot to Neuronavigation: Robot connection status")
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
 
         Publisher.subscribe(self.UpdateTractsVisualization, "Update tracts visualization")
@@ -2205,10 +2204,8 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.EnableRobotTrackTargetButton, "Enable robot button")
 
         Publisher.subscribe(self.PressRobotMoveAwayButton, "Press move away button")
-        Publisher.subscribe(self.EnableRobotMoveAwayButton, "Enable move away button")
 
-        Publisher.subscribe(self.EnableRobotFreeDriveButton, "Enable free drive button")
-        Publisher.subscribe(self.EnableRobotResetErrorsButton, "Enable reset errors button")
+        Publisher.subscribe(self.OnEnableRobotButtons, "Enable robot")
 
         Publisher.subscribe(self.ShowTargetButton, "Show target button")
         Publisher.subscribe(self.HideTargetButton, "Hide target button")
@@ -2253,13 +2250,12 @@ class ControlPanel(wx.Panel):
             ctrl.SetBackgroundColour(self.RED_COLOR)
 
     def EnableToggleButton(self, ctrl, state):
-        # Check if the button state is not changed, if so, return early. This is to prevent
-        # unnecessary updates to the button.
-        if ctrl.IsEnabled() == state:
-            return
-
+        # Always call ctrl.Enable(state) — on Windows, SetBackgroundColour/SetValue
+        # can silently re-enable a disabled native ToggleButton, so we must ensure
+        # Enable() is called even if the internal flag hasn't changed.
         ctrl.Enable(state)
-        ctrl.SetBackgroundColour(self.GREY_COLOR)
+        if not state:
+            ctrl.SetBackgroundColour(self.GREY_COLOR)
 
     # Navigation
     def OnStartNavigation(self):
@@ -2349,9 +2345,6 @@ class ControlPanel(wx.Panel):
         self.PressShowCoilButton(pressed=done)
 
     # Robot
-    def OnRobotStatus(self, data):
-        if data:
-            self.Layout()
 
     def UpdateRobotButtons(self):
         # Enable 'track target' robot button if:
@@ -2381,27 +2374,23 @@ class ControlPanel(wx.Panel):
 
         self.EnableRobotTrackTargetButton(enabled=track_target_button_enabled)
 
+        robot_connected = self.robot.IsConnected()
+
         # Enable 'move away' robot button if robot is connected.
-        move_away_button_enabled = self.robot.IsConnected()
-        self.EnableRobotMoveAwayButton(enabled=move_away_button_enabled)
+        self.EnableRobotMoveAwayButton(enabled=robot_connected)
 
         # Enable 'free drive' robot button if robot is connected.
-        free_drive_button_enabled = self.robot.IsConnected()
-        self.EnableRobotFreeDriveButton(enabled=free_drive_button_enabled)
+        self.EnableRobotFreeDriveButton(enabled=robot_connected)
 
         # Enable 'reset errors' robot button if robot is connected.
-        reset_errors_button_enabled = self.robot.IsConnected()
-        self.EnableRobotResetErrorsButton(enabled=reset_errors_button_enabled)
+        self.EnableRobotResetErrorsButton(enabled=robot_connected)
 
     def SetTargetMode(self, enabled=False):
         self.target_mode = enabled
+        self.robot.SetObjective(RobotObjective.NONE)
 
         # Update robot button state when target mode is changed.
         self.UpdateRobotButtons()
-
-        # Set robot objective to NONE when target mode is off.
-        if not enabled:
-            self.robot.SetObjective(RobotObjective.NONE)
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
@@ -2567,18 +2556,16 @@ class ControlPanel(wx.Panel):
     def OnTargetButton(self, evt=None):
         pressed = self.target_mode_button.GetValue()
         self.UpdateToggleButton(self.target_mode_button, pressed)
-
         Publisher.sendMessage("Set target mode", enabled=pressed)
-        if pressed:
-            # Set robot objective to NONE when target mode is enabled.
-            self.robot.SetObjective(RobotObjective.NONE)
 
     # Robot-related buttons
+    def OnEnableRobotButtons(self, enabled=False):
+        self.UpdateRobotButtons()
 
     # 'Track target with robot' button
     def EnableRobotTrackTargetButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_track_target_button, enabled)
         self.UpdateToggleButton(self.robot_track_target_button)
+        self.EnableToggleButton(self.robot_track_target_button, enabled)
 
     def PressRobotTrackTargetButton(self, pressed):
         if pressed:
@@ -2598,14 +2585,11 @@ class ControlPanel(wx.Panel):
             # objective set by another button; hence this check.
             if self.robot.objective == RobotObjective.TRACK_TARGET:
                 self.robot.SetObjective(RobotObjective.NONE)
-            Publisher.sendMessage(
-                "Robot to Neuronavigation: Update robot warning", robot_warning=""
-            )
 
     # 'Move away' button
     def EnableRobotMoveAwayButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_move_away_button, enabled)
         self.UpdateToggleButton(self.robot_move_away_button)
+        self.EnableToggleButton(self.robot_move_away_button, enabled)
 
     def PressRobotMoveAwayButton(self, pressed):
         self.UpdateToggleButton(self.robot_move_away_button, pressed)
@@ -2621,39 +2605,27 @@ class ControlPanel(wx.Panel):
             # objective set by another button; hence this check.
             if self.robot.objective == RobotObjective.MOVE_AWAY_FROM_HEAD:
                 self.robot.SetObjective(RobotObjective.NONE)
-            Publisher.sendMessage(
-                "Robot to Neuronavigation: Update robot warning", robot_warning=""
-            )
 
     # 'Free drive' button
     def EnableRobotFreeDriveButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_free_drive_button, enabled)
         self.UpdateToggleButton(self.robot_free_drive_button)
+        self.EnableToggleButton(self.robot_free_drive_button, enabled)
 
     def OnRobotFreeDriveButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.robot_free_drive_button)
         pressed = self.robot_free_drive_button.GetValue()
-        if pressed:
-            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=True)
-        else:
-            Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=False)
+        self.robot.SetFreeDrive(pressed)
 
     # 'Reset errors robot' button
     def EnableRobotResetErrorsButton(self, enabled=False):
-        self.EnableToggleButton(self.robot_reset_errors_button, enabled)
         self.UpdateToggleButton(self.robot_reset_errors_button)
+        self.EnableToggleButton(self.robot_reset_errors_button, enabled)
 
     def OnRobotResetErrorsButton(self, evt=None, ctrl=None):
         self.UpdateToggleButton(self.robot_reset_errors_button)
         pressed = self.robot_reset_errors_button.GetValue()
         if pressed:
-            if self.robot.objective == RobotObjective.TRACK_TARGET:
-                self.robot.SetObjective(RobotObjective.NONE)
-
-            Publisher.sendMessage(
-                "Neuronavigation to Robot: Reset errors",
-            )
-
+            self.robot.ResetErrors()
             self.UpdateToggleButton(self.robot_reset_errors_button, False)
 
     # TMS Motor Mapping related
