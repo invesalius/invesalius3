@@ -16,6 +16,8 @@ mod count_regions;
 mod count_regions_py;
 mod polygon_mask;
 mod polygon_mask_py;
+mod brush_mask;
+mod brush_mask_py;
 
 /// InVesalius Rust extension module
 #[pymodule]
@@ -57,6 +59,9 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Polygon mask function
     m.add_function(wrap_pyfunction!(polygon_mask_py::polygon2mask_rs, m)?)?;
+    
+    // Brush mask function
+    m.add_function(wrap_pyfunction!(brush_mask_py::brush_mask_rs, m)?)?;
 
     Ok(())
 }

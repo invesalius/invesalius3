@@ -850,6 +850,12 @@ class EditionTools(wx.Panel):
             self, -1, "", choices=const.MASK_3D_EDIT_OP_NAME, style=wx.CB_DROPDOWN | wx.CB_READONLY
         )
         combo_mask_edit_3d_op.SetSelection(const.MASK_3D_EDIT_INCLUDE)
+        
+        txt_edit_tool = wx.StaticText(self, -1, _("Tool:"))
+        combo_mask_edit_3d_tool = wx.ComboBox(
+            self, -1, "", choices=const.MASK_3D_EDIT_TOOL_NAME, style=wx.CB_DROPDOWN | wx.CB_READONLY
+        )
+        combo_mask_edit_3d_tool.SetSelection(const.MASK_3D_EDIT_TOOL_POLYGON)
 
         txt_depth_value = wx.StaticText(self, -1, _("Depth:"))
         spin_mask_edit_3d_depth = wx.SpinCtrlDouble(self, value="1.0", min=0.0, max=1.0, inc=0.05)
@@ -859,12 +865,17 @@ class EditionTools(wx.Panel):
         line6.AddSpacer(1)
         line6.Add(combo_mask_edit_3d_op, 0, wx.ALIGN_CENTER_VERTICAL)
         line6.AddSpacer(15)
+        line6.Add(txt_edit_tool, 0, wx.ALIGN_CENTER_VERTICAL)
+        line6.AddSpacer(1)
+        line6.Add(combo_mask_edit_3d_tool, 0, wx.ALIGN_CENTER_VERTICAL)
+        line6.AddSpacer(15)
         line6.Add(txt_depth_value, 0, wx.ALIGN_CENTER_VERTICAL)
         line6.AddSpacer(1)
         line6.Add(spin_mask_edit_3d_depth, 0, wx.ALIGN_CENTER_VERTICAL)
 
         self.cbox_mask_edit_3d = cbox_mask_edit_3d
         self.combo_mask_edit_3d_op = combo_mask_edit_3d_op
+        self.combo_mask_edit_3d_tool = combo_mask_edit_3d_tool
         self.spin_mask_edit_3d_depth = spin_mask_edit_3d_depth
         self.btn_clear_3d_poly = btn_clear_3d_poly
 
@@ -900,6 +911,7 @@ class EditionTools(wx.Panel):
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
         self.cbox_mask_edit_3d.Bind(wx.EVT_CHECKBOX, self.OnCheckboxMaskEdit3D)
         self.combo_mask_edit_3d_op.Bind(wx.EVT_COMBOBOX, self.OnComboMaskEdit3DMode)
+        self.combo_mask_edit_3d_tool.Bind(wx.EVT_COMBOBOX, self.OnComboMaskEdit3DTool)
         self.spin_mask_edit_3d_depth.Bind(wx.EVT_SPINCTRLDOUBLE, self.OnSpinDepthMaskEdit3D)
         self.btn_clear_3d_poly.Bind(wx.EVT_BUTTON, self.OnClearPolyMaskEdit3D)
 
@@ -911,6 +923,7 @@ class EditionTools(wx.Panel):
         Publisher.subscribe(self._set_threshold_range_gui, "Set edition threshold gui")
         Publisher.subscribe(self.ChangeMaskColour, "Set GUI items colour")
         Publisher.subscribe(self.OnAskMaskEdit3DMode, "M3E ask for edit mode")
+        Publisher.subscribe(self.OnAskMaskEdit3DTool, "M3E ask for tool mode")
         Publisher.subscribe(self.OnAskDepthMaskEdit3D, "M3E ask for depth value")
 
     def ChangeMaskColour(self, colour):
@@ -1029,6 +1042,14 @@ class EditionTools(wx.Panel):
     def OnAskMaskEdit3DMode(self):
         op_id = self.combo_mask_edit_3d_op.GetSelection()
         Publisher.sendMessage("M3E set edit mode", mode=op_id)
+
+    def OnComboMaskEdit3DTool(self, evt: wx.CommandEvent):
+        tool_id = evt.GetSelection()
+        Publisher.sendMessage("M3E set tool mode", tool=tool_id)
+        
+    def OnAskMaskEdit3DTool(self):
+        tool_id = self.combo_mask_edit_3d_tool.GetSelection()
+        Publisher.sendMessage("M3E set tool mode", tool=tool_id)
 
     def OnSpinDepthMaskEdit3D(self, _evt):
         spin_val = self.spin_mask_edit_3d_depth.GetValue()
