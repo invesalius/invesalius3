@@ -45,7 +45,6 @@ from invesalius.pubsub import pub as Publisher
 PROP_MEASURE = 0.8
 
 if TYPE_CHECKING:
-
     from invesalius.data.viewer_volume import Viewer
 
 
