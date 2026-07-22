@@ -300,6 +300,7 @@ source = { editable = "." }
 dependencies = [
     { name = "h5py" },
     { name = "imageio" },
+    { name = "lib3mf" },
     { name = "matplotlib" },
     { name = "nibabel" },
     { name = "numpy" },
@@ -356,6 +357,7 @@ dev = [
 requires-dist = [
     { name = "h5py", specifier = "==3.11.0" },
     { name = "imageio", specifier = "==2.34.2" },
+    { name = "lib3mf", specifier = "==2.3.2" },
     { name = "matplotlib", specifier = "==3.9.0" },
     { name = "nibabel", specifier = "==5.2.1" },
     { name = "numpy", specifier = "==1.26.4" },
@@ -378,7 +380,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.32.3" },
     { name = "scikit-image", specifier = "==0.24.0" },
     { name = "scipy", specifier = "==1.14.0" },
-    { name = "setuptools", specifier = ">=65,<68" },
+    { name = "setuptools", specifier = ">=83.0.0,<84" },
     { name = "setuptools-scm", specifier = "<8" },
     { name = "tinygrad", specifier = "==0.10.2" },
     { name = "torch", marker = "sys_platform != 'darwin' and sys_platform != 'linux' and sys_platform != 'win32'", specifier = ">=2.3.1" },
@@ -461,6 +463,14 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6f/6b/c875b30a1ba490860c93da4cabf479e03f584eba06fe5963f6f6644653d8/lazy_loader-0.4.tar.gz", hash = "sha256:47c75182589b91a4e1a85a136c074285a5ad4d9f39c63e0d7fb76391c4574cd1", size = 15431, upload-time = "2024-04-05T13:03:12.261Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/83/60/d497a310bde3f01cb805196ac61b7ad6dc5dcf8dce66634dc34364b20b4f/lazy_loader-0.4-py3-none-any.whl", hash = "sha256:342aa8e14d543a154047afb4ba8ef17f5563baad3fc610d7b15b213b0f119efc", size = 12097, upload-time = "2024-04-05T13:03:10.514Z" },
+]
+
+[[package]]
+name = "lib3mf"
+version = "2.3.2"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/80/e7/f256462072fa27de4dfb27672d3dca1e55c7024a1014b36dd4c6ecea7c7e/lib3mf-2.3.2-py3-none-any.whl", hash = "sha256:42a3be872caffe0a9bc53451cd632b87773ce27710e3a4f374877e95a8c11db1", size = 2993336, upload-time = "2024-07-12T17:53:31.217Z" },
 ]
 
 [[package]]
@@ -1314,11 +1324,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "67.8.0"
+version = "83.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/03/20/630783571e76e5fa5f3e9f29398ca3ace377207b8196b54e0ffdf09f12c1/setuptools-67.8.0.tar.gz", hash = "sha256:62642358adc77ffa87233bc4d2354c4b2682d214048f500964dbe760ccedf102", size = 2492475, upload-time = "2023-05-19T19:38:37.607Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/26/f5d29e25ffdb535afef2d35cdb55b325298f96debd670da4c325e08d70f4/setuptools-83.0.0.tar.gz", hash = "sha256:025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef", size = 1154254, upload-time = "2026-07-04T15:31:22.699Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/2c/074ab1c5be9c7d523d8d6d69d1f46f450fe7f11713147dc9e779aa4ca4ea/setuptools-67.8.0-py3-none-any.whl", hash = "sha256:5df61bf30bb10c6f756eb19e7c9f3b473051f48db77fddbe06ff2ca307df9a6f", size = 1093916, upload-time = "2023-05-19T19:38:35.61Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/40/e1e72872c6354b306daef1703549e8e83b4d43cfea356311bf722a043752/setuptools-83.0.0-py3-none-any.whl", hash = "sha256:29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3", size = 1008090, upload-time = "2026-07-04T15:31:20.885Z" },
 ]
 
 [[package]]
