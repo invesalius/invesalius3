@@ -21,15 +21,12 @@
 import time
 from typing import TYPE_CHECKING
 
-import numpy as np
-import numpy.typing as npt
 import wx
-from skimage.draw import polygon2mask
+from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
 )
-from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkCellPicker,
@@ -40,19 +37,14 @@ from vtkmodules.vtkRenderingCore import (
 )
 
 import invesalius.constants as const
-import invesalius.data.slice_ as slc
 import invesalius.project as prj
 import invesalius.session as ses
 from invesalius.data.mask3d_editor_state import Mask3DEditorState
-from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import vtkarray_to_numpy
-from invesalius_rs import mask_cut
 
 PROP_MEASURE = 0.8
 
 if TYPE_CHECKING:
-    from vtkmodules.vtkRenderingCore import vtkCamera
 
     from invesalius.data.viewer_volume import Viewer
 
@@ -1091,25 +1083,25 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
 
         self.state_manager = Mask3DEditorState(viewer)
-        
+
         self.picker = vtkCellPicker()
         self.picker.SetTolerance(0.005)
         self.brush_source = vtkSphereSource()
         self.brush_source.SetPhiResolution(20)
         self.brush_source.SetThetaResolution(20)
-        
+
         mapper = vtkCompositePolyDataMapper()
         mapper.SetInputConnection(self.brush_source.GetOutputPort())
-        
+
         self.brush_actor = vtkActor()
         self.brush_actor.SetMapper(mapper)
         self.brush_actor.GetProperty().SetColor(1.0, 0.0, 0.0)
         self.brush_actor.GetProperty().SetOpacity(0.5)
         self.brush_actor.SetVisibility(False)
         self.brush_actor.PickableOff()
-        
+
         self.is_brushing = False
-        
+
         self._bind_events()
 
     def _bind_events(self):
@@ -1164,7 +1156,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             return
 
         mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
-        
+
         if self.state_manager.tool_mode == const.MASK_3D_EDIT_TOOL_BRUSH:
             self.is_brushing = True
             self.state_manager.start_brush_stroke()
@@ -1193,13 +1185,13 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             if self.left_pressed or self.middle_pressed or self.right_pressed:
                 super().OnMouseMove(obj, evt)
                 return
-                
+
         if self.state_manager.tool_mode == const.MASK_3D_EDIT_TOOL_BRUSH:
             mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
             self.UpdateBrush(mouse_x, mouse_y, do_stroke=self.is_brushing)
-            
+
         super().OnMouseMove(obj, evt)
-        
+
     def UpdateBrush(self, x, y, do_stroke=False):
         # Pick the surface under the mouse
         self.picker.Pick(x, y, 0, self.viewer.ren)
@@ -1211,7 +1203,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             self.brush_source.SetRadius(radius)
             self.brush_actor.SetVisibility(True)
             self.viewer.interactor.Render()
-            
+
             if do_stroke:
                 self.state_manager.brush_stroke(coord)
         else:

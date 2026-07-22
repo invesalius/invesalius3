@@ -850,10 +850,14 @@ class EditionTools(wx.Panel):
             self, -1, "", choices=const.MASK_3D_EDIT_OP_NAME, style=wx.CB_DROPDOWN | wx.CB_READONLY
         )
         combo_mask_edit_3d_op.SetSelection(const.MASK_3D_EDIT_INCLUDE)
-        
+
         txt_edit_tool = wx.StaticText(self, -1, _("Tool:"))
         combo_mask_edit_3d_tool = wx.ComboBox(
-            self, -1, "", choices=const.MASK_3D_EDIT_TOOL_NAME, style=wx.CB_DROPDOWN | wx.CB_READONLY
+            self,
+            -1,
+            "",
+            choices=const.MASK_3D_EDIT_TOOL_NAME,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
         combo_mask_edit_3d_tool.SetSelection(const.MASK_3D_EDIT_TOOL_POLYGON)
 
@@ -1046,7 +1050,7 @@ class EditionTools(wx.Panel):
     def OnComboMaskEdit3DTool(self, evt: wx.CommandEvent):
         tool_id = evt.GetSelection()
         Publisher.sendMessage("M3E set tool mode", tool=tool_id)
-        
+
     def OnAskMaskEdit3DTool(self):
         tool_id = self.combo_mask_edit_3d_tool.GetSelection()
         Publisher.sendMessage("M3E set tool mode", tool=tool_id)

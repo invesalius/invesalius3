@@ -3,7 +3,6 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-import wx
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 import invesalius.constants as const
@@ -224,21 +223,21 @@ class Mask3DEditorState:
     def brush_stroke(self, world_coord):
         if self.mask_data is None:
             return
-            
+
         w, h = self.resolution
         if h == 0:
             return
-            
+
         slice = slc.Slice()
         sx, sy, sz = slice.spacing
-        
+
         _mat = self.mask_data[1:, 1:, 1:]
-        
+
         # InVesalius defines brush_size as diameter, so radius is size / 2.0
         radius = self.brush_size / 2.0
-        
+
         wx, wy, wz = world_coord
-        
+
         # InVesalius transforms the numpy array when sending it to VTK:
         # 1. to_vtk_mask sets the origin to (cx - sx, cy - sy, cz - sz)
         # 2. vtkImageFlip flips the Y axis about the origin
@@ -247,17 +246,19 @@ class Mask3DEditorState:
         rust_cx = wx - cx + sx
         rust_cy = cy - sy - wy
         rust_cz = wz - cz + sz
-        
+
         if self.edit_mode == 0:
             # For 'Include Inside' (Crop), restore the original mask before applying the brush
             # This ensures dragging the mouse moves the 'crop spotlight' over the original mask
             # rather than accumulating crop intersections which would erase everything.
             if hasattr(self, "original_mask_data"):
                 self.mask_data[:] = self.original_mask_data[:]
-        
+
         # Apply the high-performance Rust sphere brush
-        invesalius_rs.brush_mask_rs(_mat, (sx, sy, sz), (rust_cx, rust_cy, rust_cz), radius, self.edit_mode)
-        
+        invesalius_rs.brush_mask_rs(
+            _mat, (sx, sy, sz), (rust_cx, rust_cy, rust_cz), radius, self.edit_mode
+        )
+
         # After Rust modifies the array in-place, we update the viewer
         self.update_views(_mat)
 
