@@ -21,31 +21,30 @@
 import time
 from typing import TYPE_CHECKING
 
-import numpy as np
-import numpy.typing as npt
 import wx
-from skimage.draw import polygon2mask
+from vtkmodules.vtkFiltersSources import vtkSphereSource
 from vtkmodules.vtkInteractionStyle import (
     vtkInteractorStyleRubberBandZoom,
     vtkInteractorStyleTrackballCamera,
 )
-from vtkmodules.vtkRenderingCore import vtkCellPicker, vtkCoordinate, vtkPointPicker, vtkPropPicker
+from vtkmodules.vtkRenderingCore import (
+    vtkActor,
+    vtkCellPicker,
+    vtkCompositePolyDataMapper,
+    vtkCoordinate,
+    vtkPointPicker,
+    vtkPropPicker,
+)
 
 import invesalius.constants as const
-import invesalius.data.slice_ as slc
 import invesalius.project as prj
 import invesalius.session as ses
 from invesalius.data.mask3d_editor_state import Mask3DEditorState
-from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
-from invesalius.utils import vtkarray_to_numpy
-from invesalius_rs import mask_cut
 
 PROP_MEASURE = 0.8
 
 if TYPE_CHECKING:
-    from vtkmodules.vtkRenderingCore import vtkCamera
-
     from invesalius.data.viewer_volume import Viewer
 
 
@@ -1083,6 +1082,25 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         super().__init__(viewer)
 
         self.state_manager = Mask3DEditorState(viewer)
+
+        self.picker = vtkCellPicker()
+        self.picker.SetTolerance(0.005)
+        self.brush_source = vtkSphereSource()
+        self.brush_source.SetPhiResolution(20)
+        self.brush_source.SetThetaResolution(20)
+
+        mapper = vtkCompositePolyDataMapper()
+        mapper.SetInputConnection(self.brush_source.GetOutputPort())
+
+        self.brush_actor = vtkActor()
+        self.brush_actor.SetMapper(mapper)
+        self.brush_actor.GetProperty().SetColor(1.0, 0.0, 0.0)
+        self.brush_actor.GetProperty().SetOpacity(0.5)
+        self.brush_actor.SetVisibility(False)
+        self.brush_actor.PickableOff()
+
+        self.is_brushing = False
+
         self._bind_events()
 
     def _bind_events(self):
@@ -1095,6 +1113,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         ## Bind events for this style
         self.viewer.canvas.subscribe_event("LeftButtonPressEvent", self.OnLeftButtonPress)
+        self.viewer.canvas.subscribe_event("LeftButtonReleaseEvent", self.OnLeftButtonRelease)
         self.viewer.canvas.subscribe_event(
             "LeftButtonDoubleClickEvent", self.OnLeftButtonDoubleClick
         )
@@ -1103,11 +1122,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
 
     def SetUp(self):
-        """Set up is called just before the style is set in the interactor.
-
-        This is called by the volume ``Viewer.SetInteractorStyle`` method.
-        """
+        """Set up is called just before the style is set in the interactor."""
         self.state_manager.setup_state()
+        self.viewer.ren.AddActor(self.brush_actor)
         Publisher.sendMessage(
             "Update viewer caption", viewer_name="Volume", caption="Volume - 3D mask editor"
         )
@@ -1119,11 +1136,13 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         """
         super().CleanUp()
         self.viewer.canvas.unsubscribe_event("LeftButtonPressEvent", self.OnLeftButtonPress)
+        self.viewer.canvas.unsubscribe_event("LeftButtonReleaseEvent", self.OnLeftButtonRelease)
         self.viewer.canvas.unsubscribe_event(
             "LeftButtonDoubleClickEvent", self.OnLeftButtonDoubleClick
         )
 
         self.state_manager.cleanup_state()
+        self.viewer.ren.RemoveActor(self.brush_actor)
 
         Publisher.sendMessage("Update viewer caption", viewer_name="Volume", caption="Volume")
         self.viewer.UpdateCanvas()
@@ -1136,8 +1155,21 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             return
 
         mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
-        world_point = self._display_to_world_focal_plane(mouse_x, mouse_y)
-        self.state_manager.insert_point(mouse_x, mouse_y, world_point)
+
+        if self.state_manager.tool_mode == const.MASK_3D_EDIT_TOOL_BRUSH:
+            self.is_brushing = True
+            self.state_manager.start_brush_stroke()
+            self.UpdateBrush(mouse_x, mouse_y, do_stroke=True)
+        else:
+            world_point = self._display_to_world_focal_plane(mouse_x, mouse_y)
+            self.state_manager.insert_point(mouse_x, mouse_y, world_point)
+
+    def OnLeftButtonRelease(self, evt):
+        if getattr(self, "is_brushing", False):
+            self.state_manager.end_brush_stroke()
+        self.is_brushing = False
+        self.left_pressed = False
+        super().OnLeftButtonRelease(evt)
 
     def OnLeftButtonDoubleClick(self, evt):
         if self.viewer.interactor.GetShiftKey():
@@ -1152,7 +1184,31 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
             if self.left_pressed or self.middle_pressed or self.right_pressed:
                 super().OnMouseMove(obj, evt)
                 return
+
+        if self.state_manager.tool_mode == const.MASK_3D_EDIT_TOOL_BRUSH:
+            mouse_x, mouse_y = self.viewer.get_vtk_mouse_position()
+            self.UpdateBrush(mouse_x, mouse_y, do_stroke=self.is_brushing)
+
         super().OnMouseMove(obj, evt)
+
+    def UpdateBrush(self, x, y, do_stroke=False):
+        # Pick the surface under the mouse
+        self.picker.Pick(x, y, 0, self.viewer.ren)
+        if self.picker.GetVolume() or self.picker.GetActor():
+            coord = self.picker.GetPickPosition()
+            self.brush_actor.SetPosition(coord)
+            # InVesalius defines brush_size as diameter, so radius is size / 2.0
+            radius = self.state_manager.brush_size / 2.0
+            self.brush_source.SetRadius(radius)
+            self.brush_actor.SetVisibility(True)
+            self.viewer.interactor.Render()
+
+            if do_stroke:
+                self.state_manager.brush_stroke(coord)
+        else:
+            if self.brush_actor.GetVisibility():
+                self.brush_actor.SetVisibility(False)
+                self.viewer.interactor.Render()
 
     def OnScrollForward(self, obj, evt):
         if self.viewer.interactor.GetShiftKey():

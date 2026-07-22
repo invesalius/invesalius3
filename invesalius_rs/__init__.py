@@ -85,6 +85,7 @@ apply_view_matrix_transform = _native.apply_view_matrix_transform
 convolve_non_zero = _native.convolve_non_zero
 mask_cut = _native.mask_cut
 polygon2mask_rs = _native.polygon2mask_rs
+brush_mask_rs = _native.brush_mask_rs
 
 
 def mida(image: np.ndarray, axis: int, wl: int, ww: int, out: np.ndarray):
@@ -288,9 +289,9 @@ __all__ = [
     # Transforms
     "apply_view_matrix_transform",
     "convolve_non_zero",
-    # Mask cut
     "mask_cut",
     "polygon2mask_rs",
+    "brush_mask_rs",
     # Mesh
     "Mesh",
     "ca_smoothing",
