@@ -383,8 +383,10 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.btn_stop.Disable()
         self.btn_segment.Disable()
         self.chk_new_mask.Disable()
-        self.sld_threshold.Disable()
-        self.txt_threshold.Disable()
+        # Keep threshold slider and text field enabled for post-inference adjustment
+        # Users can interactively adjust the threshold, and the mask will update in real-time
+        # self.sld_threshold.Disable()
+        # self.txt_threshold.Disable()
         self.cb_backends.Disable()
         self.cb_devices.Disable()
         self.overlap.Disable()
