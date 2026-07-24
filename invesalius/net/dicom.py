@@ -1,7 +1,7 @@
+import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-import logging
 
 import gdcm
 import wx
@@ -25,6 +25,7 @@ from pynetdicom.sop_class import (
 # debug_logger()
 
 logger = logging.getLogger(__name__)
+
 
 class DicomNet:
     def __init__(self, address: str, port: int, aetitle: str, aetitle_call: str = "INVESALIUS"):
@@ -114,6 +115,7 @@ class DicomNet:
             except Exception as e:
                 if callback:
                     wx.CallAfter(callback, dest, None, str(e))
+
         self._executor.submit(_task)
 
     def RunCMove(self, data, dest: str, progress_callback, callback=None):
@@ -125,6 +127,7 @@ class DicomNet:
             except Exception as e:
                 if callback:
                     wx.CallAfter(callback, dest, None, str(e))
+
         self._executor.submit(_task)
 
     # Sync Methods
@@ -171,7 +174,7 @@ class DicomNet:
             return False
 
         patients = {}
-        
+
         try:
             # Patient Level
             patient_ds = Dataset()
@@ -270,9 +273,13 @@ class DicomNet:
                                 if first_image:
                                     patients[patientId][study_id][serie_id] = {
                                         "name": image_identifier.get("PatientName", ""),
-                                        "age": self._format_age(image_identifier.get("PatientAge", "")),
+                                        "age": self._format_age(
+                                            image_identifier.get("PatientAge", "")
+                                        ),
                                         "gender": image_identifier.get("PatientSex", ""),
-                                        "study_id": image_identifier.get("StudyInstanceUID", study_id),
+                                        "study_id": image_identifier.get(
+                                            "StudyInstanceUID", study_id
+                                        ),
                                         "study_description": image_identifier.get(
                                             "StudyDescription", ""
                                         ),
@@ -287,7 +294,9 @@ class DicomNet:
                                         "date_of_birth": self._date_format(
                                             image_identifier.get("PatientBirthDate", "")
                                         ),
-                                        "acession_number": image_identifier.get("AccessionNumber", ""),
+                                        "acession_number": image_identifier.get(
+                                            "AccessionNumber", ""
+                                        ),
                                         "ref_physician": image_identifier.get(
                                             "ReferringPhysicianName", ""
                                         ),
@@ -307,7 +316,7 @@ class DicomNet:
                                         sop_uid
                                     )
             total_images = sum(
-                patients[patient][study][series].get('n_images', 0)
+                patients[patient][study][series].get("n_images", 0)
                 for patient in patients
                 for study in patients[patient]
                 for series in patients[patient][study]
@@ -315,18 +324,15 @@ class DicomNet:
             logger.info(f"Total images found: {total_images}")
 
             return patients
-        
-        except Exception as e:    
+
+        except Exception as e:
             logger.error(f"C-FIND failed: {e}", exc_info=True)
 
         finally:
             assoc.release()
             logger.debug("C-FIND association released")
 
-    def __RunCGet(
-        self,
-        data, dest, progress_callback
-    ):
+    def __RunCGet(self, data, dest, progress_callback):
         logger.info(f"Starting C-GET for patient: {data.get('patient', 'unknown')}")
         logger.debug(f"Destination: {dest}")
 
@@ -345,7 +351,9 @@ class DicomNet:
         ds.SeriesInstanceUID = data.get("series", "")
         ds.QueryRetrieveLevel = data["type"]
 
-        assoc = ae.associate(self.address, self.port, ext_neg=[role], evt_handlers=handlers, ae_title=self.aetitle)
+        assoc = ae.associate(
+            self.address, self.port, ext_neg=[role], evt_handlers=handlers, ae_title=self.aetitle
+        )
 
         # Use the C-GET service to send the identifier
         total_images = data.get("n_images", 0)
@@ -355,7 +363,7 @@ class DicomNet:
             if progress_callback(0, total_images):
                 logger.info("Download cancelled by user")
                 raise RuntimeError("CANCELLED")
-            
+
             responses = assoc.send_c_get(ds, PatientRootQueryRetrieveInformationModelGet)
 
             for status, identifier in responses:
@@ -439,7 +447,7 @@ class DicomNet:
             if str(e) == "CANCELLED":
                 self._cleanup_partial_files(dest)
                 logger.info("C-MOVE cancelled - partial files cleaned up")
-            
+
             logger.error(f"C-MOVE failed: {e}", exc_info=True)
             raise
 
@@ -468,6 +476,7 @@ class DicomNet:
     def _cleanup_partial_files(self, dest):
         try:
             import shutil
+
             if os.path.exists(dest):
                 shutil.rmtree(dest)
                 logger.info(f"Removed partial download: {dest}")

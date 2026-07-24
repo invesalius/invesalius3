@@ -255,9 +255,9 @@ class TextPanel(wx.Panel):
             return True
 
         percentage = int((completed / total) * 100) if total > 0 else 0
-        
-        cancelled = [False] # mutable
-        
+
+        cancelled = [False]  # mutable
+
         def _update():
             if self.__progress_dialog:
                 keep_going, skip = self.__progress_dialog.Update(
@@ -266,11 +266,11 @@ class TextPanel(wx.Panel):
                 if not keep_going:
                     cancelled[0] = True
                     self._destroy_progress()
-        
+
         wx.CallAfter(_update)
-        
+
         return cancelled[0]
-    
+
     def OnActivate(self, evt):
         item = evt.GetItem()
 
@@ -328,12 +328,12 @@ class TextPanel(wx.Panel):
 
     def _on_download_done(self, dest, result=None, error=None):
         self._destroy_progress()
-        
+
         if error == "CANCELLED":
             wx.MessageBox(
                 _("Download cancelled. Partial files have been removed."),
                 _("Cancelled"),
-                wx.OK | wx.ICON_INFORMATION
+                wx.OK | wx.ICON_INFORMATION,
             )
             return
 
