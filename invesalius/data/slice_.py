@@ -1386,7 +1386,7 @@ class Slice(metaclass=utils.Singleton):
 
             # Update the parameters for this specific mask
             mask_surface_params["options"]["index"] = mask_index
-            mask_surface_params["options"]["name"] = mask.name
+            mask_surface_params["options"]["name"] = ""
             mask_surface_params["options"]["overwrite"] = False
 
             print(f"Creating surface for mask '{mask.name}' (index {mask_index})")
