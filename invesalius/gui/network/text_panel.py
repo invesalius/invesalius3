@@ -122,6 +122,12 @@ class TextPanel(wx.Panel):
     def Populate(self, patients):
         """Populate tree."""
 
+        self.__tree.DeleteChildren(self.__root)
+
+        self.__idpatient_treeitem.clear()
+        self.__idstudy_treeitem.clear()
+        self.__idserie_treeitem.clear()
+
         for patient in patients.keys():
             first_study = list(patients[patient].keys())[0]
             first_serie = list(patients[patient][first_study].keys())[0]

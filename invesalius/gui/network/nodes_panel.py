@@ -76,6 +76,8 @@ class NodesPanel(wx.Panel):
     def _on_button_find(self, evt):
         """Find button event."""
 
+        self.__find_status.SetForegroundColour(wx.WHITE)
+
         if self.__selected_node is None:
             wx.MessageBox(_("Please, select a node."), _("Error"), wx.OK | wx.ICON_ERROR)
             return
@@ -107,6 +109,7 @@ class NodesPanel(wx.Panel):
         else:
             self.__find_status.SetLabel("No patients found")
             self.__find_status.SetForegroundColour(wx.BLUE)
+            Publisher.sendMessage("Populate tree", patients=patients)
 
     def _add_node(self, node):
         """Add a node to the nodes list."""
