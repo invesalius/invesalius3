@@ -1986,12 +1986,14 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         # Retrieve existing masks
         project = prj.Project()
         index_list = project.mask_dict.keys()
-        self.mask_list = [project.mask_dict[index].name for index in sorted(index_list)]
+        self.mask_list = ["All"] + [project.mask_dict[index].name for index in sorted(index_list)]
+        # Store the actual mask indices for lookup (None for "All")
+        self.mask_indices = [None] + list(sorted(index_list))
 
         active_mask = 0
-        for idx in project.mask_dict:
-            if project.mask_dict[idx] is slc.Slice().current_mask:
-                active_mask = idx
+        for i, idx in enumerate(self.mask_indices):
+            if idx is not None and project.mask_dict[idx] is slc.Slice().current_mask:
+                active_mask = i
                 break
 
         # Mask selection combo
@@ -2055,18 +2057,23 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         sizer.Fit(self)
 
     def OnSetMask(self, evt: wx.CommandEvent) -> None:
-        new_evt = MaskEvent(myEVT_MASK_SET, -1, self.combo_mask.GetSelection())
-        self.GetEventHandler().ProcessEvent(new_evt)
+        selection = self.combo_mask.GetSelection()
+        mask_index = self.mask_indices[selection]
+        # Only send event if a specific mask is selected (not "All")
+        if mask_index is not None:
+            new_evt = MaskEvent(myEVT_MASK_SET, -1, mask_index)
+            self.GetEventHandler().ProcessEvent(new_evt)
 
-    def GetValue(self) -> dict[str, str | int | bool]:
-        mask_index = self.combo_mask.GetSelection()
+    def GetValue(self) -> dict[str, str | int | bool | None]:
+        selection = self.combo_mask.GetSelection()
+        mask_index = self.mask_indices[selection]
         surface_name = self.text.GetValue()
         quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
         fill_border_holes = self.check_box_border_holes.GetValue()
         fill_holes = self.check_box_holes.GetValue()
         keep_largest = self.check_box_largest.GetValue()
         return {
-            "index": mask_index,
+            "index": mask_index,  # None if "All" is selected
             "name": surface_name,
             "quality": quality,
             "fill_border_holes": fill_border_holes,

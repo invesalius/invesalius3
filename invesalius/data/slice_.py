@@ -228,6 +228,7 @@ class Slice(metaclass=utils.Singleton):
     def __bind_events(self) -> None:
         # General slice control
         Publisher.subscribe(self.CreateSurfaceFromIndex, "Create surface from index")
+        Publisher.subscribe(self.CreateSurfacesForAllMasks, "Create surfaces for all masks")
         # Mask control
         Publisher.subscribe(self.__add_mask_thresh, "Create new mask")
         Publisher.subscribe(self.__select_current_mask, "Change mask selected")
@@ -291,7 +292,6 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.UpdateSlice3D, "Update slice 3D")
 
         Publisher.subscribe(self.on_select_all_masks_changed, "Select all masks changed")
-        Publisher.subscribe(self.create_surfaces_for_all_masks, "Create surfaces for all masks")
         Publisher.subscribe(self.update_selected_masks, "Update selected masks list")
 
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
@@ -1347,42 +1347,84 @@ class Slice(metaclass=utils.Singleton):
             surface_parameters=surface_parameters,
         )
 
-    def on_select_all_masks_changed(self, select_all_active):
-        Publisher.sendMessage("Update create surface button", select_all_active=select_all_active)
-
-    def create_surfaces_for_all_masks(self, surface_template):
+    def CreateSurfacesForAllMasks(self, surface_parameters):
+        """
+        Create surfaces for all existing masks.
+        This is called when "All" is selected in the Mask of Reference field.
+        """
         proj = Project()
-        created_surfaces = []
-        mask_dict = proj.mask_dict
+        created_count = 0
+        failed_masks = []
 
-        for mask_index in self.selected_mask_indices:
-            if mask_index not in mask_dict:
-                continue
-            mask = mask_dict[mask_index]
+        # Get all masks sorted by index
+        mask_indices = sorted(proj.mask_dict.keys())
+
+        if not mask_indices:
+            import wx
+
+            wx.MessageBox(
+                _("No masks available to create surfaces."),
+                _("Create surfaces warning"),
+                wx.OK | wx.ICON_WARNING,
+            )
+            return
+
+        for mask_index in mask_indices:
+            mask = proj.mask_dict[mask_index]
+
+            # Skip masks with no voxels selected
             if mask.matrix.max() < 127:
-                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels available")
+                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels selected")
+                failed_masks.append(mask.name)
                 continue
 
-            surface_parameters = surface_template.copy()
-            surface_parameters["options"] = surface_template["options"].copy()
+            # Create a copy of surface parameters for this mask
+            mask_surface_params = {
+                "method": surface_parameters["method"].copy(),
+                "options": surface_parameters["options"].copy(),
+            }
 
-            surface_parameters["options"]["index"] = mask_index
-            surface_parameters["options"]["name"] = f"{mask.name}"
-            surface_parameters["options"]["overwrite"] = False  # always create new surfaces
+            # Update the parameters for this specific mask
+            mask_surface_params["options"]["index"] = mask_index
+            mask_surface_params["options"]["name"] = mask.name
+            mask_surface_params["options"]["overwrite"] = False
 
             print(f"Creating surface for mask '{mask.name}' (index {mask_index})")
 
             try:
                 self.do_threshold_to_all_slices(mask)
                 Publisher.sendMessage(
-                    "Create surface", slice_=self, mask=mask, surface_parameters=surface_parameters
+                    "Create surface",
+                    slice_=self,
+                    mask=mask,
+                    surface_parameters=mask_surface_params,
                 )
-                created_surfaces.append(mask_index)
+                created_count += 1
             except Exception as e:
                 print(f"Failed to create surface for mask '{mask.name}': {str(e)}")
+                failed_masks.append(mask.name)
 
-        print(f"Successfully created surfaces for {len(created_surfaces)} masks")
-        Publisher.sendMessage("Surfaces creation completed", created_count=len(created_surfaces))
+        # Show summary message
+        import wx
+
+        if created_count > 0:
+            msg = _("Successfully created {} surface(s).").format(created_count)
+            if failed_masks:
+                msg += _("\n\nSkipped {} mask(s) with no voxels: {}").format(
+                    len(failed_masks), ", ".join(failed_masks)
+                )
+            wx.MessageBox(msg, _("Surface creation complete"), wx.OK | wx.ICON_INFORMATION)
+        else:
+            wx.MessageBox(
+                _("No surfaces were created. All masks are empty."),
+                _("Create surfaces warning"),
+                wx.OK | wx.ICON_WARNING,
+            )
+
+        print(f"Batch surface creation complete: {created_count} surfaces created")
+
+    def on_select_all_masks_changed(self, select_all_active):
+        Publisher.sendMessage("Update create surface button", select_all_active=select_all_active)
 
     def GetOutput(self):
         return self.blend_filter.GetOutput()
