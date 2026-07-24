@@ -578,7 +578,8 @@ ID_FRAME = wx.NewIdRef()
     ID_NIFTI_IMPORT,
     ID_PARREC_IMPORT,
     ID_MODE_DBS,
-] = [wx.NewIdRef() for number in range(23)]
+    ID_DICOM_SERVER,
+] = [wx.NewIdRef() for number in range(24)]
 ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
 
@@ -751,11 +752,15 @@ STYLE_LEVEL = {
     STATE_MASK_3D_EDIT: 3,
 }
 
-# ------------ Prefereces options key ------------
+# ------------ Preferences options key ------------
 RENDERING = 0
 SURFACE_INTERPOLATION = 1
 LANGUAGE = 2
 SLICE_INTERPOLATION = 3
+SERVER_AETITLE = 4
+SERVER_PORT = 5
+STORE_PATH = 6
+SERVER_IP = 7
 # Logging
 LOGGING = 4
 LOGGING_LEVEL = 5

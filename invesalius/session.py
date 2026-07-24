@@ -62,6 +62,12 @@ CONFIG_INIT = {
     "robot": {
         "robot_ip_options": "",
     },
+    "server_aetitle": "INVESALIUS",
+    "server_port": 11120,
+    'nodes': [],
+    'selected_node': {},
+    'store_path': str(inv_paths.USER_DICOM_DIR),
+    'server_ip': ""
 }
 
 
@@ -304,6 +310,13 @@ class Session(metaclass=Singleton):
         do_console_logging = config.getint("session", "do_console_logging")
         console_logging_level = config.getint("session", "console_logging_level")
 
+        server_aetitle = config.get('session','server_aetitle')
+        server_port = config.get('session','server_port')
+        nodes = config.get('session','nodes')
+        selected_node = config.get('session','selected_node')
+        store_path = config.get('session','store_path')
+        server_ip = config.get('session','server_ip')
+
         recent_projects = eval(config.get("project", "recent_projects"))
         recent_projects = [list(rp) for rp in recent_projects]
 
@@ -323,6 +336,12 @@ class Session(metaclass=Singleton):
         self.SetConfig("logging_file", logging_file)
         self.SetConfig("do_console_logging", do_console_logging)
         self.SetConfig("console_logging_level", console_logging_level)
+        self.SetConfig('server_aetitle', server_aetitle)
+        self.SetConfig('server_port', server_port)
+        self.SetConfig('nodes', nodes)
+        self.SetConfig('selected_node', selected_node)
+        self.SetConfig('store_path', store_path)
+        self.SetConfig('server_ip', server_ip)
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius
