@@ -1043,7 +1043,8 @@ class Viewer(wx.Panel):
                 writer = vtkPostScriptWriter()
             elif filetype == const.FILETYPE_TIF:
                 writer = vtkTIFFWriter()
-                filename = "{}.tif".format(filename.strip(".tif"))
+                if not filename.lower().endswith((".tif", ".tiff")):
+                    filename += ".tif"
 
             writer.SetInputData(image)
             writer.SetFileName(filename.encode(const.FS_ENCODE))
