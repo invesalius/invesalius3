@@ -1123,7 +1123,8 @@ class SurfaceManager:
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
         Publisher.sendMessage("End busy cursor")
 
-        dialog.running = False
+        if dialog:
+            dialog.running = False
 
     def on_publish_surface(self):
         Publisher.sendMessage("Stop navigation")
@@ -1246,9 +1247,14 @@ class SurfaceManager:
             pass
 
     def _on_callback_error(self, e, dialog=None):
-        dialog.running = False
-        msg = utl.log_traceback(e)
-        dialog.error = msg
+        if dialog:
+            dialog.running = False
+            msg = utl.log_traceback(e)
+            dialog.error = msg
+        else:
+            # Batch mode: just log the error
+            msg = utl.log_traceback(e)
+            print(f"Surface creation error: {msg}")
 
     def AddNewActor(self, slice_, mask, surface_parameters):
         """
@@ -1311,6 +1317,10 @@ class SurfaceManager:
             overwrite = surface_parameters["options"]["overwrite"]
         except KeyError:
             overwrite = False
+
+        # Check if we're in batch mode (suppress individual progress dialogs)
+        batch_mode = surface_parameters["options"].get("batch_mode", False)
+
         mask.matrix.flush()
 
         if quality in const.SURFACE_QUALITY.keys():
@@ -1450,7 +1460,12 @@ class SurfaceManager:
 
         # With GUI
         else:
-            sp = dialogs.SurfaceProgressWindow()
+            # In batch mode, skip individual progress dialogs
+            if not batch_mode:
+                sp = dialogs.SurfaceProgressWindow()
+            else:
+                sp = None
+
             for i in range(n_pieces):
                 init = i * piece_size
                 end = init + piece_size + o_piece
@@ -1481,17 +1496,20 @@ class SurfaceManager:
                         fill_border_holes,
                     ),
                     callback=lambda x: filenames.append(x),
-                    error_callback=functools.partial(self._on_callback_error, dialog=sp),
+                    error_callback=functools.partial(self._on_callback_error, dialog=sp)
+                    if sp
+                    else None,
                 )
 
             while len(filenames) != n_pieces:
-                if sp.WasCancelled() or not sp.running:
+                if sp and (sp.WasCancelled() or not sp.running):
                     break
                 time.sleep(0.25)
-                sp.Update(_("Creating 3D surface..."))
-                wx.Yield()
+                if sp:
+                    sp.Update(_("Creating 3D surface..."))
+                    wx.Yield()
 
-            if not sp.WasCancelled() or sp.running:
+            if not sp or (not sp.WasCancelled() or sp.running):
                 f = pool.apply_async(
                     surface_process.join_process_surface,
                     args=(
@@ -1513,27 +1531,37 @@ class SurfaceManager:
                         category=category,
                         dialog=sp,
                     ),
-                    error_callback=functools.partial(self._on_callback_error, dialog=sp),
+                    error_callback=functools.partial(self._on_callback_error, dialog=sp)
+                    if sp
+                    else lambda e: print(f"Surface creation error: {e}"),
                 )
 
-                while sp.running:
-                    if sp.WasCancelled():
-                        break
-                    time.sleep(0.25)
-                    try:
-                        msg = msg_queue.get_nowait()
-                        sp.Update(msg)
-                    except Exception:
-                        sp.Update(None)
-                    wx.Yield()
+                if sp:
+                    while sp.running:
+                        if sp.WasCancelled():
+                            break
+                        time.sleep(0.25)
+                        try:
+                            msg = msg_queue.get_nowait()
+                            sp.Update(msg)
+                        except Exception:
+                            sp.Update(None)
+                        wx.Yield()
+                else:
+                    # In batch mode, just wait for completion without GUI updates
+                    while not f.ready():
+                        time.sleep(0.25)
 
             t_end = time.time()
             print(f"Elapsed time - {t_end - t_init}")
-            sp.Close()
-            if sp.error:
-                dlg = GMD.GenericMessageDialog(None, sp.error, "Exception!", wx.OK | wx.ICON_ERROR)
-                dlg.ShowModal()
-            del sp
+            if sp:
+                sp.Close()
+                if sp.error:
+                    dlg = GMD.GenericMessageDialog(
+                        None, sp.error, "Exception!", wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                del sp
 
         pool.close()
         try:
