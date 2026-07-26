@@ -2006,6 +2006,11 @@ class SurfaceCreationOptionsPanel(wx.Panel):
             combo_mask.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.combo_mask = combo_mask
 
+        # Disable surface name field if "All" is initially selected
+        if active_mask == 0:
+            text.Enable(False)
+            text.SetValue(_("Batch mode"))
+
         # LINE 3: Surface quality
         label_quality = wx.StaticText(self, -1, _("Surface quality:"))
 
@@ -2059,6 +2064,21 @@ class SurfaceCreationOptionsPanel(wx.Panel):
     def OnSetMask(self, evt: wx.CommandEvent) -> None:
         selection = self.combo_mask.GetSelection()
         mask_index = self.mask_indices[selection]
+
+        # Disable "New surface name" field when "All" is selected (index 0)
+        if selection == 0:  # "All" is always at index 0
+            self.text.Enable(False)
+            self.text.SetValue(_("Batch mode"))  # Optional: show why it's disabled
+        else:
+            self.text.Enable(True)
+            # Restore default name if it was showing "Batch mode"
+            if self.text.GetValue() == _("Batch mode"):
+                import invesalius.constants as const
+                import invesalius.data.surface as surface
+
+                default_name = const.SURFACE_NAME_PATTERN % (surface.Surface.general_index + 2)
+                self.text.SetValue(default_name)
+
         # Only send event if a specific mask is selected (not "All")
         if mask_index is not None:
             new_evt = MaskEvent(myEVT_MASK_SET, -1, mask_index)
