@@ -644,6 +644,10 @@ class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
         for checkbox in self.mask_checkboxes.values():
             checkbox.Enable()
 
+        # Disable threshold slider for Brain Subpart - it uses label IDs, not thresholds
+        self.sld_threshold.Disable()
+        self.txt_threshold.Disable()
+
     def apply_segment_threshold(self):
         threshold = self.sld_threshold.GetValue() / 100.0
         self.ps.apply_segment_threshold(threshold)
