@@ -849,7 +849,7 @@ class EditionTools(wx.Panel):
         combo_mask_edit_3d_op = wx.ComboBox(
             self, -1, "", choices=const.MASK_3D_EDIT_OP_NAME, style=wx.CB_DROPDOWN | wx.CB_READONLY
         )
-        combo_mask_edit_3d_op.SetSelection(const.MASK_3D_EDIT_INCLUDE)
+        combo_mask_edit_3d_op.SetSelection(const.MASK_3D_EDIT_EXCLUDE)
 
         txt_edit_tool = wx.StaticText(self, -1, _("Tool:"))
         combo_mask_edit_3d_tool = wx.ComboBox(

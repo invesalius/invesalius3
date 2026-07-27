@@ -27,7 +27,7 @@ class Mask3DEditorState:
     viewer: Any
     mask_data: npt.NDArray | None = None
     m3e_list: list[PolygonSelectCanvas] = field(default_factory=list)
-    edit_mode: int = const.MASK_3D_EDIT_INCLUDE
+    edit_mode: int = const.MASK_3D_EDIT_EXCLUDE
     tool_mode: int = const.MASK_3D_EDIT_TOOL_POLYGON
     brush_size: float = const.BRUSH_SIZE
     depth_val: float = 1.0
