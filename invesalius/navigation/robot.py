@@ -343,6 +343,7 @@ class Robot(metaclass=Singleton):
     def ResetErrors(self):
         if self.objective == RobotObjective.TRACK_TARGET:
             self.SetObjective(RobotObjective.NONE)
-            Publisher.sendMessage(
-                "Neuronavigation to Robot: Reset errors",
-            )
+
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Reset errors",
+        )
