@@ -255,7 +255,7 @@ class Mask3DEditorState:
             orig_mat = self.base_mask_data[1:, 1:, 1:]
         elif hasattr(self, "original_mask_data"):
             orig_mat = self.original_mask_data[1:, 1:, 1:]
-            
+
         invesalius_rs.brush_mask_rs(
             _mat, orig_mat, (sx, sy, sz), (rust_cx, rust_cy, rust_cz), radius, self.edit_mode
         )
@@ -293,7 +293,10 @@ class Mask3DEditorState:
             self.mask_data = cur_mask.matrix.copy()
             self.original_mask_data = cur_mask.matrix.copy()
             if self.edit_mode == 0:
-                if not self.has_cleared_for_crop or (self.base_mask_data is not None and np.array_equal(self.mask_data, self.base_mask_data)):
+                if not self.has_cleared_for_crop or (
+                    self.base_mask_data is not None
+                    and np.array_equal(self.mask_data, self.base_mask_data)
+                ):
                     self.base_mask_data = cur_mask.matrix.copy()
                     self.mask_data[:] = 0
                     self.has_cleared_for_crop = True

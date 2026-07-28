@@ -1201,7 +1201,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         else:
             # Fallback if clicking completely outside any volume or mesh
             coord = self._display_to_world_focal_plane(x, y)
-            
+
         self.brush_actor.SetPosition(coord)
         # InVesalius defines brush_size as diameter, so radius is size / 2.0
         radius = self.state_manager.brush_size / 2.0

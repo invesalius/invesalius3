@@ -373,7 +373,7 @@ class CanvasRendererCTX:
                 shift_down=evt.ShiftDown(),
             )
             self.propagate_event(self._drag_obj, evt_obj)
-        
+
         evt_obj_release = CanvasEvent(
             "left_button_release",
             None,
