@@ -1986,12 +1986,14 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         # Retrieve existing masks
         project = prj.Project()
         index_list = project.mask_dict.keys()
-        self.mask_list = [project.mask_dict[index].name for index in sorted(index_list)]
+        self.mask_list = ["All"] + [project.mask_dict[index].name for index in sorted(index_list)]
+        # Store the actual mask indices for lookup (None for "All")
+        self.mask_indices = [None] + list(sorted(index_list))
 
         active_mask = 0
-        for idx in project.mask_dict:
-            if project.mask_dict[idx] is slc.Slice().current_mask:
-                active_mask = idx
+        for i, idx in enumerate(self.mask_indices):
+            if idx is not None and project.mask_dict[idx] is slc.Slice().current_mask:
+                active_mask = i
                 break
 
         # Mask selection combo
@@ -2003,6 +2005,11 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         if sys.platform != "win32":
             combo_mask.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.combo_mask = combo_mask
+
+        # Disable surface name field if "All" is initially selected
+        if active_mask == 0:
+            text.Enable(False)
+            text.SetValue(_("Batch mode"))
 
         # LINE 3: Surface quality
         label_quality = wx.StaticText(self, -1, _("Surface quality:"))
@@ -2055,18 +2062,38 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         sizer.Fit(self)
 
     def OnSetMask(self, evt: wx.CommandEvent) -> None:
-        new_evt = MaskEvent(myEVT_MASK_SET, -1, self.combo_mask.GetSelection())
-        self.GetEventHandler().ProcessEvent(new_evt)
+        selection = self.combo_mask.GetSelection()
+        mask_index = self.mask_indices[selection]
 
-    def GetValue(self) -> dict[str, str | int | bool]:
-        mask_index = self.combo_mask.GetSelection()
+        # Disable "New surface name" field when "All" is selected (index 0)
+        if selection == 0:  # "All" is always at index 0
+            self.text.Enable(False)
+            self.text.SetValue(_("Batch mode"))  # Optional: show why it's disabled
+        else:
+            self.text.Enable(True)
+            # Restore default name if it was showing "Batch mode"
+            if self.text.GetValue() == _("Batch mode"):
+                import invesalius.constants as const
+                import invesalius.data.surface as surface
+
+                default_name = const.SURFACE_NAME_PATTERN % (surface.Surface.general_index + 2)
+                self.text.SetValue(default_name)
+
+        # Only send event if a specific mask is selected (not "All")
+        if mask_index is not None:
+            new_evt = MaskEvent(myEVT_MASK_SET, -1, mask_index)
+            self.GetEventHandler().ProcessEvent(new_evt)
+
+    def GetValue(self) -> dict[str, str | int | bool | None]:
+        selection = self.combo_mask.GetSelection()
+        mask_index = self.mask_indices[selection]
         surface_name = self.text.GetValue()
         quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
         fill_border_holes = self.check_box_border_holes.GetValue()
         fill_holes = self.check_box_holes.GetValue()
         keep_largest = self.check_box_largest.GetValue()
         return {
-            "index": mask_index,
+            "index": mask_index,  # None if "All" is selected
             "name": surface_name,
             "quality": quality,
             "fill_border_holes": fill_border_holes,

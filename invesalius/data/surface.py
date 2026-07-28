@@ -33,7 +33,7 @@ from collections import Counter
 import numpy as np
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
-from vtkmodules.util.numpy_support import vtk_to_numpy
+from vtkmodules.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray, vtk_to_numpy
 from vtkmodules.vtkCommonCore import (
     vtkIdList,
     vtkPoints,
@@ -642,6 +642,22 @@ class SurfaceManager:
                 )
                 return
 
+            # Progress throttle class to reduce GUI overhead
+            import time
+
+            class ProgressThrottle:
+                def __init__(self, min_interval_s=0.2):
+                    self.min_interval_s = min_interval_s
+                    self.last_yield = 0.0
+
+                def maybe_yield(self):
+                    now = time.time()
+                    if now - self.last_yield >= self.min_interval_s:
+                        wx.Yield()
+                        self.last_yield = now
+
+            throttle = ProgressThrottle()
+
             progress = wx.ProgressDialog(
                 _("Importing 3MF file"),
                 _("Reading 3MF file..."),
@@ -698,19 +714,22 @@ class SurfaceManager:
                         if not keep_going:
                             progress.Destroy()
                             return
-                        wx.Yield()
+                        throttle.maybe_yield()
 
+                        # Batch retrieve all vertices in one call
+                        vertex_buffer = mesh_object.GetVertices()
+                        verts_np = np.array(
+                            [
+                                [v.Coordinates[0], v.Coordinates[1], v.Coordinates[2]]
+                                for v in vertex_buffer
+                            ],
+                            dtype=np.float64,
+                        )
+
+                        # Convert to VTK points (no coordinate transform - coordinates pass verbatim)
+                        vtk_points_array = numpy_to_vtk(verts_np, deep=True)
                         points = vtkPoints()
-                        points.SetNumberOfPoints(vertex_count)
-
-                        for i in range(vertex_count):
-                            vertex = mesh_object.GetVertex(i)
-                            points.SetPoint(
-                                i,
-                                vertex.Coordinates[0],
-                                vertex.Coordinates[1],
-                                vertex.Coordinates[2],
-                            )
+                        points.SetData(vtk_points_array)
 
                         percent_mid = int(20 + (idx + 0.4) * surface_progress_chunk)
                         keep_going, skip = progress.Update(
@@ -722,16 +741,24 @@ class SurfaceManager:
                         if not keep_going:
                             progress.Destroy()
                             return
-                        wx.Yield()
+                        throttle.maybe_yield()
+
+                        # Batch retrieve all triangles in one call
+                        tri_buffer = mesh_object.GetTriangleIndices()
+                        tris_np = np.array(
+                            [[t.Indices[0], t.Indices[1], t.Indices[2]] for t in tri_buffer],
+                            dtype=np.int64,
+                        )
+
+                        # Build VTK cell connectivity without per-triangle vtkTriangle() objects
+                        n_tris = tris_np.shape[0]
+                        connectivity = np.column_stack(
+                            [np.full(n_tris, 3, dtype=np.int64), tris_np]
+                        ).ravel()
+                        vtk_cells = numpy_to_vtkIdTypeArray(connectivity, deep=True)
 
                         triangles = vtkCellArray()
-                        for i in range(triangle_count):
-                            triangle_obj = mesh_object.GetTriangle(i)
-                            triangle = vtkTriangle()
-                            triangle.GetPointIds().SetId(0, triangle_obj.Indices[0])
-                            triangle.GetPointIds().SetId(1, triangle_obj.Indices[1])
-                            triangle.GetPointIds().SetId(2, triangle_obj.Indices[2])
-                            triangles.InsertNextCell(triangle)
+                        triangles.SetCells(n_tris, vtk_cells)
 
                         percent_end = int(20 + (idx + 0.8) * surface_progress_chunk)
                         keep_going, skip = progress.Update(
@@ -740,7 +767,7 @@ class SurfaceManager:
                         if not keep_going:
                             progress.Destroy()
                             return
-                        wx.Yield()
+                        throttle.maybe_yield()
 
                         polydata = vtkPolyData()
                         polydata.SetPoints(points)
@@ -1096,7 +1123,8 @@ class SurfaceManager:
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
         Publisher.sendMessage("End busy cursor")
 
-        dialog.running = False
+        if dialog:
+            dialog.running = False
 
     def on_publish_surface(self):
         Publisher.sendMessage("Stop navigation")
@@ -1219,9 +1247,14 @@ class SurfaceManager:
             pass
 
     def _on_callback_error(self, e, dialog=None):
-        dialog.running = False
-        msg = utl.log_traceback(e)
-        dialog.error = msg
+        if dialog:
+            dialog.running = False
+            msg = utl.log_traceback(e)
+            dialog.error = msg
+        else:
+            # Batch mode: just log the error
+            msg = utl.log_traceback(e)
+            print(f"Surface creation error: {msg}")
 
     def AddNewActor(self, slice_, mask, surface_parameters):
         """
@@ -1284,6 +1317,10 @@ class SurfaceManager:
             overwrite = surface_parameters["options"]["overwrite"]
         except KeyError:
             overwrite = False
+
+        # Check if we're in batch mode (suppress individual progress dialogs)
+        batch_mode = surface_parameters["options"].get("batch_mode", False)
+
         mask.matrix.flush()
 
         if quality in const.SURFACE_QUALITY.keys():
@@ -1423,7 +1460,12 @@ class SurfaceManager:
 
         # With GUI
         else:
-            sp = dialogs.SurfaceProgressWindow()
+            # In batch mode, skip individual progress dialogs
+            if not batch_mode:
+                sp = dialogs.SurfaceProgressWindow()
+            else:
+                sp = None
+
             for i in range(n_pieces):
                 init = i * piece_size
                 end = init + piece_size + o_piece
@@ -1454,17 +1496,20 @@ class SurfaceManager:
                         fill_border_holes,
                     ),
                     callback=lambda x: filenames.append(x),
-                    error_callback=functools.partial(self._on_callback_error, dialog=sp),
+                    error_callback=functools.partial(self._on_callback_error, dialog=sp)
+                    if sp
+                    else None,
                 )
 
             while len(filenames) != n_pieces:
-                if sp.WasCancelled() or not sp.running:
+                if sp and (sp.WasCancelled() or not sp.running):
                     break
                 time.sleep(0.25)
-                sp.Update(_("Creating 3D surface..."))
-                wx.Yield()
+                if sp:
+                    sp.Update(_("Creating 3D surface..."))
+                    wx.Yield()
 
-            if not sp.WasCancelled() or sp.running:
+            if not sp or (not sp.WasCancelled() or sp.running):
                 f = pool.apply_async(
                     surface_process.join_process_surface,
                     args=(
@@ -1486,27 +1531,37 @@ class SurfaceManager:
                         category=category,
                         dialog=sp,
                     ),
-                    error_callback=functools.partial(self._on_callback_error, dialog=sp),
+                    error_callback=functools.partial(self._on_callback_error, dialog=sp)
+                    if sp
+                    else lambda e: print(f"Surface creation error: {e}"),
                 )
 
-                while sp.running:
-                    if sp.WasCancelled():
-                        break
-                    time.sleep(0.25)
-                    try:
-                        msg = msg_queue.get_nowait()
-                        sp.Update(msg)
-                    except Exception:
-                        sp.Update(None)
-                    wx.Yield()
+                if sp:
+                    while sp.running:
+                        if sp.WasCancelled():
+                            break
+                        time.sleep(0.25)
+                        try:
+                            msg = msg_queue.get_nowait()
+                            sp.Update(msg)
+                        except Exception:
+                            sp.Update(None)
+                        wx.Yield()
+                else:
+                    # In batch mode, just wait for completion without GUI updates
+                    while not f.ready():
+                        time.sleep(0.25)
 
             t_end = time.time()
             print(f"Elapsed time - {t_end - t_init}")
-            sp.Close()
-            if sp.error:
-                dlg = GMD.GenericMessageDialog(None, sp.error, "Exception!", wx.OK | wx.ICON_ERROR)
-                dlg.ShowModal()
-            del sp
+            if sp:
+                sp.Close()
+                if sp.error:
+                    dlg = GMD.GenericMessageDialog(
+                        None, sp.error, "Exception!", wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                del sp
 
         pool.close()
         try:
@@ -1806,6 +1861,22 @@ class SurfaceManager:
                     )
                     return
 
+                # Progress throttle class to reduce GUI overhead
+                import time
+
+                class ProgressThrottle:
+                    def __init__(self, min_interval_s=0.2):
+                        self.min_interval_s = min_interval_s
+                        self.last_yield = 0.0
+
+                    def maybe_yield(self):
+                        now = time.time()
+                        if now - self.last_yield >= self.min_interval_s:
+                            wx.Yield()
+                            self.last_yield = now
+
+                throttle = ProgressThrottle()
+
                 try:
                     from ctypes import c_float, c_uint32
 
@@ -1867,7 +1938,7 @@ class SurfaceManager:
                         if not keep_going:
                             progress.Destroy()
                             return
-                        wx.Yield()
+                        throttle.maybe_yield()
 
                         if convert_to_world:
                             surf_polydata = self.ConvertPolydataToInv(surf_polydata, inverse=True)
@@ -1880,15 +1951,17 @@ class SurfaceManager:
                         mesh_object = model.AddMeshObject()
                         mesh_object.SetName(surf_name if surf_name else f"Surface_{surf_idx + 1}")
 
+                        # Build vertex buffer (batch approach - no lib3mf calls yet)
+                        positions = []
                         for i in range(n_points):
                             pos = lib3mf.Position()
-                            pos.Coordinates = (c_float * 3)(
-                                float(points_array[i, 0]),
-                                float(points_array[i, 1]),
-                                float(points_array[i, 2]),
-                            )
-                            mesh_object.AddVertex(pos)
+                            pos.Coordinates[0] = float(points_array[i, 0])
+                            pos.Coordinates[1] = float(points_array[i, 1])
+                            pos.Coordinates[2] = float(points_array[i, 2])
+                            positions.append(pos)
 
+                        # Build triangle buffer (batch approach, preserve degenerate filtering)
+                        triangles = []
                         polys = surf_polydata.GetPolys()
                         polys.InitTraversal()
                         id_list = vtkIdList()
@@ -1898,8 +1971,11 @@ class SurfaceManager:
                                 v0, v1, v2 = id_list.GetId(0), id_list.GetId(1), id_list.GetId(2)
                                 if v0 != v1 and v1 != v2 and v0 != v2:
                                     tri = lib3mf.Triangle()
-                                    tri.Indices = (c_uint32 * 3)(v0, v1, v2)
-                                    mesh_object.AddTriangle(tri)
+                                    tri.Indices[0], tri.Indices[1], tri.Indices[2] = v0, v1, v2
+                                    triangles.append(tri)
+
+                        # Single batch call replaces all AddVertex/AddTriangle calls
+                        mesh_object.SetGeometry(positions, triangles)
 
                         color_group = model.AddColorGroup()
                         color = lib3mf.Color()
