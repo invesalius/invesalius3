@@ -19,6 +19,7 @@
 
 import logging
 from collections.abc import Callable
+from pathlib import Path
 
 from invesalius import inv_paths
 from invesalius.net.utils import download_url_to_file
@@ -211,7 +212,8 @@ def get_model_path(
         return path
 
     logger.info(f"Downloading {info['filename']} from {info['url']}")
-    download_url_to_file(info["url"], path, info["hash"], progress_callback)
+    # download_url_to_file needs a pathlib.Path so it can call dst.parent.mkdir.
+    download_url_to_file(info["url"], Path(path), info["hash"], progress_callback)
     return path
 
 
@@ -228,5 +230,5 @@ def get_sidecar_path(
         return path
 
     logger.info(f"Downloading {info['filename']} from {info['url']}")
-    download_url_to_file(info["url"], path, info["hash"], progress_callback)
+    download_url_to_file(info["url"], Path(path), info["hash"], progress_callback)
     return path

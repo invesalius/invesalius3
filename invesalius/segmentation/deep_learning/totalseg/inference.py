@@ -109,7 +109,10 @@ def infer_num_classes(handle: dict, patch_size: tuple[int, ...]) -> int:
     dummy = np.zeros((1, 1, *patch_size), dtype=np.float32)
     if handle["type"] == "jit":
         with torch.no_grad():
-            out = handle["model"](torch.from_numpy(dummy))
+            # Move dummy to the model's device — matches what _run_patch does.
+            # Without this, GPU-loaded models get a CPU input and either raise
+            # a device-mismatch error or silently fall back to CPU.
+            out = handle["model"](torch.from_numpy(dummy).to(handle["device"]))
             if isinstance(out, list | tuple):
                 out = out[0]
             return int(out.shape[1])
@@ -259,11 +262,33 @@ def run(
         plans["mean"] = sidecar["normalization"]["mean"]
         plans["std"] = sidecar["normalization"]["std"]
 
-    spacing = np.asarray(spacing, dtype=np.float32)
-    preprocessed, meta = preprocess(volume, spacing, plans, modality=modality)
+    import time as _t  # diagnostic — remove before final push
 
+    spacing = np.asarray(spacing, dtype=np.float32)
+    print(
+        f"[inference.run] volume shape={volume.shape} spacing={spacing.tolist()} "
+        f"target_spacing={plans['target_spacing']}",
+        flush=True,
+    )
+
+    _s = _t.time()
+    preprocessed, meta = preprocess(volume, spacing, plans, modality=modality)
+    print(
+        f"[inference.run] preprocess done in {_t.time() - _s:.1f}s "
+        f"preprocessed shape={preprocessed.shape}",
+        flush=True,
+    )
+
+    _s = _t.time()
     patch_size = tuple(plans["patch_size"])
     num_classes = infer_num_classes(handle, patch_size)
+    print(
+        f"[inference.run] infer_num_classes={num_classes} in {_t.time() - _s:.1f}s. "
+        f"about to sliding_window (patch_size={patch_size})",
+        flush=True,
+    )
+
+    _s = _t.time()
     pred = sliding_window_inference(
         preprocessed,
         handle,
@@ -272,11 +297,15 @@ def run(
         step_size=step_size,
         progress_callback=progress_callback,
     )
+    print(f"[inference.run] sliding_window done in {_t.time() - _s:.1f}s", flush=True)
 
+    _s = _t.time()
     # postprocess returns ZYX (the layout the network ran in). "input" assumes
     # the caller fed XYZ via load_nifti/load_volume_from_array, so transpose
     # back. Callers already in ZYX (InVesalius wrapper) pass "zyx" to skip.
     pred_zyx = postprocess(pred, meta)
+    print(f"[inference.run] postprocess done in {_t.time() - _s:.1f}s", flush=True)
+
     if output_layout == "zyx":
         return pred_zyx
     return output_to_input_layout(pred_zyx)
