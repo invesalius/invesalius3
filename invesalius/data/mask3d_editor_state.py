@@ -32,6 +32,8 @@ class Mask3DEditorState:
     brush_size: float = const.BRUSH_SIZE
     depth_val: float = 1.0
     has_set_mask_preview: bool = False
+    base_mask_data: npt.NDArray | None = field(default=None, init=False)
+    has_cleared_for_crop: bool = field(default=False, init=False)
 
     resolution: tuple[int, int] = field(init=False)
     world_to_screen: npt.NDArray | None = field(default=None, init=False)
@@ -90,6 +92,7 @@ class Mask3DEditorState:
 
     def SetEditMode(self, mode: int):
         self.edit_mode = mode
+        self.has_cleared_for_crop = False
         Publisher.sendMessage("M3E cut mask from 3D")
 
     def SetToolMode(self, tool: int):
@@ -239,24 +242,22 @@ class Mask3DEditorState:
         wx, wy, wz = world_coord
 
         # InVesalius transforms the numpy array when sending it to VTK:
-        # 1. to_vtk_mask sets the origin to (cx - sx, cy - sy, cz - sz)
+        # 1. to_vtk_mask sets the origin to (-sx, -sy, -sz)
         # 2. vtkImageFlip flips the Y axis about the origin
         # We must mathematically invert this pipeline to find the true center of the brush in numpy space.
-        cx, cy, cz = slice.center
-        rust_cx = wx - cx + sx
-        rust_cy = cy - sy - wy
-        rust_cz = wz - cz + sz
-
-        if self.edit_mode == 0:
-            # For 'Include Inside' (Crop), restore the original mask before applying the brush
-            # This ensures dragging the mouse moves the 'crop spotlight' over the original mask
-            # rather than accumulating crop intersections which would erase everything.
-            if hasattr(self, "original_mask_data"):
-                self.mask_data[:] = self.original_mask_data[:]
+        rust_cx = wx + sx
+        rust_cy = -wy - sy
+        rust_cz = wz + sz
 
         # Apply the high-performance Rust sphere brush
+        orig_mat = None
+        if self.edit_mode == 0 and self.base_mask_data is not None:
+            orig_mat = self.base_mask_data[1:, 1:, 1:]
+        elif hasattr(self, "original_mask_data"):
+            orig_mat = self.original_mask_data[1:, 1:, 1:]
+            
         invesalius_rs.brush_mask_rs(
-            _mat, (sx, sy, sz), (rust_cx, rust_cy, rust_cz), radius, self.edit_mode
+            _mat, orig_mat, (sx, sy, sz), (rust_cx, rust_cy, rust_cz), radius, self.edit_mode
         )
 
         # After Rust modifies the array in-place, we update the viewer
@@ -266,6 +267,7 @@ class Mask3DEditorState:
         cur_mask = slc.Slice().current_mask
         if cur_mask is not None:
             self.mask_data = cur_mask.matrix.copy()
+            self.has_cleared_for_crop = False
 
     def update_views(self, _mat):
         # Notify the 2D views that the mask changed.
@@ -290,10 +292,15 @@ class Mask3DEditorState:
         if cur_mask is not None:
             self.mask_data = cur_mask.matrix.copy()
             self.original_mask_data = cur_mask.matrix.copy()
+            if self.edit_mode == 0:
+                if not self.has_cleared_for_crop or (self.base_mask_data is not None and np.array_equal(self.mask_data, self.base_mask_data)):
+                    self.base_mask_data = cur_mask.matrix.copy()
+                    self.mask_data[:] = 0
+                    self.has_cleared_for_crop = True
 
     def end_brush_stroke(self):
         cur_mask = slc.Slice().current_mask
         if cur_mask is not None:
-            cur_mask.save_history(0, "VOLUME", cur_mask.matrix.copy(), self.mask_data)
+            cur_mask.save_history(0, "VOLUME", self.original_mask_data, self.mask_data)
             self.mask_data = cur_mask.matrix.copy()
             cur_mask.modified(all_volume=True)

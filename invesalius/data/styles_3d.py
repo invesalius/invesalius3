@@ -35,6 +35,7 @@ from vtkmodules.vtkRenderingCore import (
     vtkPointPicker,
     vtkPropPicker,
 )
+from vtkmodules.vtkRenderingVolume import vtkVolumePicker
 
 import invesalius.constants as const
 import invesalius.project as prj
@@ -1083,7 +1084,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
 
         self.state_manager = Mask3DEditorState(viewer)
 
-        self.picker = vtkCellPicker()
+        self.picker = vtkVolumePicker()
         self.picker.SetTolerance(0.005)
         self.brush_source = vtkSphereSource()
         self.brush_source.SetPhiResolution(20)
@@ -1095,7 +1096,7 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.brush_actor = vtkActor()
         self.brush_actor.SetMapper(mapper)
         self.brush_actor.GetProperty().SetColor(1.0, 0.0, 0.0)
-        self.brush_actor.GetProperty().SetOpacity(0.5)
+        self.brush_actor.GetProperty().SetOpacity(1.0)
         self.brush_actor.SetVisibility(False)
         self.brush_actor.PickableOff()
 
@@ -1168,8 +1169,9 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         if getattr(self, "is_brushing", False):
             self.state_manager.end_brush_stroke()
         self.is_brushing = False
-        self.left_pressed = False
-        super().OnLeftButtonRelease(evt)
+        if getattr(self, "left_pressed", False):
+            self.EndRotate()
+            self.left_pressed = False
 
     def OnLeftButtonDoubleClick(self, evt):
         if self.viewer.interactor.GetShiftKey():
@@ -1196,19 +1198,19 @@ class Mask3DEditorInteractorStyle(DefaultInteractorStyle):
         self.picker.Pick(x, y, 0, self.viewer.ren)
         if self.picker.GetVolume() or self.picker.GetActor():
             coord = self.picker.GetPickPosition()
-            self.brush_actor.SetPosition(coord)
-            # InVesalius defines brush_size as diameter, so radius is size / 2.0
-            radius = self.state_manager.brush_size / 2.0
-            self.brush_source.SetRadius(radius)
-            self.brush_actor.SetVisibility(True)
-            self.viewer.interactor.Render()
-
-            if do_stroke:
-                self.state_manager.brush_stroke(coord)
         else:
-            if self.brush_actor.GetVisibility():
-                self.brush_actor.SetVisibility(False)
-                self.viewer.interactor.Render()
+            # Fallback if clicking completely outside any volume or mesh
+            coord = self._display_to_world_focal_plane(x, y)
+            
+        self.brush_actor.SetPosition(coord)
+        # InVesalius defines brush_size as diameter, so radius is size / 2.0
+        radius = self.state_manager.brush_size / 2.0
+        self.brush_source.SetRadius(radius)
+        self.brush_actor.SetVisibility(True)
+        self.viewer.interactor.Render()
+
+        if do_stroke:
+            self.state_manager.brush_stroke(coord)
 
     def OnScrollForward(self, obj, evt):
         if self.viewer.interactor.GetShiftKey():
