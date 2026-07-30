@@ -4473,14 +4473,21 @@ class ObjectCalibrationDialog(wx.Dialog):
             ShowNavigationTrackerWarning(0, "choose")
             return
 
-        marker_visibilities, coord, coord_raw = self.tracker.GetTrackerCoordinates(
-            # XXX: Always use static reference mode when getting the coordinates. This is what the
-            #      code did previously, as well. At some point, it should probably be thought through
-            #      if this is actually what we want or if it should be changed somehow.
-            #
-            ref_mode_id=const.STATIC_REF,
-            n_samples=const.CALIBRATION_TRACKER_SAMPLES,
-        )
+        # Show a wait cursor while collecting tracker samples.
+        # GetTrackerCoordinates blocks the main thread for ~100-300ms (10 samples × sleep).
+        # Without this, the dialog appears frozen with no feedback to the user.
+        wx.BeginBusyCursor()
+        try:
+            marker_visibilities, coord, coord_raw = self.tracker.GetTrackerCoordinates(
+                # XXX: Always use static reference mode when getting the coordinates. This is what the
+                #      code did previously, as well. At some point, it should probably be thought through
+                #      if this is actually what we want or if it should be changed somehow.
+                #
+                ref_mode_id=const.STATIC_REF,
+                n_samples=const.CALIBRATION_TRACKER_SAMPLES,
+            )
+        finally:
+            wx.EndBusyCursor()
 
         # If coil or probe markers are not visible, show a warning and return early.
         probe_visible, head_visible, *coils_visible = marker_visibilities
