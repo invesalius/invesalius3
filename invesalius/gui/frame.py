@@ -978,6 +978,7 @@ class Frame(wx.Frame):
             server_port = values[const.SERVER_PORT]
             store_path = values[const.STORE_PATH]
             server_ip = values[const.SERVER_IP]
+            download_method = values[const.DOWNLOAD_METHOD]
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
@@ -1001,6 +1002,7 @@ class Frame(wx.Frame):
             session.SetConfig("server_port", server_port)
             session.SetConfig("store_path", store_path)
             session.SetConfig("server_ip", server_ip)
+            session.SetConfig("download_method", download_method)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")

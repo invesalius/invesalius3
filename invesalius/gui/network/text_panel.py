@@ -24,6 +24,7 @@ class TextPanel(wx.Panel):
         self.__server_ip = None
         self.__server_aetitle = None
         self.__server_port = None
+        self.__download_method = ""
         self.__store_path = None
         self.__progress_dialog = None
 
@@ -111,6 +112,12 @@ class TextPanel(wx.Panel):
             self.__session.GetConfig("server_port")
             if self.__session.GetConfig("server_port")
             else 11120
+        )
+
+        self.__download_method = (
+            self.__session.GetConfig("download_method")
+            if self.__session.GetConfig("download_method")
+            else "CMOVE"
         )
 
         self.__store_path = (
@@ -325,7 +332,13 @@ class TextPanel(wx.Panel):
         )
 
         try:
-            dn.RunCGet(data, str(dest), self._update_progress, self._on_download_done)
+            dn.RunDownloader(
+                data,
+                str(dest),
+                self._update_progress,
+                self.__download_method,
+                self._on_download_done,
+            )
 
         except Exception as e:
             self._destroy_progress()

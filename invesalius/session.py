@@ -67,7 +67,8 @@ CONFIG_INIT = {
     'nodes': [],
     'selected_node': {},
     'store_path': str(inv_paths.USER_DICOM_DIR),
-    'server_ip': ""
+    'server_ip': "",
+    'download_method': "CMOVE"
 }
 
 
@@ -316,6 +317,7 @@ class Session(metaclass=Singleton):
         selected_node = config.get('session','selected_node')
         store_path = config.get('session','store_path')
         server_ip = config.get('session','server_ip')
+        download_method = config.get('session', 'download_method')
 
         recent_projects = eval(config.get("project", "recent_projects"))
         recent_projects = [list(rp) for rp in recent_projects]
@@ -342,6 +344,7 @@ class Session(metaclass=Singleton):
         self.SetConfig('selected_node', selected_node)
         self.SetConfig('store_path', store_path)
         self.SetConfig('server_ip', server_ip)
+        self.SetConfig('download_method', download_method)
 
         # Do not update project status from the config file, since there
         # isn't a recover session tool in InVesalius

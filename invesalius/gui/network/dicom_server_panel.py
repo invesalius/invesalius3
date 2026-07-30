@@ -21,6 +21,13 @@ class DicomServerPanel(wx.Panel):
         self.__ip_address = wx.TextCtrl(self)
         self.__ae_input = wx.TextCtrl(self)
         self.__port_input = wx.TextCtrl(self)
+        self.__download_method = wx.RadioBox(
+            self,
+            label=_("Download method:"),
+            choices=[_("C-MOVE"), _("C-GET")],
+            style=wx.RA_SPECIFY_COLS,
+            majorDimension=2,
+        )
 
         # Load values from config file
         self._load_values()
@@ -49,6 +56,9 @@ class DicomServerPanel(wx.Panel):
             const.SERVER_PORT: self.__port_input.GetValue(),
             const.STORE_PATH: self.__path.GetPath(),
             const.SERVER_IP: self.__ip_address.GetValue(),
+            const.DOWNLOAD_METHOD: "CGET"
+            if self.__download_method.GetSelection() == 1
+            else "CMOVE",
         }
 
     def _load_values(self):
@@ -69,6 +79,12 @@ class DicomServerPanel(wx.Panel):
             if session.GetConfig("store_path")
             else str(inv_paths.USER_DICOM_DIR)
         )
+
+        download_method = session.GetConfig("download_method") or "CMOVE"
+        if download_method == "CMOVE":
+            self.__download_method.SetSelection(0)
+        else:
+            self.__download_method.SetSelection(1)
 
         server_ip = session.GetConfig("server_ip") if session.GetConfig("server_ip") else "0.0.0.0"
 
@@ -99,5 +115,7 @@ class DicomServerPanel(wx.Panel):
 
         form_sizer.Add(wx.StaticText(self, label="PORT"), flag=wx.ALL, border=5)
         form_sizer.Add(self.__port_input, flag=wx.EXPAND | wx.ALL, border=5)
+
+        form_sizer.Add(self.__download_method, flag=wx.EXPAND | wx.ALL, border=5)
 
         return form_sizer

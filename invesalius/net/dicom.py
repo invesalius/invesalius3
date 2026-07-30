@@ -106,22 +106,13 @@ class DicomNet:
 
         self._executor.submit(_task)
 
-    def RunCGet(self, data, dest: str, progress_callback, callback=None):
+    def RunDownloader(self, data, dest: str, progress_callback, download_method, callback=None):
         def _task():
             try:
-                result = self.__RunCGet(data, dest, progress_callback)
-                if callback:
-                    wx.CallAfter(callback, dest, result, None)
-            except Exception as e:
-                if callback:
-                    wx.CallAfter(callback, dest, None, str(e))
-
-        self._executor.submit(_task)
-
-    def RunCMove(self, data, dest: str, progress_callback, callback=None):
-        def _task():
-            try:
-                result = self.__RunCMove(data, dest, progress_callback)
+                if download_method == "CMOVE":
+                    result = self.__RunCMove(data, dest, progress_callback)
+                else:
+                    result = self.__RunCGet(data, dest, progress_callback)
                 if callback:
                     wx.CallAfter(callback, dest, result, None)
             except Exception as e:
