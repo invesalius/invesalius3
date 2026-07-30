@@ -27,7 +27,14 @@ from invesalius.net.utils import download_url_to_file
 logger = logging.getLogger(__name__)
 
 
-_BASE_URL = "https://raw.githubusercontent.com/invesalius/weights/main/total_segmentator"
+# LFS binaries (.jit / .onnx) are served through media.githubusercontent.com,
+# which transparently resolves LFS pointers. raw.githubusercontent.com would
+# return the tiny pointer text file instead of the real binary.
+_BASE_URL = "https://media.githubusercontent.com/media/invesalius/weights/main/total_segmentator"
+
+# Small regular git files (.json sidecars) are NOT LFS-tracked, so the media
+# endpoint returns 404 for them. Use raw for those.
+_BASE_URL_SIDECAR = "https://raw.githubusercontent.com/invesalius/weights/main/total_segmentator"
 
 
 TASK_REGISTRY: dict = {
@@ -46,7 +53,7 @@ TASK_REGISTRY: dict = {
         },
         "sidecar": {
             "filename": "ct_total_3mm.json",
-            "url": f"{_BASE_URL}/ct_total_3mm.json",
+            "url": f"{_BASE_URL_SIDECAR}/ct_total_3mm.json",
             "hash": None,
         },
     },
@@ -65,7 +72,7 @@ TASK_REGISTRY: dict = {
         },
         "sidecar": {
             "filename": "ct_organs.json",
-            "url": f"{_BASE_URL}/ct_organs.json",
+            "url": f"{_BASE_URL_SIDECAR}/ct_organs.json",
             "hash": None,
         },
     },
@@ -84,7 +91,7 @@ TASK_REGISTRY: dict = {
         },
         "sidecar": {
             "filename": "ct_vertebrae.json",
-            "url": f"{_BASE_URL}/ct_vertebrae.json",
+            "url": f"{_BASE_URL_SIDECAR}/ct_vertebrae.json",
             "hash": None,
         },
     },
@@ -103,7 +110,7 @@ TASK_REGISTRY: dict = {
         },
         "sidecar": {
             "filename": "ct_cardiac.json",
-            "url": f"{_BASE_URL}/ct_cardiac.json",
+            "url": f"{_BASE_URL_SIDECAR}/ct_cardiac.json",
             "hash": None,
         },
     },
@@ -122,7 +129,7 @@ TASK_REGISTRY: dict = {
         },
         "sidecar": {
             "filename": "ct_muscles.json",
-            "url": f"{_BASE_URL}/ct_muscles.json",
+            "url": f"{_BASE_URL_SIDECAR}/ct_muscles.json",
             "hash": None,
         },
     },
@@ -141,7 +148,7 @@ TASK_REGISTRY: dict = {
         },
         "sidecar": {
             "filename": "ct_ribs.json",
-            "url": f"{_BASE_URL}/ct_ribs.json",
+            "url": f"{_BASE_URL_SIDECAR}/ct_ribs.json",
             "hash": None,
         },
     },
@@ -160,7 +167,7 @@ TASK_REGISTRY: dict = {
         },
         "sidecar": {
             "filename": "mri_organs.json",
-            "url": f"{_BASE_URL}/mri_organs.json",
+            "url": f"{_BASE_URL_SIDECAR}/mri_organs.json",
             "hash": None,
         },
     },
@@ -179,7 +186,7 @@ TASK_REGISTRY: dict = {
         },
         "sidecar": {
             "filename": "mri_muscles.json",
-            "url": f"{_BASE_URL}/mri_muscles.json",
+            "url": f"{_BASE_URL_SIDECAR}/mri_muscles.json",
             "hash": None,
         },
     },
@@ -200,6 +207,7 @@ def get_model_path(
     task: str,
     backend: str = "jit",
     progress_callback: Callable[[float], None] | None = None,
+    cache_only: bool = False,
 ) -> str:
     if task not in TASK_REGISTRY:
         raise ValueError(f"Unknown task '{task}'. Known: {list(TASK_REGISTRY)}")
@@ -210,6 +218,10 @@ def get_model_path(
     found, path = _resolve(info["filename"])
     if found:
         return path
+    if cache_only:
+        raise FileNotFoundError(
+            f"Model '{info['filename']}' not cached. Run segmentation to download."
+        )
 
     logger.info(f"Downloading {info['filename']} from {info['url']}")
     # download_url_to_file needs a pathlib.Path so it can call dst.parent.mkdir.
@@ -220,6 +232,7 @@ def get_model_path(
 def get_sidecar_path(
     task: str,
     progress_callback: Callable[[float], None] | None = None,
+    cache_only: bool = False,
 ) -> str:
     if task not in TASK_REGISTRY:
         raise ValueError(f"Unknown task '{task}'. Known: {list(TASK_REGISTRY)}")
@@ -228,6 +241,10 @@ def get_sidecar_path(
     found, path = _resolve(info["filename"])
     if found:
         return path
+    if cache_only:
+        raise FileNotFoundError(
+            f"Sidecar '{info['filename']}' not cached. Run segmentation to download."
+        )
 
     logger.info(f"Downloading {info['filename']} from {info['url']}")
     download_url_to_file(info["url"], Path(path), info["hash"], progress_callback)

@@ -18,6 +18,8 @@
 # --------------------------------------------------------------------------
 
 import logging
+import os
+import tempfile
 import time
 
 import numpy as np
@@ -51,6 +53,27 @@ class TotalSegProcess(SegmentProcess):
         self.selected_class_names = selected_class_names or {}
         self.masks_created = 0
 
+        # Status channel — subprocess writes short human-readable text to this
+        # file; the dialog polls it in OnTickTimer to show "Downloading X…" /
+        # "Running inference on Y…" above the progress bar. Cheap file-based
+        # IPC keeps the base SegmentProcess untouched.
+        fd, self._status_filename = tempfile.mkstemp(suffix=".txt", prefix="totalseg_status_")
+        os.close(fd)
+
+    def _set_status(self, msg: str) -> None:
+        try:
+            with open(self._status_filename, "w", encoding="utf-8") as f:
+                f.write(msg)
+        except OSError:
+            pass
+
+    def get_status(self) -> str:
+        try:
+            with open(self._status_filename, encoding="utf-8") as f:
+                return f.read()
+        except OSError:
+            return ""
+
     def _run_segmentation(self):
         # Lazy imports keep parent-process startup light and let the dialog
         # surface a clear error if torch/onnxruntime is missing.
@@ -81,6 +104,8 @@ class TotalSegProcess(SegmentProcess):
         comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
 
         # Network util reports 0..100; normalise into comm_array's 0..1 space.
+        # Reaching 1.0 momentarily is fine — the TotalSegmenterDialog overrides
+        # OnTickTimer to only treat np.inf as completion.
         def dl_cb(pct):
             comm_array[0] = float(pct) / 100.0
 
@@ -93,13 +118,16 @@ class TotalSegProcess(SegmentProcess):
 
         sidecars = {}
         weight_paths = {}
-        for p in parts:
+        n_parts = len(parts)
+        for pi, p in enumerate(parts, start=1):
             print(f"[totalseg-child] resolving sidecar for {p}...", flush=True)
+            self._set_status(f"Downloading sidecar for {p} ({pi}/{n_parts})")
             sc_path = get_sidecar_path(p, progress_callback=dl_cb)
             sidecars[p] = read_sidecar(sc_path)
             print(f"[totalseg-child]   -> {sc_path}", flush=True)
 
             print(f"[totalseg-child] resolving weights for {p}...", flush=True)
+            self._set_status(f"Downloading {p} weights ({pi}/{n_parts})")
             weight_paths[p] = get_model_path(p, self.backend, progress_callback=dl_cb)
             print(f"[totalseg-child]   -> {weight_paths[p]}", flush=True)
         comm_array[0] = 0.0
@@ -110,14 +138,14 @@ class TotalSegProcess(SegmentProcess):
         spacing_zyx = np.array(self.image_spacing[::-1], dtype=np.float32)
 
         preds = {}
-        n = len(parts)
         print(
             f"[totalseg-child] requested backend={self.backend} "
             f"use_gpu={self.use_gpu} device_id={self.device_id}",
             flush=True,
         )
         for i, part in enumerate(parts):
-            print(f"[totalseg-child] [{i + 1}/{n}] loading model: {part}", flush=True)
+            print(f"[totalseg-child] [{i + 1}/{n_parts}] loading model: {part}", flush=True)
+            self._set_status(f"Loading model {part} ({i + 1}/{n_parts})")
             handle = load_model(
                 weight_paths[part],
                 backend=self.backend,
@@ -128,21 +156,20 @@ class TotalSegProcess(SegmentProcess):
             # falls back to CPU on some load failures even when CUDA is present).
             if handle["type"] == "jit":
                 print(
-                    f"[totalseg-child] [{i + 1}/{n}] model on device: {handle['device']}",
+                    f"[totalseg-child] [{i + 1}/{n_parts}] model on device: {handle['device']}",
                     flush=True,
                 )
             sidecar = sidecars[part]
             modality = sidecar.get("modality", "CT").lower()
 
-            def cb(f, idx=i, n_parts=n):
-                # Cap at 0.95: reaching exactly 1.0 would trip the dialog's
-                # `progress >= 1.0` check and fire AfterSegment before the
-                # child has run postprocess + written prob_array. Only np.inf
-                # (set at the very end of _run_segmentation) should signal
-                # completion.
-                comm_array[0] = min(0.95, (idx + f) / n_parts)
+            def cb(f, idx=i, total=n_parts):
+                comm_array[0] = (idx + f) / total
 
-            print(f"[totalseg-child] [{i + 1}/{n}] running inference on {part}...", flush=True)
+            print(
+                f"[totalseg-child] [{i + 1}/{n_parts}] running inference on {part}...",
+                flush=True,
+            )
+            self._set_status(f"Running inference on {part} ({i + 1}/{n_parts})")
             t_inf = time.time()
             preds[part] = run_inference(
                 volume_zyx,
@@ -156,16 +183,18 @@ class TotalSegProcess(SegmentProcess):
             elapsed = time.time() - t_inf
             part_unique = np.unique(preds[part])
             print(
-                f"[totalseg-child] [{i + 1}/{n}] {part} done in {elapsed:.1f}s. "
+                f"[totalseg-child] [{i + 1}/{n_parts}] {part} done in {elapsed:.1f}s. "
                 f"pred shape={preds[part].shape} unique={sorted(part_unique.tolist())[:15]}",
                 flush=True,
             )
 
-        unified = (
-            _merge.merge_label_maps(preds, self.task)
-            if _merge.is_multipart(self.task)
-            else preds[parts[0]]
-        )
+        if _merge.is_multipart(self.task):
+            self._set_status("Merging part predictions")
+            unified = _merge.merge_label_maps(preds, self.task)
+        else:
+            unified = preds[parts[0]]
+
+        self._set_status("Writing result")
 
         # Diagnostic: log what the child is about to write. If these IDs don't
         # reappear in the parent's read log, memmap sync is the problem (or a
@@ -260,3 +289,16 @@ class TotalSegProcess(SegmentProcess):
         # Keep the last created mask on self.mask so anything downstream that
         # expects a single "self.mask" pointer still has one.
         self.mask = last_mask
+
+    def __del__(self):
+        # Clean up the status temp file. Wrapped in try because base __del__
+        # already handles the memmap files and both need to run.
+        try:
+            if hasattr(self, "_status_filename") and os.path.exists(self._status_filename):
+                os.remove(self._status_filename)
+        except OSError:
+            pass
+        try:
+            super().__del__()
+        except Exception:  # noqa: BLE001
+            pass

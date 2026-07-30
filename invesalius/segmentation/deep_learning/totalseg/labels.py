@@ -118,8 +118,11 @@ def _categorize(label_name: str) -> str:
 
 
 @lru_cache(maxsize=16)
-def get_labels(task: str) -> dict:
-    sidecar_path = get_sidecar_path(task)
+def get_labels(task: str, cache_only: bool = False) -> dict:
+    # cache_only=True lets the GUI populate the tree without triggering any
+    # network I/O at dialog open time. Downloads only happen when the user
+    # clicks Segment (via the wrapper's own download path).
+    sidecar_path = get_sidecar_path(task, cache_only=cache_only)
     sidecar = read_sidecar(sidecar_path)
 
     raw = sidecar.get("labels")
