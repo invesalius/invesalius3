@@ -1377,7 +1377,25 @@ class TrackerPage(wx.Panel):
         #      is more concerned with the calibration than the navigation.
         #
         ref_mode_id = self.navigation.GetReferenceMode()
-        success = self.tracker.SetTrackerFiducial(ref_mode_id, fiducial_index)
+
+        # Disable buttons and show a wait cursor while collecting tracker samples.
+        # GetTrackerCoordinates blocks the main thread for ~100-300ms (10 samples × sleep).
+        # Without this, additional clicks are enqueued and processed after unblocking,
+        # causing duplicate registrations or apparent freezes.
+        for btn in self.fiducial_buttons:
+            btn.Disable()
+        self.register_button.Disable()
+
+        wx.BeginBusyCursor()
+        try:
+            success = self.tracker.SetTrackerFiducial(ref_mode_id, fiducial_index)
+        finally:
+            wx.EndBusyCursor()
+            # Re-enable buttons only if registration is still ongoing.
+            if self.registration_on:
+                for btn in self.fiducial_buttons:
+                    btn.Enable()
+                self.register_button.Enable()
 
         # Setting the fiducial is not successful if head or probe markers are not visible.
         # In that case, return early and do not move to the next fiducial.
