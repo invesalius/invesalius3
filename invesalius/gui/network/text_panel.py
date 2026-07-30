@@ -263,7 +263,11 @@ class TextPanel(wx.Panel):
             self.__tree.Expand(parent_id)
         evt.Skip()
 
-    def _update_progress(self, completed, total):
+    def _update_progress(self, completed, total, fallback=""):
+        if fallback:
+            wx.MessageBox(fallback, "Info", wx.OK | wx.ICON_INFORMATION)
+            return
+
         if not self.__progress_dialog:
             return True
 

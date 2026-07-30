@@ -110,7 +110,13 @@ class DicomNet:
         def _task():
             try:
                 if download_method == "CMOVE":
-                    result = self.__RunCMove(data, dest, progress_callback)
+                    try:
+                        result = self.__RunCMove(data, dest, progress_callback)
+                    except Exception as e:
+                        msg = f"C-MOVE failed: {e}. Falling back to C-GET..."
+                        logger.warning(msg)
+                        wx.CallAfter(progress_callback, 0, 0, msg)
+                        result = self.__RunCGet(data, dest, progress_callback)
                 else:
                     result = self.__RunCGet(data, dest, progress_callback)
                 if callback:
