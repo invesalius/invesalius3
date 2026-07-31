@@ -279,9 +279,7 @@ class Mask3DEditorState:
             if _cur_mask.volume is not None and ses.Session().mask_3d_preview:
                 _cur_mask._update_imagedata(update_volume_viewer=True)
 
-        for ori in ["AXIAL", "CORONAL", "SAGITAL"]:
-            slice = slc.Slice()
-            slice.buffer_slices[ori].discard_buffer()
+        slc.Slice().discard_all_buffers()
 
         Publisher.sendMessage("Update slice viewer")
         # Publisher.sendMessage("Render volume viewer") is already handled by _update_imagedata
