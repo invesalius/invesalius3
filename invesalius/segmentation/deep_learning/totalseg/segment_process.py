@@ -18,6 +18,9 @@
 # --------------------------------------------------------------------------
 
 import logging
+import os
+import tempfile
+import time
 
 import numpy as np
 
@@ -39,11 +42,37 @@ class TotalSegProcess(SegmentProcess):
         task,
         image_spacing,
         selected_class_ids=None,
+        selected_class_names=None,
     ):
         super().__init__(image, create_new_mask, backend, device_id, use_gpu)
         self.task = task
         self.image_spacing = tuple(image_spacing)
         self.selected_class_ids = selected_class_ids
+        # {class_id: anatomical_name} — used by apply_segment_threshold to name
+        # each output mask after the structure it contains.
+        self.selected_class_names = selected_class_names or {}
+        self.masks_created = 0
+
+        # Status channel — subprocess writes short human-readable text to this
+        # file; the dialog polls it in OnTickTimer to show "Downloading X…" /
+        # "Running inference on Y…" above the progress bar. Cheap file-based
+        # IPC keeps the base SegmentProcess untouched.
+        fd, self._status_filename = tempfile.mkstemp(suffix=".txt", prefix="totalseg_status_")
+        os.close(fd)
+
+    def _set_status(self, msg: str) -> None:
+        try:
+            with open(self._status_filename, "w", encoding="utf-8") as f:
+                f.write(msg)
+        except OSError:
+            pass
+
+    def get_status(self) -> str:
+        try:
+            with open(self._status_filename, encoding="utf-8") as f:
+                return f.read()
+        except OSError:
+            return ""
 
     def _run_segmentation(self):
         # Lazy imports keep parent-process startup light and let the dialog
@@ -53,6 +82,12 @@ class TotalSegProcess(SegmentProcess):
         from .inference import run as run_inference
         from .preprocess import read_sidecar
         from .weights import get_model_path, get_sidecar_path
+
+        # print() instead of logger.info() so the messages actually reach the
+        # terminal on Windows spawn multiprocessing (child logger has no
+        # configured handler).
+        print(f"[totalseg-child] START task={self.task} backend={self.backend}", flush=True)
+        print(f"[totalseg-child] prob_array file: {self._prob_array_filename}", flush=True)
 
         image = np.memmap(
             self._image_filename,
@@ -69,6 +104,8 @@ class TotalSegProcess(SegmentProcess):
         comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
 
         # Network util reports 0..100; normalise into comm_array's 0..1 space.
+        # Reaching 1.0 momentarily is fine — the TotalSegmenterDialog overrides
+        # OnTickTimer to only treat np.inf as completion.
         def dl_cb(pct):
             comm_array[0] = float(pct) / 100.0
 
@@ -77,9 +114,22 @@ class TotalSegProcess(SegmentProcess):
             if _merge.is_multipart(self.task)
             else [self.task]
         )
+        print(f"[totalseg-child] parts to run: {parts}", flush=True)
 
-        sidecars = {p: read_sidecar(get_sidecar_path(p, progress_callback=dl_cb)) for p in parts}
-        weight_paths = {p: get_model_path(p, self.backend, progress_callback=dl_cb) for p in parts}
+        sidecars = {}
+        weight_paths = {}
+        n_parts = len(parts)
+        for pi, p in enumerate(parts, start=1):
+            print(f"[totalseg-child] resolving sidecar for {p}...", flush=True)
+            self._set_status(f"Downloading sidecar for {p} ({pi}/{n_parts})")
+            sc_path = get_sidecar_path(p, progress_callback=dl_cb)
+            sidecars[p] = read_sidecar(sc_path)
+            print(f"[totalseg-child]   -> {sc_path}", flush=True)
+
+            print(f"[totalseg-child] resolving weights for {p}...", flush=True)
+            self._set_status(f"Downloading {p} weights ({pi}/{n_parts})")
+            weight_paths[p] = get_model_path(p, self.backend, progress_callback=dl_cb)
+            print(f"[totalseg-child]   -> {weight_paths[p]}", flush=True)
         comm_array[0] = 0.0
 
         # InVesalius matrix is ZYX; Slice().spacing is XYZ. Inference engine
@@ -88,20 +138,39 @@ class TotalSegProcess(SegmentProcess):
         spacing_zyx = np.array(self.image_spacing[::-1], dtype=np.float32)
 
         preds = {}
-        n = len(parts)
+        print(
+            f"[totalseg-child] requested backend={self.backend} "
+            f"use_gpu={self.use_gpu} device_id={self.device_id}",
+            flush=True,
+        )
         for i, part in enumerate(parts):
+            print(f"[totalseg-child] [{i + 1}/{n_parts}] loading model: {part}", flush=True)
+            self._set_status(f"Loading model {part} ({i + 1}/{n_parts})")
             handle = load_model(
                 weight_paths[part],
                 backend=self.backend,
                 use_gpu=self.use_gpu,
                 device_id=self.device_id,
             )
+            # Confirm what device the model actually landed on (torch silently
+            # falls back to CPU on some load failures even when CUDA is present).
+            if handle["type"] == "jit":
+                print(
+                    f"[totalseg-child] [{i + 1}/{n_parts}] model on device: {handle['device']}",
+                    flush=True,
+                )
             sidecar = sidecars[part]
             modality = sidecar.get("modality", "CT").lower()
 
-            def cb(f, idx=i, n_parts=n):
-                comm_array[0] = (idx + f) / n_parts
+            def cb(f, idx=i, total=n_parts):
+                comm_array[0] = (idx + f) / total
 
+            print(
+                f"[totalseg-child] [{i + 1}/{n_parts}] running inference on {part}...",
+                flush=True,
+            )
+            self._set_status(f"Running inference on {part} ({i + 1}/{n_parts})")
+            t_inf = time.time()
             preds[part] = run_inference(
                 volume_zyx,
                 spacing_zyx,
@@ -111,48 +180,125 @@ class TotalSegProcess(SegmentProcess):
                 progress_callback=cb,
                 output_layout="zyx",
             )
+            elapsed = time.time() - t_inf
+            part_unique = np.unique(preds[part])
+            print(
+                f"[totalseg-child] [{i + 1}/{n_parts}] {part} done in {elapsed:.1f}s. "
+                f"pred shape={preds[part].shape} unique={sorted(part_unique.tolist())[:15]}",
+                flush=True,
+            )
 
-        unified = (
-            _merge.merge_label_maps(preds, self.task)
-            if _merge.is_multipart(self.task)
-            else preds[parts[0]]
+        if _merge.is_multipart(self.task):
+            self._set_status("Merging part predictions")
+            unified = _merge.merge_label_maps(preds, self.task)
+        else:
+            unified = preds[parts[0]]
+
+        self._set_status("Writing result")
+
+        # Diagnostic: log what the child is about to write. If these IDs don't
+        # reappear in the parent's read log, memmap sync is the problem (or a
+        # shape mismatch is silently truncating the write).
+        u = np.unique(unified)
+        print(
+            f"[totalseg-child] unified shape={unified.shape} dtype={unified.dtype} "
+            f"unique IDs: {sorted(u.tolist())[:20]}"
+            + (f" (+{len(u) - 20} more)" if len(u) > 20 else ""),
+            flush=True,
         )
+        print(f"[totalseg-child] prob_array shape={prob_array.shape} WRITING...", flush=True)
+
         prob_array[:] = unified.astype(np.float32)
         prob_array.flush()
+        print("[totalseg-child] write + flush done. Signalling completion.", flush=True)
         comm_array[0] = np.inf
 
     def apply_segment_threshold(self, threshold=None):
         # threshold ignored — totalseg produces label maps, not probabilities.
-        # Selected class IDs (from the dialog) are unioned into one binary mask.
-        labels = self._probability_array.astype(np.uint8)
+        # One mask per selected structure, named after the structure. This keeps
+        # each anatomical region independently toggleable in the mask panel
+        # instead of merging everything into a single opaque mask.
+        #
+        # Re-open the memmap in the parent process before reading. On Windows
+        # the parent's cached view is not always refreshed after the subprocess
+        # writes + flushes, so pulling a fresh mapping guarantees we see the
+        # data the child just wrote.
+        fresh = np.memmap(
+            self._prob_array_filename,
+            dtype=np.float32,
+            shape=self._image_shape,
+            mode="r",
+        )
+        labels = np.asarray(fresh).astype(np.uint8)
+        del fresh
+
+        unique_ids = sorted(np.unique(labels).tolist())
+        print(
+            f"[totalseg-parent] read prob_array file: {self._prob_array_filename}",
+            flush=True,
+        )
+        print(
+            f"[totalseg-parent] shape={self._image_shape}, "
+            f"unique class ids in labels: {unique_ids[:20]}"
+            + (f" (+{len(unique_ids) - 20} more)" if len(unique_ids) > 20 else ""),
+            flush=True,
+        )
+
         ids = self.selected_class_ids
         if ids is None:
-            ids = sorted(int(i) for i in np.unique(labels) if int(i) != 0)
+            ids = sorted(int(i) for i in unique_ids if int(i) != 0)
 
-        mask_data = np.zeros_like(labels, dtype=np.uint8)
+        derived = getattr(slc.Slice(), "current_image_label", "Original")
+        self.masks_created = 0
+        last_mask = None
+
         for cid in ids:
-            mask_data[labels == int(cid)] = 255
+            structure = self.selected_class_names.get(int(cid), f"class_{int(cid)}")
+            mask_data = (labels == int(cid)).astype(np.uint8) * 255
+            voxel_count = int(mask_data.sum() // 255)
 
-        if self.create_new_mask:
-            if self.mask is None:
-                name = new_name_by_pattern(f"totalseg_{self.task}")
-                self.mask = slc.Slice().create_new_mask(
-                    name=name,
-                    derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
+            # Skip structures the model didn't find — usually anatomy outside
+            # the scan's FOV (e.g. cervical spine on an abdominal CT). Creating
+            # empty masks just clutters the mask panel.
+            if voxel_count == 0:
+                print(
+                    f"[totalseg-parent] skipping {structure} (class {cid}): 0 voxels",
+                    flush=True,
                 )
-        else:
-            self.mask = slc.Slice().current_mask
-            if self.mask is None:
-                name = new_name_by_pattern(f"totalseg_{self.task}")
-                self.mask = slc.Slice().create_new_mask(
-                    name=name,
-                    derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
-                )
+                continue
 
-        self.mask.was_edited = True
-        self.mask.matrix[1:, 1:, 1:] = mask_data
-        self.mask.matrix[:, 0, 0] = 2
-        self.mask.matrix[0, :, 0] = 2
-        self.mask.matrix[0, 0, :] = 2
-        self.mask.matrix.flush()
-        self.mask.modified(True)
+            mask_name = new_name_by_pattern(structure)
+            mask = slc.Slice().create_new_mask(name=mask_name, derived_from=derived)
+            print(
+                f"[totalseg-parent] {structure} (class {cid}): {voxel_count} voxels -> {mask_name}",
+                flush=True,
+            )
+            mask.was_edited = True
+            mask.matrix[1:, 1:, 1:] = mask_data
+            # Border flags mark all slices as AI-edited so the lazy threshold
+            # viewer doesn't overwrite the mask when scrolling.
+            mask.matrix[:, 0, 0] = 2
+            mask.matrix[0, :, 0] = 2
+            mask.matrix[0, 0, :] = 2
+            mask.matrix.flush()
+            mask.modified(True)
+
+            last_mask = mask
+            self.masks_created += 1
+
+        # Keep the last created mask on self.mask so anything downstream that
+        # expects a single "self.mask" pointer still has one.
+        self.mask = last_mask
+
+    def __del__(self):
+        # Clean up the status temp file. Wrapped in try because base __del__
+        # already handles the memmap files and both need to run.
+        try:
+            if hasattr(self, "_status_filename") and os.path.exists(self._status_filename):
+                os.remove(self._status_filename)
+        except OSError:
+            pass
+        try:
+            super().__del__()
+        except Exception:  # noqa: BLE001
+            pass
