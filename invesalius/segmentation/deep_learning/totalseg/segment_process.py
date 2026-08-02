@@ -48,15 +48,10 @@ class TotalSegProcess(SegmentProcess):
         self.task = task
         self.image_spacing = tuple(image_spacing)
         self.selected_class_ids = selected_class_ids
-        # {class_id: anatomical_name} — used by apply_segment_threshold to name
-        # each output mask after the structure it contains.
         self.selected_class_names = selected_class_names or {}
         self.masks_created = 0
 
-        # Status channel — subprocess writes short human-readable text to this
-        # file; the dialog polls it in OnTickTimer to show "Downloading X…" /
-        # "Running inference on Y…" above the progress bar. Cheap file-based
-        # IPC keeps the base SegmentProcess untouched.
+        # Status text channel; dialog polls via get_status().
         fd, self._status_filename = tempfile.mkstemp(suffix=".txt", prefix="totalseg_status_")
         os.close(fd)
 
@@ -75,17 +70,14 @@ class TotalSegProcess(SegmentProcess):
             return ""
 
     def _run_segmentation(self):
-        # Lazy imports keep parent-process startup light and let the dialog
-        # surface a clear error if torch/onnxruntime is missing.
+        # Lazy imports: torch/onnx aren't needed until inference actually runs.
         from . import merge as _merge
         from .inference import load_model
         from .inference import run as run_inference
         from .preprocess import read_sidecar
         from .weights import get_model_path, get_sidecar_path
 
-        # print() instead of logger.info() so the messages actually reach the
-        # terminal on Windows spawn multiprocessing (child logger has no
-        # configured handler).
+        # print() (not logger) so messages reach the terminal from the spawn subprocess on Windows.
         print(f"[totalseg-child] START task={self.task} backend={self.backend}", flush=True)
         print(f"[totalseg-child] prob_array file: {self._prob_array_filename}", flush=True)
 
@@ -103,9 +95,7 @@ class TotalSegProcess(SegmentProcess):
         )
         comm_array = np.memmap(self._comm_array_filename, dtype=np.float32, shape=(1,), mode="r+")
 
-        # Network util reports 0..100; normalise into comm_array's 0..1 space.
-        # Reaching 1.0 momentarily is fine — the TotalSegmenterDialog overrides
-        # OnTickTimer to only treat np.inf as completion.
+        # Network util reports 0..100; normalise to 0..1.
         def dl_cb(pct):
             comm_array[0] = float(pct) / 100.0
 
@@ -132,8 +122,7 @@ class TotalSegProcess(SegmentProcess):
             print(f"[totalseg-child]   -> {weight_paths[p]}", flush=True)
         comm_array[0] = 0.0
 
-        # InVesalius matrix is ZYX; Slice().spacing is XYZ. Inference engine
-        # works in ZYX, so reverse spacing and pass volume directly.
+        # InVesalius matrix is ZYX, spacing is XYZ. Inference wants ZYX for both.
         volume_zyx = np.ascontiguousarray(image, dtype=np.float32)
         spacing_zyx = np.array(self.image_spacing[::-1], dtype=np.float32)
 
@@ -152,8 +141,7 @@ class TotalSegProcess(SegmentProcess):
                 use_gpu=self.use_gpu,
                 device_id=self.device_id,
             )
-            # Confirm what device the model actually landed on (torch silently
-            # falls back to CPU on some load failures even when CUDA is present).
+            # Torch can silently fall back to CPU on load; log the actual device.
             if handle["type"] == "jit":
                 print(
                     f"[totalseg-child] [{i + 1}/{n_parts}] model on device: {handle['device']}",
@@ -196,9 +184,6 @@ class TotalSegProcess(SegmentProcess):
 
         self._set_status("Writing result")
 
-        # Diagnostic: log what the child is about to write. If these IDs don't
-        # reappear in the parent's read log, memmap sync is the problem (or a
-        # shape mismatch is silently truncating the write).
         u = np.unique(unified)
         print(
             f"[totalseg-child] unified shape={unified.shape} dtype={unified.dtype} "
@@ -214,15 +199,9 @@ class TotalSegProcess(SegmentProcess):
         comm_array[0] = np.inf
 
     def apply_segment_threshold(self, threshold=None):
-        # threshold ignored — totalseg produces label maps, not probabilities.
-        # One mask per selected structure, named after the structure. This keeps
-        # each anatomical region independently toggleable in the mask panel
-        # instead of merging everything into a single opaque mask.
-        #
-        # Re-open the memmap in the parent process before reading. On Windows
-        # the parent's cached view is not always refreshed after the subprocess
-        # writes + flushes, so pulling a fresh mapping guarantees we see the
-        # data the child just wrote.
+        # Threshold arg ignored: totalseg outputs label maps, not probabilities.
+        # One mask per selected structure so each is toggleable independently.
+        # Re-open the memmap: parent's cached view can be stale on Windows.
         fresh = np.memmap(
             self._prob_array_filename,
             dtype=np.float32,
@@ -257,9 +236,7 @@ class TotalSegProcess(SegmentProcess):
             mask_data = (labels == int(cid)).astype(np.uint8) * 255
             voxel_count = int(mask_data.sum() // 255)
 
-            # Skip structures the model didn't find — usually anatomy outside
-            # the scan's FOV (e.g. cervical spine on an abdominal CT). Creating
-            # empty masks just clutters the mask panel.
+            # Skip empty structures (outside FOV or model missed).
             if voxel_count == 0:
                 print(
                     f"[totalseg-parent] skipping {structure} (class {cid}): 0 voxels",
@@ -275,8 +252,7 @@ class TotalSegProcess(SegmentProcess):
             )
             mask.was_edited = True
             mask.matrix[1:, 1:, 1:] = mask_data
-            # Border flags mark all slices as AI-edited so the lazy threshold
-            # viewer doesn't overwrite the mask when scrolling.
+            # Border = 2 marks slices as AI-edited so the lazy viewer doesn't overwrite them.
             mask.matrix[:, 0, 0] = 2
             mask.matrix[0, :, 0] = 2
             mask.matrix[0, 0, :] = 2
@@ -286,13 +262,10 @@ class TotalSegProcess(SegmentProcess):
             last_mask = mask
             self.masks_created += 1
 
-        # Keep the last created mask on self.mask so anything downstream that
-        # expects a single "self.mask" pointer still has one.
+        # Keep last mask on self.mask for downstream compatibility.
         self.mask = last_mask
 
     def __del__(self):
-        # Clean up the status temp file. Wrapped in try because base __del__
-        # already handles the memmap files and both need to run.
         try:
             if hasattr(self, "_status_filename") and os.path.exists(self._status_filename):
                 os.remove(self._status_filename)

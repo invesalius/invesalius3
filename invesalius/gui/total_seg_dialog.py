@@ -24,9 +24,7 @@ from invesalius.gui.deep_learning_seg_dialog import (
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
-# TotalSegmentator uses its own backend naming (JIT for TorchScript, ONNX for
-# ONNX Runtime). The base dialog labels backends "Pytorch"/"Tinygrad" which
-# are brain-seg specific; the labels are replaced in _init_gui below.
+# Backend labels shown in the combo. Replaces base's Pytorch/Tinygrad.
 TOTALSEG_BACKENDS = []
 if HAS_TORCH:
     TOTALSEG_BACKENDS.append("JIT")
@@ -100,10 +98,7 @@ class TotalSegmenterDialog(DeepLearningSegmenterDialog):
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
 
-        # Structure tree — categories as parents, class names as children.
-        # CustomTreeCtrl (wx.lib.agw) supports checkbox items on all wxPython
-        # versions via ct_type=1, unlike wx.TreeCtrl.EnableCheckBoxes which
-        # only exists in 4.1+.
+        # CustomTreeCtrl (not TreeCtrl): checkbox items work on wxPython < 4.1.
         self.tree = CT.CustomTreeCtrl(
             self,
             agwStyle=(
@@ -115,31 +110,23 @@ class TotalSegmenterDialog(DeepLearningSegmenterDialog):
                 | CT.TR_AUTO_CHECK_PARENT
             ),
         )
-        # Wide enough to fit the longest class names like
-        # "portal_vein_and_splenic_vein" without truncation.
         self.tree.SetMinSize((420, 320))
         self._tree_root = self.tree.AddRoot("root")
 
         self.btn_check_all = wx.Button(self, wx.ID_ANY, _("Check all"))
         self.btn_uncheck_all = wx.Button(self, wx.ID_ANY, _("Uncheck all"))
 
-        # Live status text shown above the progress bar during segmentation.
-        # Populated from TotalSegProcess.get_status() each tick.
         self.lbl_status = wx.StaticText(self, -1, "")
 
         self._populate_tree(self.cb_task.GetValue())
 
-        # Threshold slider / WW&WL / overlap don't apply to label-map output.
-        # They're created by super() but hidden by the custom _do_layout below.
+        # Not applicable to label-map output.
         self.sld_threshold.Hide()
         self.txt_threshold.Hide()
         self.chk_apply_wwwl.Hide()
         self.overlap.Hide()
 
     def _do_layout(self):
-        # Full override — build our own layout instead of trying to remove
-        # unwanted widgets from the base's sizer (that route is finicky in wx,
-        # as SubpartSegmenterDialog's commented-out attempts show).
         main = wx.BoxSizer(wx.VERTICAL)
 
         row_input = wx.BoxSizer(wx.HORIZONTAL)
@@ -199,8 +186,6 @@ class TotalSegmenterDialog(DeepLearningSegmenterDialog):
     def _set_events(self):
         super()._set_events()
         self.cb_task.Bind(wx.EVT_COMBOBOX, self.OnTaskChanged)
-        # TR_AUTO_CHECK_CHILD / TR_AUTO_CHECK_PARENT handle parent-child sync
-        # automatically, so no per-item click handler is needed.
         self.btn_check_all.Bind(wx.EVT_BUTTON, self.OnCheckAll)
         self.btn_uncheck_all.Bind(wx.EVT_BUTTON, self.OnUncheckAll)
 
@@ -210,8 +195,7 @@ class TotalSegmenterDialog(DeepLearningSegmenterDialog):
         self.tree.DeleteChildren(self._tree_root)
         self._category_items = {}
         self._class_items = {}
-        # Sidecar auto-fetch: ~1 KB JSON per task, subsecond. Model binaries
-        # (100+ MB) still wait for the Segment click.
+        # Sidecar fetch is ~1 KB; model binaries wait for the Segment click.
         try:
             self._current_labels, self._current_categories = _task_labels(task)
         except Exception as e:  # noqa: BLE001
@@ -255,9 +239,8 @@ class TotalSegmenterDialog(DeepLearningSegmenterDialog):
     # Segmentation lifecycle
 
     def OnSetBackend(self, evt=None):
-        # Base class dispatches on "pytorch"/"tinygrad"; we ship "JIT"/"ONNX".
-        # Device list is torch's for both backends (ONNX Runtime uses the same
-        # CUDA device if present).
+        # Base dispatches on pytorch/tinygrad; we use JIT/ONNX. Device list is
+        # torch's for both (ONNX Runtime shares the same CUDA device).
         if HAS_TORCH:
             choices = list(self.torch_devices.keys())
             self.cb_devices.Clear()
@@ -271,21 +254,15 @@ class TotalSegmenterDialog(DeepLearningSegmenterDialog):
         self.main_sizer.SetSizeHints(self)
 
     def OnScrollThreshold(self, evt):
-        # Base binds this to the (hidden) threshold slider — the wrapper's
-        # apply_segment_threshold ignores its argument anyway.
+        # Threshold slider is hidden; wrapper ignores threshold.
         pass
 
     def OnKillFocus(self, evt):
         pass
 
     def OnTickTimer(self, evt):
-        # Override the base's polling to treat ONLY np.inf as completion.
-        # Base fires AfterSegment on `progress >= 1.0`, which is fragile: any
-        # callback wired to comm_array (download callback hitting 100%,
-        # sliding-window callback hitting 12/12=1.0, etc.) trips it early
-        # even though the child hasn't finished writing prob_array yet.
-        # Only np.inf (set at the very end of _run_segmentation) is a real
-        # completion signal.
+        # Only np.inf triggers AfterSegment. Base's `progress >= 1.0` check is
+        # fragile — any callback that momentarily hits 1.0 would fire it early.
         import numpy as _np
 
         fmt = "%H:%M:%S"
@@ -309,7 +286,6 @@ class TotalSegmenterDialog(DeepLearningSegmenterDialog):
             dlg.ShowModal()
             return
 
-        # Live status text — updated by the subprocess via a small file.
         status = getattr(self.ps, "get_status", lambda: "")()
         if status:
             self.lbl_status.SetLabel(status)
@@ -319,13 +295,11 @@ class TotalSegmenterDialog(DeepLearningSegmenterDialog):
             self.SetProgress(1.0)
             self.AfterSegment()
         else:
-            # Display cap at 0.99 — never show "100%" mid-work, even if a
-            # callback set comm_array to exactly 1.0 for a tick.
+            # Cap display at 0.99; avoids showing 100% mid-work.
             self.SetProgress(max(0.0, min(progress, 0.99)))
 
     def apply_segment_threshold(self):
-        # Threshold ignored by TotalSegProcess.apply_segment_threshold — the
-        # selected class IDs (set at OnSegment time) drive mask generation.
+        # Threshold ignored; class IDs drive mask generation.
         if self.ps is not None:
             self.ps.apply_segment_threshold(None)
             slc.Slice().discard_all_buffers()
@@ -369,8 +343,7 @@ class TotalSegmenterDialog(DeepLearningSegmenterDialog):
         self.btn_check_all.Disable()
         self.btn_uncheck_all.Disable()
 
-        # Pass the id -> name mapping so the wrapper can name each output mask
-        # after the anatomical structure instead of a generic totalseg_N pattern.
+        # id -> name for per-structure mask naming.
         selected_names = {int(cid): self._current_labels[cid] for cid in selected}
 
         try:

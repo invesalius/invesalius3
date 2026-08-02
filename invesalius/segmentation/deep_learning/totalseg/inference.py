@@ -300,9 +300,8 @@ def run(
     print(f"[inference.run] sliding_window done in {_t.time() - _s:.1f}s", flush=True)
 
     _s = _t.time()
-    # postprocess returns ZYX (the layout the network ran in). "input" assumes
-    # the caller fed XYZ via load_nifti/load_volume_from_array, so transpose
-    # back. Callers already in ZYX (InVesalius wrapper) pass "zyx" to skip.
+    # postprocess returns ZYX. "input" transposes to XYZ (nibabel callers);
+    # "zyx" keeps ZYX (InVesalius wrapper).
     pred_zyx = postprocess(pred, meta)
     print(f"[inference.run] postprocess done in {_t.time() - _s:.1f}s", flush=True)
 

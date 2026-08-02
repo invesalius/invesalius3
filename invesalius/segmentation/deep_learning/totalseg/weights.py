@@ -27,13 +27,9 @@ from invesalius.net.utils import download_url_to_file
 logger = logging.getLogger(__name__)
 
 
-# LFS binaries (.jit / .onnx) are served through media.githubusercontent.com,
-# which transparently resolves LFS pointers. raw.githubusercontent.com would
-# return the tiny pointer text file instead of the real binary.
+# .jit/.onnx are LFS-tracked; media URL resolves the pointer to the real binary.
 _BASE_URL = "https://media.githubusercontent.com/media/invesalius/weights/main/total_segmentator"
-
-# Small regular git files (.json sidecars) are NOT LFS-tracked, so the media
-# endpoint returns 404 for them. Use raw for those.
+# .json sidecars are regular git files; media URL 404s, use raw.
 _BASE_URL_SIDECAR = "https://raw.githubusercontent.com/invesalius/weights/main/total_segmentator"
 
 
