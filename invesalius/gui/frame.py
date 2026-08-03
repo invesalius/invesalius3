@@ -353,9 +353,10 @@ class Frame(wx.Frame):
             import_network_panel,
             wx.aui.AuiPaneInfo()
             .Name("Retrieve")
+            .CloseButton(False)
+            .MaximizeButton(False)
             .Centre()
             .Hide()
-            .MaximizeButton(True)
             .Floatable(True)
             .Caption(ncaption)
             .CaptionVisible(True),
