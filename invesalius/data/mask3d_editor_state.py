@@ -8,11 +8,10 @@ from vtkmodules.vtkRenderingCore import vtkCoordinate
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
 import invesalius.session as ses
-import invesalius_rs
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
-from invesalius_rs import mask_cut
+from invesalius_rs import brush_mask_rs, mask_cut, polygon2mask_rs
 
 
 @dataclass
@@ -174,7 +173,7 @@ class Mask3DEditorState:
                 if display_points
                 else np.zeros((0, 2), dtype=np.float64)
             )
-            mask = invesalius_rs.polygon2mask_rs((w, h), poly_array)
+            mask = polygon2mask_rs((w, h), poly_array)
             filters.append(mask)
 
         return filters
@@ -221,6 +220,7 @@ class Mask3DEditorState:
 
         mask_cut(_mat, sx, sy, sz, depth, filter, wts, wtc, out, self.edit_mode)  # type: ignore
 
+        self.mask_data[1:, 1:, 1:] = out
         self.update_views(out)
 
     def brush_stroke(self, world_coord):
@@ -256,7 +256,7 @@ class Mask3DEditorState:
         elif hasattr(self, "original_mask_data"):
             orig_mat = self.original_mask_data[1:, 1:, 1:]
 
-        invesalius_rs.brush_mask_rs(
+        brush_mask_rs(
             _mat, orig_mat, (sx, sy, sz), (rust_cx, rust_cy, rust_cz), radius, self.edit_mode
         )
 
