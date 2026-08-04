@@ -27,7 +27,7 @@ import invesalius.session as ses
 from invesalius.i18n import tr as _
 from invesalius.navigation.markers import MarkersControl
 from invesalius.navigation.navigation import Navigation
-from invesalius.navigation.robot import Robot
+from invesalius.navigation.robot import Robot, Robots
 from invesalius.navigation.tracker import Tracker
 from invesalius.pubsub import pub as Publisher
 
@@ -114,7 +114,8 @@ class InteractiveShellFrame(wx.Frame):
         if mode == const.MODE_NAVIGATOR:
             navigation_context["markers"] = MarkersControl()
             navigation_context["navigation"] = Navigation()
-            navigation_context["robot"] = Robot()
+            navigation_context["robots"] = Robots()
+            navigation_context["robot"] = Robots().GetRobot(0)
             navigation_context["tracker"] = Tracker()
 
         Publisher.sendMessage("Update shell context", new_context=navigation_context)
