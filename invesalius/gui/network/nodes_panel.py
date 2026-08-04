@@ -53,20 +53,18 @@ class NodesPanel(wx.Panel):
         main_sizer.Add(self.__list_ctrl, 1, wx.GROW | wx.EXPAND)
 
         # Create the input fields
-        self.__ipaddress_input = wx.TextCtrl(self, size=(225, -1))
-        self.__ipaddress_input.SetHint("127.0.0.1")
-        self.__port_input = wx.TextCtrl(self, size=(225, -1))
-        self.__port_input.SetHint("4242")
-        self.__aetitle_input = wx.TextCtrl(self, size=(225, -1))
-        self.__aetitle_input.SetHint("ORTHANC")
-        self.__description_input = wx.TextCtrl(self, size=(225, -1))
+        self.__add_new_dialog = wx.Dialog(self, title="Add Node")
 
+        self.__ipaddress_input = wx.TextCtrl(self.__add_new_dialog, size=(225, -1))
+        self.__ipaddress_input.SetHint("127.0.0.1")
+        self.__port_input = wx.TextCtrl(self.__add_new_dialog, size=(225, -1))
+        self.__port_input.SetHint("4242")
+        self.__aetitle_input = wx.TextCtrl(self.__add_new_dialog, size=(225, -1))
+        self.__aetitle_input.SetHint("ORTHANC")
+        self.__description_input = wx.TextCtrl(self.__add_new_dialog, size=(225, -1))
         self.__description_input.SetHint("My local server")
 
-        form_sizer = self._create_form_sizer()
-
-        # Add the form sizer to the main sizer
-        main_sizer.Add(form_sizer, 0, wx.ALIGN_CENTER)
+        self._create_form_dialog(self.__add_new_dialog)
 
         # Set the main sizer as the sizer for the frame
         self.SetSizer(main_sizer)
@@ -268,25 +266,25 @@ class NodesPanel(wx.Panel):
         self.__selected_index = idx
         self.__selected_node = self.__nodes[idx]
 
-    def _create_form_sizer(self):
+    def _create_form_dialog(self, add_new_dialog):
         """Create the form sizer."""
 
-        form_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        form_sizer = wx.BoxSizer(wx.VERTICAL)
 
         sizer1 = wx.BoxSizer(wx.VERTICAL)
-        sizer1.Add(wx.StaticText(self, label="IP Address"), 0, wx.ALL, 5)
+        sizer1.Add(wx.StaticText(add_new_dialog, label="IP Address"), 0, wx.ALL, 5)
         sizer1.Add(self.__ipaddress_input, 0, wx.ALL, 5)
 
         sizer2 = wx.BoxSizer(wx.VERTICAL)
-        sizer2.Add(wx.StaticText(self, label="Port"), 0, wx.ALL, 5)
+        sizer2.Add(wx.StaticText(add_new_dialog, label="Port"), 0, wx.ALL, 5)
         sizer2.Add(self.__port_input, 0, wx.ALL, 5)
 
         sizer3 = wx.BoxSizer(wx.VERTICAL)
-        sizer3.Add(wx.StaticText(self, label="AE Title"), 0, wx.ALL, 5)
+        sizer3.Add(wx.StaticText(add_new_dialog, label="AE Title"), 0, wx.ALL, 5)
         sizer3.Add(self.__aetitle_input, 0, wx.ALL, 5)
 
         sizer4 = wx.BoxSizer(wx.VERTICAL)
-        sizer4.Add(wx.StaticText(self, label="Description"), 0, wx.ALL, 5)
+        sizer4.Add(wx.StaticText(add_new_dialog, label="Description"), 0, wx.ALL, 5)
         sizer4.Add(self.__description_input, 0, wx.ALL, 5)
 
         form_sizer.Add(sizer1, 0, wx.ALL, 5)
@@ -294,10 +292,26 @@ class NodesPanel(wx.Panel):
         form_sizer.Add(sizer3, 0, wx.ALL, 5)
         form_sizer.Add(sizer4, 0, wx.ALL, 5)
 
-        return form_sizer
+        btn_sizer = add_new_dialog.CreateButtonSizer(wx.OK | wx.CANCEL)
+        if btn_sizer:
+            form_sizer.Add(btn_sizer, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+
+        add_new_dialog.SetSizer(form_sizer)
+        add_new_dialog.SetSize(400, 450)
+        add_new_dialog.CenterOnScreen()
+
+        return add_new_dialog
 
     def _on_add_button(self, event):
         """Handler for the "Add" button."""
+
+        result = self.__add_new_dialog.ShowModal()
+
+        if result == wx.ID_CANCEL:
+            self.__add_new_dialog.Destroy()
+            return result
+
+        self.__add_new_dialog.Destroy()
 
         ipaddress = self.__ipaddress_input.GetValue()
         port = self.__port_input.GetValue()
