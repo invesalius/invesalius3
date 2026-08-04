@@ -272,18 +272,17 @@ class Mask3DEditorState:
     def update_views(self, _mat):
         # Notify the 2D views that the mask changed.
         _cur_mask = slc.Slice().current_mask
+        slc.Slice().discard_all_buffers()
         if _cur_mask is not None:
-            _cur_mask.matrix[:] = self.mask_data[:]
+            _cur_mask.matrix[1:, 1:, 1:] = self.mask_data[1:, 1:, 1:]
             _cur_mask.was_edited = True
 
             if _cur_mask.volume is not None and ses.Session().mask_3d_preview:
                 _cur_mask._update_imagedata(update_volume_viewer=True)
 
-        slc.Slice().discard_all_buffers()
-
-        Publisher.sendMessage("Update slice viewer")
         # Publisher.sendMessage("Render volume viewer") is already handled by _update_imagedata
         Publisher.sendMessage("Reload actual slice")
+        Publisher.sendMessage("Update slice viewer")
 
     def start_brush_stroke(self):
         cur_mask = slc.Slice().current_mask
