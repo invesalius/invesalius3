@@ -2145,11 +2145,9 @@ class RobotSetupPanel(wx.Panel):
             gray_color = wx.Colour(150, 150, 150)
             self.pressure_lbl.SetForegroundColour(gray_color)
             self.pressure_val_lbl.SetForegroundColour(gray_color)
-            self.pressure_rec_lbl.SetForegroundColour(gray_color)
 
         self.pressure_lbl.Refresh()
         self.pressure_val_lbl.Refresh()
-        self.pressure_rec_lbl.Refresh()
 
     def OnTogglePressureSensor(self, evt):
         enabled = self.chk_enable_pressure.GetValue()
