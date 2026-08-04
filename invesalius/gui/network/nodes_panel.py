@@ -231,15 +231,24 @@ class NodesPanel(wx.Panel):
         dn.RunCEcho(self._on_check_done)
 
     def _on_check_done(self, check, error):
+        dialog = wx.Dialog(self, title="Node Status")
+
         if error:
-            self.__list_ctrl.SetItem(self.__selected_index, 5, _("error"))
-            self.__list_ctrl.SetItemTextColour(self.__selected_index, wx.RED)
-
-            return
-
+            message = "An error occurred while checking the node."
+            title = "Error"
+            self.__list_ctrl.SetItem(self.__selected_index, 5, "Error")
         elif check:
-            self.__list_ctrl.SetItem(self.__selected_index, 5, _("ok"))
-            self.__list_ctrl.SetItemTextColour(self.__selected_index, wx.GREEN)
+            message = "The node is working correctly!"
+            title = "Success"
+            self.__list_ctrl.SetItem(self.__selected_index, 5, "Working")
+        else:
+            message = "The node is not responding."
+            title = "Info"
+            self.__list_ctrl.SetItem(self.__selected_index, 5, "No Response")
+
+        dialog = wx.MessageDialog(self, message, title, wx.OK | wx.ICON_INFORMATION)
+        dialog.ShowModal()
+        dialog.Destroy()
 
         self.__check_button.Enable()
 
