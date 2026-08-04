@@ -36,16 +36,16 @@ class RobotObjective(Enum):
     MOVE_AWAY_FROM_HEAD = 2
 
 
-# Only one robot will be initialized per time. Therefore, we use
-# Singleton design pattern for implementing it
-class Robot(metaclass=Singleton):
-    def __init__(self, tracker, navigation, icp):
+# The Robot class represents a single robot instance.
+class Robot:
+    def __init__(self, robot_id, tracker, navigation, icp, coil_name=None):
+        self.robot_id = robot_id
         self.tracker = tracker
         self.navigation = navigation
         self.icp = icp
         self.enabled_in_gui = False
 
-        self.coil_name = None
+        self.coil_name = coil_name
         self.use_pressure_sensor = False
         self.is_robot_connected = False
         self.robot_ip = None
@@ -70,7 +70,7 @@ class Robot(metaclass=Singleton):
 
         self.__bind_events()
 
-        Publisher.sendMessage("Neuronavigation to Robot: Request config")
+        Publisher.sendMessage("Neuronavigation to Robot: Request config", robot_id=self.robot_id)
 
     def __bind_events(self):
         Publisher.subscribe(
@@ -88,25 +88,29 @@ class Robot(metaclass=Singleton):
 
     def SaveConfig(self, key=None, value=None):
         session = ses.Session()
+        config_key = f"robot_{self.robot_id}"
         if key is None or value is None:
             # Save the whole state
             state = {
                 "robot_ip": self.robot_ip,
                 "robot_ip_options": self.robot_ip_options,
-                "tracker_to_robot": self.matrix_tracker_to_robot.tolist(),
+                "tracker_to_robot": self.matrix_tracker_to_robot.tolist()
+                if self.matrix_tracker_to_robot is not None
+                else None,
                 "use_pressure_sensor": self.use_pressure_sensor,
             }
             if self.coil_name is not None:
                 state["robot_coil"] = self.coil_name
         else:
-            state = session.GetConfig("robot", {})
+            state = session.GetConfig(config_key, {})
             state[key] = value
 
-        session.SetConfig("robot", state)
+        session.SetConfig(config_key, state)
 
     def LoadConfig(self):
         session = ses.Session()
-        state = session.GetConfig("robot", {})
+        config_key = f"robot_{self.robot_id}"
+        state = session.GetConfig(config_key, {})
 
         self.coil_name = state.get("robot_coil", None)
 
@@ -137,7 +141,9 @@ class Robot(metaclass=Singleton):
 
             # Ensure we fetch the robot-side config early so features like the force/pressure
             # overlay can be initialized without requiring the Preferences dialog to be opened.
-            Publisher.sendMessage("Neuronavigation to Robot: Request config")
+            Publisher.sendMessage(
+                "Neuronavigation to Robot: Request config", robot_id=self.robot_id
+            )
 
     def RegisterRobot(self):
         Publisher.sendMessage("End busy cursor")
@@ -189,12 +195,17 @@ class Robot(metaclass=Singleton):
             self.is_robot_connected = False
             Publisher.sendMessage("Enable robot", enabled=self.is_robot_connected)
 
-        Publisher.sendMessage("Neuronavigation to Robot: Connect to robot", robot_IP=self.robot_ip)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Connect to robot",
+            robot_IP=self.robot_ip,
+            robot_id=self.robot_id,
+        )
 
     def InitializeRobot(self):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set robot transformation matrix",
             data=self.matrix_tracker_to_robot.tolist(),
+            robot_id=self.robot_id,
         )
         self.SetCoilName(self.coil_name) if self.coil_name is not None else "default_coil"
         Publisher.sendMessage("Robot transformation matrix set")
@@ -214,6 +225,7 @@ class Robot(metaclass=Singleton):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set coil index",
             coil_idx=coil_idx,
+            robot_id=self.robot_id,
         )
         self.SaveConfig("robot_coil", name)
 
@@ -252,12 +264,15 @@ class Robot(metaclass=Singleton):
         Publisher.sendMessage(
             "Neuronavigation to Robot: Set target",
             target=m_target.tolist(),
+            robot_id=self.robot_id,
         )
 
     def TrackerFiducialsSet(self):
         tracker_fiducials = self.tracker.GetMatrixTrackerFiducials()
         Publisher.sendMessage(
-            "Neuronavigation to Robot: Set tracker fiducials", tracker_fiducials=tracker_fiducials
+            "Neuronavigation to Robot: Set tracker fiducials",
+            tracker_fiducials=tracker_fiducials,
+            robot_id=self.robot_id,
         )
 
     def SetObjective(self, objective):
@@ -267,7 +282,11 @@ class Robot(metaclass=Singleton):
             return
 
         self.objective = objective
-        Publisher.sendMessage("Neuronavigation to Robot: Set objective", objective=objective.value)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Set objective",
+            objective=objective.value,
+            robot_id=self.robot_id,
+        )
 
         if self.objective == RobotObjective.NONE:
             Publisher.sendMessage(
@@ -308,18 +327,21 @@ class Robot(metaclass=Singleton):
         if active:
             pressure_setpoint = ses.Session().GetConfig("pressure_setpoint", 5.0)
             Publisher.sendMessage(
-                "Neuronavigation to Robot: Pressure set point", pressure=pressure_setpoint
+                "Neuronavigation to Robot: Pressure set point",
+                pressure=pressure_setpoint,
+                robot_id=self.robot_id,
             )
 
         if notify_robot:
             Publisher.sendMessage(
                 "Neuronavigation to Robot: Update config",
                 use_pressure_sensor=self.use_pressure_sensor,
+                robot_id=self.robot_id,
             )
 
     def UnsetTarget(self, marker):
         self.target = None
-        Publisher.sendMessage("Neuronavigation to Robot: Unset target")
+        Publisher.sendMessage("Neuronavigation to Robot: Unset target", robot_id=self.robot_id)
 
     def SetTarget(self, marker):
         coord = marker.position + marker.orientation
@@ -332,13 +354,21 @@ class Robot(metaclass=Singleton):
         self.SendTargetToRobot()
 
     def SetPressureSetpoint(self, pressure):
-        Publisher.sendMessage("Neuronavigation to Robot: Pressure set point", pressure=pressure)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Pressure set point",
+            pressure=pressure,
+            robot_id=self.robot_id,
+        )
 
     def CheckConnection(self):
-        Publisher.sendMessage("Neuronavigation to Robot: Check connection robot")
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Check connection robot", robot_id=self.robot_id
+        )
 
     def SetFreeDrive(self, enabled):
-        Publisher.sendMessage("Neuronavigation to Robot: Set free drive", set=enabled)
+        Publisher.sendMessage(
+            "Neuronavigation to Robot: Set free drive", set=enabled, robot_id=self.robot_id
+        )
 
     def ResetErrors(self):
         if self.objective == RobotObjective.TRACK_TARGET:
@@ -346,4 +376,33 @@ class Robot(metaclass=Singleton):
 
         Publisher.sendMessage(
             "Neuronavigation to Robot: Reset errors",
+            robot_id=self.robot_id,
         )
+
+
+class Robots(metaclass=Singleton):
+    """
+    Manager class for multiple Robot instances.
+    Maintains a mapping of robot_id to Robot and coil_name to Robot.
+    """
+
+    def __init__(self):
+        self.robots_by_id = {}
+        self.robots_by_coil = {}
+        self.n_robots_created = 0
+
+    def AddRobot(self, tracker, navigation, icp, coil_name=None):
+        robot_id = self.n_robots_created
+        self.n_robots_created += 1
+
+        new_robot = Robot(robot_id, tracker, navigation, icp, coil_name)
+        self.robots_by_id[robot_id] = new_robot
+        if coil_name:
+            self.robots_by_coil[coil_name] = new_robot
+        return new_robot
+
+    def GetActiveRobot(self, main_coil_name):
+        return self.robots_by_coil.get(main_coil_name)
+
+    def GetRobot(self, robot_id):
+        return self.robots_by_id.get(robot_id)
