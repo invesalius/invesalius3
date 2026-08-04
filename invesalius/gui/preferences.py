@@ -2168,27 +2168,8 @@ class RobotSetupPanel(wx.Panel):
             self.pressure_lbl.SetForegroundColour(self._pressure_lbl_default_fg)
             self.pressure_val_lbl.SetForegroundColour(self._pressure_val_default_fg)
 
-        # Recommended hint styling: green if near 5.0 N, grey otherwise
-        if abs(value - self.pressure_recommended) <= self.pressure_match_tol:
-            self.pressure_rec_lbl.SetForegroundColour(wx.Colour(0, 140, 0))  # green
-            try:
-                f = self.pressure_rec_lbl.GetFont()
-                f.SetWeight(wx.FONTWEIGHT_BOLD)
-                self.pressure_rec_lbl.SetFont(f)
-            except Exception:
-                pass
-        else:
-            self.pressure_rec_lbl.SetForegroundColour(wx.Colour(90, 90, 90))
-            try:
-                f = self.pressure_rec_lbl.GetFont()
-                f.SetWeight(wx.FONTWEIGHT_NORMAL)
-                self.pressure_rec_lbl.SetFont(f)
-            except Exception:
-                pass
-
         self.pressure_lbl.Refresh()
         self.pressure_val_lbl.Refresh()
-        self.pressure_rec_lbl.Refresh()
 
 
 class TrackerTab(wx.Panel):
