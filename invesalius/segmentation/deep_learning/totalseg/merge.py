@@ -112,24 +112,40 @@ def _apply_remap(local: np.ndarray, remap: dict) -> np.ndarray:
     return lut[local]
 
 
+def parts_for_selection(composite_task: str, selected_class_ids) -> list:
+    # Return only the parts whose unified-namespace ids intersect the caller's
+    # selection. Lets the wrapper skip inference on parts that can't contribute
+    # any selected structure.
+    if composite_task not in MULTIPART_TASKS:
+        raise ValueError(f"Unknown composite task '{composite_task}'")
+    all_parts = MULTIPART_TASKS[composite_task]["parts"]
+    if not selected_class_ids:
+        return list(all_parts)
+    selected = {int(c) for c in selected_class_ids}
+    remaps = _build_remaps(composite_task)
+    needed = [p for p in all_parts if set(remaps[p].values()) & selected]
+    return needed or list(all_parts)
+
+
 def merge_label_maps(
     part_predictions: dict,
     composite_task: str,
 ) -> np.ndarray:
+    # Skips any parts the caller didn't provide, so an "only ct_organs was run"
+    # dict still produces a valid unified label map (extras/wrong keys still error).
     if composite_task not in MULTIPART_TASKS:
         raise ValueError(f"Unknown composite task '{composite_task}'")
 
     spec = MULTIPART_TASKS[composite_task]
     expected = set(spec["parts"])
     got = set(part_predictions.keys())
-    if got != expected:
-        missing = expected - got
-        extra = got - expected
-        raise ValueError(
-            f"Part mismatch for '{composite_task}'. missing={sorted(missing)} extra={sorted(extra)}"
-        )
+    extra = got - expected
+    if extra:
+        raise ValueError(f"Unknown parts for '{composite_task}': {sorted(extra)}")
+    if not got:
+        raise ValueError(f"No part predictions provided for '{composite_task}'")
 
-    parts = spec["parts"]
+    parts = [p for p in spec["parts"] if p in part_predictions]
     shape = part_predictions[parts[0]].shape
     for name in parts:
         if part_predictions[name].shape != shape:

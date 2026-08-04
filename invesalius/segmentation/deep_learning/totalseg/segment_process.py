@@ -99,11 +99,12 @@ class TotalSegProcess(SegmentProcess):
         def dl_cb(pct):
             comm_array[0] = float(pct) / 100.0
 
-        parts = (
-            _merge.MULTIPART_TASKS[self.task]["parts"]
-            if _merge.is_multipart(self.task)
-            else [self.task]
-        )
+        # For composite tasks, skip parts whose classes the user didn't select.
+        # Cuts runtime proportionally (e.g. only "liver" selected -> ct_organs only).
+        if _merge.is_multipart(self.task):
+            parts = _merge.parts_for_selection(self.task, self.selected_class_ids)
+        else:
+            parts = [self.task]
         print(f"[totalseg-child] parts to run: {parts}", flush=True)
 
         sidecars = {}
