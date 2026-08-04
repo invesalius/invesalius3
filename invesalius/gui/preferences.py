@@ -1756,92 +1756,19 @@ class ObjectTab(wx.Panel):
         self.session.SetConfig("distance_threshold", self.distance_threshold)
 
 
-class TrackerTab(wx.Panel):
-    def __init__(self, parent, tracker, robot):
+class RobotSetupPanel(wx.Panel):
+    """Panel containing all robot setup UI: IP connection, status, registration, and pressure control.
+
+    Extracted from TrackerTab to separate robot setup concerns from tracker setup.
+    """
+
+    def __init__(self, parent, robot):
         wx.Panel.__init__(self, parent)
 
         self.session = ses.Session()
-
-        self.__bind_events()
-
-        self.tracker = tracker
         self.robot = robot
 
-        self.n_coils = 1
-        self.LoadConfig()
-
-        # ComboBox for choosing the no. of coils to track
-        n_coils_options = [str(n) for n in range(1, 10)]
-        select_n_coils_elem = wx.ComboBox(
-            self,
-            -1,
-            "",
-            size=(145, -1),
-            choices=n_coils_options,
-            style=wx.CB_DROPDOWN | wx.CB_READONLY,
-        )
-        tooltip = _("Choose the number of coils to track")
-        select_n_coils_elem.SetToolTip(tooltip)
-        select_n_coils_elem.SetSelection(self.n_coils - 1)
-        select_n_coils_elem.Bind(
-            wx.EVT_COMBOBOX, partial(self.OnChooseNoOfCoils, ctrl=select_n_coils_elem)
-        )
-
-        select_n_coils_label = wx.StaticText(self, -1, _("Choose the number of coils to track:"))
-
-        # ComboBox for spatial tracker device selection
-        tracker_options = [_("Select")] + self.tracker.get_trackers()
-        select_tracker_elem = wx.ComboBox(
-            self,
-            -1,
-            "",
-            size=(145, -1),
-            choices=tracker_options,
-            style=wx.CB_DROPDOWN | wx.CB_READONLY,
-        )
-        tooltip = _("Choose the tracking device")
-        select_tracker_elem.SetToolTip(tooltip)
-        select_tracker_elem.SetSelection(self.tracker.tracker_id)
-        select_tracker_elem.Bind(
-            wx.EVT_COMBOBOX, partial(self.OnChooseTracker, ctrl=select_tracker_elem)
-        )
-
-        select_tracker_label = wx.StaticText(self, -1, _("Choose the tracking device: "))
-
-        # ComboBox for tracker reference mode
-        tooltip = _("Choose the navigation reference mode")
-        choice_ref = wx.ComboBox(
-            self,
-            -1,
-            "",
-            size=(145, -1),
-            choices=const.REF_MODE,
-            style=wx.CB_DROPDOWN | wx.CB_READONLY,
-        )
-        choice_ref.SetSelection(const.DEFAULT_REF_MODE)
-        choice_ref.SetToolTip(tooltip)
-        choice_ref.Bind(
-            wx.EVT_COMBOBOX, partial(self.OnChooseReferenceMode, ctrl=select_tracker_elem)
-        )
-        self.choice_ref = choice_ref
-
-        choice_ref_label = wx.StaticText(self, -1, _("Choose the navigation reference mode: "))
-
-        ref_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=5, vgap=5)
-        ref_sizer.AddMany(
-            [
-                (select_n_coils_label, wx.LEFT),
-                (select_n_coils_elem, wx.RIGHT),
-                (select_tracker_label, wx.LEFT),
-                (select_tracker_elem, wx.RIGHT),
-                (choice_ref_label, wx.LEFT),
-                (choice_ref, wx.RIGHT),
-            ]
-        )
-        ref_sizer.Layout()
-
-        sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
-        sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
+        self.__bind_events()
 
         lbl_rob = wx.StaticText(self, -1, _("IP for robot device: "))
 
@@ -2034,83 +1961,24 @@ class TrackerTab(wx.Panel):
         rob_static_sizer.Add(pressure_sizer, 0, wx.ALL | wx.EXPAND, 10)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.AddMany(
-            [(sizer, 0, wx.ALL | wx.EXPAND, 7), (rob_static_sizer, 0, wx.ALL | wx.EXPAND, 7)]
-        )
+        main_sizer.Add(rob_static_sizer, 0, wx.ALL | wx.EXPAND, 7)
         self.SetSizerAndFit(main_sizer)
         self.Layout()
 
         self.robot.CheckConnection()  # Check if robot is connected and update GUI accordingly
 
     def __bind_events(self):
-        Publisher.subscribe(self.ShowParent, "Show preferences dialog")
         Publisher.subscribe(self.OnRobotEnabled, "Enable robot")
         Publisher.subscribe(self.OnRobotStatus, "Update robot status connection")
         Publisher.subscribe(
             self.OnSetRobotTransformationMatrix, "Robot transformation matrix seted"
         )
 
-    def LoadConfig(self):
-        session = ses.Session()
-        self.n_coils = session.GetConfig("navigation", {}).get("n_coils", 1)
-
-    def OnChooseNoOfCoils(self, evt, ctrl):
-        old_n_coils = self.n_coils
-        if hasattr(evt, "GetSelection"):
-            choice = evt.GetSelection()
-            self.n_coils = choice + 1
-        else:
-            self.n_coils = 1
-
-        if self.n_coils != old_n_coils:  # if n_coils was changed reset connection
-            clear_all = True
-            tracker_id = self.tracker.tracker_id
-            self.tracker.DisconnectTracker()
-            self.tracker.SetTracker(tracker_id, n_coils=self.n_coils)
-        else:
-            clear_all = False
-
-        ctrl.SetSelection(self.n_coils - 1)
-        Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils, clear_all=clear_all)
-        Publisher.sendMessage("Coil selection done", done=False)
-
-    def OnChooseTracker(self, evt, ctrl):
-        if sys.platform == "darwin":
-            wx.CallAfter(self.GetParent().Hide)
-        else:
-            self.HideParent()
-        Publisher.sendMessage("Begin busy cursor")
-        Publisher.sendMessage("Update status text in GUI", label=_("Configuring tracker ..."))
-        if hasattr(evt, "GetSelection"):
-            choice = evt.GetSelection()
-        else:
-            choice = None
-
-        # Stop navigation to avoid tracker to be disconnected while navigating
-        Publisher.sendMessage("Stop navigation")
-
-        self.tracker.DisconnectTracker()
-        self.tracker.ResetTrackerFiducials()
-        self.tracker.SetTracker(choice, n_coils=self.n_coils)
-        Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
-        Publisher.sendMessage("Tracker changed")
-        Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils, clear_all=True)
-        Publisher.sendMessage("Coil selection done", done=False)
-        ctrl.SetSelection(self.tracker.tracker_id)
-        Publisher.sendMessage("End busy cursor")
-        if sys.platform == "darwin":
-            wx.CallAfter(self.GetParent().Show)
-        else:
-            self.ShowParent()
-
-    def OnChooseReferenceMode(self, evt, ctrl):
-        Navigation(None, None).SetReferenceMode(evt.GetSelection())
-
     def HideParent(self):  # hide preferences dialog box
-        self.GetGrandParent().Hide()
+        self.GetGrandParent().GetGrandParent().Hide()
 
     def ShowParent(self):  # show preferences dialog box
-        self.GetGrandParent().Show()
+        self.GetGrandParent().GetGrandParent().Show()
 
     def verifyFormatIP(self, robot_ip):
         robot_ip_strip = robot_ip.strip()
@@ -2346,6 +2214,168 @@ class TrackerTab(wx.Panel):
         self.pressure_lbl.Refresh()
         self.pressure_val_lbl.Refresh()
         self.pressure_rec_lbl.Refresh()
+
+
+class TrackerTab(wx.Panel):
+    def __init__(self, parent, tracker, robot):
+        wx.Panel.__init__(self, parent)
+
+        self.session = ses.Session()
+
+        self.__bind_events()
+
+        self.tracker = tracker
+        self.robot = robot
+
+        self.n_coils = 1
+        self.LoadConfig()
+
+        # ComboBox for choosing the no. of coils to track
+        n_coils_options = [str(n) for n in range(1, 10)]
+        select_n_coils_elem = wx.ComboBox(
+            self,
+            -1,
+            "",
+            size=(145, -1),
+            choices=n_coils_options,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        tooltip = _("Choose the number of coils to track")
+        select_n_coils_elem.SetToolTip(tooltip)
+        select_n_coils_elem.SetSelection(self.n_coils - 1)
+        select_n_coils_elem.Bind(
+            wx.EVT_COMBOBOX, partial(self.OnChooseNoOfCoils, ctrl=select_n_coils_elem)
+        )
+
+        select_n_coils_label = wx.StaticText(self, -1, _("Choose the number of coils to track:"))
+
+        # ComboBox for spatial tracker device selection
+        tracker_options = [_("Select")] + self.tracker.get_trackers()
+        select_tracker_elem = wx.ComboBox(
+            self,
+            -1,
+            "",
+            size=(145, -1),
+            choices=tracker_options,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        tooltip = _("Choose the tracking device")
+        select_tracker_elem.SetToolTip(tooltip)
+        select_tracker_elem.SetSelection(self.tracker.tracker_id)
+        select_tracker_elem.Bind(
+            wx.EVT_COMBOBOX, partial(self.OnChooseTracker, ctrl=select_tracker_elem)
+        )
+
+        select_tracker_label = wx.StaticText(self, -1, _("Choose the tracking device: "))
+
+        # ComboBox for tracker reference mode
+        tooltip = _("Choose the navigation reference mode")
+        choice_ref = wx.ComboBox(
+            self,
+            -1,
+            "",
+            size=(145, -1),
+            choices=const.REF_MODE,
+            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+        )
+        choice_ref.SetSelection(const.DEFAULT_REF_MODE)
+        choice_ref.SetToolTip(tooltip)
+        choice_ref.Bind(
+            wx.EVT_COMBOBOX, partial(self.OnChooseReferenceMode, ctrl=select_tracker_elem)
+        )
+        self.choice_ref = choice_ref
+
+        choice_ref_label = wx.StaticText(self, -1, _("Choose the navigation reference mode: "))
+
+        ref_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=5, vgap=5)
+        ref_sizer.AddMany(
+            [
+                (select_n_coils_label, wx.LEFT),
+                (select_n_coils_elem, wx.RIGHT),
+                (select_tracker_label, wx.LEFT),
+                (select_tracker_elem, wx.RIGHT),
+                (choice_ref_label, wx.LEFT),
+                (choice_ref, wx.RIGHT),
+            ]
+        )
+        ref_sizer.Layout()
+
+        tracker_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
+        tracker_sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
+
+        # Robot setup panel (child component)
+        self.robot_setup_panel = RobotSetupPanel(self, robot)
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(tracker_sizer, 0, wx.ALL | wx.EXPAND, 7)
+        main_sizer.Add(self.robot_setup_panel, 0, wx.ALL | wx.EXPAND, 0)
+        self.SetSizerAndFit(main_sizer)
+        self.Layout()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.ShowParent, "Show preferences dialog")
+
+    def LoadConfig(self):
+        session = ses.Session()
+        self.n_coils = session.GetConfig("navigation", {}).get("n_coils", 1)
+
+    def OnChooseNoOfCoils(self, evt, ctrl):
+        old_n_coils = self.n_coils
+        if hasattr(evt, "GetSelection"):
+            choice = evt.GetSelection()
+            self.n_coils = choice + 1
+        else:
+            self.n_coils = 1
+
+        if self.n_coils != old_n_coils:  # if n_coils was changed reset connection
+            clear_all = True
+            tracker_id = self.tracker.tracker_id
+            self.tracker.DisconnectTracker()
+            self.tracker.SetTracker(tracker_id, n_coils=self.n_coils)
+        else:
+            clear_all = False
+
+        ctrl.SetSelection(self.n_coils - 1)
+        Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils, clear_all=clear_all)
+        Publisher.sendMessage("Coil selection done", done=False)
+
+    def OnChooseTracker(self, evt, ctrl):
+        if sys.platform == "darwin":
+            wx.CallAfter(self.GetParent().Hide)
+        else:
+            self.HideParent()
+        Publisher.sendMessage("Begin busy cursor")
+        Publisher.sendMessage("Update status text in GUI", label=_("Configuring tracker ..."))
+        if hasattr(evt, "GetSelection"):
+            choice = evt.GetSelection()
+        else:
+            choice = None
+
+        # Stop navigation to avoid tracker to be disconnected while navigating
+        Publisher.sendMessage("Stop navigation")
+
+        self.tracker.DisconnectTracker()
+        self.tracker.ResetTrackerFiducials()
+        self.tracker.SetTracker(choice, n_coils=self.n_coils)
+        Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
+        Publisher.sendMessage("Tracker changed")
+        Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils, clear_all=True)
+        Publisher.sendMessage("Coil selection done", done=False)
+        ctrl.SetSelection(self.tracker.tracker_id)
+        Publisher.sendMessage("End busy cursor")
+        if sys.platform == "darwin":
+            wx.CallAfter(self.GetParent().Show)
+        else:
+            self.ShowParent()
+
+    def OnChooseReferenceMode(self, evt, ctrl):
+        Navigation(None, None).SetReferenceMode(evt.GetSelection())
+
+    def HideParent(self):  # hide preferences dialog box
+        self.GetGrandParent().Hide()
+
+    def ShowParent(self):  # show preferences dialog box
+        self.GetGrandParent().Show()
 
 
 class LanguageTab(wx.Panel):
