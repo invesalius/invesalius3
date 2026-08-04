@@ -18,7 +18,7 @@ from invesalius import inv_paths, utils
 from invesalius.gui.language_dialog import ComboBoxLanguage
 from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import Navigation
-from invesalius.navigation.robot import Robot
+from invesalius.navigation.robot import Robot, Robots
 from invesalius.navigation.tracker import Tracker
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
@@ -51,7 +51,17 @@ class Preferences(wx.Dialog):
         mode = session.GetConfig("mode")
         if mode == const.MODE_NAVIGATOR:
             tracker = Tracker()
-            robot = Robot()
+            robots = Robots()
+            # If the robot is not initialized yet (maybe NavigationHub hasn't run),
+            # this gets the first robot or creates one.
+            if len(robots.robots_by_id) == 0:
+                robots.AddRobot(
+                    tracker=tracker,
+                    navigation=Navigation(
+                        pedal_connector=None, neuronavigation_api=NeuronavigationApi()
+                    ),
+                    icp=None,
+                )
             neuronavigation_api = NeuronavigationApi()
             pedal_connector = PedalConnector(neuronavigation_api, self)
             navigation = Navigation(
@@ -60,7 +70,7 @@ class Preferences(wx.Dialog):
             )
 
             self.navigation_tab = NavigationTab(self.book, navigation)
-            self.tracker_tab = TrackerTab(self.book, tracker, robot)
+            self.tracker_tab = TrackerTab(self.book, tracker, robots)
             self.object_tab = ObjectTab(self.book, navigation, tracker, pedal_connector)
 
             self.book.AddPage(self.navigation_tab, _("Navigation"))
@@ -2217,7 +2227,7 @@ class RobotSetupPanel(wx.Panel):
 
 
 class TrackerTab(wx.Panel):
-    def __init__(self, parent, tracker, robot):
+    def __init__(self, parent, tracker, robots):
         wx.Panel.__init__(self, parent)
 
         self.session = ses.Session()
@@ -2225,7 +2235,7 @@ class TrackerTab(wx.Panel):
         self.__bind_events()
 
         self.tracker = tracker
-        self.robot = robot
+        self.robots = robots
 
         self.n_coils = 1
         self.LoadConfig()
@@ -2303,14 +2313,29 @@ class TrackerTab(wx.Panel):
         tracker_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, _("Setup tracker"))
         tracker_sizer.Add(ref_sizer, 1, wx.ALL | wx.FIXED_MINSIZE, 20)
 
-        # Robot setup panel (child component)
-        self.robot_setup_panel = RobotSetupPanel(self, robot)
+        # Ensure at least two robots exist in Robots manager for the UI
+        while len(self.robots.robots_by_id) < 2:
+            self.robots.AddRobot(tracker=self.tracker, navigation=None, icp=None)
+
+        robot_0 = self.robots.GetRobot(0)
+        robot_1 = self.robots.GetRobot(1)
+
+        # Robot setup panel (child component) for ID 0
+        self.robot_setup_panel_0 = RobotSetupPanel(self, robot_0)
+
+        # Robot setup panel (child component) for ID 1
+        self.robot_setup_panel_1 = RobotSetupPanel(self, robot_1)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(tracker_sizer, 0, wx.ALL | wx.EXPAND, 7)
-        main_sizer.Add(self.robot_setup_panel, 0, wx.ALL | wx.EXPAND, 0)
+        main_sizer.Add(self.robot_setup_panel_0, 0, wx.ALL | wx.EXPAND, 0)
+        main_sizer.Add(self.robot_setup_panel_1, 0, wx.ALL | wx.EXPAND, 0)
+
+        self.main_sizer = main_sizer
         self.SetSizerAndFit(main_sizer)
         self.Layout()
+
+        self.UpdateRobotPanelsVisibility()
 
     def __bind_events(self):
         Publisher.subscribe(self.ShowParent, "Show preferences dialog")
@@ -2328,6 +2353,8 @@ class TrackerTab(wx.Panel):
             self.n_coils = 1
 
         if self.n_coils != old_n_coils:  # if n_coils was changed reset connection
+            self.UpdateRobotPanelsVisibility()
+
             clear_all = True
             tracker_id = self.tracker.tracker_id
             self.tracker.DisconnectTracker()
@@ -2376,6 +2403,16 @@ class TrackerTab(wx.Panel):
 
     def ShowParent(self):  # show preferences dialog box
         self.GetGrandParent().Show()
+
+    def UpdateRobotPanelsVisibility(self):
+        if self.n_coils > 1:
+            self.main_sizer.Show(self.robot_setup_panel_1)
+        else:
+            self.main_sizer.Hide(self.robot_setup_panel_1)
+
+        self.Layout()
+        if self.GetParent():
+            self.GetParent().Layout()
 
 
 class LanguageTab(wx.Panel):
