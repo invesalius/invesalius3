@@ -43,7 +43,7 @@ from invesalius.i18n import tr as _
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.markers import MarkersControl
-from invesalius.navigation.robot import Robot
+from invesalius.navigation.robot import Robot, Robots
 from invesalius.navigation.tracker import Tracker
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
@@ -65,7 +65,9 @@ class NavigationHub(metaclass=Singleton):
         self.navigation = Navigation(
             pedal_connector=self.pedal_connector, neuronavigation_api=self.neuronavigation_api
         )
-        self.robot = Robot(
+        self.robots = Robots()
+        # Initialize the first robot by default
+        self.robot = self.robots.AddRobot(
             tracker=self.tracker,
             navigation=self.navigation,
             icp=self.icp,
