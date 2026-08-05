@@ -112,6 +112,10 @@ class Robot:
         config_key = f"robot_{self.robot_id}"
         state = session.GetConfig(config_key, {})
 
+        # Fallback to legacy "robot" config for the primary robot (id 0) to maintain backward compatibility
+        if not state and self.robot_id == 0:
+            state = session.GetConfig("robot", {})
+
         self.coil_name = state.get("robot_coil", None)
 
         self.robot_ip = state.get("robot_ip", None)
