@@ -71,7 +71,7 @@ class Preferences(wx.Dialog):
 
             self.navigation_tab = NavigationTab(self.book, navigation)
             self.tracker_tab = TrackerTab(self.book, tracker, robots)
-            self.object_tab = ObjectTab(self.book, navigation, tracker, pedal_connector)
+            self.object_tab = ObjectTab(self.book, navigation, tracker, pedal_connector, robots)
 
             self.book.AddPage(self.navigation_tab, _("Navigation"))
             self.book.AddPage(self.tracker_tab, _("Tracker"))
@@ -1008,7 +1008,7 @@ class NavigationTab(wx.Panel):
 
 
 class ObjectTab(wx.Panel):
-    def __init__(self, parent, navigation, tracker, pedal_connector):
+    def __init__(self, parent, navigation, tracker, pedal_connector, robots):
         wx.Panel.__init__(self, parent)
 
         self.session = ses.Session()
@@ -1018,7 +1018,7 @@ class ObjectTab(wx.Panel):
         self.tracker = tracker
         self.pedal_connector = pedal_connector
         self.navigation = navigation
-        self.robots = Robots()
+        self.robots = robots
         self.robot = self.robots.GetRobot(0)
         self.coil_registrations = {}
         self.__bind_events()
