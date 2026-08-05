@@ -1156,7 +1156,9 @@ class ObjectTab(wx.Panel):
             self,
             _("Robot coil selection"),
         )
-        self.inner_robot_sizer = inner_robot_sizer = wx.FlexGridSizer(4, 1, 1)
+        self.inner_robot_sizer = inner_robot_sizer = wx.FlexGridSizer(
+            rows=2, cols=2, vgap=5, hgap=5
+        )
 
         # Robot 0
         self.robot_0_lbl = wx.StaticText(self, -1, _("Robot 0 is connected. Coil attached: "))
@@ -1232,13 +1234,16 @@ class ObjectTab(wx.Panel):
                 self.choice_robot_0_coil.Show(True)
                 self.robot_0_lbl.SetLabel("Robot 0 is connected. Coil attached: ")
             else:
+                self.choice_robot_0_coil.Show(False)
                 self.robot_0_lbl.SetLabel("Robot 0 is not connected.")
         elif robot_id == 1:
             if enabled:
                 self.choice_robot_1_coil.Show(True)
                 self.robot_1_lbl.SetLabel("Robot 1 is connected. Coil attached: ")
             else:
+                self.choice_robot_1_coil.Show(False)
                 self.robot_1_lbl.SetLabel("Robot 1 is not connected.")
+        self.Layout()
 
     def OnChoiceRobotCoil(self, event, robot):
         robot_coil_name = event.GetEventObject().GetStringSelection()
@@ -1442,8 +1447,6 @@ class ObjectTab(wx.Panel):
             coil_name = next(iter(self.navigation.coil_registrations))
             if hasattr(self, "robot_0"):
                 self.robot_0.SetCoilName(coil_name)
-            if hasattr(self, "robot_1"):
-                self.robot_1.SetCoilName(coil_name)
 
         Publisher.sendMessage("Coil selection done", done=True)
         Publisher.sendMessage("Update status text in GUI", label=_("Ready"))

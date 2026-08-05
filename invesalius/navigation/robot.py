@@ -244,6 +244,9 @@ class Robot:
         self.SaveConfig("robot_coil", name)
 
     def SendTargetToRobot(self):
+        if not self.IsReady():
+            return
+
         # If the target is not set, return early.
         if self.target is None or self.navigation.main_coil != self.coil_name:
             return False

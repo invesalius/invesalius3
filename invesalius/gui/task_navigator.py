@@ -2075,7 +2075,7 @@ class RobotButtonsPanel(wx.Panel):
         # Enable 'reset errors' robot button if robot is connected.
         self.EnableRobotResetErrorsButton(enabled=robot_connected)
 
-    def OnEnableRobotButtons(self, enabled=False):
+    def OnEnableRobotButtons(self, enabled=False, robot_id=None):
         self.UpdateRobotButtons()
 
     # 'Track target with robot' button
