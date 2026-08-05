@@ -1202,7 +1202,10 @@ class ObjectTab(wx.Panel):
         Publisher.subscribe(self.OnSetCoilCount, "Reset coil selection")
         Publisher.subscribe(self.OnEnableRobot, "Enable robot")
 
-    def OnEnableRobot(self, enabled=False):
+    def OnEnableRobot(self, enabled=False, robot_id=None):
+        if robot_id is not None and robot_id != self.robot.robot_id:
+            return
+
         if enabled:
             self.choice_robot_coil.Show(True)
             self.robot_lbl.SetLabel("Robot is connected. Coil attached to robot: ")
@@ -2056,7 +2059,10 @@ class RobotSetupPanel(wx.Panel):
         else:
             self.ShowParent()
 
-    def OnRobotStatus(self, status):
+    def OnRobotStatus(self, status, robot_id=None):
+        if robot_id is not None and robot_id != self.robot.robot_id:
+            return
+
         if self.robot.robot_ip is not None:
             self.status_text.SetLabelText(_(f"{status} to robot on {self.robot.robot_ip}"))
         else:
@@ -2070,7 +2076,10 @@ class RobotSetupPanel(wx.Panel):
         self._update_pressure_controls_state(use_pressure_sensor and self.robot.IsConnected())
         self.Layout()
 
-    def OnRobotEnabled(self, enabled=False):
+    def OnRobotEnabled(self, enabled=False, robot_id=None):
+        if robot_id is not None and robot_id != self.robot.robot_id:
+            return
+
         if enabled:
             self.status_text.SetLabelText(_("Setup robot transformation matrix:"))
             self.btn_rob_con.Show()

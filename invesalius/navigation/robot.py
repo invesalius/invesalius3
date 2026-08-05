@@ -136,8 +136,10 @@ class Robot:
         self.is_robot_connected = True if data == "Connected" else False
 
         # Send to preference active robot connection status
-        Publisher.sendMessage("Update robot status connection", status=data)
-        Publisher.sendMessage("Enable robot", enabled=self.is_robot_connected)
+        Publisher.sendMessage("Update robot status connection", status=data, robot_id=self.robot_id)
+        Publisher.sendMessage(
+            "Enable robot", enabled=self.is_robot_connected, robot_id=self.robot_id
+        )
 
         # If the robot is connected, we add the robot IP to the list of options if it's not already there, and request the robot-side config.
         if self.is_robot_connected:
@@ -203,7 +205,9 @@ class Robot:
 
         if self.IsConnected():
             self.is_robot_connected = False
-            Publisher.sendMessage("Enable robot", enabled=self.is_robot_connected)
+            Publisher.sendMessage(
+                "Enable robot", enabled=self.is_robot_connected, robot_id=self.robot_id
+            )
 
         Publisher.sendMessage(
             "Neuronavigation to Robot: Connect to robot",
