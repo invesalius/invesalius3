@@ -7190,7 +7190,10 @@ class RobotCoregistrationDialog(wx.Dialog):
     def SetAcquiredPoints(self, num_points: int) -> None:
         self.txt_number.SetLabel(str(num_points))
 
-    def PointRegisteredByRobot(self) -> None:
+    def PointRegisteredByRobot(self, robot_id=None) -> None:
+        if robot_id is not None and robot_id != self.robot.robot_id:
+            return
+
         # Increment the number of acquired points.
         num_points = self.GetAcquiredPoints()
         num_points += 1
@@ -7227,7 +7230,10 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         # TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
 
-    def UpdateRobotTransformationMatrix(self, data: Any) -> None:
+    def UpdateRobotTransformationMatrix(self, data, robot_id=None) -> None:
+        if robot_id is not None and robot_id != self.robot.robot_id:
+            return
+
         self.matrix_tracker_to_robot = np.array(data)
 
     def SaveRegistration(self, evt: wx.CommandEvent) -> None:

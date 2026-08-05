@@ -129,7 +129,10 @@ class Robot:
         success = self.robot_ip is not None and self.matrix_tracker_to_robot is not None
         return success
 
-    def OnRobotConnectionStatus(self, data):
+    def OnRobotConnectionStatus(self, data, robot_id=None):
+        if robot_id is not None and robot_id != self.robot_id:
+            return
+
         self.is_robot_connected = True if data == "Connected" else False
 
         # Send to preference active robot connection status
@@ -177,7 +180,10 @@ class Robot:
         self.SaveConfig()
         self.InitializeRobot()
 
-    def AbortRobotConfiguration(self):
+    def AbortRobotConfiguration(self, robot_id=None):
+        if robot_id is not None and robot_id != self.robot_id:
+            return
+
         if self.robot_coregistration_dialog:
             self.robot_coregistration_dialog.Destroy()
 
@@ -297,7 +303,10 @@ class Robot:
                 "Robot to Neuronavigation: Update robot warning", robot_warning=""
             )
 
-    def SetObjectiveByRobot(self, objective):
+    def SetObjectiveByRobot(self, objective, robot_id=None):
+        if robot_id is not None and robot_id != self.robot_id:
+            return
+
         if objective is None:
             return
 
@@ -315,7 +324,10 @@ class Robot:
             Publisher.sendMessage("Press robot button", pressed=False)
             Publisher.sendMessage("Press move away button", pressed=False)
 
-    def OnRobotInitialConfig(self, config):
+    def OnRobotInitialConfig(self, config, robot_id=None):
+        if robot_id is not None and robot_id != self.robot_id:
+            return
+
         if not config:
             return
 

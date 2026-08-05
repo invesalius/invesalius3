@@ -1170,7 +1170,7 @@ class Viewer(wx.Panel):
         print("updated to ", dist_threshold)
         self.distance_threshold = dist_threshold
 
-    def OnUpdateRobotWarning(self, robot_warning):
+    def OnUpdateRobotWarning(self, robot_warning, robot_id=None):
         if self.robot_warnings_text is not None:
             self.robot_warnings_text.SetValue(robot_warning)
 
