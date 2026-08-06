@@ -262,16 +262,27 @@ class Controller:
             Publisher.sendMessage("Import Nifti mask", filepath=filepath)
 
     def OnImportMaskNifti(self, filepath: "str | bytes") -> None:
+        progress_dlg = None
         try:
             if isinstance(filepath, bytes):
                 filepath = filepath.decode("utf-8")
 
+            progress_dlg = dialogs.MaskProgressDialog(
+                _("Importing Mask"), _("Preparing to import mask..."), maximum=100
+            )
+
             import invesalius.reader.others_reader as oth
             from invesalius.reader.nifti_utils import check_is_mask, validate_mask_compatibility
+
+            if not progress_dlg.Update(10, _("Reading NIfTI file...")):
+                return
 
             img = oth.ReadOthers(filepath)
             if img is False:
                 raise Exception(_("Failed to read NIfTI file."))
+
+            if not progress_dlg.Update(20, _("Validating mask data...")):
+                return
 
             # Ensure a volume is loaded before importing a mask
             if self.Slice.matrix is None:
@@ -282,12 +293,21 @@ class Controller:
             # Preserve original dtype; avoid forcing float64 conversion
             data = np.asarray(img.dataobj)
 
+            if not progress_dlg.Update(40, _("Checking mask compatibility...")):
+                return
+
             # Validate dimensions match the current project volume
             proj_shape = self.Slice.matrix.shape[::-1]
             validate_mask_compatibility(data.shape, proj_shape)
 
+            if not progress_dlg.Update(50, _("Converting mask data...")):
+                return
+
             # Convert and normalize to binary label map (0/255 uint8)
             mask_data = check_is_mask(data)
+
+            if not progress_dlg.Update(60, _("Transforming mask orientation...")):
+                return
 
             # Match InVesalius internal (axial) coordinate layout (ZYX flipped)
             mask_data = np.ascontiguousarray(np.fliplr(np.swapaxes(mask_data, 0, 2)))
@@ -297,7 +317,13 @@ class Controller:
             thresh = (0, 255)
             colour = const.MASK_COLOUR[len(prj.Project().mask_dict) % len(const.MASK_COLOUR)]
 
+            if not progress_dlg.Update(70, _("Creating new mask...")):
+                return
+
             Publisher.sendMessage("Create new mask", mask_name=name, thresh=thresh, colour=colour)
+
+            if not progress_dlg.Update(80, _("Applying mask data...")):
+                return
 
             mask = self.Slice.current_mask
             if mask:
@@ -310,7 +336,13 @@ class Controller:
                 for buffer_ in self.Slice.buffer_slices.values():
                     buffer_.discard_vtk_mask()
                     buffer_.discard_mask()
-                Publisher.sendMessage("Reload actual slice")
+
+            if not progress_dlg.Update(95, _("Refreshing views...")):
+                return
+
+            Publisher.sendMessage("Reload actual slice")
+
+            progress_dlg.Update(100, _("Mask imported successfully!"))
 
             Publisher.sendMessage(
                 "Update status text in GUI", label=_("Mask imported successfully.")
@@ -318,6 +350,9 @@ class Controller:
 
         except Exception as e:
             dialogs.ErrorMessageBox(None, _("Error importing mask"), str(e)).ShowModal()
+        finally:
+            if progress_dlg is not None:
+                progress_dlg.Close()
 
     def OnShowExportMaskDialog(self, mask_indexes: list) -> None:
         if not mask_indexes:
@@ -351,19 +386,41 @@ class Controller:
         dlg.Destroy()
 
     def OnExportMaskNifti(self, mask_indexes: list, filepath: "str | bytes") -> None:
+        progress_dlg = None
         try:
             import nibabel as nib
 
             project = prj.Project()
-            for index in mask_indexes:
+            total_masks = len(mask_indexes)
+            
+            progress_dlg = dialogs.MaskProgressDialog(
+                _("Exporting Mask"), _("Preparing to export mask(s)..."), maximum=100
+            )
+
+            for i, index in enumerate(mask_indexes):
+                base_progress = int((i / total_masks) * 100)
+                progress_step = int(100 / total_masks)
+                
                 mask = project.GetMask(index)
                 if not mask:
                     continue
+                    
+                msg_prefix = f"[{i + 1}/{total_masks}] " if total_masks > 1 else ""
+
+                if not progress_dlg.Update(base_progress + int(progress_step * 0.1), f"{msg_prefix}{_('Preparing mask data...')} ({mask.name})"):
+                    break
 
                 # Ensure all slices have threshold data (lazy threshold only generates visited slices)
                 self.Slice.do_threshold_to_all_slices(mask)
+                
+                if not progress_dlg.Update(base_progress + int(progress_step * 0.4), f"{msg_prefix}{_('Extracting matrix...')} ({mask.name})"):
+                    break
+                    
                 # Strip 1-pixel padding from InVesalius mask matrix (padding is only at index 0)
                 mask_matrix = mask.matrix[1:, 1:, 1:]
+
+                if not progress_dlg.Update(base_progress + int(progress_step * 0.6), f"{msg_prefix}{_('Converting format...')} ({mask.name})"):
+                    break
 
                 # Axis transform to NIfTI layout and cast to uint8
                 export_data = np.ascontiguousarray(
@@ -372,6 +429,9 @@ class Controller:
 
                 # Label-map enforcement: strict binary encoding (0=background, 255=mask)
                 export_data[export_data > 0] = 255
+
+                if not progress_dlg.Update(base_progress + int(progress_step * 0.8), f"{msg_prefix}{_('Saving file...')} ({mask.name})"):
+                    break
 
                 # Use identity affine to ensure RAS+ encoding; as_closest_canonical will be a no-op on reimport
                 mask_nifti = nib.Nifti1Image(export_data, np.eye(4))
@@ -387,9 +447,15 @@ class Controller:
                     save_path = filepath
 
                 nib.save(mask_nifti, save_path)
+                
+            if not progress_dlg.WasCancelled():
+                progress_dlg.Update(100, _("Mask(s) exported successfully!"))
 
         except Exception as e:
             dialogs.ErrorMessageBox(None, _("Error exporting mask"), str(e)).ShowModal()
+        finally:
+            if progress_dlg is not None:
+                progress_dlg.Close()
 
     def ShowDialogOpenProject(self) -> None:
         # Offer to save current project if necessary
