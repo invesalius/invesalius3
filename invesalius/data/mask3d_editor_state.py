@@ -3,17 +3,15 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-import wx
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slc
 import invesalius.session as ses
-import invesalius_rs
 from invesalius.data.polygon_select import PolygonSelectCanvas
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import vtkarray_to_numpy
-from invesalius_rs import mask_cut
+from invesalius_rs import brush_mask_rs, mask_cut, polygon2mask_rs
 
 
 @dataclass
@@ -28,9 +26,13 @@ class Mask3DEditorState:
     viewer: Any
     mask_data: npt.NDArray | None = None
     m3e_list: list[PolygonSelectCanvas] = field(default_factory=list)
-    edit_mode: int = const.MASK_3D_EDIT_INCLUDE
+    edit_mode: int = const.MASK_3D_EDIT_EXCLUDE
+    tool_mode: int = const.MASK_3D_EDIT_TOOL_POLYGON
+    brush_size: float = const.BRUSH_SIZE
     depth_val: float = 1.0
     has_set_mask_preview: bool = False
+    base_mask_data: npt.NDArray | None = field(default=None, init=False)
+    has_cleared_for_crop: bool = field(default=False, init=False)
 
     resolution: tuple[int, int] = field(init=False)
     world_to_screen: npt.NDArray | None = field(default=None, init=False)
@@ -48,7 +50,9 @@ class Mask3DEditorState:
         sub(self.ReceiveVolumeViewerSize, "Receive volume viewer size")
         sub(self.CutMaskFromPolygons, "M3E cut mask from 3D")
         sub(self.SetEditMode, "M3E set edit mode")
+        sub(self.SetToolMode, "M3E set tool mode")
         sub(self.SetDepthValue, "M3E set depth value")
+        sub(self.SetBrushSize, "Set edition brush size")
         sub(self.OnMaskChanged, "Change mask selected")
 
     def setup_state(self):
@@ -60,6 +64,7 @@ class Mask3DEditorState:
                 self.m3e_list.append(drawn_polygon)
 
         Publisher.sendMessage("M3E ask for edit mode")
+        Publisher.sendMessage("M3E ask for tool mode")
         Publisher.sendMessage("M3E ask for depth value")
 
         if not ses.Session().mask_3d_preview:
@@ -86,11 +91,18 @@ class Mask3DEditorState:
 
     def SetEditMode(self, mode: int):
         self.edit_mode = mode
+        self.has_cleared_for_crop = False
         Publisher.sendMessage("M3E cut mask from 3D")
+
+    def SetToolMode(self, tool: int):
+        self.tool_mode = tool
 
     def SetDepthValue(self, value: float):
         self.depth_val = value
         Publisher.sendMessage("M3E cut mask from 3D")
+
+    def SetBrushSize(self, size: float):
+        self.brush_size = size
 
     def init_new_polygon(self):
         self.m3e_list.append(PolygonSelectCanvas())
@@ -161,7 +173,7 @@ class Mask3DEditorState:
                 if display_points
                 else np.zeros((0, 2), dtype=np.float64)
             )
-            mask = invesalius_rs.polygon2mask_rs((w, h), poly_array)
+            mask = polygon2mask_rs((w, h), poly_array)
             filters.append(mask)
 
         return filters
@@ -208,32 +220,87 @@ class Mask3DEditorState:
 
         mask_cut(_mat, sx, sy, sz, depth, filter, wts, wtc, out, self.edit_mode)  # type: ignore
 
+        self.mask_data[1:, 1:, 1:] = out
         self.update_views(out)
+
+    def brush_stroke(self, world_coord):
+        if self.mask_data is None:
+            return
+
+        w, h = self.resolution
+        if h == 0:
+            return
+
+        slice = slc.Slice()
+        sx, sy, sz = slice.spacing
+
+        _mat = self.mask_data[1:, 1:, 1:]
+
+        # InVesalius defines brush_size as diameter, so radius is size / 2.0
+        radius = self.brush_size / 2.0
+
+        wx, wy, wz = world_coord
+
+        # InVesalius transforms the numpy array when sending it to VTK:
+        # 1. to_vtk_mask sets the origin to (-sx, -sy, -sz)
+        # 2. vtkImageFlip flips the Y axis about the origin
+        # We must mathematically invert this pipeline to find the true center of the brush in numpy space.
+        rust_cx = wx + sx
+        rust_cy = -wy - sy
+        rust_cz = wz + sz
+
+        # Apply the high-performance Rust sphere brush
+        orig_mat = None
+        if self.edit_mode == 0 and self.base_mask_data is not None:
+            orig_mat = self.base_mask_data[1:, 1:, 1:]
+        elif hasattr(self, "original_mask_data"):
+            orig_mat = self.original_mask_data[1:, 1:, 1:]
+
+        brush_mask_rs(
+            _mat, orig_mat, (sx, sy, sz), (rust_cx, rust_cy, rust_cz), radius, self.edit_mode
+        )
+
+        # After Rust modifies the array in-place, we update the viewer
+        self.update_views(_mat)
 
     def OnMaskChanged(self, index: int):
         cur_mask = slc.Slice().current_mask
         if cur_mask is not None:
             self.mask_data = cur_mask.matrix.copy()
+            self.has_cleared_for_crop = False
 
-    def update_views(self, _mat: npt.NDArray):
-        slice = slc.Slice()
-        _cur_mask = slice.current_mask
+    def update_views(self, _mat):
+        # Notify the 2D views that the mask changed.
+        _cur_mask = slc.Slice().current_mask
+        slc.Slice().discard_all_buffers()
         if _cur_mask is not None:
-            _cur_mask.matrix[:] = 1  # type: ignore
-            _cur_mask.matrix[1:, 1:, 1:] = _mat  # type: ignore
+            _cur_mask.matrix[1:, 1:, 1:] = self.mask_data[1:, 1:, 1:]
             _cur_mask.was_edited = True
 
             if _cur_mask.volume is not None and ses.Session().mask_3d_preview:
-                _cur_mask.imagedata = _cur_mask.as_vtkimagedata()
-                _cur_mask.volume.change_imagedata()
+                _cur_mask._update_imagedata(update_volume_viewer=True)
 
-            _cur_mask.modified(all_volume=True)
-
-        for ori in ["AXIAL", "CORONAL", "SAGITAL"]:
-            slice.buffer_slices[ori].discard_buffer()
-
-        if _cur_mask is not None:
-            _cur_mask.save_history(0, "VOLUME", _cur_mask.matrix.copy(), self.mask_data)
-
-        Publisher.sendMessage("Render volume viewer")
+        # Publisher.sendMessage("Render volume viewer") is already handled by _update_imagedata
         Publisher.sendMessage("Reload actual slice")
+        Publisher.sendMessage("Update slice viewer")
+
+    def start_brush_stroke(self):
+        cur_mask = slc.Slice().current_mask
+        if cur_mask is not None:
+            self.mask_data = cur_mask.matrix.copy()
+            self.original_mask_data = cur_mask.matrix.copy()
+            if self.edit_mode == 0:
+                if not self.has_cleared_for_crop or (
+                    self.base_mask_data is not None
+                    and np.array_equal(self.mask_data, self.base_mask_data)
+                ):
+                    self.base_mask_data = cur_mask.matrix.copy()
+                    self.mask_data[:] = 0
+                    self.has_cleared_for_crop = True
+
+    def end_brush_stroke(self):
+        cur_mask = slc.Slice().current_mask
+        if cur_mask is not None:
+            cur_mask.save_history(0, "VOLUME", self.original_mask_data, self.mask_data)
+            self.mask_data = cur_mask.matrix.copy()
+            cur_mask.modified(all_volume=True)

@@ -373,6 +373,22 @@ class CanvasRendererCTX:
                 shift_down=evt.ShiftDown(),
             )
             self.propagate_event(self._drag_obj, evt_obj)
+
+        evt_obj_release = CanvasEvent(
+            "left_button_release",
+            None,
+            (x, y),
+            self.viewer,
+            self.evt_renderer,
+            control_down=evt.ControlDown(),
+            alt_down=evt.AltDown(),
+            shift_down=evt.ShiftDown(),
+        )
+        for cb in self._callback_events["LeftButtonReleaseEvent"]:
+            if cb() is not None:
+                cb()(evt_obj_release)
+                break
+
         self._over_obj = None
         self._drag_obj = None
         evt.Skip()
