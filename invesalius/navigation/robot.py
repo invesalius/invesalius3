@@ -22,6 +22,7 @@ from enum import Enum
 import numpy as np
 import wx
 
+import invesalius.constants as const
 import invesalius.data.coregistration as dcr
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
@@ -120,6 +121,10 @@ class Robot:
 
         self.robot_ip = state.get("robot_ip", None)
         self.robot_ip_options = state.get("robot_ip_options", [])
+
+        if not self.robot_ip_options:
+            self.robot_ip_options = list(const.ROBOT_IPS)
+
         self.use_pressure_sensor = state.get("use_pressure_sensor", False)
 
         self.matrix_tracker_to_robot = state.get("tracker_to_robot", None)
