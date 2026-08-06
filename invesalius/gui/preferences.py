@@ -1523,11 +1523,19 @@ class ObjectTab(wx.Panel):
         # Update robot coil combobox
         if hasattr(self, "choice_robot_0_coil") and self.choice_robot_0_coil is not None:
             self.choice_robot_0_coil.Set(list(navigation.coil_registrations))
-            self.choice_robot_0_coil.SetStringSelection(self.robot_0.GetCoilName() or "")
+            coil_0 = self.robot_0.GetCoilName()
+            if coil_0 and coil_0 in navigation.coil_registrations:
+                self.choice_robot_0_coil.SetStringSelection(coil_0)
+            else:
+                self.choice_robot_0_coil.SetSelection(wx.NOT_FOUND)
 
         if hasattr(self, "choice_robot_1_coil") and self.choice_robot_1_coil is not None:
             self.choice_robot_1_coil.Set(list(navigation.coil_registrations))
-            self.choice_robot_1_coil.SetStringSelection(self.robot_1.GetCoilName() or "")
+            coil_1 = self.robot_1.GetCoilName()
+            if coil_1 and coil_1 in navigation.coil_registrations:
+                self.choice_robot_1_coil.SetStringSelection(coil_1)
+            else:
+                self.choice_robot_1_coil.SetSelection(wx.NOT_FOUND)
 
         if n_coils_selected == n_coils:
             self.CoilSelectionDone()
