@@ -70,7 +70,7 @@ class Preferences(wx.Dialog):
             )
 
             self.navigation_tab = NavigationTab(self.book, navigation)
-            self.tracker_tab = TrackerTab(self.book, tracker, robots)
+            self.tracker_tab = TrackerTab(self.book, tracker, robots, navigation)
             self.object_tab = ObjectTab(self.book, navigation, tracker, pedal_connector, robots)
 
             self.book.AddPage(self.navigation_tab, _("Navigation"))
@@ -2222,7 +2222,7 @@ class RobotSetupPanel(wx.Panel):
 
 
 class TrackerTab(wx.Panel):
-    def __init__(self, parent, tracker, robots):
+    def __init__(self, parent, tracker, robots, navigation):
         wx.Panel.__init__(self, parent)
 
         self.session = ses.Session()
@@ -2231,6 +2231,7 @@ class TrackerTab(wx.Panel):
 
         self.tracker = tracker
         self.robots = robots
+        self.navigation = navigation
 
         self.n_coils = 1
         self.LoadConfig()
@@ -2310,7 +2311,7 @@ class TrackerTab(wx.Panel):
 
         # Ensure at least two robots exist in Robots manager for the UI
         while len(self.robots.robots_by_id) < 2:
-            self.robots.AddRobot(tracker=self.tracker, navigation=None, icp=None)
+            self.robots.AddRobot(tracker=self.tracker, navigation=self.navigation, icp=None)
 
         robot_0 = self.robots.GetRobot(0)
         robot_1 = self.robots.GetRobot(1)
