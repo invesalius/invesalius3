@@ -158,6 +158,9 @@ class Robot:
             Publisher.sendMessage(
                 "Neuronavigation to Robot: Request config", robot_id=self.robot_id
             )
+        else:
+            self.SetCoilName(None)
+            Publisher.sendMessage("Update option main coil", done=True)
 
     def RegisterRobot(self):
         Publisher.sendMessage("End busy cursor")

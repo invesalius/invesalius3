@@ -1237,6 +1237,7 @@ class ObjectTab(wx.Panel):
                 self.robot_0_lbl.SetLabel("Robot 0 is connected. Coil attached: ")
             else:
                 self.choice_robot_0_coil.Show(False)
+                self.choice_robot_0_coil.SetSelection(wx.NOT_FOUND)
                 self.robot_0_lbl.SetLabel("Robot 0 is not connected.")
         elif robot_id == 1:
             if enabled:
@@ -1244,6 +1245,7 @@ class ObjectTab(wx.Panel):
                 self.robot_1_lbl.SetLabel("Robot 1 is connected. Coil attached: ")
             else:
                 self.choice_robot_1_coil.Show(False)
+                self.choice_robot_1_coil.SetSelection(wx.NOT_FOUND)
                 self.robot_1_lbl.SetLabel("Robot 1 is not connected.")
         self.Layout()
 

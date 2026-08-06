@@ -3006,6 +3006,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Update main_coil combobox
         Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
+        Publisher.subscribe(self.UpdateMainCoilCombobox, "Update option main coil")
 
         # Update marker_list_ctrl
         Publisher.subscribe(self._AddMarker, "Add marker")
