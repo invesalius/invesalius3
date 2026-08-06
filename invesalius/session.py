@@ -108,7 +108,6 @@ class Session(metaclass=Singleton):
         self._config = CONFIG_INIT
         self._config["mode"] = const.MODE_RP
         self._config["project_status"] = const.PROJECT_STATUS_CLOSED
-        self._config["robot"] = {"robot_ip_options": const.ROBOT_IPS}
 
         self.WriteConfigFile()
 
@@ -119,7 +118,6 @@ class Session(metaclass=Singleton):
             config_init = CONFIG_INIT
             config_init["mode"] = const.MODE_RP
             config_init["project_status"] = const.PROJECT_STATUS_CLOSED
-            config_init["robot"] = {"robot_ip_options": const.ROBOT_IPS}
             self._config = deep_merge_dict(config_init, self._config.copy())
             self.WriteConfigFile()
 

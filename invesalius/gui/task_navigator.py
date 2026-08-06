@@ -2075,7 +2075,7 @@ class RobotButtonsPanel(wx.Panel):
         # Enable 'reset errors' robot button if robot is connected.
         self.EnableRobotResetErrorsButton(enabled=robot_connected)
 
-    def OnEnableRobotButtons(self, enabled=False):
+    def OnEnableRobotButtons(self, enabled=False, robot_id=None):
         self.UpdateRobotButtons()
 
     # 'Track target with robot' button
@@ -2730,6 +2730,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.navigation = nav_hub.navigation
         self.markers = nav_hub.markers
         self.robot = nav_hub.robot
+        self.robots = nav_hub.robots
 
         if has_mTMS:
             self.mTMS = mTMS()
@@ -3005,6 +3006,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Update main_coil combobox
         Publisher.subscribe(self.UpdateMainCoilCombobox, "Coil selection done")
+        Publisher.subscribe(self.UpdateMainCoilCombobox, "Update option main coil")
 
         # Update marker_list_ctrl
         Publisher.subscribe(self._AddMarker, "Add marker")
@@ -3688,11 +3690,28 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         select_main_coil = self.select_main_coil
         if done:
             select_main_coil.Clear()
-            robot_coil = self.robot.GetCoilName()
-            choices = [
-                f"{coil} (robot)" if coil == robot_coil else coil
-                for coil in self.navigation.coil_registrations
-            ]
+
+            coil_to_robots = {}
+            if hasattr(self, "robots") and self.robots is not None:
+                for r_id, r in self.robots.robots_by_id.items():
+                    r_coil = r.GetCoilName()
+                    if r_coil:
+                        if r_coil not in coil_to_robots:
+                            coil_to_robots[r_coil] = []
+                        coil_to_robots[r_coil].append(str(r_id))
+            elif hasattr(self, "robot") and self.robot is not None:
+                r_coil = self.robot.GetCoilName()
+                if r_coil:
+                    coil_to_robots[r_coil] = ["0"]
+
+            choices = []
+            for coil in self.navigation.coil_registrations:
+                if coil in coil_to_robots:
+                    r_str = ", ".join(coil_to_robots[coil])
+                    choices.append(f"{coil} (robot {r_str})")
+                else:
+                    choices.append(coil)
+
             select_main_coil.AppendItems(choices)
             try:
                 main_coil_index = list(self.navigation.coil_registrations).index(
@@ -3713,7 +3732,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def OnChooseMainCoil(self, evt, ctrl):
         choice = evt.GetSelection()
         main_coil = ctrl.GetString(choice)
-        if main_coil.endswith(" (robot)"):
+        if " (robot " in main_coil:
+            main_coil = main_coil.split(" (robot ")[0]
+        elif main_coil.endswith(" (robot)"):
             main_coil = main_coil[:-8]
         self.navigation.SetMainCoil(main_coil)
         ctrl.SetSelection(choice)

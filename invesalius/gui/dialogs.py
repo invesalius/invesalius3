@@ -6945,69 +6945,6 @@ class SetTrackerDeviceToRobot(wx.Dialog):
         return self.tracker_id
 
 
-class SetRobotIP(wx.Dialog):
-    def __init__(self, title: str = _("Set Robot IP")):
-        wx.Dialog.__init__(
-            self,
-            wx.GetApp().GetTopWindow(),
-            -1,
-            title,
-            size=wx.Size(1000, 200),
-            style=wx.DEFAULT_DIALOG_STYLE
-            | wx.FRAME_FLOAT_ON_PARENT
-            | wx.STAY_ON_TOP
-            | wx.RESIZE_BORDER,
-        )
-        self.robot_ip = None
-        self._init_gui()
-
-    def _init_gui(self) -> None:
-        # ComboBox for spatial tracker device selection
-        tooltip = _("Choose or type the robot IP")
-        robot_ip_options = [_("Select robot IP:")] + const.ROBOT_IPS
-        choice_IP = wx.ComboBox(
-            self, -1, "", choices=robot_ip_options, style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER
-        )
-        choice_IP.SetToolTip(tooltip)
-        choice_IP.SetSelection(const.DEFAULT_TRACKER)
-        choice_IP.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceIP, ctrl=choice_IP))
-        choice_IP.Bind(wx.EVT_TEXT, partial(self.OnTxt_Ent, ctrl=choice_IP))
-
-        btn_ok = wx.Button(self, wx.ID_OK)
-        btn_ok.SetHelpText("")
-        btn_ok.SetDefault()
-
-        btn_cancel = wx.Button(self, wx.ID_CANCEL)
-        btn_cancel.SetHelpText("")
-
-        btnsizer = wx.StdDialogButtonSizer()
-        btnsizer.AddButton(btn_ok)
-        btnsizer.AddButton(btn_cancel)
-        btnsizer.Realize()
-
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-
-        main_sizer.Add((5, 5))
-        main_sizer.Add(choice_IP, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
-        main_sizer.Add((15, 15))
-        main_sizer.Add(btnsizer, 0, wx.EXPAND)
-        main_sizer.Add((5, 5))
-
-        self.SetSizer(main_sizer)
-        main_sizer.Fit(self)
-
-        self.CenterOnParent()
-
-    def OnTxt_Ent(self, evt: wx.CommandEvent, ctrl: wx.TextEntry) -> None:
-        self.robot_ip = str(ctrl.GetValue())
-
-    def OnChoiceIP(self, evt: wx.CommandEvent, ctrl: wx.ComboBox) -> None:
-        self.robot_ip = ctrl.GetStringSelection()
-
-    def GetValue(self) -> str | None:
-        return self.robot_ip
-
-
 class RobotCoregistrationDialog(wx.Dialog):
     def __init__(
         self,
@@ -7190,7 +7127,10 @@ class RobotCoregistrationDialog(wx.Dialog):
     def SetAcquiredPoints(self, num_points: int) -> None:
         self.txt_number.SetLabel(str(num_points))
 
-    def PointRegisteredByRobot(self) -> None:
+    def PointRegisteredByRobot(self, robot_id=None) -> None:
+        if robot_id is not None and robot_id != self.robot.robot_id:
+            return
+
         # Increment the number of acquired points.
         num_points = self.GetAcquiredPoints()
         num_points += 1
@@ -7227,7 +7167,10 @@ class RobotCoregistrationDialog(wx.Dialog):
 
         # TODO: make a colored circle to sinalize that the transformation was made (green) (red if not)
 
-    def UpdateRobotTransformationMatrix(self, data: Any) -> None:
+    def UpdateRobotTransformationMatrix(self, data, robot_id=None) -> None:
+        if robot_id is not None and robot_id != self.robot.robot_id:
+            return
+
         self.matrix_tracker_to_robot = np.array(data)
 
     def SaveRegistration(self, evt: wx.CommandEvent) -> None:
