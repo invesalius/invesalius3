@@ -78,7 +78,7 @@ def test_load_state(mocker, tracker):
     assert tracker.tracker_id == const.DEBUGTRACKAPPROACH
     assert (tracker.tracker_fiducials == np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])).all()
     mock_set_tracker.assert_called_once_with(
-        tracker_id=const.DEBUGTRACKAPPROACH, configuration=None
+        tracker_id=const.DEBUGTRACKAPPROACH, n_coils=1, configuration=None
     )
 
 

@@ -70,7 +70,7 @@ class OrderedFiducialButtons:
             tip = fiducial["tip"]
 
             w, h = wx.ScreenDC().GetTextExtent("M" * len(label))
-            ctrl = wx.Button(parent, button_id, label="", size=(55, h + 5))
+            ctrl = wx.Button(parent, button_id, label="", size=(65, h + 5))
             ctrl.SetLabel(label)
             ctrl.SetToolTip(tip)
             ctrl.Bind(wx.EVT_BUTTON, partial(self._OnButton, n=n))

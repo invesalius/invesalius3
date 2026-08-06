@@ -431,8 +431,9 @@ class CoordinateCorregistrate(threading.Thread):
                 coords = {"probe": coord_probe}
                 m_imgs = {"probe": m_img_probe}
 
-                # LUKATODO: this is an arbitrary coil, so efields/tracts work correctly with 1 coil but may bug out when using multiple
-                main_coil = next(iter(obj_datas))
+                main_coil = self.navigation.main_coil
+                if main_coil not in obj_datas:
+                    main_coil = next(iter(obj_datas))
                 for coil_name, obj_data in obj_datas.items():
                     if coil_name != main_coil:
                         obj_id = obj_data[0]

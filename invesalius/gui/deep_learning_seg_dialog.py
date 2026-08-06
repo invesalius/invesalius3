@@ -383,8 +383,10 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.btn_stop.Disable()
         self.btn_segment.Disable()
         self.chk_new_mask.Disable()
-        self.sld_threshold.Disable()
-        self.txt_threshold.Disable()
+        # Keep threshold slider and text field enabled for post-inference adjustment
+        # Users can interactively adjust the threshold, and the mask will update in real-time
+        # self.sld_threshold.Disable()
+        # self.txt_threshold.Disable()
         self.cb_backends.Disable()
         self.cb_devices.Disable()
         self.overlap.Disable()
@@ -641,6 +643,10 @@ class SubpartSegmenterDialog(DeepLearningSegmenterDialog):
 
         for checkbox in self.mask_checkboxes.values():
             checkbox.Enable()
+
+        # Disable threshold slider for Brain Subpart - it uses label IDs, not thresholds
+        self.sld_threshold.Disable()
+        self.txt_threshold.Disable()
 
     def apply_segment_threshold(self):
         threshold = self.sld_threshold.GetValue() / 100.0

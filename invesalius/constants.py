@@ -514,6 +514,7 @@ FILETYPE_VRML = wx.NewIdRef()
 FILETYPE_OBJ = wx.NewIdRef()
 FILETYPE_VTP = wx.NewIdRef()
 FILETYPE_PLY = wx.NewIdRef()
+FILETYPE_3MF = wx.NewIdRef()
 FILETYPE_X3D = wx.NewIdRef()
 
 FILETYPE_IMAGEDATA = wx.NewIdRef()
@@ -524,6 +525,7 @@ FILETYPE_PNG = wx.NewIdRef()
 FILETYPE_PS = wx.NewIdRef()
 FILETYPE_POV = wx.NewIdRef()
 FILETYPE_TIF = wx.NewIdRef()
+
 
 IMAGE_TILING = {
     "1 x 1": (1, 1),
@@ -1212,3 +1214,7 @@ KEYSTROKE_PEDAL_KEY = wx.WXK_F21
 MASK_3D_EDIT_INCLUDE = 0
 MASK_3D_EDIT_EXCLUDE = 1
 MASK_3D_EDIT_OP_NAME = [_("Include Inside"), _("Exclude Inside")]
+
+MASK_3D_EDIT_TOOL_POLYGON = 0
+MASK_3D_EDIT_TOOL_BRUSH = 1
+MASK_3D_EDIT_TOOL_NAME = [_("Polygon"), _("3D Brush")]

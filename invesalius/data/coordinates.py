@@ -270,15 +270,17 @@ def PolarisCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_m
     trans_ref = np.array(ref[6:9]).astype(float)
     coord2 = np.hstack((trans_ref, angles_ref))
 
+    n_coils = getattr(tracker_connection, "n_coils", 1)
+
     obj_coords = []
-    for i in range(trck.objs.size()):
+    for i in range(min(n_coils, trck.objs.size())):
         obj = trck.objs[i].decode(const.FS_ENCODE).split(",")
         angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
         trans_obj = np.array(obj[6:9]).astype(float)
         obj_coords.append(np.hstack((trans_obj, angles_obj)))
 
     coord = np.vstack([coord1, coord2, *obj_coords])
-    marker_visibilities = [trck.probeID, trck.refID] + list(trck.objIDs)
+    marker_visibilities = [trck.probeID, trck.refID] + list(trck.objIDs)[:n_coils]
 
     return coord, marker_visibilities
 
@@ -545,41 +547,36 @@ def DebugCoordRandom(tracker_connection: "TrackerConnection", tracker_id: int, r
     dx = [-30, 30]
     dt = [-180, 180]
 
-    coord1 = np.array(
-        [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
+    n_coils = getattr(tracker_connection, "n_coils", 1)
+
+    coords = []
+    # Add probe and ref
+    coords.append(
+        np.array(
+            [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
+        )
     )
-    coord2 = np.array(
-        [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
+    coords.append(
+        np.array(
+            [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
+        )
     )
-    coord3 = np.array(
-        [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
-    )
-    coord4 = np.array(
-        [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
-    )
-    coord5 = np.array(
-        [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
-    )
+
+    # Add varying number of coils
+    for _ in range(n_coils):
+        coords.append(
+            np.array(
+                [uniform(*dx), uniform(*dx), uniform(*dx), uniform(*dt), uniform(*dt), uniform(*dt)]
+            )
+        )
 
     sleep(0.15)
 
-    # coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-    #
-    # coord2 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-    #
-    # coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-    #
-    # coord4 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-    #                    uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-
     # Always make the markers visible when using debug tracker; this enables registration, as it
     # is not possible to registering without markers.
-    marker_visibilities = [True, True, True, True, True]
+    marker_visibilities = [True] * (2 + n_coils)
 
-    return np.vstack([coord1, coord2, coord3, coord4, coord5]), marker_visibilities
+    return np.vstack(coords), marker_visibilities
 
 
 def coordinates_to_transformation_matrix(

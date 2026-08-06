@@ -11,6 +11,7 @@ nibabel==5.2.1
 scikit-image==0.24.0
 python-gdcm==3.0.24.1
 vtk==9.3.0
+lib3mf==2.3.2
 
 # Machine Learning
 torch>=2.3.1

@@ -296,6 +296,7 @@ WILDCARD_MESH_FILES = (
     "Standard Polygon File Format (*.ply)|*.ply|"
     "Alias Wavefront Object (*.obj)|*.obj|"
     "VTK Polydata File Format (*.vtp)|*.vtp|"
+    "3D Manufacturing Format (*.3mf)|*.3mf|"
     "All files (*.*)|*.*"
 )
 WILDCARD_JSON_FILES = "JSON File format (*.json|*.json|All files (*.*)|*.*"
@@ -1985,12 +1986,14 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         # Retrieve existing masks
         project = prj.Project()
         index_list = project.mask_dict.keys()
-        self.mask_list = [project.mask_dict[index].name for index in sorted(index_list)]
+        self.mask_list = ["All"] + [project.mask_dict[index].name for index in sorted(index_list)]
+        # Store the actual mask indices for lookup (None for "All")
+        self.mask_indices = [None] + list(sorted(index_list))
 
         active_mask = 0
-        for idx in project.mask_dict:
-            if project.mask_dict[idx] is slc.Slice().current_mask:
-                active_mask = idx
+        for i, idx in enumerate(self.mask_indices):
+            if idx is not None and project.mask_dict[idx] is slc.Slice().current_mask:
+                active_mask = i
                 break
 
         # Mask selection combo
@@ -2002,6 +2005,11 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         if sys.platform != "win32":
             combo_mask.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.combo_mask = combo_mask
+
+        # Disable surface name field if "All" is initially selected
+        if active_mask == 0:
+            text.Enable(False)
+            text.SetValue(_("Batch mode"))
 
         # LINE 3: Surface quality
         label_quality = wx.StaticText(self, -1, _("Surface quality:"))
@@ -2054,18 +2062,38 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         sizer.Fit(self)
 
     def OnSetMask(self, evt: wx.CommandEvent) -> None:
-        new_evt = MaskEvent(myEVT_MASK_SET, -1, self.combo_mask.GetSelection())
-        self.GetEventHandler().ProcessEvent(new_evt)
+        selection = self.combo_mask.GetSelection()
+        mask_index = self.mask_indices[selection]
 
-    def GetValue(self) -> dict[str, str | int | bool]:
-        mask_index = self.combo_mask.GetSelection()
+        # Disable "New surface name" field when "All" is selected (index 0)
+        if selection == 0:  # "All" is always at index 0
+            self.text.Enable(False)
+            self.text.SetValue(_("Batch mode"))  # Optional: show why it's disabled
+        else:
+            self.text.Enable(True)
+            # Restore default name if it was showing "Batch mode"
+            if self.text.GetValue() == _("Batch mode"):
+                import invesalius.constants as const
+                import invesalius.data.surface as surface
+
+                default_name = const.SURFACE_NAME_PATTERN % (surface.Surface.general_index + 2)
+                self.text.SetValue(default_name)
+
+        # Only send event if a specific mask is selected (not "All")
+        if mask_index is not None:
+            new_evt = MaskEvent(myEVT_MASK_SET, -1, mask_index)
+            self.GetEventHandler().ProcessEvent(new_evt)
+
+    def GetValue(self) -> dict[str, str | int | bool | None]:
+        selection = self.combo_mask.GetSelection()
+        mask_index = self.mask_indices[selection]
         surface_name = self.text.GetValue()
         quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
         fill_border_holes = self.check_box_border_holes.GetValue()
         fill_holes = self.check_box_holes.GetValue()
         keep_largest = self.check_box_largest.GetValue()
         return {
-            "index": mask_index,
+            "index": mask_index,  # None if "All" is selected
             "name": surface_name,
             "quality": quality,
             "fill_border_holes": fill_border_holes,
@@ -4122,6 +4150,27 @@ class ObjectCalibrationDialog(wx.Dialog):
         self._init_pedal()
         self.InitializeObject()
 
+    def _GetROMBasename(self, obj_id):
+        """Get the ROM file basename (without extension) for a given obj_id.
+
+        For trackers like NDI Polaris, each coil has a ROM file. The obj_id
+        maps to the ROM file index as: obj_id=2 -> obj_dirs[0], etc.
+
+        Returns the basename without extension, or None if not available.
+        """
+        connection = self.tracker.tracker_connection
+        if connection is None or connection.configuration is None:
+            return None
+        obj_dirs = connection.configuration.get("obj_dirs", None)
+        if obj_dirs is None:
+            return None
+        rom_index = obj_id - 2
+        if 0 <= rom_index < len(obj_dirs):
+            basename = os.path.basename(obj_dirs[rom_index])
+            name, _ = os.path.splitext(basename)
+            return name
+        return None
+
     def _init_gui(self) -> None:
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
@@ -4134,33 +4183,56 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ball_actors: list[vtkActor | None] = [None] * 4
         self.txt_coord = [list(), list(), list(), list()]
 
-        # ComboBox for object index in coord_raw (0 for static, 2 for dynamic, 3, 4, ... for multiple coils)
-        # Check how many coords the tracker gives, ie. coord_raw.shape[0]
+        # ComboBox for object index in coord_raw
         max_obj_id = self.tracker.GetTrackerCoordinates(ref_mode_id=0)[2].shape[0]
-        tooltip = _(
-            "Choose the coil index in coord_raw. Choose 0 for static mode, 2 for dynamic mode and 3 onwards for multiple coils."
-        )
+        tooltip = _("Select the hardware port / tracker sensor for the coil to be calibrated.")
 
-        # Static mode obj_id=0 (case where stylus is attached to coil) is only feasible for single coil-mode, so hide it in multicoil mode
-        choices = ["0"] if self.n_coils == 1 else []
-        choices += [str(i) for i in range(2, max_obj_id)]
+        choices = []
+        self.obj_id_map = {}
 
-        choice_obj_id = wx.ComboBox(
+        if self.n_coils == 1:
+            label = _("Stylus (Single)")
+            choices.append(label)
+            self.obj_id_map[label] = 0
+
+        is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
+        for i in range(2, max_obj_id):
+            label = None
+            if is_polaris:
+                label = self._GetROMBasename(i)
+            label = label or _(f"Coil {i - 1}")
+            choices.append(label)
+            self.obj_id_map[label] = i
+
+        self.choice_obj_id = choice_obj_id = wx.ComboBox(
             self,
             -1,
             "",
-            size=wx.Size(90, 23),
+            size=wx.Size(120, 23),
             choices=choices,
-            style=wx.CB_DROPDOWN | wx.CB_READONLY,
+            style=wx.CB_DROPDOWN,
         )
         choice_obj_id.SetToolTip(tooltip)
         choice_obj_id.Bind(wx.EVT_COMBOBOX, self.OnChooseObjID)
-        choice_obj_id.SetStringSelection(str(self.obj_id))
+
+        # Determine initial selection based on default obj_id
+        for lbl, idx in self.obj_id_map.items():
+            if idx == self.obj_id:
+                choice_obj_id.SetStringSelection(lbl)
+                break
+        else:
+            if choices:
+                choice_obj_id.SetStringSelection(choices[0])
+                self.obj_id = self.obj_id_map[choices[0]]
+
         choice_obj_id.Enable(True)
 
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
-            self.obj_id = 0
-            choice_obj_id.SetSelection(0)
+            for lbl, idx in self.obj_id_map.items():
+                if idx == 0:
+                    self.obj_id = 0
+                    choice_obj_id.SetStringSelection(lbl)
+                    break
             choice_obj_id.Enable(False)
 
         # ComboBox for sensor selection for FASTRAK
@@ -4169,7 +4241,7 @@ class ObjectCalibrationDialog(wx.Dialog):
             self,
             -1,
             "",
-            size=wx.Size(90, 23),
+            size=wx.Size(120, 23),
             choices=const.FT_SENSOR_MODE,
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
@@ -4185,16 +4257,16 @@ class ObjectCalibrationDialog(wx.Dialog):
             choice_sensor.Show(False)
 
         tooltip = _("Reset all fiducials")
-        btn_reset = wx.Button(self, -1, _("Reset"), size=wx.Size(90, 30))
+        btn_reset = wx.Button(self, -1, _("Reset"), size=wx.Size(120, 26))
         btn_reset.SetToolTip(tooltip)
         btn_reset.Bind(wx.EVT_BUTTON, self.OnReset)
 
         # Buttons to finish or cancel object registration
         tooltip = _("Registration done")
-        btn_ok = wx.Button(self, wx.ID_OK, _("Done"), size=wx.Size(90, 30))
+        btn_ok = wx.Button(self, wx.ID_OK, _("Done"), size=wx.Size(120, 26))
         btn_ok.SetToolTip(tooltip)
 
-        extra_sizer = wx.FlexGridSizer(cols=1, hgap=5, vgap=10)
+        extra_sizer = wx.FlexGridSizer(cols=1, hgap=5, vgap=6)
         extra_sizer.AddMany([choice_obj_id, btn_reset, btn_ok, choice_sensor])
 
         # Buttons for object fiducials
@@ -4214,7 +4286,7 @@ class ObjectCalibrationDialog(wx.Dialog):
                     wx.StaticText(self, -1, label="-", style=wx.ALIGN_RIGHT, size=wx.Size(40, 23))
                 )
 
-        coord_sizer = wx.GridBagSizer(hgap=20, vgap=5)
+        coord_sizer = wx.GridBagSizer(hgap=10, vgap=5)
 
         for m, button in enumerate(self.buttons):
             coord_sizer.Add(button, pos=wx.GBPosition(m, 0))
@@ -4232,26 +4304,16 @@ class ObjectCalibrationDialog(wx.Dialog):
         group_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=50, vgap=5)
         group_sizer.AddMany([(coord_sizer, 0, wx.LEFT, 20), (extra_sizer, 0, wx.LEFT, 10)])
 
-        name_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        lbl_name = wx.StaticText(self, -1, _("Name the coil:"))
-        self.name_box = name_box = wx.TextCtrl(self, -1, _("coil1"))
-        name_sizer.AddMany(
-            [(lbl_name, 1, wx.ALIGN_CENTER_VERTICAL), (name_box, 1, wx.ALIGN_CENTER_VERTICAL)]
-        )
-
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
         main_sizer.Add(
             group_sizer, 0, wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP | wx.RIGHT | wx.BOTTOM, 10
         )
-        if self.n_coils > 1:  # Multicoil
-            main_sizer.Add(name_sizer, 0, wx.EXPAND)
-        else:  # Single coil mode
+
+        if self.n_coils == 1:  # Single coil mode
             # Hide obj_id combobox
             choice_obj_id.Enable(False)
             choice_obj_id.Show(False)
-            name_sizer.Show(False)
-            name_sizer.ShowItems(False)
 
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
@@ -4411,14 +4473,21 @@ class ObjectCalibrationDialog(wx.Dialog):
             ShowNavigationTrackerWarning(0, "choose")
             return
 
-        marker_visibilities, coord, coord_raw = self.tracker.GetTrackerCoordinates(
-            # XXX: Always use static reference mode when getting the coordinates. This is what the
-            #      code did previously, as well. At some point, it should probably be thought through
-            #      if this is actually what we want or if it should be changed somehow.
-            #
-            ref_mode_id=const.STATIC_REF,
-            n_samples=const.CALIBRATION_TRACKER_SAMPLES,
-        )
+        # Show a wait cursor while collecting tracker samples.
+        # GetTrackerCoordinates blocks the main thread for ~100-300ms (10 samples × sleep).
+        # Without this, the dialog appears frozen with no feedback to the user.
+        wx.BeginBusyCursor()
+        try:
+            marker_visibilities, coord, coord_raw = self.tracker.GetTrackerCoordinates(
+                # XXX: Always use static reference mode when getting the coordinates. This is what the
+                #      code did previously, as well. At some point, it should probably be thought through
+                #      if this is actually what we want or if it should be changed somehow.
+                #
+                ref_mode_id=const.STATIC_REF,
+                n_samples=const.CALIBRATION_TRACKER_SAMPLES,
+            )
+        finally:
+            wx.EndBusyCursor()
 
         # If coil or probe markers are not visible, show a warning and return early.
         probe_visible, head_visible, *coils_visible = marker_visibilities
@@ -4478,7 +4547,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ResetObjectFiducials()
 
     def OnChooseObjID(self, evt: wx.CommandEvent) -> None:
-        self.obj_id = int(evt.GetEventObject().GetStringSelection())
+        selection_label = evt.GetEventObject().GetStringSelection()
+        if selection_label in self.obj_id_map:
+            self.obj_id = self.obj_id_map[selection_label]
 
         # choice_sensor is only shown for relevant trackers like Polhemus FASTRAK
         # If obj_id=0, (ie. the stylus is attached to the coil), the sensor is not used, so hide this
@@ -4499,10 +4570,14 @@ class ObjectCalibrationDialog(wx.Dialog):
     def GetValue(
         self,
     ) -> tuple[np.ndarray, np.ndarray, int, bytes | None, vtkPolyData | None]:
+        coil_name = "default_coil"
+
         if self.n_coils > 1:
-            coil_name = self.name_box.GetValue().strip()
-        else:
-            coil_name = "default_coil"
+            is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
+
+            rom_name = self._GetROMBasename(self.obj_id) if is_polaris else None
+
+            coil_name = rom_name or self.choice_obj_id.GetValue().strip() or "coil"
 
         return (
             coil_name,
