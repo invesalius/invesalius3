@@ -99,6 +99,8 @@ class Preferences(wx.Dialog):
         self.Layout()
         self.__bind_events()
 
+        Publisher.sendMessage("Stop navigation")
+
     def __bind_events(self):
         Publisher.subscribe(self.LoadPreferences, "Load Preferences")
 
