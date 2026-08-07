@@ -1427,6 +1427,8 @@ class MenuBar(wx.MenuBar):
         sub(self.OnEnableState, "Enable state project")
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
+        sub(self.OnUpdateUndoLabel, "Update undo label")
+        sub(self.OnUpdateRedoLabel, "Update redo label")
         sub(self.OnEnableGotoCoord, "Enable Go-to-Coord")
         sub(self.OnEnableNavigation, "Navigation status")
 
@@ -1815,6 +1817,16 @@ class MenuBar(wx.MenuBar):
             self.FindItemById(wx.ID_REDO).Enable(True)
         else:
             self.FindItemById(wx.ID_REDO).Enable(False)
+
+    def OnUpdateUndoLabel(self, label):
+        item = self.FindItemById(wx.ID_UNDO)
+        if item:
+            item.SetItemLabel(f"{label}\tCtrl+Z")
+
+    def OnUpdateRedoLabel(self, label):
+        item = self.FindItemById(wx.ID_REDO)
+        if item:
+            item.SetItemLabel(f"{label}\tCtrl+Y")
 
     def OnEnableGotoCoord(self, status=True):
         """
