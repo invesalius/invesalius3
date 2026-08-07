@@ -208,6 +208,12 @@ class Project(metaclass=Singleton):
             preset = plistlib.load(f, fmt=plistlib.FMT_XML)
         Publisher.sendMessage("Set raycasting preset", preset)
 
+    def SetRaycastColorPreset(self, label: str) -> None:
+        path = os.path.join(inv_paths.RAYCASTING_PRESETS_COLOR_DIRECTORY, label + ".plist")
+        with open(path, "r+b") as f:
+            preset = plistlib.load(f, fmt=plistlib.FMT_XML)
+        Publisher.sendMessage("Set raycasting color preset", preset=preset)
+
     def GetMeasuresDict(self):
         measures = {}
         d = self.measurement_dict
