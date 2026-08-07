@@ -162,8 +162,8 @@ class InvesaliusLogger:  # metaclass=Singleton):
 
     def _read_config_from_json(self, json_filename):
         try:
-            config_file = open(json_filename)
-            config_dict = json.load(config_file)
+            with open(json_filename) as config_file:
+                config_dict = json.load(config_file)
             self._config = deep_merge_dict(self._config.copy(), config_dict)
         except Exception as e1:
             print("Error in _read_config_from_json:", e1)
