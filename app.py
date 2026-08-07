@@ -39,6 +39,23 @@ if sys.platform == "win32":
         import winreg
     except ImportError:
         import _winreg as winreg
+
+    # Enable DPI awareness for high-resolution displays (fixes #324)
+    # Must be called before wx initialization
+    try:
+        import ctypes
+
+        # Try to set per-monitor DPI awareness (Windows 10 1607+)
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE
+        except Exception:
+            # Fall back to system DPI awareness (Windows Vista+)
+            try:
+                ctypes.windll.user32.SetProcessDPIAware()
+            except Exception:
+                pass  # DPI awareness not available on this system
+    except Exception:
+        pass  # Silently continue if DPI awareness setup fails
 #  else:
 #  if sys.platform != 'darwin':
 #  import wxversion
