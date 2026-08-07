@@ -169,14 +169,16 @@ class InnerTaskPanel(wx.Panel):
         # link_request_rp.UpdateLink()
         # link_request_rp.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkRequestRP)
 
-        # tooltip = "Open report tool..."
-        # link_report = hl.HyperLinkCtrl(self,-1,"Open report tool...")
-        # link_report.SetUnderlines(False, False, False)
-        # link_report.SetColours("BLACK", "BLACK", "BLACK")
-        # link_report.SetToolTip(tooltip)
-        # link_report.AutoBrowse(False)
-        # link_report.UpdateLink()
-        # link_report.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkReport)
+        tooltip = _("Generate a case report with DICOM info, measures and screenshot")
+        link_report = hl.HyperLinkCtrl(self, -1, _("Open report tool..."))
+        link_report.SetUnderlines(False, False, False)
+        link_report.SetBold(True)
+        link_report.SetColours("BLACK", "BLACK", "BLACK")
+        link_report.SetBackgroundColour(self.GetBackgroundColour())
+        link_report.SetToolTip(tooltip)
+        link_report.AutoBrowse(False)
+        link_report.UpdateLink()
+        link_report.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkReport)
 
         # Image(s) for buttons
         BMP_EXPORT_SURFACE = (
@@ -188,6 +190,14 @@ class InnerTaskPanel(wx.Panel):
             .ConvertToBitmap()
         )
         BMP_TAKE_PICTURE = (
+            wx.Bitmap(
+                os.path.join(inv_paths.ICON_DIR, "tool_photo_original.png"), wx.BITMAP_TYPE_PNG
+            )
+            .ConvertToImage()
+            .Rescale(25, 25)
+            .ConvertToBitmap()
+        )
+        BMP_REPORT = (
             wx.Bitmap(
                 os.path.join(inv_paths.ICON_DIR, "tool_photo_original.png"), wx.BITMAP_TYPE_PNG
             )
@@ -214,9 +224,8 @@ class InnerTaskPanel(wx.Panel):
         #                                style=button_style)
         # button_request_rp = pbtn.PlateButton(self, BTN_REQUEST_RP, "",
         #                                    BMP_IMPORT, style=button_style)
-        # button_report = pbtn.PlateButton(self, BTN_REPORT, "",
-        #                                 BMP_IMPORT,
-        #                                 style=button_style)
+        button_report = pbtn.PlateButton(self, BTN_REPORT, "", BMP_REPORT, style=button_style)
+        button_report.SetBackgroundColour(self.GetBackgroundColour())
 
         # When using PlaneButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
@@ -225,7 +234,7 @@ class InnerTaskPanel(wx.Panel):
         flag_link = wx.EXPAND | wx.GROW | wx.LEFT | wx.TOP
         flag_button = wx.EXPAND | wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=2, vgap=0)
+        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany(
             [
@@ -233,14 +242,14 @@ class InnerTaskPanel(wx.Panel):
                 (button_picture, 0, flag_button),
                 (link_export_surface, 1, flag_link, 3),
                 (button_surface, 0, flag_button),
+                (link_report, 1, flag_link, 3),
+                (button_report, 0, flag_button),
             ]
         )
         # (link_export_mask, 1, flag_link, 3),
-        # (button_mask, 0, flag_button)])
-        # (link_report, 0, flag_link, 3),
-        # (button_report, 0, flag_button),
+        # (button_mask, 0, flag_button)
         # (link_request_rp, 1, flag_link, 3),
-        # (button_request_rp, 0, flag_button)])
+        # (button_request_rp, 0, flag_button)
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -397,7 +406,19 @@ class InnerTaskPanel(wx.Panel):
         pass
 
     def OnLinkReport(self, evt=None):
-        pass
+        from invesalius.gui.report_dialog import ReportDialog
+
+        if not hasattr(self, "_report_dialog") or not self._report_dialog:
+            self._report_dialog = ReportDialog(parent=self)
+            self._report_dialog.Bind(wx.EVT_CLOSE, self._on_report_dialog_close)
+        self._report_dialog.Show()
+        self._report_dialog.Raise()
+
+    def _on_report_dialog_close(self, evt):
+        if hasattr(self, "_report_dialog") and self._report_dialog:
+            self._report_dialog.Destroy()
+            self._report_dialog = None
+        evt.Skip()
 
     def OnButton(self, evt):
         id = evt.GetId()
