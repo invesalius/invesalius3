@@ -514,6 +514,7 @@ FILETYPE_VRML = wx.NewIdRef()
 FILETYPE_OBJ = wx.NewIdRef()
 FILETYPE_VTP = wx.NewIdRef()
 FILETYPE_PLY = wx.NewIdRef()
+FILETYPE_3MF = wx.NewIdRef()
 FILETYPE_X3D = wx.NewIdRef()
 
 FILETYPE_IMAGEDATA = wx.NewIdRef()
@@ -524,6 +525,7 @@ FILETYPE_PNG = wx.NewIdRef()
 FILETYPE_PS = wx.NewIdRef()
 FILETYPE_POV = wx.NewIdRef()
 FILETYPE_TIF = wx.NewIdRef()
+
 
 IMAGE_TILING = {
     "1 x 1": (1, 1),
@@ -1038,6 +1040,12 @@ EFIELD_ROI_SIZE = 40
 SLEEP_NAVIGATION = 0.1
 SLEEP_COORDINATES = 0.1
 
+# Delay between consecutive tracker coordinate samples when computing the median
+# for calibration. Without this delay, the sampling loop runs faster than the
+# tracker's update rate, causing duplicate readings that defeat the purpose of
+# median filtering. See: https://github.com/invesalius/invesalius3/issues/380
+SLEEP_BETWEEN_TRACKER_SAMPLES = 0.01
+
 BRAIN_OPACITY = 0.6
 N_CPU = psutil.cpu_count()
 # the max_sampling_step can be set to something different as well. Above 100 is probably not necessary
@@ -1201,3 +1209,7 @@ KEYSTROKE_PEDAL_KEY = wx.WXK_F21
 MASK_3D_EDIT_INCLUDE = 0
 MASK_3D_EDIT_EXCLUDE = 1
 MASK_3D_EDIT_OP_NAME = [_("Include Inside"), _("Exclude Inside")]
+
+MASK_3D_EDIT_TOOL_POLYGON = 0
+MASK_3D_EDIT_TOOL_BRUSH = 1
+MASK_3D_EDIT_TOOL_NAME = [_("Polygon"), _("3D Brush")]

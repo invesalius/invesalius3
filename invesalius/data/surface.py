@@ -28,10 +28,12 @@ import sys
 import tempfile
 import time
 import traceback
+from collections import Counter
 
 import numpy as np
 import wx
 import wx.lib.agw.genericmessagedialog as GMD
+from vtkmodules.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray, vtk_to_numpy
 from vtkmodules.vtkCommonCore import (
     vtkIdList,
     vtkPoints,
@@ -54,6 +56,13 @@ from vtkmodules.vtkIOXML import vtkXMLPolyDataReader, vtkXMLPolyDataWriter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
 from invesalius.pubsub import pub as Publisher
+
+try:
+    import lib3mf
+
+    _has_lib3mf = True
+except ImportError:
+    _has_lib3mf = False
 
 if sys.platform == "win32":
     try:
@@ -526,6 +535,7 @@ class SurfaceManager:
         cortex = config_dict["path_meshes"] + config_dict["cortex"]
         bmeshes = config_dict["bmeshes"]
         coil = config_dict["coil"]
+        coil_set = config_dict.get("coil_set", False)
         targeting_file = config_dict["targeting csv file"]
         dIperdt_list = []
         dIperdt = config_dict["dIperdts"]
@@ -590,6 +600,7 @@ class SurfaceManager:
                 cortex_file=cortex_save_file,
                 meshes_file=bmeshes_list,
                 coil=coil,
+                coil_set=coil_set,
                 ci=ci_list,
                 co=co_list,
                 dIperdt_list=dIperdt_list,
@@ -623,6 +634,196 @@ class SurfaceManager:
         elif filename.lower().endswith(".vtp"):
             reader = vtkXMLPolyDataReader()
             scalar = True
+        elif filename.lower().endswith(".3mf"):
+            if not _has_lib3mf:
+                wx.MessageBox(
+                    _("Lib3MF library not available. Cannot import 3MF files."),
+                    _("Import surface error"),
+                )
+                return
+
+            # Progress throttle class to reduce GUI overhead
+            import time
+
+            class ProgressThrottle:
+                def __init__(self, min_interval_s=0.2):
+                    self.min_interval_s = min_interval_s
+                    self.last_yield = 0.0
+
+                def maybe_yield(self):
+                    now = time.time()
+                    if now - self.last_yield >= self.min_interval_s:
+                        wx.Yield()
+                        self.last_yield = now
+
+            throttle = ProgressThrottle()
+
+            progress = wx.ProgressDialog(
+                _("Importing 3MF file"),
+                _("Reading 3MF file..."),
+                maximum=100,
+                parent=None,
+                style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE,
+            )
+
+            try:
+                keep_going, skip = progress.Update(10, _("Reading 3MF file..."))
+                if not keep_going:
+                    progress.Destroy()
+                    return
+                wx.Yield()
+
+                wrapper = lib3mf.Wrapper()
+                model = wrapper.CreateModel()
+                reader_3mf = model.QueryReader("3mf")
+                reader_3mf.ReadFromFile(filename)
+
+                keep_going, skip = progress.Update(20, _("Analyzing 3MF structure..."))
+                if not keep_going:
+                    progress.Destroy()
+                    return
+                wx.Yield()
+
+                build_items = model.GetBuildItems()
+                base_name = os.path.splitext(os.path.split(filename)[-1])[0]
+
+                idx = 0
+                total_items = build_items.Count()
+
+                while build_items.MoveNext():
+                    build_item = build_items.GetCurrent()
+                    object_resource = build_item.GetObjectResource()
+
+                    if object_resource.IsMeshObject():
+                        mesh_object = model.GetMeshObjectByID(object_resource.GetResourceID())
+
+                        vertex_count = mesh_object.GetVertexCount()
+                        triangle_count = mesh_object.GetTriangleCount()
+
+                        # Calculate progress range for this surface (20% to 80% total range)
+                        progress_range = 60  # Total progress range for all surfaces
+                        surface_progress_chunk = progress_range / max(total_items, 1)
+
+                        percent_start = int(20 + (idx * surface_progress_chunk))
+                        keep_going, skip = progress.Update(
+                            percent_start,
+                            _("Loading mesh {}/{}: {} vertices, {} triangles...").format(
+                                idx + 1, total_items, vertex_count, triangle_count
+                            ),
+                        )
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        throttle.maybe_yield()
+
+                        # Batch retrieve all vertices in one call
+                        vertex_buffer = mesh_object.GetVertices()
+                        verts_np = np.array(
+                            [
+                                [v.Coordinates[0], v.Coordinates[1], v.Coordinates[2]]
+                                for v in vertex_buffer
+                            ],
+                            dtype=np.float64,
+                        )
+
+                        # Convert to VTK points (no coordinate transform - coordinates pass verbatim)
+                        vtk_points_array = numpy_to_vtk(verts_np, deep=True)
+                        points = vtkPoints()
+                        points.SetData(vtk_points_array)
+
+                        percent_mid = int(20 + (idx + 0.4) * surface_progress_chunk)
+                        keep_going, skip = progress.Update(
+                            percent_mid,
+                            _("Processing triangles for mesh {}/{}...").format(
+                                idx + 1, total_items
+                            ),
+                        )
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        throttle.maybe_yield()
+
+                        # Batch retrieve all triangles in one call
+                        tri_buffer = mesh_object.GetTriangleIndices()
+                        tris_np = np.array(
+                            [[t.Indices[0], t.Indices[1], t.Indices[2]] for t in tri_buffer],
+                            dtype=np.int64,
+                        )
+
+                        # Build VTK cell connectivity without per-triangle vtkTriangle() objects
+                        n_tris = tris_np.shape[0]
+                        connectivity = np.column_stack(
+                            [np.full(n_tris, 3, dtype=np.int64), tris_np]
+                        ).ravel()
+                        vtk_cells = numpy_to_vtkIdTypeArray(connectivity, deep=True)
+
+                        triangles = vtkCellArray()
+                        triangles.SetCells(n_tris, vtk_cells)
+
+                        percent_end = int(20 + (idx + 0.8) * surface_progress_chunk)
+                        keep_going, skip = progress.Update(
+                            percent_end, _("Creating surface {}/{}...").format(idx + 1, total_items)
+                        )
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        throttle.maybe_yield()
+
+                        polydata = vtkPolyData()
+                        polydata.SetPoints(points)
+                        polydata.SetPolys(triangles)
+
+                        try:
+                            surface_name = object_resource.GetName()
+                            if not surface_name:
+                                surface_name = (
+                                    f"{base_name}_{idx + 1}" if total_items > 1 else base_name
+                                )
+                        except:
+                            surface_name = (
+                                f"{base_name}_{idx + 1}" if total_items > 1 else base_name
+                            )
+
+                        surface_colour = None
+                        surface_transparency = None
+                        try:
+                            property_result = mesh_object.GetObjectLevelProperty()
+                            if property_result and len(property_result) == 3 and property_result[2]:
+                                resource_id, property_id, has_property = property_result
+                                color_group = model.GetColorGroupByID(resource_id)
+                                color = color_group.GetColor(property_id)
+
+                                surface_colour = (
+                                    color.Red / 255.0,
+                                    color.Green / 255.0,
+                                    color.Blue / 255.0,
+                                )
+                                surface_transparency = 1.0 - (color.Alpha / 255.0)
+                        except Exception:
+                            pass
+
+                        if polydata.GetNumberOfPoints() > 0:
+                            self.CreateSurfaceFromPolydata(
+                                polydata,
+                                name=surface_name,
+                                colour=surface_colour,
+                                transparency=surface_transparency,
+                                scalar=False,
+                            )
+
+                        idx += 1
+
+                progress.Update(100, _("Import complete."))
+                wx.Yield()
+                progress.Destroy()
+                return
+
+            except Exception as e:
+                progress.Destroy()
+                wx.MessageBox(
+                    _("Failed to import 3MF file: {}").format(str(e)), _("Import surface error")
+                )
+                return
         else:
             wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
@@ -922,7 +1123,8 @@ class SurfaceManager:
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
         Publisher.sendMessage("End busy cursor")
 
-        dialog.running = False
+        if dialog:
+            dialog.running = False
 
     def on_publish_surface(self):
         Publisher.sendMessage("Stop navigation")
@@ -1045,9 +1247,14 @@ class SurfaceManager:
             pass
 
     def _on_callback_error(self, e, dialog=None):
-        dialog.running = False
-        msg = utl.log_traceback(e)
-        dialog.error = msg
+        if dialog:
+            dialog.running = False
+            msg = utl.log_traceback(e)
+            dialog.error = msg
+        else:
+            # Batch mode: just log the error
+            msg = utl.log_traceback(e)
+            print(f"Surface creation error: {msg}")
 
     def AddNewActor(self, slice_, mask, surface_parameters):
         """
@@ -1110,6 +1317,10 @@ class SurfaceManager:
             overwrite = surface_parameters["options"]["overwrite"]
         except KeyError:
             overwrite = False
+
+        # Check if we're in batch mode (suppress individual progress dialogs)
+        batch_mode = surface_parameters["options"].get("batch_mode", False)
+
         mask.matrix.flush()
 
         if quality in const.SURFACE_QUALITY.keys():
@@ -1249,7 +1460,12 @@ class SurfaceManager:
 
         # With GUI
         else:
-            sp = dialogs.SurfaceProgressWindow()
+            # In batch mode, skip individual progress dialogs
+            if not batch_mode:
+                sp = dialogs.SurfaceProgressWindow()
+            else:
+                sp = None
+
             for i in range(n_pieces):
                 init = i * piece_size
                 end = init + piece_size + o_piece
@@ -1280,17 +1496,20 @@ class SurfaceManager:
                         fill_border_holes,
                     ),
                     callback=lambda x: filenames.append(x),
-                    error_callback=functools.partial(self._on_callback_error, dialog=sp),
+                    error_callback=functools.partial(self._on_callback_error, dialog=sp)
+                    if sp
+                    else None,
                 )
 
             while len(filenames) != n_pieces:
-                if sp.WasCancelled() or not sp.running:
+                if sp and (sp.WasCancelled() or not sp.running):
                     break
                 time.sleep(0.25)
-                sp.Update(_("Creating 3D surface..."))
-                wx.Yield()
+                if sp:
+                    sp.Update(_("Creating 3D surface..."))
+                    wx.Yield()
 
-            if not sp.WasCancelled() or sp.running:
+            if not sp or (not sp.WasCancelled() or sp.running):
                 f = pool.apply_async(
                     surface_process.join_process_surface,
                     args=(
@@ -1312,27 +1531,37 @@ class SurfaceManager:
                         category=category,
                         dialog=sp,
                     ),
-                    error_callback=functools.partial(self._on_callback_error, dialog=sp),
+                    error_callback=functools.partial(self._on_callback_error, dialog=sp)
+                    if sp
+                    else lambda e: print(f"Surface creation error: {e}"),
                 )
 
-                while sp.running:
-                    if sp.WasCancelled():
-                        break
-                    time.sleep(0.25)
-                    try:
-                        msg = msg_queue.get_nowait()
-                        sp.Update(msg)
-                    except Exception:
-                        sp.Update(None)
-                    wx.Yield()
+                if sp:
+                    while sp.running:
+                        if sp.WasCancelled():
+                            break
+                        time.sleep(0.25)
+                        try:
+                            msg = msg_queue.get_nowait()
+                            sp.Update(msg)
+                        except Exception:
+                            sp.Update(None)
+                        wx.Yield()
+                else:
+                    # In batch mode, just wait for completion without GUI updates
+                    while not f.ready():
+                        time.sleep(0.25)
 
             t_end = time.time()
             print(f"Elapsed time - {t_end - t_init}")
-            sp.Close()
-            if sp.error:
-                dlg = GMD.GenericMessageDialog(None, sp.error, "Exception!", wx.OK | wx.ICON_ERROR)
-                dlg.ShowModal()
-            del sp
+            if sp:
+                sp.Close()
+                if sp.error:
+                    dlg = GMD.GenericMessageDialog(
+                        None, sp.error, "Exception!", wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                del sp
 
         pool.close()
         try:
@@ -1421,6 +1650,7 @@ class SurfaceManager:
             const.FILETYPE_VTP: ".vtp",
             const.FILETYPE_PLY: ".ply",
             const.FILETYPE_STL_ASCII: ".stl",
+            const.FILETYPE_3MF: ".3mf",
         }
         if filetype in ftype_prefix:
             temp_fd, temp_file = tempfile.mkstemp(suffix=ftype_prefix[filetype])
@@ -1622,6 +1852,161 @@ class SurfaceManager:
             #   writer = vtkVRMLExporter()
             # elif filetype == const.FILETYPE_OBJ:
             #   writer = vtkOBJExporter()
+
+            elif filetype == const.FILETYPE_3MF:
+                if not _has_lib3mf:
+                    progress.Destroy()
+                    wx.MessageBox(
+                        "Lib3MF library not available. Cannot export 3MF files.", "Export error"
+                    )
+                    return
+
+                # Progress throttle class to reduce GUI overhead
+                import time
+
+                class ProgressThrottle:
+                    def __init__(self, min_interval_s=0.2):
+                        self.min_interval_s = min_interval_s
+                        self.last_yield = 0.0
+
+                    def maybe_yield(self):
+                        now = time.time()
+                        if now - self.last_yield >= self.min_interval_s:
+                            wx.Yield()
+                            self.last_yield = now
+
+                throttle = ProgressThrottle()
+
+                try:
+                    from ctypes import c_float, c_uint32
+
+                    wrapper = lib3mf.Wrapper()
+                    model = wrapper.CreateModel()
+                    model.SetUnit(lib3mf.ModelUnit.MilliMeter)
+
+                    keep_going, skip = progress.Update(20, "Preparing 3MF export...")
+                    if not keep_going:
+                        progress.Destroy()
+                        return
+                    wx.Yield()
+
+                    visible_surfaces = []
+                    for index in proj.surface_dict:
+                        surface = proj.surface_dict[index]
+                        if surface.is_shown:
+                            visible_surfaces.append(
+                                (
+                                    surface.polydata,
+                                    surface.name,
+                                    surface.colour,
+                                    1 - surface.transparency,
+                                )
+                            )
+
+                    if not visible_surfaces:
+                        progress.Destroy()
+                        return
+
+                    # Deduplicate surface names
+                    # First pass: normalize empty/None names to Surface_N
+                    for i, (polydata, name, colour, opacity) in enumerate(visible_surfaces):
+                        if not name:
+                            visible_surfaces[i] = (polydata, f"Surface_{i + 1}", colour, opacity)
+
+                    # Second pass: add suffixes to duplicates
+                    names = [item[1] for item in visible_surfaces]
+                    name_counts = Counter(names)
+                    duplicates = {name: 0 for name, count in name_counts.items() if count > 1}
+
+                    for i, (polydata, name, colour, opacity) in enumerate(visible_surfaces):
+                        if name in duplicates:
+                            duplicates[name] += 1
+                            new_name = f"{name}_{duplicates[name]:02d}"
+                            visible_surfaces[i] = (polydata, new_name, colour, opacity)
+
+                    num_surfaces = len(visible_surfaces)
+                    for surf_idx, (
+                        surf_polydata,
+                        surf_name,
+                        surf_colour,
+                        surf_opacity,
+                    ) in enumerate(visible_surfaces):
+                        percent_start = 20 + (surf_idx * 60 // num_surfaces)
+                        keep_going, skip = progress.Update(
+                            percent_start, f"Processing surface {surf_idx + 1}/{num_surfaces}..."
+                        )
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        throttle.maybe_yield()
+
+                        if convert_to_world:
+                            surf_polydata = self.ConvertPolydataToInv(surf_polydata, inverse=True)
+
+                        points_vtk = surf_polydata.GetPoints()
+                        n_points = points_vtk.GetNumberOfPoints()
+
+                        points_array = vtk_to_numpy(points_vtk.GetData())
+
+                        mesh_object = model.AddMeshObject()
+                        mesh_object.SetName(surf_name if surf_name else f"Surface_{surf_idx + 1}")
+
+                        # Build vertex buffer (batch approach - no lib3mf calls yet)
+                        positions = []
+                        for i in range(n_points):
+                            pos = lib3mf.Position()
+                            pos.Coordinates[0] = float(points_array[i, 0])
+                            pos.Coordinates[1] = float(points_array[i, 1])
+                            pos.Coordinates[2] = float(points_array[i, 2])
+                            positions.append(pos)
+
+                        # Build triangle buffer (batch approach, preserve degenerate filtering)
+                        triangles = []
+                        polys = surf_polydata.GetPolys()
+                        polys.InitTraversal()
+                        id_list = vtkIdList()
+
+                        while polys.GetNextCell(id_list):
+                            if id_list.GetNumberOfIds() == 3:
+                                v0, v1, v2 = id_list.GetId(0), id_list.GetId(1), id_list.GetId(2)
+                                if v0 != v1 and v1 != v2 and v0 != v2:
+                                    tri = lib3mf.Triangle()
+                                    tri.Indices[0], tri.Indices[1], tri.Indices[2] = v0, v1, v2
+                                    triangles.append(tri)
+
+                        # Single batch call replaces all AddVertex/AddTriangle calls
+                        mesh_object.SetGeometry(positions, triangles)
+
+                        color_group = model.AddColorGroup()
+                        color = lib3mf.Color()
+                        color.Red = int(surf_colour[0] * 255)
+                        color.Green = int(surf_colour[1] * 255)
+                        color.Blue = int(surf_colour[2] * 255)
+                        color.Alpha = int(surf_opacity * 255)
+                        color_id = color_group.AddColor(color)
+
+                        mesh_object.SetObjectLevelProperty(color_group.GetResourceID(), color_id)
+
+                        model.AddBuildItem(mesh_object, wrapper.GetIdentityTransform())
+
+                    keep_going, skip = progress.Update(85, "Writing 3MF file...")
+                    if not keep_going:
+                        progress.Destroy()
+                        return
+                    wx.Yield()
+
+                    writer_3mf = model.QueryWriter("3mf")
+                    writer_3mf.WriteToFile(filename)
+
+                    progress.Update(100, "Export complete.")
+                    self.export_successful = True
+                    wx.Yield()
+                    return
+
+                except Exception as e:
+                    progress.Destroy()
+                    wx.MessageBox(f"Failed to export 3MF file: {str(e)}", "Export error")
+                    return
 
             else:
                 progress.Destroy()

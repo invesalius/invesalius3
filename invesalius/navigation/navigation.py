@@ -43,7 +43,7 @@ from invesalius.i18n import tr as _
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.markers import MarkersControl
-from invesalius.navigation.robot import Robot
+from invesalius.navigation.robot import Robots
 from invesalius.navigation.tracker import Tracker
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
@@ -65,11 +65,14 @@ class NavigationHub(metaclass=Singleton):
         self.navigation = Navigation(
             pedal_connector=self.pedal_connector, neuronavigation_api=self.neuronavigation_api
         )
-        self.robot = Robot(
-            tracker=self.tracker,
-            navigation=self.navigation,
-            icp=self.icp,
-        )
+        self.robots = Robots()
+        # Initialize the first robot by default
+        if len(self.robots.robots_by_id) == 0:
+            self.robot = self.robots.AddRobot(
+                tracker=self.tracker,
+                navigation=self.navigation,
+                icp=self.icp,
+            )
         self.markers = MarkersControl(robot=self.robot)
         self.mep_visualizer = MEPVisualizer()
         Publisher.sendMessage("Add navigation context to interactive shell")
@@ -218,6 +221,7 @@ class UpdateNavigationScene(threading.Thread):
                                 "Get enorm",
                                 enorm_data=enorm_data,
                                 plot_vector=self.plot_efield_vectors,
+                                current_revision=self.navigation.e_field_revision,
                             )
 
                 if probe_visible:
@@ -248,7 +252,10 @@ class UpdateNavigationScene(threading.Thread):
             main_coil = self.navigation.main_coil
             track_this = main_coil if self.navigation.track_coil else "probe"
             # choose which object to track in slices and viewer_volume pointer
-            coord = coords[track_this]
+            coord = coords.get(track_this, None)
+            if coord is None:
+                self.coord_queue.task_done()
+                continue
 
             # Remove probe, so that coords/m_imgs only contain coils
             probe_coord = coords.pop("probe")
@@ -258,6 +265,14 @@ class UpdateNavigationScene(threading.Thread):
             tracts_payload = None
             if self.view_tracts:
                 try:
+                    if self.e_field_loaded:
+                        wx.CallAfter(
+                            Publisher.sendMessage,
+                            "Update tract seed based efield",
+                            coord_tracts_queue=self.navigation.coord_tracts_queue,
+                            fallback_m_img=m_imgs[main_coil],
+                            current_revision=self.navigation.e_field_revision,
+                        )
                     bundle, affine_vtk, coord_offset, coord_offset_w = (
                         self.tracts_queue.get_nowait()
                     )
@@ -355,6 +370,7 @@ class Navigation(metaclass=Singleton):
         self.e_field_loaded = False
         self.plot_efield_vectors = False
         self.debug_efield_enorm = None
+        self.e_field_revision = 0
 
         # Tractography parameters
         self.trk_inp = None
@@ -482,7 +498,7 @@ class Navigation(metaclass=Singleton):
     def SetLockToTarget(self, value):
         self.lock_to_target = value
 
-    def SetNoOfCoils(self, n_coils):
+    def SetNoOfCoils(self, n_coils, clear_all=False):
         self.n_coils = n_coils
         self.SaveConfig("n_coils", n_coils)
 
@@ -637,14 +653,6 @@ class Navigation(metaclass=Singleton):
 
             coreg_data = [self.m_change, self.r_stylus]
 
-            robot = Robot()
-            if robot.IsReady():
-                # Tell robot at which index (obj_id) to find its coil in (relevant when there are multiple coils)
-                Publisher.sendMessage(
-                    "Neuronavigation to Robot: Set coil index",
-                    data=self.coil_registrations[robot.GetCoilName()]["obj_id"],
-                )
-
             queues = [
                 self.coord_queue,
                 self.coord_tracts_queue,
@@ -665,6 +673,7 @@ class Navigation(metaclass=Singleton):
                     self.target,
                     icp,
                     self.e_field_loaded,
+                    self,
                 )
             )
 
@@ -682,8 +691,6 @@ class Navigation(metaclass=Singleton):
                     jobs_list.append(self.serial_port_connection)
                 else:
                     # Connection failed - show error and disable serial port
-                    import wx
-
                     wx.MessageBox(
                         "Failed to connect to serial port. Navigation will continue without serial port support.",
                         "InVesalius 3",
@@ -789,3 +796,6 @@ class Navigation(metaclass=Singleton):
             self.plot_efield_vectors,
         ]
         Publisher.sendMessage("Navigation status", nav_status=False, vis_status=vis_components)
+
+    def MarkEfieldParametersChanged(self):
+        self.e_field_revision += 1

@@ -24,11 +24,16 @@ import nibabel as nb
 import numpy as np
 
 try:
-    import Trekker
+    import Trekker.Trekker as Trekker
 
     has_trekker = True
 except ImportError:
-    has_trekker = False
+    try:
+        import Trekker
+
+        has_trekker = hasattr(Trekker, "initialize")
+    except ImportError:
+        has_trekker = False
 
 try:
     # TODO: the try-except could be done inside the mTMS() method call

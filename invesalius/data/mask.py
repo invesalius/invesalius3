@@ -366,17 +366,10 @@ class Mask:
         self._open_mask(path, tuple(shape))
 
     def OnFlipVolume(self, axis):
-        submatrix = self.matrix[1:, 1:, 1:]
-        if axis == 0:
-            submatrix[:] = submatrix[::-1]
-            self.matrix[1::, 0, 0] = self.matrix[:0:-1, 0, 0]
-        elif axis == 1:
-            submatrix[:] = submatrix[:, ::-1]
-            self.matrix[0, 1::, 0] = self.matrix[0, :0:-1, 0]
-        elif axis == 2:
-            submatrix[:] = submatrix[:, :, ::-1]
-            self.matrix[0, 0, 1::] = self.matrix[0, 0, :0:-1]
-
+        # Note: slice_.py's OnFlipVolume already zeros matrix[:] and clears
+        # history for all masks before this handler runs.  Here we only need
+        # to update the VTK volume actor if a 3D mask preview is active.
+        # (fix for issue #1402)
         if self.volume:
             self.imagedata = self.as_vtkimagedata()
             self.volume.change_imagedata()
@@ -384,8 +377,10 @@ class Mask:
         self.modified()
 
     def OnSwapVolumeAxes(self, axes):
-        axis0, axis1 = axes
-        self.matrix = self.matrix.swapaxes(axis0, axis1)
+        # Note: slice_.py's OnSwapVolumeAxes already zeros matrix[:] and clears
+        # history for all masks before this handler runs.  Here we only need
+        # to update the VTK volume actor if a 3D mask preview is active.
+        # (fix for issue #1402 — same class of bug as flip)
         if self.volume:
             self.imagedata = self.as_vtkimagedata()
             self.volume.change_imagedata()

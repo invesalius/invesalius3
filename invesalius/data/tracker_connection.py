@@ -34,6 +34,7 @@ class TrackerConnection:
         self.connection = None
         self.configuration = None
         self.model = model
+        self.n_coils = n_coils
 
     def Configure(self):
         assert False, "Not implemented"
@@ -81,7 +82,7 @@ class OptitrackTrackerConnection(TrackerConnection):
     """
 
     def __init__(self, model=None, n_coils=1):
-        super().__init__(model)
+        super().__init__(model=model, n_coils=n_coils)
 
     def Configure(self):
         dialog = dlg.ConfigureOptitrackDialog()
@@ -128,7 +129,7 @@ class OptitrackTrackerConnection(TrackerConnection):
 
 class ClaronTrackerConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
-        super().__init__(model)
+        super().__init__(model=model, n_coils=n_coils)
 
     def Configure(self):
         return True
@@ -174,7 +175,7 @@ class PolhemusTrackerConnection(TrackerConnection):
             "patriot",
         ], f"Unsupported model for Polhemus tracker: {model}"
 
-        super().__init__(model)
+        super().__init__(model=model, n_coils=n_coils)
 
     def Configure(self):
         return True
@@ -356,7 +357,7 @@ class PolhemusTrackerConnection(TrackerConnection):
 
 class CameraTrackerConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
-        super().__init__(model)
+        super().__init__(model=model, n_coils=n_coils)
 
     def Configure(self):
         return True
@@ -384,8 +385,7 @@ class CameraTrackerConnection(TrackerConnection):
 
 class PolarisTrackerConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
-        self.n_coils = n_coils
-        super().__init__(model)
+        super().__init__(model=model, n_coils=n_coils)
 
     def Configure(self):
         dialog = dlg.ConfigurePolarisDialog(self.n_coils)
@@ -451,7 +451,7 @@ class PolarisTrackerConnection(TrackerConnection):
 
 class PolarisP4TrackerConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
-        super().__init__(model)
+        super().__init__(model=model, n_coils=n_coils)
 
     def Configure(self):
         dialog = dlg.ConfigurePolarisDialog(1)
@@ -511,7 +511,7 @@ class PolarisP4TrackerConnection(TrackerConnection):
 
 class DebugTrackerRandomConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
-        super().__init__(model)
+        super().__init__(model=model, n_coils=n_coils)
 
     def Configure(self):
         return True
@@ -529,7 +529,7 @@ class DebugTrackerRandomConnection(TrackerConnection):
 
 class DebugTrackerApproachConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
-        super().__init__(model)
+        super().__init__(model=model, n_coils=n_coils)
 
     def Configure(self):
         return True

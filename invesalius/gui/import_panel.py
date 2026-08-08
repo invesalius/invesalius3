@@ -177,6 +177,7 @@ class InnerPanel(wx.Panel):
 
     def OnClickCancel(self, evt):
         Publisher.sendMessage("Cancel DICOM load")
+        Publisher.sendMessage("Hide import panel")
 
     def LoadDicom(self, group):
         if not group:

@@ -287,7 +287,7 @@ def create_dicom_thumbnails(image, window=None, level=None):
         return thumbnail_path
 
 
-def array2memmap(arr, filename=None):
+def array2memmap(arr, filename: str | None = None) -> np.memmap:
     fd = None
     if filename is None:
         fd, filename = tempfile.mkstemp(prefix="inv3_", suffix=".dat")

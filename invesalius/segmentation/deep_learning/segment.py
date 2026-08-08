@@ -736,13 +736,22 @@ class SubpartSegmentProcess(SegmentProcess):
         if seg is None:
             raise RuntimeError("_probability_array not initialized.")
 
+        # Initialize mask cache on first call
+        if not hasattr(self, "_mask_cache"):
+            self._mask_cache = {}
+
         # Whole brain fallback
         if not self.selected_mask_types:
-            mask = slc.Slice().create_new_mask(
-                name=new_name_by_pattern("whole_brain"),
-                add_to_project=True,
-                derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
-            )
+            if "whole_brain" not in self._mask_cache:
+                mask = slc.Slice().create_new_mask(
+                    name=new_name_by_pattern("whole_brain"),
+                    add_to_project=True,
+                    derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
+                )
+                self._mask_cache["whole_brain"] = mask
+            else:
+                mask = self._mask_cache["whole_brain"]
+
             mask.was_edited = True
             mask.matrix[1:, 1:, 1:] = (seg > 0).astype(np.uint8) * 255
             mask.modified(True)
@@ -886,12 +895,22 @@ class SubpartSegmentProcess(SegmentProcess):
                     print(f"No voxels found for label ID {lid} ('{name}'). Skipping mask creation.")
                     continue
 
-                m = slc.Slice().create_new_mask(
-                    name=new_name_by_pattern(f"{category}_{name}"),
-                    add_to_project=True,
-                    derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
-                )
-                m.color = color(rec)
+                # Use cache key to track masks across threshold adjustments
+                cache_key = f"{category}_{name}"
+
+                if cache_key not in self._mask_cache:
+                    # Create mask only on first call
+                    m = slc.Slice().create_new_mask(
+                        name=new_name_by_pattern(cache_key),
+                        add_to_project=True,
+                        derived_from=getattr(slc.Slice(), "current_image_label", "Original"),
+                    )
+                    m.color = color(rec)
+                    self._mask_cache[cache_key] = m
+                else:
+                    # Reuse existing mask on subsequent calls
+                    m = self._mask_cache[cache_key]
+
                 m.was_edited = True
                 m.matrix[1:, 1:, 1:] = binmask
                 m.modified(True)

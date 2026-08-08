@@ -228,6 +228,7 @@ class Slice(metaclass=utils.Singleton):
     def __bind_events(self) -> None:
         # General slice control
         Publisher.subscribe(self.CreateSurfaceFromIndex, "Create surface from index")
+        Publisher.subscribe(self.CreateSurfacesForAllMasks, "Create surfaces for all masks")
         # Mask control
         Publisher.subscribe(self.__add_mask_thresh, "Create new mask")
         Publisher.subscribe(self.__select_current_mask, "Change mask selected")
@@ -291,7 +292,6 @@ class Slice(metaclass=utils.Singleton):
         Publisher.subscribe(self.UpdateSlice3D, "Update slice 3D")
 
         Publisher.subscribe(self.on_select_all_masks_changed, "Select all masks changed")
-        Publisher.subscribe(self.create_surfaces_for_all_masks, "Create surfaces for all masks")
         Publisher.subscribe(self.update_selected_masks, "Update selected masks list")
 
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
@@ -1347,42 +1347,120 @@ class Slice(metaclass=utils.Singleton):
             surface_parameters=surface_parameters,
         )
 
+    def CreateSurfacesForAllMasks(self, surface_parameters):
+        """
+        Create surfaces for all existing masks.
+        This is called when "All" is selected in the Mask of Reference field.
+        """
+        import wx
+
+        proj = Project()
+        created_count = 0
+        failed_masks = []
+
+        # Get all masks sorted by index
+        mask_indices = sorted(proj.mask_dict.keys())
+
+        if not mask_indices:
+            wx.MessageBox(
+                _("No masks available to create surfaces."),
+                _("Create surfaces warning"),
+                wx.OK | wx.ICON_WARNING,
+            )
+            return
+
+        # Filter out empty masks before starting
+        valid_masks = []
+        for mask_index in mask_indices:
+            mask = proj.mask_dict[mask_index]
+            if mask.matrix.max() >= 127:
+                valid_masks.append((mask_index, mask))
+            else:
+                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels selected")
+                failed_masks.append(mask.name)
+
+        if not valid_masks:
+            wx.MessageBox(
+                _("No surfaces were created. All masks are empty."),
+                _("Create surfaces warning"),
+                wx.OK | wx.ICON_WARNING,
+            )
+            return
+
+        total_masks = len(valid_masks)
+
+        # Create unified progress dialog
+        progress_dialog = wx.ProgressDialog(
+            _("Creating surfaces"),
+            _("Creating surface 1/{}").format(total_masks),
+            maximum=total_masks,
+            parent=wx.GetApp().GetTopWindow(),
+            style=wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_AUTO_HIDE | wx.PD_ELAPSED_TIME,
+        )
+
+        try:
+            for idx, (mask_index, mask) in enumerate(valid_masks, start=1):
+                # Check if user cancelled before starting next surface
+                if progress_dialog.WasCancelled():
+                    print(
+                        f"Batch surface creation cancelled by user after {created_count} surfaces"
+                    )
+                    break
+
+                # Update progress dialog BEFORE creating surface
+                progress_dialog.Update(
+                    idx - 1, _("Creating surface {}/{}: {}").format(idx, total_masks, mask.name)
+                )
+
+                # Create a copy of surface parameters for this mask
+                mask_surface_params = {
+                    "method": surface_parameters["method"].copy(),
+                    "options": surface_parameters["options"].copy(),
+                }
+
+                # Update the parameters for this specific mask
+                mask_surface_params["options"]["index"] = mask_index
+                mask_surface_params["options"]["name"] = mask.name
+                mask_surface_params["options"]["overwrite"] = False
+                mask_surface_params["options"]["batch_mode"] = True
+
+                print(f"Creating surface for mask '{mask.name}' (index {mask_index})")
+
+                try:
+                    self.do_threshold_to_all_slices(mask)
+                    Publisher.sendMessage(
+                        "Create surface",
+                        slice_=self,
+                        mask=mask,
+                        surface_parameters=mask_surface_params,
+                    )
+                    created_count += 1
+                except Exception as e:
+                    print(f"Failed to create surface for mask '{mask.name}': {str(e)}")
+                    failed_masks.append(mask.name)
+
+        finally:
+            progress_dialog.Destroy()
+
+        # Show summary message
+        if created_count > 0:
+            msg = _("Successfully created {} surface(s).").format(created_count)
+            if failed_masks:
+                msg += _("\n\nSkipped {} mask(s): {}").format(
+                    len(failed_masks), ", ".join(failed_masks)
+                )
+            wx.MessageBox(msg, _("Surface creation complete"), wx.OK | wx.ICON_INFORMATION)
+        else:
+            wx.MessageBox(
+                _("No surfaces were created."),
+                _("Create surfaces warning"),
+                wx.OK | wx.ICON_WARNING,
+            )
+
+        print(f"Batch surface creation complete: {created_count} surfaces created")
+
     def on_select_all_masks_changed(self, select_all_active):
         Publisher.sendMessage("Update create surface button", select_all_active=select_all_active)
-
-    def create_surfaces_for_all_masks(self, surface_template):
-        proj = Project()
-        created_surfaces = []
-        mask_dict = proj.mask_dict
-
-        for mask_index in self.selected_mask_indices:
-            if mask_index not in mask_dict:
-                continue
-            mask = mask_dict[mask_index]
-            if mask.matrix.max() < 127:
-                print(f"Skipping mask '{mask.name}' (index {mask_index}) - no voxels available")
-                continue
-
-            surface_parameters = surface_template.copy()
-            surface_parameters["options"] = surface_template["options"].copy()
-
-            surface_parameters["options"]["index"] = mask_index
-            surface_parameters["options"]["name"] = f"{mask.name}"
-            surface_parameters["options"]["overwrite"] = False  # always create new surfaces
-
-            print(f"Creating surface for mask '{mask.name}' (index {mask_index})")
-
-            try:
-                self.do_threshold_to_all_slices(mask)
-                Publisher.sendMessage(
-                    "Create surface", slice_=self, mask=mask, surface_parameters=surface_parameters
-                )
-                created_surfaces.append(mask_index)
-            except Exception as e:
-                print(f"Failed to create surface for mask '{mask.name}': {str(e)}")
-
-        print(f"Successfully created surfaces for {len(created_surfaces)} masks")
-        Publisher.sendMessage("Surfaces creation completed", created_count=len(created_surfaces))
 
     def GetOutput(self):
         return self.blend_filter.GetOutput()
@@ -1687,12 +1765,6 @@ class Slice(metaclass=utils.Singleton):
                     target_matrix[n - 1], m, mask.threshold_range
                 )
                 mask.matrix[n, 0, 0] = 1
-
-        # After evaluating all axial slices, the entire volume is fully evaluated.
-        # Mark coronal and sagittal slices as evaluated too, to prevent them from being
-        # incorrectly re-evaluated and corrupted by get_mask_slice when scrolling.
-        mask.matrix[0, 1:, 0] = 1
-        mask.matrix[0, 0, 1:] = 1
 
         mask.matrix.flush()
 
@@ -2036,18 +2108,144 @@ class Slice(metaclass=utils.Singleton):
         elif axis == 2:
             self.matrix[:] = self.matrix[:, :, ::-1]
 
+        # Flush the flipped image matrix to disk so it is consistent
+        # with any mask re-evaluation that follows.
+        if hasattr(self.matrix, "flush"):
+            self.matrix.flush()
+
+        # Also flip every image version (filtered images) so that mask
+        # threshold evaluation always uses the correctly flipped data.
+        proj = Project()
+        for i, (label, mat) in enumerate(proj.image_versions):
+            if mat is not self.matrix:
+                if axis == 0:
+                    mat[:] = mat[::-1]
+                elif axis == 1:
+                    mat[:] = mat[:, ::-1]
+                elif axis == 2:
+                    mat[:] = mat[:, :, ::-1]
+                if hasattr(mat, "flush"):
+                    mat.flush()
+
+        # Invalidate every mask so all slices are re-evaluated against the
+        # flipped image on next access.  Without this, do_threshold_to_all_slices
+        # (called by CreateSurfaceFromIndex) pre-marks coronal/sagittal sentinel
+        # flags as evaluated without actually computing them, so get_mask_slice
+        # returns stale data when the user scrolls those views.
+        # (fix for issue #1402, same approach as the #1387 reorientation fix)
+        for mask in proj.mask_dict.values():
+            mask.matrix[:] = 0
+            mask.matrix.flush()
+            if hasattr(mask, "temp_fd"):
+                try:
+                    import os as _os
+
+                    _os.fsync(mask.temp_fd)
+                except OSError:
+                    pass
+            mask.clear_history()
+
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
 
     def OnSwapVolumeAxes(self, axes):
         axis0, axis1 = axes
-        self.matrix = self.matrix.swapaxes(axis0, axis1)
+
+        # swapaxes() returns a view — the underlying memmap file is NOT updated.
+        # We must write the swapped data back in-place so that surface workers
+        # (which read the file directly) see the correct data.
+        swapped = np.array(self.matrix.swapaxes(axis0, axis1))  # contiguous copy
+        new_shape = swapped.shape
+
+        # Reopen the memmap with the new shape and write the swapped data
+        import tempfile as _tempfile
+
+        new_fd, new_filename = _tempfile.mkstemp()
+        new_mat = np.memmap(new_filename, dtype=self.matrix.dtype, mode="w+", shape=new_shape)
+        new_mat[:] = swapped
+        new_mat.flush()
+        import os as _os
+
+        _os.fsync(new_fd)
+        _os.close(new_fd)
+        del swapped
+
+        # Close and remove the old matrix file, replace with new one
+        old_filename = self._matrix_filename
+        del self._matrix
+        try:
+            _os.remove(old_filename)
+        except OSError:
+            pass
+
+        self._matrix_filename = new_filename
+        self._matrix = new_mat
+
         if (axis0, axis1) == (2, 1):
             self.spacing = self.spacing[1], self.spacing[0], self.spacing[2]
         elif (axis0, axis1) == (2, 0):
             self.spacing = self.spacing[2], self.spacing[1], self.spacing[0]
         elif (axis0, axis1) == (1, 0):
             self.spacing = self.spacing[0], self.spacing[2], self.spacing[1]
+
+        # Also swap every image version (filtered images) so that mask
+        # threshold evaluation always uses the correctly swapped data.
+        proj = Project()
+
+        # Update project metadata so save/load uses the new file and shape.
+        # Without this, saving after a swap would archive the old (pre-swap)
+        # matrix file and the wrong shape, causing an error on reopen.
+        proj.matrix_filename = new_filename
+        proj.matrix_shape = new_shape
+        proj.spacing = self.spacing
+        # matrix_dtype stays the same
+        for i, (label, mat) in enumerate(proj.image_versions):
+            swapped_ver = np.array(mat.swapaxes(axis0, axis1))
+            ver_fd, ver_filename = _tempfile.mkstemp()
+            ver_mat = np.memmap(ver_filename, dtype=mat.dtype, mode="w+", shape=swapped_ver.shape)
+            ver_mat[:] = swapped_ver
+            ver_mat.flush()
+            _os.fsync(ver_fd)
+            _os.close(ver_fd)
+            del swapped_ver
+            # Clean up the old temp file for this image version
+            old_ver_filename = getattr(mat, "filename", None)
+            del mat
+            if old_ver_filename and old_ver_filename != old_filename:
+                try:
+                    _os.remove(old_ver_filename)
+                except OSError:
+                    pass
+            proj.image_versions[i] = (label, ver_mat)
+
+        # Update original_orientation so the volume viewer camera is
+        # positioned correctly after the swap.
+        _swap_orientation = {
+            (2, 1): {const.CORONAL: const.SAGITAL, const.SAGITAL: const.CORONAL},
+            (2, 0): {const.AXIAL: const.SAGITAL, const.SAGITAL: const.AXIAL},
+            (1, 0): {const.AXIAL: const.CORONAL, const.CORONAL: const.AXIAL},
+        }
+        mapping = _swap_orientation.get((axis0, axis1), {})
+        proj.original_orientation = mapping.get(
+            proj.original_orientation, proj.original_orientation
+        )
+
+        # Invalidate every mask so all slices are re-evaluated against the
+        # swapped image on next access.  After a swap the image shape changes
+        # so the mask matrix must be recreated with the new shape.
+        for mask in proj.mask_dict.values():
+            new_mask_shape = (new_shape[0] + 1, new_shape[1] + 1, new_shape[2] + 1)
+            if mask.matrix.shape != new_mask_shape:
+                mask._recreate_mask_matrix(new_mask_shape)
+            else:
+                mask.matrix[:] = 0
+                mask.matrix.flush()
+                if hasattr(mask, "temp_fd"):
+                    try:
+                        _os.fsync(mask.temp_fd)
+                    except OSError:
+                        pass
+            mask.clear_history()
 
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()

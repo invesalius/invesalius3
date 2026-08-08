@@ -206,8 +206,10 @@ def test_do_watershed():
         assert np.any(result > 0), "Watershed should produce segmentation"
 
         # Check that the queue received a completion signal
-        assert not q.empty(), "Queue should contain completion signal"
-        completion_signal = q.get()
+        try:
+            completion_signal = q.get(timeout=2)
+        except Exception:
+            pytest.fail("Queue did not contain a completion signal within timeout")
         assert completion_signal == 1, "Completion signal should be 1"
 
 

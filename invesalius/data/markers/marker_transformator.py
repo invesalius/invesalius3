@@ -45,7 +45,7 @@ class MarkerTransformator:
     def UpdateSelectedMarker(self, marker):
         self.selected_marker = marker
 
-    def UpdateZOffsetTargetByRobot(self, z_offset):
+    def UpdateZOffsetTargetByRobot(self, z_offset, robot_id=None):
         marker = self.target
         if not marker or not self.robot_track_status:
             return

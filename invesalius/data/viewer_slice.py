@@ -56,6 +56,7 @@ import invesalius.project as project
 import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius.data.ruler import GenericLeftRuler
+from invesalius.data.visualization.marker_visualizer import MarkerHighlightX
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.gui.widgets.inv_spinctrl import InvFloatSpinCtrl, InvSpinCtrl
 from invesalius.i18n import tr as _
@@ -245,6 +246,8 @@ class Viewer(wx.Panel):
         self.on_text = False
         # Newly added attribute for ruler
         self.ruler = None
+        # Marker highlight overlay (Stage 2)
+        self._marker_highlight = None
         # VTK pipeline and actors
         self.__config_interactor()
         self.cross_actor = vtkActor()
@@ -694,8 +697,9 @@ class Viewer(wx.Panel):
         SetFocalPoint call is required.
         :param position: list of 6 coordinates in vtk world coordinate system wx, wy, wz
         """
-        self.cross.SetFocalPoint(position[:3])
-        if not self.nav_status:
+        if hasattr(self, "cross"):
+            self.cross.SetFocalPoint(position[:3])
+        if not self.nav_status and hasattr(self, "slice_data") and self.slice_data:
             self.UpdateSlicesPosition(position[:3])
 
     def ScrollSlice(self, coord):
@@ -1015,6 +1019,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateCross, "Update cross pos")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
         Publisher.subscribe(self.OnHighlightMarker, "Highlight marker")
+        Publisher.subscribe(self.OnUnhighlightMarker, "Unhighlight marker")
+        Publisher.subscribe(self.OnDeleteMarker, "Delete marker")
+        Publisher.subscribe(self.OnDeleteMarkers, "Delete markers")
 
     def RefreshViewer(self):
         self.Refresh()
@@ -1516,11 +1523,22 @@ class Viewer(wx.Panel):
 
             if 0 <= vx < dx and 0 <= vy < dy and 0 <= vz < dz:
                 voxel_value = matrix[vz, vy, vx]
-                info = (
-                    f"Window: {self.orientation.capitalize()}  |  "
-                    f"Pos: ({int(px)}, {int(py)})  Slice: {slice_number}  |  "
-                    f"Value: {voxel_value}"
+                # info = (
+                #    f"Window: {self.orientation.capitalize()}  |  "
+                #    f"Pos: ({int(px)}, {int(py)})  Slice: {slice_number}  |  "
+                #    f"Value: {voxel_value}"
+                # )
+
+                info = _(
+                    "Window: {window}  |  Pos: ({px}, {py})  Slice: {slice}  |  Value: {value}"
+                ).format(
+                    window=self.orientation.capitalize(),
+                    px=int(px),
+                    py=int(py),
+                    slice=slice_number,
+                    value=voxel_value,
                 )
+
                 Publisher.sendMessage("Update statusbar image info", info=info)
         except Exception:
             pass
@@ -1796,17 +1814,83 @@ class Viewer(wx.Panel):
             self.UpdateRender()
 
     def OnHighlightMarker(self, marker):
-        """Synchronize slice viewers to the selected marker's position."""
+        """Synchronize slice viewers and show a highlight X mark at the marker position."""
         if marker is None:
             return
 
-        if self.orientation != "AXIAL":
-            return
-
+        # Synchronize slice position to marker location (Stage 1)
         if not self.nav_status:
             Publisher.sendMessage(
                 "Set cross focal point", position=[marker.x, marker.y, marker.z, None, None, None]
             )
+
+        # Stage 2: show an orange X mark overlay on the exact slice where marker was created
+        if self.canvas is not None:
+            pos = list(marker.position)
+            if self._marker_highlight is None:
+                self._marker_highlight = MarkerHighlightX(position=pos)
+            else:
+                self._marker_highlight.position = pos
+
+            # Compute the slice indices for all three orientations
+            # This ensures the marker only appears on the exact slice where it was created
+            # Use the marker's world coordinates directly to calculate slice indices
+            try:
+                # Get slice spacing from the slice object
+                slice_obj = sl.Slice()
+                spacing = slice_obj.spacing
+
+                # Calculate slice indices directly from world coordinates
+                # Each orientation uses a different axis:
+                # AXIAL: uses Z coordinate (pos[2])
+                # CORONAL: uses Y coordinate (pos[1])
+                # SAGITTAL: uses X coordinate (pos[0])
+                axial_slice = int(round(pos[2] / spacing[2]))
+                coronal_slice = int(round(pos[1] / spacing[1]))
+                sagittal_slice = int(round(pos[0] / spacing[0]))
+
+                self._marker_highlight.sagittal_slice = sagittal_slice
+                self._marker_highlight.coronal_slice = coronal_slice
+                self._marker_highlight.axial_slice = axial_slice
+            except Exception:
+                # Fallback: use current slice number if calculation fails
+                if self.slice_data is not None:
+                    if self.orientation == "AXIAL":
+                        self._marker_highlight.axial_slice = self.slice_data.number
+                    elif self.orientation == "CORONAL":
+                        self._marker_highlight.coronal_slice = self.slice_data.number
+                    elif self.orientation == "SAGITAL":
+                        self._marker_highlight.sagittal_slice = self.slice_data.number
+
+            if self._marker_highlight not in self.canvas.draw_list:
+                self.canvas.draw_list.append(self._marker_highlight)
+            self.canvas.modified = True
+            if not self.nav_status:
+                self.UpdateRender()
+
+    def OnUnhighlightMarker(self):
+        """Remove the X mark overlay when marker is deselected or deleted."""
+        if self._marker_highlight is not None and self.canvas is not None:
+            # Remove from draw list if present
+            if self._marker_highlight in self.canvas.draw_list:
+                self.canvas.draw_list.remove(self._marker_highlight)
+
+            # Hide the marker highlight
+            self._marker_highlight.visible = False
+            self._marker_highlight = None
+
+            # Mark canvas as modified and update
+            self.canvas.modified = True
+            if not self.nav_status:
+                self.UpdateRender()
+
+    def OnDeleteMarker(self, marker):
+        """Remove the X mark overlay when a marker is deleted."""
+        self.OnUnhighlightMarker()
+
+    def OnDeleteMarkers(self, markers):
+        """Remove the X mark overlay when markers are deleted."""
+        self.OnUnhighlightMarker()
 
     def AddActors(self, actors, slice_number):
         "Inserting actors"

@@ -43,6 +43,17 @@ from invesalius.pubsub import pub as Publisher
 # np.set_printoptions(suppress=True)
 
 
+def prepare_seed_coordinates(seed_coordinates):
+    seed_coordinates = np.asarray(seed_coordinates, dtype=float)
+    if seed_coordinates.ndim != 2 or seed_coordinates.shape[1] != 3:
+        return None
+    if seed_coordinates.shape[0] == 0:
+        return None
+    if not np.all(np.isfinite(seed_coordinates)):
+        return None
+    return np.ascontiguousarray(seed_coordinates)
+
+
 def compute_directions(trk_n, alpha=255):
     """Compute direction of a single tract in each point and return as an RGBA color
 
@@ -263,7 +274,7 @@ class ComputeTractsThread(threading.Thread):
             img_shift,
         ) = self.inp
         # n_threads = n_tracts_total
-        n_threads = int(n_threads / 4)
+        n_threads = max(1, int(n_threads / 4))
         p_old = np.array([[0.0, 0.0, 0.0]])
         n_tracts = 0
 
@@ -307,7 +318,11 @@ class ComputeTractsThread(threading.Thread):
                 # trekker has internal multiprocessing approach done in C. Here the number of available threads is give,
                 # but in case a large number of tracts is requested, it will compute all in parallel automatically
                 # for a more fluent navigation, better to compute the maximum number the computer handles
-                trekker.seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
+                seed_coordinates = prepare_seed_coordinates(np.repeat(seed_trk, n_threads, axis=0))
+                if seed_coordinates is None:
+                    self.coord_tracts_queue.task_done()
+                    continue
+                trekker.seed_coordinates(seed_coordinates)
 
                 # run the trekker, this is the slowest line of code, be careful to just use once!
                 trk_list = trekker.run()
@@ -528,7 +543,11 @@ class ComputeTractsACTThread(threading.Thread):
                     # to reduce the overhead for when the coil is moving, we compute only half the number of tracts
                     # that should be computed when the coil is fixed in the same location
                     # required input is Nx3 array
-                    trekker.seed_coordinates(seed_trk_r_world_sampled[::2, :])
+                    seed_coordinates = prepare_seed_coordinates(seed_trk_r_world_sampled[::2, :])
+                    if seed_coordinates is None:
+                        self.coord_tracts_queue.task_done()
+                        continue
+                    trekker.seed_coordinates(seed_coordinates)
                     # run the trekker, this is the slowest line of code, be careful to just use once!
                     trk_list = trekker.run()
 
@@ -551,12 +570,19 @@ class ComputeTractsACTThread(threading.Thread):
                         # of tracts to reduce the overhead
                         bundle = vtkMultiBlockDataSet()
                         # required input is Nx3 array
-                        trekker.seed_coordinates(seed_trk_r_world_sampled[::2, :])
+                        seed_coordinates = prepare_seed_coordinates(
+                            seed_trk_r_world_sampled[::2, :]
+                        )
                         n_tracts, n_branches = 0, 0
                     else:
                         # if the bundle exists compute all tracts requested
                         # required input is Nx3 array
-                        trekker.seed_coordinates(seed_trk_r_world_sampled)
+                        seed_coordinates = prepare_seed_coordinates(seed_trk_r_world_sampled)
+
+                    if seed_coordinates is None:
+                        self.coord_tracts_queue.task_done()
+                        continue
+                    trekker.seed_coordinates(seed_coordinates)
 
                     trk_list = trekker.run()
 

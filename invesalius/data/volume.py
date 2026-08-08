@@ -140,6 +140,7 @@ class Volume:
         Publisher.subscribe(self.ResetRayCasting, "Reset Raycasting")
 
         Publisher.subscribe(self.OnFlipVolume, "Flip volume")
+        Publisher.subscribe(self.OnSwapVolumeAxes, "Swap volume axes")
 
     def ResetRayCasting(self):
         if self.exist:
@@ -269,6 +270,16 @@ class Volume:
         del self.image
         self.image = None
         self.to_reload = True
+
+    def OnSwapVolumeAxes(self, axes):
+        self.loaded_image = False
+        del self.image
+        self.image = None
+        self.to_reload = True
+        if self.exist:
+            self.exist = None
+            self.LoadVolume()
+            Publisher.sendMessage("Render volume viewer")
 
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset

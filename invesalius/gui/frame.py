@@ -153,7 +153,6 @@ class Frame(wx.Frame):
         """
         sub = Publisher.subscribe
         sub(self._BeginBusyCursor, "Begin busy cursor")
-        sub(self._ShowContentPanel, "Cancel DICOM load")
         sub(self._EndBusyCursor, "End busy cursor")
         sub(self._HideContentPanel, "Hide content panel")
         sub(self._HideImportPanel, "Hide import panel")
@@ -442,11 +441,12 @@ class Frame(wx.Frame):
 
     def _EndBusyCursor(self):
         """
-        End busy cursor.
-        Note: _BeginBusyCursor should have been called previously.
+        End busy cursor, draining all stacked BeginBusyCursor calls.
+        wx.BeginBusyCursor is reference-counted; each Begin needs a matching End.
         """
         try:
-            wx.EndBusyCursor()
+            while wx.IsBusy():
+                wx.EndBusyCursor()
         except wx.PyAssertionError:
             # no matching wxBeginBusyCursor() for wxEndBusyCursor()
             pass
@@ -592,7 +592,10 @@ class Frame(wx.Frame):
             # Use RichMessageDialog so we can add a 'Store session' checkbox,
             # consistent with the normal (no unsaved changes) exit dialog.
             dialog = wx.RichMessageDialog(
-                None, msg, "InVesalius 3 - Unsaved Changes", wx.ICON_WARNING | wx.YES_NO | wx.CANCEL
+                None,
+                msg,
+                _("InVesalius 3 - Unsaved Changes"),
+                wx.ICON_WARNING | wx.YES_NO | wx.CANCEL,
             )
             dialog.SetYesNoLabels(_("Save and Exit"), _("Discard and Exit"))
             dialog.ShowCheckBox(_("Store session"), False)
@@ -1470,7 +1473,7 @@ class MenuBar(wx.MenuBar):
         others_file_menu.Append(const.ID_ANALYZE_IMPORT, _("Analyze 7.5"))
         others_file_menu.Append(const.ID_NIFTI_IMPORT, _("NIfTI 1"))
         others_file_menu.Append(const.ID_PARREC_IMPORT, _("PAR/REC"))
-        others_file_menu.Append(const.ID_TIFF_JPG_PNG, "TIFF,BMP,JPG or PNG (\xb5CT)")
+        others_file_menu.Append(const.ID_TIFF_JPG_PNG, _("TIFF,BMP,JPG or PNG (micro-CT)"))
 
         # FILE
         file_menu = wx.Menu()
@@ -1604,7 +1607,7 @@ class MenuBar(wx.MenuBar):
 
         # Surface Menu
         surface_menu = wx.Menu()
-        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, ("New\tCtrl+Shift+C"))
+        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, _("New\tCtrl+Shift+C"))
         self.create_surface.Enable(False)
 
         self.remove_non_visible = surface_menu.Append(
