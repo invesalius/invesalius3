@@ -214,7 +214,7 @@ class Frame(wx.Frame):
         is_shell_focused = False
 
         # Check if the focus is on a text entry field
-        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
+        if focused and isinstance(focused, wx.TextCtrl | wx.ComboBox):
             is_search_field = True
 
         # Check if the shell is focused
@@ -805,6 +805,8 @@ class Frame(wx.Frame):
             self.OnTracheSegmentation()
         elif id == const.ID_SEGMENTATION_MANDIBLE_CT:
             self.OnMandibleCTSegmentation()
+        elif id == const.ID_SEGMENTATION_TOTALSEG:
+            self.OnTotalSegmentation()
         elif id == const.ID_PLANNING_CRANIOPLASTY:
             self.OnImplantCTSegmentation()
 
@@ -1184,6 +1186,25 @@ class Frame(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
 
+    def OnTotalSegmentation(self):
+        from invesalius.gui import deep_learning_seg_dialog, total_seg_dialog
+
+        if deep_learning_seg_dialog.HAS_TORCH:
+            dlg = total_seg_dialog.TotalSegmenterDialog(self)
+            dlg.Show()
+        else:
+            dlg = wx.MessageDialog(
+                self,
+                _(
+                    "It's not possible to run TotalSegmentator because your system doesn't have the following modules installed:"
+                )
+                + " Torch",
+                "InVesalius 3 - TotalSegmentator",
+                wx.ICON_INFORMATION | wx.OK,
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+
     def OnTracheSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog
 
@@ -1403,6 +1424,7 @@ class MenuBar(wx.MenuBar):
             const.ID_SEGMENTATION_SUBPART,
             const.ID_SEGMENTATION_TRACHEA,
             const.ID_SEGMENTATION_MANDIBLE_CT,
+            const.ID_SEGMENTATION_TOTALSEG,
             const.ID_PLANNING_CRANIOPLASTY,
             const.ID_MASK_DENSITY_MEASURE,
             const.ID_CREATE_SURFACE,
@@ -1579,6 +1601,9 @@ class MenuBar(wx.MenuBar):
         )
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
+        segmentation_menu.Append(
+            const.ID_SEGMENTATION_TOTALSEG, _("TotalSegmentator (CT / MRI)")
+        )
 
         # Surface Menu
         surface_menu = wx.Menu()
