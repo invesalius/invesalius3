@@ -1512,7 +1512,7 @@ class MenuBar(wx.MenuBar):
         self.fill_hole_auto_menu = mask_menu.Append(
             const.ID_FILL_HOLE_AUTO, _("Fill holes automatically\tCtrl+Shift+J")
         )
-        self.fill_hole_mask_menu.Enable(False)
+        self.fill_hole_auto_menu.Enable(False)
 
         mask_menu.AppendSeparator()
 
