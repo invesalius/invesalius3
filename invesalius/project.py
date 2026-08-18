@@ -130,13 +130,14 @@ class Project(metaclass=Singleton):
         mask.index = index
         return index
 
-    def RemoveMask(self, index: int) -> None:
+    def RemoveMask(self, index: int, cleanup: bool = True) -> None:
         new_dict = TwoWaysDictionary()
         # Iterate safely over a snapshot of items
         for i, mask in self.mask_dict.items():
             if i == index:
                 # Clean up the removed mask
-                mask.cleanup()
+                if cleanup:
+                    mask.cleanup()
                 continue
             # Compute the new index and update mask
             new_i = i if i < index else i - 1
@@ -145,6 +146,19 @@ class Project(metaclass=Singleton):
             if hasattr(mask, "index"):
                 mask.index = new_i
         # Replace the dictionary with the rebuilt one
+        self.mask_dict = new_dict
+
+    def InsertMask(self, index: int, mask: "Mask") -> None:
+        new_dict = TwoWaysDictionary()
+        # Shift masks at or after the index by +1
+        for i, m in self.mask_dict.items():
+            new_i = i if i < index else i + 1
+            new_dict[new_i] = m
+            if hasattr(m, "index"):
+                m.index = new_i
+        # Insert the mask at the correct index
+        mask.index = index
+        new_dict[index] = mask
         self.mask_dict = new_dict
 
     def GetMask(self, index):
