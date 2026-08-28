@@ -62,6 +62,9 @@ CONFIG_INIT = {
     "robot": {
         "robot_ip_options": "",
     },
+    "measure_transparency": 50,
+    "measure_transparency_2d": 50,
+    "measure_transparency_3d": 50,
 }
 
 
