@@ -248,6 +248,8 @@ class Viewer(wx.Panel):
         self.ruler = None
         # Marker highlight overlay (Stage 2)
         self._marker_highlight = None
+        # SimNIBS E-field, drawn where the surfaces carrying it meet this slice
+        self.simnibs_efield_cuts = []
         # VTK pipeline and actors
         self.__config_interactor()
         self.cross_actor = vtkActor()
@@ -1023,6 +1025,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnDeleteMarker, "Delete marker")
         Publisher.subscribe(self.OnDeleteMarkers, "Delete markers")
 
+        Publisher.subscribe(self.SetSimnibsEfieldCuts, "Set SimNIBS efield cross sections")
+        Publisher.subscribe(self.UpdateSimnibsEfieldCuts, "Update SimNIBS efield cross sections")
+
     def RefreshViewer(self):
         self.Refresh()
 
@@ -1724,6 +1729,7 @@ class Viewer(wx.Panel):
             self.slice_data.SetNumber(index, end)
         self.__update_display_extent(image)
         self.cross.SetModelBounds(self.slice_data.actor.GetBounds())
+        self.UpdateSimnibsEfieldCuts()
         self._update_draw_list()
 
     def ChangeSliceNumber(self, index):
@@ -1921,6 +1927,62 @@ class Viewer(wx.Panel):
                 renderer.RemoveActor(actor)
                 # and remove the actor from the actor's list
                 self.actors_by_slice_number[slice_number].remove(actor)
+
+    def SetSimnibsEfieldCuts(self, polydatas):
+        """Draw the SimNIBS E-field where the surfaces carrying it cross this slice."""
+        import invesalius.data.simnibs_efield as simnibs_efield
+
+        self._ClearSimnibsEfieldCuts()
+
+        if self.slice_data is not None:
+            for polydata in polydatas:
+                cutter, plane = simnibs_efield.CreateCutter(polydata)
+
+                mapper = vtkPolyDataMapper()
+                mapper.SetInputConnection(cutter.GetOutputPort())
+                mapper.ScalarVisibilityOn()
+
+                actor = vtkActor()
+                actor.SetMapper(mapper)
+                actor.GetProperty().SetLineWidth(const.SIMNIBS_EFIELD_CUT_WIDTH)
+                actor.GetProperty().SetLighting(False)
+                # Back into this viewer's frame; see _PlaceSimnibsEfieldCuts.
+                actor.SetScale(1, -1, 1)
+
+                self.slice_data.overlay_renderer.AddActor(actor)
+                self.simnibs_efield_cuts.append((cutter, plane, actor))
+
+        self._PlaceSimnibsEfieldCuts()
+        self.UpdateRender()
+
+    def UpdateSimnibsEfieldCuts(self):
+        if not self.simnibs_efield_cuts:
+            return
+        self._PlaceSimnibsEfieldCuts()
+        self.UpdateRender()
+
+    def _PlaceSimnibsEfieldCuts(self):
+        """Move the cut onto the slice being shown."""
+        if not self.simnibs_efield_cuts or self.slice_data is None:
+            return
+
+        bounds = self.slice_data.actor.GetBounds()
+        # The slice is flat, so the axis it has no thickness along is its normal.
+        axis = next((i for i in range(3) if bounds[2 * i] == bounds[2 * i + 1]), 2)
+        origin = [(bounds[2 * i] + bounds[2 * i + 1]) / 2.0 for i in range(3)]
+        origin[1] = -origin[1]
+        normal = [1.0 if i == axis else 0.0 for i in range(3)]
+
+        for cutter, plane, _actor in self.simnibs_efield_cuts:
+            plane.SetOrigin(origin)
+            plane.SetNormal(normal)
+            cutter.Update()
+
+    def _ClearSimnibsEfieldCuts(self):
+        for _cutter, _plane, actor in self.simnibs_efield_cuts:
+            if self.slice_data is not None:
+                self.slice_data.overlay_renderer.RemoveActor(actor)
+        self.simnibs_efield_cuts = []
 
     def get_actual_mask(self):
         # Returns actual mask. Returns None if there is not a mask or no mask

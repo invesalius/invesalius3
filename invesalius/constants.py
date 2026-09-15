@@ -1036,6 +1036,10 @@ SEED_RADIUS = 1.5
 EFIELD_MAX_RANGE_SCALE = 0.90
 CORTEX_COLOR = (190, 190, 190)
 EFIELD_ROI_SIZE = 40
+# Width of the SimNIBS E-field cross section drawn over the 2D slices
+SIMNIBS_EFIELD_CUT_WIDTH = 3.0
+# Opacity of the outermost surface when several carry the E-field at once
+SIMNIBS_EFIELD_OUTER_OPACITY = 0.25
 
 # Note that the sleep parameters can be set in the preferences dialog in the UI. The values here are default values,
 # selected to be a conservative compromise between frame rate and responsiveness, leaning towards responsiveness even

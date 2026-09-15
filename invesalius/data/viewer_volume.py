@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 # from math import cos, sin
+import logging
 import os
 import queue
 import sys
@@ -121,6 +122,8 @@ if sys.platform == "win32":
 else:
     win32api = None  # type: ignore[assignment]
     _has_win32api = False
+
+log = logging.getLogger(__name__)
 
 PROP_MEASURE = 0.8
 
@@ -373,6 +376,15 @@ class Viewer(wx.Panel):
         self.ClusterEfieldTextActor = None
         self.enableefieldabovethreshold = False
         self.efield_tools = False
+        self.simnibs_efield_actor = None
+        self.efield_colormap = None
+        self.simnibs_efield_source = None
+        self.simnibs_efield_targets = []
+        self.simnibs_efield_surface_actor = None
+        self.simnibs_efield_opacity = 1.0
+        self.simnibs_efield_max_distance = None
+        self.simnibs_dropping_surface = False
+        self.simnibs_borrowed_state = None
         self.save_automatically = False
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
@@ -833,6 +845,15 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.Getdiperdtforreport, "Get diperdt used in efield calculation")
         Publisher.subscribe(self.UpdateTractSeedBasedEfield, "Update tract seed based efield")
         Publisher.subscribe(self.Get_meshes_paths_to_report, "Get path meshes")
+
+        # E-field from a SimNIBS simulation
+        Publisher.subscribe(self.LoadSimnibsEfield, "Load SimNIBS efield into viewer")
+        Publisher.subscribe(self.RemoveSimnibsEfield, "Remove SimNIBS efield from viewer")
+        Publisher.subscribe(self.SetSimnibsEfieldColormap, "Set SimNIBS efield colormap")
+        Publisher.subscribe(self.SetSimnibsEfieldOpacity, "Set SimNIBS efield opacity")
+        Publisher.subscribe(self.SetSimnibsEfieldThreshold, "Set SimNIBS efield threshold")
+        Publisher.subscribe(self.SetSimnibsEfieldSurfaces, "Set SimNIBS efield surfaces")
+        Publisher.subscribe(self.ReleaseSimnibsEfield, "Remove surface actor from viewer")
 
         # SSAO related
         Publisher.subscribe(self._EnableSSAO, "Enable SSAO")
@@ -2272,13 +2293,35 @@ class Viewer(wx.Panel):
         wx.CallAfter(Publisher.sendMessage, "Initialize color array")
         wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
 
-    def CreateLUTTableForEfield(self, min, max, highlight_threshold=False):
+    def _BuildColormapLUT(self, colormap_name, min, max, number_colors=256):
+        from matplotlib.colors import LinearSegmentedColormap
+
+        definition = const.MEP_COLORMAP_DEFINITIONS.get(colormap_name)
+        if definition is None:
+            return None
+
+        colors = list(definition.values())  # min, low, mid, max
+        positions = [0.0, 0.25, 0.5, 1.0]
+        cmap = LinearSegmentedColormap.from_list(colormap_name, list(zip(positions, colors)))
+
         lut = vtkLookupTable()
         lut.SetTableRange(min, max)
-        colorSeries = vtkColorSeries()
-        seriesEnum = colorSeries.BREWER_SEQUENTIAL_BLUE_PURPLE_9
-        colorSeries.SetColorScheme(seriesEnum)
-        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+        lut.SetNumberOfTableValues(number_colors)
+        for i in range(number_colors):
+            r, g, b, a = cmap(i / (number_colors - 1))
+            lut.SetTableValue(i, r, g, b, a)
+        lut.Build()
+        return lut
+
+    def CreateLUTTableForEfield(self, min, max, highlight_threshold=False):
+        lut = self._BuildColormapLUT(self.efield_colormap, min, max)
+        if lut is None:
+            lut = vtkLookupTable()
+            lut.SetTableRange(min, max)
+            colorSeries = vtkColorSeries()
+            seriesEnum = colorSeries.BREWER_SEQUENTIAL_BLUE_PURPLE_9
+            colorSeries.SetColorScheme(seriesEnum)
+            colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
         n = lut.GetNumberOfTableValues()
         threshold = self.efield_threshold
         if highlight_threshold:
@@ -2656,6 +2699,382 @@ class Viewer(wx.Panel):
 
         if self.edge_actor is not None:
             self.ren.RemoveActor(self.edge_actor)
+
+    def LoadSimnibsEfield(
+        self,
+        filepath,
+        target_surfaces=None,
+        colormap=None,
+        threshold=None,
+        opacity=None,
+        max_distance=None,
+    ):
+        import invesalius.data.simnibs_efield as simnibs_efield
+
+        polydata, norms, vectors = simnibs_efield.ReadEfieldSurface(filepath)
+
+        if colormap is not None:
+            self.efield_colormap = colormap
+        if opacity is not None:
+            self.simnibs_efield_opacity = float(opacity)
+        if max_distance is not None:
+            self.simnibs_efield_max_distance = float(max_distance)
+
+        self.simnibs_efield_source = (polydata, norms, vectors)
+        # Nothing chosen at load time means the viewer picks the best surface itself.
+        self._PaintSimnibsEfield(target_surfaces, threshold=threshold, choose=True)
+
+    def SetSimnibsEfieldSurfaces(self, target_surfaces, max_distance=None):
+        if max_distance is not None:
+            self.simnibs_efield_max_distance = float(max_distance)
+        if self.simnibs_efield_source is None:
+            return
+        self._PaintSimnibsEfield(target_surfaces)
+
+    def _PaintSimnibsEfield(self, target_surfaces, threshold=None, choose=False):
+        polydata, norms, vectors = self.simnibs_efield_source
+        painted, refused = self._PrepareSimnibsEfieldTargets(target_surfaces or [], polydata, norms)
+
+        if not painted:
+            if target_surfaces and self.simnibs_efield_targets:
+                raise ValueError(self._SimnibsEfieldRefusal(refused))
+            chosen = (
+                self._BestSimnibsEfieldSurface(polydata) if choose and not target_surfaces else None
+            )
+            if chosen is None:
+                chosen = self._CreateSimnibsEfieldSurface(polydata)
+            painted, _ = self._PrepareSimnibsEfieldTargets([chosen], polydata, norms)
+            if not painted:
+                raise ValueError("the E-field surface could not be shown")
+
+        self._HideSimnibsEfield()
+        self._ShowSimnibsEfield(painted, vectors, threshold)
+        self._DropSimnibsEfieldSurface()
+
+        self._TellSimnibsCrossSections(
+            [target["display"] for target in self.simnibs_efield_targets]
+        )
+        self._PublishSimnibsEfieldTargets(refused)
+
+    def _TellSimnibsCrossSections(self, polydatas=None):
+        try:
+            if polydatas is None:
+                Publisher.sendMessage("Update SimNIBS efield cross sections")
+            else:
+                Publisher.sendMessage("Set SimNIBS efield cross sections", polydatas=polydatas)
+        except Exception:  # noqa: BLE001 - the 3D view is already correct
+            log.exception("SimNIBS E-field cross sections could not be updated")
+
+    def _BestSimnibsEfieldSurface(self, polydata):
+        """The surface to use when the user has not chosen one."""
+        import invesalius.data.simnibs_efield as simnibs_efield
+
+        max_distance = self.simnibs_efield_max_distance
+        if max_distance is None:
+            max_distance = simnibs_efield.EFIELD_SAMPLING_MAX_DISTANCE
+        tree = simnibs_efield.BuildPointTree(polydata)
+
+        best, best_rank = None, None
+        for surface_index, surface in prj.Project().surface_dict.items():
+            geometry = self._SimnibsEfieldGeometry(self._GetSurfaceActor(surface_index))
+            if geometry is None:
+                continue
+            coverage = simnibs_efield.EstimateCoverage(tree, geometry, max_distance)
+            if coverage <= 0:
+                continue
+            rank = (simnibs_efield.IsDefaultTarget(str(surface.name)), coverage)
+            if best_rank is None or rank > best_rank:
+                best, best_rank = surface_index, rank
+        return best
+
+    def _PrepareSimnibsEfieldTargets(self, surface_indexes, polydata, norms):
+        import invesalius.data.simnibs_efield as simnibs_efield
+
+        surface_dict = prj.Project().surface_dict
+        painted, refused = [], []
+        for surface_index in surface_indexes:
+            if surface_index not in surface_dict:
+                continue
+            name = str(surface_dict[surface_index].name)
+            geometry = self._SimnibsEfieldGeometry(self._GetSurfaceActor(surface_index))
+            if geometry is None or geometry.GetNumberOfPoints() == 0:
+                refused.append((name, None))
+                continue
+
+            max_distance = self.simnibs_efield_max_distance
+            if max_distance is None:
+                max_distance = simnibs_efield.EFIELD_SAMPLING_MAX_DISTANCE
+            values, point_ids, source_ids, coverage, closest = (
+                simnibs_efield.SampleEfieldOntoSurface(polydata, norms, geometry, max_distance)
+            )
+            if not point_ids:
+                refused.append((name, closest))
+                continue
+
+            painted.append(
+                {
+                    "actor": self._GetSurfaceActor(surface_index),
+                    "name": name,
+                    "geometry": geometry,
+                    "display": simnibs_efield.ShareGeometry(geometry),
+                    "values": values,
+                    "point_ids": point_ids,
+                    "source_ids": source_ids,
+                    "coverage": coverage,
+                    "mapper": None,
+                    "opacity": 1.0,
+                    "backface_culling": 0,
+                }
+            )
+        return painted, refused
+
+    def _SimnibsEfieldGeometry(self, actor):
+        if actor is None:
+            return None
+        for target in self.simnibs_efield_targets:
+            if target["actor"] is actor:
+                return target["geometry"]
+        mapper = actor.GetMapper()
+        return mapper.GetInput() if mapper is not None else None
+
+    def _GetSurfaceActor(self, surface_index):
+        # Only the real-time E-field path creates efield_actor, so it may not exist yet.
+        previous = getattr(self, "efield_actor", None)
+        self.efield_actor = None
+        try:
+            Publisher.sendMessage("Get Actor", surface_index=surface_index)
+        except KeyError:
+            pass
+        actor = self.efield_actor
+        self.efield_actor = previous
+        return actor
+
+    def _SurfaceIndexFromActor(self, actor):
+        for surface_index in prj.Project().surface_dict:
+            if self._GetSurfaceActor(surface_index) is actor:
+                return surface_index
+        return None
+
+    def _ShowSimnibsEfield(self, painted, vectors, threshold=None):
+        import invesalius.data.brainmesh_handler as brain
+
+        for target in painted:
+            prop = target["actor"].GetProperty()
+            target["mapper"] = target["actor"].GetMapper()
+            target["opacity"] = prop.GetOpacity()
+            target["backface_culling"] = prop.GetBackfaceCulling()
+
+        self.simnibs_efield_targets = painted
+
+        primary = painted[0]
+        self.simnibs_efield_actor = primary["actor"]
+        self.efield_actor = primary["actor"]
+        self.InitEfield(brain.E_field_brain(primary["display"]))
+
+        if threshold is not None:
+            self.UpdateEfieldThreshold(threshold)
+
+        self.Id_list = list(primary["point_ids"])
+        self.radius_list.Reset()
+        for point_id in self.Id_list:
+            self.radius_list.InsertNextId(point_id)
+
+        self.colors_init = vtkUnsignedCharArray()
+        self.colors_init.SetNumberOfComponents(3)
+        self.colors_init.SetName("Colors")
+        self.colors_init.SetNumberOfTuples(primary["display"].GetNumberOfPoints())
+        self.colors_init.Fill(const.CORTEX_COLOR[0])
+
+        values = primary["values"]
+        self.e_field_norms_to_save = values
+        max_index = int(np.argmax(values))
+        self.Idmax = self.Id_list[max_index]
+        if vectors is not None:
+            sampled = np.asarray(vectors)[primary["source_ids"]]
+            self.e_field_col1 = sampled[:, 0]
+            self.e_field_col2 = sampled[:, 1]
+            self.e_field_col3 = sampled[:, 2]
+            self.max_efield_array = list(sampled[max_index])
+        else:
+            self.e_field_col1 = []
+            self.e_field_col2 = []
+            self.e_field_col3 = []
+            self.max_efield_array = None
+
+        for target in painted[1:]:
+            mapper = vtkPolyDataMapper()
+            mapper.SetInputData(target["display"])
+            mapper.ScalarVisibilityOn()
+            target["actor"].SetMapper(mapper)
+            target["actor"].GetProperty().SetBackfaceCulling(1)
+        self._StaggerSimnibsEfieldOpacity()
+
+        self.GetEfieldMaxMin(values)
+        self._RenderAfterEfieldUpdate()
+        wx.CallAfter(self._RecolorSimnibsEfieldTargets)
+
+    def _StaggerSimnibsEfieldOpacity(self):
+        """Fade the outer surfaces when several carry the field.
+
+        Tissue surfaces are nested, so at full opacity the outermost one hides all the
+        others. The chosen opacity stays on the innermost surface, which is the one the
+        field is usually about.
+        """
+        targets = self.simnibs_efield_targets
+        base = self.simnibs_efield_opacity
+        if len(targets) < 2:
+            for target in targets:
+                target["actor"].GetProperty().SetOpacity(base)
+            return
+
+        outer = min(const.SIMNIBS_EFIELD_OUTER_OPACITY, base)
+        # Widest bounding box first, which for nested surfaces is the outermost.
+        order = sorted(targets, key=lambda t: t["display"].GetLength(), reverse=True)
+        for rank, target in enumerate(order):
+            opacity = outer + (base - outer) * rank / (len(order) - 1)
+            target["actor"].GetProperty().SetOpacity(opacity)
+
+    def _RecolorSimnibsEfieldTargets(self):
+        import invesalius.data.simnibs_efield as simnibs_efield
+
+        if not self.simnibs_efield_targets:
+            return
+
+        if len(self.simnibs_efield_targets) > 1:
+            lut = self.CreateLUTTableForEfield(
+                0, self.efield_max, highlight_threshold=self.enableefieldabovethreshold
+            )
+            for target in self.simnibs_efield_targets[1:]:
+                display = target["display"]
+                colors = simnibs_efield.BuildColorArray(
+                    display.GetNumberOfPoints(), target["point_ids"], target["values"], lut
+                )
+                display.GetPointData().SetScalars(colors)
+                display.Modified()
+
+        self._TellSimnibsCrossSections()
+
+    def _PublishSimnibsEfieldTargets(self, refused=()):
+        painted = [
+            (self._SurfaceIndexFromActor(target["actor"]), target["name"], target["coverage"])
+            for target in self.simnibs_efield_targets
+        ]
+        Publisher.sendMessage("SimNIBS efield painted", painted=painted, refused=list(refused))
+
+    @staticmethod
+    def _SimnibsEfieldRefusal(refused):
+        if not refused:
+            return "no surface was given to paint the E-field on"
+        reasons = [
+            f"{name} has no geometry to paint on"
+            if closest is None
+            else f"{name} is {closest:.1f} mm away from the E-field mesh"
+            for name, closest in refused
+        ]
+        return "the E-field does not reach the chosen surface: " + "; ".join(reasons)
+
+    def _CreateSimnibsEfieldSurface(self, polydata):
+        """Add the SimNIBS mesh to the project, for when no surface of its own can carry the field."""
+        Publisher.sendMessage(
+            "Create surface from polydata",
+            polydata=polydata,
+            name=_("E-field (SimNIBS)"),
+            scalar=True,
+        )
+        surface_dict = prj.Project().surface_dict
+        if not surface_dict:
+            return None
+        surface_index = max(surface_dict)
+        self.simnibs_efield_surface_actor = self._GetSurfaceActor(surface_index)
+        wx.CallAfter(Publisher.sendMessage, "Repopulate surfaces")
+        return surface_index
+
+    def _DropSimnibsEfieldSurface(self):
+        actor = self.simnibs_efield_surface_actor
+        if actor is None or any(t["actor"] is actor for t in self.simnibs_efield_targets):
+            return
+
+        self.simnibs_efield_surface_actor = None
+        surface_index = self._SurfaceIndexFromActor(actor)
+        if surface_index is None:
+            return
+
+        self.simnibs_dropping_surface = True
+        try:
+            Publisher.sendMessage("Remove surfaces", surface_indexes=[surface_index])
+        finally:
+            self.simnibs_dropping_surface = False
+        wx.CallAfter(Publisher.sendMessage, "Repopulate surfaces")
+
+    def _HideSimnibsEfield(self):
+        for target in self.simnibs_efield_targets:
+            actor = target["actor"]
+            if target["mapper"] is not None:
+                actor.SetMapper(target["mapper"])
+            actor.GetProperty().SetOpacity(target["opacity"])
+            actor.GetProperty().SetBackfaceCulling(target["backface_culling"])
+        self.simnibs_efield_targets = []
+
+    def _RenderAfterEfieldUpdate(self):
+        wx.CallAfter(wx.CallAfter, self.UpdateRender)
+
+    def RemoveSimnibsEfield(self):
+        if not self.simnibs_efield_targets and self.simnibs_efield_source is None:
+            return
+
+        self.RemoveEfieldTargetingActors()
+        self.RemoveEfieldVectorActor()
+        self.RemoveEfieldEdges()
+        if self.efield_scalar_bar is not None:
+            self.ren.RemoveActor(self.efield_scalar_bar)
+            self.efield_scalar_bar = None
+
+        self._HideSimnibsEfield()
+        self._DropSimnibsEfieldSurface()
+
+        if getattr(self, "efield_actor", None) is self.simnibs_efield_actor:
+            self.efield_actor = None
+        self.simnibs_efield_actor = None
+        self.simnibs_efield_source = None
+
+        self.efield_mesh = None
+        self.e_field_norms = None
+        self.radius_list.Reset()
+        self.efield_colormap = None
+        self.UpdateRender()
+        self._TellSimnibsCrossSections([])
+
+    def ReleaseSimnibsEfield(self, actor):
+        if self.simnibs_dropping_surface:
+            return
+        if any(target["actor"] is actor for target in self.simnibs_efield_targets):
+            self.RemoveSimnibsEfield()
+
+    def SetSimnibsEfieldColormap(self, colormap):
+        if not self.simnibs_efield_targets:
+            return
+        self.efield_colormap = colormap
+        self._RefreshSimnibsEfield()
+
+    def SetSimnibsEfieldThreshold(self, threshold):
+        if not self.simnibs_efield_targets:
+            return
+        self.UpdateEfieldThreshold(threshold)
+        self._RefreshSimnibsEfield()
+
+    def SetSimnibsEfieldOpacity(self, opacity):
+        if not self.simnibs_efield_targets:
+            return
+        self.simnibs_efield_opacity = float(opacity)
+        self._StaggerSimnibsEfieldOpacity()
+        self.UpdateRender()
+
+    def _RefreshSimnibsEfield(self):
+        if self.efield_mesh is None:
+            return
+        self.OnUpdateEfieldvis()
+        self._RecolorSimnibsEfieldTargets()
+        wx.CallAfter(self.UpdateRender)
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
