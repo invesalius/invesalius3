@@ -5120,6 +5120,363 @@ msgstr ""
 "\n"
 "{} máscara(s) criada(s) em {:02d}:{:02d}."
 
+msgid "Adrenal Gland Left"
+msgstr "Glândula Adrenal Esquerda"
+
+msgid "Adrenal Gland Right"
+msgstr "Glândula Adrenal Direita"
+
+msgid "Aorta"
+msgstr "Aorta"
+
+msgid "Atrial Appendage Left"
+msgstr "Apêndice Atrial Esquerdo"
+
+msgid "Autochthon Left"
+msgstr "Autóctone Esquerdo"
+
+msgid "Autochthon Right"
+msgstr "Autóctone Direito"
+
+msgid "Brachiocephalic Trunk"
+msgstr "Tronco Braquiocefálico"
+
+msgid "Brachiocephalic Vein Left"
+msgstr "Veia Braquiocefálica Esquerda"
+
+msgid "Brachiocephalic Vein Right"
+msgstr "Veia Braquiocefálica Direita"
+
+msgid "Clavicula Left"
+msgstr "Clavícula Esquerda"
+
+msgid "Clavicula Right"
+msgstr "Clavícula Direita"
+
+msgid "Colon"
+msgstr "Cólon"
+
+msgid "Common Carotid Artery Left"
+msgstr "Artéria Carótida Comum Esquerda"
+
+msgid "Common Carotid Artery Right"
+msgstr "Artéria Carótida Comum Direita"
+
+msgid "Costal Cartilages"
+msgstr "Cartilagens Costais"
+
+msgid "Duodenum"
+msgstr "Duodeno"
+
+msgid "Esophagus"
+msgstr "Esôfago"
+
+msgid "Femur Left"
+msgstr "Fêmur Esquerdo"
+
+msgid "Femur Right"
+msgstr "Fêmur Direito"
+
+msgid "Gallbladder"
+msgstr "Vesícula Biliar"
+
+msgid "Gluteus Maximus Left"
+msgstr "Glúteo Máximo Esquerdo"
+
+msgid "Gluteus Maximus Right"
+msgstr "Glúteo Máximo Direito"
+
+msgid "Gluteus Medius Left"
+msgstr "Glúteo Médio Esquerdo"
+
+msgid "Gluteus Medius Right"
+msgstr "Glúteo Médio Direito"
+
+msgid "Gluteus Minimus Left"
+msgstr "Glúteo Mínimo Esquerdo"
+
+msgid "Gluteus Minimus Right"
+msgstr "Glúteo Mínimo Direito"
+
+msgid "Heart"
+msgstr "Coração"
+
+msgid "Hip Left"
+msgstr "Quadril Esquerdo"
+
+msgid "Hip Right"
+msgstr "Quadril Direito"
+
+msgid "Humerus Left"
+msgstr "Úmero Esquerdo"
+
+msgid "Humerus Right"
+msgstr "Úmero Direito"
+
+msgid "Iliac Artery Left"
+msgstr "Artéria Ilíaca Esquerda"
+
+msgid "Iliac Artery Right"
+msgstr "Artéria Ilíaca Direita"
+
+msgid "Iliac Vena Left"
+msgstr "Veia Ilíaca Esquerda"
+
+msgid "Iliac Vena Right"
+msgstr "Veia Ilíaca Direita"
+
+msgid "Iliopsoas Left"
+msgstr "Iliopsoas Esquerdo"
+
+msgid "Iliopsoas Right"
+msgstr "Iliopsoas Direito"
+
+msgid "Inferior Vena Cava"
+msgstr "Veia Cava Inferior"
+
+msgid "Intervertebral Discs"
+msgstr "Discos Intervertebrais"
+
+msgid "Kidney Cyst Left"
+msgstr "Cisto Renal Esquerdo"
+
+msgid "Kidney Cyst Right"
+msgstr "Cisto Renal Direito"
+
+msgid "Kidney Left"
+msgstr "Rim Esquerdo"
+
+msgid "Kidney Right"
+msgstr "Rim Direito"
+
+msgid "Lung Left"
+msgstr "Pulmão Esquerdo"
+
+msgid "Lung Lower Lobe Left"
+msgstr "Lobo Inferior Esquerdo do Pulmão"
+
+msgid "Lung Lower Lobe Right"
+msgstr "Lobo Inferior Direito do Pulmão"
+
+msgid "Lung Middle Lobe Right"
+msgstr "Lobo Médio Direito do Pulmão"
+
+msgid "Lung Right"
+msgstr "Pulmão Direito"
+
+msgid "Lung Upper Lobe Left"
+msgstr "Lobo Superior Esquerdo do Pulmão"
+
+msgid "Lung Upper Lobe Right"
+msgstr "Lobo Superior Direito do Pulmão"
+
+msgid "Pancreas"
+msgstr "Pâncreas"
+
+msgid "Portal Vein And Splenic Vein"
+msgstr "Veia Porta e Veia Esplênica"
+
+msgid "Prostate"
+msgstr "Próstata"
+
+msgid "Pulmonary Vein"
+msgstr "Veia Pulmonar"
+
+msgid "Rib Left 1"
+msgstr "Costela Esquerda 1"
+
+msgid "Rib Left 10"
+msgstr "Costela Esquerda 10"
+
+msgid "Rib Left 11"
+msgstr "Costela Esquerda 11"
+
+msgid "Rib Left 12"
+msgstr "Costela Esquerda 12"
+
+msgid "Rib Left 2"
+msgstr "Costela Esquerda 2"
+
+msgid "Rib Left 3"
+msgstr "Costela Esquerda 3"
+
+msgid "Rib Left 4"
+msgstr "Costela Esquerda 4"
+
+msgid "Rib Left 5"
+msgstr "Costela Esquerda 5"
+
+msgid "Rib Left 6"
+msgstr "Costela Esquerda 6"
+
+msgid "Rib Left 7"
+msgstr "Costela Esquerda 7"
+
+msgid "Rib Left 8"
+msgstr "Costela Esquerda 8"
+
+msgid "Rib Left 9"
+msgstr "Costela Esquerda 9"
+
+msgid "Rib Right 1"
+msgstr "Costela Direita 1"
+
+msgid "Rib Right 10"
+msgstr "Costela Direita 10"
+
+msgid "Rib Right 11"
+msgstr "Costela Direita 11"
+
+msgid "Rib Right 12"
+msgstr "Costela Direita 12"
+
+msgid "Rib Right 2"
+msgstr "Costela Direita 2"
+
+msgid "Rib Right 3"
+msgstr "Costela Direita 3"
+
+msgid "Rib Right 4"
+msgstr "Costela Direita 4"
+
+msgid "Rib Right 5"
+msgstr "Costela Direita 5"
+
+msgid "Rib Right 6"
+msgstr "Costela Direita 6"
+
+msgid "Rib Right 7"
+msgstr "Costela Direita 7"
+
+msgid "Rib Right 8"
+msgstr "Costela Direita 8"
+
+msgid "Rib Right 9"
+msgstr "Costela Direita 9"
+
+msgid "Sacrum"
+msgstr "Sacro"
+
+msgid "Scapula Left"
+msgstr "Escápula Esquerda"
+
+msgid "Scapula Right"
+msgstr "Escápula Direita"
+
+msgid "Skull"
+msgstr "Crânio"
+
+msgid "Small Bowel"
+msgstr "Intestino Delgado"
+
+msgid "Spinal Cord"
+msgstr "Medula Espinhal"
+
+msgid "Spleen"
+msgstr "Baço"
+
+msgid "Sternum"
+msgstr "Esterno"
+
+msgid "Stomach"
+msgstr "Estômago"
+
+msgid "Subclavian Artery Left"
+msgstr "Artéria Subclávia Esquerda"
+
+msgid "Subclavian Artery Right"
+msgstr "Artéria Subclávia Direita"
+
+msgid "Superior Vena Cava"
+msgstr "Veia Cava Superior"
+
+msgid "Thyroid Gland"
+msgstr "Glândula Tireoide"
+
+msgid "Trachea"
+msgstr "Traqueia"
+
+msgid "Urinary Bladder"
+msgstr "Bexiga Urinária"
+
+msgid "Vertebrae"
+msgstr "Vértebras"
+
+msgid "Vertebrae C1"
+msgstr "Vértebra C1"
+
+msgid "Vertebrae C2"
+msgstr "Vértebra C2"
+
+msgid "Vertebrae C3"
+msgstr "Vértebra C3"
+
+msgid "Vertebrae C4"
+msgstr "Vértebra C4"
+
+msgid "Vertebrae C5"
+msgstr "Vértebra C5"
+
+msgid "Vertebrae C6"
+msgstr "Vértebra C6"
+
+msgid "Vertebrae C7"
+msgstr "Vértebra C7"
+
+msgid "Vertebrae L1"
+msgstr "Vértebra L1"
+
+msgid "Vertebrae L2"
+msgstr "Vértebra L2"
+
+msgid "Vertebrae L3"
+msgstr "Vértebra L3"
+
+msgid "Vertebrae L4"
+msgstr "Vértebra L4"
+
+msgid "Vertebrae L5"
+msgstr "Vértebra L5"
+
+msgid "Vertebrae S1"
+msgstr "Vértebra S1"
+
+msgid "Vertebrae T1"
+msgstr "Vértebra T1"
+
+msgid "Vertebrae T10"
+msgstr "Vértebra T10"
+
+msgid "Vertebrae T11"
+msgstr "Vértebra T11"
+
+msgid "Vertebrae T12"
+msgstr "Vértebra T12"
+
+msgid "Vertebrae T2"
+msgstr "Vértebra T2"
+
+msgid "Vertebrae T3"
+msgstr "Vértebra T3"
+
+msgid "Vertebrae T4"
+msgstr "Vértebra T4"
+
+msgid "Vertebrae T5"
+msgstr "Vértebra T5"
+
+msgid "Vertebrae T6"
+msgstr "Vértebra T6"
+
+msgid "Vertebrae T7"
+msgstr "Vértebra T7"
+
+msgid "Vertebrae T8"
+msgstr "Vértebra T8"
+
+msgid "Vertebrae T9"
+msgstr "Vértebra T9"
+
 #~ msgid "TIFF,BMP,JPG or PNG (CT)"
 #~ msgstr "TIFF,BMP,JPG ou PNG (CT)"
 

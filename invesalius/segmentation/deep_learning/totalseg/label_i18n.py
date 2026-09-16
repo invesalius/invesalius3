@@ -6,79 +6,141 @@
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
 # --------------------------------------------------------------------------
 # Structure keys come from external TotalSegmentator sidecars, so pygettext
-# can't extract them. Anatomical vocabulary is translated via JSON tables here
-# instead of the project-wide .po files. Lookup: session locale -> English ->
-# auto-formatted key.
+# cannot discover them automatically. The tuple below lists every anatomical
+# display name as a literal so pygettext extracts them for the .po workflow;
+# actual translation happens through gettext at call time.
 
-import json
-import logging
-from functools import lru_cache
-from pathlib import Path
-
-logger = logging.getLogger(__name__)
-
-TRANSLATIONS_DIR = Path(__file__).parent / "translations"
-_DEFAULT_LOCALE = "en"
+from invesalius.i18n import tr as _
 
 
 def _display_from_key(name: str) -> str:
     return " ".join(w.capitalize() for w in name.split("_"))
 
 
-@lru_cache(maxsize=16)
-def _load_locale(locale: str) -> dict:
-    path = TRANSLATIONS_DIR / f"structures.{locale}.json"
-    if not path.exists():
-        return {}
-    try:
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-        if not isinstance(data, dict):
-            logger.warning("structures.%s.json is not a JSON object; ignoring", locale)
-            return {}
-        return data
-    except (OSError, json.JSONDecodeError) as e:
-        logger.warning("Could not read structures.%s.json: %s", locale, e)
-        return {}
+_ANATOMICAL_STRINGS = (
+    _("Adrenal Gland Left"),
+    _("Adrenal Gland Right"),
+    _("Aorta"),
+    _("Atrial Appendage Left"),
+    _("Autochthon Left"),
+    _("Autochthon Right"),
+    _("Brachiocephalic Trunk"),
+    _("Brachiocephalic Vein Left"),
+    _("Brachiocephalic Vein Right"),
+    _("Brain"),
+    _("Clavicula Left"),
+    _("Clavicula Right"),
+    _("Colon"),
+    _("Common Carotid Artery Left"),
+    _("Common Carotid Artery Right"),
+    _("Costal Cartilages"),
+    _("Duodenum"),
+    _("Esophagus"),
+    _("Femur Left"),
+    _("Femur Right"),
+    _("Gallbladder"),
+    _("Gluteus Maximus Left"),
+    _("Gluteus Maximus Right"),
+    _("Gluteus Medius Left"),
+    _("Gluteus Medius Right"),
+    _("Gluteus Minimus Left"),
+    _("Gluteus Minimus Right"),
+    _("Heart"),
+    _("Hip Left"),
+    _("Hip Right"),
+    _("Humerus Left"),
+    _("Humerus Right"),
+    _("Iliac Artery Left"),
+    _("Iliac Artery Right"),
+    _("Iliac Vena Left"),
+    _("Iliac Vena Right"),
+    _("Iliopsoas Left"),
+    _("Iliopsoas Right"),
+    _("Inferior Vena Cava"),
+    _("Intervertebral Discs"),
+    _("Kidney Cyst Left"),
+    _("Kidney Cyst Right"),
+    _("Kidney Left"),
+    _("Kidney Right"),
+    _("Liver"),
+    _("Lung Left"),
+    _("Lung Lower Lobe Left"),
+    _("Lung Lower Lobe Right"),
+    _("Lung Middle Lobe Right"),
+    _("Lung Right"),
+    _("Lung Upper Lobe Left"),
+    _("Lung Upper Lobe Right"),
+    _("Pancreas"),
+    _("Portal Vein And Splenic Vein"),
+    _("Prostate"),
+    _("Pulmonary Vein"),
+    _("Rib Left 1"),
+    _("Rib Left 10"),
+    _("Rib Left 11"),
+    _("Rib Left 12"),
+    _("Rib Left 2"),
+    _("Rib Left 3"),
+    _("Rib Left 4"),
+    _("Rib Left 5"),
+    _("Rib Left 6"),
+    _("Rib Left 7"),
+    _("Rib Left 8"),
+    _("Rib Left 9"),
+    _("Rib Right 1"),
+    _("Rib Right 10"),
+    _("Rib Right 11"),
+    _("Rib Right 12"),
+    _("Rib Right 2"),
+    _("Rib Right 3"),
+    _("Rib Right 4"),
+    _("Rib Right 5"),
+    _("Rib Right 6"),
+    _("Rib Right 7"),
+    _("Rib Right 8"),
+    _("Rib Right 9"),
+    _("Sacrum"),
+    _("Scapula Left"),
+    _("Scapula Right"),
+    _("Skull"),
+    _("Small Bowel"),
+    _("Spinal Cord"),
+    _("Spleen"),
+    _("Sternum"),
+    _("Stomach"),
+    _("Subclavian Artery Left"),
+    _("Subclavian Artery Right"),
+    _("Superior Vena Cava"),
+    _("Thyroid Gland"),
+    _("Trachea"),
+    _("Urinary Bladder"),
+    _("Vertebrae"),
+    _("Vertebrae C1"),
+    _("Vertebrae C2"),
+    _("Vertebrae C3"),
+    _("Vertebrae C4"),
+    _("Vertebrae C5"),
+    _("Vertebrae C6"),
+    _("Vertebrae C7"),
+    _("Vertebrae L1"),
+    _("Vertebrae L2"),
+    _("Vertebrae L3"),
+    _("Vertebrae L4"),
+    _("Vertebrae L5"),
+    _("Vertebrae S1"),
+    _("Vertebrae T1"),
+    _("Vertebrae T10"),
+    _("Vertebrae T11"),
+    _("Vertebrae T12"),
+    _("Vertebrae T2"),
+    _("Vertebrae T3"),
+    _("Vertebrae T4"),
+    _("Vertebrae T5"),
+    _("Vertebrae T6"),
+    _("Vertebrae T7"),
+    _("Vertebrae T8"),
+    _("Vertebrae T9"),
+)
 
 
-def _current_session_locale() -> str:
-    try:
-        from invesalius.session import Session
-
-        lang = Session().GetConfig("language")
-        if isinstance(lang, str) and lang:
-            return lang
-    except Exception:  # noqa: BLE001
-        pass
-    return _DEFAULT_LOCALE
-
-
-def translate_structure(name: str, locale: str | None = None) -> str:
-    resolved_locale = locale or _current_session_locale()
-
-    for candidate in (resolved_locale, _DEFAULT_LOCALE):
-        translations = _load_locale(candidate)
-        if name in translations:
-            translated = translations[name]
-            if isinstance(translated, str) and translated.strip():
-                return translated
-
-    return _display_from_key(name)
-
-
-def available_locales() -> list[str]:
-    if not TRANSLATIONS_DIR.is_dir():
-        return []
-    prefix = "structures."
-    suffix = ".json"
-    out = []
-    for p in TRANSLATIONS_DIR.iterdir():
-        n = p.name
-        if n.startswith(prefix) and n.endswith(suffix):
-            out.append(n[len(prefix) : -len(suffix)])
-    return sorted(out)
-
-
-def reset_cache() -> None:
-    _load_locale.cache_clear()
+def translate_structure(name: str) -> str:
+    return _(_display_from_key(name))
