@@ -106,17 +106,33 @@ class TrackerCoordinates:
 
 def GetCoordinatesForThread(
     tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int
-):
+) -> Tuple[Optional[np.ndarray], List[bool]]:
     """
     Read coordinates from spatial tracking devices using
 
     :param tracker_connection: Connection object of tracking device and connection type. See tracker_connection.py.
     :param tracker_id: ID of tracking device.
     :param ref_mode: Single or dynamic reference mode of tracking.
-    :return: array of six coordinates (x, y, z, alpha, beta, gamma)
+    :return: array of six coordinates (x, y, z, alpha, beta, gamma), and the
+             per-marker visibility flags.
+
+    With no tracker selected (``tracker_id == const.SELECT``) there is nothing
+    to read, so this returns ``(None, [False, False, False])``: no coordinate,
+    and no marker visible. The visibilities are a list of ``False`` rather than
+    ``None`` because they are not optional to callers. ``SetCoordinates()``
+    stores them *before* its ``coord is None`` guard, so ``None`` would replace
+    the default set in ``TrackerCoordinates.__init__`` and reach every consumer
+    through ``GetCoordinates()``, where they are indexed and unpacked
+    (``probe_visible, head_visible, *coils_visible = marker_visibilities``).
+    That would turn this crash into a ``TypeError`` further away from its cause.
     """
 
     coord = None
+    # Bound here, not only inside the branch below: the `else` path used to fall
+    # through to the return with this name unassigned, raising UnboundLocalError
+    # and killing the ReceiveCoordinates polling thread on its first iteration
+    # whenever navigation started before a tracker was chosen (#1472).
+    marker_visibilities: List[bool] = [False, False, False]
     if tracker_id:
         getcoord = {
             const.MTC: ClaronCoord,
