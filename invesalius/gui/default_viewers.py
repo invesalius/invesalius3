@@ -124,7 +124,11 @@ class Panel(wx.Panel):
             .Name("Volume")
             .Bottom()
             .Centre()
-            .Caption(_("Volume"))
+            .Caption(
+                _("Navigation")
+                if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR
+                else _("Volume")
+            )
             .MaximizeButton(True)
             .CloseButton(False)
         )
@@ -172,6 +176,7 @@ class Panel(wx.Panel):
             caption (str): The new caption to set for the viewer pane.
         """
         self.aui_manager.GetPane(viewer_name).Caption(caption)
+        self.aui_manager.Update()
         self.Refresh()
 
     def OnSetTargetMode(self, enabled=True):

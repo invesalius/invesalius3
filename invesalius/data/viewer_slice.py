@@ -1276,29 +1276,31 @@ class Viewer(wx.Panel):
         max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number, max_slice_number)
 
-        self.slice_data = self.create_slice_window()
-        self.slice_data.SetCursor(self.__create_cursor())
-        self.cam = self.slice_data.renderer.GetActiveCamera()
-        self.__build_cross_lines()
+        first_input = self.slice_data is None
+        if first_input:
+            self.slice_data = self.create_slice_window()
+            self.slice_data.SetCursor(self.__create_cursor())
+            self.canvas = CanvasRendererCTX(
+                self, self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation
+            )
+            self.canvas.draw_list.append(self.slice_data)
 
-        self.canvas = CanvasRendererCTX(
-            self, self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation
-        )
-        self.canvas.draw_list.append(self.slice_data)
+        self.cam = self.slice_data.renderer.GetActiveCamera()
+        if first_input:
+            self.__build_cross_lines()
 
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
         self.set_slice_number(max_slice_number - 1)
         self.__update_camera()
         self.Reposition(self.slice_data)
-        self.interactor.GetRenderWindow().AddRenderer(self.slice_data.renderer)
         if not self.nav_status:
             self.UpdateRender()
 
-        self.EnableText()
-        self.wl_text.Hide()
-
-        self.EnableRuler()
+        if first_input:
+            self.EnableText()
+            self.wl_text.Hide()
+            self.EnableRuler()
 
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)

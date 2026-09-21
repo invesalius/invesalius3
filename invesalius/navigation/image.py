@@ -33,6 +33,7 @@ class Image:
     def __init__(self) -> None:
         self.__bind_events()
         self._fiducials = np.full([3, 3], np.nan)
+        self._project_enabled = False
         self.load_from_state = not ses.Session().ExitedSuccessfullyLastTime()
 
     @property
@@ -132,6 +133,9 @@ class Image:
 
     def OnStateProject(self, state: Dict[str, object]) -> None:
         if state:
+            if self._project_enabled:
+                return
+            self._project_enabled = True
             if self.load_from_state:
                 self.load_from_state = False
                 try:
@@ -141,6 +145,8 @@ class Image:
                     self.LoadProject()  # Load project if failed to load from state
             else:
                 self.LoadProject()
+            self.UpdateFiducialMarkers()
+        else:
+            self._project_enabled = False
 
         self.SaveState()
-        self.UpdateFiducialMarkers()
