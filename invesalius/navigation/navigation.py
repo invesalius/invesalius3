@@ -179,9 +179,10 @@ class UpdateNavigationScene(threading.Thread):
         try:
             if tracts_payload is not None:
                 bundle, affine_vtk, coord_offset, coord_offset_w = tracts_payload
-                Publisher.sendMessage("Remove tracts")
+                Publisher.sendMessage("Remove tracts", coil_name=main_coil)
                 Publisher.sendMessage(
                     "Update tracts",
+                    coil_name=main_coil,
                     root=bundle,
                     affine_vtk=affine_vtk,
                     coord_offset=coord_offset,
@@ -213,6 +214,7 @@ class UpdateNavigationScene(threading.Thread):
                     )
                     Publisher.sendMessage(
                         "Update object arrow matrix",
+                        coil_name=main_coil,
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
                         flag=self.peel_loaded,
@@ -221,6 +223,7 @@ class UpdateNavigationScene(threading.Thread):
                     if self.e_field_loaded:
                         Publisher.sendMessage(
                             "Update point location for e-field calculation",
+                            coil_name=main_coil,
                             m_img=m_imgs[main_coil],
                             coord=coords[main_coil],
                             queue_IDs=self.e_field_IDs_queue,
@@ -228,6 +231,7 @@ class UpdateNavigationScene(threading.Thread):
                         if enorm_data is not None:
                             Publisher.sendMessage(
                                 "Get enorm",
+                                coil_name=main_coil,
                                 enorm_data=enorm_data,
                                 plot_vector=self.plot_efield_vectors,
                                 current_revision=self.navigation.e_field_revision,
@@ -278,6 +282,7 @@ class UpdateNavigationScene(threading.Thread):
                         wx.CallAfter(
                             Publisher.sendMessage,
                             "Update tract seed based efield",
+                            coil_name=main_coil,
                             coord_tracts_queue=self.navigation.coord_tracts_queue,
                             fallback_m_img=m_imgs[main_coil],
                             current_revision=self.navigation.e_field_revision,

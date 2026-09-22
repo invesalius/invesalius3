@@ -152,6 +152,8 @@ class NavigationScene:
         self.distance_text = None
         self.robot_warnings_text = None
         self.pTarget = [0.0, 0.0, 0.0]
+        self.actor_tracts = None
+        self.tracts_status = False
 
         self.target_camera_last_update = 0.0
         self.target_camera_update_interval = 1.0 / 20.0
@@ -261,6 +263,11 @@ class NavigationView:
             return self.scene
 
         return None
+
+    def _get_scene_for_update(self, coil_name):
+        if coil_name is None:
+            return self.scene
+        return self._get_scene_for_coil(coil_name)
 
     def activate(self):
         if self._disposed or self._active:
@@ -416,7 +423,6 @@ class NavigationView:
 
         self.angle_arrow_projection_threshold = const.COIL_ANGLE_ARROW_PROJECTION_THRESHOLD
 
-        self.actor_tracts = None
         self.actor_peel = None
 
     def _initialize_navigation_visualizers(self):
@@ -466,7 +472,6 @@ class NavigationView:
         self.edge_fill_actor = None
         self.edge_actor = None
         self.show_efield_edges = False
-        self.tracts_status = False
         # self.dummy_efield_coil_actor = None
         self.target_at_cortex = None
         self.SpreadEfieldFactorTextActor = None
@@ -1877,8 +1882,8 @@ class NavigationView:
             self.e_field_norms is not None
             and self.efield_mesh is not None
             and self.radius_list.GetNumberOfIds() != 0
-            and not self.tracts_status
-            and self.actor_tracts is None
+            and not self.scene.tracts_status
+            and self.scene.actor_tracts is None
         ):
             self.CalculateEdgesEfield()
             self.Refresh()
@@ -2169,7 +2174,11 @@ class NavigationView:
                 self.GetIndexesAboveThreshold(self.efield_threshold)
             )
             self.UpdateEfieldScalarBar()
-            if not self.show_efield_edges or self.tracts_status or self.actor_tracts is not None:
+            if (
+                not self.show_efield_edges
+                or self.scene.tracts_status
+                or self.scene.actor_tracts is not None
+            ):
                 self.RemoveEfieldEdges()
             else:
                 self.CalculateEdgesEfield()
@@ -2202,7 +2211,10 @@ class NavigationView:
         else:
             wx.CallAfter(Publisher.sendMessage, "Recolor again")
 
-    def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
+    def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs, coil_name=None):
+        if self._get_scene_for_update(coil_name) is None:
+            return
+
         # TODO: In the future, remove the "put_nowait" and mesh processing to another module (maybe e_field.py)
         # this might work because a python instance from the 3D mesh can be edited in the thread. Check how to extract
         # the instance from the desired mesh for visualization and if it works. Optimally, there should be no
@@ -2220,8 +2232,11 @@ class NavigationView:
             pass
 
     def UpdateTractSeedBasedEfield(
-        self, coord_tracts_queue, fallback_m_img=None, current_revision=None
+        self, coord_tracts_queue, fallback_m_img=None, current_revision=None, coil_name=None
     ):
+        if self._get_scene_for_update(coil_name) is None:
+            return
+
         if (
             getattr(self, "position_max", None) is None
             or self.position_max_revision != current_revision
@@ -2276,7 +2291,10 @@ class NavigationView:
         T_rot = T_rot.tolist()  # to list
         Publisher.sendMessage("Send coil position and rotation", T_rot=T_rot, cp=cp, m_img=m_img)
 
-    def GetEnorm(self, enorm_data, plot_vector, current_revision=None):
+    def GetEnorm(self, enorm_data, plot_vector, current_revision=None, coil_name=None):
+        if self._get_scene_for_update(coil_name) is None:
+            return
+
         result_revision = enorm_data[5] if len(enorm_data) > 5 else current_revision
         if current_revision is not None and result_revision != current_revision:
             self.RemoveEfieldTargetingActors()
@@ -2528,7 +2546,8 @@ class NavigationView:
         locator.FindCellsAlongLine(p1, p2, 0.001, intersectingCellIds)
         return intersectingCellIds
 
-    def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir):
+    def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir, renderer=None):
+        renderer = renderer or self.ren
         # vtk_colors = vtkNamedColors()
         closestDist = 50
 
@@ -2546,8 +2565,8 @@ class NavigationView:
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     # print('the angle:', angle)
 
-                    self.ren.AddActor(self.obj_projection_arrow_actor)
-                    self.ren.AddActor(self.object_orientation_torus_actor)
+                    renderer.AddActor(self.obj_projection_arrow_actor)
+                    renderer.AddActor(self.object_orientation_torus_actor)
                     self.obj_projection_arrow_actor.SetPosition(closestPoint)
                     self.obj_projection_arrow_actor.SetOrientation(coil_dir)
 
@@ -2570,12 +2589,12 @@ class NavigationView:
                             [240 / 255, 146 / 255, 105 / 255]
                         )
         else:
-            self.ren.RemoveActor(self.obj_projection_arrow_actor)
-            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            renderer.RemoveActor(self.obj_projection_arrow_actor)
+            renderer.RemoveActor(self.object_orientation_torus_actor)
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
-        self.tracts_status = vis_status[1]
+        self.scene.tracts_status = vis_status[1]
 
         if self.nav_status:
             self.scene.pTarget = self.CenterOfMass()
@@ -2605,14 +2624,20 @@ class NavigationView:
         if not self.nav_status:
             self.UpdateRender()
 
-    def UpdateArrowPose(self, m_img, coord, flag):
+    def UpdateArrowPose(self, m_img, coord, flag, coil_name=None):
+        scene = self._get_scene_for_update(coil_name)
+        if scene is None:
+            return
+
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
 
         if flag and self.efield_mesh is None:
-            self.ren.RemoveActor(self.obj_projection_arrow_actor)
-            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            scene.ren.RemoveActor(self.obj_projection_arrow_actor)
+            scene.ren.RemoveActor(self.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
-            self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
+            self.ShowCoilProjection(
+                intersectingCellIds, p1, coil_norm, coil_dir, renderer=scene.ren
+            )
 
     def TrackObject(self, enabled):
         if enabled:
@@ -2637,27 +2662,42 @@ class NavigationView:
             self.obj_projection_arrow_actor = None
             self.object_orientation_torus_actor = None
 
-    def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
-        self.tracts_status = True
+    def OnUpdateTracts(
+        self,
+        root=None,
+        affine_vtk=None,
+        coord_offset=None,
+        coord_offset_w=None,
+        coil_name=None,
+    ):
+        scene = self._get_scene_for_update(coil_name)
+        if scene is None:
+            return
+
+        scene.tracts_status = True
         self.RemoveEfieldEdges()
         mapper = vtkCompositePolyDataMapper()
         mapper.SetInputDataObject(root)
 
-        self.actor_tracts = vtkActor()
-        self.actor_tracts.SetMapper(mapper)
-        self.actor_tracts.SetUserMatrix(affine_vtk)
+        scene.actor_tracts = vtkActor()
+        scene.actor_tracts.SetMapper(mapper)
+        scene.actor_tracts.SetUserMatrix(affine_vtk)
 
-        self.ren.AddActor(self.actor_tracts)
+        scene.ren.AddActor(scene.actor_tracts)
         if self.mark_actor:
             self.mark_actor.SetPosition(coord_offset)
         self.Refresh()
 
-    def OnRemoveTracts(self):
-        if self.actor_tracts:
-            self.ren.RemoveActor(self.actor_tracts)
-            self.actor_tracts = None
-            self.Refresh()
-        self.tracts_status = False
+    def OnRemoveTracts(self, coil_name=None):
+        scenes = self.scenes if coil_name is None else [self._get_scene_for_coil(coil_name)]
+        for scene in scenes:
+            if scene is None:
+                continue
+            if scene.actor_tracts:
+                scene.ren.RemoveActor(scene.actor_tracts)
+                scene.actor_tracts = None
+                self.Refresh()
+            scene.tracts_status = False
 
     def SetVolumetricCamera(self, enabled):
         self.use_volumetric_camera = enabled

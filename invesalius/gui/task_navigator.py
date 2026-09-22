@@ -3221,7 +3221,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.nav_status = True
 
     def UpdateSeedCoordinates(
-        self, root=None, affine_vtk=None, coord_offset=(0, 0, 0), coord_offset_w=(0, 0, 0)
+        self,
+        root=None,
+        affine_vtk=None,
+        coord_offset=(0, 0, 0),
+        coord_offset_w=(0, 0, 0),
+        coil_name=None,
     ):
         self.current_seed = coord_offset_w
 
