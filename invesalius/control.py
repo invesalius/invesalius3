@@ -911,9 +911,9 @@ class Controller:
             spacing=self.Slice.spacing,
         )
 
-        Publisher.sendMessage(("Set scroll position", "AXIAL"), index=proj.matrix_shape[0] / 2)
-        Publisher.sendMessage(("Set scroll position", "SAGITAL"), index=proj.matrix_shape[1] / 2)
-        Publisher.sendMessage(("Set scroll position", "CORONAL"), index=proj.matrix_shape[2] / 2)
+        Publisher.sendMessage(("Set scroll position", "AXIAL"), index=proj.matrix_shape[0] // 2)
+        Publisher.sendMessage(("Set scroll position", "SAGITAL"), index=proj.matrix_shape[1] // 2)
+        Publisher.sendMessage(("Set scroll position", "CORONAL"), index=proj.matrix_shape[2] // 2)
 
         # TODO: Check that this is needed with the new way of using affine
         #  now the affine should be at least the identity(4) and never None
