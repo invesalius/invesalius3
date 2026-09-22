@@ -1029,7 +1029,7 @@ class NavigationView:
         else:
             self.DisableTargetMode()
 
-    def OnUpdateCoilPose(self, m_img, coord):
+    def OnUpdateCoilPose(self, coil_name, m_img, coord):
         # vtk_colors = vtkNamedColors()
         if self.target_coord and self.target_mode:
             now = time.monotonic()
