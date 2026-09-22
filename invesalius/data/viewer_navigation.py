@@ -134,6 +134,32 @@ class NavigationRenderer:
         self._active = False
 
 
+class NavigationScene:
+    """Rendering state associated with one navigation target."""
+
+    def __init__(self, renderer):
+        self.ren = NavigationRenderer(renderer)
+        self.target_guide_renderer = vtkRenderer()
+
+        self.target_mode = False
+        self.target_coord = None
+        self.m_target = None
+        self.stored_camera_settings = None
+
+        self.guide_coil_actors = None
+        self.guide_arrow_actors = None
+        self.distance_text = None
+        self.robot_warnings_text = None
+        self.pTarget = [0.0, 0.0, 0.0]
+
+        self.target_camera_last_update = 0.0
+        self.target_camera_update_interval = 1.0 / 20.0
+        self.target_guide_last_update = 0.0
+        self.target_guide_update_interval = 1.0 / 20.0
+        self.target_guide_deadband = 2.0
+        self.target_guide_last_signature = None
+
+
 class NavigationView:
     """Add navigation behavior to an existing volume viewer."""
 
@@ -146,8 +172,8 @@ class NavigationView:
         self._navigation_interaction_state = None
         self._navigation_renderers = []
         self._nav_status = False
-        self._target_mode = False
-        self.ren = NavigationRenderer(view.ren)
+        self.scene = NavigationScene(view.ren)
+        self.ren = self.scene.ren
 
         self._initialize_navigation_data()
         self._initialize_sensor_data()
@@ -175,13 +201,129 @@ class NavigationView:
 
     @property
     def target_mode(self):
-        return self._target_mode
+        return self.scene.target_mode
 
     @target_mode.setter
     def target_mode(self, value):
-        self._target_mode = value
+        self.scene.target_mode = value
         if self._active:
             self.view.target_mode = value
+
+    @property
+    def target_guide_renderer(self):
+        return self.scene.target_guide_renderer
+
+    @property
+    def target_coord(self):
+        return self.scene.target_coord
+
+    @target_coord.setter
+    def target_coord(self, value):
+        self.scene.target_coord = value
+
+    @property
+    def m_target(self):
+        return self.scene.m_target
+
+    @m_target.setter
+    def m_target(self, value):
+        self.scene.m_target = value
+
+    @property
+    def stored_camera_settings(self):
+        return self.scene.stored_camera_settings
+
+    @stored_camera_settings.setter
+    def stored_camera_settings(self, value):
+        self.scene.stored_camera_settings = value
+
+    @property
+    def guide_coil_actors(self):
+        return self.scene.guide_coil_actors
+
+    @guide_coil_actors.setter
+    def guide_coil_actors(self, value):
+        self.scene.guide_coil_actors = value
+
+    @property
+    def guide_arrow_actors(self):
+        return self.scene.guide_arrow_actors
+
+    @guide_arrow_actors.setter
+    def guide_arrow_actors(self, value):
+        self.scene.guide_arrow_actors = value
+
+    @property
+    def distance_text(self):
+        return self.scene.distance_text
+
+    @distance_text.setter
+    def distance_text(self, value):
+        self.scene.distance_text = value
+
+    @property
+    def robot_warnings_text(self):
+        return self.scene.robot_warnings_text
+
+    @robot_warnings_text.setter
+    def robot_warnings_text(self, value):
+        self.scene.robot_warnings_text = value
+
+    @property
+    def pTarget(self):
+        return self.scene.pTarget
+
+    @pTarget.setter
+    def pTarget(self, value):
+        self.scene.pTarget = value
+
+    @property
+    def _target_camera_last_update(self):
+        return self.scene.target_camera_last_update
+
+    @_target_camera_last_update.setter
+    def _target_camera_last_update(self, value):
+        self.scene.target_camera_last_update = value
+
+    @property
+    def _target_camera_update_interval(self):
+        return self.scene.target_camera_update_interval
+
+    @_target_camera_update_interval.setter
+    def _target_camera_update_interval(self, value):
+        self.scene.target_camera_update_interval = value
+
+    @property
+    def _target_guide_last_update(self):
+        return self.scene.target_guide_last_update
+
+    @_target_guide_last_update.setter
+    def _target_guide_last_update(self, value):
+        self.scene.target_guide_last_update = value
+
+    @property
+    def _target_guide_update_interval(self):
+        return self.scene.target_guide_update_interval
+
+    @_target_guide_update_interval.setter
+    def _target_guide_update_interval(self, value):
+        self.scene.target_guide_update_interval = value
+
+    @property
+    def _target_guide_deadband(self):
+        return self.scene.target_guide_deadband
+
+    @_target_guide_deadband.setter
+    def _target_guide_deadband(self, value):
+        self.scene.target_guide_deadband = value
+
+    @property
+    def _target_guide_last_signature(self):
+        return self.scene.target_guide_last_signature
+
+    @_target_guide_last_signature.setter
+    def _target_guide_last_signature(self, value):
+        self.scene.target_guide_last_signature = value
 
     def activate(self):
         if self._disposed or self._active:
@@ -280,7 +422,6 @@ class NavigationView:
     def _create_navigation_renderer(self):
         # Render the target guide in a separate renderer, so that it can be
         # rendered on top of the volume.
-        self.target_guide_renderer = vtkRenderer()
         self.view.target_guide_renderer = self.target_guide_renderer
 
         self._add_scene_renderer(self.target_guide_renderer)
@@ -308,12 +449,6 @@ class NavigationView:
         self.obj_axes = None
         self.coil_path = False
         self.show_coil = False
-        self.guide_coil_actors = None
-        self.guide_arrow_actors = None
-        self.pTarget = [0.0, 0.0, 0.0]
-
-        self.distance_text = None
-        self.robot_warnings_text = None
 
         # self.obj_axes = None
         self.mark_actor = None
@@ -326,18 +461,9 @@ class NavigationView:
         self.ref = False
         self.obj = False
 
-        self.target_coord = None
-
         self.dummy_probe_actor = None
         self.dummy_ref_actor = None
         self.dummy_obj_actor = None
-        self.target_mode = False
-        self._target_camera_last_update = 0.0
-        self._target_camera_update_interval = 1.0 / 20.0
-        self._target_guide_last_update = 0.0
-        self._target_guide_update_interval = 1.0 / 20.0
-        self._target_guide_deadband = 2.0
-        self._target_guide_last_signature = None
 
         # Set the angle and distance thresholds.
         session = ses.Session()
