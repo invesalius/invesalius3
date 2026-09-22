@@ -186,8 +186,9 @@ class NavigationScene:
 class NavigationView:
     """Add navigation behavior to an existing volume viewer."""
 
-    def __init__(self, view):
+    def __init__(self, view, markers_control=None):
         self.view = view
+        self.markers_control = markers_control
         self._active = False
         self._disposed = False
         self._volume_state = None
@@ -485,9 +486,10 @@ class NavigationView:
         self.cell_id_indexes_above_threshold = None
 
     def _restore_navigation_markers(self):
-        from invesalius.navigation.markers import MarkersControl
+        if self.markers_control is None:
+            return
 
-        for marker in MarkersControl().list:
+        for marker in self.markers_control.list:
             self.marker_visualizer.AddMarker(marker, render=False, focus=False)
             if marker.is_target:
                 self.marker_visualizer.SetTarget(marker)

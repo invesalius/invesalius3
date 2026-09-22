@@ -111,7 +111,7 @@ class Viewer(wx.Panel):
         self._cube_render_observer_tag = None
         self.navigation = None
         self.active_view = self
-        self._navigation_mode = None
+        self._navigation_mode = False
         self._scene_viewport = (0.0, 0.0, 1.0, 1.0)
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
 
@@ -241,7 +241,6 @@ class Viewer(wx.Panel):
         # Request the orientation cube visibility status with a small delay
         # to ensure the interactor has time to initialize during app startup.
         self._call_later(1000, Publisher.sendMessage, "Send orientation cube visibility status")
-        self.SetNavigationMode(ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR)
 
     def _call_later(self, delay, callable_, *args, **kwargs):
         if self._disposed:
@@ -387,7 +386,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.remove_mask_preview, "Remove mask preview")
         Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
-    def SetNavigationMode(self, status):
+    def SetNavigationMode(self, status, markers_control=None):
         if self._disposed:
             return
         status = bool(status)
@@ -397,7 +396,7 @@ class Viewer(wx.Panel):
         if status:
             from invesalius.data.viewer_navigation import NavigationView
 
-            self.navigation = NavigationView(self)
+            self.navigation = NavigationView(self, markers_control)
             self.navigation.activate()
             self.active_view = self.navigation
         else:
