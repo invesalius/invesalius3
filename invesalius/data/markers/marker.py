@@ -46,7 +46,7 @@ class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
 
-    version: int = 5
+    version: int = 6
     marker_id: int = 0
     x: float = 0
     y: float = 0
@@ -80,6 +80,7 @@ class Marker:
     # in micro Volts (but scale in milli Volts for display)
     mep_value: float = dataclasses.field(default=None)
     brain_target_list: list = dataclasses.field(default_factory=list)
+    coil_name: str = ""
     timestamp: str = dataclasses.field(
         default_factory=lambda: datetime.now().isoformat(timespec="seconds")
     )
@@ -245,6 +246,7 @@ class Marker:
             "session_id": self.session_id,
             "mep_value": self.mep_value,
             "marker_uuid": self.marker_uuid,
+            "coil_name": self.coil_name,
             "timestamp": self.timestamp,
             "x_mtms": self.x_mtms,
             "y_mtms": self.y_mtms,
@@ -272,6 +274,7 @@ class Marker:
             "mep_value": self.mep_value,
             "brain_target_list": self.brain_target_list,
             "marker_uuid": self.marker_uuid,
+            "coil_name": self.coil_name,
             "timestamp": self.timestamp,
         }
 
@@ -320,6 +323,7 @@ class Marker:
         mep_value = d.get("mep_value", None)
         brain_target_list = d.get("brain_target_list", [])
         marker_uuid = d.get("marker_uuid", "")
+        coil_name = d.get("coil_name", "")
         timestamp = d.get("timestamp", "")
 
         self.size = d["size"]
@@ -339,6 +343,7 @@ class Marker:
         self.mep_value = mep_value
         self.brain_target_list = brain_target_list
         self.marker_uuid = marker_uuid
+        self.coil_name = coil_name
         self.timestamp = timestamp
 
         return self

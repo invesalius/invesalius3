@@ -4515,6 +4515,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_type=None,
         cortex_position_orientation=None,
         mep_value=None,
+        coil_name=None,
     ):
         if label is None:
             label = self.GetNextMarkerLabel()
@@ -4553,6 +4554,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
             mep_value=mep_value,
+            coil_name=coil_name,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
 
@@ -4795,6 +4797,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         z_offset=0.0,
         z_rotation=0.0,
         mep_value=None,
+        coil_name=None,
     ):
         """
         Create a new marker object.
@@ -4819,6 +4822,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker.z_offset = z_offset
         marker.z_rotation = z_rotation
         marker.mep_value = mep_value
+        if marker_type in (MarkerType.COIL_TARGET, MarkerType.COIL_POSE):
+            marker.coil_name = coil_name or self.navigation.main_coil or ""
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers.list)

@@ -1177,14 +1177,18 @@ class NavigationView:
                 scene.target_guide_last_update = now
 
     def OnUnsetTarget(self, marker):
-        self._unset_scene_target(self.scene)
+        scene = self._get_scene_for_update(marker.coil_name or None)
+        if scene is not None:
+            self._unset_scene_target(scene)
 
     def _unset_scene_target(self, scene):
         self.DisableTargetMode(scene)
         scene.target_coord = None
 
     def OnSetTarget(self, marker):
-        self._set_scene_target(self.scene, marker)
+        scene = self._get_scene_for_update(marker.coil_name or None)
+        if scene is not None:
+            self._set_scene_target(scene, marker)
 
     def _set_scene_target(self, scene, marker):
         coord = marker.position + marker.orientation

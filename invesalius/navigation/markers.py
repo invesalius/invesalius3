@@ -32,6 +32,7 @@ class MarkersControl(metaclass=Singleton):
     def __init__(self) -> None:
         self.list: List[Marker] = []
         self.nav_status = False
+        self.navigation = None
         self.transformator = MarkerTransformator()
 
     def SaveState(self) -> None:
@@ -130,19 +131,28 @@ class MarkersControl(metaclass=Singleton):
         self.SaveState()
 
     def SetTarget(self, marker_id: int, check_for_previous: bool = True) -> None:
-        if check_for_previous:
-            prev_target = self.FindTarget()
+        marker = self.list[marker_id]
+        if not marker.coil_name and self.navigation is not None:
+            marker.coil_name = self.navigation.main_coil or ""
 
-            # If the new target is same as the previous do nothing.
-            if prev_target and prev_target.marker_id == marker_id:
+        if check_for_previous:
+            simultaneous_navigation = (
+                self.navigation is not None and self.navigation.simultaneous_navigation
+            )
+            coil_name = marker.coil_name if simultaneous_navigation else None
+            previous_targets = self.FindTargets(coil_name=coil_name)
+
+            # If the new target is the only current target for this selection, do nothing.
+            if len(previous_targets) == 1 and previous_targets[0].marker_id == marker_id:
                 return
 
-            # Unset the previous target
-            if prev_target is not None:
-                self.UnsetTarget(prev_target.marker_id)
+            # In regular navigation, unset every previous target. In simultaneous
+            # navigation, unset only the previous target associated with this coil.
+            for previous_target in previous_targets:
+                if previous_target.marker_id != marker_id:
+                    self.UnsetTarget(previous_target.marker_id)
 
         # Set new target
-        marker = self.list[marker_id]
         marker.is_target = True
 
         Publisher.sendMessage("Set target", marker=marker)
@@ -192,16 +202,19 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def FindTarget(self) -> Union[None, Marker]:
-        """
-        Return the marker currently selected as target (there
-        should be at most one).
-        """
-        for marker in self.list:
-            if marker.is_target:
-                return marker
+    def FindTargets(self, coil_name=None) -> List[Marker]:
+        return [
+            marker
+            for marker in self.list
+            if marker.is_target and (coil_name is None or marker.coil_name == coil_name)
+        ]
 
-        return None
+    def FindTarget(self, coil_name=None) -> Union[None, Marker]:
+        """
+        Return the first selected target, optionally associated with a coil.
+        """
+        targets = self.FindTargets(coil_name=coil_name)
+        return targets[0] if targets else None
 
     def FindLabel(self, label) -> Union[None, Marker]:
         """

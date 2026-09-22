@@ -82,6 +82,7 @@ class NavigationHub(metaclass=Singleton):
             if len(self.robots.robots_by_id) == 2:
                 break
         self.markers = MarkersControl()
+        self.markers.navigation = self.navigation
         self.mep_visualizer = MEPVisualizer()
         Publisher.sendMessage("Add navigation context to interactive shell")
 
@@ -362,6 +363,7 @@ class Navigation(metaclass=Singleton):
         self.coil_registrations = {}
         self.track_coil = False
         self.main_coil = None  # Which coil to track with pointer
+        self.simultaneous_navigation = False
         self.m_change = None
         self.r_stylus = None
         self.obj_datas = None  # This is accessed by the robot, gets value at StartNavigation
@@ -436,6 +438,7 @@ class Navigation(metaclass=Singleton):
                 "selected_coils": list(self.coil_registrations),
                 "n_coils": self.n_coils,
                 "track_coil": self.track_coil,
+                "simultaneous_navigation": self.simultaneous_navigation,
             }
             if self.main_coil is not None:
                 state["main_coil"] = self.main_coil
@@ -462,6 +465,7 @@ class Navigation(metaclass=Singleton):
                 self.main_coil = "default_coil"
 
             self.track_coil = state.get("track_coil", False)
+            self.simultaneous_navigation = state.get("simultaneous_navigation", False)
 
             # Try to load selected_coils (the list of names of coils to use for navigation)
             if ("selected_coils" in state) and (saved_coil_registrations is not None):
@@ -512,12 +516,18 @@ class Navigation(metaclass=Singleton):
         self.track_coil = enabled
         self.SaveConfig()
 
+    def SetSimultaneousNavigation(self, enabled=False):
+        self.simultaneous_navigation = enabled
+        self.SaveConfig("simultaneous_navigation", enabled)
+
     def SetLockToTarget(self, value):
         self.lock_to_target = value
 
     def SetNoOfCoils(self, n_coils, clear_all=False):
         self.n_coils = n_coils
         self.SaveConfig("n_coils", n_coils)
+        if n_coils < 2:
+            self.SetSimultaneousNavigation(False)
 
         # Reset coil selection
         self.coil_registrations = {}
