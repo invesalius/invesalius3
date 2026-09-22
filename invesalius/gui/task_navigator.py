@@ -2702,7 +2702,7 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(ctrl)
 
     # 'Target mode' button
-    def TrackObject(self, enabled):
+    def TrackObject(self, enabled=False):
         self.UpdateTargetButton()
 
     def ShowTargetButton(self):

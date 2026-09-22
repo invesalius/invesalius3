@@ -2645,7 +2645,7 @@ class NavigationView:
                 intersectingCellIds, p1, coil_norm, coil_dir, renderer=scene.ren
             )
 
-    def TrackObject(self, enabled):
+    def TrackObject(self, enabled=False):
         if enabled:
             vtk_colors = vtkNamedColors()
             self.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
