@@ -137,9 +137,10 @@ class NavigationRenderer:
 class NavigationScene:
     """Rendering state associated with one navigation target."""
 
-    def __init__(self, renderer):
+    def __init__(self, renderer, coil_name=None):
         self.ren = NavigationRenderer(renderer)
         self.target_guide_renderer = vtkRenderer()
+        self.coil_name = coil_name
 
         self.target_mode = False
         self.target_coord = None
@@ -159,6 +160,26 @@ class NavigationScene:
         self.target_guide_deadband = 2.0
         self.target_guide_last_signature = None
 
+    def get_camera_settings(self):
+        camera = self.ren.GetActiveCamera()
+        return {
+            "position": camera.GetPosition(),
+            "focal_point": camera.GetFocalPoint(),
+            "view_up": camera.GetViewUp(),
+            "clipping_range": camera.GetClippingRange(),
+            "view_angle": camera.GetViewAngle(),
+            "parallel_scale": camera.GetParallelScale(),
+        }
+
+    def apply_camera_settings(self, settings):
+        camera = self.ren.GetActiveCamera()
+        camera.SetPosition(settings["position"])
+        camera.SetFocalPoint(settings["focal_point"])
+        camera.SetViewUp(settings["view_up"])
+        camera.SetClippingRange(settings["clipping_range"])
+        camera.SetViewAngle(settings["view_angle"])
+        camera.SetParallelScale(settings["parallel_scale"])
+
 
 class NavigationView:
     """Add navigation behavior to an existing volume viewer."""
@@ -173,6 +194,8 @@ class NavigationView:
         self._navigation_renderers = []
         self._nav_status = False
         self.scene = NavigationScene(view.ren)
+        self.scenes = [self.scene]
+        self.scenes_by_coil = {}
         self.ren = self.scene.ren
 
         self._initialize_navigation_data()
@@ -216,6 +239,28 @@ class NavigationView:
     @target_coord.setter
     def target_coord(self, value):
         self.scene.target_coord = value
+
+    def _associate_scene_with_coil(self, scene, coil_name):
+        if scene.coil_name == coil_name:
+            return
+
+        if scene.coil_name is not None:
+            self.scenes_by_coil.pop(scene.coil_name, None)
+
+        scene.coil_name = coil_name
+        if coil_name is not None:
+            self.scenes_by_coil[coil_name] = scene
+
+    def _get_scene_for_coil(self, coil_name):
+        scene = self.scenes_by_coil.get(coil_name)
+        if scene is not None:
+            return scene
+
+        if len(self.scenes) == 1:
+            self._associate_scene_with_coil(self.scene, coil_name)
+            return self.scene
+
+        return None
 
     def activate(self):
         if self._disposed or self._active:
@@ -269,6 +314,8 @@ class NavigationView:
         for renderer in self._navigation_renderers:
             self._detach_renderer(renderer)
         self._navigation_renderers.clear()
+        self.scenes_by_coil.clear()
+        self.scenes.clear()
         self.view.target_guide_renderer = None
 
     def _add_scene_renderer(self, renderer):
@@ -716,13 +763,20 @@ class NavigationView:
         self.distance_threshold = dist_threshold
 
     def OnUpdateRobotWarning(self, robot_warning, robot_id=None):
-        if self.scene.robot_warnings_text is not None:
-            self.scene.robot_warnings_text.SetValue(robot_warning)
+        scene = self.scene
+        if robot_id is not None:
+            robot = self.robots.GetRobot(robot_id)
+            coil_name = getattr(robot, "coil_name", None)
+            if coil_name is not None:
+                scene = self._get_scene_for_coil(coil_name)
 
-    def CreateTargetGuide(self):
-        if self.scene.guide_arrow_actors:
-            for ind in self.scene.guide_arrow_actors:
-                self.scene.target_guide_renderer.RemoveActor(ind)
+        if scene is not None and scene.robot_warnings_text is not None:
+            scene.robot_warnings_text.SetValue(robot_warning)
+
+    def CreateTargetGuide(self, scene):
+        if scene.guide_arrow_actors:
+            for ind in scene.guide_arrow_actors:
+                scene.target_guide_renderer.RemoveActor(ind)
 
         # Using default coil for target guide model as using self.coil_path can cause custom models to overlap.
         coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
@@ -797,8 +851,8 @@ class NavigationView:
         arrow_pitch_x2.RotateY(90)
         arrow_pitch_x2.RotateZ(180)
 
-        self.scene.guide_coil_actors = obj_roll, obj_yaw, obj_pitch
-        self.scene.guide_arrow_actors = (
+        scene.guide_coil_actors = obj_roll, obj_yaw, obj_pitch
+        scene.guide_arrow_actors = (
             arrow_roll_z1,
             arrow_roll_z2,
             arrow_yaw_y1,
@@ -807,101 +861,103 @@ class NavigationView:
             arrow_pitch_x2,
         )
 
-        for ind in self.scene.guide_coil_actors:
-            self.scene.target_guide_renderer.AddActor(ind)
+        for ind in scene.guide_coil_actors:
+            scene.target_guide_renderer.AddActor(ind)
 
-        for ind in self.scene.guide_arrow_actors:
-            self.scene.target_guide_renderer.AddActor(ind)
+        for ind in scene.guide_arrow_actors:
+            scene.target_guide_renderer.AddActor(ind)
 
-    def EnableTargetMode(self):
-        self._attach_renderer(self.scene.target_guide_renderer)
+    def EnableTargetMode(self, scene=None):
+        scene = scene or self.scene
+        self._attach_renderer(scene.target_guide_renderer)
 
         # Store the current camera settings so that they can be restored when the target mode is disabled.
-        self.scene.stored_camera_settings = self.GetCameraSettings()
+        scene.stored_camera_settings = scene.get_camera_settings()
 
         # Set the transformation matrix for the target.
-        self.scene.m_target = self.CreateVTKObjectMatrix(
-            self.target_coord[:3], self.target_coord[3:]
-        )
+        scene.m_target = self.CreateVTKObjectMatrix(scene.target_coord[:3], scene.target_coord[3:])
 
         if self.actor_peel:
             self.object_orientation_torus_actor.SetVisibility(0)
             self.obj_projection_arrow_actor.SetVisibility(0)
 
-        self.coil_visualizer.AddTargetCoil(self.scene.m_target)
+        self.coil_visualizer.AddTargetCoil(scene.m_target)
 
         # Separate the target guide inside this navigation scene's viewport.
         self._apply_scene_viewport()
 
         # Remove the previous actor for 'distance' text
-        if self.scene.distance_text is not None:
-            self.ren.RemoveActor(self.scene.distance_text.actor)
+        if scene.distance_text is not None:
+            scene.ren.RemoveActor(scene.distance_text.actor)
 
         # Create new actor for 'distance' text
         distance_text = self.CreateDistanceText()
-        self.ren.AddActor(distance_text.actor)
+        scene.ren.AddActor(distance_text.actor)
 
         # Store the object for 'distance' text so it can be modified when distance changes.
-        self.scene.distance_text = distance_text
+        scene.distance_text = distance_text
 
         # Remove the previous actor for 'distance' text
-        if self.scene.robot_warnings_text is not None:
-            self.ren.RemoveActor(self.scene.robot_warnings_text.actor)
+        if scene.robot_warnings_text is not None:
+            scene.ren.RemoveActor(scene.robot_warnings_text.actor)
 
         # Create new actor for 'distance' text
         robot_warnings_text = self.CreateRobotWarningsText()
-        self.ren.AddActor(robot_warnings_text.actor)
+        scene.ren.AddActor(robot_warnings_text.actor)
 
         # Store the object for 'distance' text so it can be modified when distance changes.
-        self.scene.robot_warnings_text = robot_warnings_text
+        scene.robot_warnings_text = robot_warnings_text
 
-        self.CreateTargetGuide()
-        self.scene.target_camera_last_update = 0.0
-        self.scene.target_guide_last_update = 0.0
-        self.scene.target_guide_last_signature = None
+        self.CreateTargetGuide(scene)
+        scene.target_camera_last_update = 0.0
+        scene.target_guide_last_update = 0.0
+        scene.target_guide_last_signature = None
 
-        self.ren.ResetCamera()
-        self.SetCameraTarget()
-        # self.ren.GetActiveCamera().Zoom(4)
+        scene.ren.ResetCamera()
+        self.SetCameraTarget(scene)
+        # scene.ren.GetActiveCamera().Zoom(4)
 
-        self.scene.target_guide_renderer.ResetCamera()
-        self.scene.target_guide_renderer.GetActiveCamera().Zoom(2)
-        self.scene.target_guide_renderer.InteractiveOff()
+        scene.target_guide_renderer.ResetCamera()
+        scene.target_guide_renderer.GetActiveCamera().Zoom(2)
+        scene.target_guide_renderer.InteractiveOff()
         if not self.nav_status:
             self.UpdateRender()
 
-    def DisableTargetMode(self):
-        self.target_mode = False
+    def DisableTargetMode(self, scene=None):
+        scene = scene or self.scene
+        scene.target_mode = False
+        if scene is self.scene and self._active:
+            self.view.target_mode = False
 
         # Restore the camera settings that were stored when the target mode was enabled.
-        if self.scene.stored_camera_settings is not None:
-            self.ApplyCameraSettings(self.scene.stored_camera_settings)
+        if scene.stored_camera_settings is not None:
+            scene.apply_camera_settings(scene.stored_camera_settings)
 
         # Remove the target coil.
         self.coil_visualizer.RemoveTargetCoil()
 
         # Remove all actors from the target guide renderer.
-        actors = self.scene.target_guide_renderer.GetActors()
+        actors = scene.target_guide_renderer.GetActors()
         actors.InitTraversal()
         actor = actors.GetNextItem()
         while actor:
-            self.scene.target_guide_renderer.RemoveActor(actor)
+            scene.target_guide_renderer.RemoveActor(actor)
             actor = actors.GetNextItem()
 
         # Reset the main renderer to this navigation scene's full viewport.
         self._apply_scene_viewport()
-        self._detach_renderer(self.scene.target_guide_renderer)
+        self._detach_renderer(scene.target_guide_renderer)
 
         # Remove the actor for 'distance' text.
-        if self.scene.distance_text is not None:
-            self.ren.RemoveActor(self.scene.distance_text.actor)
+        if scene.distance_text is not None:
+            scene.ren.RemoveActor(scene.distance_text.actor)
 
         # Remove the actor for 'robot warnings' text.
-        if self.scene.robot_warnings_text is not None:
-            self.ren.RemoveActor(self.scene.robot_warnings_text.actor)
+        if scene.robot_warnings_text is not None:
+            scene.ren.RemoveActor(scene.robot_warnings_text.actor)
 
         self.camera_show_object = None
-        self.scene.target_guide_last_signature = None
+        scene.target_guide_last_signature = None
         if self.actor_peel:
             if self.object_orientation_torus_actor:
                 self.object_orientation_torus_actor.SetVisibility(1)
@@ -919,34 +975,39 @@ class NavigationView:
         self.target_mode = enabled
 
         if enabled:
-            self.EnableTargetMode()
+            self.EnableTargetMode(self.scene)
         else:
-            self.DisableTargetMode()
+            self.DisableTargetMode(self.scene)
 
     def OnUpdateCoilPose(self, coil_name, m_img, coord):
+        scene = self._get_scene_for_coil(coil_name)
+        if scene is None:
+            return
+
+        self._update_scene_coil_pose(scene, m_img, coord)
+
+    def _update_scene_coil_pose(self, scene, m_img, coord):
         # vtk_colors = vtkNamedColors()
-        if self.target_coord and self.target_mode:
+        if scene.target_coord and scene.target_mode:
             now = time.monotonic()
             distance_to_target = distance.euclidean(
-                coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
+                coord[0:3],
+                (scene.target_coord[0], -scene.target_coord[1], scene.target_coord[2]),
             )
 
             formatted_distance = f"Distance: {distance_to_target: >5.1f} mm"
 
-            if self.scene.distance_text is not None:
-                self.scene.distance_text.SetValue(formatted_distance)
+            if scene.distance_text is not None:
+                scene.distance_text.SetValue(formatted_distance)
 
-            if (
-                now - self.scene.target_camera_last_update
-                >= self.scene.target_camera_update_interval
-            ):
-                self.ren.ResetCamera()
-                self.SetCameraTarget()
+            if now - scene.target_camera_last_update >= scene.target_camera_update_interval:
+                scene.ren.ResetCamera()
+                self.SetCameraTarget(scene)
                 zoom_distance = min(distance_to_target, 100)
                 # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
                 # the distance between 1 and 100 mm
-                self.ren.GetActiveCamera().Zoom((-0.0404 * zoom_distance) + 5.0404)
-                self.scene.target_camera_last_update = now
+                scene.ren.GetActiveCamera().Zoom((-0.0404 * zoom_distance) + 5.0404)
+                scene.target_camera_last_update = now
 
             is_under_distance_threshold = distance_to_target <= self.distance_threshold
 
@@ -957,7 +1018,7 @@ class NavigationView:
             #
             # TODO: Unify naming; displacement is more correct term than distance, it should be used consistently.
             displacement_to_target_robot = dcr.ComputeRelativeDistanceToTarget(
-                target_coord=self.target_coord, m_img=m_img_flip
+                target_coord=scene.target_coord, m_img=m_img_flip
             )
 
             distance_to_target = displacement_to_target_robot.copy()
@@ -985,10 +1046,10 @@ class NavigationView:
                 > -self.angle_threshold * const.ARROW_SCALE
             ):
                 is_under_x_angle_threshold = True
-                self.scene.guide_coil_actors[0].GetProperty().SetColor(0, 1, 0)
+                scene.guide_coil_actors[0].GetProperty().SetColor(0, 1, 0)
             else:
                 is_under_x_angle_threshold = False
-                self.scene.guide_coil_actors[0].GetProperty().SetColor(1, 1, 1)
+                scene.guide_coil_actors[0].GetProperty().SetColor(1, 1, 1)
 
             if (
                 self.angle_threshold * const.ARROW_SCALE
@@ -996,10 +1057,10 @@ class NavigationView:
                 > -self.angle_threshold * const.ARROW_SCALE
             ):
                 is_under_z_angle_threshold = True
-                self.scene.guide_coil_actors[1].GetProperty().SetColor(0, 1, 0)
+                scene.guide_coil_actors[1].GetProperty().SetColor(0, 1, 0)
             else:
                 is_under_z_angle_threshold = False
-                self.scene.guide_coil_actors[1].GetProperty().SetColor(1, 1, 1)
+                scene.guide_coil_actors[1].GetProperty().SetColor(1, 1, 1)
 
             if (
                 self.angle_threshold * const.ARROW_SCALE
@@ -1007,10 +1068,10 @@ class NavigationView:
                 > -self.angle_threshold * const.ARROW_SCALE
             ):
                 is_under_y_angle_threshold = True
-                self.scene.guide_coil_actors[2].GetProperty().SetColor(0, 1, 0)
+                scene.guide_coil_actors[2].GetProperty().SetColor(0, 1, 0)
             else:
                 is_under_y_angle_threshold = False
-                self.scene.guide_coil_actors[2].GetProperty().SetColor(1, 1, 1)
+                scene.guide_coil_actors[2].GetProperty().SetColor(1, 1, 1)
 
             # Combine all the conditions to check if the coil is at the target.
             coil_at_target = (
@@ -1020,7 +1081,12 @@ class NavigationView:
                 and is_under_z_angle_threshold
             )
 
-            wx.CallAfter(Publisher.sendMessage, "Coil at target", state=coil_at_target)
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "Coil at target",
+                state=coil_at_target,
+                coil_name=scene.coil_name,
+            )
 
             robot_active = self.robots.GetActiveRobot()
             # If robot is active, send status and update displacement to target
@@ -1029,19 +1095,18 @@ class NavigationView:
                 robot_active.UpdateDisplacementToTarget(displacement_to_target_robot)
 
             guide_signature = (
-                int(round(coordrx_arrow / self.scene.target_guide_deadband)),
-                int(round(coordry_arrow / self.scene.target_guide_deadband)),
-                int(round(coordrz_arrow / self.scene.target_guide_deadband)),
+                int(round(coordrx_arrow / scene.target_guide_deadband)),
+                int(round(coordry_arrow / scene.target_guide_deadband)),
+                int(round(coordrz_arrow / scene.target_guide_deadband)),
             )
             should_update_guide = (
-                guide_signature != self.scene.target_guide_last_signature
-                and now - self.scene.target_guide_last_update
-                >= self.scene.target_guide_update_interval
+                guide_signature != scene.target_guide_last_signature
+                and now - scene.target_guide_last_update >= scene.target_guide_update_interval
             )
             if should_update_guide:
-                if self.scene.guide_arrow_actors is not None:
-                    for actor in self.scene.guide_arrow_actors:
-                        self.scene.target_guide_renderer.RemoveActor(actor)
+                if scene.guide_arrow_actors is not None:
+                    for actor in scene.guide_arrow_actors:
+                        scene.target_guide_renderer.RemoveActor(actor)
 
                 offset = 5
                 arrow_roll_x1 = self.actor_factory.CreateArrow(
@@ -1091,7 +1156,7 @@ class NavigationView:
                 arrow_pitch_y2.RotateZ(180)
                 arrow_pitch_y2.GetProperty().SetColor(1, 0, 0)
 
-                self.scene.guide_arrow_actors = (
+                scene.guide_arrow_actors = (
                     arrow_roll_x1,
                     arrow_roll_x2,
                     arrow_yaw_z1,
@@ -1100,18 +1165,23 @@ class NavigationView:
                     arrow_pitch_y2,
                 )
 
-                for ind in self.scene.guide_arrow_actors:
-                    self.scene.target_guide_renderer.AddActor(ind)
+                for ind in scene.guide_arrow_actors:
+                    scene.target_guide_renderer.AddActor(ind)
 
-                self.scene.target_guide_last_signature = guide_signature
-                self.scene.target_guide_last_update = now
+                scene.target_guide_last_signature = guide_signature
+                scene.target_guide_last_update = now
 
     def OnUnsetTarget(self, marker):
-        self.DisableTargetMode()
+        self._unset_scene_target(self.scene)
 
-        self.target_coord = None
+    def _unset_scene_target(self, scene):
+        self.DisableTargetMode(scene)
+        scene.target_coord = None
 
     def OnSetTarget(self, marker):
+        self._set_scene_target(self.scene, marker)
+
+    def _set_scene_target(self, scene, marker):
         coord = marker.position + marker.orientation
 
         # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
@@ -1119,10 +1189,10 @@ class NavigationView:
         coord[1] = -coord[1]
 
         # Store the new target coordinates and create a new transformation matrix for the target.
-        self.target_coord = coord
-        self.scene.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
+        scene.target_coord = coord
+        scene.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
 
-        self.coil_visualizer.AddTargetCoil(self.scene.m_target)
+        self.coil_visualizer.AddTargetCoil(scene.m_target)
 
         print(f"Target updated to coordinates {coord}")
 
@@ -1191,15 +1261,16 @@ class NavigationView:
 
         return v3, M_plane_inv
 
-    def SetCameraTarget(self):
-        cam_focus = self.target_coord[0:3]
-        cam = self.ren.GetActiveCamera()
+    def SetCameraTarget(self, scene=None):
+        scene = scene or self.scene
+        cam_focus = scene.target_coord[0:3]
+        cam = scene.ren.GetActiveCamera()
 
         oldcamVTK = vtkMatrix4x4()
         oldcamVTK.DeepCopy(cam.GetViewTransformMatrix())
 
         newvtk = vtkMatrix4x4()
-        newvtk.Multiply4x4(self.scene.m_target, oldcamVTK, newvtk)
+        newvtk.Multiply4x4(scene.m_target, oldcamVTK, newvtk)
 
         transform = vtkTransform()
         transform.SetMatrix(newvtk)
