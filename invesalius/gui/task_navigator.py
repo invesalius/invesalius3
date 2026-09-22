@@ -2043,11 +2043,17 @@ class RobotButtonsPanel(wx.Panel):
         self.nav_status = nav_status
         self.UpdateRobotButtons()
 
-    def OnSetTarget(self, marker):
+    def OnSetTarget(self, marker, coil_name=None):
+        robot_coil = getattr(self.robot, "coil_name", None)
+        if coil_name is not None and robot_coil is not None and robot_coil != coil_name:
+            return
         self.target_selected = True
         self.UpdateRobotButtons()
 
-    def OnUnsetTarget(self, marker):
+    def OnUnsetTarget(self, marker, coil_name=None):
+        robot_coil = getattr(self.robot, "coil_name", None)
+        if coil_name is not None and robot_coil is not None and robot_coil != coil_name:
+            return
         self.target_selected = False
         self.UpdateRobotButtons()
 
@@ -2523,25 +2529,18 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def UnsetTarget(self, marker):
-        self.navigation.target = None
-        self.target_selected = False
+    def UnsetTarget(self, marker, coil_name=None):
+        self.target_selected = self.navigation.GetTarget() is not None
         self.UpdateTargetButton()
 
-    def SetTarget(self, marker):
-        coord = marker.position + marker.orientation
-
-        # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
-        #   flip wouldn't be needed.
-        coord[1] = -coord[1]
-
-        self.navigation.target = coord
+    def SetTarget(self, marker, coil_name=None):
+        self.navigation.SetTarget(marker, coil_name)
 
         self.EnableToggleButton(self.lock_to_target_button, 1)
         self.UpdateToggleButton(self.lock_to_target_button, True)
         self.navigation.SetLockToTarget(True)
 
-        self.target_selected = True
+        self.target_selected = self.navigation.GetTarget() is not None
         self.UpdateTargetButton()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -3825,7 +3824,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)
 
-    def _SetTarget(self, marker):
+    def _SetTarget(self, marker, coil_name=None):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(255, 220, 209))
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
@@ -4230,7 +4229,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             brain_target_list=self.currently_focused_marker.brain_target_list,
         )
 
-    def _UnsetTarget(self, marker):
+    def _UnsetTarget(self, marker, coil_name=None):
+        if marker.is_target:
+            return
         idx = self.__find_marker_index(marker.marker_id)
 
         # When unsetting a target, automatically unpress the target mode button.
@@ -4515,7 +4516,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_type=None,
         cortex_position_orientation=None,
         mep_value=None,
-        coil_name=None,
     ):
         if label is None:
             label = self.GetNextMarkerLabel()
@@ -4554,7 +4554,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             marker_type=marker_type,
             cortex_position_orientation=cortex_position_orientation,
             mep_value=mep_value,
-            coil_name=coil_name,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
 
@@ -4797,7 +4796,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         z_offset=0.0,
         z_rotation=0.0,
         mep_value=None,
-        coil_name=None,
     ):
         """
         Create a new marker object.
@@ -4822,8 +4820,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker.z_offset = z_offset
         marker.z_rotation = z_rotation
         marker.mep_value = mep_value
-        if marker_type in (MarkerType.COIL_TARGET, MarkerType.COIL_POSE):
-            marker.coil_name = coil_name or self.navigation.main_coil or ""
 
         # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
         marker.marker_id = len(self.markers.list)

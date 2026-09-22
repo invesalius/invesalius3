@@ -358,6 +358,7 @@ class Navigation(metaclass=Singleton):
         self.neuronavigation_api = neuronavigation_api
 
         self.target = None
+        self.targets_by_coil = {}
         self.n_coils = 1
         self.coil_registrations = {}
         self.track_coil = False
@@ -501,6 +502,45 @@ class Navigation(metaclass=Singleton):
         if coil_name is not None:
             self.coils_at_target[coil_name] = state
         self.coil_at_target = state
+
+    @staticmethod
+    def _get_target_coordinates(marker):
+        coord = marker.position + marker.orientation
+        coord[1] = -coord[1]
+        return coord
+
+    def SetTarget(self, marker, coil_name=None):
+        coil_name = coil_name or self.main_coil
+        if coil_name is None:
+            return
+
+        self.targets_by_coil[coil_name] = marker
+        if coil_name == self.main_coil:
+            self.target = self._get_target_coordinates(marker)
+
+    def UnsetTarget(self, coil_name=None):
+        coil_name = coil_name or self.main_coil
+        if coil_name is None:
+            return None
+
+        marker = self.targets_by_coil.pop(coil_name, None)
+        if coil_name == self.main_coil:
+            self.target = None
+        return marker
+
+    def GetTarget(self, coil_name=None):
+        coil_name = coil_name or self.main_coil
+        return self.targets_by_coil.get(coil_name)
+
+    def GetTargetCoils(self, marker):
+        return [
+            coil_name
+            for coil_name, target in self.targets_by_coil.items()
+            if target.marker_uuid == marker.marker_uuid
+        ]
+
+    def IsTarget(self, marker):
+        return bool(self.GetTargetCoils(marker))
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep

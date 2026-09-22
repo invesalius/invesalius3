@@ -70,11 +70,12 @@ class MarkerTransformator:
     def UpdateRobotTrackStatus(self, status):
         self.robot_track_status = status
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker, coil_name=None):
         self.target = marker
 
-    def UnsetTarget(self, marker):
-        self.target = None
+    def UnsetTarget(self, marker, coil_name=None):
+        if not marker.is_target:
+            self.target = None
 
     def SetTargetMode(self, enabled=False):
         self.is_target_mode = enabled

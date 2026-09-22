@@ -378,12 +378,16 @@ class Robot:
                 robot_id=self.robot_id,
             )
 
-    def UnsetTarget(self, marker):
+    def UnsetTarget(self, marker, coil_name=None):
+        if coil_name is not None and self.coil_name is not None and self.coil_name != coil_name:
+            return
         self.target = None
         self.target_marker_id = None
         Publisher.sendMessage("Neuronavigation to Robot: Unset target", robot_id=self.robot_id)
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker, coil_name=None):
+        if coil_name is not None and self.coil_name is not None and self.coil_name != coil_name:
+            return
         # Set robot objective to NONE when a new target is selected. This prevents the robot from
         # automatically moving to the new target (which would be the case if robot objective was previously
         # set to TRACK_TARGET). Preventing the automatic moving makes robot movement more explicit and predictable.

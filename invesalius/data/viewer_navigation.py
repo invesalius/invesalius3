@@ -1178,8 +1178,8 @@ class NavigationView:
                 scene.target_guide_last_signature = guide_signature
                 scene.target_guide_last_update = now
 
-    def OnUnsetTarget(self, marker):
-        scene = self._get_scene_for_update(marker.coil_name or None)
+    def OnUnsetTarget(self, marker, coil_name=None):
+        scene = self._get_scene_for_update(coil_name)
         if scene is not None:
             self._unset_scene_target(scene)
 
@@ -1187,8 +1187,8 @@ class NavigationView:
         self.DisableTargetMode(scene)
         scene.target_coord = None
 
-    def OnSetTarget(self, marker):
-        scene = self._get_scene_for_update(marker.coil_name or None)
+    def OnSetTarget(self, marker, coil_name=None):
+        scene = self._get_scene_for_update(coil_name)
         if scene is not None:
             self._set_scene_target(scene, marker)
 
