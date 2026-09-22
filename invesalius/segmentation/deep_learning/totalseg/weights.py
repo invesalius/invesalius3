@@ -18,6 +18,7 @@
 # --------------------------------------------------------------------------
 
 import logging
+import ssl
 from collections.abc import Callable
 from pathlib import Path
 
@@ -31,6 +32,9 @@ logger = logging.getLogger(__name__)
 _BASE_URL = "https://media.githubusercontent.com/media/invesalius/weights/main/total_segmentator"
 # .json sidecars are regular git files; media URL 404s, use raw.
 _BASE_URL_SIDECAR = "https://raw.githubusercontent.com/invesalius/weights/main/total_segmentator"
+# CTI mirror used when GitHub is unreachable. Serves byte-identical files;
+# SHA-256 remains the integrity gate so the unverified TLS context is safe here.
+_FALLBACK_BASE_URL = "https://repo-invesalius.cti.gov.br/weights/total_segmentator"
 
 
 TASK_REGISTRY: dict = {
@@ -199,6 +203,27 @@ def _resolve(filename: str) -> tuple[bool, str]:
     return False, str(user_path)
 
 
+def _download_with_fallback(
+    primary_url: str,
+    filename: str,
+    dst: Path,
+    hash: str | None,
+    progress_callback: Callable[[float], None] | None,
+) -> None:
+    try:
+        download_url_to_file(primary_url, dst, hash, progress_callback)
+        return
+    except Exception as primary_err:  # noqa: BLE001
+        logger.warning("Primary download failed (%s); trying CTI mirror", primary_err)
+
+    fallback_url = f"{_FALLBACK_BASE_URL}/{filename}"
+    # CTI cert chain isn't verifiable from Python's default CA bundle;
+    # hash check on the downloaded bytes is the actual integrity gate.
+    download_url_to_file(
+        fallback_url, dst, hash, progress_callback, ssl_context=ssl._create_unverified_context()
+    )
+
+
 def get_model_path(
     task: str,
     backend: str = "jit",
@@ -220,8 +245,9 @@ def get_model_path(
         )
 
     logger.info(f"Downloading {info['filename']} from {info['url']}")
-    # download_url_to_file needs a pathlib.Path so it can call dst.parent.mkdir.
-    download_url_to_file(info["url"], Path(path), info["hash"], progress_callback)
+    _download_with_fallback(
+        info["url"], info["filename"], Path(path), info["hash"], progress_callback
+    )
     return path
 
 
@@ -243,5 +269,7 @@ def get_sidecar_path(
         )
 
     logger.info(f"Downloading {info['filename']} from {info['url']}")
-    download_url_to_file(info["url"], Path(path), info["hash"], progress_callback)
+    _download_with_fallback(
+        info["url"], info["filename"], Path(path), info["hash"], progress_callback
+    )
     return path

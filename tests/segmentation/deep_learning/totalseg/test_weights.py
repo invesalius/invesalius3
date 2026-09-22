@@ -98,3 +98,52 @@ def test_resolve_prefers_system_over_user(tmp_path, monkeypatch):
     found, path = w._resolve("ct_organs.json")
     assert found is True
     assert str(sys_dir / "ct_organs.json") == path
+
+
+def test_fallback_base_url_points_at_cti_mirror():
+    assert w._FALLBACK_BASE_URL.startswith("https://repo-invesalius.cti.gov.br/")
+    assert "total_segmentator" in w._FALLBACK_BASE_URL
+
+
+def test_download_with_fallback_uses_primary_when_it_succeeds(tmp_path, monkeypatch):
+    calls = []
+
+    def fake_download(url, dst, hash, callback, *, ssl_context=None):
+        calls.append((url, ssl_context))
+
+    monkeypatch.setattr(w, "download_url_to_file", fake_download)
+    w._download_with_fallback(
+        "https://primary/file.jit", "file.jit", tmp_path / "out.jit", "abc", None
+    )
+
+    assert len(calls) == 1
+    assert calls[0][0] == "https://primary/file.jit"
+    assert calls[0][1] is None
+
+
+def test_download_with_fallback_switches_to_cti_when_primary_raises(tmp_path, monkeypatch):
+    calls = []
+
+    def fake_download(url, dst, hash, callback, *, ssl_context=None):
+        calls.append((url, ssl_context))
+        if len(calls) == 1:
+            raise ConnectionError("primary is down")
+
+    monkeypatch.setattr(w, "download_url_to_file", fake_download)
+    w._download_with_fallback(
+        "https://primary/ct_organs.jit", "ct_organs.jit", tmp_path / "out.jit", "abc", None
+    )
+
+    assert len(calls) == 2
+    assert calls[0][0] == "https://primary/ct_organs.jit"
+    assert calls[1][0] == f"{w._FALLBACK_BASE_URL}/ct_organs.jit"
+    assert calls[1][1] is not None  # unverified SSL context passed
+
+
+def test_download_with_fallback_raises_when_both_fail(tmp_path, monkeypatch):
+    def fake_download(url, dst, hash, callback, *, ssl_context=None):
+        raise ConnectionError(f"unreachable: {url}")
+
+    monkeypatch.setattr(w, "download_url_to_file", fake_download)
+    with pytest.raises(ConnectionError):
+        w._download_with_fallback("https://primary/x", "x", tmp_path / "x", None, None)
