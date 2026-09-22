@@ -8,14 +8,19 @@ from urllib.request import Request, urlopen
 
 
 def download_url_to_file(
-    url: str, dst: pathlib.Path, hash: str = None, callback: typing.Callable[[float], None] = None
+    url: str,
+    dst: pathlib.Path,
+    hash: str = None,
+    callback: typing.Callable[[float], None] = None,
+    *,
+    ssl_context=None,
 ):
     file_size = None
     total_downloaded = 0
     if hash is not None:
         calc_hash = hashlib.sha256()
     req = Request(url)
-    response = urlopen(req)
+    response = urlopen(req, context=ssl_context) if ssl_context is not None else urlopen(req)
     meta = response.info()
     if hasattr(meta, "getheaders"):
         content_length = meta.getheaders("Content-Length")
