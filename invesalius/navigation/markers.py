@@ -29,10 +29,10 @@ from invesalius.utils import Singleton
 
 
 class MarkersControl(metaclass=Singleton):
-    def __init__(self) -> None:
+    def __init__(self, navigation) -> None:
         self.list: List[Marker] = []
         self.nav_status = False
-        self.navigation = None
+        self.navigation = navigation
         self.transformator = MarkerTransformator()
 
     def SaveState(self) -> None:
@@ -132,13 +132,11 @@ class MarkersControl(metaclass=Singleton):
 
     def SetTarget(self, marker_id: int, check_for_previous: bool = True) -> None:
         marker = self.list[marker_id]
-        if not marker.coil_name and self.navigation is not None:
+        if not marker.coil_name:
             marker.coil_name = self.navigation.main_coil or ""
 
         if check_for_previous:
-            simultaneous_navigation = (
-                self.navigation is not None and self.navigation.simultaneous_navigation
-            )
+            simultaneous_navigation = self.navigation.simultaneous_navigation
             coil_name = marker.coil_name if simultaneous_navigation else None
             previous_targets = self.FindTargets(coil_name=coil_name)
 

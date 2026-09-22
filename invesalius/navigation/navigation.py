@@ -81,8 +81,7 @@ class NavigationHub(metaclass=Singleton):
             # Break when we have 2 robots
             if len(self.robots.robots_by_id) == 2:
                 break
-        self.markers = MarkersControl()
-        self.markers.navigation = self.navigation
+        self.markers = MarkersControl(navigation=self.navigation)
         self.mep_visualizer = MEPVisualizer()
         Publisher.sendMessage("Add navigation context to interactive shell")
 
