@@ -4875,4 +4875,4 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Focus on the added marker.
         if focus:
-            self.FocusOnMarker(num_items)
+            wx.CallAfter(self.FocusOnMarker, num_items)
