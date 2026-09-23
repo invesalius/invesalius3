@@ -280,11 +280,11 @@ class Session(metaclass=Singleton):
     def _read_config_from_json(self, json_filename: "str | Path") -> None:
         with open(json_filename) as config_file:
             config_dict = json.load(config_file)
-            self._config = deep_merge_dict(self._config.copy(), config_dict)
 
         # Do not reading project status from the config file, since there
         # isn't a recover session tool in InVesalius yet.
-        self.project_status = 3
+        config_dict.pop("project_status", None)
+        self._config = deep_merge_dict(self._config.copy(), config_dict)
 
     def _read_config_from_ini(self, config_filename: str) -> None:
         file = codecs.open(config_filename, "rb", SESSION_ENCODING)
