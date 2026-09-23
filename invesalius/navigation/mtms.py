@@ -71,7 +71,10 @@ class mTMS:
                 "coil_pose(nav)": coil_pose_flip,
                 "intensity": self.intensity,
             }
-            self.df = self.df.append(pd.DataFrame([new_row], columns=self.df.columns))
+            self.df = pd.concat(
+                [self.df, pd.DataFrame([new_row], columns=self.df.columns)],
+                ignore_index=True,
+            )
         else:
             print("Target is not valid. The offset is: ", offset)
 
