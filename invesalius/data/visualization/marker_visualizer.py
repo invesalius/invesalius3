@@ -351,7 +351,7 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def SetTarget(self, marker):
+    def SetTarget(self, marker, coil_name=None):
         """
         When setting a marker as the target, change the arrow to an aim highlight
         that it is the target.
@@ -388,10 +388,12 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def UnsetTarget(self, marker):
+    def UnsetTarget(self, marker, coil_name=None):
         """
         When unsetting a marker as the target, change the aim back to an arrow.
         """
+        if marker.is_target:
+            return
         self.target_marker = None
 
         position = marker.position
@@ -423,7 +425,7 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def SetCoilAtTarget(self, state):
+    def SetCoilAtTarget(self, state, coil_name=None):
         """
         Set the coil at target, which is a special case of setting a marker as the target.
         """

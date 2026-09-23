@@ -81,7 +81,7 @@ class NavigationHub(metaclass=Singleton):
             # Break when we have 2 robots
             if len(self.robots.robots_by_id) == 2:
                 break
-        self.markers = MarkersControl()
+        self.markers = MarkersControl(navigation=self.navigation)
         self.mep_visualizer = MEPVisualizer()
         Publisher.sendMessage("Add navigation context to interactive shell")
 
@@ -179,9 +179,10 @@ class UpdateNavigationScene(threading.Thread):
         try:
             if tracts_payload is not None:
                 bundle, affine_vtk, coord_offset, coord_offset_w = tracts_payload
-                Publisher.sendMessage("Remove tracts")
+                Publisher.sendMessage("Remove tracts", coil_name=main_coil)
                 Publisher.sendMessage(
                     "Update tracts",
+                    coil_name=main_coil,
                     root=bundle,
                     affine_vtk=affine_vtk,
                     coord_offset=coord_offset,
@@ -203,6 +204,7 @@ class UpdateNavigationScene(threading.Thread):
                     Publisher.sendMessage("Update coil poses", m_imgs=m_imgs, coords=coords)
                     Publisher.sendMessage(
                         "Update coil pose",
+                        coil_name=main_coil,
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
                     )
@@ -212,6 +214,7 @@ class UpdateNavigationScene(threading.Thread):
                     )
                     Publisher.sendMessage(
                         "Update object arrow matrix",
+                        coil_name=main_coil,
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
                         flag=self.peel_loaded,
@@ -220,6 +223,7 @@ class UpdateNavigationScene(threading.Thread):
                     if self.e_field_loaded:
                         Publisher.sendMessage(
                             "Update point location for e-field calculation",
+                            coil_name=main_coil,
                             m_img=m_imgs[main_coil],
                             coord=coords[main_coil],
                             queue_IDs=self.e_field_IDs_queue,
@@ -227,6 +231,7 @@ class UpdateNavigationScene(threading.Thread):
                         if enorm_data is not None:
                             Publisher.sendMessage(
                                 "Get enorm",
+                                coil_name=main_coil,
                                 enorm_data=enorm_data,
                                 plot_vector=self.plot_efield_vectors,
                                 current_revision=self.navigation.e_field_revision,
@@ -277,6 +282,7 @@ class UpdateNavigationScene(threading.Thread):
                         wx.CallAfter(
                             Publisher.sendMessage,
                             "Update tract seed based efield",
+                            coil_name=main_coil,
                             coord_tracts_queue=self.navigation.coord_tracts_queue,
                             fallback_m_img=m_imgs[main_coil],
                             current_revision=self.navigation.e_field_revision,
@@ -352,10 +358,12 @@ class Navigation(metaclass=Singleton):
         self.neuronavigation_api = neuronavigation_api
 
         self.target = None
+        self.targets_by_coil = {}
         self.n_coils = 1
         self.coil_registrations = {}
         self.track_coil = False
         self.main_coil = None  # Which coil to track with pointer
+        self.simultaneous_navigation = False
         self.m_change = None
         self.r_stylus = None
         self.obj_datas = None  # This is accessed by the robot, gets value at StartNavigation
@@ -407,6 +415,7 @@ class Navigation(metaclass=Singleton):
         # During navigation
         self.lock_to_target = False
         self.coil_at_target = False
+        self.coils_at_target = {}
 
         self.LoadConfig()
 
@@ -429,6 +438,7 @@ class Navigation(metaclass=Singleton):
                 "selected_coils": list(self.coil_registrations),
                 "n_coils": self.n_coils,
                 "track_coil": self.track_coil,
+                "simultaneous_navigation": self.simultaneous_navigation,
             }
             if self.main_coil is not None:
                 state["main_coil"] = self.main_coil
@@ -455,6 +465,7 @@ class Navigation(metaclass=Singleton):
                 self.main_coil = "default_coil"
 
             self.track_coil = state.get("track_coil", False)
+            self.simultaneous_navigation = state.get("simultaneous_navigation", False)
 
             # Try to load selected_coils (the list of names of coils to use for navigation)
             if ("selected_coils" in state) and (saved_coil_registrations is not None):
@@ -487,8 +498,49 @@ class Navigation(metaclass=Singleton):
 
         self.SaveConfig()
 
-    def CoilAtTarget(self, state):
+    def CoilAtTarget(self, state, coil_name=None):
+        if coil_name is not None:
+            self.coils_at_target[coil_name] = state
         self.coil_at_target = state
+
+    @staticmethod
+    def _get_target_coordinates(marker):
+        coord = marker.position + marker.orientation
+        coord[1] = -coord[1]
+        return coord
+
+    def SetTarget(self, marker, coil_name=None):
+        coil_name = coil_name or self.main_coil
+        if coil_name is None:
+            return
+
+        self.targets_by_coil[coil_name] = marker
+        if coil_name == self.main_coil:
+            self.target = self._get_target_coordinates(marker)
+
+    def UnsetTarget(self, coil_name=None):
+        coil_name = coil_name or self.main_coil
+        if coil_name is None:
+            return None
+
+        marker = self.targets_by_coil.pop(coil_name, None)
+        if coil_name == self.main_coil:
+            self.target = None
+        return marker
+
+    def GetTarget(self, coil_name=None):
+        coil_name = coil_name or self.main_coil
+        return self.targets_by_coil.get(coil_name)
+
+    def GetTargetCoils(self, marker):
+        return [
+            coil_name
+            for coil_name, target in self.targets_by_coil.items()
+            if target.marker_uuid == marker.marker_uuid
+        ]
+
+    def IsTarget(self, marker):
+        return bool(self.GetTargetCoils(marker))
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
@@ -503,12 +555,18 @@ class Navigation(metaclass=Singleton):
         self.track_coil = enabled
         self.SaveConfig()
 
+    def SetSimultaneousNavigation(self, enabled=False):
+        self.simultaneous_navigation = enabled
+        self.SaveConfig("simultaneous_navigation", enabled)
+
     def SetLockToTarget(self, value):
         self.lock_to_target = value
 
     def SetNoOfCoils(self, n_coils, clear_all=False):
         self.n_coils = n_coils
         self.SaveConfig("n_coils", n_coils)
+        if n_coils < 2:
+            self.SetSimultaneousNavigation(False)
 
         # Reset coil selection
         self.coil_registrations = {}

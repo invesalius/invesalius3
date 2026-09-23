@@ -45,6 +45,7 @@ from invesalius.data.slice_ import Slice
 from invesalius.gui import project_properties
 from invesalius.gui.interactive_shell import InteractiveShellFrame
 from invesalius.i18n import tr as _
+from invesalius.navigation.navigation import NavigationHub
 from invesalius.pubsub import pub as Publisher
 
 try:
@@ -137,6 +138,7 @@ class Frame(wx.Frame):
         # Set TaskBarIcon
         # TaskBarIcon(self)
 
+        self.navigation_hub = None
         # Create aui manager and insert content in it
         self.__init_aui()
 
@@ -279,6 +281,8 @@ class Frame(wx.Frame):
         # panel by publishing an 'Add marker' message.
         #
         viewers_panel = viewers.Panel(self)
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            self.navigation_hub = NavigationHub(window=self)
         task_panel = tasks.Panel(self)
         import_panel = imp.Panel(self)
         import_bitmap_panel = imp_bmp.Panel(self)
@@ -438,6 +442,11 @@ class Frame(wx.Frame):
 
         # TODO: Allow saving and restoring perspectives
         self.perspective_all = aui_manager.SavePerspective()
+
+        if self.navigation_hub is not None:
+            viewers_panel.p4.viewer.SetNavigationMode(
+                True, markers_control=self.navigation_hub.markers
+            )
 
         self.Layout()
 
@@ -923,7 +932,11 @@ class Frame(wx.Frame):
                 wx.OK | wx.ICON_INFORMATION,
             )
             self._show_navigator_message = False
-        Publisher.sendMessage("Set navigation mode", status=status)
+        if status and self.navigation_hub is None:
+            self.navigation_hub = NavigationHub(window=self)
+
+        markers_control = self.navigation_hub.markers if status else None
+        Publisher.sendMessage("Set navigation mode", status=status, markers_control=markers_control)
         if not status:
             Publisher.sendMessage("Remove sensors ID")
 

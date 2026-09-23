@@ -29,9 +29,10 @@ from invesalius.utils import Singleton
 
 
 class MarkersControl(metaclass=Singleton):
-    def __init__(self) -> None:
+    def __init__(self, navigation) -> None:
         self.list: List[Marker] = []
         self.nav_status = False
+        self.navigation = navigation
         self.transformator = MarkerTransformator()
 
     def SaveState(self) -> None:
@@ -129,23 +130,22 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def SetTarget(self, marker_id: int, check_for_previous: bool = True) -> None:
-        if check_for_previous:
-            prev_target = self.FindTarget()
+    def SetTarget(self, marker_id: int, check_for_previous: bool = True, coil_name=None) -> None:
+        marker = self.list[marker_id]
+        coil_name = coil_name or self.navigation.main_coil
+        previous_target = self.navigation.GetTarget(coil_name)
 
-            # If the new target is same as the previous do nothing.
-            if prev_target and prev_target.marker_id == marker_id:
-                return
+        if check_for_previous and previous_target is marker:
+            return
 
-            # Unset the previous target
-            if prev_target is not None:
-                self.UnsetTarget(prev_target.marker_id)
+        if previous_target is not None and previous_target is not marker:
+            self.UnsetTarget(previous_target.marker_id, coil_name=coil_name)
 
         # Set new target
-        marker = self.list[marker_id]
+        self.navigation.SetTarget(marker, coil_name)
         marker.is_target = True
 
-        Publisher.sendMessage("Set target", marker=marker)
+        Publisher.sendMessage("Set target", marker=marker, coil_name=coil_name)
         Publisher.sendMessage("Set target transparency", marker=marker, transparent=True)
 
         # When setting a new target, automatically switch into target mode. Note that the order is important here:
@@ -174,12 +174,28 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def UnsetTarget(self, marker_id: int) -> None:
+    def UnsetTarget(self, marker_id: int, coil_name=None) -> None:
         marker = self.list[marker_id]
-        marker.is_target = False
+        if coil_name is not None:
+            assigned_target = self.navigation.GetTarget(coil_name)
+            if assigned_target is not marker:
+                return
 
-        Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
-        Publisher.sendMessage("Unset target", marker=marker)
+        target_coils = (
+            [coil_name] if coil_name is not None else self.navigation.GetTargetCoils(marker)
+        )
+        if not target_coils:
+            target_coils = [self.navigation.main_coil]
+
+        for target_coil in target_coils:
+            self.navigation.UnsetTarget(target_coil)
+
+        marker.is_target = self.navigation.IsTarget(marker)
+
+        if not marker.is_target:
+            Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
+        for target_coil in target_coils:
+            Publisher.sendMessage("Unset target", marker=marker, coil_name=target_coil)
 
         self.SaveState()
 
@@ -192,16 +208,23 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def FindTarget(self) -> Union[None, Marker]:
-        """
-        Return the marker currently selected as target (there
-        should be at most one).
-        """
-        for marker in self.list:
-            if marker.is_target:
-                return marker
+    def FindTargets(self, coil_name=None) -> List[Marker]:
+        if coil_name is not None:
+            target = self.navigation.GetTarget(coil_name)
+            return [target] if target is not None else []
+        return [marker for marker in self.list if marker.is_target]
 
-        return None
+    def FindTarget(self, coil_name=None) -> Union[None, Marker]:
+        """
+        Return the first selected target, optionally associated with a coil.
+        """
+        if coil_name is not None:
+            return self.navigation.GetTarget(coil_name)
+        target = self.navigation.GetTarget()
+        if target is not None:
+            return target
+        targets = self.FindTargets()
+        return targets[0] if targets else None
 
     def FindLabel(self, label) -> Union[None, Marker]:
         """

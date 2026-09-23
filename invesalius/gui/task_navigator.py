@@ -2043,11 +2043,17 @@ class RobotButtonsPanel(wx.Panel):
         self.nav_status = nav_status
         self.UpdateRobotButtons()
 
-    def OnSetTarget(self, marker):
+    def OnSetTarget(self, marker, coil_name=None):
+        robot_coil = getattr(self.robot, "coil_name", None)
+        if coil_name is not None and robot_coil is not None and robot_coil != coil_name:
+            return
         self.target_selected = True
         self.UpdateRobotButtons()
 
-    def OnUnsetTarget(self, marker):
+    def OnUnsetTarget(self, marker, coil_name=None):
+        robot_coil = getattr(self.robot, "coil_name", None)
+        if coil_name is not None and robot_coil is not None and robot_coil != coil_name:
+            return
         self.target_selected = False
         self.UpdateRobotButtons()
 
@@ -2523,25 +2529,18 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def UnsetTarget(self, marker):
-        self.navigation.target = None
-        self.target_selected = False
+    def UnsetTarget(self, marker, coil_name=None):
+        self.target_selected = self.navigation.GetTarget() is not None
         self.UpdateTargetButton()
 
-    def SetTarget(self, marker):
-        coord = marker.position + marker.orientation
-
-        # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
-        #   flip wouldn't be needed.
-        coord[1] = -coord[1]
-
-        self.navigation.target = coord
+    def SetTarget(self, marker, coil_name=None):
+        self.navigation.SetTarget(marker, coil_name)
 
         self.EnableToggleButton(self.lock_to_target_button, 1)
         self.UpdateToggleButton(self.lock_to_target_button, True)
         self.navigation.SetLockToTarget(True)
 
-        self.target_selected = True
+        self.target_selected = self.navigation.GetTarget() is not None
         self.UpdateTargetButton()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -2702,7 +2701,7 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(ctrl)
 
     # 'Target mode' button
-    def TrackObject(self, enabled):
+    def TrackObject(self, enabled=False):
         self.UpdateTargetButton()
 
     def ShowTargetButton(self):
@@ -3221,7 +3220,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.nav_status = True
 
     def UpdateSeedCoordinates(
-        self, root=None, affine_vtk=None, coord_offset=(0, 0, 0), coord_offset_w=(0, 0, 0)
+        self,
+        root=None,
+        affine_vtk=None,
+        coord_offset=(0, 0, 0),
+        coord_offset_w=(0, 0, 0),
+        coil_name=None,
     ):
         self.current_seed = coord_offset_w
 
@@ -3820,7 +3824,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)
 
-    def _SetTarget(self, marker):
+    def _SetTarget(self, marker, coil_name=None):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(255, 220, 209))
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
@@ -4225,7 +4229,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             brain_target_list=self.currently_focused_marker.brain_target_list,
         )
 
-    def _UnsetTarget(self, marker):
+    def _UnsetTarget(self, marker, coil_name=None):
+        if marker.is_target:
+            return
         idx = self.__find_marker_index(marker.marker_id)
 
         # When unsetting a target, automatically unpress the target mode button.
@@ -4869,4 +4875,4 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Focus on the added marker.
         if focus:
-            self.FocusOnMarker(num_items)
+            wx.CallAfter(self.FocusOnMarker, num_items)
