@@ -2,6 +2,8 @@ import time
 
 import wx
 
+from invesalius.i18n import tr as _
+
 
 class SurfaceProgressWindow:
     def __init__(self):
