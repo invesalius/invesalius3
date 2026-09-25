@@ -109,9 +109,16 @@ class DeltaHistoryNode:
         return "3D Volume Edit"
 
     def serialize_to_disk(self):
-        """Compresses and writes delta arrays to a temporary file for crash recovery / memory spillover."""
-        if self.filename is None and self.indices is not None and len(self.indices[0]) > 0:
-            self.fd, self.filename = tempfile.mkstemp(suffix=".npz")
+        """Compresses and writes delta arrays to a temporary file for crash recovery / memory spillover.
+
+        Safe to call repeatedly: a node that was already spilled and later
+        brought back into memory by _ensure_in_memory() (e.g. because it was
+        revisited by undo/redo/jump_to) is re-spilled using its existing
+        temp file rather than being skipped.
+        """
+        if self.indices is not None and len(self.indices[0]) > 0:
+            if self.filename is None:
+                self.fd, self.filename = tempfile.mkstemp(suffix=".npz")
             np.savez_compressed(
                 self.filename,
                 z=self.indices[0],
@@ -201,6 +208,21 @@ class EditionHistory:
         Publisher.sendMessage("Enable undo", value=True)
         Publisher.sendMessage("Enable redo", value=False)
         self.notify_history_change()
+        self._spill_inactive_delta_nodes()
+
+    def _spill_inactive_delta_nodes(self):
+        """Free the RAM held by delta-encoded nodes that are not the current state.
+
+        DeltaHistoryNode keeps its modified-voxel coordinates/values in memory
+        until serialize_to_disk() is called. Only the node at self.index
+        reflects what is currently loaded in mvolume, so every other delta
+        node can be safely spilled to a compressed temp file; apply_undo()/
+        apply_redo() transparently reload it (_ensure_in_memory()) if it is
+        visited again.
+        """
+        for i, node in enumerate(self.history):
+            if i != self.index and isinstance(node, DeltaHistoryNode):
+                node.serialize_to_disk()
 
     def jump_to(self, target_index, mvolume, actual_slices=None):
         if target_index == self.index or target_index < -1 or target_index >= len(self.history):
@@ -224,6 +246,7 @@ class EditionHistory:
                 if self.index < 0:
                     Publisher.sendMessage("Enable undo", value=False)
                 Publisher.sendMessage("Enable redo", value=True)
+                self._spill_inactive_delta_nodes()
                 return
             elif self.index > 0 and h[self.index - 1].orientation == "VOLUME":
                 self.index -= 1
@@ -259,6 +282,7 @@ class EditionHistory:
             if hasattr(self.history[self.index], "filename")
             else self.history[self.index],
         )
+        self._spill_inactive_delta_nodes()
 
     def redo(self, mvolume, actual_slices=None):
         h = self.history
@@ -270,6 +294,7 @@ class EditionHistory:
                 if self.index == len(h) - 1:
                     Publisher.sendMessage("Enable redo", value=False)
                 Publisher.sendMessage("Enable undo", value=True)
+                self._spill_inactive_delta_nodes()
                 return
             elif h[self.index + 1].orientation == "VOLUME":
                 self.index += 1
@@ -297,6 +322,7 @@ class EditionHistory:
         if self.index == len(h) - 1:
             Publisher.sendMessage("Enable redo", value=False)
         print("AT", self.index, len(h), h[self.index].filename)
+        self._spill_inactive_delta_nodes()
 
     def _reload_slice(self, index):
         Publisher.sendMessage(
