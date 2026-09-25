@@ -71,14 +71,15 @@ def ApplyDecimationFilter(polydata: vtkPolyData, reduction_factor: float) -> vtk
     """
     # Important: vtkQuadricDecimation presented better results than
     # vtkDecimatePro
+    UpdateProgress = vu.ShowProgress(1)
     decimation = vtkQuadricDecimation()
     decimation.SetInputData(polydata)
     decimation.SetTargetReduction(reduction_factor)
-    decimation.GetOutput().ReleaseDataFlagOn()
     decimation.AddObserver(
         "ProgressEvent",
-        lambda obj, evt: UpdateProgress(decimation, "Reducing number of triangles..."),
+        lambda obj, evt: UpdateProgress(decimation, _("Reducing number of triangles...")),
     )
+    decimation.Update()
     return decimation.GetOutput()
 
 
@@ -88,6 +89,7 @@ def ApplySmoothFilter(
     """
     Smooth given vtkPolyData surface, based on iteration and relaxation_factor.
     """
+    UpdateProgress = vu.ShowProgress(2)
     smoother = vtkSmoothPolyDataFilter()
     smoother.SetInputData(polydata)
     smoother.SetNumberOfIterations(iterations)
@@ -95,14 +97,17 @@ def ApplySmoothFilter(
     smoother.SetRelaxationFactor(relaxation_factor)
     smoother.FeatureEdgeSmoothingOff()
     smoother.BoundarySmoothingOff()
+    smoother.AddObserver(
+        "ProgressEvent", lambda obj, evt: UpdateProgress(smoother, _("Smoothing surface..."))
+    )
     smoother.Update()
     filler = vtkFillHolesFilter()
     filler.SetInputConnection(smoother.GetOutputPort())
     filler.SetHoleSize(1000)
-    filler.Update()
-    smoother.AddObserver(
-        "ProgressEvent", lambda obj, evt: UpdateProgress(smoother, "Smoothing surface...")
+    filler.AddObserver(
+        "ProgressEvent", lambda obj, evt: UpdateProgress(filler, _("Filling holes..."))
     )
+    filler.Update()
 
     return filler.GetOutput()
 
