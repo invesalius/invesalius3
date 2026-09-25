@@ -888,22 +888,6 @@ class Frame(wx.Frame):
             # Force focus on main window to ensure UI updates properly
             self.SetFocus()
 
-    def _HideTask(self):
-        """
-        Hide task panel.
-        """
-        # Make sure the task panel is hidden
-        task_pane = self.aui_manager.GetPane("Tasks")
-        if task_pane.IsShown():
-            task_pane.Hide()
-            self.aui_manager.Update()
-
-            # Force UI refresh
-            wx.Yield()
-
-            # Ensure the layout button in the toolbar is toggled properly
-            Publisher.sendMessage("Set layout button full")
-
     def OnDbsMode(self):
         st = self.actived_dbs_mode.IsChecked()
         Publisher.sendMessage("Hide target button")
