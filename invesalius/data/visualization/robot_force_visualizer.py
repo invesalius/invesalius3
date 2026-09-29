@@ -60,6 +60,9 @@ class RobotForceVisualizer:
         )
         Publisher.subscribe(self.set_visibility, "Set visibility robot force visualizer")
 
+    def dispose(self):
+        Publisher.unsubscribe_owner(self)
+
     def _create_segment(self, i):
         theta_start = (2 * math.pi / self.num_segments) * i
         theta_end = theta_start + (2 * math.pi / self.num_segments) * 0.9

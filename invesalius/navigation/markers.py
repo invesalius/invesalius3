@@ -41,14 +41,21 @@ class MarkersControl(metaclass=Singleton):
         session.SetState("markers", state)
 
     def LoadState(self) -> None:
+        if self.list:
+            return
+
         session = ses.Session()
         state = session.GetState("markers")
 
         if state is None:
             return
 
+        loaded_uuids = set()
         for d in state:
             marker = Marker().from_dict(d)
+            if marker.marker_uuid and marker.marker_uuid in loaded_uuids:
+                continue
+            loaded_uuids.add(marker.marker_uuid)
             self.AddMarker(marker, render=False)
 
     def AddMarker(self, marker: Marker, render: bool = True, focus: bool = False) -> None:

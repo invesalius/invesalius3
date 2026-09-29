@@ -998,8 +998,22 @@ class SurfaceManager:
         self.ShowActor(surface_index, True)
 
     def OnLoadSurfaceDict(self, surface_dict):
+        removed_indexes = self.actors_dict.keys() - surface_dict.keys()
+        for index in removed_indexes:
+            actor = self.actors_dict.pop(index)
+            Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
+
         for key in surface_dict:
             surface = surface_dict[key]
+
+            if surface.index in self.actors_dict:
+                actor = self.actors_dict[surface.index]
+                actor.GetProperty().SetColor(surface.colour[:3])
+                actor.GetProperty().SetOpacity(1 - surface.transparency)
+                actor.SetVisibility(surface.is_shown)
+                Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
+                Publisher.sendMessage("Update surface info in GUI", surface=surface)
+                continue
 
             # Map polygonal data (vtkPolyData) to graphics primitives.
             normals = vtkPolyDataNormals()
@@ -1037,8 +1051,9 @@ class SurfaceManager:
 
             # The following lines have to be here, otherwise all volumes disappear
             Publisher.sendMessage("Update surface info in GUI", surface=surface)
-            if not surface.is_shown:
-                self.ShowActor(key, False)
+            actor.SetVisibility(surface.is_shown)
+
+        Publisher.sendMessage("Render volume viewer")
 
     ####
     # (mask_index, surface_name, quality, fill_holes, keep_largest)

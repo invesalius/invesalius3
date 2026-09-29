@@ -151,6 +151,9 @@ class MarkerVisualizer:
             self.UpdateVectorFieldAssemblyVisibility, "Set vector field assembly visibility"
         )
 
+    def dispose(self):
+        Publisher.unsubscribe_owner(self)
+
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
 

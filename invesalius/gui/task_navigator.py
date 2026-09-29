@@ -2987,11 +2987,16 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
         brain_targets_list_ctrl.Bind(wx.EVT_CHAR_HOOK, self.OnBrainTargetsKeyDown)
         self.brain_targets_list_ctrl = brain_targets_list_ctrl
-        # In the future, it would be better if the panel could initialize itself based on markers in MarkersControl
-        try:
-            self.markers.LoadState()
-        except:
-            self.session.DeleteStateFile()  # Delete state file if it is erroneous
+        if self.markers.list:
+            for marker in self.markers.list:
+                self._AddMarker(marker, render=False, focus=False)
+                if marker.is_target:
+                    self._SetTarget(marker)
+        else:
+            try:
+                self.markers.LoadState()
+            except:
+                self.session.DeleteStateFile()  # Delete state file if it is erroneous
 
         # Add all lines into main sizer
         group_sizer = wx.BoxSizer(wx.VERTICAL)

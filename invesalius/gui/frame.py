@@ -1333,7 +1333,7 @@ class Frame(wx.Frame):
             .GetItem(0)
             .GetWindow()
             .aui_manager.GetAllPanes()[0]
-            .window,
+            .window.active_view,
             "axial_viewer": self.aui_manager.GetPane("Data")
             .window.aui_manager.GetPane("Axial Slice")
             .window,

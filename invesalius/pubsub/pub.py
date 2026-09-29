@@ -17,7 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-from typing import Callable, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from pubsub import pub as Publisher
 from pubsub.core.listener import Listener, UserListener
@@ -31,6 +31,8 @@ __all__ = [
     "sendMessage_no_hook",
     # adding hooks
     "add_sendMessage_hook",
+    # unsubscribing by owner
+    "unsubscribe_owner",
 ]
 
 Hook = Callable[[str, dict], None]
@@ -63,6 +65,16 @@ def subscribe(listener: UserListener, topicName: str, **curriedArgs) -> Tuple[Li
 def unsubscribe(*args, **kwargs) -> None:
     """Unsubscribe from a topic."""
     Publisher.unsubscribe(*args, **kwargs)
+
+
+def unsubscribe_owner(owner: object) -> List[Listener]:
+    """Unsubscribe every bound method belonging to an object."""
+
+    def belongs_to_owner(listener: Listener) -> bool:
+        callback = listener.getCallable()
+        return getattr(callback, "__self__", None) is owner
+
+    return Publisher.unsubAll(listenerFilter=belongs_to_owner)
 
 
 def sendMessage(topicName: str, **msgdata) -> None:

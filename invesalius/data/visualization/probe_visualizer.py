@@ -28,6 +28,9 @@ class ProbeVisualizer:
         Publisher.subscribe(self.UpdateProbePose, "Update probe pose")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
 
+    def dispose(self):
+        Publisher.unsubscribe_owner(self)
+
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
 

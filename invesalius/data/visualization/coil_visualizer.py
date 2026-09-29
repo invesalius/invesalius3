@@ -68,6 +68,9 @@ class CoilVisualizer:
         Publisher.subscribe(self.UpdateCoilPoses, "Update coil poses")
         Publisher.subscribe(self.UpdateVectorField, "Update vector field")
 
+    def dispose(self):
+        Publisher.unsubscribe_owner(self)
+
     def LoadConfig(self):
         session = ses.Session()
 
