@@ -806,7 +806,7 @@ class Controller:
                 self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
             # OPTION 4: Nothing...
 
-        self.LoadProject(create_default_mask=not is_other_files)
+        self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
     def OnImportGroup(self, group: "DicomGroup", use_gui: bool):
@@ -1227,7 +1227,7 @@ class Controller:
             if group:
                 matrix, matrix_filename = self.OpenOtherFiles(group)
                 self.CreateOtherProject(name, matrix, matrix_filename)
-                self.LoadProject(create_default_mask=False)
+                self.LoadProject()
 
                 Publisher.sendMessage("Enable state project", state=True)
             else:
