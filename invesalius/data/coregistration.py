@@ -365,7 +365,6 @@ class CoordinateCorregistrate(threading.Thread):
         self.m_icp = icp.m_icp
         self.last_coord = None
         self.tracker_id = tracker_id
-        self.target = target
         self.target_flag = False
         self._obj_cache = {}
         for obj_data in obj_datas.values():
@@ -384,15 +383,6 @@ class CoordinateCorregistrate(threading.Thread):
                 "r_obj_img": r_obj_img,
                 "r_obj_img_m_obj_raw_inv_s0_dyn_inv": r_obj_img @ m_obj_raw_inv @ s0_dyn_inv,
             }
-
-        if self.target is not None:
-            self.target = np.array(self.target)
-
-            # XXX: Not sure why this is done, but a similar thing is done in OnUpdateTargetCoordinates
-            #      in viewer_volume.py, so this makes them match. A better solution would probably be to
-            #      do this transformation only once, and doing it in the correct place.
-            #
-            self.target[1] = -self.target[1]
 
     def _get_current_target(self):
         # Read the target from navigation on every call, so a target selected while
