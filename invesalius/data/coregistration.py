@@ -394,6 +394,17 @@ class CoordinateCorregistrate(threading.Thread):
             #
             self.target[1] = -self.target[1]
 
+    def _get_current_target(self):
+        # Read the target from navigation on every call, so a target selected while
+        # navigation is running is picked up without restarting it.
+        target = self.navigation.target
+        if target is None:
+            return None
+
+        target = np.array(target)
+        target[1] = -target[1]
+        return target
+
     def run(self):
         m_change, r_stylus = self.coreg_data
         obj_datas = self.obj_datas
