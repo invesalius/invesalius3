@@ -217,7 +217,6 @@ class UpdateNavigationScene(threading.Thread):
                     if self.e_field_loaded:
                         Publisher.sendMessage(
                             "Update point location for e-field calculation",
-                            coil_name=main_coil,
                             m_img=m_imgs[main_coil],
                             coord=coords[main_coil],
                             queue_IDs=self.e_field_IDs_queue,
@@ -225,7 +224,6 @@ class UpdateNavigationScene(threading.Thread):
                         if enorm_data is not None:
                             Publisher.sendMessage(
                                 "Get enorm",
-                                coil_name=main_coil,
                                 enorm_data=enorm_data,
                                 plot_vector=self.plot_efield_vectors,
                                 current_revision=self.navigation.e_field_revision,
@@ -276,7 +274,6 @@ class UpdateNavigationScene(threading.Thread):
                         wx.CallAfter(
                             Publisher.sendMessage,
                             "Update tract seed based efield",
-                            coil_name=main_coil,
                             coord_tracts_queue=self.navigation.coord_tracts_queue,
                             fallback_m_img=m_imgs[main_coil],
                             current_revision=self.navigation.e_field_revision,

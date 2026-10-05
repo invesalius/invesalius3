@@ -2254,10 +2254,7 @@ class NavigationView:
         else:
             wx.CallAfter(Publisher.sendMessage, "Recolor again")
 
-    def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs, coil_name=None):
-        if self._get_scene_for_update(coil_name) is None:
-            return
-
+    def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
         # TODO: In the future, remove the "put_nowait" and mesh processing to another module (maybe e_field.py)
         # this might work because a python instance from the 3D mesh can be edited in the thread. Check how to extract
         # the instance from the desired mesh for visualization and if it works. Optimally, there should be no
@@ -2275,11 +2272,8 @@ class NavigationView:
             pass
 
     def UpdateTractSeedBasedEfield(
-        self, coord_tracts_queue, fallback_m_img=None, current_revision=None, coil_name=None
+        self, coord_tracts_queue, fallback_m_img=None, current_revision=None
     ):
-        if self._get_scene_for_update(coil_name) is None:
-            return
-
         if (
             getattr(self, "position_max", None) is None
             or self.position_max_revision != current_revision
@@ -2334,10 +2328,7 @@ class NavigationView:
         T_rot = T_rot.tolist()  # to list
         Publisher.sendMessage("Send coil position and rotation", T_rot=T_rot, cp=cp, m_img=m_img)
 
-    def GetEnorm(self, enorm_data, plot_vector, current_revision=None, coil_name=None):
-        if self._get_scene_for_update(coil_name) is None:
-            return
-
+    def GetEnorm(self, enorm_data, plot_vector, current_revision=None):
         result_revision = enorm_data[5] if len(enorm_data) > 5 else current_revision
         if current_revision is not None and result_revision != current_revision:
             self.RemoveEfieldTargetingActors()
