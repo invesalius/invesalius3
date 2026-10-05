@@ -579,7 +579,7 @@ class NavigationView:
         Publisher.subscribe(self.GetEnorm, "Get enorm")
         Publisher.subscribe(self.TrackObject, "Track object")
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
-        Publisher.subscribe(self.OnUpdateCoilPose, "Update coil pose")
+        Publisher.subscribe(self.OnUpdateCoilPoses, "Update coil poses")
         Publisher.subscribe(self.OnSetTarget, "Set target")
         Publisher.subscribe(self.OnUnsetTarget, "Unset target")
         Publisher.subscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
@@ -1015,12 +1015,20 @@ class NavigationView:
         else:
             self.DisableTargetMode(self.scene)
 
-    def OnUpdateCoilPose(self, coil_name, m_img, coord):
-        scene = self._get_scene_for_coil(coil_name)
-        if scene is None:
-            return
+    def OnUpdateCoilPoses(self, m_imgs, coords):
+        if len(self.scenes) == 1:
+            navigation = getattr(self.markers_control, "navigation", None)
+            coil_name = getattr(navigation, "main_coil", None) or self.scene.coil_name
+            if coil_name is None and len(m_imgs) == 1:
+                coil_name = next(iter(m_imgs))
+            if coil_name is not None:
+                self._associate_scene_with_coil(self.scene, coil_name)
 
-        self._update_scene_coil_pose(scene, m_img, coord)
+        for scene in self.scenes:
+            coil_name = scene.coil_name
+            if coil_name not in m_imgs or coil_name not in coords:
+                continue
+            self._update_scene_coil_pose(scene, m_imgs[coil_name], coords[coil_name])
 
     def _update_scene_coil_pose(self, scene, m_img, coord):
         # vtk_colors = vtkNamedColors()
