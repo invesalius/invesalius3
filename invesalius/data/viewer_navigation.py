@@ -146,9 +146,12 @@ class NavigationScene:
         self.target_coord = None
         self.m_target = None
         self.stored_camera_settings = None
+        self.coil_visualizer = None
 
         self.guide_coil_actors = None
         self.guide_arrow_actors = None
+        self.obj_projection_arrow_actor = None
+        self.object_orientation_torus_actor = None
         self.distance_text = None
         self.robot_warnings_text = None
         self.pTarget = [0.0, 0.0, 0.0]
@@ -181,6 +184,11 @@ class NavigationScene:
         camera.SetClippingRange(settings["clipping_range"])
         camera.SetViewAngle(settings["view_angle"])
         camera.SetParallelScale(settings["parallel_scale"])
+
+    def dispose(self):
+        if self.coil_visualizer is not None:
+            self.coil_visualizer.dispose()
+        self.ren.dispose()
 
 
 class NavigationView:
@@ -242,6 +250,29 @@ class NavigationView:
     @target_coord.setter
     def target_coord(self, value):
         self.scene.target_coord = value
+
+    @property
+    def coil_visualizer(self):
+        """Return the coil visualizer owned by the primary scene."""
+        return self.scene.coil_visualizer
+
+    @property
+    def obj_projection_arrow_actor(self):
+        """Return the projection arrow owned by the primary scene."""
+        return self.scene.obj_projection_arrow_actor
+
+    @obj_projection_arrow_actor.setter
+    def obj_projection_arrow_actor(self, actor):
+        self.scene.obj_projection_arrow_actor = actor
+
+    @property
+    def object_orientation_torus_actor(self):
+        """Return the orientation torus owned by the primary scene."""
+        return self.scene.object_orientation_torus_actor
+
+    @object_orientation_torus_actor.setter
+    def object_orientation_torus_actor(self, actor):
+        self.scene.object_orientation_torus_actor = actor
 
     def _associate_scene_with_coil(self, scene, coil_name):
         if scene.coil_name == coil_name:
@@ -314,11 +345,11 @@ class NavigationView:
         self._disposed = True
         Publisher.unsubscribe_owner(self)
         self.marker_visualizer.dispose()
-        self.coil_visualizer.dispose()
         self.probe_visualizer.dispose()
         self.robot_force_visualizer.dispose()
         self.vector_field_visualizer.dispose()
-        self.ren.dispose()
+        for scene in self.scenes:
+            scene.dispose()
         for renderer in self._navigation_renderers:
             self._detach_renderer(renderer)
         self._navigation_renderers.clear()
@@ -399,8 +430,6 @@ class NavigationView:
 
         # self.obj_axes = None
         self.mark_actor = None
-        self.obj_projection_arrow_actor = None
-        self.object_orientation_torus_actor = None
         self._to_show_ball = 0
         self.highlighted_marker_index = None
 
@@ -443,7 +472,7 @@ class NavigationView:
         )
 
         # An object to manage visualizing coils in the 3D viewer.
-        self.coil_visualizer = CoilVisualizer(
+        self.scene.coil_visualizer = CoilVisualizer(
             renderer=self.ren,
             actor_factory=self.actor_factory,
             vector_field_visualizer=self.vector_field_visualizer,
@@ -885,10 +914,10 @@ class NavigationView:
         scene.m_target = self.CreateVTKObjectMatrix(scene.target_coord[:3], scene.target_coord[3:])
 
         if self.actor_peel:
-            self.object_orientation_torus_actor.SetVisibility(0)
-            self.obj_projection_arrow_actor.SetVisibility(0)
+            scene.object_orientation_torus_actor.SetVisibility(0)
+            scene.obj_projection_arrow_actor.SetVisibility(0)
 
-        self.coil_visualizer.AddTargetCoil(scene.m_target)
+        scene.coil_visualizer.AddTargetCoil(scene.m_target)
 
         # Separate the target guide inside this navigation scene's viewport.
         self._apply_scene_viewport()
@@ -941,7 +970,7 @@ class NavigationView:
             scene.apply_camera_settings(scene.stored_camera_settings)
 
         # Remove the target coil.
-        self.coil_visualizer.RemoveTargetCoil()
+        scene.coil_visualizer.RemoveTargetCoil()
 
         # Remove all actors from the target guide renderer.
         actors = scene.target_guide_renderer.GetActors()
@@ -966,10 +995,10 @@ class NavigationView:
         self.camera_show_object = None
         scene.target_guide_last_signature = None
         if self.actor_peel:
-            if self.object_orientation_torus_actor:
-                self.object_orientation_torus_actor.SetVisibility(1)
-            if self.obj_projection_arrow_actor:
-                self.obj_projection_arrow_actor.SetVisibility(1)
+            if scene.object_orientation_torus_actor:
+                scene.object_orientation_torus_actor.SetVisibility(1)
+            if scene.obj_projection_arrow_actor:
+                scene.obj_projection_arrow_actor.SetVisibility(1)
 
         if not self.nav_status:
             self.UpdateRender()
@@ -1203,7 +1232,7 @@ class NavigationView:
         scene.target_coord = coord
         scene.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
 
-        self.coil_visualizer.AddTargetCoil(scene.m_target)
+        scene.coil_visualizer.AddTargetCoil(scene.m_target)
 
         print(f"Target updated to coordinates {coord}")
 
@@ -2552,8 +2581,11 @@ class NavigationView:
         locator.FindCellsAlongLine(p1, p2, 0.001, intersectingCellIds)
         return intersectingCellIds
 
-    def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir, renderer=None):
-        renderer = renderer or self.ren
+    def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir, scene=None):
+        scene = scene or self.scene
+        renderer = scene.ren
+        projection_arrow = scene.obj_projection_arrow_actor
+        orientation_torus = scene.object_orientation_torus_actor
         # vtk_colors = vtkNamedColors()
         closestDist = 50
 
@@ -2571,32 +2603,28 @@ class NavigationView:
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     # print('the angle:', angle)
 
-                    renderer.AddActor(self.obj_projection_arrow_actor)
-                    renderer.AddActor(self.object_orientation_torus_actor)
-                    self.obj_projection_arrow_actor.SetPosition(closestPoint)
-                    self.obj_projection_arrow_actor.SetOrientation(coil_dir)
+                    renderer.AddActor(projection_arrow)
+                    renderer.AddActor(orientation_torus)
+                    projection_arrow.SetPosition(closestPoint)
+                    projection_arrow.SetOrientation(coil_dir)
 
-                    self.object_orientation_torus_actor.SetPosition(closestPoint)
-                    self.object_orientation_torus_actor.SetOrientation(coil_dir)
+                    orientation_torus.SetPosition(closestPoint)
+                    orientation_torus.SetOrientation(coil_dir)
 
                     # change color of arrow and disk according to angle
                     if angle < self.angle_arrow_projection_threshold:
-                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor(
+                        orientation_torus.GetProperty().SetDiffuseColor(
                             [51 / 255, 176 / 255, 102 / 255]
                         )
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(
-                            [55 / 255, 120 / 255, 163 / 255]
-                        )
+                        projection_arrow.GetProperty().SetColor([55 / 255, 120 / 255, 163 / 255])
                     else:
-                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor(
+                        orientation_torus.GetProperty().SetDiffuseColor(
                             [240 / 255, 146 / 255, 105 / 255]
                         )
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(
-                            [240 / 255, 146 / 255, 105 / 255]
-                        )
+                        projection_arrow.GetProperty().SetColor([240 / 255, 146 / 255, 105 / 255])
         else:
-            renderer.RemoveActor(self.obj_projection_arrow_actor)
-            renderer.RemoveActor(self.object_orientation_torus_actor)
+            renderer.RemoveActor(projection_arrow)
+            renderer.RemoveActor(orientation_torus)
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
@@ -2638,35 +2666,36 @@ class NavigationView:
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
 
         if flag and self.efield_mesh is None:
-            scene.ren.RemoveActor(self.obj_projection_arrow_actor)
-            scene.ren.RemoveActor(self.object_orientation_torus_actor)
+            scene.ren.RemoveActor(scene.obj_projection_arrow_actor)
+            scene.ren.RemoveActor(scene.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
-            self.ShowCoilProjection(
-                intersectingCellIds, p1, coil_norm, coil_dir, renderer=scene.ren
-            )
+            self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir, scene=scene)
 
     def TrackObject(self, enabled=False):
+        self._track_scene_object(self.scene, enabled)
+
+    def _track_scene_object(self, scene, enabled):
         if enabled:
             vtk_colors = vtkNamedColors()
-            self.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
+            scene.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
                 position=[0.0, 0.0, 0.0],
                 orientation=[0.0, 0.0, 0.0],
                 colour=vtk_colors.GetColor3d("Red"),
                 length_multiplier=0.8,
             )
-            self.object_orientation_torus_actor = self.actor_factory.CreateTorus(
+            scene.object_orientation_torus_actor = self.actor_factory.CreateTorus(
                 position=[0.0, 0.0, 0.0],
                 orientation=[0.0, 0.0, 0.0],
                 colour=vtk_colors.GetColor3d("Red"),
             )
         else:
             self.ren.RemoveActor(self.mark_actor)
-            self.ren.RemoveActor(self.obj_projection_arrow_actor)
-            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            scene.ren.RemoveActor(scene.obj_projection_arrow_actor)
+            scene.ren.RemoveActor(scene.object_orientation_torus_actor)
 
             self.mark_actor = None
-            self.obj_projection_arrow_actor = None
-            self.object_orientation_torus_actor = None
+            scene.obj_projection_arrow_actor = None
+            scene.object_orientation_torus_actor = None
 
     def OnUpdateTracts(
         self,
