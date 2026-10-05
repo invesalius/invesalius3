@@ -28,7 +28,7 @@ dependencies = [
     "pyacvd==0.2.11",
     "pyclaron ; python_full_version == '3.8.*' and sys_platform == 'win32'",
     "pypubsub==4.0.3",
-    "pypolaris==0.0.9",
+    "pypolaris==0.0.9; sys_platform != 'darwin' or platform_machine != 'arm64'",
     "pyserial==3.5",
     "python-gdcm~=3.0.24",
     "requests>=2.32.3",
