@@ -405,7 +405,6 @@ class Navigation(metaclass=Singleton):
         # During navigation
         self.lock_to_target = False
         self.coil_at_target = False
-        self.coils_at_target = {}
 
         self.LoadConfig()
 
@@ -487,8 +486,6 @@ class Navigation(metaclass=Singleton):
         self.SaveConfig()
 
     def CoilAtTarget(self, state, coil_name=None):
-        if coil_name is not None:
-            self.coils_at_target[coil_name] = state
         self.coil_at_target = state
 
     @staticmethod
