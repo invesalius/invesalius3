@@ -300,6 +300,7 @@ source = { editable = "." }
 dependencies = [
     { name = "h5py" },
     { name = "imageio" },
+    { name = "lib3mf" },
     { name = "matplotlib" },
     { name = "nibabel" },
     { name = "numpy" },
@@ -312,7 +313,9 @@ dependencies = [
     { name = "polhemusft", marker = "sys_platform == 'win32'" },
     { name = "psutil" },
     { name = "pyacvd" },
-    { name = "pypolaris", marker = "sys_platform == 'win32'" },
+    { name = "pydicom" },
+    { name = "pynetdicom" },
+    { name = "pypolaris" },
     { name = "pypubsub" },
     { name = "pyserial" },
     { name = "python-gdcm" },
@@ -356,6 +359,7 @@ dev = [
 requires-dist = [
     { name = "h5py", specifier = "==3.11.0" },
     { name = "imageio", specifier = "==2.34.2" },
+    { name = "lib3mf", specifier = "==2.3.2" },
     { name = "matplotlib", specifier = "==3.9.0" },
     { name = "nibabel", specifier = "==5.2.1" },
     { name = "numpy", specifier = "==1.26.4" },
@@ -365,13 +369,15 @@ requires-dist = [
     { name = "optitrack", marker = "python_full_version == '3.8.*' and sys_platform == 'win32'" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pillow", specifier = "==10.3.0" },
-    { name = "polhemus", marker = "sys_platform == 'win32'", specifier = "==0.0.3" },
-    { name = "polhemusft", marker = "sys_platform == 'win32'", specifier = "==0.0.3" },
+    { name = "polhemus", marker = "sys_platform == 'win32'", specifier = "==0.0.4" },
+    { name = "polhemusft", marker = "sys_platform == 'win32'", specifier = "==0.0.4" },
     { name = "psutil", specifier = "==6.0.0" },
     { name = "pyacvd", specifier = "==0.2.11" },
     { name = "pyclaron", marker = "python_full_version == '3.8.*' and sys_platform == 'win32'" },
+    { name = "pydicom", specifier = "==2.4.5" },
     { name = "pyinstaller", marker = "extra == 'installer'", specifier = ">=6.12.0" },
-    { name = "pypolaris", marker = "sys_platform == 'win32'", specifier = "==0.0.8" },
+    { name = "pynetdicom", specifier = "==2.0.2" },
+    { name = "pypolaris", specifier = "==0.0.9" },
     { name = "pypubsub", specifier = "==4.0.3" },
     { name = "pyserial", specifier = "==3.5" },
     { name = "python-gdcm", specifier = "~=3.0.24" },
@@ -461,6 +467,14 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6f/6b/c875b30a1ba490860c93da4cabf479e03f584eba06fe5963f6f6644653d8/lazy_loader-0.4.tar.gz", hash = "sha256:47c75182589b91a4e1a85a136c074285a5ad4d9f39c63e0d7fb76391c4574cd1", size = 15431, upload-time = "2024-04-05T13:03:12.261Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/83/60/d497a310bde3f01cb805196ac61b7ad6dc5dcf8dce66634dc34364b20b4f/lazy_loader-0.4-py3-none-any.whl", hash = "sha256:342aa8e14d543a154047afb4ba8ef17f5563baad3fc610d7b15b213b0f119efc", size = 12097, upload-time = "2024-04-05T13:03:10.514Z" },
+]
+
+[[package]]
+name = "lib3mf"
+version = "2.3.2"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/80/e7/f256462072fa27de4dfb27672d3dca1e55c7024a1014b36dd4c6ecea7c7e/lib3mf-2.3.2-py3-none-any.whl", hash = "sha256:42a3be872caffe0a9bc53451cd632b87773ce27710e3a4f374877e95a8c11db1", size = 2993336, upload-time = "2024-07-12T17:53:31.217Z" },
 ]
 
 [[package]]
@@ -872,18 +886,18 @@ wheels = [
 
 [[package]]
 name = "polhemus"
-version = "0.0.3"
+version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a0/98/47b2b0b7c76296e5b3c5c4be4da2e658731656aa33ef6057a72a1c06f537/polhemus-0.0.3-cp312-none-win_amd64.whl", hash = "sha256:ea6fd0515b6f56933488a7227d0703330d039bd5d5091db024746e944f4db76d", size = 7286509, upload-time = "2026-02-13T07:58:48.55Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/79/7f2b328b613b4a83afcad5cde998a33aebe1b1c1a6889c15fdf3af3c0874/polhemus-0.0.4-cp312-cp312-win_amd64.whl", hash = "sha256:36650b851c0477cd19940e37a9b290ab26394ca055426efcf6ba15e78c762528", size = 7286805, upload-time = "2026-10-05T13:04:28.276Z" },
 ]
 
 [[package]]
 name = "polhemusft"
-version = "0.0.3"
+version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3e/9e/70e06a8707b5f557eed0c20c22e8975733aef4f3db232a9ccb423387aeb5/polhemusft-0.0.3-cp312-none-win_amd64.whl", hash = "sha256:6984096d8c254c525a61b9d36e3ed364d79f7b5702aba1f81897ae34bc91b74f", size = 3627656, upload-time = "2026-02-13T08:43:20.077Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/36/3a0234fbe791f60d31c9a732a608ac17e581b2147a2a800b2cd591d58364/polhemusft-0.0.4-cp312-cp312-win_amd64.whl", hash = "sha256:bc0e1214df952b5dda0948ca54d72ba3d2a83d51e57da739b424d85413f454ee", size = 3626044, upload-time = "2026-10-05T13:06:04.191Z" },
 ]
 
 [[package]]
@@ -960,6 +974,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pydicom"
+version = "2.4.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/8b/6fca5f1f0cc74b2ad9ea0271d374bee2cb13ed3b2793fd93254678de1aba/pydicom-2.4.5.tar.gz", hash = "sha256:ba2077bd76cb49e05fe51c3e1e0b2d77218f50c6c231120b443d29b38ea6b7a8", size = 2018349, upload-time = "2026-03-20T14:39:26.931Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/db/5b/4e7d67d880b3344afff01708725a39717694a79391a32711fd40a8958bed/pydicom-2.4.5-py3-none-any.whl", hash = "sha256:35a594cc8ebae8dd40b1f632cd7c9f08ecaa147cb9305a9f9fbca2c03f5ccc93", size = 1771963, upload-time = "2026-03-20T14:39:24.178Z" },
+]
+
+[[package]]
 name = "pyinstaller"
 version = "6.12.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1001,6 +1024,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pynetdicom"
+version = "2.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydicom" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0f/73/4e5b394548e1defde010589f63d30474212b87fb804c989b2e8fbf95ec62/pynetdicom-2.0.2.tar.gz", hash = "sha256:231212e9b9c5e0debf2af4f17d8afa14ecd1b262a11cdb891b2b2b15f7ab5939", size = 1561254, upload-time = "2022-04-23T09:00:03.378Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f4/01/a309b8fb9c4dd376108ea3cc85b856e61fe8a7d6c68ff9fcbfeb1160d3ad/pynetdicom-2.0.2-py3-none-any.whl", hash = "sha256:6726173d25a51f66f2a4557d816c0f93b3b2a8435ce3d319e6cdd8e48bf657d5", size = 1632689, upload-time = "2022-04-23T08:59:59.301Z" },
+]
+
+[[package]]
 name = "pyparsing"
 version = "3.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1011,10 +1046,12 @@ wheels = [
 
 [[package]]
 name = "pypolaris"
-version = "0.0.8"
+version = "0.0.9"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/db/9a/40fd38247191ca5a1b134d515b3343039512f8cd26c14d084ca126acd09c/pypolaris-0.0.8-cp312-none-win_amd64.whl", hash = "sha256:25743ac842503b6c7b2f4dfa30539ad7f97ef5e04c66ba4ed88d0d7670c8278e", size = 255899, upload-time = "2026-02-13T09:06:46.137Z" },
+    { url = "https://files.pythonhosted.org/packages/04/cf/0b44616d33a4d1697242eb71ea97c964ea051d4ba0881c3d1c9276f467b6/pypolaris-0.0.9-cp312-cp312-macosx_14_0_x86_64.whl", hash = "sha256:733838262bfa3b3dc3d34d4f1846bbeb345401257f51afdf2bb6e74fb5815649", size = 305287, upload-time = "2026-10-05T13:08:42.265Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/08/b2b581a41e0f9967efbc3e14acfd27cfdfc8eb62f4dd242fbb8a6acb6d5d/pypolaris-0.0.9-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:5efe74bcc449bab0386ba62e5a9564a21ae18f473458372702c8e17776656a6a", size = 339155, upload-time = "2026-10-05T13:08:43.958Z" },
+    { url = "https://files.pythonhosted.org/packages/82/53/f9c56bc6543d1706503e8679a93a512d85375f0dd6f0242737bac2aafc04/pypolaris-0.0.9-cp312-cp312-win_amd64.whl", hash = "sha256:5d43b185829bf517dfddbbcec26f8b8046512c92fece233dbf3753448d9072b8", size = 283089, upload-time = "2026-10-05T13:08:45.404Z" },
 ]
 
 [[package]]
