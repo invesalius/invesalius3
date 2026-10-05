@@ -2043,17 +2043,11 @@ class RobotButtonsPanel(wx.Panel):
         self.nav_status = nav_status
         self.UpdateRobotButtons()
 
-    def OnSetTarget(self, marker, coil_name=None):
-        robot_coil = getattr(self.robot, "coil_name", None)
-        if coil_name is not None and robot_coil is not None and robot_coil != coil_name:
-            return
+    def OnSetTarget(self, marker):
         self.target_selected = True
         self.UpdateRobotButtons()
 
-    def OnUnsetTarget(self, marker, coil_name=None):
-        robot_coil = getattr(self.robot, "coil_name", None)
-        if coil_name is not None and robot_coil is not None and robot_coil != coil_name:
-            return
+    def OnUnsetTarget(self, marker):
         self.target_selected = False
         self.UpdateRobotButtons()
 
@@ -2177,6 +2171,7 @@ class ControlPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.navigation = nav_hub.navigation
+        self.markers = nav_hub.markers
         self.tracker = nav_hub.tracker
         self.robots = nav_hub.robots
         self.icp = nav_hub.icp
@@ -2529,18 +2524,18 @@ class ControlPanel(wx.Panel):
 
         self.navigation.StopNavigation()
 
-    def UnsetTarget(self, marker, coil_name=None):
-        self.target_selected = self.navigation.GetTarget() is not None
+    def UnsetTarget(self, marker):
+        self.target_selected = self.markers.GetTarget() is not None
         self.UpdateTargetButton()
 
-    def SetTarget(self, marker, coil_name=None):
-        self.navigation.SetTarget(marker, coil_name)
+    def SetTarget(self, marker):
+        self.navigation.SetTarget(marker)
 
         self.EnableToggleButton(self.lock_to_target_button, 1)
         self.UpdateToggleButton(self.lock_to_target_button, True)
         self.navigation.SetLockToTarget(True)
 
-        self.target_selected = self.navigation.GetTarget() is not None
+        self.target_selected = self.markers.GetTarget() is not None
         self.UpdateTargetButton()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -3824,7 +3819,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_id = self.__get_marker_id(idx)
         self.markers.SetTarget(marker_id)
 
-    def _SetTarget(self, marker, coil_name=None):
+    def _SetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(255, 220, 209))
         self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
@@ -4229,7 +4224,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             brain_target_list=self.currently_focused_marker.brain_target_list,
         )
 
-    def _UnsetTarget(self, marker, coil_name=None):
+    def _UnsetTarget(self, marker):
         if marker.is_target:
             return
         idx = self.__find_marker_index(marker.marker_id)

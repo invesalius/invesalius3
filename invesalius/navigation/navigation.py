@@ -497,38 +497,20 @@ class Navigation(metaclass=Singleton):
         coord[1] = -coord[1]
         return coord
 
-    def SetTarget(self, marker, coil_name=None):
-        coil_name = coil_name or self.main_coil
-        if coil_name is None:
+    def SetTarget(self, marker):
+        if self.main_coil is None:
             return
 
-        self.targets_by_coil[coil_name] = marker
-        if coil_name == self.main_coil:
-            self.target = self._get_target_coordinates(marker)
+        self.targets_by_coil[self.main_coil] = marker
+        self.target = self._get_target_coordinates(marker)
 
-    def UnsetTarget(self, coil_name=None):
-        coil_name = coil_name or self.main_coil
-        if coil_name is None:
+    def UnsetTarget(self):
+        if self.main_coil is None:
             return None
 
-        marker = self.targets_by_coil.pop(coil_name, None)
-        if coil_name == self.main_coil:
-            self.target = None
+        marker = self.targets_by_coil.pop(self.main_coil, None)
+        self.target = None
         return marker
-
-    def GetTarget(self, coil_name=None):
-        coil_name = coil_name or self.main_coil
-        return self.targets_by_coil.get(coil_name)
-
-    def GetTargetCoils(self, marker):
-        return [
-            coil_name
-            for coil_name, target in self.targets_by_coil.items()
-            if target.marker_uuid == marker.marker_uuid
-        ]
-
-    def IsTarget(self, marker):
-        return bool(self.GetTargetCoils(marker))
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
@@ -557,6 +539,8 @@ class Navigation(metaclass=Singleton):
 
     def SetMainCoil(self, main_coil):
         self.main_coil = main_coil
+        marker = self.targets_by_coil.get(main_coil)
+        self.target = self._get_target_coordinates(marker) if marker is not None else None
         self.SaveConfig("main_coil", main_coil)
 
         # Send the polydata of the main coil to the connection
