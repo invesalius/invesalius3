@@ -1,3 +1,4 @@
+import numpy as np
 import vtk
 
 import invesalius.constants as const
@@ -85,6 +86,7 @@ class MarkerVisualizer:
 
     # Color for highlighting a marker.
     HIGHLIGHT_COLOR = vtk.vtkNamedColors().GetColor3d("Red")
+    EEG_HIGHLIGHT_COLOR = (0.0, 0.5, 1.0)
 
     # Scaling factor for the marker when it is highlighted.
     #
@@ -599,6 +601,12 @@ class MarkerVisualizer:
         """
         Set the camera focal point to the marker, making the marker the center of the view.
         """
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            if self.is_navigating:
+                return
+            self._FocusCameraOnEEGElectrode(marker)
+            return
+
         # If not navigating, render the scene.
         if not self.is_target_mode or not self.is_navigating:
             position = marker.position
@@ -614,6 +622,35 @@ class MarkerVisualizer:
                 self.renderer.ResetCameraClippingRange()
                 self.renderer.Render()
                 self.interactor.GetRenderWindow().Render()
+
+    def _FocusCameraOnEEGElectrode(self, marker):
+        target = np.asarray(marker.position, dtype=float)
+        target[1] *= -1
+
+        orientation = [value if value is not None else 0.0 for value in marker.orientation]
+        rotation = dco.coordinates_to_transformation_matrix(
+            position=(0.0, 0.0, 0.0),
+            orientation=orientation,
+            axes="sxyz",
+        )
+        normal = rotation[:3, 2]
+        normal_length = np.linalg.norm(normal)
+        normal = normal / normal_length if normal_length > 1e-6 else np.array([0.0, 0.0, 1.0])
+
+        camera = self.renderer.GetActiveCamera()
+        camera_position = np.asarray(camera.GetPosition(), dtype=float)
+        camera_focal_point = np.asarray(camera.GetFocalPoint(), dtype=float)
+        camera_distance = np.linalg.norm(camera_position - camera_focal_point)
+        if camera_distance < 50.0:
+            camera_distance = 250.0
+
+        new_position = target + normal * camera_distance
+        camera.SetFocalPoint(*target)
+        camera.SetPosition(*new_position)
+        camera.SetViewUp(0, 1, 0) if abs(normal[2]) > 0.99 else camera.SetViewUp(0, 0, 1)
+
+        self.renderer.ResetCameraClippingRange()
+        self.interactor.Render()
 
     def HighlightMarker(self, marker, render=True):
         # Unpack relevant fields from the marker.
@@ -643,7 +680,12 @@ class MarkerVisualizer:
             return
 
         # Change the color of the marker.
-        actor.GetProperty().SetColor(self.HIGHLIGHT_COLOR)
+        highlight_colour = (
+            self.EEG_HIGHLIGHT_COLOR
+            if marker_type == MarkerType.EEG_ELECTRODE
+            else self.HIGHLIGHT_COLOR
+        )
+        actor.GetProperty().SetColor(highlight_colour)
 
         # Increase the scale of the marker.
         self.actor_factory.ScaleActor(actor, self.HIGHLIGHTED_MARKER_SCALING_FACTOR)

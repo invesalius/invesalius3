@@ -160,7 +160,11 @@ class NotebookPanel(wx.Panel):
 
         if should_show:
             if self.eeg_page is None:
-                self.eeg_page = EEGElectrodePage(self.book, self.eeg_electrodes)
+                self.eeg_page = EEGElectrodePage(
+                    self.book,
+                    self.eeg_electrodes,
+                    navigation_on=self.navigation_on,
+                )
                 self.book.AddPage(self.eeg_page, _("EEG electrodes"))
             self.eeg_page.RefreshElectrodes()
             if select:
@@ -223,6 +227,8 @@ class NotebookPanel(wx.Panel):
 
     def _OnNavigationStatus(self, nav_status, vis_status):
         self.navigation_on = bool(nav_status)
+        if self.eeg_page is not None:
+            self.eeg_page.SetNavigationStatus(self.navigation_on)
         self.book.GetPage(self.MASK_PAGE_INDEX).Enable(not self.navigation_on)
         self.book.GetPage(self.IMAGE_PAGE_INDEX).Enable(not self.navigation_on)
         if self.navigation_on:
@@ -232,11 +238,15 @@ class NotebookPanel(wx.Panel):
 class EEGElectrodePage(wx.Panel):
     """Data notebook page that presents the registered EEG electrodes."""
 
-    def __init__(self, parent, eeg_electrodes):
+    def __init__(self, parent, eeg_electrodes, navigation_on=False):
         super().__init__(parent)
         self.eeg_electrodes = eeg_electrodes
 
-        self.listctrl = EEGElectrodeListCtrl(self, eeg_electrodes)
+        self.listctrl = EEGElectrodeListCtrl(
+            self,
+            eeg_electrodes,
+            navigation_on=navigation_on,
+        )
         self.buttonctrl = EEGElectrodeButtonControlPanel(self, eeg_electrodes, self.listctrl)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -248,6 +258,9 @@ class EEGElectrodePage(wx.Panel):
     def RefreshElectrodes(self):
         self.listctrl.RefreshElectrodes()
         self.buttonctrl.UpdateButtons()
+
+    def SetNavigationStatus(self, navigation_on):
+        self.listctrl.SetNavigationStatus(navigation_on)
 
 
 class EEGElectrodeButtonControlPanel(wx.Panel):
@@ -337,10 +350,12 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
 class EEGElectrodeListCtrl(wx.ListCtrl):
     """EEG electrode table with a clickable visibility column."""
 
-    def __init__(self, parent, eeg_electrodes):
+    def __init__(self, parent, eeg_electrodes, navigation_on=False):
         super().__init__(parent, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN)
         self.eeg_electrodes = eeg_electrodes
         self.marker_uuids = []
+        self.navigation_on = bool(navigation_on)
+        self.highlighted_marker_uuid = None
 
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER, width=25)
         self.InsertColumn(1, _("ID"), width=50)
@@ -354,6 +369,8 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
             self.visibility_images.Add(wx.Bitmap(image.Scale(16, 16)))
         self.SetImageList(self.visibility_images, wx.IMAGE_LIST_SMALL)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected)
 
     def OnLeftDown(self, evt):
         row, _flags = self.HitTest(evt.GetPosition())
@@ -365,6 +382,7 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
         evt.Skip()
 
     def RefreshElectrodes(self):
+        self._ClearHighlight()
         self.DeleteAllItems()
         self.marker_uuids = []
 
@@ -405,6 +423,33 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
 
     def GetSelectedElectrode(self):
         return self._GetElectrode(self.GetFirstSelected())
+
+    def SetNavigationStatus(self, navigation_on):
+        self.navigation_on = bool(navigation_on)
+        if self.navigation_on:
+            self._ClearHighlight()
+
+    def OnItemSelected(self, evt):
+        if not self.navigation_on:
+            electrode = self._GetElectrode(evt.GetIndex())
+            if electrode is not None:
+                Publisher.sendMessage("Unhighlight marker")
+                Publisher.sendMessage("Highlight marker", marker=electrode)
+                Publisher.sendMessage("Set camera to focus on marker", marker=electrode)
+                self.highlighted_marker_uuid = electrode.marker_uuid
+        evt.Skip()
+
+    def OnItemDeselected(self, evt):
+        electrode = self._GetElectrode(evt.GetIndex())
+        if electrode is not None and electrode.marker_uuid == self.highlighted_marker_uuid:
+            self._ClearHighlight()
+        evt.Skip()
+
+    def _ClearHighlight(self):
+        if self.highlighted_marker_uuid is None:
+            return
+        Publisher.sendMessage("Unhighlight marker")
+        self.highlighted_marker_uuid = None
 
 
 class MeasurePage(wx.Panel):
