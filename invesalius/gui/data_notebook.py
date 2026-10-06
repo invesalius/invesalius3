@@ -276,13 +276,21 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         remove_bitmap = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
         )
+        remove_all_bitmap = self._LoadBitmap("data_remove_all.png")
 
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
         self.remove_button = pbtn.PlateButton(
             self, wx.ID_ANY, "", remove_bitmap, style=button_style, size=wx.Size(24, 20)
         )
         self.remove_button.SetToolTip(_("Delete selected EEG electrode"))
-        self.remove_all_button = wx.Button(self, wx.ID_ANY, _("Delete all"), size=wx.Size(75, 20))
+        self.remove_all_button = pbtn.PlateButton(
+            self,
+            wx.ID_ANY,
+            "",
+            remove_all_bitmap,
+            style=button_style,
+            size=wx.Size(24, 20),
+        )
         self.remove_all_button.SetToolTip(_("Delete all EEG electrodes"))
         self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 20))
 
