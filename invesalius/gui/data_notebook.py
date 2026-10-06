@@ -236,20 +236,10 @@ class EEGElectrodePage(wx.Panel):
         super().__init__(parent)
         self.eeg_electrodes = eeg_electrodes
 
-        self.visible_bitmap = self._LoadBitmap("object_visible.png")
-        self.invisible_bitmap = self._LoadBitmap("object_invisible.png")
-        self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 24))
-        self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
-
         self.listctrl = EEGElectrodeListCtrl(self, eeg_electrodes)
         self.buttonctrl = EEGElectrodeButtonControlPanel(self, eeg_electrodes, self.listctrl)
 
-        header_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        header_sizer.AddStretchSpacer()
-        header_sizer.Add(self.visibility_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
-
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(header_sizer, 0, wx.EXPAND | wx.TOP, 2)
         sizer.Add(self.listctrl, 1, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
         self.SetSizer(sizer)
@@ -257,8 +247,50 @@ class EEGElectrodePage(wx.Panel):
 
     def RefreshElectrodes(self):
         self.listctrl.RefreshElectrodes()
-        self.UpdateVisibilityButton()
         self.buttonctrl.UpdateButtons()
+
+
+class EEGElectrodeButtonControlPanel(wx.Panel):
+    """Removal controls that apply only to EEG electrodes."""
+
+    def __init__(self, parent, eeg_electrodes, listctrl):
+        super().__init__(parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
+        self.eeg_electrodes = eeg_electrodes
+        self.listctrl = listctrl
+
+        self.visible_bitmap = self._LoadBitmap("object_visible.png")
+        self.invisible_bitmap = self._LoadBitmap("object_invisible.png")
+        remove_bitmap = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
+        )
+
+        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        self.remove_button = pbtn.PlateButton(
+            self, wx.ID_ANY, "", remove_bitmap, style=button_style, size=wx.Size(24, 20)
+        )
+        self.remove_button.SetToolTip(_("Delete selected EEG electrode"))
+        self.remove_all_button = wx.Button(self, wx.ID_ANY, _("Delete all"), size=wx.Size(75, 20))
+        self.remove_all_button.SetToolTip(_("Delete all EEG electrodes"))
+        self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 20))
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
+        sizer.Add(self.remove_all_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
+        sizer.AddStretchSpacer()
+        sizer.Add(self.visibility_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        self.SetSizer(sizer)
+        self.Fit()
+
+        self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
+        self.remove_all_button.Bind(wx.EVT_BUTTON, self.OnDeleteAll)
+        self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
+        self.listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
+        self.listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnSelectionChanged)
+
+    def UpdateButtons(self):
+        self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
+        self.remove_all_button.Enable(bool(self.eeg_electrodes.electrodes))
+        self.UpdateVisibilityButton()
 
     @staticmethod
     def _LoadBitmap(icon_name):
@@ -282,42 +314,6 @@ class EEGElectrodePage(wx.Panel):
             self.eeg_electrodes.hide_all()
         else:
             self.eeg_electrodes.show_all()
-
-
-class EEGElectrodeButtonControlPanel(wx.Panel):
-    """Removal controls that apply only to EEG electrodes."""
-
-    def __init__(self, parent, eeg_electrodes, listctrl):
-        super().__init__(parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
-        self.eeg_electrodes = eeg_electrodes
-        self.listctrl = listctrl
-
-        remove_bitmap = wx.Bitmap(
-            os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
-        )
-
-        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
-        self.remove_button = pbtn.PlateButton(
-            self, wx.ID_ANY, "", remove_bitmap, style=button_style, size=wx.Size(24, 20)
-        )
-        self.remove_button.SetToolTip(_("Delete selected EEG electrode"))
-        self.remove_all_button = wx.Button(self, wx.ID_ANY, _("Delete all"), size=wx.Size(75, 20))
-        self.remove_all_button.SetToolTip(_("Delete all EEG electrodes"))
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
-        sizer.Add(self.remove_all_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
-        self.SetSizer(sizer)
-        self.Fit()
-
-        self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
-        self.remove_all_button.Bind(wx.EVT_BUTTON, self.OnDeleteAll)
-        self.listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
-        self.listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnSelectionChanged)
-
-    def UpdateButtons(self):
-        self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
-        self.remove_all_button.Enable(bool(self.eeg_electrodes.electrodes))
 
     def OnSelectionChanged(self, evt):
         self.UpdateButtons()
@@ -1336,6 +1332,7 @@ class SurfacePage(wx.Panel):
         Publisher.subscribe(self.OnShowMultiple, "Show multiple surfaces")
         Publisher.subscribe(self.update_current_surface_data, "Update surface info in GUI")
         Publisher.subscribe(self.update_select_all_checkbox, "Update surface select all checkbox")
+        Publisher.subscribe(self.UpdateVisibilityButton, "Update surface visibility button")
 
     def __init_gui(self):
         # button control with tools (eg. remove, add new, etc)
@@ -1366,21 +1363,6 @@ class SurfacePage(wx.Panel):
         category_label = wx.StaticText(header_panel, label=category)
         category_label.SetFont(category_label.GetFont().Bold())
 
-        # Create image list for visibility icons
-        visibility_imagelist = wx.ImageList(16, 16)
-        invisible_image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
-        invisible_bitmap = wx.Bitmap(invisible_image.Scale(16, 16))
-        visible_image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
-        visible_bitmap = wx.Bitmap(visible_image.Scale(16, 16))
-        visibility_imagelist.Add(invisible_bitmap)
-        visibility_imagelist.Add(visible_bitmap)
-
-        # Visibility toggle button with icon
-        visibility_btn = wx.BitmapButton(header_panel, size=(24, 24))
-        visibility_btn.SetBitmap(visible_bitmap)
-        visibility_btn.SetToolTip("Toggle visibility for all surfaces in this category")
-        visibility_btn.Bind(wx.EVT_BUTTON, lambda evt: self.on_category_visibility_toggle(category))
-
         # Select all checkbox
         select_all_cb = wx.CheckBox(header_panel, label="", style=wx.CHK_3STATE)
         select_all_cb.SetToolTip("Select/Unselect all surfaces in this category")
@@ -1390,29 +1372,16 @@ class SurfacePage(wx.Panel):
 
         header_sizer.Add(expand_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 2)
         header_sizer.Add(category_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
-        header_sizer.Add(visibility_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
         header_sizer.Add(select_all_cb, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
 
         header_panel.SetSizer(header_sizer)
 
-        return (
-            header_panel,
-            expand_btn,
-            visibility_btn,
-            select_all_cb,
-            invisible_bitmap,
-            visible_bitmap,
-        )
+        return header_panel, expand_btn, select_all_cb
 
     def create_category(self, category):
-        (
-            header_panel,
-            expand_btn,
-            visibility_btn,
-            select_all_cb,
-            invisible_bitmap,
-            visible_bitmap,
-        ) = self.create_category_header(self.scroll_panel, category)
+        header_panel, expand_btn, select_all_cb = self.create_category_header(
+            self.scroll_panel, category
+        )
 
         content_panel = wx.Panel(self.scroll_panel)
         listctrl = SurfacesListCtrlPanel(content_panel, size=wx.Size(256, 150), category=category)
@@ -1425,11 +1394,8 @@ class SurfacePage(wx.Panel):
             "header": header_panel,
             "content": content_panel,
             "expand_btn": expand_btn,
-            "visibility_btn": visibility_btn,
             "select_all_cb": select_all_cb,
             "list": listctrl,
-            "invisible_bitmap": invisible_bitmap,
-            "visible_bitmap": visible_bitmap,
             "expanded": True,
         }
 
@@ -1458,37 +1424,35 @@ class SurfacePage(wx.Panel):
 
         self.update_scroll_layout()
 
-    def on_category_visibility_toggle(self, category):
-        """Toggle visibility for all surfaces in the given category"""
-        if category not in self.categories:
-            return
+    def ToggleAllSurfacesVisibility(self):
+        new_visibility = not self.HasVisibleSurfaces()
+        for category_info in self.categories.values():
+            listctrl = category_info["list"]
+            for global_surface_id, local_pos in listctrl.surface_list_index.items():
+                listctrl.SetItemImage(local_pos, int(new_visibility))
+                Publisher.sendMessage(
+                    "Show surface", index=global_surface_id, visibility=new_visibility
+                )
+        self.UpdateVisibilityButton()
 
-        listctrl = self.categories[category]["list"]
-        visibility_btn = self.categories[category]["visibility_btn"]
-        invisible_bitmap = self.categories[category]["invisible_bitmap"]
-        visible_bitmap = self.categories[category]["visible_bitmap"]
+    def HasVisibleSurfaces(self):
+        for category_info in self.categories.values():
+            listctrl = category_info["list"]
+            for local_pos in listctrl.surface_list_index.values():
+                try:
+                    if listctrl.GetItem(local_pos, 0).GetImage() == 1:
+                        return True
+                except wx.wxAssertionError:
+                    continue
+        return False
 
-        is_visible = False
-        for local_pos in listctrl.surface_list_index.values():
-            try:
-                item = listctrl.GetItem(local_pos, 0)
-                if item.GetImage() == 1:  # 1 = visible
-                    is_visible = True
-                    break
-            except wx.wxAssertionError:
-                continue
-        new_visibility = not is_visible
-        for global_surface_id, local_pos in listctrl.surface_list_index.items():
-            listctrl.SetItemImage(local_pos, int(new_visibility))
-            Publisher.sendMessage(
-                "Show surface", index=global_surface_id, visibility=new_visibility
-            )
+    def HasSurfaces(self):
+        return any(
+            category_info["list"].surface_list_index for category_info in self.categories.values()
+        )
 
-        # Update the button icon based on the new visibility state
-        if new_visibility:
-            visibility_btn.SetBitmap(visible_bitmap)
-        else:
-            visibility_btn.SetBitmap(invisible_bitmap)
+    def UpdateVisibilityButton(self):
+        self.buttonctrl.UpdateVisibilityButton()
 
     def on_category_select_all(self, category, select_all):
         """Select or unselect all surfaces in the given category"""
@@ -1525,33 +1489,6 @@ class SurfacePage(wx.Panel):
         else:
             select_all_cb.Set3StateValue(wx.CHK_UNDETERMINED)
 
-    def _update_visibility_button_icon(self, category):
-        """Update the visibility button icon based on current visibility state"""
-        if category not in self.categories:
-            return
-
-        listctrl = self.categories[category]["list"]
-        visibility_btn = self.categories[category]["visibility_btn"]
-        invisible_bitmap = self.categories[category]["invisible_bitmap"]
-        visible_bitmap = self.categories[category]["visible_bitmap"]
-
-        # Check if any items are visible
-        any_visible = False
-        for local_pos in listctrl.surface_list_index.values():
-            try:
-                item = listctrl.GetItem(local_pos, 0)
-                if item.GetImage() == 1:  # 1 = visible
-                    any_visible = True
-                    break
-            except wx.wxAssertionError:
-                continue
-
-        # Update button icon
-        if any_visible:
-            visibility_btn.SetBitmap(visible_bitmap)
-        else:
-            visibility_btn.SetBitmap(invisible_bitmap)
-
     def AddSurface(self, surface):
         category = getattr(surface, "category", "General")
         if category not in self.categories:
@@ -1561,8 +1498,7 @@ class SurfacePage(wx.Panel):
         self.update_scroll_layout()
         self.update_select_all_checkbox(category)
 
-        # Update visibility button icon
-        self._update_visibility_button_icon(category)
+        self.UpdateVisibilityButton()
 
     def RepopulateSurfaces(self, clear_project=False):
         # Properly destroy all components and clear sizer
@@ -1580,6 +1516,7 @@ class SurfacePage(wx.Panel):
             self.create_category("General")
 
         self.update_scroll_layout()
+        self.UpdateVisibilityButton()
 
     def OnPaneChanged(self, evt):
         self.update_scroll_layout()
@@ -1623,6 +1560,7 @@ class SurfacePage(wx.Panel):
                 local_idx = listctrl.surface_list_index[key]
                 listctrl.SetItemImage(local_idx, int(show))
                 Publisher.sendMessage("Show surface", index=key, visibility=show)
+        self.UpdateVisibilityButton()
 
     def OnShowMultiple(self, index_list, visibility):
         for category_info in self.categories.values():
@@ -1636,6 +1574,7 @@ class SurfacePage(wx.Panel):
                 if current_img != int(show):
                     listctrl.SetItemImage(local_idx, int(show))
                     Publisher.sendMessage("Show surface", index=key, visibility=show)
+        self.UpdateVisibilityButton()
 
 
 class SurfaceButtonControlPanel(wx.Panel):
@@ -1665,6 +1604,8 @@ class SurfaceButtonControlPanel(wx.Panel):
         BMP_EXPORT = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"), wx.BITMAP_TYPE_PNG
         )
+        self.invisible_bitmap = self._LoadBitmap("object_invisible.png")
+        self.visible_bitmap = self._LoadBitmap("object_visible.png")
 
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -1693,6 +1634,9 @@ class SurfaceButtonControlPanel(wx.Panel):
         )
         button_export.SetToolTip(_("Export surface"))
 
+        self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 20))
+        self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
+
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(button_new, 0, wx.GROW | wx.EXPAND | wx.LEFT)
@@ -1700,11 +1644,31 @@ class SurfaceButtonControlPanel(wx.Panel):
         sizer.Add(button_duplicate, 0, wx.GROW | wx.EXPAND)
         sizer.Add(button_open, 0, wx.GROW | wx.EXPAND)
         sizer.Add(button_export, 0, wx.GROW | wx.EXPAND)
+        sizer.AddStretchSpacer()
+        sizer.Add(self.visibility_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
         self.SetSizer(sizer)
         self.Fit()
+        self.UpdateVisibilityButton()
 
         # Bindings
         self.Bind(wx.EVT_BUTTON, self.OnButton)
+
+    @staticmethod
+    def _LoadBitmap(icon_name):
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, icon_name))
+        return wx.Bitmap(image.Scale(16, 16))
+
+    def UpdateVisibilityButton(self):
+        has_visible_surfaces = self.parent.HasVisibleSurfaces()
+        self.visibility_button.SetBitmap(
+            self.visible_bitmap if has_visible_surfaces else self.invisible_bitmap
+        )
+        tooltip = _("Hide all surfaces") if has_visible_surfaces else _("Show all surfaces")
+        self.visibility_button.SetToolTip(tooltip)
+        self.visibility_button.Enable(self.parent.HasSurfaces())
+
+    def OnToggleVisibility(self, _evt):
+        self.parent.ToggleAllSurfacesVisibility()
 
     def OnButton(self, evt):
         id = evt.GetId()
@@ -2298,6 +2262,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         Publisher.sendMessage("Show surface", index=global_idx, visibility=flag)
+        Publisher.sendMessage("Update surface visibility button")
 
     def InsertSurfaceItem(self, surface):
         index = surface.index
