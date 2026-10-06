@@ -2724,7 +2724,8 @@ class ControlPanel(wx.Panel):
 
     def OnEEGRegistrationButton(self, evt):
         active = self.eeg_registration_button.GetValue()
-        if active and not self.eeg_electrodes.prepare_scalp_surface():
+        project_has_surface = bool(prj.Project().surface_dict)
+        if active and (not project_has_surface or not self.eeg_electrodes.prepare_scalp_surface()):
             self.UpdateToggleButton(self.eeg_registration_button, False)
             wx.MessageBox(
                 _("Create a 3D scalp surface before registering EEG electrodes."),
@@ -4615,6 +4616,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     _("InVesalius 3"),
                     wx.OK | wx.ICON_WARNING,
                 )
+            return
+
+        if is_eeg_marker and not prj.Project().surface_dict:
+            wx.MessageBox(
+                _("Create a 3D scalp surface before registering EEG electrodes."),
+                _("InVesalius 3"),
+                wx.OK | wx.ICON_WARNING,
+            )
             return
 
         if is_eeg_marker:

@@ -28,9 +28,24 @@ class SurfaceGeometry(metaclass=Singleton):
         self.surfaces = []
 
     def PrecalculateSurfaceData(self, actor):
+        mapper = actor.GetMapper()
+        mapper.Update()
+        polydata = mapper.GetInput()
+        if (
+            polydata is None
+            or polydata.GetNumberOfPoints() == 0
+            or polydata.GetNumberOfCells() == 0
+        ):
+            return {
+                "actor": actor,
+                "polydata": polydata,
+                "normals": None,
+                "point_locator": None,
+                "highest_z": float("-inf"),
+            }
+
         normals = self.GetSurfaceNormals(actor)
         highest_z = self.CalculateHighestZ(actor)
-        polydata = actor.GetMapper().GetInput()
         point_locator = vtk.vtkPointLocator()
         point_locator.SetDataSet(polydata)
         point_locator.BuildLocator()
@@ -253,11 +268,14 @@ class SurfaceGeometry(metaclass=Singleton):
 
     def GetSmoothedScalpSurface(self):
         # Retrieve the surface with the highest z-coordinate.
-        if not self.surfaces:
+        valid_surfaces = [
+            surface for surface in self.surfaces if self._HasUsableGeometry(surface["original"])
+        ]
+        if not valid_surfaces:
             return None
 
         # Find the surface with the highest z-coordinate
-        highest_surface = max(self.surfaces, key=lambda surface: surface["original"]["highest_z"])
+        highest_surface = max(valid_surfaces, key=lambda surface: surface["original"]["highest_z"])
 
         # Track if a new highest surface was detected
         current_id = id(highest_surface)
@@ -292,7 +310,10 @@ class SurfaceGeometry(metaclass=Singleton):
 
             progress_window.Close()
 
-        return highest_surface["smoothed"]
+        smoothed_surface = highest_surface["smoothed"]
+        if not self._HasUsableGeometry(smoothed_surface):
+            return None
+        return smoothed_surface
 
     def GetClosestPointOnSurface(self, surface_name, point, smooth_radius=0.0):
         """Return the closest point and local normal on the shared smoothed scalp.
@@ -308,12 +329,16 @@ class SurfaceGeometry(metaclass=Singleton):
         normals = surface["normals"]
         point_locator = surface["point_locator"]
         closest_point_id = point_locator.FindClosestPoint(point)
+        if not 0 <= closest_point_id < polydata.GetNumberOfPoints():
+            raise RuntimeError(_("The scalp surface does not contain usable geometry."))
 
         # Retrieve the coordinates of the closest point using the point ID.
         closest_point = polydata.GetPoint(closest_point_id)
 
         # Extract the normal at the closest point
         normal_data = normals.GetPointData().GetNormals()
+        if normal_data is None or closest_point_id >= normal_data.GetNumberOfTuples():
+            raise RuntimeError(_("The scalp surface does not contain usable normals."))
         closest_normal = np.asarray(normal_data.GetTuple(closest_point_id), dtype=float)
 
         if smooth_radius > 0:
@@ -333,6 +358,22 @@ class SurfaceGeometry(metaclass=Singleton):
             closest_normal /= normal_length
 
         return closest_point, tuple(closest_normal)
+
+    @staticmethod
+    def _HasUsableGeometry(surface):
+        if surface is None:
+            return False
+        polydata = surface.get("polydata")
+        normals = surface.get("normals")
+        normal_data = normals.GetPointData().GetNormals() if normals is not None else None
+        return (
+            polydata is not None
+            and polydata.GetNumberOfPoints() > 0
+            and polydata.GetNumberOfCells() > 0
+            and normal_data is not None
+            and normal_data.GetNumberOfTuples() >= polydata.GetNumberOfPoints()
+            and surface.get("point_locator") is not None
+        )
 
     @staticmethod
     def OrientationFromNormal(normal):
