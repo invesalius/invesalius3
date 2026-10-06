@@ -3158,58 +3158,62 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         deleted_marker_id = marker.marker_id
         deleted_marker_uuid = marker.marker_uuid
         idx = self.__find_marker_index(deleted_marker_id)
-        self.marker_list_ctrl.DeleteItem(idx)
-        print("_DeleteMarker:", deleted_marker_uuid)
+        if idx is not None:
+            self.marker_list_ctrl.DeleteItem(idx)
+            print("_DeleteMarker:", deleted_marker_uuid)
 
-        # Delete the marker from itemDataMap
-        for key, data in self.itemDataMap.items():
+        # Delete the marker from itemDataMap when it is present in the general marker table.
+        for key, data in list(self.itemDataMap.items()):
             current_uuid = data[-1]
             if current_uuid == deleted_marker_uuid:
                 self.itemDataMap.pop(key)
 
-        num_items = self.marker_list_ctrl.GetItemCount()
-        for n in range(num_items):
-            m_id = self.__get_marker_id(n)
-            if m_id > deleted_marker_id:
-                self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - 1))
+        wx.CallAfter(self._RefreshVisibleMarkerIds)
 
     def _DeleteMultiple(self, markers):
-        if len(markers) == self.marker_list_ctrl.GetItemCount():
+        visible_markers = [
+            marker for marker in markers if marker.marker_type != MarkerType.EEG_ELECTRODE
+        ]
+        if visible_markers and len(visible_markers) == self.marker_list_ctrl.GetItemCount():
             self.marker_list_ctrl.DeleteAllItems()
             self.itemDataMap.clear()
-            return
+        else:
+            min_for_fast_deletion = 10
+            if len(visible_markers) > min_for_fast_deletion:
+                self.marker_list_ctrl.Hide()
 
-        min_for_fast_deletion = 10
-        if len(markers) > min_for_fast_deletion:
-            self.marker_list_ctrl.Hide()
+            deleted_keys = []
+            for marker in visible_markers:
+                idx = self.__find_marker_index_by_uuid(marker.marker_uuid)
+                if idx is None:
+                    continue
+                deleted_uuid = marker.marker_uuid
+                for key, data in self.itemDataMap.items():
+                    if data[-1] == deleted_uuid:
+                        deleted_keys.append(key)
 
-        deleted_ids = []
-        deleted_keys = []
-        for marker in markers:
-            idx = self.__find_marker_index(marker.marker_id)
-            if idx is None:
+                self.marker_list_ctrl.DeleteItem(idx)
+
+            for key in deleted_keys:
+                self.itemDataMap.pop(key, None)
+
+            self.marker_list_ctrl.Show()
+
+        wx.CallAfter(self._RefreshVisibleMarkerIds)
+
+    def _RefreshVisibleMarkerIds(self):
+        """Synchronize displayed IDs after hidden EEG markers change the central list."""
+        for row in range(self.marker_list_ctrl.GetItemCount()):
+            marker_uuid = self.marker_list_ctrl.GetItem(row, const.UUID).GetText()
+            marker = self.markers.FindByUUID(marker_uuid)
+            if marker is None:
                 continue
-            deleted_uuid = marker.marker_uuid
-            for key, data in self.itemDataMap.items():
-                current_uuid = data[-1]
-
-                if current_uuid == deleted_uuid:
-                    deleted_keys.append(key)
-
-            self.marker_list_ctrl.DeleteItem(idx)
-            deleted_ids.append(marker.marker_id)
-
-        # Remove all the deleted markers from itemDataMap
-        for key in deleted_keys:
-            try:
-                self.itemDataMap.pop(key)
-            except KeyError:
-                print("Invalid itemDataMap key:", key)
-
-        for idx in range(self.marker_list_ctrl.GetItemCount()):
-            self.marker_list_ctrl.SetItem(idx, const.ID_COLUMN, str(idx))
-
-        self.marker_list_ctrl.Show()
+            marker_id = marker.marker_id
+            self.marker_list_ctrl.SetItem(row, const.ID_COLUMN, str(marker_id))
+            for data in self.itemDataMap.values():
+                if data[-1] == marker_uuid:
+                    data[const.ID_COLUMN] = marker_id
+                    break
 
     def _SetPointOfInterest(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
@@ -3237,6 +3241,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 self.itemDataMap[key][const.POINT_OF_INTEREST_TARGET_COLUMN] = ""
 
     def _UpdateMarkerLabel(self, marker):
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            return
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItem(idx, const.LABEL_COLUMN, marker.label)
 
@@ -4318,6 +4324,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 return idx
         return None
 
+    def __find_marker_index_by_uuid(self, marker_uuid):
+        """Return the table row for a marker UUID."""
+        for row in range(self.marker_list_ctrl.GetItemCount()):
+            if self.marker_list_ctrl.GetItem(row, const.UUID).GetText() == marker_uuid:
+                return row
+        return None
+
     def __get_marker_id(self, idx):
         """
         For an index in self.marker_list_ctrl, returns the corresponding marker_id
@@ -4895,11 +4908,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         return marker
 
     def _AddMarker(self, marker, render, focus):
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            return
+
         # Add marker to the marker list in GUI and to the itemDataMap.
         num_items = self.marker_list_ctrl.GetItemCount()
 
         list_entry = ["" for _ in range(0, const.X_COLUMN)]
-        list_entry[const.ID_COLUMN] = num_items
+        list_entry[const.ID_COLUMN] = marker.marker_id
         list_entry[const.SESSION_COLUMN] = str(marker.session_id)
         list_entry[const.MARKER_TYPE_COLUMN] = marker.marker_type.human_readable
         list_entry[const.LABEL_COLUMN] = marker.label
