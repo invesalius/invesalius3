@@ -17,7 +17,10 @@ from dataclasses import dataclass
 from math import dist
 
 from invesalius.data.markers.marker import Marker, MarkerType
-from invesalius.data.markers.surface_geometry import SurfaceGeometry
+from invesalius.data.markers.surface_geometry import (
+    SCALP_NORMAL_AVERAGING_RADIUS_MM,
+    SurfaceGeometry,
+)
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
@@ -45,6 +48,10 @@ class EEGElectrodeManager(metaclass=Singleton):
         """Enable or disable creation of EEG electrode markers."""
         self.registration_active = bool(active)
         Publisher.sendMessage("EEG registration mode changed", active=self.registration_active)
+
+    def prepare_scalp_surface(self) -> bool:
+        """Create the shared smoothed scalp data when it is not cached yet."""
+        return self.surface_geometry.GetSmoothedScalpSurface() is not None
 
     @property
     def electrodes(self) -> list[Marker]:
@@ -97,7 +104,9 @@ class EEGElectrodeManager(metaclass=Singleton):
         viewer_position[1] *= -1
 
         closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
-            "scalp", viewer_position, smooth_radius=15.0
+            "scalp",
+            viewer_position,
+            smooth_radius=SCALP_NORMAL_AVERAGING_RADIUS_MM,
         )
         projected_position = list(closest_point)
         projected_position[1] *= -1

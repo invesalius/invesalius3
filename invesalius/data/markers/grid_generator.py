@@ -24,7 +24,10 @@ import numpy as np
 
 import invesalius.data.coordinates as dco
 from invesalius.data.markers.marker import Marker, MarkerType
-from invesalius.data.markers.surface_geometry import SurfaceGeometry
+from invesalius.data.markers.surface_geometry import (
+    SCALP_NORMAL_AVERAGING_RADIUS_MM,
+    SurfaceGeometry,
+)
 
 # Maximum grid dimension to prevent accidental creation of excessive markers.
 MAX_GRID_DIMENSION = 100
@@ -238,7 +241,12 @@ class GridGenerator:
         marker.position = new_position
         marker.orientation = new_orientation
 
-    def _project_to_scalp(self, marker, z_rotation, smooth_radius=15.0):
+    def _project_to_scalp(
+        self,
+        marker,
+        z_rotation,
+        smooth_radius=SCALP_NORMAL_AVERAGING_RADIUS_MM,
+    ):
         """Project a marker onto the smoothed scalp surface and orient it tangentially.
 
         Instead of just using the normal of the closest point, this method averages

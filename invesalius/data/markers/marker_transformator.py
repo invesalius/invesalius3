@@ -3,7 +3,10 @@ import numpy as np
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 from invesalius.data.markers.marker import MarkerType
-from invesalius.data.markers.surface_geometry import SurfaceGeometry
+from invesalius.data.markers.surface_geometry import (
+    SCALP_NORMAL_AVERAGING_RADIUS_MM,
+    SurfaceGeometry,
+)
 from invesalius.pubsub import pub as Publisher
 
 
@@ -203,7 +206,9 @@ class MarkerTransformator:
         marker_position[1] = -marker_position[1]
 
         closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
-            "scalp", marker_position, smooth_radius=15.0
+            "scalp",
+            marker_position,
+            smooth_radius=SCALP_NORMAL_AVERAGING_RADIUS_MM,
         )
 
         if opposite_side:
@@ -213,7 +218,9 @@ class MarkerTransformator:
 
             # Re-compute the closest point and normal, but now for the new position.
             closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
-                "scalp", new_position, smooth_radius=15.0
+                "scalp",
+                new_position,
+                smooth_radius=SCALP_NORMAL_AVERAGING_RADIUS_MM,
             )
 
         orientation = self.surface_geometry.OrientationFromNormal(closest_normal)

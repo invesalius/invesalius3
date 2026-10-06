@@ -8,6 +8,10 @@ from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
+# Radius used to average nearby scalp normals. This stabilizes orientation and
+# is independent from the filter that smooths the surface mesh itself.
+SCALP_NORMAL_AVERAGING_RADIUS_MM = 15.0
+
 
 class SurfaceGeometry(metaclass=Singleton):
     def __init__(self):

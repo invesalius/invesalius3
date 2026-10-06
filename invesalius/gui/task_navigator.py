@@ -2724,6 +2724,15 @@ class ControlPanel(wx.Panel):
 
     def OnEEGRegistrationButton(self, evt):
         active = self.eeg_registration_button.GetValue()
+        if active and not self.eeg_electrodes.prepare_scalp_surface():
+            self.UpdateToggleButton(self.eeg_registration_button, False)
+            wx.MessageBox(
+                _("Create a 3D scalp surface before registering EEG electrodes."),
+                _("InVesalius 3"),
+                wx.OK | wx.ICON_WARNING,
+            )
+            return
+
         self.eeg_electrodes.set_registration_active(active)
         if active:
             Publisher.sendMessage("Press show-probe button", pressed=True)
