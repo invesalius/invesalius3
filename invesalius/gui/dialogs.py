@@ -6346,6 +6346,54 @@ class SurfaceSmoothingProgressWindow:
         self.dlg.Destroy()
 
 
+class EEGMontageExportDialog(wx.Dialog):
+    def __init__(self, parent, default_directory=""):
+        super().__init__(parent, title=_("Export EEG montage"))
+
+        format_label = wx.StaticText(self, label=_("Format:"))
+        self.format_choice = wx.Choice(self, choices=("BIDS", "HPTS"))
+        self.format_choice.SetSelection(0)
+
+        directory_label = wx.StaticText(self, label=_("Destination folder:"))
+        self.directory_picker = wx.DirPickerCtrl(
+            self,
+            path=default_directory,
+            message=_("Select EEG montage export directory"),
+            style=wx.DIRP_DEFAULT_STYLE | wx.DIRP_DIR_MUST_EXIST | wx.DIRP_USE_TEXTCTRL,
+        )
+
+        fields = wx.FlexGridSizer(rows=2, cols=2, vgap=8, hgap=8)
+        fields.Add(format_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        fields.Add(self.format_choice, 1, wx.EXPAND)
+        fields.Add(directory_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        fields.Add(self.directory_picker, 1, wx.EXPAND)
+        fields.AddGrowableCol(1, 1)
+
+        buttons = self.CreateSeparatedButtonSizer(wx.OK | wx.CANCEL)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(fields, 1, wx.EXPAND | wx.ALL, 12)
+        sizer.Add(buttons, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        self.SetSizerAndFit(sizer)
+        self.SetMinSize(wx.Size(480, -1))
+        self.CentreOnParent()
+
+        self.ok_button = self.FindWindowById(wx.ID_OK)
+        self.directory_picker.Bind(wx.EVT_DIRPICKER_CHANGED, self._OnDirectoryChanged)
+        self._UpdateOKButton()
+
+    def GetDirectory(self):
+        return self.directory_picker.GetPath()
+
+    def GetFormat(self):
+        return self.format_choice.GetStringSelection()
+
+    def _OnDirectoryChanged(self, _evt):
+        self._UpdateOKButton()
+
+    def _UpdateOKButton(self):
+        self.ok_button.Enable(bool(self.GetDirectory()))
+
+
 class SurfaceProgressWindow:
     def __init__(self):
         self.title = "InVesalius 3"

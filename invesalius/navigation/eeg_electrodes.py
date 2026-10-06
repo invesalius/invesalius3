@@ -12,9 +12,12 @@ The navigation and data panels consume the marker events emitted by
 ``MarkersControl`` without owning electrode or scalp-projection state.
 """
 
+import csv
+import json
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from math import dist
+from math import dist, isfinite
+from pathlib import Path
 
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import (
@@ -62,6 +65,144 @@ class EEGElectrodeManager(metaclass=Singleton):
             markers=self.electrodes,
             visible=self.labels_visible,
         )
+
+    def get_export_paths(self, output_dir: str, export_format: str) -> list[Path]:
+        """Return the files produced by a montage export."""
+        output_path = Path(output_dir)
+        export_format = export_format.upper()
+        if export_format == "BIDS":
+            return [
+                output_path / "sub-01_electrodes.tsv",
+                output_path / "sub-01_coordsystem.json",
+            ]
+        if export_format == "HPTS":
+            return [output_path / "eeg_montage.hpts"]
+        raise ValueError(f"Unsupported EEG montage export format: {export_format}")
+
+    def export_montage(self, output_dir: str, export_format: str) -> list[str]:
+        """Export all EEG electrodes in BIDS or MNE HPTS format."""
+        if not self.electrodes:
+            raise ValueError("There are no EEG electrodes to export.")
+
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        export_format = export_format.upper()
+        if export_format == "BIDS":
+            return self._export_bids(output_path)
+        if export_format == "HPTS":
+            return self._export_hpts(output_path)
+        raise ValueError(f"Unsupported EEG montage export format: {export_format}")
+
+    def _export_bids(self, output_dir: Path) -> list[str]:
+        electrodes_path, coordsystem_path = self.get_export_paths(output_dir, "BIDS")
+        world_electrodes = self._get_world_electrodes()
+
+        with electrodes_path.open("w", encoding="utf-8", newline="") as electrodes_file:
+            writer = csv.DictWriter(
+                electrodes_file,
+                fieldnames=("name", "x", "y", "z"),
+                delimiter="\t",
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            for name, position in world_electrodes:
+                writer.writerow(
+                    {
+                        "name": name,
+                        "x": round(position[0], 2),
+                        "y": round(position[1], 2),
+                        "z": round(position[2], 2),
+                    }
+                )
+
+        distances = [
+            float(electrode.eeg_distance_mm)
+            for electrode in self.electrodes
+            if electrode.eeg_distance_mm is not None and isfinite(float(electrode.eeg_distance_mm))
+        ]
+        coordsystem = {
+            "EEGCoordinateSystem": "Other",
+            "EEGCoordinateUnits": "mm",
+            "EEGCoordinateSystemDescription": (
+                "Scanner RAS coordinate system derived from the subject MRI affine transformation."
+            ),
+            "IntendedFor": "",
+            "AnatomicalLandmarkCoordinateSystem": "Other",
+            "AnatomicalLandmarkCoordinateUnits": "mm",
+            "AnatomicalLandmarkCoordinates": self._get_world_fiducials(),
+            "DigitizationMethod": "InVesalius Navigator - EEG electrode digitization",
+            "ICPMeanErrorMM": sum(distances) / len(distances) if distances else None,
+        }
+        with coordsystem_path.open("w", encoding="utf-8") as coordsystem_file:
+            json.dump(coordsystem, coordsystem_file, indent=2)
+
+        return [str(electrodes_path), str(coordsystem_path)]
+
+    def _export_hpts(self, output_dir: Path) -> list[str]:
+        (hpts_path,) = self.get_export_paths(output_dir, "HPTS")
+        lines = [
+            "# Digitized points exported by InVesalius 3",
+            "# Coordinate system: Scanner RAS",
+        ]
+
+        fiducials = self._get_world_fiducials()
+        for name, fiducial_id in (("NASION", 1), ("LPA", 2), ("RPA", 3)):
+            if name in fiducials:
+                position = fiducials[name]
+                lines.append(
+                    f"cardinal {fiducial_id} "
+                    f"{position['x']:.2f} {position['y']:.2f} {position['z']:.2f}"
+                )
+
+        for name, position in self._get_world_electrodes():
+            lines.append(f"eeg {name} {position[0]:.2f} {position[1]:.2f} {position[2]:.2f}")
+
+        hpts_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return [str(hpts_path)]
+
+    def _get_world_electrodes(self) -> list[tuple[str, tuple[float, float, float]]]:
+        from invesalius.data import imagedata_utils
+
+        world_electrodes = []
+        for electrode in sorted(self.electrodes, key=self._get_export_name):
+            position, _orientation = imagedata_utils.convert_invesalius_to_world(
+                position=electrode.position,
+                orientation=(0.0, 0.0, 0.0),
+            )
+            if any(value is None or not isfinite(float(value)) for value in position):
+                raise ValueError("The project does not have a valid MRI world coordinate system.")
+            world_electrodes.append(
+                (self._get_export_name(electrode), tuple(float(value) for value in position))
+            )
+        return world_electrodes
+
+    @staticmethod
+    def _get_world_fiducials() -> dict[str, dict[str, float]]:
+        from invesalius.data import imagedata_utils
+        from invesalius.project import Project
+
+        fiducials = {}
+        fiducial_names = ((2, "NASION"), (0, "LPA"), (1, "RPA"))
+        for index, name in fiducial_names:
+            position = Project().image_fiducials[index]
+            if any(not isfinite(float(value)) for value in position):
+                continue
+            position_world, _orientation = imagedata_utils.convert_invesalius_to_world(
+                position=position,
+                orientation=(0.0, 0.0, 0.0),
+            )
+            if any(value is None or not isfinite(float(value)) for value in position_world):
+                continue
+            fiducials[name] = {
+                "x": round(float(position_world[0]), 2),
+                "y": round(float(position_world[1]), 2),
+                "z": round(float(position_world[2]), 2),
+            }
+        return fiducials
+
+    @staticmethod
+    def _get_export_name(electrode: Marker) -> str:
+        return electrode.eeg_matched_name or electrode.label
 
     @property
     def electrodes(self) -> list[Marker]:

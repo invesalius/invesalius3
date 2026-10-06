@@ -277,6 +277,10 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
         )
         remove_all_bitmap = self._LoadBitmap("data_remove_all.png")
+        export_bitmap = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"),
+            wx.BITMAP_TYPE_PNG,
+        )
 
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
         self.remove_button = pbtn.PlateButton(
@@ -292,6 +296,15 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             size=wx.Size(24, 20),
         )
         self.remove_all_button.SetToolTip(_("Delete all EEG electrodes"))
+        self.export_button = pbtn.PlateButton(
+            self,
+            wx.ID_ANY,
+            "",
+            export_bitmap,
+            style=button_style,
+            size=wx.Size(24, 20),
+        )
+        self.export_button.SetToolTip(_("Export EEG montage"))
         labels_bitmap = self._LoadBitmap("text_original.png")
         labels_pressed_bitmap = self._LoadBitmap("text_inverted_original.png")
         self.labels_button = wx.BitmapToggleButton(
@@ -307,6 +320,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
         sizer.Add(self.remove_all_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
+        sizer.Add(self.export_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.Add(self.labels_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.AddStretchSpacer()
         sizer.Add(self.visibility_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
@@ -315,6 +329,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
 
         self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
         self.remove_all_button.Bind(wx.EVT_BUTTON, self.OnDeleteAll)
+        self.export_button.Bind(wx.EVT_BUTTON, self.OnExport)
         self.labels_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleLabels)
         self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
         self.listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
@@ -323,6 +338,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
     def UpdateButtons(self):
         self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
         self.remove_all_button.Enable(bool(self.eeg_electrodes.electrodes))
+        self.export_button.Enable(bool(self.eeg_electrodes.electrodes))
         self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
         self._UpdateLabelsButtonTooltip()
         self.UpdateVisibilityButton()
@@ -379,6 +395,45 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         result = dlg.ShowConfirmationDialog(msg=_("Delete all EEG electrodes? Cannot be undone."))
         if result == wx.ID_OK:
             self.eeg_electrodes.clear()
+
+    def OnExport(self, _evt):
+        session = ses.Session()
+        export_dialog = dlg.EEGMontageExportDialog(
+            self,
+            default_directory=session.GetConfig("last_directory_eeg_montage", ""),
+        )
+        try:
+            if export_dialog.ShowModal() != wx.ID_OK:
+                return
+
+            output_directory = export_dialog.GetDirectory()
+            export_format = export_dialog.GetFormat()
+            existing_paths = [
+                path
+                for path in self.eeg_electrodes.get_export_paths(
+                    output_directory,
+                    export_format,
+                )
+                if path.exists()
+            ]
+            if existing_paths:
+                result = dlg.ShowConfirmationDialog(
+                    msg=_("The montage export files already exist. Overwrite them?")
+                )
+                if result != wx.ID_OK:
+                    return
+
+            self.eeg_electrodes.export_montage(output_directory, export_format)
+            session.SetConfig("last_directory_eeg_montage", output_directory)
+            wx.MessageBox(
+                _("EEG montage exported successfully."),
+                _("Success"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+        except (OSError, ValueError) as error:
+            wx.MessageBox(str(error), _("Export error"), wx.OK | wx.ICON_ERROR)
+        finally:
+            export_dialog.Destroy()
 
 
 class EEGElectrodeListCtrl(wx.ListCtrl):
