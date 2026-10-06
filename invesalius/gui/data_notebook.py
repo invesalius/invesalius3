@@ -292,7 +292,15 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             size=wx.Size(24, 20),
         )
         self.remove_all_button.SetToolTip(_("Delete all EEG electrodes"))
-        self.labels_button = wx.ToggleButton(self, wx.ID_ANY, _("Labels"), size=wx.Size(55, 20))
+        labels_bitmap = self._LoadBitmap("text_original.png")
+        labels_pressed_bitmap = self._LoadBitmap("text_inverted_original.png")
+        self.labels_button = wx.BitmapToggleButton(
+            self,
+            wx.ID_ANY,
+            labels_bitmap,
+            size=wx.Size(24, 20),
+        )
+        self.labels_button.SetBitmapPressed(labels_pressed_bitmap)
         self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
         self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 20))
 
