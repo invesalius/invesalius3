@@ -3558,10 +3558,26 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 if marker.brain_target_list[i]["mep_value"]
                 else ""
             )
-            list_entry[const.BRAIN_X_MTMS] = marker.brain_target_list[i]["x_mtms"]
-            list_entry[const.BRAIN_Y_MTMS] = marker.brain_target_list[i]["y_mtms"]
-            list_entry[const.BRAIN_R_MTMS] = marker.brain_target_list[i]["r_mtms"]
-            list_entry[const.BRAIN_INTENSITY_MTMS] = marker.brain_target_list[i]["intensity_mtms"]
+            list_entry[const.BRAIN_X_MTMS] = (
+                str(marker.brain_target_list[i]["x_mtms"])
+                if marker.brain_target_list[i]["x_mtms"] is not None
+                else ""
+            )
+            list_entry[const.BRAIN_Y_MTMS] = (
+                str(marker.brain_target_list[i]["y_mtms"])
+                if marker.brain_target_list[i]["y_mtms"] is not None
+                else ""
+            )
+            list_entry[const.BRAIN_R_MTMS] = (
+                str(marker.brain_target_list[i]["r_mtms"])
+                if marker.brain_target_list[i]["r_mtms"] is not None
+                else ""
+            )
+            list_entry[const.BRAIN_INTENSITY_MTMS] = (
+                str(marker.brain_target_list[i]["intensity_mtms"])
+                if marker.brain_target_list[i]["intensity_mtms"] is not None
+                else ""
+            )
             list_entry[const.BRAIN_UUID] = (
                 str(marker.brain_target_list[i]["marker_uuid"])
                 if marker.brain_target_list[i]["marker_uuid"]
