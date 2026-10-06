@@ -3279,8 +3279,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def UpdateCurrentCoord(self, position):
         self.current_position = list(position[:3])
-        self.current_orientation = list(position[3:])
-        if not self.navigation.track_coil:
+        tracks_oriented_object = (
+            self.navigation.track_coil or self.eeg_electrodes.registration_active
+        )
+        if tracks_oriented_object and len(position) >= 6:
+            self.current_orientation = list(position[3:6])
+        else:
             self.current_orientation = None, None, None
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
