@@ -49,7 +49,7 @@ class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
 
-    version: int = 6
+    version: int = 7
     marker_id: int = 0
     x: float = 0
     y: float = 0
@@ -76,6 +76,9 @@ class Marker:
     gamma_cortex: float = dataclasses.field(default=None)
     marker_type: MarkerType = MarkerType.LANDMARK
     visible: bool = True
+    eeg_matched_name: str | None = None
+    eeg_distance_mm: float | None = None
+    eeg_confidence: str | None = None
     z_rotation: float = 0.0
     z_offset: float = 0.0
     visualization: dict = dataclasses.field(default_factory=dict)
@@ -270,6 +273,9 @@ class Marker:
             "is_point_of_interest": self.is_point_of_interest,
             "marker_type": self.marker_type.value,
             "visible": self.visible,
+            "eeg_matched_name": self.eeg_matched_name,
+            "eeg_distance_mm": self.eeg_distance_mm,
+            "eeg_confidence": self.eeg_confidence,
             "seed": self.seed,
             "session_id": self.session_id,
             "cortex_position_orientation": self.cortex_position_orientation,
@@ -328,6 +334,9 @@ class Marker:
         marker_uuid = d.get("marker_uuid", "")
         timestamp = d.get("timestamp", "")
         visible = d.get("visible", True)
+        eeg_matched_name = d.get("eeg_matched_name")
+        eeg_distance_mm = d.get("eeg_distance_mm")
+        eeg_confidence = d.get("eeg_confidence")
 
         self.size = d["size"]
         self.label = d["label"]
@@ -341,6 +350,9 @@ class Marker:
         self.is_point_of_interest = is_point_of_interest
         self.marker_type = MarkerType(marker_type)
         self.visible = visible
+        self.eeg_matched_name = eeg_matched_name
+        self.eeg_distance_mm = eeg_distance_mm
+        self.eeg_confidence = eeg_confidence
         self.cortex_position_orientation = cortex_position_orientation
         self.z_offset = z_offset
         self.z_rotation = z_rotation

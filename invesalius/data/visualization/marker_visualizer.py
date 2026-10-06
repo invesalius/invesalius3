@@ -134,6 +134,8 @@ class MarkerVisualizer:
         Publisher.subscribe(self.UpdateMarker, "Update marker")
         Publisher.subscribe(self.HideMarkers, "Hide markers")
         Publisher.subscribe(self.ShowMarkers, "Show markers")
+        Publisher.subscribe(self.SetMarkerVisibility, "Set marker visibility")
+        Publisher.subscribe(self.SetMarkersVisibility, "Set markers visibility")
         Publisher.subscribe(self.DeleteMarkers, "Delete markers")
         Publisher.subscribe(self.DeleteMarker, "Delete marker")
         Publisher.subscribe(self.SetCameraToFocusOnMarker, "Set camera to focus on marker")
@@ -239,6 +241,10 @@ class MarkerVisualizer:
                 position_flipped, orientation, colour
             )
 
+        # For 'EEG electrode' type markers, create a ball.
+        elif marker_type == MarkerType.EEG_ELECTRODE:
+            actor = self.actor_factory.CreateBall(position_flipped, colour, size)
+
         else:
             assert False, "Invalid marker type."
 
@@ -250,8 +256,9 @@ class MarkerVisualizer:
         marker.visualization = {
             "actor": actor,
             "highlighted": False,
-            "hidden": False,
+            "hidden": not marker.visible,
         }
+        actor.SetVisibility(marker.visible)
         self.renderer.AddActor(actor)
 
         if render:
@@ -329,6 +336,18 @@ class MarkerVisualizer:
 
         if not self.is_navigating:
             self.interactor.Render()
+
+    def SetMarkerVisibility(self, marker, visible):
+        self.SetMarkersVisibility([marker], visible)
+
+    def SetMarkersVisibility(self, markers, visible):
+        markers_with_actors = [
+            marker for marker in markers if marker.visualization.get("actor") is not None
+        ]
+        if visible:
+            self.ShowMarkers(markers_with_actors)
+        else:
+            self.HideMarkers(markers_with_actors)
 
     def DeleteMarkers(self, markers):
         for marker in markers:

@@ -48,6 +48,9 @@ class EEGElectrodeManager(metaclass=Singleton):
         size: float = 2.0,
         visible: bool = True,
         focus: bool = False,
+        matched_name: str | None = None,
+        distance_mm: float | None = None,
+        confidence: str | None = None,
     ) -> Marker:
         """Create, persist and return one EEG electrode marker."""
         electrode = Marker(
@@ -55,6 +58,9 @@ class EEGElectrodeManager(metaclass=Singleton):
             marker_type=MarkerType.EEG_ELECTRODE,
             size=size,
             visible=visible,
+            eeg_matched_name=matched_name,
+            eeg_distance_mm=distance_mm,
+            eeg_confidence=confidence,
         )
         electrode.position = self._validate_coordinate(position, "position")
         electrode.orientation = self._validate_coordinate(

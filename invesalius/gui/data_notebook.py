@@ -236,12 +236,7 @@ class EEGElectrodePage(wx.Panel):
         super().__init__(parent)
         self.eeg_electrodes = eeg_electrodes
 
-        self.listctrl = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
-        self.listctrl.InsertColumn(0, _("Electrode"), width=80)
-        self.listctrl.InsertColumn(1, "X", width=50)
-        self.listctrl.InsertColumn(2, "Y", width=50)
-        self.listctrl.InsertColumn(3, "Z", width=50)
-        self.listctrl.InsertColumn(4, _("Visible"), width=55)
+        self.listctrl = EEGElectrodeListCtrl(self, eeg_electrodes)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.listctrl, 1, wx.EXPAND | wx.ALL, 2)
@@ -249,12 +244,77 @@ class EEGElectrodePage(wx.Panel):
         self.RefreshElectrodes()
 
     def RefreshElectrodes(self):
-        self.listctrl.DeleteAllItems()
+        self.listctrl.RefreshElectrodes()
+
+
+class EEGElectrodeListCtrl(wx.ListCtrl):
+    """EEG electrode table with a clickable visibility column."""
+
+    def __init__(self, parent, eeg_electrodes):
+        super().__init__(parent, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN)
+        self.eeg_electrodes = eeg_electrodes
+        self.marker_uuids = []
+
+        self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER, width=25)
+        self.InsertColumn(1, _("ID"), width=50)
+        self.InsertColumn(2, _("Matched Name"), width=100)
+        self.InsertColumn(3, _("Distance (mm)"), width=100)
+        self.InsertColumn(4, _("Confidence"), width=100)
+
+        self.visibility_images = wx.ImageList(16, 16)
+        for icon_name in ("object_invisible.png", "object_visible.png"):
+            image = wx.Image(os.path.join(inv_paths.ICON_DIR, icon_name))
+            self.visibility_images.Add(wx.Bitmap(image.Scale(16, 16)))
+        self.SetImageList(self.visibility_images, wx.IMAGE_LIST_SMALL)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+
+    def OnLeftDown(self, evt):
+        row, _flags = self.HitTest(evt.GetPosition())
+        if row != wx.NOT_FOUND and evt.GetPosition()[0] <= self.GetColumnWidth(0):
+            electrode = self._GetElectrode(row)
+            if electrode is not None:
+                self.eeg_electrodes.set_visible(electrode.marker_uuid, not electrode.visible)
+            return
+        evt.Skip()
+
+    def RefreshElectrodes(self):
+        self.DeleteAllItems()
+        self.marker_uuids = []
+
         for electrode in self.eeg_electrodes.electrodes:
-            row = self.listctrl.InsertItem(self.listctrl.GetItemCount(), electrode.label)
-            for column, coordinate in enumerate(electrode.position, start=1):
-                self.listctrl.SetItem(row, column, f"{coordinate:.1f}")
-            self.listctrl.SetItem(row, 4, _("Yes") if electrode.visible else _("No"))
+            self.marker_uuids.append(electrode.marker_uuid)
+            row = self.InsertItem(self.GetItemCount(), "", int(electrode.visible))
+            self.SetItem(row, 1, electrode.label)
+
+            matched_name = getattr(electrode, "eeg_matched_name", None)
+            distance_mm = getattr(electrode, "eeg_distance_mm", None)
+            confidence = getattr(electrode, "eeg_confidence", None)
+            confidence_value = getattr(confidence, "value", confidence)
+            confidence_key = str(confidence_value).lower() if confidence_value else ""
+
+            self.SetItem(row, 2, matched_name or "-")
+            self.SetItem(row, 3, f"{distance_mm:.2f}" if distance_mm is not None else "-")
+            self.SetItem(row, 4, confidence_key.capitalize() if confidence_key else "-")
+
+            if confidence_key == "high":
+                self.SetItemTextColour(row, wx.Colour(0, 150, 0))
+            elif confidence_key == "medium":
+                self.SetItemTextColour(row, wx.Colour(204, 204, 0))
+            elif confidence_key == "low":
+                self.SetItemTextColour(row, wx.Colour(200, 0, 0))
+
+    def _GetElectrode(self, row):
+        if not 0 <= row < len(self.marker_uuids):
+            return None
+        marker_uuid = self.marker_uuids[row]
+        return next(
+            (
+                electrode
+                for electrode in self.eeg_electrodes.electrodes
+                if electrode.marker_uuid == marker_uuid
+            ),
+            None,
+        )
 
 
 class MeasurePage(wx.Panel):
