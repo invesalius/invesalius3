@@ -2882,8 +2882,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         btn_create = wx.Button(self, -1, label=_("Create marker"), size=wx.Size(135, 23))
         btn_create.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
-        self.btn_create = btn_create
-        self._UpdateCreateMarkerButtonState()
 
         sizer_create = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
         sizer_create.AddMany([(spin_session, 1), (select_colour, 0), (btn_create, 0)])
@@ -3094,7 +3092,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self.OnDeleteAllMarkers, "Delete all markers")
         Publisher.subscribe(self.OnCreateMarker, "Create marker")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
-        Publisher.subscribe(self.OnEEGRegistrationModeChanged, "EEG registration mode changed")
         Publisher.subscribe(self.UpdateSeedCoordinates, "Update tracts")
         Publisher.subscribe(self.OnChangeCurrentSession, "Current session changed")
         Publisher.subscribe(self.UpdateMarker, "Update marker")
@@ -3293,23 +3290,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.current_orientation = None, None, None
         else:
             self.nav_status = True
-        self._UpdateCreateMarkerButtonState()
-
-    def OnEEGRegistrationModeChanged(self, active):
-        self._UpdateCreateMarkerButtonState()
-
-    def _UpdateCreateMarkerButtonState(self):
-        if not hasattr(self, "btn_create"):
-            return
-
-        eeg_without_navigation = self.eeg_electrodes.registration_active and not self.nav_status
-        self.btn_create.Enable(not eeg_without_navigation)
-        tooltip = (
-            _("Start navigation to register EEG electrodes")
-            if eeg_without_navigation
-            else _("Create marker")
-        )
-        self.btn_create.SetToolTip(tooltip)
 
     def UpdateSeedCoordinates(
         self, root=None, affine_vtk=None, coord_offset=(0, 0, 0), coord_offset_w=(0, 0, 0)
