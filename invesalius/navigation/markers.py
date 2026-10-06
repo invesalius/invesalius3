@@ -212,6 +212,31 @@ class MarkersControl(metaclass=Singleton):
 
         return matching_markers if matching_markers else None
 
+    def FindByUUID(self, marker_uuid: str) -> Union[None, Marker]:
+        """Return the marker with the given UUID, or None when it does not exist."""
+        return next((marker for marker in self.list if marker.marker_uuid == marker_uuid), None)
+
+    def GetMarkersByType(self, marker_type: MarkerType) -> List[Marker]:
+        """Return all markers of a given type."""
+        return [marker for marker in self.list if marker.marker_type == marker_type]
+
+    def SetVisibility(self, marker_id: int, visible: bool) -> None:
+        """Change and persist the visibility of one marker."""
+        marker = self.list[marker_id]
+        marker.visible = bool(visible)
+        Publisher.sendMessage("Set marker visibility", marker=marker, visible=marker.visible)
+        self.SaveState()
+
+    def SetMultipleVisibility(self, marker_ids: List[int], visible: bool) -> None:
+        """Change and persist the visibility of multiple markers."""
+        markers = [self.list[marker_id] for marker_id in marker_ids]
+        visible = bool(visible)
+        for marker in markers:
+            marker.visible = visible
+
+        Publisher.sendMessage("Set markers visibility", markers=markers, visible=visible)
+        self.SaveState()
+
     def FindPointOfInterest(self) -> Union[None, Marker]:
         for marker in self.list:
             if marker.is_point_of_interest:

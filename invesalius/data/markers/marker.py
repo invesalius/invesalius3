@@ -18,6 +18,7 @@ class MarkerType(Enum):
     COIL_POSE: a point and orientation (= pose) of the coil; otherwise similar to COIL_TARGET,
         but created to store the coil pose after a stimulation pulse is delivered. Visualized
         differently from COIL_TARGET.
+    EEG_ELECTRODE: a digitized EEG electrode position.
     """
 
     FIDUCIAL = 0
@@ -25,6 +26,7 @@ class MarkerType(Enum):
     BRAIN_TARGET = 2
     COIL_TARGET = 3
     COIL_POSE = 4
+    EEG_ELECTRODE = 5
 
     @property
     def human_readable(self):
@@ -36,6 +38,7 @@ class MarkerType(Enum):
             MarkerType.BRAIN_TARGET: "Brain Target",
             MarkerType.COIL_TARGET: "Coil Target",
             MarkerType.COIL_POSE: "Coil Pose",
+            MarkerType.EEG_ELECTRODE: "EEG Electrode",
         }
         # Return the human-readable name for the enum member.
         return names[self]
@@ -46,7 +49,7 @@ class Marker:
     """Class for storing markers. @dataclass decorator simplifies
     setting default values, serialization, etc."""
 
-    version: int = 5
+    version: int = 6
     marker_id: int = 0
     x: float = 0
     y: float = 0
@@ -72,6 +75,7 @@ class Marker:
     beta_cortex: float = dataclasses.field(default=None)
     gamma_cortex: float = dataclasses.field(default=None)
     marker_type: MarkerType = MarkerType.LANDMARK
+    visible: bool = True
     z_rotation: float = 0.0
     z_offset: float = 0.0
     visualization: dict = dataclasses.field(default_factory=dict)
@@ -242,6 +246,7 @@ class Marker:
             "label": self.label,
             "is_target": self.is_target,
             "marker_type": self.marker_type.value,
+            "visible": self.visible,
             "session_id": self.session_id,
             "mep_value": self.mep_value,
             "marker_uuid": self.marker_uuid,
@@ -264,6 +269,7 @@ class Marker:
             "is_target": self.is_target,
             "is_point_of_interest": self.is_point_of_interest,
             "marker_type": self.marker_type.value,
+            "visible": self.visible,
             "seed": self.seed,
             "session_id": self.session_id,
             "cortex_position_orientation": self.cortex_position_orientation,
@@ -321,6 +327,7 @@ class Marker:
         brain_target_list = d.get("brain_target_list", [])
         marker_uuid = d.get("marker_uuid", "")
         timestamp = d.get("timestamp", "")
+        visible = d.get("visible", True)
 
         self.size = d["size"]
         self.label = d["label"]
@@ -333,6 +340,7 @@ class Marker:
         self.seed = seed
         self.is_point_of_interest = is_point_of_interest
         self.marker_type = MarkerType(marker_type)
+        self.visible = visible
         self.cortex_position_orientation = cortex_position_orientation
         self.z_offset = z_offset
         self.z_rotation = z_rotation
