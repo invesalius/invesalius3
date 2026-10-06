@@ -1255,6 +1255,22 @@ class GeodesicMeasure(LinearMeasure):
 
         self._path_length = total_length
 
+        # Sync the computed length back to the Measurement object stored in
+        # project.measurement_dict so that any consumer reading m.value
+        # (e.g. the Report Tool) gets the real geodesic distance instead of 0.
+        import invesalius.project as prj
+
+        project = prj.Project()
+        for _idx, m_obj in project.measurement_dict.items():
+            if (
+                m_obj.type == const.CURVED_LINEAR
+                and len(m_obj.points) >= 2
+                and tuple(m_obj.points[0]) == tuple(self.points[0])
+                and tuple(m_obj.points[-1]) == tuple(self.points[-1])
+            ):
+                m_obj.value = total_length
+                break
+
         # Render as a solid 3D tube for clear visibility on the surface
         from vtkmodules.vtkFiltersCore import vtkTubeFilter
 
