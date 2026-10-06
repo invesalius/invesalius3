@@ -787,7 +787,10 @@ class Viewer(wx.Panel):
         point.SetRadius(radius)
 
         mapper = vtkPolyDataMapper()
-        mapper.SetInput(point.GetOutput())
+        # SetInput() was removed in VTK 6. Connecting the port rather than
+        # passing the data object also keeps the sphere source upstream of the
+        # mapper, so the mapper re-executes if the source is ever changed.
+        mapper.SetInputConnection(point.GetOutputPort())
 
         p = vtkProperty()
         p.SetColor(colour)
