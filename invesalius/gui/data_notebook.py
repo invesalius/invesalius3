@@ -236,10 +236,20 @@ class EEGElectrodePage(wx.Panel):
         super().__init__(parent)
         self.eeg_electrodes = eeg_electrodes
 
+        self.visible_bitmap = self._LoadBitmap("object_visible.png")
+        self.invisible_bitmap = self._LoadBitmap("object_invisible.png")
+        self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 24))
+        self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
+
         self.listctrl = EEGElectrodeListCtrl(self, eeg_electrodes)
-        self.buttonctrl = EEGElectrodeButtonControlPanel(self, eeg_electrodes)
+        self.buttonctrl = EEGElectrodeButtonControlPanel(self, eeg_electrodes, self.listctrl)
+
+        header_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        header_sizer.AddStretchSpacer()
+        header_sizer.Add(self.visibility_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(header_sizer, 0, wx.EXPAND | wx.TOP, 2)
         sizer.Add(self.listctrl, 1, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
         self.SetSizer(sizer)
@@ -247,44 +257,8 @@ class EEGElectrodePage(wx.Panel):
 
     def RefreshElectrodes(self):
         self.listctrl.RefreshElectrodes()
-        self.buttonctrl.UpdateVisibilityButton()
-
-
-class EEGElectrodeButtonControlPanel(wx.Panel):
-    """Bulk controls that apply only to EEG electrodes."""
-
-    def __init__(self, parent, eeg_electrodes):
-        super().__init__(parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
-        self.eeg_electrodes = eeg_electrodes
-
-        self.visible_bitmap = self._LoadBitmap("object_visible.png")
-        self.invisible_bitmap = self._LoadBitmap("object_invisible.png")
-        remove_bitmap = wx.Bitmap(
-            os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
-        )
-
-        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
-        self.visibility_button = pbtn.PlateButton(
-            self,
-            wx.ID_ANY,
-            "",
-            self.visible_bitmap,
-            style=button_style,
-            size=wx.Size(24, 20),
-        )
-        self.remove_button = pbtn.PlateButton(
-            self, wx.ID_ANY, "", remove_bitmap, style=button_style, size=wx.Size(24, 20)
-        )
-        self.remove_button.SetToolTip(_("Delete all EEG electrodes"))
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.visibility_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
-        sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND)
-        self.SetSizer(sizer)
-        self.Fit()
-
-        self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
-        self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteAll)
+        self.UpdateVisibilityButton()
+        self.buttonctrl.UpdateButtons()
 
     @staticmethod
     def _LoadBitmap(icon_name):
@@ -302,13 +276,61 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         )
         self.visibility_button.SetToolTip(tooltip)
         self.visibility_button.Enable(bool(electrodes))
-        self.remove_button.Enable(bool(electrodes))
 
     def OnToggleVisibility(self, _evt):
         if any(electrode.visible for electrode in self.eeg_electrodes.electrodes):
             self.eeg_electrodes.hide_all()
         else:
             self.eeg_electrodes.show_all()
+
+
+class EEGElectrodeButtonControlPanel(wx.Panel):
+    """Removal controls that apply only to EEG electrodes."""
+
+    def __init__(self, parent, eeg_electrodes, listctrl):
+        super().__init__(parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
+        self.eeg_electrodes = eeg_electrodes
+        self.listctrl = listctrl
+
+        remove_bitmap = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
+        )
+
+        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        self.remove_button = pbtn.PlateButton(
+            self, wx.ID_ANY, "", remove_bitmap, style=button_style, size=wx.Size(24, 20)
+        )
+        self.remove_button.SetToolTip(_("Delete selected EEG electrode"))
+        self.remove_all_button = wx.Button(self, wx.ID_ANY, _("Delete all"), size=wx.Size(75, 20))
+        self.remove_all_button.SetToolTip(_("Delete all EEG electrodes"))
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
+        sizer.Add(self.remove_all_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
+        self.SetSizer(sizer)
+        self.Fit()
+
+        self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
+        self.remove_all_button.Bind(wx.EVT_BUTTON, self.OnDeleteAll)
+        self.listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
+        self.listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnSelectionChanged)
+
+    def UpdateButtons(self):
+        self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
+        self.remove_all_button.Enable(bool(self.eeg_electrodes.electrodes))
+
+    def OnSelectionChanged(self, evt):
+        self.UpdateButtons()
+        evt.Skip()
+
+    def OnDeleteSelected(self, _evt):
+        electrode = self.listctrl.GetSelectedElectrode()
+        if electrode is None:
+            return
+
+        result = dlg.ShowConfirmationDialog(msg=_("Delete selected EEG electrode?"))
+        if result == wx.ID_OK:
+            self.eeg_electrodes.remove(electrode.marker_uuid)
 
     def OnDeleteAll(self, _evt):
         result = dlg.ShowConfirmationDialog(msg=_("Delete all EEG electrodes? Cannot be undone."))
@@ -384,6 +406,9 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
             ),
             None,
         )
+
+    def GetSelectedElectrode(self):
+        return self._GetElectrode(self.GetFirstSelected())
 
 
 class MeasurePage(wx.Panel):
