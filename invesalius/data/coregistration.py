@@ -432,20 +432,28 @@ class CoordinateCorregistrate(threading.Thread):
                 m_imgs = {"probe": m_img_probe}
 
                 main_coil = self.navigation.main_coil
-                if main_coil not in obj_datas:
-                    main_coil = next(iter(obj_datas))
-                for coil_name, obj_data in obj_datas.items():
-                    if coil_name != main_coil:
-                        obj_id = obj_data[0]
-                        if obj_id < len(marker_visibilities) and not marker_visibilities[obj_id]:
-                            continue
-                    coord_coil, m_img_coil = self._corregistrate_object_cached(
-                        m_change, obj_data, coord_raw, icp
-                    )
-                    coords[coil_name] = coord_coil
-                    m_imgs[coil_name] = m_img_coil
-                coord = coords[main_coil]
-                m_img = m_imgs[main_coil]
+                if obj_datas:
+                    if main_coil not in obj_datas:
+                        main_coil = next(iter(obj_datas))
+                    for coil_name, obj_data in obj_datas.items():
+                        if coil_name != main_coil:
+                            obj_id = obj_data[0]
+                            if (
+                                obj_id < len(marker_visibilities)
+                                and not marker_visibilities[obj_id]
+                            ):
+                                continue
+                        coord_coil, m_img_coil = self._corregistrate_object_cached(
+                            m_change, obj_data, coord_raw, icp
+                        )
+                        coords[coil_name] = coord_coil
+                        m_imgs[coil_name] = m_img_coil
+                    coord = coords[main_coil]
+                    m_img = m_imgs[main_coil]
+                else:
+                    main_coil = "probe"
+                    coord = coord_probe
+                    m_img = m_img_probe
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
                 #      debug tracker is in use. However, the trackers (including the debug trackers) operate in

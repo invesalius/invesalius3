@@ -1746,6 +1746,11 @@ class StimulatorPage(wx.Panel):
         btn_edit.SetToolTip("Open preferences menu")
         btn_edit.Bind(wx.EVT_BUTTON, self.OnEditPreferences)
 
+        self.cb_probe_only = wx.CheckBox(self, -1, _("EEG / probe only (no coil)"))
+        self.cb_probe_only.SetToolTip(_("Allow EEG navigation using only the probe"))
+        self.cb_probe_only.SetValue(self.navigation.probe_only)
+        self.cb_probe_only.Bind(wx.EVT_CHECKBOX, self.OnProbeOnly)
+
         back_button = wx.Button(self, label="Back")
         back_button.Bind(wx.EVT_BUTTON, self.OnBack)
 
@@ -1776,6 +1781,7 @@ class StimulatorPage(wx.Panel):
             [
                 (border, 0, wx.ALIGN_CENTER | wx.TOP, 10),
                 stretch_spacer,
+                (self.cb_probe_only, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10),
                 (bottom_sizer, 0, wx.EXPAND | wx.BOTTOM, 10),
             ]
         )
@@ -1793,6 +1799,12 @@ class StimulatorPage(wx.Panel):
         Publisher.sendMessage("Enable start navigation button", enabled=False)
 
     def CoilSelectionDone(self, done):
+        if self.navigation.probe_only:
+            self.lbl.SetLabel(_("Ready for navigation (probe-only mode)"))
+            self.next_button.Enable(True)
+            self.lbl.Show()
+            return
+
         if done:
             self.lbl.SetLabel(
                 f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!"
@@ -1802,6 +1814,12 @@ class StimulatorPage(wx.Panel):
 
         self.next_button.Enable(done)
         self.lbl.Show()
+
+    def OnProbeOnly(self, evt):
+        enabled = self.cb_probe_only.GetValue()
+        self.navigation.SetProbeOnly(enabled)
+        self.CoilSelectionDone(self.navigation.CoilSelectionDone())
+        Publisher.sendMessage("Probe-only navigation mode changed", enabled=enabled)
 
     def OnEditPreferences(self, evt):
         Publisher.sendMessage("Open preferences menu", page=3)
@@ -2419,6 +2437,9 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
 
         Publisher.subscribe(self.OnCoilSelectionDone, "Coil selection done")
+        Publisher.subscribe(
+            self.OnProbeOnlyNavigationModeChanged, "Probe-only navigation mode changed"
+        )
 
         Publisher.subscribe(self.PressShowCoilButton, "Press show-coil button")
         Publisher.subscribe(self.EnableShowCoilButton, "Enable show-coil button")
@@ -2560,8 +2581,26 @@ class ControlPanel(wx.Panel):
             self.UpdateToggleButton(self.checkbox_serial_port)
 
     def OnCoilSelectionDone(self, done):
+        if self.navigation.probe_only:
+            return
+
         self.PressTrackObjectButton(done)
         self.PressShowCoilButton(pressed=done)
+
+    def OnProbeOnlyNavigationModeChanged(self, enabled):
+        if enabled:
+            self.PressTrackObjectButton(False)
+            self.PressShowCoilButton(False)
+            self.EnableToggleButton(self.track_object_button, False)
+            self.EnableToggleButton(self.show_coil_button, False)
+            self.PressShowProbeButton(True)
+            return
+
+        coils_ready = len(self.navigation.coil_registrations) == self.navigation.n_coils
+        self.PressTrackObjectButton(coils_ready)
+        self.PressShowCoilButton(coils_ready)
+        self.EnableToggleButton(self.track_object_button, coils_ready)
+        self.EnableToggleButton(self.show_coil_button, coils_ready)
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):

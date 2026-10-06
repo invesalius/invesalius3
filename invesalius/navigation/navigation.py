@@ -199,7 +199,7 @@ class UpdateNavigationScene(threading.Thread):
                     position=[coord[0], -coord[1], coord[2]],
                 )
 
-                if coil_visible:
+                if coil_visible and main_coil in coords and main_coil in m_imgs:
                     Publisher.sendMessage("Update coil poses", m_imgs=m_imgs, coords=coords)
                     Publisher.sendMessage(
                         "Update coil pose",
@@ -255,10 +255,11 @@ class UpdateNavigationScene(threading.Thread):
                 continue
 
             probe_visible = marker_visibilities[0]
-            coil_visible = any(marker_visibilities[2:])  # is any coil visible?
-
             main_coil = self.navigation.main_coil
-            track_this = main_coil if self.navigation.track_coil else "probe"
+            coil_visible = (
+                any(marker_visibilities[2:]) and main_coil in coords and main_coil in m_imgs
+            )
+            track_this = main_coil if self.navigation.track_coil and coil_visible else "probe"
             # choose which object to track in slices and viewer_volume pointer
             coord = coords.get(track_this, None)
             if coord is None:
@@ -278,7 +279,7 @@ class UpdateNavigationScene(threading.Thread):
                             Publisher.sendMessage,
                             "Update tract seed based efield",
                             coord_tracts_queue=self.navigation.coord_tracts_queue,
-                            fallback_m_img=m_imgs[main_coil],
+                            fallback_m_img=m_imgs.get(main_coil, probe_m_img),
                             current_revision=self.navigation.e_field_revision,
                         )
                     bundle, affine_vtk, coord_offset, coord_offset_w = (
@@ -355,6 +356,7 @@ class Navigation(metaclass=Singleton):
         self.n_coils = 1
         self.coil_registrations = {}
         self.track_coil = False
+        self.probe_only = False
         self.main_coil = None  # Which coil to track with pointer
         self.m_change = None
         self.r_stylus = None
@@ -472,7 +474,12 @@ class Navigation(metaclass=Singleton):
                 self.r_stylus = np.array(state["r_stylus"])
 
     def CoilSelectionDone(self):
-        return len(self.coil_registrations) == self.n_coils
+        return self.probe_only or len(self.coil_registrations) == self.n_coils
+
+    def SetProbeOnly(self, enabled):
+        self.probe_only = bool(enabled)
+        if self.probe_only:
+            self.TrackObject(False)
 
     def SelectCoil(self, coil_name, coil_registration):
         if coil_registration is not None:  # Add the coil to selection
@@ -629,7 +636,8 @@ class Navigation(metaclass=Singleton):
             # Pre-compute obj_datas: data/matrices for each coil to be used in coregistration
             # data is accessed from dict by coil name
             obj_datas = {}
-            for coil_name in self.coil_registrations:
+            selected_coils = () if self.probe_only else self.coil_registrations
+            for coil_name in selected_coils:
                 if self.ref_mode_id:
                     coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
                 else:
