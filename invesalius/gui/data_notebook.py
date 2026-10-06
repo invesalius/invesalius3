@@ -292,11 +292,14 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             size=wx.Size(24, 20),
         )
         self.remove_all_button.SetToolTip(_("Delete all EEG electrodes"))
+        self.labels_button = wx.ToggleButton(self, wx.ID_ANY, _("Labels"), size=wx.Size(55, 20))
+        self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
         self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 20))
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
         sizer.Add(self.remove_all_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
+        sizer.Add(self.labels_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.AddStretchSpacer()
         sizer.Add(self.visibility_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
         self.SetSizer(sizer)
@@ -304,6 +307,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
 
         self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
         self.remove_all_button.Bind(wx.EVT_BUTTON, self.OnDeleteAll)
+        self.labels_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleLabels)
         self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
         self.listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
         self.listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnSelectionChanged)
@@ -311,6 +315,8 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
     def UpdateButtons(self):
         self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
         self.remove_all_button.Enable(bool(self.eeg_electrodes.electrodes))
+        self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
+        self._UpdateLabelsButtonTooltip()
         self.UpdateVisibilityButton()
 
     @staticmethod
@@ -335,6 +341,18 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             self.eeg_electrodes.hide_all()
         else:
             self.eeg_electrodes.show_all()
+
+    def OnToggleLabels(self, _evt):
+        self.eeg_electrodes.set_labels_visible(self.labels_button.GetValue())
+        self._UpdateLabelsButtonTooltip()
+
+    def _UpdateLabelsButtonTooltip(self):
+        tooltip = (
+            _("Hide EEG electrode labels")
+            if self.eeg_electrodes.labels_visible
+            else _("Show EEG electrode labels")
+        )
+        self.labels_button.SetToolTip(tooltip)
 
     def OnSelectionChanged(self, evt):
         self.UpdateButtons()

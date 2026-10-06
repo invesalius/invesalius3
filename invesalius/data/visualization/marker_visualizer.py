@@ -121,6 +121,7 @@ class MarkerVisualizer:
 
         self.is_navigating = False
         self.is_target_mode = False
+        self.eeg_labels_visible = True
 
         # The assembly for the current vector field, shown relative to the highlighted marker.
         self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
@@ -139,6 +140,10 @@ class MarkerVisualizer:
         Publisher.subscribe(self.ShowMarkers, "Show markers")
         Publisher.subscribe(self.SetMarkerVisibility, "Set marker visibility")
         Publisher.subscribe(self.SetMarkersVisibility, "Set markers visibility")
+        Publisher.subscribe(
+            self.SetEEGLabelsVisibility,
+            "Set EEG electrode labels visibility",
+        )
         Publisher.subscribe(self.DeleteMarkers, "Delete markers")
         Publisher.subscribe(self.DeleteMarker, "Delete marker")
         Publisher.subscribe(self.SetCameraToFocusOnMarker, "Set camera to focus on marker")
@@ -265,7 +270,7 @@ class MarkerVisualizer:
         actor.SetVisibility(marker.visible)
         self.renderer.AddActor(actor)
         if marker_type == MarkerType.EEG_ELECTRODE:
-            label_actor.SetVisibility(marker.visible)
+            label_actor.SetVisibility(marker.visible and self.eeg_labels_visible)
             self.renderer.AddActor(label_actor)
 
         if render:
@@ -307,8 +312,10 @@ class MarkerVisualizer:
             "hidden": old_visualization["hidden"],
         }
         if marker.marker_type == MarkerType.EEG_ELECTRODE:
-            for new_visual_actor in self._GetVisualizationActors(marker):
-                new_visual_actor.SetVisibility(not old_visualization["hidden"])
+            new_actor.SetVisibility(not old_visualization["hidden"])
+            new_label_actor.SetVisibility(
+                not old_visualization["hidden"] and self.eeg_labels_visible
+            )
 
         for old_actor in self._GetVisualizationActors(marker, visualization=old_visualization):
             self.renderer.RemoveActor(old_actor)
@@ -349,11 +356,27 @@ class MarkerVisualizer:
         for marker in markers:
             visualization = marker.visualization
 
-            for actor in self._GetVisualizationActors(marker):
+            actor = visualization.get("actor")
+            if actor is not None:
                 actor.SetVisibility(1)
+            label_actor = visualization.get("label_actor")
+            if label_actor is not None:
+                label_actor.SetVisibility(self.eeg_labels_visible)
 
             # Mark the marker as not hidden.
             visualization["hidden"] = False
+
+        if not self.is_navigating:
+            self.interactor.Render()
+
+    def SetEEGLabelsVisibility(self, markers, visible):
+        self.eeg_labels_visible = bool(visible)
+        for marker in markers:
+            label_actor = marker.visualization.get("label_actor")
+            if label_actor is not None:
+                label_actor.SetVisibility(
+                    self.eeg_labels_visible and not marker.visualization["hidden"]
+                )
 
         if not self.is_navigating:
             self.interactor.Render()

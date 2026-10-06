@@ -43,6 +43,7 @@ class EEGElectrodeManager(metaclass=Singleton):
         self.markers = markers if markers is not None else MarkersControl()
         self.surface_geometry = SurfaceGeometry()
         self.registration_active = False
+        self.labels_visible = True
 
     def set_registration_active(self, active: bool) -> None:
         """Enable or disable creation of EEG electrode markers."""
@@ -52,6 +53,15 @@ class EEGElectrodeManager(metaclass=Singleton):
     def prepare_scalp_surface(self) -> bool:
         """Create the shared smoothed scalp data when it is not cached yet."""
         return self.surface_geometry.GetSmoothedScalpSurface() is not None
+
+    def set_labels_visible(self, visible: bool) -> None:
+        """Show or hide the labels of every EEG electrode."""
+        self.labels_visible = bool(visible)
+        Publisher.sendMessage(
+            "Set EEG electrode labels visibility",
+            markers=self.electrodes,
+            visible=self.labels_visible,
+        )
 
     @property
     def electrodes(self) -> list[Marker]:
