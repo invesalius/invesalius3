@@ -1879,7 +1879,7 @@ class NavigationPanel(wx.Panel):
         self.image.ResetImageFiducials()
 
         Publisher.sendMessage("Disconnect tracker")
-        Publisher.sendMessage("Delete all markers")
+        self.nav_hub.markers.Clear()
         Publisher.sendMessage("Update marker offset state", create=False)
         Publisher.sendMessage("Remove tracts")
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
@@ -4456,7 +4456,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             result = dlg.ShowConfirmationDialog(msg=_("Delete all markers? Cannot be undone."))
             if result != wx.ID_OK:
                 return
-        self.markers.Clear()
+        marker_ids = [
+            marker.marker_id
+            for marker in self.markers.list
+            if marker.marker_type != MarkerType.EEG_ELECTRODE
+        ]
+        if marker_ids:
+            self.markers.DeleteMultiple(marker_ids)
         self.itemDataMap.clear()
         self.__restore_default_marker_view()
 
@@ -4774,11 +4780,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.GetMarkersFromFile(filename, overwrite_checkbox.GetValue())
 
     def OnShowHideAllMarkers(self, evt, ctrl):
+        markers = [
+            marker for marker in self.markers.list if marker.marker_type != MarkerType.EEG_ELECTRODE
+        ]
         if ctrl.GetValue():
-            Publisher.sendMessage("Hide markers", markers=self.markers.list)
+            Publisher.sendMessage("Hide markers", markers=markers)
             ctrl.SetLabel("Show all")
         else:
-            Publisher.sendMessage("Show markers", markers=self.markers.list)
+            Publisher.sendMessage("Show markers", markers=markers)
             ctrl.SetLabel("Hide all")
 
     def OnSaveMarkers(self, evt):
