@@ -62,6 +62,7 @@ from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.gui import deep_learning_seg_dialog
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
 from invesalius.i18n import tr as _
+from invesalius.navigation.eeg_electrodes import MAX_SCALP_PROJECTION_DISTANCE_MM
 from invesalius.navigation.navigation import NavigationHub
 from invesalius.navigation.robot import RobotObjective
 from invesalius.pubsub import pub as Publisher
@@ -4606,6 +4607,37 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     wx.OK | wx.ICON_WARNING,
                 )
             return
+
+        if is_eeg_marker:
+            capture_position = position if position is not None else self.current_position
+            try:
+                projection = self.eeg_electrodes.project_to_scalp(capture_position)
+            except RuntimeError as error:
+                wx.MessageBox(str(error), _("InVesalius 3"), wx.OK | wx.ICON_ERROR)
+                return
+
+            if projection.distance_mm > MAX_SCALP_PROJECTION_DISTANCE_MM:
+                message = (
+                    _(
+                        "The projection to the scalp surface moved the electrode by %.1f mm "
+                        "(above the 3 mm limit). This may indicate an inaccurate capture.\n\n"
+                        "Do you want to keep this electrode anyway?"
+                    )
+                    % projection.distance_mm
+                )
+                dialog = wx.MessageDialog(
+                    self,
+                    message,
+                    _("Displacement Warning"),
+                    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
+                )
+                keep_electrode = dialog.ShowModal() == wx.ID_YES
+                dialog.Destroy()
+                if not keep_electrode:
+                    return
+
+            position = projection.position
+            orientation = projection.orientation
 
         if label is None:
             label = (

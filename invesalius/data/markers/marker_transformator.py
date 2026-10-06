@@ -2,7 +2,6 @@ import numpy as np
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
-import invesalius.data.transformations as tr
 from invesalius.data.markers.marker import MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.pubsub import pub as Publisher
@@ -204,7 +203,7 @@ class MarkerTransformator:
         marker_position[1] = -marker_position[1]
 
         closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
-            "scalp", marker_position
+            "scalp", marker_position, smooth_radius=15.0
         )
 
         if opposite_side:
@@ -214,43 +213,17 @@ class MarkerTransformator:
 
             # Re-compute the closest point and normal, but now for the new position.
             closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
-                "scalp", new_position
+                "scalp", new_position, smooth_radius=15.0
             )
 
-        # The reference direction vector that we want to align the normal to.
-        #
-        # This was figured out by testing; from the vectors (1, 0, 0), (0, 1, 0), and (0, 0, 1), the one was selected that
-        # made the coil point towards the brain.
-        ref_vector = np.array([0, 0, 1])
-
-        # Normal at the closest point.
-        normal_vector = np.array(closest_normal)
-
-        # Calculate the rotation axis (cross product) and angle (dot product).
-        rotation_axis = np.cross(ref_vector, normal_vector)
-        rotation_angle = np.arccos(
-            np.dot(ref_vector, normal_vector)
-            / (np.linalg.norm(ref_vector) * np.linalg.norm(normal_vector))
-        )
-
-        # Normalize the rotation axis.
-        rotation_axis_normalized = rotation_axis / np.linalg.norm(rotation_axis)
-
-        # Create a rotation matrix from the axis and angle.
-        rotation_matrix = tr.rotation_matrix(rotation_angle, rotation_axis_normalized)
-
-        # Convert the rotation matrix to Euler angles.
-        euler_angles = tr.euler_from_matrix(rotation_matrix, "sxyz")
-
-        # Convert the Euler angles to degrees.
-        euler_angles_deg = np.degrees(euler_angles)
+        orientation = self.surface_geometry.OrientationFromNormal(closest_normal)
 
         # XXX: Invert back to the get to 'marker space'.
         closest_point = list(closest_point)
         closest_point[1] = -closest_point[1]
 
         marker.position = closest_point
-        marker.orientation = euler_angles_deg
+        marker.orientation = orientation
 
         # XXX: This rotation is done apparently to account for the fact that in coil coordinate
         #   system, y-axis is along the left-right axis of the coil, but in the world coordinates,

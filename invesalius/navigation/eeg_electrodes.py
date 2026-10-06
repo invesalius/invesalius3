@@ -8,17 +8,29 @@
 
 """Domain operations for EEG electrode markers.
 
-This module intentionally has no GUI or VTK dependencies. The navigation and
-data panels can consume the marker events emitted by ``MarkersControl`` without
-owning the electrode state.
+The navigation and data panels consume the marker events emitted by
+``MarkersControl`` without owning electrode or scalp-projection state.
 """
 
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
+from math import dist
 
 from invesalius.data.markers.marker import Marker, MarkerType
+from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
+
+MAX_SCALP_PROJECTION_DISTANCE_MM = 3.0
+
+
+@dataclass(frozen=True)
+class ScalpProjection:
+    position: list[float]
+    orientation: list[float]
+    normal: tuple[float, float, float]
+    distance_mm: float
 
 
 class EEGElectrodeManager(metaclass=Singleton):
@@ -26,6 +38,7 @@ class EEGElectrodeManager(metaclass=Singleton):
 
     def __init__(self, markers: MarkersControl | None = None) -> None:
         self.markers = markers if markers is not None else MarkersControl()
+        self.surface_geometry = SurfaceGeometry()
         self.registration_active = False
 
     def set_registration_active(self, active: bool) -> None:
@@ -76,6 +89,26 @@ class EEGElectrodeManager(metaclass=Singleton):
     ) -> list[Marker]:
         """Create EEG electrodes for each position."""
         return [self.create(position, visible=visible) for position in positions]
+
+    def project_to_scalp(self, position: Sequence[float]) -> ScalpProjection:
+        """Project a tracker position onto the shared smoothed scalp surface."""
+        original_position = self._validate_coordinate(position, "position")
+        viewer_position = original_position.copy()
+        viewer_position[1] *= -1
+
+        closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
+            "scalp", viewer_position, smooth_radius=15.0
+        )
+        projected_position = list(closest_point)
+        projected_position[1] *= -1
+        orientation = list(self.surface_geometry.OrientationFromNormal(closest_normal))
+
+        return ScalpProjection(
+            position=projected_position,
+            orientation=orientation,
+            normal=closest_normal,
+            distance_mm=dist(original_position, projected_position),
+        )
 
     def remove(self, marker_uuid: str) -> bool:
         """Remove one EEG electrode identified by UUID."""

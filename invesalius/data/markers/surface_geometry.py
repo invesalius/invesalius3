@@ -1,6 +1,8 @@
+import numpy as np
 import vtk
 import wx
 
+import invesalius.data.transformations as tr
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
@@ -25,10 +27,14 @@ class SurfaceGeometry(metaclass=Singleton):
         normals = self.GetSurfaceNormals(actor)
         highest_z = self.CalculateHighestZ(actor)
         polydata = actor.GetMapper().GetInput()
+        point_locator = vtk.vtkPointLocator()
+        point_locator.SetDataSet(polydata)
+        point_locator.BuildLocator()
         return {
             "actor": actor,
             "polydata": polydata,
             "normals": normals,
+            "point_locator": point_locator,
             "highest_z": highest_z,
         }
 
@@ -284,16 +290,19 @@ class SurfaceGeometry(metaclass=Singleton):
 
         return highest_surface["smoothed"]
 
-    def GetClosestPointOnSurface(self, surface_name, point):
+    def GetClosestPointOnSurface(self, surface_name, point, smooth_radius=0.0):
+        """Return the closest point and local normal on the shared smoothed scalp.
+
+        ``smooth_radius`` averages nearby point normals to provide stable orientation
+        while moving targets or creating grids on locally irregular meshes.
+        """
         surface = self.GetSmoothedScalpSurface()
+        if surface is None:
+            raise RuntimeError(_("Create a 3D scalp surface before projecting onto it."))
 
         polydata = surface["polydata"]
         normals = surface["normals"]
-
-        # Create a cell locator using VTK. This will allow us to find the closest point on the surface to the given point.
-        point_locator = vtk.vtkPointLocator()
-        point_locator.SetDataSet(polydata)
-        point_locator.BuildLocator()
+        point_locator = surface["point_locator"]
         closest_point_id = point_locator.FindClosestPoint(point)
 
         # Retrieve the coordinates of the closest point using the point ID.
@@ -301,6 +310,46 @@ class SurfaceGeometry(metaclass=Singleton):
 
         # Extract the normal at the closest point
         normal_data = normals.GetPointData().GetNormals()
-        closest_normal = normal_data.GetTuple(closest_point_id)
+        closest_normal = np.asarray(normal_data.GetTuple(closest_point_id), dtype=float)
 
-        return closest_point, closest_normal
+        if smooth_radius > 0:
+            nearby_ids = vtk.vtkIdList()
+            point_locator.FindPointsWithinRadius(smooth_radius, closest_point, nearby_ids)
+            if nearby_ids.GetNumberOfIds() > 0:
+                closest_normal = np.mean(
+                    [
+                        normal_data.GetTuple(nearby_ids.GetId(index))
+                        for index in range(nearby_ids.GetNumberOfIds())
+                    ],
+                    axis=0,
+                )
+
+        normal_length = np.linalg.norm(closest_normal)
+        if normal_length > 0:
+            closest_normal /= normal_length
+
+        return closest_point, tuple(closest_normal)
+
+    @staticmethod
+    def OrientationFromNormal(normal):
+        """Return Euler angles that align the local +Z axis with a surface normal."""
+        reference = np.array([0.0, 0.0, 1.0])
+        normal = np.asarray(normal, dtype=float)
+        normal_length = np.linalg.norm(normal)
+        if normal_length == 0:
+            return np.zeros(3)
+
+        normal /= normal_length
+        rotation_axis = np.cross(reference, normal)
+        axis_length = np.linalg.norm(rotation_axis)
+        dot_product = np.clip(np.dot(reference, normal), -1.0, 1.0)
+
+        if axis_length < 1e-10:
+            if dot_product >= 0:
+                return np.zeros(3)
+            rotation_axis = np.array([1.0, 0.0, 0.0])
+        else:
+            rotation_axis /= axis_length
+
+        rotation_matrix = tr.rotation_matrix(np.arccos(dot_product), rotation_axis)
+        return np.degrees(tr.euler_from_matrix(rotation_matrix, "sxyz"))
