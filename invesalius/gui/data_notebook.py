@@ -34,7 +34,9 @@ import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius import inv_paths
+from invesalius.data.markers.marker import MarkerType
 from invesalius.i18n import tr as _
+from invesalius.navigation.eeg_electrodes import EEGElectrodeManager
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
@@ -97,6 +99,8 @@ class NotebookPanel(wx.Panel):
 
         book.Refresh()
         self.book = book
+        self.eeg_electrodes = EEGElectrodeManager()
+        self.eeg_page = None
         self.navigation_on = False
         self.__bind_events()
 
@@ -109,6 +113,75 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._FoldMask, "Fold mask page")
         Publisher.subscribe(self._FoldImage, "Fold image page")
         Publisher.subscribe(self._OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self._OnEEGRegistrationModeChanged, "EEG registration mode changed")
+        Publisher.subscribe(self._OnMarkerAdded, "Add marker")
+        Publisher.subscribe(self._OnMarkerDeleted, "Delete marker")
+        Publisher.subscribe(self._OnMarkersDeleted, "Delete markers")
+        Publisher.subscribe(self._OnMarkerUpdated, "Update marker label")
+        Publisher.subscribe(self._OnMarkerVisibilityChanged, "Set marker visibility")
+        Publisher.subscribe(self._OnMarkersVisibilityChanged, "Set markers visibility")
+        Publisher.subscribe(self._OnCloseProject, "Close project data")
+
+    def _OnEEGRegistrationModeChanged(self, active):
+        self._SyncEEGPage(select=active)
+
+    def _OnMarkerAdded(self, marker, render=True, focus=False):
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            self._SyncEEGPage()
+
+    def _OnMarkerDeleted(self, marker):
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            wx.CallAfter(self._SyncEEGPage)
+
+    def _OnMarkersDeleted(self, markers):
+        if any(marker.marker_type == MarkerType.EEG_ELECTRODE for marker in markers):
+            wx.CallAfter(self._SyncEEGPage)
+
+    def _OnMarkerUpdated(self, marker):
+        if marker.marker_type == MarkerType.EEG_ELECTRODE and self.eeg_page is not None:
+            self.eeg_page.RefreshElectrodes()
+
+    def _OnMarkerVisibilityChanged(self, marker, visible):
+        if marker.marker_type == MarkerType.EEG_ELECTRODE and self.eeg_page is not None:
+            self.eeg_page.RefreshElectrodes()
+
+    def _OnMarkersVisibilityChanged(self, markers, visible):
+        if self.eeg_page is not None and any(
+            marker.marker_type == MarkerType.EEG_ELECTRODE for marker in markers
+        ):
+            self.eeg_page.RefreshElectrodes()
+
+    def _OnCloseProject(self):
+        wx.CallAfter(self._SyncEEGPage)
+
+    def _SyncEEGPage(self, select=False):
+        has_electrodes = bool(self.eeg_electrodes.electrodes)
+        should_show = self.eeg_electrodes.registration_active or has_electrodes
+
+        if should_show:
+            if self.eeg_page is None:
+                self.eeg_page = EEGElectrodePage(self.book, self.eeg_electrodes)
+                self.book.AddPage(self.eeg_page, _("EEG electrodes"))
+            self.eeg_page.RefreshElectrodes()
+            if select:
+                self.book.SetSelection(self._GetEEGPageIndex())
+        elif self.eeg_page is not None:
+            page_index = self._GetEEGPageIndex()
+            if page_index != wx.NOT_FOUND:
+                page = self.eeg_page
+                self.book.RemovePage(page_index)
+                page.Destroy()
+            self.eeg_page = None
+
+        self.Layout()
+
+    def _GetEEGPageIndex(self):
+        if self.eeg_page is None:
+            return wx.NOT_FOUND
+        for page_index in range(self.book.GetPageCount()):
+            if self.book.GetPage(page_index) is self.eeg_page:
+                return page_index
+        return wx.NOT_FOUND
 
     def OnPageChanging(self, evt):
         if self.navigation_on:
@@ -154,6 +227,34 @@ class NotebookPanel(wx.Panel):
         self.book.GetPage(self.IMAGE_PAGE_INDEX).Enable(not self.navigation_on)
         if self.navigation_on:
             self.book.SetSelection(self.SURFACE_PAGE_INDEX)
+
+
+class EEGElectrodePage(wx.Panel):
+    """Data notebook page that presents the registered EEG electrodes."""
+
+    def __init__(self, parent, eeg_electrodes):
+        super().__init__(parent)
+        self.eeg_electrodes = eeg_electrodes
+
+        self.listctrl = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
+        self.listctrl.InsertColumn(0, _("Electrode"), width=80)
+        self.listctrl.InsertColumn(1, "X", width=50)
+        self.listctrl.InsertColumn(2, "Y", width=50)
+        self.listctrl.InsertColumn(3, "Z", width=50)
+        self.listctrl.InsertColumn(4, _("Visible"), width=55)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.listctrl, 1, wx.EXPAND | wx.ALL, 2)
+        self.SetSizer(sizer)
+        self.RefreshElectrodes()
+
+    def RefreshElectrodes(self):
+        self.listctrl.DeleteAllItems()
+        for electrode in self.eeg_electrodes.electrodes:
+            row = self.listctrl.InsertItem(self.listctrl.GetItemCount(), electrode.label)
+            for column, coordinate in enumerate(electrode.position, start=1):
+                self.listctrl.SetItem(row, column, f"{coordinate:.1f}")
+            self.listctrl.SetItem(row, 4, _("Yes") if electrode.visible else _("No"))
 
 
 class MeasurePage(wx.Panel):

@@ -17,13 +17,21 @@ from collections.abc import Iterable, Sequence
 
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.navigation.markers import MarkersControl
+from invesalius.pubsub import pub as Publisher
+from invesalius.utils import Singleton
 
 
-class EEGElectrodeManager:
+class EEGElectrodeManager(metaclass=Singleton):
     """Create and manage EEG electrodes stored in the central marker collection."""
 
     def __init__(self, markers: MarkersControl | None = None) -> None:
         self.markers = markers if markers is not None else MarkersControl()
+        self.registration_active = False
+
+    def set_registration_active(self, active: bool) -> None:
+        """Enable or disable creation of EEG electrode markers."""
+        self.registration_active = bool(active)
+        Publisher.sendMessage("EEG registration mode changed", active=self.registration_active)
 
     @property
     def electrodes(self) -> list[Marker]:

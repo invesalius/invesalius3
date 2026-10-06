@@ -1874,6 +1874,7 @@ class NavigationPanel(wx.Panel):
             self.GetParent().Fit()
 
     def OnCloseProject(self):
+        self.nav_hub.eeg_electrodes.set_registration_active(False)
         self.tracker.ResetTrackerFiducials()
         self.image.ResetImageFiducials()
 
@@ -2194,6 +2195,7 @@ class ControlPanel(wx.Panel):
         self.icp = nav_hub.icp
         self.image = nav_hub.image
         self.mep_visualizer = nav_hub.mep_visualizer
+        self.eeg_electrodes = nav_hub.eeg_electrodes
 
         self.nav_status = False
 
@@ -2308,6 +2310,14 @@ class ControlPanel(wx.Panel):
         show_probe_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowProbe)
         self.show_probe_button = show_probe_button
 
+        # Toggle button for creating EEG electrode markers with the probe
+        eeg_registration_button = wx.ToggleButton(scroll_panel, -1, "EEG", size=ICON_SIZE)
+        eeg_registration_button.SetBackgroundColour(RED_COLOR)
+        eeg_registration_button.SetValue(self.eeg_electrodes.registration_active)
+        eeg_registration_button.SetToolTip(_("Register EEG electrodes with the probe"))
+        eeg_registration_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnEEGRegistrationButton)
+        self.eeg_registration_button = eeg_registration_button
+
         # Toggle Button to use serial port to trigger pulse signal and create markers
         tooltip = _("Enable serial port communication to trigger pulse and create markers")
         BMP_PORT = wx.Bitmap(str(inv_paths.ICON_DIR.joinpath("wave.png")), wx.BITMAP_TYPE_PNG)
@@ -2396,6 +2406,7 @@ class ControlPanel(wx.Panel):
                 (lock_to_target_button),
                 (show_coil_button),
                 (show_probe_button),
+                (eeg_registration_button),
                 (show_motor_map_button),
             ]
         )
@@ -2435,6 +2446,7 @@ class ControlPanel(wx.Panel):
 
         # Externally press/unpress and enable/disable buttons.
         Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
+        Publisher.subscribe(self.OnEEGRegistrationModeChanged, "EEG registration mode changed")
 
         Publisher.subscribe(self.OnCoilSelectionDone, "Coil selection done")
         Publisher.subscribe(
@@ -2709,6 +2721,15 @@ class ControlPanel(wx.Panel):
         pressed = self.show_probe_button.GetValue()
         Publisher.sendMessage("Show probe in viewer volume", state=pressed)
 
+    def OnEEGRegistrationButton(self, evt):
+        active = self.eeg_registration_button.GetValue()
+        self.eeg_electrodes.set_registration_active(active)
+        if active:
+            Publisher.sendMessage("Press show-probe button", pressed=True)
+
+    def OnEEGRegistrationModeChanged(self, active):
+        self.UpdateToggleButton(self.eeg_registration_button, active)
+
     # 'Serial Port Com'
     def OnEnableSerialPort(self, evt, ctrl):
         self.UpdateToggleButton(ctrl)
@@ -2811,6 +2832,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.navigation = nav_hub.navigation
         self.markers = nav_hub.markers
+        self.eeg_electrodes = nav_hub.eeg_electrodes
         self.robots = nav_hub.robots
 
         if has_mTMS:
@@ -4551,7 +4573,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         mep_value=None,
     ):
         if label is None:
-            label = self.GetNextMarkerLabel()
+            label = (
+                self.eeg_electrodes.next_label()
+                if self.eeg_electrodes.registration_active
+                else self.GetNextMarkerLabel()
+            )
 
         if self.nav_status and self.navigation.e_field_loaded:
             Publisher.sendMessage("Get Cortex position")
@@ -4565,13 +4591,16 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         #   MarkerType.FIDUCIAL by the caller), do not automatically infer the marker type; only do it, if
         #   marker_type is None.
         if marker_type is None:
-            marker_type = (
-                MarkerType.COIL_TARGET
-                if self.nav_status and self.navigation.track_coil
-                else MarkerType.LANDMARK
-            )
+            if self.eeg_electrodes.registration_active:
+                marker_type = MarkerType.EEG_ELECTRODE
+            else:
+                marker_type = (
+                    MarkerType.COIL_TARGET
+                    if self.nav_status and self.navigation.track_coil
+                    else MarkerType.LANDMARK
+                )
         # Ensure LANDMARK is used when navigation is off
-        if not self.nav_status and orientation is None:
+        if not self.nav_status and orientation is None and marker_type != MarkerType.EEG_ELECTRODE:
             marker_type = MarkerType.LANDMARK
             orientation = None, None, None
 
