@@ -279,3 +279,17 @@ def test_read_state_with_corrupted_json(mocker):
     success = session._ReadState()
     assert success is False
     mock_delete.assert_called_once()
+
+
+def test_read_config_forces_project_status_closed(tmp_path):
+    import invesalius.session as ses_module
+
+    cfg = {"project_status": const.PROJECT_STATUS_OPENED, "language": "en"}
+    cfg_path = tmp_path / "config.json"
+    with open(cfg_path, "w") as f:
+        json.dump(cfg, f)
+
+    session._config = {k: "" if k == "language" else v for k, v in ses_module.CONFIG_INIT.items()}
+    session._read_config_from_json(str(cfg_path))
+    assert session._config["project_status"] == const.PROJECT_STATUS_CLOSED
+    assert session.IsOpen() is False
