@@ -398,16 +398,15 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
 
     def OnExport(self, _evt):
         session = ses.Session()
-        export_dialog = dlg.EEGMontageExportDialog(
+        export_selection = dlg.ShowEEGMontageExportDialog(
             self,
             default_directory=session.GetConfig("last_directory_eeg_montage", ""),
         )
-        try:
-            if export_dialog.ShowModal() != wx.ID_OK:
-                return
+        if export_selection is None:
+            return
 
-            output_directory = export_dialog.GetDirectory()
-            export_format = export_dialog.GetFormat()
+        output_directory, export_format = export_selection
+        try:
             existing_paths = [
                 path
                 for path in self.eeg_electrodes.get_export_paths(
@@ -432,8 +431,6 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             )
         except (OSError, ValueError) as error:
             wx.MessageBox(str(error), _("Export error"), wx.OK | wx.ICON_ERROR)
-        finally:
-            export_dialog.Destroy()
 
 
 class EEGElectrodeListCtrl(wx.ListCtrl):
