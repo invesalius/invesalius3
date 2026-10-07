@@ -2312,10 +2312,17 @@ class ControlPanel(wx.Panel):
         self.show_probe_button = show_probe_button
 
         # Toggle button for creating EEG electrode markers with the probe
-        eeg_registration_button = wx.ToggleButton(scroll_panel, -1, "EEG", size=ICON_SIZE)
+        tooltip = _("Enable digitization of EEG electrodes with the probe")
+        BMP_SHOW_PROBE = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("brain_eeg.png")), wx.BITMAP_TYPE_PNG
+        )
+        eeg_registration_button = wx.ToggleButton(
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
         eeg_registration_button.SetBackgroundColour(RED_COLOR)
+        eeg_registration_button.SetBitmap(BMP_SHOW_PROBE)
         eeg_registration_button.SetValue(self.eeg_electrodes.registration_active)
-        eeg_registration_button.SetToolTip(_("Register EEG electrodes with the probe"))
+        eeg_registration_button.SetToolTip(tooltip)
         eeg_registration_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnEEGRegistrationButton)
         self.eeg_registration_button = eeg_registration_button
 
