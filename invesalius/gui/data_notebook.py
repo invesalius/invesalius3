@@ -103,6 +103,7 @@ class NotebookPanel(wx.Panel):
         self.eeg_page = None
         self.navigation_on = False
         self.__bind_events()
+        self._SyncEEGPage()
 
     def __bind_events(self):
         self.book.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
@@ -120,7 +121,12 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._OnMarkerUpdated, "Update marker label")
         Publisher.subscribe(self._OnMarkerVisibilityChanged, "Set marker visibility")
         Publisher.subscribe(self._OnMarkersVisibilityChanged, "Set markers visibility")
+        Publisher.subscribe(self._OnProjectStateEnabled, "Enable state project")
         Publisher.subscribe(self._OnCloseProject, "Close project data")
+
+    def _OnProjectStateEnabled(self, state):
+        if state:
+            wx.CallAfter(self._SyncEEGPage)
 
     def _OnEEGRegistrationModeChanged(self, active):
         self._SyncEEGPage(select=active)
