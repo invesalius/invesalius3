@@ -1,5 +1,5 @@
 import math
-from typing import Iterable, List, Sequence, Tuple
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 
@@ -17,7 +17,7 @@ def calculate_distance(p1: Iterable[float], p2: Iterable[float]) -> float:
     return math.sqrt(sum([(j - i) ** 2 for i, j in zip(p1, p2)]))
 
 
-def calculate_angle(v1: Tuple[float, ...], v2: Tuple[float, ...]) -> float:
+def calculate_angle(v1: tuple[float, ...], v2: tuple[float, ...]) -> float:
     """
     Calculates the angle formed between vector v1 and v2.
 
@@ -60,7 +60,7 @@ def calc_ellipse_circumference(a: float, b: float) -> float:
     return circumference
 
 
-def calc_polygon_area(points: Sequence[Tuple[float, float]]) -> float:
+def calc_polygon_area(points: Sequence[tuple[float, float]]) -> float:
     """
     Calculates the area from the polygon formed by given the points.
 
@@ -91,7 +91,7 @@ def calc_polygon_area(points: Sequence[Tuple[float, float]]) -> float:
     return area
 
 
-def calc_polygon_perimeter(points: List[Tuple[float, float]]) -> float:
+def calc_polygon_perimeter(points: list[tuple[float, float]]) -> float:
     """
     Calculates the perimeter from the polygon formed by given the points.
     """
@@ -124,6 +124,83 @@ def inner1d(v0: np.ndarray, v1: np.ndarray) -> np.ndarray:
     array([  5,  50, 149])
     """
     return (v0 * v1).sum(axis=-1)
+
+
+def solve_qef(
+    normals: np.ndarray,
+    positions: np.ndarray,
+    mass_point: np.ndarray = None,
+    svd_tol: float = 1e-5,
+) -> np.ndarray:
+    """
+    Solves the Quadratic Error Function (QEF) to find the optimal vertex placement
+    that minimizes the sum of squared distances to a set of tangent planes.
+
+    This is a foundational utility for feature-preserving surface extraction
+    methods (e.g., Dual Contouring).
+
+    Parameters:
+    -----------
+    normals : np.ndarray
+        An N x 3 array of intersection surface normals.
+    positions : np.ndarray
+        An N x 3 array of boundary intersection points.
+    mass_point : np.ndarray, optional
+        A 3D coordinate representing the fallback position (usually the average
+        of all intersection points). If None, it will be calculated from `positions`.
+    svd_tol : float, optional
+        The cutoff tolerance for singular values in the pseudo-inverse calculation.
+
+    Returns:
+    --------
+    np.ndarray
+        The computed 3D coordinate (x, y, z) that minimizes the QEF.
+
+    Raises:
+    -------
+    ValueError
+        If normals and positions arrays do not have matching shapes or are not 3D.
+
+    >>> normals = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    >>> positions = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    >>> solve_qef(normals, positions)
+    array([1., 1., 1.])
+    """
+    normals = np.asarray(normals, dtype=float)
+    positions = np.asarray(positions, dtype=float)
+
+    if normals.ndim != 2 or normals.shape[1] != 3:
+        raise ValueError("normals must be an N x 3 array.")
+    if positions.ndim != 2 or positions.shape[1] != 3:
+        raise ValueError("positions must be an N x 3 array.")
+    if normals.shape[0] != positions.shape[0]:
+        raise ValueError("normals and positions must have the same number of points (N).")
+
+    if mass_point is None:
+        mass_point = np.mean(positions, axis=0)
+    else:
+        mass_point = np.asarray(mass_point, dtype=float)
+
+    # Formulate the least-squares problem: A * x = b
+    # where A = normals, and b = normals dot positions
+    A = normals
+    # b is the dot product of each normal with its corresponding position
+    b = np.sum(normals * positions, axis=1)
+
+    # To improve numerical stability (especially far from origin), we solve for
+    # the offset from the mass point.
+    # A * (x - mass_point) = A * x - A * mass_point = b - A * mass_point
+    b_moved = b - np.dot(A, mass_point)
+
+    try:
+        # Solve using SVD pseudo-inverse to handle under-determined/singular systems safely
+        offset, residuals, rank, s = np.linalg.lstsq(A, b_moved, rcond=svd_tol)
+        optimal_vertex = mass_point + offset
+    except np.linalg.LinAlgError:
+        # If SVD completely fails (extremely rare), fallback to the mass point
+        optimal_vertex = mass_point
+
+    return optimal_vertex
 
 
 if __name__ == "__main__":
