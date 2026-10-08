@@ -1495,6 +1495,7 @@ class NavigationView:
 
     def SaveEfieldTargetData(self, target_list_index, position, orientation, plot_efield_vectors):
         if len(self.Id_list) > 0:
+            efield_coords_position = None
             if self.efield_coords is not None:
                 import invesalius.data.imagedata_utils as imagedata_utils
 
@@ -2327,6 +2328,7 @@ class NavigationView:
             "cortex file",
             "coil model file",
         ]
+        efield_coords_position = None
         if self.efield_coords is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
                 position=[self.efield_coords[0], self.efield_coords[1], self.efield_coords[2]],
