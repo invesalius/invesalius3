@@ -461,7 +461,7 @@ class MarkerVisualizer:
 
     @staticmethod
     def _GetEEGElectrodeLabel(marker):
-        return marker.eeg_matched_name or marker.label
+        return marker.label
 
     @staticmethod
     def _GetVisualizationActors(marker, visualization=None):

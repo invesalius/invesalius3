@@ -254,7 +254,7 @@ class EEGElectrodeManager(metaclass=Singleton):
 
     @staticmethod
     def _get_export_name(electrode: Marker) -> str:
-        return electrode.eeg_matched_name or electrode.label
+        return electrode.label
 
     @property
     def electrodes(self) -> list[Marker]:
@@ -272,9 +272,6 @@ class EEGElectrodeManager(metaclass=Singleton):
         visible: bool = True,
         focus: bool = False,
         session_id: int = 1,
-        matched_name: str | None = None,
-        distance_mm: float | None = None,
-        confidence: str | None = None,
     ) -> Marker:
         """Create, persist and return one EEG electrode marker."""
         electrode = Marker(
@@ -283,9 +280,6 @@ class EEGElectrodeManager(metaclass=Singleton):
             size=size,
             visible=visible,
             session_id=session_id,
-            eeg_matched_name=matched_name,
-            eeg_distance_mm=distance_mm,
-            eeg_confidence=confidence,
         )
         electrode.position = self._validate_coordinate(position, "position")
         electrode.orientation = self._validate_coordinate(

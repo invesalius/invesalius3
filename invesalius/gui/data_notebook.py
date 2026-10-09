@@ -462,9 +462,9 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
 
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER, width=25)
         self.InsertColumn(1, _("ID"), width=50)
-        self.InsertColumn(2, _("Matched Name"), width=100)
-        self.InsertColumn(3, _("Distance (mm)"), width=100)
-        self.InsertColumn(4, _("Confidence"), width=100)
+        self.InsertColumn(2, _("X (mm)"), width=85)
+        self.InsertColumn(3, _("Y (mm)"), width=85)
+        self.InsertColumn(4, _("Z (mm)"), width=85)
 
         self.visibility_images = wx.ImageList(16, 16)
         for icon_name in ("object_invisible.png", "object_visible.png"):
@@ -494,22 +494,8 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
             row = self.InsertItem(self.GetItemCount(), "", int(electrode.visible))
             self.SetItem(row, 1, electrode.label)
 
-            matched_name = getattr(electrode, "eeg_matched_name", None)
-            distance_mm = getattr(electrode, "eeg_distance_mm", None)
-            confidence = getattr(electrode, "eeg_confidence", None)
-            confidence_value = getattr(confidence, "value", confidence)
-            confidence_key = str(confidence_value).lower() if confidence_value else ""
-
-            self.SetItem(row, 2, matched_name or "-")
-            self.SetItem(row, 3, f"{distance_mm:.2f}" if distance_mm is not None else "-")
-            self.SetItem(row, 4, confidence_key.capitalize() if confidence_key else "-")
-
-            if confidence_key == "high":
-                self.SetItemTextColour(row, wx.Colour(0, 150, 0))
-            elif confidence_key == "medium":
-                self.SetItemTextColour(row, wx.Colour(204, 204, 0))
-            elif confidence_key == "low":
-                self.SetItemTextColour(row, wx.Colour(200, 0, 0))
+            for column, coordinate in enumerate(electrode.position, start=2):
+                self.SetItem(row, column, f"{coordinate:.2f}")
 
     def _GetElectrode(self, row):
         if not 0 <= row < len(self.marker_uuids):
