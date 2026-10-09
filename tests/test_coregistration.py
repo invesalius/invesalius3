@@ -63,7 +63,7 @@ def wait_for_coil(thread, expected, timeout=10):
     pytest.fail(f"coil stopped at {position}, expected {expected}")
 
 
-def test_coil_follows_target_changed_during_navigation(thread, navigation):
+def test_coil_follows_target_changed_during_navigation(thread, navigation) -> None:
     thread.start()
     wait_for_coil(thread, [40.0, -30.0, 20.0])
 
@@ -71,7 +71,7 @@ def test_coil_follows_target_changed_during_navigation(thread, navigation):
     wait_for_coil(thread, [-30.0, 50.0, 60.0])
 
 
-def test_coil_stays_at_target_after_unset(thread, navigation):
+def test_coil_stays_at_target_after_unset(thread, navigation) -> None:
     thread.start()
     wait_for_coil(thread, [40.0, -30.0, 20.0])
 
@@ -81,6 +81,6 @@ def test_coil_stays_at_target_after_unset(thread, navigation):
     wait_for_coil(thread, [40.0, -30.0, 20.0])
 
 
-def test_navigation_target_is_not_modified(thread, navigation):
+def test_navigation_target_is_not_modified(thread, navigation) -> None:
     thread._set_target(navigation.target)
     assert navigation.target == TARGET_A
