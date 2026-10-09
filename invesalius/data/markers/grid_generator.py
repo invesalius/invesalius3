@@ -21,12 +21,13 @@ import uuid
 from typing import List
 
 import numpy as np
-import vtk
 
 import invesalius.data.coordinates as dco
-import invesalius.data.transformations as tr
 from invesalius.data.markers.marker import Marker, MarkerType
-from invesalius.data.markers.surface_geometry import SurfaceGeometry
+from invesalius.data.markers.surface_geometry import (
+    SCALP_NORMAL_AVERAGING_RADIUS_MM,
+    SurfaceGeometry,
+)
 
 # Maximum grid dimension to prevent accidental creation of excessive markers.
 MAX_GRID_DIMENSION = 100
@@ -240,7 +241,12 @@ class GridGenerator:
         marker.position = new_position
         marker.orientation = new_orientation
 
-    def _project_to_scalp(self, marker, z_rotation, smooth_radius=15.0):
+    def _project_to_scalp(
+        self,
+        marker,
+        z_rotation,
+        smooth_radius=SCALP_NORMAL_AVERAGING_RADIUS_MM,
+    ):
         """Project a marker onto the smoothed scalp surface and orient it tangentially.
 
         Instead of just using the normal of the closest point, this method averages
@@ -255,83 +261,17 @@ class GridGenerator:
         marker_position = list(marker.position)
         marker_position[1] = -marker_position[1]
 
-        surface = self.surface_geometry.GetSmoothedScalpSurface()
-        if not surface:
-            return
-
-        polydata = surface["polydata"]
-        normals = surface["normals"]
-
-        point_locator = vtk.vtkPointLocator()
-        point_locator.SetDataSet(polydata)
-        point_locator.BuildLocator()
-
-        closest_point_id = point_locator.FindClosestPoint(marker_position)
-        closest_point = polydata.GetPoint(closest_point_id)
-
-        # Find points within radius to average normals for a smoother orientation
-        id_list = vtk.vtkIdList()
-        point_locator.FindPointsWithinRadius(smooth_radius, closest_point, id_list)
-
-        normal_data = normals.GetPointData().GetNormals()
-
-        if id_list.GetNumberOfIds() > 0:
-            avg_normal = np.zeros(3)
-            for i in range(id_list.GetNumberOfIds()):
-                pt_id = id_list.GetId(i)
-                avg_normal += np.array(normal_data.GetTuple(pt_id))
-
-            avg_normal /= id_list.GetNumberOfIds()
-            norm = np.linalg.norm(avg_normal)
-            if norm > 0:
-                closest_normal = avg_normal / norm
-            else:
-                closest_normal = normal_data.GetTuple(closest_point_id)
-        else:
-            closest_normal = normal_data.GetTuple(closest_point_id)
-
-        # The reference direction vector that we want to align the normal to.
-        # This was figured out by testing; (0, 0, 1) makes the coil point towards the brain.
-        ref_vector = np.array([0, 0, 1])
-
-        # Average Normal around the closest point.
-        normal_vector = np.array(closest_normal)
-
-        # Calculate the rotation axis (cross product) and angle (dot product).
-        rotation_axis = np.cross(ref_vector, normal_vector)
-        rotation_axis_norm = np.linalg.norm(rotation_axis)
-
-        # Handle the degenerate case where the normal is parallel to the reference vector.
-        if rotation_axis_norm < 1e-10:
-            euler_angles_deg = [0.0, 0.0, 0.0]
-        else:
-            rotation_angle = np.arccos(
-                np.clip(
-                    np.dot(ref_vector, normal_vector)
-                    / (np.linalg.norm(ref_vector) * np.linalg.norm(normal_vector)),
-                    -1.0,
-                    1.0,
-                )
-            )
-
-            # Normalize the rotation axis.
-            rotation_axis_normalized = rotation_axis / rotation_axis_norm
-
-            # Create a rotation matrix from the axis and angle.
-            rotation_matrix = tr.rotation_matrix(rotation_angle, rotation_axis_normalized)
-
-            # Convert the rotation matrix to Euler angles.
-            euler_angles = tr.euler_from_matrix(rotation_matrix, "sxyz")
-
-            # Convert the Euler angles to degrees.
-            euler_angles_deg = np.degrees(euler_angles)
+        closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
+            "scalp", marker_position, smooth_radius=smooth_radius
+        )
+        orientation = self.surface_geometry.OrientationFromNormal(closest_normal)
 
         # Invert back to marker space.
         closest_point = list(closest_point)
         closest_point[1] = -closest_point[1]
 
         marker.position = closest_point
-        marker.orientation = euler_angles_deg
+        marker.orientation = orientation
 
         # Apply the z_rotation offset (90 degrees base + custom z_rotation).
         # This accounts for the difference between coil and world coordinate systems.

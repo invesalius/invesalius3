@@ -1746,6 +1746,11 @@ class StimulatorPage(wx.Panel):
         btn_edit.SetToolTip("Open preferences menu")
         btn_edit.Bind(wx.EVT_BUTTON, self.OnEditPreferences)
 
+        self.cb_probe_only = wx.CheckBox(self, -1, _("EEG / probe only (no coil)"))
+        self.cb_probe_only.SetToolTip(_("Allow EEG navigation using only the probe"))
+        self.cb_probe_only.SetValue(self.navigation.probe_only)
+        self.cb_probe_only.Bind(wx.EVT_CHECKBOX, self.OnProbeOnly)
+
         back_button = wx.Button(self, label="Back")
         back_button.Bind(wx.EVT_BUTTON, self.OnBack)
 
@@ -1776,6 +1781,7 @@ class StimulatorPage(wx.Panel):
             [
                 (border, 0, wx.ALIGN_CENTER | wx.TOP, 10),
                 stretch_spacer,
+                (self.cb_probe_only, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10),
                 (bottom_sizer, 0, wx.EXPAND | wx.BOTTOM, 10),
             ]
         )
@@ -1793,6 +1799,12 @@ class StimulatorPage(wx.Panel):
         Publisher.sendMessage("Enable start navigation button", enabled=False)
 
     def CoilSelectionDone(self, done):
+        if self.navigation.probe_only:
+            self.lbl.SetLabel(_("Ready for navigation (probe-only mode)"))
+            self.next_button.Enable(True)
+            self.lbl.Show()
+            return
+
         if done:
             self.lbl.SetLabel(
                 f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!"
@@ -1802,6 +1814,12 @@ class StimulatorPage(wx.Panel):
 
         self.next_button.Enable(done)
         self.lbl.Show()
+
+    def OnProbeOnly(self, evt):
+        enabled = self.cb_probe_only.GetValue()
+        self.navigation.SetProbeOnly(enabled)
+        self.CoilSelectionDone(self.navigation.CoilSelectionDone())
+        Publisher.sendMessage("Probe-only navigation mode changed", enabled=enabled)
 
     def OnEditPreferences(self, evt):
         Publisher.sendMessage("Open preferences menu", page=3)
@@ -1856,11 +1874,12 @@ class NavigationPanel(wx.Panel):
             self.GetParent().Fit()
 
     def OnCloseProject(self):
+        self.nav_hub.eeg_electrodes.set_registration_active(False)
         self.tracker.ResetTrackerFiducials()
         self.image.ResetImageFiducials()
 
         Publisher.sendMessage("Disconnect tracker")
-        Publisher.sendMessage("Delete all markers")
+        self.nav_hub.markers.Clear()
         Publisher.sendMessage("Update marker offset state", create=False)
         Publisher.sendMessage("Remove tracts")
         Publisher.sendMessage("Disable style", style=const.SLICE_STATE_CROSS)
@@ -2176,6 +2195,7 @@ class ControlPanel(wx.Panel):
         self.icp = nav_hub.icp
         self.image = nav_hub.image
         self.mep_visualizer = nav_hub.mep_visualizer
+        self.eeg_electrodes = nav_hub.eeg_electrodes
 
         self.nav_status = False
 
@@ -2234,10 +2254,9 @@ class ControlPanel(wx.Panel):
         track_object_button.Enable(True)
         track_object_button.SetValue(False)
         track_object_button.SetToolTip(tooltip)
-        track_object_button.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectButton, ctrl=track_object_button)
-        )
+        track_object_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnTrackObjectButton)
         self.track_object_button = track_object_button
+        self._track_object_enabled = True
 
         # Toggle button for allowing triggering only if coil is at target
         tooltip = _("Allow triggering only if the coil is at the target")
@@ -2289,6 +2308,21 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(show_probe_button, False)  # the probe is hidden at start
         show_probe_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnShowProbe)
         self.show_probe_button = show_probe_button
+
+        # Toggle button for creating EEG electrode markers with the probe
+        tooltip = _("Enable digitization of EEG electrodes with the probe")
+        BMP_SHOW_PROBE = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("brain_eeg.png")), wx.BITMAP_TYPE_PNG
+        )
+        eeg_registration_button = wx.ToggleButton(
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        eeg_registration_button.SetBackgroundColour(RED_COLOR)
+        eeg_registration_button.SetBitmap(BMP_SHOW_PROBE)
+        eeg_registration_button.SetValue(self.eeg_electrodes.registration_active)
+        eeg_registration_button.SetToolTip(tooltip)
+        eeg_registration_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnEEGRegistrationButton)
+        self.eeg_registration_button = eeg_registration_button
 
         # Toggle Button to use serial port to trigger pulse signal and create markers
         tooltip = _("Enable serial port communication to trigger pulse and create markers")
@@ -2378,6 +2412,7 @@ class ControlPanel(wx.Panel):
                 (lock_to_target_button),
                 (show_coil_button),
                 (show_probe_button),
+                (eeg_registration_button),
                 (show_motor_map_button),
             ]
         )
@@ -2417,8 +2452,12 @@ class ControlPanel(wx.Panel):
 
         # Externally press/unpress and enable/disable buttons.
         Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
+        Publisher.subscribe(self.OnEEGRegistrationModeChanged, "EEG registration mode changed")
 
         Publisher.subscribe(self.OnCoilSelectionDone, "Coil selection done")
+        Publisher.subscribe(
+            self.OnProbeOnlyNavigationModeChanged, "Probe-only navigation mode changed"
+        )
 
         Publisher.subscribe(self.PressShowCoilButton, "Press show-coil button")
         Publisher.subscribe(self.EnableShowCoilButton, "Enable show-coil button")
@@ -2560,8 +2599,26 @@ class ControlPanel(wx.Panel):
             self.UpdateToggleButton(self.checkbox_serial_port)
 
     def OnCoilSelectionDone(self, done):
+        if self.navigation.probe_only:
+            return
+
         self.PressTrackObjectButton(done)
         self.PressShowCoilButton(pressed=done)
+
+    def OnProbeOnlyNavigationModeChanged(self, enabled):
+        if enabled:
+            self.PressTrackObjectButton(False)
+            self.PressShowCoilButton(False)
+            self.EnableTrackObjectButton(False)
+            self.EnableToggleButton(self.show_coil_button, False)
+            self.PressShowProbeButton(True)
+            return
+
+        coils_ready = len(self.navigation.coil_registrations) == self.navigation.n_coils
+        self.PressTrackObjectButton(coils_ready)
+        self.PressShowCoilButton(coils_ready)
+        self.EnableTrackObjectButton(coils_ready)
+        self.EnableToggleButton(self.show_coil_button, coils_ready)
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
@@ -2607,17 +2664,20 @@ class ControlPanel(wx.Panel):
 
     # 'Track object' button
     def EnableTrackObjectButton(self, enabled):
-        self.EnableToggleButton(self.track_object_button, enabled)
+        self._track_object_enabled = enabled
         self.UpdateToggleButton(self.track_object_button)
+        # Apply Enable last: changing the colour can re-enable native Windows buttons.
+        self.track_object_button.Enable(enabled and not self.eeg_electrodes.registration_active)
 
     def PressTrackObjectButton(self, pressed):
         self.UpdateToggleButton(self.track_object_button, pressed)
         self.OnTrackObjectButton()
 
-    def OnTrackObjectButton(self, evt=None, ctrl=None):
-        if ctrl is not None:
-            self.UpdateToggleButton(ctrl)
-        pressed = self.track_object_button.GetValue()
+    def OnTrackObjectButton(self, evt=None):
+        pressed = (
+            self.track_object_button.GetValue() and not self.eeg_electrodes.registration_active
+        )
+        self.UpdateToggleButton(self.track_object_button, pressed)
         Publisher.sendMessage("Track object", enabled=pressed)
         if not pressed and self.target_mode_button.GetValue():
             Publisher.sendMessage("Press target mode button", pressed=False)
@@ -2625,6 +2685,7 @@ class ControlPanel(wx.Panel):
         # Automatically press or unpress 'Show coil' and 'Show probe' button.
         Publisher.sendMessage("Press show-coil button", pressed=pressed)
         Publisher.sendMessage("Press show-probe button", pressed=(not pressed))
+        self.EnableTrackObjectButton(self._track_object_enabled)
 
     # 'Lock to Target' button
     def OnLockToTargetButton(self, evt, ctrl):
@@ -2666,9 +2727,32 @@ class ControlPanel(wx.Panel):
         self.OnShowProbe()
 
     def OnShowProbe(self, evt=None):
-        self.UpdateToggleButton(self.show_probe_button)
-        pressed = self.show_probe_button.GetValue()
+        active = self.eeg_electrodes.registration_active
+        pressed = self.show_probe_button.GetValue() or active
+        self.UpdateToggleButton(self.show_probe_button, pressed)
+        self.show_probe_button.Enable(not active)
         Publisher.sendMessage("Show probe in viewer volume", state=pressed)
+
+    def OnEEGRegistrationButton(self, evt):
+        active = self.eeg_registration_button.GetValue()
+        if active and not self.eeg_electrodes.prepare_scalp_surface():
+            self.UpdateToggleButton(self.eeg_registration_button, False)
+            wx.MessageBox(
+                _("Create a 3D scalp surface before registering EEG electrodes."),
+                _("InVesalius 3"),
+                wx.OK | wx.ICON_WARNING,
+            )
+            return
+
+        self.eeg_electrodes.set_registration_active(active)
+
+    def OnEEGRegistrationModeChanged(self, active):
+        self.UpdateToggleButton(self.eeg_registration_button, active)
+        if active:
+            self.PressTrackObjectButton(False)
+        else:
+            self.EnableTrackObjectButton(self._track_object_enabled)
+            self.OnShowProbe()
 
     # 'Serial Port Com'
     def OnEnableSerialPort(self, evt, ctrl):
@@ -2772,6 +2856,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.navigation = nav_hub.navigation
         self.markers = nav_hub.markers
+        self.eeg_electrodes = nav_hub.eeg_electrodes
         self.robots = nav_hub.robots
 
         if has_mTMS:
@@ -3097,58 +3182,62 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         deleted_marker_id = marker.marker_id
         deleted_marker_uuid = marker.marker_uuid
         idx = self.__find_marker_index(deleted_marker_id)
-        self.marker_list_ctrl.DeleteItem(idx)
-        print("_DeleteMarker:", deleted_marker_uuid)
+        if idx is not None:
+            self.marker_list_ctrl.DeleteItem(idx)
+            print("_DeleteMarker:", deleted_marker_uuid)
 
-        # Delete the marker from itemDataMap
-        for key, data in self.itemDataMap.items():
+        # Delete the marker from itemDataMap when it is present in the general marker table.
+        for key, data in list(self.itemDataMap.items()):
             current_uuid = data[-1]
             if current_uuid == deleted_marker_uuid:
                 self.itemDataMap.pop(key)
 
-        num_items = self.marker_list_ctrl.GetItemCount()
-        for n in range(num_items):
-            m_id = self.__get_marker_id(n)
-            if m_id > deleted_marker_id:
-                self.marker_list_ctrl.SetItem(n, const.ID_COLUMN, str(m_id - 1))
+        wx.CallAfter(self._RefreshVisibleMarkerIds)
 
     def _DeleteMultiple(self, markers):
-        if len(markers) == self.marker_list_ctrl.GetItemCount():
+        visible_markers = [
+            marker for marker in markers if marker.marker_type != MarkerType.EEG_ELECTRODE
+        ]
+        if visible_markers and len(visible_markers) == self.marker_list_ctrl.GetItemCount():
             self.marker_list_ctrl.DeleteAllItems()
             self.itemDataMap.clear()
-            return
+        else:
+            min_for_fast_deletion = 10
+            if len(visible_markers) > min_for_fast_deletion:
+                self.marker_list_ctrl.Hide()
 
-        min_for_fast_deletion = 10
-        if len(markers) > min_for_fast_deletion:
-            self.marker_list_ctrl.Hide()
+            deleted_keys = []
+            for marker in visible_markers:
+                idx = self.__find_marker_index_by_uuid(marker.marker_uuid)
+                if idx is None:
+                    continue
+                deleted_uuid = marker.marker_uuid
+                for key, data in self.itemDataMap.items():
+                    if data[-1] == deleted_uuid:
+                        deleted_keys.append(key)
 
-        deleted_ids = []
-        deleted_keys = []
-        for marker in markers:
-            idx = self.__find_marker_index(marker.marker_id)
-            if idx is None:
+                self.marker_list_ctrl.DeleteItem(idx)
+
+            for key in deleted_keys:
+                self.itemDataMap.pop(key, None)
+
+            self.marker_list_ctrl.Show()
+
+        wx.CallAfter(self._RefreshVisibleMarkerIds)
+
+    def _RefreshVisibleMarkerIds(self):
+        """Synchronize displayed IDs after hidden EEG markers change the central list."""
+        for row in range(self.marker_list_ctrl.GetItemCount()):
+            marker_uuid = self.marker_list_ctrl.GetItem(row, const.UUID).GetText()
+            marker = self.markers.FindByUUID(marker_uuid)
+            if marker is None:
                 continue
-            deleted_uuid = marker.marker_uuid
-            for key, data in self.itemDataMap.items():
-                current_uuid = data[-1]
-
-                if current_uuid == deleted_uuid:
-                    deleted_keys.append(key)
-
-            self.marker_list_ctrl.DeleteItem(idx)
-            deleted_ids.append(marker.marker_id)
-
-        # Remove all the deleted markers from itemDataMap
-        for key in deleted_keys:
-            try:
-                self.itemDataMap.pop(key)
-            except KeyError:
-                print("Invalid itemDataMap key:", key)
-
-        for idx in range(self.marker_list_ctrl.GetItemCount()):
-            self.marker_list_ctrl.SetItem(idx, const.ID_COLUMN, str(idx))
-
-        self.marker_list_ctrl.Show()
+            marker_id = marker.marker_id
+            self.marker_list_ctrl.SetItem(row, const.ID_COLUMN, str(marker_id))
+            for data in self.itemDataMap.values():
+                if data[-1] == marker_uuid:
+                    data[const.ID_COLUMN] = marker_id
+                    break
 
     def _SetPointOfInterest(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
@@ -3176,6 +3265,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 self.itemDataMap[key][const.POINT_OF_INTEREST_TARGET_COLUMN] = ""
 
     def _UpdateMarkerLabel(self, marker):
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            return
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItem(idx, const.LABEL_COLUMN, marker.label)
 
@@ -3209,8 +3300,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def UpdateCurrentCoord(self, position):
         self.current_position = list(position[:3])
-        self.current_orientation = list(position[3:])
-        if not self.navigation.track_coil:
+        if self.navigation.track_coil and len(position) >= 6:
+            self.current_orientation = list(position[3:6])
+        else:
             self.current_orientation = None, None, None
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -4257,6 +4349,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 return idx
         return None
 
+    def __find_marker_index_by_uuid(self, marker_uuid):
+        """Return the table row for a marker UUID."""
+        for row in range(self.marker_list_ctrl.GetItemCount()):
+            if self.marker_list_ctrl.GetItem(row, const.UUID).GetText() == marker_uuid:
+                return row
+        return None
+
     def __get_marker_id(self, idx):
         """
         For an index in self.marker_list_ctrl, returns the corresponding marker_id
@@ -4357,21 +4456,23 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
               place where the list of markers, including information about their visualization, is
               stored.
         """
-        for m, idx in zip(self.markers.list, range(len(self.markers.list))):
+        for m in self.markers.list:
             visualization = m.visualization
             if visualization is None:
                 continue
 
             if visualization.get("actor") == actor:
+                if m.marker_type == MarkerType.EEG_ELECTRODE:
+                    Publisher.sendMessage("Select EEG electrode", marker_uuid=m.marker_uuid)
+                    return
+
+                idx = self.__find_marker_index_by_uuid(m.marker_uuid)
+                if idx is None:
+                    return
                 # Unselect the previously selected item.
                 idx_old = self.marker_list_ctrl.GetFocusedItem()
                 if idx_old != -1 and idx_old != idx:
                     self.marker_list_ctrl.Select(idx_old, on=False)
-
-                current_uuid = m.marker_uuid
-                for i in range(self.marker_list_ctrl.GetItemCount()):
-                    if current_uuid == self.marker_list_ctrl.GetItem(i, const.UUID).GetText():
-                        idx = i
 
                 self.marker_list_ctrl.Focus(idx)
                 self.marker_list_ctrl.Select(idx, on=True)
@@ -4382,7 +4483,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             result = dlg.ShowConfirmationDialog(msg=_("Delete all markers? Cannot be undone."))
             if result != wx.ID_OK:
                 return
-        self.markers.Clear()
+        marker_ids = [
+            marker.marker_id
+            for marker in self.markers.list
+            if marker.marker_type != MarkerType.EEG_ELECTRODE
+        ]
+        if marker_ids:
+            self.markers.DeleteMultiple(marker_ids)
         self.itemDataMap.clear()
         self.__restore_default_marker_view()
 
@@ -4511,8 +4618,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         cortex_position_orientation=None,
         mep_value=None,
     ):
-        if label is None:
-            label = self.GetNextMarkerLabel()
+        is_eeg_marker = marker_type == MarkerType.EEG_ELECTRODE or (
+            marker_type is None and self.eeg_electrodes.registration_active
+        )
+        if is_eeg_marker:
+            self.OnCreateEEGElectrode(
+                position=position, colour=colour, size=size, label=label, session_id=session_id
+            )
+            return
 
         if self.nav_status and self.navigation.e_field_loaded:
             Publisher.sendMessage("Get Cortex position")
@@ -4550,6 +4663,47 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             mep_value=mep_value,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
+
+    def OnCreateEEGElectrode(
+        self, position=None, colour=None, size=None, label=None, session_id=None
+    ):
+        """Handle only the UI decisions for an EEG capture prepared by the manager."""
+        try:
+            capture = self.eeg_electrodes.prepare_capture(position)
+        except RuntimeError as error:
+            wx.MessageBox(str(error), _("InVesalius 3"), wx.OK | wx.ICON_WARNING)
+            return
+
+        if capture.needs_confirmation:
+            message = (
+                _(
+                    "The projection to the scalp surface moved the electrode by %.1f mm "
+                    "(above the 3 mm limit). This may indicate an inaccurate capture.\n\n"
+                    "Do you want to keep this electrode anyway?"
+                )
+                % capture.distance_mm
+            )
+            dialog = wx.MessageDialog(
+                self,
+                message,
+                _("Displacement Warning"),
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
+            )
+            try:
+                keep_electrode = dialog.ShowModal() == wx.ID_YES
+            finally:
+                dialog.Destroy()
+            if not keep_electrode:
+                return
+
+        self.eeg_electrodes.create_from_capture(
+            capture,
+            label=label,
+            colour=colour if colour is not None else self.marker_colour,
+            size=size if size is not None else self.marker_size,
+            session_id=session_id if session_id is not None else self.current_session,
+            focus=True,
+        )
 
     # Given a string, try to parse it as an integer, float, or string.
     #
@@ -4693,11 +4847,14 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.GetMarkersFromFile(filename, overwrite_checkbox.GetValue())
 
     def OnShowHideAllMarkers(self, evt, ctrl):
+        markers = [
+            marker for marker in self.markers.list if marker.marker_type != MarkerType.EEG_ELECTRODE
+        ]
         if ctrl.GetValue():
-            Publisher.sendMessage("Hide markers", markers=self.markers.list)
+            Publisher.sendMessage("Hide markers", markers=markers)
             ctrl.SetLabel("Show all")
         else:
-            Publisher.sendMessage("Show markers", markers=self.markers.list)
+            Publisher.sendMessage("Show markers", markers=markers)
             ctrl.SetLabel("Hide all")
 
     def OnSaveMarkers(self, evt):
@@ -4794,44 +4951,35 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         Create a new marker object.
         """
-        if label is None:
-            label = self.GetNextMarkerLabel()
-
-        marker = Marker()
-        marker.position = position or self.current_position
-        marker.orientation = orientation or self.current_orientation
-
-        marker.colour = colour or self.marker_colour
-        marker.size = size or self.marker_size
-        marker.label = label
-        marker.is_target = is_target
-        marker.seed = seed or self.current_seed
-        marker.session_id = session_id or self.current_session
-        marker.marker_type = marker_type
-        marker.cortex_position_orientation = (
-            cortex_position_orientation or self.cortex_position_orientation
+        return self.markers.CreateMarker(
+            position=position if position is not None else self.current_position,
+            orientation=orientation if orientation is not None else self.current_orientation,
+            colour=colour if colour is not None else self.marker_colour,
+            size=size if size is not None else self.marker_size,
+            label=label if label is not None else self.GetNextMarkerLabel(),
+            is_target=is_target,
+            seed=seed if seed is not None else self.current_seed,
+            session_id=session_id if session_id is not None else self.current_session,
+            marker_type=marker_type,
+            cortex_position_orientation=(
+                cortex_position_orientation
+                if cortex_position_orientation is not None
+                else self.cortex_position_orientation
+            ),
+            z_offset=z_offset,
+            z_rotation=z_rotation,
+            mep_value=mep_value,
         )
-        marker.z_offset = z_offset
-        marker.z_rotation = z_rotation
-        marker.mep_value = mep_value
-
-        # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
-        marker.marker_id = len(self.markers.list)
-
-        # Create an uuid for the marker
-        marker.marker_uuid = str(uuid.uuid4())
-
-        # if marker.marker_type == MarkerType.BRAIN_TARGET:
-        #    marker.colour = [0, 0, 1]
-
-        return marker
 
     def _AddMarker(self, marker, render, focus):
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            return
+
         # Add marker to the marker list in GUI and to the itemDataMap.
         num_items = self.marker_list_ctrl.GetItemCount()
 
         list_entry = ["" for _ in range(0, const.X_COLUMN)]
-        list_entry[const.ID_COLUMN] = num_items
+        list_entry[const.ID_COLUMN] = marker.marker_id
         list_entry[const.SESSION_COLUMN] = str(marker.session_id)
         list_entry[const.MARKER_TYPE_COLUMN] = marker.marker_type.human_readable
         list_entry[const.LABEL_COLUMN] = marker.label

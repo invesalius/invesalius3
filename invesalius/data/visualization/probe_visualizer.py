@@ -75,7 +75,10 @@ class ProbeVisualizer:
             self.renderer.RemoveActor(self.probe_actor)
             self.probe_actor = None
 
-    def UpdateProbePose(self, m_img, coord):
+    def UpdateProbePose(self, m_img, coord, probe_visible, head_visible):
+        if not (probe_visible and head_visible):
+            return
+
         m_img_flip = m_img.copy()
         m_img_flip[1, -1] = -m_img_flip[1, -1]
 

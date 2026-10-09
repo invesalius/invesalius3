@@ -68,6 +68,7 @@ from invesalius.data.visualization.robot_force_visualizer import RobotForceVisua
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d
+from invesalius.navigation.eeg_electrodes import EEGElectrodeManager
 from invesalius.navigation.robot import Robots
 from invesalius.pubsub import pub as Publisher
 
@@ -311,6 +312,8 @@ class NavigationView:
         self.guide_coil_actors = None
         self.guide_arrow_actors = None
         self.pTarget = [0.0, 0.0, 0.0]
+        self.use_volumetric_camera = EEGElectrodeManager().registration_active
+        self.camera_show_object = True if self.use_volumetric_camera else None
 
         self.distance_text = None
         self.robot_warnings_text = None
@@ -471,6 +474,8 @@ class NavigationView:
         Publisher.subscribe(self.OnRemoveSensorsID, "Remove sensors ID")
         Publisher.subscribe(self.DeleteEFieldMarkers, "Delete markers")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.OnEEGRegistrationModeChanged, "EEG registration mode changed")
+        Publisher.subscribe(self.UpdateEEGCamera, "Update probe pose")
         Publisher.subscribe(self.UpdateArrowPose, "Update object arrow matrix")
         Publisher.subscribe(
             self.UpdateEfieldPointLocation, "Update point location for e-field calculation"
@@ -2486,7 +2491,8 @@ class NavigationView:
             self.pTarget = self.CenterOfMass()
             self.RemoveEfieldVectorActor()
 
-        self.camera_show_object = None
+        if not self.use_volumetric_camera:
+            self.camera_show_object = None
         self._update_fps_visibility()
         if not self.nav_status:
             self.UpdateRender()
@@ -2564,9 +2570,21 @@ class NavigationView:
             self.Refresh()
         self.tracts_status = False
 
-    def SetVolumetricCamera(self, enabled):
-        self.use_volumetric_camera = enabled
-        self.camera_show_object = None
+    def SetVolumetricCamera(self, enabled, show_object=None):
+        self.use_volumetric_camera = bool(enabled)
+        self.camera_show_object = show_object if self.use_volumetric_camera else None
+
+    def OnEEGRegistrationModeChanged(self, active):
+        """Follow the tracked probe while EEG electrodes are being registered."""
+        self.SetVolumetricCamera(active, show_object=True)
+
+    def UpdateEEGCamera(self, m_img, coord, probe_visible, head_visible):
+        if not (self.use_volumetric_camera and probe_visible and head_visible):
+            return
+
+        probe_position = np.asarray(coord[:3], dtype=float).copy()
+        probe_position[1] *= -1
+        self.VolumetricCamera(probe_position)
 
     def VolumetricCamera(self, cam_focus):
         # TODO: exclude dependency on initial focus

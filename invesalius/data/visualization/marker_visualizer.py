@@ -1,3 +1,4 @@
+import numpy as np
 import vtk
 
 import invesalius.constants as const
@@ -85,6 +86,7 @@ class MarkerVisualizer:
 
     # Color for highlighting a marker.
     HIGHLIGHT_COLOR = vtk.vtkNamedColors().GetColor3d("Red")
+    EEG_HIGHLIGHT_COLOR = (0.0, 0.5, 1.0)
 
     # Scaling factor for the marker when it is highlighted.
     #
@@ -119,6 +121,7 @@ class MarkerVisualizer:
 
         self.is_navigating = False
         self.is_target_mode = False
+        self.eeg_labels_visible = True
 
         # The assembly for the current vector field, shown relative to the highlighted marker.
         self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
@@ -132,8 +135,15 @@ class MarkerVisualizer:
     def __bind_events(self):
         Publisher.subscribe(self.AddMarker, "Add marker")
         Publisher.subscribe(self.UpdateMarker, "Update marker")
+        Publisher.subscribe(self.UpdateMarkerLabel, "Update marker label")
         Publisher.subscribe(self.HideMarkers, "Hide markers")
         Publisher.subscribe(self.ShowMarkers, "Show markers")
+        Publisher.subscribe(self.SetMarkerVisibility, "Set marker visibility")
+        Publisher.subscribe(self.SetMarkersVisibility, "Set markers visibility")
+        Publisher.subscribe(
+            self.SetEEGLabelsVisibility,
+            "Set EEG electrode labels visibility",
+        )
         Publisher.subscribe(self.DeleteMarkers, "Delete markers")
         Publisher.subscribe(self.DeleteMarker, "Delete marker")
         Publisher.subscribe(self.SetCameraToFocusOnMarker, "Set camera to focus on marker")
@@ -239,6 +249,10 @@ class MarkerVisualizer:
                 position_flipped, orientation, colour
             )
 
+        # For 'EEG electrode' type markers, create a torus and a camera-facing label.
+        elif marker_type == MarkerType.EEG_ELECTRODE:
+            actor, label_actor = self._CreateEEGElectrodeActors(marker, position_flipped)
+
         else:
             assert False, "Invalid marker type."
 
@@ -249,10 +263,15 @@ class MarkerVisualizer:
 
         marker.visualization = {
             "actor": actor,
+            "label_actor": label_actor if marker_type == MarkerType.EEG_ELECTRODE else None,
             "highlighted": False,
-            "hidden": False,
+            "hidden": not marker.visible,
         }
+        actor.SetVisibility(marker.visible)
         self.renderer.AddActor(actor)
+        if marker_type == MarkerType.EEG_ELECTRODE:
+            label_actor.SetVisibility(marker.visible and self.eeg_labels_visible)
+            self.renderer.AddActor(label_actor)
 
         if render:
             self.interactor.Render()
@@ -261,20 +280,26 @@ class MarkerVisualizer:
         """
         Update the position and orientation of a marker.
         """
-        actor = marker.visualization["actor"]
-        highlighted = marker.visualization["highlighted"]
+        old_visualization = marker.visualization
+        highlighted = old_visualization["highlighted"]
         colour = marker.colour
 
         new_position_flipped = list(new_position)
         new_position_flipped[1] = -new_position_flipped[1]
 
-        # XXX: Workaround because modifying the original actor does not seem to work using
-        #   method UpdatePositionAndOrientation in ActorFactory; instead, create a new actor
-        #   and remove the old one. This only works for coil target markers, as the new actor
-        #   created is of a fixed type (arrow).
-        new_actor = self.actor_factory.CreateArrowUsingDirection(
-            new_position_flipped, new_orientation, colour
-        )
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            new_actor, new_label_actor = self._CreateEEGElectrodeActors(
+                marker, new_position_flipped, orientation=new_orientation
+            )
+        else:
+            # XXX: Workaround because modifying the original actor does not seem to work using
+            #   method UpdatePositionAndOrientation in ActorFactory; instead, create a new actor
+            #   and remove the old one. This only works for coil target markers, as the new actor
+            #   created is of a fixed type (arrow).
+            new_actor = self.actor_factory.CreateArrowUsingDirection(
+                new_position_flipped, new_orientation, colour
+            )
+            new_label_actor = None
 
         if highlighted:
             # Unhighlight the marker, but do not render the interactor yet to avoid flickering.
@@ -282,12 +307,21 @@ class MarkerVisualizer:
 
         marker.visualization = {
             "actor": new_actor,
+            "label_actor": new_label_actor,
             "highlighted": False,
-            "hidden": False,
+            "hidden": old_visualization["hidden"],
         }
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            new_actor.SetVisibility(not old_visualization["hidden"])
+            new_label_actor.SetVisibility(
+                not old_visualization["hidden"] and self.eeg_labels_visible
+            )
 
-        self.renderer.RemoveActor(actor)
+        for old_actor in self._GetVisualizationActors(marker, visualization=old_visualization):
+            self.renderer.RemoveActor(old_actor)
         self.renderer.AddActor(new_actor)
+        if new_label_actor is not None:
+            self.renderer.AddActor(new_label_actor)
 
         if highlighted:
             self.HighlightMarker(marker)
@@ -301,7 +335,6 @@ class MarkerVisualizer:
             is_target = marker.is_target
 
             highlighted = visualization["highlighted"]
-            actor = visualization["actor"]
 
             # Mark the marker as 'hidden' regardless of if it's the target or highlighted.
             #
@@ -309,11 +342,12 @@ class MarkerVisualizer:
             visualization["hidden"] = True
 
             # If marker is the target or it is already highlighted, do not actually hide the actor.
-            if is_target or highlighted:
+            if (is_target or highlighted) and marker.marker_type != MarkerType.EEG_ELECTRODE:
                 continue
 
             # Hide the actor.
-            actor.SetVisibility(0)
+            for actor in self._GetVisualizationActors(marker):
+                actor.SetVisibility(0)
 
         if not self.is_navigating:
             self.interactor.Render()
@@ -322,7 +356,12 @@ class MarkerVisualizer:
         for marker in markers:
             visualization = marker.visualization
 
-            visualization["actor"].SetVisibility(1)
+            actor = visualization.get("actor")
+            if actor is not None:
+                actor.SetVisibility(1)
+            label_actor = visualization.get("label_actor")
+            if label_actor is not None:
+                label_actor.SetVisibility(self.eeg_labels_visible)
 
             # Mark the marker as not hidden.
             visualization["hidden"] = False
@@ -330,26 +369,108 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
+    def SetEEGLabelsVisibility(self, markers, visible):
+        self.eeg_labels_visible = bool(visible)
+        for marker in markers:
+            label_actor = marker.visualization.get("label_actor")
+            if label_actor is not None:
+                label_actor.SetVisibility(
+                    self.eeg_labels_visible and not marker.visualization["hidden"]
+                )
+
+        if not self.is_navigating:
+            self.interactor.Render()
+
+    def SetMarkerVisibility(self, marker, visible):
+        self.SetMarkersVisibility([marker], visible)
+
+    def SetMarkersVisibility(self, markers, visible):
+        markers_with_actors = [
+            marker for marker in markers if marker.visualization.get("actor") is not None
+        ]
+        if visible:
+            self.ShowMarkers(markers_with_actors)
+        else:
+            self.HideMarkers(markers_with_actors)
+
     def DeleteMarkers(self, markers):
         for marker in markers:
-            actor = marker.visualization.get("actor")
-            self.renderer.RemoveActor(actor)
+            for actor in self._GetVisualizationActors(marker):
+                self.renderer.RemoveActor(actor)
 
         if not self.is_navigating:
             self.interactor.Render()
 
     def DeleteMarker(self, marker):
-        actor = marker.visualization.get("actor")
-        self.renderer.RemoveActor(actor)
+        for actor in self._GetVisualizationActors(marker):
+            self.renderer.RemoveActor(actor)
         if not self.is_navigating:
             self.interactor.Render()
 
     def SetNewColor(self, marker, new_color):
         actor = marker.visualization.get("actor")
-        actor.GetProperty().SetColor([round(s / 255.0, 3) for s in new_color])
+        colour = [round(s / 255.0, 3) for s in new_color]
+        actor.GetProperty().SetColor(colour)
+        label_actor = marker.visualization.get("label_actor")
+        if label_actor is not None:
+            label_actor.GetTextProperty().SetColor(colour)
 
         if not self.is_navigating:
             self.interactor.Render()
+
+    def UpdateMarkerLabel(self, marker):
+        if marker.marker_type != MarkerType.EEG_ELECTRODE:
+            return
+
+        label_actor = marker.visualization.get("label_actor")
+        if label_actor is not None:
+            label_actor.SetInput(self._GetEEGElectrodeLabel(marker))
+            if not self.is_navigating:
+                self.interactor.Render()
+
+    def _CreateEEGElectrodeActors(self, marker, position, orientation=None):
+        orientation = orientation if orientation is not None else marker.orientation
+        orientation = [value if value is not None else 0.0 for value in orientation]
+        torus_actor = self.actor_factory.CreateTorus(
+            position,
+            orientation,
+            marker.colour,
+            ring_radius=3.0,
+            cross_section_radius=0.8,
+        )
+        torus_actor.GetProperty().SetOpacity(0.8)
+
+        label_actor = vtk.vtkBillboardTextActor3D()
+        label_actor.SetInput(self._GetEEGElectrodeLabel(marker))
+        label_actor.SetPosition(position[0], position[1], position[2] + 6.0)
+        label_actor.PickableOff()
+
+        text_property = label_actor.GetTextProperty()
+        text_property.SetFontSize(28)
+        text_property.SetColor(marker.colour)
+        text_property.SetBold(True)
+        text_property.SetShadow(True)
+        text_property.SetShadowOffset(2, -2)
+        text_property.SetFrame(True)
+        text_property.SetFrameColor(0.2, 0.2, 0.2)
+        text_property.SetFrameWidth(2)
+        text_property.SetBackgroundColor(0.3, 0.3, 0.3)
+        text_property.SetBackgroundOpacity(0.85)
+
+        return torus_actor, label_actor
+
+    @staticmethod
+    def _GetEEGElectrodeLabel(marker):
+        return marker.label
+
+    @staticmethod
+    def _GetVisualizationActors(marker, visualization=None):
+        visualization = visualization if visualization is not None else marker.visualization
+        return [
+            actor
+            for actor in (visualization.get("actor"), visualization.get("label_actor"))
+            if actor is not None
+        ]
 
     def SetTarget(self, marker):
         """
@@ -503,6 +624,12 @@ class MarkerVisualizer:
         """
         Set the camera focal point to the marker, making the marker the center of the view.
         """
+        if marker.marker_type == MarkerType.EEG_ELECTRODE:
+            if self.is_navigating:
+                return
+            self._FocusCameraOnEEGElectrode(marker)
+            return
+
         # If not navigating, render the scene.
         if not self.is_target_mode or not self.is_navigating:
             position = marker.position
@@ -518,6 +645,35 @@ class MarkerVisualizer:
                 self.renderer.ResetCameraClippingRange()
                 self.renderer.Render()
                 self.interactor.GetRenderWindow().Render()
+
+    def _FocusCameraOnEEGElectrode(self, marker):
+        target = np.asarray(marker.position, dtype=float)
+        target[1] *= -1
+
+        orientation = [value if value is not None else 0.0 for value in marker.orientation]
+        rotation = dco.coordinates_to_transformation_matrix(
+            position=(0.0, 0.0, 0.0),
+            orientation=orientation,
+            axes="sxyz",
+        )
+        normal = rotation[:3, 2]
+        normal_length = np.linalg.norm(normal)
+        normal = normal / normal_length if normal_length > 1e-6 else np.array([0.0, 0.0, 1.0])
+
+        camera = self.renderer.GetActiveCamera()
+        camera_position = np.asarray(camera.GetPosition(), dtype=float)
+        camera_focal_point = np.asarray(camera.GetFocalPoint(), dtype=float)
+        camera_distance = np.linalg.norm(camera_position - camera_focal_point)
+        if camera_distance < 50.0:
+            camera_distance = 250.0
+
+        new_position = target + normal * camera_distance
+        camera.SetFocalPoint(*target)
+        camera.SetPosition(*new_position)
+        camera.SetViewUp(0, 1, 0) if abs(normal[2]) > 0.99 else camera.SetViewUp(0, 0, 1)
+
+        self.renderer.ResetCameraClippingRange()
+        self.interactor.Render()
 
     def HighlightMarker(self, marker, render=True):
         # Unpack relevant fields from the marker.
@@ -547,7 +703,12 @@ class MarkerVisualizer:
             return
 
         # Change the color of the marker.
-        actor.GetProperty().SetColor(self.HIGHLIGHT_COLOR)
+        highlight_colour = (
+            self.EEG_HIGHLIGHT_COLOR
+            if marker_type == MarkerType.EEG_ELECTRODE
+            else self.HIGHLIGHT_COLOR
+        )
+        actor.GetProperty().SetColor(highlight_colour)
 
         # Increase the scale of the marker.
         self.actor_factory.ScaleActor(actor, self.HIGHLIGHTED_MARKER_SCALING_FACTOR)
@@ -602,6 +763,12 @@ class MarkerVisualizer:
         # However, if it is the target, it should remain visible.
         if marker.is_target:
             actor.SetVisibility(1)
+
+        label_actor = marker.visualization.get("label_actor")
+        if label_actor is not None:
+            label_actor.SetVisibility(
+                self.eeg_labels_visible and not marker.visualization["hidden"]
+            )
 
         # Remove the projection actor if it exists.
         if self.projection_line_actor is not None:

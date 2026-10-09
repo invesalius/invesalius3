@@ -6328,7 +6328,7 @@ class BrainSurfaceLoadingProgressWindow:
 
 class SurfaceSmoothingProgressWindow:
     def __init__(self):
-        title = "InVesalius 3 – Creating TMS Coil Target"
+        title = _("InVesalius 3 – Surface Smoothing")
         message = _("Smoothing the surface...")
         style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
         parent = wx.GetApp().GetTopWindow()
@@ -6344,6 +6344,38 @@ class SurfaceSmoothingProgressWindow:
 
     def Close(self) -> None:
         self.dlg.Destroy()
+
+
+def ShowEEGMontageExportDialog(
+    parent: wx.Window, default_directory: str = ""
+) -> tuple[str, str] | None:
+    """Select an EEG export filename and format in the native save dialog."""
+    export_formats = ("BIDS", "HPTS")
+    wildcard = "|".join(
+        (
+            _("BIDS EEG montage (*.tsv, *.json)"),
+            "*.tsv;*.json",
+            _("MNE Head Points (*.hpts)"),
+            "*.hpts",
+        )
+    )
+    export_dialog = wx.FileDialog(
+        parent,
+        message=_("Save EEG montage as..."),
+        defaultDir=default_directory,
+        defaultFile="sub-01_electrodes.tsv",
+        wildcard=wildcard,
+        style=wx.FD_SAVE,
+    )
+    export_dialog.SetFilterIndex(0)
+    try:
+        if export_dialog.ShowModal() != wx.ID_OK:
+            return None
+        output_filename = export_dialog.GetPath()
+        export_format = export_formats[export_dialog.GetFilterIndex()]
+        return output_filename, export_format
+    finally:
+        export_dialog.Destroy()
 
 
 class SurfaceProgressWindow:

@@ -1,10 +1,16 @@
+import numpy as np
 import vtk
 import wx
 
+import invesalius.data.transformations as tr
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
+
+# Radius used to average nearby scalp normals. This stabilizes orientation and
+# is independent from the filter that smooths the surface mesh itself.
+SCALP_NORMAL_AVERAGING_RADIUS_MM = 15.0
 
 
 class SurfaceGeometry(metaclass=Singleton):
@@ -22,13 +28,37 @@ class SurfaceGeometry(metaclass=Singleton):
         self.surfaces = []
 
     def PrecalculateSurfaceData(self, actor):
+        mapper = actor.GetMapper()
+        mapper.Update()
+        polydata = mapper.GetInput()
+        if (
+            polydata is None
+            or polydata.GetNumberOfPoints() == 0
+            or polydata.GetNumberOfCells() == 0
+        ):
+            return {
+                "actor": actor,
+                "polydata": polydata,
+                "normals": None,
+                "point_locator": None,
+                "cell_locator": None,
+                "highest_z": float("-inf"),
+            }
+
         normals = self.GetSurfaceNormals(actor)
         highest_z = self.CalculateHighestZ(actor)
-        polydata = actor.GetMapper().GetInput()
+        point_locator = vtk.vtkPointLocator()
+        point_locator.SetDataSet(polydata)
+        point_locator.BuildLocator()
+        cell_locator = vtk.vtkCellLocator()
+        cell_locator.SetDataSet(polydata)
+        cell_locator.BuildLocator()
         return {
             "actor": actor,
             "polydata": polydata,
             "normals": normals,
+            "point_locator": point_locator,
+            "cell_locator": cell_locator,
             "highest_z": highest_z,
         }
 
@@ -243,11 +273,14 @@ class SurfaceGeometry(metaclass=Singleton):
 
     def GetSmoothedScalpSurface(self):
         # Retrieve the surface with the highest z-coordinate.
-        if not self.surfaces:
+        valid_surfaces = [
+            surface for surface in self.surfaces if self._HasUsableGeometry(surface["original"])
+        ]
+        if not valid_surfaces:
             return None
 
         # Find the surface with the highest z-coordinate
-        highest_surface = max(self.surfaces, key=lambda surface: surface["original"]["highest_z"])
+        highest_surface = max(valid_surfaces, key=lambda surface: surface["original"]["highest_z"])
 
         # Track if a new highest surface was detected
         current_id = id(highest_surface)
@@ -282,25 +315,120 @@ class SurfaceGeometry(metaclass=Singleton):
 
             progress_window.Close()
 
-        return highest_surface["smoothed"]
+        smoothed_surface = highest_surface["smoothed"]
+        if not self._HasUsableGeometry(smoothed_surface):
+            return None
+        return smoothed_surface
 
-    def GetClosestPointOnSurface(self, surface_name, point):
+    def GetClosestPointOnSurface(self, surface_name, point, smooth_radius=0.0):
+        """Return the closest point and local normal on the shared smoothed scalp.
+
+        ``smooth_radius`` averages nearby point normals to provide stable orientation
+        while moving targets or creating grids on locally irregular meshes.
+        """
         surface = self.GetSmoothedScalpSurface()
+        if surface is None:
+            raise RuntimeError(_("Create a 3D scalp surface before projecting onto it."))
 
         polydata = surface["polydata"]
         normals = surface["normals"]
+        point_locator = surface["point_locator"]
+        point = np.asarray(point, dtype=float)
+        if point.shape != (3,) or not np.all(np.isfinite(point)):
+            raise RuntimeError(_("Coordinates must contain only finite numbers."))
 
-        # Create a cell locator using VTK. This will allow us to find the closest point on the surface to the given point.
-        point_locator = vtk.vtkPointLocator()
-        point_locator.SetDataSet(polydata)
-        point_locator.BuildLocator()
-        closest_point_id = point_locator.FindClosestPoint(point)
+        closest_point = [0.0, 0.0, 0.0]
+        cell_id = vtk.reference(-1)
+        sub_id = vtk.reference(0)
+        distance_squared = vtk.reference(0.0)
+        surface["cell_locator"].FindClosestPoint(
+            point, closest_point, cell_id, sub_id, distance_squared
+        )
+        if not 0 <= cell_id.get() < polydata.GetNumberOfCells():
+            raise RuntimeError(_("The scalp surface does not contain usable geometry."))
 
-        # Retrieve the coordinates of the closest point using the point ID.
-        closest_point = polydata.GetPoint(closest_point_id)
-
-        # Extract the normal at the closest point
         normal_data = normals.GetPointData().GetNormals()
-        closest_normal = normal_data.GetTuple(closest_point_id)
+        if normal_data is None:
+            raise RuntimeError(_("The scalp surface does not contain usable normals."))
 
-        return closest_point, closest_normal
+        # Interpolate normals at the actual point on the cell, not at a nearby vertex.
+        cell = polydata.GetCell(cell_id.get())
+        weights = [0.0] * cell.GetNumberOfPoints()
+        evaluation = cell.EvaluatePosition(
+            closest_point, [0.0, 0.0, 0.0], sub_id, [0.0, 0.0, 0.0], distance_squared, weights
+        )
+        if evaluation < 0:
+            closest_point_id = point_locator.FindClosestPoint(closest_point)
+            closest_normal = np.asarray(normal_data.GetTuple(closest_point_id), dtype=float)
+        else:
+            closest_normal = np.sum(
+                [
+                    np.asarray(normal_data.GetTuple(cell.GetPointId(index))) * weight
+                    for index, weight in enumerate(weights)
+                ],
+                axis=0,
+            )
+        interpolated_normal = closest_normal.copy()
+
+        if smooth_radius > 0:
+            nearby_ids = vtk.vtkIdList()
+            point_locator.FindPointsWithinRadius(smooth_radius, closest_point, nearby_ids)
+            if nearby_ids.GetNumberOfIds() > 0:
+                closest_normal = np.mean(
+                    [
+                        normal_data.GetTuple(nearby_ids.GetId(index))
+                        for index in range(nearby_ids.GetNumberOfIds())
+                    ],
+                    axis=0,
+                )
+
+        normal_length = np.linalg.norm(closest_normal)
+        if normal_length < 1e-10:
+            closest_normal = interpolated_normal
+            normal_length = np.linalg.norm(closest_normal)
+        if not np.isfinite(normal_length) or normal_length < 1e-10:
+            raise RuntimeError(_("The scalp surface does not contain usable normals."))
+        closest_normal /= normal_length
+
+        return tuple(closest_point), tuple(closest_normal)
+
+    @staticmethod
+    def _HasUsableGeometry(surface):
+        if surface is None:
+            return False
+        polydata = surface.get("polydata")
+        normals = surface.get("normals")
+        normal_data = normals.GetPointData().GetNormals() if normals is not None else None
+        return (
+            polydata is not None
+            and polydata.GetNumberOfPoints() > 0
+            and polydata.GetNumberOfCells() > 0
+            and normal_data is not None
+            and normal_data.GetNumberOfTuples() >= polydata.GetNumberOfPoints()
+            and surface.get("point_locator") is not None
+            and surface.get("cell_locator") is not None
+        )
+
+    @staticmethod
+    def OrientationFromNormal(normal):
+        """Return Euler angles that align the local +Z axis with a surface normal."""
+        reference = np.array([0.0, 0.0, 1.0])
+        normal = np.asarray(normal, dtype=float)
+        normal_length = np.linalg.norm(normal)
+        if normal_length == 0:
+            return np.zeros(3)
+
+        normal /= normal_length
+        rotation_axis = np.cross(reference, normal)
+        axis_length = np.linalg.norm(rotation_axis)
+        dot_product = np.clip(np.dot(reference, normal), -1.0, 1.0)
+
+        if axis_length < 1e-10:
+            if dot_product >= 0:
+                return np.zeros(3)
+            rotation_axis = np.array([1.0, 0.0, 0.0])
+        else:
+            rotation_axis /= axis_length
+
+        rotation_matrix = tr.rotation_matrix(np.arccos(dot_product), rotation_axis)
+        return np.degrees(tr.euler_from_matrix(rotation_matrix, "sxyz"))
