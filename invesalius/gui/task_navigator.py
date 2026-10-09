@@ -62,7 +62,6 @@ from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.gui import deep_learning_seg_dialog
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
 from invesalius.i18n import tr as _
-from invesalius.navigation.eeg_electrodes import MAX_SCALP_PROJECTION_DISTANCE_MM
 from invesalius.navigation.navigation import NavigationHub
 from invesalius.navigation.robot import RobotObjective
 from invesalius.pubsub import pub as Publisher
@@ -2731,8 +2730,7 @@ class ControlPanel(wx.Panel):
 
     def OnEEGRegistrationButton(self, evt):
         active = self.eeg_registration_button.GetValue()
-        project_has_surface = bool(prj.Project().surface_dict)
-        if active and (not project_has_surface or not self.eeg_electrodes.prepare_scalp_surface()):
+        if active and not self.eeg_electrodes.prepare_scalp_surface():
             self.UpdateToggleButton(self.eeg_registration_button, False)
             wx.MessageBox(
                 _("Create a 3D scalp surface before registering EEG electrodes."),
@@ -3294,10 +3292,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def UpdateCurrentCoord(self, position):
         self.current_position = list(position[:3])
-        tracks_oriented_object = (
-            self.navigation.track_coil or self.eeg_electrodes.registration_active
-        )
-        if tracks_oriented_object and len(position) >= 6:
+        if self.navigation.track_coil and len(position) >= 6:
             self.current_orientation = list(position[3:6])
         else:
             self.current_orientation = None, None, None
@@ -4618,66 +4613,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         is_eeg_marker = marker_type == MarkerType.EEG_ELECTRODE or (
             marker_type is None and self.eeg_electrodes.registration_active
         )
-        if is_eeg_marker and not self.nav_status:
-            if evt is not None:
-                wx.MessageBox(
-                    _("Start navigation before registering EEG electrodes."),
-                    _("InVesalius 3"),
-                    wx.OK | wx.ICON_WARNING,
-                )
-            return
-
-        if is_eeg_marker and not prj.Project().surface_dict:
-            wx.MessageBox(
-                _("Create a 3D scalp surface before registering EEG electrodes."),
-                _("InVesalius 3"),
-                wx.OK | wx.ICON_WARNING,
-            )
-            return
-
         if is_eeg_marker:
-            try:
-                capture_position = self.eeg_electrodes.get_capture_position()
-                if position is not None:
-                    capture_position = position
-                projection = self.eeg_electrodes.project_to_scalp(capture_position)
-            except (RuntimeError, ValueError, TypeError) as error:
-                wx.MessageBox(str(error), _("InVesalius 3"), wx.OK | wx.ICON_ERROR)
-                return
-
-            if projection.distance_mm > MAX_SCALP_PROJECTION_DISTANCE_MM:
-                message = (
-                    _(
-                        "The projection to the scalp surface moved the electrode by %.1f mm "
-                        "(above the 3 mm limit). This may indicate an inaccurate capture.\n\n"
-                        "Do you want to keep this electrode anyway?"
-                    )
-                    % projection.distance_mm
-                )
-                dialog = wx.MessageDialog(
-                    self,
-                    message,
-                    _("Displacement Warning"),
-                    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
-                )
-                keep_electrode = dialog.ShowModal() == wx.ID_YES
-                dialog.Destroy()
-                if not keep_electrode:
-                    return
-
-            self.eeg_electrodes.create(
-                projection.position,
-                orientation=projection.orientation,
-                label=label,
-                colour=colour if colour is not None else self.marker_colour,
-                size=size if size is not None else self.marker_size,
-                session_id=session_id if session_id is not None else self.current_session,
-                focus=True,
+            self.OnCreateEEGElectrode(
+                position=position, colour=colour, size=size, label=label, session_id=session_id
             )
             return
-
-        if label is None:
-            label = self.GetNextMarkerLabel()
 
         if self.nav_status and self.navigation.e_field_loaded:
             Publisher.sendMessage("Get Cortex position")
@@ -4691,16 +4631,13 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         #   MarkerType.FIDUCIAL by the caller), do not automatically infer the marker type; only do it, if
         #   marker_type is None.
         if marker_type is None:
-            if self.eeg_electrodes.registration_active:
-                marker_type = MarkerType.EEG_ELECTRODE
-            else:
-                marker_type = (
-                    MarkerType.COIL_TARGET
-                    if self.nav_status and self.navigation.track_coil
-                    else MarkerType.LANDMARK
-                )
+            marker_type = (
+                MarkerType.COIL_TARGET
+                if self.nav_status and self.navigation.track_coil
+                else MarkerType.LANDMARK
+            )
         # Ensure LANDMARK is used when navigation is off
-        if not self.nav_status and orientation is None and marker_type != MarkerType.EEG_ELECTRODE:
+        if not self.nav_status and orientation is None:
             marker_type = MarkerType.LANDMARK
             orientation = None, None, None
 
@@ -4718,6 +4655,47 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             mep_value=mep_value,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
+
+    def OnCreateEEGElectrode(
+        self, position=None, colour=None, size=None, label=None, session_id=None
+    ):
+        """Handle only the UI decisions for an EEG capture prepared by the manager."""
+        try:
+            capture = self.eeg_electrodes.prepare_capture(position)
+        except RuntimeError as error:
+            wx.MessageBox(str(error), _("InVesalius 3"), wx.OK | wx.ICON_WARNING)
+            return
+
+        if capture.needs_confirmation:
+            message = (
+                _(
+                    "The projection to the scalp surface moved the electrode by %.1f mm "
+                    "(above the 3 mm limit). This may indicate an inaccurate capture.\n\n"
+                    "Do you want to keep this electrode anyway?"
+                )
+                % capture.distance_mm
+            )
+            dialog = wx.MessageDialog(
+                self,
+                message,
+                _("Displacement Warning"),
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
+            )
+            try:
+                keep_electrode = dialog.ShowModal() == wx.ID_YES
+            finally:
+                dialog.Destroy()
+            if not keep_electrode:
+                return
+
+        self.eeg_electrodes.create_from_capture(
+            capture,
+            label=label,
+            colour=colour if colour is not None else self.marker_colour,
+            size=size if size is not None else self.marker_size,
+            session_id=session_id if session_id is not None else self.current_session,
+            focus=True,
+        )
 
     # Given a string, try to parse it as an integer, float, or string.
     #
@@ -4965,37 +4943,25 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         """
         Create a new marker object.
         """
-        if label is None:
-            label = self.GetNextMarkerLabel()
-
-        marker = Marker()
-        marker.position = position or self.current_position
-        marker.orientation = orientation or self.current_orientation
-
-        marker.colour = colour or self.marker_colour
-        marker.size = size or self.marker_size
-        marker.label = label
-        marker.is_target = is_target
-        marker.seed = seed or self.current_seed
-        marker.session_id = session_id or self.current_session
-        marker.marker_type = marker_type
-        marker.cortex_position_orientation = (
-            cortex_position_orientation or self.cortex_position_orientation
+        return self.markers.CreateMarker(
+            position=position if position is not None else self.current_position,
+            orientation=orientation if orientation is not None else self.current_orientation,
+            colour=colour if colour is not None else self.marker_colour,
+            size=size if size is not None else self.marker_size,
+            label=label if label is not None else self.GetNextMarkerLabel(),
+            is_target=is_target,
+            seed=seed if seed is not None else self.current_seed,
+            session_id=session_id if session_id is not None else self.current_session,
+            marker_type=marker_type,
+            cortex_position_orientation=(
+                cortex_position_orientation
+                if cortex_position_orientation is not None
+                else self.cortex_position_orientation
+            ),
+            z_offset=z_offset,
+            z_rotation=z_rotation,
+            mep_value=mep_value,
         )
-        marker.z_offset = z_offset
-        marker.z_rotation = z_rotation
-        marker.mep_value = mep_value
-
-        # Marker IDs start from zero, hence len(self.markers) will be the ID of the new marker.
-        marker.marker_id = len(self.markers.list)
-
-        # Create an uuid for the marker
-        marker.marker_uuid = str(uuid.uuid4())
-
-        # if marker.marker_type == MarkerType.BRAIN_TARGET:
-        #    marker.colour = [0, 0, 1]
-
-        return marker
 
     def _AddMarker(self, marker, render, focus):
         if marker.marker_type == MarkerType.EEG_ELECTRODE:

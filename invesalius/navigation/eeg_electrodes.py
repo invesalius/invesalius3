@@ -53,6 +53,10 @@ class ScalpProjection:
     normal: tuple[float, float, float]
     distance_mm: float
 
+    @property
+    def needs_confirmation(self) -> bool:
+        return self.distance_mm > MAX_SCALP_PROJECTION_DISTANCE_MM
+
 
 class EEGElectrodeManager(metaclass=Singleton):
     """Create and manage EEG electrodes stored in the central marker collection."""
@@ -75,7 +79,6 @@ class EEGElectrodeManager(metaclass=Singleton):
     def on_navigation_status(self, nav_status, vis_status):
         self.navigation_on = nav_status
         self._probe_position = None
-        self._probe_pose_time = 0.0
 
     def update_tracking_status(self, poses, visibilities, robot_id=-1):
         """Use tracker visibility only; raw tracker poses are not in image space."""
@@ -230,16 +233,14 @@ class EEGElectrodeManager(metaclass=Singleton):
         from invesalius.data import imagedata_utils
 
         world_electrodes = []
-        for electrode in sorted(self.electrodes, key=self._get_export_name):
+        for electrode in sorted(self.electrodes, key=lambda electrode: electrode.label):
             position, _orientation = imagedata_utils.convert_invesalius_to_world(
                 position=electrode.position,
                 orientation=(0.0, 0.0, 0.0),
             )
             if any(value is None or not isfinite(float(value)) for value in position):
                 raise ValueError("The project does not have a valid MRI world coordinate system.")
-            world_electrodes.append(
-                (self._get_export_name(electrode), tuple(float(value) for value in position))
-            )
+            world_electrodes.append((electrode.label, tuple(float(value) for value in position)))
         return world_electrodes
 
     @staticmethod
@@ -262,10 +263,6 @@ class EEGElectrodeManager(metaclass=Singleton):
             fiducials[name] = [round(float(value), 2) for value in position_world]
         return fiducials
 
-    @staticmethod
-    def _get_export_name(electrode: Marker) -> str:
-        return electrode.label
-
     @property
     def electrodes(self) -> list[Marker]:
         """Return the EEG electrode markers in their current marker-list order."""
@@ -276,7 +273,7 @@ class EEGElectrodeManager(metaclass=Singleton):
         position: Sequence[float],
         *,
         label: str | None = None,
-        orientation: Sequence[float] | None = None,
+        orientation: Sequence[float] = (0.0, 0.0, 0.0),
         colour: Sequence[float] = (0.0, 1.0, 0.0),
         size: float = 2.0,
         visible: bool = True,
@@ -284,21 +281,27 @@ class EEGElectrodeManager(metaclass=Singleton):
         session_id: int = 1,
     ) -> Marker:
         """Create, persist and return one EEG electrode marker."""
-        electrode = Marker(
-            label=label or self.next_label(),
-            marker_type=MarkerType.EEG_ELECTRODE,
+        electrode = self.markers.CreateMarker(
+            position=position,
+            orientation=orientation,
+            colour=colour,
             size=size,
+            label=label if label is not None else self.next_label(),
+            marker_type=MarkerType.EEG_ELECTRODE,
             visible=visible,
             session_id=session_id,
         )
-        electrode.position = self._validate_coordinate(position, "position")
-        electrode.orientation = self._validate_coordinate(
-            orientation if orientation is not None else (0.0, 0.0, 0.0),
-            "orientation",
-        )
-        electrode.colour = self._validate_coordinate(colour, "colour")
         self.markers.AddMarker(electrode, focus=focus)
         return electrode
+
+    def prepare_capture(self, position: Sequence[float] | None = None) -> ScalpProjection:
+        """Validate navigation/tracking and prepare the electrode's scalp pose."""
+        probe_position = self.get_capture_position()
+        return self.project_to_scalp(probe_position if position is None else position)
+
+    def create_from_capture(self, capture: ScalpProjection, **marker_options) -> Marker:
+        """Create the confirmed capture without sampling or projecting it again."""
+        return self.create(capture.position, orientation=capture.orientation, **marker_options)
 
     def create_many(
         self, positions: Iterable[Sequence[float]], *, visible: bool = True
@@ -308,7 +311,7 @@ class EEGElectrodeManager(metaclass=Singleton):
 
     def project_to_scalp(self, position: Sequence[float]) -> ScalpProjection:
         """Project a tracker position onto the shared smoothed scalp surface."""
-        original_position = self._validate_coordinate(position, "position")
+        original_position = list(position)
         viewer_position = original_position.copy()
         viewer_position[1] *= -1
 
@@ -379,12 +382,3 @@ class EEGElectrodeManager(metaclass=Singleton):
         if marker is None or marker.marker_type != MarkerType.EEG_ELECTRODE:
             return None
         return marker
-
-    @staticmethod
-    def _validate_coordinate(values: Sequence[float], name: str) -> list[float]:
-        coordinate = [float(value) for value in values]
-        if len(coordinate) != 3:
-            raise ValueError(f"{name} must contain exactly three values")
-        if not all(isfinite(value) for value in coordinate):
-            raise ValueError(_("Coordinates must contain only finite numbers."))
-        return coordinate
