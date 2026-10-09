@@ -18,7 +18,6 @@
 # --------------------------------------------------------------------------
 
 import collections
-import math
 import os
 import sys
 
@@ -75,9 +74,6 @@ else:
 
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
-
-# Below this angle (degrees) from an axis the direction text shows a single letter
-DIRECTION_SNAP_ANGLE = 1.5
 
 ORIENTATIONS = {
     "AXIAL": const.AXIAL,
@@ -448,54 +444,32 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def GetDirectionLabels(self):
-        # Labels at the default camera, clockwise starting from the top.
+    def GetDefaultTextDirection(self):
+        # Values are on ccw order, starting from the top:
         if self.orientation == "AXIAL":
-            return [_("A"), _("L"), _("P"), _("R")]
+            return [_("A"), _("R"), _("P"), _("L")]
         elif self.orientation == "CORONAL":
-            return [_("T"), _("L"), _("B"), _("R")]
+            return [_("T"), _("R"), _("B"), _("L")]
         else:  # 'SAGITAL':
-            return [_("T"), _("A"), _("B"), _("P")]
-
-    def ResetTextDirection(self, cam):
-        top, right, bottom, left = self.GetDirectionLabels()
-        self.RenderTextDirection([top, left, bottom, right])
-        if not self.nav_status:
-            self.UpdateRender()
+            return [_("T"), _("P"), _("B"), _("A")]
 
     def UpdateTextDirection(self, cam):
-        # Angle of the current view up relative to the default one of this
-        # slice, so it does not depend on how the image was acquired. Positive
-        # when the label on the right moves towards the top.
-        up_0 = self.GetDefaultViewUp()
-        up = cam.GetViewUp()
-        dx, dy, dz = cam.GetDirectionOfProjection()
-        right_0 = (
-            dy * up_0[2] - dz * up_0[1],
-            dz * up_0[0] - dx * up_0[2],
-            dx * up_0[1] - dy * up_0[0],
-        )
-        angle = math.degrees(
-            math.atan2(
-                sum(u * r for u, r in zip(up, right_0)),
-                sum(u * u_0 for u, u_0 in zip(up, up_0)),
-            )
-        )
+        # Roll relative to the default camera of this slice, from -180 to 180.
+        roll = (cam.GetRoll() - self.default_roll + 180) % 360 - 180
+        quarter = round(roll / 90)
+        remainder = roll - 90 * quarter
 
-        quarter = round(angle / 90)
-        remainder = angle - 90 * quarter
-        labels = self.GetDirectionLabels()
-
-        values = []
-        for position in range(4):  # top, right, bottom, left
-            value = labels[(quarter + position) % 4]
-            if abs(remainder) > DIRECTION_SNAP_ANGLE:
+        default = self.GetDefaultTextDirection()
+        directions = []
+        for i in range(4):
+            direction = default[(i - quarter) % 4]
+            # Two letters when more than 1.5 degrees away from an axis.
+            if abs(remainder) > 1.5:
                 step = 1 if remainder > 0 else -1
-                value += labels[(quarter + position + step) % 4]
-            values.append(value)
+                direction += default[(i - quarter - step) % 4]
+            directions.append(direction)
 
-        top, right, bottom, left = values
-        self.RenderTextDirection([top, left, bottom, right])
+        self.RenderTextDirection(directions)
 
     def Reposition(self, slice_data):
         """
@@ -1347,22 +1321,18 @@ class Viewer(wx.Panel):
             if not self.nav_status:
                 self.UpdateRender()
 
-    def GetDefaultViewUp(self):
-        # The default camera depends on how the image was acquired.
-        orig_orien = project.Project().original_orientation
-        return const.SLICE_POSITION[orig_orien][0][self.orientation]
-
     def __update_camera(self):
         # orientation = self.orientation
         proj = project.Project()
         orig_orien = proj.original_orientation
 
         self.cam.SetFocalPoint(0, 0, 0)
-        self.cam.SetViewUp(self.GetDefaultViewUp())
+        self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
         self.cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
         # self.cam.ComputeViewPlaneNormal()
         # self.cam.OrthogonalizeViewUp()
         self.cam.ParallelProjectionOn()
+        self.default_roll = self.cam.GetRoll()
 
     def __update_display_extent(self, image):
         self.slice_data.actor.SetDisplayExtent(image.GetExtent())

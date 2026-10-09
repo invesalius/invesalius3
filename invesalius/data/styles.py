@@ -1238,8 +1238,8 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = iren.GetLastEventPosition()
         ren = iren.FindPokedRenderer(mouse_x, mouse_y)
         cam = ren.GetActiveCamera()
-        cam.SetViewUp(self.viewer.GetDefaultViewUp())
-        self.viewer.ResetTextDirection(cam)
+        cam.SetRoll(self.viewer.default_roll)
+        self.viewer.UpdateTextDirection(cam)
         iren.Render()
 
 
