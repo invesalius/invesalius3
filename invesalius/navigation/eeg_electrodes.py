@@ -67,28 +67,19 @@ class EEGElectrodeManager(metaclass=Singleton):
         self.registration_active = False
         self.labels_visible = True
         self.navigation_on = False
-        self._tracking_visible = False
         self._probe_position = None
         self._probe_pose_time = 0.0
         Publisher.subscribe(self.update_probe_pose, "Update probe pose")
-        Publisher.subscribe(
-            self.update_tracking_status, "From Neuronavigation: Update tracker poses"
-        )
         Publisher.subscribe(self.on_navigation_status, "Navigation status")
 
     def on_navigation_status(self, nav_status, vis_status):
         self.navigation_on = nav_status
         self._probe_position = None
 
-    def update_tracking_status(self, poses, visibilities, robot_id=-1):
-        """Use tracker visibility only; raw tracker poses are not in image space."""
-        self._tracking_visible = visibilities[0] and visibilities[1]
-        if not self._tracking_visible:
-            self._probe_position = None
-
-    def update_probe_pose(self, m_img, coord):
-        """Cache the coregistered probe tip, not the navigation pointer or coil."""
-        if self.navigation_on and self._tracking_visible:
+    def update_probe_pose(self, m_img, coord, probe_visible, head_visible):
+        """Use the coregistered probe tip and tracking validity from the same sample."""
+        self._probe_position = None
+        if self.navigation_on and probe_visible and head_visible:
             self._probe_position = list(coord[:3])
             self._probe_pose_time = monotonic()
 

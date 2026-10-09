@@ -2578,8 +2578,8 @@ class NavigationView:
         """Follow the tracked probe while EEG electrodes are being registered."""
         self.SetVolumetricCamera(active, show_object=True)
 
-    def UpdateEEGCamera(self, m_img, coord):
-        if not self.use_volumetric_camera:
+    def UpdateEEGCamera(self, m_img, coord, probe_visible, head_visible):
+        if not (self.use_volumetric_camera and probe_visible and head_visible):
             return
 
         probe_position = np.asarray(coord[:3], dtype=float).copy()

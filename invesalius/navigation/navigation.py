@@ -168,6 +168,7 @@ class UpdateNavigationScene(threading.Thread):
         slice_render,
         coord,
         probe_visible,
+        head_visible,
         probe_coord,
         probe_m_img,
         coil_visible,
@@ -234,12 +235,13 @@ class UpdateNavigationScene(threading.Thread):
                                 current_revision=self.navigation.e_field_revision,
                             )
 
-                if probe_visible:
-                    Publisher.sendMessage(
-                        "Update probe pose",
-                        m_img=probe_m_img,
-                        coord=probe_coord,
-                    )
+                Publisher.sendMessage(
+                    "Update probe pose",
+                    m_img=probe_m_img,
+                    coord=probe_coord,
+                    probe_visible=probe_visible,
+                    head_visible=head_visible,
+                )
 
             if render:
                 Publisher.sendMessage("Render volume viewer")
@@ -333,6 +335,7 @@ class UpdateNavigationScene(threading.Thread):
                         slice_render=slice_render,
                         coord=coord,
                         probe_visible=probe_visible,
+                        head_visible=marker_visibilities[1],
                         probe_coord=probe_coord,
                         probe_m_img=probe_m_img,
                         coil_visible=coil_visible,
