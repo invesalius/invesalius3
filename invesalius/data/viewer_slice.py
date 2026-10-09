@@ -1420,13 +1420,18 @@ class Viewer(wx.Panel):
             if not self.nav_status:
                 self.UpdateRender()
 
+    def GetDefaultViewUp(self):
+        # The default camera depends on how the image was acquired.
+        orig_orien = project.Project().original_orientation
+        return const.SLICE_POSITION[orig_orien][0][self.orientation]
+
     def __update_camera(self):
         # orientation = self.orientation
         proj = project.Project()
         orig_orien = proj.original_orientation
 
         self.cam.SetFocalPoint(0, 0, 0)
-        self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
+        self.cam.SetViewUp(self.GetDefaultViewUp())
         self.cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
         # self.cam.ComputeViewPlaneNormal()
         # self.cam.OrthogonalizeViewUp()
