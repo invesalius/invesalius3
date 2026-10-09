@@ -74,6 +74,8 @@ else:
 
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
+# Degrees around an axis where the direction text keeps a single letter
+DIRECTION_TEXT_TOLERANCE = 1.5
 
 ORIENTATIONS = {
     "AXIAL": const.AXIAL,
@@ -444,7 +446,7 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def GetDefaultTextDirection(self):
+    def GetDefaultTextDirection(self) -> list[str]:
         # Values are on ccw order, starting from the top:
         if self.orientation == "AXIAL":
             return [_("A"), _("R"), _("P"), _("L")]
@@ -463,8 +465,7 @@ class Viewer(wx.Panel):
         directions = []
         for i in range(4):
             direction = default[(i - quarter) % 4]
-            # Two letters when more than 1.5 degrees away from an axis.
-            if abs(remainder) > 1.5:
+            if abs(remainder) > DIRECTION_TEXT_TOLERANCE:
                 step = 1 if remainder > 0 else -1
                 direction += default[(i - quarter - step) % 4]
             directions.append(direction)
