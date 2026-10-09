@@ -420,13 +420,15 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         if export_selection is None:
             return
 
-        output_directory, export_format = export_selection
+        output_path, export_format = export_selection
+        output_directory, filename = os.path.split(output_path)
         try:
             existing_paths = [
                 path
                 for path in self.eeg_electrodes.get_export_paths(
                     output_directory,
                     export_format,
+                    filename,
                 )
                 if path.exists()
             ]
@@ -437,7 +439,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
                 if result != wx.ID_OK:
                     return
 
-            self.eeg_electrodes.export_montage(output_directory, export_format)
+            self.eeg_electrodes.export_montage(output_directory, export_format, filename)
             session.SetConfig("last_directory_eeg_montage", output_directory)
             wx.MessageBox(
                 _("EEG montage exported successfully."),

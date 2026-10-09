@@ -112,35 +112,51 @@ class EEGElectrodeManager(metaclass=Singleton):
             visible=self.labels_visible,
         )
 
-    def get_export_paths(self, output_dir: str, export_format: str) -> list[Path]:
+    def get_export_paths(
+        self, output_dir: str, export_format: str, filename: str | None = None
+    ) -> list[Path]:
         """Return the files produced by a montage export."""
         output_path = Path(output_dir)
         export_format = export_format.upper()
         if export_format == "BIDS":
+            stem = Path(filename or "sub-01_electrodes.tsv").stem
+            for suffix in ("_electrodes", "_coordsystem"):
+                if stem.endswith(suffix):
+                    stem = stem[: -len(suffix)]
+                    break
+            if not stem.startswith("sub-") or stem == "sub-":
+                raise ValueError(
+                    _(
+                        "Use a BIDS filename starting with 'sub-', for example sub-01_electrodes.tsv."
+                    )
+                )
             return [
-                output_path / "sub-01_electrodes.tsv",
-                output_path / "sub-01_coordsystem.json",
+                output_path / f"{stem}_electrodes.tsv",
+                output_path / f"{stem}_coordsystem.json",
             ]
         if export_format == "HPTS":
-            return [output_path / "eeg_montage.hpts"]
+            return [output_path / Path(filename or "eeg_montage.hpts").with_suffix(".hpts").name]
         raise ValueError(f"Unsupported EEG montage export format: {export_format}")
 
-    def export_montage(self, output_dir: str, export_format: str) -> list[str]:
+    def export_montage(
+        self, output_dir: str, export_format: str, filename: str | None = None
+    ) -> list[str]:
         """Export all EEG electrodes in BIDS or MNE HPTS format."""
         if not self.electrodes:
             raise ValueError("There are no EEG electrodes to export.")
 
         output_path = Path(output_dir)
+        self.get_export_paths(output_path, export_format, filename)
         output_path.mkdir(parents=True, exist_ok=True)
         export_format = export_format.upper()
         if export_format == "BIDS":
-            return self._export_bids(output_path)
+            return self._export_bids(output_path, filename)
         if export_format == "HPTS":
-            return self._export_hpts(output_path)
+            return self._export_hpts(output_path, filename)
         raise ValueError(f"Unsupported EEG montage export format: {export_format}")
 
-    def _export_bids(self, output_dir: Path) -> list[str]:
-        electrodes_path, coordsystem_path = self.get_export_paths(output_dir, "BIDS")
+    def _export_bids(self, output_dir: Path, filename: str | None = None) -> list[str]:
+        electrodes_path, coordsystem_path = self.get_export_paths(output_dir, "BIDS", filename)
         world_electrodes = self._get_world_electrodes()
         coordinate_description = (
             "Scanner RAS coordinate system derived from the subject MRI affine transformation."
@@ -179,8 +195,8 @@ class EEGElectrodeManager(metaclass=Singleton):
 
         return [str(electrodes_path), str(coordsystem_path)]
 
-    def _export_hpts(self, output_dir: Path) -> list[str]:
-        (hpts_path,) = self.get_export_paths(output_dir, "HPTS")
+    def _export_hpts(self, output_dir: Path, filename: str | None = None) -> list[str]:
+        (hpts_path,) = self.get_export_paths(output_dir, "HPTS", filename)
         lines = [
             "# Digitized points exported by InVesalius 3",
             "# Coordinate system: Scanner RAS",
