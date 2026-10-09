@@ -134,11 +134,73 @@ class NavigationRenderer:
         self._active = False
 
 
+class NavigationScene:
+    """Rendering state associated with one navigation target."""
+
+    def __init__(self, renderer, coil_name=None):
+        self.ren = NavigationRenderer(renderer)
+        self.target_guide_renderer = vtkRenderer()
+        self.coil_name = coil_name
+
+        self.target_mode = False
+        self.target_coord = None
+        self.m_target = None
+        self.stored_camera_settings = None
+        self.initial_focus = None
+        self.camera_show_object = None
+        self.use_volumetric_camera = False
+        self.coil_visualizer = None
+
+        self.guide_coil_actors = None
+        self.guide_arrow_actors = None
+        self.obj_projection_arrow_actor = None
+        self.object_orientation_torus_actor = None
+        self.distance_text = None
+        self.robot_warnings_text = None
+        self.pTarget = [0.0, 0.0, 0.0]
+        self.actor_tracts = None
+        self.tracts_status = False
+        self.mark_actor = None
+
+        self.target_camera_last_update = 0.0
+        self.target_camera_update_interval = 1.0 / 20.0
+        self.target_guide_last_update = 0.0
+        self.target_guide_update_interval = 1.0 / 20.0
+        self.target_guide_deadband = 2.0
+        self.target_guide_last_signature = None
+
+    def get_camera_settings(self):
+        camera = self.ren.GetActiveCamera()
+        return {
+            "position": camera.GetPosition(),
+            "focal_point": camera.GetFocalPoint(),
+            "view_up": camera.GetViewUp(),
+            "clipping_range": camera.GetClippingRange(),
+            "view_angle": camera.GetViewAngle(),
+            "parallel_scale": camera.GetParallelScale(),
+        }
+
+    def apply_camera_settings(self, settings):
+        camera = self.ren.GetActiveCamera()
+        camera.SetPosition(settings["position"])
+        camera.SetFocalPoint(settings["focal_point"])
+        camera.SetViewUp(settings["view_up"])
+        camera.SetClippingRange(settings["clipping_range"])
+        camera.SetViewAngle(settings["view_angle"])
+        camera.SetParallelScale(settings["parallel_scale"])
+
+    def dispose(self):
+        if self.coil_visualizer is not None:
+            self.coil_visualizer.dispose()
+        self.ren.dispose()
+
+
 class NavigationView:
     """Add navigation behavior to an existing volume viewer."""
 
-    def __init__(self, view):
+    def __init__(self, view, markers_control=None):
         self.view = view
+        self.markers_control = markers_control
         self._active = False
         self._disposed = False
         self._volume_state = None
@@ -146,8 +208,10 @@ class NavigationView:
         self._navigation_interaction_state = None
         self._navigation_renderers = []
         self._nav_status = False
-        self._target_mode = False
-        self.ren = NavigationRenderer(view.ren)
+        self.scene = NavigationScene(view.ren)
+        self.scenes = [self.scene]
+        self.scenes_by_coil = {}
+        self.ren = self.scene.ren
 
         self._initialize_navigation_data()
         self._initialize_sensor_data()
@@ -175,13 +239,71 @@ class NavigationView:
 
     @property
     def target_mode(self):
-        return self._target_mode
+        return self.scene.target_mode
 
     @target_mode.setter
     def target_mode(self, value):
-        self._target_mode = value
+        self.scene.target_mode = value
         if self._active:
             self.view.target_mode = value
+
+    @property
+    def target_coord(self):
+        return self.scene.target_coord
+
+    @target_coord.setter
+    def target_coord(self, value):
+        self.scene.target_coord = value
+
+    @property
+    def coil_visualizer(self):
+        """Return the coil visualizer owned by the primary scene."""
+        return self.scene.coil_visualizer
+
+    @property
+    def obj_projection_arrow_actor(self):
+        """Return the projection arrow owned by the primary scene."""
+        return self.scene.obj_projection_arrow_actor
+
+    @obj_projection_arrow_actor.setter
+    def obj_projection_arrow_actor(self, actor):
+        self.scene.obj_projection_arrow_actor = actor
+
+    @property
+    def object_orientation_torus_actor(self):
+        """Return the orientation torus owned by the primary scene."""
+        return self.scene.object_orientation_torus_actor
+
+    @object_orientation_torus_actor.setter
+    def object_orientation_torus_actor(self, actor):
+        self.scene.object_orientation_torus_actor = actor
+
+    def _associate_scene_with_coil(self, scene, coil_name):
+        if scene.coil_name == coil_name:
+            return
+
+        if scene.coil_name is not None:
+            self.scenes_by_coil.pop(scene.coil_name, None)
+
+        scene.coil_name = coil_name
+        if coil_name is not None:
+            self.scenes_by_coil[coil_name] = scene
+
+    def _get_scene_for_coil(self, coil_name):
+        scene = self.scenes_by_coil.get(coil_name)
+        if scene is not None:
+            return scene
+
+        if len(self.scenes) == 1:
+            self._associate_scene_with_coil(self.scene, coil_name)
+            return self.scene
+
+        return None
+
+    def _get_scene_for_update(self, coil_name):
+        if coil_name is None:
+            return self.scene
+        return self._get_scene_for_coil(coil_name)
 
     def activate(self):
         if self._disposed or self._active:
@@ -197,7 +319,7 @@ class NavigationView:
         self.view.target_mode = self.target_mode
         self.ren.set_active(True)
         for renderer in self._navigation_renderers:
-            if renderer is not self.target_guide_renderer or self.target_mode:
+            if renderer is not self.scene.target_guide_renderer or self.target_mode:
                 self._attach_renderer(renderer)
         self._apply_scene_viewport()
         self._update_fps_visibility()
@@ -227,20 +349,22 @@ class NavigationView:
         self._disposed = True
         Publisher.unsubscribe_owner(self)
         self.marker_visualizer.dispose()
-        self.coil_visualizer.dispose()
         self.probe_visualizer.dispose()
         self.robot_force_visualizer.dispose()
         self.vector_field_visualizer.dispose()
-        self.ren.dispose()
+        for scene in self.scenes:
+            scene.dispose()
         for renderer in self._navigation_renderers:
             self._detach_renderer(renderer)
         self._navigation_renderers.clear()
+        self.scenes_by_coil.clear()
+        self.scenes.clear()
         self.view.target_guide_renderer = None
 
     def _add_scene_renderer(self, renderer):
         if renderer not in self._navigation_renderers:
             self._navigation_renderers.append(renderer)
-        if self._active and (renderer is not self.target_guide_renderer or self.target_mode):
+        if self._active and (renderer is not self.scene.target_guide_renderer or self.target_mode):
             self._attach_renderer(renderer)
 
     def _remove_scene_renderer(self, renderer):
@@ -280,10 +404,9 @@ class NavigationView:
     def _create_navigation_renderer(self):
         # Render the target guide in a separate renderer, so that it can be
         # rendered on top of the volume.
-        self.target_guide_renderer = vtkRenderer()
-        self.view.target_guide_renderer = self.target_guide_renderer
+        self.view.target_guide_renderer = self.scene.target_guide_renderer
 
-        self._add_scene_renderer(self.target_guide_renderer)
+        self._add_scene_renderer(self.scene.target_guide_renderer)
         self.ren.AddActor(self.fps_text.actor)
         self.fps_text.Hide()
 
@@ -291,9 +414,9 @@ class NavigationView:
         self.view._apply_scene_viewport()
         if self.target_mode:
             self._set_renderer_viewport(self.ren, (0.0, 0.0, 0.75, 1.0))
-            self._set_renderer_viewport(self.target_guide_renderer, (0.75, 0.0, 1.0, 1.0))
+            self._set_renderer_viewport(self.scene.target_guide_renderer, (0.75, 0.0, 1.0, 1.0))
         else:
-            self._set_renderer_viewport(self.target_guide_renderer, (0.0, 0.0, 1.0, 1.0))
+            self._set_renderer_viewport(self.scene.target_guide_renderer, (0.0, 0.0, 1.0, 1.0))
 
         for name, viewport in (
             ("ren_probe", (0.01, 0.79, 0.15, 0.97)),
@@ -308,17 +431,8 @@ class NavigationView:
         self.obj_axes = None
         self.coil_path = False
         self.show_coil = False
-        self.guide_coil_actors = None
-        self.guide_arrow_actors = None
-        self.pTarget = [0.0, 0.0, 0.0]
-
-        self.distance_text = None
-        self.robot_warnings_text = None
 
         # self.obj_axes = None
-        self.mark_actor = None
-        self.obj_projection_arrow_actor = None
-        self.object_orientation_torus_actor = None
         self._to_show_ball = 0
         self.highlighted_marker_index = None
 
@@ -326,18 +440,9 @@ class NavigationView:
         self.ref = False
         self.obj = False
 
-        self.target_coord = None
-
         self.dummy_probe_actor = None
         self.dummy_ref_actor = None
         self.dummy_obj_actor = None
-        self.target_mode = False
-        self._target_camera_last_update = 0.0
-        self._target_camera_update_interval = 1.0 / 20.0
-        self._target_guide_last_update = 0.0
-        self._target_guide_update_interval = 1.0 / 20.0
-        self._target_guide_deadband = 2.0
-        self._target_guide_last_signature = None
 
         # Set the angle and distance thresholds.
         session = ses.Session()
@@ -351,7 +456,6 @@ class NavigationView:
 
         self.angle_arrow_projection_threshold = const.COIL_ANGLE_ARROW_PROJECTION_THRESHOLD
 
-        self.actor_tracts = None
         self.actor_peel = None
 
     def _initialize_navigation_visualizers(self):
@@ -370,12 +474,7 @@ class NavigationView:
             vector_field_visualizer=self.vector_field_visualizer,
         )
 
-        # An object to manage visualizing coils in the 3D viewer.
-        self.coil_visualizer = CoilVisualizer(
-            renderer=self.ren,
-            actor_factory=self.actor_factory,
-            vector_field_visualizer=self.vector_field_visualizer,
-        )
+        self._initialize_scene_visualizers(self.scene)
 
         self.probe_visualizer = ProbeVisualizer(self.ren)
         self.robot_force_visualizer = RobotForceVisualizer(self.interactor)
@@ -401,7 +500,6 @@ class NavigationView:
         self.edge_fill_actor = None
         self.edge_actor = None
         self.show_efield_edges = False
-        self.tracts_status = False
         # self.dummy_efield_coil_actor = None
         self.target_at_cortex = None
         self.SpreadEfieldFactorTextActor = None
@@ -414,10 +512,19 @@ class NavigationView:
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
-    def _restore_navigation_markers(self):
-        from invesalius.navigation.markers import MarkersControl
+    def _initialize_scene_visualizers(self, scene):
+        """Create the visualizers owned by this navigation scene."""
+        scene.coil_visualizer = CoilVisualizer(
+            renderer=scene.ren,
+            actor_factory=self.actor_factory,
+            vector_field_visualizer=self.vector_field_visualizer,
+        )
 
-        for marker in MarkersControl().list:
+    def _restore_navigation_markers(self):
+        if self.markers_control is None:
+            return
+
+        for marker in self.markers_control.list:
             self.marker_visualizer.AddMarker(marker, render=False, focus=False)
             if marker.is_target:
                 self.marker_visualizer.SetTarget(marker)
@@ -478,7 +585,7 @@ class NavigationView:
         Publisher.subscribe(self.GetEnorm, "Get enorm")
         Publisher.subscribe(self.TrackObject, "Track object")
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
-        Publisher.subscribe(self.OnUpdateCoilPose, "Update coil pose")
+        Publisher.subscribe(self.OnUpdateCoilPoses, "Update coil poses")
         Publisher.subscribe(self.OnSetTarget, "Set target")
         Publisher.subscribe(self.OnUnsetTarget, "Unset target")
         Publisher.subscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
@@ -698,13 +805,20 @@ class NavigationView:
         self.distance_threshold = dist_threshold
 
     def OnUpdateRobotWarning(self, robot_warning, robot_id=None):
-        if self.robot_warnings_text is not None:
-            self.robot_warnings_text.SetValue(robot_warning)
+        scene = self.scene
+        if robot_id is not None:
+            robot = self.robots.GetRobot(robot_id)
+            coil_name = getattr(robot, "coil_name", None)
+            if coil_name is not None:
+                scene = self._get_scene_for_coil(coil_name)
 
-    def CreateTargetGuide(self):
-        if self.guide_arrow_actors:
-            for ind in self.guide_arrow_actors:
-                self.target_guide_renderer.RemoveActor(ind)
+        if scene is not None and scene.robot_warnings_text is not None:
+            scene.robot_warnings_text.SetValue(robot_warning)
+
+    def CreateTargetGuide(self, scene):
+        if scene.guide_arrow_actors:
+            for ind in scene.guide_arrow_actors:
+                scene.target_guide_renderer.RemoveActor(ind)
 
         # Using default coil for target guide model as using self.coil_path can cause custom models to overlap.
         coil_path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
@@ -779,8 +893,8 @@ class NavigationView:
         arrow_pitch_x2.RotateY(90)
         arrow_pitch_x2.RotateZ(180)
 
-        self.guide_coil_actors = obj_roll, obj_yaw, obj_pitch
-        self.guide_arrow_actors = (
+        scene.guide_coil_actors = obj_roll, obj_yaw, obj_pitch
+        scene.guide_arrow_actors = (
             arrow_roll_z1,
             arrow_roll_z2,
             arrow_yaw_y1,
@@ -789,104 +903,108 @@ class NavigationView:
             arrow_pitch_x2,
         )
 
-        for ind in self.guide_coil_actors:
-            self.target_guide_renderer.AddActor(ind)
+        for ind in scene.guide_coil_actors:
+            scene.target_guide_renderer.AddActor(ind)
 
-        for ind in self.guide_arrow_actors:
-            self.target_guide_renderer.AddActor(ind)
+        for ind in scene.guide_arrow_actors:
+            scene.target_guide_renderer.AddActor(ind)
 
-    def EnableTargetMode(self):
-        self._attach_renderer(self.target_guide_renderer)
+    def EnableTargetMode(self, scene=None):
+        scene = scene or self.scene
+        self._attach_renderer(scene.target_guide_renderer)
 
         # Store the current camera settings so that they can be restored when the target mode is disabled.
-        self.stored_camera_settings = self.GetCameraSettings()
+        scene.stored_camera_settings = scene.get_camera_settings()
 
         # Set the transformation matrix for the target.
-        self.m_target = self.CreateVTKObjectMatrix(self.target_coord[:3], self.target_coord[3:])
+        scene.m_target = self.CreateVTKObjectMatrix(scene.target_coord[:3], scene.target_coord[3:])
 
         if self.actor_peel:
-            self.object_orientation_torus_actor.SetVisibility(0)
-            self.obj_projection_arrow_actor.SetVisibility(0)
+            scene.object_orientation_torus_actor.SetVisibility(0)
+            scene.obj_projection_arrow_actor.SetVisibility(0)
 
-        self.coil_visualizer.AddTargetCoil(self.m_target)
+        scene.coil_visualizer.AddTargetCoil(scene.m_target)
 
         # Separate the target guide inside this navigation scene's viewport.
         self._apply_scene_viewport()
 
         # Remove the previous actor for 'distance' text
-        if self.distance_text is not None:
-            self.ren.RemoveActor(self.distance_text.actor)
+        if scene.distance_text is not None:
+            scene.ren.RemoveActor(scene.distance_text.actor)
 
         # Create new actor for 'distance' text
         distance_text = self.CreateDistanceText()
-        self.ren.AddActor(distance_text.actor)
+        scene.ren.AddActor(distance_text.actor)
 
         # Store the object for 'distance' text so it can be modified when distance changes.
-        self.distance_text = distance_text
+        scene.distance_text = distance_text
 
         # Remove the previous actor for 'distance' text
-        if self.robot_warnings_text is not None:
-            self.ren.RemoveActor(self.robot_warnings_text.actor)
+        if scene.robot_warnings_text is not None:
+            scene.ren.RemoveActor(scene.robot_warnings_text.actor)
 
         # Create new actor for 'distance' text
         robot_warnings_text = self.CreateRobotWarningsText()
-        self.ren.AddActor(robot_warnings_text.actor)
+        scene.ren.AddActor(robot_warnings_text.actor)
 
         # Store the object for 'distance' text so it can be modified when distance changes.
-        self.robot_warnings_text = robot_warnings_text
+        scene.robot_warnings_text = robot_warnings_text
 
-        self.CreateTargetGuide()
-        self._target_camera_last_update = 0.0
-        self._target_guide_last_update = 0.0
-        self._target_guide_last_signature = None
+        self.CreateTargetGuide(scene)
+        scene.target_camera_last_update = 0.0
+        scene.target_guide_last_update = 0.0
+        scene.target_guide_last_signature = None
 
-        self.ren.ResetCamera()
-        self.SetCameraTarget()
-        # self.ren.GetActiveCamera().Zoom(4)
+        scene.ren.ResetCamera()
+        self.SetCameraTarget(scene)
+        # scene.ren.GetActiveCamera().Zoom(4)
 
-        self.target_guide_renderer.ResetCamera()
-        self.target_guide_renderer.GetActiveCamera().Zoom(2)
-        self.target_guide_renderer.InteractiveOff()
+        scene.target_guide_renderer.ResetCamera()
+        scene.target_guide_renderer.GetActiveCamera().Zoom(2)
+        scene.target_guide_renderer.InteractiveOff()
         if not self.nav_status:
             self.UpdateRender()
 
-    def DisableTargetMode(self):
-        self.target_mode = False
+    def DisableTargetMode(self, scene=None):
+        scene = scene or self.scene
+        scene.target_mode = False
+        if scene is self.scene and self._active:
+            self.view.target_mode = False
 
         # Restore the camera settings that were stored when the target mode was enabled.
-        if self.stored_camera_settings is not None:
-            self.ApplyCameraSettings(self.stored_camera_settings)
+        if scene.stored_camera_settings is not None:
+            scene.apply_camera_settings(scene.stored_camera_settings)
 
         # Remove the target coil.
-        self.coil_visualizer.RemoveTargetCoil()
+        scene.coil_visualizer.RemoveTargetCoil()
 
         # Remove all actors from the target guide renderer.
-        actors = self.target_guide_renderer.GetActors()
+        actors = scene.target_guide_renderer.GetActors()
         actors.InitTraversal()
         actor = actors.GetNextItem()
         while actor:
-            self.target_guide_renderer.RemoveActor(actor)
+            scene.target_guide_renderer.RemoveActor(actor)
             actor = actors.GetNextItem()
 
         # Reset the main renderer to this navigation scene's full viewport.
         self._apply_scene_viewport()
-        self._detach_renderer(self.target_guide_renderer)
+        self._detach_renderer(scene.target_guide_renderer)
 
         # Remove the actor for 'distance' text.
-        if self.distance_text is not None:
-            self.ren.RemoveActor(self.distance_text.actor)
+        if scene.distance_text is not None:
+            scene.ren.RemoveActor(scene.distance_text.actor)
 
         # Remove the actor for 'robot warnings' text.
-        if self.robot_warnings_text is not None:
-            self.ren.RemoveActor(self.robot_warnings_text.actor)
+        if scene.robot_warnings_text is not None:
+            scene.ren.RemoveActor(scene.robot_warnings_text.actor)
 
-        self.camera_show_object = None
-        self._target_guide_last_signature = None
+        scene.camera_show_object = None
+        scene.target_guide_last_signature = None
         if self.actor_peel:
-            if self.object_orientation_torus_actor:
-                self.object_orientation_torus_actor.SetVisibility(1)
-            if self.obj_projection_arrow_actor:
-                self.obj_projection_arrow_actor.SetVisibility(1)
+            if scene.object_orientation_torus_actor:
+                scene.object_orientation_torus_actor.SetVisibility(1)
+            if scene.obj_projection_arrow_actor:
+                scene.obj_projection_arrow_actor.SetVisibility(1)
 
         if not self.nav_status:
             self.UpdateRender()
@@ -899,31 +1017,47 @@ class NavigationView:
         self.target_mode = enabled
 
         if enabled:
-            self.EnableTargetMode()
+            self.EnableTargetMode(self.scene)
         else:
-            self.DisableTargetMode()
+            self.DisableTargetMode(self.scene)
 
-    def OnUpdateCoilPose(self, m_img, coord):
+    def OnUpdateCoilPoses(self, m_imgs, coords):
+        if len(self.scenes) == 1:
+            navigation = getattr(self.markers_control, "navigation", None)
+            coil_name = getattr(navigation, "main_coil", None) or self.scene.coil_name
+            if coil_name is None and len(m_imgs) == 1:
+                coil_name = next(iter(m_imgs))
+            if coil_name is not None:
+                self._associate_scene_with_coil(self.scene, coil_name)
+
+        for scene in self.scenes:
+            coil_name = scene.coil_name
+            if coil_name not in m_imgs or coil_name not in coords:
+                continue
+            self._update_scene_coil_pose(scene, m_imgs[coil_name], coords[coil_name])
+
+    def _update_scene_coil_pose(self, scene, m_img, coord):
         # vtk_colors = vtkNamedColors()
-        if self.target_coord and self.target_mode:
+        if scene.target_coord and scene.target_mode:
             now = time.monotonic()
             distance_to_target = distance.euclidean(
-                coord[0:3], (self.target_coord[0], -self.target_coord[1], self.target_coord[2])
+                coord[0:3],
+                (scene.target_coord[0], -scene.target_coord[1], scene.target_coord[2]),
             )
 
             formatted_distance = f"Distance: {distance_to_target: >5.1f} mm"
 
-            if self.distance_text is not None:
-                self.distance_text.SetValue(formatted_distance)
+            if scene.distance_text is not None:
+                scene.distance_text.SetValue(formatted_distance)
 
-            if now - self._target_camera_last_update >= self._target_camera_update_interval:
-                self.ren.ResetCamera()
-                self.SetCameraTarget()
+            if now - scene.target_camera_last_update >= scene.target_camera_update_interval:
+                scene.ren.ResetCamera()
+                self.SetCameraTarget(scene)
                 zoom_distance = min(distance_to_target, 100)
                 # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
                 # the distance between 1 and 100 mm
-                self.ren.GetActiveCamera().Zoom((-0.0404 * zoom_distance) + 5.0404)
-                self._target_camera_last_update = now
+                scene.ren.GetActiveCamera().Zoom((-0.0404 * zoom_distance) + 5.0404)
+                scene.target_camera_last_update = now
 
             is_under_distance_threshold = distance_to_target <= self.distance_threshold
 
@@ -934,7 +1068,7 @@ class NavigationView:
             #
             # TODO: Unify naming; displacement is more correct term than distance, it should be used consistently.
             displacement_to_target_robot = dcr.ComputeRelativeDistanceToTarget(
-                target_coord=self.target_coord, m_img=m_img_flip
+                target_coord=scene.target_coord, m_img=m_img_flip
             )
 
             distance_to_target = displacement_to_target_robot.copy()
@@ -962,10 +1096,10 @@ class NavigationView:
                 > -self.angle_threshold * const.ARROW_SCALE
             ):
                 is_under_x_angle_threshold = True
-                self.guide_coil_actors[0].GetProperty().SetColor(0, 1, 0)
+                scene.guide_coil_actors[0].GetProperty().SetColor(0, 1, 0)
             else:
                 is_under_x_angle_threshold = False
-                self.guide_coil_actors[0].GetProperty().SetColor(1, 1, 1)
+                scene.guide_coil_actors[0].GetProperty().SetColor(1, 1, 1)
 
             if (
                 self.angle_threshold * const.ARROW_SCALE
@@ -973,10 +1107,10 @@ class NavigationView:
                 > -self.angle_threshold * const.ARROW_SCALE
             ):
                 is_under_z_angle_threshold = True
-                self.guide_coil_actors[1].GetProperty().SetColor(0, 1, 0)
+                scene.guide_coil_actors[1].GetProperty().SetColor(0, 1, 0)
             else:
                 is_under_z_angle_threshold = False
-                self.guide_coil_actors[1].GetProperty().SetColor(1, 1, 1)
+                scene.guide_coil_actors[1].GetProperty().SetColor(1, 1, 1)
 
             if (
                 self.angle_threshold * const.ARROW_SCALE
@@ -984,10 +1118,10 @@ class NavigationView:
                 > -self.angle_threshold * const.ARROW_SCALE
             ):
                 is_under_y_angle_threshold = True
-                self.guide_coil_actors[2].GetProperty().SetColor(0, 1, 0)
+                scene.guide_coil_actors[2].GetProperty().SetColor(0, 1, 0)
             else:
                 is_under_y_angle_threshold = False
-                self.guide_coil_actors[2].GetProperty().SetColor(1, 1, 1)
+                scene.guide_coil_actors[2].GetProperty().SetColor(1, 1, 1)
 
             # Combine all the conditions to check if the coil is at the target.
             coil_at_target = (
@@ -997,7 +1131,12 @@ class NavigationView:
                 and is_under_z_angle_threshold
             )
 
-            wx.CallAfter(Publisher.sendMessage, "Coil at target", state=coil_at_target)
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "Coil at target",
+                state=coil_at_target,
+                coil_name=scene.coil_name,
+            )
 
             robot_active = self.robots.GetActiveRobot()
             # If robot is active, send status and update displacement to target
@@ -1006,18 +1145,18 @@ class NavigationView:
                 robot_active.UpdateDisplacementToTarget(displacement_to_target_robot)
 
             guide_signature = (
-                int(round(coordrx_arrow / self._target_guide_deadband)),
-                int(round(coordry_arrow / self._target_guide_deadband)),
-                int(round(coordrz_arrow / self._target_guide_deadband)),
+                int(round(coordrx_arrow / scene.target_guide_deadband)),
+                int(round(coordry_arrow / scene.target_guide_deadband)),
+                int(round(coordrz_arrow / scene.target_guide_deadband)),
             )
             should_update_guide = (
-                guide_signature != self._target_guide_last_signature
-                and now - self._target_guide_last_update >= self._target_guide_update_interval
+                guide_signature != scene.target_guide_last_signature
+                and now - scene.target_guide_last_update >= scene.target_guide_update_interval
             )
             if should_update_guide:
-                if self.guide_arrow_actors is not None:
-                    for actor in self.guide_arrow_actors:
-                        self.target_guide_renderer.RemoveActor(actor)
+                if scene.guide_arrow_actors is not None:
+                    for actor in scene.guide_arrow_actors:
+                        scene.target_guide_renderer.RemoveActor(actor)
 
                 offset = 5
                 arrow_roll_x1 = self.actor_factory.CreateArrow(
@@ -1067,7 +1206,7 @@ class NavigationView:
                 arrow_pitch_y2.RotateZ(180)
                 arrow_pitch_y2.GetProperty().SetColor(1, 0, 0)
 
-                self.guide_arrow_actors = (
+                scene.guide_arrow_actors = (
                     arrow_roll_x1,
                     arrow_roll_x2,
                     arrow_yaw_z1,
@@ -1076,18 +1215,23 @@ class NavigationView:
                     arrow_pitch_y2,
                 )
 
-                for ind in self.guide_arrow_actors:
-                    self.target_guide_renderer.AddActor(ind)
+                for ind in scene.guide_arrow_actors:
+                    scene.target_guide_renderer.AddActor(ind)
 
-                self._target_guide_last_signature = guide_signature
-                self._target_guide_last_update = now
+                scene.target_guide_last_signature = guide_signature
+                scene.target_guide_last_update = now
 
     def OnUnsetTarget(self, marker):
-        self.DisableTargetMode()
+        self._unset_scene_target(self.scene)
 
-        self.target_coord = None
+    def _unset_scene_target(self, scene):
+        self.DisableTargetMode(scene)
+        scene.target_coord = None
 
     def OnSetTarget(self, marker):
+        self._set_scene_target(self.scene, marker)
+
+    def _set_scene_target(self, scene, marker):
         coord = marker.position + marker.orientation
 
         # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
@@ -1095,10 +1239,10 @@ class NavigationView:
         coord[1] = -coord[1]
 
         # Store the new target coordinates and create a new transformation matrix for the target.
-        self.target_coord = coord
-        self.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
+        scene.target_coord = coord
+        scene.m_target = self.CreateVTKObjectMatrix(coord[:3], coord[3:])
 
-        self.coil_visualizer.AddTargetCoil(self.m_target)
+        scene.coil_visualizer.AddTargetCoil(scene.m_target)
 
         print(f"Target updated to coordinates {coord}")
 
@@ -1167,15 +1311,16 @@ class NavigationView:
 
         return v3, M_plane_inv
 
-    def SetCameraTarget(self):
-        cam_focus = self.target_coord[0:3]
-        cam = self.ren.GetActiveCamera()
+    def SetCameraTarget(self, scene=None):
+        scene = scene or self.scene
+        cam_focus = scene.target_coord[0:3]
+        cam = scene.ren.GetActiveCamera()
 
         oldcamVTK = vtkMatrix4x4()
         oldcamVTK.DeepCopy(cam.GetViewTransformMatrix())
 
         newvtk = vtkMatrix4x4()
-        newvtk.Multiply4x4(self.m_target, oldcamVTK, newvtk)
+        newvtk.Multiply4x4(scene.m_target, oldcamVTK, newvtk)
 
         transform = vtkTransform()
         transform.SetMatrix(newvtk)
@@ -1782,8 +1927,8 @@ class NavigationView:
             self.e_field_norms is not None
             and self.efield_mesh is not None
             and self.radius_list.GetNumberOfIds() != 0
-            and not self.tracts_status
-            and self.actor_tracts is None
+            and not self.scene.tracts_status
+            and self.scene.actor_tracts is None
         ):
             self.CalculateEdgesEfield()
             self.Refresh()
@@ -2074,7 +2219,11 @@ class NavigationView:
                 self.GetIndexesAboveThreshold(self.efield_threshold)
             )
             self.UpdateEfieldScalarBar()
-            if not self.show_efield_edges or self.tracts_status or self.actor_tracts is not None:
+            if (
+                not self.show_efield_edges
+                or self.scene.tracts_status
+                or self.scene.actor_tracts is not None
+            ):
                 self.RemoveEfieldEdges()
             else:
                 self.CalculateEdgesEfield()
@@ -2433,7 +2582,11 @@ class NavigationView:
         locator.FindCellsAlongLine(p1, p2, 0.001, intersectingCellIds)
         return intersectingCellIds
 
-    def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir):
+    def ShowCoilProjection(self, intersectingCellIds, p1, coil_norm, coil_dir, scene=None):
+        scene = scene or self.scene
+        renderer = scene.ren
+        projection_arrow = scene.obj_projection_arrow_actor
+        orientation_torus = scene.object_orientation_torus_actor
         # vtk_colors = vtkNamedColors()
         closestDist = 50
 
@@ -2451,42 +2604,38 @@ class NavigationView:
                     angle = np.rad2deg(np.arccos(np.dot(pointnormal, coil_norm)))
                     # print('the angle:', angle)
 
-                    self.ren.AddActor(self.obj_projection_arrow_actor)
-                    self.ren.AddActor(self.object_orientation_torus_actor)
-                    self.obj_projection_arrow_actor.SetPosition(closestPoint)
-                    self.obj_projection_arrow_actor.SetOrientation(coil_dir)
+                    renderer.AddActor(projection_arrow)
+                    renderer.AddActor(orientation_torus)
+                    projection_arrow.SetPosition(closestPoint)
+                    projection_arrow.SetOrientation(coil_dir)
 
-                    self.object_orientation_torus_actor.SetPosition(closestPoint)
-                    self.object_orientation_torus_actor.SetOrientation(coil_dir)
+                    orientation_torus.SetPosition(closestPoint)
+                    orientation_torus.SetOrientation(coil_dir)
 
                     # change color of arrow and disk according to angle
                     if angle < self.angle_arrow_projection_threshold:
-                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor(
+                        orientation_torus.GetProperty().SetDiffuseColor(
                             [51 / 255, 176 / 255, 102 / 255]
                         )
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(
-                            [55 / 255, 120 / 255, 163 / 255]
-                        )
+                        projection_arrow.GetProperty().SetColor([55 / 255, 120 / 255, 163 / 255])
                     else:
-                        self.object_orientation_torus_actor.GetProperty().SetDiffuseColor(
+                        orientation_torus.GetProperty().SetDiffuseColor(
                             [240 / 255, 146 / 255, 105 / 255]
                         )
-                        self.obj_projection_arrow_actor.GetProperty().SetColor(
-                            [240 / 255, 146 / 255, 105 / 255]
-                        )
+                        projection_arrow.GetProperty().SetColor([240 / 255, 146 / 255, 105 / 255])
         else:
-            self.ren.RemoveActor(self.obj_projection_arrow_actor)
-            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            renderer.RemoveActor(projection_arrow)
+            renderer.RemoveActor(orientation_torus)
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
-        self.tracts_status = vis_status[1]
+        self.scene.tracts_status = vis_status[1]
 
         if self.nav_status:
-            self.pTarget = self.CenterOfMass()
+            self.scene.pTarget = self.CenterOfMass()
             self.RemoveEfieldVectorActor()
 
-        self.camera_show_object = None
+        self.scene.camera_show_object = None
         self._update_fps_visibility()
         if not self.nav_status:
             self.UpdateRender()
@@ -2495,106 +2644,133 @@ class NavigationView:
         self.seed_offset = data
 
     def UpdateMarkerOffsetState(self, create=False):
+        self._update_scene_marker_offset_state(self.scene, create)
+
+    def _update_scene_marker_offset_state(self, scene, create):
         if create:
-            if not self.mark_actor:
-                self.mark_actor = self.actor_factory.CreateBall(
+            if not scene.mark_actor:
+                scene.mark_actor = self.actor_factory.CreateBall(
                     position=[0.0, 0.0, 0.0],
                     colour=[0.0, 1.0, 1.0],
                     size=1.5,
                 )
-                self.ren.AddActor(self.mark_actor)
+                scene.ren.AddActor(scene.mark_actor)
         else:
-            if self.mark_actor:
-                self.ren.RemoveActor(self.mark_actor)
-                self.mark_actor = None
+            if scene.mark_actor:
+                scene.ren.RemoveActor(scene.mark_actor)
+                scene.mark_actor = None
         if not self.nav_status:
             self.UpdateRender()
 
-    def UpdateArrowPose(self, m_img, coord, flag):
+    def UpdateArrowPose(self, m_img, coord, flag, coil_name=None):
+        scene = self._get_scene_for_update(coil_name)
+        if scene is None:
+            return
+
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
 
         if flag and self.efield_mesh is None:
-            self.ren.RemoveActor(self.obj_projection_arrow_actor)
-            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            scene.ren.RemoveActor(scene.obj_projection_arrow_actor)
+            scene.ren.RemoveActor(scene.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)
-            self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir)
+            self.ShowCoilProjection(intersectingCellIds, p1, coil_norm, coil_dir, scene=scene)
 
-    def TrackObject(self, enabled):
+    def TrackObject(self, enabled=False):
+        self._track_scene_object(self.scene, enabled)
+
+    def _track_scene_object(self, scene, enabled):
         if enabled:
             vtk_colors = vtkNamedColors()
-            self.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
+            scene.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
                 position=[0.0, 0.0, 0.0],
                 orientation=[0.0, 0.0, 0.0],
                 colour=vtk_colors.GetColor3d("Red"),
                 length_multiplier=0.8,
             )
-            self.object_orientation_torus_actor = self.actor_factory.CreateTorus(
+            scene.object_orientation_torus_actor = self.actor_factory.CreateTorus(
                 position=[0.0, 0.0, 0.0],
                 orientation=[0.0, 0.0, 0.0],
                 colour=vtk_colors.GetColor3d("Red"),
             )
         else:
-            self.ren.RemoveActor(self.mark_actor)
-            self.ren.RemoveActor(self.obj_projection_arrow_actor)
-            self.ren.RemoveActor(self.object_orientation_torus_actor)
+            scene.ren.RemoveActor(scene.mark_actor)
+            scene.ren.RemoveActor(scene.obj_projection_arrow_actor)
+            scene.ren.RemoveActor(scene.object_orientation_torus_actor)
 
-            self.mark_actor = None
-            self.obj_projection_arrow_actor = None
-            self.object_orientation_torus_actor = None
+            scene.mark_actor = None
+            scene.obj_projection_arrow_actor = None
+            scene.object_orientation_torus_actor = None
 
-    def OnUpdateTracts(self, root=None, affine_vtk=None, coord_offset=None, coord_offset_w=None):
-        self.tracts_status = True
+    def OnUpdateTracts(
+        self,
+        root=None,
+        affine_vtk=None,
+        coord_offset=None,
+        coord_offset_w=None,
+        coil_name=None,
+    ):
+        scene = self._get_scene_for_update(coil_name)
+        if scene is None:
+            return
+
+        scene.tracts_status = True
         self.RemoveEfieldEdges()
         mapper = vtkCompositePolyDataMapper()
         mapper.SetInputDataObject(root)
 
-        self.actor_tracts = vtkActor()
-        self.actor_tracts.SetMapper(mapper)
-        self.actor_tracts.SetUserMatrix(affine_vtk)
+        scene.actor_tracts = vtkActor()
+        scene.actor_tracts.SetMapper(mapper)
+        scene.actor_tracts.SetUserMatrix(affine_vtk)
 
-        self.ren.AddActor(self.actor_tracts)
-        if self.mark_actor:
-            self.mark_actor.SetPosition(coord_offset)
+        scene.ren.AddActor(scene.actor_tracts)
+        if scene.mark_actor:
+            scene.mark_actor.SetPosition(coord_offset)
         self.Refresh()
 
-    def OnRemoveTracts(self):
-        if self.actor_tracts:
-            self.ren.RemoveActor(self.actor_tracts)
-            self.actor_tracts = None
-            self.Refresh()
-        self.tracts_status = False
+    def OnRemoveTracts(self, coil_name=None):
+        scenes = self.scenes if coil_name is None else [self._get_scene_for_coil(coil_name)]
+        for scene in scenes:
+            if scene is None:
+                continue
+            if scene.actor_tracts:
+                scene.ren.RemoveActor(scene.actor_tracts)
+                scene.actor_tracts = None
+                self.Refresh()
+            scene.tracts_status = False
 
-    def SetVolumetricCamera(self, enabled):
-        self.use_volumetric_camera = enabled
-        self.camera_show_object = None
+    def SetVolumetricCamera(self, enabled, scene=None):
+        scene = scene or self.scene
+        scene.use_volumetric_camera = enabled
+        scene.camera_show_object = None
 
-    def VolumetricCamera(self, cam_focus):
+    def VolumetricCamera(self, cam_focus, scene=None):
+        scene = scene or self.scene
         # TODO: exclude dependency on initial focus
         # cam_focus = np.array(bases.flip_x(position[:3]))
         # cam_focus = np.array(bases.flip_x(position))
-        cam = self.ren.GetActiveCamera()
+        cam = scene.ren.GetActiveCamera()
 
-        if self.initial_focus is None:
-            self.initial_focus = np.array(cam.GetFocalPoint())
+        if scene.initial_focus is None:
+            scene.initial_focus = np.array(cam.GetFocalPoint())
 
         cam_pos0 = np.array(cam.GetPosition())
         cam_focus0 = np.array(cam.GetFocalPoint())
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        if self.camera_show_object is None:
-            self.camera_show_object = self.coil_visualizer.show_coil
+        if scene.camera_show_object is None:
+            scene.camera_show_object = scene.coil_visualizer.show_coil
 
-        if self.camera_show_object:
+        if scene.camera_show_object:
             v1 = np.array(
                 [
-                    cam_focus[0] - self.pTarget[0],
-                    cam_focus[1] - self.pTarget[1],
-                    cam_focus[2] - self.pTarget[2],
+                    cam_focus[0] - scene.pTarget[0],
+                    cam_focus[1] - scene.pTarget[1],
+                    cam_focus[2] - scene.pTarget[2],
                 ]
             )
         else:
-            v1 = cam_focus - self.initial_focus
+            v1 = cam_focus - scene.initial_focus
 
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:

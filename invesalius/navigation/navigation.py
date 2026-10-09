@@ -81,7 +81,7 @@ class NavigationHub(metaclass=Singleton):
             # Break when we have 2 robots
             if len(self.robots.robots_by_id) == 2:
                 break
-        self.markers = MarkersControl()
+        self.markers = MarkersControl(navigation=self.navigation)
         self.mep_visualizer = MEPVisualizer()
         Publisher.sendMessage("Add navigation context to interactive shell")
 
@@ -179,9 +179,10 @@ class UpdateNavigationScene(threading.Thread):
         try:
             if tracts_payload is not None:
                 bundle, affine_vtk, coord_offset, coord_offset_w = tracts_payload
-                Publisher.sendMessage("Remove tracts")
+                Publisher.sendMessage("Remove tracts", coil_name=main_coil)
                 Publisher.sendMessage(
                     "Update tracts",
+                    coil_name=main_coil,
                     root=bundle,
                     affine_vtk=affine_vtk,
                     coord_offset=coord_offset,
@@ -202,16 +203,12 @@ class UpdateNavigationScene(threading.Thread):
                 if coil_visible:
                     Publisher.sendMessage("Update coil poses", m_imgs=m_imgs, coords=coords)
                     Publisher.sendMessage(
-                        "Update coil pose",
-                        m_img=m_imgs[main_coil],
-                        coord=coords[main_coil],
-                    )
-                    Publisher.sendMessage(
                         "From Neuronavigation: Send coil pose",
                         coord=list(coords[main_coil]),
                     )
                     Publisher.sendMessage(
                         "Update object arrow matrix",
+                        coil_name=main_coil,
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
                         flag=self.peel_loaded,
@@ -487,8 +484,16 @@ class Navigation(metaclass=Singleton):
 
         self.SaveConfig()
 
-    def CoilAtTarget(self, state):
+    def CoilAtTarget(self, state, coil_name=None):
         self.coil_at_target = state
+
+    def SetTarget(self, marker):
+        coord = marker.position + marker.orientation
+        coord[1] = -coord[1]
+        self.target = coord
+
+    def UnsetTarget(self):
+        self.target = None
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
