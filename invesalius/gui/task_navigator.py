@@ -2254,10 +2254,9 @@ class ControlPanel(wx.Panel):
         track_object_button.Enable(True)
         track_object_button.SetValue(False)
         track_object_button.SetToolTip(tooltip)
-        track_object_button.Bind(
-            wx.EVT_TOGGLEBUTTON, partial(self.OnTrackObjectButton, ctrl=track_object_button)
-        )
+        track_object_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnTrackObjectButton)
         self.track_object_button = track_object_button
+        self._track_object_enabled = True
 
         # Toggle button for allowing triggering only if coil is at target
         tooltip = _("Allow triggering only if the coil is at the target")
@@ -2610,7 +2609,7 @@ class ControlPanel(wx.Panel):
         if enabled:
             self.PressTrackObjectButton(False)
             self.PressShowCoilButton(False)
-            self.EnableToggleButton(self.track_object_button, False)
+            self.EnableTrackObjectButton(False)
             self.EnableToggleButton(self.show_coil_button, False)
             self.PressShowProbeButton(True)
             return
@@ -2618,7 +2617,7 @@ class ControlPanel(wx.Panel):
         coils_ready = len(self.navigation.coil_registrations) == self.navigation.n_coils
         self.PressTrackObjectButton(coils_ready)
         self.PressShowCoilButton(coils_ready)
-        self.EnableToggleButton(self.track_object_button, coils_ready)
+        self.EnableTrackObjectButton(coils_ready)
         self.EnableToggleButton(self.show_coil_button, coils_ready)
 
     # Tractography
@@ -2665,17 +2664,20 @@ class ControlPanel(wx.Panel):
 
     # 'Track object' button
     def EnableTrackObjectButton(self, enabled):
-        self.EnableToggleButton(self.track_object_button, enabled)
+        self._track_object_enabled = enabled
         self.UpdateToggleButton(self.track_object_button)
+        # Apply Enable last: changing the colour can re-enable native Windows buttons.
+        self.track_object_button.Enable(enabled and not self.eeg_electrodes.registration_active)
 
     def PressTrackObjectButton(self, pressed):
         self.UpdateToggleButton(self.track_object_button, pressed)
         self.OnTrackObjectButton()
 
-    def OnTrackObjectButton(self, evt=None, ctrl=None):
-        if ctrl is not None:
-            self.UpdateToggleButton(ctrl)
-        pressed = self.track_object_button.GetValue()
+    def OnTrackObjectButton(self, evt=None):
+        pressed = (
+            self.track_object_button.GetValue() and not self.eeg_electrodes.registration_active
+        )
+        self.UpdateToggleButton(self.track_object_button, pressed)
         Publisher.sendMessage("Track object", enabled=pressed)
         if not pressed and self.target_mode_button.GetValue():
             Publisher.sendMessage("Press target mode button", pressed=False)
@@ -2683,6 +2685,7 @@ class ControlPanel(wx.Panel):
         # Automatically press or unpress 'Show coil' and 'Show probe' button.
         Publisher.sendMessage("Press show-coil button", pressed=pressed)
         Publisher.sendMessage("Press show-probe button", pressed=(not pressed))
+        self.EnableTrackObjectButton(self._track_object_enabled)
 
     # 'Lock to Target' button
     def OnLockToTargetButton(self, evt, ctrl):
@@ -2724,8 +2727,10 @@ class ControlPanel(wx.Panel):
         self.OnShowProbe()
 
     def OnShowProbe(self, evt=None):
-        self.UpdateToggleButton(self.show_probe_button)
-        pressed = self.show_probe_button.GetValue()
+        active = self.eeg_electrodes.registration_active
+        pressed = self.show_probe_button.GetValue() or active
+        self.UpdateToggleButton(self.show_probe_button, pressed)
+        self.show_probe_button.Enable(not active)
         Publisher.sendMessage("Show probe in viewer volume", state=pressed)
 
     def OnEEGRegistrationButton(self, evt):
@@ -2740,11 +2745,14 @@ class ControlPanel(wx.Panel):
             return
 
         self.eeg_electrodes.set_registration_active(active)
-        if active:
-            Publisher.sendMessage("Press show-probe button", pressed=True)
 
     def OnEEGRegistrationModeChanged(self, active):
         self.UpdateToggleButton(self.eeg_registration_button, active)
+        if active:
+            self.PressTrackObjectButton(False)
+        else:
+            self.EnableTrackObjectButton(self._track_object_enabled)
+            self.OnShowProbe()
 
     # 'Serial Port Com'
     def OnEnableSerialPort(self, evt, ctrl):
