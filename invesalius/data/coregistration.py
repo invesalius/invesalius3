@@ -365,6 +365,7 @@ class CoordinateCorregistrate(threading.Thread):
         self.m_icp = icp.m_icp
         self.last_coord = None
         self.tracker_id = tracker_id
+        self.target = None
         self.target_flag = False
         self._obj_cache = {}
         for obj_data in obj_datas.values():
@@ -384,16 +385,19 @@ class CoordinateCorregistrate(threading.Thread):
                 "r_obj_img_m_obj_raw_inv_s0_dyn_inv": r_obj_img @ m_obj_raw_inv @ s0_dyn_inv,
             }
 
-    def _get_current_target(self):
-        # Read the target from navigation on every call, so a target selected while
-        # navigation is running is picked up without restarting it.
-        target = self.navigation.target
-        if target is None:
-            return None
+        self._set_target(target)
 
-        target = np.array(target)
-        target[1] = -target[1]
-        return target
+    def _set_target(self, target):
+        if target is None:
+            return
+
+        self.target = np.array(target)
+
+        # XXX: Not sure why this is done, but a similar thing is done in OnUpdateTargetCoordinates
+        #      in viewer_volume.py, so this makes them match. A better solution would probably be to
+        #      do this transformation only once, and doing it in the correct place.
+        #
+        self.target[1] = -self.target[1]
 
     def run(self):
         m_change, r_stylus = self.coreg_data
@@ -454,14 +458,15 @@ class CoordinateCorregistrate(threading.Thread):
                 #      Ideally, the transformation from the tracker space to the image space (the function
                 #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
                 #      tracker, and then the whole class would be mocked when using the debug tracker.
-                target = (
-                    self._get_current_target() if self.tracker_id == const.DEBUGTRACKAPPROACH else None
-                )
-                if target is not None:
+                if self.tracker_id == const.DEBUGTRACKAPPROACH:
+                    # The target can be changed while navigating.
+                    self._set_target(self.navigation.target)
+
+                if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
                     if self.last_coord is None:
                         self.last_coord = np.array(coord)
                     else:
-                        coord = self.last_coord + (target - self.last_coord) * 0.05
+                        coord = self.last_coord + (self.target - self.last_coord) * 0.05
                         coords[main_coil] = coord
                         self.last_coord = coord
 
