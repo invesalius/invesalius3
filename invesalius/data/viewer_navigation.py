@@ -146,6 +146,9 @@ class NavigationScene:
         self.target_coord = None
         self.m_target = None
         self.stored_camera_settings = None
+        self.initial_focus = None
+        self.camera_show_object = None
+        self.use_volumetric_camera = False
         self.coil_visualizer = None
 
         self.guide_coil_actors = None
@@ -157,6 +160,7 @@ class NavigationScene:
         self.pTarget = [0.0, 0.0, 0.0]
         self.actor_tracts = None
         self.tracts_status = False
+        self.mark_actor = None
 
         self.target_camera_last_update = 0.0
         self.target_camera_update_interval = 1.0 / 20.0
@@ -429,7 +433,6 @@ class NavigationView:
         self.show_coil = False
 
         # self.obj_axes = None
-        self.mark_actor = None
         self._to_show_ball = 0
         self.highlighted_marker_index = None
 
@@ -471,12 +474,7 @@ class NavigationView:
             vector_field_visualizer=self.vector_field_visualizer,
         )
 
-        # An object to manage visualizing coils in the 3D viewer.
-        self.scene.coil_visualizer = CoilVisualizer(
-            renderer=self.ren,
-            actor_factory=self.actor_factory,
-            vector_field_visualizer=self.vector_field_visualizer,
-        )
+        self._initialize_scene_visualizers(self.scene)
 
         self.probe_visualizer = ProbeVisualizer(self.ren)
         self.robot_force_visualizer = RobotForceVisualizer(self.interactor)
@@ -513,6 +511,14 @@ class NavigationView:
         self.save_automatically = False
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
+
+    def _initialize_scene_visualizers(self, scene):
+        """Create the visualizers owned by this navigation scene."""
+        scene.coil_visualizer = CoilVisualizer(
+            renderer=scene.ren,
+            actor_factory=self.actor_factory,
+            vector_field_visualizer=self.vector_field_visualizer,
+        )
 
     def _restore_navigation_markers(self):
         if self.markers_control is None:
@@ -992,7 +998,7 @@ class NavigationView:
         if scene.robot_warnings_text is not None:
             scene.ren.RemoveActor(scene.robot_warnings_text.actor)
 
-        self.camera_show_object = None
+        scene.camera_show_object = None
         scene.target_guide_last_signature = None
         if self.actor_peel:
             if scene.object_orientation_torus_actor:
@@ -2629,7 +2635,7 @@ class NavigationView:
             self.scene.pTarget = self.CenterOfMass()
             self.RemoveEfieldVectorActor()
 
-        self.camera_show_object = None
+        self.scene.camera_show_object = None
         self._update_fps_visibility()
         if not self.nav_status:
             self.UpdateRender()
@@ -2638,18 +2644,21 @@ class NavigationView:
         self.seed_offset = data
 
     def UpdateMarkerOffsetState(self, create=False):
+        self._update_scene_marker_offset_state(self.scene, create)
+
+    def _update_scene_marker_offset_state(self, scene, create):
         if create:
-            if not self.mark_actor:
-                self.mark_actor = self.actor_factory.CreateBall(
+            if not scene.mark_actor:
+                scene.mark_actor = self.actor_factory.CreateBall(
                     position=[0.0, 0.0, 0.0],
                     colour=[0.0, 1.0, 1.0],
                     size=1.5,
                 )
-                self.ren.AddActor(self.mark_actor)
+                scene.ren.AddActor(scene.mark_actor)
         else:
-            if self.mark_actor:
-                self.ren.RemoveActor(self.mark_actor)
-                self.mark_actor = None
+            if scene.mark_actor:
+                scene.ren.RemoveActor(scene.mark_actor)
+                scene.mark_actor = None
         if not self.nav_status:
             self.UpdateRender()
 
@@ -2684,11 +2693,11 @@ class NavigationView:
                 colour=vtk_colors.GetColor3d("Red"),
             )
         else:
-            self.ren.RemoveActor(self.mark_actor)
+            scene.ren.RemoveActor(scene.mark_actor)
             scene.ren.RemoveActor(scene.obj_projection_arrow_actor)
             scene.ren.RemoveActor(scene.object_orientation_torus_actor)
 
-            self.mark_actor = None
+            scene.mark_actor = None
             scene.obj_projection_arrow_actor = None
             scene.object_orientation_torus_actor = None
 
@@ -2714,8 +2723,8 @@ class NavigationView:
         scene.actor_tracts.SetUserMatrix(affine_vtk)
 
         scene.ren.AddActor(scene.actor_tracts)
-        if self.mark_actor:
-            self.mark_actor.SetPosition(coord_offset)
+        if scene.mark_actor:
+            scene.mark_actor.SetPosition(coord_offset)
         self.Refresh()
 
     def OnRemoveTracts(self, coil_name=None):
@@ -2729,37 +2738,39 @@ class NavigationView:
                 self.Refresh()
             scene.tracts_status = False
 
-    def SetVolumetricCamera(self, enabled):
-        self.use_volumetric_camera = enabled
-        self.camera_show_object = None
+    def SetVolumetricCamera(self, enabled, scene=None):
+        scene = scene or self.scene
+        scene.use_volumetric_camera = enabled
+        scene.camera_show_object = None
 
-    def VolumetricCamera(self, cam_focus):
+    def VolumetricCamera(self, cam_focus, scene=None):
+        scene = scene or self.scene
         # TODO: exclude dependency on initial focus
         # cam_focus = np.array(bases.flip_x(position[:3]))
         # cam_focus = np.array(bases.flip_x(position))
-        cam = self.ren.GetActiveCamera()
+        cam = scene.ren.GetActiveCamera()
 
-        if self.initial_focus is None:
-            self.initial_focus = np.array(cam.GetFocalPoint())
+        if scene.initial_focus is None:
+            scene.initial_focus = np.array(cam.GetFocalPoint())
 
         cam_pos0 = np.array(cam.GetPosition())
         cam_focus0 = np.array(cam.GetFocalPoint())
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        if self.camera_show_object is None:
-            self.camera_show_object = self.coil_visualizer.show_coil
+        if scene.camera_show_object is None:
+            scene.camera_show_object = scene.coil_visualizer.show_coil
 
-        if self.camera_show_object:
+        if scene.camera_show_object:
             v1 = np.array(
                 [
-                    cam_focus[0] - self.scene.pTarget[0],
-                    cam_focus[1] - self.scene.pTarget[1],
-                    cam_focus[2] - self.scene.pTarget[2],
+                    cam_focus[0] - scene.pTarget[0],
+                    cam_focus[1] - scene.pTarget[1],
+                    cam_focus[2] - scene.pTarget[2],
                 ]
             )
         else:
-            v1 = cam_focus - self.initial_focus
+            v1 = cam_focus - scene.initial_focus
 
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:

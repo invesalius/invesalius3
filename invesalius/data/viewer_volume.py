@@ -117,8 +117,6 @@ class Viewer(wx.Panel):
 
         self.interaction_style = st.StyleStateManager()
 
-        self.initial_focus = None
-
         self.style = None
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -204,9 +202,6 @@ class Viewer(wx.Panel):
         self.repositioned_sagital_plan = 0
         self.repositioned_coronal_plan = 0
         self.surface_added = False
-
-        self.use_volumetric_camera = False
-        self.camera_show_object = None
 
         # Pointer is the ball that is shown to indicate the 3D point in the volume viewer that corresponds to the
         # selected slice positions. The same pointer is also used to show the point selected from the 3D viewer by
