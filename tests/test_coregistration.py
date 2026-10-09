@@ -1,86 +1,77 @@
 import queue
 import threading
-import time
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
 import invesalius.constants as const
-from invesalius.data.coregistration import CoordinateCorregistrate
+import invesalius.data.coregistration as coregistration
 
 TARGET_A = [40.0, 30.0, 20.0, 0.0, 0.0, 0.0]
 TARGET_B = [-30.0, -50.0, 60.0, 0.0, 0.0, 0.0]
 
 
-class StillTracker:
+class FakeTracker:
+    """Still tracker that changes the navigation target and stops the loop at given reads."""
+
+    def __init__(self, navigation, event, target_changes, stop_at):
+        self.navigation = navigation
+        self.event = event
+        self.target_changes = target_changes
+        self.stop_at = stop_at
+        self.reads = 0
+
     def GetCoordinates(self):
+        self.reads += 1
+        if self.reads in self.target_changes:
+            self.navigation.target = self.target_changes[self.reads]
+        if self.reads == self.stop_at:
+            self.event.set()
         return np.zeros((3, 6)), [True, True, True]
 
 
-@pytest.fixture
-def navigation():
-    return SimpleNamespace(target=list(TARGET_A), main_coil="coil", e_field_revision=0)
+def navigate(monkeypatch, target_changes):
+    """Run the coregistration loop for 300 reads and return the coil positions."""
+    monkeypatch.setattr(coregistration, "sleep", lambda seconds: None)
 
-
-@pytest.fixture
-def thread(navigation):
     eye = np.identity(4)
-    coreg = CoordinateCorregistrate(
+    event = threading.Event()
+    navigation = SimpleNamespace(target=TARGET_A, main_coil="coil", e_field_revision=0)
+    tracker = FakeTracker(navigation, event, target_changes, stop_at=300)
+    thread = coregistration.CoordinateCorregistrate(
         ref_mode_id=0,
-        tracker=SimpleNamespace(TrackerCoordinates=StillTracker()),
+        tracker=SimpleNamespace(TrackerCoordinates=tracker),
         coreg_data=[eye, None],
         obj_datas={"coil": (2, eye, eye, eye, eye, eye, eye)},
         view_tracts=False,
-        queues=[queue.Queue(maxsize=1) for _ in range(4)],
-        event=threading.Event(),
-        sle=0.001,
+        queues=[queue.Queue() for _ in range(4)],
+        event=event,
+        sle=0,
         tracker_id=const.DEBUGTRACKAPPROACH,
         target=navigation.target,
         icp=SimpleNamespace(use_icp=False, m_icp=None),
         e_field_loaded=False,
         navigation=navigation,
     )
-    coreg.daemon = True
-    yield coreg
-    coreg.event.set()
-    if coreg.is_alive():
-        coreg.join(timeout=2)
+    thread.run()
+
+    positions = []
+    while not thread.coord_queue.empty():
+        coords, _, _ = thread.coord_queue.get()
+        positions.append(coords["coil"][:3])
+    return positions
 
 
-def wait_for_coil(thread, expected, timeout=10):
-    """Read coil coordinates until the coil is at the expected position."""
-    position = None
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        try:
-            coords, _, _ = thread.coord_queue.get(timeout=0.5)
-        except queue.Empty:
-            continue
-        position = np.array(coords["coil"][:3])
-        if np.allclose(position, expected, atol=0.5):
-            return
-    pytest.fail(f"coil stopped at {position}, expected {expected}")
+def test_coil_follows_target_changed_during_navigation(monkeypatch) -> None:
+    positions = navigate(monkeypatch, {150: TARGET_B})
+
+    assert positions[148] == pytest.approx([40.0, -30.0, 20.0], abs=0.5)
+    assert positions[-1] == pytest.approx([-30.0, 50.0, 60.0], abs=0.5)
+    assert TARGET_B == [-30.0, -50.0, 60.0, 0.0, 0.0, 0.0]
 
 
-def test_coil_follows_target_changed_during_navigation(thread, navigation) -> None:
-    thread.start()
-    wait_for_coil(thread, [40.0, -30.0, 20.0])
+def test_coil_stays_at_target_after_unset(monkeypatch) -> None:
+    positions = navigate(monkeypatch, {150: None})
 
-    navigation.target = list(TARGET_B)
-    wait_for_coil(thread, [-30.0, 50.0, 60.0])
-
-
-def test_coil_stays_at_target_after_unset(thread, navigation) -> None:
-    thread.start()
-    wait_for_coil(thread, [40.0, -30.0, 20.0])
-
-    navigation.target = None
-    for _ in range(20):
-        thread.coord_queue.get(timeout=2)
-    wait_for_coil(thread, [40.0, -30.0, 20.0])
-
-
-def test_navigation_target_is_not_modified(thread, navigation) -> None:
-    thread._set_target(navigation.target)
-    assert navigation.target == TARGET_A
+    assert positions[-1] == pytest.approx([40.0, -30.0, 20.0], abs=0.5)
