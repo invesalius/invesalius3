@@ -62,27 +62,37 @@ class EEGElectrodeManager(metaclass=Singleton):
         self.surface_geometry = SurfaceGeometry()
         self.registration_active = False
         self.labels_visible = True
+        self.navigation_on = False
+        self._tracking_visible = False
         self._probe_position = None
         self._probe_pose_time = 0.0
-        Publisher.subscribe(self.update_probe_tracking, "Update probe tracking")
+        Publisher.subscribe(self.update_probe_pose, "Update probe pose")
+        Publisher.subscribe(
+            self.update_tracking_status, "From Neuronavigation: Update tracker poses"
+        )
         Publisher.subscribe(self.on_navigation_status, "Navigation status")
 
     def on_navigation_status(self, nav_status, vis_status):
+        self.navigation_on = nav_status
         self._probe_position = None
         self._probe_pose_time = 0.0
 
-    def update_probe_tracking(self, coord, probe_visible, head_visible):
-        """Cache the probe tip independently of the object followed by the pointer."""
-        self._probe_position = None
-        self._probe_pose_time = monotonic()
-        if probe_visible and head_visible:
-            try:
-                self._probe_position = self._validate_coordinate(coord[:3], "position")
-            except (TypeError, ValueError):
-                pass
+    def update_tracking_status(self, poses, visibilities, robot_id=-1):
+        """Use tracker visibility only; raw tracker poses are not in image space."""
+        self._tracking_visible = visibilities[0] and visibilities[1]
+        if not self._tracking_visible:
+            self._probe_position = None
+
+    def update_probe_pose(self, m_img, coord):
+        """Cache the coregistered probe tip, not the navigation pointer or coil."""
+        if self.navigation_on and self._tracking_visible:
+            self._probe_position = list(coord[:3])
+            self._probe_pose_time = monotonic()
 
     def get_capture_position(self) -> list[float]:
         """Only allow digitization with a recent, valid probe/head tracking sample."""
+        if not self.navigation_on:
+            raise RuntimeError(_("Start navigation before registering EEG electrodes."))
         if (
             self._probe_position is None
             or monotonic() - self._probe_pose_time > MAX_PROBE_POSE_AGE_SECONDS
