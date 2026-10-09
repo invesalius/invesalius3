@@ -74,7 +74,6 @@ else:
 
 # Navigation paths
 OBJ_DIR = str(INV_TOP_DIR.joinpath("navigation", "objects"))
-EEG_MONTAGES_DIR = INV_TOP_DIR.joinpath("navigation", "eeg_montages")
 
 MTC_CAL_DIR = str(INV_TOP_DIR.joinpath("navigation", "mtc_files", "CalibrationFiles"))
 MTC_MAR_DIR = str(INV_TOP_DIR.joinpath("navigation", "mtc_files", "Markers"))
