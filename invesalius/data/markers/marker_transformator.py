@@ -74,8 +74,7 @@ class MarkerTransformator:
         self.target = marker
 
     def UnsetTarget(self, marker):
-        if not marker.is_target:
-            self.target = None
+        self.target = None
 
     def SetTargetMode(self, enabled=False):
         self.is_target_mode = enabled

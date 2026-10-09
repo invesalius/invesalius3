@@ -392,8 +392,6 @@ class MarkerVisualizer:
         """
         When unsetting a marker as the target, change the aim back to an arrow.
         """
-        if marker.is_target:
-            return
         self.target_marker = None
 
         position = marker.position

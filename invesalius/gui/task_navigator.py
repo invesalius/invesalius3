@@ -2171,7 +2171,6 @@ class ControlPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.navigation = nav_hub.navigation
-        self.markers = nav_hub.markers
         self.tracker = nav_hub.tracker
         self.robots = nav_hub.robots
         self.icp = nav_hub.icp
@@ -2525,7 +2524,7 @@ class ControlPanel(wx.Panel):
         self.navigation.StopNavigation()
 
     def UnsetTarget(self, marker):
-        self.target_selected = self.markers.GetTarget() is not None
+        self.target_selected = False
         self.UpdateTargetButton()
 
     def SetTarget(self, marker):
@@ -2535,7 +2534,7 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(self.lock_to_target_button, True)
         self.navigation.SetLockToTarget(True)
 
-        self.target_selected = self.markers.GetTarget() is not None
+        self.target_selected = True
         self.UpdateTargetButton()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -4225,8 +4224,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
 
     def _UnsetTarget(self, marker):
-        if marker.is_target:
-            return
         idx = self.__find_marker_index(marker.marker_id)
 
         # When unsetting a target, automatically unpress the target mode button.
@@ -4868,6 +4865,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 
-        # Focus on the added marker.
+        # Wait for all 'Add marker' listeners to create the 3D actors before focusing.
         if focus:
             wx.CallAfter(self.FocusOnMarker, num_items)

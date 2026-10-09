@@ -132,12 +132,12 @@ class MarkersControl(metaclass=Singleton):
 
     def SetTarget(self, marker_id: int, check_for_previous: bool = True) -> None:
         marker = self.list[marker_id]
-        previous_target = self.GetTarget()
+        previous_target = self.FindTarget()
 
         if check_for_previous and previous_target is marker:
             return
 
-        if previous_target is not None and previous_target is not marker:
+        if check_for_previous and previous_target is not None and previous_target is not marker:
             self.UnsetTarget(previous_target.marker_id)
 
         # Set new target
@@ -175,14 +175,10 @@ class MarkersControl(metaclass=Singleton):
 
     def UnsetTarget(self, marker_id: int) -> None:
         marker = self.list[marker_id]
-        if self.GetTarget() is not marker:
-            return
-
         self.navigation.UnsetTarget()
-        marker.is_target = self.IsTarget(marker)
+        marker.is_target = False
 
-        if not marker.is_target:
-            Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
+        Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
         Publisher.sendMessage("Unset target", marker=marker)
 
         self.SaveState()
@@ -196,31 +192,16 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def GetTarget(self) -> Union[None, Marker]:
-        return self.navigation.targets_by_coil.get(self.navigation.main_coil)
-
-    def GetTargetCoils(self, marker) -> List[str]:
-        return [
-            coil_name
-            for coil_name, target in self.navigation.targets_by_coil.items()
-            if target.marker_uuid == marker.marker_uuid
-        ]
-
-    def IsTarget(self, marker) -> bool:
-        return bool(self.GetTargetCoils(marker))
-
-    def FindTargets(self) -> List[Marker]:
-        return [marker for marker in self.list if marker.is_target]
-
     def FindTarget(self) -> Union[None, Marker]:
         """
-        Return the target associated with the main coil, if available.
+        Return the marker currently selected as target (there
+        should be at most one).
         """
-        target = self.GetTarget()
-        if target is not None:
-            return target
-        targets = self.FindTargets()
-        return targets[0] if targets else None
+        for marker in self.list:
+            if marker.is_target:
+                return marker
+
+        return None
 
     def FindLabel(self, label) -> Union[None, Marker]:
         """
