@@ -123,6 +123,15 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._OnMarkersVisibilityChanged, "Set markers visibility")
         Publisher.subscribe(self._OnProjectStateEnabled, "Enable state project")
         Publisher.subscribe(self._OnCloseProject, "Close project data")
+        Publisher.subscribe(self._OnSelectEEGElectrode, "Select EEG electrode")
+
+    def _OnSelectEEGElectrode(self, marker_uuid):
+        if not any(
+            electrode.marker_uuid == marker_uuid for electrode in self.eeg_electrodes.electrodes
+        ):
+            return
+        self._SyncEEGPage(select=True)
+        self.eeg_page.listctrl.SelectElectrode(marker_uuid)
 
     def _OnProjectStateEnabled(self, state):
         if state:
@@ -515,6 +524,17 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
 
     def GetSelectedElectrode(self):
         return self._GetElectrode(self.GetFirstSelected())
+
+    def SelectElectrode(self, marker_uuid):
+        if marker_uuid not in self.marker_uuids:
+            return
+        row = self.marker_uuids.index(marker_uuid)
+        previous_row = self.GetFirstSelected()
+        if previous_row != wx.NOT_FOUND and previous_row != row:
+            self.Select(previous_row, on=False)
+        self.Focus(row)
+        self.Select(row)
+        self.EnsureVisible(row)
 
     def SetNavigationStatus(self, navigation_on):
         self.navigation_on = bool(navigation_on)

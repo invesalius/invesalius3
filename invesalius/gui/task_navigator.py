@@ -4453,21 +4453,23 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
               place where the list of markers, including information about their visualization, is
               stored.
         """
-        for m, idx in zip(self.markers.list, range(len(self.markers.list))):
+        for m in self.markers.list:
             visualization = m.visualization
             if visualization is None:
                 continue
 
             if visualization.get("actor") == actor:
+                if m.marker_type == MarkerType.EEG_ELECTRODE:
+                    Publisher.sendMessage("Select EEG electrode", marker_uuid=m.marker_uuid)
+                    return
+
+                idx = self.__find_marker_index_by_uuid(m.marker_uuid)
+                if idx is None:
+                    return
                 # Unselect the previously selected item.
                 idx_old = self.marker_list_ctrl.GetFocusedItem()
                 if idx_old != -1 and idx_old != idx:
                     self.marker_list_ctrl.Select(idx_old, on=False)
-
-                current_uuid = m.marker_uuid
-                for i in range(self.marker_list_ctrl.GetItemCount()):
-                    if current_uuid == self.marker_list_ctrl.GetItem(i, const.UUID).GetText():
-                        idx = i
 
                 self.marker_list_ctrl.Focus(idx)
                 self.marker_list_ctrl.Select(idx, on=True)
