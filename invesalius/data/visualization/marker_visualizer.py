@@ -342,7 +342,7 @@ class MarkerVisualizer:
             visualization["hidden"] = True
 
             # If marker is the target or it is already highlighted, do not actually hide the actor.
-            if is_target or highlighted:
+            if (is_target or highlighted) and marker.marker_type != MarkerType.EEG_ELECTRODE:
                 continue
 
             # Hide the actor.
@@ -763,6 +763,12 @@ class MarkerVisualizer:
         # However, if it is the target, it should remain visible.
         if marker.is_target:
             actor.SetVisibility(1)
+
+        label_actor = marker.visualization.get("label_actor")
+        if label_actor is not None:
+            label_actor.SetVisibility(
+                self.eeg_labels_visible and not marker.visualization["hidden"]
+            )
 
         # Remove the projection actor if it exists.
         if self.projection_line_actor is not None:
