@@ -29,17 +29,21 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from math import dist, isfinite
 from pathlib import Path
+from time import monotonic
 
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import (
     SCALP_NORMAL_AVERAGING_RADIUS_MM,
     SurfaceGeometry,
 )
+from invesalius.i18n import tr as _
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
 MAX_SCALP_PROJECTION_DISTANCE_MM = 3.0
+# Reject a cached pose if navigation has stopped delivering tracking samples.
+MAX_PROBE_POSE_AGE_SECONDS = 1.0
 
 
 @dataclass(frozen=True)
@@ -58,6 +62,37 @@ class EEGElectrodeManager(metaclass=Singleton):
         self.surface_geometry = SurfaceGeometry()
         self.registration_active = False
         self.labels_visible = True
+        self._probe_position = None
+        self._probe_pose_time = 0.0
+        Publisher.subscribe(self.update_probe_tracking, "Update probe tracking")
+        Publisher.subscribe(self.on_navigation_status, "Navigation status")
+
+    def on_navigation_status(self, nav_status, vis_status):
+        self._probe_position = None
+        self._probe_pose_time = 0.0
+
+    def update_probe_tracking(self, coord, probe_visible, head_visible):
+        """Cache the probe tip independently of the object followed by the pointer."""
+        self._probe_position = None
+        self._probe_pose_time = monotonic()
+        if probe_visible and head_visible:
+            try:
+                self._probe_position = self._validate_coordinate(coord[:3], "position")
+            except (TypeError, ValueError):
+                pass
+
+    def get_capture_position(self) -> list[float]:
+        """Only allow digitization with a recent, valid probe/head tracking sample."""
+        if (
+            self._probe_position is None
+            or monotonic() - self._probe_pose_time > MAX_PROBE_POSE_AGE_SECONDS
+        ):
+            raise RuntimeError(
+                _(
+                    "Cannot register an EEG electrode: make sure the probe and head reference are tracked."
+                )
+            )
+        return self._probe_position.copy()
 
     def set_registration_active(self, active: bool) -> None:
         """Enable or disable creation of EEG electrode markers."""
@@ -230,6 +265,7 @@ class EEGElectrodeManager(metaclass=Singleton):
         size: float = 2.0,
         visible: bool = True,
         focus: bool = False,
+        session_id: int = 1,
         matched_name: str | None = None,
         distance_mm: float | None = None,
         confidence: str | None = None,
@@ -240,6 +276,7 @@ class EEGElectrodeManager(metaclass=Singleton):
             marker_type=MarkerType.EEG_ELECTRODE,
             size=size,
             visible=visible,
+            session_id=session_id,
             eeg_matched_name=matched_name,
             eeg_distance_mm=distance_mm,
             eeg_confidence=confidence,
@@ -335,7 +372,9 @@ class EEGElectrodeManager(metaclass=Singleton):
 
     @staticmethod
     def _validate_coordinate(values: Sequence[float], name: str) -> list[float]:
-        coordinate = list(values)
+        coordinate = [float(value) for value in values]
         if len(coordinate) != 3:
             raise ValueError(f"{name} must contain exactly three values")
+        if not all(isfinite(value) for value in coordinate):
+            raise ValueError(_("Coordinates must contain only finite numbers."))
         return coordinate

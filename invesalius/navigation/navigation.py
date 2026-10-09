@@ -168,6 +168,7 @@ class UpdateNavigationScene(threading.Thread):
         slice_render,
         coord,
         probe_visible,
+        head_visible,
         probe_coord,
         probe_m_img,
         coil_visible,
@@ -179,6 +180,12 @@ class UpdateNavigationScene(threading.Thread):
         enorm_data,
     ):
         try:
+            Publisher.sendMessage(
+                "Update probe tracking",
+                coord=probe_coord,
+                probe_visible=probe_visible,
+                head_visible=head_visible,
+            )
             if tracts_payload is not None:
                 bundle, affine_vtk, coord_offset, coord_offset_w = tracts_payload
                 Publisher.sendMessage("Remove tracts")
@@ -333,6 +340,7 @@ class UpdateNavigationScene(threading.Thread):
                         slice_render=slice_render,
                         coord=coord,
                         probe_visible=probe_visible,
+                        head_visible=marker_visibilities[1],
                         probe_coord=probe_coord,
                         probe_m_img=probe_m_img,
                         coil_visible=coil_visible,

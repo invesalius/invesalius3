@@ -4634,10 +4634,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             return
 
         if is_eeg_marker:
-            capture_position = position if position is not None else self.current_position
             try:
+                capture_position = self.eeg_electrodes.get_capture_position()
+                if position is not None:
+                    capture_position = position
                 projection = self.eeg_electrodes.project_to_scalp(capture_position)
-            except RuntimeError as error:
+            except (RuntimeError, ValueError, TypeError) as error:
                 wx.MessageBox(str(error), _("InVesalius 3"), wx.OK | wx.ICON_ERROR)
                 return
 
@@ -4661,15 +4663,19 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 if not keep_electrode:
                     return
 
-            position = projection.position
-            orientation = projection.orientation
+            self.eeg_electrodes.create(
+                projection.position,
+                orientation=projection.orientation,
+                label=label,
+                colour=colour if colour is not None else self.marker_colour,
+                size=size if size is not None else self.marker_size,
+                session_id=session_id if session_id is not None else self.current_session,
+                focus=True,
+            )
+            return
 
         if label is None:
-            label = (
-                self.eeg_electrodes.next_label()
-                if self.eeg_electrodes.registration_active
-                else self.GetNextMarkerLabel()
-            )
+            label = self.GetNextMarkerLabel()
 
         if self.nav_status and self.navigation.e_field_loaded:
             Publisher.sendMessage("Get Cortex position")
