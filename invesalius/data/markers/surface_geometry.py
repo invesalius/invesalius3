@@ -41,6 +41,7 @@ class SurfaceGeometry(metaclass=Singleton):
                 "polydata": polydata,
                 "normals": None,
                 "point_locator": None,
+                "cell_locator": None,
                 "highest_z": float("-inf"),
             }
 
@@ -49,11 +50,15 @@ class SurfaceGeometry(metaclass=Singleton):
         point_locator = vtk.vtkPointLocator()
         point_locator.SetDataSet(polydata)
         point_locator.BuildLocator()
+        cell_locator = vtk.vtkCellLocator()
+        cell_locator.SetDataSet(polydata)
+        cell_locator.BuildLocator()
         return {
             "actor": actor,
             "polydata": polydata,
             "normals": normals,
             "point_locator": point_locator,
+            "cell_locator": cell_locator,
             "highest_z": highest_z,
         }
 
@@ -328,18 +333,42 @@ class SurfaceGeometry(metaclass=Singleton):
         polydata = surface["polydata"]
         normals = surface["normals"]
         point_locator = surface["point_locator"]
-        closest_point_id = point_locator.FindClosestPoint(point)
-        if not 0 <= closest_point_id < polydata.GetNumberOfPoints():
+        point = np.asarray(point, dtype=float)
+        if point.shape != (3,) or not np.all(np.isfinite(point)):
+            raise RuntimeError(_("Coordinates must contain only finite numbers."))
+
+        closest_point = [0.0, 0.0, 0.0]
+        cell_id = vtk.reference(-1)
+        sub_id = vtk.reference(0)
+        distance_squared = vtk.reference(0.0)
+        surface["cell_locator"].FindClosestPoint(
+            point, closest_point, cell_id, sub_id, distance_squared
+        )
+        if not 0 <= cell_id.get() < polydata.GetNumberOfCells():
             raise RuntimeError(_("The scalp surface does not contain usable geometry."))
 
-        # Retrieve the coordinates of the closest point using the point ID.
-        closest_point = polydata.GetPoint(closest_point_id)
-
-        # Extract the normal at the closest point
         normal_data = normals.GetPointData().GetNormals()
-        if normal_data is None or closest_point_id >= normal_data.GetNumberOfTuples():
+        if normal_data is None:
             raise RuntimeError(_("The scalp surface does not contain usable normals."))
-        closest_normal = np.asarray(normal_data.GetTuple(closest_point_id), dtype=float)
+
+        # Interpolate normals at the actual point on the cell, not at a nearby vertex.
+        cell = polydata.GetCell(cell_id.get())
+        weights = [0.0] * cell.GetNumberOfPoints()
+        evaluation = cell.EvaluatePosition(
+            closest_point, [0.0, 0.0, 0.0], sub_id, [0.0, 0.0, 0.0], distance_squared, weights
+        )
+        if evaluation < 0:
+            closest_point_id = point_locator.FindClosestPoint(closest_point)
+            closest_normal = np.asarray(normal_data.GetTuple(closest_point_id), dtype=float)
+        else:
+            closest_normal = np.sum(
+                [
+                    np.asarray(normal_data.GetTuple(cell.GetPointId(index))) * weight
+                    for index, weight in enumerate(weights)
+                ],
+                axis=0,
+            )
+        interpolated_normal = closest_normal.copy()
 
         if smooth_radius > 0:
             nearby_ids = vtk.vtkIdList()
@@ -354,10 +383,14 @@ class SurfaceGeometry(metaclass=Singleton):
                 )
 
         normal_length = np.linalg.norm(closest_normal)
-        if normal_length > 0:
-            closest_normal /= normal_length
+        if normal_length < 1e-10:
+            closest_normal = interpolated_normal
+            normal_length = np.linalg.norm(closest_normal)
+        if not np.isfinite(normal_length) or normal_length < 1e-10:
+            raise RuntimeError(_("The scalp surface does not contain usable normals."))
+        closest_normal /= normal_length
 
-        return closest_point, tuple(closest_normal)
+        return tuple(closest_point), tuple(closest_normal)
 
     @staticmethod
     def _HasUsableGeometry(surface):
@@ -373,6 +406,7 @@ class SurfaceGeometry(metaclass=Singleton):
             and normal_data is not None
             and normal_data.GetNumberOfTuples() >= polydata.GetNumberOfPoints()
             and surface.get("point_locator") is not None
+            and surface.get("cell_locator") is not None
         )
 
     @staticmethod
