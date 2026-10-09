@@ -142,6 +142,19 @@ class EEGElectrodeManager(metaclass=Singleton):
     def _export_bids(self, output_dir: Path) -> list[str]:
         electrodes_path, coordsystem_path = self.get_export_paths(output_dir, "BIDS")
         world_electrodes = self._get_world_electrodes()
+        coordinate_description = (
+            "Scanner RAS coordinate system derived from the subject MRI affine transformation."
+        )
+        coordsystem = {
+            "EEGCoordinateSystem": "Other",
+            "EEGCoordinateUnits": "mm",
+            "EEGCoordinateSystemDescription": coordinate_description,
+            "AnatomicalLandmarkCoordinateSystem": "Other",
+            "AnatomicalLandmarkCoordinateUnits": "mm",
+            "AnatomicalLandmarkCoordinateSystemDescription": coordinate_description,
+            "AnatomicalLandmarkCoordinates": self._get_world_fiducials(),
+            "DigitizationMethod": "InVesalius Navigator - EEG electrode digitization",
+        }
 
         with electrodes_path.open("w", encoding="utf-8", newline="") as electrodes_file:
             writer = csv.DictWriter(
@@ -161,24 +174,6 @@ class EEGElectrodeManager(metaclass=Singleton):
                     }
                 )
 
-        distances = [
-            float(electrode.eeg_distance_mm)
-            for electrode in self.electrodes
-            if electrode.eeg_distance_mm is not None and isfinite(float(electrode.eeg_distance_mm))
-        ]
-        coordsystem = {
-            "EEGCoordinateSystem": "Other",
-            "EEGCoordinateUnits": "mm",
-            "EEGCoordinateSystemDescription": (
-                "Scanner RAS coordinate system derived from the subject MRI affine transformation."
-            ),
-            "IntendedFor": "",
-            "AnatomicalLandmarkCoordinateSystem": "Other",
-            "AnatomicalLandmarkCoordinateUnits": "mm",
-            "AnatomicalLandmarkCoordinates": self._get_world_fiducials(),
-            "DigitizationMethod": "InVesalius Navigator - EEG electrode digitization",
-            "ICPMeanErrorMM": sum(distances) / len(distances) if distances else None,
-        }
         with coordsystem_path.open("w", encoding="utf-8") as coordsystem_file:
             json.dump(coordsystem, coordsystem_file, indent=2)
 
@@ -192,12 +187,11 @@ class EEGElectrodeManager(metaclass=Singleton):
         ]
 
         fiducials = self._get_world_fiducials()
-        for name, fiducial_id in (("NASION", 1), ("LPA", 2), ("RPA", 3)):
+        for name, fiducial_id in (("LPA", 1), ("NAS", 2), ("RPA", 3)):
             if name in fiducials:
                 position = fiducials[name]
                 lines.append(
-                    f"cardinal {fiducial_id} "
-                    f"{position['x']:.2f} {position['y']:.2f} {position['z']:.2f}"
+                    f"cardinal {fiducial_id} {position[0]:.2f} {position[1]:.2f} {position[2]:.2f}"
                 )
 
         for name, position in self._get_world_electrodes():
@@ -223,12 +217,12 @@ class EEGElectrodeManager(metaclass=Singleton):
         return world_electrodes
 
     @staticmethod
-    def _get_world_fiducials() -> dict[str, dict[str, float]]:
+    def _get_world_fiducials() -> dict[str, list[float]]:
         from invesalius.data import imagedata_utils
         from invesalius.project import Project
 
         fiducials = {}
-        fiducial_names = ((2, "NASION"), (0, "LPA"), (1, "RPA"))
+        fiducial_names = ((2, "NAS"), (0, "LPA"), (1, "RPA"))
         for index, name in fiducial_names:
             position = Project().image_fiducials[index]
             if any(not isfinite(float(value)) for value in position):
@@ -239,11 +233,7 @@ class EEGElectrodeManager(metaclass=Singleton):
             )
             if any(value is None or not isfinite(float(value)) for value in position_world):
                 continue
-            fiducials[name] = {
-                "x": round(float(position_world[0]), 2),
-                "y": round(float(position_world[1]), 2),
-                "z": round(float(position_world[2]), 2),
-            }
+            fiducials[name] = [round(float(value), 2) for value in position_world]
         return fiducials
 
     @staticmethod
