@@ -1234,12 +1234,11 @@ class SpinInteractorStyle(DefaultInteractorStyle):
             obj.OnRightButtonDown()
 
     def OnUnspin(self, evt):
-        orig_orien = 1
         iren = self.viewer.interactor
         mouse_x, mouse_y = iren.GetLastEventPosition()
         ren = iren.FindPokedRenderer(mouse_x, mouse_y)
         cam = ren.GetActiveCamera()
-        cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.viewer.orientation])
+        cam.SetViewUp(self.viewer.GetDefaultViewUp())
         self.viewer.ResetTextDirection(cam)
         iren.Render()
 
