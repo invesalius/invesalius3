@@ -30,7 +30,7 @@ def test_export_surface_without_wx_app(tmp_path: Path) -> None:
         "surface.polydata = sphere.GetOutput()\n"
         "surface.is_shown = True\n"
         "prj.Project().surface_dict[surface.index] = surface\n"
-        "SurfaceManager()._export_surface(sys.argv[1], const.FILETYPE_STL, convert_to_world=False)\n"
+        "SurfaceManager().OnExportSurface(sys.argv[1], const.FILETYPE_STL)\n"
     )
     path = tmp_path / "out.stl"
     result = run_code(code, str(path))
