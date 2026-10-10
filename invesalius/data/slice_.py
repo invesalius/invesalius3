@@ -1295,7 +1295,9 @@ class Slice(metaclass=utils.Singleton):
         "Insert mask data, based on given index, into pipeline."
         import wx
 
-        wx.BeginBusyCursor()
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            wx.BeginBusyCursor()
         try:
             if self.current_mask:
                 self.current_mask.is_shown = False
@@ -1331,7 +1333,8 @@ class Slice(metaclass=utils.Singleton):
             Publisher.sendMessage("Select mask name in combo", index=index)
             Publisher.sendMessage("Update slice viewer")
         finally:
-            wx.EndBusyCursor()
+            if use_gui:
+                wx.EndBusyCursor()
 
     # ---------------------------------------------------------------------------
 
@@ -1607,7 +1610,9 @@ class Slice(metaclass=utils.Singleton):
         """
         import wx
 
-        wx.BeginBusyCursor()
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            wx.BeginBusyCursor()
         try:
             future_mask = Mask()
             future_mask.create_mask(self.matrix.shape)
@@ -1630,7 +1635,8 @@ class Slice(metaclass=utils.Singleton):
             if add_to_project:
                 self._add_mask_into_proj(future_mask, show=show)
         finally:
-            wx.EndBusyCursor()
+            if use_gui:
+                wx.EndBusyCursor()
 
         return future_mask
 
@@ -2482,7 +2488,9 @@ class Slice(metaclass=utils.Singleton):
 
         import wx
 
-        wx.BeginBusyCursor()
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            wx.BeginBusyCursor()
         try:
             # Update histogram and center for the filtered image.
             # Previously this happened via the matrix setter in _run_filter, but now
@@ -2535,7 +2543,8 @@ class Slice(metaclass=utils.Singleton):
             Publisher.sendMessage("Render volume viewer")
             Publisher.sendMessage("Image filter done")
         finally:
-            wx.EndBusyCursor()
+            if use_gui:
+                wx.EndBusyCursor()
 
     def __switch_active_image(self, matrix):
         """Swap the active volume to a previously stored image version.
@@ -2545,7 +2554,9 @@ class Slice(metaclass=utils.Singleton):
         """
         import wx
 
-        wx.BeginBusyCursor()
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            wx.BeginBusyCursor()
         try:
             if self.matrix is not None:
                 # Swap reference instead of overwriting memory to avoid corruption
@@ -2571,13 +2582,16 @@ class Slice(metaclass=utils.Singleton):
                 Publisher.sendMessage("Refresh viewer")
                 Publisher.sendMessage("Render volume viewer")
         finally:
-            wx.EndBusyCursor()
+            if use_gui:
+                wx.EndBusyCursor()
 
     def __bake_masks_for_image(self, label, matrix):
         """Force full evaluation of masks derived from the specified image label."""
         import wx
 
-        wx.BeginBusyCursor()
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            wx.BeginBusyCursor()
         try:
             proj = Project()
             for mask in proj.mask_dict.values():
@@ -2585,7 +2599,8 @@ class Slice(metaclass=utils.Singleton):
                     self.do_threshold_to_all_slices(mask=mask, target_matrix=matrix)
                     mask.was_edited = True
         finally:
-            wx.EndBusyCursor()
+            if use_gui:
+                wx.EndBusyCursor()
 
     def __switch_active_image_by_label(self, label):
         """Find an image version by label and switch to it if not already active."""
@@ -2594,7 +2609,9 @@ class Slice(metaclass=utils.Singleton):
 
         import wx
 
-        wx.BeginBusyCursor()
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            wx.BeginBusyCursor()
         try:
             proj = Project()
             for lbl, mat in proj.image_versions:
@@ -2631,7 +2648,8 @@ class Slice(metaclass=utils.Singleton):
 
                     break
         finally:
-            wx.EndBusyCursor()
+            if use_gui:
+                wx.EndBusyCursor()
 
 
 def _conv_area(x: np.ndarray, sx: float, sy: float, sz: float) -> float:
