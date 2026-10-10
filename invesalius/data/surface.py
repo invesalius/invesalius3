@@ -1727,11 +1727,14 @@ class SurfaceManager:
             # If export was flagged successful, shows success message and resets the flag
             if getattr(self, "export_successful", False):
                 self.export_successful = False
-                wx.MessageBox(
-                    _("Export completed successfully."),
-                    _("Export success"),
-                    wx.OK | wx.ICON_INFORMATION,
-                )
+                if wx.GetApp() is None:
+                    print("Export completed successfully.")
+                else:
+                    wx.MessageBox(
+                        _("Export completed successfully."),
+                        _("Export success"),
+                        wx.OK | wx.ICON_INFORMATION,
+                    )
 
             try:
                 if os.path.exists(temp_file):
