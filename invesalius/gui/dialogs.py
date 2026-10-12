@@ -4171,6 +4171,16 @@ class ObjectCalibrationDialog(wx.Dialog):
             return name
         return None
 
+    def _GetCoilName(self, obj_id):
+        """Get a suggested coil name without exposing names in single OptiTrack mode."""
+        if self.tracker_id in (const.POLARIS, const.POLARISP4):
+            return self._GetROMBasename(obj_id)
+        if self.tracker_id == const.OPTITRACK and self.n_coils > 1:
+            connection = self.tracker.tracker_connection
+            if connection is not None:
+                return connection.GetCoilName(obj_id)
+        return None
+
     def _init_gui(self) -> None:
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
@@ -4188,21 +4198,18 @@ class ObjectCalibrationDialog(wx.Dialog):
         tooltip = _("Select the hardware port / tracker sensor for the coil to be calibrated.")
 
         choices = []
-        self.obj_id_map = {}
+        # Map selection positions to rows, since coil names may be repeated or edited.
+        self.obj_ids = []
 
         if self.n_coils == 1:
             label = _("Stylus (Single)")
             choices.append(label)
-            self.obj_id_map[label] = 0
+            self.obj_ids.append(0)
 
-        is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
         for i in range(2, max_obj_id):
-            label = None
-            if is_polaris:
-                label = self._GetROMBasename(i)
-            label = label or _(f"Coil {i - 1}")
+            label = self._GetCoilName(i) or _(f"Coil {i - 1}")
             choices.append(label)
-            self.obj_id_map[label] = i
+            self.obj_ids.append(i)
 
         self.choice_obj_id = choice_obj_id = wx.ComboBox(
             self,
@@ -4216,23 +4223,18 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_obj_id.Bind(wx.EVT_COMBOBOX, self.OnChooseObjID)
 
         # Determine initial selection based on default obj_id
-        for lbl, idx in self.obj_id_map.items():
-            if idx == self.obj_id:
-                choice_obj_id.SetStringSelection(lbl)
-                break
-        else:
-            if choices:
-                choice_obj_id.SetStringSelection(choices[0])
-                self.obj_id = self.obj_id_map[choices[0]]
+        if self.obj_id in self.obj_ids:
+            choice_obj_id.SetSelection(self.obj_ids.index(self.obj_id))
+        elif choices:
+            choice_obj_id.SetSelection(0)
+            self.obj_id = self.obj_ids[0]
 
         choice_obj_id.Enable(True)
 
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
-            for lbl, idx in self.obj_id_map.items():
-                if idx == 0:
-                    self.obj_id = 0
-                    choice_obj_id.SetStringSelection(lbl)
-                    break
+            if 0 in self.obj_ids:
+                self.obj_id = 0
+                choice_obj_id.SetSelection(self.obj_ids.index(0))
             choice_obj_id.Enable(False)
 
         # ComboBox for sensor selection for FASTRAK
@@ -4547,9 +4549,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ResetObjectFiducials()
 
     def OnChooseObjID(self, evt: wx.CommandEvent) -> None:
-        selection_label = evt.GetEventObject().GetStringSelection()
-        if selection_label in self.obj_id_map:
-            self.obj_id = self.obj_id_map[selection_label]
+        selection = evt.GetSelection()
+        if 0 <= selection < len(self.obj_ids):
+            self.obj_id = self.obj_ids[selection]
 
         # choice_sensor is only shown for relevant trackers like Polhemus FASTRAK
         # If obj_id=0, (ie. the stylus is attached to the coil), the sensor is not used, so hide this

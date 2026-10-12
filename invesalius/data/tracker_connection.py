@@ -77,12 +77,12 @@ class TrackerConnection:
 
 class OptitrackTrackerConnection(TrackerConnection):
     """
-    Connects to optitrack wrapper from Motive 2.2. Initialize cameras, attach listener, loads Calibration,
-    loads User Profile (Rigid bodies information).
+    Connect to OptiTrack, load calibration and rigid bodies, and cache coil names.
     """
 
     def __init__(self, model=None, n_coils=1):
         super().__init__(model=model, n_coils=n_coils)
+        self.coil_names = []
 
     def Configure(self):
         dialog = dlg.ConfigureOptitrackDialog()
@@ -105,6 +105,9 @@ class OptitrackTrackerConnection(TrackerConnection):
     def Connect(self):
         assert self.configuration is not None, "No configuration defined"
 
+        self.connection = None
+        self.coil_names = []
+
         import optitrack
 
         connection = optitrack.optr()
@@ -114,6 +117,9 @@ class OptitrackTrackerConnection(TrackerConnection):
 
         if connection.Initialize(calibration, user_profile) == 0:
             connection.Run()  # Runs 'Run' function once to update cameras.
+            # The library keeps the same coil order in every frame.
+            frame = connection.GetFrame()
+            self.coil_names = [coil.name.strip() for coil in frame.coils]
             lib_mode = "wrapper"
 
             self.connection = connection
@@ -123,8 +129,17 @@ class OptitrackTrackerConnection(TrackerConnection):
 
         self.lib_mode = lib_mode
 
+    def GetCoilName(self, obj_id):
+        """Return the name matching a coil row in coord_raw, or None."""
+        coil_index = obj_id - 2
+        if 0 <= coil_index < len(self.coil_names):
+            return self.coil_names[coil_index] or None
+        return None
+
     def Disconnect(self):
         super().Disconnect()
+        if not self.IsConnected():
+            self.coil_names = []
 
 
 class ClaronTrackerConnection(TrackerConnection):
