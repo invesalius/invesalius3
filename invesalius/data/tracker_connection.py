@@ -94,10 +94,6 @@ class TrackerConnection:
         self.lib_mode = "coil count mismatch"
         return False
 
-    def GetCoilFileName(self, obj_id: int | None) -> str | None:
-        """Return an associated tracker file basename, if this adapter uses coil files."""
-        return None
-
     def GetConfiguration(self):
         return self.configuration
 
@@ -441,26 +437,11 @@ class PolarisTrackerConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
         super().__init__(model=model, n_coils=n_coils)
 
-    def _GetCoilFiles(self) -> list[str] | None:
-        if self.configuration is None:
-            return None
-        return self.configuration.get("obj_dirs")
-
     def GetCoilNames(self) -> list[str]:
-        return [os.path.splitext(os.path.basename(path))[0] for path in self._GetCoilFiles() or []]
-
-    def GetCoilCount(self) -> int | None:
-        coil_files = self._GetCoilFiles()
-        return len(coil_files) if coil_files is not None else None
-
-    def GetCoilFileName(self, obj_id: int | None) -> str | None:
-        if obj_id is None or obj_id < 2:
-            return None
-        coil_files = self._GetCoilFiles() or []
-        coil_index = obj_id - 2
-        if coil_index < len(coil_files):
-            return os.path.basename(coil_files[coil_index])
-        return None
+        if self.configuration is None:
+            return []
+        obj_dirs = self.configuration.get("obj_dirs") or []
+        return [os.path.splitext(os.path.basename(path))[0] for path in obj_dirs]
 
     def Configure(self):
         dialog = dlg.ConfigurePolarisDialog(self.n_coils)
@@ -524,18 +505,9 @@ class PolarisTrackerConnection(TrackerConnection):
         super().Disconnect()
 
 
-class PolarisP4TrackerConnection(PolarisTrackerConnection):
+class PolarisP4TrackerConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
         super().__init__(model=model, n_coils=n_coils)
-
-    def _GetCoilFiles(self) -> list[str] | None:
-        if self.configuration is None:
-            return None
-        coil_file = self.configuration.get("obj_dir")
-        if coil_file is None:
-            return None
-        # Older configurations may have saved the dialog's one-element list.
-        return coil_file if isinstance(coil_file, list) else [coil_file]
 
     def Configure(self):
         dialog = dlg.ConfigurePolarisDialog(1)
@@ -543,13 +515,13 @@ class PolarisP4TrackerConnection(PolarisTrackerConnection):
 
         success = status == ID_OK
         if success:
-            com_port, probe_dir, ref_dir, obj_dirs = dialog.GetValue()
+            com_port, probe_dir, ref_dir, obj_dir = dialog.GetValue()
 
             self.configuration = {
                 "com_port": com_port,
                 "probe_dir": probe_dir,
                 "ref_dir": ref_dir,
-                "obj_dir": obj_dirs[0],
+                "obj_dir": obj_dir,
             }
         else:
             self.lib_mode = None
@@ -572,7 +544,7 @@ class PolarisP4TrackerConnection(PolarisTrackerConnection):
             com_port = self.configuration["com_port"].encode(const.FS_ENCODE)
             probe_dir = self.configuration["probe_dir"].encode(const.FS_ENCODE)
             ref_dir = self.configuration["ref_dir"].encode(const.FS_ENCODE)
-            obj_dir = self._GetCoilFiles()[0].encode(const.FS_ENCODE)
+            obj_dir = self.configuration["obj_dir"].encode(const.FS_ENCODE)
 
             if connection.Initialize(com_port, probe_dir, ref_dir, obj_dir) != 0:
                 connection = None

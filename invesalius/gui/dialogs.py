@@ -4556,11 +4556,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         coil_name = "default_coil"
 
         if self.n_coils > 1:
-            coil_name = (
-                self.choice_obj_id.GetValue().strip()
-                or self.tracker.GetCoilName(self.obj_id)
-                or "coil"
-            )
+            is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
+            rom_name = self.tracker.GetCoilName(self.obj_id) if is_polaris else None
+            coil_name = rom_name or self.choice_obj_id.GetValue().strip() or "coil"
 
         return (
             coil_name,
@@ -7359,7 +7357,7 @@ class ConfigurePolarisDialog(wx.Dialog):
     def OnChoicePort(self, evt: wx.CommandEvent, ctrl: wx.ComboBox) -> None:
         self.btn_ok.Enable(True)
 
-    def GetValue(self) -> tuple[str, str, str, list[str]]:
+    def GetValue(self) -> tuple[str, str, str, str]:
         fn_probe = self.dir_probe.GetPath()
         fn_ref = self.dir_ref.GetPath()
         fn_objs = [dir_obj.GetPath() for dir_obj in self.dir_objs]

@@ -328,11 +328,6 @@ class Tracker(metaclass=Singleton):
             return None
         return self.tracker_connection.GetCoilCount()
 
-    def GetCoilFileName(self, obj_id: int | None) -> str | None:
-        if self.tracker_connection is None:
-            return None
-        return self.tracker_connection.GetCoilFileName(obj_id)
-
     def GetTrackerId(self) -> int:
         return self.tracker_id
 
