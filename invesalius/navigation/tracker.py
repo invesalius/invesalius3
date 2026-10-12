@@ -138,7 +138,12 @@ class Tracker(metaclass=Singleton):
 
             # Check that the connection was successful.
             if not self.tracker_connection.IsConnected():
-                dlg.ShowNavigationTrackerWarning(tracker_id, self.tracker_connection.GetLibMode())
+                dlg.ShowNavigationTrackerWarning(
+                    tracker_id,
+                    self.tracker_connection.GetLibMode(),
+                    expected_n_coils=n_coils,
+                    motive_n_coils=getattr(self.tracker_connection, "motive_n_coils", None),
+                )
 
                 self.tracker_id = 0
                 self.tracker_connected = False

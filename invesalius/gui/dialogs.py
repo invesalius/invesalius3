@@ -1107,7 +1107,12 @@ def SurfaceIndexNotExist(index: int) -> None:
 # ----------------------------------
 
 
-def ShowNavigationTrackerWarning(trck_id: int, lib_mode: str) -> None:
+def ShowNavigationTrackerWarning(
+    trck_id: int,
+    lib_mode: str,
+    expected_n_coils: int | None = None,
+    motive_n_coils: int | None = None,
+) -> None:
     """
     Spatial Tracker connection error
     """
@@ -1133,6 +1138,12 @@ def ShowNavigationTrackerWarning(trck_id: int, lib_mode: str) -> None:
         msg = _("Coil marker is not visible.")
     elif lib_mode == "head marker not visible":
         msg = _("Head marker is not visible.")
+    elif lib_mode == "coil count mismatch":
+        msg = _(
+            "Cannot connect to OptiTrack: the interface is configured for {expected} coil(s), "
+            "but the Motive profile contains {actual}. "
+            "Adjust the coil count in Preferences or the Motive profile and try again."
+        ).format(expected=expected_n_coils, actual=motive_n_coils)
     elif lib_mode == "error":
         msg = trck[trck_id] + _(" is not installed.")
     elif lib_mode == "disconnect":

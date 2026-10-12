@@ -83,6 +83,7 @@ class OptitrackTrackerConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
         super().__init__(model=model, n_coils=n_coils)
         self.coil_names = []
+        self.motive_n_coils = None
 
     def Configure(self):
         dialog = dlg.ConfigureOptitrackDialog()
@@ -107,6 +108,7 @@ class OptitrackTrackerConnection(TrackerConnection):
 
         self.connection = None
         self.coil_names = []
+        self.motive_n_coils = None
 
         import optitrack
 
@@ -116,6 +118,12 @@ class OptitrackTrackerConnection(TrackerConnection):
         user_profile = self.configuration["user_profile"]
 
         if connection.Initialize(calibration, user_profile) == 0:
+            self.motive_n_coils = int(connection.getCoilCount())
+            if self.motive_n_coils != self.n_coils:
+                connection.Close()
+                self.lib_mode = "coil count mismatch"
+                return
+
             connection.Run()  # Runs 'Run' function once to update cameras.
             # The library keeps the same coil order in every frame.
             frame = connection.GetFrame()
