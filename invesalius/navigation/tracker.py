@@ -142,7 +142,7 @@ class Tracker(metaclass=Singleton):
                     tracker_id,
                     self.tracker_connection.GetLibMode(),
                     expected_n_coils=n_coils,
-                    motive_n_coils=getattr(self.tracker_connection, "motive_n_coils", None),
+                    detected_n_coils=self.GetCoilCount(),
                 )
 
                 self.tracker_id = 0
@@ -317,6 +317,21 @@ class Tracker(metaclass=Singleton):
         )
 
         return [m_probe_ref_left.tolist(), m_probe_ref_right.tolist(), m_probe_ref_nasion.tolist()]
+
+    def GetCoilName(self, obj_id: int | None) -> str | None:
+        if self.tracker_connection is None:
+            return None
+        return self.tracker_connection.GetCoilName(obj_id)
+
+    def GetCoilCount(self) -> int | None:
+        if self.tracker_connection is None:
+            return None
+        return self.tracker_connection.GetCoilCount()
+
+    def GetCoilFileName(self, obj_id: int | None) -> str | None:
+        if self.tracker_connection is None:
+            return None
+        return self.tracker_connection.GetCoilFileName(obj_id)
 
     def GetTrackerId(self) -> int:
         return self.tracker_id

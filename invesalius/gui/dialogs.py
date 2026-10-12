@@ -1111,7 +1111,7 @@ def ShowNavigationTrackerWarning(
     trck_id: int,
     lib_mode: str,
     expected_n_coils: int | None = None,
-    motive_n_coils: int | None = None,
+    detected_n_coils: int | None = None,
 ) -> None:
     """
     Spatial Tracker connection error
@@ -1140,10 +1140,10 @@ def ShowNavigationTrackerWarning(
         msg = _("Head marker is not visible.")
     elif lib_mode == "coil count mismatch":
         msg = _(
-            "Cannot connect to OptiTrack: the interface is configured for {expected} coil(s), "
-            "but the Motive profile contains {actual}. "
-            "Adjust the coil count in Preferences or the Motive profile and try again."
-        ).format(expected=expected_n_coils, actual=motive_n_coils)
+            "Cannot connect to {tracker}: the interface is configured for {expected} coil(s), "
+            "but the tracker configuration contains {actual}. "
+            "Adjust the coil count in Preferences or the tracker configuration and try again."
+        ).format(tracker=trck[trck_id], expected=expected_n_coils, actual=detected_n_coils)
     elif lib_mode == "error":
         msg = trck[trck_id] + _(" is not installed.")
     elif lib_mode == "disconnect":
@@ -4161,37 +4161,6 @@ class ObjectCalibrationDialog(wx.Dialog):
         self._init_pedal()
         self.InitializeObject()
 
-    def _GetROMBasename(self, obj_id):
-        """Get the ROM file basename (without extension) for a given obj_id.
-
-        For trackers like NDI Polaris, each coil has a ROM file. The obj_id
-        maps to the ROM file index as: obj_id=2 -> obj_dirs[0], etc.
-
-        Returns the basename without extension, or None if not available.
-        """
-        connection = self.tracker.tracker_connection
-        if connection is None or connection.configuration is None:
-            return None
-        obj_dirs = connection.configuration.get("obj_dirs", None)
-        if obj_dirs is None:
-            return None
-        rom_index = obj_id - 2
-        if 0 <= rom_index < len(obj_dirs):
-            basename = os.path.basename(obj_dirs[rom_index])
-            name, _ = os.path.splitext(basename)
-            return name
-        return None
-
-    def _GetCoilName(self, obj_id):
-        """Get a suggested coil name without exposing names in single OptiTrack mode."""
-        if self.tracker_id in (const.POLARIS, const.POLARISP4):
-            return self._GetROMBasename(obj_id)
-        if self.tracker_id == const.OPTITRACK and self.n_coils > 1:
-            connection = self.tracker.tracker_connection
-            if connection is not None:
-                return connection.GetCoilName(obj_id)
-        return None
-
     def _init_gui(self) -> None:
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
@@ -4218,7 +4187,8 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_ids.append(0)
 
         for i in range(2, max_obj_id):
-            label = self._GetCoilName(i) or _(f"Coil {i - 1}")
+            label = self.tracker.GetCoilName(i) if self.n_coils > 1 else None
+            label = label or _(f"Coil {i - 1}")
             choices.append(label)
             self.obj_ids.append(i)
 
@@ -4582,15 +4552,15 @@ class ObjectCalibrationDialog(wx.Dialog):
 
     def GetValue(
         self,
-    ) -> tuple[np.ndarray, np.ndarray, int, bytes | None, vtkPolyData | None]:
+    ) -> tuple[str, bytes | None, np.ndarray, np.ndarray, int, int]:
         coil_name = "default_coil"
 
         if self.n_coils > 1:
-            is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
-
-            rom_name = self._GetROMBasename(self.obj_id) if is_polaris else None
-
-            coil_name = rom_name or self.choice_obj_id.GetValue().strip() or "coil"
+            coil_name = (
+                self.choice_obj_id.GetValue().strip()
+                or self.tracker.GetCoilName(self.obj_id)
+                or "coil"
+            )
 
         return (
             coil_name,
@@ -7389,7 +7359,7 @@ class ConfigurePolarisDialog(wx.Dialog):
     def OnChoicePort(self, evt: wx.CommandEvent, ctrl: wx.ComboBox) -> None:
         self.btn_ok.Enable(True)
 
-    def GetValue(self) -> tuple[str, str, str, str]:
+    def GetValue(self) -> tuple[str, str, str, list[str]]:
         fn_probe = self.dir_probe.GetPath()
         fn_ref = self.dir_ref.GetPath()
         fn_objs = [dir_obj.GetPath() for dir_obj in self.dir_objs]

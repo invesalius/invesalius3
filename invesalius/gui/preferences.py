@@ -1257,28 +1257,6 @@ class ObjectTab(wx.Panel):
         Publisher.sendMessage("Coil selection done", done=True)
         Publisher.sendMessage("Update robot buttons")
 
-    def _GetTrackerFileName(self, obj_id):
-        """Get the tracker file name (e.g. ROM) for a given obj_id, if available.
-
-        For trackers like NDI Polaris, each coil has a ROM file that defines
-        the rigid body. The obj_id maps to the ROM file index as:
-        obj_id=2 -> obj_dirs[0], obj_id=3 -> obj_dirs[1], etc.
-
-        Returns the basename of the ROM file, or None if not available.
-        """
-        if obj_id is None:
-            return None
-        connection = self.tracker.tracker_connection
-        if connection is None or connection.configuration is None:
-            return None
-        obj_dirs = connection.configuration.get("obj_dirs", None)
-        if obj_dirs is None:
-            return None
-        rom_index = obj_id - 2
-        if 0 <= rom_index < len(obj_dirs):
-            return os.path.basename(obj_dirs[rom_index])
-        return None
-
     def _remap_polaris_obj_id(self, coil_name, coil_registration):
         if coil_registration.get("tracker_id") != const.POLARIS:
             return
@@ -1287,19 +1265,20 @@ class ObjectTab(wx.Panel):
         if not tracker_file:
             return
 
-        connection = self.tracker.tracker_connection
-        if connection is None or connection.configuration is None:
+        if self.tracker.GetTrackerId() != coil_registration["tracker_id"]:
             return
 
-        obj_dirs = connection.configuration.get("obj_dirs", None)
-        if not obj_dirs:
+        coil_count = self.tracker.GetCoilCount()
+        if not coil_count:
             return
 
-        for i, rom_path in enumerate(obj_dirs):
-            basename = os.path.basename(rom_path)
+        for obj_id in range(2, coil_count + 2):
+            basename = self.tracker.GetCoilFileName(obj_id)
+            if not basename:
+                continue
             name, _ = os.path.splitext(basename)
             if name == tracker_file or basename == tracker_file:
-                new_obj_id = i + 2
+                new_obj_id = obj_id
                 if new_obj_id != coil_registration.get("obj_id"):
                     print(
                         f"[{coil_name}] Remapping obj_id {coil_registration.get('obj_id')} -> {new_obj_id} based on ROM {tracker_file}"
@@ -1325,7 +1304,7 @@ class ObjectTab(wx.Panel):
             lines.append(f"Sensor index: {obj_id}")
 
         # Tracker ROM file (only for trackers like NDI Polaris that use ROM files)
-        rom_name = self._GetTrackerFileName(obj_id)
+        rom_name = self.tracker.GetCoilFileName(obj_id)
         if rom_name:
             lines.append(f"Tracker file: {rom_name}")
 
@@ -1627,7 +1606,7 @@ class ObjectTab(wx.Panel):
                             "obj_id": obj_id,
                             "tracker_id": tracker_id,
                             "path": coil_path.decode(const.FS_ENCODE),
-                            "tracker_file": self._GetTrackerFileName(obj_id),
+                            "tracker_file": self.tracker.GetCoilFileName(obj_id),
                         }
                         self.coil_registrations[coil_name] = coil_registration
                         self.session.SetConfig("coil_registrations", self.coil_registrations)
