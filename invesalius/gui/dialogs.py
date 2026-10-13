@@ -1138,6 +1138,11 @@ def ShowNavigationTrackerWarning(
         msg = _("Coil marker is not visible.")
     elif lib_mode == "head marker not visible":
         msg = _("Head marker is not visible.")
+    elif lib_mode == "coil selection error":
+        msg = _(
+            "Cannot connect to {tracker} in single-coil mode: no unique coil could be selected. "
+            "Name one coil 'Coil', or keep only one coil whose name starts with 'Coil'."
+        ).format(tracker=trck[trck_id])
     elif lib_mode == "coil count mismatch":
         msg = _(
             "Cannot connect to {tracker}: the interface is configured for {expected} coil(s), "

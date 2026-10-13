@@ -104,7 +104,7 @@ class TrackerConnection:
 
 class OptitrackTrackerConnection(TrackerConnection):
     """
-    Connect to OptiTrack, validate the coil count, and cache names from its profile.
+    Connect to OptiTrack, selecting one coil by name or validating the multicoil count.
     """
 
     def __init__(self, model=None, n_coils=1):
@@ -146,14 +146,27 @@ class OptitrackTrackerConnection(TrackerConnection):
 
         if connection.Initialize(calibration, user_profile) == 0:
             self.coil_count = int(connection.getCoilCount())
-            if not self.ValidateCoilCount():
+            self.coil_names = [name.strip() for name in connection.getCoilNames()]
+
+            if self.n_coils == 1:
+                exact_names = [name for name in self.coil_names if name.casefold() == "coil"]
+                self.coil_names = exact_names or [
+                    name for name in self.coil_names if name.casefold().startswith("coil")
+                ]
+                valid_coils = len(self.coil_names) == 1
+                if not valid_coils:
+                    self.lib_mode = "coil selection error"
+            else:
+                valid_coils = self.ValidateCoilCount()
+
+            if not valid_coils:
                 try:
                     connection.Close()
                 except Exception as error:
                     print(f"Could not close the rejected OptiTrack connection: {error}")
+                self.coil_names = []
                 return
 
-            self.coil_names = [name.strip() for name in connection.getCoilNames()]
             connection.Run()  # Runs 'Run' function once to update cameras.
             lib_mode = "wrapper"
 

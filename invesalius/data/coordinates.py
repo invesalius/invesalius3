@@ -182,13 +182,18 @@ def PolarisP4Coord(tracker_connection: "TrackerConnection", tracker_id: int, ref
 
 
 def OptitrackCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
-    """Return probe, head and all coils as rows of [position_mm, angles_deg]."""
+    """Return probe, head and selected coils as rows of [position_mm, angles_deg]."""
     trck = tracker_connection.GetConnection()
     trck.Run()
 
     # Keep coil poses and visibilities in the same frame and library order.
     frame = trck.GetFrame()
     coils = list(frame.coils)
+
+    if tracker_connection.n_coils == 1:
+        # Keep the name selected at initialization, including while it is untracked.
+        coil_name = tracker_connection.GetCoilName(2)
+        coils = [coil for coil in coils if coil.name.strip() == coil_name]
 
     def make_coord(position, quaternion):
         position_mm = np.asarray(position, dtype=float) * 1000.0
