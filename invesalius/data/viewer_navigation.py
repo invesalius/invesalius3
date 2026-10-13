@@ -519,6 +519,9 @@ class NavigationView:
             actor_factory=self.actor_factory,
             vector_field_visualizer=self.vector_field_visualizer,
         )
+        # This view can be created after the Track object event was published.
+        navigation_state = ses.Session().GetConfig("navigation", {})
+        self._track_scene_object(scene, navigation_state.get("track_coil", False))
 
     def _restore_navigation_markers(self):
         if self.markers_control is None:
@@ -1368,6 +1371,7 @@ class NavigationView:
         return coil_dir, p2_norm, coil_norm, p1
 
     def AddPeeledSurface(self, flag, actor):
+        """Update the peel; pose updates position and display coil projection actors."""
         if self.actor_peel:
             self.ren.RemoveActor(self.actor_peel)
             self.ren.RemoveActor(self.object_orientation_torus_actor)
@@ -1379,8 +1383,6 @@ class NavigationView:
         if flag and actor:
             self.ren.AddActor(actor)
             self.actor_peel = actor
-            self.ren.AddActor(self.object_orientation_torus_actor)
-            self.ren.AddActor(self.obj_projection_arrow_actor)
 
         if not self.nav_status:
             self.UpdateRender()
@@ -2664,7 +2666,7 @@ class NavigationView:
 
     def UpdateArrowPose(self, m_img, coord, flag, coil_name=None):
         scene = self._get_scene_for_update(coil_name)
-        if scene is None:
+        if scene is None or scene.obj_projection_arrow_actor is None:
             return
 
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
@@ -2679,6 +2681,8 @@ class NavigationView:
         self._track_scene_object(self.scene, enabled)
 
     def _track_scene_object(self, scene, enabled):
+        if enabled and scene.obj_projection_arrow_actor is not None:
+            return
         if enabled:
             vtk_colors = vtkNamedColors()
             scene.obj_projection_arrow_actor = self.actor_factory.CreateArrowUsingDirection(
