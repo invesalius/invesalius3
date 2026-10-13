@@ -203,6 +203,11 @@ class UpdateNavigationScene(threading.Thread):
                 if coil_visible:
                     Publisher.sendMessage("Update coil poses", m_imgs=m_imgs, coords=coords)
                     Publisher.sendMessage(
+                        "Update coil pose",
+                        m_img=m_imgs[main_coil],
+                        coord=coords[main_coil],
+                    )
+                    Publisher.sendMessage(
                         "From Neuronavigation: Send coil pose",
                         coord=list(coords[main_coil]),
                     )
