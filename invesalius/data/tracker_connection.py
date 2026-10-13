@@ -148,18 +148,7 @@ class OptitrackTrackerConnection(TrackerConnection):
             self.coil_count = int(connection.getCoilCount())
             self.coil_names = [name.strip() for name in connection.getCoilNames()]
 
-            if self.n_coils == 1:
-                exact_names = [name for name in self.coil_names if name.casefold() == "coil"]
-                self.coil_names = exact_names or [
-                    name for name in self.coil_names if name.casefold().startswith("coil")
-                ]
-                valid_coils = len(self.coil_names) == 1
-                if not valid_coils:
-                    self.lib_mode = "coil selection error"
-            else:
-                valid_coils = self.ValidateCoilCount()
-
-            if not valid_coils:
+            if not self.ValidateCoilCount():
                 try:
                     connection.Close()
                 except Exception as error:
@@ -176,6 +165,20 @@ class OptitrackTrackerConnection(TrackerConnection):
             lib_mode = "error"
 
         self.lib_mode = lib_mode
+
+    def ValidateCoilCount(self) -> bool:
+        """Select one coil by name, or require the exact multicoil count."""
+        if self.n_coils != 1:
+            return super().ValidateCoilCount()
+
+        exact_names = [name for name in self.coil_names if name.casefold() == "coil"]
+        self.coil_names = exact_names or [
+            name for name in self.coil_names if name.casefold().startswith("coil")
+        ]
+        if len(self.coil_names) == 1:
+            return True
+        self.lib_mode = "coil selection error"
+        return False
 
     def GetCoilNames(self) -> list[str]:
         return list(self.coil_names)
