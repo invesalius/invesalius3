@@ -423,7 +423,7 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def SetCoilAtTarget(self, state):
+    def SetCoilAtTarget(self, state, coil_name=None):
         """
         Set the coil at target, which is a special case of setting a marker as the target.
         """

@@ -232,7 +232,7 @@ class NeuronavigationApi(metaclass=Singleton):
                 polygons=polygons,
             )
 
-    def update_coil_at_target(self, state):
+    def update_coil_at_target(self, state, coil_name=None):
         if self.connection is not None:
             self.connection.update_coil_at_target(state=state)
 

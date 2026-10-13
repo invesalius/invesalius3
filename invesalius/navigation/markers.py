@@ -29,9 +29,10 @@ from invesalius.utils import Singleton
 
 
 class MarkersControl(metaclass=Singleton):
-    def __init__(self) -> None:
+    def __init__(self, navigation) -> None:
         self.list: List[Marker] = []
         self.nav_status = False
+        self.navigation = navigation
         self.transformator = MarkerTransformator()
 
     def SaveState(self) -> None:
@@ -130,19 +131,17 @@ class MarkersControl(metaclass=Singleton):
         self.SaveState()
 
     def SetTarget(self, marker_id: int, check_for_previous: bool = True) -> None:
-        if check_for_previous:
-            prev_target = self.FindTarget()
+        marker = self.list[marker_id]
+        previous_target = self.FindTarget()
 
-            # If the new target is same as the previous do nothing.
-            if prev_target and prev_target.marker_id == marker_id:
-                return
+        if check_for_previous and previous_target is marker:
+            return
 
-            # Unset the previous target
-            if prev_target is not None:
-                self.UnsetTarget(prev_target.marker_id)
+        if check_for_previous and previous_target is not None and previous_target is not marker:
+            self.UnsetTarget(previous_target.marker_id)
 
         # Set new target
-        marker = self.list[marker_id]
+        self.navigation.SetTarget(marker)
         marker.is_target = True
 
         Publisher.sendMessage("Set target", marker=marker)
@@ -176,6 +175,7 @@ class MarkersControl(metaclass=Singleton):
 
     def UnsetTarget(self, marker_id: int) -> None:
         marker = self.list[marker_id]
+        self.navigation.UnsetTarget()
         marker.is_target = False
 
         Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
