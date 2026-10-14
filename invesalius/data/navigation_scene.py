@@ -32,7 +32,9 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.vtk_utils as vtku
 from invesalius import inv_paths
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
+from invesalius.data.visualization.robot_force_visualizer import RobotForceVisualizer
 from invesalius.math_utils import inner1d
+from invesalius.pubsub import pub as Publisher
 
 
 class NavigationRenderer:
@@ -119,6 +121,7 @@ class NavigationScene:
         self.camera_show_object = None
         self.use_volumetric_camera = False
         self.coil_visualizer = None
+        self.robot_force_visualizer = None
 
         self.guide_coil_actors = None
         self.guide_arrow_actors = None
@@ -137,6 +140,13 @@ class NavigationScene:
         self.target_guide_update_interval = 1.0 / 20.0
         self.target_guide_deadband = 2.0
         self.target_guide_last_signature = None
+
+        self._bind_events()
+
+    def _bind_events(self):
+        Publisher.subscribe(self.OnRobotForceVisibility, "Set visibility robot force visualizer")
+        Publisher.subscribe(self.OnUpdateRobotWarning, "Update robot warning")
+        Publisher.subscribe(self.OnUpdateRobotForceData, "Send force sensor data")
 
     def get_camera_settings(self):
         camera = self.ren.GetActiveCamera()
@@ -159,18 +169,45 @@ class NavigationScene:
         camera.SetParallelScale(settings["parallel_scale"])
 
     def dispose(self):
+        Publisher.unsubscribe_owner(self)
         if self.coil_visualizer is not None:
             self.coil_visualizer.dispose()
+        if self.robot_force_visualizer is not None:
+            self.robot_force_visualizer.dispose()
         self.ren.dispose()
         self.clear_target_guide()
 
     def initialize_visualizers(self, vector_field_visualizer, track_object=False):
+        self.robot_force_visualizer = RobotForceVisualizer()
+        self._refresh_robot_force_state()
         self.coil_visualizer = CoilVisualizer(
             renderer=self.ren,
             actor_factory=self.actor_factory,
             vector_field_visualizer=vector_field_visualizer,
         )
         self.track_object(track_object)
+
+    def set_coil(self, coil_name, robot=None):
+        """Change the live coil and its robot without changing the scene's target."""
+        self.coil_name = coil_name
+        self.refresh_target_coil()
+
+    def _refresh_robot_force_state(self):
+        if self.robot_force_visualizer is None:
+            return
+        self.robot_force_visualizer.reset()
+
+    def update_robot_force(self, force):
+        if self.robot_force_visualizer is not None:
+            self.robot_force_visualizer.update_force(force)
+
+    def set_robot_force_visibility(self, visible):
+        if self.robot_force_visualizer is not None:
+            self.robot_force_visualizer.set_visibility(visible)
+
+    def update_robot_warning(self, warning):
+        if self.robot_warnings_text is not None:
+            self.robot_warnings_text.SetValue(warning)
 
     def set_target(self, marker):
         coord = marker.position + marker.orientation
@@ -628,3 +665,15 @@ class NavigationScene:
             self.mark_actor = None
             self.obj_projection_arrow_actor = None
             self.object_orientation_torus_actor = None
+
+    def OnRobotForceVisibility(self, visible, coil_associated):
+        if coil_associated is not None and coil_associated == self.coil_name:
+            self.set_robot_force_visibility(visible)
+
+    def OnUpdateRobotWarning(self, robot_warning, coil_associated):
+        if coil_associated is not None and coil_associated == self.coil_name:
+            self.update_robot_warning(robot_warning)
+
+    def OnUpdateRobotForceData(self, force_data, coil_associated):
+        if coil_associated is not None and coil_associated == self.coil_name:
+            self.update_robot_force(force_data)

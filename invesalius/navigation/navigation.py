@@ -488,7 +488,7 @@ class Navigation(metaclass=Singleton):
 
         self.SaveConfig()
 
-    def CoilAtTarget(self, state, coil_name=None):
+    def CoilAtTarget(self, state, displacement, coil_name=None):
         self.coil_at_target = state
 
     def SetTarget(self, marker):

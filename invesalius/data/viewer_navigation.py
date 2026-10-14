@@ -60,11 +60,9 @@ from invesalius import inv_paths
 from invesalius.data.navigation_scene import NavigationScene
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
-from invesalius.data.visualization.robot_force_visualizer import RobotForceVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d
-from invesalius.navigation.robot import Robots
 from invesalius.pubsub import pub as Publisher
 
 
@@ -158,12 +156,12 @@ class NavigationView:
         if scene.coil_name is not None:
             self.scenes_by_coil.pop(scene.coil_name, None)
 
-        scene.coil_name = coil_name
         if coil_name is not None:
             self.scenes_by_coil[coil_name] = scene
 
         # Changing the live coil keeps the current target and its coordinates.
         scene.refresh_target_coil()
+        scene.set_coil(coil_name)
 
     def _get_scene_for_coil(self, coil_name):
         return self.scenes_by_coil.get(coil_name)
@@ -220,7 +218,6 @@ class NavigationView:
         Publisher.unsubscribe_owner(self)
         self.marker_visualizer.dispose()
         self.probe_visualizer.dispose()
-        self.robot_force_visualizer.dispose()
         self.vector_field_visualizer.dispose()
         for scene in self.scenes:
             scene.dispose()
@@ -297,6 +294,12 @@ class NavigationView:
             if renderer is not None:
                 self._set_renderer_viewport(renderer, viewport)
 
+        for scene in self.scenes:
+            if scene.robot_force_visualizer is not None:
+                self._set_renderer_viewport(
+                    scene.robot_force_visualizer.ren_force, (0.01, 0.23, 0.15, 0.35)
+                )
+
     def _initialize_navigation_state(self):
         self.obj_axes = None
         self.coil_path = False
@@ -350,12 +353,9 @@ class NavigationView:
                 self.vector_field_visualizer,
                 track_object=navigation_state.get("track_coil", False),
             )
+            self._add_scene_renderer(scene.robot_force_visualizer.ren_force)
 
         self.probe_visualizer = ProbeVisualizer(self.ren)
-        self.robot_force_visualizer = RobotForceVisualizer(self.interactor)
-        self._navigation_renderers.append(self.robot_force_visualizer.ren_force)
-        self._detach_renderer(self.robot_force_visualizer.ren_force)
-        self.robots = Robots()
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
@@ -484,9 +484,6 @@ class NavigationView:
         Publisher.subscribe(self.EfieldVectors, "Show Efield vectors")
         Publisher.subscribe(self.RecolorEfieldActor, "Recolor efield actor")
         Publisher.subscribe(self.GetScalpEfield, "Send scalp index")
-        Publisher.subscribe(
-            self.OnUpdateRobotWarning, "Robot to Neuronavigation: Update robot warning"
-        )
         Publisher.subscribe(self.GetCoilPosition, "Calculate position and rotation")
         Publisher.subscribe(
             self.CreateCortexProjectionOnScalp, "Send efield target position on brain"
@@ -670,17 +667,6 @@ class NavigationView:
         print("updated to ", dist_threshold)
         self.distance_threshold = dist_threshold
 
-    def OnUpdateRobotWarning(self, robot_warning, robot_id=None):
-        scene = self.scene
-        if robot_id is not None:
-            robot = self.robots.GetRobot(robot_id)
-            coil_name = getattr(robot, "coil_name", None)
-            if coil_name is not None:
-                scene = self._get_scene_for_coil(coil_name)
-
-        if scene is not None and scene.robot_warnings_text is not None:
-            scene.robot_warnings_text.SetValue(robot_warning)
-
     def EnableTargetMode(self, scene=None):
         scene = scene or self.scene
         was_enabled = scene.target_mode
@@ -731,12 +717,9 @@ class NavigationView:
                 Publisher.sendMessage,
                 "Coil at target",
                 state=coil_at_target,
+                displacement=displacement,
                 coil_name=coil_name,
             )
-            robot = self.robots.GetActiveRobot()
-            if robot is not None:
-                robot.SendStatusCoilAtTarget(coil_at_target)
-                robot.UpdateDisplacementToTarget(displacement)
 
     def OnSelectCoil(self, coil_name, coil_registration):
         if coil_registration is not None:

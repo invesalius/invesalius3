@@ -102,7 +102,7 @@ class CoilVisualizer:
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
 
-    def SetCoilAtTarget(self, state, coil_name=None):
+    def SetCoilAtTarget(self, state, displacement, coil_name=None):
         if coil_name is not None and coil_name != self.target_model_coil_name:
             return
         self.coil_at_target = state
