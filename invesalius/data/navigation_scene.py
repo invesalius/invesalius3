@@ -32,6 +32,7 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.vtk_utils as vtku
 from invesalius import inv_paths
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
+from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.robot_force_visualizer import RobotForceVisualizer
 from invesalius.math_utils import inner1d
 from invesalius.pubsub import pub as Publisher
@@ -121,6 +122,7 @@ class NavigationScene:
         self.camera_show_object = None
         self.use_volumetric_camera = False
         self.coil_visualizer = None
+        self.marker_visualizer = None
         self.robot_force_visualizer = None
 
         self.guide_coil_actors = None
@@ -172,12 +174,21 @@ class NavigationScene:
         Publisher.unsubscribe_owner(self)
         if self.coil_visualizer is not None:
             self.coil_visualizer.dispose()
+        if self.marker_visualizer is not None:
+            self.marker_visualizer.dispose()
         if self.robot_force_visualizer is not None:
             self.robot_force_visualizer.dispose()
         self.ren.dispose()
         self.clear_target_guide()
 
-    def initialize_visualizers(self, vector_field_visualizer, track_object=False):
+    def initialize_visualizers(self, vector_field_visualizer, interactor, track_object=False):
+        self.marker_visualizer = MarkerVisualizer(
+            renderer=self.ren,
+            interactor=interactor,
+            actor_factory=self.actor_factory,
+            vector_field_visualizer=vector_field_visualizer,
+            coil_name=self.coil_name,
+        )
         self.robot_force_visualizer = RobotForceVisualizer()
         self._refresh_robot_force_state()
         self.coil_visualizer = CoilVisualizer(
@@ -190,7 +201,15 @@ class NavigationScene:
     def set_coil(self, coil_name, robot=None):
         """Change the live coil and its robot without changing the scene's target."""
         self.coil_name = coil_name
+        if self.marker_visualizer is not None:
+            self.marker_visualizer.coil_name = coil_name
         self.refresh_target_coil()
+
+    def restore_markers(self, markers):
+        for marker in markers:
+            self.marker_visualizer.AddMarker(marker, render=False, focus=False)
+            if marker.is_target:
+                self.set_target(marker)
 
     def _refresh_robot_force_state(self):
         if self.robot_force_visualizer is None:
@@ -214,6 +233,7 @@ class NavigationScene:
         # Slice and volume viewers currently use opposite Y directions.
         coord[1] = -coord[1]
         self.target_marker = marker
+        self.marker_visualizer.SetTarget(marker)
         self.target_coord = coord
         self.m_target = self.actor_factory.CreateVTKObjectMatrix(coord[:3], coord[3:])
         self._target_coil_enabled = True
@@ -225,6 +245,8 @@ class NavigationScene:
             self.coil_visualizer.AddTargetCoil(self.m_target, self.coil_name)
 
     def unset_target(self):
+        if self.target_marker is not None:
+            self.marker_visualizer.UnsetTarget(self.target_marker)
         self._target_coil_enabled = False
         self.target_marker = None
         self.target_coord = None
@@ -332,6 +354,7 @@ class NavigationScene:
         if self.target_coord is None or self.target_mode:
             return
         self.target_mode = True
+        self.marker_visualizer.UpdateTargetMode(True)
 
         # Store the current camera settings so that they can be restored when the target mode is disabled.
         self.stored_camera_settings = self.get_camera_settings()
@@ -393,6 +416,7 @@ class NavigationScene:
         if self.target_mode and self.stored_camera_settings is not None:
             self.apply_camera_settings(self.stored_camera_settings)
         self.target_mode = False
+        self.marker_visualizer.UpdateTargetMode(False)
         self.stored_camera_settings = None
         self._target_coil_enabled = False
         self.coil_visualizer.RemoveTargetCoil()

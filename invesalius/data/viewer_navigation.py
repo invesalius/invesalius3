@@ -58,7 +58,6 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius import inv_paths
 from invesalius.data.navigation_scene import NavigationScene
-from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.i18n import tr as _
@@ -216,7 +215,6 @@ class NavigationView:
         self.deactivate()
         self._disposed = True
         Publisher.unsubscribe_owner(self)
-        self.marker_visualizer.dispose()
         self.probe_visualizer.dispose()
         self.vector_field_visualizer.dispose()
         for scene in self.scenes:
@@ -339,23 +337,18 @@ class NavigationView:
             actor_factory=self.actor_factory,
         )
 
-        # An object to manage visualizing markers in the 3D viewer.
-        self.marker_visualizer = MarkerVisualizer(
-            renderer=self.ren,
-            interactor=self.interactor,
-            actor_factory=self.actor_factory,
-            vector_field_visualizer=self.vector_field_visualizer,
-        )
-
         navigation_state = ses.Session().GetConfig("navigation", {})
         for scene in self.scenes:
             scene.initialize_visualizers(
                 self.vector_field_visualizer,
+                interactor=self.interactor,
                 track_object=navigation_state.get("track_coil", False),
             )
             self._add_scene_renderer(scene.robot_force_visualizer.ren_force)
 
         self.probe_visualizer = ProbeVisualizer(self.ren)
+        for scene in self.scenes:
+            self.probe_visualizer.add_renderer(scene.ren)
 
         self.seed_offset = const.SEED_OFFSET
         self.radius_list = vtkIdList()
@@ -388,11 +381,9 @@ class NavigationView:
         self.cell_id_indexes_above_threshold = None
 
     def _restore_navigation_markers(self, markers):
-        for marker in markers:
-            self.marker_visualizer.AddMarker(marker, render=False, focus=False)
-            if marker.is_target:
-                self.marker_visualizer.SetTarget(marker)
-                self.OnSetTarget(marker)
+        markers = tuple(markers)
+        for scene in self.scenes:
+            scene.restore_markers(markers)
 
     def _initialize_navigation_ui(self):
         Publisher.sendMessage("Press target mode button", pressed=False)
