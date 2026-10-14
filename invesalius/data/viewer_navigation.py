@@ -171,9 +171,7 @@ class NavigationView:
             self.scenes_by_coil[coil_name] = scene
 
         # Changing the live coil keeps the current target and its coordinates.
-        visualizer = scene.coil_visualizer
-        if visualizer is not None and visualizer.target_matrix is not None:
-            visualizer.AddTargetCoil(scene.m_target, coil_name)
+        scene.refresh_target_coil()
 
     def _sync_primary_scene_coil(self, m_imgs=None):
         """Follow the selected coil in the current single-scene navigation mode."""
@@ -764,12 +762,18 @@ class NavigationView:
                 robot.UpdateDisplacementToTarget(displacement)
 
     def OnSelectCoil(self, coil_name, coil_registration):
-        if len(self.scenes) != 1:
-            return
-        if coil_registration is not None and self.scene.coil_name is None:
-            self._associate_scene_with_coil(self.scene, self._get_main_coil_name() or coil_name)
-        elif coil_registration is None and self.scene.coil_name == coil_name:
-            self._associate_scene_with_coil(self.scene, None)
+        if len(self.scenes) == 1:
+            if coil_registration is not None and self.scene.coil_name is None:
+                self._associate_scene_with_coil(self.scene, self._get_main_coil_name() or coil_name)
+                return
+            elif coil_registration is None and self.scene.coil_name == coil_name:
+                self._associate_scene_with_coil(self.scene, None)
+                return
+
+        if coil_registration is not None:
+            for scene in self.scenes:
+                if scene.coil_name == coil_name:
+                    scene.refresh_target_coil()
 
     def OnResetCoilSelection(self, n_coils, clear_all=False):
         for scene in self.scenes:

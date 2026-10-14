@@ -41,7 +41,6 @@ class CoilVisualizer:
         # The actor for showing the target coil in the volume viewer.
         self.target_coil_actor = None
         self.target_model_coil_name = None
-        self.target_matrix = None
         self.last_target_coil_visibility = True
 
         # The assembly for showing the vector field relative to the coil in the volume viewer.
@@ -155,7 +154,6 @@ class CoilVisualizer:
     def AddTargetCoil(self, m_target, coil_name):
         self.RemoveTargetCoil()
         self.target_model_coil_name = coil_name
-        self.target_matrix = m_target
 
         vtk_colors = vtk.vtkNamedColors()
 
@@ -217,7 +215,6 @@ class CoilVisualizer:
             self.renderer.RemoveActor(self.target_coil_actor)
         self.target_coil_actor = None
         self.target_model_coil_name = None
-        self.target_matrix = None
         self.coil_at_target = False
 
     # Called when a coil is (un)selected for navigation
@@ -277,15 +274,11 @@ class CoilVisualizer:
         self.coils[coil_name]["center_actor"] = coil_center_actor
         self.coils[coil_name]["path"] = coil_path
 
-        if coil_name == self.target_model_coil_name and self.target_matrix is not None:
-            self.AddTargetCoil(self.target_matrix, coil_name)
-
         # LUKATODO: Vector field assembly follows a different pattern for addition, should unify.
         self.vector_field_assembly.SetVisibility(1)
 
     def RemoveCoil(self, coil_name=None):
         if coil_name is None or coil_name == self.target_model_coil_name:
-            # Keep the target association so reselecting its coil restores the model.
             if self.target_coil_actor is not None:
                 self.renderer.RemoveActor(self.target_coil_actor)
                 self.target_coil_actor = None

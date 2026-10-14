@@ -113,6 +113,7 @@ class NavigationScene:
         self.target_mode = False
         self.target_coord = None
         self.m_target = None
+        self._target_coil_enabled = False
         self.stored_camera_settings = None
         self.initial_focus = None
         self.camera_show_object = None
@@ -178,9 +179,16 @@ class NavigationScene:
         self.target_marker = marker
         self.target_coord = coord
         self.m_target = self.actor_factory.CreateVTKObjectMatrix(coord[:3], coord[3:])
-        self.coil_visualizer.AddTargetCoil(self.m_target, self.coil_name)
+        self._target_coil_enabled = True
+        self.refresh_target_coil()
+
+    def refresh_target_coil(self):
+        """Restore the requested target model using the matrix owned by this scene."""
+        if self._target_coil_enabled and self.m_target is not None:
+            self.coil_visualizer.AddTargetCoil(self.m_target, self.coil_name)
 
     def unset_target(self):
+        self._target_coil_enabled = False
         self.target_marker = None
         self.target_coord = None
         self.m_target = None
@@ -302,7 +310,8 @@ class NavigationScene:
             if self.obj_projection_arrow_actor is not None:
                 self.obj_projection_arrow_actor.SetVisibility(0)
 
-        self.coil_visualizer.AddTargetCoil(self.m_target, self.coil_name)
+        self._target_coil_enabled = True
+        self.refresh_target_coil()
 
         # Remove the previous actor for 'distance' text
         if self.distance_text is not None:
@@ -348,6 +357,7 @@ class NavigationScene:
             self.apply_camera_settings(self.stored_camera_settings)
         self.target_mode = False
         self.stored_camera_settings = None
+        self._target_coil_enabled = False
         self.coil_visualizer.RemoveTargetCoil()
         self.clear_target_guide()
         for text in (self.distance_text, self.robot_warnings_text):
