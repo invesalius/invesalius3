@@ -71,9 +71,8 @@ from invesalius.pubsub import pub as Publisher
 class NavigationView:
     """Add navigation behavior to an existing volume viewer."""
 
-    def __init__(self, view, markers_control=None):
+    def __init__(self, view, *, markers=(), main_coil=None):
         self.view = view
-        self.markers_control = markers_control
         self._active = False
         self._disposed = False
         self._volume_state = None
@@ -85,7 +84,7 @@ class NavigationView:
         self.scenes = [self.scene]
         self.scenes_by_coil = {}
         self.ren = self.scene.ren
-        self._associate_scene_with_coil(self.scene, self._get_main_coil_name())
+        self._associate_scene_with_coil(self.scene, main_coil)
 
         self._initialize_navigation_data()
         self._initialize_sensor_data()
@@ -94,7 +93,7 @@ class NavigationView:
         self._create_navigation_renderer()
         self._initialize_navigation_ui()
         self._bind_events()
-        self._restore_navigation_markers()
+        self._restore_navigation_markers(markers)
         self._update_fps_visibility()
 
     def __getattr__(self, name):
@@ -152,13 +151,6 @@ class NavigationView:
     def object_orientation_torus_actor(self, actor):
         self.scene.object_orientation_torus_actor = actor
 
-    def _get_main_coil_name(self):
-        navigation = getattr(self.markers_control, "navigation", None)
-        if navigation is not None:
-            return navigation.main_coil
-        state = ses.Session().GetConfig("navigation", {})
-        return state.get("main_coil") or next(iter(state.get("selected_coils", [])), None)
-
     def _associate_scene_with_coil(self, scene, coil_name):
         if scene.coil_name == coil_name:
             return
@@ -173,17 +165,7 @@ class NavigationView:
         # Changing the live coil keeps the current target and its coordinates.
         scene.refresh_target_coil()
 
-    def _sync_primary_scene_coil(self, m_imgs=None):
-        """Follow the selected coil in the current single-scene navigation mode."""
-        if len(self.scenes) != 1:
-            return
-        coil_name = self._get_main_coil_name() or self.scene.coil_name
-        if coil_name is None and m_imgs is not None and len(m_imgs) == 1:
-            coil_name = next(iter(m_imgs))
-        self._associate_scene_with_coil(self.scene, coil_name)
-
     def _get_scene_for_coil(self, coil_name):
-        self._sync_primary_scene_coil()
         return self.scenes_by_coil.get(coil_name)
 
     def _get_scene_for_update(self, coil_name):
@@ -405,11 +387,8 @@ class NavigationView:
         self.positions_above_threshold = None
         self.cell_id_indexes_above_threshold = None
 
-    def _restore_navigation_markers(self):
-        if self.markers_control is None:
-            return
-
-        for marker in self.markers_control.list:
+    def _restore_navigation_markers(self, markers):
+        for marker in markers:
             self.marker_visualizer.AddMarker(marker, render=False, focus=False)
             if marker.is_target:
                 self.marker_visualizer.SetTarget(marker)
@@ -472,7 +451,6 @@ class NavigationView:
         Publisher.subscribe(self.SetTargetMode, "Set target mode")
         Publisher.subscribe(self.OnUpdateCoilPoses, "Update coil poses")
         Publisher.subscribe(self.OnSelectCoil, "Select coil")
-        Publisher.subscribe(self.OnResetCoilSelection, "Reset coil selection")
         Publisher.subscribe(self.OnMainCoilChanged, "Main coil changed")
         Publisher.subscribe(self.OnSetTarget, "Set target")
         Publisher.subscribe(self.OnUnsetTarget, "Unset target")
@@ -736,7 +714,6 @@ class NavigationView:
             self.DisableTargetMode(self.scene)
 
     def OnUpdateCoilPoses(self, m_imgs, coords):
-        self._sync_primary_scene_coil(m_imgs)
         for scene in self.scenes:
             coil_name = scene.coil_name
             if coil_name not in m_imgs or coil_name not in coords:
@@ -762,22 +739,10 @@ class NavigationView:
                 robot.UpdateDisplacementToTarget(displacement)
 
     def OnSelectCoil(self, coil_name, coil_registration):
-        if len(self.scenes) == 1:
-            if coil_registration is not None and self.scene.coil_name is None:
-                self._associate_scene_with_coil(self.scene, self._get_main_coil_name() or coil_name)
-                return
-            elif coil_registration is None and self.scene.coil_name == coil_name:
-                self._associate_scene_with_coil(self.scene, None)
-                return
-
         if coil_registration is not None:
             for scene in self.scenes:
                 if scene.coil_name == coil_name:
                     scene.refresh_target_coil()
-
-    def OnResetCoilSelection(self, n_coils, clear_all=False):
-        for scene in self.scenes:
-            self._associate_scene_with_coil(scene, None)
 
     def OnMainCoilChanged(self, coil_name):
         if len(self.scenes) == 1:
@@ -790,7 +755,6 @@ class NavigationView:
                 scene.unset_target()
 
     def OnSetTarget(self, marker):
-        self._sync_primary_scene_coil()
         self.scene.set_target(marker)
 
     def Plane(self, x0, pTarget):

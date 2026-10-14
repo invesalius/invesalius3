@@ -445,7 +445,9 @@ class Frame(wx.Frame):
 
         if self.navigation_hub is not None:
             viewers_panel.p4.viewer.SetNavigationMode(
-                True, markers_control=self.navigation_hub.markers
+                True,
+                markers=tuple(self.navigation_hub.markers.list),
+                main_coil=self.navigation_hub.navigation.main_coil,
             )
 
         self.Layout()
@@ -935,8 +937,11 @@ class Frame(wx.Frame):
         if status and self.navigation_hub is None:
             self.navigation_hub = NavigationHub(window=self)
 
-        markers_control = self.navigation_hub.markers if status else None
-        Publisher.sendMessage("Set navigation mode", status=status, markers_control=markers_control)
+        markers = tuple(self.navigation_hub.markers.list) if status else ()
+        main_coil = self.navigation_hub.navigation.main_coil if status else None
+        Publisher.sendMessage(
+            "Set navigation mode", status=status, markers=markers, main_coil=main_coil
+        )
         if not status:
             Publisher.sendMessage("Remove sensors ID")
 
