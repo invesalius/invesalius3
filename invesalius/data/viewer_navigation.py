@@ -88,7 +88,6 @@ class NavigationView:
         self._initialize_navigation_state()
         self._initialize_navigation_visualizers()
         self._create_navigation_renderer()
-        self._initialize_navigation_ui()
         self._bind_events()
         self._restore_navigation_markers(markers)
         self._update_fps_visibility()
@@ -173,6 +172,7 @@ class NavigationView:
     def activate(self):
         if self._disposed or self._active:
             return
+        first_activation = self._navigation_camera_settings is None
         self._volume_state = self.view.capture_state()
         if self._navigation_camera_settings is not None:
             self.view.ApplyCameraSettings(self._navigation_camera_settings)
@@ -189,6 +189,8 @@ class NavigationView:
         self._apply_scene_viewport()
         if self.target_mode:
             self.scene.reset_target_guide_camera()
+        if first_activation:
+            self._initialize_navigation_ui()
         self._update_fps_visibility()
         self.view.UpdateRender()
 
@@ -386,7 +388,10 @@ class NavigationView:
             scene.restore_markers(markers)
 
     def _initialize_navigation_ui(self):
-        Publisher.sendMessage("Press target mode button", pressed=False)
+        # Restore target mode after activation so cameras use the attached renderers.
+        enabled = self.scene.target_marker is not None
+        self.SetTargetMode(enabled=enabled)
+        Publisher.sendMessage("Press target mode button", pressed=enabled)
 
     def _update_fps_visibility(self):
         show_fps = (
