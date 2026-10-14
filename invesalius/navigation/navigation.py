@@ -528,6 +528,7 @@ class Navigation(metaclass=Singleton):
     def SetMainCoil(self, main_coil):
         self.main_coil = main_coil
         self.SaveConfig("main_coil", main_coil)
+        Publisher.sendMessage("Main coil changed", coil_name=main_coil)
 
         # Send the polydata of the main coil to the connection
         polydata = pu.LoadPolydata(self.coil_registrations[main_coil]["path"])
