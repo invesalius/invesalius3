@@ -49,10 +49,8 @@ import invesalius.data.transformations as transformations
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
-from invesalius.data.visualization.surface_scalar import (
-    CreateColorTransferFunction,
-    SurfaceScalarLayer,
-)
+from invesalius.data.visualization.colormap import CreateColorTransferFunction
+from invesalius.data.visualization.surface_scalar import SurfaceScalarLayer
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 

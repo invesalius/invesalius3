@@ -29,6 +29,7 @@ import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius.data.slice_ import Slice
+from invesalius.data.visualization.colormap import CreateColorTable, SampleColorFunction
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -153,17 +154,8 @@ class InnerTaskPanel(wx.Panel):
 
     def GenerateColormapColors(self, colormap_name, number_colors=10):
         cmap = plt.get_cmap(colormap_name)
-        colors_gradient = [
-            (
-                int(255 * cmap(i)[0]),
-                int(255 * cmap(i)[1]),
-                int(255 * cmap(i)[2]),
-                int(255 * cmap(i)[3]),
-            )
-            for i in np.linspace(0, 1, number_colors)
-        ]
-
-        return colors_gradient
+        colors = SampleColorFunction(cmap, number_colors)
+        return [tuple(int(255 * component) for component in color) for color in colors]
 
     def UpdateGradient(self, gradient, colors):
         gradient.SetGradientColours(colors)
@@ -212,15 +204,12 @@ class InnerTaskPanel(wx.Panel):
         # 2. Attribute different hue accordingly
         cmap = plt.get_cmap(colormap)
 
-        # new way
-        # Flatten the data to 1D
         cluster_volume_unique = np.unique(cluster_volume)
-        # Map the scaled data to colors
-        colors = cmap(cluster_volume_unique / 255)
-        # Create a dictionary where keys are scaled data and values are colors
-        color_dict = {val: color for val, color in zip(cluster_volume_unique, map(tuple, colors))}
-
-        self.slc.aux_matrices_colours["color_overlay"] = color_dict
+        self.slc.aux_matrices_colours["color_overlay"] = CreateColorTable(
+            cluster_volume_unique,
+            cmap,
+            scalar_range=(0, 255),
+        )
         # add transparent color for nans and non GM voxels
         if zero_value in self.slc.aux_matrices_colours["color_overlay"]:
             self.slc.aux_matrices_colours["color_overlay"][zero_value] = (0.0, 0.0, 0.0, 0.0)

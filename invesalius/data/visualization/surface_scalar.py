@@ -3,21 +3,8 @@ from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkColorTransferFunction,
     vtkPolyDataMapper,
 )
-
-
-def CreateColorTransferFunction(color_points, nan_color=None):
-    """Create a VTK color transfer function from scalar and RGB pairs."""
-    color_function = vtkColorTransferFunction()
-    for value, color in color_points:
-        color_function.AddRGBPoint(value, *color[:3])
-
-    if nan_color is not None:
-        color_function.SetNanColor(*nan_color)
-
-    return color_function
 
 
 class SurfaceScalarLayer:
