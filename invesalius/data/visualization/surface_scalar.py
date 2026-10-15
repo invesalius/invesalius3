@@ -65,6 +65,8 @@ class SurfaceScalarLayer:
         scalars.SetName(name)
         self.poly_data.GetPointData().AddArray(scalars)
         self.poly_data.GetPointData().SetActiveScalars(name)
+        self.mapper.SetScalarModeToUsePointData()
+        self.mapper.ScalarVisibilityOn()
         self.poly_data.Modified()
 
     def SetLookupTable(self, lookup_table):

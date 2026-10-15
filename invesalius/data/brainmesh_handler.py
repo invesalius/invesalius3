@@ -32,7 +32,6 @@ from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter, vtkWarpVect
 from vtkmodules.vtkFiltersModeling import vtkLinearSubdivisionFilter
 from vtkmodules.vtkImagingCore import vtkImageFlip
 from vtkmodules.vtkIOImage import vtkNIFTIImageReader
-from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
@@ -44,6 +43,7 @@ import invesalius.data.slice_ as sl
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 from invesalius.data.converters import to_vtk
+from invesalius.data.visualization.surface_scalar import SurfaceScalarLayer
 
 
 class Brain:
@@ -351,13 +351,15 @@ class E_field_brain:
         self.e_field_mesh_centers = GetCenters(mesh)
         self.e_field_mesh = mesh
 
-        self.efield_mapper = vtkPolyDataMapper()
+        self.scalar_layer = SurfaceScalarLayer()
+        self.scalar_layer.SetInputData(mesh)
+        self.efield_mapper = self.scalar_layer.mapper
 
         text_property = vtkTextProperty()
         text_property.SetFontSize(3)
         text_property.SetJustificationToCentered()
 
-        self.efield_scalar_bar = vtkScalarBarActor()
+        self.efield_scalar_bar = self.scalar_layer.GetScalarBar()
         self.efield_scalar_bar.SetOrientationToVertical()
         self.efield_scalar_bar.SetTitle("E (V/m)")
         self.efield_scalar_bar.SetNumberOfLabels(2)
