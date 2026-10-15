@@ -21,7 +21,6 @@ from copy import deepcopy
 import numpy as np
 import wx
 from scipy.spatial import cKDTree
-from vtk import vtkColorTransferFunction
 from vtkmodules.vtkCommonCore import (
     vtkDoubleArray,
     vtkPoints,
@@ -40,11 +39,9 @@ from vtkmodules.vtkFiltersPoints import (
     vtkGaussianKernel,
     vtkPointInterpolator,
 )
-from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPointGaussianMapper,
-    vtkPolyDataMapper,
 )
 
 import invesalius.constants as const
@@ -52,6 +49,10 @@ import invesalius.data.transformations as transformations
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
+from invesalius.data.visualization.surface_scalar import (
+    CreateColorTransferFunction,
+    SurfaceScalarLayer,
+)
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 
@@ -68,6 +69,7 @@ class MEPVisualizer:
 
         self.colorBarActor = None
         self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
+        self.surface_scalar_layer = SurfaceScalarLayer()
         self.marker_storage = []
 
         self.is_navigating = False
@@ -199,20 +201,20 @@ class MEPVisualizer:
             vtkColorTransferFunction: The created color transfer function.
         """
 
-        color_function = vtkColorTransferFunction()
         choice = choice or self._config_params["mep_colormap"]
 
         color_maps = const.MEP_COLORMAP_DEFINITIONS
-        color_function.AddRGBPoint(0, *(np.array(const.CORTEX_COLOR) / 255.0))
-        if choice in color_maps:
-            for value, color in color_maps[choice].items():
-                color_function.AddRGBPoint(self._config_params["colormap_range_uv"][value], *color)
-        else:
+        if choice not in color_maps:
             raise ValueError(
                 f"Invalid choice '{choice}'. Choose from: {', '.join(color_maps.keys())}"
             )
 
-        return color_function
+        color_points = [(0, np.array(const.CORTEX_COLOR) / 255.0)]
+        color_points.extend(
+            (self._config_params["colormap_range_uv"][value], color)
+            for value, color in color_maps[choice].items()
+        )
+        return CreateColorTransferFunction(color_points)
 
     def DecimateBrainSurface(self):
         triangle_filter = vtkTriangleFilter()
@@ -439,12 +441,14 @@ class MEPVisualizer:
         self._CleanupVisualization()
 
         interpolated_data = self.InterpolateData()
-        self.colored_surface_actor = self.CreateColoredSurface(interpolated_data)
+        lut = self._CustomColormap()
+        self.colored_surface_actor = self.CreateColoredSurface(interpolated_data, lut)
         self.point_actor = self.CreatePointActor(
             self.points_polydata,
             (self._config_params["threshold_down"], self._config_params["range_up"]),
+            lut,
         )
-        self.colorBarActor = self.CreateColorbarActor()
+        self.colorBarActor = self.CreateColorbarActor(lut)
 
         Publisher.sendMessage("AppendActor", actor=self.colored_surface_actor)
         # Publisher.sendMessage("AppendActor", actor=self.point_actor)
@@ -456,11 +460,16 @@ class MEPVisualizer:
     def CreateColorbarActor(self, lut=None) -> vtkActor:
         if lut is None:
             lut = self._CustomColormap(self._config_params["mep_colormap"])
-        colorBarActor = vtkScalarBarActor()
-        colorBarActor.SetLookupTable(lut)
-        colorBarActor.SetNumberOfLabels(4)
-        colorBarActor.SetLabelFormat("%4.0f")
-        colorBarActor.SetTitle("µV       ")
+        self.surface_scalar_layer.SetLookupTable(lut)
+        self.surface_scalar_layer.ConfigureScalarBar(
+            title="µV       ",
+            number_of_labels=4,
+            label_format="%4.0f",
+            position=(0.06, 0.06),
+            width=0.1,
+            height=0.3,
+        )
+        colorBarActor = self.surface_scalar_layer.GetScalarBar()
         # FIXME: Set the title to be a little bit smaller
         colorBarActor.SetTitleRatio(0.1)
         colorBarActor.SetMaximumWidthInPixels(70)
@@ -474,20 +483,12 @@ class MEPVisualizer:
 
         colorBarActor.SetLabelTextProperty(label_text_property)
 
-        # resize colorbar
-        colorBarActor.SetWidth(0.1)
-        colorBarActor.SetHeight(0.3)
-
         colorBarActor.SetVisibility(1)
-
-        # set position of the colorbar to the bottom left corner
-        colorBarActor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-        colorBarActor.GetPositionCoordinate().SetValue(0.06, 0.06)
         # Track the created actor
         self.actors_dict[id(colorBarActor)] = colorBarActor
         return colorBarActor
 
-    def CreateColoredSurface(self, poly_data) -> vtkActor:
+    def CreateColoredSurface(self, poly_data, lut=None) -> vtkActor:
         """Creates the actor for the surface with color mapping."""
         normals = vtkPolyDataNormals()
         normals.SetInputData(poly_data)
@@ -497,22 +498,17 @@ class MEPVisualizer:
 
         data_range = (self._config_params["threshold_down"], self._config_params["range_up"])
 
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputData(normals.GetOutput())
-        if data_range is None:
-            data_range = (self._config_params["threshold_down"], self._config_params["range_up"])
-        mapper.SetScalarRange(data_range)
-
-        lut = self._CustomColormap()
-        mapper.SetLookupTable(lut)
-
-        actor = vtkActor()
-        actor.SetMapper(mapper)
+        if lut is None:
+            lut = self._CustomColormap()
+        self.surface_scalar_layer.SetInputData(normals.GetOutput())
+        self.surface_scalar_layer.SetScalarRange(data_range)
+        self.surface_scalar_layer.SetLookupTable(lut)
+        actor = self.surface_scalar_layer.GetActor()
         actor.GetProperty().SetInterpolationToGouraud()
         self.actors_dict[id(actor)] = actor
         return actor
 
-    def CreatePointActor(self, points, data_range):
+    def CreatePointActor(self, points, data_range, lut=None):
         """Creates the actor for the data points."""
         point_mapper = vtkPointGaussianMapper()
         point_mapper.SetInputData(points)
@@ -531,7 +527,8 @@ class MEPVisualizer:
             "}\n"
         )
 
-        lut = self._CustomColormap()
+        if lut is None:
+            lut = self._CustomColormap()
         point_mapper.SetLookupTable(lut)
 
         point_actor = vtkActor()
