@@ -556,6 +556,7 @@ class Mask:
                 "mask file was deleted by the operating system. "
                 "Please create a new mask."
             )
+        self.temp_fd = os.open(filename, os.O_RDWR)
         self.temp_file = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
