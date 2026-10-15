@@ -247,7 +247,10 @@ class NotebookPanel(wx.Panel):
         self.book.GetPage(self.MASK_PAGE_INDEX).Enable(not self.navigation_on)
         self.book.GetPage(self.IMAGE_PAGE_INDEX).Enable(not self.navigation_on)
         if self.navigation_on:
-            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
+            if self.eeg_electrodes.registration_active:
+                self._SyncEEGPage(select=True)
+            else:
+                self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
 
 class EEGElectrodePage(wx.Panel):
