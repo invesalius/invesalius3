@@ -291,7 +291,6 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         remove_bitmap = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
         )
-        remove_all_bitmap = self._LoadBitmap("data_remove_all.png")
         export_bitmap = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"),
             wx.BITMAP_TYPE_PNG,
@@ -301,16 +300,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         self.remove_button = pbtn.PlateButton(
             self, wx.ID_ANY, "", remove_bitmap, style=button_style, size=wx.Size(24, 20)
         )
-        self.remove_button.SetToolTip(_("Delete selected EEG electrode"))
-        self.remove_all_button = pbtn.PlateButton(
-            self,
-            wx.ID_ANY,
-            "",
-            remove_all_bitmap,
-            style=button_style,
-            size=wx.Size(24, 20),
-        )
-        self.remove_all_button.SetToolTip(_("Delete all EEG electrodes"))
+        self.remove_button.SetToolTip(_("Delete selected EEG electrodes"))
         self.export_button = pbtn.PlateButton(
             self,
             wx.ID_ANY,
@@ -334,7 +324,6 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
-        sizer.Add(self.remove_all_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.Add(self.export_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.Add(self.labels_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.AddStretchSpacer()
@@ -343,7 +332,6 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         self.Fit()
 
         self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
-        self.remove_all_button.Bind(wx.EVT_BUTTON, self.OnDeleteAll)
         self.export_button.Bind(wx.EVT_BUTTON, self.OnExport)
         self.labels_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleLabels)
         self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
@@ -352,7 +340,6 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
 
     def UpdateButtons(self):
         self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
-        self.remove_all_button.Enable(bool(self.eeg_electrodes.electrodes))
         self.export_button.Enable(bool(self.eeg_electrodes.electrodes))
         self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
         self._UpdateLabelsButtonTooltip()
@@ -398,18 +385,18 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         evt.Skip()
 
     def OnDeleteSelected(self, _evt):
-        electrode = self.listctrl.GetSelectedElectrode()
-        if electrode is None:
+        electrodes = self.listctrl.GetSelectedElectrodes()
+        if not electrodes:
             return
 
-        result = dlg.ShowConfirmationDialog(msg=_("Delete selected EEG electrode?"))
+        message = (
+            _("Delete selected EEG electrode?")
+            if len(electrodes) == 1
+            else _("Delete the selected EEG electrodes ({count})?").format(count=len(electrodes))
+        )
+        result = dlg.ShowConfirmationDialog(msg=message)
         if result == wx.ID_OK:
-            self.eeg_electrodes.remove(electrode.marker_uuid)
-
-    def OnDeleteAll(self, _evt):
-        result = dlg.ShowConfirmationDialog(msg=_("Delete all EEG electrodes? Cannot be undone."))
-        if result == wx.ID_OK:
-            self.eeg_electrodes.clear()
+            self.eeg_electrodes.remove_many(electrode.marker_uuid for electrode in electrodes)
 
     def OnExport(self, _evt):
         session = ses.Session()
@@ -454,11 +441,12 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
     """EEG electrode table with a clickable visibility column."""
 
     def __init__(self, parent, eeg_electrodes, navigation_on=False):
-        super().__init__(parent, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN)
+        super().__init__(parent, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
         self.eeg_electrodes = eeg_electrodes
         self.marker_uuids = []
         self.navigation_on = bool(navigation_on)
         self.highlighted_marker_uuid = None
+        self._refreshing = False
 
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER, width=25)
         self.InsertColumn(1, _("ID"), width=50)
@@ -472,6 +460,7 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
             self.visibility_images.Add(wx.Bitmap(image.Scale(16, 16)))
         self.SetImageList(self.visibility_images, wx.IMAGE_LIST_SMALL)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+        self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected)
 
@@ -485,17 +474,39 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
         evt.Skip()
 
     def RefreshElectrodes(self):
-        self._ClearHighlight()
-        self.DeleteAllItems()
-        self.marker_uuids = []
+        selected_uuids = {electrode.marker_uuid for electrode in self.GetSelectedElectrodes()}
+        focused_row = self.GetFocusedItem()
+        focused_uuid = (
+            self.marker_uuids[focused_row] if 0 <= focused_row < len(self.marker_uuids) else None
+        )
+        self._refreshing = True
+        self.Freeze()
+        try:
+            self.DeleteAllItems()
+            self.marker_uuids = []
 
-        for electrode in self.eeg_electrodes.electrodes:
-            self.marker_uuids.append(electrode.marker_uuid)
-            row = self.InsertItem(self.GetItemCount(), "", int(electrode.visible))
-            self.SetItem(row, 1, electrode.label)
+            for electrode in self.eeg_electrodes.electrodes:
+                self.marker_uuids.append(electrode.marker_uuid)
+                row = self.InsertItem(self.GetItemCount(), "", int(electrode.visible))
+                self.SetItem(row, 1, electrode.label)
 
-            for column, coordinate in enumerate(electrode.position, start=2):
-                self.SetItem(row, column, f"{coordinate:.2f}")
+                for column, coordinate in enumerate(electrode.position, start=2):
+                    self.SetItem(row, column, f"{coordinate:.2f}")
+                if electrode.marker_uuid in selected_uuids:
+                    self.Select(row)
+                if electrode.marker_uuid == focused_uuid:
+                    self.Focus(row)
+        finally:
+            self._refreshing = False
+            self.Thaw()
+        if self.highlighted_marker_uuid not in self.marker_uuids:
+            self._ClearHighlight()
+
+    def OnKeyDown(self, evt):
+        if evt.CmdDown() and evt.GetKeyCode() == ord("A"):
+            self.SetItemState(-1, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+            return
+        evt.Skip()
 
     def _GetElectrode(self, row):
         if not 0 <= row < len(self.marker_uuids):
@@ -510,16 +521,21 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
             None,
         )
 
-    def GetSelectedElectrode(self):
-        return self._GetElectrode(self.GetFirstSelected())
+    def GetSelectedElectrodes(self):
+        electrodes = []
+        row = self.GetFirstSelected()
+        while row != wx.NOT_FOUND:
+            electrode = self._GetElectrode(row)
+            if electrode is not None:
+                electrodes.append(electrode)
+            row = self.GetNextSelected(row)
+        return electrodes
 
     def SelectElectrode(self, marker_uuid):
         if marker_uuid not in self.marker_uuids:
             return
         row = self.marker_uuids.index(marker_uuid)
-        previous_row = self.GetFirstSelected()
-        if previous_row != wx.NOT_FOUND and previous_row != row:
-            self.Select(previous_row, on=False)
+        self.SetItemState(-1, 0, wx.LIST_STATE_SELECTED)
         self.Focus(row)
         self.Select(row)
         self.EnsureVisible(row)
@@ -530,7 +546,7 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
             self._ClearHighlight()
 
     def OnItemSelected(self, evt):
-        if not self.navigation_on:
+        if not self._refreshing and not self.navigation_on:
             electrode = self._GetElectrode(evt.GetIndex())
             if electrode is not None:
                 Publisher.sendMessage("Unhighlight marker")
@@ -540,6 +556,9 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
         evt.Skip()
 
     def OnItemDeselected(self, evt):
+        if self._refreshing:
+            evt.Skip()
+            return
         electrode = self._GetElectrode(evt.GetIndex())
         if electrode is not None and electrode.marker_uuid == self.highlighted_marker_uuid:
             self._ClearHighlight()

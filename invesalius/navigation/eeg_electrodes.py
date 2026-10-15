@@ -338,6 +338,18 @@ class EEGElectrodeManager(metaclass=Singleton):
             self.markers.DeleteMultiple(marker_ids)
         return len(marker_ids)
 
+    def remove_many(self, marker_uuids: Iterable[str]) -> int:
+        """Remove the selected EEG electrodes and return the number removed."""
+        selected_uuids = set(marker_uuids)
+        marker_ids = [
+            electrode.marker_id
+            for electrode in self.electrodes
+            if electrode.marker_uuid in selected_uuids
+        ]
+        if marker_ids:
+            self.markers.DeleteMultiple(marker_ids)
+        return len(marker_ids)
+
     def set_visible(self, marker_uuid: str, visible: bool) -> bool:
         """Show or hide one EEG electrode."""
         electrode = self._find_electrode(marker_uuid)
