@@ -1,4 +1,5 @@
 import numpy as np
+from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
 
@@ -12,6 +13,23 @@ def CreateColorTransferFunction(color_points, nan_color=None):
         color_function.SetNanColor(*nan_color)
 
     return color_function
+
+
+def CreateLookupTable(scalar_range, colors, nan_color=None):
+    """Create a VTK lookup table from normalized RGB or RGBA colors."""
+    lookup_table = vtkLookupTable()
+    lookup_table.SetTableRange(*scalar_range)
+    lookup_table.SetNumberOfTableValues(len(colors))
+    lookup_table.Build()
+
+    for index, color in enumerate(colors):
+        rgba = tuple(color) if len(color) == 4 else (*color, 1.0)
+        lookup_table.SetTableValue(index, *rgba)
+
+    if nan_color is not None:
+        lookup_table.SetNanColor(*nan_color)
+
+    return lookup_table
 
 
 def SampleColorFunction(color_function, number_of_colors=10):

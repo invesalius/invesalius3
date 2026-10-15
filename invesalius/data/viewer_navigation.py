@@ -26,12 +26,11 @@ import wx
 from scipy.spatial import distance
 from vtkmodules.vtkCommonColor import vtkColorSeries, vtkNamedColors
 
-# TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
+# TODO: Check that these imports are not used -- vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
 from vtkmodules.vtkCommonCore import (
     mutable,
     vtkDoubleArray,
     vtkIdList,
-    vtkLookupTable,
     vtkPoints,
     vtkUnsignedCharArray,
 )
@@ -62,6 +61,7 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius import inv_paths
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
+from invesalius.data.visualization.colormap import CreateLookupTable
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
 from invesalius.data.visualization.robot_force_visualizer import RobotForceVisualizer
@@ -1803,14 +1803,19 @@ class NavigationView:
         wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
 
     def CreateLUTTableForEfield(self, min, max, highlight_threshold=False):
-        lut = vtkLookupTable()
-        lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
         seriesEnum = colorSeries.BREWER_SEQUENTIAL_BLUE_PURPLE_9
         colorSeries.SetColorScheme(seriesEnum)
-        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
         cortex_color = np.array(const.CORTEX_COLOR) / 255.0
-        lut.SetNanColor(*cortex_color, 1.0)
+        colors = [
+            np.array(colorSeries.GetColor(index)) / 255.0
+            for index in range(colorSeries.GetNumberOfColors())
+        ]
+        lut = CreateLookupTable(
+            (min, max),
+            colors,
+            nan_color=(*cortex_color, 1.0),
+        )
         n = lut.GetNumberOfTableValues()
         threshold = self.efield_threshold
         if highlight_threshold:
