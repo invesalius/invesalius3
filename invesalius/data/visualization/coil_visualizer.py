@@ -40,6 +40,7 @@ class CoilVisualizer:
 
         # The actor for showing the target coil in the volume viewer.
         self.target_coil_actor = None
+        self.target_coil_matrix = None
         self.last_target_coil_visibility = True
 
         # The assembly for showing the vector field relative to the coil in the volume viewer.
@@ -112,7 +113,8 @@ class CoilVisualizer:
         )
 
         # Set the color of both target coil (representing the target) and the coil center (representing the actual coil).
-        self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
+        if self.target_coil_actor is not None:
+            self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
 
         coil = self.coils.get(coil_name) if coil_name is not None else None
         if coil is None:
@@ -151,6 +153,11 @@ class CoilVisualizer:
 
     def AddTargetCoil(self, m_target):
         self.RemoveTargetCoil()
+        self.target_coil_matrix = m_target
+
+        # A saved target can be restored before any coil has been selected.
+        if not self.coils:
+            return
 
         vtk_colors = vtk.vtkNamedColors()
 
@@ -203,6 +210,7 @@ class CoilVisualizer:
             Publisher.sendMessage("Render volume viewer")
 
     def RemoveTargetCoil(self):
+        self.target_coil_matrix = None
         if self.target_coil_actor is None:
             return
 
@@ -265,6 +273,9 @@ class CoilVisualizer:
         self.coils[coil_name]["actor"] = coil_actor
         self.coils[coil_name]["center_actor"] = coil_center_actor
         self.coils[coil_name]["path"] = coil_path
+
+        if self.target_coil_matrix is not None and self.target_coil_actor is None:
+            self.AddTargetCoil(self.target_coil_matrix)
 
         # LUKATODO: Vector field assembly follows a different pattern for addition, should unify.
         self.vector_field_assembly.SetVisibility(1)
