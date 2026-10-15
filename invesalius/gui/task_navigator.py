@@ -1874,7 +1874,6 @@ class NavigationPanel(wx.Panel):
             self.GetParent().Fit()
 
     def OnCloseProject(self):
-        self.nav_hub.eeg_electrodes.set_registration_active(False)
         self.tracker.ResetTrackerFiducials()
         self.image.ResetImageFiducials()
 

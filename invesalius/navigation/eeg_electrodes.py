@@ -69,8 +69,25 @@ class EEGElectrodeManager(metaclass=Singleton):
         self.navigation_on = False
         self._probe_position = None
         self._probe_pose_time = 0.0
+        self.__bind_events()
+
+    def __bind_events(self) -> None:
         Publisher.subscribe(self.update_probe_pose, "Update probe pose")
         Publisher.subscribe(self.on_navigation_status, "Navigation status")
+        Publisher.subscribe(self.on_navigation_mode, "Set navigation mode")
+        Publisher.subscribe(self.reset, "Close project data")
+
+    def on_navigation_mode(self, status: bool) -> None:
+        if not status:
+            self.reset()
+
+    def reset(self) -> None:
+        """Discard EEG data, keeping subscriptions so the singleton can be reused."""
+        self.navigation_on = False
+        self._probe_position = None
+        self._probe_pose_time = 0.0
+        self.set_registration_active(False)
+        self.clear()
 
     def on_navigation_status(self, nav_status, vis_status):
         self.navigation_on = nav_status
