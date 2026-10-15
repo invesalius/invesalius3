@@ -470,14 +470,14 @@ class Robot:
             coil_associated=self.coil_name,
         )
 
-    def OnUpdateRobotForceData(self, force_data, robot_id=None):
+    def OnUpdateRobotForceData(self, force_feedback, robot_id=None):
         if robot_id is not None and robot_id != self.robot_id:
             return
 
         wx.CallAfter(
             Publisher.sendMessage,
             "Send force sensor data",
-            force_data=force_data,
+            force_data=force_feedback,
             coil_associated=self.coil_name,
         )
 
