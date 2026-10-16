@@ -2022,6 +2022,7 @@ class RobotButtonsPanel(wx.Panel):
         Publisher.subscribe(self.EnableRobotTrackTargetButton, "Enable robot button")
         Publisher.subscribe(self.PressRobotMoveAwayButton, "Press move away button")
         Publisher.subscribe(self.OnEnableRobotButtons, "Enable robot")
+        Publisher.subscribe(self.UpdateRobotButtons, "Robot transformation matrix set")
 
     # Toggle Button Helpers
     def UpdateToggleButton(self, ctrl, state=None):
@@ -2064,6 +2065,7 @@ class RobotButtonsPanel(wx.Panel):
         #   - Target is set
         #   - Target mode is on
         #   - Robot is connected
+        #   - Robot tracking registration is available
         #   - The name of the coil attached to robot is being tracked
         robot_coil = self.robot.GetCoilName()
         if self.navigation.n_coils > 1:
@@ -2075,7 +2077,7 @@ class RobotButtonsPanel(wx.Panel):
             self.nav_status
             and self.target_selected
             and self.target_mode
-            and self.robot.IsConnected()
+            and self.robot.IsReady()
             and coil_check
         )
 
