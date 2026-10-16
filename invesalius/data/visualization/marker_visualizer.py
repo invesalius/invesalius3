@@ -95,6 +95,9 @@ class MarkerVisualizer:
     # Color for the marker for target when the coil at the target.
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d("Green")
 
+    # Opacity of the target marker when it is made transparent.
+    TARGET_OPACITY = 0.4
+
     def __init__(self, renderer, interactor, actor_factory, vector_field_visualizer):
         self.renderer = renderer
         self.interactor = interactor
@@ -453,11 +456,10 @@ class MarkerVisualizer:
 
     def SetTargetTransparency(self, marker, transparent):
         actor = marker.visualization["actor"]
-        if transparent:
-            actor.GetProperty().SetOpacity(1)
-            # actor.GetProperty().SetOpacity(0.4)
-        else:
-            actor.GetProperty().SetOpacity(1)
+        actor.GetProperty().SetOpacity(self.TARGET_OPACITY if transparent else 1.0)
+
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def _CreateProjectionLine(self, startpoint_position, startpoint_orientation):
         """
