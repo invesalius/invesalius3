@@ -256,6 +256,7 @@ class SurfaceManager:
         Publisher.subscribe(self.on_surfaces_creation_completed, "Surfaces creation completed")
 
         Publisher.subscribe(self.on_publish_surface, "Publish surface")
+        Publisher.subscribe(self.OnApplySurfaceColors, "Apply surface point colors")
 
     def on_surfaces_creation_completed(self, created_count):
         """
@@ -1621,6 +1622,21 @@ class SurfaceManager:
     def OnHideAllSurfaces(self):
         for key in self.actors_dict:
             self.ShowActor(key, False)
+
+    def OnApplySurfaceColors(self, surface_index, colors=None):
+        if surface_index in self.actors_dict:
+            actor = self.actors_dict[surface_index]
+            proj = prj.Project()
+            if surface_index in proj.surface_dict:
+                surface = proj.surface_dict[surface_index]
+                if colors is not None:
+                    surface.polydata.GetPointData().SetScalars(colors)
+                    actor.GetMapper().ScalarVisibilityOn()
+                    actor.GetMapper().SetScalarModeToUsePointData()
+                else:
+                    surface.polydata.GetPointData().SetScalars(None)
+                    actor.GetMapper().ScalarVisibilityOff()
+                Publisher.sendMessage("Render volume viewer")
 
     def GetBrainSurfaceActor(self, index):
         """

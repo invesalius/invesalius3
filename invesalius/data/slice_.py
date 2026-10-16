@@ -813,7 +813,7 @@ class Slice(metaclass=utils.Singleton):
                 },
             )
             final_image = self.do_blend(final_image, cimage)
-        elif self.to_show_aux and self.current_mask:
+        elif self.to_show_aux:
             m = self.get_aux_slice(self.to_show_aux, orientation, slice_number)
             tmp_vimage = converters.to_vtk(m, self.spacing, slice_number, orientation)
             try:
@@ -1828,8 +1828,8 @@ class Slice(metaclass=utils.Singleton):
 
     def do_custom_colour(self, imagedata, map_colours):
         # map scalar values into colors
-        minv = min(map_colours)
-        maxv = max(map_colours)
+        minv = min(0, int(min(map_colours)))
+        maxv = int(max(map_colours))
         ncolours = maxv - minv + 1
 
         lut_mask = vtkLookupTable()
@@ -1842,7 +1842,7 @@ class Slice(metaclass=utils.Singleton):
 
         for v in map_colours:
             r, g, b, a = map_colours[v]
-            lut_mask.SetTableValue(v, r, g, b, a)
+            lut_mask.SetTableValue(int(v - minv), r, g, b, a)
 
         lut_mask.SetRampToLinear()
         lut_mask.Build()
