@@ -206,11 +206,33 @@ class EditionHistory:
         if target_index == self.index or target_index < -1 or target_index >= len(self.history):
             return
 
+        # undo()/redo() have a "reload only" step for 2D slice edits: if the
+        # slice currently on screen doesn't match the history entry being
+        # crossed, they just reposition the 2D viewer instead of applying
+        # that entry, and leave self.index unchanged (this is by design for
+        # a single manual Undo/Redo click -- it lets the next click apply
+        # the edit once the right slice is in view). jump_to() walks
+        # multiple steps in one call, so it can't wait for a second click:
+        # track our own view of "what slice is on screen" and update it
+        # after every reposition, so the next undo()/redo() call always
+        # makes progress instead of repeating the same reload forever.
+        local_slices = dict(actual_slices) if actual_slices else None
+
         while self.index > target_index and self.index >= 0:
-            self.undo(mvolume, actual_slices)
+            index_before = self.index
+            self.undo(mvolume, local_slices)
+            if self.index == index_before and local_slices is not None:
+                node = self.history[self.index - 1]
+                local_slices[node.orientation] = node.index
+                self.undo(mvolume, local_slices)
 
         while self.index < target_index and self.index < len(self.history) - 1:
-            self.redo(mvolume, actual_slices)
+            index_before = self.index
+            self.redo(mvolume, local_slices)
+            if self.index == index_before and local_slices is not None:
+                node = self.history[self.index + 1]
+                local_slices[node.orientation] = node.index
+                self.redo(mvolume, local_slices)
 
         self.notify_history_change()
 
@@ -247,6 +269,16 @@ class EditionHistory:
                     self.index -= 1
                     h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
+                Publisher.sendMessage("Enable redo", value=True)
+            else:
+                # self.index == 0: mvolume already matches h[0]'s snapshot,
+                # which is the pre-edit state of the *first* recorded edit
+                # (2D edits always add a "before" node ahead of the "after"
+                # node -- see new_node()), i.e. the same state as "no edits
+                # applied". Nothing left to write to mvolume; just record
+                # that we've reached that sentinel so undo() -- and the
+                # jump_to() loop that drives it -- can actually terminate.
+                self.index -= 1
                 Publisher.sendMessage("Enable redo", value=True)
 
         if self.index < 0:
