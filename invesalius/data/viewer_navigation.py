@@ -26,12 +26,11 @@ import wx
 from scipy.spatial import distance
 from vtkmodules.vtkCommonColor import vtkColorSeries, vtkNamedColors
 
-# TODO: Check that these imports are not used -- vtkLookupTable, vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
+# TODO: Check that these imports are not used -- vtkMinimalStandardRandomSequence, vtkPoints, vtkUnsignedCharArray
 from vtkmodules.vtkCommonCore import (
     mutable,
     vtkDoubleArray,
     vtkIdList,
-    vtkLookupTable,
     vtkPoints,
     vtkUnsignedCharArray,
 )
@@ -62,6 +61,7 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius import inv_paths
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
+from invesalius.data.visualization.colormap import CreateLookupTable
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
 from invesalius.data.visualization.robot_force_visualizer import RobotForceVisualizer
@@ -1791,9 +1791,10 @@ class NavigationView:
     def InitializeColorArray(self):
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName("Colors")
+        self.colors_init.SetNumberOfTuples(self.efield_mesh.GetNumberOfPoints())
         color = const.CORTEX_COLOR
-        for i in range(self.efield_mesh.GetNumberOfCells()):
-            self.colors_init.InsertTuple(i, color)
+        for i in range(self.efield_mesh.GetNumberOfPoints()):
+            self.colors_init.SetTuple(i, color)
 
     def ReturnToDefaultColorActor(self):
         self.RemoveEfieldTargetingActors()
@@ -1802,12 +1803,19 @@ class NavigationView:
         wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
 
     def CreateLUTTableForEfield(self, min, max, highlight_threshold=False):
-        lut = vtkLookupTable()
-        lut.SetTableRange(min, max)
         colorSeries = vtkColorSeries()
         seriesEnum = colorSeries.BREWER_SEQUENTIAL_BLUE_PURPLE_9
         colorSeries.SetColorScheme(seriesEnum)
-        colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
+        cortex_color = np.array(const.CORTEX_COLOR) / 255.0
+        colors = [
+            np.array(colorSeries.GetColor(index)) / 255.0
+            for index in range(colorSeries.GetNumberOfColors())
+        ]
+        lut = CreateLookupTable(
+            (min, max),
+            colors,
+            nan_color=(*cortex_color, 1.0),
+        )
         n = lut.GetNumberOfTableValues()
         threshold = self.efield_threshold
         if highlight_threshold:
@@ -1822,7 +1830,7 @@ class NavigationView:
         if self.efield_scalar_bar is None or self.efield_lut is None:
             return
 
-        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
+        self.efield_scalar_layer.SetLookupTable(self.efield_lut)
         self.efield_scalar_bar.Modified()
         if not self.ren.HasViewProp(self.efield_scalar_bar):
             self.ren.AddActor2D(self.efield_scalar_bar)
@@ -2069,11 +2077,6 @@ class NavigationView:
     def EnableShowEfieldAboveThreshold(self, enable):
         self.enableefieldabovethreshold = enable
 
-    def SegmentEfieldMax(self, cell_id_indexes):
-        color = [255, 165, 0]
-        for j, value in enumerate(cell_id_indexes):
-            self.colors_init.InsertTuple(value, color)
-
     def GetEfieldActor(self, e_field_actor):
         self.efield_actor = e_field_actor
 
@@ -2145,6 +2148,7 @@ class NavigationView:
         self.locator_efield = e_field_brain.locator_efield
         self.locator_efield_cell = e_field_brain.locator_efield_Cell
         self.efield_mesh = e_field_brain.e_field_mesh
+        self.efield_scalar_layer = e_field_brain.scalar_layer
         self.efield_mapper = e_field_brain.efield_mapper
         self.efield_mesh_normals_viewer = vtkPolyDataNormals()
         self.efield_mesh_normals_viewer.SetInputData(self.efield_mesh)
@@ -2229,17 +2233,13 @@ class NavigationView:
                 self.RemoveEfieldEdges()
             else:
                 self.CalculateEdgesEfield()
-            self.colors_init.SetNumberOfComponents(3)
-            self.colors_init.Fill(const.CORTEX_COLOR[0])
-            for h in range(len(self.Id_list)):
-                dcolor = 3 * [0.0]
-                index_id = self.Id_list[h]
-                self.efield_lut.GetColor(self.e_field_norms[h], dcolor)
-                color = 3 * [0.0]
-                for j in range(0, 3):
-                    color[j] = int(255.0 * dcolor[j])
-                self.colors_init.InsertTuple(index_id, color)
-            self.efield_mesh.GetPointData().SetScalars(self.colors_init)
+            self.efield_scalar_layer.SetPointScalars(
+                "EFieldNorm",
+                self.e_field_norms,
+                point_ids=self.Id_list,
+            )
+            self.efield_scalar_layer.SetLookupTable(self.efield_lut)
+            self.efield_scalar_layer.SetScalarRange((0, self.efield_max))
             wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
             self.RemoveEfieldVectorActor()
             wx.CallAfter(Publisher.sendMessage, "Show max Efield actor")
@@ -2248,8 +2248,6 @@ class NavigationView:
                 wx.CallAfter(Publisher.sendMessage, "Show distance between Max and CoG Efield")
                 if self.positions_above_threshold is not None:
                     self.DetectClustersEfieldSpread(self.positions_above_threshold)
-            if self.enableefieldabovethreshold and self.cell_id_indexes_above_threshold is not None:
-                self.SegmentEfieldMax(self.cell_id_indexes_above_threshold)
             self.ShowEfieldAtCortexTarget()
             if self.plot_no_connection:
                 wx.CallAfter(Publisher.sendMessage, "Show Efield vectors")
