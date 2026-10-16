@@ -8001,6 +8001,67 @@ class ProjectLoadProgressDialog:
             pass
 
 
+class MaskProgressDialog:
+    """Progress dialog for mask import/export operations with cancellation support."""
+
+    def __init__(self, title: str, parent: Optional[wx.Window] = None):
+        if parent is None:
+            parent = wx.GetApp().GetTopWindow()
+
+        self.title = title
+        self.msg = _("Initializing...")
+        self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE
+        self.cancelled = False
+
+        self.dlg = wx.ProgressDialog(
+            self.title, self.msg, maximum=100, parent=parent, style=self.style
+        )
+
+        # Force the dialog to paint before operation starts
+        wx.SafeYield()
+
+    def Update(self, value: int, message: str = "") -> bool:
+        """
+        Update progress dialog.
+
+        Args:
+            value: Progress value (0-100)
+            message: Status message to display
+
+        Returns:
+            True if should continue, False if cancelled
+        """
+        if self.cancelled:
+            return False
+
+        try:
+            if message:
+                continue_op, skip = self.dlg.Update(value, message)
+            else:
+                continue_op, skip = self.dlg.Update(value)
+
+            if not continue_op:
+                self.cancelled = True
+                return False
+
+            return True
+        except Exception:
+            return False
+
+    def WasCancelled(self) -> bool:
+        """Check if user cancelled the operation."""
+        return self.cancelled
+
+    def Close(self) -> None:
+        """Close and destroy the progress dialog."""
+        try:
+            if self.dlg:
+                self.dlg.Destroy()
+                self.dlg = None
+        except Exception:
+            pass
+
+
 class AnnotationDialog(wx.Dialog):
     """Dialog for entering a annotation text."""
 

@@ -263,7 +263,13 @@ class Controller:
             Publisher.sendMessage("Import Nifti mask", filepath=filepath)
 
     def OnImportMaskNifti(self, filepath: "str | bytes") -> None:
+        progress = dialogs.MaskProgressDialog(_("Importing Mask"))
+        
         try:
+            # Stage 1: Reading file (0-20%)
+            if not progress.Update(0, _("Reading NIfTI file...")):
+                return
+            
             if isinstance(filepath, bytes):
                 filepath = filepath.decode("utf-8")
 
@@ -273,6 +279,14 @@ class Controller:
             img = oth.ReadOthers(filepath)
             if img is False:
                 raise Exception(_("Failed to read NIfTI file."))
+
+            # Check for cancellation after reading
+            if progress.WasCancelled():
+                return
+
+            # Stage 2: Validating (20-40%)
+            if not progress.Update(20, _("Validating mask compatibility...")):
+                return
 
             # Ensure a volume is loaded before importing a mask
             if self.Slice.matrix is None:
@@ -287,11 +301,35 @@ class Controller:
             proj_shape = self.Slice.matrix.shape[::-1]
             validate_mask_compatibility(data.shape, proj_shape)
 
+            # Check for cancellation after validation
+            if progress.WasCancelled():
+                return
+
+            # Stage 3: Converting (40-60%)
+            if not progress.Update(40, _("Converting to binary mask...")):
+                return
+
             # Convert and normalize to binary label map (0/255 uint8)
             mask_data = check_is_mask(data)
 
+            # Check for cancellation after conversion
+            if progress.WasCancelled():
+                return
+
+            # Stage 4: Transforming (60-80%)
+            if not progress.Update(60, _("Transforming coordinate system...")):
+                return
+
             # Match InVesalius internal (axial) coordinate layout (ZYX flipped)
             mask_data = np.ascontiguousarray(np.fliplr(np.swapaxes(mask_data, 0, 2)))
+
+            # Check for cancellation after transformation
+            if progress.WasCancelled():
+                return
+
+            # Stage 5: Applying to project (80-100%)
+            if not progress.Update(80, _("Applying mask to project...")):
+                return
 
             name = os.path.splitext(os.path.basename(filepath))[0]
             # Label-map threshold: strict 0-255 range for binary mask
@@ -313,12 +351,17 @@ class Controller:
                     buffer_.discard_mask()
                 Publisher.sendMessage("Reload actual slice")
 
+            # Final update (100%)
+            progress.Update(100, _("Import complete!"))
+
             Publisher.sendMessage(
                 "Update status text in GUI", label=_("Mask imported successfully.")
             )
 
         except Exception as e:
             dialogs.ErrorMessageBox(None, _("Error importing mask"), str(e)).ShowModal()
+        finally:
+            progress.Close()
 
     def OnShowExportMaskDialog(self, mask_indexes: list) -> None:
         if not mask_indexes:
@@ -352,19 +395,45 @@ class Controller:
         dlg.Destroy()
 
     def OnExportMaskNifti(self, mask_indexes: list, filepath: "str | bytes") -> None:
+        progress = dialogs.MaskProgressDialog(_("Exporting Mask"))
+        
         try:
             import nibabel as nib
 
             project = prj.Project()
-            for index in mask_indexes:
+            total_masks = len(mask_indexes)
+            
+            for idx, index in enumerate(mask_indexes):
+                # Calculate progress for this mask (divide 100% by number of masks)
+                base_progress = int((idx / total_masks) * 100)
+                stage_increment = int(100 / total_masks / 3)  # 3 stages per mask
+                
                 mask = project.GetMask(index)
                 if not mask:
                     continue
+
+                # Check for cancellation before processing each mask
+                if progress.WasCancelled():
+                    return
+
+                # Stage 1: Extracting matrix
+                msg = _("Extracting mask matrix ({}/{})...").format(idx + 1, total_masks)
+                if not progress.Update(base_progress, msg):
+                    return
 
                 # Ensure all slices have threshold data (lazy threshold only generates visited slices)
                 self.Slice.do_threshold_to_all_slices(mask)
                 # Strip 1-pixel padding from InVesalius mask matrix (padding is only at index 0)
                 mask_matrix = mask.matrix[1:, 1:, 1:]
+
+                # Check for cancellation after extraction
+                if progress.WasCancelled():
+                    return
+
+                # Stage 2: Converting format
+                msg = _("Converting to NIfTI format ({}/{})...").format(idx + 1, total_masks)
+                if not progress.Update(base_progress + stage_increment, msg):
+                    return
 
                 # Axis transform to NIfTI layout and cast to uint8
                 export_data = np.ascontiguousarray(
@@ -378,6 +447,15 @@ class Controller:
                 mask_nifti = nib.Nifti1Image(export_data, np.eye(4))
                 mask_nifti.header.set_zooms(self.Slice.spacing)
 
+                # Check for cancellation before saving
+                if progress.WasCancelled():
+                    return
+
+                # Stage 3: Saving to file
+                msg = _("Saving mask file ({}/{})...").format(idx + 1, total_masks)
+                if not progress.Update(base_progress + stage_increment * 2, msg):
+                    return
+
                 # Save the NIfTI file cleanly without popping a dialog
                 if len(mask_indexes) > 1:
                     # Append mask name if exporting multiple via loop
@@ -389,8 +467,14 @@ class Controller:
 
                 nib.save(mask_nifti, save_path)
 
+            # Final update (100%)
+            if not progress.WasCancelled():
+                progress.Update(100, _("Export complete!"))
+
         except Exception as e:
             dialogs.ErrorMessageBox(None, _("Error exporting mask"), str(e)).ShowModal()
+        finally:
+            progress.Close()
 
     def ShowDialogOpenProject(self) -> None:
         # Offer to save current project if necessary
