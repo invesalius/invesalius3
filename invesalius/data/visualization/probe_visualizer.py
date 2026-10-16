@@ -13,7 +13,7 @@ class ProbeVisualizer:
     """
 
     def __init__(self, renderer):
-        self.renderer = renderer
+        self.renderers = [renderer]
 
         self.probe_actor = None
         self.probe_path = os.path.join(inv_paths.OBJ_DIR, "stylus.stl")
@@ -30,6 +30,20 @@ class ProbeVisualizer:
 
     def dispose(self):
         Publisher.unsubscribe_owner(self)
+        self.RemoveProbeActor()
+        self.renderers.clear()
+
+    def add_renderer(self, renderer):
+        if renderer not in self.renderers:
+            self.renderers.append(renderer)
+            if self.probe_actor is not None:
+                renderer.AddActor(self.probe_actor)
+
+    def remove_renderer(self, renderer):
+        if renderer in self.renderers:
+            if self.probe_actor is not None:
+                renderer.RemoveActor(self.probe_actor)
+            self.renderers.remove(renderer)
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -43,6 +57,7 @@ class ProbeVisualizer:
                 Publisher.sendMessage("Render volume viewer")
 
     def AddProbeActor(self, probe_path):
+        self.RemoveProbeActor()
         vtk_colors = vtk.vtkNamedColors()
         obj_polydata = vtku.CreateObjectPolyData(probe_path)
 
@@ -68,11 +83,13 @@ class ProbeVisualizer:
         probe_actor.SetVisibility(0)
 
         self.probe_actor = probe_actor
-        self.renderer.AddActor(self.probe_actor)
+        for renderer in self.renderers:
+            renderer.AddActor(self.probe_actor)
 
     def RemoveProbeActor(self):
         if self.probe_actor is not None:
-            self.renderer.RemoveActor(self.probe_actor)
+            for renderer in self.renderers:
+                renderer.RemoveActor(self.probe_actor)
             self.probe_actor = None
 
     def UpdateProbePose(self, m_img, coord):

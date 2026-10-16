@@ -40,6 +40,7 @@ class CoilVisualizer:
 
         # The actor for showing the target coil in the volume viewer.
         self.target_coil_actor = None
+        self.target_model_coil_name = None
         self.target_coil_matrix = None
         self.last_target_coil_visibility = True
 
@@ -102,7 +103,9 @@ class CoilVisualizer:
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
 
-    def SetCoilAtTarget(self, state, coil_name=None):
+    def SetCoilAtTarget(self, state, displacement, coil_name=None):
+        if coil_name is not None and coil_name != self.target_model_coil_name:
+            return
         self.coil_at_target = state
 
         vtk_colors = vtk.vtkNamedColors()
@@ -116,9 +119,7 @@ class CoilVisualizer:
         if self.target_coil_actor is not None:
             self.target_coil_actor.GetProperty().SetDiffuseColor(target_coil_color)
 
-        coil = self.coils.get(coil_name) if coil_name is not None else None
-        if coil is None:
-            coil = next(iter(self.coils.values()), None)
+        coil = self.coils.get(self.target_model_coil_name)
         if coil is not None:
             coil["center_actor"].GetProperty().SetDiffuseColor(target_coil_color)
 
@@ -151,18 +152,17 @@ class CoilVisualizer:
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
 
-    def AddTargetCoil(self, m_target):
+    def AddTargetCoil(self, m_target, coil_name):
         self.RemoveTargetCoil()
+        self.target_model_coil_name = coil_name
         self.target_coil_matrix = m_target
-
-        # A saved target can be restored before any coil has been selected.
-        if not self.coils:
-            return
 
         vtk_colors = vtk.vtkNamedColors()
 
-        # LUKATODO: this is an arbitrary coil... but works for single coil mode
-        decoded_path = next(iter(self.coils.values()))["path"]
+        coil = self.coils.get(coil_name)
+        if coil is None:
+            return
+        decoded_path = coil["path"]
 
         coil_filename = os.path.basename(decoded_path)
         coil_dir = os.path.dirname(decoded_path)
@@ -211,11 +211,14 @@ class CoilVisualizer:
 
     def RemoveTargetCoil(self):
         self.target_coil_matrix = None
-        if self.target_coil_actor is None:
-            return
-
-        self.renderer.RemoveActor(self.target_coil_actor)
+        coil = self.coils.get(self.target_model_coil_name)
+        if coil is not None:
+            coil["center_actor"].GetProperty().SetDiffuseColor(self.HIGHLIGHT_COLOR)
+        if self.target_coil_actor is not None:
+            self.renderer.RemoveActor(self.target_coil_actor)
         self.target_coil_actor = None
+        self.target_model_coil_name = None
+        self.coil_at_target = False
 
     # Called when a coil is (un)selected for navigation
     def SelectCoil(self, coil_name, coil_registration):
@@ -274,13 +277,22 @@ class CoilVisualizer:
         self.coils[coil_name]["center_actor"] = coil_center_actor
         self.coils[coil_name]["path"] = coil_path
 
-        if self.target_coil_matrix is not None and self.target_coil_actor is None:
-            self.AddTargetCoil(self.target_coil_matrix)
+        if (
+            self.target_coil_matrix is not None
+            and self.target_coil_actor is None
+            and coil_name == self.target_model_coil_name
+        ):
+            self.AddTargetCoil(self.target_coil_matrix, coil_name)
 
         # LUKATODO: Vector field assembly follows a different pattern for addition, should unify.
         self.vector_field_assembly.SetVisibility(1)
 
     def RemoveCoil(self, coil_name=None):
+        if coil_name is None or coil_name == self.target_model_coil_name:
+            if self.target_coil_actor is not None:
+                self.renderer.RemoveActor(self.target_coil_actor)
+                self.target_coil_actor = None
+            self.coil_at_target = False
         if coil_name is not None:
             coil = self.coils.pop(coil_name, None)
             if coil is not None:
@@ -307,14 +319,17 @@ class CoilVisualizer:
         """
 
         for name, m_img in m_imgs.items():
+            coil = self.coils.get(name)
+            if coil is None:
+                continue
             m_img_flip = m_img.copy()
             m_img_flip[1, -1] = -m_img_flip[1, -1]
 
             m_img_vtk = vtku.numpy_to_vtkMatrix4x4(m_img_flip)
 
             # Update actor positions for coil, coil center, and coil orientation axes.
-            self.coils[name]["actor"].SetUserMatrix(m_img_vtk)
-            self.coils[name]["center_actor"].SetUserMatrix(m_img_vtk)
+            coil["actor"].SetUserMatrix(m_img_vtk)
+            coil["center_actor"].SetUserMatrix(m_img_vtk)
 
             # LUKATODO
 

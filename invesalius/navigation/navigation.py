@@ -480,16 +480,15 @@ class Navigation(metaclass=Singleton):
         if coil_registration is not None:  # Add the coil to selection
             self.coil_registrations[coil_name] = coil_registration
             if self.main_coil is None:
-                self.main_coil = coil_name
+                self._set_main_coil(coil_name)
         else:  # Remove the coil from selection
             self.coil_registrations.pop(coil_name, None)
             if self.main_coil == coil_name:
-                self.main_coil = None
-                self.SaveConfig()
+                self._set_main_coil(None)
 
         self.SaveConfig()
 
-    def CoilAtTarget(self, state, coil_name=None):
+    def CoilAtTarget(self, state, displacement, coil_name=None):
         self.coil_at_target = state
 
     def SetTarget(self, marker):
@@ -522,11 +521,18 @@ class Navigation(metaclass=Singleton):
 
         # Reset coil selection
         self.coil_registrations = {}
-        self.main_coil = None
+        self._set_main_coil(None)
         self.SaveConfig()
 
+    def _set_main_coil(self, coil_name):
+        """Publish every runtime change to the main coil from one place."""
+        if self.main_coil == coil_name:
+            return
+        self.main_coil = coil_name
+        Publisher.sendMessage("Main coil changed", coil_name=coil_name)
+
     def SetMainCoil(self, main_coil):
-        self.main_coil = main_coil
+        self._set_main_coil(main_coil)
         self.SaveConfig("main_coil", main_coil)
 
         # Send the polydata of the main coil to the connection
