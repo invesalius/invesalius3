@@ -214,6 +214,7 @@ class NodesPanel(wx.Panel):
 
         self.Bind(wx.EVT_LIST_ITEM_CHECKED, self._on_item_selected, self.__list_ctrl)
         self.Bind(wx.EVT_LIST_ITEM_UNCHECKED, self._on_item_deselected, self.__list_ctrl)
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_item_activated, self.__list_ctrl)
 
     def _add_node_to_list(self, node):
         """add node to list."""
@@ -294,6 +295,45 @@ class NodesPanel(wx.Panel):
         self.__selected_index = idx
         self.__selected_node = self.__nodes[idx]
 
+    def _on_item_activated(self, evt):
+        """double click item handler"""
+
+        idx = evt.GetIndex()
+        node = self.__nodes[idx]
+
+        update_dialog = self._create_update_dialog(node)
+
+        if update_dialog.ShowModal() == wx.ID_OK:
+            ipaddress = update_dialog.ipaddress_input.GetValue()
+            port = update_dialog.port_input.GetValue()
+            aetitle = update_dialog.aetitle_input.GetValue()
+            description = update_dialog.description_input.GetValue()
+
+            if not (ipaddress and port and aetitle):
+                wx.MessageBox(
+                    "Please fill in all fields (IP Address, Port, and AE Title).",
+                    "Missing Fields",
+                    wx.OK | wx.ICON_WARNING,
+                )
+                update_dialog.Destroy()
+                return
+
+            self.__nodes[idx] = {
+                "ipaddress": ipaddress,
+                "port": port,
+                "aetitle": aetitle,
+                "description": description,
+            }
+
+            self.__list_ctrl.SetItem(idx, 1, ipaddress)
+            self.__list_ctrl.SetItem(idx, 2, port)
+            self.__list_ctrl.SetItem(idx, 3, aetitle)
+            self.__list_ctrl.SetItem(idx, 4, description)
+
+            self.__session.SetConfig("nodes", self.__nodes)
+
+        update_dialog.Destroy()
+
     def _create_form_dialog(self, add_new_dialog):
         """Create the form sizer."""
 
@@ -329,6 +369,60 @@ class NodesPanel(wx.Panel):
         add_new_dialog.CenterOnScreen()
 
         return add_new_dialog
+
+    def _create_update_dialog(self, node):
+        """Create and return the update dialog with pre-filled values."""
+
+        update_dialog = wx.Dialog(self, title="Update Node")
+
+        ipaddress_input = wx.TextCtrl(update_dialog, size=(225, -1))
+        ipaddress_input.SetValue(node["ipaddress"])
+
+        port_input = wx.TextCtrl(update_dialog, size=(225, -1))
+        port_input.SetValue(node["port"])
+
+        aetitle_input = wx.TextCtrl(update_dialog, size=(225, -1))
+        aetitle_input.SetValue(node["aetitle"])
+
+        description_input = wx.TextCtrl(update_dialog, size=(225, -1))
+        description_input.SetValue(node["description"])
+
+        form_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        sizer1 = wx.BoxSizer(wx.VERTICAL)
+        sizer1.Add(wx.StaticText(update_dialog, label="IP Address *"), 0, wx.ALL, 5)
+        sizer1.Add(ipaddress_input, 0, wx.ALL, 5)
+
+        sizer2 = wx.BoxSizer(wx.VERTICAL)
+        sizer2.Add(wx.StaticText(update_dialog, label="Port *"), 0, wx.ALL, 5)
+        sizer2.Add(port_input, 0, wx.ALL, 5)
+
+        sizer3 = wx.BoxSizer(wx.VERTICAL)
+        sizer3.Add(wx.StaticText(update_dialog, label="AE Title *"), 0, wx.ALL, 5)
+        sizer3.Add(aetitle_input, 0, wx.ALL, 5)
+
+        sizer4 = wx.BoxSizer(wx.VERTICAL)
+        sizer4.Add(wx.StaticText(update_dialog, label="Description"), 0, wx.ALL, 5)
+        sizer4.Add(description_input, 0, wx.ALL, 5)
+
+        form_sizer.Add(sizer1, 0, wx.ALL, 5)
+        form_sizer.Add(sizer2, 0, wx.ALL, 5)
+        form_sizer.Add(sizer3, 0, wx.ALL, 5)
+        form_sizer.Add(sizer4, 0, wx.ALL, 5)
+
+        btn_sizer = update_dialog.CreateButtonSizer(wx.OK | wx.CANCEL)
+        form_sizer.Add(btn_sizer, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+
+        update_dialog.SetSizer(form_sizer)
+        update_dialog.SetSize(400, 450)
+        update_dialog.CenterOnScreen()
+
+        update_dialog.ipaddress_input = ipaddress_input
+        update_dialog.port_input = port_input
+        update_dialog.aetitle_input = aetitle_input
+        update_dialog.description_input = description_input
+
+        return update_dialog
 
     def _on_add_button(self, event):
         """Handler for the "Add" button."""
