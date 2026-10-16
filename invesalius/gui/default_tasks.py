@@ -135,7 +135,7 @@ class Panel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
-    def SetNavigationMode(self, status):
+    def SetNavigationMode(self, status, markers_control=None):
         # Stop tracking while its controls and callbacks still exist, before
         # rebuilding the task panel and switching back to the general 3D scene.
         if not status and ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:

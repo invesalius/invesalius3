@@ -477,6 +477,8 @@ class Robots(metaclass=Singleton):
         if active_coil_name:
             self.robots_by_coil[active_coil_name] = new_robot
 
+        self.SetMainCoil(navigation.main_coil)
+
         wx.CallAfter(Publisher.sendMessage, "Robot added", robot=new_robot)
 
         return new_robot
@@ -494,13 +496,13 @@ class Robots(metaclass=Singleton):
             self.robots_by_coil[coil_name] = robot
 
         robot.SetCoilName(coil_name)
+        self.SetMainCoil(robot.navigation.main_coil)
 
     def SetMainCoil(self, main_coil_name):
-        if main_coil_name in self.robots_by_coil:
-            self.main_coil_name = main_coil_name
-            robot = self.GetActiveRobot()
-            if robot:
-                robot.SendTargetToRobot()
+        self.main_coil_name = main_coil_name
+        robot = self.GetActiveRobot()
+        if robot:
+            robot.SendTargetToRobot()
 
     def GetActiveRobot(self):
         if self.main_coil_name:

@@ -16,8 +16,7 @@ msgstr ""
 "POT-Creation-Date: 2026-05-18 16:01-0300\n"
 "PO-Revision-Date: 2019-02-25 12:52+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Portuguese (Brazil) (http://www.transifex.com/invesalius/"
-"invesalius3/language/pt_BR/)\n"
+"Language-Team: Portuguese (Brazil) (http://www.transifex.com/invesalius/invesalius3/language/pt_BR/)\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -134,7 +133,8 @@ msgstr "Cinza invertido"
 #: invesalius/gui/bitmap_preview_panel.py:443 invesalius/gui/dialogs.py:1407
 #: invesalius/gui/dialogs.py:1421 invesalius/gui/dicom_preview_panel.py:718
 #: invesalius/gui/dicom_preview_panel.py:719 invesalius/presets.py:37
-#: invesalius/presets.py:57 invesalius/presets.py:109 invesalius/presets.py:142
+#: invesalius/presets.py:57 invesalius/presets.py:109
+#: invesalius/presets.py:142
 msgid "Bone"
 msgstr "Osso"
 
@@ -621,12 +621,10 @@ msgstr "Carregando arquivo %d de %d ..."
 
 #: invesalius/control.py:1201
 msgid ""
-"this is a rgb image, it's necessary to convert to grayscale to open on "
-"invesalius.\n"
+"this is a rgb image, it's necessary to convert to grayscale to open on invesalius.\n"
 "do you want to convert it to grayscale?"
 msgstr ""
-"Esta é uma imagem RGB. É necessário convertê-la para tons de cinza para abri-"
-"la no InVesalius.\n"
+"Esta é uma imagem RGB. É necessário convertê-la para tons de cinza para abri-la no InVesalius.\n"
 "Deseja convertê-la para tons de cinza?"
 
 #: invesalius/control.py:1203
@@ -884,8 +882,8 @@ msgid ""
 "If checked, the slices are traversed in descending order to compound the "
 "visualization instead of ascending order."
 msgstr ""
-"Se selecionado, as fatias são percorridas em ordem decrescente para compor a "
-"visualização em vez de ordem crescente."
+"Se selecionado, as fatias são percorridas em ordem decrescente para compor a"
+" visualização em vez de ordem crescente."
 
 #: invesalius/data/viewer_slice.py:133
 msgid "Number of slices"
@@ -1806,16 +1804,13 @@ msgstr "O valor não será aplicado."
 
 #: invesalius/gui/dialogs.py:214
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
 "O InVesalius está sendo executado sobre um sistema operacional de 32 bits\n"
-"ou não dispõe de memória suficiente. Se você deseja trabalhar com "
-"superfícies 3D\n"
-"ou renderização volumétrica, recomenda-se diminuir a resolução das imagens "
-"médicas."
+"ou não dispõe de memória suficiente. Se você deseja trabalhar com superfícies 3D\n"
+"ou renderização volumétrica, recomenda-se diminuir a resolução das imagens médicas."
 
 #: invesalius/gui/dialogs.py:230
 msgid "Percentage of original resolution"
@@ -1915,8 +1910,8 @@ msgstr "%s é uma pasta vazia."
 
 #: invesalius/gui/dialogs.py:960
 msgid ""
-"File was created in a newer InVesalius version. Some functionalities may not "
-"work correctly."
+"File was created in a newer InVesalius version. Some functionalities may not"
+" work correctly."
 msgstr ""
 "O arquivo foi criado em uma versão mais recente do InVesalius. Algumas "
 "funcionalidades podem não funcionar corretamente."
@@ -2132,7 +2127,8 @@ msgstr "Pré-ajuste de limiar:"
 #: invesalius/gui/task_slice.py:667 invesalius/gui/task_slice.py:707
 #: invesalius/gui/task_slice.py:710 invesalius/gui/widgets/slice_menu.py:115
 #: invesalius/gui/widgets/slice_menu.py:244 invesalius/presets.py:51
-#: invesalius/presets.py:71 invesalius/presets.py:123 invesalius/presets.py:156
+#: invesalius/presets.py:71 invesalius/presets.py:123
+#: invesalius/presets.py:156
 msgid "Custom"
 msgstr "Personalizado"
 
@@ -2151,32 +2147,17 @@ msgstr "(c) 2007-"
 
 #: invesalius/gui/dialogs.py:1581
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
-"creating physical models of a patient's anatomy using additive manufacturing "
-"(3D printing) technologies. The software is developed by Center for "
-"Information Technology Renato Archer (CTI), National Council for Scientific "
-"and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information "
-"Technology Renato Archer is not responsible for damages caused by the use of "
-"this software.\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
 "O InVesalius é um programa para reconstrução 3D de \n"
 "imagens médicas a partir de uma sequência de imagens \n"
-"DICOM 2D, obtidas com equipamentos de TC ou RM. O InVesalius permite a "
-"exportação de volumes 3D ou superfícies para a criação de modelos físicos da "
-"anatomia de um paciente utilizando as tecnologias de manufatura aditiva "
-"(impressão 3D). Este software é desenvolvido pelo Centro de Tecnologia da "
-"Informação Renato Archer (CTI), Conselho Nacional de Desenvolvimento "
-"Científico e Tecnológico (CNPq) e Ministério da Saúde brasileiro.\n"
+"DICOM 2D, obtidas com equipamentos de TC ou RM. O InVesalius permite a exportação de volumes 3D ou superfícies para a criação de modelos físicos da anatomia de um paciente utilizando as tecnologias de manufatura aditiva (impressão 3D). Este software é desenvolvido pelo Centro de Tecnologia da Informação Renato Archer (CTI), Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq) e Ministério da Saúde brasileiro.\n"
 "\n"
-"InVesalius deve ser utilizado apenas para pesquisa. O Centro de Tecnologia "
-"da Informação Renato Archer não se responsabiliza por qualquer dano causado "
-"pelo uso deste software.\n"
+"InVesalius deve ser utilizado apenas para pesquisa. O Centro de Tecnologia da Informação Renato Archer não se responsabiliza por qualquer dano causado pelo uso deste software.\n"
 "\n"
 " Contato: invesalius@cti.gov.br"
 
@@ -3068,16 +3049,16 @@ msgstr ""
 
 #: invesalius/gui/frame.py:1213
 msgid ""
-"It's not possible to run implant prediction because your system doesn't have "
-"the following modules installed:"
+"It's not possible to run implant prediction because your system doesn't have"
+" the following modules installed:"
 msgstr ""
 "Não é possível executar a predição de implantes porque o seu sistema não "
 "possui os seguintes módulos instalados:"
 
 #: invesalius/gui/frame.py:1232
 msgid ""
-"It's not possible to run mandible segmenter because your system doesn't have "
-"the following modules installed:"
+"It's not possible to run mandible segmenter because your system doesn't have"
+" the following modules installed:"
 msgstr ""
 "Não é possível executar o segmentador de mandíbula porque o seu sistema não "
 "possui os seguintes módulos instalados:"
@@ -3477,7 +3458,8 @@ msgid "Redo"
 msgstr "Refazer"
 
 #: invesalius/gui/import_bitmap_panel.py:94
-#: invesalius/gui/import_network_panel.py:104 invesalius/gui/import_panel.py:95
+#: invesalius/gui/import_network_panel.py:104
+#: invesalius/gui/import_panel.py:95
 msgid "Import"
 msgstr "Importar"
 
@@ -3815,11 +3797,11 @@ msgstr "Configurações"
 
 #: invesalius/gui/preferences.py:1121
 msgid ""
-"TMS coil selection ({len(navigation.coil_registrations)} out of {navigation."
-"n_coils})"
+"TMS coil selection ({len(navigation.coil_registrations)} out of "
+"{navigation.n_coils})"
 msgstr ""
-"Seleção de bobina TMS ({len(navigation.coil_registrations)} de {navigation."
-"n_coils})"
+"Seleção de bobina TMS ({len(navigation.coil_registrations)} de "
+"{navigation.n_coils})"
 
 #: invesalius/gui/preferences.py:1131
 msgid "No coils found in config.json. Create or load new coils below."
@@ -3847,12 +3829,12 @@ msgstr ""
 #: invesalius/gui/preferences.py:1340
 msgid ""
 "Cannot select this coil, its tracker [{const.TRACKERS[obj_tracker_id - 1]}] "
-"does not match the selected tracker [{const.TRACKERS[self.tracker.tracker_id "
-"- 1]}]"
+"does not match the selected tracker [{const.TRACKERS[self.tracker.tracker_id"
+" - 1]}]"
 msgstr ""
-"Não é possível selecionar esta bobina, seu rastreador [{const."
-"TRACKERS[obj_tracker_id - 1]}] não corresponde ao rastreador selecionado "
-"[{const.TRACKERS[self.tracker.tracker_id - 1]}]"
+"Não é possível selecionar esta bobina, seu rastreador "
+"[{const.TRACKERS[obj_tracker_id - 1]}] não corresponde ao rastreador "
+"selecionado [{const.TRACKERS[self.tracker.tracker_id - 1]}]"
 
 #: invesalius/gui/preferences.py:1425 invesalius/gui/preferences.py:1506
 msgid ""
@@ -4317,11 +4299,11 @@ msgstr "Sonda ou cabeça não visível para o rastreador!"
 
 #: invesalius/gui/task_navigator.py:1720
 msgid ""
-"Ready for navigation with {self.navigation.n_coils} coil{'' if self."
-"navigation.n_coils == 1 else 's'}!"
+"Ready for navigation with {self.navigation.n_coils} coil{'' if "
+"self.navigation.n_coils == 1 else 's'}!"
 msgstr ""
-"Pronto para navegação com {self.navigation.n_coils} bobina{'' if self."
-"navigation.n_coils == 1 else 's'}!"
+"Pronto para navegação com {self.navigation.n_coils} bobina{'' if "
+"self.navigation.n_coils == 1 else 's'}!"
 
 #: invesalius/gui/task_navigator.py:1727
 msgid "Edit coil registration in Preferences"
@@ -4624,7 +4606,8 @@ msgid "Advanced options"
 msgstr "Opções avançadas"
 
 #: invesalius/gui/task_surface.py:312
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr ""
 "Selecionar automaticamente a maior região desconexa e criar nova superfície"
 
@@ -4634,7 +4617,8 @@ msgstr "Selecionar maior superfície"
 
 #: invesalius/gui/task_surface.py:321
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
+"Automatically select disconnected regions and create a new surface per "
+"region"
 msgstr ""
 "Selecionar automaticamente regiões desconexas e criar uma nova superfície "
 "por região"
@@ -4880,12 +4864,12 @@ msgstr ""
 #: invesalius/navigation/navigation.py:621
 #, python-brace-format
 msgid ""
-"Coil index {obj_id} for coil {coil_name} is out of range of current Tracker! "
-"Change the coil index in Preferences - TMS Coil tab"
+"Coil index {obj_id} for coil {coil_name} is out of range of current Tracker!"
+" Change the coil index in Preferences - TMS Coil tab"
 msgstr ""
-"O índice da bobina {obj_id} para a bobina {coil_name} está fora do intervalo "
-"do rastreador atual! Altere o índice da bobina em Preferências - aba Bobina "
-"TMS"
+"O índice da bobina {obj_id} para a bobina {coil_name} está fora do intervalo"
+" do rastreador atual! Altere o índice da bobina em Preferências - aba Bobina"
+" TMS"
 
 #: invesalius/navigation/robot.py:137 invesalius/navigation/robot.py:155
 msgid "Unable to connect to the robot."
@@ -5048,6 +5032,450 @@ msgstr ""
 "Máscara: {} voxels\n"
 "\n"
 "As máscaras devem corresponder exatamente às dimensões do volume."
+
+msgid "TotalSegmentator (CT / MRI)"
+msgstr "Segmentador Total (CT / MRI)"
+
+msgid "TotalSegmentator"
+msgstr "Segmentador Total"
+
+msgid "TotalSegmentator error"
+msgstr "Erro do TotalSegmentator"
+
+msgid "Task"
+msgstr "Tarefa"
+
+msgid "CT - High resolution"
+msgstr "CT - Alta resolução"
+
+msgid "CT - Lower resolution"
+msgstr "CT - Baixa resolução"
+
+msgid "MRI"
+msgstr "MRI"
+
+msgid "Structures to segment"
+msgstr "Estruturas a segmentar"
+
+msgid "Check all"
+msgstr "Marcar tudo"
+
+msgid "Uncheck all"
+msgstr "Desmarcar tudo"
+
+msgid "Organs"
+msgstr "Órgãos"
+
+msgid "Bones"
+msgstr "Ossos"
+
+msgid "Cardiac"
+msgstr "Cardíaco"
+
+msgid "Vessels"
+msgstr "Vasos"
+
+msgid "Muscles"
+msgstr "Músculos"
+
+msgid "Preparing..."
+msgstr "Preparando..."
+
+msgid "Downloading sidecar for {p} ({pi}/{n_parts})"
+msgstr "Baixando sidecar de {p} ({pi}/{n_parts})"
+
+msgid "Downloading {p} weights ({pi}/{n_parts})"
+msgstr "Baixando pesos {p} ({pi}/{n_parts})"
+
+msgid "Loading model {part} ({idx}/{n_parts})"
+msgstr "Carregando modelo {part} ({idx}/{n_parts})"
+
+msgid "Running inference on {part} ({idx}/{n_parts})"
+msgstr "Executando inferência em {part} ({idx}/{n_parts})"
+
+msgid "Merging part predictions"
+msgstr "Mesclando predições das partes"
+
+msgid "Writing result"
+msgstr "Gravando resultado"
+
+msgid "Select at least one structure before segmenting."
+msgstr "Selecione pelo menos uma estrutura antes de segmentar."
+
+msgid "It was not possible to run TotalSegmentator because:"
+msgstr "Não foi possível executar o TotalSegmentator porque:"
+
+msgid "Could not load labels for task '{}': {}"
+msgstr "Não foi possível carregar rótulos para a tarefa '{}': {}"
+
+msgid "Could not start TotalSegmentator: "
+msgstr "Não foi possível iniciar o TotalSegmentator: "
+
+msgid ""
+"Segmentation complete.\n"
+"\n"
+"{} mask(s) created in {:02d}:{:02d}."
+msgstr ""
+"Segmentação concluída.\n"
+"\n"
+"{} máscara(s) criada(s) em {:02d}:{:02d}."
+
+msgid "Adrenal Gland Left"
+msgstr "Glândula Adrenal Esquerda"
+
+msgid "Adrenal Gland Right"
+msgstr "Glândula Adrenal Direita"
+
+msgid "Aorta"
+msgstr "Aorta"
+
+msgid "Atrial Appendage Left"
+msgstr "Apêndice Atrial Esquerdo"
+
+msgid "Autochthon Left"
+msgstr "Autóctone Esquerdo"
+
+msgid "Autochthon Right"
+msgstr "Autóctone Direito"
+
+msgid "Brachiocephalic Trunk"
+msgstr "Tronco Braquiocefálico"
+
+msgid "Brachiocephalic Vein Left"
+msgstr "Veia Braquiocefálica Esquerda"
+
+msgid "Brachiocephalic Vein Right"
+msgstr "Veia Braquiocefálica Direita"
+
+msgid "Clavicula Left"
+msgstr "Clavícula Esquerda"
+
+msgid "Clavicula Right"
+msgstr "Clavícula Direita"
+
+msgid "Colon"
+msgstr "Cólon"
+
+msgid "Common Carotid Artery Left"
+msgstr "Artéria Carótida Comum Esquerda"
+
+msgid "Common Carotid Artery Right"
+msgstr "Artéria Carótida Comum Direita"
+
+msgid "Costal Cartilages"
+msgstr "Cartilagens Costais"
+
+msgid "Duodenum"
+msgstr "Duodeno"
+
+msgid "Esophagus"
+msgstr "Esôfago"
+
+msgid "Femur Left"
+msgstr "Fêmur Esquerdo"
+
+msgid "Femur Right"
+msgstr "Fêmur Direito"
+
+msgid "Gallbladder"
+msgstr "Vesícula Biliar"
+
+msgid "Gluteus Maximus Left"
+msgstr "Glúteo Máximo Esquerdo"
+
+msgid "Gluteus Maximus Right"
+msgstr "Glúteo Máximo Direito"
+
+msgid "Gluteus Medius Left"
+msgstr "Glúteo Médio Esquerdo"
+
+msgid "Gluteus Medius Right"
+msgstr "Glúteo Médio Direito"
+
+msgid "Gluteus Minimus Left"
+msgstr "Glúteo Mínimo Esquerdo"
+
+msgid "Gluteus Minimus Right"
+msgstr "Glúteo Mínimo Direito"
+
+msgid "Heart"
+msgstr "Coração"
+
+msgid "Hip Left"
+msgstr "Quadril Esquerdo"
+
+msgid "Hip Right"
+msgstr "Quadril Direito"
+
+msgid "Humerus Left"
+msgstr "Úmero Esquerdo"
+
+msgid "Humerus Right"
+msgstr "Úmero Direito"
+
+msgid "Iliac Artery Left"
+msgstr "Artéria Ilíaca Esquerda"
+
+msgid "Iliac Artery Right"
+msgstr "Artéria Ilíaca Direita"
+
+msgid "Iliac Vena Left"
+msgstr "Veia Ilíaca Esquerda"
+
+msgid "Iliac Vena Right"
+msgstr "Veia Ilíaca Direita"
+
+msgid "Iliopsoas Left"
+msgstr "Iliopsoas Esquerdo"
+
+msgid "Iliopsoas Right"
+msgstr "Iliopsoas Direito"
+
+msgid "Inferior Vena Cava"
+msgstr "Veia Cava Inferior"
+
+msgid "Intervertebral Discs"
+msgstr "Discos Intervertebrais"
+
+msgid "Kidney Cyst Left"
+msgstr "Cisto Renal Esquerdo"
+
+msgid "Kidney Cyst Right"
+msgstr "Cisto Renal Direito"
+
+msgid "Kidney Left"
+msgstr "Rim Esquerdo"
+
+msgid "Kidney Right"
+msgstr "Rim Direito"
+
+msgid "Lung Left"
+msgstr "Pulmão Esquerdo"
+
+msgid "Lung Lower Lobe Left"
+msgstr "Lobo Inferior Esquerdo do Pulmão"
+
+msgid "Lung Lower Lobe Right"
+msgstr "Lobo Inferior Direito do Pulmão"
+
+msgid "Lung Middle Lobe Right"
+msgstr "Lobo Médio Direito do Pulmão"
+
+msgid "Lung Right"
+msgstr "Pulmão Direito"
+
+msgid "Lung Upper Lobe Left"
+msgstr "Lobo Superior Esquerdo do Pulmão"
+
+msgid "Lung Upper Lobe Right"
+msgstr "Lobo Superior Direito do Pulmão"
+
+msgid "Pancreas"
+msgstr "Pâncreas"
+
+msgid "Portal Vein And Splenic Vein"
+msgstr "Veia Porta e Veia Esplênica"
+
+msgid "Prostate"
+msgstr "Próstata"
+
+msgid "Pulmonary Vein"
+msgstr "Veia Pulmonar"
+
+msgid "Rib Left 1"
+msgstr "Costela Esquerda 1"
+
+msgid "Rib Left 10"
+msgstr "Costela Esquerda 10"
+
+msgid "Rib Left 11"
+msgstr "Costela Esquerda 11"
+
+msgid "Rib Left 12"
+msgstr "Costela Esquerda 12"
+
+msgid "Rib Left 2"
+msgstr "Costela Esquerda 2"
+
+msgid "Rib Left 3"
+msgstr "Costela Esquerda 3"
+
+msgid "Rib Left 4"
+msgstr "Costela Esquerda 4"
+
+msgid "Rib Left 5"
+msgstr "Costela Esquerda 5"
+
+msgid "Rib Left 6"
+msgstr "Costela Esquerda 6"
+
+msgid "Rib Left 7"
+msgstr "Costela Esquerda 7"
+
+msgid "Rib Left 8"
+msgstr "Costela Esquerda 8"
+
+msgid "Rib Left 9"
+msgstr "Costela Esquerda 9"
+
+msgid "Rib Right 1"
+msgstr "Costela Direita 1"
+
+msgid "Rib Right 10"
+msgstr "Costela Direita 10"
+
+msgid "Rib Right 11"
+msgstr "Costela Direita 11"
+
+msgid "Rib Right 12"
+msgstr "Costela Direita 12"
+
+msgid "Rib Right 2"
+msgstr "Costela Direita 2"
+
+msgid "Rib Right 3"
+msgstr "Costela Direita 3"
+
+msgid "Rib Right 4"
+msgstr "Costela Direita 4"
+
+msgid "Rib Right 5"
+msgstr "Costela Direita 5"
+
+msgid "Rib Right 6"
+msgstr "Costela Direita 6"
+
+msgid "Rib Right 7"
+msgstr "Costela Direita 7"
+
+msgid "Rib Right 8"
+msgstr "Costela Direita 8"
+
+msgid "Rib Right 9"
+msgstr "Costela Direita 9"
+
+msgid "Sacrum"
+msgstr "Sacro"
+
+msgid "Scapula Left"
+msgstr "Escápula Esquerda"
+
+msgid "Scapula Right"
+msgstr "Escápula Direita"
+
+msgid "Skull"
+msgstr "Crânio"
+
+msgid "Small Bowel"
+msgstr "Intestino Delgado"
+
+msgid "Spinal Cord"
+msgstr "Medula Espinhal"
+
+msgid "Spleen"
+msgstr "Baço"
+
+msgid "Sternum"
+msgstr "Esterno"
+
+msgid "Stomach"
+msgstr "Estômago"
+
+msgid "Subclavian Artery Left"
+msgstr "Artéria Subclávia Esquerda"
+
+msgid "Subclavian Artery Right"
+msgstr "Artéria Subclávia Direita"
+
+msgid "Superior Vena Cava"
+msgstr "Veia Cava Superior"
+
+msgid "Thyroid Gland"
+msgstr "Glândula Tireoide"
+
+msgid "Trachea"
+msgstr "Traqueia"
+
+msgid "Urinary Bladder"
+msgstr "Bexiga Urinária"
+
+msgid "Vertebrae"
+msgstr "Vértebras"
+
+msgid "Vertebrae C1"
+msgstr "Vértebra C1"
+
+msgid "Vertebrae C2"
+msgstr "Vértebra C2"
+
+msgid "Vertebrae C3"
+msgstr "Vértebra C3"
+
+msgid "Vertebrae C4"
+msgstr "Vértebra C4"
+
+msgid "Vertebrae C5"
+msgstr "Vértebra C5"
+
+msgid "Vertebrae C6"
+msgstr "Vértebra C6"
+
+msgid "Vertebrae C7"
+msgstr "Vértebra C7"
+
+msgid "Vertebrae L1"
+msgstr "Vértebra L1"
+
+msgid "Vertebrae L2"
+msgstr "Vértebra L2"
+
+msgid "Vertebrae L3"
+msgstr "Vértebra L3"
+
+msgid "Vertebrae L4"
+msgstr "Vértebra L4"
+
+msgid "Vertebrae L5"
+msgstr "Vértebra L5"
+
+msgid "Vertebrae S1"
+msgstr "Vértebra S1"
+
+msgid "Vertebrae T1"
+msgstr "Vértebra T1"
+
+msgid "Vertebrae T10"
+msgstr "Vértebra T10"
+
+msgid "Vertebrae T11"
+msgstr "Vértebra T11"
+
+msgid "Vertebrae T12"
+msgstr "Vértebra T12"
+
+msgid "Vertebrae T2"
+msgstr "Vértebra T2"
+
+msgid "Vertebrae T3"
+msgstr "Vértebra T3"
+
+msgid "Vertebrae T4"
+msgstr "Vértebra T4"
+
+msgid "Vertebrae T5"
+msgstr "Vértebra T5"
+
+msgid "Vertebrae T6"
+msgstr "Vértebra T6"
+
+msgid "Vertebrae T7"
+msgstr "Vértebra T7"
+
+msgid "Vertebrae T8"
+msgstr "Vértebra T8"
+
+msgid "Vertebrae T9"
+msgstr "Vértebra T9"
 
 #~ msgid "TIFF,BMP,JPG or PNG (CT)"
 #~ msgstr "TIFF,BMP,JPG ou PNG (CT)"

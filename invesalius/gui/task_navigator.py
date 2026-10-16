@@ -2524,18 +2524,11 @@ class ControlPanel(wx.Panel):
         self.navigation.StopNavigation()
 
     def UnsetTarget(self, marker):
-        self.navigation.target = None
         self.target_selected = False
         self.UpdateTargetButton()
 
     def SetTarget(self, marker):
-        coord = marker.position + marker.orientation
-
-        # TODO: The coordinate systems of slice viewers and volume viewer should be unified, so that this coordinate
-        #   flip wouldn't be needed.
-        coord[1] = -coord[1]
-
-        self.navigation.target = coord
+        self.navigation.SetTarget(marker)
 
         self.EnableToggleButton(self.lock_to_target_button, 1)
         self.UpdateToggleButton(self.lock_to_target_button, True)
@@ -2702,7 +2695,7 @@ class ControlPanel(wx.Panel):
         self.UpdateToggleButton(ctrl)
 
     # 'Target mode' button
-    def TrackObject(self, enabled):
+    def TrackObject(self, enabled=False):
         self.UpdateTargetButton()
 
     def ShowTargetButton(self):
@@ -3221,7 +3214,12 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.nav_status = True
 
     def UpdateSeedCoordinates(
-        self, root=None, affine_vtk=None, coord_offset=(0, 0, 0), coord_offset_w=(0, 0, 0)
+        self,
+        root=None,
+        affine_vtk=None,
+        coord_offset=(0, 0, 0),
+        coord_offset_w=(0, 0, 0),
+        coil_name=None,
     ):
         self.current_seed = coord_offset_w
 
@@ -4867,6 +4865,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         self.marker_list_ctrl.EnsureVisible(num_items)
 
-        # Focus on the added marker.
+        # Wait for all 'Add marker' listeners to create the 3D actors before focusing.
         if focus:
-            self.FocusOnMarker(num_items)
+            wx.CallAfter(self.FocusOnMarker, num_items)

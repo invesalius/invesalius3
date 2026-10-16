@@ -45,6 +45,7 @@ from invesalius.data.slice_ import Slice
 from invesalius.gui import project_properties
 from invesalius.gui.interactive_shell import InteractiveShellFrame
 from invesalius.i18n import tr as _
+from invesalius.navigation.navigation import NavigationHub
 from invesalius.pubsub import pub as Publisher
 
 try:
@@ -137,6 +138,7 @@ class Frame(wx.Frame):
         # Set TaskBarIcon
         # TaskBarIcon(self)
 
+        self.navigation_hub = None
         # Create aui manager and insert content in it
         self.__init_aui()
 
@@ -214,7 +216,7 @@ class Frame(wx.Frame):
         is_shell_focused = False
 
         # Check if the focus is on a text entry field
-        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
+        if focused and isinstance(focused, wx.TextCtrl | wx.ComboBox):
             is_search_field = True
 
         # Check if the shell is focused
@@ -279,6 +281,8 @@ class Frame(wx.Frame):
         # panel by publishing an 'Add marker' message.
         #
         viewers_panel = viewers.Panel(self)
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            self.navigation_hub = NavigationHub(window=self)
         task_panel = tasks.Panel(self)
         import_panel = imp.Panel(self)
         import_bitmap_panel = imp_bmp.Panel(self)
@@ -438,6 +442,11 @@ class Frame(wx.Frame):
 
         # TODO: Allow saving and restoring perspectives
         self.perspective_all = aui_manager.SavePerspective()
+
+        if self.navigation_hub is not None:
+            viewers_panel.p4.viewer.SetNavigationMode(
+                True, markers_control=self.navigation_hub.markers
+            )
 
         self.Layout()
 
@@ -824,6 +833,8 @@ class Frame(wx.Frame):
             self.OnTracheSegmentation()
         elif id == const.ID_SEGMENTATION_MANDIBLE_CT:
             self.OnMandibleCTSegmentation()
+        elif id == const.ID_SEGMENTATION_TOTALSEG:
+            self.OnTotalSegmentation()
         elif id == const.ID_PLANNING_CRANIOPLASTY:
             self.OnImplantCTSegmentation()
 
@@ -923,7 +934,11 @@ class Frame(wx.Frame):
                 wx.OK | wx.ICON_INFORMATION,
             )
             self._show_navigator_message = False
-        Publisher.sendMessage("Set navigation mode", status=status)
+        if status and self.navigation_hub is None:
+            self.navigation_hub = NavigationHub(window=self)
+
+        markers_control = self.navigation_hub.markers if status else None
+        Publisher.sendMessage("Set navigation mode", status=status, markers_control=markers_control)
         if not status:
             Publisher.sendMessage("Remove sensors ID")
 
@@ -1213,6 +1228,25 @@ class Frame(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
 
+    def OnTotalSegmentation(self):
+        from invesalius.gui import deep_learning_seg_dialog, total_seg_dialog
+
+        if deep_learning_seg_dialog.HAS_TORCH:
+            dlg = total_seg_dialog.TotalSegmenterDialog(self)
+            dlg.Show()
+        else:
+            dlg = wx.MessageDialog(
+                self,
+                _(
+                    "It's not possible to run TotalSegmentator because your system doesn't have the following modules installed:"
+                )
+                + " Torch",
+                "InVesalius 3 - TotalSegmentator",
+                wx.ICON_INFORMATION | wx.OK,
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+
     def OnTracheSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog
 
@@ -1432,6 +1466,7 @@ class MenuBar(wx.MenuBar):
             const.ID_SEGMENTATION_SUBPART,
             const.ID_SEGMENTATION_TRACHEA,
             const.ID_SEGMENTATION_MANDIBLE_CT,
+            const.ID_SEGMENTATION_TOTALSEG,
             const.ID_PLANNING_CRANIOPLASTY,
             const.ID_MASK_DENSITY_MEASURE,
             const.ID_CREATE_SURFACE,
@@ -1608,6 +1643,7 @@ class MenuBar(wx.MenuBar):
         )
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
+        segmentation_menu.Append(const.ID_SEGMENTATION_TOTALSEG, _("TotalSegmentator (CT / MRI)"))
 
         # Surface Menu
         surface_menu = wx.Menu()
