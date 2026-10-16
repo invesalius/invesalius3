@@ -40,7 +40,7 @@ def calc_ellipse_area(a: float, b: float) -> float:
     >>> np.allclose(area, 47.1238)
     True
 
-    >>> area = calc_polygon_area(10, 10)
+    >>> area = calc_ellipse_area(10, 10)
     >>> np.allclose(area, 314.1592)
     True
     """
