@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import nibabel as nib
 import numpy as np
 
 # _ is usually injected by gettext in InVesalius, but we need a fallback for import safety
@@ -56,6 +57,12 @@ def check_is_mask(data):
 
     # Binary label-map encoding: 0=background, 255=mask
     return (data > 0).astype(np.uint8) * 255
+
+
+def reorient_to_affine(img, affine):
+    """Return the voxel data of img in the axis order and directions of affine."""
+    src, dst = nib.io_orientation(img.affine), nib.io_orientation(affine)
+    return nib.apply_orientation(np.asarray(img.dataobj), nib.orientations.ornt_transform(src, dst))
 
 
 def validate_mask_compatibility(mask_shape, slice_shape):
