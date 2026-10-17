@@ -268,7 +268,11 @@ class Controller:
                 filepath = filepath.decode("utf-8")
 
             import invesalius.reader.others_reader as oth
-            from invesalius.reader.nifti_utils import check_is_mask, validate_mask_compatibility
+            from invesalius.reader.nifti_utils import (
+                check_is_mask,
+                reorient_to_affine,
+                validate_mask_compatibility,
+            )
 
             img = oth.ReadOthers(filepath)
             if img is False:
@@ -280,8 +284,8 @@ class Controller:
                     _("No volume loaded. Please load a volume before importing a mask.")
                 )
 
-            # Preserve original dtype; avoid forcing float64 conversion
-            data = np.asarray(img.dataobj)
+            # ReadOthers returns RAS; go back to the voxel order the NIfTI export writes
+            data = reorient_to_affine(img, prj.Project().get_nifti_affine(self.Slice.spacing))
 
             # Validate dimensions match the current project volume
             proj_shape = self.Slice.matrix.shape[::-1]
@@ -374,9 +378,8 @@ class Controller:
                 # Label-map enforcement: strict binary encoding (0=background, 255=mask)
                 export_data[export_data > 0] = 255
 
-                # Use identity affine to ensure RAS+ encoding; as_closest_canonical will be a no-op on reimport
-                mask_nifti = nib.Nifti1Image(export_data, np.eye(4))
-                mask_nifti.header.set_zooms(self.Slice.spacing)
+                affine = project.get_nifti_affine(self.Slice.spacing)
+                mask_nifti = nib.Nifti1Image(export_data, affine)
 
                 # Save the NIfTI file cleanly without popping a dialog
                 if len(mask_indexes) > 1:
