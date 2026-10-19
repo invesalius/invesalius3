@@ -6350,13 +6350,19 @@ def ShowEEGMontageExportDialog(
     parent: wx.Window, default_directory: str = ""
 ) -> tuple[str, str] | None:
     """Select an EEG export filename and format in the native save dialog."""
-    export_formats = ("BIDS", "HPTS")
+    export_formats = ("BIDS", "HPTS", "SFP", "ELC", "FIF")
     wildcard = "|".join(
         (
             _("BIDS EEG montage (*.tsv, *.json)"),
             "*.tsv;*.json",
             _("MNE Head Points (*.hpts)"),
             "*.hpts",
+            _("BESA SFP (*.sfp)"),
+            "*.sfp",
+            _("ASA ELC (*.elc)"),
+            "*.elc",
+            _("MNE digitization FIF (*.fif)"),
+            "*.fif",
         )
     )
     export_dialog = wx.FileDialog(
