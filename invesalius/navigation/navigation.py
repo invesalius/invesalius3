@@ -674,8 +674,7 @@ class Navigation(metaclass=Singleton):
 
             coreg_data = [self.m_change, self.r_stylus]
 
-            Publisher.sendMessage(
-                "EEG capture registration",
+            EEGElectrodeManager().set_capture_registration(
                 matrix=self.m_change,
                 use_icp=icp.use_icp,
                 icp_matrix=icp.m_icp,

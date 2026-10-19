@@ -83,7 +83,6 @@ class EEGElectrodeManager(metaclass=Singleton):
     def __bind_events(self) -> None:
         Publisher.subscribe(self.update_probe_pose, "Update probe pose")
         Publisher.subscribe(self.on_navigation_status, "Navigation status")
-        Publisher.subscribe(self.on_capture_registration, "EEG capture registration")
         Publisher.subscribe(self.on_navigation_mode, "Set navigation mode")
         Publisher.subscribe(self.reset, "Close project data")
 
@@ -106,7 +105,7 @@ class EEGElectrodeManager(metaclass=Singleton):
         self._probe_position = None
         self._capture_registration = None
 
-    def on_capture_registration(self, matrix, use_icp, icp_matrix, reference_mode, tracker_id):
+    def set_capture_registration(self, matrix, use_icp, icp_matrix, reference_mode, tracker_id):
         """Snapshot the same positional registration supplied to the navigation worker."""
         source = (
             "Reference-relative tracker, Z reflected" if reference_mode else "Tracker, Z reflected"
