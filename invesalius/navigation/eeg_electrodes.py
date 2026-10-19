@@ -393,29 +393,25 @@ class EEGElectrodeManager(metaclass=Singleton):
         """Describe a directed positional affine; invalid or absent matrices stay null."""
         if matrix is not None:
             matrix = np.asarray(matrix, dtype=float)
-            matrix = (
-                matrix.tolist()
-                if (
-                    matrix.shape == (4, 4)
-                    and np.isfinite(matrix).all()
-                    and np.allclose(matrix[3], [0, 0, 0, 1])
-                    and np.linalg.matrix_rank(matrix[:3, :3]) == 3
-                )
-                else None
-            )
+            if (
+                matrix.shape != (4, 4)
+                or not np.isfinite(matrix).all()
+                or not np.allclose(matrix[3], [0, 0, 0, 1])
+                or np.linalg.matrix_rank(matrix[:3, :3]) != 3
+            ):
+                matrix = None
         return {
             "SourceCoordinateSystem": source,
             "DestinationCoordinateSystem": destination,
             "SourceCoordinateUnits": source_units,
             "DestinationCoordinateUnits": destination_units,
-            "Matrix": matrix,
+            "Matrix": matrix.tolist() if matrix is not None else None,
             "Direction": f"{source} -> {destination}",
         }
 
     def _registration_metadata(self, fiducials):
         """Describe export transforms, explicitly marking unretained tracker provenance."""
         import invesalius
-        from invesalius.data.imagedata_utils import convert_invesalius_to_world
         from invesalius.data.slice_ import Slice
         from invesalius.project import Project
 
@@ -423,12 +419,10 @@ class EEGElectrodeManager(metaclass=Singleton):
         # Recover the positional affine using exactly the existing conversion.
         # Slice.affine is inverse, spacing-scaled geometry, not a voxel affine.
         points = [
-            convert_invesalius_to_world(point, (0, 0, 0))[0]
+            self._get_world_position(point)
             for point in ((0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1))
         ]
         matrix = np.eye(4)
-        if any(value is None for point in points for value in point):
-            raise ValueError("The project does not have a valid MRI world coordinate system.")
         matrix[:3, 3] = points[0]
         matrix[:3, :3] = np.asarray(points[1:]).T - np.asarray(points[0])[:, None]
         image_to_ras = self._transform_metadata("InVesalius image", "MRI Scanner RAS", matrix)
@@ -476,23 +470,23 @@ class EEGElectrodeManager(metaclass=Singleton):
             "AdditionalTransformations": [],
         }
 
-    def _get_world_electrodes(self) -> list[tuple[str, tuple[float, float, float]]]:
-        from invesalius.data import imagedata_utils
-
-        world_electrodes = []
-        for electrode in sorted(self.electrodes, key=lambda electrode: electrode.label):
-            position, _orientation = imagedata_utils.convert_invesalius_to_world(
-                position=electrode.position,
-                orientation=(0.0, 0.0, 0.0),
-            )
-            if any(value is None or not isfinite(float(value)) for value in position):
-                raise ValueError("The project does not have a valid MRI world coordinate system.")
-            world_electrodes.append((electrode.label, tuple(float(value) for value in position)))
-        return world_electrodes
-
     @staticmethod
-    def _get_world_fiducials() -> dict[str, list[float]]:
+    def _get_world_position(position) -> list[float]:
+        """Convert and validate a position with the shared MRI world-coordinate utility."""
         from invesalius.data import imagedata_utils
+
+        position, _orientation = imagedata_utils.convert_invesalius_to_world(position, (0, 0, 0))
+        if any(value is None or not isfinite(float(value)) for value in position):
+            raise ValueError("The project does not have a valid MRI world coordinate system.")
+        return [float(value) for value in position]
+
+    def _get_world_electrodes(self) -> list[tuple[str, tuple[float, float, float]]]:
+        return [
+            (electrode.label, tuple(self._get_world_position(electrode.position)))
+            for electrode in sorted(self.electrodes, key=lambda electrode: electrode.label)
+        ]
+
+    def _get_world_fiducials(self) -> dict[str, list[float]]:
         from invesalius.project import Project
 
         fiducials = {}
@@ -501,13 +495,10 @@ class EEGElectrodeManager(metaclass=Singleton):
             position = Project().image_fiducials[index]
             if any(not isfinite(float(value)) for value in position):
                 continue
-            position_world, _orientation = imagedata_utils.convert_invesalius_to_world(
-                position=position,
-                orientation=(0.0, 0.0, 0.0),
-            )
-            if any(value is None or not isfinite(float(value)) for value in position_world):
+            try:
+                fiducials[name] = self._get_world_position(position)
+            except ValueError:
                 continue
-            fiducials[name] = [float(value) for value in position_world]
         return fiducials
 
     @property
