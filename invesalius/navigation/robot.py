@@ -215,7 +215,11 @@ class Robot:
         return self.is_robot_connected
 
     def IsReady(self):
-        return self.IsConnected() and (self.coil_name in self.navigation.coil_registrations)
+        return (
+            self.IsConnected()
+            and self.matrix_tracker_to_robot is not None
+            and self.coil_name in self.navigation.coil_registrations
+        )
 
     def SetRobotIP(self, data):
         if data is not None:
@@ -246,6 +250,8 @@ class Robot:
         self.SetCoilName(self.coil_name) if self.coil_name is not None else "default_coil"
         Publisher.sendMessage("Robot transformation matrix set")
         print("Robot initialized")
+        # A target may have been selected before robot registration was available.
+        self.SendTargetToRobot()
 
     def GetCoilName(self):
         return self.coil_name
@@ -275,8 +281,8 @@ class Robot:
 
         navigation = self.navigation
 
-        # XXX: These are needed for computing the target in tracker coordinate system. Ensure that they are set.
-        if navigation.m_change is None or self.coil_name not in self.navigation.obj_datas:
+        # StartNavigation prepares the coil transformation before pending targets are sent.
+        if navigation.m_change is None or self.coil_name not in navigation.obj_datas:
             return False
 
         # Compute the target in tracker coordinate system.

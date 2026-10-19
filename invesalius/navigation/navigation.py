@@ -360,7 +360,8 @@ class Navigation(metaclass=Singleton):
         self.main_coil = None  # Which coil to track with pointer
         self.m_change = None
         self.r_stylus = None
-        self.obj_datas = None  # This is accessed by the robot, gets value at StartNavigation
+        # Coil transformations available to the robot after StartNavigation prepares them.
+        self.obj_datas = {}
 
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
@@ -477,6 +478,8 @@ class Navigation(metaclass=Singleton):
         return len(self.coil_registrations) == self.n_coils
 
     def SelectCoil(self, coil_name, coil_registration):
+        # A changed registration invalidates the previously computed transformation.
+        self.obj_datas.pop(coil_name, None)
         if coil_registration is not None:  # Add the coil to selection
             self.coil_registrations[coil_name] = coil_registration
             if self.main_coil is None:
@@ -521,6 +524,7 @@ class Navigation(metaclass=Singleton):
 
         # Reset coil selection
         self.coil_registrations = {}
+        self.obj_datas = {}
         self._set_main_coil(None)
         self.SaveConfig()
 
@@ -611,6 +615,9 @@ class Navigation(metaclass=Singleton):
             return False
 
     def StartNavigation(self, tracker, icp):
+        # Publish new transformations only after all selected coils are prepared.
+        self.obj_datas = {}
+
         # initialize jobs list
         jobs_list = []
 
@@ -781,6 +788,8 @@ class Navigation(metaclass=Singleton):
             self.pedal_connector.add_callback("navigation", self.PedalStateChanged)
 
     def StopNavigation(self):
+        # Prevent target updates from using transformations from a previous navigation.
+        self.obj_datas = {}
         self.event.set()
 
         self.pedal_connector.remove_callback("navigation")
