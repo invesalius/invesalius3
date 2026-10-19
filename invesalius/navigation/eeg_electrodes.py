@@ -26,8 +26,7 @@ The navigation and data panels consume the marker events emitted by
 import csv
 import json
 from collections.abc import Iterable, Sequence
-from copy import deepcopy
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from math import dist, isfinite
 from pathlib import Path
 from struct import pack
@@ -58,7 +57,6 @@ class ScalpProjection:
     orientation: list[float]
     normal: tuple[float, float, float]
     distance_mm: float
-    registration: dict | None = None
 
     @property
     def needs_confirmation(self) -> bool:
@@ -76,8 +74,6 @@ class EEGElectrodeManager(metaclass=Singleton):
         self.navigation_on = False
         self._probe_position = None
         self._probe_pose_time = 0.0
-        self._capture_registration = None
-        self._electrode_registrations = {}
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -95,47 +91,12 @@ class EEGElectrodeManager(metaclass=Singleton):
         self.navigation_on = False
         self._probe_position = None
         self._probe_pose_time = 0.0
-        self._capture_registration = None
-        self._electrode_registrations.clear()
         self.set_registration_active(False)
         self.clear()
 
     def on_navigation_status(self, nav_status, vis_status):
         self.navigation_on = nav_status
         self._probe_position = None
-        self._capture_registration = None
-
-    def set_capture_registration(self, matrix, use_icp, icp_matrix, reference_mode, tracker_id):
-        """Snapshot the same positional registration supplied to the navigation worker."""
-        source = (
-            "Reference-relative tracker, Z reflected" if reference_mode else "Tracker, Z reflected"
-        )
-        registration = self._transform_metadata(source, "InVesalius image", matrix)
-        icp = self._transform_metadata(
-            "InVesalius viewer", "InVesalius viewer, ICP corrected", icp_matrix if use_icp else None
-        )
-        effective = registration["Matrix"]
-        if use_icp:
-            # bases.transform_icp applies ICP in viewer coordinates (Y reflected).
-            flip_y = np.diag([1.0, -1.0, 1.0, 1.0])
-            effective = (
-                flip_y @ np.asarray(icp["Matrix"]) @ flip_y @ np.asarray(effective)
-                if effective is not None and icp["Matrix"] is not None
-                else None
-            )
-        self._capture_registration = {
-            "TrackerID": int(tracker_id) if tracker_id is not None else None,
-            "ReferenceMode": "dynamic" if reference_mode else "static",
-            "OriginalDigitizedCoordinateSystem": "Tracker device coordinates, mm",
-            "RawDigitizedCoordinates": None,
-            "RawTrackerToReferenceMatrix": None,
-            "FiducialRegistration": registration,
-            "ICPEnabled": bool(use_icp),
-            "ICP": icp,
-            "Registration": self._transform_metadata(
-                source, "InVesalius image, registered", effective
-            ),
-        }
 
     def update_probe_pose(self, m_img, coord, probe_visible, head_visible):
         """Use the coregistered probe tip and tracking validity from the same sample."""
@@ -484,7 +445,7 @@ class EEGElectrodeManager(metaclass=Singleton):
         }
 
     def _registration_metadata(self):
-        """Export available capture provenance without substituting current registration."""
+        """Describe export transforms, explicitly marking unretained tracker provenance."""
         import invesalius
         from invesalius.data.imagedata_utils import convert_invesalius_to_world
         from invesalius.data.slice_ import Slice
@@ -527,11 +488,15 @@ class EEGElectrodeManager(metaclass=Singleton):
                 {
                     "Name": electrode.label,
                     "MarkerUUID": str(electrode.marker_uuid),
-                    "CaptureRegistration": self._electrode_registrations.get(electrode.marker_uuid),
+                    "CaptureRegistration": None,
                 }
                 for electrode in self.electrodes
             ],
-            "RegistrationAvailability": "Null capture provenance: restored/manually created marker. Raw tracker/reference samples are not retained. Scalp projection is non-affine.",
+            "RegistrationAvailability": (
+                "Capture-time tracker registration, ICP settings and raw tracker/reference samples "
+                "are not retained. Exported positions are already registered image coordinates. "
+                "Scalp projection is non-affine."
+            ),
             "AnatomicalLandmarksScannerRAS_mm": self._get_world_fiducials(round_positions=False),
             "AnatomicalLandmarkSource": "Current project image fiducials, unchanged",
             "ScannerRASToSurfaceRAS": self._transform_metadata(
@@ -614,14 +579,11 @@ class EEGElectrodeManager(metaclass=Singleton):
     def prepare_capture(self, position: Sequence[float] | None = None) -> ScalpProjection:
         """Validate navigation/tracking and prepare the electrode's scalp pose."""
         probe_position = self.get_capture_position()
-        capture = self.project_to_scalp(probe_position if position is None else position)
-        return replace(capture, registration=deepcopy(self._capture_registration))
+        return self.project_to_scalp(probe_position if position is None else position)
 
     def create_from_capture(self, capture: ScalpProjection, **marker_options) -> Marker:
         """Create the confirmed capture without sampling or projecting it again."""
-        electrode = self.create(capture.position, orientation=capture.orientation, **marker_options)
-        self._electrode_registrations[electrode.marker_uuid] = deepcopy(capture.registration)
-        return electrode
+        return self.create(capture.position, orientation=capture.orientation, **marker_options)
 
     def create_many(
         self, positions: Iterable[Sequence[float]], *, visible: bool = True

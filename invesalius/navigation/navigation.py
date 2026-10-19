@@ -674,14 +674,6 @@ class Navigation(metaclass=Singleton):
 
             coreg_data = [self.m_change, self.r_stylus]
 
-            EEGElectrodeManager().set_capture_registration(
-                matrix=self.m_change,
-                use_icp=icp.use_icp,
-                icp_matrix=icp.m_icp,
-                reference_mode=self.ref_mode_id,
-                tracker_id=tracker.tracker_id,
-            )
-
             queues = [
                 self.coord_queue,
                 self.coord_tracts_queue,
