@@ -162,9 +162,9 @@ class EEGElectrodeManager(metaclass=Singleton):
                 output_path / f"{stem}_registration.json",
             ]
         if export_format in ("HPTS", "SFP", "ELC", "FIF"):
-            suffix = f".{export_format.lower()}"
             montage_path = (
-                output_path / Path(filename or f"eeg_montage{suffix}").with_suffix(suffix).name
+                output_path
+                / Path(filename or "eeg_montage").with_suffix(f".{export_format.lower()}").name
             )
             paths = [montage_path]
             if export_format == "FIF":
@@ -186,41 +186,30 @@ class EEGElectrodeManager(metaclass=Singleton):
         output_path = Path(output_dir)
         paths = self.get_export_paths(output_path, export_format, filename)
         export_format = export_format.upper()
-        metadata = self._registration_metadata()
-        metadata["ExportFormat"] = export_format
-        metadata["ExportedFiles"] = [path.name for path in paths]
+        electrodes = self._get_world_electrodes()
+        fiducials = self._get_world_fiducials()
+        metadata = self._registration_metadata(fiducials)
+        metadata.update(ExportFormat=export_format, ExportedFiles=[path.name for path in paths])
         output_path.mkdir(parents=True, exist_ok=True)
         # Serialize everything before replacing existing files, so validation
         # failures do not leave a montage without its required registration metadata.
         with TemporaryDirectory(prefix="eeg-export-", dir=output_path) as staging:
-            staging_path = Path(staging)
+            staged_paths = [Path(staging) / path.name for path in paths]
             if export_format == "BIDS":
-                self._export_bids(staging_path, filename)
-            elif export_format == "HPTS":
-                self._export_hpts(staging_path, filename)
-            elif export_format in ("SFP", "ELC"):
-                self._export_cartesian(
-                    staging_path / paths[0].name,
-                    export_format,
-                    metadata["AnatomicalLandmarksScannerRAS_mm"],
-                )
+                self._export_bids(*staged_paths[:2], electrodes, fiducials)
             elif export_format == "FIF":
-                self._export_fif(
-                    staging_path / paths[0].name, staging_path / paths[1].name, metadata
-                )
-            metadata_path = staging_path / paths[-1].name
-            metadata_path.write_text(
+                self._export_fif(*staged_paths[:2], electrodes, metadata)
+            else:
+                self._export_text(staged_paths[0], export_format, electrodes, fiducials)
+            staged_paths[-1].write_text(
                 json.dumps(metadata, indent=2, allow_nan=False) + "\n", encoding="utf-8"
             )
-            for path in paths:
-                (staging_path / path.name).replace(path)
+            for staged, destination in zip(staged_paths, paths):
+                staged.replace(destination)
         return [str(path) for path in paths]
 
-    def _export_bids(self, output_dir: Path, filename: str | None = None) -> list[str]:
-        electrodes_path, coordsystem_path, _registration_path = self.get_export_paths(
-            output_dir, "BIDS", filename
-        )
-        world_electrodes = self._get_world_electrodes()
+    @staticmethod
+    def _export_bids(electrodes_path, coordsystem_path, electrodes, fiducials):
         coordinate_description = (
             "Scanner RAS coordinate system derived from the subject MRI affine transformation."
         )
@@ -231,53 +220,22 @@ class EEGElectrodeManager(metaclass=Singleton):
             "AnatomicalLandmarkCoordinateSystem": "Other",
             "AnatomicalLandmarkCoordinateUnits": "mm",
             "AnatomicalLandmarkCoordinateSystemDescription": coordinate_description,
-            "AnatomicalLandmarkCoordinates": self._get_world_fiducials(),
+            "AnatomicalLandmarkCoordinates": {
+                name: [round(value, 2) for value in position]
+                for name, position in fiducials.items()
+            },
             "DigitizationMethod": "InVesalius Navigator - EEG electrode digitization",
         }
 
         with electrodes_path.open("w", encoding="utf-8", newline="") as electrodes_file:
-            writer = csv.DictWriter(
-                electrodes_file,
-                fieldnames=("name", "x", "y", "z"),
-                delimiter="\t",
-                lineterminator="\n",
+            writer = csv.writer(electrodes_file, delimiter="\t", lineterminator="\n")
+            writer.writerow(("name", "x", "y", "z"))
+            writer.writerows(
+                (name, *(round(value, 2) for value in position)) for name, position in electrodes
             )
-            writer.writeheader()
-            for name, position in world_electrodes:
-                writer.writerow(
-                    {
-                        "name": name,
-                        "x": round(position[0], 2),
-                        "y": round(position[1], 2),
-                        "z": round(position[2], 2),
-                    }
-                )
 
         with coordsystem_path.open("w", encoding="utf-8") as coordsystem_file:
             json.dump(coordsystem, coordsystem_file, indent=2)
-
-        return [str(electrodes_path), str(coordsystem_path)]
-
-    def _export_hpts(self, output_dir: Path, filename: str | None = None) -> list[str]:
-        hpts_path, _registration_path = self.get_export_paths(output_dir, "HPTS", filename)
-        lines = [
-            "# Digitized points exported by InVesalius 3",
-            "# Coordinate system: Scanner RAS",
-        ]
-
-        fiducials = self._get_world_fiducials()
-        for name, fiducial_id in (("LPA", 1), ("NAS", 2), ("RPA", 3)):
-            if name in fiducials:
-                position = fiducials[name]
-                lines.append(
-                    f"cardinal {fiducial_id} {position[0]:.2f} {position[1]:.2f} {position[2]:.2f}"
-                )
-
-        for name, position in self._get_world_electrodes():
-            lines.append(f"eeg {name} {position[0]:.2f} {position[1]:.2f} {position[2]:.2f}")
-
-        hpts_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        return [str(hpts_path)]
 
     @staticmethod
     def _validate_export_labels(electrodes, reserved=(), single_token=False):
@@ -297,24 +255,24 @@ class EEGElectrodeManager(metaclass=Singleton):
                 raise ValueError(f"Duplicate or reserved electrode label: {name!r}.")
             seen.add(name)
 
-    def _export_cartesian(self, path, export_format, fiducials):
-        """Write SFP rows or ASA ELC sections in Scanner RAS mm."""
-        electrodes = self._get_world_electrodes()
-        labels = (
-            (("NAS", "FidNz"), ("LPA", "FidT9"), ("RPA", "FidT10"))
-            if export_format == "SFP"
-            else (("LPA", "LPA"), ("NAS", "Nz"), ("RPA", "RPA"))
-        )
-        reserved = [label for _name, label in labels] + (
-            ["headshape"] if export_format == "SFP" else []
-        )
-        self._validate_export_labels(electrodes, reserved=reserved, single_token=True)
+    def _export_text(self, path, export_format, electrodes, fiducials):
+        """Write HPTS/SFP rows or ASA ELC sections in Scanner RAS mm."""
+        labels = {
+            "HPTS": (("LPA", "cardinal 1"), ("NAS", "cardinal 2"), ("RPA", "cardinal 3")),
+            "SFP": (("NAS", "FidNz"), ("LPA", "FidT9"), ("RPA", "FidT10")),
+            "ELC": (("LPA", "LPA"), ("NAS", "Nz"), ("RPA", "RPA")),
+        }[export_format]
+        if export_format == "HPTS":
+            electrodes = [(f"eeg {name}", position) for name, position in electrodes]
+        else:
+            reserved = [label for _name, label in labels]
+            if export_format == "SFP":
+                reserved.append("headshape")
+            self._validate_export_labels(electrodes, reserved=reserved, single_token=True)
         points = [
             (label, fiducials[name]) for name, label in labels if name in fiducials
         ] + electrodes
-        if export_format == "SFP":
-            lines = [f"{name} {x:.6f} {y:.6f} {z:.6f}" for name, (x, y, z) in points]
-        else:
+        if export_format == "ELC":
             lines = [
                 "# ASA electrode file",
                 "# Coordinate system: MRI Scanner RAS",
@@ -324,6 +282,17 @@ class EEGElectrodeManager(metaclass=Singleton):
             ]
             lines.extend(f"{x:.6f} {y:.6f} {z:.6f}" for _name, (x, y, z) in points)
             lines.extend(["Labels", *(name for name, _position in points)])
+        else:
+            lines = (
+                ["# Digitized points exported by InVesalius 3", "# Coordinate system: Scanner RAS"]
+                if export_format == "HPTS"
+                else []
+            )
+            precision = 2 if export_format == "HPTS" else 6
+            lines.extend(
+                f"{name} {x:.{precision}f} {y:.{precision}f} {z:.{precision}f}"
+                for name, (x, y, z) in points
+            )
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     @staticmethod
@@ -346,7 +315,7 @@ class EEGElectrodeManager(metaclass=Singleton):
                 stream.write(pack(">4i", kind, data_type, len(data), 0) + data)
             stream.write(pack(">4i", 108, 0, 0, -1))  # terminal NOP
 
-    def _export_fif(self, path, trans_path, metadata):
+    def _export_fif(self, path, trans_path, electrodes, metadata):
         """Write head-frame DigMontage points and a head->Scanner-RAS transform."""
         from invesalius.data.bases import ras_to_head_matrix
 
@@ -359,7 +328,6 @@ class EEGElectrodeManager(metaclass=Singleton):
             *(np.asarray(fiducials[name]) * 1e-3 for name in ("NAS", "LPA", "RPA"))
         )
         mm_to_head = ras_to_head @ np.diag([1e-3, 1e-3, 1e-3, 1.0])
-        electrodes = self._get_world_electrodes()
         self._validate_export_labels(electrodes)
         names = [name for name, _position in electrodes]
         if any("{COLON}" in name for name in names):
@@ -444,7 +412,7 @@ class EEGElectrodeManager(metaclass=Singleton):
             "Direction": f"{source} -> {destination}",
         }
 
-    def _registration_metadata(self):
+    def _registration_metadata(self, fiducials):
         """Describe export transforms, explicitly marking unretained tracker provenance."""
         import invesalius
         from invesalius.data.imagedata_utils import convert_invesalius_to_world
@@ -497,7 +465,7 @@ class EEGElectrodeManager(metaclass=Singleton):
                 "are not retained. Exported positions are already registered image coordinates. "
                 "Scalp projection is non-affine."
             ),
-            "AnatomicalLandmarksScannerRAS_mm": self._get_world_fiducials(round_positions=False),
+            "AnatomicalLandmarksScannerRAS_mm": fiducials,
             "AnatomicalLandmarkSource": "Current project image fiducials, unchanged",
             "ScannerRASToSurfaceRAS": self._transform_metadata(
                 "MRI Scanner RAS", "FreeSurfer surface RAS", None
@@ -523,7 +491,7 @@ class EEGElectrodeManager(metaclass=Singleton):
         return world_electrodes
 
     @staticmethod
-    def _get_world_fiducials(round_positions: bool = True) -> dict[str, list[float]]:
+    def _get_world_fiducials() -> dict[str, list[float]]:
         from invesalius.data import imagedata_utils
         from invesalius.project import Project
 
@@ -539,10 +507,7 @@ class EEGElectrodeManager(metaclass=Singleton):
             )
             if any(value is None or not isfinite(float(value)) for value in position_world):
                 continue
-            fiducials[name] = [
-                round(float(value), 2) if round_positions else float(value)
-                for value in position_world
-            ]
+            fiducials[name] = [float(value) for value in position_world]
         return fiducials
 
     @property
