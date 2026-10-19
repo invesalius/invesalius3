@@ -30,8 +30,10 @@ from copy import deepcopy
 from dataclasses import dataclass, replace
 from math import dist, isfinite
 from pathlib import Path
+from struct import pack
 from tempfile import TemporaryDirectory
-from time import monotonic
+from time import monotonic, time_ns
+from uuid import uuid4
 
 import numpy as np
 
@@ -199,12 +201,19 @@ class EEGElectrodeManager(metaclass=Singleton):
                 output_path / f"{stem}_coordsystem.json",
                 output_path / f"{stem}_registration.json",
             ]
-        if export_format in ("HPTS", "SFP", "ELC"):
+        if export_format in ("HPTS", "SFP", "ELC", "FIF"):
             suffix = f".{export_format.lower()}"
             montage_path = (
                 output_path / Path(filename or f"eeg_montage{suffix}").with_suffix(suffix).name
             )
-            return [montage_path, montage_path.with_name(f"{montage_path.stem}_registration.json")]
+            paths = [montage_path]
+            if export_format == "FIF":
+                stem = montage_path.stem
+                if stem.endswith(("-dig", "_dig")):
+                    stem = stem[:-4]
+                montage_path = montage_path.with_name(f"{stem}-dig.fif")
+                paths = [montage_path, montage_path.with_name(f"{stem}-trans.fif")]
+            return paths + [montage_path.with_name(f"{montage_path.stem}_registration.json")]
         raise ValueError(f"Unsupported EEG montage export format: {export_format}")
 
     def export_montage(
@@ -234,6 +243,10 @@ class EEGElectrodeManager(metaclass=Singleton):
                     staging_path / paths[0].name,
                     export_format,
                     metadata["AnatomicalLandmarksScannerRAS_mm"],
+                )
+            elif export_format == "FIF":
+                self._export_fif(
+                    staging_path / paths[0].name, staging_path / paths[1].name, metadata
                 )
             metadata_path = staging_path / paths[-1].name
             metadata_path.write_text(
@@ -352,6 +365,100 @@ class EEGElectrodeManager(metaclass=Singleton):
             lines.extend(f"{x:.6f} {y:.6f} {z:.6f}" for _name, (x, y, z) in points)
             lines.extend(["Labels", *(name for name, _position in points)])
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def _write_fiff(path, tags):
+        """Write the sequential FIFF subset used by digitization and transform files.
+
+        Tags have big-endian int32 (kind, type, byte count, next) headers.
+        Numeric IDs and layouts follow the FIFF dictionary, not a Python API:
+        https://github.com/mne-tools/fiff-constants
+        """
+        seconds, microseconds = divmod(time_ns() // 1000, 1000000)
+        file_id = pack(">i", 0x10004) + uuid4().bytes[:8] + pack(">ii", seconds, microseconds)
+        headers = [
+            (100, 31, file_id),  # FILE_ID / ID_STRUCT: FIFF 1.4, ID, timestamp
+            (101, 3, pack(">i", -1)),  # DIR_POINTER: scan sequential tags
+            (106, 3, pack(">i", -1)),  # FREE_LIST: none
+        ]
+        with path.open("wb") as stream:
+            for kind, data_type, data in (*headers, *tags):
+                stream.write(pack(">4i", kind, data_type, len(data), 0) + data)
+            stream.write(pack(">4i", 108, 0, 0, -1))  # terminal NOP
+
+    def _export_fif(self, path, trans_path, metadata):
+        """Write head-frame DigMontage points and a head->Scanner-RAS transform."""
+        from invesalius.data.bases import ras_to_head_matrix
+
+        fiducials = metadata["AnatomicalLandmarksScannerRAS_mm"]
+        if not all(name in fiducials for name in ("NAS", "LPA", "RPA")):
+            raise ValueError(
+                "FIF export requires NAS, LPA and RPA. Use a Scanner RAS text export when a head frame is unavailable."
+            )
+        ras_to_head = ras_to_head_matrix(
+            *(np.asarray(fiducials[name]) * 1e-3 for name in ("NAS", "LPA", "RPA"))
+        )
+        mm_to_head = ras_to_head @ np.diag([1e-3, 1e-3, 1e-3, 1.0])
+        electrodes = self._get_world_electrodes()
+        self._validate_export_labels(electrodes)
+        names = [name for name, _position in electrodes]
+        if any("{COLON}" in name for name in names):
+            raise ValueError(
+                "FIF electrode labels cannot contain the reserved substring '{COLON}'."
+            )
+        # ISOTRAK block (107), with an explicit HEAD coordinate frame (4).
+        tags = [(104, 3, pack(">i", 107)), (3506, 3, pack(">i", 4))]
+        points = [
+            (1, index, fiducials[name]) for index, name in ((1, "LPA"), (2, "NAS"), (3, "RPA"))
+        ]
+        points.extend((3, index, position) for index, (_name, position) in enumerate(electrodes, 1))
+        for kind, identifier, position in points:
+            head_position = mm_to_head @ [*position, 1.0]
+            tags.append((213, 33, pack(">ii3f", kind, identifier, *head_position[:3])))
+        # FIFF strings are Latin-1; modern readers restore escaped colons.
+        name_list = ":".join(name.replace(":", "{COLON}") for name in names)
+        try:
+            encoded_names = name_list.encode("latin1")
+        except UnicodeEncodeError as error:
+            raise ValueError(
+                "FIF requires Latin-1 electrode labels. Use a text export for these labels."
+            ) from error
+        tags.extend(
+            [
+                (3507, 10, encoded_names),
+                (105, 3, pack(">i", 107)),
+            ]
+        )
+        self._write_fiff(path, tags)
+        head_to_ras = np.linalg.inv(ras_to_head)
+        # COORD_TRANS_STRUCT: from/to frames, forward R/t, inverse R/t (meters).
+        transform = pack(">ii", 4, 2002)  # HEAD -> RAS, not FreeSurfer MRI (5)
+        for matrix in (head_to_ras, ras_to_head):
+            transform += (
+                np.concatenate((matrix[:3, :3].ravel(), matrix[:3, 3])).astype(">f4").tobytes()
+            )
+        self._write_fiff(trans_path, [(222, 35, transform)])
+        metadata.update(
+            {
+                "DestinationCoordinateSystem": "MNE head",
+                "DestinationCoordinateUnits": "m",
+                "ExportedCoordinateSystem": "MNE head",
+                "ExportedCoordinateUnits": "m",
+                "MNEChannelNames": names,
+                "MNEHeadConvention": "+X LPA->RPA; +Y toward NAS perpendicular to X; +Z superior. Origin: projection of NAS onto LPA-RPA.",
+                "AdditionalTransformations": [
+                    self._transform_metadata("MRI Scanner RAS", "MNE head", mm_to_head, "mm", "m"),
+                    self._transform_metadata("MNE head", "MRI Scanner RAS", head_to_ras, "m", "m"),
+                ],
+                "MNETransformFile": {
+                    "File": trans_path.name,
+                    "From": "head",
+                    "To": "ras",
+                    "Units": "m",
+                    "Description": "Head->Scanner RAS; compose with matching FreeSurfer geometry before surface-RAS source modeling.",
+                },
+            }
+        )
 
     @staticmethod
     def _transform_metadata(source, destination, matrix, source_units="mm", destination_units="mm"):
