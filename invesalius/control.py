@@ -773,11 +773,6 @@ class Controller:
 
     def ImportMedicalImages(self, directory: str, gui: bool = True) -> None:
         patients_groups = dcm.GetDicomGroups(directory)
-        name = directory.rpartition("\\")[-1].split(".")
-
-        # Track whether this is a generic volume import (NIfTI/Analyze/PAR-REC)
-        # so we can skip auto mask creation for those paths.
-        is_other_files = False
 
         if len(patients_groups):
             # OPTION 1: DICOM
@@ -788,12 +783,19 @@ class Controller:
             self.CreateDicomProject(dicom, matrix, matrix_filename)
         else:
             # OPTION 2: NIfTI, Analyze or PAR/REC
-            is_other_files = True
-            if name[-1] == "gz":
-                name[1] = "nii.gz"
+            basename = os.path.basename(directory)
+            lower_basename = basename.lower()
+            if lower_basename.endswith(".nii.gz"):
+                filetype = "nii.gz"
+                project_name = basename[:-7]
+            elif "." in basename:
+                project_name, ext = basename.rsplit(".", 1)
+                filetype = ext.lower()
+            else:
+                filetype = ""
+                project_name = basename
 
             suptype = ("hdr", "nii", "nii.gz", "par")
-            filetype = name[1].lower()
 
             if filetype in suptype:
                 group = oth.ReadOthers(directory)
@@ -803,7 +805,10 @@ class Controller:
 
             if group:
                 matrix, matrix_filename = self.OpenOtherFiles(group)
-                self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
+                self.CreateOtherProject(project_name, matrix, matrix_filename)
+            else:
+                utils.debug("Could not read medical images from given directory")
+                return
             # OPTION 4: Nothing...
 
         self.LoadProject()
