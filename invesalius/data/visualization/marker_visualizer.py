@@ -95,8 +95,11 @@ class MarkerVisualizer:
     # Color for the marker for target when the coil at the target.
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d("Green")
 
-    def __init__(self, renderer, interactor, actor_factory, vector_field_visualizer):
+    def __init__(
+        self, renderer, interactor, actor_factory, vector_field_visualizer, coil_name=None
+    ):
         self.renderer = renderer
+        self.coil_name = coil_name
         self.interactor = interactor
 
         # The actor factory is used to create actor for the projection line of the coil target to the brain surface.
@@ -140,13 +143,10 @@ class MarkerVisualizer:
         Publisher.subscribe(self.HighlightMarker, "Highlight marker")
         Publisher.subscribe(self.UnhighlightMarker, "Unhighlight marker")
         Publisher.subscribe(self.SetNewColor, "Set new color")
-        Publisher.subscribe(self.SetTarget, "Set target")
-        Publisher.subscribe(self.UnsetTarget, "Unset target")
         Publisher.subscribe(self.SetTargetTransparency, "Set target transparency")
         Publisher.subscribe(self.SetCoilAtTarget, "Coil at target")
         Publisher.subscribe(self.UpdateBrainTargets, "Update brain targets")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
-        Publisher.subscribe(self.UpdateTargetMode, "Set target mode")
         Publisher.subscribe(
             self.UpdateVectorFieldAssemblyVisibility, "Set vector field assembly visibility"
         )
@@ -423,10 +423,12 @@ class MarkerVisualizer:
         if not self.is_navigating:
             self.interactor.Render()
 
-    def SetCoilAtTarget(self, state, coil_name=None):
+    def SetCoilAtTarget(self, state, displacement, coil_name=None):
         """
         Set the coil at target, which is a special case of setting a marker as the target.
         """
+        if coil_name is not None and coil_name != self.coil_name:
+            return
         self.is_coil_at_target = state
 
         marker = self.target_marker

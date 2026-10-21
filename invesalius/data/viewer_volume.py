@@ -381,7 +381,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.remove_mask_preview, "Remove mask preview")
         Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
-    def SetNavigationMode(self, status, markers_control=None):
+    def SetNavigationMode(self, status, markers=(), main_coil=None):
         if self._disposed:
             return
         status = bool(status)
@@ -391,7 +391,7 @@ class Viewer(wx.Panel):
         if status:
             from invesalius.data.viewer_navigation import NavigationView
 
-            self.navigation = NavigationView(self, markers_control)
+            self.navigation = NavigationView(self, markers=markers, main_coil=main_coil)
             self.navigation.activate()
             self.active_view = self.navigation
         else:

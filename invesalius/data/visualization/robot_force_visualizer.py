@@ -12,16 +12,11 @@ from vtkmodules.vtkRenderingCore import (
     vtkTextActor,
 )
 
-from invesalius.pubsub import pub as Publisher
-
 
 class RobotForceVisualizer:
-    def __init__(self, interactor, num_segments=30, radius=0.5, thickness=0.1):
+    def __init__(self, num_segments=30, radius=0.5, thickness=0.1):
         self.ren_force = vtkRenderer()
         self.ren_force.SetLayer(1)
-
-        render_window = interactor.GetRenderWindow()
-        render_window.AddRenderer(self.ren_force)
 
         self.ren_force.SetViewport(0.01, 0.23, 0.15, 0.35)
         self.num_segments = num_segments
@@ -33,8 +28,7 @@ class RobotForceVisualizer:
         self.threshold_high = 20.0
         self.max_force = 40.0
 
-        # visibility flag (default on)
-        self.visible = True
+        self.visible = False
 
         for i in range(num_segments):
             actor = self._create_segment(i)
@@ -52,16 +46,18 @@ class RobotForceVisualizer:
         self.ren_force.GetActiveCamera().Zoom(0.4)
         self.ren_force.InteractiveOff()
 
-        self.__bind_events()
-
-    def __bind_events(self):
-        Publisher.subscribe(
-            self.OnUpdateRobotForceData, "Robot to Neuronavigation: Send force sensor data"
-        )
-        Publisher.subscribe(self.set_visibility, "Set visibility robot force visualizer")
-
     def dispose(self):
-        Publisher.unsubscribe_owner(self)
+        render_window = self.ren_force.GetRenderWindow()
+        if render_window is not None:
+            render_window.RemoveRenderer(self.ren_force)
+        self.ren_force.RemoveAllViewProps()
+        self.segments.clear()
+
+    def reset(self):
+        """Clear the displayed force while preserving visibility."""
+        self.text.SetInput("")
+        for segment in self.segments:
+            segment.GetProperty().SetColor(0.9, 0.9, 0.9)
 
     def _create_segment(self, i):
         theta_start = (2 * math.pi / self.num_segments) * i
@@ -117,11 +113,6 @@ class RobotForceVisualizer:
         # Approximate text width adjustment for centering
         self.text.SetDisplayPosition(text_x - 25, text_y - 10)
 
-    def OnUpdateRobotForceData(self, force_feedback, robot_id=None):
-        if not self.visible:
-            return
-        self.update_force(force_feedback)
-
     def set_visibility(self, visible: bool):
         self.visible = bool(visible)
         vis_int = 1 if self.visible else 0
@@ -133,6 +124,8 @@ class RobotForceVisualizer:
         self.set_visibility(bool(robot_status))
 
     def update_force(self, force):
+        if not self.visible:
+            return
         active_segments = int((force / self.max_force) * self.num_segments)
         for i, seg in enumerate(self.segments):
             if i < active_segments:

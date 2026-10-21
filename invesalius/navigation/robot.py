@@ -84,8 +84,14 @@ class Robot:
         Publisher.subscribe(self.OnRobotInitialConfig, "Robot to Neuronavigation: Initial config")
         Publisher.subscribe(self.SetTarget, "Set target")
         Publisher.subscribe(self.UnsetTarget, "Unset target")
-
         Publisher.subscribe(self.TrackerFiducialsSet, "Tracker fiducials set")
+        Publisher.subscribe(
+            self.OnUpdateRobotWarning, "Robot to Neuronavigation: Update robot warning"
+        )
+        Publisher.subscribe(
+            self.OnUpdateRobotForceData, "Robot to Neuronavigation: Send force sensor data"
+        )
+        Publisher.subscribe(self.UpdateTargetInfo, "Coil at target")
 
     def SaveConfig(self, key=None, value=None):
         session = ses.Session()
@@ -329,7 +335,9 @@ class Robot:
 
         if self.objective == RobotObjective.NONE:
             Publisher.sendMessage(
-                "Robot to Neuronavigation: Update robot warning", robot_warning=""
+                "Robot to Neuronavigation: Update robot warning",
+                robot_warning="",
+                robot_id=self.robot_id,
             )
 
     def SetObjectiveByRobot(self, objective, robot_id=None):
@@ -367,7 +375,9 @@ class Robot:
         self.use_pressure_sensor = active
         self.SaveConfig("use_pressure_sensor", self.use_pressure_sensor)
 
-        Publisher.sendMessage("Set visibility robot force visualizer", visible=active)
+        Publisher.sendMessage(
+            "Set visibility robot force visualizer", visible=active, coil_associated=self.coil_name
+        )
 
         if active:
             pressure_setpoint = ses.Session().GetConfig("pressure_setpoint", 5.0)
@@ -432,6 +442,13 @@ class Robot:
             robot_id=self.robot_id,
         )
 
+    def UpdateTargetInfo(self, state, displacement, coil_name=None):
+        if coil_name is not None and coil_name != self.coil_name:
+            return
+
+        self.UpdateDisplacementToTarget(displacement)
+        self.SendStatusCoilAtTarget(state)
+
     def UpdateDisplacementToTarget(self, displacement):
         wx.CallAfter(
             Publisher.sendMessage,
@@ -446,6 +463,28 @@ class Robot:
             "From Neuronavigation: Coil at target",
             state=coil_at_target,
             robot_id=self.robot_id,
+        )
+
+    def OnUpdateRobotWarning(self, robot_warning, robot_id=None):
+        if robot_id is not None and robot_id != self.robot_id:
+            return
+
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "Update robot warning",
+            robot_warning=robot_warning,
+            coil_associated=self.coil_name,
+        )
+
+    def OnUpdateRobotForceData(self, force_feedback, robot_id=None):
+        if robot_id is not None and robot_id != self.robot_id:
+            return
+
+        wx.CallAfter(
+            Publisher.sendMessage,
+            "Send force sensor data",
+            force_data=force_feedback,
+            coil_associated=self.coil_name,
         )
 
 
@@ -517,6 +556,9 @@ class Robots(metaclass=Singleton):
 
     def GetRobot(self, robot_id):
         return self.robots_by_id.get(robot_id)
+
+    def GetRobotForCoil(self, coil_name):
+        return self.robots_by_coil.get(coil_name)
 
     def SetNoneObjectiveToAll(self):
         for robot in self.robots_by_id.values():
