@@ -36,7 +36,7 @@ class EEGElectrode:
     def from_legacy_marker(cls, data):
         """Read EEG records written by the former marker-based implementation."""
         return cls(
-            position=data.get("position", [data.get(axis, 0.0) for axis in "xyz"]),
+            position=data["position"] if "position" in data else [data[axis] for axis in "xyz"],
             orientation=data.get(
                 "orientation", [data.get(axis) or 0.0 for axis in ("alpha", "beta", "gamma")]
             ),

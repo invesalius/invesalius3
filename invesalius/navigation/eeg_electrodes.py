@@ -70,9 +70,20 @@ class EEGElectrodeManager(metaclass=Singleton):
                 "markers", [data for data in marker_state if data.get("marker_type") != 5]
             )
 
-    def on_navigation_mode(self, status):
+    def on_navigation_mode(self, status, markers=(), main_coil=None):
         if not status:
             self.reset()
+
+    def import_legacy_markers(self, records):
+        electrodes = [
+            EEGElectrode.from_legacy_marker(data)
+            for data in records
+            if data.get("marker_type") == 5
+        ]
+        if electrodes:
+            self._electrodes.update((item.electrode_uuid, item) for item in electrodes)
+            self.SaveState()
+            Publisher.sendMessage("EEG electrodes changed")
 
     def reset(self):
         self.navigation_on = False
