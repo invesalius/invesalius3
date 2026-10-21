@@ -138,7 +138,12 @@ class Tracker(metaclass=Singleton):
 
             # Check that the connection was successful.
             if not self.tracker_connection.IsConnected():
-                dlg.ShowNavigationTrackerWarning(tracker_id, self.tracker_connection.GetLibMode())
+                dlg.ShowNavigationTrackerWarning(
+                    tracker_id,
+                    self.tracker_connection.GetLibMode(),
+                    expected_n_coils=n_coils,
+                    detected_n_coils=self.GetCoilCount(),
+                )
 
                 self.tracker_id = 0
                 self.tracker_connected = False
@@ -312,6 +317,16 @@ class Tracker(metaclass=Singleton):
         )
 
         return [m_probe_ref_left.tolist(), m_probe_ref_right.tolist(), m_probe_ref_nasion.tolist()]
+
+    def GetCoilName(self, obj_id: int | None) -> str | None:
+        if self.tracker_connection is None:
+            return None
+        return self.tracker_connection.GetCoilName(obj_id)
+
+    def GetCoilCount(self) -> int | None:
+        if self.tracker_connection is None:
+            return None
+        return self.tracker_connection.GetCoilCount()
 
     def GetTrackerId(self) -> int:
         return self.tracker_id
