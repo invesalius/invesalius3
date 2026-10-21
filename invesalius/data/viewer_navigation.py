@@ -58,10 +58,12 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius import inv_paths
 from invesalius.data.navigation_scene import NavigationScene
+from invesalius.data.visualization.eeg_electrode_visualizer import EEGElectrodeVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d
+from invesalius.navigation.eeg_electrodes import EEGElectrodeManager
 from invesalius.pubsub import pub as Publisher
 
 
@@ -218,6 +220,7 @@ class NavigationView:
         self._disposed = True
         Publisher.unsubscribe_owner(self)
         self.probe_visualizer.dispose()
+        self.eeg_visualizer.dispose()
         self.vector_field_visualizer.dispose()
         for scene in self.scenes:
             scene.dispose()
@@ -349,6 +352,11 @@ class NavigationView:
             self._add_scene_renderer(scene.robot_force_visualizer.ren_force)
 
         self.probe_visualizer = ProbeVisualizer(self.ren)
+        self.eeg_electrodes = EEGElectrodeManager()
+        self.eeg_visualizer = EEGElectrodeVisualizer(
+            self.ren, self.actor_factory, self.eeg_electrodes
+        )
+        self.OnEEGRegistrationModeChanged(self.eeg_electrodes.registration_active)
         for scene in self.scenes:
             self.probe_visualizer.add_renderer(scene.ren)
 
@@ -438,6 +446,8 @@ class NavigationView:
         Publisher.subscribe(self.OnRemoveSensorsID, "Remove sensors ID")
         Publisher.subscribe(self.DeleteEFieldMarkers, "Delete markers")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.OnEEGRegistrationModeChanged, "EEG registration mode changed")
+        Publisher.subscribe(self.UpdateEEGCamera, "Update probe pose")
         Publisher.subscribe(self.UpdateArrowPose, "Update object arrow matrix")
         Publisher.subscribe(
             self.UpdateEfieldPointLocation, "Update point location for e-field calculation"
@@ -2050,7 +2060,8 @@ class NavigationView:
             self.scene.pTarget = self.CenterOfMass()
             self.RemoveEfieldVectorActor()
 
-        self.scene.camera_show_object = None
+        if not self.eeg_electrodes.registration_active:
+            self.scene.camera_show_object = None
         self._update_fps_visibility()
         if not self.nav_status:
             self.UpdateRender()
@@ -2135,6 +2146,18 @@ class NavigationView:
         scene = scene or self.scene
         scene.use_volumetric_camera = enabled
         scene.camera_show_object = None
+
+    def OnEEGRegistrationModeChanged(self, active):
+        self.SetVolumetricCamera(active)
+        if active:
+            self.scene.camera_show_object = True
+
+    def UpdateEEGCamera(self, m_img, coord, probe_visible, head_visible):
+        if not (self.eeg_electrodes.registration_active and probe_visible and head_visible):
+            return
+        position = np.asarray(coord[:3], dtype=float).copy()
+        position[1] *= -1
+        self.VolumetricCamera(position)
 
     def VolumetricCamera(self, cam_focus, scene=None):
         scene = scene or self.scene

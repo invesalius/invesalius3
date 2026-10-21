@@ -219,6 +219,7 @@ class DefaultInteractorStyle(Base3DInteractorStyle):
 
         if self.marker_found is not None:
             Publisher.sendMessage("Select marker by actor", actor=actor)
+            Publisher.sendMessage("Select EEG electrode by actor", actor=actor)
 
     def SetCameraFocus(self, evt):
         # If an actor was already found by PickMarker, use its center as the camera focus, otherwise
