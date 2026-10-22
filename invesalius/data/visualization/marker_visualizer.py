@@ -163,8 +163,19 @@ class MarkerVisualizer:
         Publisher.unsubscribe_owner(self)
         self._visualizations.clear()
 
+    @staticmethod
+    def _marker_key(marker):
+        return marker.marker_uuid or id(marker)
+
     def _get_visualization(self, marker):
-        return self._visualizations[marker.marker_id]
+        key = self._marker_key(marker)
+        visualization = self._visualizations.get(key)
+        if visualization is None:
+            # A restored marker can become visible before a newly created
+            # navigation scene receives its initial marker collection.
+            self.AddMarker(marker, render=False, focus=False)
+            visualization = self._visualizations[key]
+        return visualization
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -259,7 +270,7 @@ class MarkerVisualizer:
                 "Add cortex marker actor", position_orientation=cortex_marker, marker_id=marker_id
             )
 
-        self._visualizations[marker_id] = {
+        self._visualizations[self._marker_key(marker)] = {
             "actor": actor,
             "highlighted": False,
             "hidden": False,
@@ -293,7 +304,7 @@ class MarkerVisualizer:
             # Unhighlight the marker, but do not render the interactor yet to avoid flickering.
             self.UnhighlightMarker(render=False)
 
-        self._visualizations[marker.marker_id] = {
+        self._visualizations[self._marker_key(marker)] = {
             "actor": new_actor,
             "highlighted": False,
             "hidden": False,
@@ -345,7 +356,7 @@ class MarkerVisualizer:
 
     def DeleteMarkers(self, markers):
         for marker in markers:
-            visualization = self._visualizations.pop(marker.marker_id, None)
+            visualization = self._visualizations.pop(self._marker_key(marker), None)
             if visualization is not None:
                 self.renderer.RemoveActor(visualization["actor"])
 
@@ -353,7 +364,7 @@ class MarkerVisualizer:
             self.interactor.Render()
 
     def DeleteMarker(self, marker):
-        visualization = self._visualizations.pop(marker.marker_id, None)
+        visualization = self._visualizations.pop(self._marker_key(marker), None)
         if visualization is not None:
             self.renderer.RemoveActor(visualization["actor"])
         if not self.is_navigating:
