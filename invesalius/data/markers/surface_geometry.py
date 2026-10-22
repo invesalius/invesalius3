@@ -1,8 +1,8 @@
 import numpy as np
 import vtk
-import wx
 
 import invesalius.data.transformations as tr
+import invesalius.session as ses
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
@@ -66,16 +66,27 @@ class SurfaceGeometry(metaclass=Singleton):
             "highest_z": highest_z,
         }
 
-    def LoadActor(self, actor):
+    def LoadActor(self, actor, surface=None):
         # Maintain a list of surfaces and their smoothed versions. However,
         # do not compute the smoothed surface until it is needed.
         #
         # The original versions are used for visualization, while the smoothed
         # versions are used for calculations.
+        smoothed = None
+        if surface is not None and surface.projection_polydata is not None:
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputData(surface.projection_polydata)
+            smoothed_actor = vtk.vtkActor()
+            smoothed_actor.SetMapper(mapper)
+            smoothed_actor.GetProperty().DeepCopy(actor.GetProperty())
+            smoothed = self.PrecalculateSurfaceData(smoothed_actor)
+            if not self._HasUsableGeometry(smoothed):
+                smoothed = None
         self.surfaces.append(
             {
                 "original": self.PrecalculateSurfaceData(actor),
-                "smoothed": None,
+                "smoothed": smoothed,
+                "surface": surface,
             }
         )
 
@@ -288,24 +299,7 @@ class SurfaceGeometry(metaclass=Singleton):
         # Find the surface with the highest z-coordinate
         highest_surface = max(valid_surfaces, key=lambda surface: surface["original"]["highest_z"])
 
-        # Track if a new highest surface was detected
-        current_id = id(highest_surface)
-        previous_id = getattr(self, "_last_highest_surface_id", None)
-        self._last_highest_surface_id = current_id
-        has_changed = current_id != previous_id
-
-        # If the highest surface has changed, ask the user if they want to update
-        if has_changed and highest_surface["smoothed"] is not None:
-            result = dialogs.ShowConfirmationDialog(
-                _(
-                    "A new highest scalp surface was identified. Do you want to update the smoothed surface?"
-                )
-            )
-            if result != wx.ID_OK:
-                return highest_surface["smoothed"]
-
-        # Reprocess if user agreed OR if no smoothed version exists yet
-        if has_changed or highest_surface["smoothed"] is None:
+        if highest_surface["smoothed"] is None:
             resume_navigation = self.is_navigating
             if resume_navigation:
                 Publisher.sendMessage("Stop navigation")
@@ -322,7 +316,12 @@ class SurfaceGeometry(metaclass=Singleton):
                     else:
                         smoothed_actor = actor
                     progress_window.Update()
-                    highest_surface["smoothed"] = self.PrecalculateSurfaceData(smoothed_actor)
+                    smoothed_surface = self.PrecalculateSurfaceData(smoothed_actor)
+                    highest_surface["smoothed"] = smoothed_surface
+                    surface = highest_surface["surface"]
+                    if surface is not None and self._HasUsableGeometry(smoothed_surface):
+                        surface.projection_polydata = smoothed_surface["polydata"]
+                        ses.Session().ChangeProject()
                 finally:
                     progress_window.Close()
             finally:
