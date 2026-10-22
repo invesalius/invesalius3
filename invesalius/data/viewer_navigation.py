@@ -76,6 +76,8 @@ class NavigationView:
         self._navigation_camera_settings = None
         self._navigation_interaction_state = None
         self._navigation_renderers = []
+        self._dual_navigation = False
+        self._mirror_renderers = {}
         self._nav_status = False
         self.scene = NavigationScene(view.ren, view.actor_factory)
         self.scenes = [self.scene]
@@ -90,6 +92,12 @@ class NavigationView:
         self._create_navigation_renderer()
         self._bind_events()
         self._restore_navigation_markers(markers)
+        navigation_state = ses.Session().GetConfig("navigation", {})
+        self.SetDualNavigation(
+            navigation_state.get("dual_navigation", False)
+            and navigation_state.get("n_coils", 1) > 1
+            and len(navigation_state.get("selected_coils", ())) > 1
+        )
         self._update_fps_visibility()
 
     def __getattr__(self, name):
@@ -186,6 +194,7 @@ class NavigationView:
         for renderer in self._navigation_renderers:
             if renderer is not self.scene.target_guide_renderer or self.target_mode:
                 self._attach_renderer(renderer)
+        self._attach_mirror_renderers()
         self._apply_scene_viewport()
         if self.target_mode:
             self.scene.reset_target_guide_camera()
@@ -204,6 +213,7 @@ class NavigationView:
         self.view.target_mode = False
         self._update_fps_visibility()
         self.ren.set_active(False)
+        self._detach_mirror_renderers()
         for renderer in self._navigation_renderers:
             self._detach_renderer(renderer)
         self.view.restore_state(self._volume_state)
@@ -219,6 +229,7 @@ class NavigationView:
         Publisher.unsubscribe_owner(self)
         self.probe_visualizer.dispose()
         self.vector_field_visualizer.dispose()
+        self._dispose_mirror_renderers()
         for scene in self.scenes:
             scene.dispose()
         for renderer in self._navigation_renderers:
@@ -233,6 +244,8 @@ class NavigationView:
             self._navigation_renderers.append(renderer)
         if self._active and (renderer is not self.scene.target_guide_renderer or self.target_mode):
             self._attach_renderer(renderer)
+        if self._dual_navigation:
+            self._ensure_mirror_renderer(renderer)
 
     def _remove_scene_renderer(self, renderer):
         self._detach_renderer(renderer)
@@ -240,14 +253,131 @@ class NavigationView:
             self._navigation_renderers.remove(renderer)
 
     def _attach_renderer(self, renderer):
+        renderer = self._unwrap_renderer(renderer)
         window = self.interactor.GetRenderWindow()
         if not window.HasRenderer(renderer):
             window.AddRenderer(renderer)
+        mirror = self._mirror_renderers.get(renderer)
+        if self._dual_navigation and mirror is not None and not window.HasRenderer(mirror):
+            window.AddRenderer(mirror)
 
     def _detach_renderer(self, renderer):
+        renderer = self._unwrap_renderer(renderer)
         window = self.interactor.GetRenderWindow()
         if window.HasRenderer(renderer):
             window.RemoveRenderer(renderer)
+        mirror = self._mirror_renderers.get(renderer)
+        if mirror is not None and window.HasRenderer(mirror):
+            window.RemoveRenderer(mirror)
+
+    @staticmethod
+    def _unwrap_renderer(renderer):
+        return getattr(renderer, "renderer", renderer)
+
+    def _mirror_sources(self):
+        return (self.view.ren, self.view.canvas_renderer, *self._navigation_renderers)
+
+    def _ensure_mirror_renderer(self, renderer):
+        source = self._unwrap_renderer(renderer)
+        mirror = self._mirror_renderers.get(source)
+        if mirror is None:
+            mirror = vtkRenderer()
+            self._mirror_renderers[source] = mirror
+        self._sync_mirror_renderer(source, mirror)
+        return mirror
+
+    def _sync_mirror_renderer(self, source, mirror):
+        mirror.SetLayer(source.GetLayer())
+        mirror.SetInteractive(source.GetInteractive())
+        mirror.SetPreserveDepthBuffer(source.GetPreserveDepthBuffer())
+        mirror.SetBackground(source.GetBackground())
+        mirror.SetActiveCamera(source.GetActiveCamera())
+
+        source_props = set()
+        props = source.GetViewProps()
+        props.InitTraversal()
+        prop = props.GetNextProp()
+        while prop is not None:
+            source_props.add(prop)
+            if not mirror.HasViewProp(prop):
+                mirror.AddViewProp(prop)
+            prop = props.GetNextProp()
+
+        mirror_props = mirror.GetViewProps()
+        current_mirror_props = []
+        mirror_props.InitTraversal()
+        prop = mirror_props.GetNextProp()
+        while prop is not None:
+            current_mirror_props.append(prop)
+            prop = mirror_props.GetNextProp()
+        for prop in current_mirror_props:
+            if prop not in source_props:
+                mirror.RemoveViewProp(prop)
+
+    def _attach_mirror_renderers(self):
+        if not self._dual_navigation or not self._active:
+            return
+        window = self.interactor.GetRenderWindow()
+        for source in self._mirror_sources():
+            source = self._unwrap_renderer(source)
+            if not window.HasRenderer(source):
+                continue
+            mirror = self._ensure_mirror_renderer(source)
+            if not window.HasRenderer(mirror):
+                window.AddRenderer(mirror)
+
+    def _detach_mirror_renderers(self):
+        window = self.interactor.GetRenderWindow()
+        for mirror in self._mirror_renderers.values():
+            if window.HasRenderer(mirror):
+                window.RemoveRenderer(mirror)
+
+    def _dispose_mirror_renderers(self):
+        self._detach_mirror_renderers()
+        for mirror in self._mirror_renderers.values():
+            mirror.RemoveAllViewProps()
+        self._mirror_renderers.clear()
+
+    def _map_dual_viewport(self, viewport, scene_index):
+        x_min, y_min, x_max, y_max = viewport
+        scene_x_min = 0.5 * scene_index
+        mapped = (
+            scene_x_min + 0.5 * x_min,
+            y_min,
+            scene_x_min + 0.5 * x_max,
+            y_max,
+        )
+        return self.view._map_scene_viewport(mapped)
+
+    def _set_renderer_viewport(self, renderer, viewport):
+        source = self._unwrap_renderer(renderer)
+        if not self._dual_navigation:
+            self.view._set_renderer_viewport(source, viewport)
+            return
+        source.SetViewport(*self._map_dual_viewport(viewport, 0))
+        mirror = self._ensure_mirror_renderer(source)
+        mirror.SetViewport(*self._map_dual_viewport(viewport, 1))
+
+    def SetDualNavigation(self, enabled=False):
+        enabled = bool(enabled)
+        if enabled == self._dual_navigation:
+            return
+        self._dual_navigation = enabled
+        if enabled:
+            for renderer in self._mirror_sources():
+                self._ensure_mirror_renderer(renderer)
+            self._attach_mirror_renderers()
+        else:
+            self._dispose_mirror_renderers()
+        self._apply_scene_viewport()
+        if self._active:
+            self.view.UpdateRender()
+
+    def prepare_render(self):
+        if not self._dual_navigation:
+            return
+        for source, mirror in self._mirror_renderers.items():
+            self._sync_mirror_renderer(source, mirror)
 
     def _initialize_navigation_data(self):
         self.static_markers_efield = []
@@ -279,6 +409,7 @@ class NavigationView:
 
     def _apply_scene_viewport(self):
         self.view._apply_scene_viewport()
+        self._set_renderer_viewport(self.view.canvas_renderer, (0.0, 0.0, 1.0, 1.0))
         if self.target_mode:
             self._set_renderer_viewport(self.ren, (0.0, 0.0, 0.75, 1.0))
             self._set_renderer_viewport(self.scene.target_guide_renderer, (0.75, 0.0, 1.0, 1.0))
@@ -299,6 +430,11 @@ class NavigationView:
                 self._set_renderer_viewport(
                     scene.robot_force_visualizer.ren_force, (0.01, 0.23, 0.15, 0.35)
                 )
+
+        if self._dual_navigation and self.view.orientation_widget is not None:
+            self.view.orientation_widget.SetViewport(
+                *self._map_dual_viewport((0.85, 0.0, 1.0, 0.15), 0)
+            )
 
     def _initialize_navigation_state(self):
         self.obj_axes = None
@@ -431,6 +567,7 @@ class NavigationView:
                 self.fps_text.SetValue(f"FPS: {fps:0.1f}")
 
     def _bind_events(self):
+        Publisher.subscribe(self.SetDualNavigation, "Set dual navigation view")
         Publisher.subscribe(self.OnHideText, "Hide text actors on viewers")
         Publisher.subscribe(self.OnShowText, "Show text actors on viewers")
         Publisher.subscribe(self.OnRender, "Render volume viewer")

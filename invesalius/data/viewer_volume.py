@@ -1433,6 +1433,8 @@ class Viewer(wx.Panel):
     def UpdateRender(self):
         if self._disposed:
             return
+        if self.active_view is not self:
+            self.active_view.prepare_render()
         self._UpdateOrientationCubeZTextRotation()
         self.interactor.Render()
 

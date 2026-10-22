@@ -358,6 +358,7 @@ class Navigation(metaclass=Singleton):
         self.coil_registrations = {}
         self.track_coil = False
         self.main_coil = None  # Which coil to track with pointer
+        self.dual_navigation = False
         self.m_change = None
         self.r_stylus = None
         # Coil transformations available to the robot after StartNavigation prepares them.
@@ -432,6 +433,7 @@ class Navigation(metaclass=Singleton):
                 "selected_coils": list(self.coil_registrations),
                 "n_coils": self.n_coils,
                 "track_coil": self.track_coil,
+                "dual_navigation": self.dual_navigation,
             }
             if self.main_coil is not None:
                 state["main_coil"] = self.main_coil
@@ -470,12 +472,24 @@ class Navigation(metaclass=Singleton):
                 if self.coil_registrations:
                     self.main_coil = self.main_coil or next(iter(self.coil_registrations))
 
+            self.dual_navigation = bool(state.get("dual_navigation", False))
+            if not self.CanUseDualNavigation():
+                self.dual_navigation = False
+
             # Try to load stylus orientation data
             if "r_stylus" in state:
                 self.r_stylus = np.array(state["r_stylus"])
 
     def CoilSelectionDone(self):
         return len(self.coil_registrations) == self.n_coils
+
+    def CanUseDualNavigation(self):
+        return self.n_coils > 1 and len(self.coil_registrations) > 1
+
+    def SetDualNavigation(self, enabled):
+        self.dual_navigation = bool(enabled) and self.CanUseDualNavigation()
+        self.SaveConfig("dual_navigation", self.dual_navigation)
+        return self.dual_navigation
 
     def SelectCoil(self, coil_name, coil_registration):
         # A changed registration invalidates the previously computed transformation.
@@ -488,6 +502,10 @@ class Navigation(metaclass=Singleton):
             self.coil_registrations.pop(coil_name, None)
             if self.main_coil == coil_name:
                 self._set_main_coil(None)
+
+        if self.dual_navigation and not self.CanUseDualNavigation():
+            self.SetDualNavigation(False)
+            Publisher.sendMessage("Set dual navigation view", enabled=False)
 
         self.SaveConfig()
 
@@ -526,6 +544,9 @@ class Navigation(metaclass=Singleton):
         self.coil_registrations = {}
         self.obj_datas = {}
         self._set_main_coil(None)
+        if self.dual_navigation:
+            self.SetDualNavigation(False)
+            Publisher.sendMessage("Set dual navigation view", enabled=False)
         self.SaveConfig()
 
     def _set_main_coil(self, coil_name):

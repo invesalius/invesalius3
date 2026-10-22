@@ -2338,6 +2338,21 @@ class ControlPanel(wx.Panel):
         self.target_mode_button = target_mode_button
         self.UpdateTargetButton()
 
+        # Initially this is a visual mirror of the primary navigation scene.
+        tooltip = _("Dual navigation view")
+        BMP_DUAL_NAVIGATION = wx.Bitmap(
+            str(inv_paths.ICON_DIR.joinpath("multi_target.png")), wx.BITMAP_TYPE_PNG
+        )
+        dual_navigation_button = wx.ToggleButton(
+            scroll_panel, -1, "", style=pbtn.PB_STYLE_SQUARE, size=ICON_SIZE
+        )
+        dual_navigation_button.SetBitmap(BMP_DUAL_NAVIGATION)
+        dual_navigation_button.SetToolTip(tooltip)
+        dual_navigation_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnDualNavigation)
+        self.dual_navigation_button = dual_navigation_button
+        self.UpdateToggleButton(dual_navigation_button, self.navigation.dual_navigation)
+        self.UpdateDualNavigationButton()
+
         # Robot buttons panels
         self.robot_panels = {}
         self.robots_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -2381,6 +2396,7 @@ class ControlPanel(wx.Panel):
                 (show_coil_button),
                 (show_probe_button),
                 (show_motor_map_button),
+                (dual_navigation_button),
             ]
         )
 
@@ -2455,6 +2471,11 @@ class ControlPanel(wx.Panel):
         state = session.GetConfig("navigation", {})
         track_coil = state.get("track_coil", False)
         self.PressTrackObjectButton(track_coil)
+        self.UpdateToggleButton(
+            self.dual_navigation_button,
+            self.navigation.dual_navigation and self.navigation.CanUseDualNavigation(),
+        )
+        self.UpdateDualNavigationButton()
 
     # Toggle Button Helpers
     def UpdateToggleButton(self, ctrl, state=None):
@@ -2557,6 +2578,21 @@ class ControlPanel(wx.Panel):
     def OnCoilSelectionDone(self, done):
         self.PressTrackObjectButton(done)
         self.PressShowCoilButton(pressed=done)
+        self.UpdateDualNavigationButton()
+
+    def UpdateDualNavigationButton(self):
+        enabled = self.navigation.CanUseDualNavigation()
+        if not enabled and self.dual_navigation_button.GetValue():
+            self.navigation.SetDualNavigation(False)
+            self.UpdateToggleButton(self.dual_navigation_button, False)
+            Publisher.sendMessage("Set dual navigation view", enabled=False)
+        self.EnableToggleButton(self.dual_navigation_button, enabled)
+
+    def OnDualNavigation(self, evt=None):
+        enabled = self.navigation.SetDualNavigation(self.dual_navigation_button.GetValue())
+        self.UpdateToggleButton(self.dual_navigation_button, enabled)
+        self.UpdateDualNavigationButton()
+        Publisher.sendMessage("Set dual navigation view", enabled=enabled)
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
