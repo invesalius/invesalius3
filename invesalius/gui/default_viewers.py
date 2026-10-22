@@ -196,12 +196,18 @@ class Panel(wx.Panel):
             self.MaximizeViewerVolume()
 
     def OnNavigationModeChanged(self, status, markers=(), main_coil=None):
-        navigation_state = ses.Session().GetConfig("navigation", {})
+        session = ses.Session()
+        navigation_state = session.GetConfig("navigation", {})
+        saved_coil_registrations = session.GetConfig("coil_registrations", {}) or {}
+        selected_coils = navigation_state.get("selected_coils", ())
+        registered_coils = [
+            coil_name for coil_name in selected_coils if coil_name in saved_coil_registrations
+        ]
         enabled = (
             status
             and navigation_state.get("dual_navigation", False)
             and navigation_state.get("n_coils", 1) > 1
-            and len(navigation_state.get("selected_coils", ())) > 1
+            and len(registered_coils) > 1
         )
         self.OnSetDualNavigation(enabled=enabled)
 

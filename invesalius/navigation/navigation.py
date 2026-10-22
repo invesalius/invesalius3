@@ -476,6 +476,7 @@ class Navigation(metaclass=Singleton):
             self.dual_navigation = bool(state.get("dual_navigation", False))
             if not self.CanUseDualNavigation():
                 self.dual_navigation = False
+                self.SaveConfig("dual_navigation", False)
 
             # Try to load stylus orientation data
             if "r_stylus" in state:

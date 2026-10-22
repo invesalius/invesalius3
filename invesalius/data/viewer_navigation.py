@@ -96,10 +96,15 @@ class NavigationView:
         self._bind_events()
         self._restore_navigation_markers(self._markers.values())
         navigation_state = ses.Session().GetConfig("navigation", {})
+        saved_coil_registrations = ses.Session().GetConfig("coil_registrations", {}) or {}
+        selected_coils = navigation_state.get("selected_coils", ())
+        registered_coils = [
+            coil_name for coil_name in selected_coils if coil_name in saved_coil_registrations
+        ]
         self.SetDualNavigation(
             navigation_state.get("dual_navigation", False)
             and navigation_state.get("n_coils", 1) > 1
-            and len(navigation_state.get("selected_coils", ())) > 1
+            and len(registered_coils) > 1
         )
         self._update_fps_visibility()
 
@@ -344,6 +349,26 @@ class NavigationView:
         scene.dispose()
         self._secondary_scene = None
 
+    def _deactivate_secondary_scene(self):
+        scene = self._secondary_scene
+        if scene is None:
+            return
+
+        scene.ren.set_active(False)
+        for renderer in tuple(self._navigation_renderers):
+            if self._unwrap_renderer(renderer) in self._secondary_renderers:
+                self._detach_renderer(renderer)
+
+        # A coil reset can disable dual navigation while pubsub is still
+        # iterating over the secondary visualizers. Dispose them only after
+        # the current event has finished dispatching.
+        wx.CallAfter(self._dispose_secondary_scene_if_inactive, scene)
+
+    def _dispose_secondary_scene_if_inactive(self, scene):
+        if self._disposed or self._dual_navigation or self._secondary_scene is not scene:
+            return
+        self._dispose_secondary_scene()
+
     def _sync_secondary_anatomy(self):
         scene = self._secondary_scene
         if scene is None:
@@ -403,7 +428,7 @@ class NavigationView:
                         if self._should_attach_renderer(renderer):
                             self._attach_renderer(renderer)
         else:
-            self._dispose_secondary_scene()
+            self._deactivate_secondary_scene()
         self._apply_scene_viewport()
         if enabled and scene.target_mode and self._active:
             scene.initialize_target_cameras()
