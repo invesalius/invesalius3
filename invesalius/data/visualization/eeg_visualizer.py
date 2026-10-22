@@ -7,7 +7,7 @@ import invesalius.data.coordinates as dco
 from invesalius.pubsub import pub as Publisher
 
 
-class EEGVisualizer:
+class EEGElectrodeVisualizer:
     def __init__(self, renderer, actor_factory, electrodes):
         self.renderer = renderer
         self.actor_factory = actor_factory
