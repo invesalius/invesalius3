@@ -407,9 +407,14 @@ class NavigationView:
         else:
             self.view._set_renderer_viewport(renderer, viewport)
 
-    def _update_coil_indicator_scale(self):
+    def _update_sensor_indicator_scale(self):
         scale = 0.5 if self._dual_navigation else 1.0
-        actors = (self.dummy_obj_actor, *self.coil_sensor_spheres)
+        actors = (
+            self.dummy_probe_actor,
+            self.dummy_ref_actor,
+            self.dummy_obj_actor,
+            *self.coil_sensor_spheres,
+        )
         for actor in actors:
             if actor is not None:
                 actor.SetScale(scale)
@@ -505,7 +510,7 @@ class NavigationView:
             renderer = getattr(self, name, None)
             if renderer is not None:
                 self._set_renderer_viewport(renderer, viewport)
-        self._update_coil_indicator_scale()
+        self._update_sensor_indicator_scale()
 
         for scene_index, scene in enumerate(self._visible_scenes()):
             if scene.robot_force_visualizer is not None:
@@ -874,7 +879,7 @@ class NavigationView:
                 actor.SetMapper(mapper)
                 self.ren_obj.AddActor(actor)
                 self.coil_sensor_spheres.append(actor)
-        self._update_coil_indicator_scale()
+        self._update_sensor_indicator_scale()
 
     def OnRemoveSensorsID(self):
         if self.probe:
