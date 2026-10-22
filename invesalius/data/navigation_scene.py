@@ -632,6 +632,7 @@ class NavigationScene:
     def create_distance_text():
         distance_text = vtku.Text()
 
+        distance_text.actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
         distance_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
         distance_text.SetPosition((const.X, 1.0 - const.Y))
         distance_text.SetVerticalJustificationToBottom()
