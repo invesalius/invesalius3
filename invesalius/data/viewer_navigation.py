@@ -408,7 +408,7 @@ class NavigationView:
             self.view._set_renderer_viewport(renderer, viewport)
 
     def _update_sensor_indicator_scale(self):
-        scale = 0.5 if self._dual_navigation else 1.0
+        scale = 0.75 if self._dual_navigation else 1.0
         actors = (
             self.dummy_probe_actor,
             self.dummy_ref_actor,
@@ -418,6 +418,27 @@ class NavigationView:
         for actor in actors:
             if actor is not None:
                 actor.SetScale(scale)
+
+    def _sensor_indicator_viewport(self, renderer_name):
+        viewports = {
+            "ren_probe": (0.01, 0.79, 0.15, 0.97),
+            "ren_ref": (0.01, 0.57, 0.15, 0.79),
+            "ren_obj": (0.01, 0.40, 0.15, 0.57),
+        }
+        viewport = viewports[renderer_name]
+        if not self._dual_navigation:
+            return viewport
+
+        # Adjust these offsets to test the vertical spacing in dual mode.
+        # Negative values move an indicator down; positive values move it up.
+        dual_y_offsets = {
+            "ren_probe": 0.0,
+            "ren_ref": 0.05,
+            "ren_obj": 0.1,
+        }
+        x_min, y_min, x_max, y_max = viewport
+        y_offset = dual_y_offsets[renderer_name]
+        return x_min, y_min + y_offset, x_max, y_max + y_offset
 
     def SetDualNavigation(self, enabled=False, coil_names=()):
         coil_names = tuple(coil_names)
@@ -502,14 +523,10 @@ class NavigationView:
                     scene_index,
                 )
 
-        for name, viewport in (
-            ("ren_probe", (0.01, 0.79, 0.15, 0.97)),
-            ("ren_ref", (0.01, 0.57, 0.15, 0.79)),
-            ("ren_obj", (0.01, 0.40, 0.15, 0.57)),
-        ):
+        for name in ("ren_probe", "ren_ref", "ren_obj"):
             renderer = getattr(self, name, None)
             if renderer is not None:
-                self._set_renderer_viewport(renderer, viewport)
+                self._set_renderer_viewport(renderer, self._sensor_indicator_viewport(name))
         self._update_sensor_indicator_scale()
 
         for scene_index, scene in enumerate(self._visible_scenes()):
@@ -787,7 +804,7 @@ class NavigationView:
         self.ren_probe.SetLayer(1)
 
         self._add_scene_renderer(self.ren_probe)
-        self._set_renderer_viewport(self.ren_probe, (0.01, 0.79, 0.15, 0.97))
+        self._set_renderer_viewport(self.ren_probe, self._sensor_indicator_viewport("ren_probe"))
         filename = os.path.join(inv_paths.OBJ_DIR, "stylus.stl")
 
         reader = vtkSTLReader()
@@ -813,7 +830,7 @@ class NavigationView:
         self.ren_ref.SetLayer(1)
 
         self._add_scene_renderer(self.ren_ref)
-        self._set_renderer_viewport(self.ren_ref, (0.01, 0.57, 0.15, 0.79))
+        self._set_renderer_viewport(self.ren_ref, self._sensor_indicator_viewport("ren_ref"))
         filename = os.path.join(inv_paths.OBJ_DIR, "head.stl")
 
         reader = vtkSTLReader()
@@ -839,7 +856,7 @@ class NavigationView:
         self.ren_obj.SetLayer(1)
 
         self._add_scene_renderer(self.ren_obj)
-        self._set_renderer_viewport(self.ren_obj, (0.01, 0.40, 0.15, 0.57))
+        self._set_renderer_viewport(self.ren_obj, self._sensor_indicator_viewport("ren_obj"))
         filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
 
         reader = vtkSTLReader()
