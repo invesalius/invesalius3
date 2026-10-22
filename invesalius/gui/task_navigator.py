@@ -2544,16 +2544,9 @@ class ControlPanel(wx.Panel):
         nav_id = btn_nav.GetValue()
         if not nav_id:
             wx.CallAfter(Publisher.sendMessage, "Stop navigation")
-            tooltip = _("Start navigation")
-            btn_nav.SetToolTip(tooltip)
-            btn_nav.SetLabelText(_("Start navigation"))
         else:
             Publisher.sendMessage("Start navigation")
-            if self.nav_status:
-                tooltip = _("Stop navigation")
-                btn_nav.SetToolTip(tooltip)
-                btn_nav.SetLabelText(_("Stop navigation"))
-            else:
+            if not self.nav_status:
                 btn_nav.SetValue(False)
 
     def OnStopNavigation(self):
@@ -2584,6 +2577,10 @@ class ControlPanel(wx.Panel):
             self.current_orientation = None, None, None
         else:
             self.nav_status = True
+        self.btn_nav.SetValue(nav_status)
+        label = _("Stop navigation") if nav_status else _("Start navigation")
+        self.btn_nav.SetToolTip(label)
+        self.btn_nav.SetLabelText(label)
 
     def OnCheckStatus(self, nav_status, vis_status):
         if nav_status:

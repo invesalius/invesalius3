@@ -14,6 +14,7 @@ SCALP_NORMAL_AVERAGING_RADIUS_MM = 15.0
 
 class SurfaceGeometry(metaclass=Singleton):
     def __init__(self):
+        self.is_navigating = False
         self.__bind_events()
 
         self.surfaces = []
@@ -22,6 +23,10 @@ class SurfaceGeometry(metaclass=Singleton):
         Publisher.subscribe(self.LoadActor, "Load surface actor into viewer")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.RemoveSurface, "Remove surface actor from viewer")
+        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+
+    def OnNavigationStatus(self, nav_status, vis_status):
+        self.is_navigating = nav_status
 
     def OnCloseProject(self):
         self.surfaces = []
@@ -301,20 +306,28 @@ class SurfaceGeometry(metaclass=Singleton):
 
         # Reprocess if user agreed OR if no smoothed version exists yet
         if has_changed or highest_surface["smoothed"] is None:
-            progress_window = dialogs.SurfaceSmoothingProgressWindow()
-            progress_window.Update()
-            polydata = highest_surface["original"]["polydata"]
-            actor = highest_surface["original"]["actor"]
+            resume_navigation = self.is_navigating
+            if resume_navigation:
+                Publisher.sendMessage("Stop navigation")
+            try:
+                progress_window = dialogs.SurfaceSmoothingProgressWindow()
+                try:
+                    progress_window.Update()
+                    polydata = highest_surface["original"]["polydata"]
+                    actor = highest_surface["original"]["actor"]
 
-            # Create a smoothed version of the actor.
-            if polydata.GetNumberOfCells() > 10000:
-                smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
-            else:
-                smoothed_actor = actor
-            progress_window.Update()
-            highest_surface["smoothed"] = self.PrecalculateSurfaceData(smoothed_actor)
-
-            progress_window.Close()
+                    # Create a smoothed version of the actor.
+                    if polydata.GetNumberOfCells() > 10000:
+                        smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
+                    else:
+                        smoothed_actor = actor
+                    progress_window.Update()
+                    highest_surface["smoothed"] = self.PrecalculateSurfaceData(smoothed_actor)
+                finally:
+                    progress_window.Close()
+            finally:
+                if resume_navigation:
+                    Publisher.sendMessage("Start navigation")
 
         smoothed_surface = highest_surface["smoothed"]
         if not self._HasUsableGeometry(smoothed_surface):
