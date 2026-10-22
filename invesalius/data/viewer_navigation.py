@@ -58,7 +58,7 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius import inv_paths
 from invesalius.data.navigation_scene import NavigationScene
-from invesalius.data.visualization.eeg_electrode_visualizer import EEGElectrodeVisualizer
+from invesalius.data.visualization.eeg_visualizer import EEGVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.i18n import tr as _
@@ -353,9 +353,7 @@ class NavigationView:
 
         self.probe_visualizer = ProbeVisualizer(self.ren)
         self.eeg_electrodes = EEGElectrodeManager()
-        self.eeg_visualizer = EEGElectrodeVisualizer(
-            self.ren, self.actor_factory, self.eeg_electrodes
-        )
+        self.eeg_visualizer = EEGVisualizer(self.ren, self.actor_factory, self.eeg_electrodes)
         self.OnEEGRegistrationModeChanged(self.eeg_electrodes.registration_active)
         for scene in self.scenes:
             self.probe_visualizer.add_renderer(scene.ren)
