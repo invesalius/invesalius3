@@ -473,10 +473,7 @@ class Navigation(metaclass=Singleton):
                 if self.coil_registrations:
                     self.main_coil = self.main_coil or next(iter(self.coil_registrations))
 
-            self.dual_navigation = bool(state.get("dual_navigation", False))
-            if not self.CanUseDualNavigation():
-                self.dual_navigation = False
-                self.SaveConfig("dual_navigation", False)
+            self.SetDualNavigation(state.get("dual_navigation", False), notify=False)
 
             # Try to load stylus orientation data
             if "r_stylus" in state:
@@ -488,9 +485,11 @@ class Navigation(metaclass=Singleton):
     def CanUseDualNavigation(self):
         return self.n_coils > 1 and len(self.coil_registrations) > 1
 
-    def SetDualNavigation(self, enabled):
+    def SetDualNavigation(self, enabled, *, notify=True):
         self.dual_navigation = bool(enabled) and self.CanUseDualNavigation()
         self.SaveConfig("dual_navigation", self.dual_navigation)
+        if notify:
+            Publisher.sendMessage("Set dual navigation view", enabled=self.dual_navigation)
         return self.dual_navigation
 
     def SelectCoil(self, coil_name, coil_registration):
@@ -507,7 +506,6 @@ class Navigation(metaclass=Singleton):
 
         if self.dual_navigation and not self.CanUseDualNavigation():
             self.SetDualNavigation(False)
-            Publisher.sendMessage("Set dual navigation view", enabled=False)
 
         self.SaveConfig()
 
@@ -548,7 +546,6 @@ class Navigation(metaclass=Singleton):
         self._set_main_coil(None)
         if self.dual_navigation:
             self.SetDualNavigation(False)
-            Publisher.sendMessage("Set dual navigation view", enabled=False)
         self.SaveConfig()
 
     def _set_main_coil(self, coil_name):

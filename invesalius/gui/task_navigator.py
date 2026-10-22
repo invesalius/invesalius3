@@ -2437,6 +2437,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
 
         Publisher.subscribe(self.OnCoilSelectionDone, "Coil selection done")
+        Publisher.subscribe(self.OnDualNavigationChanged, "Set dual navigation view")
 
         Publisher.subscribe(self.PressShowCoilButton, "Press show-coil button")
         Publisher.subscribe(self.EnableShowCoilButton, "Enable show-coil button")
@@ -2582,17 +2583,18 @@ class ControlPanel(wx.Panel):
 
     def UpdateDualNavigationButton(self):
         enabled = self.navigation.CanUseDualNavigation()
-        if not enabled and self.dual_navigation_button.GetValue():
+        if not enabled and self.navigation.dual_navigation:
             self.navigation.SetDualNavigation(False)
-            self.UpdateToggleButton(self.dual_navigation_button, False)
-            Publisher.sendMessage("Set dual navigation view", enabled=False)
+            return
+        self.UpdateToggleButton(self.dual_navigation_button, self.navigation.dual_navigation)
         self.EnableToggleButton(self.dual_navigation_button, enabled)
 
     def OnDualNavigation(self, evt=None):
-        enabled = self.navigation.SetDualNavigation(self.dual_navigation_button.GetValue())
+        self.navigation.SetDualNavigation(self.dual_navigation_button.GetValue())
+
+    def OnDualNavigationChanged(self, enabled=False):
         self.UpdateToggleButton(self.dual_navigation_button, enabled)
-        self.UpdateDualNavigationButton()
-        Publisher.sendMessage("Set dual navigation view", enabled=enabled)
+        self.EnableToggleButton(self.dual_navigation_button, self.navigation.CanUseDualNavigation())
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
