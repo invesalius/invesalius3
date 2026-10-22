@@ -449,6 +449,7 @@ class Frame(wx.Frame):
                 markers=tuple(self.navigation_hub.markers.list),
                 main_coil=self.navigation_hub.navigation.main_coil,
             )
+            self.navigation_hub.navigation.PublishDualNavigationState()
 
         self.Layout()
 
@@ -938,6 +939,12 @@ class Frame(wx.Frame):
             self._show_navigator_message = False
         if status and self.navigation_hub is None:
             self.navigation_hub = NavigationHub(window=self)
+
+        if status:
+            try:
+                self.navigation_hub.markers.LoadState()
+            except Exception:
+                ses.Session().DeleteStateFile()
 
         markers = tuple(self.navigation_hub.markers.list) if status else ()
         main_coil = self.navigation_hub.navigation.main_coil if status else None
