@@ -6,7 +6,7 @@ from math import dist
 from time import monotonic
 
 import invesalius.session as ses
-from invesalius.data.eeg_electrode import EEGElectrode
+from invesalius.data.eeg import EEGElectrode
 from invesalius.data.markers.surface_geometry import (
     SCALP_NORMAL_AVERAGING_RADIUS_MM,
     SurfaceGeometry,

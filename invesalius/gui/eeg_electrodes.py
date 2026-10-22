@@ -8,7 +8,7 @@ import wx.lib.platebtn as pbtn
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius import inv_paths
-from invesalius.data.eeg_montage import export_montage, get_export_paths
+from invesalius.data.eeg import EEGMontage
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -175,7 +175,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         try:
             existing_paths = [
                 path
-                for path in get_export_paths(
+                for path in EEGMontage.get_export_paths(
                     output_directory,
                     export_format,
                     filename,
@@ -189,7 +189,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
                 if result != wx.ID_OK:
                     return
 
-            export_montage(
+            EEGMontage.export_montage(
                 self.eeg_electrodes.electrodes, output_directory, export_format, filename
             )
             session.SetConfig("last_directory_eeg_montage", output_directory)
