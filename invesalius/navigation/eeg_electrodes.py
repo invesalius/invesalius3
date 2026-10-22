@@ -61,29 +61,11 @@ class EEGElectrodeManager(metaclass=Singleton):
         electrodes = [EEGElectrode(**data) for data in session.GetState("eeg_electrodes", [])]
         marker_state = session.GetState("markers", []) or []
         # Migrate before MarkersControl reads the old EEG type (5), which master does not know.
-        legacy = [data for data in marker_state if data.get("marker_type") == 5]
-        migrated = [EEGElectrode.from_legacy_marker(data) for data in legacy]
-        self._electrodes = {item.electrode_uuid: item for item in migrated + electrodes}
-        if legacy:
-            self.SaveState()
-            session.SetState(
-                "markers", [data for data in marker_state if data.get("marker_type") != 5]
-            )
+        self._electrodes = {item.electrode_uuid: item for item in electrodes}
 
     def on_navigation_mode(self, status, markers=(), main_coil=None):
         if not status:
             self.reset()
-
-    def import_legacy_markers(self, records):
-        electrodes = [
-            EEGElectrode.from_legacy_marker(data)
-            for data in records
-            if data.get("marker_type") == 5
-        ]
-        if electrodes:
-            self._electrodes.update((item.electrode_uuid, item) for item in electrodes)
-            self.SaveState()
-            Publisher.sendMessage("EEG electrodes changed")
 
     def reset(self):
         self.navigation_on = False

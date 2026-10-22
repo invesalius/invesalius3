@@ -42,24 +42,6 @@ class EEGElectrode:
     def to_dict(self):
         return asdict(self)
 
-    @classmethod
-    def from_legacy_marker(cls, data):
-        """Read EEG records written by the former marker-based implementation."""
-        return cls(
-            position=data["position"] if "position" in data else [data[axis] for axis in "xyz"],
-            orientation=data.get(
-                "orientation", [data.get(axis) or 0.0 for axis in ("alpha", "beta", "gamma")]
-            ),
-            colour=data.get(
-                "colour", [data.get(axis, default) for axis, default in zip("rgb", (0.0, 1.0, 0.0))]
-            ),
-            label=data.get("eeg_matched_name") or data["label"],
-            size=data.get("size", 2.0),
-            visible=data.get("visible", True),
-            session_id=data.get("session_id", 1),
-            electrode_uuid=data.get("marker_uuid") or str(uuid4()),
-        )
-
 
 class EEGMontage:
     """Serialize electrode montages and their MRI coordinate metadata."""
