@@ -57,12 +57,17 @@ class EEGVisualizer:
         position = list(electrode.position)
         position[1] *= -1
         actor = self.actor_factory.CreateTorus(
-            position,
-            electrode.orientation,
+            (0, 0, 0),
+            (0, 0, 0),
             electrode.colour,
             ring_radius=3.0,
             cross_section_radius=0.8,
         )
+        transform = vtk.vtkTransform()
+        transform.SetMatrix(
+            self.actor_factory.CreateVTKObjectMatrix(position, electrode.orientation)
+        )
+        actor.SetUserTransform(transform)
         actor.GetProperty().SetOpacity(0.8)
         label = vtk.vtkBillboardTextActor3D()
         label.SetInput(electrode.label)

@@ -363,7 +363,8 @@ class ActorFactory:
         torusActor = vtk.vtkActor()
         torusActor.SetMapper(torusMapper)
         torusActor.GetProperty().SetDiffuseColor(colour)
-        torusActor.SetUserMatrix(self.CreateVTKObjectMatrix(position, orientation))
+        torusActor.SetPosition(position)
+        torusActor.SetOrientation(orientation)
         torusActor.SetScale(scale, scale, scale)
 
         return torusActor
