@@ -426,9 +426,10 @@ class NavigationView:
         else:
             self._deactivate_secondary_scene()
         self._apply_scene_viewport()
-        if enabled and scene.target_mode and self._active:
-            scene.initialize_target_cameras()
         if self._active:
+            for visible_scene in self._visible_scenes():
+                if visible_scene.target_mode:
+                    visible_scene.initialize_target_cameras()
             self.view.UpdateRender()
 
     def prepare_render(self):
