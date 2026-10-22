@@ -2606,14 +2606,16 @@ class ControlPanel(wx.Panel):
             self.navigation.SetDualNavigation(False, coil_names=coil_names)
 
     def _EnableDualNavigation(self, coil_names):
+        parent = wx.GetTopLevelParent(self)
         progress_dialog = wx.ProgressDialog(
             _("Dual navigation"),
             _("Preparing dual navigation..."),
             maximum=100,
-            parent=self,
+            parent=parent,
             style=wx.PD_APP_MODAL | wx.PD_SMOOTH,
         )
         try:
+            progress_dialog.CenterOnParent()
             progress_dialog.Pulse()
             # Paint the dialog before creating the secondary VTK scene.
             wx.SafeYield()
