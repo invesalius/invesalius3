@@ -402,22 +402,12 @@ class NavigationView:
         else:
             self.view._set_renderer_viewport(renderer, viewport)
 
-    def _coil_indicator_viewport(self):
-        return (0.01, 0.40, 0.15, 0.57)
-
-    def _update_coil_indicator_camera(self):
-        renderer = getattr(self, "ren_obj", None)
-        default_view_angle = getattr(self, "_coil_indicator_view_angle", None)
-        if renderer is None or default_view_angle is None:
-            return
-
-        view_angle = default_view_angle
-        if self._dual_navigation:
-            # The viewport is half as wide in dual mode. Widen the camera field
-            # of view while preserving the viewport center and its alignment.
-            half_angle = np.radians(default_view_angle / 2.0)
-            view_angle = np.degrees(2.0 * np.arctan(2.0 * np.tan(half_angle)))
-        renderer.GetActiveCamera().SetViewAngle(view_angle)
+    def _update_coil_indicator_scale(self):
+        scale = 0.5 if self._dual_navigation else 1.0
+        actors = (self.dummy_obj_actor, *self.coil_sensor_spheres)
+        for actor in actors:
+            if actor is not None:
+                actor.SetScale(scale)
 
     def SetDualNavigation(self, enabled=False):
         enabled = bool(enabled)
@@ -497,12 +487,12 @@ class NavigationView:
         for name, viewport in (
             ("ren_probe", (0.01, 0.79, 0.15, 0.97)),
             ("ren_ref", (0.01, 0.57, 0.15, 0.79)),
-            ("ren_obj", self._coil_indicator_viewport()),
+            ("ren_obj", (0.01, 0.40, 0.15, 0.57)),
         ):
             renderer = getattr(self, name, None)
             if renderer is not None:
                 self._set_renderer_viewport(renderer, viewport)
-        self._update_coil_indicator_camera()
+        self._update_coil_indicator_scale()
 
         for scene_index, scene in enumerate(self._visible_scenes()):
             if scene.robot_force_visualizer is not None:
@@ -829,11 +819,9 @@ class NavigationView:
 
         self.ren_obj = vtkRenderer()
         self.ren_obj.SetLayer(1)
-        self._coil_indicator_view_angle = self.ren_obj.GetActiveCamera().GetViewAngle()
 
         self._add_scene_renderer(self.ren_obj)
-        self._set_renderer_viewport(self.ren_obj, self._coil_indicator_viewport())
-        self._update_coil_indicator_camera()
+        self._set_renderer_viewport(self.ren_obj, (0.01, 0.40, 0.15, 0.57))
         filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
 
         reader = vtkSTLReader()
@@ -873,6 +861,7 @@ class NavigationView:
                 actor.SetMapper(mapper)
                 self.ren_obj.AddActor(actor)
                 self.coil_sensor_spheres.append(actor)
+        self._update_coil_indicator_scale()
 
     def OnRemoveSensorsID(self):
         if self.probe:
