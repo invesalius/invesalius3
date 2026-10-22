@@ -409,7 +409,7 @@ class NavigationView:
             if actor is not None:
                 actor.SetScale(scale)
 
-    def SetDualNavigation(self, enabled=False):
+    def SetDualNavigation(self, enabled=False, coil_names=()):
         enabled = bool(enabled)
         if enabled == self._dual_navigation:
             return

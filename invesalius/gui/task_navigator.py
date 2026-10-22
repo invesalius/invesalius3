@@ -2592,7 +2592,7 @@ class ControlPanel(wx.Panel):
     def OnDualNavigation(self, evt=None):
         self.navigation.SetDualNavigation(self.dual_navigation_button.GetValue())
 
-    def OnDualNavigationChanged(self, enabled=False):
+    def OnDualNavigationChanged(self, enabled=False, coil_names=()):
         self.UpdateToggleButton(self.dual_navigation_button, enabled)
         self.EnableToggleButton(self.dual_navigation_button, self.navigation.CanUseDualNavigation())
 

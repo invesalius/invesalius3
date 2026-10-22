@@ -1159,7 +1159,7 @@ class Viewer(wx.Panel):
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
 
-    def OnSetDualNavigation(self, enabled=False):
+    def OnSetDualNavigation(self, enabled=False, coil_names=()):
         self.dual_navigation = bool(enabled)
         if not self.dual_navigation:
             self.UpdateRender()

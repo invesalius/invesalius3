@@ -199,7 +199,7 @@ class Panel(wx.Panel):
         if not status:
             self.OnSetDualNavigation(enabled=False)
 
-    def OnSetDualNavigation(self, enabled=False):
+    def OnSetDualNavigation(self, enabled=False, coil_names=()):
         enabled = bool(enabled)
         if enabled == self.dual_navigation:
             return
