@@ -449,7 +449,6 @@ class NavigationView:
         if not self._dual_navigation or self._secondary_scene is None:
             return
         self._sync_secondary_anatomy()
-        self._secondary_scene.ren.GetActiveCamera().DeepCopy(self.ren.GetActiveCamera())
 
     def _initialize_navigation_data(self):
         self.static_markers_efield = []
