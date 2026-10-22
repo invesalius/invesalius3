@@ -941,9 +941,13 @@ class Frame(wx.Frame):
 
         markers = tuple(self.navigation_hub.markers.list) if status else ()
         main_coil = self.navigation_hub.navigation.main_coil if status else None
+        if not status and self.navigation_hub is not None:
+            self.navigation_hub.navigation.PublishDualNavigationState(navigation_active=False)
         Publisher.sendMessage(
             "Set navigation mode", status=status, markers=markers, main_coil=main_coil
         )
+        if status:
+            self.navigation_hub.navigation.PublishDualNavigationState()
         if not status:
             Publisher.sendMessage("Remove sensors ID")
 

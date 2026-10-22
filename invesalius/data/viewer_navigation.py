@@ -95,17 +95,6 @@ class NavigationView:
         self._create_navigation_renderer()
         self._bind_events()
         self._restore_navigation_markers(self._markers.values())
-        navigation_state = ses.Session().GetConfig("navigation", {})
-        saved_coil_registrations = ses.Session().GetConfig("coil_registrations", {}) or {}
-        selected_coils = navigation_state.get("selected_coils", ())
-        registered_coils = [
-            coil_name for coil_name in selected_coils if coil_name in saved_coil_registrations
-        ]
-        self.SetDualNavigation(
-            navigation_state.get("dual_navigation", False)
-            and navigation_state.get("n_coils", 1) > 1
-            and len(registered_coils) > 1
-        )
         self._update_fps_visibility()
 
     def __getattr__(self, name):
@@ -641,7 +630,7 @@ class NavigationView:
                 self.fps_text.SetValue(f"FPS: {fps:0.1f}")
 
     def _bind_events(self):
-        Publisher.subscribe(self.SetDualNavigation, "Set dual navigation view")
+        Publisher.subscribe(self.SetDualNavigation, "Dual navigation changed")
         Publisher.subscribe(self.OnAddMarker, "Add marker")
         Publisher.subscribe(self.OnDeleteMarker, "Delete marker")
         Publisher.subscribe(self.OnDeleteMarkers, "Delete markers")

@@ -1005,7 +1005,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ReloadActualSlice, "Reload actual slice")
         Publisher.subscribe(self.ReloadActualSlice, f"Reload actual slice {self.orientation}")
         Publisher.subscribe(self.OnUpdateScroll, "Update scroll")
-        Publisher.subscribe(self.OnSetDualNavigation, "Set dual navigation view")
+        Publisher.subscribe(self.OnSetDualNavigation, "Dual navigation changed")
 
         # MIP
         Publisher.subscribe(self.OnSetMIPSize, f"Set MIP size {self.orientation}")

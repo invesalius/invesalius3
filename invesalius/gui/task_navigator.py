@@ -2437,7 +2437,7 @@ class ControlPanel(wx.Panel):
         Publisher.subscribe(self.PressShowProbeButton, "Press show-probe button")
 
         Publisher.subscribe(self.OnCoilSelectionDone, "Coil selection done")
-        Publisher.subscribe(self.OnDualNavigationChanged, "Set dual navigation view")
+        Publisher.subscribe(self.OnDualNavigationChanged, "Dual navigation changed")
 
         Publisher.subscribe(self.PressShowCoilButton, "Press show-coil button")
         Publisher.subscribe(self.EnableShowCoilButton, "Enable show-coil button")

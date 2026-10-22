@@ -489,8 +489,14 @@ class Navigation(metaclass=Singleton):
         self.dual_navigation = bool(enabled) and self.CanUseDualNavigation()
         self.SaveConfig("dual_navigation", self.dual_navigation)
         if notify:
-            Publisher.sendMessage("Set dual navigation view", enabled=self.dual_navigation)
+            self.PublishDualNavigationState()
         return self.dual_navigation
+
+    def PublishDualNavigationState(self, *, navigation_active=True):
+        Publisher.sendMessage(
+            "Dual navigation changed",
+            enabled=self.dual_navigation and navigation_active,
+        )
 
     def SelectCoil(self, coil_name, coil_registration):
         # A changed registration invalidates the previously computed transformation.
