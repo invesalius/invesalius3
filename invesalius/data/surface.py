@@ -105,6 +105,7 @@ class Surface:
             self.index = index
             Surface.general_index -= 1
         self.polydata = ""
+        self.projection_polydata = None
         self.colour = ""
         self.transparency = const.SURFACE_TRANSPARENCY
         self.volume = 0.0
@@ -144,6 +145,12 @@ class Surface:
             "area": self.area,
             "category": self.category,
         }
+        if self.projection_polydata is not None:
+            projection_filename = filename + "_projection.vtp"
+            projection_filepath = os.path.join(dir_temp, projection_filename)
+            pu.Export(self.projection_polydata, projection_filepath, bin=True)
+            filelist[projection_filepath] = projection_filename
+            surface["projection_polydata"] = projection_filename
         plist_filename = filename + ".plist"
         # plist_filepath = os.path.join(dir_temp, filename + '.plist')
         temp_fd, temp_plist = tempfile.mkstemp()
@@ -174,6 +181,11 @@ class Surface:
         except KeyError:
             self.category = "General"
         self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
+        self.projection_polydata = None
+        if "projection_polydata" in sp:
+            projection_filepath = os.path.join(dirpath, sp["projection_polydata"])
+            if os.path.isfile(projection_filepath):
+                self.projection_polydata = pu.Import(projection_filepath)
         Surface.general_index = max(Surface.general_index, self.index)
 
     def _set_class_index(self, index):
@@ -968,7 +980,7 @@ class SurfaceManager:
 
         self.last_surface_index = surface.index
 
-        Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+        Publisher.sendMessage("Load surface actor into viewer", actor=actor, surface=surface)
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
         return surface.index
 
@@ -1045,7 +1057,7 @@ class SurfaceManager:
             self.actors_dict[surface.index] = actor
 
             # Send actor by pubsub to viewer's render
-            Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+            Publisher.sendMessage("Load surface actor into viewer", actor=actor, surface=surface)
 
             Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
 
@@ -1126,7 +1138,7 @@ class SurfaceManager:
 
         session.ChangeProject()
 
-        Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+        Publisher.sendMessage("Load surface actor into viewer", actor=actor, surface=surface)
 
         # Send actor by pubsub to viewer's render
         if overwrite and self.actors_dict.keys():

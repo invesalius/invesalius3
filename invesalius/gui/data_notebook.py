@@ -34,7 +34,9 @@ import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius import inv_paths
+from invesalius.data.eeg import EEGMontage
 from invesalius.i18n import tr as _
+from invesalius.navigation.eeg_electrodes import EEGElectrodeManager
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
@@ -92,16 +94,18 @@ class NotebookPanel(wx.Panel):
         book.SetSelection(self.MASK_PAGE_INDEX)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(book, 0, wx.EXPAND)
+        sizer.Add(book, 1, wx.EXPAND)
         self.SetSizer(sizer)
 
         book.Refresh()
         self.book = book
+        self.eeg_electrodes = EEGElectrodeManager()
+        self.eeg_page = None
         self.navigation_on = False
         self.__bind_events()
+        self._SyncEEGPage()
 
     def __bind_events(self):
-        self.book.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
         Publisher.subscribe(self._FoldSurface, "Fold surface task")
         Publisher.subscribe(self._FoldSurface, "Fold surface page")
         Publisher.subscribe(self._FoldMeasure, "Fold measure task")
@@ -109,22 +113,68 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._FoldMask, "Fold mask page")
         Publisher.subscribe(self._FoldImage, "Fold image page")
         Publisher.subscribe(self._OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self._OnEEGRegistrationModeChanged, "EEG registration mode changed")
+        Publisher.subscribe(self._OnEEGElectrodesChanged, "EEG electrodes changed")
+        Publisher.subscribe(self._OnProjectStateEnabled, "Enable state project")
+        Publisher.subscribe(self._OnCloseProject, "Close project data")
+        Publisher.subscribe(self._OnSelectEEGElectrode, "Select EEG electrode")
 
-    def OnPageChanging(self, evt):
-        if self.navigation_on:
-            target_page = evt.GetSelection()
-            if target_page in (self.IMAGE_PAGE_INDEX, self.MASK_PAGE_INDEX):
-                evt.Veto()
-                return
-        evt.Skip()
+    def _OnSelectEEGElectrode(self, electrode_uuid):
+        if self.eeg_electrodes.get(electrode_uuid) is None:
+            return
+        self._SyncEEGPage(select=True)
+        self.eeg_page.listctrl.SelectElectrode(electrode_uuid)
+
+    def _OnProjectStateEnabled(self, state):
+        if state:
+            wx.CallAfter(self._SyncEEGPage)
+
+    def _OnEEGRegistrationModeChanged(self, active):
+        self._SyncEEGPage(select=active)
+
+    def _OnEEGElectrodesChanged(self):
+        wx.CallAfter(self._SyncEEGPage)
+
+    def _OnCloseProject(self):
+        wx.CallAfter(self._SyncEEGPage)
+
+    def _SyncEEGPage(self, select=False):
+        has_electrodes = bool(self.eeg_electrodes.electrodes)
+        should_show = self.eeg_electrodes.registration_active or has_electrodes
+
+        if should_show:
+            if self.eeg_page is None:
+                self.eeg_page = EEGElectrodePage(
+                    self.book,
+                    self.eeg_electrodes,
+                    navigation_on=self.navigation_on,
+                )
+                self.book.AddPage(self.eeg_page, _("EEG electrodes"))
+            self.eeg_page.RefreshElectrodes()
+            if select:
+                self.book.SetSelection(self._GetEEGPageIndex())
+        elif self.eeg_page is not None:
+            page_index = self._GetEEGPageIndex()
+            if page_index != wx.NOT_FOUND:
+                page = self.eeg_page
+                self.book.RemovePage(page_index)
+                page.Destroy()
+            self.eeg_page = None
+
+        self.Layout()
+
+    def _GetEEGPageIndex(self):
+        if self.eeg_page is None:
+            return wx.NOT_FOUND
+        for page_index in range(self.book.GetPageCount()):
+            if self.book.GetPage(page_index) is self.eeg_page:
+                return page_index
+        return wx.NOT_FOUND
 
     def _FoldImage(self):
         """
         Fold Images notebook page.
         """
-        if self.navigation_on:
-            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
-            return
         self.book.SetSelection(self.IMAGE_PAGE_INDEX)
 
     def _FoldSurface(self):
@@ -143,17 +193,19 @@ class NotebookPanel(wx.Panel):
         """
         Fold mask notebook page.
         """
-        if self.navigation_on:
-            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
-            return
         self.book.SetSelection(self.MASK_PAGE_INDEX)
 
     def _OnNavigationStatus(self, nav_status, vis_status):
         self.navigation_on = bool(nav_status)
+        if self.eeg_page is not None:
+            self.eeg_page.SetNavigationStatus(self.navigation_on)
         self.book.GetPage(self.MASK_PAGE_INDEX).Enable(not self.navigation_on)
         self.book.GetPage(self.IMAGE_PAGE_INDEX).Enable(not self.navigation_on)
         if self.navigation_on:
-            self.book.SetSelection(self.SURFACE_PAGE_INDEX)
+            if self.eeg_electrodes.registration_active:
+                self._SyncEEGPage(select=True)
+            else:
+                self.book.SetSelection(self.SURFACE_PAGE_INDEX)
 
 
 class MeasurePage(wx.Panel):
@@ -172,7 +224,7 @@ class MeasurePage(wx.Panel):
         self.buttonctrl = MeasureButtonControlPanel(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.listctrl, 0, wx.EXPAND)
+        sizer.Add(self.listctrl, 1, wx.EXPAND)
         sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
         self.SetSizer(sizer)
         self.Fit()
@@ -1081,6 +1133,7 @@ class SurfacePage(wx.Panel):
         Publisher.subscribe(self.OnShowMultiple, "Show multiple surfaces")
         Publisher.subscribe(self.update_current_surface_data, "Update surface info in GUI")
         Publisher.subscribe(self.update_select_all_checkbox, "Update surface select all checkbox")
+        Publisher.subscribe(self.UpdateVisibilityButton, "Update surface visibility button")
 
     def __init_gui(self):
         # button control with tools (eg. remove, add new, etc)
@@ -1111,19 +1164,14 @@ class SurfacePage(wx.Panel):
         category_label = wx.StaticText(header_panel, label=category)
         category_label.SetFont(category_label.GetFont().Bold())
 
-        # Create image list for visibility icons
-        visibility_imagelist = wx.ImageList(16, 16)
         invisible_image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_invisible.png"))
         invisible_bitmap = wx.Bitmap(invisible_image.Scale(16, 16))
         visible_image = wx.Image(os.path.join(inv_paths.ICON_DIR, "object_visible.png"))
         visible_bitmap = wx.Bitmap(visible_image.Scale(16, 16))
-        visibility_imagelist.Add(invisible_bitmap)
-        visibility_imagelist.Add(visible_bitmap)
 
         # Visibility toggle button with icon
         visibility_btn = wx.BitmapButton(header_panel, size=(24, 24))
         visibility_btn.SetBitmap(visible_bitmap)
-        visibility_btn.SetToolTip("Toggle visibility for all surfaces in this category")
         visibility_btn.Bind(wx.EVT_BUTTON, lambda evt: self.on_category_visibility_toggle(category))
 
         # Select all checkbox
@@ -1180,6 +1228,7 @@ class SurfacePage(wx.Panel):
 
         self.scroll_sizer.Add(header_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 2)
         self.scroll_sizer.Add(content_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 2)
+        self.UpdateVisibilityButton()
 
         return listctrl
 
@@ -1204,36 +1253,39 @@ class SurfacePage(wx.Panel):
         self.update_scroll_layout()
 
     def on_category_visibility_toggle(self, category):
-        """Toggle visibility for all surfaces in the given category"""
         if category not in self.categories:
             return
 
+        new_visibility = not self.HasVisibleSurfaces(category)
         listctrl = self.categories[category]["list"]
-        visibility_btn = self.categories[category]["visibility_btn"]
-        invisible_bitmap = self.categories[category]["invisible_bitmap"]
-        visible_bitmap = self.categories[category]["visible_bitmap"]
-
-        is_visible = False
-        for local_pos in listctrl.surface_list_index.values():
-            try:
-                item = listctrl.GetItem(local_pos, 0)
-                if item.GetImage() == 1:  # 1 = visible
-                    is_visible = True
-                    break
-            except wx.wxAssertionError:
-                continue
-        new_visibility = not is_visible
         for global_surface_id, local_pos in listctrl.surface_list_index.items():
             listctrl.SetItemImage(local_pos, int(new_visibility))
             Publisher.sendMessage(
                 "Show surface", index=global_surface_id, visibility=new_visibility
             )
+        self.UpdateVisibilityButton()
 
-        # Update the button icon based on the new visibility state
-        if new_visibility:
-            visibility_btn.SetBitmap(visible_bitmap)
-        else:
-            visibility_btn.SetBitmap(invisible_bitmap)
+    def HasVisibleSurfaces(self, category):
+        listctrl = self.categories[category]["list"]
+        for local_pos in listctrl.surface_list_index.values():
+            try:
+                if listctrl.GetItem(local_pos, 0).GetImage() == 1:
+                    return True
+            except wx.wxAssertionError:
+                continue
+        return False
+
+    def UpdateVisibilityButton(self):
+        for category, category_info in self.categories.items():
+            has_visible_surfaces = self.HasVisibleSurfaces(category)
+            button = category_info["visibility_btn"]
+            button.SetBitmap(
+                category_info["visible_bitmap" if has_visible_surfaces else "invisible_bitmap"]
+            )
+            button.SetToolTip(
+                _("Hide all surfaces") if has_visible_surfaces else _("Show all surfaces")
+            )
+            button.Enable(bool(category_info["list"].surface_list_index))
 
     def on_category_select_all(self, category, select_all):
         """Select or unselect all surfaces in the given category"""
@@ -1270,33 +1322,6 @@ class SurfacePage(wx.Panel):
         else:
             select_all_cb.Set3StateValue(wx.CHK_UNDETERMINED)
 
-    def _update_visibility_button_icon(self, category):
-        """Update the visibility button icon based on current visibility state"""
-        if category not in self.categories:
-            return
-
-        listctrl = self.categories[category]["list"]
-        visibility_btn = self.categories[category]["visibility_btn"]
-        invisible_bitmap = self.categories[category]["invisible_bitmap"]
-        visible_bitmap = self.categories[category]["visible_bitmap"]
-
-        # Check if any items are visible
-        any_visible = False
-        for local_pos in listctrl.surface_list_index.values():
-            try:
-                item = listctrl.GetItem(local_pos, 0)
-                if item.GetImage() == 1:  # 1 = visible
-                    any_visible = True
-                    break
-            except wx.wxAssertionError:
-                continue
-
-        # Update button icon
-        if any_visible:
-            visibility_btn.SetBitmap(visible_bitmap)
-        else:
-            visibility_btn.SetBitmap(invisible_bitmap)
-
     def AddSurface(self, surface):
         category = getattr(surface, "category", "General")
         if category not in self.categories:
@@ -1306,8 +1331,7 @@ class SurfacePage(wx.Panel):
         self.update_scroll_layout()
         self.update_select_all_checkbox(category)
 
-        # Update visibility button icon
-        self._update_visibility_button_icon(category)
+        self.UpdateVisibilityButton()
 
     def RepopulateSurfaces(self, clear_project=False):
         # Properly destroy all components and clear sizer
@@ -1325,6 +1349,7 @@ class SurfacePage(wx.Panel):
             self.create_category("General")
 
         self.update_scroll_layout()
+        self.UpdateVisibilityButton()
 
     def OnPaneChanged(self, evt):
         self.update_scroll_layout()
@@ -1368,6 +1393,7 @@ class SurfacePage(wx.Panel):
                 local_idx = listctrl.surface_list_index[key]
                 listctrl.SetItemImage(local_idx, int(show))
                 Publisher.sendMessage("Show surface", index=key, visibility=show)
+        self.UpdateVisibilityButton()
 
     def OnShowMultiple(self, index_list, visibility):
         for category_info in self.categories.values():
@@ -1381,6 +1407,7 @@ class SurfacePage(wx.Panel):
                 if current_img != int(show):
                     listctrl.SetItemImage(local_idx, int(show))
                     Publisher.sendMessage("Show surface", index=key, visibility=show)
+        self.UpdateVisibilityButton()
 
 
 class SurfaceButtonControlPanel(wx.Panel):
@@ -2043,6 +2070,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
             return
 
         Publisher.sendMessage("Show surface", index=global_idx, visibility=flag)
+        Publisher.sendMessage("Update surface visibility button")
 
     def InsertSurfaceItem(self, surface):
         index = surface.index
@@ -2134,6 +2162,323 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
 # -------------------------------------------------
 # -------------------------------------------------
+
+
+class EEGElectrodePage(wx.Panel):
+    """Data notebook page that presents the registered EEG electrodes."""
+
+    def __init__(self, parent, eeg_electrodes, navigation_on=False):
+        super().__init__(parent)
+        self.eeg_electrodes = eeg_electrodes
+
+        self.listctrl = EEGElectrodeListCtrl(
+            self,
+            eeg_electrodes,
+            navigation_on=navigation_on,
+        )
+        self.buttonctrl = EEGElectrodeButtonControlPanel(self, eeg_electrodes, self.listctrl)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.listctrl, 1, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
+        self.SetSizer(sizer)
+        self.RefreshElectrodes()
+
+    def RefreshElectrodes(self):
+        self.listctrl.RefreshElectrodes()
+        self.buttonctrl.UpdateButtons()
+
+    def SetNavigationStatus(self, navigation_on):
+        self.listctrl.SetNavigationStatus(navigation_on)
+
+
+class EEGElectrodeButtonControlPanel(wx.Panel):
+    """Removal controls that apply only to EEG electrodes."""
+
+    def __init__(self, parent, eeg_electrodes, listctrl):
+        super().__init__(parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
+        self.eeg_electrodes = eeg_electrodes
+        self.listctrl = listctrl
+
+        self.visible_bitmap = self._LoadBitmap("object_visible.png")
+        self.invisible_bitmap = self._LoadBitmap("object_invisible.png")
+        remove_bitmap = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
+        )
+        export_bitmap = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"),
+            wx.BITMAP_TYPE_PNG,
+        )
+
+        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        self.remove_button = pbtn.PlateButton(
+            self, wx.ID_ANY, "", remove_bitmap, style=button_style, size=wx.Size(24, 20)
+        )
+        self.remove_button.SetToolTip(_("Delete selected EEG electrodes"))
+        self.export_button = pbtn.PlateButton(
+            self,
+            wx.ID_ANY,
+            "",
+            export_bitmap,
+            style=button_style,
+            size=wx.Size(24, 20),
+        )
+        self.export_button.SetToolTip(_("Export EEG montage"))
+        labels_bitmap = self._LoadBitmap("text_original.png")
+        labels_pressed_bitmap = self._LoadBitmap("text_inverted_original.png")
+        self.labels_button = wx.BitmapToggleButton(
+            self,
+            wx.ID_ANY,
+            labels_bitmap,
+            size=wx.Size(24, 20),
+        )
+        self.labels_button.SetBitmapPressed(labels_pressed_bitmap)
+        self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
+        self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 20))
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
+        sizer.Add(self.export_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
+        sizer.Add(self.labels_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
+        sizer.AddStretchSpacer()
+        sizer.Add(self.visibility_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        self.SetSizer(sizer)
+        self.Fit()
+
+        self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
+        self.export_button.Bind(wx.EVT_BUTTON, self.OnExport)
+        self.labels_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleLabels)
+        self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
+        self.listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
+        self.listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnSelectionChanged)
+
+    def UpdateButtons(self):
+        self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
+        self.export_button.Enable(bool(self.eeg_electrodes.electrodes))
+        self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
+        self._UpdateLabelsButtonTooltip()
+        self.UpdateVisibilityButton()
+
+    @staticmethod
+    def _LoadBitmap(icon_name):
+        image = wx.Image(os.path.join(inv_paths.ICON_DIR, icon_name))
+        return wx.Bitmap(image.Scale(16, 16))
+
+    def UpdateVisibilityButton(self):
+        electrodes = self.eeg_electrodes.electrodes
+        has_visible_electrodes = any(electrode.visible for electrode in electrodes)
+        self.visibility_button.SetBitmap(
+            self.visible_bitmap if has_visible_electrodes else self.invisible_bitmap
+        )
+        tooltip = (
+            _("Hide all EEG electrodes") if has_visible_electrodes else _("Show all EEG electrodes")
+        )
+        self.visibility_button.SetToolTip(tooltip)
+        self.visibility_button.Enable(bool(electrodes))
+
+    def OnToggleVisibility(self, _evt):
+        if any(electrode.visible for electrode in self.eeg_electrodes.electrodes):
+            self.eeg_electrodes.set_all_visible(False)
+        else:
+            self.eeg_electrodes.set_all_visible(True)
+
+    def OnToggleLabels(self, _evt):
+        self.eeg_electrodes.set_labels_visible(self.labels_button.GetValue())
+        self._UpdateLabelsButtonTooltip()
+
+    def _UpdateLabelsButtonTooltip(self):
+        tooltip = (
+            _("Hide EEG electrode labels")
+            if self.eeg_electrodes.labels_visible
+            else _("Show EEG electrode labels")
+        )
+        self.labels_button.SetToolTip(tooltip)
+
+    def OnSelectionChanged(self, evt):
+        self.UpdateButtons()
+        evt.Skip()
+
+    def OnDeleteSelected(self, _evt):
+        electrodes = self.listctrl.GetSelectedElectrodes()
+        if not electrodes:
+            return
+
+        message = (
+            _("Delete selected EEG electrode?")
+            if len(electrodes) == 1
+            else _("Delete the selected EEG electrodes ({count})?").format(count=len(electrodes))
+        )
+        result = dlg.ShowConfirmationDialog(msg=message)
+        if result == wx.ID_OK:
+            self.eeg_electrodes.remove_many(electrode.electrode_uuid for electrode in electrodes)
+
+    def OnExport(self, _evt):
+        session = ses.Session()
+        export_selection = dlg.ShowEEGMontageExportDialog(
+            self,
+            default_directory=session.GetConfig("last_directory_eeg_montage", ""),
+        )
+        if export_selection is None:
+            return
+
+        output_path, export_format = export_selection
+        output_directory, filename = os.path.split(output_path)
+        try:
+            existing_paths = [
+                path
+                for path in EEGMontage.get_export_paths(
+                    output_directory,
+                    export_format,
+                    filename,
+                )
+                if path.exists()
+            ]
+            if existing_paths:
+                result = dlg.ShowConfirmationDialog(
+                    msg=_("The montage export files already exist. Overwrite them?")
+                )
+                if result != wx.ID_OK:
+                    return
+
+            EEGMontage.export_montage(
+                self.eeg_electrodes.electrodes, output_directory, export_format, filename
+            )
+            session.SetConfig("last_directory_eeg_montage", output_directory)
+            wx.MessageBox(
+                _("EEG montage exported successfully."),
+                _("Success"),
+                wx.OK | wx.ICON_INFORMATION,
+            )
+        except (OSError, ValueError) as error:
+            wx.MessageBox(str(error), _("Export error"), wx.OK | wx.ICON_ERROR)
+
+
+class EEGElectrodeListCtrl(wx.ListCtrl):
+    """EEG electrode table with a clickable visibility column."""
+
+    def __init__(self, parent, eeg_electrodes, navigation_on=False):
+        super().__init__(parent, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
+        self.eeg_electrodes = eeg_electrodes
+        self.electrode_uuids = []
+        self.navigation_on = bool(navigation_on)
+        self.highlighted_electrode_uuid = None
+        self._refreshing = False
+
+        self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER, width=25)
+        self.InsertColumn(1, _("ID"), width=50)
+        self.InsertColumn(2, _("X (mm)"), width=85)
+        self.InsertColumn(3, _("Y (mm)"), width=85)
+        self.InsertColumn(4, _("Z (mm)"), width=85)
+
+        self.visibility_images = wx.ImageList(16, 16)
+        for icon_name in ("object_invisible.png", "object_visible.png"):
+            image = wx.Image(os.path.join(inv_paths.ICON_DIR, icon_name))
+            self.visibility_images.Add(wx.Bitmap(image.Scale(16, 16)))
+        self.SetImageList(self.visibility_images, wx.IMAGE_LIST_SMALL)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+        self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected)
+
+    def OnLeftDown(self, evt):
+        row, _flags = self.HitTest(evt.GetPosition())
+        if row != wx.NOT_FOUND and evt.GetPosition()[0] <= self.GetColumnWidth(0):
+            electrode = self._GetElectrode(row)
+            if electrode is not None:
+                self.eeg_electrodes.set_visible(electrode.electrode_uuid, not electrode.visible)
+            return
+        evt.Skip()
+
+    def RefreshElectrodes(self):
+        selected_uuids = {electrode.electrode_uuid for electrode in self.GetSelectedElectrodes()}
+        focused_row = self.GetFocusedItem()
+        focused_uuid = (
+            self.electrode_uuids[focused_row]
+            if 0 <= focused_row < len(self.electrode_uuids)
+            else None
+        )
+        self._refreshing = True
+        self.Freeze()
+        try:
+            self.DeleteAllItems()
+            self.electrode_uuids = []
+
+            for electrode in self.eeg_electrodes.electrodes:
+                self.electrode_uuids.append(electrode.electrode_uuid)
+                row = self.InsertItem(self.GetItemCount(), "", int(electrode.visible))
+                self.SetItem(row, 1, electrode.label)
+
+                for column, coordinate in enumerate(electrode.position, start=2):
+                    self.SetItem(row, column, f"{coordinate:.2f}")
+                if electrode.electrode_uuid in selected_uuids:
+                    self.Select(row)
+                if electrode.electrode_uuid == focused_uuid:
+                    self.Focus(row)
+        finally:
+            self._refreshing = False
+            self.Thaw()
+        if self.highlighted_electrode_uuid not in self.electrode_uuids:
+            self._ClearHighlight()
+
+    def OnKeyDown(self, evt):
+        if evt.CmdDown() and evt.GetKeyCode() == ord("A"):
+            self.SetItemState(-1, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+            return
+        evt.Skip()
+
+    def _GetElectrode(self, row):
+        if not 0 <= row < len(self.electrode_uuids):
+            return None
+        return self.eeg_electrodes.get(self.electrode_uuids[row])
+
+    def GetSelectedElectrodes(self):
+        electrodes = []
+        row = self.GetFirstSelected()
+        while row != wx.NOT_FOUND:
+            electrode = self._GetElectrode(row)
+            if electrode is not None:
+                electrodes.append(electrode)
+            row = self.GetNextSelected(row)
+        return electrodes
+
+    def SelectElectrode(self, electrode_uuid):
+        if electrode_uuid not in self.electrode_uuids:
+            return
+        row = self.electrode_uuids.index(electrode_uuid)
+        self.SetItemState(-1, 0, wx.LIST_STATE_SELECTED)
+        self.Focus(row)
+        self.Select(row)
+        self.EnsureVisible(row)
+
+    def SetNavigationStatus(self, navigation_on):
+        self.navigation_on = bool(navigation_on)
+        if self.navigation_on:
+            self._ClearHighlight()
+
+    def OnItemSelected(self, evt):
+        if not self._refreshing and not self.navigation_on:
+            electrode = self._GetElectrode(evt.GetIndex())
+            if electrode is not None:
+                Publisher.sendMessage(
+                    "Highlight EEG electrode", electrode_uuid=electrode.electrode_uuid
+                )
+                self.highlighted_electrode_uuid = electrode.electrode_uuid
+        evt.Skip()
+
+    def OnItemDeselected(self, evt):
+        if self._refreshing:
+            evt.Skip()
+            return
+        electrode = self._GetElectrode(evt.GetIndex())
+        if electrode is not None and electrode.electrode_uuid == self.highlighted_electrode_uuid:
+            self._ClearHighlight()
+        evt.Skip()
+
+    def _ClearHighlight(self):
+        if self.highlighted_electrode_uuid is None:
+            return
+        Publisher.sendMessage("Unhighlight EEG electrode")
+        self.highlighted_electrode_uuid = None
 
 
 class MeasuresListCtrlPanel(InvListCtrl):
@@ -2693,7 +3038,7 @@ class ImagePage(wx.Panel):
         self._init_image_list()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.list_ctrl, 0, wx.EXPAND)
+        sizer.Add(self.list_ctrl, 1, wx.EXPAND)
         sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
         self.SetSizer(sizer)
         self.Fit()
