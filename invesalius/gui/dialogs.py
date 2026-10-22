@@ -2178,9 +2178,6 @@ class CalculateSurfacePropertiesProgressWindow:
     def Close(self) -> None:
         self.dlg.Destroy()
 
-    def Close(self) -> None:
-        self.dlg.Destroy()
-
 
 class SurfaceTransparencyDialog(wx.Dialog):
     def __init__(
