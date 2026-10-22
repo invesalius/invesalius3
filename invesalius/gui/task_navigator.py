@@ -2600,7 +2600,26 @@ class ControlPanel(wx.Panel):
                     coil_names=self.navigation.dual_navigation_coils,
                 )
                 return
-        self.navigation.SetDualNavigation(enabled, coil_names=coil_names)
+        if enabled:
+            self._EnableDualNavigation(coil_names)
+        else:
+            self.navigation.SetDualNavigation(False, coil_names=coil_names)
+
+    def _EnableDualNavigation(self, coil_names):
+        progress_dialog = wx.ProgressDialog(
+            _("Dual navigation"),
+            _("Preparing dual navigation..."),
+            maximum=100,
+            parent=self,
+            style=wx.PD_APP_MODAL | wx.PD_SMOOTH,
+        )
+        try:
+            progress_dialog.Pulse()
+            # Paint the dialog before creating the secondary VTK scene.
+            wx.SafeYield()
+            self.navigation.SetDualNavigation(True, coil_names=coil_names)
+        finally:
+            progress_dialog.Destroy()
 
     def _ChooseDualNavigationCoils(self):
         coil_names = list(self.navigation.coil_registrations)
