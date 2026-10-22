@@ -485,14 +485,14 @@ class Navigation(metaclass=Singleton):
     def CanUseDualNavigation(self):
         return self.n_coils > 1 and len(self.coil_registrations) > 1
 
-    def SetDualNavigation(self, enabled, *, notify=True):
+    def SetDualNavigation(self, enabled, notify=True):
         self.dual_navigation = bool(enabled) and self.CanUseDualNavigation()
         self.SaveConfig("dual_navigation", self.dual_navigation)
         if notify:
             self.PublishDualNavigationState()
         return self.dual_navigation
 
-    def PublishDualNavigationState(self, *, navigation_active=True):
+    def PublishDualNavigationState(self, navigation_active=True):
         Publisher.sendMessage(
             "Dual navigation changed",
             enabled=self.dual_navigation and navigation_active,
