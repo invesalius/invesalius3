@@ -193,7 +193,8 @@ class UpdateNavigationScene(threading.Thread):
                 Publisher.sendMessage("Create marker", marker_type=MarkerType.COIL_POSE)
 
             if update_pose:
-                Publisher.sendMessage("Update slices position", position=coord[:3])
+                if not self.navigation.dual_navigation:
+                    Publisher.sendMessage("Update slices position", position=coord[:3])
                 Publisher.sendMessage("Set cross focal point", position=coord)
                 Publisher.sendMessage(
                     "Update volume viewer pointer",
@@ -243,7 +244,7 @@ class UpdateNavigationScene(threading.Thread):
 
             if render:
                 Publisher.sendMessage("Render volume viewer")
-                if slice_render:
+                if slice_render and not self.navigation.dual_navigation:
                     Publisher.sendMessage("Update slice viewer")
         finally:
             self._dispatch_pending = False

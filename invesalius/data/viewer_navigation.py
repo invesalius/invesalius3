@@ -78,6 +78,7 @@ class NavigationView:
         self._navigation_renderers = []
         self._dual_navigation = False
         self._mirror_renderers = {}
+        self._unmirrored_renderers = set()
         self._nav_status = False
         self.scene = NavigationScene(view.ren, view.actor_factory)
         self.scenes = [self.scene]
@@ -235,22 +236,29 @@ class NavigationView:
         for renderer in self._navigation_renderers:
             self._detach_renderer(renderer)
         self._navigation_renderers.clear()
+        self._unmirrored_renderers.clear()
         self.scenes_by_coil.clear()
         self.scenes.clear()
         self.view.target_guide_renderer = None
 
-    def _add_scene_renderer(self, renderer):
+    def _add_scene_renderer(self, renderer, *, mirror=True):
+        raw_renderer = self._unwrap_renderer(renderer)
         if renderer not in self._navigation_renderers:
             self._navigation_renderers.append(renderer)
+        if mirror:
+            self._unmirrored_renderers.discard(raw_renderer)
+        else:
+            self._unmirrored_renderers.add(raw_renderer)
         if self._active and (renderer is not self.scene.target_guide_renderer or self.target_mode):
             self._attach_renderer(renderer)
-        if self._dual_navigation:
+        if self._dual_navigation and mirror:
             self._ensure_mirror_renderer(renderer)
 
     def _remove_scene_renderer(self, renderer):
         self._detach_renderer(renderer)
         if renderer in self._navigation_renderers:
             self._navigation_renderers.remove(renderer)
+        self._unmirrored_renderers.discard(self._unwrap_renderer(renderer))
 
     def _attach_renderer(self, renderer):
         renderer = self._unwrap_renderer(renderer)
@@ -275,7 +283,12 @@ class NavigationView:
         return getattr(renderer, "renderer", renderer)
 
     def _mirror_sources(self):
-        return (self.view.ren, self.view.canvas_renderer, *self._navigation_renderers)
+        renderers = (self.view.ren, self.view.canvas_renderer, *self._navigation_renderers)
+        return tuple(
+            renderer
+            for renderer in renderers
+            if self._unwrap_renderer(renderer) not in self._unmirrored_renderers
+        )
 
     def _ensure_mirror_renderer(self, renderer):
         source = self._unwrap_renderer(renderer)
@@ -355,6 +368,8 @@ class NavigationView:
             self.view._set_renderer_viewport(source, viewport)
             return
         source.SetViewport(*self._map_dual_viewport(viewport, 0))
+        if source in self._unmirrored_renderers:
+            return
         mirror = self._ensure_mirror_renderer(source)
         mirror.SetViewport(*self._map_dual_viewport(viewport, 1))
 
@@ -684,7 +699,7 @@ class NavigationView:
         self.ren_probe = vtkRenderer()
         self.ren_probe.SetLayer(1)
 
-        self._add_scene_renderer(self.ren_probe)
+        self._add_scene_renderer(self.ren_probe, mirror=False)
         self._set_renderer_viewport(self.ren_probe, (0.01, 0.79, 0.15, 0.97))
         filename = os.path.join(inv_paths.OBJ_DIR, "stylus.stl")
 
@@ -710,7 +725,7 @@ class NavigationView:
         self.ren_ref = vtkRenderer()
         self.ren_ref.SetLayer(1)
 
-        self._add_scene_renderer(self.ren_ref)
+        self._add_scene_renderer(self.ren_ref, mirror=False)
         self._set_renderer_viewport(self.ren_ref, (0.01, 0.57, 0.15, 0.79))
         filename = os.path.join(inv_paths.OBJ_DIR, "head.stl")
 
@@ -736,7 +751,7 @@ class NavigationView:
         self.ren_obj = vtkRenderer()
         self.ren_obj.SetLayer(1)
 
-        self._add_scene_renderer(self.ren_obj)
+        self._add_scene_renderer(self.ren_obj, mirror=False)
         self._set_renderer_viewport(self.ren_obj, (0.01, 0.40, 0.15, 0.57))
         filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
 
