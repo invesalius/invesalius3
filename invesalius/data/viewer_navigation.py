@@ -402,6 +402,12 @@ class NavigationView:
         else:
             self.view._set_renderer_viewport(renderer, viewport)
 
+    def _coil_indicator_viewport(self):
+        if self._dual_navigation:
+            # Compensate for the left scene occupying half of the render window.
+            return (0.02, 0.40, 0.30, 0.57)
+        return (0.01, 0.40, 0.15, 0.57)
+
     def SetDualNavigation(self, enabled=False):
         enabled = bool(enabled)
         if enabled == self._dual_navigation:
@@ -480,7 +486,7 @@ class NavigationView:
         for name, viewport in (
             ("ren_probe", (0.01, 0.79, 0.15, 0.97)),
             ("ren_ref", (0.01, 0.57, 0.15, 0.79)),
-            ("ren_obj", (0.01, 0.40, 0.15, 0.57)),
+            ("ren_obj", self._coil_indicator_viewport()),
         ):
             renderer = getattr(self, name, None)
             if renderer is not None:
@@ -813,7 +819,7 @@ class NavigationView:
         self.ren_obj.SetLayer(1)
 
         self._add_scene_renderer(self.ren_obj)
-        self._set_renderer_viewport(self.ren_obj, (0.01, 0.40, 0.15, 0.57))
+        self._set_renderer_viewport(self.ren_obj, self._coil_indicator_viewport())
         filename = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil_no_handle.stl")
 
         reader = vtkSTLReader()
