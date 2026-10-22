@@ -456,6 +456,8 @@ class NavigationView:
             self._dual_navigation_coils = coil_names
             self._sync_secondary_anatomy()
             scene.ren.set_active(self._active)
+            self.scene.set_coil_name_visibility(True)
+            scene.set_coil_name_visibility(True)
             if self._active:
                 for renderer in self._navigation_renderers:
                     if self._unwrap_renderer(renderer) in self._secondary_renderers:
@@ -463,6 +465,7 @@ class NavigationView:
                             self._attach_renderer(renderer)
         else:
             self._deactivate_secondary_scene()
+            self.scene.set_coil_name_visibility(False)
             self._associate_scene_with_coil(self.scene, self._main_coil)
         self._apply_scene_viewport()
         if self._active:

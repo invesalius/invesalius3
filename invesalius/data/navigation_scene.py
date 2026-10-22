@@ -93,6 +93,13 @@ class NavigationRenderer:
                 prop.SetVisibility(False)
         self._active = active
 
+    def set_prop_visibility(self, prop, visible):
+        """Set managed visibility even while this renderer is inactive."""
+        if prop not in self._props:
+            return
+        self._props[prop] = bool(visible)
+        prop.SetVisibility(bool(visible) if self._active else False)
+
     def owns_prop(self, prop):
         return prop in self._props
 
@@ -134,6 +141,9 @@ class NavigationScene:
         self.object_orientation_torus_actor = None
         self.distance_text = None
         self.robot_warnings_text = None
+        self.coil_name_text = self.create_coil_name_text(coil_name)
+        self.ren.AddActor(self.coil_name_text.actor)
+        self.ren.set_prop_visibility(self.coil_name_text.actor, False)
         self.pTarget = [0.0, 0.0, 0.0]
         self.actor_tracts = None
         self.tracts_status = False
@@ -211,9 +221,13 @@ class NavigationScene:
     def set_coil(self, coil_name, robot=None):
         """Change the live coil and its robot without changing the scene's target."""
         self.coil_name = coil_name
+        self.coil_name_text.SetValue(coil_name or "")
         if self.marker_visualizer is not None:
             self.marker_visualizer.coil_name = coil_name
         self.refresh_target_coil()
+
+    def set_coil_name_visibility(self, visible):
+        self.ren.set_prop_visibility(self.coil_name_text.actor, visible)
 
     def restore_markers(self, markers):
         for marker in markers:
@@ -639,6 +653,20 @@ class NavigationScene:
         distance_text.BoldOn()
 
         return distance_text
+
+    @staticmethod
+    def create_coil_name_text(coil_name):
+        coil_name_text = vtku.Text()
+
+        coil_name_text.actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
+        coil_name_text.SetSize(const.TEXT_SIZE_SMALL)
+        coil_name_text.SetPosition(const.TEXT_POS_RIGHT_DOWN)
+        coil_name_text.SetJustificationToRight()
+        coil_name_text.SetVerticalJustificationToBottom()
+        coil_name_text.SetColour((0.75, 0.75, 0.75))
+        coil_name_text.SetValue(coil_name or "")
+
+        return coil_name_text
 
     def set_camera_target(self):
         cam_focus = self.target_coord[0:3]
