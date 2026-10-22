@@ -94,7 +94,7 @@ class NotebookPanel(wx.Panel):
         book.SetSelection(self.MASK_PAGE_INDEX)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(book, 0, wx.EXPAND)
+        sizer.Add(book, 1, wx.EXPAND)
         self.SetSizer(sizer)
 
         book.Refresh()
@@ -239,7 +239,7 @@ class MeasurePage(wx.Panel):
         self.buttonctrl = MeasureButtonControlPanel(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.listctrl, 0, wx.EXPAND)
+        sizer.Add(self.listctrl, 1, wx.EXPAND)
         sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
         self.SetSizer(sizer)
         self.Fit()
@@ -2729,7 +2729,7 @@ class ImagePage(wx.Panel):
         self._init_image_list()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.list_ctrl, 0, wx.EXPAND)
+        sizer.Add(self.list_ctrl, 1, wx.EXPAND)
         sizer.Add(self.buttonctrl, 0, wx.EXPAND | wx.TOP, 2)
         self.SetSizer(sizer)
         self.Fit()
