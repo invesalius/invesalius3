@@ -59,6 +59,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 from invesalius import inv_paths, utils
 from invesalius.data.markers.marker import Marker, MarkerType
+from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.gui import deep_learning_seg_dialog
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
 from invesalius.i18n import tr as _
@@ -817,6 +818,13 @@ class HeadPage(wx.Panel):
             self.SmoothSurface()
 
         self.VisualizeScalpSurface()
+
+        try:
+            if SurfaceGeometry().GetSmoothedScalpSurface() is None:
+                raise RuntimeError(_("The scalp surface does not contain usable geometry."))
+        except RuntimeError as error:
+            wx.MessageBox(str(error), _("InVesalius 3"), wx.OK | wx.ICON_WARNING)
+            return
 
         if self.brain_segmentation_checkbox.IsChecked():
             self.SegmentBrain()
