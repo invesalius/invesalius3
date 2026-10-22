@@ -2590,7 +2590,60 @@ class ControlPanel(wx.Panel):
         self.EnableToggleButton(self.dual_navigation_button, enabled)
 
     def OnDualNavigation(self, evt=None):
-        self.navigation.SetDualNavigation(self.dual_navigation_button.GetValue())
+        enabled = self.dual_navigation_button.GetValue()
+        coil_names = None
+        if enabled and len(self.navigation.coil_registrations) > 2:
+            coil_names = self._ChooseDualNavigationCoils()
+            if coil_names is None:
+                self.OnDualNavigationChanged(
+                    enabled=self.navigation.dual_navigation,
+                    coil_names=self.navigation.dual_navigation_coils,
+                )
+                return
+        self.navigation.SetDualNavigation(enabled, coil_names=coil_names)
+
+    def _ChooseDualNavigationCoils(self):
+        coil_names = list(self.navigation.coil_registrations)
+        selected_coils = self.navigation.dual_navigation_coils
+
+        left_dialog = wx.SingleChoiceDialog(
+            self,
+            _("Select the coil for the left navigation scene"),
+            _("Dual navigation"),
+            coil_names,
+        )
+        preferred_left = selected_coils[0] if selected_coils else self.navigation.main_coil
+        if preferred_left in coil_names:
+            left_dialog.SetSelection(coil_names.index(preferred_left))
+        else:
+            left_dialog.SetSelection(0)
+        try:
+            if left_dialog.ShowModal() != wx.ID_OK:
+                return None
+            left_coil = left_dialog.GetStringSelection()
+        finally:
+            left_dialog.Destroy()
+
+        right_choices = [name for name in coil_names if name != left_coil]
+        right_dialog = wx.SingleChoiceDialog(
+            self,
+            _("Select the coil for the right navigation scene"),
+            _("Dual navigation"),
+            right_choices,
+        )
+        preferred_right = selected_coils[1] if len(selected_coils) > 1 else None
+        if preferred_right in right_choices:
+            right_dialog.SetSelection(right_choices.index(preferred_right))
+        else:
+            right_dialog.SetSelection(0)
+        try:
+            if right_dialog.ShowModal() != wx.ID_OK:
+                return None
+            right_coil = right_dialog.GetStringSelection()
+        finally:
+            right_dialog.Destroy()
+
+        return left_coil, right_coil
 
     def OnDualNavigationChanged(self, enabled=False, coil_names=()):
         self.UpdateToggleButton(self.dual_navigation_button, enabled)

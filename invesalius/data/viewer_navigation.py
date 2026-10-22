@@ -78,9 +78,11 @@ class NavigationView:
         self._navigation_renderers = []
         self._secondary_renderers = set()
         self._dual_navigation = False
+        self._dual_navigation_coils = ()
         self._secondary_scene = None
         self._secondary_anatomy_props = set()
         self._markers = {marker.marker_id: marker for marker in markers}
+        self._main_coil = main_coil
         self._nav_status = False
         self.scene = NavigationScene(view.ren, view.actor_factory)
         self.scenes = [self.scene]
@@ -154,16 +156,17 @@ class NavigationView:
 
     def _associate_scene_with_coil(self, scene, coil_name):
         if scene.coil_name == coil_name:
+            if coil_name is not None:
+                self.scenes_by_coil[coil_name] = scene
             return
 
-        if scene.coil_name is not None:
+        if scene.coil_name is not None and self.scenes_by_coil.get(scene.coil_name) is scene:
             self.scenes_by_coil.pop(scene.coil_name, None)
 
         if coil_name is not None:
             self.scenes_by_coil[coil_name] = scene
 
         # Changing the live coil keeps the current target and its coordinates.
-        scene.refresh_target_coil()
         scene.set_coil(coil_name)
 
     def _get_scene_for_coil(self, coil_name):
@@ -290,7 +293,7 @@ class NavigationView:
         scene = self._scene_for_target_guide(renderer)
         return scene is None or scene.target_mode
 
-    def _ensure_secondary_scene(self):
+    def _ensure_secondary_scene(self, coil_name):
         if self._secondary_scene is not None:
             return self._secondary_scene
 
@@ -303,7 +306,7 @@ class NavigationView:
         renderer.SetGradientBackground(self.view.ren.GetGradientBackground())
         renderer.GetActiveCamera().DeepCopy(self.view.ren.GetActiveCamera())
 
-        scene = NavigationScene(renderer, self.view.actor_factory, coil_name=self.scene.coil_name)
+        scene = NavigationScene(renderer, self.view.actor_factory, coil_name=coil_name)
         self._secondary_scene = scene
         self.scenes.append(scene)
         scene.initialize_visualizers(
@@ -334,6 +337,8 @@ class NavigationView:
             scene.robot_force_visualizer.ren_force,
         ):
             self._remove_scene_renderer(renderer)
+        if scene.coil_name is not None and self.scenes_by_coil.get(scene.coil_name) is scene:
+            self.scenes_by_coil.pop(scene.coil_name, None)
         self.scenes.remove(scene)
         scene.dispose()
         self._secondary_scene = None
@@ -410,12 +415,19 @@ class NavigationView:
                 actor.SetScale(scale)
 
     def SetDualNavigation(self, enabled=False, coil_names=()):
-        enabled = bool(enabled)
-        if enabled == self._dual_navigation:
+        coil_names = tuple(coil_names)
+        enabled = bool(enabled) and len(coil_names) == 2 and len(set(coil_names)) == 2
+        if enabled == self._dual_navigation and (
+            not enabled or coil_names == self._dual_navigation_coils
+        ):
             return
         self._dual_navigation = enabled
         if enabled:
-            scene = self._ensure_secondary_scene()
+            left_coil, right_coil = coil_names
+            self._associate_scene_with_coil(self.scene, left_coil)
+            scene = self._ensure_secondary_scene(right_coil)
+            self._associate_scene_with_coil(scene, right_coil)
+            self._dual_navigation_coils = coil_names
             self._sync_secondary_anatomy()
             scene.ren.set_active(self._active)
             if self._active:
@@ -425,6 +437,7 @@ class NavigationView:
                             self._attach_renderer(renderer)
         else:
             self._deactivate_secondary_scene()
+            self._associate_scene_with_coil(self.scene, self._main_coil)
         self._apply_scene_viewport()
         if self._active:
             for visible_scene in self._visible_scenes():
@@ -933,14 +946,13 @@ class NavigationView:
             if targeting is None:
                 continue
             coil_at_target, displacement = targeting
-            if scene is self.scene:
-                wx.CallAfter(
-                    Publisher.sendMessage,
-                    "Coil at target",
-                    state=coil_at_target,
-                    displacement=displacement,
-                    coil_name=coil_name,
-                )
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "Coil at target",
+                state=coil_at_target,
+                displacement=displacement,
+                coil_name=coil_name,
+            )
 
     def OnSelectCoil(self, coil_name, coil_registration):
         if coil_registration is not None:
@@ -949,9 +961,9 @@ class NavigationView:
                     scene.refresh_target_coil()
 
     def OnMainCoilChanged(self, coil_name):
-        self._associate_scene_with_coil(self.scene, coil_name)
-        if self._secondary_scene is not None:
-            self._secondary_scene.set_coil(coil_name)
+        self._main_coil = coil_name
+        if not self._dual_navigation:
+            self._associate_scene_with_coil(self.scene, coil_name)
 
     def OnUnsetTarget(self, marker):
         for scene in self.scenes:
