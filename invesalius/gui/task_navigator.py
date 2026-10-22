@@ -3852,7 +3852,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     points_per_ring=config.get("points_per_ring", 6),
                     spacing=config["spacing"],
                 )
-            except ValueError as e:
+            except (ValueError, RuntimeError) as e:
                 wx.MessageBox(str(e), _("InVesalius 3"), wx.OK | wx.ICON_ERROR)
         grid_dlg.Destroy()
 
