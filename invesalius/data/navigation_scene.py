@@ -93,6 +93,9 @@ class NavigationRenderer:
                 prop.SetVisibility(False)
         self._active = active
 
+    def owns_prop(self, prop):
+        return prop in self._props
+
     def dispose(self):
         for prop in self._props:
             self.renderer.RemoveViewProp(prop)
@@ -181,13 +184,20 @@ class NavigationScene:
         self.ren.dispose()
         self.clear_target_guide()
 
-    def initialize_visualizers(self, vector_field_visualizer, interactor, track_object=False):
+    def initialize_visualizers(
+        self,
+        vector_field_visualizer,
+        interactor,
+        track_object=False,
+        publish_cortex_markers=True,
+    ):
         self.marker_visualizer = MarkerVisualizer(
             renderer=self.ren,
             interactor=interactor,
             actor_factory=self.actor_factory,
             vector_field_visualizer=vector_field_visualizer,
             coil_name=self.coil_name,
+            publish_cortex_markers=publish_cortex_markers,
         )
         self.robot_force_visualizer = RobotForceVisualizer()
         self._refresh_robot_force_state()

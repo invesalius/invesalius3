@@ -96,7 +96,13 @@ class MarkerVisualizer:
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d("Green")
 
     def __init__(
-        self, renderer, interactor, actor_factory, vector_field_visualizer, coil_name=None
+        self,
+        renderer,
+        interactor,
+        actor_factory,
+        vector_field_visualizer,
+        coil_name=None,
+        publish_cortex_markers=True,
     ):
         self.renderer = renderer
         self.coil_name = coil_name
@@ -107,6 +113,7 @@ class MarkerVisualizer:
 
         # The vector field visualizer is used to represent a vector field relative to target.
         self.vector_field_visualizer = vector_field_visualizer
+        self.publish_cortex_markers = publish_cortex_markers
 
         # The currently highlighted marker object.
         self.highlighted_marker = None
@@ -247,7 +254,7 @@ class MarkerVisualizer:
         else:
             assert False, "Invalid marker type."
 
-        if cortex_marker[0] is not None:
+        if self.publish_cortex_markers and cortex_marker[0] is not None:
             Publisher.sendMessage(
                 "Add cortex marker actor", position_orientation=cortex_marker, marker_id=marker_id
             )
