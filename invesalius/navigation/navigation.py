@@ -651,8 +651,6 @@ class Navigation(metaclass=Singleton):
             self.e_field_IDs_queue,
         ]
 
-        Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-
         if not self.CoilSelectionDone():
             wx.MessageBox(
                 _(
@@ -792,6 +790,8 @@ class Navigation(metaclass=Singleton):
                     neuronavigation_api=self.neuronavigation_api,
                 )
             )
+
+            Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
 
             for jobs in jobs_list:
                 # jobs.daemon = True
