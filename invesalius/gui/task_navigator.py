@@ -288,7 +288,7 @@ class InnerFoldPanel(wx.Panel):
         Publisher.sendMessage("Show coil in viewer volume", state=pressed, coil_name=None)
 
     def CollapseNavigation(self, done):
-        if not done:  # Coil selection is no longer complete, so hide navigation panel
+        if not done:  # No valid coil selection, so hide the navigation panel.
             self.fold_panel.Collapse(self.nav_panel)
 
     def OnFoldPressCaption(self, evt):
@@ -1731,11 +1731,12 @@ class StimulatorPage(wx.Panel):
         border = wx.FlexGridSizer(1, 2, 1)
         self.coil_registrations = []
 
+        n_coils_selected = len(self.navigation.coil_registrations)
         lbl = wx.StaticText(
             self,
             -1,
             _(
-                f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!"
+                f"Ready for navigation with {n_coils_selected} coil{'' if n_coils_selected == 1 else 's'}!"
             ),
         )
         # lbl.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -1794,8 +1795,9 @@ class StimulatorPage(wx.Panel):
 
     def CoilSelectionDone(self, done):
         if done:
+            n_coils_selected = len(self.navigation.coil_registrations)
             self.lbl.SetLabel(
-                f"Ready for navigation with {self.navigation.n_coils} coil{'' if self.navigation.n_coils == 1 else 's'}!"
+                f"Ready for navigation with {n_coils_selected} coil{'' if n_coils_selected == 1 else 's'}!"
             )
         else:
             self.lbl.SetLabel("Please select which coil(s) to track")

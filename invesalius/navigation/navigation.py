@@ -355,7 +355,7 @@ class Navigation(metaclass=Singleton):
         self.neuronavigation_api = neuronavigation_api
 
         self.target = None
-        self.n_coils = 1
+        self.n_coils = 1  # Tracker capacity, not the required number of selected coils.
         self.coil_registrations = {}
         self.track_coil = False
         self.main_coil = None  # Which coil to track with pointer
@@ -506,10 +506,11 @@ class Navigation(metaclass=Singleton):
                 self.r_stylus = np.array(state["r_stylus"])
 
     def CoilSelectionDone(self):
-        return len(self.coil_registrations) == self.n_coils
+        """Allow any nonempty coil selection within the tracker capacity."""
+        return 1 <= len(self.coil_registrations) <= self.n_coils
 
     def CanUseDualNavigation(self):
-        return self.n_coils > 1 and len(self.coil_registrations) > 1
+        return self.CoilSelectionDone() and len(self.coil_registrations) > 1
 
     def GetDefaultDualNavigationCoils(self):
         coil_names = tuple(self.coil_registrations)
@@ -555,12 +556,11 @@ class Navigation(metaclass=Singleton):
         self.obj_datas.pop(coil_name, None)
         if coil_registration is not None:  # Add the coil to selection
             self.coil_registrations[coil_name] = coil_registration
-            if self.main_coil is None:
-                self._set_main_coil(coil_name)
         else:  # Remove the coil from selection
             self.coil_registrations.pop(coil_name, None)
-            if self.main_coil == coil_name:
-                self._set_main_coil(None)
+
+        if self.main_coil not in self.coil_registrations:
+            self._set_main_coil(next(iter(self.coil_registrations), None))
 
         if self.dual_navigation and (
             not self.CanUseDualNavigation()
@@ -734,16 +734,16 @@ class Navigation(metaclass=Singleton):
             self.e_field_IDs_queue,
         ]
 
-        Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-
         if not self.CoilSelectionDone():
             wx.MessageBox(
-                _(
-                    f"No. of coils to track is {self.n_coils}, but no. of coils registered is {len(self.coil_registrations)}"
+                _("Select between 1 and {maximum} registered coils for navigation.").format(
+                    maximum=self.n_coils
                 ),
                 _("InVesalius 3"),
             )
         else:
+            Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
+
             # Pre-compute obj_datas: data/matrices for each coil to be used in coregistration
             # data is accessed from dict by coil name
             obj_datas = {}
