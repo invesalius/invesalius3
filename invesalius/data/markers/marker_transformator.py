@@ -9,8 +9,10 @@ from invesalius.pubsub import pub as Publisher
 
 
 class MarkerTransformator:
-    def __init__(self):
+    def __init__(self, target_resolver=None, main_target_resolver=None):
         self.surface_geometry = SurfaceGeometry()
+        self.target_resolver = target_resolver
+        self.main_target_resolver = main_target_resolver
 
         # Keep track of the marker selected in the marker menu; this is the marker
         # that will be moved when the user presses a key.
@@ -46,7 +48,7 @@ class MarkerTransformator:
         self.selected_marker = marker
 
     def UpdateZOffsetTargetByRobot(self, z_offset, robot_id=None):
-        marker = self.target
+        marker = self.target_resolver(robot_id) if self.target_resolver else self.target
         if not marker or not self.robot_track_status:
             return
         if not z_offset or not np.isfinite(z_offset):
@@ -71,10 +73,13 @@ class MarkerTransformator:
         self.robot_track_status = status
 
     def SetTarget(self, marker):
-        self.target = marker
+        self.target = self.main_target_resolver() if self.main_target_resolver else marker
 
     def UnsetTarget(self, marker):
-        self.target = None
+        if self.main_target_resolver:
+            self.target = self.main_target_resolver()
+        elif self.target is marker:
+            self.target = None
 
     def SetTargetMode(self, enabled=False):
         self.is_target_mode = enabled
@@ -274,9 +279,9 @@ class MarkerTransformator:
 
         The marker can only be moved if the navigation is off, except for the '+' and '-' keys.
         """
-        marker = (
-            self.target if self.is_target_mode and self.target is not None else self.selected_marker
-        )
+        # The selected marker disambiguates keyboard edits when several coils
+        # have independent targets.
+        marker = self.selected_marker or (self.target if self.is_target_mode else None)
 
         # Return early if no marker is selected.
         if marker is None:

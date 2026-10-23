@@ -413,6 +413,7 @@ class Navigation(metaclass=Singleton):
         # During navigation
         self.lock_to_target = False
         self.coil_at_target = False
+        self._coils_at_target = {}
 
         self.LoadConfig()
 
@@ -570,15 +571,26 @@ class Navigation(metaclass=Singleton):
         self.SaveConfig()
 
     def CoilAtTarget(self, state, displacement, coil_name=None):
-        self.coil_at_target = state
+        coil_name = coil_name or self.main_coil
+        self._coils_at_target[coil_name] = state
+        if coil_name == self.main_coil:
+            self.coil_at_target = state
+
+    def ResetCoilAtTarget(self, coil_name):
+        self._coils_at_target.pop(coil_name, None)
+        if coil_name == self.main_coil:
+            self.coil_at_target = False
 
     def SetTarget(self, marker):
+        if marker.coil_name is not None and marker.coil_name != self.main_coil:
+            return
         coord = marker.position + marker.orientation
         coord[1] = -coord[1]
         self.target = coord
 
     def UnsetTarget(self):
         self.target = None
+        self.coil_at_target = False
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
@@ -603,6 +615,8 @@ class Navigation(metaclass=Singleton):
         # Reset coil selection
         self.coil_registrations = {}
         self.obj_datas = {}
+        self._coils_at_target.clear()
+        self.coil_at_target = False
         self._set_main_coil(None)
         if self.dual_navigation:
             self.SetDualNavigation(False)
@@ -613,6 +627,7 @@ class Navigation(metaclass=Singleton):
         if self.main_coil == coil_name:
             return
         self.main_coil = coil_name
+        self.coil_at_target = self._coils_at_target.get(coil_name, False)
         Publisher.sendMessage("Main coil changed", coil_name=coil_name)
 
     def SetMainCoil(self, main_coil):
