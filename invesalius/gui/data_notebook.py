@@ -28,7 +28,6 @@ import wx.grid
 import wx.lib.platebtn as pbtn
 import wx.lib.scrolledpanel as scrolled
 from PIL import Image
-from wx.lib.colourutils import GetHighlightColour
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
@@ -2233,22 +2232,25 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
                 18, 18, wx.IMAGE_QUALITY_HIGH
             )
         )
-        self.auto_label_button = wx.BitmapButton(
-            self, wx.ID_ANY, auto_label_bitmap, size=wx.Size(24, 20), style=wx.BORDER_NONE
+        self.auto_label_button = pbtn.PlateButton(
+            self,
+            wx.ID_ANY,
+            "",
+            auto_label_bitmap,
+            size=wx.Size(24, 20),
+            style=button_style,
         )
         self.auto_label_button.SetToolTip(_("Assign EEG labels using a montage template"))
 
         labels_bitmap = self._LoadBitmap("text_original.png")
-        labels_pressed_bitmap = self._LoadBitmap("text_inverted_original.png")
-        self.labels_button = wx.BitmapToggleButton(
+        self.labels_button = pbtn.PlateButton(
             self,
             wx.ID_ANY,
+            "",
             labels_bitmap,
             size=wx.Size(24, 20),
-            style=wx.BORDER_NONE,
+            style=button_style | pbtn.PB_STYLE_TOGGLE,
         )
-        self.labels_button.SetBitmapPressed(labels_pressed_bitmap)
-        self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
         self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 20))
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -2265,9 +2267,6 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         self.export_button.Bind(wx.EVT_BUTTON, self.OnExport)
         self.auto_label_button.Bind(wx.EVT_BUTTON, self.OnAutoLabel)
         self.labels_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleLabels)
-        for button in (self.auto_label_button, self.labels_button):
-            button.Bind(wx.EVT_ENTER_WINDOW, self.OnButtonHover)
-            button.Bind(wx.EVT_LEAVE_WINDOW, self.OnButtonHover)
         self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
         self.listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
         self.listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnSelectionChanged)
@@ -2276,20 +2275,13 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
         self.export_button.Enable(bool(self.eeg_electrodes.electrodes))
         self.auto_label_button.Enable(len(self.eeg_electrodes.electrodes) >= 3)
-        self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
+        # PlateButton has no public setter for its toggle value.
+        self.labels_button._pressed = self.eeg_electrodes.labels_visible
+        self.labels_button._SetState(
+            pbtn.PLATE_PRESSED if self.eeg_electrodes.labels_visible else pbtn.PLATE_NORMAL
+        )
         self._UpdateLabelsButtonTooltip()
         self.UpdateVisibilityButton()
-
-    def OnButtonHover(self, event):
-        button = event.GetEventObject()
-        colour = (
-            GetHighlightColour()
-            if event.Entering() and button.IsEnabled()
-            else self.GetBackgroundColour()
-        )
-        button.SetBackgroundColour(colour)
-        button.Refresh()
-        event.Skip()
 
     @staticmethod
     def _LoadBitmap(icon_name):
@@ -2315,8 +2307,8 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             self.eeg_electrodes.set_all_visible(True)
 
     def OnToggleLabels(self, _evt):
-        self.eeg_electrodes.set_labels_visible(self.labels_button.GetValue())
-        self._UpdateLabelsButtonTooltip()
+        self.eeg_electrodes.set_labels_visible(not self.eeg_electrodes.labels_visible)
+        self.UpdateButtons()
 
     def _UpdateLabelsButtonTooltip(self):
         tooltip = (
