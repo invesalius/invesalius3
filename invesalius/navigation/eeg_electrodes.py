@@ -214,3 +214,16 @@ class EEGElectrodeManager(metaclass=Singleton):
         while f"E{index}" in labels:
             index += 1
         return f"E{index}"
+
+    def apply_labels(self, labels: dict[str, str]):
+        """Apply a reviewed assignment only while the captured electrode set is unchanged."""
+        if labels.keys() != self._electrodes.keys():
+            raise ValueError(_("EEG electrodes changed. Run auto labelling again."))
+        if any(not isinstance(label, str) or not label.strip() for label in labels.values()) or len(
+            set(labels.values())
+        ) != len(labels):
+            raise ValueError(_("EEG electrode labels must be nonempty and unique."))
+        for electrode_uuid, label in labels.items():
+            self._electrodes[electrode_uuid].label = label
+        self.SaveState()
+        Publisher.sendMessage("EEG electrodes changed")

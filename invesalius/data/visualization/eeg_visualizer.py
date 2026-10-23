@@ -68,6 +68,7 @@ class EEGElectrodeVisualizer:
                 for actor in self.actors[electrode_uuid]:
                     self.renderer.AddActor(actor)
             actor, label = self.actors[electrode_uuid]
+            label.SetInput(electrode.label)
             self.renderer.SetPropVisibility(actor, electrode.visible)
             self.renderer.SetPropVisibility(label, electrode.visible and self.labels_visible)
         self._Render()
