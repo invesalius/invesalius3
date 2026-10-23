@@ -21,11 +21,11 @@
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from math import dist
+from math import dist, isfinite
 from time import monotonic
 
 import invesalius.session as ses
-from invesalius.data.eeg import EEGElectrode
+from invesalius.data.eeg import EEGElectrode, EEGMontage
 from invesalius.data.markers.surface_geometry import (
     SCALP_NORMAL_AVERAGING_RADIUS_MM,
     SurfaceGeometry,
@@ -63,6 +63,7 @@ class EEGElectrodeManager(metaclass=Singleton):
         Publisher.subscribe(self.update_probe_pose, "Update probe pose")
         Publisher.subscribe(self.on_navigation_status, "Navigation status")
         Publisher.subscribe(self.on_navigation_mode, "Set navigation mode")
+        Publisher.subscribe(self.on_project_state, "Enable state project")
         Publisher.subscribe(self.reset, "Close project data")
 
     @property
@@ -81,6 +82,11 @@ class EEGElectrodeManager(metaclass=Singleton):
         marker_state = session.GetState("markers", []) or []
         # Migrate before MarkersControl reads the old EEG type (5), which master does not know.
         self._electrodes = {item.electrode_uuid: item for item in electrodes}
+
+    def on_project_state(self, state):
+        if state and self._electrodes:
+            # Startup clears the state after electrodes have been restored in memory.
+            self.SaveState()
 
     def on_navigation_mode(self, status, markers=(), main_coil=None):
         if not status:
@@ -192,6 +198,20 @@ class EEGElectrodeManager(metaclass=Singleton):
     def clear(self):
         return self.remove_many(self._electrodes)
 
+    def replace_electrodes(self, electrodes: Sequence[EEGElectrode]):
+        """Install a fully validated import, keeping the current collection on save failure."""
+        if self.prepare_scalp_surface():
+            for electrode in electrodes:
+                electrode.orientation = self.project_to_scalp(electrode.position).orientation
+        previous = self._electrodes
+        self._electrodes = {item.electrode_uuid: item for item in electrodes}
+        try:
+            self.SaveState()
+        except Exception:
+            self._electrodes = previous
+            raise
+        Publisher.sendMessage("EEG electrodes changed")
+
     def set_visible(self, electrode_uuid, visible):
         electrode = self.get(electrode_uuid)
         if electrode is None:
@@ -214,3 +234,51 @@ class EEGElectrodeManager(metaclass=Singleton):
         while f"E{index}" in labels:
             index += 1
         return f"E{index}"
+
+    def rename(self, electrode_uuid: str, label: str):
+        electrode = self.get(electrode_uuid)
+        if electrode is None or electrode.label == label:
+            return
+        template = EEGMontage.get_templates().get(electrode.montage_name)
+        if template is None:
+            raise ValueError(_("Run auto labelling to select an EEG montage first."))
+        if label not in template["electrodes"]:
+            raise ValueError(_("Choose a label from the electrode's EEG montage."))
+        EEGMontage._validate_export_labels(
+            [
+                (label if item is electrode else item.label, item.position)
+                for item in self.electrodes
+            ]
+        )
+        previous_label, previous_distance = electrode.label, electrode.distance_mm
+        electrode.label = label
+        # The previous distance belongs to the automatically assigned template label.
+        electrode.distance_mm = None
+        try:
+            self.SaveState()
+        except Exception:
+            electrode.label, electrode.distance_mm = previous_label, previous_distance
+            raise
+        Publisher.sendMessage("EEG electrodes changed")
+
+    def apply_labels(self, labels: dict[str, str], distances: dict[str, float], montage_name: str):
+        """Apply a template assignment only while the captured electrode set is unchanged."""
+        if labels.keys() != self._electrodes.keys() or distances.keys() != labels.keys():
+            raise ValueError(_("EEG electrodes changed. Run auto labelling again."))
+        if any(not isinstance(label, str) or not label.strip() for label in labels.values()) or len(
+            set(labels.values())
+        ) != len(labels):
+            raise ValueError(_("EEG electrode labels must be nonempty and unique."))
+        if any(not isfinite(distance) or distance < 0 for distance in distances.values()):
+            raise ValueError(_("Matching distances must be finite and nonnegative."))
+        template = EEGMontage.get_templates().get(montage_name)
+        if template is None or any(
+            label not in template["electrodes"] for label in labels.values()
+        ):
+            raise ValueError(_("Choose labels from the selected EEG montage."))
+        for electrode_uuid, label in labels.items():
+            self._electrodes[electrode_uuid].label = label
+            self._electrodes[electrode_uuid].distance_mm = float(distances[electrode_uuid])
+            self._electrodes[electrode_uuid].montage_name = montage_name
+        self.SaveState()
+        Publisher.sendMessage("EEG electrodes changed")

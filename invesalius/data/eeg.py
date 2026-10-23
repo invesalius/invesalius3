@@ -17,14 +17,14 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
-"""EEG electrode data and montage exports."""
+"""EEG electrode data and montage import/export."""
 
 import csv
 import json
 from dataclasses import asdict, dataclass, field
 from math import isfinite
 from pathlib import Path
-from struct import pack
+from struct import pack, unpack
 from tempfile import TemporaryDirectory
 from time import time_ns
 from uuid import uuid4
@@ -44,6 +44,8 @@ class EEGElectrode:
     visible: bool = True
     session_id: int = 1
     electrode_uuid: str = field(default_factory=lambda: str(uuid4()))
+    distance_mm: float | None = None
+    montage_name: str | None = None
 
     def __post_init__(self):
         for values in (self.position, self.orientation, self.colour):
@@ -57,13 +59,135 @@ class EEGElectrode:
             raise ValueError("An electrode needs a nonempty label.")
         if not isinstance(self.electrode_uuid, str) or not self.electrode_uuid:
             raise ValueError("An electrode needs a nonempty UUID.")
+        if self.distance_mm is not None and (
+            not isinstance(self.distance_mm, (int, float))
+            or not isfinite(self.distance_mm)
+            or self.distance_mm < 0
+        ):
+            raise ValueError("Matching distances must be finite and nonnegative.")
+        if self.montage_name is not None and (
+            not isinstance(self.montage_name, str) or not self.montage_name.strip()
+        ):
+            raise ValueError("A montage name must be a nonempty string.")
+
+    @property
+    def display_colour(self):
+        if self.distance_mm is None:
+            return self.colour if self.montage_name is None else (0.5, 0.5, 0.5)
+        if self.distance_mm < 5.0:
+            return (0.0, 1.0, 0.0)
+        if self.distance_mm < 10.0:
+            return (1.0, 1.0, 0.0)
+        return (1.0, 0.0, 0.0)
 
     def to_dict(self):
         return asdict(self)
 
 
 class EEGMontage:
-    """Serialize electrode montages and their MRI coordinate metadata."""
+    """Match electrode templates and serialize montages with MRI coordinate metadata."""
+
+    @staticmethod
+    def get_templates() -> dict:
+        from invesalius import inv_paths
+
+        path = inv_paths.INV_TOP_DIR / "navigation" / "eeg_montages.json"
+        catalog = json.loads(path.read_text(encoding="utf-8"))
+        if (
+            not isinstance(catalog, dict)
+            or catalog.get("units") != "m"
+            or not isinstance(catalog.get("montages"), dict)
+            or not catalog["montages"]
+        ):
+            raise ValueError(_("Invalid EEG montage template catalog."))
+        return catalog["montages"]
+
+    @staticmethod
+    def match_template(template, positions, fiducials) -> tuple[list[str], np.ndarray]:
+        """Return unique labels and residuals in capture order, without modifying captures.
+
+        Positions and fiducials are in InVesalius image mm; fiducial order is LPA, RPA, Nasion.
+        """
+        from scipy.optimize import linear_sum_assignment
+        from scipy.spatial.distance import cdist, pdist
+
+        from invesalius.data.transformations import affine_matrix_from_points
+
+        positions = np.asarray(positions, dtype=float)
+        fiducials = np.asarray(fiducials, dtype=float)
+        if fiducials.shape != (3, 3) or not np.isfinite(fiducials).all():
+            raise ValueError(_("Register image fiducials (Left Ear, Right Ear, Nasion) first."))
+        if (
+            positions.ndim != 2
+            or positions.shape[1] != 3
+            or len(positions) < 3
+            or not np.isfinite(positions).all()
+        ):
+            raise ValueError(_("Auto labelling requires at least three finite EEG positions."))
+        if (
+            not isinstance(template, dict)
+            or not isinstance(template.get("electrodes"), dict)
+            or not isinstance(template.get("fiducials"), dict)
+        ):
+            raise ValueError(_("Invalid EEG montage template coordinates."))
+        try:
+            labels = list(template["electrodes"])
+            # The bundled templates use meters and anterior +Y; image coordinates use mm and -Y.
+            template_positions = np.asarray(list(template["electrodes"].values()), dtype=float)
+            template_positions = template_positions * (1000, -1000, 1000)
+            template_fiducials = np.asarray(
+                [template["fiducials"][name] for name in ("lpa", "rpa", "nasion")], dtype=float
+            ) * (1000, -1000, 1000)
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(_("Invalid EEG montage template coordinates.")) from error
+        if (
+            template.get("units") != "m"
+            or template_positions.shape != (len(labels), 3)
+            or template_fiducials.shape != (3, 3)
+            or not np.isfinite(template_positions).all()
+            or not np.isfinite(template_fiducials).all()
+            or not labels
+            or any(not isinstance(label, str) or not label.strip() for label in labels)
+        ):
+            raise ValueError(_("Invalid EEG montage template coordinates."))
+        if len(positions) > len(labels):
+            raise ValueError(
+                _("There are more captured electrodes than channels in this template.")
+            )
+        for points in (positions, fiducials, template_fiducials, template_positions):
+            if np.linalg.matrix_rank(points - points.mean(axis=0)) < 2:
+                raise ValueError(_("EEG positions and fiducials must not be collinear."))
+            if pdist(points).min() < 1e-6:
+                raise ValueError(_("Duplicate EEG positions or fiducials cannot be matched."))
+
+        transform = affine_matrix_from_points(
+            template_fiducials.T, fiducials.T, shear=False, scale=True
+        )
+        best_error = float("inf")
+        for iteration in range(6):
+            aligned = template_positions @ transform[:3, :3].T + transform[:3, 3]
+            costs = cdist(positions, aligned)
+            rows, columns = linear_sum_assignment(costs)
+            distances = costs[rows, columns]
+            mean_error = float(distances.mean())
+            if mean_error >= best_error:
+                break
+            improvement = best_error - mean_error
+            best_error = mean_error
+            best_columns, best_distances = columns.copy(), distances.copy()
+            if improvement < 0.1 or iteration == 5:
+                break
+            good = distances < 50.0
+            source = template_positions[columns[good]]
+            target = positions[rows[good]]
+            if len(source) < 3 or any(
+                np.linalg.matrix_rank(points - points.mean(axis=0)) < 2
+                for points in (source, target)
+            ):
+                break
+            transform = affine_matrix_from_points(source.T, target.T, shear=False, scale=True)
+
+        return [labels[index] for index in best_columns], best_distances
 
     @staticmethod
     def get_export_paths(
@@ -139,6 +263,175 @@ class EEGMontage:
         return [str(path) for path in paths]
 
     @staticmethod
+    def read_montage(filename) -> list[EEGElectrode]:
+        """Read an InVesalius export with its registration sidecar into the current MRI."""
+        path = Path(filename)
+        export_format = "BIDS" if path.suffix.lower() == ".tsv" else path.suffix[1:].upper()
+        paths = EEGMontage.get_export_paths(path.parent, export_format, path.name)
+        if not paths[-1].is_file():
+            raise ValueError(
+                _("Keep the matching *_registration.json file beside the exported EEG montage.")
+            )
+        metadata = json.loads(paths[-1].read_text(encoding="utf-8"))
+        current_matrix = EEGMontage._image_to_scanner_ras_matrix()
+        try:
+            source_matrix = np.asarray(metadata["ImageToScannerRAS"]["Matrix"], dtype=float)
+            if source_matrix.shape != (4, 4) or not np.allclose(
+                source_matrix, current_matrix, rtol=1e-6, atol=1e-4
+            ):
+                raise ValueError(_("Open the MRI project used to export this EEG montage."))
+            if metadata["ExportFormat"] != export_format:
+                raise ValueError(_("The EEG montage format does not match its registration file."))
+            if export_format == "FIF":
+                electrodes = EEGMontage._read_fif(path)
+                transforms = [
+                    item
+                    for item in metadata["AdditionalTransformations"]
+                    if item["SourceCoordinateSystem"] == "MNE head"
+                    and item["DestinationCoordinateSystem"] == "MRI Scanner RAS"
+                    and item["SourceCoordinateUnits"] == item["DestinationCoordinateUnits"] == "m"
+                ]
+                if len(transforms) != 1:
+                    raise ValueError(_("The FIF montage requires a head-to-Scanner-RAS transform."))
+                transform = np.asarray(transforms[0]["Matrix"], dtype=float)
+                if EEGMontage._transform_metadata("head", "ras", transform)["Matrix"] is None:
+                    raise ValueError(_("Invalid FIF coordinate transform."))
+                if (
+                    metadata["ExportedCoordinateSystem"] != "MNE head"
+                    or metadata["ExportedCoordinateUnits"] != "m"
+                ):
+                    raise ValueError(_("The FIF montage must use MNE head coordinates in meters."))
+                electrodes = [
+                    (name, (transform @ [*position, 1])[:3] * 1000) for name, position in electrodes
+                ]
+            else:
+                if (
+                    metadata["ExportedCoordinateSystem"] != "MRI Scanner RAS"
+                    or metadata["ExportedCoordinateUnits"] != "mm"
+                ):
+                    raise ValueError(_("The EEG montage must use Scanner RAS coordinates in mm."))
+                electrodes = EEGMontage._read_text_montage(path, export_format)
+            details = {item["Name"]: item for item in metadata.get("ElectrodeRegistrations", [])}
+        except (KeyError, TypeError, IndexError, csv.Error) as error:
+            raise ValueError(_("Invalid EEG montage registration metadata.")) from error
+        if not electrodes:
+            raise ValueError(_("There are no EEG electrodes in this montage."))
+        EEGMontage._validate_export_labels(electrodes)
+        world_to_image = np.linalg.inv(current_matrix)
+        return [
+            EEGElectrode(
+                label=name,
+                position=(world_to_image @ [*position, 1])[:3].tolist(),
+                distance_mm=details.get(name, {}).get("DistanceMM"),
+                montage_name=details.get(name, {}).get("MontageName"),
+            )
+            for name, position in electrodes
+        ]
+
+    @staticmethod
+    def _read_text_montage(path, export_format):
+        if export_format == "BIDS":
+            with path.open(encoding="utf-8-sig", newline="") as stream:
+                reader = csv.DictReader(stream, delimiter="\t")
+                if not {"name", "x", "y", "z"}.issubset(reader.fieldnames or ()):
+                    raise ValueError(_("The EEG TSV file needs name, x, y and z columns."))
+                return [
+                    (row["name"], [float(row[axis]) for axis in ("x", "y", "z")]) for row in reader
+                ]
+        lines = [
+            line.strip()
+            for line in path.read_text(encoding="utf-8-sig").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        if export_format == "ELC":
+            if "UnitPosition mm" not in lines:
+                raise ValueError(_("The exported ELC montage must use millimeters."))
+            counts = [
+                line.split("=", 1)[1] for line in lines if line.startswith("NumberPositions=")
+            ]
+            if len(counts) != 1:
+                raise ValueError(_("The ELC montage needs one NumberPositions entry."))
+            count = int(counts[0])
+            start = lines.index("Positions") + 1
+            end = lines.index("Labels")
+            if end - start != count or len(lines) - end - 1 != count:
+                raise ValueError(_("ELC position and label counts do not match."))
+            return [
+                (name, EEGMontage._read_xyz(position))
+                for name, position in zip(lines[end + 1 :], lines[start:end])
+                if name not in ("LPA", "Nz", "RPA")
+            ]
+        electrodes = []
+        for line in lines:
+            fields = line.split()
+            if export_format == "HPTS":
+                if len(fields) != 5 or fields[0] not in ("cardinal", "eeg"):
+                    raise ValueError(_("Invalid HPTS montage row."))
+                kind, name, *coordinates = fields
+                position = EEGMontage._read_xyz(" ".join(coordinates))
+                if kind == "cardinal":
+                    continue
+            else:
+                if len(fields) != 4:
+                    raise ValueError(_("Invalid SFP montage row."))
+                name, *coordinates = fields
+                position = EEGMontage._read_xyz(" ".join(coordinates))
+                if name in ("FidNz", "FidT9", "FidT10", "headshape"):
+                    continue
+            electrodes.append((name, position))
+        return electrodes
+
+    @staticmethod
+    def _read_xyz(text):
+        values = [float(value) for value in text.split()]
+        if len(values) != 3 or not all(isfinite(value) for value in values):
+            raise ValueError(_("EEG positions require three finite coordinates."))
+        return values
+
+    @staticmethod
+    def _read_fif(path):
+        # shortcut: read sequential FIFF digitization exports; use a full reader for external FIF files.
+        names, frame, points = None, None, []
+        file_size = path.stat().st_size
+        with path.open("rb") as stream:
+            while stream.tell() < file_size:
+                header = stream.read(16)
+                if len(header) != 16:
+                    raise ValueError(_("Truncated FIF tag header."))
+                kind, data_type, size, next_tag = unpack(">4i", header)
+                if size < 0 or size > file_size - stream.tell() or next_tag not in (0, -1):
+                    raise ValueError(_("Invalid or unsupported FIF tag layout."))
+                if kind in (213, 3506, 3507):
+                    data = stream.read(size)
+                    if kind == 213 and data_type == 33 and size == 20:
+                        point_kind, identifier, x, y, z = unpack(">ii3f", data)
+                        if point_kind == 3:
+                            points.append((identifier, [x, y, z]))
+                    elif kind == 3506 and data_type == 3 and size == 4:
+                        frame = unpack(">i", data)[0]
+                    elif kind == 3507 and data_type == 10:
+                        names = [
+                            name.replace("{COLON}", ":")
+                            for name in data.decode("latin1").split(":")
+                        ]
+                    else:
+                        raise ValueError(_("Invalid FIF digitization tag."))
+                else:
+                    stream.seek(size, 1)
+                if next_tag == -1:
+                    break
+        points.sort(key=lambda point: point[0])
+        if (
+            frame != 4
+            or names is None
+            or [identifier for identifier, _position in points] != list(range(1, len(names) + 1))
+        ):
+            raise ValueError(
+                _("FIF electrode names, identifiers or head coordinate frame are invalid.")
+            )
+        return [(name, position) for name, (_identifier, position) in zip(names, points)]
+
+    @staticmethod
     def _export_bids(electrodes_path, coordsystem_path, electrodes, fiducials):
         coordinate_description = (
             "Scanner RAS coordinate system derived from the subject MRI affine transformation."
@@ -173,7 +466,8 @@ class EEGMontage:
         seen = set()
         for name, _position in electrodes:
             if (
-                not name
+                not isinstance(name, str)
+                or not name
                 or name != name.strip()
                 or any(character in name for character in "\r\n\t\x00")
                 or (
@@ -353,18 +647,8 @@ class EEGMontage:
         from invesalius.project import Project
 
         image, project = Slice(), Project()
-        # Recover the positional affine using exactly the existing conversion.
-        # Slice.affine is inverse, spacing-scaled geometry, not a voxel affine.
-        points = [
-            EEGMontage._get_world_position(point)
-            for point in ((0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1))
-        ]
-        matrix = np.eye(4)
-        matrix[:3, 3] = points[0]
-        matrix[:3, :3] = np.asarray(points[1:]).T - np.asarray(points[0])[:, None]
+        matrix = EEGMontage._image_to_scanner_ras_matrix()
         image_to_ras = EEGMontage._transform_metadata("InVesalius image", "MRI Scanner RAS", matrix)
-        if image_to_ras["Matrix"] is None:
-            raise ValueError("The project does not have a valid MRI world coordinate system.")
         return {
             "Software": "InVesalius Navigator",
             "SoftwareVersion": str(invesalius.__version__),
@@ -387,6 +671,8 @@ class EEGMontage:
                 {
                     "Name": electrode.label,
                     "ElectrodeUUID": electrode.electrode_uuid,
+                    "DistanceMM": electrode.distance_mm,
+                    "MontageName": electrode.montage_name,
                     "CaptureRegistration": None,
                 }
                 for electrode in electrodes
@@ -406,6 +692,20 @@ class EEGMontage:
             "ExportedCoordinateUnits": "mm",
             "AdditionalTransformations": [],
         }
+
+    @staticmethod
+    def _image_to_scanner_ras_matrix():
+        # Recover the positional affine using the existing conversion, including its image Y flip.
+        points = [
+            EEGMontage._get_world_position(point)
+            for point in ((0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1))
+        ]
+        matrix = np.eye(4)
+        matrix[:3, 3] = points[0]
+        matrix[:3, :3] = np.asarray(points[1:]).T - np.asarray(points[0])[:, None]
+        if EEGMontage._transform_metadata("image", "ras", matrix)["Matrix"] is None:
+            raise ValueError(_("The project does not have a valid MRI world coordinate system."))
+        return matrix
 
     @staticmethod
     def _get_world_position(position) -> list[float]:
