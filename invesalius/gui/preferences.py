@@ -1601,7 +1601,7 @@ class ObjectTab(wx.Panel):
                         dialog.GetValue()
                     )
 
-                    if coil_name in self.coil_registrations and coil_name != "default_coil":
+                    if self.navigation.n_coils > 1 and coil_name in self.coil_registrations:
                         # Warn that we are overwriting an old registration
                         dialog = wx.TextEntryDialog(
                             None,
@@ -1697,7 +1697,7 @@ class ObjectTab(wx.Panel):
                 if len(data[0]) >= 8 and data[0][6] == "ROM":
                     tracker_file = data[0][7].strip()
 
-                if coil_name in self.coil_registrations and coil_name != "default_coil":
+                if self.navigation.n_coils > 1 and coil_name in self.coil_registrations:
                     # Warn that we are overwriting an old registration
                     dialog = wx.TextEntryDialog(
                         None,

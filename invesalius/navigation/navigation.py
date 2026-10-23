@@ -466,14 +466,32 @@ class Navigation(metaclass=Singleton):
 
             # Try to load selected_coils (the list of names of coils to use for navigation)
             if ("selected_coils" in state) and (saved_coil_registrations is not None):
-                selected_coils = state["selected_coils"]
+                selected_coils = [
+                    name for name in state["selected_coils"] if name in saved_coil_registrations
+                ]
+                if self.n_coils == 1 and selected_coils:
+                    # The single-coil slot keeps its identity regardless of the
+                    # registration's original name. Keep named library entries.
+                    saved_main_coil = state.get("main_coil")
+                    source_name = (
+                        saved_main_coil if saved_main_coil in selected_coils else selected_coils[0]
+                    )
+                    if source_name != "default_coil":
+                        saved_coil_registrations = dict(saved_coil_registrations)
+                        saved_coil_registrations["default_coil"] = dict(
+                            saved_coil_registrations[source_name]
+                        )
+                        session.SetConfig("coil_registrations", saved_coil_registrations)
+                    selected_coils = ["default_coil"]
+                    state = dict(state, selected_coils=selected_coils, main_coil="default_coil")
+                    session.SetConfig("navigation", state)
                 self.coil_registrations = {
                     coil_name: saved_coil_registrations[coil_name]
                     for coil_name in selected_coils
                     if coil_name in saved_coil_registrations
                 }
-                if self.coil_registrations:
-                    self.main_coil = self.main_coil or next(iter(self.coil_registrations))
+                if self.coil_registrations and self.main_coil not in self.coil_registrations:
+                    self.main_coil = next(iter(self.coil_registrations))
 
             self.dual_navigation_coils = tuple(state.get("dual_navigation_coils", ()))
             self.SetDualNavigation(
