@@ -3009,8 +3009,8 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.InsertColumn(const.ID_COLUMN, "#")
         marker_list_ctrl.SetColumnWidth(const.ID_COLUMN, 24)
 
-        marker_list_ctrl.InsertColumn(const.SESSION_COLUMN, "Session")
-        marker_list_ctrl.SetColumnWidth(const.SESSION_COLUMN, 51)
+        marker_list_ctrl.InsertColumn(const.SESSION_COLUMN, _("Sess."))
+        marker_list_ctrl.SetColumnWidth(const.SESSION_COLUMN, 38)
 
         marker_list_ctrl.InsertColumn(const.MARKER_TYPE_COLUMN, "Type")
         marker_list_ctrl.SetColumnWidth(const.MARKER_TYPE_COLUMN, 77)
@@ -3019,7 +3019,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.SetColumnWidth(const.LABEL_COLUMN, 95)
 
         marker_list_ctrl.InsertColumn(const.TARGET_COLUMN, "Target")
-        marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 45)
+        marker_list_ctrl.SetColumnWidth(const.TARGET_COLUMN, 58)
 
         marker_list_ctrl.InsertColumn(const.Z_OFFSET_COLUMN, "Z-offset")
         marker_list_ctrl.SetColumnWidth(const.Z_OFFSET_COLUMN, 45)
@@ -3048,6 +3048,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.SetCameraToFocusOnMarker)
         marker_list_ctrl.Bind(wx.EVT_CHAR_HOOK, self.OnMarkerListKeyDown)
+        marker_list_ctrl.SetToolTip(_("Sess.: Session"))
+        marker_list_ctrl.Bind(wx.EVT_MOTION, self.OnMarkerListMouseMove)
+        marker_list_ctrl.Bind(wx.EVT_LEAVE_WINDOW, self.OnMarkerListMouseLeave)
 
         self.marker_list_ctrl = marker_list_ctrl
         self.column_sorter = ColumnSorterMixin.__init__(
@@ -3172,6 +3175,26 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         Publisher.subscribe(self.SetBrainTarget, "Set brain targets")
         # Publisher.subscribe(self.SetVectorField, "Set vector field")
+
+    def OnMarkerListMouseMove(self, evt):
+        ctrl = self.marker_list_ctrl
+        row, _, column = ctrl.HitTestSubItem(evt.GetPosition())
+        tooltip = _("Sess.: Session")
+        if row != wx.NOT_FOUND:
+            if column == const.TARGET_COLUMN:
+                # Keep the full cell text available when the column truncates it.
+                tooltip = ctrl.GetItemText(row, column)
+            elif column == const.SESSION_COLUMN:
+                tooltip = _("Session: {session}").format(session=ctrl.GetItemText(row, column))
+            else:
+                tooltip = ""
+        if ctrl.GetToolTipText() != tooltip:
+            ctrl.SetToolTip(tooltip)
+        evt.Skip()
+
+    def OnMarkerListMouseLeave(self, evt):
+        self.marker_list_ctrl.SetToolTip(_("Sess.: Session"))
+        evt.Skip()
 
     def __get_selected_items(self):
         """
