@@ -63,6 +63,7 @@ class EEGElectrodeManager(metaclass=Singleton):
         Publisher.subscribe(self.update_probe_pose, "Update probe pose")
         Publisher.subscribe(self.on_navigation_status, "Navigation status")
         Publisher.subscribe(self.on_navigation_mode, "Set navigation mode")
+        Publisher.subscribe(self.on_project_state, "Enable state project")
         Publisher.subscribe(self.reset, "Close project data")
 
     @property
@@ -81,6 +82,11 @@ class EEGElectrodeManager(metaclass=Singleton):
         marker_state = session.GetState("markers", []) or []
         # Migrate before MarkersControl reads the old EEG type (5), which master does not know.
         self._electrodes = {item.electrode_uuid: item for item in electrodes}
+
+    def on_project_state(self, state):
+        if state and self._electrodes:
+            # Startup clears the state after electrodes have been restored in memory.
+            self.SaveState()
 
     def on_navigation_mode(self, status, markers=(), main_coil=None):
         if not status:
