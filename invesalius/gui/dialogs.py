@@ -6346,6 +6346,57 @@ class SurfaceSmoothingProgressWindow:
         self.dlg.Destroy()
 
 
+def ShowEEGAutoLabelDialog(parent, template_name, electrodes, labels, distances) -> bool:
+    """Preview every proposed label before replacing the captured electrodes' names."""
+    dialog = wx.Dialog(
+        parent,
+        title=_("Review EEG labels"),
+        size=(560, 470),
+        style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+    )
+    try:
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        summary = _("Template: %s\nMean distance: %.2f mm; maximum: %.2f mm") % (
+            template_name,
+            float(np.mean(distances)),
+            float(np.max(distances)),
+        )
+        sizer.Add(wx.StaticText(dialog, label=summary), 0, wx.ALL, 10)
+        message = wx.StaticText(
+            dialog,
+            label=_(
+                "Review the proposed names before applying. Distances of 10 mm or more "
+                "are marked for review. Small distances do not guarantee correct labels."
+            ),
+        )
+        message.Wrap(500)
+        sizer.Add(message, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        table = wx.ListCtrl(dialog, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
+        for index, (title, width) in enumerate(
+            (
+                (_("Current name"), 120),
+                (_("Proposed name"), 120),
+                (_("Distance (mm)"), 120),
+                (_("Review"), 100),
+            )
+        ):
+            table.InsertColumn(index, title, width=width)
+        for electrode, label, distance in zip(electrodes, labels, distances):
+            row = table.InsertItem(table.GetItemCount(), electrode.label)
+            table.SetItem(row, 1, label)
+            table.SetItem(row, 2, f"{distance:.2f}")
+            table.SetItem(row, 3, _("Check") if distance >= 10.0 else "")
+        sizer.Add(table, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        sizer.Add(dialog.CreateSeparatedButtonSizer(wx.OK | wx.CANCEL), 0, wx.EXPAND | wx.ALL, 10)
+        dialog.SetSizer(sizer)
+        dialog.FindWindow(wx.ID_OK).SetLabel(_("Apply labels"))
+        dialog.SetMinSize((500, 350))
+        dialog.CentreOnParent()
+        return dialog.ShowModal() == wx.ID_OK
+    finally:
+        dialog.Destroy()
+
+
 def ShowEEGMontageExportDialog(
     parent: wx.Window, default_directory: str = ""
 ) -> tuple[str, str] | None:

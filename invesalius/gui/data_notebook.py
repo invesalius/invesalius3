@@ -28,6 +28,7 @@ import wx.grid
 import wx.lib.platebtn as pbtn
 import wx.lib.scrolledpanel as scrolled
 from PIL import Image
+from wx.lib.colourutils import GetHighlightColour
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
@@ -2193,7 +2194,7 @@ class EEGElectrodePage(wx.Panel):
 
 
 class EEGElectrodeButtonControlPanel(wx.Panel):
-    """Removal controls that apply only to EEG electrodes."""
+    """Labelling, export and visibility controls for EEG electrodes."""
 
     def __init__(self, parent, eeg_electrodes, listctrl):
         super().__init__(parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
@@ -2205,16 +2206,18 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         remove_bitmap = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
         )
-        export_bitmap = wx.Bitmap(
-            os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"),
-            wx.BITMAP_TYPE_PNG,
-        )
 
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
         self.remove_button = pbtn.PlateButton(
             self, wx.ID_ANY, "", remove_bitmap, style=button_style, size=wx.Size(24, 20)
         )
         self.remove_button.SetToolTip(_("Delete selected EEG electrodes"))
+
+        export_bitmap = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"),
+            wx.BITMAP_TYPE_PNG,
+        )
+
         self.export_button = pbtn.PlateButton(
             self,
             wx.ID_ANY,
@@ -2223,7 +2226,18 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             style=button_style,
             size=wx.Size(24, 20),
         )
+
         self.export_button.SetToolTip(_("Export EEG montage"))
+        auto_label_bitmap = wx.Bitmap(
+            wx.Image(str(inv_paths.ICON_DIR / "wand_sparkles.png")).Scale(
+                18, 18, wx.IMAGE_QUALITY_HIGH
+            )
+        )
+        self.auto_label_button = wx.BitmapButton(
+            self, wx.ID_ANY, auto_label_bitmap, size=wx.Size(24, 20), style=wx.BORDER_NONE
+        )
+        self.auto_label_button.SetToolTip(_("Assign EEG labels using a montage template"))
+
         labels_bitmap = self._LoadBitmap("text_original.png")
         labels_pressed_bitmap = self._LoadBitmap("text_inverted_original.png")
         self.labels_button = wx.BitmapToggleButton(
@@ -2231,6 +2245,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             wx.ID_ANY,
             labels_bitmap,
             size=wx.Size(24, 20),
+            style=wx.BORDER_NONE,
         )
         self.labels_button.SetBitmapPressed(labels_pressed_bitmap)
         self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
@@ -2239,6 +2254,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
         sizer.Add(self.export_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
+        sizer.Add(self.auto_label_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.Add(self.labels_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.AddStretchSpacer()
         sizer.Add(self.visibility_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
@@ -2247,7 +2263,11 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
 
         self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
         self.export_button.Bind(wx.EVT_BUTTON, self.OnExport)
+        self.auto_label_button.Bind(wx.EVT_BUTTON, self.OnAutoLabel)
         self.labels_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleLabels)
+        for button in (self.auto_label_button, self.labels_button):
+            button.Bind(wx.EVT_ENTER_WINDOW, self.OnButtonHover)
+            button.Bind(wx.EVT_LEAVE_WINDOW, self.OnButtonHover)
         self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
         self.listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
         self.listctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnSelectionChanged)
@@ -2255,9 +2275,21 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
     def UpdateButtons(self):
         self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
         self.export_button.Enable(bool(self.eeg_electrodes.electrodes))
+        self.auto_label_button.Enable(len(self.eeg_electrodes.electrodes) >= 3)
         self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
         self._UpdateLabelsButtonTooltip()
         self.UpdateVisibilityButton()
+
+    def OnButtonHover(self, event):
+        button = event.GetEventObject()
+        colour = (
+            GetHighlightColour()
+            if event.Entering() and button.IsEnabled()
+            else self.GetBackgroundColour()
+        )
+        button.SetBackgroundColour(colour)
+        button.Refresh()
+        event.Skip()
 
     @staticmethod
     def _LoadBitmap(icon_name):
@@ -2311,6 +2343,36 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         result = dlg.ShowConfirmationDialog(msg=message)
         if result == wx.ID_OK:
             self.eeg_electrodes.remove_many(electrode.electrode_uuid for electrode in electrodes)
+
+    def OnAutoLabel(self, _evt):
+        try:
+            templates = EEGMontage.get_templates()
+            names = sorted(templates, key=lambda name: len(templates[name]["electrodes"]))
+            choice = wx.SingleChoiceDialog(
+                self, _("Select the EEG montage template:"), _("Auto label EEG electrodes"), names
+            )
+            try:
+                if choice.ShowModal() != wx.ID_OK:
+                    return
+                name = choice.GetStringSelection()
+            finally:
+                choice.Destroy()
+            electrodes = self.eeg_electrodes.electrodes
+            with wx.BusyCursor():
+                labels, distances = EEGMontage.match_template(
+                    templates[name],
+                    [electrode.position for electrode in electrodes],
+                    Project().image_fiducials,
+                )
+            if dlg.ShowEEGAutoLabelDialog(self, name, electrodes, labels, distances):
+                self.eeg_electrodes.apply_labels(
+                    {
+                        electrode.electrode_uuid: label
+                        for electrode, label in zip(electrodes, labels)
+                    }
+                )
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            wx.MessageBox(str(error), _("EEG auto labelling error"), wx.OK | wx.ICON_ERROR)
 
     def OnExport(self, _evt):
         session = ses.Session()
