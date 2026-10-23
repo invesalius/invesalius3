@@ -3191,7 +3191,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
     def OnMarkerListMouseMove(self, evt):
         ctrl = self.marker_list_ctrl
-        row, _, column = ctrl.HitTestSubItem(evt.GetPosition())
+        row, _hit_flags, column = ctrl.HitTestSubItem(evt.GetPosition())
         tooltip = _("Sess.: Session")
         if row != wx.NOT_FOUND:
             if column == const.TARGET_COLUMN:
