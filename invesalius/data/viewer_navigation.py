@@ -42,13 +42,17 @@ from vtkmodules.vtkFiltersCore import vtkGlyph3D, vtkPolyDataNormals
 from vtkmodules.vtkFiltersModeling import vtkBandedPolyDataContourFilter
 from vtkmodules.vtkFiltersSources import (
     vtkArrowSource,
+    vtkLineSource,
     vtkSphereSource,
 )
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
+    vtkActor2D,
     vtkCompositePolyDataMapper,
+    vtkCoordinate,
     vtkPolyDataMapper,
+    vtkPolyDataMapper2D,
     vtkRenderer,
 )
 
@@ -77,6 +81,7 @@ class NavigationView:
         self._navigation_interaction_state = None
         self._navigation_renderers = []
         self._secondary_renderers = set()
+        self._dual_separator_renderer = None
         self._dual_navigation = False
         self._target_mode_requested = False
         self._dual_navigation_coils = ()
@@ -265,6 +270,7 @@ class NavigationView:
             self._detach_renderer(renderer)
         self._navigation_renderers.clear()
         self._secondary_renderers.clear()
+        self._dual_separator_renderer = None
         self.scenes_by_coil.clear()
         self.scenes.clear()
         self.view.target_guide_renderer = None
@@ -314,6 +320,8 @@ class NavigationView:
 
     def _should_attach_renderer(self, renderer):
         raw_renderer = self._unwrap_renderer(renderer)
+        if raw_renderer is self._dual_separator_renderer:
+            return self._dual_navigation
         if raw_renderer in self._secondary_renderers and not self._dual_navigation:
             return False
         scene = self._scene_for_target_guide(renderer)
@@ -532,6 +540,10 @@ class NavigationView:
             self._associate_scene_with_coil(self.scene, self._main_coil)
         self._apply_scene_viewport()
         if self._active:
+            if enabled:
+                self._attach_renderer(self._dual_separator_renderer)
+            else:
+                self._detach_renderer(self._dual_separator_renderer)
             for visible_scene in self._visible_scenes():
                 if visible_scene.target_mode and visible_scene is not self._secondary_scene:
                     visible_scene.initialize_target_cameras()
@@ -573,9 +585,37 @@ class NavigationView:
         self._add_scene_renderer(self.scene.target_guide_renderer)
         self.ren.AddActor(self.fps_text.actor)
         self.fps_text.Hide()
+        self._create_dual_navigation_separator()
+
+    def _create_dual_navigation_separator(self):
+        """Draw a screen-space divider without changing the scene cameras or bounds."""
+        line = vtkLineSource()
+        line.SetPoint1(0.5, 0.0, 0.0)
+        line.SetPoint2(0.5, 1.0, 0.0)
+
+        coordinate = vtkCoordinate()
+        coordinate.SetCoordinateSystemToNormalizedViewport()
+        mapper = vtkPolyDataMapper2D()
+        mapper.SetInputConnection(line.GetOutputPort())
+        mapper.SetTransformCoordinate(coordinate)
+
+        actor = vtkActor2D()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(0.35, 0.35, 0.35)
+        actor.GetProperty().SetLineWidth(2.0)
+        actor.PickableOff()
+
+        renderer = vtkRenderer()
+        renderer.SetLayer(self.view.canvas_renderer.GetLayer())
+        renderer.InteractiveOff()
+        renderer.PreserveDepthBufferOn()
+        renderer.AddActor2D(actor)
+        self._dual_separator_renderer = renderer
+        self._add_scene_renderer(renderer)
 
     def _apply_scene_viewport(self):
         self.view._apply_scene_viewport()
+        self.view._set_renderer_viewport(self._dual_separator_renderer, (0.0, 0.0, 1.0, 1.0))
         self._set_renderer_viewport(self.view.canvas_renderer, (0.0, 0.0, 1.0, 1.0))
         for scene_index, scene in enumerate(self._visible_scenes()):
             if scene.target_mode:
