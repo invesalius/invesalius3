@@ -709,7 +709,7 @@ class Navigation(metaclass=Singleton):
         else:
             return False
 
-    def StartNavigation(self, tracker, icp):
+    def StartNavigation(self, tracker, icp, target_provider=None):
         # Publish new transformations only after all selected coils are prepared.
         self.obj_datas = {}
 
@@ -800,6 +800,7 @@ class Navigation(metaclass=Singleton):
                     icp,
                     self.e_field_loaded,
                     self,
+                    target_provider=target_provider,
                 )
             )
 

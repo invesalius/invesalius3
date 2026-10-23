@@ -38,8 +38,24 @@ class MarkersControl(metaclass=Singleton):
             target_resolver=self._FindRobotTarget, main_target_resolver=self.FindTarget
         )
         self._loading_state = False
+        self._debug_target_poses = ()
         Publisher.subscribe(self.OnMainCoilChanged, "Main coil changed")
         Publisher.subscribe(self.OnRequestCoilTarget, "Request coil target")
+        Publisher.subscribe(self._UpdateDebugTargetPoses, "Set target")
+        Publisher.subscribe(self._UpdateDebugTargetPoses, "Unset target")
+
+    def _UpdateDebugTargetPoses(self, marker):
+        # Publish one immutable snapshot for the debug worker. Marker poses
+        # already use the coordinate convention returned in the coords queue.
+        self._debug_target_poses = tuple(
+            (m.coil_name, tuple(m.position + m.orientation))
+            for m in self.list
+            if m.is_target and m.coil_name is not None
+        )
+
+    def GetDebugTargetPoses(self):
+        """Return a snapshot safe to read from the coordinate worker thread."""
+        return self._debug_target_poses
 
     def SaveState(self) -> None:
         if self._loading_state:

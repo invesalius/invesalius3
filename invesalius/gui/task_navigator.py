@@ -2515,7 +2515,9 @@ class ControlPanel(wx.Panel):
             Publisher.sendMessage("Hide current mask")
 
             self.navigation.EstimateTrackerToInVTransformationMatrix(self.tracker, self.image)
-            self.navigation.StartNavigation(self.tracker, self.icp)
+            self.navigation.StartNavigation(
+                self.tracker, self.icp, target_provider=self.markers.GetDebugTargetPoses
+            )
 
             # Ensure that the target is sent to robot when navigation starts.
             self.robots.SendTargetToAll()
