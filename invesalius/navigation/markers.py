@@ -18,7 +18,8 @@
 # --------------------------------------------------------------------------
 
 import uuid
-from typing import List, Union
+from dataclasses import dataclass
+from typing import Iterable, List, Mapping, Union
 
 import invesalius.session as ses
 from invesalius.data.markers.grid_generator import GridGenerator
@@ -377,3 +378,89 @@ class MarkersControl(metaclass=Singleton):
             self.AddMarker(marker)
 
         return new_markers
+
+
+@dataclass(frozen=True)
+class TargetAssignment:
+    coil_name: str
+    marker_uuid: str
+
+    def __post_init__(self):
+        for name, value in (("coil_name", self.coil_name), ("marker_uuid", self.marker_uuid)):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} must be a non-empty string")
+
+
+class TargetAssignments:
+    """Own a one-to-one relation; expose only immutable association snapshots.
+
+    A coil may replace its own target with an unassigned marker. Moving a
+    marker from another coil requires explicitly unassigning it first.
+    Registration and marker existence are validated by the owning controller.
+    The name ``default_coil`` is treated like any other coil name here.
+    """
+
+    def __init__(self, assignments: Iterable[TargetAssignment] = ()):
+        self.__assignments: tuple[TargetAssignment, ...] = ()
+        self.replace_all(assignments)
+
+    @property
+    def assignments(self) -> tuple[TargetAssignment, ...]:
+        return self.__assignments
+
+    def get_target(self, coil_name: str) -> str | None:
+        for assignment in self.__assignments:
+            if assignment.coil_name == coil_name:
+                return assignment.marker_uuid
+        return None
+
+    def get_coil(self, marker_uuid: str) -> str | None:
+        for assignment in self.__assignments:
+            if assignment.marker_uuid == marker_uuid:
+                return assignment.coil_name
+        return None
+
+    def assign(self, coil_name: str, marker_uuid: str) -> None:
+        assignment = TargetAssignment(coil_name, marker_uuid)
+        owner = self.get_coil(marker_uuid)
+        if owner is not None and owner != coil_name:
+            raise ValueError(f"Target {marker_uuid!r} already belongs to {owner!r}")
+        if self.get_target(coil_name) == marker_uuid:
+            return
+
+        remaining = tuple(a for a in self.__assignments if a.coil_name != coil_name)
+        self.__assignments = (*remaining, assignment)
+
+    def unassign(self, coil_name: str) -> None:
+        self.__assignments = tuple(a for a in self.__assignments if a.coil_name != coil_name)
+
+    def remove_target(self, marker_uuid: str) -> None:
+        self.__assignments = tuple(a for a in self.__assignments if a.marker_uuid != marker_uuid)
+
+    def clear(self) -> None:
+        self.__assignments = ()
+
+    def replace_all(self, assignments: Iterable[TargetAssignment]) -> None:
+        """Validate a complete replacement before changing any live association."""
+        replacement = tuple(assignments)
+        coils = set()
+        markers = set()
+        for assignment in replacement:
+            if not isinstance(assignment, TargetAssignment):
+                raise TypeError("Expected a TargetAssignment")
+            if assignment.coil_name in coils:
+                raise ValueError(f"Coil {assignment.coil_name!r} has multiple targets")
+            if assignment.marker_uuid in markers:
+                raise ValueError(f"Target {assignment.marker_uuid!r} belongs to multiple coils")
+            coils.add(assignment.coil_name)
+            markers.add(assignment.marker_uuid)
+        self.__assignments = replacement
+
+    def to_state(self) -> list[dict[str, str]]:
+        return [
+            {"coil_name": a.coil_name, "marker_uuid": a.marker_uuid} for a in self.__assignments
+        ]
+
+    def restore(self, state: Iterable[Mapping[str, str]]) -> None:
+        """Restore serialized data using the same exclusivity rules as live edits."""
+        self.replace_all(TargetAssignment(item["coil_name"], item["marker_uuid"]) for item in state)
