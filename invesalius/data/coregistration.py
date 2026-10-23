@@ -345,6 +345,7 @@ class CoordinateCorregistrate(threading.Thread):
         icp,
         e_field_loaded,
         navigation,
+        target_provider=None,
     ):
         threading.Thread.__init__(self, name="CoordCoregObject")
         self.ref_mode_id = ref_mode_id
@@ -363,7 +364,8 @@ class CoordinateCorregistrate(threading.Thread):
         self._loop_sleep = max(self.sle, 1.0 / 120.0)
         self.use_icp = icp.use_icp
         self.m_icp = icp.m_icp
-        self.last_coord = None
+        self._debug_last_coords = {}
+        self.target_provider = target_provider
         self.tracker_id = tracker_id
         self.target = target
         self.target_flag = False
@@ -461,17 +463,9 @@ class CoordinateCorregistrate(threading.Thread):
                 #      Ideally, the transformation from the tracker space to the image space (the function
                 #      corregistrate_object_dynamic above) would be encapsulated in a class together with the
                 #      tracker, and then the whole class would be mocked when using the debug tracker.
-                if self.tracker_id == const.DEBUGTRACKAPPROACH and self.target is not None:
-                    if self.last_coord is None:
-                        self.last_coord = np.array(coord)
-                    else:
-                        coord = self.last_coord + (self.target - self.last_coord) * 0.05
-                        coords[main_coil] = coord
-                        self.last_coord = coord
-
-                    angles = [np.radians(coord[3]), np.radians(coord[4]), np.radians(coord[5])]
-                    translate = coord[0:3]
-                    m_imgs[main_coil] = tr.compose_matrix(angles=angles, translate=translate)
+                if self.tracker_id == const.DEBUGTRACKAPPROACH:
+                    self._approach_debug_targets(coords, m_imgs, main_coil)
+                    coord = coords[main_coil]
                     m_img = m_imgs[main_coil]
 
                 if can_push_coord:
@@ -491,6 +485,29 @@ class CoordinateCorregistrate(threading.Thread):
 
             # The sleep has to be in both threads
             sleep(self._loop_sleep)
+
+    def _approach_debug_targets(self, coords, m_imgs, main_coil):
+        if self.target_provider is not None:
+            target_poses = self.target_provider()
+        else:
+            # Preserve the legacy entry point used without a target provider.
+            target_poses = ((main_coil, self.target),) if self.target is not None else ()
+
+        active_coils = {name for name, target in target_poses if name in coords}
+        self._debug_last_coords = {
+            name: coord for name, coord in self._debug_last_coords.items() if name in active_coils
+        }
+        for coil_name, target in target_poses:
+            if coil_name not in coords:
+                continue
+            previous = self._debug_last_coords.get(coil_name)
+            if previous is None:
+                coord = np.array(coords[coil_name], dtype=float)
+            else:
+                coord = previous + (np.asarray(target, dtype=float) - previous) * 0.05
+            self._debug_last_coords[coil_name] = coord
+            coords[coil_name] = coord
+            m_imgs[coil_name] = tr.compose_matrix(angles=np.radians(coord[3:]), translate=coord[:3])
 
     def _corregistrate_probe(
         self, m_change, r_stylus_eff, coord_raw, ref_mode_id, icp, probe_rot, probe_rot_inv

@@ -808,6 +808,8 @@ class Viewer(wx.Panel):
         self.ren.RemoveActor(actor)
 
     def IsTargetMode(self):
+        if self._navigation_mode and self.navigation is not None:
+            return self.navigation.IsTargetMode()
         return self.target_mode
 
     def CenterOfMass(self):
@@ -1433,6 +1435,8 @@ class Viewer(wx.Panel):
     def UpdateRender(self):
         if self._disposed:
             return
+        if self.active_view is not self:
+            self.active_view.prepare_render()
         self._UpdateOrientationCubeZTextRotation()
         self.interactor.Render()
 

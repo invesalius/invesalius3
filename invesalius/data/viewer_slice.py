@@ -233,6 +233,7 @@ class Viewer(wx.Panel):
         self.slice_number = 0
         self.scroll_enabled = True
         self.nav_status = False
+        self.dual_navigation = False
 
         self.__init_gui()
 
@@ -674,6 +675,8 @@ class Viewer(wx.Panel):
             self.slice_data.cursor.SetColour(colour_vtk)
 
     def UpdateSlicesPosition(self, position):
+        if self.dual_navigation:
+            return
         # Get point from base change
         px, py = self.get_slice_pixel_coord_by_world_pos(*position)
         coord = self.calcultate_scroll_position(px, py)
@@ -1002,6 +1005,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ReloadActualSlice, "Reload actual slice")
         Publisher.subscribe(self.ReloadActualSlice, f"Reload actual slice {self.orientation}")
         Publisher.subscribe(self.OnUpdateScroll, "Update scroll")
+        Publisher.subscribe(self.OnSetDualNavigation, "Dual navigation changed")
 
         # MIP
         Publisher.subscribe(self.OnSetMIPSize, f"Set MIP size {self.orientation}")
@@ -1154,6 +1158,11 @@ class Viewer(wx.Panel):
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.nav_status = nav_status
+
+    def OnSetDualNavigation(self, enabled=False, coil_names=()):
+        self.dual_navigation = bool(enabled)
+        if not self.dual_navigation:
+            self.UpdateRender()
 
     def OnSize(self, evt):
         """
@@ -1437,6 +1446,8 @@ class Viewer(wx.Panel):
         self.slice_data.renderer.ResetCameraClippingRange()
 
     def UpdateRender(self):
+        if self.dual_navigation:
+            return
         self.interactor.Render()
 
     def UpdateCanvas(self, evt=None):

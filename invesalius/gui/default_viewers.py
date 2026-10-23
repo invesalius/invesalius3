@@ -46,6 +46,7 @@ from invesalius.pubsub import pub as Publisher
 class Panel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(0, 50), size=wx.Size(744, 656))
+        self.dual_navigation = False
 
         self.__init_aui_manager()
         self.__bind_events_wx()
@@ -135,6 +136,7 @@ class Panel(wx.Panel):
 
         self.s4 = s4
         self.p4 = p4
+        self.slice_viewers = (p1, p2, p3)
 
         menu = slice_menu_.SliceMenu()
         p1.SetPopupMenu(menu)
@@ -165,6 +167,8 @@ class Panel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.OnSetTargetMode, "Set target mode")
         Publisher.subscribe(self.OnStartNavigation, "Start navigation")
+        Publisher.subscribe(self.OnSetDualNavigation, "Dual navigation changed")
+        Publisher.subscribe(self.OnNavigationModeChanged, "Set navigation mode")
         Publisher.subscribe(self.UpdateViewerCaption, "Update viewer caption")
         Publisher.subscribe(self._Exit, "Exit")
 
@@ -180,13 +184,39 @@ class Panel(wx.Panel):
         self.Refresh()
 
     def OnSetTargetMode(self, enabled=True):
+        if self.dual_navigation:
+            return
         if enabled:
             self.MaximizeViewerVolume()
         else:
             self.RestoreViewerVolume()
 
     def OnStartNavigation(self):
-        self.MaximizeViewerVolume()
+        if not self.dual_navigation:
+            self.MaximizeViewerVolume()
+
+    def OnNavigationModeChanged(self, status, markers=(), main_coil=None):
+        if not status:
+            self.OnSetDualNavigation(enabled=False)
+
+    def OnSetDualNavigation(self, enabled=False, coil_names=()):
+        enabled = bool(enabled)
+        if enabled == self.dual_navigation:
+            return
+
+        if enabled:
+            self.RestoreViewerVolume()
+
+        self.dual_navigation = enabled
+        for viewer in self.slice_viewers:
+            self.aui_manager.GetPane(viewer).Show(not enabled)
+
+        volume_pane = self.aui_manager.GetPane(self.p4)
+        volume_pane.MaximizeButton(not enabled)
+        self.aui_manager.Update()
+
+        if not enabled:
+            Publisher.sendMessage("Update slice viewer")
 
     def RestoreViewerVolume(self):
         self.aui_manager.RestoreMaximizedPane()
@@ -194,6 +224,8 @@ class Panel(wx.Panel):
         self.aui_manager.Update()
 
     def MaximizeViewerVolume(self):
+        if self.dual_navigation:
+            return
         # Restore volume viewer to make sure it is not already maximized before attempting to maximize it
         # to fix the issue with panes locking into the maximized state where they cannot be restored
         self.RestoreViewerVolume()

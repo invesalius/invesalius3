@@ -22,8 +22,9 @@ class CoilVisualizer:
     # Color for the marker for target when the coil at the target.
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d("Green")
 
-    def __init__(self, renderer, actor_factory, vector_field_visualizer):
+    def __init__(self, renderer, actor_factory, vector_field_visualizer, coil_name=None):
         self.renderer = renderer
+        self.coil_name = coil_name
         self.tracker = Tracker()
 
         # Keeps track of whether tracker fiducials have been set.
@@ -311,6 +312,17 @@ class CoilVisualizer:
     def ResetCoilVisualizer(self, n_coils, clear_all=False):
         self.RemoveCoil()  # Remove all coils
 
+    def GetOtherCoilActors(self):
+        """Return live actors that must not drive this scene's automatic camera."""
+        if self.coil_name is None:
+            return ()
+        return tuple(
+            coil[key]
+            for name, coil in self.coils.items()
+            if name != self.coil_name
+            for key in ("actor", "center_actor")
+        )
+
     def UpdateCoilPoses(self, m_imgs, coords):
         """
         During navigation, use updated coil pose to perform the following tasks:
@@ -331,6 +343,5 @@ class CoilVisualizer:
             coil["actor"].SetUserMatrix(m_img_vtk)
             coil["center_actor"].SetUserMatrix(m_img_vtk)
 
-            # LUKATODO
-
-            self.vector_field_assembly.SetUserMatrix(m_img_vtk)
+            if self.coil_name is None or name == self.coil_name:
+                self.vector_field_assembly.SetUserMatrix(m_img_vtk)
