@@ -2045,11 +2045,12 @@ class RobotButtonsPanel(wx.Panel):
         self.UpdateRobotButtons()
 
     def OnSetTarget(self, marker):
+        if marker.coil_name != self.robot.GetCoilName():
+            return
         self.target_selected = True
         self.UpdateRobotButtons()
 
     def OnUnsetTarget(self, marker):
-        self.target_selected = False
         self.UpdateRobotButtons()
 
     def SetTargetMode(self, enabled=False):
@@ -2068,10 +2069,8 @@ class RobotButtonsPanel(wx.Panel):
         #   - Robot tracking registration is available
         #   - The name of the coil attached to robot is being tracked
         robot_coil = self.robot.GetCoilName()
-        if self.navigation.n_coils > 1:
-            coil_check = (robot_coil is not None) and (robot_coil == self.navigation.main_coil)
-        else:
-            coil_check = True
+        coil_check = robot_coil in self.navigation.coil_registrations
+        self.target_selected = self.robot.target is not None
 
         track_target_button_enabled = (
             self.nav_status
@@ -2173,6 +2172,7 @@ class ControlPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.navigation = nav_hub.navigation
+        self.markers = nav_hub.markers
         self.tracker = nav_hub.tracker
         self.robots = nav_hub.robots
         self.icp = nav_hub.icp
@@ -2438,6 +2438,7 @@ class ControlPanel(wx.Panel):
 
         Publisher.subscribe(self.OnCoilSelectionDone, "Coil selection done")
         Publisher.subscribe(self.OnDualNavigationChanged, "Dual navigation changed")
+        Publisher.subscribe(self.OnMainCoilChanged, "Main coil changed")
 
         Publisher.subscribe(self.PressShowCoilButton, "Press show-coil button")
         Publisher.subscribe(self.EnableShowCoilButton, "Enable show-coil button")
@@ -2548,7 +2549,7 @@ class ControlPanel(wx.Panel):
         self.navigation.StopNavigation()
 
     def UnsetTarget(self, marker):
-        self.target_selected = False
+        self.target_selected = any(m.is_target for m in self.markers.list)
         self.UpdateTargetButton()
 
     def SetTarget(self, marker):
@@ -2669,6 +2670,10 @@ class ControlPanel(wx.Panel):
     def OnDualNavigationChanged(self, enabled=False, coil_names=()):
         self.UpdateToggleButton(self.dual_navigation_button, enabled)
         self.EnableToggleButton(self.dual_navigation_button, self.navigation.CanUseDualNavigation())
+        self.UpdateTargetButton()
+
+    def OnMainCoilChanged(self, coil_name):
+        self.UpdateTargetButton()
 
     # Tractography
     def OnTractographyCheckbox(self, evt, ctrl):
@@ -2820,6 +2825,14 @@ class ControlPanel(wx.Panel):
 
     def UpdateTargetButton(self):
         # Enable or disable 'Target mode' button based on if target is selected and if 'Track object' button is pressed.
+        coil_names = (
+            self.navigation.dual_navigation_coils
+            if self.navigation.dual_navigation
+            else (self.navigation.main_coil,)
+        )
+        self.target_selected = any(
+            m.is_target and m.coil_name in coil_names for m in self.markers.list
+        )
         enabled = self.target_selected and self.navigation.track_coil
         self.EnableToggleButton(self.target_mode_button, enabled)
 
@@ -3492,8 +3505,24 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                     )
                     menu_id.Bind(wx.EVT_MENU, self.OnSetBrainTarget, brain_target_menu_item)
             else:
-                target_menu_item = menu_id.Append(unique_menu_id + 7, _("Set as target"))
-                menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
+                if self.navigation.n_coils > 1:
+                    coil_menu = wx.Menu()
+                    coil_names = (
+                        self.navigation.dual_navigation_coils
+                        if self.navigation.dual_navigation
+                        else self.navigation.coil_registrations
+                    )
+                    for coil_name in coil_names:
+                        item = coil_menu.Append(wx.ID_ANY, coil_name)
+                        coil_menu.Bind(
+                            wx.EVT_MENU,
+                            partial(self.OnMenuSetTarget, coil_name=coil_name),
+                            item,
+                        )
+                    menu_id.AppendSubMenu(coil_menu, _("Set as target"))
+                else:
+                    target_menu_item = menu_id.Append(unique_menu_id + 7, _("Set as target"))
+                    menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu_item)
 
         # Show 'Create coil target' menu item if the marker is a coil pose.
         if is_coil_pose:
@@ -3907,6 +3936,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             select_main_coil.Hide()
         else:
             select_main_coil.Show()
+        for marker in self.markers.list:
+            if marker.is_target:
+                self._SetTarget(marker)
         self.Layout()
 
     def OnChooseMainCoil(self, evt, ctrl):
@@ -3943,7 +3975,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         self.brain_targets_list_ctrl.SetItem(list_index, const.BRAIN_LABEL_COLUMN, marker["label"])
         self.markers.SaveState()
 
-    def OnMenuSetTarget(self, evt):
+    def OnMenuSetTarget(self, evt, coil_name=None):
         idx = self.marker_list_ctrl.GetFocusedItem()
         if idx == -1:
             wx.MessageBox(_("No data selected."), _("InVesalius 3"))
@@ -3953,12 +3985,23 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             return
 
         marker_id = self.__get_marker_id(idx)
-        self.markers.SetTarget(marker_id)
+        try:
+            self.markers.SetTarget(marker_id, coil_name=coil_name)
+        except ValueError as error:
+            wx.MessageBox(str(error), _("InVesalius 3"), wx.OK | wx.ICON_WARNING)
+
+    def _TargetColumnText(self, marker):
+        if not marker.is_target:
+            return ""
+        if self.navigation.n_coils == 1:
+            return _("Yes")
+        return marker.coil_name or _("Yes")
 
     def _SetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
         self.marker_list_ctrl.SetItemBackgroundColour(idx, wx.Colour(255, 220, 209))
-        self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, _("Yes"))
+        target_text = self._TargetColumnText(marker)
+        self.marker_list_ctrl.SetItem(idx, const.TARGET_COLUMN, target_text)
 
         target_uuid = marker.marker_uuid
 
@@ -3966,7 +4009,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         for key, data in self.itemDataMap.items():
             current_uuid = data[-1]
             if current_uuid == target_uuid:
-                self.itemDataMap[key][const.TARGET_COLUMN] = "Yes"
+                self.itemDataMap[key][const.TARGET_COLUMN] = target_text
 
     @staticmethod
     def _make_copy_label(original_label: str, existing_labels: list[str]) -> str:
@@ -4031,10 +4074,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         # Update target if necessary
         if set_target:
-            current_target = self.markers.FindTarget()
+            current_target = self.markers.FindTarget(marker.coil_name)
+            coil_name = current_target.coil_name if current_target else self.navigation.main_coil
             if current_target:
                 self.markers.UnsetTarget(current_target.marker_id)
-            self.markers.SetTarget(new_marker.marker_id)
+            self.markers.SetTarget(new_marker.marker_id, coil_name=coil_name)
 
         # Force brain target visualization refresh to ensure correct rendering.
         if new_marker.brain_target_list:
@@ -4363,8 +4407,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def _UnsetTarget(self, marker):
         idx = self.__find_marker_index(marker.marker_id)
 
-        # When unsetting a target, automatically unpress the target mode button.
-        Publisher.sendMessage("Press target mode button", pressed=False)
+        # Removing one coil's target must not disable the other scene.
+        if not any(m.is_target for m in self.markers.list):
+            Publisher.sendMessage("Press target mode button", pressed=False)
 
         # Update the marker list control.
         if marker.brain_target_list:
@@ -4791,8 +4836,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 marker = Marker(version=version)
                 marker.from_dict(data)
 
-                # When loading markers from file, we first create a marker with is_target set to False, and then call __set_marker_as_target.
-                marker.is_target = False
+                # Legacy marker files keep their previous import behavior.
+                # New files carry an explicit coil association, validated by
+                # MarkersControl when adding the marker.
+                if not data.get("coil_name"):
+                    marker.is_target = False
 
                 # Note that we don't want to render or focus on the markers here for each loop iteration.
                 self.markers.AddMarker(marker, render=False)
@@ -4971,7 +5019,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         list_entry[const.MARKER_TYPE_COLUMN] = marker.marker_type.human_readable
         list_entry[const.LABEL_COLUMN] = marker.label
         list_entry[const.Z_OFFSET_COLUMN] = str(marker.z_offset) if marker.z_offset != 0.0 else ""
-        list_entry[const.TARGET_COLUMN] = "Yes" if marker.is_target else ""
+        list_entry[const.TARGET_COLUMN] = self._TargetColumnText(marker)
         list_entry[const.POINT_OF_INTEREST_TARGET_COLUMN] = (
             "Yes" if marker.is_point_of_interest else ""
         )
