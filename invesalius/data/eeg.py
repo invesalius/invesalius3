@@ -44,6 +44,8 @@ class EEGElectrode:
     visible: bool = True
     session_id: int = 1
     electrode_uuid: str = field(default_factory=lambda: str(uuid4()))
+    distance_mm: float | None = None
+    montage_name: str | None = None
 
     def __post_init__(self):
         for values in (self.position, self.orientation, self.colour):
@@ -57,6 +59,26 @@ class EEGElectrode:
             raise ValueError("An electrode needs a nonempty label.")
         if not isinstance(self.electrode_uuid, str) or not self.electrode_uuid:
             raise ValueError("An electrode needs a nonempty UUID.")
+        if self.distance_mm is not None and (
+            not isinstance(self.distance_mm, (int, float))
+            or not isfinite(self.distance_mm)
+            or self.distance_mm < 0
+        ):
+            raise ValueError("Matching distances must be finite and nonnegative.")
+        if self.montage_name is not None and (
+            not isinstance(self.montage_name, str) or not self.montage_name.strip()
+        ):
+            raise ValueError("A montage name must be a nonempty string.")
+
+    @property
+    def display_colour(self):
+        if self.distance_mm is None:
+            return self.colour if self.montage_name is None else (0.5, 0.5, 0.5)
+        if self.distance_mm < 5.0:
+            return (0.0, 1.0, 0.0)
+        if self.distance_mm < 10.0:
+            return (1.0, 1.0, 0.0)
+        return (1.0, 0.0, 0.0)
 
     def to_dict(self):
         return asdict(self)
@@ -289,6 +311,7 @@ class EEGMontage:
                 ):
                     raise ValueError(_("The EEG montage must use Scanner RAS coordinates in mm."))
                 electrodes = EEGMontage._read_text_montage(path, export_format)
+            details = {item["Name"]: item for item in metadata.get("ElectrodeRegistrations", [])}
         except (KeyError, TypeError, IndexError, csv.Error) as error:
             raise ValueError(_("Invalid EEG montage registration metadata.")) from error
         if not electrodes:
@@ -299,6 +322,8 @@ class EEGMontage:
             EEGElectrode(
                 label=name,
                 position=(world_to_image @ [*position, 1])[:3].tolist(),
+                distance_mm=details.get(name, {}).get("DistanceMM"),
+                montage_name=details.get(name, {}).get("MontageName"),
             )
             for name, position in electrodes
         ]
@@ -646,6 +671,8 @@ class EEGMontage:
                 {
                     "Name": electrode.label,
                     "ElectrodeUUID": electrode.electrode_uuid,
+                    "DistanceMM": electrode.distance_mm,
+                    "MontageName": electrode.montage_name,
                     "CaptureRegistration": None,
                 }
                 for electrode in electrodes

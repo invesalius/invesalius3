@@ -69,6 +69,9 @@ class EEGElectrodeVisualizer:
                     self.renderer.AddActor(actor)
             actor, label = self.actors[electrode_uuid]
             label.SetInput(electrode.label)
+            label.GetTextProperty().SetColor(electrode.display_colour)
+            if electrode_uuid != self.highlighted_uuid:
+                actor.GetProperty().SetColor(electrode.display_colour)
             self.renderer.SetPropVisibility(actor, electrode.visible)
             self.renderer.SetPropVisibility(label, electrode.visible and self.labels_visible)
         self._Render()
@@ -79,7 +82,7 @@ class EEGElectrodeVisualizer:
         actor = self.actor_factory.CreateTorus(
             (0, 0, 0),
             (0, 0, 0),
-            electrode.colour,
+            electrode.display_colour,
             ring_radius=3.0,
             cross_section_radius=0.8,
         )
@@ -95,7 +98,7 @@ class EEGElectrodeVisualizer:
         label.PickableOff()
         text = label.GetTextProperty()
         text.SetFontSize(28)
-        text.SetColor(electrode.colour)
+        text.SetColor(electrode.display_colour)
         text.SetBold(True)
         text.SetShadow(True)
         text.SetShadowOffset(2, -2)
@@ -135,7 +138,7 @@ class EEGElectrodeVisualizer:
         electrode = self.electrodes.get(self.highlighted_uuid)
         if electrode is not None and self.highlighted_uuid in self.actors:
             actor, _label = self.actors[self.highlighted_uuid]
-            actor.GetProperty().SetColor(electrode.colour)
+            actor.GetProperty().SetColor(electrode.display_colour)
             actor.SetScale(1.0)
         self.highlighted_uuid = None
         self._Render()
