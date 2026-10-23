@@ -2949,20 +2949,17 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         select_colour.SetToolTip("Set colour")
         select_colour.Bind(csel.EVT_COLOURSELECT, partial(self.OnSelectColour, ctrl=select_colour))
 
-        btn_create = wx.Button(self, -1, label=_("Create marker"), size=wx.Size(135, 23))
+        btn_create = wx.Button(self, -1, label=_("Create marker"), size=wx.Size(95, 23))
         btn_create.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
 
-        sizer_create = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
-        sizer_create.AddMany([(spin_session, 1), (select_colour, 0), (btn_create, 0)])
-
         # Buttons to save and load markers and to change its visibility as well
-        btn_save = wx.Button(self, -1, label=_("Save"), size=wx.Size(65, 23))
+        btn_save = wx.Button(self, -1, label=_("Save"), size=wx.Size(85, 23))
         btn_save.Bind(wx.EVT_BUTTON, self.OnSaveMarkers)
 
-        btn_load = wx.Button(self, -1, label=_("Load"), size=wx.Size(65, 23))
+        btn_load = wx.Button(self, -1, label=_("Load"), size=wx.Size(85, 23))
         btn_load.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
 
-        btn_show_hide_all = wx.ToggleButton(self, -1, _("Hide all"), size=wx.Size(65, 23))
+        btn_show_hide_all = wx.ToggleButton(self, -1, _("Hide all"), size=wx.Size(85, 23))
         btn_show_hide_all.Bind(
             wx.EVT_TOGGLEBUTTON, partial(self.OnShowHideAllMarkers, ctrl=btn_show_hide_all)
         )
@@ -2977,10 +2974,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         )
 
         # Buttons to delete markers
-        btn_delete_single = wx.Button(self, -1, label=_("Delete"), size=wx.Size(65, 23))
+        btn_delete_single = wx.Button(self, -1, label=_("Delete"), size=wx.Size(85, 23))
         btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteSelectedMarkers)
 
-        btn_delete_all = wx.Button(self, -1, label=_("Delete all"), size=wx.Size(135, 23))
+        btn_delete_all = wx.Button(self, -1, label=_("Delete all"), size=wx.Size(175, 23))
         btn_delete_all.Bind(wx.EVT_BUTTON, self.OnDeleteAllMarkers)
 
         sizer_delete = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
@@ -2993,7 +2990,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self,
             -1,
             "",
-            size=(145, -1),
+            size=(95, -1),
             choices=init_choices,
             style=wx.CB_DROPDOWN | wx.CB_READONLY,
         )
@@ -3012,11 +3009,24 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             except ValueError:
                 pass
 
-        # Hide main_coil combobox if single coil mode
-        select_main_coil.Show(nav_state.get("n_coils", 1) != 1)
+        sizer_create = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_create.Add(spin_session, 0, wx.ALIGN_CENTER_VERTICAL)
+        sizer_create.Add(select_colour, 0, wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 5)
+        sizer_create.Add(select_main_coil, 0, wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 5)
+        sizer_create.Add(btn_create, 0, wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 5)
 
-        sizer_main_coil = wx.FlexGridSizer(rows=1, cols=1, hgap=5, vgap=5)
-        sizer_main_coil.Add(select_main_coil)
+        # Keep the single-coil widths from master and the adjusted multicoil widths above.
+        self._marker_button_widths = tuple(
+            (button, single_coil_width, button.GetSize().GetWidth())
+            for button, single_coil_width in (
+                (btn_create, 135),
+                (btn_save, 65),
+                (btn_load, 65),
+                (btn_show_hide_all, 65),
+                (btn_delete_single, 65),
+                (btn_delete_all, 135),
+            )
+        )
 
         screen_width, screen_height = wx.DisplaySize()
 
@@ -3135,12 +3145,11 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        group_sizer.Add(sizer_main_coil, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
         group_sizer.Add(marker_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
         group_sizer.Add(brain_targets_list_ctrl, 0, wx.EXPAND | wx.ALL, 5)
-        group_sizer.Fit(self)
-
         self.SetSizer(group_sizer)
+        self._UpdateMarkerControlsLayout()
+        group_sizer.Fit(self)
         self.Update()
 
     # Required function for sorting the marker list
@@ -3918,6 +3927,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
                 choices.append(coil)
         return choices
 
+    def _UpdateMarkerControlsLayout(self):
+        multicoil = len(self.navigation.coil_registrations) > 1
+        self.select_main_coil.Show(multicoil)
+        for button, single_coil_width, multicoil_width in self._marker_button_widths:
+            width = multicoil_width if multicoil else single_coil_width
+            button.SetMinSize(wx.Size(width, 23))
+            button.SetSize(wx.Size(width, 23))
+        self.Layout()
+
     def UpdateMainCoilCombobox(self, done):
         select_main_coil = self.select_main_coil
         if done:
@@ -3936,14 +3954,10 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         else:
             select_main_coil.Clear()
 
-        if self.navigation.n_coils == 1:  # Single coil: hide main coil combobox
-            select_main_coil.Hide()
-        else:
-            select_main_coil.Show()
         for marker in self.markers.list:
             if marker.is_target:
                 self._SetTarget(marker)
-        self.Layout()
+        self._UpdateMarkerControlsLayout()
 
     def OnChooseMainCoil(self, evt, ctrl):
         choice = evt.GetSelection()
