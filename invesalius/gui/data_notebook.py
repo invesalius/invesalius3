@@ -102,6 +102,7 @@ class NotebookPanel(wx.Panel):
         self.eeg_electrodes = EEGElectrodeManager()
         self.eeg_page = None
         self.navigation_on = False
+        self._project_enabled = False
         self.__bind_events()
         self._SyncEEGPage()
 
@@ -126,8 +127,8 @@ class NotebookPanel(wx.Panel):
         self.eeg_page.listctrl.SelectElectrode(electrode_uuid)
 
     def _OnProjectStateEnabled(self, state):
-        if state:
-            wx.CallAfter(self._SyncEEGPage)
+        self._project_enabled = bool(state)
+        wx.CallAfter(self._SyncEEGPage)
 
     def _OnEEGRegistrationModeChanged(self, active):
         self._SyncEEGPage(select=active)
@@ -136,11 +137,14 @@ class NotebookPanel(wx.Panel):
         wx.CallAfter(self._SyncEEGPage)
 
     def _OnCloseProject(self):
+        self._project_enabled = False
         wx.CallAfter(self._SyncEEGPage)
 
     def _SyncEEGPage(self, select=False):
         has_electrodes = bool(self.eeg_electrodes.electrodes)
-        should_show = self.eeg_electrodes.registration_active or has_electrodes
+        should_show = (
+            self._project_enabled or self.eeg_electrodes.registration_active or has_electrodes
+        )
 
         if should_show:
             if self.eeg_page is None:
@@ -2227,6 +2231,10 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         )
 
         self.export_button.SetToolTip(_("Export EEG montage"))
+        self.import_button = pbtn.PlateButton(
+            self, wx.ID_ANY, "", export_bitmap, style=button_style, size=wx.Size(24, 20)
+        )
+        self.import_button.SetToolTip(_("Import EEG montage"))
         auto_label_bitmap = wx.Bitmap(
             wx.Image(str(inv_paths.ICON_DIR / "wand_sparkles.png")).Scale(
                 18, 18, wx.IMAGE_QUALITY_HIGH
@@ -2255,6 +2263,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
+        sizer.Add(self.import_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.Add(self.export_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.Add(self.auto_label_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.AddStretchSpacer()
@@ -2264,6 +2273,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         self.Fit()
 
         self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
+        self.import_button.Bind(wx.EVT_BUTTON, self.OnImport)
         self.export_button.Bind(wx.EVT_BUTTON, self.OnExport)
         self.auto_label_button.Bind(wx.EVT_BUTTON, self.OnAutoLabel)
         self.labels_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleLabels)
@@ -2365,6 +2375,37 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
                 )
         except (OSError, ValueError, KeyError, TypeError) as error:
             wx.MessageBox(str(error), _("EEG auto labelling error"), wx.OK | wx.ICON_ERROR)
+
+    def OnImport(self, _evt):
+        session = ses.Session()
+        dialog = wx.FileDialog(
+            self,
+            message=_("Open an exported EEG montage (keep its registration JSON beside it)"),
+            defaultDir=session.GetConfig("last_directory_eeg_montage", ""),
+            wildcard=_("EEG montages (*.tsv, *.hpts, *.sfp, *.elc, *.fif)")
+            + "|*.tsv;*.hpts;*.sfp;*.elc;*.fif",
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+        )
+        try:
+            if dialog.ShowModal() != wx.ID_OK:
+                return
+            filename = dialog.GetPath()
+        finally:
+            dialog.Destroy()
+        try:
+            with wx.BusyCursor():
+                electrodes = EEGMontage.read_montage(filename)
+            if self.eeg_electrodes.electrodes:
+                message = _(
+                    "Replace the current EEG electrodes with the imported montage (%d electrodes)?"
+                ) % len(electrodes)
+                if dlg.ShowConfirmationDialog(msg=message) != wx.ID_OK:
+                    return
+            with wx.BusyCursor():
+                self.eeg_electrodes.replace_electrodes(electrodes)
+            session.SetConfig("last_directory_eeg_montage", os.path.dirname(filename))
+        except (OSError, ValueError, RuntimeError) as error:
+            wx.MessageBox(str(error), _("EEG import error"), wx.OK | wx.ICON_ERROR)
 
     def OnExport(self, _evt):
         session = ses.Session()

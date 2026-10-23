@@ -192,6 +192,20 @@ class EEGElectrodeManager(metaclass=Singleton):
     def clear(self):
         return self.remove_many(self._electrodes)
 
+    def replace_electrodes(self, electrodes: Sequence[EEGElectrode]):
+        """Install a fully validated import, keeping the current collection on save failure."""
+        if self.prepare_scalp_surface():
+            for electrode in electrodes:
+                electrode.orientation = self.project_to_scalp(electrode.position).orientation
+        previous = self._electrodes
+        self._electrodes = {item.electrode_uuid: item for item in electrodes}
+        try:
+            self.SaveState()
+        except Exception:
+            self._electrodes = previous
+            raise
+        Publisher.sendMessage("EEG electrodes changed")
+
     def set_visible(self, electrode_uuid, visible):
         electrode = self.get(electrode_uuid)
         if electrode is None:
