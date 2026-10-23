@@ -63,7 +63,109 @@ class EEGElectrode:
 
 
 class EEGMontage:
-    """Serialize electrode montages and their MRI coordinate metadata."""
+    """Match electrode templates and serialize montages with MRI coordinate metadata."""
+
+    @staticmethod
+    def get_templates() -> dict:
+        from invesalius import inv_paths
+
+        path = inv_paths.INV_TOP_DIR / "navigation" / "eeg_montages.json"
+        catalog = json.loads(path.read_text(encoding="utf-8"))
+        if (
+            not isinstance(catalog, dict)
+            or catalog.get("units") != "m"
+            or not isinstance(catalog.get("montages"), dict)
+            or not catalog["montages"]
+        ):
+            raise ValueError(_("Invalid EEG montage template catalog."))
+        return catalog["montages"]
+
+    @staticmethod
+    def match_template(template, positions, fiducials) -> tuple[list[str], np.ndarray]:
+        """Return unique labels and residuals in capture order, without modifying captures.
+
+        Positions and fiducials are in InVesalius image mm; fiducial order is LPA, RPA, Nasion.
+        """
+        from scipy.optimize import linear_sum_assignment
+        from scipy.spatial.distance import cdist, pdist
+
+        from invesalius.data.transformations import affine_matrix_from_points
+
+        positions = np.asarray(positions, dtype=float)
+        fiducials = np.asarray(fiducials, dtype=float)
+        if fiducials.shape != (3, 3) or not np.isfinite(fiducials).all():
+            raise ValueError(_("Register image fiducials (Left Ear, Right Ear, Nasion) first."))
+        if (
+            positions.ndim != 2
+            or positions.shape[1] != 3
+            or len(positions) < 3
+            or not np.isfinite(positions).all()
+        ):
+            raise ValueError(_("Auto labelling requires at least three finite EEG positions."))
+        if (
+            not isinstance(template, dict)
+            or not isinstance(template.get("electrodes"), dict)
+            or not isinstance(template.get("fiducials"), dict)
+        ):
+            raise ValueError(_("Invalid EEG montage template coordinates."))
+        try:
+            labels = list(template["electrodes"])
+            # The bundled templates use meters and anterior +Y; image coordinates use mm and -Y.
+            template_positions = np.asarray(list(template["electrodes"].values()), dtype=float)
+            template_positions = template_positions * (1000, -1000, 1000)
+            template_fiducials = np.asarray(
+                [template["fiducials"][name] for name in ("lpa", "rpa", "nasion")], dtype=float
+            ) * (1000, -1000, 1000)
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(_("Invalid EEG montage template coordinates.")) from error
+        if (
+            template.get("units") != "m"
+            or template_positions.shape != (len(labels), 3)
+            or template_fiducials.shape != (3, 3)
+            or not np.isfinite(template_positions).all()
+            or not np.isfinite(template_fiducials).all()
+            or not labels
+            or any(not isinstance(label, str) or not label.strip() for label in labels)
+        ):
+            raise ValueError(_("Invalid EEG montage template coordinates."))
+        if len(positions) > len(labels):
+            raise ValueError(
+                _("There are more captured electrodes than channels in this template.")
+            )
+        for points in (positions, fiducials, template_fiducials, template_positions):
+            if np.linalg.matrix_rank(points - points.mean(axis=0)) < 2:
+                raise ValueError(_("EEG positions and fiducials must not be collinear."))
+            if pdist(points).min() < 1e-6:
+                raise ValueError(_("Duplicate EEG positions or fiducials cannot be matched."))
+
+        transform = affine_matrix_from_points(
+            template_fiducials.T, fiducials.T, shear=False, scale=True
+        )
+        best_error = float("inf")
+        for iteration in range(6):
+            aligned = template_positions @ transform[:3, :3].T + transform[:3, 3]
+            costs = cdist(positions, aligned)
+            rows, columns = linear_sum_assignment(costs)
+            distances = costs[rows, columns]
+            mean_error = float(distances.mean())
+            if mean_error >= best_error:
+                break
+            improvement = best_error - mean_error
+            best_error = mean_error
+            best_columns, best_distances = columns.copy(), distances.copy()
+            if improvement < 0.1 or iteration == 5:
+                break
+            good = distances < 50.0
+            source = template_positions[columns[good]]
+            target = positions[rows[good]]
+            if len(source) < 3 or any(
+                np.linalg.matrix_rank(points - points.mean(axis=0)) < 2
+                for points in (source, target)
+            ):
+                break
+            transform = affine_matrix_from_points(source.T, target.T, shear=False, scale=True)
+
+        return [labels[index] for index in best_columns], best_distances
 
     @staticmethod
     def get_export_paths(
