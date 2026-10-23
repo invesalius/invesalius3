@@ -1037,7 +1037,7 @@ class Viewer(wx.Panel):
         self.ren.SetBackground(colour[:3])
         self.UpdateRender()
 
-    def AddSurface(self, actor):
+    def AddSurface(self, actor, surface=None):
         # Add the actor to the renderer.
         ren = self.ren
         ren.AddActor(actor)

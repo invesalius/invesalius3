@@ -80,6 +80,10 @@ class NavigationRenderer:
     def RemoveViewProp(self, prop):
         self._remove("RemoveViewProp", prop)
 
+    def SetPropVisibility(self, prop, visible):
+        self._props[prop] = bool(visible)
+        prop.SetVisibility(bool(visible) and self._active)
+
     def set_active(self, active):
         if self._active == active:
             return

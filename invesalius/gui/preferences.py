@@ -1447,7 +1447,8 @@ class ObjectTab(wx.Panel):
         )
 
         done = self.navigation.CoilSelectionDone()
-        if done and self.navigation.n_coils == 1:  # Tell the robot the coil name
+        if done and n_coils_selected == 1 and self.navigation.n_coils == 1:
+            # Probe-only navigation can also be ready without a registered coil.
             coil_name = next(iter(self.navigation.coil_registrations))
             if hasattr(self, "robot_0"):
                 self.robots.AssignCoilToRobot(self.robot_0.robot_id, coil_name)

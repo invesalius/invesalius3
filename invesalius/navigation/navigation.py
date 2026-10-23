@@ -40,6 +40,7 @@ import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
 from invesalius.data.visualization.mep_visualizer import MEPVisualizer
 from invesalius.i18n import tr as _
+from invesalius.navigation.eeg_electrodes import EEGElectrodeManager
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.markers import MarkersControl
@@ -81,6 +82,7 @@ class NavigationHub(metaclass=Singleton):
             # Break when we have 2 robots
             if len(self.robots.robots_by_id) == 2:
                 break
+        self.eeg_electrodes = EEGElectrodeManager()
         self.markers = MarkersControl(navigation=self.navigation)
         self.mep_visualizer = MEPVisualizer()
         Publisher.sendMessage("Add navigation context to interactive shell")
@@ -166,6 +168,7 @@ class UpdateNavigationScene(threading.Thread):
         slice_render,
         coord,
         probe_visible,
+        head_visible,
         probe_coord,
         probe_m_img,
         coil_visible,
@@ -235,12 +238,13 @@ class UpdateNavigationScene(threading.Thread):
                                 current_revision=self.navigation.e_field_revision,
                             )
 
-                if probe_visible:
-                    Publisher.sendMessage(
-                        "Update probe pose",
-                        m_img=probe_m_img,
-                        coord=probe_coord,
-                    )
+                Publisher.sendMessage(
+                    "Update probe pose",
+                    m_img=probe_m_img,
+                    coord=probe_coord,
+                    probe_visible=probe_visible,
+                    head_visible=head_visible,
+                )
 
             if render:
                 Publisher.sendMessage("Render volume viewer")
@@ -258,10 +262,11 @@ class UpdateNavigationScene(threading.Thread):
                 continue
 
             probe_visible = marker_visibilities[0]
-            coil_visible = any(marker_visibilities[2:])  # is any coil visible?
-
             main_coil = self.navigation.main_coil
-            track_this = main_coil if self.navigation.track_coil else "probe"
+            coil_visible = (
+                any(marker_visibilities[2:]) and main_coil in coords and main_coil in m_imgs
+            )
+            track_this = main_coil if self.navigation.track_coil and coil_visible else "probe"
             # choose which object to track in slices and viewer_volume pointer
             coord = coords.get(track_this, None)
             if coord is None:
@@ -281,7 +286,7 @@ class UpdateNavigationScene(threading.Thread):
                             Publisher.sendMessage,
                             "Update tract seed based efield",
                             coord_tracts_queue=self.navigation.coord_tracts_queue,
-                            fallback_m_img=m_imgs[main_coil],
+                            fallback_m_img=m_imgs.get(main_coil, probe_m_img),
                             current_revision=self.navigation.e_field_revision,
                         )
                     bundle, affine_vtk, coord_offset, coord_offset_w = (
@@ -333,6 +338,7 @@ class UpdateNavigationScene(threading.Thread):
                         slice_render=slice_render,
                         coord=coord,
                         probe_visible=probe_visible,
+                        head_visible=marker_visibilities[1],
                         probe_coord=probe_coord,
                         probe_m_img=probe_m_img,
                         coil_visible=coil_visible,
@@ -358,6 +364,7 @@ class Navigation(metaclass=Singleton):
         self.n_coils = 1  # Tracker capacity, not the required number of selected coils.
         self.coil_registrations = {}
         self.track_coil = False
+        self.probe_only = False
         self.main_coil = None  # Which coil to track with pointer
         self.dual_navigation = False
         self.dual_navigation_coils = ()
@@ -506,11 +513,18 @@ class Navigation(metaclass=Singleton):
                 self.r_stylus = np.array(state["r_stylus"])
 
     def CoilSelectionDone(self):
-        """Allow any nonempty coil selection within the tracker capacity."""
-        return 1 <= len(self.coil_registrations) <= self.n_coils
+        """Allow probe-only navigation or a coil subset within the tracker capacity."""
+        return self.probe_only or 1 <= len(self.coil_registrations) <= self.n_coils
+
+    def SetProbeOnly(self, enabled):
+        self.probe_only = bool(enabled)
+        if self.probe_only:
+            self.TrackObject(False)
+            if self.dual_navigation:
+                self.SetDualNavigation(False)
 
     def CanUseDualNavigation(self):
-        return self.CoilSelectionDone() and len(self.coil_registrations) > 1
+        return not self.probe_only and self.CoilSelectionDone() and len(self.coil_registrations) > 1
 
     def GetDefaultDualNavigationCoils(self):
         coil_names = tuple(self.coil_registrations)
@@ -742,12 +756,11 @@ class Navigation(metaclass=Singleton):
                 _("InVesalius 3"),
             )
         else:
-            Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-
             # Pre-compute obj_datas: data/matrices for each coil to be used in coregistration
             # data is accessed from dict by coil name
             obj_datas = {}
-            for coil_name in self.coil_registrations:
+            selected_coils = () if self.probe_only else self.coil_registrations
+            for coil_name in selected_coils:
                 if self.ref_mode_id:
                     coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
                 else:
@@ -875,6 +888,8 @@ class Navigation(metaclass=Singleton):
                     neuronavigation_api=self.neuronavigation_api,
                 )
             )
+
+            Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
 
             for jobs in jobs_list:
                 # jobs.daemon = True
