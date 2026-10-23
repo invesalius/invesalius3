@@ -3061,7 +3061,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnMarkerUnfocused)
         marker_list_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.SetCameraToFocusOnMarker)
         marker_list_ctrl.Bind(wx.EVT_CHAR_HOOK, self.OnMarkerListKeyDown)
-        marker_list_ctrl.SetToolTip(_("Sess.: Session"))
         marker_list_ctrl.Bind(wx.EVT_MOTION, self.OnMarkerListMouseMove)
         marker_list_ctrl.Bind(wx.EVT_LEAVE_WINDOW, self.OnMarkerListMouseLeave)
 
@@ -3192,21 +3191,16 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def OnMarkerListMouseMove(self, evt):
         ctrl = self.marker_list_ctrl
         row, _hit_flags, column = ctrl.HitTestSubItem(evt.GetPosition())
-        tooltip = _("Sess.: Session")
-        if row != wx.NOT_FOUND:
-            if column == const.TARGET_COLUMN:
-                # Keep the full cell text available when the column truncates it.
-                tooltip = ctrl.GetItemText(row, column)
-            elif column == const.SESSION_COLUMN:
-                tooltip = _("Session: {session}").format(session=ctrl.GetItemText(row, column))
-            else:
-                tooltip = ""
+        tooltip = ""
+        if row != wx.NOT_FOUND and column == const.TARGET_COLUMN:
+            # Keep the full cell text available when the column truncates it.
+            tooltip = ctrl.GetItemText(row, column)
         if ctrl.GetToolTipText() != tooltip:
             ctrl.SetToolTip(tooltip)
         evt.Skip()
 
     def OnMarkerListMouseLeave(self, evt):
-        self.marker_list_ctrl.SetToolTip(_("Sess.: Session"))
+        self.marker_list_ctrl.UnsetToolTip()
         evt.Skip()
 
     def __get_selected_items(self):
