@@ -431,7 +431,7 @@ class NavigationView:
         if scene.target_mode:
             scene.initialize_target_cameras()
         else:
-            scene.ren.ResetCamera()
+            scene.reset_camera()
         scene.ren.ResetCameraClippingRange()
         self._secondary_camera_needs_fit = False
 

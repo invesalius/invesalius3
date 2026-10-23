@@ -217,6 +217,7 @@ class NavigationScene:
             renderer=self.ren,
             actor_factory=self.actor_factory,
             vector_field_visualizer=vector_field_visualizer,
+            coil_name=self.coil_name,
         )
         self.track_object(track_object)
 
@@ -226,6 +227,8 @@ class NavigationScene:
         self.update_coil_label()
         if self.marker_visualizer is not None:
             self.marker_visualizer.coil_name = coil_name
+        if self.coil_visualizer is not None:
+            self.coil_visualizer.coil_name = coil_name
 
     def set_coil_name_visibility(self, visible):
         self.ren.set_prop_visibility(self.coil_name_text.actor, visible)
@@ -437,10 +440,28 @@ class NavigationScene:
         self.target_guide_last_update = 0.0
         self.target_guide_last_signature = None
 
+    def reset_camera(self):
+        """Fit anatomy and this scene's coil without hiding the other coils.
+
+        Refresh clipping for all props after applying the final camera pose.
+        """
+        excluded = (
+            self.coil_visualizer.GetOtherCoilActors() if self.coil_visualizer is not None else ()
+        )
+        bounds_states = [(actor, actor.GetUseBounds()) for actor in excluded]
+        try:
+            for actor in excluded:
+                actor.UseBoundsOff()
+            self.ren.ResetCamera()
+        finally:
+            for actor, use_bounds in bounds_states:
+                actor.SetUseBounds(use_bounds)
+
     def initialize_target_cameras(self):
         """Frame the target after the view has applied the scene viewports."""
-        self.ren.ResetCamera()
+        self.reset_camera()
         self.set_camera_target()
+        self.ren.ResetCameraClippingRange()
         self.reset_target_guide_camera()
 
     def reset_target_guide_camera(self):
@@ -484,12 +505,13 @@ class NavigationScene:
                 self.distance_text.SetValue(formatted_distance)
 
             if now - self.target_camera_last_update >= self.target_camera_update_interval:
-                self.ren.ResetCamera()
+                self.reset_camera()
                 self.set_camera_target()
                 zoom_distance = min(distance_to_target, 100)
                 # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
                 # the distance between 1 and 100 mm
                 self.ren.GetActiveCamera().Zoom((-0.0404 * zoom_distance) + 5.0404)
+                self.ren.ResetCameraClippingRange()
                 self.target_camera_last_update = now
 
             is_under_distance_threshold = distance_to_target <= distance_threshold
