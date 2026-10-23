@@ -2071,6 +2071,12 @@ class RobotButtonsPanel(wx.Panel):
         #   - Robot tracking registration is available
         #   - The name of the coil attached to robot is being tracked
         robot_coil = self.robot.GetCoilName()
+        label_text = f"Robot {self.robot.robot_id}"
+        if robot_coil is not None:
+            label_text += f" - {robot_coil}"
+        if self.label.GetLabel() != label_text:
+            self.label.SetLabel(label_text)
+            self.Layout()
         coil_check = robot_coil in self.navigation.coil_registrations
         self.target_selected = self.robot.target is not None
 

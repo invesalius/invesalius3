@@ -1452,6 +1452,18 @@ class ObjectTab(wx.Panel):
             if hasattr(self, "robot_0"):
                 self.robots.AssignCoilToRobot(self.robot_0.robot_id, coil_name)
 
+        # Refresh robot choices on selection, reset, and configuration restore.
+        for robot, choice in (
+            (self.robot_0, self.choice_robot_0_coil),
+            (self.robot_1, self.choice_robot_1_coil),
+        ):
+            choice.Set(list(self.navigation.coil_registrations))
+            coil_name = robot.GetCoilName() if robot is not None else None
+            if coil_name in self.navigation.coil_registrations:
+                choice.SetStringSelection(coil_name)
+            else:
+                choice.SetSelection(wx.NOT_FOUND)
+
         # Readiness needs one coil; only the maximum count disables new selections.
         for coil_name, button_info in self.coil_btns.items():
             btn = button_info[0]
@@ -1516,25 +1528,6 @@ class ObjectTab(wx.Panel):
 
         # Select/Unselect coil
         Publisher.sendMessage("Select coil", coil_name=name, coil_registration=coil_registration)
-
-        # Update robot coil combobox
-        if hasattr(self, "choice_robot_0_coil") and self.choice_robot_0_coil is not None:
-            self.choice_robot_0_coil.Set(list(navigation.coil_registrations))
-            coil_0 = self.robot_0.GetCoilName() if self.robot_0.IsConnected() else None
-            if coil_0 and coil_0 in navigation.coil_registrations:
-                self.choice_robot_0_coil.SetStringSelection(coil_0)
-            else:
-                self.choice_robot_0_coil.SetSelection(wx.NOT_FOUND)
-
-        if hasattr(self, "choice_robot_1_coil") and self.choice_robot_1_coil is not None:
-            self.choice_robot_1_coil.Set(list(navigation.coil_registrations))
-            coil_1 = (
-                self.robot_1.GetCoilName() if self.robot_1 and self.robot_1.IsConnected() else None
-            )
-            if coil_1 and coil_1 in navigation.coil_registrations:
-                self.choice_robot_1_coil.SetStringSelection(coil_1)
-            else:
-                self.choice_robot_1_coil.SetSelection(wx.NOT_FOUND)
 
         self.UpdateCoilSelectionState()
 
