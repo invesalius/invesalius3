@@ -233,7 +233,11 @@ class NavigationScene:
     def restore_markers(self, markers):
         for marker in markers:
             self.marker_visualizer.AddMarker(marker, render=False, focus=False)
-            if marker.is_target and marker.coil_name == self.coil_name:
+            if (
+                marker.is_target
+                and marker.coil_name is not None
+                and marker.coil_name == self.coil_name
+            ):
                 self.set_target(marker)
 
     def _refresh_robot_force_state(self):

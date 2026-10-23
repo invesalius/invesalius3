@@ -174,7 +174,11 @@ class NavigationView:
 
     def _sync_scene_target(self, scene):
         marker = next(
-            (m for m in self._markers.values() if m.is_target and m.coil_name == scene.coil_name),
+            (
+                m
+                for m in self._markers.values()
+                if m.is_target and m.coil_name is not None and m.coil_name == scene.coil_name
+            ),
             None,
         )
         if scene.target_marker is not marker:
@@ -1030,6 +1034,8 @@ class NavigationView:
                 scene.unset_target()
 
     def OnSetTarget(self, marker):
+        if marker.coil_name is None:
+            return
         for scene in self.scenes:
             if marker.coil_name == scene.coil_name:
                 scene.set_target(marker)
