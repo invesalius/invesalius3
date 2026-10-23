@@ -34,6 +34,7 @@ from invesalius import inv_paths
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.robot_force_visualizer import RobotForceVisualizer
+from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d
 from invesalius.pubsub import pub as Publisher
 
@@ -142,6 +143,7 @@ class NavigationScene:
         self.distance_text = None
         self.robot_warnings_text = None
         self.coil_name_text = self.create_coil_name_text(coil_name)
+        self.update_coil_label()
         self.ren.AddActor(self.coil_name_text.actor)
         self.ren.set_prop_visibility(self.coil_name_text.actor, False)
         self.pTarget = [0.0, 0.0, 0.0]
@@ -219,12 +221,11 @@ class NavigationScene:
         self.track_object(track_object)
 
     def set_coil(self, coil_name, robot=None):
-        """Change the live coil and its robot without changing the scene's target."""
+        """Change the live coil before the view restores its associated target."""
         self.coil_name = coil_name
-        self.coil_name_text.SetValue(coil_name or "")
+        self.update_coil_label()
         if self.marker_visualizer is not None:
             self.marker_visualizer.coil_name = coil_name
-        self.refresh_target_coil()
 
     def set_coil_name_visibility(self, visible):
         self.ren.set_prop_visibility(self.coil_name_text.actor, visible)
@@ -232,7 +233,7 @@ class NavigationScene:
     def restore_markers(self, markers):
         for marker in markers:
             self.marker_visualizer.AddMarker(marker, render=False, focus=False)
-            if marker.is_target:
+            if marker.is_target and marker.coil_name == self.coil_name:
                 self.set_target(marker)
 
     def _refresh_robot_force_state(self):
@@ -257,6 +258,7 @@ class NavigationScene:
         # Slice and volume viewers currently use opposite Y directions.
         coord[1] = -coord[1]
         self.target_marker = marker
+        self.update_coil_label()
         self.marker_visualizer.SetTarget(marker)
         self.target_coord = coord
         self.m_target = self.actor_factory.CreateVTKObjectMatrix(coord[:3], coord[3:])
@@ -273,8 +275,15 @@ class NavigationScene:
             self.marker_visualizer.UnsetTarget(self.target_marker)
         self._target_coil_enabled = False
         self.target_marker = None
+        self.update_coil_label()
         self.target_coord = None
         self.m_target = None
+
+    def update_coil_label(self):
+        target_label = (
+            self.target_marker.label if self.target_marker is not None else _("No target")
+        )
+        self.coil_name_text.SetValue(f"{self.coil_name or ''} · {target_label}")
 
     def create_target_guide(self):
         self.clear_target_guide()
@@ -634,6 +643,7 @@ class NavigationScene:
     def create_robot_warnings_text():
         robot_warnings_text = vtku.Text()
 
+        robot_warnings_text.actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
         robot_warnings_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
         robot_warnings_text.SetPosition((const.X, 1.02 - const.YZ))
         robot_warnings_text.SetVerticalJustificationToBottom()

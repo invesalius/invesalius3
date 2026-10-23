@@ -808,6 +808,8 @@ class Viewer(wx.Panel):
         self.ren.RemoveActor(actor)
 
     def IsTargetMode(self):
+        if self._navigation_mode and self.navigation is not None:
+            return self.navigation.IsTargetMode()
         return self.target_mode
 
     def CenterOfMass(self):

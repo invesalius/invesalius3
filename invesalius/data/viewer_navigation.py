@@ -78,6 +78,7 @@ class NavigationView:
         self._navigation_renderers = []
         self._secondary_renderers = set()
         self._dual_navigation = False
+        self._target_mode_requested = False
         self._dual_navigation_coils = ()
         self._secondary_scene = None
         self._secondary_anatomy_props = set()
@@ -166,8 +167,28 @@ class NavigationView:
         if coil_name is not None:
             self.scenes_by_coil[coil_name] = scene
 
-        # Changing the live coil keeps the current target and its coordinates.
+        # Restore the target belonging to the newly assigned live coil.
         scene.set_coil(coil_name)
+        if scene.marker_visualizer is not None:
+            self._sync_scene_target(scene)
+
+    def _sync_scene_target(self, scene):
+        marker = next(
+            (m for m in self._markers.values() if m.is_target and m.coil_name == scene.coil_name),
+            None,
+        )
+        if scene.target_marker is not marker:
+            scene.disable_target_mode(show_projection=bool(self.actor_peel))
+            scene.unset_target()
+            if marker is not None:
+                scene.set_target(marker)
+        if marker is not None and self._target_mode_requested:
+            scene.enable_target_mode(hide_projection=bool(self.actor_peel))
+        if self._active:
+            if scene.target_mode:
+                self._attach_renderer(scene.target_guide_renderer)
+            else:
+                self._detach_renderer(scene.target_guide_renderer)
 
     def _get_scene_for_coil(self, coil_name):
         return self.scenes_by_coil.get(coil_name)
@@ -316,7 +337,7 @@ class NavigationView:
             publish_cortex_markers=False,
         )
         scene.restore_markers(self._markers.values())
-        if self.scene.target_mode:
+        if self._target_mode_requested:
             scene.enable_target_mode(hide_projection=bool(self.actor_peel))
         self.probe_visualizer.add_renderer(scene.ren)
         self._add_scene_renderer(scene.ren, secondary=True)
@@ -634,7 +655,7 @@ class NavigationView:
 
     def _initialize_navigation_ui(self):
         # Restore target mode after activation so cameras use the attached renderers.
-        enabled = self.scene.target_marker is not None
+        enabled = any(scene.target_marker is not None for scene in self._visible_scenes())
         self.SetTargetMode(enabled=enabled)
         Publisher.sendMessage("Press target mode button", pressed=enabled)
 
@@ -699,6 +720,7 @@ class NavigationView:
         Publisher.subscribe(self.OnMainCoilChanged, "Main coil changed")
         Publisher.subscribe(self.OnSetTarget, "Set target")
         Publisher.subscribe(self.OnUnsetTarget, "Unset target")
+        Publisher.subscribe(self.OnTargetLabelChanged, "Update marker label")
         Publisher.subscribe(self.OnUpdateAngleThreshold, "Update angle threshold")
         Publisher.subscribe(self.OnUpdateDistanceThreshold, "Update distance threshold")
         Publisher.subscribe(self.OnUpdateTracts, "Update tracts")
@@ -948,13 +970,19 @@ class NavigationView:
             self.UpdateRender()
 
     def SetTargetMode(self, enabled=False):
-        if self.target_coord is None:
-            return
+        self._target_mode_requested = enabled
         for scene in self.scenes:
-            if enabled:
+            if enabled and scene.target_marker is not None:
                 self.EnableTargetMode(scene)
             else:
                 self.DisableTargetMode(scene)
+
+    def IsTargetMode(self):
+        renderer = self.interactor.FindPokedRenderer(*self.view.get_vtk_mouse_position())
+        for scene in self._visible_scenes():
+            if renderer is self._unwrap_renderer(scene.ren):
+                return scene.target_mode
+        return self.target_mode
 
     def OnUpdateCoilPoses(self, m_imgs, coords):
         for scene in self.scenes:
@@ -988,6 +1016,12 @@ class NavigationView:
         self._main_coil = coil_name
         if not self._dual_navigation:
             self._associate_scene_with_coil(self.scene, coil_name)
+            self._apply_scene_viewport()
+            if self._active and self.scene.target_mode:
+                self.scene.initialize_target_cameras()
+            if self._active:
+                self.view.target_mode = self.scene.target_mode
+                self.view.UpdateRender()
 
     def OnUnsetTarget(self, marker):
         for scene in self.scenes:
@@ -997,7 +1031,13 @@ class NavigationView:
 
     def OnSetTarget(self, marker):
         for scene in self.scenes:
-            scene.set_target(marker)
+            if marker.coil_name == scene.coil_name:
+                scene.set_target(marker)
+
+    def OnTargetLabelChanged(self, marker):
+        for scene in self.scenes:
+            if scene.target_marker is marker:
+                scene.update_coil_label()
 
     def Plane(self, x0, pTarget):
         v3 = np.array(pTarget) - x0  # normal to the plane

@@ -322,7 +322,7 @@ class MarkerVisualizer:
     def HideMarkers(self, markers):
         for marker in markers:
             visualization = self._get_visualization(marker)
-            is_target = marker.is_target
+            is_target = marker is self.target_marker
 
             highlighted = visualization["highlighted"]
             actor = visualization["actor"]
@@ -384,6 +384,7 @@ class MarkerVisualizer:
         """
         # Store the target marker so that it can be modified, e.g., when the coil is at target.
         self.target_marker = marker
+        self.is_coil_at_target = False
 
         position = marker.position
         orientation = marker.orientation
@@ -420,6 +421,7 @@ class MarkerVisualizer:
         When unsetting a marker as the target, change the aim back to an arrow.
         """
         self.target_marker = None
+        self.is_coil_at_target = False
 
         position = marker.position
         orientation = marker.orientation
@@ -575,7 +577,7 @@ class MarkerVisualizer:
         # Return early if the marker is a target and the coil is at the target.
         #
         # In that case, the marker should not be highlighted, as being at the target overrides the highlighting.
-        if marker.is_target and self.is_coil_at_target:
+        if marker is self.target_marker and self.is_coil_at_target:
             return
 
         # Change the color of the marker.
@@ -615,7 +617,7 @@ class MarkerVisualizer:
         #
         # In that case, the marker should not be unhighlighted, as being at the target overrides the
         # highlighting.
-        if marker.is_target and self.is_coil_at_target:
+        if marker is self.target_marker and self.is_coil_at_target:
             return
 
         visualization = self._get_visualization(marker)
@@ -633,7 +635,7 @@ class MarkerVisualizer:
             actor.SetVisibility(0)
 
         # However, if it is the target, it should remain visible.
-        if marker.is_target:
+        if marker is self.target_marker:
             actor.SetVisibility(1)
 
         # Remove the projection actor if it exists.
