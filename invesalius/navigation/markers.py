@@ -41,6 +41,8 @@ class MarkersControl(metaclass=Singleton):
         self._debug_target_poses = ()
         Publisher.subscribe(self.OnMainCoilChanged, "Main coil changed")
         Publisher.subscribe(self.OnRequestCoilTarget, "Request coil target")
+        Publisher.subscribe(self.OnSelectCoil, "Select coil")
+        Publisher.subscribe(self.OnResetCoilSelection, "Reset coil selection")
         Publisher.subscribe(self._UpdateDebugTargetPoses, "Set target")
         Publisher.subscribe(self._UpdateDebugTargetPoses, "Unset target")
 
@@ -180,6 +182,20 @@ class MarkersControl(metaclass=Singleton):
             return "default_coil"
         coil_name = coil_name or self.navigation.main_coil
         return coil_name
+
+    def OnSelectCoil(self, coil_name, coil_registration):
+        """Release only the target of a coil removed from navigation."""
+        if coil_registration is not None:
+            return
+        for marker in self.list:
+            if marker.is_target and marker.coil_name == coil_name:
+                self.UnsetTarget(marker.marker_id, coil_name=coil_name)
+
+    def OnResetCoilSelection(self, n_coils, clear_all=False):
+        """Release assigned targets when the navigation coil selection is reset."""
+        for marker in self.list:
+            if marker.is_target and marker.coil_name is not None:
+                self.UnsetTarget(marker.marker_id)
 
     def OnMainCoilChanged(self, coil_name):
         if coil_name is not None:
