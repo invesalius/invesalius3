@@ -617,14 +617,25 @@ class Project(metaclass=Singleton):
                     f[key + "/visible"] = mask.is_shown
                     f[key + "/edited"] = mask.was_edited
 
+    def get_nifti_affine(self, spacing):
+        # NIfTI voxels are written as swapaxes(fliplr(matrix)). For NIfTI imports that is
+        # already RAS; for axial DICOM it follows the DICOM rows, columns and slice normal
+        # (LPS, so x and y change sign for RAS).
+        affine = np.diag([*spacing, 1.0])
+        if self.original_orientation == const.AXIAL and self.patient_orientation is not None:
+            row, col = np.reshape(self.patient_orientation, (2, 3))
+            for axis, direction in enumerate((row, col, np.cross(row, col))):
+                affine[:3, axis] = [-1.0, -1.0, 1.0] * direction * spacing[axis]
+        return affine
+
     def export_project_to_nifti(self, filename, save_masks=True):
         import nibabel as nib
 
         import invesalius.data.slice_ as slc
 
         s = slc.Slice()
-        img_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(s.matrix), 0, 2), None)
-        img_nifti.header.set_zooms(s.spacing)
+        affine = self.get_nifti_affine(s.spacing)
+        img_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(s.matrix), 0, 2), affine)
         img_nifti.header.set_dim_info(slice=0)
         nib.save(img_nifti, filename)
         if save_masks:
@@ -635,8 +646,7 @@ class Project(metaclass=Singleton):
                 mask_data = mask.matrix[1:, 1:, 1:]
                 # Normalize mask data to uint8 with values {0, 255}
                 mask_data = (mask_data > 127).astype('uint8') * 255
-                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask_data), 0, 2), np.eye(4))
-                mask_nifti.header.set_zooms(s.spacing)
+                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask_data), 0, 2), affine)
                 if filename.lower().endswith(".nii"):
                     basename = filename[:-4]
                     ext = filename[-4::]
