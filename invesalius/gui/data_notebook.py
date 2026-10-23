@@ -2231,8 +2231,14 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         )
 
         self.export_button.SetToolTip(_("Export EEG montage"))
+
+        import_bitmap = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_import_original_min.png"),
+            wx.BITMAP_TYPE_PNG,
+        )
+
         self.import_button = pbtn.PlateButton(
-            self, wx.ID_ANY, "", export_bitmap, style=button_style, size=wx.Size(24, 20)
+            self, wx.ID_ANY, "", import_bitmap, style=button_style, size=wx.Size(24, 20)
         )
         self.import_button.SetToolTip(_("Import EEG montage"))
         auto_label_bitmap = wx.Bitmap(
