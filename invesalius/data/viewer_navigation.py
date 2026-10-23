@@ -82,6 +82,7 @@ class NavigationView:
         self._dual_navigation_coils = ()
         self._secondary_scene = None
         self._secondary_anatomy_props = set()
+        self._secondary_camera_needs_fit = False
         self._markers = {marker.marker_id: marker for marker in markers}
         self._main_coil = main_coil
         self._nav_status = False
@@ -332,7 +333,12 @@ class NavigationView:
         renderer.GetActiveCamera().DeepCopy(self.view.ren.GetActiveCamera())
 
         scene = NavigationScene(renderer, self.view.actor_factory, coil_name=coil_name)
+        if self._volume_state is not None:
+            # The primary camera may already be zoomed onto its own target.
+            # Start the new scene from the general view captured on activation.
+            scene.apply_camera_settings(self._volume_state["camera"])
         self._secondary_scene = scene
+        self._secondary_camera_needs_fit = True
         self.scenes.append(scene)
         scene.initialize_visualizers(
             self.vector_field_visualizer,
@@ -367,6 +373,7 @@ class NavigationView:
         self.scenes.remove(scene)
         scene.dispose()
         self._secondary_scene = None
+        self._secondary_camera_needs_fit = False
 
     def _deactivate_secondary_scene(self):
         scene = self._secondary_scene
@@ -406,7 +413,37 @@ class NavigationView:
 
         for prop in self._secondary_anatomy_props - source_props:
             scene.ren.renderer.RemoveViewProp(prop)
+        if source_props != self._secondary_anatomy_props:
+            # During session restore, surfaces can arrive after the scene.
+            self._secondary_camera_needs_fit = True
         self._secondary_anatomy_props = source_props
+
+    def _fit_secondary_camera(self):
+        scene = self._secondary_scene
+        if not self._active or not self._dual_navigation or scene is None:
+            return
+        if not self._secondary_camera_needs_fit:
+            return
+        width, height = scene.ren.GetSize()
+        if width <= 0 or height <= 0:
+            return
+
+        if scene.target_mode:
+            scene.initialize_target_cameras()
+        else:
+            scene.ren.ResetCamera()
+        scene.ren.ResetCameraClippingRange()
+        self._secondary_camera_needs_fit = False
+
+    def _finish_secondary_camera_layout(self, scene):
+        if self._disposed or not self._active or not self._dual_navigation:
+            return
+        if scene is not self._secondary_scene:
+            return
+        # The native window resize may finish only after SetDualNavigation.
+        self._apply_scene_viewport()
+        self._secondary_camera_needs_fit = True
+        self.view.UpdateRender()
 
     def _clear_secondary_anatomy(self):
         if self._secondary_scene is not None:
@@ -479,6 +516,7 @@ class NavigationView:
             scene = self._ensure_secondary_scene(right_coil)
             self._associate_scene_with_coil(scene, right_coil)
             self._dual_navigation_coils = coil_names
+            self._secondary_camera_needs_fit = True
             self._sync_secondary_anatomy()
             scene.ren.set_active(self._active)
             self.scene.set_coil_name_visibility(True)
@@ -495,14 +533,18 @@ class NavigationView:
         self._apply_scene_viewport()
         if self._active:
             for visible_scene in self._visible_scenes():
-                if visible_scene.target_mode:
+                if visible_scene.target_mode and visible_scene is not self._secondary_scene:
                     visible_scene.initialize_target_cameras()
+            self._fit_secondary_camera()
             self.view.UpdateRender()
+            if enabled:
+                wx.CallAfter(self._finish_secondary_camera_layout, self._secondary_scene)
 
     def prepare_render(self):
         if not self._dual_navigation or self._secondary_scene is None:
             return
         self._sync_secondary_anatomy()
+        self._fit_secondary_camera()
 
     def _initialize_navigation_data(self):
         self.static_markers_efield = []
