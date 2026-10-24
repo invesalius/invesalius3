@@ -271,11 +271,12 @@ class Project(metaclass=Singleton):
 
             if isinstance(mat, np.ndarray):
                 # mat is a numpy array or memmap
-                if hasattr(mat, "filename") and mat.filename:
+                if hasattr(mat, "filename") and mat.filename and mat.filename not in filelist:
                     # It's a memmap already backed by a file: use its filename
                     filelist[mat.filename] = v_filename
                 else:
-                    # It's an in-memory array: write it to a new temp file
+                    # It's an in-memory array, or its file is already in the list
+                    # (e.g. the main matrix after reorientation): write it to a new temp file
                     fd_v, temp_v = tempfile.mkstemp()
                     m_v = np.memmap(temp_v, shape=mat.shape, dtype=mat.dtype, mode="w+")
                     m_v[:] = mat
