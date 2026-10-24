@@ -1,3 +1,7 @@
+import subprocess
+import sys
+from pathlib import Path
+
 import numpy as np
 from invesalius.data.slice_ import Slice
 from invesalius.project import Project
@@ -63,3 +67,24 @@ def test_set_mask_name() -> None:
     slc.SetMaskName(mask_index, new_name)
     proj: Project = Project()
     assert proj.mask_dict[mask_index].name == new_name
+
+def test_create_new_mask_without_wx_app() -> None:
+    # Run in a new interpreter: with --no-gui there is no wx.App, but other
+    # test modules create one at import time.
+    code = (
+        "import numpy as np\n"
+        "import wx\n"
+        "from invesalius.data.slice_ import Slice\n"
+        "assert wx.GetApp() is None\n"
+        "slc = Slice()\n"
+        "slc.matrix = np.arange(125, dtype=np.int16).reshape((5, 5, 5))\n"
+        "slc.spacing = (1.0, 1.0, 1.0)\n"
+        "slc.create_new_mask(name='Mask 1', threshold_range=(0, 100))\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr

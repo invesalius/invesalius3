@@ -418,7 +418,7 @@ def parse_command_line():
     parser.add_argument("-s", "--save", help="Save the project after an import.")
 
     parser.add_argument(
-        "-t", "--threshold", help="Define the threshold for the export (e.g. 100-780)."
+        "-t", "--threshold", help="Define the threshold for the export (e.g. 100,780)."
     )
 
     parser.add_argument("-e", "--export", help="Export to STL.")
