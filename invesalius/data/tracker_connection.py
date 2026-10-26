@@ -104,7 +104,7 @@ class TrackerConnection:
 
 class OptitrackTrackerConnection(TrackerConnection):
     """
-    Connect to OptiTrack, selecting one coil by name or validating the multicoil count.
+    Connect to OptiTrack, selecting the requested coils from the user profile.
     """
 
     def __init__(self, model=None, n_coils=1):
@@ -167,18 +167,22 @@ class OptitrackTrackerConnection(TrackerConnection):
         self.lib_mode = lib_mode
 
     def ValidateCoilCount(self) -> bool:
-        """Select one coil by name, or require the exact multicoil count."""
-        if self.n_coils != 1:
-            return super().ValidateCoilCount()
-
-        exact_names = [name for name in self.coil_names if name.casefold() == "coil"]
-        self.coil_names = exact_names or [
-            name for name in self.coil_names if name.casefold().startswith("coil")
-        ]
-        if len(self.coil_names) == 1:
+        """Require enough coils and let the user choose when there are extra coils."""
+        if self.coil_count < self.n_coils:
+            self.lib_mode = "coil count mismatch"
+            return False
+        if self.coil_count == self.n_coils:
             return True
-        self.lib_mode = "coil selection error"
-        return False
+
+        dialog = dlg.SelectOptitrackCoilsDialog(self.coil_names, self.n_coils)
+        try:
+            if dialog.ShowModal() != ID_OK:
+                self.lib_mode = "cancelled"
+                return False
+            self.coil_names = dialog.GetValue()
+            return True
+        finally:
+            dialog.Destroy()
 
     def GetCoilNames(self) -> list[str]:
         return list(self.coil_names)

@@ -186,14 +186,10 @@ def OptitrackCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref
     trck = tracker_connection.GetConnection()
     trck.Run()
 
-    # Keep coil poses and visibilities in the same frame and library order.
+    # Keep coil poses and visibilities in the same frame and selected name order.
     frame = trck.GetFrame()
-    coils = list(frame.coils)
-
-    if tracker_connection.n_coils == 1:
-        # Keep the name selected at initialization, including while it is untracked.
-        coil_name = tracker_connection.GetCoilName(2)
-        coils = [coil for coil in coils if coil.name.strip() == coil_name]
+    coils_by_name = {coil.name.strip(): coil for coil in frame.coils}
+    coils = [coils_by_name[name] for name in tracker_connection.GetCoilNames()]
 
     def make_coord(position, quaternion):
         position_mm = np.asarray(position, dtype=float) * 1000.0

@@ -1116,6 +1116,9 @@ def ShowNavigationTrackerWarning(
     """
     Spatial Tracker connection error
     """
+    if lib_mode == "cancelled":
+        return
+
     trck = {
         const.SELECT: "Tracker",
         const.MTC: "Claron MicronTracker",
@@ -1138,16 +1141,11 @@ def ShowNavigationTrackerWarning(
         msg = _("Coil marker is not visible.")
     elif lib_mode == "head marker not visible":
         msg = _("Head marker is not visible.")
-    elif lib_mode == "coil selection error":
-        msg = _(
-            "Cannot connect to {tracker} in single-coil mode: no unique coil could be selected. "
-            "Name one coil 'Coil', or keep only one coil whose name starts with 'Coil'."
-        ).format(tracker=trck[trck_id])
     elif lib_mode == "coil count mismatch":
         msg = _(
-            "Cannot connect to {tracker}: the interface is configured for {expected} coil(s), "
-            "but the tracker configuration contains {actual}. "
-            "Adjust the coil count in Preferences or the tracker configuration and try again."
+            "Cannot connect to {tracker}: the tracker configuration file does not contain "
+            "enough coils. {expected} coil(s) required, {actual} found. "
+            "Adjust the coil count in Preferences or select another file and try again."
         ).format(tracker=trck[trck_id], expected=expected_n_coils, actual=detected_n_coils)
     elif lib_mode == "error":
         msg = trck[trck_id] + _(" is not installed.")
@@ -6767,6 +6765,33 @@ def DialogRescalePixelIntensity(max_intensity: float, unique_values: Any) -> boo
 
     dlg.Destroy()
     return status
+
+
+class SelectOptitrackCoilsDialog(wx.Dialog):
+    def __init__(self, coil_names: list[str], n_coils: int):
+        super().__init__(
+            wx.GetApp().GetTopWindow(),
+            title=_("Select Optitrack coils"),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+        )
+        self.n_coils = n_coils
+        self.coils = wx.CheckListBox(self, choices=coil_names, size=(350, 200))
+        self.coils.Bind(wx.EVT_CHECKLISTBOX, self.OnCheckCoil)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        message = _("Select exactly {count} coil(s) to track:").format(count=n_coils)
+        sizer.Add(wx.StaticText(self, label=message), 0, wx.ALL, 10)
+        sizer.Add(self.coils, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL), 0, wx.EXPAND | wx.ALL, 10)
+        self.SetSizerAndFit(sizer)
+        self.FindWindow(wx.ID_OK).Enable(False)
+        self.CenterOnParent()
+
+    def OnCheckCoil(self, evt: wx.CommandEvent) -> None:
+        self.FindWindow(wx.ID_OK).Enable(len(self.coils.GetCheckedItems()) == self.n_coils)
+
+    def GetValue(self) -> list[str]:
+        return list(self.coils.GetCheckedStrings())
 
 
 class ConfigureOptitrackDialog(wx.Dialog):
