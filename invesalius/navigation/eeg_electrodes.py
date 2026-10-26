@@ -173,8 +173,8 @@ class EEGElectrodeManager(metaclass=Singleton):
         original_position = list(position)
         viewer_position = original_position.copy()
         viewer_position[1] *= -1
-        closest_point, closest_normal = self.surface_geometry.GetClosestPointOnSurface(
-            "scalp", viewer_position, smooth_radius=SCALP_NORMAL_AVERAGING_RADIUS_MM
+        closest_point, closest_normal = self.surface_geometry.GetOuterPointOnScalp(
+            viewer_position, smooth_radius=SCALP_NORMAL_AVERAGING_RADIUS_MM
         )
         projected_position = list(closest_point)
         projected_position[1] *= -1
