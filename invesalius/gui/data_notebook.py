@@ -2356,13 +2356,19 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         try:
             templates = EEGMontage.get_templates()
             names = sorted(templates, key=lambda name: len(templates[name]["electrodes"]))
+            choices = [
+                _("{name} ({count} electrodes)").format(
+                    name=name, count=len(templates[name]["electrodes"])
+                )
+                for name in names
+            ]
             choice = wx.SingleChoiceDialog(
-                self, _("Select the EEG montage template:"), _("Auto label EEG electrodes"), names
+                self, _("Select the EEG montage template:"), _("Auto label EEG electrodes"), choices
             )
             try:
                 if choice.ShowModal() != wx.ID_OK:
                     return
-                name = choice.GetStringSelection()
+                name = names[choice.GetSelection()]
             finally:
                 choice.Destroy()
             electrodes = self.eeg_electrodes.electrodes
