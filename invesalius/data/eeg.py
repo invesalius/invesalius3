@@ -107,9 +107,11 @@ class EEGMontage:
         """Return unique labels and residuals in capture order, without modifying captures.
 
         Positions and fiducials are in InVesalius image mm; fiducial order is LPA, RPA, Nasion.
+        Refinement preserves the fiducial scale.
         """
         from scipy.optimize import linear_sum_assignment
         from scipy.spatial.distance import cdist, pdist
+        from scipy.spatial.transform import Rotation
 
         from invesalius.data.transformations import affine_matrix_from_points
 
@@ -163,29 +165,40 @@ class EEGMontage:
         transform = affine_matrix_from_points(
             template_fiducials.T, fiducials.T, shear=False, scale=True
         )
+        current_positions = template_positions @ transform[:3, :3].T + transform[:3, 3]
+        current_fiducials = template_fiducials @ transform[:3, :3].T + transform[:3, 3]
+        fiducial_weights = np.full(3, 1.0 / 3.0)
         best_error = float("inf")
         for iteration in range(6):
-            aligned = template_positions @ transform[:3, :3].T + transform[:3, 3]
-            costs = cdist(positions, aligned)
+            costs = cdist(positions, current_positions)
             rows, columns = linear_sum_assignment(costs)
             distances = costs[rows, columns]
-            mean_error = float(distances.mean())
-            if mean_error >= best_error:
+            fiducial_error = np.average(
+                np.sum((current_fiducials - fiducials) ** 2, axis=1), weights=fiducial_weights
+            )
+            error = np.sqrt((np.mean(distances**2) + fiducial_error) / 2.0)
+            if error >= best_error:
                 break
-            improvement = best_error - mean_error
-            best_error = mean_error
+            improvement = best_error - error
+            best_error = error
             best_columns, best_distances = columns.copy(), distances.copy()
             if improvement < 0.1 or iteration == 5:
                 break
             good = distances < 50.0
-            source = template_positions[columns[good]]
-            target = positions[rows[good]]
-            if len(source) < 3 or any(
-                np.linalg.matrix_rank(points - points.mean(axis=0)) < 2
-                for points in (source, target)
-            ):
+            count = int(good.sum())
+            if count < 3:
                 break
-            transform = affine_matrix_from_points(source.T, target.T, shear=False, scale=True)
+            source = np.vstack((current_positions[columns[good]], current_fiducials))
+            target = np.vstack((positions[rows[good]], fiducials))
+            # Give landmarks and captures equal total weight, regardless of electrode count.
+            weights = np.r_[np.full(count, 1.0 / count), fiducial_weights]
+            source_center = np.average(source, axis=0, weights=weights)
+            target_center = np.average(target, axis=0, weights=weights)
+            rotation, _residual = Rotation.align_vectors(
+                target - target_center, source - source_center, weights=weights
+            )
+            current_positions = rotation.apply(current_positions - source_center) + target_center
+            current_fiducials = rotation.apply(current_fiducials - source_center) + target_center
 
         return [labels[index] for index in best_columns], best_distances
 

@@ -3494,7 +3494,7 @@
       "coordinate_frame_note": "Template coordinates; do not assume individual MRI or scanner frame.",
       "original_coordinates": "template XYZ in meters",
       "head_radius_m": null,
-      "electrode_count": 336,
+      "electrode_count": 335,
       "fiducials": {
         "nasion": [
           0.00152574707527127,
@@ -3517,14 +3517,14 @@
           0.00346573088004117,
           -0.117422203404545,
           -0.0398609963370202
-        ]
-      },
-      "electrodes": {
+        ],
         "Nz": [
           0.00152350903866263,
           0.0854746300192042,
           -0.0351736896655451
-        ],
+        ]
+      },
+      "electrodes": {
         "Fp1": [
           -0.0292811604883705,
           0.0839923366306848,
