@@ -1669,7 +1669,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
     def on_mouse_right_click(self, event):
         start_idx = 1
-        local_idx = self.GetFocusedItem()
+        local_idx = event.GetIndex()
 
         global_surface_id = None
         for g_id, l_id in self.surface_list_index.items():
@@ -1686,8 +1686,43 @@ class SurfacesListCtrlPanel(InvListCtrl):
         # Create the context menu and add all the menu items
         surface_context_menu = wx.Menu()
 
+        surface = Project().surface_dict[global_surface_id]
+        if surface.can_use_as_geometry:
+            modes_menu = wx.Menu()
+            modes = {"": True, **Project().GetSurfaceMapModes(global_surface_id)}
+            for source, enabled in modes.items():
+                item = modes_menu.AppendRadioItem(wx.ID_ANY, source or _("Original"))
+                item.Enable(enabled)
+                item.Check(surface.active_scalar_map == source)
+                modes_menu.Bind(
+                    wx.EVT_MENU,
+                    lambda evt, source=source: Publisher.sendMessage(
+                        "Set surface map", surface_index=global_surface_id, source=source
+                    ),
+                    item,
+                )
+            surface_context_menu.AppendSubMenu(modes_menu, _("Coloring"))
+
+            role_menu = wx.Menu()
+            for role, label in (
+                ("", _("Unassigned")),
+                ("brain", _("Brain")),
+                ("scalp", _("Scalp")),
+            ):
+                item = role_menu.AppendRadioItem(wx.ID_ANY, label)
+                item.Check(surface.anatomical_role == role)
+                role_menu.Bind(
+                    wx.EVT_MENU,
+                    lambda evt, role=role: Publisher.sendMessage(
+                        "Set surface role", surface_index=global_surface_id, role=role
+                    ),
+                    item,
+                )
+            surface_context_menu.AppendSubMenu(role_menu, _("Anatomical reference"))
+            surface_context_menu.AppendSeparator()
+
         colour_id = surface_context_menu.Append(start_idx, _("Change color"))
-        colour_id.Enable(Project().surface_dict[global_surface_id].can_edit_colour)
+        colour_id.Enable(surface.can_edit_colour)
         surface_context_menu.Bind(
             wx.EVT_MENU,
             lambda evt: self.change_surface_color(surface_index=global_surface_id),
