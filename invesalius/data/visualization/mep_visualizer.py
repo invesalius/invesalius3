@@ -83,7 +83,8 @@ class MEPVisualizer:
         Publisher.subscribe(self.SetBrainSurface, "Load brain surface actor")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnRemoveSurfaces, "Remove surfaces")
-        Publisher.subscribe(self.OnScalarSurfaceRemoved, "Scalar surface removed")
+        Publisher.subscribe(self.OnScalarSourceDisabled, "Scalar surface removed")
+        Publisher.subscribe(self.OnScalarSourceDisabled, "Scalar source disabled")
 
     # --- Configuration Management ---
 
@@ -468,11 +469,11 @@ class MEPVisualizer:
         if self.surface_index in surface_indexes:
             self.surface = None
             self.surface_index = None
-            self.OnScalarSurfaceRemoved("MEP")
+            self.OnScalarSourceDisabled("MEP")
         elif self.surface_index is not None:
             self.surface_index -= sum(index < self.surface_index for index in surface_indexes)
 
-    def OnScalarSurfaceRemoved(self, source):
+    def OnScalarSourceDisabled(self, source):
         if source == "MEP":
             self._config_params["mep_enabled"] = False
             self.marker_storage = []

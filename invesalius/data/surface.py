@@ -1026,6 +1026,7 @@ class SurfaceManager:
     def SetScalarSourceEnabled(self, source, enabled):
         proj = prj.Project()
         state = proj.scalar_sources.setdefault(source, {"enabled": False, "surface": None})
+        was_enabled = state["enabled"]
         state["enabled"] = enabled
         if not enabled:
             for surface in proj.GetGeometrySurfaces().values():
@@ -1033,6 +1034,8 @@ class SurfaceManager:
                     surface.active_scalar_map = ""
                     self._ConfigureSurfaceMap(surface)
                     Publisher.sendMessage("Update surface info in GUI", surface=surface)
+            if was_enabled:
+                Publisher.sendMessage("Scalar source disabled", source=source)
             Publisher.sendMessage("Render volume viewer")
 
     def SetScalarSurfaceSource(self, source, surface_index):
@@ -1067,6 +1070,10 @@ class SurfaceManager:
                 Publisher.sendMessage("Get brain surface actor", index=surface_index)
             else:
                 self.SetScalarSurfaceSource(source, surface_index)
+        else:
+            for map_source, state in proj.scalar_sources.items():
+                if state["surface"] is surface and state["enabled"]:
+                    self.SetScalarSourceEnabled(map_source, False)
         surface.active_scalar_map = source
         self._ConfigureSurfaceMap(surface)
         Publisher.sendMessage("Update surface info in GUI", surface=surface)

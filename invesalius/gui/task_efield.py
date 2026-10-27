@@ -377,6 +377,12 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.SendNeuronavigationApi, "Send Neuronavigation Api")
         Publisher.subscribe(self.GetEfieldDataStatus, "Get status of Efield saved data")
         Publisher.subscribe(self.GetIds, "Get dI for mtms")
+        Publisher.subscribe(self.OnScalarSourceDisabled, "Scalar source disabled")
+
+    def OnScalarSourceDisabled(self, source):
+        if source == "E-field":
+            self.enable_efield.SetValue(False)
+            self.OnEnableEfield(None, self.enable_efield)
 
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
