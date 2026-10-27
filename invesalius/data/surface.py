@@ -355,6 +355,10 @@ class SurfaceManager:
                 self.last_surface_index = 0
             else:
                 self.last_surface_index = None
+        elif self.last_surface_index is not None:
+            self.last_surface_index -= sum(
+                index < self.last_surface_index for index in surface_indexes
+            )
 
     def OnSeedSurface(self, seeds):
         """
@@ -994,24 +998,6 @@ class SurfaceManager:
             polydata = self.ConvertPolydataToInv(polydata)
             self.convert_to_inv = False
 
-        normals = vtkPolyDataNormals()
-        normals.SetInputData(polydata)
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.Update()
-
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputData(normals.GetOutput())
-        if scalar:
-            mapper.ScalarVisibilityOn()
-        else:
-            mapper.ScalarVisibilityOff()
-        #  mapper.ImmediateModeRenderingOn() # improve performance
-
-        actor = vtkActor()
-        actor.SetMapper(mapper)
-        actor.GetProperty().SetBackfaceCulling(1)
-
         if overwrite:
             if index is None:
                 index = self.last_surface_index
@@ -1043,6 +1029,24 @@ class SurfaceManager:
 
         if scalar_map is not None:
             actor = self._ConfigureScalarSurface(surface)
+        else:
+            normals = vtkPolyDataNormals()
+            normals.SetInputData(polydata)
+            normals.SetFeatureAngle(80)
+            normals.AutoOrientNormalsOn()
+            normals.Update()
+
+            mapper = vtkPolyDataMapper()
+            mapper.SetInputData(normals.GetOutput())
+            if scalar:
+                mapper.ScalarVisibilityOn()
+            else:
+                mapper.ScalarVisibilityOff()
+            #  mapper.ImmediateModeRenderingOn() # improve performance
+
+            actor = vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetBackfaceCulling(1)
 
         # Set actor colour and transparency
         actor.GetProperty().SetColor(surface.colour[:3])
