@@ -306,11 +306,15 @@ class SurfaceManager:
             names_list = [surface_dict[i].name for i in surface_dict.keys()]
             new_name = utl.next_copy_name(name, names_list)
             scalar_map = deepcopy(original_surface.scalar_map)
+            polydata = original_surface.polydata
             if scalar_map is not None:
                 scalar_map.pop("source", None)
+                polydata = vtkPolyData()
+                polydata.ShallowCopy(original_surface.polydata)
+                polydata.GetPointData().DeepCopy(original_surface.polydata.GetPointData())
             # create new mask
             self.CreateSurfaceFromPolydata(
-                polydata=original_surface.polydata,
+                polydata=polydata,
                 overwrite=False,
                 name=new_name,
                 colour=original_surface.colour,
@@ -909,7 +913,9 @@ class SurfaceManager:
             Publisher.sendMessage("AppendActor", actor=visualizer.scalar_bar)
         config = surface.scalar_map
         visualizer.SetMap(
-            SurfaceScalarMap(surface.polydata, config["name"], config["unit"]),
+            SurfaceScalarMap(
+                surface.polydata, config["name"], config["unit"], config.get("color_array")
+            ),
             CreateLookupTable(config["lookup_table"]),
             config["range"],
         )
@@ -935,6 +941,8 @@ class SurfaceManager:
             "range": list(scalar_range),
             "lookup_table": GetLookupTableState(lookup_table),
         }
+        if surface_map.color_array is not None:
+            config["color_array"] = surface_map.color_array
         polydata = vtkPolyData()
         polydata.ShallowCopy(surface_map.polydata)
         surfaces = prj.Project().surface_dict.values()
@@ -956,7 +964,6 @@ class SurfaceManager:
             surface.scalar_map = config
             self._ConfigureScalarSurface(surface)
             ses.Session().ChangeProject()
-            Publisher.sendMessage("Update surface info in GUI", surface=surface)
         Publisher.sendMessage("Render volume viewer")
 
     def ShowScalarSurface(self, source, visibility):

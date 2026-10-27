@@ -32,6 +32,7 @@ class SurfaceScalarMap:
     polydata: vtkPolyData
     name: str
     unit: str
+    color_array: str | None = None
 
     def __post_init__(self):
         scalars = self.polydata.GetPointData().GetScalars()
@@ -40,6 +41,14 @@ class SurfaceScalarMap:
             or scalars.GetNumberOfTuples() != self.polydata.GetNumberOfPoints()
         ):
             raise ValueError("A scalar value is required for each surface point.")
+        if self.color_array is not None:
+            colors = self.polydata.GetPointData().GetArray(self.color_array)
+            if (
+                colors is None
+                or colors.GetNumberOfComponents() not in (3, 4)
+                or colors.GetNumberOfTuples() != self.polydata.GetNumberOfPoints()
+            ):
+                raise ValueError("A display color is required for each surface point.")
 
 
 def GetLookupTableState(lookup_table):
@@ -113,6 +122,13 @@ class SurfaceScalarVisualizer:
         self.mapper.SetInputData(normals.GetOutput())
         self.mapper.SetScalarRange(scalar_range)
         self.mapper.SetLookupTable(lookup_table)
+        if surface_map.color_array is None:
+            self.mapper.SetScalarModeToUsePointData()
+            self.mapper.SetColorModeToMapScalars()
+        else:
+            self.mapper.SetScalarModeToUsePointFieldData()
+            self.mapper.SelectColorArray(surface_map.color_array)
+            self.mapper.SetColorModeToDirectScalars()
         self.mapper.SetScalarVisibility(
             surface_map.polydata.GetPointData().GetScalars() is not None
         )
