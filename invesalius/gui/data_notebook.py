@@ -2093,6 +2093,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         else:
             local_position = self.surface_list_index[index]
             self.UpdateItemInfo(local_position, name, volume, area, transparency, colour)
+        self.SetItemImage(local_position, int(surface.is_shown))
 
     def InsertNewItem(
         self,
