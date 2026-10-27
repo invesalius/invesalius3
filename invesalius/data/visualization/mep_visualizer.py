@@ -53,7 +53,7 @@ from invesalius.pubsub import pub as Publisher
 
 
 class MEPVisualizer:
-    name = "MEP"
+    name = "Motor mapping"
 
     def __init__(self):
         self.points_polydata = vtkPolyData()

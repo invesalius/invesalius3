@@ -1703,7 +1703,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
                         lambda evt, name=name: painting.select(surface, name),
                         item,
                     )
-                surface_context_menu.AppendSubMenu(modes_menu, _("Coloring"))
+                surface_context_menu.AppendSubMenu(modes_menu, _("Color map mode"))
             if self.category == "General" and surface.frozen_map is None:
                 item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Assign as brain"))
                 item.Check(surface.anatomical_role == "brain")
