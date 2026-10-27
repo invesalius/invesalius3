@@ -126,6 +126,9 @@ class Surface:
         self.filename = None
         self.category = category
         self.scalar_map = None
+        self.anatomical_role = ""
+        self.scalar_maps = {}
+        self.active_scalar_map = ""
 
     @property
     def can_use_as_geometry(self):
@@ -134,6 +137,14 @@ class Surface:
     @property
     def can_edit_name_and_colour(self):
         return self.can_use_as_geometry
+
+    @property
+    def can_edit_colour(self):
+        return self.can_use_as_geometry and not self.active_scalar_map
+
+    @property
+    def displayed_polydata(self):
+        return self.scalar_maps.get(self.active_scalar_map, {}).get("polydata", self.polydata)
 
     def SavePlist(self, dir_temp, filelist):
         if self.filename and os.path.exists(self.filename):
@@ -163,6 +174,16 @@ class Surface:
         }
         if self.scalar_map is not None:
             surface["scalar_map"] = self.scalar_map
+        if self.anatomical_role:
+            surface["anatomical_role"] = self.anatomical_role
+        if self.scalar_maps:
+            surface["scalar_maps"] = {}
+            for index, (source, config) in enumerate(self.scalar_maps.items()):
+                map_filename = f"{filename}_map_{index}.vtp"
+                map_filepath = os.path.join(dir_temp, map_filename)
+                pu.Export(config["polydata"], map_filepath, bin=True)
+                filelist[map_filepath] = map_filename
+                surface["scalar_maps"][source] = dict(config, polydata=map_filename)
         if self.projection_polydata is not None:
             projection_filename = filename + "_projection.vtp"
             projection_filepath = os.path.join(dir_temp, projection_filename)
@@ -200,6 +221,12 @@ class Surface:
             self.category = "General"
         self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
         self.scalar_map = sp.get("scalar_map")
+        self.anatomical_role = sp.get("anatomical_role", "")
+        self.scalar_maps = {
+            source: dict(config, polydata=pu.Import(os.path.join(dirpath, config["polydata"])))
+            for source, config in sp.get("scalar_maps", {}).items()
+        }
+        self.active_scalar_map = ""
         self.projection_polydata = None
         if "projection_polydata" in sp:
             projection_filepath = os.path.join(dirpath, sp["projection_polydata"])

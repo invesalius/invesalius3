@@ -74,6 +74,10 @@ class Project(metaclass=Singleton):
         # Surfaces are (vtkPolyData)
         self.surface_dict = {}
         self.last_surface_index = -1
+        self.scalar_sources = {
+            "MEP": {"enabled": False, "surface": None},
+            "E-field": {"enabled": False, "surface": None},
+        }
 
         # Measurements
         self.measurement_dict = {}
@@ -164,6 +168,47 @@ class Project(metaclass=Singleton):
             if not surface.can_use_as_geometry
         }
 
+    def GetBrainSurface(self):
+        return next(
+            (
+                surface
+                for surface in self.GetGeometrySurfaces().values()
+                if surface.anatomical_role == "brain"
+            ),
+            None,
+        )
+
+    def GetScalpSurface(self):
+        return next(
+            (
+                surface
+                for surface in self.GetGeometrySurfaces().values()
+                if surface.anatomical_role == "scalp"
+            ),
+            None,
+        )
+
+    def SetSurfaceRole(self, surface_index, role):
+        if role not in ("", "brain", "scalp"):
+            raise ValueError("Invalid anatomical surface role.")
+        surface = self.GetGeometrySurfaces()[surface_index]
+        for candidate in self.GetGeometrySurfaces().values():
+            if role and candidate.anatomical_role == role:
+                candidate.anatomical_role = ""
+        surface.anatomical_role = role
+
+    def GetSurfaceMapModes(self, surface_index):
+        if surface_index not in self.GetGeometrySurfaces():
+            return {}
+        return {
+            source: state["enabled"]
+            and (
+                source == "MEP"
+                or (state["surface"] is not None and source in state["surface"].scalar_maps)
+            )
+            for source, state in self.scalar_sources.items()
+        }
+
     def AddSurface(self, surface):
         # self.last_surface_index = surface.index
         index = len(self.surface_dict)
@@ -172,6 +217,7 @@ class Project(metaclass=Singleton):
 
     def ChangeSurface(self, surface):
         index = surface.index
+        surface.anatomical_role = self.surface_dict[index].anatomical_role
         self.surface_dict[index] = surface
 
     def RemoveSurface(self, index):
