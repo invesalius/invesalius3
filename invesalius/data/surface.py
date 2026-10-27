@@ -83,6 +83,8 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utl
 from invesalius.data.converters import convert_custom_bin_to_vtk
+from invesalius.data.surface_map import SurfaceMap
+from invesalius.data.visualization.surface_map_visualizer import SurfaceMapVisualizer
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.utils import new_name_by_pattern
@@ -119,6 +121,17 @@ class Surface:
         self.filename = None
         self.category = category
         self.anatomical_role = ""
+        self.frozen_map = None
+        self.display_map = None
+        self.painting_mode = ""
+
+    @property
+    def can_edit_colour(self):
+        return self.display_map is None and not self.painting_mode
+
+    @property
+    def displayed_polydata(self):
+        return self.display_map.polydata if self.display_map is not None else self.polydata
 
     def SavePlist(self, dir_temp, filelist):
         if self.filename and os.path.exists(self.filename):
@@ -147,6 +160,8 @@ class Surface:
             "category": self.category,
             "anatomical_role": self.anatomical_role,
         }
+        if self.frozen_map is not None:
+            surface["frozen_map"] = self.frozen_map.metadata()
         if self.projection_polydata is not None:
             projection_filename = filename + "_projection.vtp"
             projection_filepath = os.path.join(dir_temp, projection_filename)
@@ -184,6 +199,11 @@ class Surface:
             self.category = "General"
         self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
         self.anatomical_role = sp.get("anatomical_role", "")
+        self.frozen_map = (
+            SurfaceMap.from_metadata(self.polydata, sp["frozen_map"])
+            if "frozen_map" in sp
+            else None
+        )
         self.projection_polydata = None
         if "projection_polydata" in sp:
             projection_filepath = os.path.join(dirpath, sp["projection_polydata"])
@@ -211,6 +231,10 @@ class SurfaceManager:
 
     def __init__(self):
         self.actors_dict = {}
+        self.map_visualizers = {}
+        from invesalius.navigation.surface_painting import SurfacePainting
+
+        self.painting = SurfacePainting()
         self.last_surface_index = 0
         self.convert_to_inv = None
         self.__bind_events()
@@ -235,6 +259,8 @@ class SurfaceManager:
             session.SetConfig("surface", self._default_parameters)
 
     def __bind_events(self):
+        Publisher.subscribe(self.UpdateSurfacePresentation, "Update surface presentation")
+        Publisher.subscribe(self.RemoveSurfacePresentation, "Discard surface painting")
         Publisher.subscribe(self.AddNewActor, "Create surface")
         Publisher.subscribe(self.GetActor, "Get Actor")
         Publisher.subscribe(self.SetActorTransparency, "Set surface transparency")
@@ -294,42 +320,64 @@ class SurfaceManager:
             name = original_surface.name
             names_list = [surface_dict[i].name for i in surface_dict.keys()]
             new_name = utl.next_copy_name(name, names_list)
+            snapshot = original_surface.display_map
+            snapshot = snapshot.snapshot() if snapshot is not None else None
             # create new mask
             self.CreateSurfaceFromPolydata(
-                polydata=original_surface.polydata,
+                polydata=snapshot.polydata if snapshot is not None else original_surface.polydata,
                 overwrite=False,
                 name=new_name,
                 colour=original_surface.colour,
                 transparency=original_surface.transparency,
-                volume=original_surface.volume,
-                area=original_surface.area,
+                volume=None if snapshot is not None else original_surface.volume,
+                area=None if snapshot is not None else original_surface.area,
                 category=original_surface.category,
+                frozen_map=snapshot,
             )
 
     def OnRemove(self, surface_indexes):
         proj = prj.Project()
-
-        old_dict = self.actors_dict
-        new_dict = {}
-        if surface_indexes:
-            for index in surface_indexes:
-                proj.RemoveSurface(index)
-                if index in old_dict:
-                    actor = old_dict[index]
-                    for i in old_dict:
-                        if i < index:
-                            new_dict[i] = old_dict[i]
-                        if i > index:
-                            new_dict[i - 1] = old_dict[i]
-                    old_dict = new_dict
-                    Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
-            self.actors_dict = new_dict
-
+        for index in sorted(surface_indexes, reverse=True):
+            proj.RemoveSurface(index)
+            actor = self.actors_dict.pop(index, None)
+            self.actors_dict = {
+                (key - 1 if key > index else key): value for key, value in self.actors_dict.items()
+            }
+            if actor is not None:
+                Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
         if self.last_surface_index in surface_indexes:
-            if self.actors_dict:
-                self.last_surface_index = 0
-            else:
-                self.last_surface_index = None
+            self.last_surface_index = next(iter(proj.surface_dict), None)
+        elif self.last_surface_index is not None:
+            self.last_surface_index -= sum(
+                index < self.last_surface_index for index in surface_indexes
+            )
+
+    def UpdateSurfacePresentation(self, surface):
+        actor = self.actors_dict.get(surface.index)
+        if actor is None:
+            return
+        surface_map = surface.display_map
+        actor.SetVisibility(surface.is_shown and surface_map is None)
+        visualizer = self.map_visualizers.get(surface)
+        if surface_map is not None:
+            if visualizer is None:
+                visualizer = SurfaceMapVisualizer()
+                self.map_visualizers[surface] = visualizer
+                for prop in visualizer.actors:
+                    Publisher.sendMessage("AppendActor", actor=prop)
+            visualizer.set_map(surface_map)
+            visualizer.actor.GetProperty().DeepCopy(actor.GetProperty())
+        if visualizer is not None:
+            visualizer.show(bool(surface.is_shown and surface_map is not None))
+        visible = [v for v in self.map_visualizers.values() if v.actor.GetVisibility()]
+        for index, item in enumerate(visible):
+            item.scalar_bar.SetPosition(0.06 + index * 0.13, 0.06)
+
+    def RemoveSurfacePresentation(self, surface):
+        visualizer = self.map_visualizers.pop(surface, None)
+        if visualizer is not None:
+            for prop in visualizer.actors:
+                Publisher.sendMessage("Remove surface actor from viewer", actor=prop)
 
     def OnSeedSurface(self, seeds):
         """
@@ -898,6 +946,7 @@ class SurfaceManager:
         area=None,
         scalar=False,
         category="General",
+        frozen_map=None,
     ):
         if self.convert_to_inv:
             polydata = self.ConvertPolydataToInv(polydata)
@@ -933,6 +982,8 @@ class SurfaceManager:
         else:
             surface.colour = colour
         surface.polydata = polydata
+        surface.frozen_map = frozen_map
+        surface.display_map = frozen_map if self.painting.enabled else None
 
         if transparency:
             surface.transparency = transparency
@@ -986,6 +1037,7 @@ class SurfaceManager:
         self.last_surface_index = surface.index
 
         Publisher.sendMessage("Load surface actor into viewer", actor=actor, surface=surface)
+        self.UpdateSurfacePresentation(surface)
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
         return surface.index
 
@@ -993,6 +1045,9 @@ class SurfaceManager:
         self.CloseProject()
 
     def CloseProject(self):
+        Publisher.sendMessage("Close surface painting")
+        for surface in list(self.map_visualizers):
+            self.RemoveSurfacePresentation(surface)
         for index in self.actors_dict:
             Publisher.sendMessage("Remove surface actor from viewer", actor=self.actors_dict[index])
         del self.actors_dict
@@ -1022,12 +1077,15 @@ class SurfaceManager:
 
         for key in surface_dict:
             surface = surface_dict[key]
+            if not surface.painting_mode:
+                surface.display_map = surface.frozen_map if self.painting.enabled else None
 
             if surface.index in self.actors_dict:
                 actor = self.actors_dict[surface.index]
                 actor.GetProperty().SetColor(surface.colour[:3])
                 actor.GetProperty().SetOpacity(1 - surface.transparency)
                 actor.SetVisibility(surface.is_shown)
+                self.UpdateSurfacePresentation(surface)
                 Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
                 Publisher.sendMessage("Update surface info in GUI", surface=surface)
                 continue
@@ -1069,6 +1127,7 @@ class SurfaceManager:
             # The following lines have to be here, otherwise all volumes disappear
             Publisher.sendMessage("Update surface info in GUI", surface=surface)
             actor.SetVisibility(surface.is_shown)
+            self.UpdateSurfacePresentation(surface)
 
         Publisher.sendMessage("Render volume viewer")
 
@@ -1670,6 +1729,7 @@ class SurfaceManager:
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[index].is_shown = value
+        self.UpdateSurfacePresentation(proj.surface_dict[index])
         Publisher.sendMessage("Render volume viewer")
 
     def SetActorTransparency(self, surface_index, transparency):
@@ -1681,10 +1741,13 @@ class SurfaceManager:
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[surface_index].transparency = transparency
+        self.UpdateSurfacePresentation(proj.surface_dict[surface_index])
         Publisher.sendMessage("Render volume viewer")
 
     def SetActorColour(self, surface_index, colour):
         """ """
+        if not prj.Project().surface_dict[surface_index].can_edit_colour:
+            return
         self.actors_dict[surface_index].GetProperty().SetColor(colour[:3])
         # Update value in project's surface_dict
         proj = prj.Project()
@@ -1836,7 +1899,7 @@ class SurfaceManager:
         for index in proj.surface_dict:
             surface = proj.surface_dict[index]
             if surface.is_shown:
-                polydata_list.append(surface.polydata)
+                polydata_list.append(surface.displayed_polydata)
 
         if len(polydata_list) == 0:
             utl.debug("oops - no polydata")

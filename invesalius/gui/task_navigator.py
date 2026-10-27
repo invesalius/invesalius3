@@ -2859,7 +2859,6 @@ class ControlPanel(wx.Panel):
     # 'Motor Map' button
     def PressMotorMapButton(self, pressed=False):
         self.UpdateToggleButton(self.show_motor_map_button, pressed)
-        self.OnShowMotorMapButton()
 
     def EnableMotorMapButton(self, enabled=False):
         self.EnableToggleButton(self.show_motor_map_button, enabled)

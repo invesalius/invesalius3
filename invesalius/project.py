@@ -166,7 +166,8 @@ class Project(metaclass=Singleton):
         return max(
             (
                 surface for surface in self.surface_dict.values()
-                if surface.polydata.GetNumberOfPoints() and surface.polydata.GetNumberOfCells()
+                if surface.frozen_map is None
+                and surface.polydata.GetNumberOfPoints() and surface.polydata.GetNumberOfCells()
             ),
             key=lambda surface: surface.polydata.GetBounds()[5],
             default=None,
@@ -181,10 +182,12 @@ class Project(metaclass=Singleton):
 
     def ChangeSurface(self, surface):
         index = surface.index
+        Publisher.sendMessage("Discard surface painting", surface=self.surface_dict[index])
         surface.anatomical_role = self.surface_dict[index].anatomical_role
         self.surface_dict[index] = surface
 
     def RemoveSurface(self, index):
+        Publisher.sendMessage("Discard surface painting", surface=self.surface_dict[index])
         new_dict = {}
         for i in self.surface_dict:
             if i < index:

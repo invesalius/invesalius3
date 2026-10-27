@@ -145,6 +145,7 @@ class Panel(wx.Panel):
         else:
             Publisher.sendMessage("Hide target button")
             session.SetConfig("mode", const.MODE_RP)
+        Publisher.sendMessage("Set surface navigation mode", status=status)
         self.gbs.Hide(self.uppertaskpanel)
         self.uppertaskpanel.Destroy()
         self.uppertaskpanel = UpperTaskPanel(self)
