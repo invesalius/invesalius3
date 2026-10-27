@@ -42,7 +42,9 @@ def Get_coil_position(coords):
 
 
 class Visualize_E_field_Thread(threading.Thread):
-    def __init__(self, queues, event, sle, neuronavigation_api, debug_efield_enorm, plot_vectors):
+    def __init__(
+        self, queues, event, sle, neuronavigation_api, debug_efield_enorm, plot_vectors, navigation
+    ):
         threading.Thread.__init__(self, name="Visualize_E_field_Thread")
         # self.inp = inp #list of inputs
         self.efield_queue = queues[0]
@@ -53,6 +55,7 @@ class Visualize_E_field_Thread(threading.Thread):
         self.event = event
         self.sle = sle
         self.neuronavigation_api = neuronavigation_api
+        self.navigation = navigation
         self.ID_list = vtkIdList()
         if isinstance(debug_efield_enorm, np.ndarray):
             self.enorm_debug = debug_efield_enorm
@@ -87,6 +90,12 @@ class Visualize_E_field_Thread(threading.Thread):
                     else:
                         _m_img, coord = efield_payload
                         revision = None
+
+                    if (
+                        not self.navigation.e_field_loaded
+                        or revision != self.navigation.e_field_revision
+                    ):
+                        continue
 
                     if self.ID_list.GetNumberOfIds() != 0:
                         if (

@@ -58,12 +58,14 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius import inv_paths
 from invesalius.data.navigation_scene import NavigationScene
+from invesalius.data.surface_map import SurfaceMap
 from invesalius.data.visualization.eeg_visualizer import EEGElectrodeVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d
 from invesalius.navigation.eeg_electrodes import EEGElectrodeManager
+from invesalius.navigation.surface_painting import SurfacePainting
 from invesalius.pubsub import pub as Publisher
 
 
@@ -374,7 +376,7 @@ class NavigationView:
         self.ball_GoGEfieldVector = None
         self.GoGEfieldVector = None
         self.vectorfield_actor = None
-        self.efield_scalar_bar = None
+        self.efield_painting_token = None
         self.edge_fill_actor = None
         self.edge_actor = None
         self.show_efield_edges = False
@@ -470,9 +472,9 @@ class NavigationView:
         Publisher.subscribe(self.UpdateMarkerOffsetState, "Update marker offset state")
         Publisher.subscribe(self.AddPeeledSurface, "Update peel")
         Publisher.subscribe(self.InitEfield, "Initialize E-field brain")
+        Publisher.subscribe(self.StopEfieldPainting, "Stop E-field surface painting")
         Publisher.subscribe(self.GetPeelCenters, "Get peel centers and normals")
         Publisher.subscribe(self.InitLocatorViewer, "Get init locator")
-        Publisher.subscribe(self.GetEfieldActor, "Send Actor")
         Publisher.subscribe(self.ReturnToDefaultColorActor, "Recolor again")
         Publisher.subscribe(self.SaveEfieldData, "Save Efield data")
         Publisher.subscribe(self.SavedAllEfieldData, "Save all Efield data")
@@ -817,8 +819,34 @@ class NavigationView:
     def InitLocatorViewer(self, locator):
         self.locator = locator
 
-    def RecolorEfieldActor(self):
-        self.efield_mesh_normals_viewer.Modified()
+    def RecolorEfieldActor(self, token=None):
+        if self.efield_painting_token is None or (
+            token is not None and token is not self.efield_painting_token
+        ):
+            return
+        polydata = vtkPolyData()
+        polydata.ShallowCopy(self.efield_mesh)
+        if self.e_field_norms is not None:
+            polydata = self.CreateEfieldScalarPolyData(outside_value=float("nan"))
+        polydata.GetPointData().AddArray(self.colors_init)
+        SurfacePainting().update(
+            "E-field",
+            self.efield_painting_token,
+            SurfaceMap(
+                polydata,
+                self.efield_lut,
+                self.efield_lut.GetTableRange(),
+                "E-field",
+                "V/m",
+                color_array="Colors",
+            ),
+        )
+
+    def StopEfieldPainting(self):
+        self.efield_painting_token = None
+        self.RemoveEfieldTargetingActors()
+        self.RemoveEfieldVectorActor()
+        self.RemoveEfieldEdges()
 
     def DrawVectors(self, position, orientation, color, scale_factor=10):
         points = vtkPoints()
@@ -1212,17 +1240,20 @@ class NavigationView:
         )
 
     def InitializeColorArray(self):
+        if self.efield_painting_token is None:
+            return
         self.colors_init.SetNumberOfComponents(3)
         self.colors_init.SetName("Colors")
-        color = const.CORTEX_COLOR
-        for i in range(self.efield_mesh.GetNumberOfCells()):
-            self.colors_init.InsertTuple(i, color)
+        self.colors_init.SetNumberOfTuples(self.efield_mesh.GetNumberOfPoints())
+        for component, value in enumerate(const.CORTEX_COLOR):
+            self.colors_init.FillComponent(component, value)
 
     def ReturnToDefaultColorActor(self):
+        if self.efield_painting_token is None:
+            return
         self.RemoveEfieldTargetingActors()
-        self.efield_mesh.GetPointData().SetScalars(self.colors_init)
-        wx.CallAfter(Publisher.sendMessage, "Initialize color array")
-        wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
+        self.InitializeColorArray()
+        self.RecolorEfieldActor()
 
     def CreateLUTTableForEfield(self, min, max, highlight_threshold=False):
         lut = vtkLookupTable()
@@ -1241,15 +1272,6 @@ class NavigationView:
                     lut.SetTableValue(i, *(np.array(highlight_rgb) / 255.0), 1.0)
         return lut
 
-    def UpdateEfieldScalarBar(self):
-        if self.efield_scalar_bar is None or self.efield_lut is None:
-            return
-
-        self.efield_scalar_bar.SetLookupTable(self.efield_lut)
-        self.efield_scalar_bar.Modified()
-        if not self.ren.HasViewProp(self.efield_scalar_bar):
-            self.ren.AddActor2D(self.efield_scalar_bar)
-
     def GetEfieldMaxMin(self, e_field_norms):
         self.e_field_norms = e_field_norms
         efield_max = np.amax(self.e_field_norms)
@@ -1257,9 +1279,9 @@ class NavigationView:
         self.efield_min = efield_min
         self.efield_max = efield_max
         # self.Idmax = np.array(self.e_field_norms).argmax()
-        wx.CallAfter(Publisher.sendMessage, "Update efield vis")
+        wx.CallAfter(self.OnUpdateEfieldvis, self.efield_painting_token)
 
-    def CreateEfieldScalarPolyData(self):
+    def CreateEfieldScalarPolyData(self, outside_value=None):
         values = np.asarray(self.e_field_norms, dtype=float)
         n_points = self.efield_mesh.GetNumberOfPoints()
 
@@ -1267,7 +1289,7 @@ class NavigationView:
         scalars.SetName("EFieldNorm")
         scalars.SetNumberOfComponents(1)
         scalars.SetNumberOfTuples(n_points)
-        scalars.FillComponent(0, self.efield_min)
+        scalars.FillComponent(0, self.efield_min if outside_value is None else outside_value)
 
         if len(values) == n_points:
             for point_id, value in enumerate(values):
@@ -1277,7 +1299,7 @@ class NavigationView:
                 scalars.SetValue(point_id, value)
 
         scalar_polydata = vtkPolyData()
-        scalar_polydata.DeepCopy(self.efield_mesh)
+        scalar_polydata.ShallowCopy(self.efield_mesh)
         scalar_polydata.GetPointData().SetScalars(scalars)
         return scalar_polydata
 
@@ -1330,8 +1352,6 @@ class NavigationView:
         self.edge_fill_actor.GetProperty().SetOpacity(0)
         self.ren.AddViewProp(self.edge_fill_actor)
         self.ren.AddViewProp(self.edge_actor)
-
-        self.UpdateEfieldScalarBar()
 
     def RemoveEfieldEdges(self):
         if self.edge_actor is not None:
@@ -1497,9 +1517,6 @@ class NavigationView:
         for j, value in enumerate(cell_id_indexes):
             self.colors_init.InsertTuple(value, color)
 
-    def GetEfieldActor(self, e_field_actor):
-        self.efield_actor = e_field_actor
-
     def FindPointsAroundRadiusEfield(self, cellId):
         radius = int(self.efield_ROISize)
         self.locator_efield.FindPointsWithinRadius(
@@ -1562,22 +1579,13 @@ class NavigationView:
     def GetScalpEfield(self, scalp_actor):
         self.scalp_actor = scalp_actor
 
-    def InitEfield(self, e_field_brain):
+    def InitEfield(self, e_field_brain, painting_token):
+        self.efield_painting_token = painting_token
         self.e_field_mesh_normals = e_field_brain.e_field_mesh_normals
         self.e_field_mesh_centers = e_field_brain.e_field_mesh_centers
         self.locator_efield = e_field_brain.locator_efield
         self.locator_efield_cell = e_field_brain.locator_efield_Cell
         self.efield_mesh = e_field_brain.e_field_mesh
-        self.efield_mapper = e_field_brain.efield_mapper
-        self.efield_mesh_normals_viewer = vtkPolyDataNormals()
-        self.efield_mesh_normals_viewer.SetInputData(self.efield_mesh)
-        self.efield_mesh_normals_viewer.SetFeatureAngle(80)
-        self.efield_mesh_normals_viewer.AutoOrientNormalsOn()
-        self.efield_mesh_normals_viewer.Update()
-        self.efield_mapper.SetInputConnection(self.efield_mesh_normals_viewer.GetOutputPort())
-        self.efield_mapper.ScalarVisibilityOn()
-        self.efield_actor.SetMapper(self.efield_mapper)
-        self.efield_actor.GetProperty().SetBackfaceCulling(1)
         self.efield_coords = None
         self.coil_position = None
         self.coil_position_Trot = None
@@ -1595,19 +1603,20 @@ class NavigationView:
         self.RemoveEfieldTargetingActors()
         self.RemoveEfieldVectorActor()
 
-        if self.efield_scalar_bar is not None:
-            self.ren.RemoveActor(self.efield_scalar_bar)
-
         if self.ClusterEfieldTextActor is not None:
             self.ren.RemoveActor(self.ClusterEfieldTextActor.actor)
 
         if self.SpreadEfieldFactorTextActor is not None:
             self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
 
-        self.efield_scalar_bar = e_field_brain.efield_scalar_bar
-
         if self.edge_actor is not None:
             self.ren.RemoveActor(self.edge_actor)
+
+        self.radius_list.Reset()
+        self.old_coord = None
+        self.efield_lut = self.CreateLUTTableForEfield(0, 1)
+        self.InitializeColorArray()
+        self.RecolorEfieldActor()
 
     def GetNeuronavigationApi(self, neuronavigation_api):
         self.neuronavigation_api = neuronavigation_api
@@ -1635,7 +1644,11 @@ class NavigationView:
             self.radius_list.Reset()
             self.last_efield_cell_id = None
 
-    def OnUpdateEfieldvis(self):
+    def OnUpdateEfieldvis(self, token=None):
+        if self.efield_painting_token is None or (
+            token is not None and token is not self.efield_painting_token
+        ):
+            return
         if self.radius_list.GetNumberOfIds() != 0:
             self.efield_lut = self.CreateLUTTableForEfield(
                 0, self.efield_max, highlight_threshold=self.enableefieldabovethreshold
@@ -1643,7 +1656,6 @@ class NavigationView:
             [self.cell_id_indexes_above_threshold, self.positions_above_threshold] = (
                 self.GetIndexesAboveThreshold(self.efield_threshold)
             )
-            self.UpdateEfieldScalarBar()
             if (
                 not self.show_efield_edges
                 or self.scene.tracts_status
@@ -1652,8 +1664,7 @@ class NavigationView:
                 self.RemoveEfieldEdges()
             else:
                 self.CalculateEdgesEfield()
-            self.colors_init.SetNumberOfComponents(3)
-            self.colors_init.Fill(const.CORTEX_COLOR[0])
+            self.InitializeColorArray()
             for h in range(len(self.Id_list)):
                 dcolor = 3 * [0.0]
                 index_id = self.Id_list[h]
@@ -1662,26 +1673,27 @@ class NavigationView:
                 for j in range(0, 3):
                     color[j] = int(255.0 * dcolor[j])
                 self.colors_init.InsertTuple(index_id, color)
-            self.efield_mesh.GetPointData().SetScalars(self.colors_init)
-            wx.CallAfter(Publisher.sendMessage, "Recolor efield actor")
             self.RemoveEfieldVectorActor()
-            wx.CallAfter(Publisher.sendMessage, "Show max Efield actor")
-            wx.CallAfter(Publisher.sendMessage, "Show CoG Efield actor")
+            Publisher.sendMessage("Show max Efield actor")
+            Publisher.sendMessage("Show CoG Efield actor")
             if self.efield_tools:
-                wx.CallAfter(Publisher.sendMessage, "Show distance between Max and CoG Efield")
+                Publisher.sendMessage("Show distance between Max and CoG Efield")
                 if self.positions_above_threshold is not None:
                     self.DetectClustersEfieldSpread(self.positions_above_threshold)
             if self.enableefieldabovethreshold and self.cell_id_indexes_above_threshold is not None:
                 self.SegmentEfieldMax(self.cell_id_indexes_above_threshold)
+            self.RecolorEfieldActor()
             self.ShowEfieldAtCortexTarget()
             if self.plot_no_connection:
-                wx.CallAfter(Publisher.sendMessage, "Show Efield vectors")
+                Publisher.sendMessage("Show Efield vectors")
                 self.plot_vector = False
                 self.plot_no_connection = False
         else:
-            wx.CallAfter(Publisher.sendMessage, "Recolor again")
+            self.ReturnToDefaultColorActor()
 
     def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
+        if self.efield_painting_token is None:
+            return
         # TODO: In the future, remove the "put_nowait" and mesh processing to another module (maybe e_field.py)
         # this might work because a python instance from the 3D mesh can be edited in the thread. Check how to extract
         # the instance from the desired mesh for visualization and if it works. Optimally, there should be no
@@ -1692,9 +1704,9 @@ class NavigationView:
         try:
             self.e_field_IDs_queue = queue_IDs
             if self.radius_list.GetNumberOfIds() != 0:
-                if np.all(self.old_coord != coord):
+                if self.old_coord is None or not np.array_equal(self.old_coord, coord):
                     self.e_field_IDs_queue.put_nowait(self.radius_list)
-                self.old_coord = np.array([coord])
+                self.old_coord = np.array(coord)
         except queue.Full:
             pass
 
@@ -1756,6 +1768,8 @@ class NavigationView:
         Publisher.sendMessage("Send coil position and rotation", T_rot=T_rot, cp=cp, m_img=m_img)
 
     def GetEnorm(self, enorm_data, plot_vector, current_revision=None):
+        if self.efield_painting_token is None:
+            return
         result_revision = enorm_data[5] if len(enorm_data) > 5 else current_revision
         if current_revision is not None and result_revision != current_revision:
             self.RemoveEfieldTargetingActors()

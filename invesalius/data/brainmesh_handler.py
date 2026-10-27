@@ -32,11 +32,9 @@ from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter, vtkWarpVect
 from vtkmodules.vtkFiltersModeling import vtkLinearSubdivisionFilter
 from vtkmodules.vtkImagingCore import vtkImageFlip
 from vtkmodules.vtkIOImage import vtkNIFTIImageReader
-from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
-    vtkTextProperty,
     vtkWindowLevelLookupTable,
 )
 
@@ -350,19 +348,6 @@ class E_field_brain:
         self.e_field_mesh_normals = GetNormals(mesh)
         self.e_field_mesh_centers = GetCenters(mesh)
         self.e_field_mesh = mesh
-
-        self.efield_mapper = vtkPolyDataMapper()
-
-        text_property = vtkTextProperty()
-        text_property.SetFontSize(3)
-        text_property.SetJustificationToCentered()
-
-        self.efield_scalar_bar = vtkScalarBarActor()
-        self.efield_scalar_bar.SetOrientationToVertical()
-        self.efield_scalar_bar.SetTitle("E (V/m)")
-        self.efield_scalar_bar.SetNumberOfLabels(2)
-        self.efield_scalar_bar.SetTitleTextProperty(text_property)
-        # self.lut = CreateLUTTableForEfield(0, 0.005)
 
 
 class Scalp:

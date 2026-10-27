@@ -49,6 +49,7 @@ class SurfacePainting(metaclass=Singleton):
         mode.available = available
         if not available:
             self.stop(mode.name)
+        Publisher.sendMessage("Surface painting availability changed", mode=mode)
 
     def select(self, surface, name=""):
         if not self.enabled:

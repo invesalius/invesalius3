@@ -54,9 +54,11 @@ import invesalius.data.brainmesh_handler as brain
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
 from invesalius.i18n import tr as _
+from invesalius.navigation.efield_surface import EFieldSurfaceMode
 from invesalius.navigation.navigation import Navigation
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
+from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
 
@@ -89,7 +91,6 @@ class InnerTaskPanel(wx.Panel):
         self.__bind_events()
 
         self.SetBackgroundColour(default_colour)
-        self.e_field_loaded = False
         self.e_field_brain = None
         self.e_field_mesh = None
         self.cortex_file = None
@@ -101,6 +102,8 @@ class InnerTaskPanel(wx.Panel):
         self.co = None
         self.sleep_nav = const.SLEEP_NAVIGATION
         self.navigation = navigation
+        self.surface_mode = EFieldSurfaceMode(navigation)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         self.session = ses.Session()
         #  Check box to enable e-field visualization
         enable_efield = wx.CheckBox(self, -1, _("Enable E-field"))
@@ -108,6 +111,10 @@ class InnerTaskPanel(wx.Panel):
         enable_efield.Enable(True)
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
+        self.show_efield = wx.Button(self, -1, _("Show E-field"))
+        self.show_efield.Enable(False)
+        self.show_efield.Bind(wx.EVT_BUTTON, self.OnShowEfield)
+        Publisher.subscribe(self.OnPaintingAvailability, "Surface painting availability changed")
 
         efield_for_targeting = wx.CheckBox(self, -1, _("E-fields for targeting"))
         efield_for_targeting.SetValue(False)
@@ -274,6 +281,7 @@ class InnerTaskPanel(wx.Panel):
         line_checkboxes.AddMany(
             [
                 (enable_efield, 1, wx.LEFT | wx.RIGHT, 2),
+                (self.show_efield, 0, wx.LEFT | wx.RIGHT, 2),
                 (show_area, 1, wx.LEFT | wx.RIGHT, 2),
                 (efield_tools, 1, wx.LEFT | wx.RIGHT, 2),
             ]
@@ -381,6 +389,7 @@ class InnerTaskPanel(wx.Panel):
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
         if filename:
+            self.surface_mode.clear()
             convert_to_inv = dlg.ImportMeshCoordSystem()
             Publisher.sendMessage("Update status in GUI", value=50, label="Loading E-field...")
             Publisher.sendMessage("Update convert_to_inv flag", convert_to_inv=convert_to_inv)
@@ -389,6 +398,21 @@ class InnerTaskPanel(wx.Panel):
             )
             self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
             self.Init_efield()
+            self.surface_mode.configure(self.e_field_brain, self.efield_source_surface)
+
+    def OnDestroy(self, event):
+        if event.GetEventObject() is self:
+            self.surface_mode.dispose()
+            Publisher.unsubscribe_owner(self)
+        event.Skip()
+
+    def OnPaintingAvailability(self, mode):
+        if mode is self.surface_mode:
+            self.enable_efield.SetValue(mode.available)
+            self.show_efield.Enable(mode.available)
+
+    def OnShowEfield(self, event):
+        self.surface_mode.painting.select(None, self.surface_mode.name)
 
     def Init_efield(self):
         coil_set = self.coil_set or self.IsMultilocusCoilset(self.coil)
@@ -411,6 +435,10 @@ class InnerTaskPanel(wx.Panel):
         self.plot_efield_vectors = ctrl.GetValue()
         self.navigation.plot_efield_vectors = self.plot_efield_vectors
         if efield_enabled:
+            if self.surface_mode.brain is None:
+                wx.MessageBox(_("Load an E-field configuration first."), _("E-field"))
+                ctrl.SetValue(False)
+                return
             if self.session.GetConfig("debug_efield"):
                 debug_efield_enorm = dlg.ShowLoadCSVDebugEfield()
                 if isinstance(debug_efield_enorm, np.ndarray):
@@ -418,28 +446,22 @@ class InnerTaskPanel(wx.Panel):
                 else:
                     dlg.Efield_debug_Enorm_warning()
                     self.enable_efield.SetValue(False)
-                    self.e_field_loaded = False
-                    self.navigation.e_field_loaded = self.e_field_loaded
+                    self.surface_mode.painting.set_available(self.surface_mode, False)
                     return
             else:
                 if not self.navigation.neuronavigation_api.connection:
                     dlg.Efield_connection_warning()
                     # self.combo_surface_name.Enable(False)
                     self.enable_efield.Enable(False)
-                    self.e_field_loaded = False
+                    self.surface_mode.painting.set_available(self.surface_mode, False)
                     return
-            Publisher.sendMessage("Initialize E-field brain", e_field_brain=self.e_field_brain)
-
-            Publisher.sendMessage("Initialize color array")
-            self.e_field_loaded = True
+            self.surface_mode.painting.set_available(self.surface_mode, True)
+            self.OnShowEfield(None)
             self.combo_change_coil.Enable(True)
             self.btn_all_save.Enable(True)
 
         else:
-            Publisher.sendMessage("Recolor again")
-            self.e_field_loaded = False
-            # self.combo_surface_name.Enable(True)
-        self.navigation.e_field_loaded = self.e_field_loaded
+            self.surface_mode.painting.set_available(self.surface_mode, False)
 
     def OnEnablePlotVectors(self, evt, ctrl):
         self.plot_efield_vectors = ctrl.GetValue()
@@ -538,7 +560,7 @@ class InnerTaskPanel(wx.Panel):
     def OnGetEfieldActor(self, efield_actor, surface_index_cortex):
         self.e_field_mesh = efield_actor
         self.surface_index = surface_index_cortex
-        Publisher.sendMessage("Get Actor", surface_index=self.surface_index)
+        self.efield_source_surface = Project().surface_dict[surface_index_cortex]
 
     def OnGetEfieldPaths(
         self, path_meshes, cortex_file, meshes_file, coil, ci, co, dIperdt_list, coil_set=False

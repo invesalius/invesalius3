@@ -222,7 +222,7 @@ class UpdateNavigationScene(threading.Thread):
                         flag=self.peel_loaded,
                     )
 
-                    if self.e_field_loaded:
+                    if self.navigation.e_field_loaded:
                         Publisher.sendMessage(
                             "Update point location for e-field calculation",
                             m_img=m_imgs[main_coil],
@@ -280,7 +280,7 @@ class UpdateNavigationScene(threading.Thread):
             tracts_payload = None
             if self.view_tracts:
                 try:
-                    if self.e_field_loaded:
+                    if self.navigation.e_field_loaded:
                         wx.CallAfter(
                             Publisher.sendMessage,
                             "Update tract seed based efield",
@@ -311,7 +311,7 @@ class UpdateNavigationScene(threading.Thread):
             render = now - self._last_render >= self._render_interval
             slice_render = render and (now - self._last_slice_render >= self._slice_render_interval)
             enorm_data = None
-            if update_pose and coil_visible and self.e_field_loaded:
+            if update_pose and coil_visible and self.navigation.e_field_loaded:
                 try:
                     enorm_data = self.e_field_norms_queue.get_nowait()
                 except queue.Empty:
@@ -386,6 +386,7 @@ class Navigation(metaclass=Singleton):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         self.e_field_loaded = False
+        self.e_field_enabled = False
         self.plot_efield_vectors = False
         self.debug_efield_enorm = None
         self.e_field_revision = 0
@@ -768,7 +769,7 @@ class Navigation(metaclass=Singleton):
                         dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav)
                     )
 
-            if self.e_field_loaded:
+            if self.e_field_enabled:
                 queues = [self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
                 jobs_list.append(
                     e_field.Visualize_E_field_Thread(
@@ -778,6 +779,7 @@ class Navigation(metaclass=Singleton):
                         self.neuronavigation_api,
                         self.debug_efield_enorm,
                         self.plot_efield_vectors,
+                        self,
                     )
                 )
 
@@ -824,15 +826,9 @@ class Navigation(metaclass=Singleton):
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        if self.e_field_loaded:
-            self.efield_queue.clear()
-            self.efield_queue.join()
-
-            self.e_field_norms_queue.clear()
-            self.e_field_norms_queue.join()
-
-            self.e_field_IDs_queue.clear()
-            self.e_field_IDs_queue.join()
+        for queue in (self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue):
+            queue.clear()
+            queue.join()
 
         vis_components = [
             self.serial_port_in_use,
