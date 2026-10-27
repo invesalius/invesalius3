@@ -118,6 +118,7 @@ class Surface:
 
         self.filename = None
         self.category = category
+        self.anatomical_role = ""
 
     def SavePlist(self, dir_temp, filelist):
         if self.filename and os.path.exists(self.filename):
@@ -144,6 +145,7 @@ class Surface:
             "volume": self.volume,
             "area": self.area,
             "category": self.category,
+            "anatomical_role": self.anatomical_role,
         }
         if self.projection_polydata is not None:
             projection_filename = filename + "_projection.vtp"
@@ -181,6 +183,7 @@ class Surface:
         except KeyError:
             self.category = "General"
         self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
+        self.anatomical_role = sp.get("anatomical_role", "")
         self.projection_polydata = None
         if "projection_polydata" in sp:
             projection_filepath = os.path.join(dirpath, sp["projection_polydata"])
@@ -572,6 +575,8 @@ class SurfaceManager:
         if surface_index_cortex is not None:
             self.convert_to_inv = convert_to_inv
             proj = prj.Project()
+            if proj.GetBrainSurface() is None:
+                proj.SetBrainSurface(proj.surface_dict[surface_index_cortex])
             cortex_save_file = path_meshes + config_dict["cortex"]
             polydata = proj.surface_dict[surface_index_cortex].polydata
             file_extension = cortex_save_file.split(".")[-1]
@@ -1071,7 +1076,7 @@ class SurfaceManager:
     # (mask_index, surface_name, quality, fill_holes, keep_largest)
 
     def _on_complete_surface_creation(
-        self, args, overwrite, surface_name, colour, category, dialog
+        self, args, overwrite, surface_name, colour, category, dialog, anatomical_role=""
     ):
         surface_filename, surface_measures = args
         wx.CallAfter(
@@ -1083,10 +1088,19 @@ class SurfaceManager:
             colour,
             category,
             dialog,
+            anatomical_role,
         )
 
     def _show_surface(
-        self, surface_filename, surface_measures, overwrite, surface_name, colour, category, dialog
+        self,
+        surface_filename,
+        surface_measures,
+        overwrite,
+        surface_name,
+        colour,
+        category,
+        dialog,
+        anatomical_role="",
     ):
         print(surface_filename, surface_measures)
         reader = vtkXMLPolyDataReader()
@@ -1136,6 +1150,8 @@ class SurfaceManager:
             surface.index = index
             self.last_surface_index = index
 
+        if anatomical_role == "brain":
+            proj.SetBrainSurface(surface)
         session.ChangeProject()
 
         Publisher.sendMessage("Load surface actor into viewer", actor=actor, surface=surface)
@@ -1327,6 +1343,7 @@ class SurfaceManager:
         options = surface_parameters["method"]["options"]
 
         surface_name = surface_parameters["options"]["name"]
+        anatomical_role = surface_parameters["options"].get("anatomical_role", "")
         quality = surface_parameters["options"]["quality"]
         fill_holes = surface_parameters["options"]["fill"]
         keep_largest = surface_parameters["options"]["keep_largest"]
@@ -1484,6 +1501,8 @@ class SurfaceManager:
             surface.polydata = polydata
             surface.volume = surface_measures["volume"]
             surface.area = surface_measures["area"]
+            if anatomical_role == "brain":
+                proj.SetBrainSurface(surface)
 
         # With GUI
         else:
@@ -1557,6 +1576,7 @@ class SurfaceManager:
                         colour=colour,
                         category=category,
                         dialog=sp,
+                        anatomical_role=anatomical_role,
                     ),
                     error_callback=functools.partial(self._on_callback_error, dialog=sp)
                     if sp

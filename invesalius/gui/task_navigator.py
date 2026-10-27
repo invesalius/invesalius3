@@ -849,6 +849,7 @@ class HeadPage(wx.Panel):
             srf_options = {
                 "index": mask_index,
                 "name": "Brain",
+                "anatomical_role": "brain",
                 "quality": _("Optimal *"),
                 "fill": False,
                 "keep_largest": True,

@@ -156,8 +156,32 @@ class Project(metaclass=Singleton):
         self.surface_dict[index] = surface
         return index
 
+    def GetBrainSurface(self):
+        return next(
+            (surface for surface in self.surface_dict.values() if surface.anatomical_role == "brain"),
+            None,
+        )
+
+    def GetScalpSurface(self):
+        return max(
+            (
+                surface for surface in self.surface_dict.values()
+                if surface.polydata.GetNumberOfPoints() and surface.polydata.GetNumberOfCells()
+            ),
+            key=lambda surface: surface.polydata.GetBounds()[5],
+            default=None,
+        )
+
+    def SetBrainSurface(self, surface):
+        if surface is not None and surface not in self.surface_dict.values():
+            raise ValueError("The brain surface must belong to the project.")
+        for candidate in self.surface_dict.values():
+            candidate.anatomical_role = "brain" if candidate is surface else ""
+        Publisher.sendMessage("Brain surface changed", surface=surface)
+
     def ChangeSurface(self, surface):
         index = surface.index
+        surface.anatomical_role = self.surface_dict[index].anatomical_role
         self.surface_dict[index] = surface
 
     def RemoveSurface(self, index):
