@@ -1704,7 +1704,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
                         item,
                     )
                 surface_context_menu.AppendSubMenu(modes_menu, _("Coloring"))
-            if surface.frozen_map is None:
+            if self.category == "General" and surface.frozen_map is None:
                 item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Assign as brain"))
                 item.Check(surface.anatomical_role == "brain")
                 surface_context_menu.Bind(
