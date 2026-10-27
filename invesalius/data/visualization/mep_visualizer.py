@@ -46,8 +46,10 @@ import invesalius.data.transformations as transformations
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
-from invesalius.data.surface_scalar_map import SurfaceScalarMap
-from invesalius.data.visualization.surface_scalar_visualizer import SurfaceScalarVisualizer
+from invesalius.data.visualization.surface_scalar_visualizer import (
+    SurfaceScalarMap,
+    SurfaceScalarVisualizer,
+)
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 

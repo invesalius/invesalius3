@@ -18,11 +18,27 @@
 # --------------------------------------------------------------------------
 """Render scalar surface maps independently of their data source."""
 
+from dataclasses import dataclass
+
+from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
-from invesalius.data.surface_scalar_map import SurfaceScalarMap
+
+@dataclass
+class SurfaceScalarMap:
+    polydata: vtkPolyData
+    name: str
+    unit: str
+
+    def __post_init__(self):
+        scalars = self.polydata.GetPointData().GetScalars()
+        if scalars is not None and (
+            scalars.GetNumberOfComponents() != 1
+            or scalars.GetNumberOfTuples() != self.polydata.GetNumberOfPoints()
+        ):
+            raise ValueError("A scalar value is required for each surface point.")
 
 
 class SurfaceScalarVisualizer:
