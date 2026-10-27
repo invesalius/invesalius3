@@ -1323,6 +1323,8 @@ class SurfacePage(wx.Panel):
             select_all_cb.Set3StateValue(wx.CHK_UNDETERMINED)
 
     def AddSurface(self, surface):
+        if surface.index not in Project().GetDisplaySurfaces():
+            return
         category = getattr(surface, "category", "General")
         if category not in self.categories:
             self.create_category(category)
@@ -1340,7 +1342,7 @@ class SurfacePage(wx.Panel):
 
         if not clear_project:
             self.create_category("General")
-            surface_dict = Project().surface_dict
+            surface_dict = Project().GetDisplaySurfaces()
             for i in sorted(surface_dict.keys()):
                 surface = surface_dict[i]
                 self.AddSurface(surface)
@@ -1547,8 +1549,8 @@ class SurfaceButtonControlPanel(wx.Panel):
         project_obj = Project()
         n_surface = 0
 
-        for index in project_obj.surface_dict:
-            if project_obj.surface_dict[index].is_shown:
+        for surface in project_obj.GetDisplaySurfaces().values():
+            if surface.is_shown:
                 n_surface += 1
 
         if not n_surface:
@@ -1687,9 +1689,10 @@ class SurfacesListCtrlPanel(InvListCtrl):
         surface_context_menu = wx.Menu()
 
         surface = Project().surface_dict[global_surface_id]
-        if surface.can_use_as_geometry:
+        modes = Project().GetSurfaceMapModes(global_surface_id)
+        if modes:
             modes_menu = wx.Menu()
-            modes = {"": True, **Project().GetSurfaceMapModes(global_surface_id)}
+            modes = {"": True, **modes}
             for source, enabled in modes.items():
                 item = modes_menu.AppendRadioItem(wx.ID_ANY, source or _("Original"))
                 item.Enable(enabled)
@@ -1703,6 +1706,11 @@ class SurfacesListCtrlPanel(InvListCtrl):
                 )
             surface_context_menu.AppendSubMenu(modes_menu, _("Coloring"))
 
+        if (
+            ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR
+            and surface.can_use_as_geometry
+            and surface.category == "General"
+        ):
             brain_item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Assign as brain"))
             brain_item.Check(surface.anatomical_role == "brain")
             surface_context_menu.Bind(
@@ -1714,6 +1722,8 @@ class SurfacesListCtrlPanel(InvListCtrl):
                 ),
                 brain_item,
             )
+
+        if surface_context_menu.GetMenuItemCount():
             surface_context_menu.AppendSeparator()
 
         colour_id = surface_context_menu.Append(start_idx, _("Change color"))

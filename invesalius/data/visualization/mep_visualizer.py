@@ -79,6 +79,7 @@ class MEPVisualizer:
         )
         Publisher.subscribe(self.SetBrainSurface, "Load brain surface actor")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+        Publisher.subscribe(self.OnCloseProject, "Close surface mapping")
         Publisher.subscribe(self.OnRemoveSurfaces, "Remove surfaces")
         Publisher.subscribe(self.OnScalarSourceDisabled, "Scalar surface removed")
         Publisher.subscribe(self.OnScalarSourceDisabled, "Scalar source disabled")

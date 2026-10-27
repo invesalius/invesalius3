@@ -86,7 +86,6 @@ import invesalius.utils as utl
 from invesalius.data.converters import convert_custom_bin_to_vtk
 from invesalius.data.visualization.surface_scalar_visualizer import (
     CreateLookupTable,
-    GetLookupTableState,
     SurfaceScalarMap,
     SurfaceScalarVisualizer,
 )
@@ -255,7 +254,7 @@ class SurfaceManager:
     def __init__(self):
         self.actors_dict = {}
         self.scalar_visualizers = {}
-        self.map_visualizers = {}
+        self.navigation_surfaces = None
         self.last_surface_index = 0
         self.convert_to_inv = None
         self.__bind_events()
@@ -269,6 +268,20 @@ class SurfaceManager:
         }
 
         self._load_user_parameters()
+        self.SetNavigationMode(ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR)
+
+    def SetNavigationMode(self, status):
+        if bool(status) == (self.navigation_surfaces is not None):
+            return
+        if status:
+            from invesalius.navigation.surface_mapping import NavigationSurfaceManager
+
+            self.navigation_surfaces = NavigationSurfaceManager(self)
+        else:
+            self.navigation_surfaces.dispose()
+            self.navigation_surfaces = None
+        self.OnLoadSurfaceDict(prj.Project().surface_dict)
+        Publisher.sendMessage("Repopulate surfaces")
 
     def _load_user_parameters(self):
         session = ses.Session()
@@ -280,6 +293,7 @@ class SurfaceManager:
             session.SetConfig("surface", self._default_parameters)
 
     def __bind_events(self):
+        Publisher.subscribe(self.SetNavigationMode, "Set surface navigation mode")
         Publisher.subscribe(self.AddNewActor, "Create surface")
         Publisher.subscribe(self.GetActor, "Get Actor")
         Publisher.subscribe(self.SetActorTransparency, "Set surface transparency")
@@ -311,12 +325,6 @@ class SurfaceManager:
         Publisher.subscribe(self.UpdateConvertToInvFlag, "Update convert_to_inv flag")
 
         Publisher.subscribe(self.CreateSurfaceFromPolydata, "Create surface from polydata")
-        Publisher.subscribe(self.UpdateScalarSurface, "Update scalar surface")
-        Publisher.subscribe(self.ShowScalarSurface, "Show scalar surface")
-        Publisher.subscribe(self.SetScalarSurfaceSource, "Set scalar surface source")
-        Publisher.subscribe(self.SetScalarSourceEnabled, "Set scalar source enabled")
-        Publisher.subscribe(self.SetSurfaceMap, "Set surface map")
-        Publisher.subscribe(self.SetSurfaceRole, "Set surface role")
         Publisher.subscribe(self.export_all_surfaces_separately, "Export all surfaces separately")
 
         Publisher.subscribe(self.on_surfaces_creation_completed, "Surfaces creation completed")
@@ -375,30 +383,21 @@ class SurfaceManager:
     def OnRemove(self, surface_indexes):
         proj = prj.Project()
 
-        old_dict = self.actors_dict
-        new_dict = {}
         if surface_indexes:
             for index in sorted(surface_indexes, reverse=True):
-                new_dict = {}
-                self._RemoveSurfaceMaps(proj.surface_dict[index])
+                Publisher.sendMessage("Discard surface mapping", surface=proj.surface_dict[index])
                 self._RemoveScalarSurface(proj.surface_dict[index])
                 proj.RemoveSurface(index)
-                if index in old_dict:
-                    actor = old_dict[index]
-                    for i in old_dict:
-                        if i < index:
-                            new_dict[i] = old_dict[i]
-                        if i > index:
-                            new_dict[i - 1] = old_dict[i]
-                    old_dict = new_dict
+                actor = self.actors_dict.pop(index, None)
+                self.actors_dict = {
+                    (i - 1 if i > index else i): surface_actor
+                    for i, surface_actor in self.actors_dict.items()
+                }
+                if actor is not None:
                     Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
-            self.actors_dict = new_dict
 
         if self.last_surface_index in surface_indexes:
-            if self.actors_dict:
-                self.last_surface_index = 0
-            else:
-                self.last_surface_index = None
+            self.last_surface_index = next(iter(proj.GetDisplaySurfaces()), None)
         elif self.last_surface_index is not None:
             self.last_surface_index -= sum(
                 index < self.last_surface_index for index in surface_indexes
@@ -991,140 +990,6 @@ class SurfaceManager:
             if source is not None:
                 Publisher.sendMessage("Scalar surface removed", source=source)
 
-    def UpdateScalarSurface(self, surface_map, lookup_table, scalar_range, source):
-        proj = prj.Project()
-        state = proj.scalar_sources.get(source)
-        if state is None or state["surface"] not in proj.GetGeometrySurfaces().values():
-            return
-        surface = state["surface"]
-        config = {
-            "name": surface_map.name,
-            "unit": surface_map.unit,
-            "range": list(scalar_range),
-            "lookup_table": GetLookupTableState(lookup_table),
-        }
-        if surface_map.color_array is not None:
-            config["color_array"] = surface_map.color_array
-        polydata = vtkPolyData()
-        polydata.ShallowCopy(surface_map.polydata)
-        surface.scalar_maps[source] = dict(config, polydata=polydata)
-        if surface.active_scalar_map == source:
-            self._ConfigureSurfaceMap(surface)
-        ses.Session().ChangeProject()
-        Publisher.sendMessage("Render volume viewer")
-
-    def ShowScalarSurface(self, source, visibility):
-        self.SetScalarSourceEnabled(source, visibility)
-        state = prj.Project().scalar_sources[source]
-        surface = state["surface"]
-        if visibility and surface is not None:
-            surface.active_scalar_map = source
-            self._ConfigureSurfaceMap(surface)
-            Publisher.sendMessage("Update surface info in GUI", surface=surface)
-            Publisher.sendMessage("Render volume viewer")
-
-    def SetScalarSourceEnabled(self, source, enabled):
-        proj = prj.Project()
-        state = proj.scalar_sources.setdefault(source, {"enabled": False, "surface": None})
-        was_enabled = state["enabled"]
-        state["enabled"] = enabled
-        if not enabled:
-            for surface in proj.GetGeometrySurfaces().values():
-                if surface.active_scalar_map == source:
-                    surface.active_scalar_map = ""
-                    self._ConfigureSurfaceMap(surface)
-                    Publisher.sendMessage("Update surface info in GUI", surface=surface)
-            if was_enabled:
-                Publisher.sendMessage("Scalar source disabled", source=source)
-            Publisher.sendMessage("Render volume viewer")
-
-    def SetScalarSurfaceSource(self, source, surface_index):
-        proj = prj.Project()
-        surface = proj.GetGeometrySurfaces().get(surface_index)
-        if surface is None:
-            return
-        state = proj.scalar_sources.setdefault(source, {"enabled": False, "surface": None})
-        previous = state["surface"]
-        if previous is surface:
-            return
-        state["surface"] = surface
-        if previous is not None:
-            config = previous.scalar_maps.pop(source, None)
-            if config is not None and source != "MEP":
-                surface.scalar_maps[source] = config
-            if previous.active_scalar_map == source:
-                previous.active_scalar_map = ""
-            self._ConfigureSurfaceMap(previous)
-            Publisher.sendMessage("Update surface info in GUI", surface=previous)
-        ses.Session().ChangeProject()
-
-    def SetSurfaceMap(self, surface_index, source=""):
-        proj = prj.Project()
-        surface = proj.GetGeometrySurfaces().get(surface_index)
-        if surface is None:
-            return
-        if source:
-            if not proj.GetSurfaceMapModes(surface_index).get(source, False):
-                return
-            if source == "MEP":
-                Publisher.sendMessage("Get brain surface actor", index=surface_index)
-            else:
-                self.SetScalarSurfaceSource(source, surface_index)
-        else:
-            for map_source, state in proj.scalar_sources.items():
-                if state["surface"] is surface and state["enabled"]:
-                    self.SetScalarSourceEnabled(map_source, False)
-        surface.active_scalar_map = source
-        self._ConfigureSurfaceMap(surface)
-        Publisher.sendMessage("Update surface info in GUI", surface=surface)
-        Publisher.sendMessage("Render volume viewer")
-
-    def SetSurfaceRole(self, surface_index, role):
-        prj.Project().SetSurfaceRole(surface_index, role)
-        ses.Session().ChangeProject()
-
-    def _ConfigureSurfaceMap(self, surface):
-        actor = self.actors_dict.get(surface.index)
-        if actor is None:
-            return
-        source = surface.active_scalar_map
-        config = surface.scalar_maps.get(source)
-        active = config is not None and prj.Project().scalar_sources.get(source, {}).get(
-            "enabled", False
-        )
-        actor.SetVisibility(surface.is_shown and not active)
-        visualizer = self.map_visualizers.get(surface)
-        if active:
-            if visualizer is None:
-                visualizer = SurfaceScalarVisualizer()
-                self.map_visualizers[surface] = visualizer
-                for prop in visualizer.actors:
-                    Publisher.sendMessage("AppendActor", actor=prop)
-            visualizer.SetMap(
-                SurfaceScalarMap(
-                    config["polydata"], config["name"], config["unit"], config.get("color_array")
-                ),
-                CreateLookupTable(config["lookup_table"]),
-                config["range"],
-            )
-            visualizer.actor.GetProperty().DeepCopy(actor.GetProperty())
-        elif visualizer is not None:
-            visualizer.Clear()
-        if visualizer is not None:
-            for prop in visualizer.actors:
-                prop.SetVisibility(bool(active and surface.is_shown))
-
-    def _RemoveSurfaceMaps(self, surface):
-        visualizer = self.map_visualizers.pop(surface, None)
-        if visualizer is not None:
-            for prop in visualizer.actors:
-                Publisher.sendMessage("Remove surface actor from viewer", actor=prop)
-            visualizer.Clear()
-        for source, state in prj.Project().scalar_sources.items():
-            if state["surface"] is surface:
-                state.update(surface=None, enabled=False)
-                Publisher.sendMessage("Scalar surface removed", source=source)
-
     def CreateSurfaceFromPolydata(
         self,
         polydata,
@@ -1166,7 +1031,7 @@ class SurfaceManager:
         # Append surface into Project.surface_dict
         proj = prj.Project()
         if overwrite:
-            self._RemoveSurfaceMaps(proj.surface_dict[index])
+            Publisher.sendMessage("Discard surface mapping", surface=proj.surface_dict[index])
             proj.ChangeSurface(surface)
         else:
             index = proj.AddSurface(surface)
@@ -1197,6 +1062,7 @@ class SurfaceManager:
         # Set actor colour and transparency
         actor.GetProperty().SetColor(surface.colour[:3])
         actor.GetProperty().SetOpacity(1 - surface.transparency)
+        actor.SetVisibility(surface.is_shown and surface.index in proj.GetDisplaySurfaces())
 
         if overwrite and self.actors_dict.keys():
             try:
@@ -1241,14 +1107,11 @@ class SurfaceManager:
         self.CloseProject()
 
     def CloseProject(self):
-        for surface in list(self.map_visualizers):
-            self._RemoveSurfaceMaps(surface)
+        Publisher.sendMessage("Close surface mapping")
         for surface in list(self.scalar_visualizers):
             self._RemoveScalarSurface(surface)
         for index in self.actors_dict:
             Publisher.sendMessage("Remove surface actor from viewer", actor=self.actors_dict[index])
-        for state in prj.Project().scalar_sources.values():
-            state.update(surface=None, enabled=False)
         del self.actors_dict
         self.actors_dict = {}
 
@@ -1269,13 +1132,7 @@ class SurfaceManager:
         self.ShowActor(surface_index, True)
 
     def OnLoadSurfaceDict(self, surface_dict):
-        for source, state in prj.Project().scalar_sources.items():
-            if state["surface"] is not None and state["surface"] not in surface_dict.values():
-                state.update(surface=None, enabled=False)
-                Publisher.sendMessage("Scalar surface removed", source=source)
-        for surface in list(self.map_visualizers):
-            if surface not in surface_dict.values():
-                self._RemoveSurfaceMaps(surface)
+        display_surfaces = prj.Project().GetDisplaySurfaces()
         for surface in list(self.scalar_visualizers):
             if surface not in surface_dict.values():
                 self._RemoveScalarSurface(surface)
@@ -1284,15 +1141,14 @@ class SurfaceManager:
             actor = self.actors_dict.pop(index)
             Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
 
-        for key in surface_dict:
-            surface = surface_dict[key]
-            for source in surface.scalar_maps:
-                state = prj.Project().scalar_sources.setdefault(
-                    source, {"enabled": False, "surface": None}
-                )
-                if state["surface"] is None:
-                    state["surface"] = surface
+        for index in self.actors_dict.keys() - display_surfaces.keys():
+            self.actors_dict[index].VisibilityOff()
+        for surface, visualizer in self.scalar_visualizers.items():
+            if surface.index not in display_surfaces:
+                visualizer.scalar_bar.VisibilityOff()
 
+        for key in display_surfaces:
+            surface = surface_dict[key]
             if surface.scalar_map is not None:
                 actor = self._ConfigureScalarSurface(surface)
                 old_actor = self.actors_dict.get(surface.index)
@@ -1353,9 +1209,6 @@ class SurfaceManager:
             Publisher.sendMessage("Update surface info in GUI", surface=surface)
             actor.SetVisibility(surface.is_shown)
 
-        for surface in surface_dict.values():
-            if surface.can_use_as_geometry:
-                self._ConfigureSurfaceMap(surface)
         Publisher.sendMessage("Render volume viewer")
 
     ####
@@ -1430,7 +1283,9 @@ class SurfaceManager:
 
         proj = prj.Project()
         if overwrite:
-            self._RemoveSurfaceMaps(proj.surface_dict[surface.index])
+            Publisher.sendMessage(
+                "Discard surface mapping", surface=proj.surface_dict[surface.index]
+            )
             proj.ChangeSurface(surface)
         else:
             index = proj.AddSurface(surface)
@@ -1959,15 +1814,15 @@ class SurfaceManager:
         """
         Show or hide actor, according to given actor index and value.
         """
-        self.actors_dict[index].SetVisibility(value)
+        displayed = index in prj.Project().GetDisplaySurfaces()
+        self.actors_dict[index].SetVisibility(value and displayed)
         # Update value in project's surface_dict
         proj = prj.Project()
         surface = proj.surface_dict[index]
         surface.is_shown = value
         if surface in self.scalar_visualizers:
-            self.scalar_visualizers[surface].scalar_bar.SetVisibility(value)
-        if surface.can_use_as_geometry:
-            self._ConfigureSurfaceMap(surface)
+            self.scalar_visualizers[surface].scalar_bar.SetVisibility(value and displayed)
+        Publisher.sendMessage("Update surface presentation", surface=surface)
         Publisher.sendMessage("Render volume viewer")
 
     def SetActorTransparency(self, surface_index, transparency):
@@ -1979,9 +1834,9 @@ class SurfaceManager:
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[surface_index].transparency = transparency
-        visualizer = self.map_visualizers.get(proj.surface_dict[surface_index])
-        if visualizer is not None:
-            visualizer.actor.GetProperty().SetOpacity(1 - transparency)
+        Publisher.sendMessage(
+            "Update surface presentation", surface=proj.surface_dict[surface_index]
+        )
         Publisher.sendMessage("Render volume viewer")
 
     def SetActorColour(self, surface_index, colour):
@@ -2137,8 +1992,7 @@ class SurfaceManager:
         polydata_list = []
 
         # Collects all visible surfaces
-        for index in proj.surface_dict:
-            surface = proj.surface_dict[index]
+        for surface in proj.GetDisplaySurfaces().values():
             if surface.is_shown:
                 polydata_list.append(surface.displayed_polydata)
 

@@ -31,6 +31,7 @@ from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius
 import invesalius.constants as const
+import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.gui.dialogs import ErrorMessageBox
@@ -161,6 +162,11 @@ class Project(metaclass=Singleton):
             if surface.can_use_as_geometry
         }
 
+    def GetDisplaySurfaces(self):
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            return self.surface_dict
+        return self.GetGeometrySurfaces()
+
     def GetBrainSurface(self):
         return next(
             (
@@ -196,14 +202,7 @@ class Project(metaclass=Singleton):
     def GetSurfaceMapModes(self, surface_index):
         if surface_index not in self.GetGeometrySurfaces():
             return {}
-        return {
-            source: state["enabled"]
-            and (
-                source == "MEP"
-                or (state["surface"] is not None and source in state["surface"].scalar_maps)
-            )
-            for source, state in self.scalar_sources.items()
-        }
+        return {source: True for source, state in self.scalar_sources.items() if state["enabled"]}
 
     def AddSurface(self, surface):
         # self.last_surface_index = surface.index
