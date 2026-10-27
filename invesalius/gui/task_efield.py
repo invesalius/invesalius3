@@ -111,9 +111,6 @@ class InnerTaskPanel(wx.Panel):
         enable_efield.Enable(True)
         enable_efield.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableEfield, ctrl=enable_efield))
         self.enable_efield = enable_efield
-        self.show_efield = wx.Button(self, -1, _("Show E-field"))
-        self.show_efield.Enable(False)
-        self.show_efield.Bind(wx.EVT_BUTTON, self.OnShowEfield)
         Publisher.subscribe(self.OnPaintingAvailability, "Surface painting availability changed")
 
         efield_for_targeting = wx.CheckBox(self, -1, _("E-fields for targeting"))
@@ -281,7 +278,6 @@ class InnerTaskPanel(wx.Panel):
         line_checkboxes.AddMany(
             [
                 (enable_efield, 1, wx.LEFT | wx.RIGHT, 2),
-                (self.show_efield, 0, wx.LEFT | wx.RIGHT, 2),
                 (show_area, 1, wx.LEFT | wx.RIGHT, 2),
                 (efield_tools, 1, wx.LEFT | wx.RIGHT, 2),
             ]
@@ -409,10 +405,6 @@ class InnerTaskPanel(wx.Panel):
     def OnPaintingAvailability(self, mode):
         if mode is self.surface_mode:
             self.enable_efield.SetValue(mode.available)
-            self.show_efield.Enable(mode.available)
-
-    def OnShowEfield(self, event):
-        self.surface_mode.painting.select(None, self.surface_mode.name)
 
     def Init_efield(self):
         coil_set = self.coil_set or self.IsMultilocusCoilset(self.coil)
@@ -456,7 +448,7 @@ class InnerTaskPanel(wx.Panel):
                     self.surface_mode.painting.set_available(self.surface_mode, False)
                     return
             self.surface_mode.painting.set_available(self.surface_mode, True)
-            self.OnShowEfield(None)
+            self.surface_mode.painting.select(None, self.surface_mode.name)
             self.combo_change_coil.Enable(True)
             self.btn_all_save.Enable(True)
 
@@ -537,12 +529,8 @@ class InnerTaskPanel(wx.Panel):
         self.Send_meshes_coil_paths_to_report()
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
-        if nav_status:
-            self.enable_efield.Enable(False)
-            self.btn_save.Enable(True)
-        else:
-            self.enable_efield.Enable(True)
-            self.btn_save.Enable(False)
+        self.enable_efield.Enable(not nav_status or self.surface_mode.available)
+        self.btn_save.Enable(nav_status)
 
     def OnSelectSleep(self, evt, ctrl):
         self.sleep_nav = ctrl.GetValue()
