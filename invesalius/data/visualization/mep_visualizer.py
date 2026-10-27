@@ -455,7 +455,7 @@ class MEPVisualizer:
         )
 
     def OnCloseProject(self):
-        self.painting.set_available(self, False)
+        self.painting.reset(self)
         self._config_params["mep_enabled"] = False
         self.brain_target_data = None
         self._SaveUserParameters()

@@ -343,7 +343,6 @@ class CoordinateCorregistrate(threading.Thread):
         tracker_id,
         target,
         icp,
-        e_field_loaded,
         navigation,
     ):
         threading.Thread.__init__(self, name="CoordCoregObject")
@@ -356,7 +355,6 @@ class CoordinateCorregistrate(threading.Thread):
         self.view_tracts = view_tracts
         self.object_at_target_queue = queues[2]
         self.efield_queue = queues[3]
-        self.e_field_loaded = e_field_loaded
         self.navigation = navigation
         self.event = event
         self.sle = sle

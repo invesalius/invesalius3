@@ -12,6 +12,7 @@ class EFieldSurfaceMode:
         self.navigation = navigation
         self.brain = None
         self.source_surface = None
+        self.hidden_source = None
         self.painting = SurfacePainting()
         self.painting.register(self)
         Publisher.subscribe(self.remove_surface, "Discard surface painting")
@@ -34,6 +35,9 @@ class EFieldSurfaceMode:
         return Project().GetBrainSurface() or self.source_surface
 
     def start(self, surface, token):
+        if self.source_surface is not surface and self.source_surface.is_shown:
+            self.hidden_source = self.source_surface
+            Publisher.sendMessage("Show surface", index=self.hidden_source.index, visibility=False)
         self.navigation.MarkEfieldParametersChanged()
         Publisher.sendMessage(
             "Initialize E-field brain", e_field_brain=self.brain, painting_token=token
@@ -47,18 +51,21 @@ class EFieldSurfaceMode:
         self.navigation.e_field_norms_queue.clear()
         self.navigation.e_field_IDs_queue.clear()
         Publisher.sendMessage("Stop E-field surface painting")
+        if self.hidden_source is not None:
+            Publisher.sendMessage("Show surface", index=self.hidden_source.index, visibility=True)
+            self.hidden_source = None
 
     def remove_surface(self, surface):
         if surface is self.source_surface:
             self.clear()
 
     def clear(self):
-        self.painting.set_available(self, False)
+        self.painting.reset(self)
         self.brain = None
         self.source_surface = None
-        self.painting.targets.pop(self.name, None)
 
     def dispose(self):
-        self.clear()
         self.painting.unregister(self)
+        self.brain = None
+        self.source_surface = None
         Publisher.unsubscribe_owner(self)

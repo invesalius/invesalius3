@@ -1,6 +1,7 @@
 import numpy as np
 import vtk
 
+import invesalius.constants as const
 import invesalius.data.transformations as tr
 import invesalius.session as ses
 from invesalius.i18n import tr as _
@@ -293,6 +294,12 @@ class SurfaceGeometry(metaclass=Singleton):
         valid_surfaces = [
             surface for surface in self.surfaces if self._HasUsableGeometry(surface["original"])
         ]
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            valid_surfaces = [
+                surface
+                for surface in valid_surfaces
+                if surface["surface"] is None or surface["surface"].frozen_map is None
+            ]
         if not valid_surfaces:
             return None
 

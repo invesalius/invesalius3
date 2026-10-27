@@ -36,9 +36,12 @@ class SurfacePainting(metaclass=Singleton):
 
     def unregister(self, mode):
         if self.modes.get(mode.name) is mode:
-            self.stop(mode.name)
+            self.reset(mode)
             self.modes.pop(mode.name)
-            self.targets.pop(mode.name, None)
+
+    def reset(self, mode):
+        self.set_available(mode, False)
+        self.targets.pop(mode.name, None)
 
     def available_modes(self, surface):
         if not self.enabled or surface.frozen_map is not None:
@@ -108,6 +111,8 @@ class SurfacePainting(metaclass=Singleton):
                 self.targets.pop(name)
 
     def set_navigation_mode(self, status):
+        if self.enabled == status:
+            return
         self.enabled = status
         if not status:
             for name in list(self.tokens):

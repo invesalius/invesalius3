@@ -178,7 +178,6 @@ class Project(metaclass=Singleton):
             raise ValueError("The brain surface must belong to the project.")
         for candidate in self.surface_dict.values():
             candidate.anatomical_role = "brain" if candidate is surface else ""
-        Publisher.sendMessage("Brain surface changed", surface=surface)
 
     def ChangeSurface(self, surface):
         index = surface.index

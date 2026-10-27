@@ -5317,6 +5317,11 @@ class CreateBrainTargetDialog(wx.Dialog):
         combo_brain_surface_name.SetSelection(init_surface)
         self.surface = self.proj.surface_dict[init_surface].polydata
         self.brain_surface = self.proj.surface_dict[init_surface].polydata
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            brain_surface = self.proj.GetBrainSurface()
+            if brain_surface is not None:
+                combo_brain_surface_name.SetSelection(brain_surface.index)
+                self.brain_surface = brain_surface.polydata
         if self.peel_brain_actor:
             self.peel_brain_actor.PickableOff()
             self.ren.AddActor(self.peel_brain_actor)

@@ -359,7 +359,9 @@ class SurfaceManager:
         surface_map = surface.display_map
         actor.SetVisibility(surface.is_shown and surface_map is None)
         visualizer = self.map_visualizers.get(surface)
-        if surface_map is not None:
+        if surface_map is None:
+            self.RemoveSurfacePresentation(surface)
+        else:
             if visualizer is None:
                 visualizer = SurfaceMapVisualizer()
                 self.map_visualizers[surface] = visualizer
@@ -367,8 +369,7 @@ class SurfaceManager:
                     Publisher.sendMessage("AppendActor", actor=prop)
             visualizer.set_map(surface_map)
             visualizer.actor.GetProperty().DeepCopy(actor.GetProperty())
-        if visualizer is not None:
-            visualizer.show(bool(surface.is_shown and surface_map is not None))
+            visualizer.show(bool(surface.is_shown))
         visible = [v for v in self.map_visualizers.values() if v.actor.GetVisibility()]
         for index, item in enumerate(visible):
             item.scalar_bar.SetPosition(0.06 + index * 0.13, 0.06)
@@ -2006,7 +2007,7 @@ class SurfaceManager:
                         if surface.is_shown:
                             visible_surfaces.append(
                                 (
-                                    surface.polydata,
+                                    surface.displayed_polydata,
                                     surface.name,
                                     surface.colour,
                                     1 - surface.transparency,

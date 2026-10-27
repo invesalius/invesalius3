@@ -715,7 +715,6 @@ class Navigation(metaclass=Singleton):
                     tracker.tracker_id,
                     self.target,
                     icp,
-                    self.e_field_loaded,
                     self,
                 )
             )

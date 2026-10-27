@@ -371,6 +371,9 @@ class NavigationView:
         self.old_coord = np.zeros((6,), dtype=float)
 
         self.efield_mesh = None
+        self.e_field_norms = None
+        self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
+        self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.max_efield_vector = None
         self.ball_max_vector = None
         self.ball_GoGEfieldVector = None
@@ -844,9 +847,18 @@ class NavigationView:
 
     def StopEfieldPainting(self):
         self.efield_painting_token = None
+        self.e_field_norms = None
+        self.radius_list.Reset()
         self.RemoveEfieldTargetingActors()
         self.RemoveEfieldVectorActor()
         self.RemoveEfieldEdges()
+        for legend in (
+            self.ClusterEfieldTextActor,
+            self.SpreadEfieldFactorTextActor,
+            self.EfieldAtTargetLegend,
+        ):
+            if legend is not None:
+                legend.SetValue("")
 
     def DrawVectors(self, position, orientation, color, scale_factor=10):
         points = vtkPoints()
@@ -1592,8 +1604,6 @@ class NavigationView:
         self.e_field_norms = None
         self.e_field_norms_to_save = None
         self.last_efield_cell_id = None
-        self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
-        self.efield_ROISize = const.EFIELD_ROI_SIZE
         self.target_radius_list = []
         self.focal_factor_members = []
         self.distance_efield = None
@@ -1602,12 +1612,6 @@ class NavigationView:
 
         self.RemoveEfieldTargetingActors()
         self.RemoveEfieldVectorActor()
-
-        if self.ClusterEfieldTextActor is not None:
-            self.ren.RemoveActor(self.ClusterEfieldTextActor.actor)
-
-        if self.SpreadEfieldFactorTextActor is not None:
-            self.ren.RemoveActor(self.SpreadEfieldFactorTextActor.actor)
 
         if self.edge_actor is not None:
             self.ren.RemoveActor(self.edge_actor)
