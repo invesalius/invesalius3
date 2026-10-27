@@ -27,7 +27,7 @@ class NodesPanel(wx.Panel):
         # Create the main vertical box sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.__find_input = wx.TextCtrl(self, size=(225, -1))
+        self.__find_input = wx.TextCtrl(self, size=(550, -1))
         self.__find_input.SetHint("Enter patient name")
         self.__btn_find = wx.Button(self, label="Search")
 
