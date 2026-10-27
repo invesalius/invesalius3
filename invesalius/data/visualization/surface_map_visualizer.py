@@ -12,9 +12,15 @@ class SurfaceMapVisualizer:
         self.scalar_bar = vtkScalarBarActor()
         self.scalar_bar.SetNumberOfLabels(4)
         self.scalar_bar.SetLabelFormat("%4.0f")
-        self.scalar_bar.SetMaximumWidthInPixels(90)
+        self.scalar_bar.SetTitleRatio(0.1)
+        self.scalar_bar.SetMaximumWidthInPixels(70)
+        self.scalar_bar.GetTitleTextProperty().SetFontSize(1)
+        self.scalar_bar.GetLabelTextProperty().SetFontSize(9)
         self.scalar_bar.SetWidth(0.1)
         self.scalar_bar.SetHeight(0.3)
+        self.scalar_bar.SetVisibility(1)
+        self.scalar_bar.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
+        self.scalar_bar.GetPositionCoordinate().SetValue(0.06, 0.06)
         self.actors = (self.actor, self.scalar_bar)
 
     def set_map(self, surface_map):
@@ -35,7 +41,7 @@ class SurfaceMapVisualizer:
             )
         )
         self.scalar_bar.SetLookupTable(surface_map.lookup_table)
-        self.scalar_bar.SetTitle(f"{surface_map.name} ({surface_map.unit})")
+        self.scalar_bar.SetTitle(f"{surface_map.unit}       ")
 
     def show(self, visible):
         for actor in self.actors:
