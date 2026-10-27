@@ -179,17 +179,20 @@ class Project(metaclass=Singleton):
         )
 
     def GetScalpSurface(self):
-        return next(
+        return max(
             (
                 surface
                 for surface in self.GetGeometrySurfaces().values()
-                if surface.anatomical_role == "scalp"
+                if surface.polydata
+                and surface.polydata.GetNumberOfPoints()
+                and surface.polydata.GetNumberOfCells()
             ),
-            None,
+            key=lambda surface: surface.polydata.GetBounds()[5],
+            default=None,
         )
 
     def SetSurfaceRole(self, surface_index, role):
-        if role not in ("", "brain", "scalp"):
+        if role not in ("", "brain"):
             raise ValueError("Invalid anatomical surface role.")
         surface = self.GetGeometrySurfaces()[surface_index]
         for candidate in self.GetGeometrySurfaces().values():

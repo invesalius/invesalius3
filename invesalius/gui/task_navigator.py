@@ -904,7 +904,6 @@ class HeadPage(wx.Panel):
                 srf_options = {
                     "index": mask_index,
                     "name": "Scalp",
-                    "anatomical_role": "scalp",
                     "quality": _("Optimal *"),
                     "fill": True,
                     "keep_largest": False,

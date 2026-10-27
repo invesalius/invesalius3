@@ -1703,22 +1703,17 @@ class SurfacesListCtrlPanel(InvListCtrl):
                 )
             surface_context_menu.AppendSubMenu(modes_menu, _("Coloring"))
 
-            role_menu = wx.Menu()
-            for role, label in (
-                ("", _("Unassigned")),
-                ("brain", _("Brain")),
-                ("scalp", _("Scalp")),
-            ):
-                item = role_menu.AppendRadioItem(wx.ID_ANY, label)
-                item.Check(surface.anatomical_role == role)
-                role_menu.Bind(
-                    wx.EVT_MENU,
-                    lambda evt, role=role: Publisher.sendMessage(
-                        "Set surface role", surface_index=global_surface_id, role=role
-                    ),
-                    item,
-                )
-            surface_context_menu.AppendSubMenu(role_menu, _("Anatomical reference"))
+            brain_item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Assign as brain"))
+            brain_item.Check(surface.anatomical_role == "brain")
+            surface_context_menu.Bind(
+                wx.EVT_MENU,
+                lambda evt: Publisher.sendMessage(
+                    "Set surface role",
+                    surface_index=global_surface_id,
+                    role="brain" if evt.IsChecked() else "",
+                ),
+                brain_item,
+            )
             surface_context_menu.AppendSeparator()
 
         colour_id = surface_context_menu.Append(start_idx, _("Change color"))

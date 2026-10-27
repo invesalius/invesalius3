@@ -221,7 +221,7 @@ class Surface:
             self.category = "General"
         self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
         self.scalar_map = sp.get("scalar_map")
-        self.anatomical_role = sp.get("anatomical_role", "")
+        self.anatomical_role = "brain" if sp.get("anatomical_role") == "brain" else ""
         self.scalar_maps = {
             source: dict(config, polydata=pu.Import(os.path.join(dirpath, config["polydata"])))
             for source, config in sp.get("scalar_maps", {}).items()
@@ -700,15 +700,11 @@ class SurfaceManager:
                 dIperdt_list=dIperdt_list,
             )
         if scalp_index is not None:
-            if proj.GetScalpSurface() is None:
-                proj.SetSurfaceRole(scalp_index, "scalp")
             Publisher.sendMessage("Send scalp index", scalp_actor=self.actors_dict[scalp_index])
         else:
             self.convert_to_inv = convert_to_inv
             scalp_path = config_dict["path_meshes"] + config_dict["scalp path"]
             surface_index_bmesh = self.OnImportCustomBinFile(scalp_path)
-            if prj.Project().GetScalpSurface() is None and surface_index_bmesh is not None:
-                prj.Project().SetSurfaceRole(surface_index_bmesh, "scalp")
             Publisher.sendMessage(
                 "Send scalp index", scalp_actor=self.actors_dict[surface_index_bmesh]
             )
