@@ -32,7 +32,6 @@ from vtkmodules.vtkCommonDataModel import (
 )
 from vtkmodules.vtkFiltersCore import (
     vtkDecimatePro,
-    vtkPolyDataNormals,
     vtkResampleWithDataSet,
     vtkTriangleFilter,
 )
@@ -40,18 +39,15 @@ from vtkmodules.vtkFiltersPoints import (
     vtkGaussianKernel,
     vtkPointInterpolator,
 )
-from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
-from vtkmodules.vtkRenderingCore import (
-    vtkActor,
-    vtkPointGaussianMapper,
-    vtkPolyDataMapper,
-)
+from vtkmodules.vtkRenderingCore import vtkActor
 
 import invesalius.constants as const
 import invesalius.data.transformations as transformations
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
+from invesalius.data.surface_scalar_map import SurfaceScalarMap
+from invesalius.data.visualization.surface_scalar_visualizer import SurfaceScalarVisualizer
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 
@@ -62,12 +58,9 @@ class MEPVisualizer:
         self.surface = None
         self.surface_index = None
         self.decimate_surface = None
-        self.colored_surface_actor = None
-        self.point_actor = None
+        self.surface_visualizer = SurfaceScalarVisualizer()
         self.bounds = None
 
-        self.colorBarActor = None
-        self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
         self.marker_storage = []
 
         self.is_navigating = False
@@ -439,112 +432,25 @@ class MEPVisualizer:
         self._CleanupVisualization()
 
         interpolated_data = self.InterpolateData()
-        self.colored_surface_actor = self.CreateColoredSurface(interpolated_data)
-        self.point_actor = self.CreatePointActor(
-            self.points_polydata,
+        surface_map = SurfaceScalarMap(interpolated_data, "MEP", "µV")
+        self.surface_visualizer.SetMap(
+            surface_map,
+            self._CustomColormap(),
             (self._config_params["threshold_down"], self._config_params["range_up"]),
         )
-        self.colorBarActor = self.CreateColorbarActor()
 
-        Publisher.sendMessage("AppendActor", actor=self.colored_surface_actor)
-        # Publisher.sendMessage("AppendActor", actor=self.point_actor)
-        Publisher.sendMessage("AppendActor", actor=self.colorBarActor)
+        for actor in self.surface_visualizer.actors:
+            Publisher.sendMessage("AppendActor", actor=actor)
 
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
 
-    def CreateColorbarActor(self, lut=None) -> vtkActor:
-        if lut is None:
-            lut = self._CustomColormap(self._config_params["mep_colormap"])
-        colorBarActor = vtkScalarBarActor()
-        colorBarActor.SetLookupTable(lut)
-        colorBarActor.SetNumberOfLabels(4)
-        colorBarActor.SetLabelFormat("%4.0f")
-        colorBarActor.SetTitle("µV       ")
-        # FIXME: Set the title to be a little bit smaller
-        colorBarActor.SetTitleRatio(0.1)
-        colorBarActor.SetMaximumWidthInPixels(70)
-        # move title to below
-        colorBarActor.GetTitleTextProperty().SetFontSize(1)
-
-        # FIXME: Set the label text size to be a little bit smaller
-        label_text_property = colorBarActor.GetLabelTextProperty()
-        label_text_property.SetFontSize(9)
-        # label_text_property.SetColor(0, 0, 0)
-
-        colorBarActor.SetLabelTextProperty(label_text_property)
-
-        # resize colorbar
-        colorBarActor.SetWidth(0.1)
-        colorBarActor.SetHeight(0.3)
-
-        colorBarActor.SetVisibility(1)
-
-        # set position of the colorbar to the bottom left corner
-        colorBarActor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-        colorBarActor.GetPositionCoordinate().SetValue(0.06, 0.06)
-        # Track the created actor
-        self.actors_dict[id(colorBarActor)] = colorBarActor
-        return colorBarActor
-
-    def CreateColoredSurface(self, poly_data) -> vtkActor:
-        """Creates the actor for the surface with color mapping."""
-        normals = vtkPolyDataNormals()
-        normals.SetInputData(poly_data)
-        normals.ComputePointNormalsOff()
-        normals.ComputeCellNormalsOff()
-        normals.Update()
-
-        data_range = (self._config_params["threshold_down"], self._config_params["range_up"])
-
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputData(normals.GetOutput())
-        if data_range is None:
-            data_range = (self._config_params["threshold_down"], self._config_params["range_up"])
-        mapper.SetScalarRange(data_range)
-
-        lut = self._CustomColormap()
-        mapper.SetLookupTable(lut)
-
-        actor = vtkActor()
-        actor.SetMapper(mapper)
-        actor.GetProperty().SetInterpolationToGouraud()
-        self.actors_dict[id(actor)] = actor
-        return actor
-
-    def CreatePointActor(self, points, data_range):
-        """Creates the actor for the data points."""
-        point_mapper = vtkPointGaussianMapper()
-        point_mapper.SetInputData(points)
-        point_mapper.SetScalarRange(data_range)
-        point_mapper.SetScaleFactor(0.1)
-        point_mapper.EmissiveOff()
-        point_mapper.SetSplatShaderCode(
-            "//VTK::Color::Impl\n"
-            "float dist = dot(offsetVCVSOutput.xy,offsetVCVSOutput.xy);\n"
-            "if (dist > 1.0) {\n"
-            "  discard;\n"
-            "} else {\n"
-            "  float scale = (1.0 - dist);\n"
-            "  ambientColor *= scale;\n"
-            "  diffuseColor *= scale;\n"
-            "}\n"
-        )
-
-        lut = self._CustomColormap()
-        point_mapper.SetLookupTable(lut)
-
-        point_actor = vtkActor()
-        point_actor.SetMapper(point_mapper)
-
-        self.actors_dict[id(point_actor)] = point_actor
-        return point_actor
-
     def _CleanupVisualization(self):
-        for actor in self.actors_dict.values():
-            Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
+        if self.surface_visualizer.mapper.GetInput() is not None:
+            for actor in self.surface_visualizer.actors:
+                Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
 
-        self.actors_dict.clear()
+        self.surface_visualizer.Clear()
 
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
@@ -570,10 +476,6 @@ class MEPVisualizer:
         self.surface = None
         self.surface_index = None
         self.decimate_surface = None
-        self.colored_surface_actor = None
-        self.point_actor = None
         self.bounds = None
-        self.colorBarActor = None
-        self.actors_dict = {}
         Publisher.sendMessage("Press motor map button", pressed=False)
         self._SaveUserParameters()
