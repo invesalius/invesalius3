@@ -46,10 +46,7 @@ import invesalius.data.transformations as transformations
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
-from invesalius.data.visualization.surface_scalar_visualizer import (
-    SurfaceScalarMap,
-    SurfaceScalarVisualizer,
-)
+from invesalius.data.visualization.surface_scalar_visualizer import SurfaceScalarMap
 from invesalius.navigation.markers import MarkersControl
 from invesalius.pubsub import pub as Publisher
 
@@ -60,7 +57,6 @@ class MEPVisualizer:
         self.surface = None
         self.surface_index = None
         self.decimate_surface = None
-        self.surface_visualizer = SurfaceScalarVisualizer()
         self.bounds = None
 
         self.marker_storage = []
@@ -86,6 +82,7 @@ class MEPVisualizer:
         Publisher.subscribe(self.SetBrainSurface, "Load brain surface actor")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnRemoveSurfaces, "Remove surfaces")
+        Publisher.subscribe(self.OnScalarSurfaceRemoved, "Scalar surface removed")
 
     # --- Configuration Management ---
 
@@ -125,21 +122,15 @@ class MEPVisualizer:
                 return False
             progress_dialog = dialogs.BrainSurfaceLoadingProgressWindow()
             progress_dialog.Update(value=20, msg="Preparing brain surface...")
-            Publisher.sendMessage("Hide all surfaces")
             self.UpdateVisualization()
             progress_dialog.Update(value=50, msg="Preparing brain surface...")
             self.UpdateMEPPoints()
+            Publisher.sendMessage("Show scalar surface", source="MEP", visibility=True)
             # self.UpdateMEPPointsFromBrainTargets()
             progress_dialog.Close()
         else:
             self._config_params["mep_enabled"] = False
-            self._CleanupVisualization()
-            if self.surface:  # Shows the original surface
-                Publisher.sendMessage(
-                    "Show surface",
-                    index=self.surface_index,
-                    visibility=True,
-                )
+            Publisher.sendMessage("Show scalar surface", source="MEP", visibility=False)
             self.marker_storage = []
         self._SaveUserParameters()
 
@@ -239,8 +230,6 @@ class MEPVisualizer:
         self.kdtree = cKDTree(self.surface_points)
         self.bounds = np.array(actor.GetBounds())
         self.marker_storage = []
-        if self._config_params["mep_enabled"]:
-            Publisher.sendMessage("Show surface", index=index, visibility=False)
         self._SaveUserParameters()
 
     def _FilterMarkers(self, markers_list):
@@ -431,28 +420,15 @@ class MEPVisualizer:
         if not self._config_params["mep_enabled"] or not self.surface:
             return
 
-        self._CleanupVisualization()
-
         interpolated_data = self.InterpolateData()
         surface_map = SurfaceScalarMap(interpolated_data, "MEP", "µV")
-        self.surface_visualizer.SetMap(
-            surface_map,
-            self._CustomColormap(),
-            (self._config_params["threshold_down"], self._config_params["range_up"]),
+        Publisher.sendMessage(
+            "Update scalar surface",
+            surface_map=surface_map,
+            lookup_table=self._CustomColormap(),
+            scalar_range=(self._config_params["threshold_down"], self._config_params["range_up"]),
+            source="MEP",
         )
-
-        for actor in self.surface_visualizer.actors:
-            Publisher.sendMessage("AppendActor", actor=actor)
-
-        if not self.is_navigating:
-            Publisher.sendMessage("Render volume viewer")
-
-    def _CleanupVisualization(self):
-        if self.surface_visualizer.mapper.GetInput() is not None:
-            for actor in self.surface_visualizer.actors:
-                Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
-
-        self.surface_visualizer.Clear()
 
         if not self.is_navigating:
             Publisher.sendMessage("Render volume viewer")
@@ -461,18 +437,22 @@ class MEPVisualizer:
         self.is_navigating = nav_status
 
     def OnRemoveSurfaces(self, surface_indexes):
-        for index in surface_indexes:
-            if index == self.surface_index:
-                self.surface = None
-                self.surface_index = None
-                self.DisplayMotorMap(False)
-                self._config_params["mep_enabled"] = False
-                self._SaveUserParameters()
-                Publisher.sendMessage("Press motor map button", pressed=False)
+        if self.surface_index in surface_indexes:
+            self.surface = None
+            self.surface_index = None
+            self.OnScalarSurfaceRemoved("MEP")
+        elif self.surface_index is not None:
+            self.surface_index -= sum(index < self.surface_index for index in surface_indexes)
+
+    def OnScalarSurfaceRemoved(self, source):
+        if source == "MEP":
+            self._config_params["mep_enabled"] = False
+            self.marker_storage = []
+            self._SaveUserParameters()
+            Publisher.sendMessage("Press motor map button", pressed=False)
 
     def OnCloseProject(self):
         """Cleanup the visualization when the project is closed."""
-        self.DisplayMotorMap(False)
         self._config_params["mep_enabled"] = False
         self.points_polydata = vtkPolyData()
         self.surface = None
