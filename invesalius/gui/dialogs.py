@@ -1063,6 +1063,12 @@ def SurfaceSelectionRequiredForDuplication() -> None:
     dlg.Destroy()
 
 
+def GeometrySurfaceNotExist() -> None:
+    wx.MessageBox(
+        _("No anatomical 3D surface is available."), _("InVesalius 3"), wx.OK | wx.ICON_INFORMATION
+    )
+
+
 def SeedSurfaceNotExist() -> None:
     msg = _("No surfaces exist, therefore cannot create a seeded surface.")
     if sys.platform == "darwin":
@@ -4651,14 +4657,14 @@ class ICPCorregistrationDialog(wx.Dialog):
         if sys.platform != "win32":
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-        for n in range(len(self.proj.surface_dict)):
-            combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for surface in self.proj.GetGeometrySurfaces().values():
+            combo_surface_name.Append(surface.name, surface)
 
         self.combo_surface_name = combo_surface_name
 
         init_surface = 0
         combo_surface_name.SetSelection(init_surface)
-        self.surface = self.proj.surface_dict[init_surface].polydata
+        self.surface = combo_surface_name.GetClientData(init_surface).polydata
         self.LoadActor()
         wx.CallAfter(self._validate_surface)
 
@@ -4952,7 +4958,7 @@ class ICPCorregistrationDialog(wx.Dialog):
 
     def OnComboName(self, evt: wx.CommandEvent) -> None:
         # surface_name = evt.GetString()
-        surface_index = evt.GetSelection()
+        surface_index = evt.GetEventObject().GetClientData(evt.GetSelection()).index
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
             self.RemoveAllActors()
@@ -5147,8 +5153,11 @@ class EfieldConfiguration(wx.Dialog):
         if sys.platform != "win32":
             combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
-        for n in range(len(self.proj.surface_dict)):
-            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for surface in self.proj.GetGeometrySurfaces().values():
+            combo_brain_surface_name.Append(surface.name, surface)
+        combo_brain_surface_name.Enable(combo_brain_surface_name.GetCount() > 0)
+        if combo_brain_surface_name.GetCount():
+            combo_brain_surface_name.SetSelection(0)
 
         txt_scalp_surface = wx.StaticText(self, -1, _("Select the scalp surface:"))
         combo_brain_scalp_name = wx.ComboBox(
@@ -5157,9 +5166,12 @@ class EfieldConfiguration(wx.Dialog):
         # combo_surface_name.SetSelection(0)
         if sys.platform != "win32":
             combo_brain_scalp_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        combo_brain_scalp_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
-        for n in range(len(self.proj.surface_dict)):
-            combo_brain_scalp_name.Insert(str(self.proj.surface_dict[n].name), n)
+        combo_brain_scalp_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameScalpSurface)
+        for surface in self.proj.GetGeometrySurfaces().values():
+            combo_brain_scalp_name.Append(surface.name, surface)
+        combo_brain_scalp_name.Enable(combo_brain_scalp_name.GetCount() > 0)
+        if combo_brain_scalp_name.GetCount():
+            combo_brain_scalp_name.SetSelection(0)
 
         tooltip1 = _("Target orientation done")
         btn_ok = wx.Button(self, wx.ID_OK, _("Done"))
@@ -5196,12 +5208,12 @@ class EfieldConfiguration(wx.Dialog):
         main_sizer.Fit(self)
 
     def OnComboNameBrainSurface(self, evt: wx.CommandEvent) -> str | vtkPolyData:
-        surface_index = evt.GetSelection()
+        surface_index = evt.GetEventObject().GetClientData(evt.GetSelection()).index
         self.brain_surface = self.proj.surface_dict[surface_index].polydata
         return self.brain_surface
 
     def OnComboNameScalpSurface(self, evt: wx.CommandEvent) -> str | vtkPolyData:
-        surface_index = evt.GetSelection()
+        surface_index = evt.GetEventObject().GetClientData(evt.GetSelection()).index
         self.scalp_surface = self.proj.surface_dict[surface_index].polydata
         return self.scalp_surface
 
@@ -5297,8 +5309,8 @@ class CreateBrainTargetDialog(wx.Dialog):
         if sys.platform != "win32":
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameScalpSurface)
-        for n in range(len(self.proj.surface_dict)):
-            combo_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for surface in self.proj.GetGeometrySurfaces().values():
+            combo_surface_name.Append(surface.name, surface)
 
         txt_brain_surface = wx.StaticText(self, -1, _("Select the brain surface:"))
 
@@ -5309,14 +5321,14 @@ class CreateBrainTargetDialog(wx.Dialog):
         if sys.platform != "win32":
             combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
-        for n in range(len(self.proj.surface_dict)):
-            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for surface in self.proj.GetGeometrySurfaces().values():
+            combo_brain_surface_name.Append(surface.name, surface)
 
         init_surface = 0
         combo_surface_name.SetSelection(init_surface)
         combo_brain_surface_name.SetSelection(init_surface)
-        self.surface = self.proj.surface_dict[init_surface].polydata
-        self.brain_surface = self.proj.surface_dict[init_surface].polydata
+        self.surface = combo_surface_name.GetClientData(init_surface).polydata
+        self.brain_surface = combo_brain_surface_name.GetClientData(init_surface).polydata
         if self.peel_brain_actor:
             self.peel_brain_actor.PickableOff()
             self.ren.AddActor(self.peel_brain_actor)
@@ -5620,7 +5632,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.interactor.Render()
 
     def OnComboNameBrainSurface(self, evt: wx.CommandEvent) -> None:
-        surface_index = evt.GetSelection()
+        surface_index = evt.GetEventObject().GetClientData(evt.GetSelection()).index
         self.brain_surface = self.proj.surface_dict[surface_index].polydata
         if self.brain_actor:
             self.RemoveActor(self.brain_actor)
@@ -5628,7 +5640,7 @@ class CreateBrainTargetDialog(wx.Dialog):
         self.chk_show_brain_surface.SetValue(True)
 
     def OnComboNameScalpSurface(self, evt: wx.CommandEvent) -> None:
-        surface_index = evt.GetSelection()
+        surface_index = evt.GetEventObject().GetClientData(evt.GetSelection()).index
         self.surface = self.proj.surface_dict[surface_index].polydata
         if self.obj_actor:
             self.RemoveAllActor()
@@ -6598,24 +6610,28 @@ class RemoveNonVisibleFacesDialog(wx.Dialog):
         Publisher.subscribe(self.on_update_surfaces, "Change surface name")
 
     def fill_surfaces_combo(self):
-        choices = [i.name for i in self.project.surface_dict.values()]
-        try:
-            initial_value = choices[0]
-            enable = True
-        except IndexError:
-            initial_value = ""
-            enable = False
-
-        self.surfaces_combo.SetItems(choices)
-        self.surfaces_combo.SetValue(initial_value)
-        self.apply_button.Enable(enable)
+        combo = self.surfaces_combo
+        selection = combo.GetSelection()
+        selected = combo.GetClientData(selection) if selection != wx.NOT_FOUND else None
+        combo.Clear()
+        for surface in self.project.GetGeometrySurfaces().values():
+            index = combo.Append(surface.name, surface)
+            if surface is selected:
+                combo.SetSelection(index)
+        if combo.GetCount() and combo.GetSelection() == wx.NOT_FOUND:
+            combo.SetSelection(0)
+        enabled = combo.GetCount() > 0
+        combo.Enable(enabled)
+        self.apply_button.Enable(enabled)
 
     def on_quit(self, evt):
         self.Destroy()
 
     def on_apply(self, evt):
         idx = self.surfaces_combo.GetSelection()
-        surface = list(self.project.surface_dict.values())[idx]
+        if idx == wx.NOT_FOUND:
+            return
+        surface = self.surfaces_combo.GetClientData(idx)
         remove_visible = self.remove_visible_check.GetValue()
         overwrite = self.overwrite_check.GetValue()
         progress_dialog = RemoveNonVisibleFacesProgressWindow()
@@ -6635,7 +6651,7 @@ class RemoveNonVisibleFacesDialog(wx.Dialog):
             polydata=new_polydata,
             name=name,
             overwrite=overwrite,
-            index=idx,
+            index=index,
             colour=colour,
         )
         Publisher.sendMessage("Fold surface task")
@@ -6643,12 +6659,7 @@ class RemoveNonVisibleFacesDialog(wx.Dialog):
         self.on_quit(self)
 
     def on_update_surfaces(self, *args, **kwargs):
-        last_idx = self.surfaces_combo.GetSelection()
         self.fill_surfaces_combo()
-        if last_idx < len(self.surfaces_combo.GetItems()):
-            self.surfaces_combo.SetSelection(last_idx)
-        else:
-            self.surfaces_combo.SetSelection(0)
 
 
 class GoToDialogScannerCoord(wx.Dialog):

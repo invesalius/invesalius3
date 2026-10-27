@@ -961,13 +961,9 @@ class SurfaceManager:
             config["color_array"] = surface_map.color_array
         polydata = vtkPolyData()
         polydata.ShallowCopy(surface_map.polydata)
-        surfaces = prj.Project().surface_dict.values()
+        surfaces = prj.Project().GetScalarSurfaces().values()
         surface = next(
-            (
-                surface
-                for surface in surfaces
-                if surface.scalar_map and surface.scalar_map.get("source") == source
-            ),
+            (surface for surface in surfaces if surface.scalar_map.get("source") == source),
             None,
         )
         if surface is None:
@@ -983,8 +979,8 @@ class SurfaceManager:
         Publisher.sendMessage("Render volume viewer")
 
     def ShowScalarSurface(self, source, visibility):
-        for surface in prj.Project().surface_dict.values():
-            if surface.scalar_map and surface.scalar_map.get("source") == source:
+        for surface in prj.Project().GetScalarSurfaces().values():
+            if surface.scalar_map.get("source") == source:
                 self.ShowActor(surface.index, visibility)
                 Publisher.sendMessage("Update surface info in GUI", surface=surface)
 

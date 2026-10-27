@@ -75,6 +75,11 @@ class IterativeClosestPoint(metaclass=Singleton):
             return
 
         # Show dialog to register ICP.
+        from invesalius.project import Project
+
+        if not Project().GetGeometrySurfaces():
+            dlg.GeometrySurfaceNotExist()
+            return
         dialog = dlg.ICPCorregistrationDialog(navigation=navigation, tracker=tracker)
 
         success = dialog.ShowModal()

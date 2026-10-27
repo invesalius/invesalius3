@@ -461,14 +461,6 @@ class InnerTaskPanel(wx.Panel):
         enable = ctrl.GetValue()
         Publisher.sendMessage("Display efield markers at cortex", display_flag=enable)
 
-    def OnComboNameClic(self, evt):
-        import invesalius.project as prj
-
-        proj = prj.Project()
-        self.combo_change_coil.Clear()
-        for n in range(len(proj.surface_dict)):
-            self.combo_change_coil.Insert(str(proj.surface_dict[n].name), n)
-
     def OnComboCoilNameClic(self, evt):
         self.combo_change_coil.Clear()
         if self.multilocus_coil is not None:

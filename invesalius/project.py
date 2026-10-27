@@ -157,6 +157,13 @@ class Project(metaclass=Singleton):
             if surface.can_use_as_geometry
         }
 
+    def GetScalarSurfaces(self):
+        return {
+            index: surface
+            for index, surface in sorted(self.surface_dict.items())
+            if not surface.can_use_as_geometry
+        }
+
     def AddSurface(self, surface):
         # self.last_surface_index = surface.index
         index = len(self.surface_dict)

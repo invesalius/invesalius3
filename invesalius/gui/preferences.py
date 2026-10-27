@@ -657,8 +657,10 @@ class NavigationTab(wx.Panel):
         #     wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
         combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
 
-        for n in range(len(self.proj.surface_dict)):
-            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for surface in self.proj.GetGeometrySurfaces().values():
+            combo_brain_surface_name.Append(surface.name, surface)
+        if combo_brain_surface_name.GetCount():
+            combo_brain_surface_name.SetSelection(0)
 
         self.combo_brain_surface_name = combo_brain_surface_name
 
@@ -668,6 +670,7 @@ class NavigationTab(wx.Panel):
         )
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
+        button_colour.Enable(combo_brain_surface_name.GetCount() > 0)
 
         # Sizer which represents the first line
         line1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -986,8 +989,9 @@ class NavigationTab(wx.Panel):
         from invesalius import project as prj
 
         self.proj = prj.Project()
-        surface_index = self.combo_brain_surface_name.GetSelection()
-        Publisher.sendMessage("Show single surface", index=surface_index, visibility=True)
+        surface_index = self.combo_brain_surface_name.GetClientData(
+            self.combo_brain_surface_name.GetSelection()
+        ).index
         Publisher.sendMessage("Get brain surface actor", index=surface_index)
         Publisher.sendMessage("Press motor map button", pressed=True)
 
@@ -999,7 +1003,9 @@ class NavigationTab(wx.Panel):
         colour = [value / 255.0 for value in self.button_colour.GetColour()]
         Publisher.sendMessage(
             "Set surface colour",
-            surface_index=self.combo_brain_surface_name.GetSelection(),
+            surface_index=self.combo_brain_surface_name.GetClientData(
+                self.combo_brain_surface_name.GetSelection()
+            ).index,
             colour=colour,
         )
 

@@ -3807,7 +3807,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         marker = self.__get_marker(list_index)
 
         proj = prj.Project()
-        if not proj.surface_dict:
+        if not proj.GetGeometrySurfaces():
             wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
             return
         self.markers.CreateCoilTargetFromLandmark(marker, label)
@@ -3839,7 +3839,7 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             return
 
         proj = prj.Project()
-        if not proj.surface_dict:
+        if not proj.GetGeometrySurfaces():
             wx.MessageBox(_("No 3D surface was created."), _("InVesalius 3"))
             return
 
@@ -4257,6 +4257,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         position_coil = marker_coil.position
         orientation_coil = marker_coil.orientation
 
+        if not prj.Project().GetGeometrySurfaces():
+            dlg.GeometrySurfaceNotExist()
+            return
         dialog = dlg.CreateBrainTargetDialog(
             marker=position_coil + orientation_coil, brain_actor=self.brain_actor
         )
@@ -4433,6 +4436,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
 
         position = marker.position
         orientation = marker.orientation
+        if not prj.Project().GetGeometrySurfaces():
+            dlg.GeometrySurfaceNotExist()
+            return
         dialog = dlg.CreateBrainTargetDialog(
             mTMS=self.mTMS,
             marker=position + orientation,
@@ -4909,6 +4915,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         list_index = marker_id if marker_id else 0
         position = self.markers.list[list_index].position
         orientation = self.markers.list[list_index].orientation
+        if not prj.Project().GetGeometrySurfaces():
+            dlg.GeometrySurfaceNotExist()
+            return
         dialog = dlg.CreateBrainTargetDialog(mTMS=self.mTMS, marker=position + orientation)
 
         if dialog.ShowModal() == wx.ID_OK:
