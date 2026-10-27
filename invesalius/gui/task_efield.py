@@ -378,6 +378,7 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.GetEfieldDataStatus, "Get status of Efield saved data")
         Publisher.subscribe(self.GetIds, "Get dI for mtms")
         Publisher.subscribe(self.OnScalarSourceDisabled, "Scalar source disabled")
+        Publisher.subscribe(self.OnScalarSourceDisabled, "Scalar surface removed")
 
     def OnScalarSourceDisabled(self, source):
         if source == "E-field":
