@@ -20,10 +20,11 @@
 
 from dataclasses import dataclass
 
+from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
-from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
+from vtkmodules.vtkRenderingCore import vtkActor, vtkColorTransferFunction, vtkPolyDataMapper
 
 
 @dataclass
@@ -39,6 +40,44 @@ class SurfaceScalarMap:
             or scalars.GetNumberOfTuples() != self.polydata.GetNumberOfPoints()
         ):
             raise ValueError("A scalar value is required for each surface point.")
+
+
+def GetLookupTableState(lookup_table):
+    if isinstance(lookup_table, vtkColorTransferFunction):
+        nodes = []
+        for index in range(lookup_table.GetSize()):
+            node = [0.0] * 6
+            lookup_table.GetNodeValue(index, node)
+            nodes.append(node)
+        return {"kind": "transfer", "colors": nodes, "nan_color": lookup_table.GetNanColor()}
+    if isinstance(lookup_table, vtkLookupTable):
+        return {
+            "kind": "table",
+            "colors": [
+                lookup_table.GetTableValue(i) for i in range(lookup_table.GetNumberOfTableValues())
+            ],
+            "range": lookup_table.GetTableRange(),
+            "nan_color": lookup_table.GetNanColor(),
+        }
+    raise TypeError("Unsupported surface lookup table.")
+
+
+def CreateLookupTable(state):
+    if state["kind"] == "transfer":
+        lookup_table = vtkColorTransferFunction()
+        for node in state["colors"]:
+            lookup_table.AddRGBPoint(*node)
+    elif state["kind"] == "table":
+        lookup_table = vtkLookupTable()
+        lookup_table.SetNumberOfTableValues(len(state["colors"]))
+        lookup_table.SetTableRange(state["range"])
+        lookup_table.Build()
+        for index, color in enumerate(state["colors"]):
+            lookup_table.SetTableValue(index, *color)
+    else:
+        raise ValueError("Invalid surface lookup table.")
+    lookup_table.SetNanColor(*state["nan_color"])
+    return lookup_table
 
 
 class SurfaceScalarVisualizer:
