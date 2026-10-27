@@ -4915,9 +4915,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         list_index = marker_id if marker_id else 0
         position = self.markers.list[list_index].position
         orientation = self.markers.list[list_index].orientation
-        if not prj.Project().GetGeometrySurfaces():
-            dlg.GeometrySurfaceNotExist()
-            return
         dialog = dlg.CreateBrainTargetDialog(mTMS=self.mTMS, marker=position + orientation)
 
         if dialog.ShowModal() == wx.ID_OK:
