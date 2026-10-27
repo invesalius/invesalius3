@@ -257,18 +257,25 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.Bind(wx.EVT_SIZE, self.OnResize)
 
         self.__bind_events()
+        self.RefreshSurfaceChoices()
 
     def OnResize(self, evt):
         self.SetupScrolling()
 
     def __bind_events(self):
-        Publisher.subscribe(self.InsertNewSurface, "Update surface info in GUI")
+        Publisher.subscribe(self.OnSurfaceChanged, "Update surface info in GUI")
         Publisher.subscribe(self.ChangeSurfaceName, "Change surface name")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnRemoveSurfaces, "Remove surfaces")
 
+    def OnSurfaceChanged(self, surface):
+        wx.CallAfter(self.RefreshSurfaceChoices)
+
+    def ChangeSurfaceName(self, index, name):
+        wx.CallAfter(self.RefreshSurfaceChoices)
+
     def OnRemoveSurfaces(self, surface_indexes):
-        self.InsertNewSurface()
+        wx.CallAfter(self.RefreshSurfaceChoices)
 
     def OnCloseProject(self):
         self.CloseProject()
@@ -277,10 +284,9 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.combo_surface_name.Clear()
         self.button_colour.Enable(False)
 
-    def ChangeSurfaceName(self, index, name):
-        self.InsertNewSurface()
-
-    def InsertNewSurface(self, surface=None):
+    def RefreshSurfaceChoices(self):
+        if not self:
+            return
         from invesalius.project import Project
 
         combo = self.combo_surface_name
@@ -291,10 +297,8 @@ class SurfaceProperties(scrolled.ScrolledPanel):
             index = combo.Append(surface.name, surface)
             if surface is selected:
                 combo.SetSelection(index)
-        if combo.GetCount() and combo.GetSelection() == wx.NOT_FOUND:
-            combo.SetSelection(0)
         combo.Enable(combo.GetCount() > 0)
-        enabled = self.combo_surface_name.GetCount() > 0
+        enabled = combo.GetSelection() != wx.NOT_FOUND
         self.button_colour.Enable(enabled)
         if enabled:
             selected = self.combo_surface_name.GetClientData(self.combo_surface_name.GetSelection())
@@ -303,6 +307,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
     def OnComboName(self, evt):
         surface = self.combo_surface_name.GetClientData(evt.GetSelection())
         self.button_colour.SetColour([int(value * 255) for value in surface.colour])
+        self.button_colour.Enable(True)
         Publisher.sendMessage("Get brain surface actor", index=surface.index)
 
     def OnSelectColour(self, evt):

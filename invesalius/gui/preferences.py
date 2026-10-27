@@ -659,8 +659,6 @@ class NavigationTab(wx.Panel):
 
         for surface in self.proj.GetGeometrySurfaces().values():
             combo_brain_surface_name.Append(surface.name, surface)
-        if combo_brain_surface_name.GetCount():
-            combo_brain_surface_name.SetSelection(0)
 
         self.combo_brain_surface_name = combo_brain_surface_name
 
@@ -670,7 +668,7 @@ class NavigationTab(wx.Panel):
         )
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
-        button_colour.Enable(combo_brain_surface_name.GetCount() > 0)
+        button_colour.Enable(False)
 
         # Sizer which represents the first line
         line1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -998,6 +996,7 @@ class NavigationTab(wx.Panel):
         self.button_colour.SetColour(
             [int(value * 255) for value in self.proj.surface_dict[surface_index].colour]
         )
+        self.button_colour.Enable(True)
 
     def OnSelectColour(self, evt):
         colour = [value / 255.0 for value in self.button_colour.GetColour()]
