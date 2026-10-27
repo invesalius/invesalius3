@@ -431,12 +431,14 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage("Initialize E-field brain", e_field_brain=self.e_field_brain)
 
             Publisher.sendMessage("Initialize color array")
+            Publisher.sendMessage("Show scalar surface", source="E-field", visibility=True)
             self.e_field_loaded = True
             self.combo_change_coil.Enable(True)
             self.btn_all_save.Enable(True)
 
         else:
             Publisher.sendMessage("Recolor again")
+            Publisher.sendMessage("Show scalar surface", source="E-field", visibility=False)
             self.e_field_loaded = False
             # self.combo_surface_name.Enable(True)
         self.navigation.e_field_loaded = self.e_field_loaded
@@ -528,8 +530,16 @@ class InnerTaskPanel(wx.Panel):
         Publisher.sendMessage("Update Efield ROI size", data=ROI_size)
 
     def OnGetEfieldActor(self, efield_actor, surface_index_cortex):
+        import invesalius.project as prj
+
         self.e_field_mesh = efield_actor
         self.surface_index = surface_index_cortex
+        surface = prj.Project().GetBrainSurface()
+        Publisher.sendMessage(
+            "Set scalar surface source",
+            source="E-field",
+            surface_index=surface.index if surface is not None else self.surface_index,
+        )
         Publisher.sendMessage("Get Actor", surface_index=self.surface_index)
 
     def OnGetEfieldPaths(

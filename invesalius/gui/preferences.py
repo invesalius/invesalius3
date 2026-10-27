@@ -996,7 +996,7 @@ class NavigationTab(wx.Panel):
         self.button_colour.SetColour(
             [int(value * 255) for value in self.proj.surface_dict[surface_index].colour]
         )
-        self.button_colour.Enable(True)
+        self.button_colour.Enable(self.proj.surface_dict[surface_index].can_edit_colour)
 
     def OnSelectColour(self, evt):
         colour = [value / 255.0 for value in self.button_colour.GetColour()]

@@ -299,7 +299,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
                 combo.SetSelection(index)
         combo.Enable(combo.GetCount() > 0)
         enabled = combo.GetSelection() != wx.NOT_FOUND
-        self.button_colour.Enable(enabled)
+        self.button_colour.Enable(enabled and selected.can_edit_colour)
         if enabled:
             selected = self.combo_surface_name.GetClientData(self.combo_surface_name.GetSelection())
             self.button_colour.SetColour([int(value * 255) for value in selected.colour])
@@ -307,7 +307,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
     def OnComboName(self, evt):
         surface = self.combo_surface_name.GetClientData(evt.GetSelection())
         self.button_colour.SetColour([int(value * 255) for value in surface.colour])
-        self.button_colour.Enable(True)
+        self.button_colour.Enable(surface.can_edit_colour)
         Publisher.sendMessage("Get brain surface actor", index=surface.index)
 
     def OnSelectColour(self, evt):

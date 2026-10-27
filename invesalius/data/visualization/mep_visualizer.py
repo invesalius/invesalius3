@@ -60,6 +60,7 @@ class MEPVisualizer:
         self.bounds = None
 
         self.marker_storage = []
+        self.brain_target_data = None
 
         self.is_navigating = False
 
@@ -98,12 +99,18 @@ class MEPVisualizer:
         defaults = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         ses.Session().SetConfig("mep_configuration", defaults)
         self._config_params = deepcopy(defaults)
+        Publisher.sendMessage(
+            "Set scalar source enabled", source="MEP", enabled=self._config_params["mep_enabled"]
+        )
 
     def _SaveUserParameters(self):
         ses.Session().SetConfig("mep_configuration", self._config_params)
 
     def UpdateConfig(self):
         self._config_params = deepcopy(ses.Session().GetConfig("mep_configuration"))
+        Publisher.sendMessage(
+            "Set scalar source enabled", source="MEP", enabled=self._config_params["mep_enabled"]
+        )
         self.UpdateVisualization()
 
     # --- Motor Map Display ---
@@ -111,9 +118,16 @@ class MEPVisualizer:
     def DisplayMotorMap(self, show: bool):
         if show:
             self._config_params["mep_enabled"] = True
+            Publisher.sendMessage("Show scalar surface", source="MEP", visibility=True)
+            if not self.surface:
+                from invesalius.project import Project
+
+                surface = Project().GetBrainSurface()
+                if surface is not None:
+                    Publisher.sendMessage("Get brain surface actor", index=surface.index)
             if not self.surface:
                 wx.MessageBox(
-                    "Please select a brain surface from preferences.",
+                    "Please select a surface from preferences or the 3D surface menu.",
                     "MEP Mapping",
                     wx.OK | wx.ICON_INFORMATION,
                 )
@@ -124,8 +138,10 @@ class MEPVisualizer:
             progress_dialog.Update(value=20, msg="Preparing brain surface...")
             self.UpdateVisualization()
             progress_dialog.Update(value=50, msg="Preparing brain surface...")
-            self.UpdateMEPPoints()
-            Publisher.sendMessage("Show scalar surface", source="MEP", visibility=True)
+            if self.brain_target_data is None:
+                self.UpdateMEPPoints()
+            else:
+                self.UpdateMEPPointsFromBrainTargets(*self.brain_target_data)
             # self.UpdateMEPPointsFromBrainTargets()
             progress_dialog.Close()
         else:
@@ -217,8 +233,11 @@ class MEPVisualizer:
         return decimate_filter.GetOutput()
 
     def SetBrainSurface(self, actor: vtkActor, index: int):
+        if self.surface is actor and self.surface_index == index:
+            return
         self.surface = actor
         self.surface_index = index
+        self.points_polydata = vtkPolyData()
         self.decimate_surface = self.surface.GetMapper().GetInput()
         # self.decimate_surface = self.DecimateBrainSurface()
         self.surface_points = np.array(
@@ -230,7 +249,14 @@ class MEPVisualizer:
         self.kdtree = cKDTree(self.surface_points)
         self.bounds = np.array(actor.GetBounds())
         self.marker_storage = []
+        Publisher.sendMessage("Set scalar surface source", source="MEP", surface_index=index)
         self._SaveUserParameters()
+        if self._config_params["mep_enabled"]:
+            Publisher.sendMessage("Show scalar surface", source="MEP", visibility=True)
+            if self.brain_target_data is None:
+                self.UpdateMEPPoints()
+            else:
+                self.UpdateMEPPointsFromBrainTargets(*self.brain_target_data)
 
     def _FilterMarkers(self, markers_list):
         """
@@ -331,12 +357,13 @@ class MEPVisualizer:
         if not self.surface:
             return
 
+        self.brain_target_data = None
         markers, skip = self._FilterMarkers(MarkersControl().list)
+        if skip:
+            return
         if not markers:
             self.points_polydata = vtkPolyData()
             self.UpdateVisualization()
-            return
-        if skip:  # Saves computation if the markers are not updated or irrelevant
             return
 
         points = vtkPoints()
@@ -347,8 +374,8 @@ class MEPVisualizer:
         point_data.AddArray(mep_array)
 
         for marker in markers:
+            projected_point = self.projection_on_surface(marker.position, marker.orientation)
             if not marker.x_cortex and not marker.y_cortex and not marker.z_cortex:
-                projected_point = self.projection_on_surface(marker.position, marker.orientation)
                 marker.cortex_position_orientation = [
                     projected_point[0],
                     -projected_point[1],
@@ -358,7 +385,7 @@ class MEPVisualizer:
                     marker.orientation[2],
                 ]
 
-            points.InsertNextPoint(marker.x_cortex, -marker.y_cortex, marker.z_cortex)
+            points.InsertNextPoint(*projected_point)
             mep_value = marker.mep_value or 0
             mep_array.InsertNextValue(mep_value)
         MarkersControl().SaveState()
@@ -385,6 +412,7 @@ class MEPVisualizer:
             o is None for o in marker_target.orientation[:3]
         ):
             return
+        self.brain_target_data = (marker_target, deepcopy(brain_target_list))
         brain_markers = []
         for m in brain_target_list:
             brain_markers.append(m)
@@ -456,6 +484,7 @@ class MEPVisualizer:
         self._config_params["mep_enabled"] = False
         self.points_polydata = vtkPolyData()
         self.surface = None
+        self.brain_target_data = None
         self.surface_index = None
         self.decimate_surface = None
         self.bounds = None

@@ -290,6 +290,7 @@ class SurfaceGeometry(metaclass=Singleton):
 
     def GetSmoothedScalpSurface(self):
         from invesalius.gui import dialogs
+        from invesalius.project import Project
 
         # Retrieve the surface with the highest z-coordinate.
         valid_surfaces = [
@@ -298,8 +299,17 @@ class SurfaceGeometry(metaclass=Singleton):
         if not valid_surfaces:
             return None
 
-        # Find the surface with the highest z-coordinate
-        highest_surface = max(valid_surfaces, key=lambda surface: surface["original"]["highest_z"])
+        scalp = Project().GetScalpSurface()
+        if scalp is not None:
+            highest_surface = next(
+                (surface for surface in valid_surfaces if surface["surface"] is scalp), None
+            )
+            if highest_surface is None:
+                return None
+        else:
+            highest_surface = max(
+                valid_surfaces, key=lambda surface: surface["original"]["highest_z"]
+            )
 
         if highest_surface["smoothed"] is None:
             resume_navigation = self.is_navigating

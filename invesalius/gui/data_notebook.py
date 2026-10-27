@@ -1687,7 +1687,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         surface_context_menu = wx.Menu()
 
         colour_id = surface_context_menu.Append(start_idx, _("Change color"))
-        colour_id.Enable(Project().surface_dict[global_surface_id].can_edit_name_and_colour)
+        colour_id.Enable(Project().surface_dict[global_surface_id].can_edit_colour)
         surface_context_menu.Bind(
             wx.EVT_MENU,
             lambda evt: self.change_surface_color(surface_index=global_surface_id),
@@ -1764,7 +1764,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
     def ShowRenameDialog(self, item_idx):
         """Show a dialog to rename the surface."""
         surface = self._GetSurface(item_idx)
-        if surface is None or not surface.can_edit_name_and_colour:
+        if surface is None or not surface.can_edit_name:
             return
 
         # Get current name (Col 2 for surfaces)
@@ -1803,7 +1803,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
             if surface_index is None
             else Project().surface_dict.get(surface_index)
         )
-        if surface is None or not surface.can_edit_name_and_colour:
+        if surface is None or not surface.can_edit_colour:
             return
 
         global_surface_id = surface.index
@@ -2038,14 +2038,14 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
     def OnBeginLabelEdit(self, evt):
         surface = self._GetSurface(evt.GetIndex())
-        if surface is None or not surface.can_edit_name_and_colour:
+        if surface is None or not surface.can_edit_name:
             evt.Veto()
         else:
             evt.Skip()
 
     def OnEditLabel(self, evt):
         surface = self._GetSurface(evt.GetIndex())
-        if surface is None or not surface.can_edit_name_and_colour:
+        if surface is None or not surface.can_edit_name:
             evt.Veto()
             return
         if not evt.IsEditCancelled():
