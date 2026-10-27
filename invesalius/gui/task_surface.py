@@ -593,6 +593,7 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         transparency = 100 * surface.transparency
         # print("Button color: ", colour)
         self.button_colour.SetColour(colour)
+        self.button_colour.Enable(surface.can_edit_name_and_colour)
         self.slider_transparency.SetValue(int(transparency))
         #  Publisher.sendMessage('Update surface data', (index))
 

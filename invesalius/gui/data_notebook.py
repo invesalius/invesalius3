@@ -1655,6 +1655,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         pass
 
     def __bind_events_wx(self):
+        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_selection_changed)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_selection_changed)
@@ -1686,6 +1687,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         surface_context_menu = wx.Menu()
 
         colour_id = surface_context_menu.Append(start_idx, _("Change color"))
+        colour_id.Enable(Project().surface_dict[global_surface_id].can_edit_name_and_colour)
         surface_context_menu.Bind(
             wx.EVT_MENU,
             lambda evt: self.change_surface_color(surface_index=global_surface_id),
@@ -1761,7 +1763,9 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
     def ShowRenameDialog(self, item_idx):
         """Show a dialog to rename the surface."""
-        import wx
+        surface = self._GetSurface(item_idx)
+        if surface is None or not surface.can_edit_name_and_colour:
+            return
 
         # Get current name (Col 2 for surfaces)
         current_name = self.GetItemText(item_idx, 2)
@@ -1777,48 +1781,34 @@ class SurfacesListCtrlPanel(InvListCtrl):
                 # Update the list
                 self.SetItem(item_idx, 2, new_name)
 
-                # Find global ID
-                global_surface_id = None
-                for surface_id, local_pos in self.surface_list_index.items():
-                    if local_pos == item_idx:
-                        global_surface_id = surface_id
-                        break
-
-                if global_surface_id is not None:
-                    Publisher.sendMessage(
-                        "Change surface name", index=global_surface_id, name=new_name
-                    )
+                Publisher.sendMessage("Change surface name", index=surface.index, name=new_name)
 
         dlg.Destroy()
 
+    def _GetSurface(self, item_idx):
+        index = next(
+            (index for index, position in self.surface_list_index.items() if position == item_idx),
+            None,
+        )
+        return Project().surface_dict.get(index)
+
     def OnChangeColor(self, item_idx):
-        global_surface_id = None
-        for surface_id, local_pos in self.surface_list_index.items():
-            if local_pos == item_idx:
-                global_surface_id = surface_id
-                break
-
-        if global_surface_id is None:
-            return
-
-        Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
-        self.change_surface_color(surface_index=global_surface_id)
+        surface = self._GetSurface(item_idx)
+        if surface is not None:
+            self.change_surface_color(surface_index=surface.index)
 
     def change_surface_color(self, event=None, surface_index=None):
-        if surface_index is not None:
-            global_surface_id = surface_index
-        else:
-            local_idx = self.GetFocusedItem()
-            global_surface_id = None
-            for g_id, l_id in self.surface_list_index.items():
-                if l_id == local_idx:
-                    global_surface_id = g_id
-                    break
-
-        if global_surface_id is None:
+        surface = (
+            self._GetSurface(self.GetFocusedItem())
+            if surface_index is None
+            else Project().surface_dict.get(surface_index)
+        )
+        if surface is None or not surface.can_edit_name_and_colour:
             return
 
-        current_color = self.current_color
+        global_surface_id = surface.index
+        Publisher.sendMessage("Change surface selected", surface_index=global_surface_id)
+        current_color = [int(255 * value) for value in surface.colour[:3]]
 
         new_color = dlg.ShowColorDialog(color_current=current_color)
 
@@ -2047,16 +2037,20 @@ class SurfacesListCtrlPanel(InvListCtrl):
         self.image_gray = Image.open(os.path.join(inv_paths.ICON_DIR, "object_colour.png"))
 
     def OnBeginLabelEdit(self, evt):
-        if evt.GetColumn() == 1:
-            evt.Skip()
-        else:
+        surface = self._GetSurface(evt.GetIndex())
+        if surface is None or not surface.can_edit_name_and_colour:
             evt.Veto()
+        else:
+            evt.Skip()
 
     def OnEditLabel(self, evt):
+        surface = self._GetSurface(evt.GetIndex())
+        if surface is None or not surface.can_edit_name_and_colour:
+            evt.Veto()
+            return
         if not evt.IsEditCancelled():
-            index = evt.GetIndex()
-            self.SetItem(index, 2, evt.GetLabel())
-            Publisher.sendMessage("Change surface name", index=evt.GetIndex(), name=evt.GetLabel())
+            self.SetItem(evt.GetIndex(), 2, evt.GetLabel())
+            Publisher.sendMessage("Change surface name", index=surface.index, name=evt.GetLabel())
         evt.Skip()
 
     def OnCheckItem(self, index, flag):

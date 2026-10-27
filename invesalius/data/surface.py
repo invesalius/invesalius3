@@ -127,6 +127,10 @@ class Surface:
         self.category = category
         self.scalar_map = None
 
+    @property
+    def can_edit_name_and_colour(self):
+        return self.scalar_map is None
+
     def SavePlist(self, dir_temp, filelist):
         if self.filename and os.path.exists(self.filename):
             filename = f"surface_{self.index}"
@@ -1742,7 +1746,9 @@ class SurfaceManager:
 
     def OnChangeSurfaceName(self, index, name):
         proj = prj.Project()
-        proj.surface_dict[index].name = name
+        surface = proj.surface_dict[index]
+        if surface.can_edit_name_and_colour:
+            surface.name = name
 
     def OnShowSurface(self, index, visibility):
         self.ShowActor(index, visibility)
@@ -1785,10 +1791,13 @@ class SurfaceManager:
 
     def SetActorColour(self, surface_index, colour):
         """ """
+        proj = prj.Project()
+        surface = proj.surface_dict[surface_index]
+        if not surface.can_edit_name_and_colour:
+            return
         self.actors_dict[surface_index].GetProperty().SetColor(colour[:3])
         # Update value in project's surface_dict
-        proj = prj.Project()
-        proj.surface_dict[surface_index].colour = colour
+        surface.colour = colour
         Publisher.sendMessage("Render volume viewer")
 
     def OnExportSurface(self, filename, filetype, convert_to_world=False):
