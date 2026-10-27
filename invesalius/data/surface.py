@@ -128,8 +128,12 @@ class Surface:
         self.scalar_map = None
 
     @property
-    def can_edit_name_and_colour(self):
+    def can_use_as_geometry(self):
         return self.scalar_map is None
+
+    @property
+    def can_edit_name_and_colour(self):
+        return self.can_use_as_geometry
 
     def SavePlist(self, dir_temp, filelist):
         if self.filename and os.path.exists(self.filename):
@@ -367,17 +371,17 @@ class SurfaceManager:
         """
         points_id_list = seeds
         index = self.last_surface_index
-        proj = prj.Project()
+        surfaces = prj.Project().GetGeometrySurfaces()
 
-        if not hasattr(proj, "surface_dict") or not proj.surface_dict:
+        if not surfaces:
             dialogs.SeedSurfaceNotExist()
             return
 
-        if index not in proj.surface_dict:
+        if index not in surfaces:
             dialogs.SurfaceIndexNotExist(index)
             return
 
-        surface = proj.surface_dict[index]
+        surface = surfaces[index]
 
         new_polydata = pu.JoinSeedsParts(surface.polydata, points_id_list)
         index = self.CreateSurfaceFromPolydata(new_polydata)
@@ -388,16 +392,19 @@ class SurfaceManager:
         """
         Create a new smooth surface, based on the last selected surface.
         """
+        surface = prj.Project().GetGeometrySurfaces().get(self.last_surface_index)
+        if surface is None:
+            return
+
         progress_dialog = dialogs.SmoothSurfaceProgressWindow()
         progress_dialog.Update()
-        index = self.last_surface_index
-        proj = prj.Project()
-        surface = proj.surface_dict[index]
 
         new_polydata = pu.ApplySmoothFilter(
             polydata=surface.polydata, iterations=20, relaxation_factor=0.4
         )
-        new_index = self.CreateSurfaceFromPolydata(new_polydata, overwrite=overwrite, name=name)
+        new_index = self.CreateSurfaceFromPolydata(
+            new_polydata, overwrite=overwrite, index=surface.index, name=name
+        )
         Publisher.sendMessage("Show single surface", index=new_index, visibility=True)
         progress_dialog.Close()
 
@@ -407,17 +414,17 @@ class SurfaceManager:
         according to their connectivity.
         """
         index = self.last_surface_index
-        proj = prj.Project()
+        surfaces = prj.Project().GetGeometrySurfaces()
 
-        if not hasattr(proj, "surface_dict") or not proj.surface_dict:
+        if not surfaces:
             dialogs.SplitSurfaceNotExist()
             return
 
-        if index not in proj.surface_dict:
+        if index not in surfaces:
             dialogs.SurfaceIndexNotExist(index)
             return
 
-        surface = proj.surface_dict[index]
+        surface = surfaces[index]
 
         index_list = []
         new_polydata_list = pu.SplitDisconectedParts(surface.polydata)
@@ -433,24 +440,23 @@ class SurfaceManager:
         Create a new surface, based on largest part of the last
         selected surface.
         """
-        proj = prj.Project()
+        surfaces = prj.Project().GetGeometrySurfaces()
         index = self.last_surface_index
-        # if index not in proj.surface_dict:
-        #     print(f"[Error] Surface index {index} not found in surface_dict.")
-        #     return
-        if not hasattr(proj, "surface_dict") or not proj.surface_dict:
+        if not surfaces:
             dialogs.LargestSurfaceNotExist()
             return
 
-        if index not in proj.surface_dict:
+        if index not in surfaces:
             dialogs.SurfaceIndexNotExist(index)
             return
         progress_dialog = dialogs.SelectLargestSurfaceProgressWindow()
         progress_dialog.Update()
-        surface = proj.surface_dict[index]
+        surface = surfaces[index]
 
         new_polydata = pu.SelectLargestPart(surface.polydata)
-        new_index = self.CreateSurfaceFromPolydata(new_polydata, overwrite=overwrite, name=name)
+        new_index = self.CreateSurfaceFromPolydata(
+            new_polydata, overwrite=overwrite, index=surface.index, name=name
+        )
         Publisher.sendMessage("Show single surface", index=new_index, visibility=True)
         progress_dialog.Close()
 
@@ -458,12 +464,13 @@ class SurfaceManager:
         """
         Create a new surface where non-visible faces have been removed.
         """
+        surface = prj.Project().GetGeometrySurfaces().get(self.last_surface_index)
+        if surface is None:
+            return
+
         progress_dialog = dialogs.RemoveNonVisibleFacesProgressWindow()
         progress_dialog.Update()
 
-        proj = prj.Project()
-        index = self.last_surface_index
-        surface = proj.surface_dict[index]
         new_polydata = pu.RemoveNonVisibleFaces(surface.polydata)
 
         name = new_name_by_pattern(f"{surface.name}_removed_nonvisible")
@@ -474,6 +481,7 @@ class SurfaceManager:
             polydata=new_polydata,
             name=name,
             overwrite=overwrite,
+            index=surface.index,
         )
         Publisher.sendMessage("Fold surface task")
         progress_dialog.Close()
@@ -1728,6 +1736,8 @@ class SurfaceManager:
         gc.collect()
 
     def GetActor(self, surface_index):
+        if surface_index not in prj.Project().GetGeometrySurfaces():
+            return
         Publisher.sendMessage("Send Actor", e_field_actor=self.actors_dict[surface_index])
 
     def UpdateSurfaceInterpolation(self):
@@ -1765,6 +1775,8 @@ class SurfaceManager:
         """
         Gets the first visible surface actor.
         """
+        if index not in prj.Project().GetGeometrySurfaces():
+            return
         Publisher.sendMessage(
             "Load brain surface actor", actor=self.actors_dict[index], index=index
         )

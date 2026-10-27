@@ -67,6 +67,8 @@ class SurfaceGeometry(metaclass=Singleton):
         }
 
     def LoadActor(self, actor, surface=None):
+        if surface is not None and not surface.can_use_as_geometry:
+            return
         # Maintain a list of surfaces and their smoothed versions. However,
         # do not compute the smoothed surface until it is needed.
         #

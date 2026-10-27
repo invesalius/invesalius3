@@ -374,6 +374,15 @@ class SurfaceTools(wx.Panel):
         button_seeds = pbtn.PlateButton(self, BTN_SEEDS, "", bmp_seeds, style=button_style_plus)
 
         self.button_seeds = button_seeds
+        self.geometry_controls = (
+            button_split,
+            button_largest,
+            button_seeds,
+            link_largest,
+            link_split_all,
+            link_seeds,
+        )
+        Publisher.subscribe(self.UpdateSurfaceControls, "Update surface info in GUI")
 
         # When using PlaneButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
@@ -416,6 +425,10 @@ class SurfaceTools(wx.Panel):
         self.button_seeds._SetState(not self.button_seeds.GetState())
         self.button_seeds.Refresh()
         self.SelectSeed()
+
+    def UpdateSurfaceControls(self, surface):
+        for control in self.geometry_controls:
+            control.Enable(surface.can_use_as_geometry)
 
     def OnButton(self, evt):
         id = evt.GetId()
