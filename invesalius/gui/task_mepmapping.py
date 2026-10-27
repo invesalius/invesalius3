@@ -209,6 +209,8 @@ class SurfaceProperties(scrolled.ScrolledPanel):
             default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
+        self.surface_list = []
+
         # LINE 1
 
         # Combo related to mask name
@@ -257,63 +259,88 @@ class SurfaceProperties(scrolled.ScrolledPanel):
         self.Bind(wx.EVT_SIZE, self.OnResize)
 
         self.__bind_events()
-        self.RefreshSurfaceChoices()
 
     def OnResize(self, evt):
         self.SetupScrolling()
 
     def __bind_events(self):
-        Publisher.subscribe(self.OnSurfaceChanged, "Update surface info in GUI")
+        Publisher.subscribe(self.InsertNewSurface, "Update surface info in GUI")
         Publisher.subscribe(self.ChangeSurfaceName, "Change surface name")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnRemoveSurfaces, "Remove surfaces")
 
-    def OnSurfaceChanged(self, surface):
-        wx.CallAfter(self.RefreshSurfaceChoices)
-
-    def ChangeSurfaceName(self, index, name):
-        wx.CallAfter(self.RefreshSurfaceChoices)
-
     def OnRemoveSurfaces(self, surface_indexes):
-        wx.CallAfter(self.RefreshSurfaceChoices)
+        s = self.combo_surface_name.GetSelection()
+        ns = 0
+
+        old_dict = self.surface_list
+        new_dict = []
+        i = 0
+        for n, (name, index) in enumerate(old_dict):
+            if n not in surface_indexes:
+                new_dict.append([name, i])
+                if s == n:
+                    ns = i
+                i += 1
+        self.surface_list = new_dict
+
+        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
+
+        if self.surface_list:
+            self.combo_surface_name.SetSelection(ns)
 
     def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
-        self.combo_surface_name.Clear()
-        self.button_colour.Enable(False)
+        n = self.combo_surface_name.GetCount()
+        for i in range(n - 1, -1, -1):
+            self.combo_surface_name.Delete(i)
+        self.surface_list = []
 
-    def RefreshSurfaceChoices(self):
-        if not self:
-            return
-        from invesalius.project import Project
+    def ChangeSurfaceName(self, index, name):
+        self.surface_list[index][0] = name
+        self.combo_surface_name.SetString(index, name)
 
-        combo = self.combo_surface_name
-        selection = combo.GetSelection()
-        selected = combo.GetClientData(selection) if selection != wx.NOT_FOUND else None
-        combo.Clear()
-        for surface in Project().GetGeometrySurfaces().values():
-            index = combo.Append(surface.name, surface)
-            if surface is selected:
-                combo.SetSelection(index)
-        combo.Enable(combo.GetCount() > 0)
-        enabled = combo.GetSelection() != wx.NOT_FOUND
-        self.button_colour.Enable(enabled and selected.can_edit_colour)
-        if enabled:
-            selected = self.combo_surface_name.GetClientData(self.combo_surface_name.GetSelection())
-            self.button_colour.SetColour([int(value * 255) for value in selected.colour])
+    def InsertNewSurface(self, surface):
+        index = surface.index
+        name = surface.name
+        colour = [int(value * 255) for value in surface.colour]
+        i = 0
+        try:
+            i = self.surface_list.index([name, index])
+            overwrite = True
+        except ValueError:
+            overwrite = False
+
+        if overwrite:
+            self.surface_list[i] = [name, index]
+        else:
+            self.surface_list.append([name, index])
+            i = len(self.surface_list) - 1
+
+        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
+        self.combo_surface_name.SetSelection(i)
+        # transparency = 100*surface.transparency
+        # print("Button color: ", colour)
+        self.button_colour.SetColour(colour)
+        # self.slider_transparency.SetValue(int(transparency))
+        #  Publisher.sendMessage('Update surface data', (index))
 
     def OnComboName(self, evt):
-        surface = self.combo_surface_name.GetClientData(evt.GetSelection())
-        self.button_colour.SetColour([int(value * 255) for value in surface.colour])
-        self.button_colour.Enable(surface.can_edit_colour)
-        Publisher.sendMessage("Get brain surface actor", index=surface.index)
+        surface_name = evt.GetString()
+        surface_index = evt.GetSelection()
+        self.button_colour.SetColour(
+            [int(value * 255) for value in self.surface_list[surface_index][2]]
+        )
+        Publisher.sendMessage(
+            "Change surface selected", surface_index=self.surface_list[surface_index][1]
+        )
 
     def OnSelectColour(self, evt):
-        surface = self.combo_surface_name.GetClientData(self.combo_surface_name.GetSelection())
+        colour = [value / 255.0 for value in evt.GetValue()]
         Publisher.sendMessage(
             "Set surface colour",
-            surface_index=surface.index,
-            colour=[value / 255.0 for value in evt.GetValue()],
+            surface_index=self.combo_surface_name.GetSelection(),
+            colour=colour,
         )

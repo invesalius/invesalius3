@@ -5153,11 +5153,8 @@ class EfieldConfiguration(wx.Dialog):
         if sys.platform != "win32":
             combo_brain_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
-        for surface in self.proj.GetGeometrySurfaces().values():
-            combo_brain_surface_name.Append(surface.name, surface)
-        combo_brain_surface_name.Enable(combo_brain_surface_name.GetCount() > 0)
-        if combo_brain_surface_name.GetCount():
-            combo_brain_surface_name.SetSelection(0)
+        for n in range(len(self.proj.surface_dict)):
+            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
 
         txt_scalp_surface = wx.StaticText(self, -1, _("Select the scalp surface:"))
         combo_brain_scalp_name = wx.ComboBox(
@@ -5166,12 +5163,9 @@ class EfieldConfiguration(wx.Dialog):
         # combo_surface_name.SetSelection(0)
         if sys.platform != "win32":
             combo_brain_scalp_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        combo_brain_scalp_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameScalpSurface)
-        for surface in self.proj.GetGeometrySurfaces().values():
-            combo_brain_scalp_name.Append(surface.name, surface)
-        combo_brain_scalp_name.Enable(combo_brain_scalp_name.GetCount() > 0)
-        if combo_brain_scalp_name.GetCount():
-            combo_brain_scalp_name.SetSelection(0)
+        combo_brain_scalp_name.Bind(wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
+        for n in range(len(self.proj.surface_dict)):
+            combo_brain_scalp_name.Insert(str(self.proj.surface_dict[n].name), n)
 
         tooltip1 = _("Target orientation done")
         btn_ok = wx.Button(self, wx.ID_OK, _("Done"))
@@ -5208,12 +5202,12 @@ class EfieldConfiguration(wx.Dialog):
         main_sizer.Fit(self)
 
     def OnComboNameBrainSurface(self, evt: wx.CommandEvent) -> str | vtkPolyData:
-        surface_index = evt.GetEventObject().GetClientData(evt.GetSelection()).index
+        surface_index = evt.GetSelection()
         self.brain_surface = self.proj.surface_dict[surface_index].polydata
         return self.brain_surface
 
     def OnComboNameScalpSurface(self, evt: wx.CommandEvent) -> str | vtkPolyData:
-        surface_index = evt.GetEventObject().GetClientData(evt.GetSelection()).index
+        surface_index = evt.GetSelection()
         self.scalp_surface = self.proj.surface_dict[surface_index].polydata
         return self.scalp_surface
 
