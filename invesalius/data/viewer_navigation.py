@@ -1584,14 +1584,11 @@ class NavigationView:
         self.efield_mesh = e_field_brain.e_field_mesh
         self.efield_surface_removed = False
         self.InitializeColorArray()
-        self.efield_mapper = e_field_brain.efield_mapper
         self.efield_mesh_normals_viewer = vtkPolyDataNormals()
         self.efield_mesh_normals_viewer.SetInputData(self.efield_mesh)
         self.efield_mesh_normals_viewer.SetFeatureAngle(80)
         self.efield_mesh_normals_viewer.AutoOrientNormalsOn()
         self.efield_mesh_normals_viewer.Update()
-        self.efield_mapper.SetInputConnection(self.efield_mesh_normals_viewer.GetOutputPort())
-        self.efield_mapper.ScalarVisibilityOn()
         self.efield_coords = None
         self.coil_position = None
         self.coil_position_Trot = None

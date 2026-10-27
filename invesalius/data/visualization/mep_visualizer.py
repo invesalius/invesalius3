@@ -62,8 +62,6 @@ class MEPVisualizer:
         self.marker_storage = []
         self.brain_target_data = None
 
-        self.is_navigating = False
-
         self._config_params = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         self.__bind_events()
         self._LoadUserParameters()
@@ -79,7 +77,6 @@ class MEPVisualizer:
         Publisher.subscribe(
             self.UpdateMEPPointsFromBrainTargets, "Redraw MEP mapping from brain targets"
         )
-        Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.SetBrainSurface, "Load brain surface actor")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnRemoveSurfaces, "Remove surfaces")
@@ -458,12 +455,6 @@ class MEPVisualizer:
             scalar_range=(self._config_params["threshold_down"], self._config_params["range_up"]),
             source="MEP",
         )
-
-        if not self.is_navigating:
-            Publisher.sendMessage("Render volume viewer")
-
-    def UpdateNavigationStatus(self, nav_status, vis_status):
-        self.is_navigating = nav_status
 
     def OnRemoveSurfaces(self, surface_indexes):
         if self.surface_index in surface_indexes:

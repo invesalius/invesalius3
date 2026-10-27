@@ -161,13 +161,6 @@ class Project(metaclass=Singleton):
             if surface.can_use_as_geometry
         }
 
-    def GetScalarSurfaces(self):
-        return {
-            index: surface
-            for index, surface in sorted(self.surface_dict.items())
-            if not surface.can_use_as_geometry
-        }
-
     def GetBrainSurface(self):
         return next(
             (
