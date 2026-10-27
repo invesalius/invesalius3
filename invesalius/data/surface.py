@@ -83,8 +83,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utl
 from invesalius.data.converters import convert_custom_bin_to_vtk
-from invesalius.data.surface_map import SurfaceMap
-from invesalius.data.visualization.surface_map_visualizer import SurfaceMapVisualizer
+from invesalius.data.visualization.surface_map_visualizer import SurfaceMap, SurfaceMapVisualizer
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.utils import new_name_by_pattern

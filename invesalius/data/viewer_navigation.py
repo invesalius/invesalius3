@@ -58,9 +58,9 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius import inv_paths
 from invesalius.data.navigation_scene import NavigationScene
-from invesalius.data.surface_map import SurfaceMap
 from invesalius.data.visualization.eeg_visualizer import EEGElectrodeVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
+from invesalius.data.visualization.surface_map_visualizer import SurfaceMap
 from invesalius.data.visualization.vector_field_visualizer import VectorFieldVisualizer
 from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d

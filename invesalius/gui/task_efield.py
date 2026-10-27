@@ -53,8 +53,8 @@ import invesalius.constants as const
 import invesalius.data.brainmesh_handler as brain
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
+from invesalius.data.e_field import EFieldSurfaceMode
 from invesalius.i18n import tr as _
-from invesalius.navigation.efield_surface import EFieldSurfaceMode
 from invesalius.navigation.navigation import Navigation
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector

@@ -45,7 +45,7 @@ import invesalius.data.transformations as transformations
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
-from invesalius.data.surface_map import SurfaceMap
+from invesalius.data.visualization.surface_map_visualizer import SurfaceMap
 from invesalius.navigation.markers import MarkersControl
 from invesalius.navigation.surface_painting import SurfacePainting
 from invesalius.project import Project
