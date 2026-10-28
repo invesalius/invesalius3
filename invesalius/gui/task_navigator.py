@@ -1040,8 +1040,11 @@ class HeadPage(wx.Panel):
         Publisher.sendMessage("Show single surface", index=surface_idx, visibility=True)
 
     def OnSuccessfulBrainSegmentation(self, mask):
-        self.CreateBrainSurface(mask)
-        if self.peel_checkbox.IsChecked():
+        prepare_peel = self.peel_checkbox.IsChecked()
+        brain = prj.Project().GetBrainSurface()
+        if not prepare_peel or brain is None or brain.peel_only:
+            self.CreateBrainSurface(mask)
+        if prepare_peel:
             self.CreatePeel(mask)
 
     def SegmentBrain(self):
