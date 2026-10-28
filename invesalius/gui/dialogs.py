@@ -5317,6 +5317,11 @@ class CreateBrainTargetDialog(wx.Dialog):
         combo_brain_surface_name.SetSelection(init_surface)
         self.surface = self.proj.surface_dict[init_surface].polydata
         self.brain_surface = self.proj.surface_dict[init_surface].polydata
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            brain_surface = self.proj.GetBrainSurface()
+            if brain_surface is not None:
+                combo_brain_surface_name.SetSelection(brain_surface.index)
+                self.brain_surface = brain_surface.polydata
         if self.peel_brain_actor:
             self.peel_brain_actor.PickableOff()
             self.ren.AddActor(self.peel_brain_actor)
@@ -7758,7 +7763,7 @@ class PeelsCreationDlg(wx.Dialog):
         mask_box = wx.StaticBox(self, -1, _("From mask"))
         from_mask_stbox = wx.StaticBoxSizer(mask_box, wx.VERTICAL)
 
-        self.cb_masks = wx.ComboBox(self, wx.ID_ANY, choices=[])
+        self.cb_masks = wx.ComboBox(self, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
         self.from_mask_rb = wx.RadioButton(self, -1, "", style=wx.RB_GROUP)
 
         internal_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -7806,17 +7811,17 @@ class PeelsCreationDlg(wx.Dialog):
         import invesalius.project as prj
 
         inv_proj = prj.Project()
-        choices = [i.name for i in inv_proj.mask_dict.values()]
-        try:
-            initial_value = choices[0]
-            enable = True
-        except IndexError:
-            initial_value = ""
-            enable = False
+        self.cb_masks.Clear()
+        for mask in inv_proj.mask_dict.values():
+            self.cb_masks.Append(mask.name, mask)
+        if self.cb_masks.GetCount():
+            self.cb_masks.SetSelection(0)
+        self.btn_ok.Enable(bool(self.cb_masks.GetCount()))
 
-        self.cb_masks.SetItems(choices)
-        self.cb_masks.SetValue(initial_value)
-        self.btn_ok.Enable(enable)
+    def get_source(self):
+        if self.method == self.FROM_FILES:
+            return self.mask_path
+        return self.cb_masks.GetClientData(self.cb_masks.GetSelection())
 
     def on_select_method(self, evt: wx.CommandEvent) -> None:
         radio_selected = evt.GetEventObject()

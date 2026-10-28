@@ -22,6 +22,7 @@ import numpy as np
 import wx
 from scipy.spatial import cKDTree
 from vtk import vtkColorTransferFunction
+from vtkmodules.util.numpy_support import vtk_to_numpy
 from vtkmodules.vtkCommonCore import (
     vtkDoubleArray,
     vtkPoints,
@@ -32,7 +33,6 @@ from vtkmodules.vtkCommonDataModel import (
 )
 from vtkmodules.vtkFiltersCore import (
     vtkDecimatePro,
-    vtkPolyDataNormals,
     vtkResampleWithDataSet,
     vtkTriangleFilter,
 )
@@ -40,41 +40,39 @@ from vtkmodules.vtkFiltersPoints import (
     vtkGaussianKernel,
     vtkPointInterpolator,
 )
-from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
-from vtkmodules.vtkRenderingCore import (
-    vtkActor,
-    vtkPointGaussianMapper,
-    vtkPolyDataMapper,
-)
 
 import invesalius.constants as const
 import invesalius.data.transformations as transformations
 import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
+from invesalius.data.visualization.surface_map_visualizer import SurfaceMap
 from invesalius.navigation.markers import MarkersControl
+from invesalius.navigation.surface_painting import SurfacePainting
+from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
 
 class MEPVisualizer:
+    name = "Motor mapping"
+
     def __init__(self):
         self.points_polydata = vtkPolyData()
         self.surface = None
-        self.surface_index = None
         self.decimate_surface = None
-        self.colored_surface_actor = None
-        self.point_actor = None
         self.bounds = None
 
-        self.colorBarActor = None
-        self.actors_dict = {}  # Dictionary to store all actors created by the MEP visualizer
         self.marker_storage = []
 
-        self.is_navigating = False
+        self.token = None
+        self.brain_target_data = None
+        self.painting = SurfacePainting()
 
         self._config_params = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         self.__bind_events()
         self._LoadUserParameters()
+        self.available = self._config_params["mep_enabled"]
+        self.painting.register(self)
 
     # --- Event Handling ---
 
@@ -87,10 +85,8 @@ class MEPVisualizer:
         Publisher.subscribe(
             self.UpdateMEPPointsFromBrainTargets, "Redraw MEP mapping from brain targets"
         )
-        Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
         Publisher.subscribe(self.SetBrainSurface, "Load brain surface actor")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
-        Publisher.subscribe(self.OnRemoveSurfaces, "Remove surfaces")
 
     # --- Configuration Management ---
 
@@ -106,49 +102,68 @@ class MEPVisualizer:
         defaults = deepcopy(const.DEFAULT_MEP_CONFIG_PARAMS)
         ses.Session().SetConfig("mep_configuration", defaults)
         self._config_params = deepcopy(defaults)
+        self.painting.set_available(self, self._config_params["mep_enabled"])
 
     def _SaveUserParameters(self):
         ses.Session().SetConfig("mep_configuration", self._config_params)
 
     def UpdateConfig(self):
         self._config_params = deepcopy(ses.Session().GetConfig("mep_configuration"))
+        self.painting.set_available(self, self._config_params["mep_enabled"])
         self.UpdateVisualization()
 
     # --- Motor Map Display ---
 
-    def DisplayMotorMap(self, show: bool):
-        if show:
-            self._config_params["mep_enabled"] = True
-            if not self.surface:
-                wx.MessageBox(
-                    "Please select a brain surface from preferences.",
-                    "MEP Mapping",
-                    wx.OK | wx.ICON_INFORMATION,
-                )
-                self._SaveUserParameters()
-                Publisher.sendMessage("Open preferences menu", page=1)
-                return False
-            progress_dialog = dialogs.BrainSurfaceLoadingProgressWindow()
-            progress_dialog.Update(value=20, msg="Preparing brain surface...")
-            Publisher.sendMessage("Hide all surfaces")
-            self.UpdateVisualization()
-            progress_dialog.Update(value=50, msg="Preparing brain surface...")
-            self.UpdateMEPPoints()
-            # self.UpdateMEPPointsFromBrainTargets()
-            progress_dialog.Close()
-        else:
-            self._config_params["mep_enabled"] = False
-            self._CleanupVisualization()
-            if self.surface:  # Shows the original surface
-                Publisher.sendMessage(
-                    "Show surface",
-                    index=self.surface_index,
-                    visibility=True,
-                )
-            self.marker_storage = []
-        self._SaveUserParameters()
+    def supports_surface(self, surface):
+        return not surface.peel_only
 
+    def default_surface(self):
+        project = Project()
+        brain = project.GetBrainSurface()
+        if brain is not None and brain.supports_painting and self.supports_surface(brain):
+            return brain
+        return project.GetScalpSurface()
+
+    def DisplayMotorMap(self, show: bool):
+        self._config_params["mep_enabled"] = show
+        self.painting.set_available(self, show)
+        self._SaveUserParameters()
+        if show and not self.painting.select(None, self.name):
+            wx.MessageBox(
+                "Please create or select a 3D surface.", "MEP Mapping", wx.OK | wx.ICON_INFORMATION
+            )
+            return False
         return True
+
+    def start(self, surface, token):
+        self.painting.peeling.select(Project().GetBrainSurface(), False)
+        self.token = token
+        self.surface = surface
+        self.decimate_surface = surface.polydata
+        self.surface_points = vtk_to_numpy(self.decimate_surface.GetPoints().GetData()).copy()
+        self.kdtree = cKDTree(self.surface_points)
+        self.bounds = np.array(self.decimate_surface.GetBounds())
+        self.points_polydata = vtkPolyData()
+        self.marker_storage = []
+        progress = dialogs.BrainSurfaceLoadingProgressWindow()
+        try:
+            progress.Update(value=20, msg="Preparing brain surface...")
+            if self.brain_target_data is None:
+                self.UpdateMEPPoints()
+            else:
+                self.UpdateMEPPointsFromBrainTargets(*self.brain_target_data)
+        finally:
+            progress.Close()
+        Publisher.sendMessage("Press motor map button", pressed=True)
+
+    def stop(self):
+        self.token = None
+        self.surface = None
+        self.decimate_surface = None
+        self.points_polydata = vtkPolyData()
+        self.marker_storage = []
+        self.bounds = None
+        Publisher.sendMessage("Press motor map button", pressed=False)
 
     # --- Data Interpolation and Visualization ---
 
@@ -160,6 +175,15 @@ class MEPVisualizer:
             return
         if not points:
             raise ValueError("MEP Visualizer: No point data found")
+        if points.GetNumberOfPoints() == 0:
+            empty = vtkPolyData()
+            empty.ShallowCopy(polydata)
+            scalars = vtkDoubleArray()
+            scalars.SetName("MEP")
+            scalars.SetNumberOfTuples(polydata.GetNumberOfPoints())
+            scalars.FillComponent(0, 0)
+            empty.GetPointData().SetScalars(scalars)
+            return empty
 
         gaussian_sharpness = self._config_params["gaussian_sharpness"]
         gaussian_radius = self._config_params["gaussian_radius"]
@@ -216,9 +240,7 @@ class MEPVisualizer:
 
     def DecimateBrainSurface(self):
         triangle_filter = vtkTriangleFilter()
-        triangle_filter.SetInputData(
-            self.surface.GetMapper().GetInput()
-        )  # Use vtkPolyData directly
+        triangle_filter.SetInputData(self.surface.polydata)  # Use vtkPolyData directly
         triangle_filter.Update()  # Perform triangulation
         triangulated_polydata = triangle_filter.GetOutput()
 
@@ -230,23 +252,8 @@ class MEPVisualizer:
         decimate_filter.Update()
         return decimate_filter.GetOutput()
 
-    def SetBrainSurface(self, actor: vtkActor, index: int):
-        self.surface = actor
-        self.surface_index = index
-        self.decimate_surface = self.surface.GetMapper().GetInput()
-        # self.decimate_surface = self.DecimateBrainSurface()
-        self.surface_points = np.array(
-            [
-                self.decimate_surface.GetPoint(i)
-                for i in range(self.decimate_surface.GetNumberOfPoints())
-            ]
-        )
-        self.kdtree = cKDTree(self.surface_points)
-        self.bounds = np.array(actor.GetBounds())
-        self.marker_storage = []
-        if self._config_params["mep_enabled"]:
-            Publisher.sendMessage("Show surface", index=index, visibility=False)
-        self._SaveUserParameters()
+    def SetBrainSurface(self, actor, index):
+        self.painting.select(Project().surface_dict[index], self.name)
 
     def _FilterMarkers(self, markers_list):
         """
@@ -332,7 +339,7 @@ class MEPVisualizer:
             dist, idx = self.kdtree.query(p)
             hit_point = self.surface_points[idx]
 
-        return hit_point
+        return hit_point.tolist()
 
     def UpdateMEPPoints(self):
         """
@@ -342,17 +349,18 @@ class MEPVisualizer:
             markers (List[Marker]): The list of marker objects to add/update points for.
             clear_old (bool, default=False): If True, clears all existing points before updating.
         """
-        if not self._config_params["mep_enabled"]:
+        if self.token is None:
             return
         if not self.surface:
             return
 
+        self.brain_target_data = None
         markers, skip = self._FilterMarkers(MarkersControl().list)
+        if skip:
+            return
         if not markers:
             self.points_polydata = vtkPolyData()
             self.UpdateVisualization()
-            return
-        if skip:  # Saves computation if the markers are not updated or irrelevant
             return
 
         points = vtkPoints()
@@ -363,8 +371,8 @@ class MEPVisualizer:
         point_data.AddArray(mep_array)
 
         for marker in markers:
+            projected_point = self.projection_on_surface(marker.position, marker.orientation)
             if not marker.x_cortex and not marker.y_cortex and not marker.z_cortex:
-                projected_point = self.projection_on_surface(marker.position, marker.orientation)
                 marker.cortex_position_orientation = [
                     projected_point[0],
                     -projected_point[1],
@@ -374,7 +382,7 @@ class MEPVisualizer:
                     marker.orientation[2],
                 ]
 
-            points.InsertNextPoint(marker.x_cortex, -marker.y_cortex, marker.z_cortex)
+            points.InsertNextPoint(*projected_point)
             mep_value = marker.mep_value or 0
             mep_array.InsertNextValue(mep_value)
         MarkersControl().SaveState()
@@ -382,7 +390,7 @@ class MEPVisualizer:
         self.points_polydata.SetPoints(points)
         self.points_polydata.GetPointData().SetActiveScalars("MEP")
         self.points_polydata.Modified()
-        if self._config_params["mep_enabled"]:
+        if self.token is not None:
             self.UpdateVisualization()
 
     def UpdateMEPPointsFromBrainTargets(self, marker_target, brain_target_list):
@@ -393,7 +401,7 @@ class MEPVisualizer:
             markers (List[Marker]): The list of marker objects to add/update points for.
             clear_old (bool, default=False): If True, clears all existing points before updating.
         """
-        if not self._config_params["mep_enabled"]:
+        if self.token is None:
             return
         if not self.surface:
             return
@@ -401,6 +409,7 @@ class MEPVisualizer:
             o is None for o in marker_target.orientation[:3]
         ):
             return
+        self.brain_target_data = (marker_target, deepcopy(brain_target_list))
         brain_markers = []
         for m in brain_target_list:
             brain_markers.append(m)
@@ -429,151 +438,27 @@ class MEPVisualizer:
         self.points_polydata.SetPoints(points)
         self.points_polydata.GetPointData().SetActiveScalars("MEP")
         self.points_polydata.Modified()
-        if self._config_params["mep_enabled"]:
+        if self.token is not None:
             self.UpdateVisualization()
 
     def UpdateVisualization(self):
-        if not self._config_params["mep_enabled"] or not self.surface:
+        if self.token is None or self.surface is None:
             return
-
-        self._CleanupVisualization()
-
-        interpolated_data = self.InterpolateData()
-        self.colored_surface_actor = self.CreateColoredSurface(interpolated_data)
-        self.point_actor = self.CreatePointActor(
-            self.points_polydata,
-            (self._config_params["threshold_down"], self._config_params["range_up"]),
+        polydata = self.InterpolateData()
+        self.painting.update(
+            self.name,
+            self.token,
+            SurfaceMap(
+                polydata,
+                self._CustomColormap(),
+                (self._config_params["threshold_down"], self._config_params["range_up"]),
+                self.name,
+                "\u00b5V",
+            ),
         )
-        self.colorBarActor = self.CreateColorbarActor()
-
-        Publisher.sendMessage("AppendActor", actor=self.colored_surface_actor)
-        # Publisher.sendMessage("AppendActor", actor=self.point_actor)
-        Publisher.sendMessage("AppendActor", actor=self.colorBarActor)
-
-        if not self.is_navigating:
-            Publisher.sendMessage("Render volume viewer")
-
-    def CreateColorbarActor(self, lut=None) -> vtkActor:
-        if lut is None:
-            lut = self._CustomColormap(self._config_params["mep_colormap"])
-        colorBarActor = vtkScalarBarActor()
-        colorBarActor.SetLookupTable(lut)
-        colorBarActor.SetNumberOfLabels(4)
-        colorBarActor.SetLabelFormat("%4.0f")
-        colorBarActor.SetTitle("µV       ")
-        # FIXME: Set the title to be a little bit smaller
-        colorBarActor.SetTitleRatio(0.1)
-        colorBarActor.SetMaximumWidthInPixels(70)
-        # move title to below
-        colorBarActor.GetTitleTextProperty().SetFontSize(1)
-
-        # FIXME: Set the label text size to be a little bit smaller
-        label_text_property = colorBarActor.GetLabelTextProperty()
-        label_text_property.SetFontSize(9)
-        # label_text_property.SetColor(0, 0, 0)
-
-        colorBarActor.SetLabelTextProperty(label_text_property)
-
-        # resize colorbar
-        colorBarActor.SetWidth(0.1)
-        colorBarActor.SetHeight(0.3)
-
-        colorBarActor.SetVisibility(1)
-
-        # set position of the colorbar to the bottom left corner
-        colorBarActor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-        colorBarActor.GetPositionCoordinate().SetValue(0.06, 0.06)
-        # Track the created actor
-        self.actors_dict[id(colorBarActor)] = colorBarActor
-        return colorBarActor
-
-    def CreateColoredSurface(self, poly_data) -> vtkActor:
-        """Creates the actor for the surface with color mapping."""
-        normals = vtkPolyDataNormals()
-        normals.SetInputData(poly_data)
-        normals.ComputePointNormalsOff()
-        normals.ComputeCellNormalsOff()
-        normals.Update()
-
-        data_range = (self._config_params["threshold_down"], self._config_params["range_up"])
-
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputData(normals.GetOutput())
-        if data_range is None:
-            data_range = (self._config_params["threshold_down"], self._config_params["range_up"])
-        mapper.SetScalarRange(data_range)
-
-        lut = self._CustomColormap()
-        mapper.SetLookupTable(lut)
-
-        actor = vtkActor()
-        actor.SetMapper(mapper)
-        actor.GetProperty().SetInterpolationToGouraud()
-        self.actors_dict[id(actor)] = actor
-        return actor
-
-    def CreatePointActor(self, points, data_range):
-        """Creates the actor for the data points."""
-        point_mapper = vtkPointGaussianMapper()
-        point_mapper.SetInputData(points)
-        point_mapper.SetScalarRange(data_range)
-        point_mapper.SetScaleFactor(0.1)
-        point_mapper.EmissiveOff()
-        point_mapper.SetSplatShaderCode(
-            "//VTK::Color::Impl\n"
-            "float dist = dot(offsetVCVSOutput.xy,offsetVCVSOutput.xy);\n"
-            "if (dist > 1.0) {\n"
-            "  discard;\n"
-            "} else {\n"
-            "  float scale = (1.0 - dist);\n"
-            "  ambientColor *= scale;\n"
-            "  diffuseColor *= scale;\n"
-            "}\n"
-        )
-
-        lut = self._CustomColormap()
-        point_mapper.SetLookupTable(lut)
-
-        point_actor = vtkActor()
-        point_actor.SetMapper(point_mapper)
-
-        self.actors_dict[id(point_actor)] = point_actor
-        return point_actor
-
-    def _CleanupVisualization(self):
-        for actor in self.actors_dict.values():
-            Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
-
-        self.actors_dict.clear()
-
-        if not self.is_navigating:
-            Publisher.sendMessage("Render volume viewer")
-
-    def UpdateNavigationStatus(self, nav_status, vis_status):
-        self.is_navigating = nav_status
-
-    def OnRemoveSurfaces(self, surface_indexes):
-        for index in surface_indexes:
-            if index == self.surface_index:
-                self.surface = None
-                self.surface_index = None
-                self.DisplayMotorMap(False)
-                self._config_params["mep_enabled"] = False
-                self._SaveUserParameters()
-                Publisher.sendMessage("Press motor map button", pressed=False)
 
     def OnCloseProject(self):
-        """Cleanup the visualization when the project is closed."""
-        self.DisplayMotorMap(False)
+        self.painting.reset(self)
         self._config_params["mep_enabled"] = False
-        self.points_polydata = vtkPolyData()
-        self.surface = None
-        self.surface_index = None
-        self.decimate_surface = None
-        self.colored_surface_actor = None
-        self.point_actor = None
-        self.bounds = None
-        self.colorBarActor = None
-        self.actors_dict = {}
-        Publisher.sendMessage("Press motor map button", pressed=False)
+        self.brain_target_data = None
         self._SaveUserParameters()

@@ -343,7 +343,6 @@ class CoordinateCorregistrate(threading.Thread):
         tracker_id,
         target,
         icp,
-        e_field_loaded,
         navigation,
     ):
         threading.Thread.__init__(self, name="CoordCoregObject")
@@ -356,7 +355,6 @@ class CoordinateCorregistrate(threading.Thread):
         self.view_tracts = view_tracts
         self.object_at_target_queue = queues[2]
         self.efield_queue = queues[3]
-        self.e_field_loaded = e_field_loaded
         self.navigation = navigation
         self.event = event
         self.sle = sle
@@ -412,7 +410,7 @@ class CoordinateCorregistrate(threading.Thread):
 
                 can_push_coord = not self.coord_queue.full()
                 can_push_tracts = self.view_tracts and not self.coord_tracts_queue.full()
-                can_push_efield = self.e_field_loaded and not self.efield_queue.full()
+                can_push_efield = self.navigation.e_field_loaded and not self.efield_queue.full()
                 if not (can_push_coord or can_push_tracts or can_push_efield):
                     sleep(self._loop_sleep)
                     continue
@@ -482,7 +480,7 @@ class CoordinateCorregistrate(threading.Thread):
                     m_img_flip = m_img.copy()
                     m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                if can_push_tracts and not self.e_field_loaded:
+                if can_push_tracts and not self.navigation.e_field_loaded:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
                 if can_push_efield:
                     self.efield_queue.put_nowait([m_img, coord, self.navigation.e_field_revision])

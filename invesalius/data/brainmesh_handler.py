@@ -1,7 +1,9 @@
+import os
+import tempfile
+import threading
+
 import numpy as np
 import pyacvd
-
-# import os
 import pyvista
 from vtkmodules.vtkCommonColor import vtkColorSeries
 
@@ -32,18 +34,19 @@ from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter, vtkWarpVect
 from vtkmodules.vtkFiltersModeling import vtkLinearSubdivisionFilter
 from vtkmodules.vtkImagingCore import vtkImageFlip
 from vtkmodules.vtkIOImage import vtkNIFTIImageReader
-from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
-    vtkTextProperty,
     vtkWindowLevelLookupTable,
 )
 
+import invesalius.constants as const
+import invesalius.data.polydata_utils as polydata_utils
 import invesalius.data.slice_ as sl
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.project as prj
 from invesalius.data.converters import to_vtk
+from invesalius.i18n import tr as _
 
 
 class Brain:
@@ -56,6 +59,71 @@ class Brain:
         self.numberOfPeels = n_peels
         self.affine = affine
         self.inv_proj = inv_proj
+        self.depth = const.PEEL_DEPTH
+        self.selected = True
+        self._layer_files = []
+        self._layer_cache = None
+        self._save_lock = threading.Lock()
+
+    def SavePlist(self, filelist):
+        with self._save_lock:
+            if not self._layer_files:
+                self._layer_cache = tempfile.TemporaryDirectory(prefix="invesalius_peel_")
+                layer_files = []
+                for index, layer in enumerate(self.peel):
+                    path = os.path.join(self._layer_cache.name, f"peel_{index}.vtp")
+                    polydata_utils.Export(layer, path, bin=True)
+                    if not os.path.getsize(path):
+                        raise OSError("Could not save a peeling layer.")
+                    layer_files.append(path)
+                self._layer_files = layer_files
+            layers = []
+            for index, path in enumerate(self._layer_files):
+                if not os.path.getsize(path):
+                    raise OSError("The saved peeling layer is empty.")
+                filename = f"peel_{index}.vtp"
+                filelist[path] = filename
+                layers.append(filename)
+        return {
+            "layers": layers,
+            "affine": self.affine.tolist(),
+            "window_width": float(self.window_width),
+            "window_level": float(self.window_level),
+            "depth": self.depth,
+            "selected": self.selected,
+        }
+
+    @classmethod
+    def OpenPlist(cls, metadata, dirpath, project, progress_callback=None):
+        layers = metadata["layers"]
+        depth = metadata["depth"]
+        affine = np.asarray(metadata["affine"], dtype=float)
+        if not layers or not 0 <= depth < len(layers):
+            raise ValueError("Invalid saved peeling depth.")
+        if affine.shape != (4, 4) or not np.isfinite(affine).all():
+            raise ValueError("Invalid saved peeling transformation.")
+        brain = cls(
+            len(layers) - 1, metadata["window_width"], metadata["window_level"], affine, project
+        )
+        for index, filename in enumerate(layers):
+            if progress_callback and not progress_callback(
+                90, _("Loading peeling layer {} of {}...").format(index + 1, len(layers))
+            ):
+                return None
+            if filename != f"peel_{index}.vtp":
+                raise ValueError("Invalid saved peeling filename.")
+            path = os.path.join(dirpath, filename)
+            if not os.path.isfile(path):
+                raise FileNotFoundError(path)
+            brain.peel.append(polydata_utils.Import(path))
+            brain._layer_files.append(path)
+        if not brain.peel[0].GetNumberOfPoints() or not brain.peel[0].GetNumberOfCells():
+            raise ValueError("The saved peel does not contain usable geometry.")
+        brain.depth = depth
+        brain.selected = metadata["selected"]
+        brain.currentPeelNo = depth
+        brain._initialize_actor(brain.peel[depth])
+        return brain
 
     def from_mask(self, mask):
         mask = np.array(mask.matrix[1:, 1:, 1:])
@@ -172,6 +240,10 @@ class Brain:
         self.peel_normals = vtkFloatArray()
         self.peel_centers = vtkFloatArray()
         self.peel.append(newPeel)
+        self._initialize_actor(currentPeel)
+        self.PeelDown(currentPeel)
+
+    def _initialize_actor(self, currentPeel):
         self.currentPeelActor = vtkActor()
         if not np.all(np.equal(self.affine, np.eye(4))):
             affine_vtk = self.CreateTransformedVTKAffine()
@@ -180,7 +252,6 @@ class Brain:
         self.peelActors.append(self.currentPeelActor)
         # locator will later find the triangle on the peel surface where the coil's normal intersect
         self.locator = vtkCellLocator()
-        self.PeelDown(currentPeel)
 
     def CreateTransformedVTKAffine(self):
         # Consistent with transformation applied in navigation.py under StartNavigation
@@ -350,19 +421,6 @@ class E_field_brain:
         self.e_field_mesh_normals = GetNormals(mesh)
         self.e_field_mesh_centers = GetCenters(mesh)
         self.e_field_mesh = mesh
-
-        self.efield_mapper = vtkPolyDataMapper()
-
-        text_property = vtkTextProperty()
-        text_property.SetFontSize(3)
-        text_property.SetJustificationToCentered()
-
-        self.efield_scalar_bar = vtkScalarBarActor()
-        self.efield_scalar_bar.SetOrientationToVertical()
-        self.efield_scalar_bar.SetTitle("E (V/m)")
-        self.efield_scalar_bar.SetNumberOfLabels(2)
-        self.efield_scalar_bar.SetTitleTextProperty(text_property)
-        # self.lut = CreateLUTTableForEfield(0, 0.005)
 
 
 class Scalp:

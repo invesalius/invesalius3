@@ -564,7 +564,10 @@ class NavigationTab(wx.Panel):
         main_sizer.Add(conf_sizer, 0, wx.ALL | wx.EXPAND, 10)
         main_sizer.Add(bsizer_markers, 0, wx.ALL | wx.EXPAND, 10)
         # Creating MEP Mapping BoxSizer
-        if self.mep_configuration.get("mep_enabled") is True:
+        if (
+            self.session.GetConfig("mode") == const.MODE_NAVIGATOR
+            and self.mep_configuration.get("mep_enabled") is True
+        ):
             self.bsizer_mep = self.InitMEPMapping(None)
             main_sizer.Add(self.bsizer_mep, 0, wx.EXPAND | wx.ALL | wx.FIXED_MINSIZE, 10)
 
@@ -657,8 +660,9 @@ class NavigationTab(wx.Panel):
         #     wx.EVT_COMBOBOX, self.OnComboNameBrainSurface)
         combo_brain_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
 
-        for n in range(len(self.proj.surface_dict)):
-            combo_brain_surface_name.Insert(str(self.proj.surface_dict[n].name), n)
+        for surface in self.proj.surface_dict.values():
+            if surface.frozen_map is None:
+                combo_brain_surface_name.Append(surface.name, surface)
 
         self.combo_brain_surface_name = combo_brain_surface_name
 
@@ -668,6 +672,8 @@ class NavigationTab(wx.Panel):
         )
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
+        button_colour.Enable(False)
+        Publisher.subscribe(self.UpdateSurfaceColourControl, "Update surface info in GUI")
 
         # Sizer which represents the first line
         line1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -986,20 +992,31 @@ class NavigationTab(wx.Panel):
         from invesalius import project as prj
 
         self.proj = prj.Project()
-        surface_index = self.combo_brain_surface_name.GetSelection()
-        Publisher.sendMessage("Show single surface", index=surface_index, visibility=True)
+        surface_index = self.combo_brain_surface_name.GetClientData(
+            self.combo_brain_surface_name.GetSelection()
+        ).index
         Publisher.sendMessage("Get brain surface actor", index=surface_index)
-        Publisher.sendMessage("Press motor map button", pressed=True)
 
         self.button_colour.SetColour(
             [int(value * 255) for value in self.proj.surface_dict[surface_index].colour]
         )
+        self.button_colour.Enable(self.proj.surface_dict[surface_index].can_edit_colour)
+
+    def UpdateSurfaceColourControl(self, surface):
+        selection = self.combo_brain_surface_name.GetSelection()
+        if (
+            selection != wx.NOT_FOUND
+            and self.combo_brain_surface_name.GetClientData(selection) is surface
+        ):
+            self.button_colour.Enable(surface.can_edit_colour)
 
     def OnSelectColour(self, evt):
         colour = [value / 255.0 for value in self.button_colour.GetColour()]
         Publisher.sendMessage(
             "Set surface colour",
-            surface_index=self.combo_brain_surface_name.GetSelection(),
+            surface_index=self.combo_brain_surface_name.GetClientData(
+                self.combo_brain_surface_name.GetSelection()
+            ).index,
             colour=colour,
         )
 

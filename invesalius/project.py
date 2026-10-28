@@ -74,6 +74,7 @@ class Project(metaclass=Singleton):
         # Surfaces are (vtkPolyData)
         self.surface_dict = {}
         self.last_surface_index = -1
+        self.peel = None
 
         # Measurements
         self.measurement_dict = {}
@@ -156,11 +157,44 @@ class Project(metaclass=Singleton):
         self.surface_dict[index] = surface
         return index
 
+    def GetBrainSurface(self):
+        return next(
+            (surface for surface in self.surface_dict.values() if surface.anatomical_role == "brain"),
+            None,
+        )
+
+    def GetScalpSurface(self):
+        return max(
+            (
+                surface for surface in self.surface_dict.values()
+                if surface.supports_painting and not surface.peel_only
+            ),
+            key=lambda surface: surface.polydata.GetBounds()[5],
+            default=None,
+        )
+
+    def SetBrainSurface(self, surface):
+        if surface is not None and surface not in self.surface_dict.values():
+            raise ValueError("The brain surface must belong to the project.")
+        previous = self.GetBrainSurface()
+        for candidate in self.surface_dict.values():
+            candidate.anatomical_role = "brain" if candidate is surface else ""
+        if previous is not surface:
+            Publisher.sendMessage("Brain surface changed", previous=previous, surface=surface)
+
     def ChangeSurface(self, surface):
         index = surface.index
+        previous = self.surface_dict[index]
+        Publisher.sendMessage("Discard surface painting", surface=previous)
+        surface.anatomical_role = previous.anatomical_role
+        surface.peel_only = previous.peel_only
         self.surface_dict[index] = surface
+        if surface.anatomical_role == "brain":
+            Publisher.sendMessage("Brain surface changed", previous=previous, surface=surface)
 
     def RemoveSurface(self, index):
+        surface = self.surface_dict[index]
+        Publisher.sendMessage("Discard surface painting", surface=surface)
         new_dict = {}
         for i in self.surface_dict:
             if i < index:
@@ -169,6 +203,8 @@ class Project(metaclass=Singleton):
                 new_dict[i - 1] = self.surface_dict[i]
                 new_dict[i - 1].index = i - 1
         self.surface_dict = new_dict
+        if surface.anatomical_role == "brain":
+            Publisher.sendMessage("Brain surface changed", previous=surface, surface=None)
 
     def AddMeasurement(self, measurement):
         index = len(self.measurement_dict)
@@ -305,6 +341,10 @@ class Project(metaclass=Singleton):
         for index in self.surface_dict:
             surfaces[str(index)] = self.surface_dict[index].SavePlist(dir_temp, filelist)
         project["surfaces"] = surfaces
+        # Keep cached layer files alive until the archive has been written.
+        peel = self.peel
+        if peel is not None:
+            project["peeling"] = peel.SavePlist(filelist)
 
         # Saving the measurements
         measurements = self.GetMeasuresDict()
@@ -510,6 +550,14 @@ class Project(metaclass=Singleton):
             s = srf.Surface(int(index))
             s.OpenPList(filepath)
             self.surface_dict[s.index] = s
+
+        self.peel = None
+        if "peeling" in project:
+            from invesalius.data.brainmesh_handler import Brain
+
+            self.peel = Brain.OpenPlist(project["peeling"], dirpath, self, progress_callback)
+            if self.peel is None:
+                return False
 
         if progress_callback:
             if not progress_callback(90, _("Loading measurements...")):
