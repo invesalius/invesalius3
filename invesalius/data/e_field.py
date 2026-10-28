@@ -175,7 +175,8 @@ class EFieldSurfaceMode:
         self.source_surface = surface
 
     def default_surface(self):
-        return Project().GetBrainSurface() or self.source_surface
+        brain = Project().GetBrainSurface()
+        return brain if brain is not None and brain.supports_painting else self.source_surface
 
     def start(self, surface, token):
         self.painting.presentation.replace_source(self.name, self.source_surface, surface)

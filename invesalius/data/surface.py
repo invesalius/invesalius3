@@ -120,6 +120,7 @@ class Surface:
         self.filename = None
         self.category = category
         self.anatomical_role = ""
+        self.peel_only = False
         self.frozen_map = None
         self.display_map = None
         self.painting_mode = ""
@@ -127,6 +128,10 @@ class Surface:
     @property
     def has_geometry(self):
         return bool(self.polydata.GetNumberOfPoints() and self.polydata.GetNumberOfCells())
+
+    @property
+    def supports_painting(self):
+        return self.has_geometry and self.frozen_map is None and not self.peel_only
 
     @property
     def can_edit_colour(self):
@@ -162,6 +167,7 @@ class Surface:
             "area": self.area,
             "category": self.category,
             "anatomical_role": self.anatomical_role,
+            "peel_only": self.peel_only,
         }
         if self.frozen_map is not None:
             surface["frozen_map"] = self.frozen_map.metadata()
@@ -202,6 +208,7 @@ class Surface:
             self.category = "General"
         self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
         self.anatomical_role = sp.get("anatomical_role", "")
+        self.peel_only = sp.get("peel_only", False)
         self.frozen_map = (
             SurfaceMap.from_metadata(self.polydata, sp["frozen_map"])
             if "frozen_map" in sp
@@ -952,6 +959,8 @@ class SurfaceManager:
         scalar=False,
         category="General",
         frozen_map=None,
+        anatomical_role="",
+        peel_only=False,
     ):
         if self.convert_to_inv:
             polydata = self.ConvertPolydataToInv(polydata)
@@ -988,6 +997,7 @@ class SurfaceManager:
             surface.colour = colour
         surface.polydata = polydata
         surface.frozen_map = frozen_map
+        surface.peel_only = peel_only
         surface.display_map = frozen_map if self.painting.enabled else None
 
         if transparency:
@@ -1017,6 +1027,9 @@ class SurfaceManager:
                 pass
 
         self.actors_dict[surface.index] = actor
+
+        if anatomical_role == "brain":
+            proj.SetBrainSurface(surface)
 
         session = ses.Session()
         session.ChangeProject()

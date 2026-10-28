@@ -1125,7 +1125,7 @@ class SurfacePage(wx.Panel):
         self.__init_gui()
 
         Publisher.subscribe(self.AddSurface, "Update surface info in GUI")
-        Publisher.subscribe(self.RepopulateSurfaces, "Repopulate surfaces")
+        Publisher.subscribe(self.OnRepopulateSurfaces, "Repopulate surfaces")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.EditSurfaceTransparency, "Set surface transparency")
         Publisher.subscribe(self.EditSurfaceColour, "Set surface colour")
@@ -1332,6 +1332,9 @@ class SurfacePage(wx.Panel):
         self.update_select_all_checkbox(category)
 
         self.UpdateVisibilityButton()
+
+    def OnRepopulateSurfaces(self, clear_project=False):
+        wx.CallAfter(self.RepopulateSurfaces, clear_project)
 
     def RepopulateSurfaces(self, clear_project=False):
         # Properly destroy all components and clear sizer
@@ -1710,6 +1713,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
             if peeling.available(surface):
                 item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Use peel for Original"))
                 item.Check(peeling.selected)
+                item.Enable(peeling.can_select(surface))
                 surface_context_menu.Bind(
                     wx.EVT_MENU,
                     lambda evt: peeling.select(surface, evt.IsChecked()),
@@ -1718,6 +1722,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
             if self.category == "General" and surface.frozen_map is None:
                 item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Assign as brain"))
                 item.Check(surface.anatomical_role == "brain")
+                item.Enable(not surface.peel_only)
                 surface_context_menu.Bind(
                     wx.EVT_MENU,
                     lambda evt: self.assign_brain(surface, evt.IsChecked()),

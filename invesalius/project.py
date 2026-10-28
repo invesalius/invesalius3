@@ -167,7 +167,7 @@ class Project(metaclass=Singleton):
         return max(
             (
                 surface for surface in self.surface_dict.values()
-                if surface.frozen_map is None and surface.has_geometry
+                if surface.supports_painting
             ),
             key=lambda surface: surface.polydata.GetBounds()[5],
             default=None,
@@ -187,6 +187,7 @@ class Project(metaclass=Singleton):
         previous = self.surface_dict[index]
         Publisher.sendMessage("Discard surface painting", surface=previous)
         surface.anatomical_role = previous.anatomical_role
+        surface.peel_only = previous.peel_only
         self.surface_dict[index] = surface
         if surface.anatomical_role == "brain":
             Publisher.sendMessage("Brain surface changed", previous=previous, surface=surface)

@@ -112,8 +112,11 @@ class SurfacePeeling:
     def actor_for(self, surface):
         return self.actor if self.available(surface) and self.selected else None
 
+    def can_select(self, surface):
+        return self.available(surface) and not surface.peel_only
+
     def select(self, surface, selected):
-        if self.available(surface):
+        if self.can_select(surface):
             self.brain.selected = selected
             self.painting._changed(surface)
             Session().ChangeProject()
@@ -144,7 +147,38 @@ class SurfacePeeling:
 
     def set_enabled(self, enabled):
         self.enabled = enabled and self.brain is not None
+        if self.enabled:
+            self._ensure_brain_surface()
         self._publish()
+        if not self.enabled:
+            self._remove_auxiliary_surfaces()
+
+    def _ensure_brain_surface(self):
+        surface = Project().GetBrainSurface()
+        if surface is not None:
+            self.brain.selected = self.brain.selected or surface.peel_only
+            return
+        self.brain.selected = True
+        Publisher.sendMessage(
+            "Create surface from polydata",
+            polydata=self.brain.TransformPeelPosition(0),
+            name="Brain",
+            colour=[value / 255.0 for value in const.CORTEX_COLOR],
+            transparency=1 - const.BRAIN_OPACITY,
+            anatomical_role="brain",
+            peel_only=True,
+        )
+
+    def _remove_auxiliary_surfaces(self, keep=None):
+        indexes = [
+            surface.index
+            for surface in Project().surface_dict.values()
+            if surface.peel_only and surface is not keep
+        ]
+        if indexes:
+            Publisher.sendMessage("Remove surfaces", surface_indexes=indexes)
+            Publisher.sendMessage("Repopulate surfaces")
+            Session().ChangeProject()
 
     def set_depth(self, depth):
         if self.brain is not None and depth != self.depth:
@@ -196,6 +230,10 @@ class SurfacePeeling:
         Publisher.sendMessage("Update peel visibility", visible=visible)
 
     def brain_changed(self, previous, surface):
+        if self.enabled and surface is not None:
+            self._remove_auxiliary_surfaces(keep=surface)
+        elif self.enabled:
+            self.set_enabled(False)
         for candidate in (previous, surface):
             if candidate is not None and candidate in Project().surface_dict.values():
                 self.painting._changed(candidate)
@@ -207,7 +245,8 @@ class SurfacePeeling:
 
     def clear(self):
         self.source = None
-        self.set_enabled(False)
+        self.enabled = False
+        self._publish()
 
 
 class SurfacePainting(metaclass=Singleton):
@@ -238,7 +277,7 @@ class SurfacePainting(metaclass=Singleton):
         self.targets.pop(mode.name, None)
 
     def available_modes(self, surface):
-        if not self.enabled or surface.frozen_map is not None or not surface.has_geometry:
+        if not self.enabled or not surface.supports_painting:
             return ()
         return tuple(mode for mode in self.modes.values() if mode.available)
 
