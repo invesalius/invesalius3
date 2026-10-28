@@ -17,7 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-"""Navigation-only mode selection and exclusive destinations for surface painting."""
+"""Navigation-only surface painting and presentation."""
 
 from typing import Protocol
 
@@ -35,6 +35,40 @@ class PaintingMode(Protocol):
     def default_surface(self): ...
     def start(self, surface, token): ...
     def stop(self): ...
+
+
+class SurfacePresentation:
+    """Resolve original representations and temporary surface replacements."""
+
+    def __init__(self, painting, original):
+        self.painting = painting
+        self.original = original
+        self.replaced_sources = {}
+
+    def visible(self, surface):
+        return bool(surface.is_shown and surface not in self.replaced_sources.values())
+
+    @staticmethod
+    def is_original(surface):
+        return not surface.painting_mode and surface.display_map is None
+
+    def show_original(self, surface, actor):
+        actor.SetVisibility(
+            self.visible(surface)
+            and self.is_original(surface)
+            and self.original.actor_for(surface) is None
+        )
+        self.original.refresh()
+
+    def replace_source(self, name, source, target):
+        if source is not target:
+            self.replaced_sources[name] = source
+            self.painting._changed(source)
+
+    def release_source(self, name):
+        source = self.replaced_sources.pop(name, None)
+        if source is not None:
+            self.painting._changed(source)
 
 
 class SurfacePeeling:
@@ -56,13 +90,8 @@ class SurfacePeeling:
             and surface is Project().GetBrainSurface()
         )
 
-    def uses_peel(self, surface):
-        return (
-            self.available(surface)
-            and self.selected
-            and not surface.painting_mode
-            and surface.display_map is None
-        )
+    def actor_for(self, surface):
+        return self.actor if self.available(surface) and self.selected else None
 
     def select(self, surface, selected):
         if self.available(surface):
@@ -82,11 +111,15 @@ class SurfacePeeling:
 
     def refresh(self):
         surface = Project().GetBrainSurface()
+        presentation = self.painting.presentation
         visible = bool(
             self.painting.enabled
             and self.actor is not None
             and self.selected
-            and (surface is None or (surface.is_shown and self.uses_peel(surface)))
+            and (
+                surface is None
+                or (presentation.visible(surface) and presentation.is_original(surface))
+            )
         )
         if self.actor is not None:
             self.actor.SetVisibility(visible)
@@ -116,6 +149,7 @@ class SurfacePainting(metaclass=Singleton):
         Publisher.subscribe(self.remove_surface, "Discard surface painting")
         Publisher.subscribe(self.close, "Close surface painting")
         self.peeling = SurfacePeeling(self)
+        self.presentation = SurfacePresentation(self, self.peeling)
 
     def register(self, mode: PaintingMode):
         previous = self.modes.get(mode.name)
@@ -182,6 +216,7 @@ class SurfacePainting(metaclass=Singleton):
             surface.display_map = None
         if token is not None:
             self.modes[name].stop()
+        self.presentation.release_source(name)
         if surface is not None:
             self._changed(surface)
 

@@ -356,12 +356,8 @@ class SurfaceManager:
         if actor is None:
             return
         surface_map = surface.display_map
-        actor.SetVisibility(
-            surface.is_shown
-            and surface_map is None
-            and not self.painting.peeling.uses_peel(surface)
-        )
-        self.painting.peeling.refresh()
+        presentation = self.painting.presentation
+        presentation.show_original(surface, actor)
         visualizer = self.map_visualizers.get(surface)
         if surface_map is None:
             self.RemoveSurfacePresentation(surface)
@@ -373,7 +369,7 @@ class SurfaceManager:
                     Publisher.sendMessage("AppendActor", actor=prop)
             visualizer.set_map(surface_map)
             visualizer.actor.GetProperty().DeepCopy(actor.GetProperty())
-            visualizer.show(bool(surface.is_shown))
+            visualizer.show(presentation.visible(surface))
         visible = [v for v in self.map_visualizers.values() if v.actor.GetVisibility()]
         for index, item in enumerate(visible):
             item.scalar_bar.SetPosition(0.06 + index * 0.13, 0.06)
@@ -1881,30 +1877,23 @@ class SurfaceManager:
                     surface_parameters=surface_parameters,
                 )
 
-            # hide all surfaces
-            for index in proj.surface_dict:
-                proj.surface_dict[index].is_shown = False
-
-            # Displays one surface at a time and export
-            for index in proj.surface_dict.keys():
-                print(proj.surface_dict[index].name)
-                proj.surface_dict[index].is_shown = True
+            for index, surface in proj.surface_dict.items():
+                print(surface.name)
                 self._export_surface(
-                    os.path.join(folder, str(index) + ".stl"), const.FILETYPE_STL, False
+                    os.path.join(folder, str(index) + ".stl"),
+                    const.FILETYPE_STL,
+                    False,
+                    surfaces=[surface],
                 )
-                proj.surface_dict[index].is_shown = False
 
-    def _export_surface(self, filename, filetype, convert_to_world):
-        # First we identify all surfaces that are selected
-        # (if any)
-        proj = prj.Project()
-        polydata_list = []
-
-        # Collects all visible surfaces
-        for index in proj.surface_dict:
-            surface = proj.surface_dict[index]
-            if surface.is_shown:
-                polydata_list.append(surface.displayed_polydata)
+    def _export_surface(self, filename, filetype, convert_to_world, surfaces=None):
+        if surfaces is None:
+            surfaces = [
+                surface
+                for surface in prj.Project().surface_dict.values()
+                if self.painting.presentation.visible(surface)
+            ]
+        polydata_list = [surface.displayed_polydata for surface in surfaces]
 
         if len(polydata_list) == 0:
             utl.debug("oops - no polydata")
@@ -2005,18 +1994,15 @@ class SurfaceManager:
                         return
                     wx.Yield()
 
-                    visible_surfaces = []
-                    for index in proj.surface_dict:
-                        surface = proj.surface_dict[index]
-                        if surface.is_shown:
-                            visible_surfaces.append(
-                                (
-                                    surface.displayed_polydata,
-                                    surface.name,
-                                    surface.colour,
-                                    1 - surface.transparency,
-                                )
-                            )
+                    visible_surfaces = [
+                        (
+                            surface.displayed_polydata,
+                            surface.name,
+                            surface.colour,
+                            1 - surface.transparency,
+                        )
+                        for surface in surfaces
+                    ]
 
                     if not visible_surfaces:
                         progress.Destroy()

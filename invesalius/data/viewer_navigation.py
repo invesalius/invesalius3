@@ -2120,11 +2120,7 @@ class NavigationView:
 
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
 
-        if (
-            self.actor_peel is not None
-            and self.actor_peel.GetVisibility()
-            and self.efield_painting_token is None
-        ):
+        if self.actor_peel is not None and self.actor_peel.GetVisibility():
             scene.ren.RemoveActor(scene.obj_projection_arrow_actor)
             scene.ren.RemoveActor(scene.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)

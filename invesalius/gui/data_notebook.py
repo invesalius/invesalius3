@@ -1543,12 +1543,14 @@ class SurfaceButtonControlPanel(wx.Panel):
             INDEX_TO_TYPE_3D,
             WILDCARD_SAVE_3D,
         )
+        from invesalius.navigation.surface_painting import SurfacePainting
 
         project_obj = Project()
         n_surface = 0
+        presentation = SurfacePainting().presentation
 
         for index in project_obj.surface_dict:
-            if project_obj.surface_dict[index].is_shown:
+            if presentation.visible(project_obj.surface_dict[index]):
                 n_surface += 1
 
         if not n_surface:
