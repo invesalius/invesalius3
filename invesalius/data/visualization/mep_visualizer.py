@@ -22,6 +22,7 @@ import numpy as np
 import wx
 from scipy.spatial import cKDTree
 from vtk import vtkColorTransferFunction
+from vtkmodules.util.numpy_support import vtk_to_numpy
 from vtkmodules.vtkCommonCore import (
     vtkDoubleArray,
     vtkPoints,
@@ -132,12 +133,7 @@ class MEPVisualizer:
         self.token = token
         self.surface = surface
         self.decimate_surface = surface.polydata
-        self.surface_points = np.array(
-            [
-                self.decimate_surface.GetPoint(i)
-                for i in range(self.decimate_surface.GetNumberOfPoints())
-            ]
-        )
+        self.surface_points = vtk_to_numpy(self.decimate_surface.GetPoints().GetData()).copy()
         self.kdtree = cKDTree(self.surface_points)
         self.bounds = np.array(self.decimate_surface.GetBounds())
         self.points_polydata = vtkPolyData()

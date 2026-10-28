@@ -125,6 +125,10 @@ class Surface:
         self.painting_mode = ""
 
     @property
+    def has_geometry(self):
+        return bool(self.polydata.GetNumberOfPoints() and self.polydata.GetNumberOfCells())
+
+    @property
     def can_edit_colour(self):
         return self.display_map is None and not self.painting_mode
 

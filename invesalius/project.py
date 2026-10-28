@@ -166,8 +166,7 @@ class Project(metaclass=Singleton):
         return max(
             (
                 surface for surface in self.surface_dict.values()
-                if surface.frozen_map is None
-                and surface.polydata.GetNumberOfPoints() and surface.polydata.GetNumberOfCells()
+                if surface.frozen_map is None and surface.has_geometry
             ),
             key=lambda surface: surface.polydata.GetBounds()[5],
             default=None,

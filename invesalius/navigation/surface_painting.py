@@ -167,7 +167,7 @@ class SurfacePainting(metaclass=Singleton):
         self.targets.pop(mode.name, None)
 
     def available_modes(self, surface):
-        if not self.enabled or surface.frozen_map is not None:
+        if not self.enabled or surface.frozen_map is not None or not surface.has_geometry:
             return ()
         return tuple(mode for mode in self.modes.values() if mode.available)
 
