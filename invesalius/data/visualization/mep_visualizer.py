@@ -114,10 +114,15 @@ class MEPVisualizer:
 
     # --- Motor Map Display ---
 
+    def supports_surface(self, surface):
+        return not surface.peel_only
+
     def default_surface(self):
         project = Project()
         brain = project.GetBrainSurface()
-        return brain if brain is not None and brain.supports_painting else project.GetScalpSurface()
+        if brain is not None and brain.supports_painting and self.supports_surface(brain):
+            return brain
+        return project.GetScalpSurface()
 
     def DisplayMotorMap(self, show: bool):
         self._config_params["mep_enabled"] = show

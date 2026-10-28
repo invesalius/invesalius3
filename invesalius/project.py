@@ -167,7 +167,7 @@ class Project(metaclass=Singleton):
         return max(
             (
                 surface for surface in self.surface_dict.values()
-                if surface.supports_painting
+                if surface.supports_painting and not surface.peel_only
             ),
             key=lambda surface: surface.polydata.GetBounds()[5],
             default=None,

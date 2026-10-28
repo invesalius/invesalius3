@@ -34,6 +34,7 @@ class PaintingMode(Protocol):
     name: str
     available: bool
 
+    def supports_surface(self, surface): ...
     def default_surface(self): ...
     def start(self, surface, token): ...
     def stop(self): ...
@@ -279,7 +280,11 @@ class SurfacePainting(metaclass=Singleton):
     def available_modes(self, surface):
         if not self.enabled or not surface.supports_painting:
             return ()
-        return tuple(mode for mode in self.modes.values() if mode.available)
+        return tuple(
+            mode
+            for mode in self.modes.values()
+            if mode.available and mode.supports_surface(surface)
+        )
 
     def set_available(self, mode, available):
         mode.available = available

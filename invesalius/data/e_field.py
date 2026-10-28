@@ -174,6 +174,9 @@ class EFieldSurfaceMode:
         self.brain = brain
         self.source_surface = surface
 
+    def supports_surface(self, surface):
+        return True
+
     def default_surface(self):
         brain = Project().GetBrainSurface()
         return brain if brain is not None and brain.supports_painting else self.source_surface

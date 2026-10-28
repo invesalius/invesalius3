@@ -131,7 +131,7 @@ class Surface:
 
     @property
     def supports_painting(self):
-        return self.has_geometry and self.frozen_map is None and not self.peel_only
+        return self.has_geometry and self.frozen_map is None
 
     @property
     def can_edit_colour(self):
