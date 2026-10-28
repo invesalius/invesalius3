@@ -136,7 +136,7 @@ class MEPVisualizer:
         return True
 
     def start(self, surface, token):
-        self.painting.peeling.set_enabled(False)
+        self.painting.peeling.select(Project().GetBrainSurface(), False)
         self.token = token
         self.surface = surface
         self.decimate_surface = surface.polydata
