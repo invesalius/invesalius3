@@ -1050,7 +1050,6 @@ class SurfaceManager:
         self.CloseProject()
 
     def CloseProject(self):
-        Publisher.sendMessage("Close surface painting")
         for surface in list(self.map_visualizers):
             self.RemoveSurfacePresentation(surface)
         for index in self.actors_dict:
