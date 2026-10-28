@@ -1708,17 +1708,12 @@ class SurfacesListCtrlPanel(InvListCtrl):
                 surface_context_menu.AppendSubMenu(modes_menu, _("Color map mode"))
             peeling = painting.peeling
             if peeling.available(surface):
-                representation_menu = wx.Menu()
-                for selected, label in [(False, _("Surface")), (True, _("Peel"))]:
-                    item = representation_menu.AppendRadioItem(wx.ID_ANY, label)
-                    item.Check(peeling.selected == selected)
-                    representation_menu.Bind(
-                        wx.EVT_MENU,
-                        lambda evt, selected=selected: peeling.select(surface, selected),
-                        item,
-                    )
-                surface_context_menu.AppendSubMenu(
-                    representation_menu, _("Original representation")
+                item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Use peel for Original"))
+                item.Check(peeling.selected)
+                surface_context_menu.Bind(
+                    wx.EVT_MENU,
+                    lambda evt: peeling.select(surface, evt.IsChecked()),
+                    item,
                 )
             if self.category == "General" and surface.frozen_map is None:
                 item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Assign as brain"))
