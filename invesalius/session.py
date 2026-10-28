@@ -257,11 +257,10 @@ class Session(metaclass=Singleton):
         self._write_to_json(self._state, STATE_PATH)
 
     def _write_to_json(self, config_dict: dict, config_filename: "str | Path") -> None:
-        serialized = json.dumps(config_dict, sort_keys=True, indent=4)
         config_path = Path(config_filename)
         config_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure parent dir exists
         with open(config_path, "w") as config_file:
-            config_file.write(serialized)
+            json.dump(config_dict, config_file, sort_keys=True, indent=4)
 
     def _add_to_recent_projects(self, item: Tuple[str, str]) -> None:
         import invesalius.constants as const

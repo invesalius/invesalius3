@@ -33,16 +33,22 @@ def test_set_and_get_config():
     assert session.GetConfig("debug") == True
 
 
-def test_write_config_file():
+def test_write_config_file(mocker):
     import invesalius.session as ses_module
 
+    mock_file = mock_open()
+    mocker.patch("builtins.open", mock_file)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json_dump = mocker.patch("json.dump")
     session._config = {"debug": True, "language": "en", "file_logging": 1}
     session.WriteConfigFile()
-    assert json.loads(Path(ses_module.CONFIG_PATH).read_text()) == {
-        "debug": True,
-        "language": "en",
-        "file_logging": 1,
-    }
+    mock_file.assert_called_once_with(Path(ses_module.CONFIG_PATH), "w")
+    mock_json_dump.assert_called_once_with(
+        {"debug": True, "language": "en", "file_logging": 1},
+        mock_file(),
+        sort_keys=True,
+        indent=4,
+    )
 
 
 def test_create_config(mocker):
@@ -81,20 +87,30 @@ def test_read_state(mocker):
     assert success is True
 
 
-def test_create_state():
+def test_create_state(mocker):
     import invesalius.session as ses_module
 
+    mock_state_json = mock_open()
+    mocker.patch("builtins.open", mock_state_json)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json_dump = mocker.patch("json.dump")
     session.CreateState()
-    assert json.loads(Path(ses_module.STATE_PATH).read_text()) == {}
+    mock_state_json.assert_called_once_with(Path(ses_module.STATE_PATH), "w")
+    mock_json_dump.assert_called_once_with({}, mock_state_json(), sort_keys=True, indent=4)
 
 
-def test_set_and_get_state():
+def test_set_and_get_state(mocker):
     import invesalius.session as ses_module
 
-    session.CreateState()
+    mock_file = mock_open()
+    mocker.patch("builtins.open", mock_file)
+    mocker.patch("pathlib.Path.mkdir")
+    mock_json = mocker.patch("json.dump")
     session.SetState("test_key", "test_value")
-    assert session.GetState("test_key") == "test_value"
-    assert json.loads(Path(ses_module.STATE_PATH).read_text()) == {"test_key": "test_value"}
+    mock_file.assert_called_once_with(Path(ses_module.STATE_PATH), "w")
+    mock_json.assert_called_once_with(
+        {"test_key": "test_value"}, mock_file(), sort_keys=True, indent=4
+    )
 
 
 def test_delete_state_file(mocker):
