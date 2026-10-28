@@ -474,6 +474,7 @@ class NavigationView:
         Publisher.subscribe(self.UpdateSeedOffset, "Update seed offset")
         Publisher.subscribe(self.UpdateMarkerOffsetState, "Update marker offset state")
         Publisher.subscribe(self.AddPeeledSurface, "Update peel")
+        Publisher.subscribe(self.UpdatePeelVisibility, "Update peel visibility")
         Publisher.subscribe(self.InitEfield, "Initialize E-field brain")
         Publisher.subscribe(self.StopEfieldPainting, "Stop E-field surface painting")
         Publisher.subscribe(self.GetPeelCenters, "Get peel centers and normals")
@@ -818,6 +819,12 @@ class NavigationView:
     def GetPeelCenters(self, centers, normals):
         self.peel_centers = centers
         self.peel_normals = normals
+
+    def UpdatePeelVisibility(self, visible):
+        if not visible:
+            for scene in self.scenes:
+                scene.ren.RemoveActor(scene.obj_projection_arrow_actor)
+                scene.ren.RemoveActor(scene.object_orientation_torus_actor)
 
     def InitLocatorViewer(self, locator):
         self.locator = locator
@@ -2113,7 +2120,11 @@ class NavigationView:
 
         [coil_dir, norm, coil_norm, p1] = self.ObjectArrowLocation(m_img, coord)
 
-        if flag and self.efield_mesh is None:
+        if (
+            self.actor_peel is not None
+            and self.actor_peel.GetVisibility()
+            and self.efield_painting_token is None
+        ):
             scene.ren.RemoveActor(scene.obj_projection_arrow_actor)
             scene.ren.RemoveActor(scene.object_orientation_torus_actor)
             intersectingCellIds = self.GetCellIntersection(p1, norm, self.locator)

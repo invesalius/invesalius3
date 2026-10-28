@@ -37,6 +37,75 @@ class PaintingMode(Protocol):
     def stop(self): ...
 
 
+class SurfacePeeling:
+    """Keep peeling as an alternative to the brain's original presentation."""
+
+    def __init__(self, painting):
+        self.painting = painting
+        self.actor = None
+        self.selected = True
+        Publisher.subscribe(self.update, "Update peel")
+        Publisher.subscribe(self.brain_changed, "Brain surface changed")
+        Publisher.subscribe(self.set_navigation_mode, "Set surface navigation mode")
+        Publisher.subscribe(self.clear, "Close surface painting")
+
+    def available(self, surface):
+        return (
+            self.painting.enabled
+            and self.actor is not None
+            and surface is Project().GetBrainSurface()
+        )
+
+    def uses_peel(self, surface):
+        return (
+            self.available(surface)
+            and self.selected
+            and not surface.painting_mode
+            and surface.display_map is None
+        )
+
+    def select(self, surface, selected):
+        if self.available(surface):
+            self.selected = selected
+            self.painting._changed(surface)
+
+    def update(self, flag, actor):
+        if self.actor is not None:
+            self.actor.SetVisibility(False)
+        if flag and actor is not self.actor:
+            self.selected = True
+        self.actor = actor if flag else None
+        surface = Project().GetBrainSurface()
+        if surface is not None:
+            self.painting._changed(surface)
+        self.refresh()
+
+    def refresh(self):
+        surface = Project().GetBrainSurface()
+        visible = bool(
+            self.painting.enabled
+            and self.actor is not None
+            and self.selected
+            and (surface is None or (surface.is_shown and self.uses_peel(surface)))
+        )
+        if self.actor is not None:
+            self.actor.SetVisibility(visible)
+        Publisher.sendMessage("Update peel visibility", visible=visible)
+
+    def brain_changed(self, previous, surface):
+        for candidate in (previous, surface):
+            if candidate is not None and candidate in Project().surface_dict.values():
+                self.painting._changed(candidate)
+        self.refresh()
+
+    def set_navigation_mode(self, status):
+        if not status:
+            self.clear()
+
+    def clear(self):
+        Publisher.sendMessage("Update peel", flag=False, actor=None)
+
+
 class SurfacePainting(metaclass=Singleton):
     def __init__(self):
         self.modes = {}
@@ -46,6 +115,7 @@ class SurfacePainting(metaclass=Singleton):
         Publisher.subscribe(self.set_navigation_mode, "Set surface navigation mode")
         Publisher.subscribe(self.remove_surface, "Discard surface painting")
         Publisher.subscribe(self.close, "Close surface painting")
+        self.peeling = SurfacePeeling(self)
 
     def register(self, mode: PaintingMode):
         previous = self.modes.get(mode.name)

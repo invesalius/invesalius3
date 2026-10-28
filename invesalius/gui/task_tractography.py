@@ -336,7 +336,7 @@ class InnerTaskPanel(wx.Panel):
 
     def OnSelectOpacity(self, evt, ctrl):
         self.brain_actor.GetProperty().SetOpacity(ctrl.GetValue())
-        Publisher.sendMessage("Update peel", flag=True, actor=self.brain_actor)
+        Publisher.sendMessage("Render volume viewer")
 
     def OnShowPeeling(self, evt, ctrl):
         # self.view_peeling = ctrl.GetValue()

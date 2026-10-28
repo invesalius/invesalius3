@@ -356,7 +356,12 @@ class SurfaceManager:
         if actor is None:
             return
         surface_map = surface.display_map
-        actor.SetVisibility(surface.is_shown and surface_map is None)
+        actor.SetVisibility(
+            surface.is_shown
+            and surface_map is None
+            and not self.painting.peeling.uses_peel(surface)
+        )
+        self.painting.peeling.refresh()
         visualizer = self.map_visualizers.get(surface)
         if surface_map is None:
             self.RemoveSurfacePresentation(surface)

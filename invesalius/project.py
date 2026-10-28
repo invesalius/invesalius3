@@ -176,17 +176,24 @@ class Project(metaclass=Singleton):
     def SetBrainSurface(self, surface):
         if surface is not None and surface not in self.surface_dict.values():
             raise ValueError("The brain surface must belong to the project.")
+        previous = self.GetBrainSurface()
         for candidate in self.surface_dict.values():
             candidate.anatomical_role = "brain" if candidate is surface else ""
+        if previous is not surface:
+            Publisher.sendMessage("Brain surface changed", previous=previous, surface=surface)
 
     def ChangeSurface(self, surface):
         index = surface.index
-        Publisher.sendMessage("Discard surface painting", surface=self.surface_dict[index])
-        surface.anatomical_role = self.surface_dict[index].anatomical_role
+        previous = self.surface_dict[index]
+        Publisher.sendMessage("Discard surface painting", surface=previous)
+        surface.anatomical_role = previous.anatomical_role
         self.surface_dict[index] = surface
+        if surface.anatomical_role == "brain":
+            Publisher.sendMessage("Brain surface changed", previous=previous, surface=surface)
 
     def RemoveSurface(self, index):
-        Publisher.sendMessage("Discard surface painting", surface=self.surface_dict[index])
+        surface = self.surface_dict[index]
+        Publisher.sendMessage("Discard surface painting", surface=surface)
         new_dict = {}
         for i in self.surface_dict:
             if i < index:
@@ -195,6 +202,8 @@ class Project(metaclass=Singleton):
                 new_dict[i - 1] = self.surface_dict[i]
                 new_dict[i - 1].index = i - 1
         self.surface_dict = new_dict
+        if surface.anatomical_role == "brain":
+            Publisher.sendMessage("Brain surface changed", previous=surface, surface=None)
 
     def AddMeasurement(self, measurement):
         index = len(self.measurement_dict)
