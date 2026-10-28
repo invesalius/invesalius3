@@ -1721,8 +1721,11 @@ class SurfacesListCtrlPanel(InvListCtrl):
                 )
             if self.category == "General" and surface.frozen_map is None:
                 item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Assign as brain"))
-                item.Check(surface.anatomical_role == "brain")
                 item.Enable(not surface.peel_only)
+                surface_context_menu.Bind(
+                    wx.EVT_MENU_OPEN,
+                    lambda evt, item=item: item.Check(surface.anatomical_role == "brain"),
+                )
                 surface_context_menu.Bind(
                     wx.EVT_MENU,
                     lambda evt: self.assign_brain(surface, evt.IsChecked()),
