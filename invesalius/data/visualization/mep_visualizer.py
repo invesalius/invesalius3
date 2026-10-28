@@ -338,7 +338,7 @@ class MEPVisualizer:
             dist, idx = self.kdtree.query(p)
             hit_point = self.surface_points[idx]
 
-        return hit_point
+        return hit_point.tolist()
 
     def UpdateMEPPoints(self):
         """
