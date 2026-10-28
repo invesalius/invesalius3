@@ -74,6 +74,7 @@ class Project(metaclass=Singleton):
         # Surfaces are (vtkPolyData)
         self.surface_dict = {}
         self.last_surface_index = -1
+        self.peel = None
 
         # Measurements
         self.measurement_dict = {}
@@ -339,6 +340,10 @@ class Project(metaclass=Singleton):
         for index in self.surface_dict:
             surfaces[str(index)] = self.surface_dict[index].SavePlist(dir_temp, filelist)
         project["surfaces"] = surfaces
+        # Keep cached layer files alive until the archive has been written.
+        peel = self.peel
+        if peel is not None:
+            project["peeling"] = peel.SavePlist(filelist)
 
         # Saving the measurements
         measurements = self.GetMeasuresDict()
@@ -544,6 +549,14 @@ class Project(metaclass=Singleton):
             s = srf.Surface(int(index))
             s.OpenPList(filepath)
             self.surface_dict[s.index] = s
+
+        self.peel = None
+        if "peeling" in project:
+            from invesalius.data.brainmesh_handler import Brain
+
+            self.peel = Brain.OpenPlist(project["peeling"], dirpath, self, progress_callback)
+            if self.peel is None:
+                return False
 
         if progress_callback:
             if not progress_callback(90, _("Loading measurements...")):
