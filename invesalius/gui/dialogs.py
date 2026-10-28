@@ -1107,10 +1107,18 @@ def SurfaceIndexNotExist(index: int) -> None:
 # ----------------------------------
 
 
-def ShowNavigationTrackerWarning(trck_id: int, lib_mode: str) -> None:
+def ShowNavigationTrackerWarning(
+    trck_id: int,
+    lib_mode: str,
+    expected_n_coils: int | None = None,
+    detected_n_coils: int | None = None,
+) -> None:
     """
     Spatial Tracker connection error
     """
+    if lib_mode == "cancelled":
+        return
+
     trck = {
         const.SELECT: "Tracker",
         const.MTC: "Claron MicronTracker",
@@ -1133,6 +1141,12 @@ def ShowNavigationTrackerWarning(trck_id: int, lib_mode: str) -> None:
         msg = _("Coil marker is not visible.")
     elif lib_mode == "head marker not visible":
         msg = _("Head marker is not visible.")
+    elif lib_mode == "coil count mismatch":
+        msg = _(
+            "Cannot connect to {tracker}: the tracker configuration file does not contain "
+            "enough coils. {expected} coil(s) required, {actual} found. "
+            "Adjust the coil count in Preferences or select another file and try again."
+        ).format(tracker=trck[trck_id], expected=expected_n_coils, actual=detected_n_coils)
     elif lib_mode == "error":
         msg = trck[trck_id] + _(" is not installed.")
     elif lib_mode == "disconnect":
@@ -4150,27 +4164,6 @@ class ObjectCalibrationDialog(wx.Dialog):
         self._init_pedal()
         self.InitializeObject()
 
-    def _GetROMBasename(self, obj_id):
-        """Get the ROM file basename (without extension) for a given obj_id.
-
-        For trackers like NDI Polaris, each coil has a ROM file. The obj_id
-        maps to the ROM file index as: obj_id=2 -> obj_dirs[0], etc.
-
-        Returns the basename without extension, or None if not available.
-        """
-        connection = self.tracker.tracker_connection
-        if connection is None or connection.configuration is None:
-            return None
-        obj_dirs = connection.configuration.get("obj_dirs", None)
-        if obj_dirs is None:
-            return None
-        rom_index = obj_id - 2
-        if 0 <= rom_index < len(obj_dirs):
-            basename = os.path.basename(obj_dirs[rom_index])
-            name, _ = os.path.splitext(basename)
-            return name
-        return None
-
     def _init_gui(self) -> None:
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         self.interactor.Enable(1)
@@ -4188,21 +4181,19 @@ class ObjectCalibrationDialog(wx.Dialog):
         tooltip = _("Select the hardware port / tracker sensor for the coil to be calibrated.")
 
         choices = []
-        self.obj_id_map = {}
+        # Map selection positions to rows, since coil names may be repeated or edited.
+        self.obj_ids = []
 
         if self.n_coils == 1:
             label = _("Stylus (Single)")
             choices.append(label)
-            self.obj_id_map[label] = 0
+            self.obj_ids.append(0)
 
-        is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
         for i in range(2, max_obj_id):
-            label = None
-            if is_polaris:
-                label = self._GetROMBasename(i)
+            label = self.tracker.GetCoilName(i) if self.n_coils > 1 else None
             label = label or _(f"Coil {i - 1}")
             choices.append(label)
-            self.obj_id_map[label] = i
+            self.obj_ids.append(i)
 
         self.choice_obj_id = choice_obj_id = wx.ComboBox(
             self,
@@ -4216,23 +4207,18 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_obj_id.Bind(wx.EVT_COMBOBOX, self.OnChooseObjID)
 
         # Determine initial selection based on default obj_id
-        for lbl, idx in self.obj_id_map.items():
-            if idx == self.obj_id:
-                choice_obj_id.SetStringSelection(lbl)
-                break
-        else:
-            if choices:
-                choice_obj_id.SetStringSelection(choices[0])
-                self.obj_id = self.obj_id_map[choices[0]]
+        if self.obj_id in self.obj_ids:
+            choice_obj_id.SetSelection(self.obj_ids.index(self.obj_id))
+        elif choices:
+            choice_obj_id.SetSelection(0)
+            self.obj_id = self.obj_ids[0]
 
         choice_obj_id.Enable(True)
 
         if self.tracker_id == const.PATRIOT or self.tracker_id == const.ISOTRAKII:
-            for lbl, idx in self.obj_id_map.items():
-                if idx == 0:
-                    self.obj_id = 0
-                    choice_obj_id.SetStringSelection(lbl)
-                    break
+            if 0 in self.obj_ids:
+                self.obj_id = 0
+                choice_obj_id.SetSelection(self.obj_ids.index(0))
             choice_obj_id.Enable(False)
 
         # ComboBox for sensor selection for FASTRAK
@@ -4547,9 +4533,9 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.ResetObjectFiducials()
 
     def OnChooseObjID(self, evt: wx.CommandEvent) -> None:
-        selection_label = evt.GetEventObject().GetStringSelection()
-        if selection_label in self.obj_id_map:
-            self.obj_id = self.obj_id_map[selection_label]
+        selection = evt.GetSelection()
+        if 0 <= selection < len(self.obj_ids):
+            self.obj_id = self.obj_ids[selection]
 
         # choice_sensor is only shown for relevant trackers like Polhemus FASTRAK
         # If obj_id=0, (ie. the stylus is attached to the coil), the sensor is not used, so hide this
@@ -4569,14 +4555,12 @@ class ObjectCalibrationDialog(wx.Dialog):
 
     def GetValue(
         self,
-    ) -> tuple[np.ndarray, np.ndarray, int, bytes | None, vtkPolyData | None]:
+    ) -> tuple[str, bytes | None, np.ndarray, np.ndarray, int, int]:
         coil_name = "default_coil"
 
         if self.n_coils > 1:
             is_polaris = self.tracker_id in (const.POLARIS, const.POLARISP4)
-
-            rom_name = self._GetROMBasename(self.obj_id) if is_polaris else None
-
+            rom_name = self.tracker.GetCoilName(self.obj_id) if is_polaris else None
             coil_name = rom_name or self.choice_obj_id.GetValue().strip() or "coil"
 
         return (
@@ -6824,6 +6808,33 @@ def DialogRescalePixelIntensity(max_intensity: float, unique_values: Any) -> boo
 
     dlg.Destroy()
     return status
+
+
+class SelectOptitrackCoilsDialog(wx.Dialog):
+    def __init__(self, coil_names: list[str], n_coils: int):
+        super().__init__(
+            wx.GetApp().GetTopWindow(),
+            title=_("Select Optitrack coils"),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+        )
+        self.n_coils = n_coils
+        self.coils = wx.CheckListBox(self, choices=coil_names, size=(350, 200))
+        self.coils.Bind(wx.EVT_CHECKLISTBOX, self.OnCheckCoil)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        message = _("Select exactly {count} coil(s) to track:").format(count=n_coils)
+        sizer.Add(wx.StaticText(self, label=message), 0, wx.ALL, 10)
+        sizer.Add(self.coils, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL), 0, wx.EXPAND | wx.ALL, 10)
+        self.SetSizerAndFit(sizer)
+        self.FindWindow(wx.ID_OK).Enable(False)
+        self.CenterOnParent()
+
+    def OnCheckCoil(self, evt: wx.CommandEvent) -> None:
+        self.FindWindow(wx.ID_OK).Enable(len(self.coils.GetCheckedItems()) == self.n_coils)
+
+    def GetValue(self) -> list[str]:
+        return list(self.coils.GetCheckedStrings())
 
 
 class ConfigureOptitrackDialog(wx.Dialog):

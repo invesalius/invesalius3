@@ -182,79 +182,73 @@ def PolarisP4Coord(tracker_connection: "TrackerConnection", tracker_id: int, ref
 
 
 def OptitrackCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
-    """
-
-    Obtains coordinates and angles of tracking rigid bodies (Measurement Probe, Coil, Head). Converts orientations from quaternion
-    rotations to Euler angles. This function uses Optitrack wrapper from Motive API 2.2.
-
-    Parameters
-    ----------
-    :tracker_connection: tracker connection instance from OptitrackTrackerConnection class at tracker_connection.py
-    :tracker_id: not used
-    :ref_mode: not used
-
-    Returns
-    -------
-    coord: position of tracking rigid bodies
-    """
+    """Return probe, head and selected coils as rows of [position_mm, angles_deg]."""
     trck = tracker_connection.GetConnection()
     trck.Run()
 
-    scale = 1000 * np.array([1.0, 1.0, 1.0])  # coordinates are in millimeters in Motive API
+    # Keep coil poses and visibilities in the same frame and selected name order.
+    frame = trck.GetFrame()
+    coils_by_name = {coil.name.strip(): coil for coil in frame.coils}
+    coils = [coils_by_name[name] for name in tracker_connection.GetCoilNames()]
 
-    angles_probe = np.degrees(
-        tr.euler_from_quaternion(
-            [
-                float(trck.qwToolTip),
-                float(trck.qzToolTip),
-                float(trck.qxToolTip),
-                float(trck.qyToolTip),
-            ],
-            axes="rzyx",
+    def make_coord(position, quaternion):
+        position_mm = np.asarray(position, dtype=float) * 1000.0
+        angles = np.degrees(
+            tr.euler_from_quaternion(
+                np.asarray(quaternion, dtype=float),
+                axes="rzyx",
+            )
         )
-    )
-    coord1 = np.array(
-        [
-            float(trck.PositionToolTipZ1) * scale[0],
-            float(trck.PositionToolTipX1) * scale[1],
-            float(trck.PositionToolTipY1) * scale[2],
-        ]
-    )
-    coord1 = np.hstack((coord1, angles_probe))
+        return np.hstack((position_mm, angles))
 
-    angles_head = np.degrees(
-        tr.euler_from_quaternion(
-            [float(trck.qwHead), float(trck.qzHead), float(trck.qxHead), float(trck.qyHead)],
-            axes="rzyx",
+    # Preserve the axis and quaternion conversion used by the previous wrapper.
+    coord_probe = make_coord(
+        (
+            trck.PositionToolTipZ1,
+            trck.PositionToolTipX1,
+            trck.PositionToolTipY1,
+        ),
+        (
+            trck.qwToolTip,
+            trck.qzToolTip,
+            trck.qxToolTip,
+            trck.qyToolTip,
+        ),
+    )
+
+    coord_head = make_coord(
+        (
+            trck.PositionHeadZ1,
+            trck.PositionHeadX1,
+            trck.PositionHeadY1,
+        ),
+        (
+            trck.qwHead,
+            trck.qzHead,
+            trck.qxHead,
+            trck.qyHead,
+        ),
+    )
+
+    coil_coords = [
+        make_coord(
+            (coil.z, coil.x, coil.y),
+            (coil.qw, coil.qz, coil.qx, coil.qy),
         )
-    )
-    coord2 = np.array(
-        [
-            float(trck.PositionHeadZ1) * scale[0],
-            float(trck.PositionHeadX1) * scale[1],
-            float(trck.PositionHeadY1) * scale[2],
-        ]
-    )
-    coord2 = np.hstack((coord2, angles_head))
+        for coil in coils
+    ]
 
-    angles_coil = np.degrees(
-        tr.euler_from_quaternion(
-            [float(trck.qwCoil), float(trck.qzCoil), float(trck.qxCoil), float(trck.qyCoil)],
-            axes="rzyx",
-        )
-    )
-    coord3 = np.array(
-        [
-            float(trck.PositionCoilZ1) * scale[0],
-            float(trck.PositionCoilX1) * scale[1],
-            float(trck.PositionCoilY1) * scale[2],
-        ]
-    )
-    coord3 = np.hstack((coord3, angles_coil))
+    coord = np.vstack([coord_probe, coord_head, *coil_coords])
+    marker_visibilities = [
+        int(trck.probeID),
+        int(trck.HeadID),
+        *(int(coil.tracked) for coil in coils),
+    ]
 
-    coord = np.vstack([coord1, coord2, coord3])
+    if frame.status != 0:
+        marker_visibilities = [0] * len(marker_visibilities)
 
-    return coord, [trck.probeID, trck.HeadID, trck.coilID]
+    return coord, marker_visibilities
 
 
 def PolarisCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_mode: int):
