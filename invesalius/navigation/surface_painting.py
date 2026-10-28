@@ -21,6 +21,8 @@
 
 from typing import Protocol
 
+import numpy as np
+
 import invesalius.constants as const
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
@@ -76,12 +78,29 @@ class SurfacePeeling:
 
     def __init__(self, painting):
         self.painting = painting
+        self.source = None
+        self.enabled = False
         self.actor = None
-        self.selected = True
-        Publisher.subscribe(self.update, "Update peel")
         Publisher.subscribe(self.brain_changed, "Brain surface changed")
         Publisher.subscribe(self.set_navigation_mode, "Set surface navigation mode")
         Publisher.subscribe(self.clear, "Close surface painting")
+        Publisher.subscribe(self.restore, "Project loaded successfully")
+
+    @property
+    def brain(self):
+        return Project().peel
+
+    @property
+    def depth(self):
+        return self.brain.depth if self.brain is not None else const.PEEL_DEPTH
+
+    @property
+    def max_depth(self):
+        return self.brain.numberOfPeels if self.brain is not None else const.MAX_PEEL_DEPTH
+
+    @property
+    def selected(self):
+        return self.brain.selected if self.brain is not None else True
 
     def available(self, surface):
         return (
@@ -95,19 +114,67 @@ class SurfacePeeling:
 
     def select(self, surface, selected):
         if self.available(surface):
-            self.selected = selected
+            self.brain.selected = selected
             self.painting._changed(surface)
+            Session().ChangeProject()
 
-    def update(self, flag, actor):
+    @staticmethod
+    def build(source):
+        from invesalius.data.brainmesh_handler import Brain
+        from invesalius.data.slice_ import Slice
+
+        slic = Slice()
+        from_file = isinstance(source, str)
+        affine = slic.affine.copy() if from_file else np.eye(4)
+        brain = Brain(const.MAX_PEEL_DEPTH, slic.window_width, slic.window_level, affine, Project())
+        if from_file:
+            brain.from_mask_file(source)
+        else:
+            brain.from_mask(source)
+        geometry = brain.peel[0]
+        if not geometry.GetNumberOfPoints() or not geometry.GetNumberOfCells():
+            raise ValueError("The brain mask does not contain usable geometry.")
+        return brain
+
+    def configure(self, brain, source):
+        Project().peel = brain
+        self.source = source
+        self.set_enabled(True)
+        Session().ChangeProject()
+
+    def set_enabled(self, enabled):
+        self.enabled = enabled and self.brain is not None
+        self._publish()
+
+    def set_depth(self, depth):
+        if self.brain is not None and depth != self.depth:
+            self.brain.depth = depth
+            self._publish()
+            Session().ChangeProject()
+
+    def restore(self):
+        if self.painting.enabled:
+            self.set_enabled(self.brain is not None)
+
+    def _publish(self):
+        actor = self.brain.get_actor(self.depth) if self.enabled else None
         if self.actor is not None:
             self.actor.SetVisibility(False)
-        if flag and actor is not self.actor:
-            self.selected = True
-        self.actor = actor if flag else None
+        self.actor = actor
+        if actor is not None:
+            Publisher.sendMessage(
+                "Get peel centers and normals",
+                centers=self.brain.peel_centers,
+                normals=self.brain.peel_normals,
+            )
+            Publisher.sendMessage("Get init locator", locator=self.brain.locator)
         surface = Project().GetBrainSurface()
         if surface is not None:
             self.painting._changed(surface)
         self.refresh()
+        Publisher.sendMessage("Update peel", flag=self.enabled, actor=actor)
+        Publisher.sendMessage("Update peel visualization", data=self.enabled)
+        Publisher.sendMessage("Surface peel changed")
 
     def refresh(self):
         surface = Project().GetBrainSurface()
@@ -122,6 +189,9 @@ class SurfacePeeling:
             )
         )
         if self.actor is not None:
+            self.actor.GetProperty().SetOpacity(
+                1 - surface.transparency if surface is not None else const.BRAIN_OPACITY
+            )
             self.actor.SetVisibility(visible)
         Publisher.sendMessage("Update peel visibility", visible=visible)
 
@@ -136,7 +206,8 @@ class SurfacePeeling:
             self.clear()
 
     def clear(self):
-        Publisher.sendMessage("Update peel", flag=False, actor=None)
+        self.source = None
+        self.set_enabled(False)
 
 
 class SurfacePainting(metaclass=Singleton):

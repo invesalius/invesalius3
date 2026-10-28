@@ -20,6 +20,7 @@ import itertools
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from typing import Optional
 
@@ -65,6 +66,7 @@ from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
 from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import NavigationHub
 from invesalius.navigation.robot import RobotObjective
+from invesalius.navigation.surface_painting import SurfacePainting
 from invesalius.pubsub import pub as Publisher
 
 BTN_NEW = wx.NewIdRef()
@@ -641,6 +643,7 @@ class ImportsPage(wx.Panel):
 class HeadPage(wx.Panel):
     def __init__(self, parent, nav_hub):
         wx.Panel.__init__(self, parent)
+        self.peeling = SurfacePainting().peeling
 
         # Create sizers
         top_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -688,6 +691,32 @@ class HeadPage(wx.Panel):
             self, label="Brain segmentation (~ a few minutes)"
         )
         top_sizer.Add(self.brain_segmentation_checkbox, 0, wx.ALIGN_LEFT | wx.LEFT, 10)
+        self.brain_segmentation_checkbox.Bind(wx.EVT_CHECKBOX, self.OnBrainSegmentationChoice)
+        top_sizer.AddSpacer(5)
+
+        self.peel_checkbox = wx.CheckBox(self, label=_("Enable brain peeling"))
+        self.peel_checkbox.Bind(wx.EVT_CHECKBOX, self.OnEnablePeeling)
+
+        depth_size = (self.FromDIP(40), self.peel_checkbox.GetBestSize().height)
+        self.peel_depth = wx.SpinCtrl(
+            self,
+            min=0,
+            max=self.peeling.max_depth,
+            initial=self.peeling.depth,
+            size=depth_size,
+            style=wx.SP_ARROW_KEYS | wx.BORDER_NONE,
+        )
+        self.peel_depth.SetMinSize(depth_size)
+        self.peel_depth.SetToolTip(_("Peeling depth (mm)"))
+        self.peel_depth.Bind(wx.EVT_SPINCTRL, self.OnPeelDepth)
+        self.peel_depth.Bind(wx.EVT_TEXT, self.OnPeelDepth)
+        peel_parameters = wx.BoxSizer(wx.HORIZONTAL)
+        peel_parameters.Add(self.peel_checkbox, 1, wx.ALIGN_CENTER_VERTICAL)
+        peel_parameters.Add(self.peel_depth, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 10)
+        peel_parameters.Add(
+            wx.StaticText(self, label="mm"), 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5
+        )
+        top_sizer.Add(peel_parameters, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
 
         # Add create surface button
         create_head_button = wx.Button(self, label="Create head surface")
@@ -713,6 +742,8 @@ class HeadPage(wx.Panel):
         self.Layout()
         self.__bind_events()
         self.__bind_events_wx()
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+        self.OnPeelChanged()
 
     def OnNext(self, evt):
         Publisher.sendMessage("Move to image page")
@@ -722,6 +753,8 @@ class HeadPage(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.OnSuccessfulBrainSegmentation, "Brain segmentation completed")
+        Publisher.subscribe(self.OnBrainSegmentationStopped, "Brain segmentation stopped")
+        Publisher.subscribe(self.OnPeelChanged, "Surface peel changed")
         Publisher.subscribe(self.SetThresholdBounds, "Update threshold limits")
         Publisher.subscribe(self.SetThresholdValues, "Set threshold values in gradient")
         Publisher.subscribe(self.SetThresholdValues2, "Set threshold values")
@@ -730,6 +763,68 @@ class HeadPage(wx.Panel):
         Publisher.subscribe(self.OnRemoveMasks, "Remove masks")
         Publisher.subscribe(self.AddMask, "Add mask")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
+
+    def OnDestroy(self, event):
+        if event.GetEventObject() is self:
+            Publisher.unsubscribe_owner(self)
+        event.Skip()
+
+    def OnBrainSegmentationChoice(self, event):
+        if self.peel_checkbox.IsChecked():
+            self.OnEnablePeeling(event)
+
+    def OnEnablePeeling(self, event):
+        enabled = self.peel_checkbox.IsChecked()
+        if not enabled or self.peeling.brain is not None:
+            self.peeling.set_enabled(enabled)
+            return
+        if self.brain_segmentation_checkbox.IsChecked():
+            return
+        selection = dlg.PeelsCreationDlg(wx.GetApp().GetTopWindow())
+        selection.CentreOnParent()
+        try:
+            if selection.ShowModal() != wx.ID_OK:
+                self.OnPeelChanged()
+                return
+            source = selection.get_source()
+        finally:
+            selection.Destroy()
+        self.CreatePeel(source)
+
+    def CreatePeel(self, source):
+        try:
+            progress = wx.ProgressDialog(
+                _("InVesalius 3"),
+                _("Creating peeled surface..."),
+                parent=wx.GetApp().GetTopWindow(),
+                style=wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME,
+            )
+            progress.CentreOnParent()
+            try:
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(self.peeling.build, source)
+                    while not future.done():
+                        progress.Pulse()
+                        time.sleep(0.05)
+                    brain = future.result()
+            finally:
+                progress.Destroy()
+            self.peeling.configure(brain, source)
+        except Exception as error:
+            self.OnPeelChanged()
+            wx.MessageBox(str(error), _("Create peel error"), wx.OK | wx.ICON_ERROR, self)
+
+    def OnPeelChanged(self):
+        self.peel_checkbox.SetValue(self.peeling.enabled)
+        self.peel_depth.SetRange(0, self.peeling.max_depth)
+        self.peel_depth.SetValue(self.peeling.depth)
+        self.peel_depth.Enable(self.peeling.enabled)
+
+    def OnPeelDepth(self, event):
+        self.peeling.set_depth(self.peel_depth.GetValue())
+
+    def OnBrainSegmentationStopped(self):
+        self.OnPeelChanged()
 
     def OnCloseProject(self):
         self.OnRemoveMasks(list(reversed(range(self.combo_mask.GetCount()))))
@@ -831,20 +926,16 @@ class HeadPage(wx.Panel):
 
         Publisher.sendMessage("Move to image page")
 
-    def CreateBrainSurface(self):
+    def CreateBrainSurface(self, mask):
         options = {"angle": 0.7, "max distance": 3.0, "min weight": 0.5, "steps": 10}
         algorithm = "ca_smoothing"
         proj = prj.Project()
-        mask_index = len(proj.mask_dict) - 1
+        mask_index = next(
+            (index for index, candidate in proj.mask_dict.items() if candidate is mask), None
+        )
         brain_colour = [235, 245, 255]
 
-        if self.combo_mask.GetSelection() != -1:
-            sl = slice_.Slice()
-            for idx in proj.mask_dict:
-                if proj.mask_dict[idx] is sl.current_mask:
-                    mask_index = idx
-                    break
-
+        if mask_index is not None:
             method = {"algorithm": algorithm, "options": options}
             srf_options = {
                 "index": mask_index,
@@ -948,8 +1039,10 @@ class HeadPage(wx.Panel):
         # Hide other surfaces
         Publisher.sendMessage("Show single surface", index=surface_idx, visibility=True)
 
-    def OnSuccessfulBrainSegmentation(self):
-        self.CreateBrainSurface()
+    def OnSuccessfulBrainSegmentation(self, mask):
+        self.CreateBrainSurface(mask)
+        if self.peel_checkbox.IsChecked():
+            self.CreatePeel(mask)
 
     def SegmentBrain(self):
         if deep_learning_seg_dialog.HAS_TORCH:
@@ -970,6 +1063,7 @@ class HeadPage(wx.Panel):
             )
             segmentation_dlg.ShowModal()
             segmentation_dlg.Destroy()
+            self.OnBrainSegmentationStopped()
 
 
 class ImagePage(wx.Panel):

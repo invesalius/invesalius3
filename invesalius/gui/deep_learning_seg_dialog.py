@@ -373,6 +373,8 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.btn_segment.Enable()
         self.chk_new_mask.Enable()
         self.elapsed_time_timer.Stop()
+        if self.auto_segment:
+            Publisher.sendMessage("Brain segmentation stopped")
 
     def OnBtnClose(self, evt):
         self.Close()
@@ -397,8 +399,9 @@ class DeepLearningSegmenterDialog(wx.Dialog):
         self.apply_segment_threshold()
 
         if self.auto_segment:
+            mask = self.ps.mask
             self.OnClose(self)
-            Publisher.sendMessage("Brain segmentation completed")
+            Publisher.sendMessage("Brain segmentation completed", mask=mask)
 
     def SetProgress(self, progress):
         if self.progress and self.progress.IsBeingDeleted() is False:
@@ -445,6 +448,8 @@ class DeepLearningSegmenterDialog(wx.Dialog):
             self.ps.terminate()
             self.ps = None
 
+        if self.auto_segment and not self.segmented:
+            Publisher.sendMessage("Brain segmentation stopped")
         self.Destroy()
 
     def HideProgress(self):

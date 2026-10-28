@@ -52,12 +52,10 @@ import wx.lib.agw.genericmessagedialog as GMD
 import wx.lib.masked.numctrl
 
 import invesalius.constants as const
-import invesalius.data.brainmesh_handler as brain
 import invesalius.data.slice_ as sl
 import invesalius.data.tractography as dti
 import invesalius.data.vtk_utils as vtk_utils
 import invesalius.gui.dialogs as dlg
-import invesalius.project as prj
 import invesalius.utils as utils
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
@@ -89,19 +87,13 @@ class InnerTaskPanel(wx.Panel):
         self.affine_vtk = None
         self.trekker = None
         self.n_tracts = const.N_TRACTS
-        self.peel_depth = const.PEEL_DEPTH
         self.view_tracts = False
         self.seed_offset = const.SEED_OFFSET
         self.seed_radius = const.SEED_RADIUS
-        self.brain_opacity = const.BRAIN_OPACITY
-        self.brain_peel = None
-        self.brain_actor = None
-        self.n_peels = const.MAX_PEEL_DEPTH
         self.p_old = np.array([[0.0, 0.0, 0.0]])
         self.tracts_run = None
         self.trekker_cfg = const.TREKKER_CONFIG
         self.nav_status = False
-        self.peel_loaded = False
         self.SetAutoLayout(1)
         self.__bind_events()
 
@@ -119,13 +111,6 @@ class InnerTaskPanel(wx.Panel):
         btn_load_cfg.Enable(True)
         btn_load_cfg.Bind(wx.EVT_BUTTON, self.OnLoadParameters)
 
-        # Button for creating peel
-        tooltip = _("Create peel")
-        btn_mask = wx.Button(self, -1, _("Peel"), size=wx.Size(50, 23))
-        btn_mask.SetToolTip(tooltip)
-        btn_mask.Enable(True)
-        btn_mask.Bind(wx.EVT_BUTTON, self.OnCreatePeel)
-
         # Button for creating new coil
         tooltip = _("Load anatomical labels")
         btn_act = wx.Button(self, -1, _("ACT"), size=wx.Size(50, 23))
@@ -137,19 +122,7 @@ class InnerTaskPanel(wx.Panel):
         line_btns = wx.BoxSizer(wx.HORIZONTAL)
         line_btns.Add(btn_load, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
         line_btns.Add(btn_load_cfg, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
-        line_btns.Add(btn_mask, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
         line_btns.Add(btn_act, 1, wx.LEFT | wx.TOP | wx.RIGHT, 2)
-
-        # Change peeling depth
-        text_peel_depth = wx.StaticText(self, -1, _("Peeling depth (mm):"))
-        spin_peel_depth = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
-        spin_peel_depth.Enable(True)
-        spin_peel_depth.SetRange(0, const.MAX_PEEL_DEPTH)
-        spin_peel_depth.SetValue(const.PEEL_DEPTH)
-        spin_peel_depth.Bind(wx.EVT_TEXT, partial(self.OnSelectPeelingDepth, ctrl=spin_peel_depth))
-        spin_peel_depth.Bind(
-            wx.EVT_SPINCTRL, partial(self.OnSelectPeelingDepth, ctrl=spin_peel_depth)
-        )
 
         # Change number of tracts
         text_ntracts = wx.StaticText(self, -1, _("Number tracts:"))
@@ -189,26 +162,7 @@ class InnerTaskPanel(wx.Panel):
         # spin_sleep.Bind(wx.EVT_TEXT, partial(self.OnSelectSleep, ctrl=spin_sleep))
         # spin_sleep.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSleep, ctrl=spin_sleep))
 
-        # Change opacity of brain mask visualization
-        text_opacity = wx.StaticText(self, -1, _("Brain opacity:"))
-        spin_opacity = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc=0.1)
-        spin_opacity.Enable(False)
-        spin_opacity.SetRange(0, 1.0)
-        spin_opacity.SetValue(self.brain_opacity)
-        spin_opacity.Bind(wx.EVT_TEXT, partial(self.OnSelectOpacity, ctrl=spin_opacity))
-        spin_opacity.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectOpacity, ctrl=spin_opacity))
-        self.spin_opacity = spin_opacity
-
-        # Create a horizontal sizer to threshold configs
         border = 1
-        line_peel_depth = wx.BoxSizer(wx.HORIZONTAL)
-        line_peel_depth.AddMany(
-            [
-                (text_peel_depth, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
-                (spin_peel_depth, 0, wx.ALL | wx.EXPAND | wx.GROW, border),
-            ]
-        )
-
         line_ntracts = wx.BoxSizer(wx.HORIZONTAL)
         line_ntracts.AddMany(
             [
@@ -237,14 +191,6 @@ class InnerTaskPanel(wx.Panel):
         # line_sleep.AddMany([(text_sleep, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
         #                     (spin_sleep, 0, wx.ALL | wx.EXPAND | wx.GROW, border)])
 
-        line_opacity = wx.BoxSizer(wx.HORIZONTAL)
-        line_opacity.AddMany(
-            [
-                (text_opacity, 1, wx.EXPAND | wx.GROW | wx.TOP | wx.RIGHT | wx.LEFT, border),
-                (spin_opacity, 0, wx.ALL | wx.EXPAND | wx.GROW, border),
-            ]
-        )
-
         # Check box to enable tract visualization
         checktracts = wx.CheckBox(self, -1, _("Enable tracts"))
         checktracts.SetValue(False)
@@ -252,14 +198,6 @@ class InnerTaskPanel(wx.Panel):
         checktracts.Bind(wx.EVT_CHECKBOX, partial(self.OnEnableTracts, ctrl=checktracts))
         self.checktracts = checktracts
 
-        # Check box to enable surface peeling
-        checkpeeling = wx.CheckBox(self, -1, _("Peel surface"))
-        checkpeeling.SetValue(False)
-        checkpeeling.Enable(False)
-        checkpeeling.Bind(wx.EVT_CHECKBOX, partial(self.OnShowPeeling, ctrl=checkpeeling))
-        self.checkpeeling = checkpeeling
-
-        # Check box to enable tract visualization
         checkACT = wx.CheckBox(self, -1, _("ACT"))
         checkACT.SetValue(False)
         checkACT.Enable(False)
@@ -269,7 +207,6 @@ class InnerTaskPanel(wx.Panel):
         border_last = 1
         line_checks = wx.BoxSizer(wx.HORIZONTAL)
         line_checks.Add(checktracts, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, border_last)
-        line_checks.Add(checkpeeling, 0, wx.ALIGN_CENTER | wx.RIGHT | wx.LEFT, border_last)
         line_checks.Add(checkACT, 0, wx.RIGHT | wx.LEFT, border_last)
 
         # Add line sizers into main sizer
@@ -277,14 +214,10 @@ class InnerTaskPanel(wx.Panel):
         border_last = 10
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, border_last)
-        main_sizer.Add(
-            line_peel_depth, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border
-        )
         main_sizer.Add(line_ntracts, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_offset, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(line_radius, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         # main_sizer.Add(line_sleep, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
-        main_sizer.Add(line_opacity, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border)
         main_sizer.Add(
             line_checks,
             0,
@@ -300,19 +233,6 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.OnUpdateTracts, "Set cross focal point")
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
-
-    def OnSelectPeelingDepth(self, evt, ctrl):
-        self.peel_depth = ctrl.GetValue()
-        if self.checkpeeling.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth)
-            Publisher.sendMessage("Update peel", flag=True, actor=actor)
-            Publisher.sendMessage(
-                "Get peel centers and normals",
-                centers=self.brain_peel.peel_centers,
-                normals=self.brain_peel.peel_normals,
-            )
-            Publisher.sendMessage("Get init locator", locator=self.brain_peel.locator)
-            self.peel_loaded = True
 
     def OnSelectNumTracts(self, evt, ctrl):
         self.n_tracts = ctrl.GetValue()
@@ -334,23 +254,6 @@ class InnerTaskPanel(wx.Panel):
     #     # self.tract.seed_offset = ctrl.GetValue()
     #     Publisher.sendMessage('Update sleep', data=self.sleep_nav)
 
-    def OnSelectOpacity(self, evt, ctrl):
-        self.brain_actor.GetProperty().SetOpacity(ctrl.GetValue())
-        Publisher.sendMessage("Render volume viewer")
-
-    def OnShowPeeling(self, evt, ctrl):
-        # self.view_peeling = ctrl.GetValue()
-        if ctrl.GetValue():
-            actor = self.brain_peel.get_actor(self.peel_depth)
-            self.peel_loaded = True
-            Publisher.sendMessage("Update peel visualization", data=self.peel_loaded)
-        else:
-            actor = None
-            self.peel_loaded = False
-            Publisher.sendMessage("Update peel visualization", data=self.peel_loaded)
-
-        Publisher.sendMessage("Update peel", flag=ctrl.GetValue(), actor=actor)
-
     def OnEnableTracts(self, evt, ctrl):
         self.view_tracts = ctrl.GetValue()
         Publisher.sendMessage("Update tracts visualization", data=self.view_tracts)
@@ -359,11 +262,6 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage("Update marker offset state", create=False)
 
     def OnEnableACT(self, evt, ctrl):
-        # self.view_peeling = ctrl.GetValue()
-        # if ctrl.GetValue():
-        #     act_data = self.brain_peel.get_actor(self.peel_depth)
-        # else:
-        #     actor = None
         Publisher.sendMessage("Enable ACT", data=ctrl.GetValue())
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
@@ -375,79 +273,6 @@ class InnerTaskPanel(wx.Panel):
             if not self.tp.running:
                 break
             wx.Yield()
-
-    def OnCreatePeel(self, event=None):
-        Publisher.sendMessage("Begin busy cursor")
-        inv_proj = prj.Project()
-        peels_dlg = dlg.PeelsCreationDlg(wx.GetApp().GetTopWindow())
-        ret = peels_dlg.ShowModal()
-        method = peels_dlg.method
-        if ret == wx.ID_OK:
-            t_init = time.time()
-            msg = "Creating peeled surface..."
-            self.tp = dlg.TractographyProgressWindow(msg)
-
-            slic = sl.Slice()
-            ww = slic.window_width
-            wl = slic.window_level
-            affine = np.eye(4)
-            if method == peels_dlg.FROM_FILES:
-                try:
-                    affine = slic.affine.copy()
-                except AttributeError:
-                    pass
-
-            self.brain_peel = brain.Brain(self.n_peels, ww, wl, affine, inv_proj)
-            if method == peels_dlg.FROM_MASK:
-                choices = [i for i in inv_proj.mask_dict.values()]
-                mask_index = peels_dlg.cb_masks.GetSelection()
-                mask = choices[mask_index]
-                option = 1
-            else:
-                mask = peels_dlg.mask_path
-                option = 2
-            with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as exec:
-                futures = [
-                    exec.submit(self.UpdateDialog, msg),
-                    exec.submit(self.BrainLoading, option, mask),
-                ]
-                done, not_done = wait(futures, return_when=FIRST_COMPLETED)
-                self.tp.running = False
-
-            t_end = time.time()
-            print(f"Elapsed time - {t_end - t_init}")
-            self.tp.Close()
-            if self.tp.error:
-                dlgg = GMD.GenericMessageDialog(
-                    None, self.tp.error, "Exception!", wx.OK | wx.ICON_ERROR
-                )
-                dlgg.ShowModal()
-
-            self.brain_actor = self.brain_peel.get_actor(self.peel_depth)
-            self.brain_actor.GetProperty().SetOpacity(self.brain_opacity)
-            Publisher.sendMessage("Update peel", flag=True, actor=self.brain_actor)
-            Publisher.sendMessage(
-                "Get peel centers and normals",
-                centers=self.brain_peel.peel_centers,
-                normals=self.brain_peel.peel_normals,
-            )
-            Publisher.sendMessage("Get init locator", locator=self.brain_peel.locator)
-            self.checkpeeling.Enable(1)
-            self.checkpeeling.SetValue(True)
-            self.spin_opacity.Enable(1)
-            Publisher.sendMessage("Update status text in GUI", label=_("Brain model loaded"))
-            self.peel_loaded = True
-            Publisher.sendMessage("Update peel visualization", data=self.peel_loaded)
-            del self.tp
-            wx.MessageBox(_("Peeled surface created"), _("InVesalius 3"))
-        peels_dlg.Destroy()
-        Publisher.sendMessage("End busy cursor")
-
-    def BrainLoading(self, option, mask):
-        if option == 1:
-            self.brain_peel.from_mask(mask)
-        else:
-            self.brain_peel.from_mask_file(mask)
 
     def OnLinkFOD(self, event=None):
         Publisher.sendMessage("Begin busy cursor")
@@ -632,16 +457,9 @@ class InnerTaskPanel(wx.Panel):
 
         self.checktracts.SetValue(False)
         self.checktracts.Enable(False)
-        self.checkpeeling.SetValue(False)
-        self.checkpeeling.Enable(False)
         self.checkACT.SetValue(False)
         self.checkACT.Enable(False)
 
-        self.spin_opacity.SetValue(const.BRAIN_OPACITY)
-        self.spin_opacity.Enable(False)
-        Publisher.sendMessage("Update peel", flag=False, actor=self.brain_actor)
-
-        self.peel_depth = const.PEEL_DEPTH
         self.n_tracts = const.N_TRACTS
 
         Publisher.sendMessage("Remove tracts")
