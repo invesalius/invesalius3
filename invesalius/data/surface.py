@@ -1081,10 +1081,10 @@ class SurfaceManager:
         # self.actors_dict.
         proj = prj.Project()
         surface = proj.surface_dict[surface_index]
-        Publisher.sendMessage("Update surface info in GUI", surface=surface)
         self.last_surface_index = surface_index
         #  if surface.is_shown:
         self.ShowActor(surface_index, True)
+        Publisher.sendMessage("Update surface info in GUI", surface=surface)
 
     def OnLoadSurfaceDict(self, surface_dict):
         removed_indexes = self.actors_dict.keys() - surface_dict.keys()
