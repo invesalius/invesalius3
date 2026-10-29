@@ -38,6 +38,18 @@ class SurfaceGeometry(metaclass=Singleton):
     def RegisterMapActor(self, actor):
         self.map_actors[actor] = actor.GetVisibility()
 
+    def GetSurfacePolyData(self, actor):
+        """Return the picked mesh without changing the anatomical surface registry."""
+        if actor is None:
+            return None
+        if actor in self.map_actors or any(
+            surface["original"]["actor"] == actor for surface in self.surfaces
+        ):
+            mapper = actor.GetMapper()
+            mapper.Update()
+            return mapper.GetInput()
+        return None
+
     def PrecalculateSurfaceData(self, actor):
         mapper = actor.GetMapper()
         mapper.Update()

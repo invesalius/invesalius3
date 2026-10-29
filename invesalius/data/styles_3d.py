@@ -711,16 +711,9 @@ class CurvedMeasureInteractorStyle(LinearMeasureInteractorStyle):
             x, y, z = self.measure_picker.GetPickPosition()
             actor = self.measure_picker.GetActor()
 
-            # ONLY add points if we hit a surface mesh (not marker spheres or line tubes)
-            is_surface = False
-            for surface in self.viewer.surface_geometry.surfaces:
-                if surface["original"]["actor"] == actor:
-                    is_surface = True
-                    break
-
-            if actor and is_surface:
+            polydata = self.viewer.surface_geometry.GetSurfacePolyData(actor)
+            if polydata is not None:
                 self.left_pressed = False
-                polydata = actor.GetMapper().GetInput()
                 Publisher.sendMessage(
                     "Add measurement point",
                     position=(x, y, z),
