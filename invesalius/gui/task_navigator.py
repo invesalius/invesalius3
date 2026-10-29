@@ -4892,7 +4892,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             self.marker_list_ctrl.Hide()
 
             # Create markers from the dictionary.
-            self.eeg_electrodes.import_legacy_markers(markers_data)
             for data in markers_data:
                 if data.get("marker_type") == 5:
                     continue
