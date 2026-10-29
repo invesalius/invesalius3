@@ -242,7 +242,7 @@ class SurfaceManager:
     def __init__(self):
         self.actors_dict = {}
         self.map_visualizers = {}
-        from invesalius.navigation.surface_painting import SurfacePainting
+        from invesalius.data.visualization.surface_painting import SurfacePainting
 
         self.painting = SurfacePainting()
         self.last_surface_index = 0
@@ -376,6 +376,7 @@ class SurfaceManager:
             if visualizer is None:
                 visualizer = SurfaceMapVisualizer()
                 self.map_visualizers[surface] = visualizer
+                Publisher.sendMessage("Register surface map actor", actor=visualizer.actor)
                 for prop in visualizer.actors:
                     Publisher.sendMessage("AppendActor", actor=prop)
             visualizer.set_map(surface_map)
@@ -998,7 +999,7 @@ class SurfaceManager:
         surface.polydata = polydata
         surface.frozen_map = frozen_map
         surface.peel_only = peel_only
-        surface.display_map = frozen_map if self.painting.enabled else None
+        surface.display_map = frozen_map
 
         if transparency:
             surface.transparency = transparency
@@ -1095,7 +1096,7 @@ class SurfaceManager:
         for key in surface_dict:
             surface = surface_dict[key]
             if not surface.painting_mode:
-                surface.display_map = surface.frozen_map if self.painting.enabled else None
+                surface.display_map = surface.frozen_map
 
             if surface.index in self.actors_dict:
                 actor = self.actors_dict[surface.index]

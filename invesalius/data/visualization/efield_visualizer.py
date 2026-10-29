@@ -32,7 +32,7 @@ from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vtku
 from invesalius.data.visualization.surface_map_visualizer import SurfaceMap
-from invesalius.navigation.surface_painting import SurfacePainting
+from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.pubsub import pub as Publisher
 
 

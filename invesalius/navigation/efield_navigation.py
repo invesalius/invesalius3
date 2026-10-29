@@ -30,8 +30,8 @@ import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius.data.visualization.efield_visualizer import EFieldVisualizer
+from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.i18n import tr as _
-from invesalius.navigation.surface_painting import SurfacePainting
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
@@ -782,6 +782,7 @@ class EFieldNavigation:
 
 class EFieldSurfaceMode:
     name = "E-field"
+    requires_navigation = True
 
     def __init__(self, navigation):
         self.navigation = navigation
