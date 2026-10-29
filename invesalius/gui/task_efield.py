@@ -44,22 +44,22 @@ try:
 except Exception:
     has_mTMS = False
 
-MTMS_DIDT_COUNT = 5
-
 import wx
 import wx.lib.masked.numctrl
 
 import invesalius.constants as const
-import invesalius.data.brainmesh_handler as brain
 import invesalius.gui.dialogs as dlg
 import invesalius.session as ses
-from invesalius.data.e_field import EFieldSurfaceMode
+from invesalius.data.e_field import EFieldBrain
 from invesalius.i18n import tr as _
+from invesalius.navigation.efield_navigation import EFieldSurfaceMode
 from invesalius.navigation.navigation import Navigation
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
+
+MTMS_DIDT_COUNT = 5
 
 
 class TaskPanel(wx.Panel):
@@ -378,9 +378,9 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnGetEfieldActor, "Get Efield actor from json")
         Publisher.subscribe(self.OnGetEfieldPaths, "Get Efield paths")
         Publisher.subscribe(self.OnGetMultilocusCoils, "Get multilocus paths from json")
-        Publisher.subscribe(self.SendNeuronavigationApi, "Send Neuronavigation Api")
         Publisher.subscribe(self.GetEfieldDataStatus, "Get status of Efield saved data")
         Publisher.subscribe(self.GetIds, "Get dI for mtms")
+        Publisher.subscribe(self.OnSaveEfield, "Request Efield save")
 
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
@@ -392,7 +392,7 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage(
                 "Read json config file for efield", filename=filename, convert_to_inv=convert_to_inv
             )
-            self.e_field_brain = brain.E_field_brain(self.e_field_mesh)
+            self.e_field_brain = EFieldBrain(self.e_field_mesh)
             self.Init_efield()
             self.surface_mode.configure(self.e_field_brain, self.efield_source_surface)
 
@@ -574,7 +574,7 @@ class InnerTaskPanel(wx.Panel):
             plot_efield_vectors=self.navigation.plot_efield_vectors,
         )
 
-    def OnSaveEfield(self, evt):
+    def OnSaveEfield(self, evt=None, marker_id=None):
         import invesalius.project as prj
 
         proj = prj.Project()
@@ -605,7 +605,7 @@ class InnerTaskPanel(wx.Panel):
             "Save Efield data",
             filename=filename,
             plot_efield_vectors=plot_efield_vectors,
-            marker_id=None,
+            marker_id=marker_id,
         )
 
     def OnSaveAllDataEfield(self, evt):
@@ -640,11 +640,6 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage("Save all Efield data", filename=filename)
         else:
             dlg.Efield_no_data_to_save_warning()
-
-    def SendNeuronavigationApi(self):
-        Publisher.sendMessage(
-            "Get Neuronavigation Api", neuronavigation_api=self.navigation.neuronavigation_api
-        )
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.efield_data_saved = efield_data_loaded

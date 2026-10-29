@@ -17,7 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-"""Navigation-only surface painting and presentation."""
+"""Surface map modes and temporary presentation, with optional navigation support."""
 
 from typing import Protocol
 
@@ -33,6 +33,7 @@ from invesalius.utils import Singleton
 class PaintingMode(Protocol):
     name: str
     available: bool
+    requires_navigation: bool
 
     def supports_surface(self, surface): ...
     def default_surface(self): ...
@@ -64,7 +65,8 @@ class SurfacePresentation:
         self.original.refresh()
 
     def replace_source(self, name, source, target):
-        if source is not target:
+        self.release_source(name)
+        if source is not None and source is not target:
             self.replaced_sources[name] = source
             self.painting._changed(source)
 
@@ -105,7 +107,7 @@ class SurfacePeeling:
 
     def available(self, surface):
         return (
-            self.painting.enabled
+            self.painting.navigation_mode
             and self.actor is not None
             and surface is Project().GetBrainSurface()
         )
@@ -188,7 +190,7 @@ class SurfacePeeling:
             Session().ChangeProject()
 
     def restore(self):
-        if self.painting.enabled:
+        if self.painting.navigation_mode:
             self.set_enabled(self.brain is not None)
 
     def _publish(self):
@@ -215,7 +217,7 @@ class SurfacePeeling:
         surface = Project().GetBrainSurface()
         presentation = self.painting.presentation
         visible = bool(
-            self.painting.enabled
+            self.painting.navigation_mode
             and self.actor is not None
             and self.selected
             and (
@@ -255,7 +257,7 @@ class SurfacePainting(metaclass=Singleton):
         self.modes = {}
         self.targets = {}
         self.tokens = {}
-        self.enabled = Session().GetConfig("mode") == const.MODE_NAVIGATOR
+        self.navigation_mode = Session().GetConfig("mode") == const.MODE_NAVIGATOR
         Publisher.subscribe(self.set_navigation_mode, "Set surface navigation mode")
         Publisher.subscribe(self.remove_surface, "Discard surface painting")
         Publisher.subscribe(self.close, "Close surface painting")
@@ -278,12 +280,14 @@ class SurfacePainting(metaclass=Singleton):
         self.targets.pop(mode.name, None)
 
     def available_modes(self, surface):
-        if not self.enabled or not surface.supports_painting:
+        if not surface.supports_painting:
             return ()
         return tuple(
             mode
             for mode in self.modes.values()
-            if mode.available and mode.supports_surface(surface)
+            if mode.available
+            and (self.navigation_mode or not mode.requires_navigation)
+            and mode.supports_surface(surface)
         )
 
     def set_available(self, mode, available):
@@ -293,10 +297,8 @@ class SurfacePainting(metaclass=Singleton):
         Publisher.sendMessage("Surface painting availability changed", mode=mode)
 
     def select(self, surface, name=""):
-        if not self.enabled:
-            return False
         if not name:
-            if surface.painting_mode:
+            if surface is not None and surface.painting_mode:
                 self.stop(surface.painting_mode)
             return True
         mode = self.modes[name]
@@ -329,14 +331,16 @@ class SurfacePainting(metaclass=Singleton):
         if surface is not None and surface.painting_mode == name:
             surface.painting_mode = ""
             surface.display_map = None
-        if token is not None:
-            self.modes[name].stop()
-        self.presentation.release_source(name)
-        if surface is not None:
-            self._changed(surface)
+        try:
+            if token is not None:
+                self.modes[name].stop()
+        finally:
+            self.presentation.release_source(name)
+            if surface is not None:
+                self._changed(surface)
 
     def update(self, name, token, surface_map):
-        if not self.enabled or token is None or self.tokens.get(name) is not token:
+        if token is None or self.tokens.get(name) is not token:
             return
         surface = self.targets[name]
         surface.display_map = surface_map
@@ -345,19 +349,21 @@ class SurfacePainting(metaclass=Singleton):
 
     def remove_surface(self, surface):
         for name, target in list(self.targets.items()):
-            if target is surface:
+            if target is surface or self.presentation.replaced_sources.get(name) is surface:
                 self.stop(name)
                 self.targets.pop(name)
 
     def set_navigation_mode(self, status):
-        if self.enabled == status:
+        if self.navigation_mode == status:
             return
-        self.enabled = status
+        self.navigation_mode = status
         if not status:
             for name in list(self.tokens):
-                self.stop(name)
+                if self.modes[name].requires_navigation:
+                    self.stop(name)
         for surface in Project().surface_dict.values():
-            surface.display_map = surface.frozen_map if status else None
+            if not surface.painting_mode:
+                surface.display_map = surface.frozen_map
             self._changed(surface)
 
     def close(self):

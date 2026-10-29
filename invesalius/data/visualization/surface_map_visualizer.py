@@ -17,9 +17,10 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-"""Surface map data and shared presentation for navigation."""
+"""Surface map data and shared presentation for live and offline sources."""
 
 from dataclasses import dataclass
+from math import isfinite
 
 from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkCommonDataModel import vtkPolyData
@@ -29,6 +30,8 @@ from vtkmodules.vtkRenderingCore import vtkActor, vtkColorTransferFunction, vtkP
 
 @dataclass
 class SurfaceMap:
+    """Map on its own mesh, already aligned to the viewer's coordinates in millimeters."""
+
     polydata: vtkPolyData
     lookup_table: object
     scalar_range: tuple
@@ -37,6 +40,16 @@ class SurfaceMap:
     color_array: str = ""
 
     def __post_init__(self):
+        if not isinstance(self.lookup_table, (vtkLookupTable, vtkColorTransferFunction)):
+            raise TypeError("Unsupported surface lookup table.")
+        if isinstance(self.lookup_table, vtkColorTransferFunction):
+            self.scalar_range = self.lookup_table.GetRange()
+        if (
+            len(self.scalar_range) != 2
+            or not all(isfinite(value) for value in self.scalar_range)
+            or self.scalar_range[0] > self.scalar_range[1]
+        ):
+            raise ValueError("Surface map range must contain two ordered, finite values.")
         point_data = self.polydata.GetPointData()
         values = (
             point_data.GetArray(self.color_array) if self.color_array else point_data.GetScalars()
@@ -68,7 +81,7 @@ class SurfaceMap:
             table = {
                 "kind": "table",
                 "colors": [lut.GetTableValue(i) for i in range(lut.GetNumberOfTableValues())],
-                "range": list(lut.GetTableRange()),
+                "range": list(self.scalar_range),
             }
         else:
             raise TypeError("Unsupported surface lookup table.")
@@ -115,7 +128,7 @@ class SurfaceMapVisualizer:
         self.actor.SetMapper(self.mapper)
         self.scalar_bar = vtkScalarBarActor()
         self.scalar_bar.SetNumberOfLabels(4)
-        self.scalar_bar.SetLabelFormat("%4.0f")
+        self.scalar_bar.SetLabelFormat("%.3g")
         self.scalar_bar.SetTitleRatio(0.1)
         self.scalar_bar.SetMaximumWidthInPixels(70)
         self.scalar_bar.GetTitleTextProperty().SetFontSize(1)
@@ -128,9 +141,12 @@ class SurfaceMapVisualizer:
         self.actors = (self.actor, self.scalar_bar)
 
     def set_map(self, surface_map):
+        if isinstance(surface_map.lookup_table, vtkLookupTable):
+            surface_map.lookup_table.SetTableRange(surface_map.scalar_range)
         self.mapper.SetInputData(surface_map.polydata)
         self.mapper.SetLookupTable(surface_map.lookup_table)
         self.mapper.SetScalarRange(surface_map.scalar_range)
+        self.mapper.UseLookupTableScalarRangeOn()
         if surface_map.color_array:
             self.mapper.SetScalarModeToUsePointFieldData()
             self.mapper.SelectColorArray(surface_map.color_array)

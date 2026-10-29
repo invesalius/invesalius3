@@ -47,14 +47,15 @@ import invesalius.gui.dialogs as dialogs
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
 from invesalius.data.visualization.surface_map_visualizer import SurfaceMap
+from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.navigation.markers import MarkersControl
-from invesalius.navigation.surface_painting import SurfacePainting
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
 
 class MEPVisualizer:
     name = "Motor mapping"
+    requires_navigation = True
 
     def __init__(self):
         self.points_polydata = vtkPolyData()
