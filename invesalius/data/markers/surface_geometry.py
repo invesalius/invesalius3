@@ -351,8 +351,6 @@ class SurfaceGeometry(metaclass=Singleton):
             raise RuntimeError(_("Create a 3D scalp surface before projecting onto it."))
 
         polydata = surface["polydata"]
-        normals = surface["normals"]
-        point_locator = surface["point_locator"]
         point = np.asarray(point, dtype=float)
         if point.shape != (3,) or not np.all(np.isfinite(point)):
             raise RuntimeError(_("Coordinates must contain only finite numbers."))
@@ -367,18 +365,77 @@ class SurfaceGeometry(metaclass=Singleton):
         if not 0 <= cell_id.get() < polydata.GetNumberOfCells():
             raise RuntimeError(_("The scalp surface does not contain usable geometry."))
 
+        return tuple(closest_point), self._GetSurfaceNormal(
+            surface, closest_point, cell_id.get(), smooth_radius
+        )
+
+    def GetOuterPointOnScalp(self, point, smooth_radius=0.0):
+        """Project radially onto the first scalp face encountered from outside."""
+        point = np.asarray(point, dtype=float)
+        if point.shape != (3,) or not np.all(np.isfinite(point)):
+            raise RuntimeError(_("Coordinates must contain only finite numbers."))
+
+        surface = self.GetSmoothedScalpSurface()
+        if surface is None:
+            raise RuntimeError(_("Create a 3D scalp surface before projecting onto it."))
+
+        polydata = surface["polydata"]
+        center = np.asarray(polydata.GetCenter())
+        direction = point - center
+        length = np.linalg.norm(direction)
+        if not np.isfinite(length) or length < 1e-10:
+            raise RuntimeError(_("Cannot project a point at the center of the scalp surface."))
+        direction /= length
+        bounds = np.asarray(polydata.GetBounds()).reshape(3, 2)
+        # The bounding-box diagonal puts the ray origin outside every face of the mesh.
+        ray_start = center + direction * (np.linalg.norm(bounds[:, 1] - bounds[:, 0]) + 1.0)
+        intersections = vtk.vtkPoints()
+        intersections.SetDataTypeToDouble()
+        cell_ids = vtk.vtkIdList()
+        # shortcut: rays can cross mesh openings, repair the projection mesh if inner faces are hit.
+        hit = surface["cell_locator"].IntersectWithLine(
+            ray_start, center, 1e-6, intersections, cell_ids, vtk.vtkGenericCell()
+        )
+        if not hit or intersections.GetNumberOfPoints() == 0:
+            raise RuntimeError(_("Cannot project the electrode onto the outer scalp surface."))
+
+        # The single-hit locator can return an inner intersection in VTK 9.3.
+        first_hit = min(
+            range(intersections.GetNumberOfPoints()),
+            key=lambda index: np.linalg.norm(np.asarray(intersections.GetPoint(index)) - ray_start),
+        )
+        projected_point = intersections.GetPoint(first_hit)
+        normal = np.asarray(
+            self._GetSurfaceNormal(
+                surface, projected_point, cell_ids.GetId(first_hit), smooth_radius
+            )
+        )
+        if np.dot(normal, direction) < 0:
+            normal *= -1
+        return tuple(projected_point), tuple(normal)
+
+    @staticmethod
+    def _GetSurfaceNormal(surface, point, cell_id, smooth_radius):
+        polydata = surface["polydata"]
+        point_locator = surface["point_locator"]
+        normals = surface["normals"]
         normal_data = normals.GetPointData().GetNormals()
         if normal_data is None:
             raise RuntimeError(_("The scalp surface does not contain usable normals."))
 
         # Interpolate normals at the actual point on the cell, not at a nearby vertex.
-        cell = polydata.GetCell(cell_id.get())
+        cell = polydata.GetCell(cell_id)
         weights = [0.0] * cell.GetNumberOfPoints()
         evaluation = cell.EvaluatePosition(
-            closest_point, [0.0, 0.0, 0.0], sub_id, [0.0, 0.0, 0.0], distance_squared, weights
+            point,
+            [0.0, 0.0, 0.0],
+            vtk.reference(0),
+            [0.0, 0.0, 0.0],
+            vtk.reference(0.0),
+            weights,
         )
         if evaluation < 0:
-            closest_point_id = point_locator.FindClosestPoint(closest_point)
+            closest_point_id = point_locator.FindClosestPoint(point)
             closest_normal = np.asarray(normal_data.GetTuple(closest_point_id), dtype=float)
         else:
             closest_normal = np.sum(
@@ -392,7 +449,7 @@ class SurfaceGeometry(metaclass=Singleton):
 
         if smooth_radius > 0:
             nearby_ids = vtk.vtkIdList()
-            point_locator.FindPointsWithinRadius(smooth_radius, closest_point, nearby_ids)
+            point_locator.FindPointsWithinRadius(smooth_radius, point, nearby_ids)
             if nearby_ids.GetNumberOfIds() > 0:
                 closest_normal = np.mean(
                     [
@@ -410,7 +467,7 @@ class SurfaceGeometry(metaclass=Singleton):
             raise RuntimeError(_("The scalp surface does not contain usable normals."))
         closest_normal /= normal_length
 
-        return tuple(closest_point), tuple(closest_normal)
+        return tuple(closest_normal)
 
     @staticmethod
     def _HasUsableGeometry(surface):

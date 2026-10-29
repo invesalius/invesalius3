@@ -102,6 +102,7 @@ class NotebookPanel(wx.Panel):
         self.eeg_electrodes = EEGElectrodeManager()
         self.eeg_page = None
         self.navigation_on = False
+        self._project_enabled = False
         self.__bind_events()
         self._SyncEEGPage()
 
@@ -126,8 +127,8 @@ class NotebookPanel(wx.Panel):
         self.eeg_page.listctrl.SelectElectrode(electrode_uuid)
 
     def _OnProjectStateEnabled(self, state):
-        if state:
-            wx.CallAfter(self._SyncEEGPage)
+        self._project_enabled = bool(state)
+        wx.CallAfter(self._SyncEEGPage)
 
     def _OnEEGRegistrationModeChanged(self, active):
         self._SyncEEGPage(select=active)
@@ -136,11 +137,14 @@ class NotebookPanel(wx.Panel):
         wx.CallAfter(self._SyncEEGPage)
 
     def _OnCloseProject(self):
+        self._project_enabled = False
         wx.CallAfter(self._SyncEEGPage)
 
     def _SyncEEGPage(self, select=False):
         has_electrodes = bool(self.eeg_electrodes.electrodes)
-        should_show = self.eeg_electrodes.registration_active or has_electrodes
+        should_show = (
+            self._project_enabled or self.eeg_electrodes.registration_active or has_electrodes
+        )
 
         if should_show:
             if self.eeg_page is None:
@@ -2251,7 +2255,7 @@ class EEGElectrodePage(wx.Panel):
 
 
 class EEGElectrodeButtonControlPanel(wx.Panel):
-    """Removal controls that apply only to EEG electrodes."""
+    """Labelling, export and visibility controls for EEG electrodes."""
 
     def __init__(self, parent, eeg_electrodes, listctrl):
         super().__init__(parent, pos=wx.Point(0, 50), size=wx.Size(256, 22))
@@ -2263,16 +2267,18 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         remove_bitmap = wx.Bitmap(
             os.path.join(inv_paths.ICON_DIR, "data_remove.png"), wx.BITMAP_TYPE_PNG
         )
-        export_bitmap = wx.Bitmap(
-            os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"),
-            wx.BITMAP_TYPE_PNG,
-        )
 
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
         self.remove_button = pbtn.PlateButton(
             self, wx.ID_ANY, "", remove_bitmap, style=button_style, size=wx.Size(24, 20)
         )
         self.remove_button.SetToolTip(_("Delete selected EEG electrodes"))
+
+        export_bitmap = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_export_original_min.png"),
+            wx.BITMAP_TYPE_PNG,
+        )
+
         self.export_button = pbtn.PlateButton(
             self,
             wx.ID_ANY,
@@ -2281,30 +2287,59 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             style=button_style,
             size=wx.Size(24, 20),
         )
+
         self.export_button.SetToolTip(_("Export EEG montage"))
-        labels_bitmap = self._LoadBitmap("text_original.png")
-        labels_pressed_bitmap = self._LoadBitmap("text_inverted_original.png")
-        self.labels_button = wx.BitmapToggleButton(
+
+        import_bitmap = wx.Bitmap(
+            os.path.join(inv_paths.ICON_DIR, "surface_import_original_min.png"),
+            wx.BITMAP_TYPE_PNG,
+        )
+
+        self.import_button = pbtn.PlateButton(
+            self, wx.ID_ANY, "", import_bitmap, style=button_style, size=wx.Size(24, 20)
+        )
+        self.import_button.SetToolTip(_("Import EEG montage"))
+        auto_label_bitmap = wx.Bitmap(
+            wx.Image(str(inv_paths.ICON_DIR / "wand_sparkles.png")).Scale(
+                18, 18, wx.IMAGE_QUALITY_HIGH
+            )
+        )
+        self.auto_label_button = pbtn.PlateButton(
             self,
             wx.ID_ANY,
+            "",
+            auto_label_bitmap,
+            size=wx.Size(24, 20),
+            style=button_style,
+        )
+        self.auto_label_button.SetToolTip(_("Assign EEG labels using a montage template"))
+
+        labels_bitmap = self._LoadBitmap("text_original.png")
+        self.labels_button = pbtn.PlateButton(
+            self,
+            wx.ID_ANY,
+            "",
             labels_bitmap,
             size=wx.Size(24, 20),
+            style=button_style | pbtn.PB_STYLE_TOGGLE,
         )
-        self.labels_button.SetBitmapPressed(labels_pressed_bitmap)
-        self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
         self.visibility_button = wx.BitmapButton(self, size=wx.Size(24, 20))
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.remove_button, 0, wx.GROW | wx.EXPAND | wx.LEFT)
+        sizer.Add(self.import_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.Add(self.export_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
-        sizer.Add(self.labels_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
+        sizer.Add(self.auto_label_button, 0, wx.GROW | wx.EXPAND | wx.LEFT, 2)
         sizer.AddStretchSpacer()
+        sizer.Add(self.labels_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
         sizer.Add(self.visibility_button, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
         self.SetSizer(sizer)
         self.Fit()
 
         self.remove_button.Bind(wx.EVT_BUTTON, self.OnDeleteSelected)
+        self.import_button.Bind(wx.EVT_BUTTON, self.OnImport)
         self.export_button.Bind(wx.EVT_BUTTON, self.OnExport)
+        self.auto_label_button.Bind(wx.EVT_BUTTON, self.OnAutoLabel)
         self.labels_button.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleLabels)
         self.visibility_button.Bind(wx.EVT_BUTTON, self.OnToggleVisibility)
         self.listctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectionChanged)
@@ -2313,7 +2348,12 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
     def UpdateButtons(self):
         self.remove_button.Enable(self.listctrl.GetFirstSelected() != wx.NOT_FOUND)
         self.export_button.Enable(bool(self.eeg_electrodes.electrodes))
-        self.labels_button.SetValue(self.eeg_electrodes.labels_visible)
+        self.auto_label_button.Enable(len(self.eeg_electrodes.electrodes) >= 3)
+        # PlateButton has no public setter for its toggle value.
+        self.labels_button._pressed = self.eeg_electrodes.labels_visible
+        self.labels_button._SetState(
+            pbtn.PLATE_PRESSED if self.eeg_electrodes.labels_visible else pbtn.PLATE_NORMAL
+        )
         self._UpdateLabelsButtonTooltip()
         self.UpdateVisibilityButton()
 
@@ -2341,8 +2381,8 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             self.eeg_electrodes.set_all_visible(True)
 
     def OnToggleLabels(self, _evt):
-        self.eeg_electrodes.set_labels_visible(self.labels_button.GetValue())
-        self._UpdateLabelsButtonTooltip()
+        self.eeg_electrodes.set_labels_visible(not self.eeg_electrodes.labels_visible)
+        self.UpdateButtons()
 
     def _UpdateLabelsButtonTooltip(self):
         tooltip = (
@@ -2369,6 +2409,74 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         result = dlg.ShowConfirmationDialog(msg=message)
         if result == wx.ID_OK:
             self.eeg_electrodes.remove_many(electrode.electrode_uuid for electrode in electrodes)
+
+    def OnAutoLabel(self, _evt):
+        try:
+            templates = EEGMontage.get_templates()
+            names = sorted(templates, key=lambda name: len(templates[name]["electrodes"]))
+            choices = [
+                _("{name} ({count} electrodes)").format(
+                    name=name, count=len(templates[name]["electrodes"])
+                )
+                for name in names
+            ]
+            choice = wx.SingleChoiceDialog(
+                self, _("Select the EEG montage template:"), _("Auto label EEG electrodes"), choices
+            )
+            try:
+                if choice.ShowModal() != wx.ID_OK:
+                    return
+                name = names[choice.GetSelection()]
+            finally:
+                choice.Destroy()
+            electrodes = self.eeg_electrodes.electrodes
+            with wx.BusyCursor():
+                labels, distances = EEGMontage.match_template(
+                    templates[name],
+                    [electrode.position for electrode in electrodes],
+                    Project().image_fiducials,
+                )
+            self.eeg_electrodes.apply_labels(
+                {electrode.electrode_uuid: label for electrode, label in zip(electrodes, labels)},
+                {
+                    electrode.electrode_uuid: float(distance)
+                    for electrode, distance in zip(electrodes, distances)
+                },
+                montage_name=name,
+            )
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            wx.MessageBox(str(error), _("EEG auto labelling error"), wx.OK | wx.ICON_ERROR)
+
+    def OnImport(self, _evt):
+        session = ses.Session()
+        dialog = wx.FileDialog(
+            self,
+            message=_("Open an exported EEG montage (keep its registration JSON beside it)"),
+            defaultDir=session.GetConfig("last_directory_eeg_montage", ""),
+            wildcard=_("EEG montages (*.tsv, *.hpts, *.sfp, *.elc, *.fif)")
+            + "|*.tsv;*.hpts;*.sfp;*.elc;*.fif",
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+        )
+        try:
+            if dialog.ShowModal() != wx.ID_OK:
+                return
+            filename = dialog.GetPath()
+        finally:
+            dialog.Destroy()
+        try:
+            with wx.BusyCursor():
+                electrodes = EEGMontage.read_montage(filename)
+            if self.eeg_electrodes.electrodes:
+                message = _(
+                    "Replace the current EEG electrodes with the imported montage (%d electrodes)?"
+                ) % len(electrodes)
+                if dlg.ShowConfirmationDialog(msg=message) != wx.ID_OK:
+                    return
+            with wx.BusyCursor():
+                self.eeg_electrodes.replace_electrodes(electrodes)
+            session.SetConfig("last_directory_eeg_montage", os.path.dirname(filename))
+        except (OSError, ValueError, RuntimeError) as error:
+            wx.MessageBox(str(error), _("EEG import error"), wx.OK | wx.ICON_ERROR)
 
     def OnExport(self, _evt):
         session = ses.Session()
@@ -2412,7 +2520,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
 
 
 class EEGElectrodeListCtrl(wx.ListCtrl):
-    """EEG electrode table with a clickable visibility column."""
+    """EEG electrodes with visibility controls and template matching results."""
 
     def __init__(self, parent, eeg_electrodes, navigation_on=False):
         super().__init__(parent, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
@@ -2423,10 +2531,11 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
         self._refreshing = False
 
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER, width=25)
-        self.InsertColumn(1, _("ID"), width=50)
-        self.InsertColumn(2, _("X (mm)"), width=85)
-        self.InsertColumn(3, _("Y (mm)"), width=85)
-        self.InsertColumn(4, _("Z (mm)"), width=85)
+        self.InsertColumn(1, _("ID"), width=40)
+        self.InsertColumn(2, _("Matched Name"), width=100)
+        self.InsertColumn(3, _("Distance (mm)"), width=100)
+        self.InsertColumn(4, _("Confidence"), width=100)
+        self.SetToolTip(_("Confidence is based on distance to the fitted montage template."))
 
         self.visibility_images = wx.ImageList(16, 16)
         for icon_name in ("object_invisible.png", "object_visible.png"):
@@ -2438,6 +2547,8 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected)
 
+        self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
+
     def OnLeftDown(self, evt):
         row, _flags = self.HitTest(evt.GetPosition())
         if row != wx.NOT_FOUND and evt.GetPosition()[0] <= self.GetColumnWidth(0):
@@ -2446,6 +2557,52 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
                 self.eeg_electrodes.set_visible(electrode.electrode_uuid, not electrode.visible)
             return
         evt.Skip()
+
+    def OnContextMenu(self, evt):
+        position = evt.GetPosition()
+        row = (
+            self.GetFocusedItem()
+            if position == wx.DefaultPosition
+            else self.HitTest(self.ScreenToClient(position))[0]
+        )
+        electrode = self._GetElectrode(row)
+        if electrode is None:
+            return
+        self.SelectElectrode(electrode.electrode_uuid)
+        menu = wx.Menu()
+        item = menu.Append(wx.ID_ANY, _("Change label..."))
+        menu.Bind(wx.EVT_MENU, lambda event: self.OnChangeLabel(electrode.electrode_uuid), item)
+        try:
+            self.PopupMenu(menu)
+        finally:
+            menu.Destroy()
+
+    def OnChangeLabel(self, electrode_uuid):
+        electrode = self.eeg_electrodes.get(electrode_uuid)
+        if electrode is None:
+            return
+        try:
+            template = EEGMontage.get_templates().get(electrode.montage_name)
+            if template is None:
+                raise ValueError(_("Run auto labelling to select an EEG montage first."))
+            labels = list(template["electrodes"])
+            dialog = wx.SingleChoiceDialog(
+                self,
+                _("Select a label from montage %s:") % electrode.montage_name,
+                _("Change label"),
+                labels,
+            )
+            try:
+                if electrode.label in labels:
+                    dialog.SetSelection(labels.index(electrode.label))
+                if dialog.ShowModal() != wx.ID_OK:
+                    return
+                label = dialog.GetStringSelection()
+            finally:
+                dialog.Destroy()
+            self.eeg_electrodes.rename(electrode_uuid, label)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            wx.MessageBox(str(error), _("EEG label error"), wx.OK | wx.ICON_ERROR)
 
     def RefreshElectrodes(self):
         selected_uuids = {electrode.electrode_uuid for electrode in self.GetSelectedElectrodes()}
@@ -2461,13 +2618,23 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
             self.DeleteAllItems()
             self.electrode_uuids = []
 
-            for electrode in self.eeg_electrodes.electrodes:
+            for index, electrode in enumerate(self.eeg_electrodes.electrodes, 1):
                 self.electrode_uuids.append(electrode.electrode_uuid)
                 row = self.InsertItem(self.GetItemCount(), "", int(electrode.visible))
-                self.SetItem(row, 1, electrode.label)
-
-                for column, coordinate in enumerate(electrode.position, start=2):
-                    self.SetItem(row, column, f"{coordinate:.2f}")
+                self.SetItem(row, 1, str(index))
+                self.SetItem(row, 2, electrode.label)
+                distance = electrode.distance_mm
+                confidence, colour = "—", wx.Colour(100, 100, 100)
+                if distance is not None:
+                    if distance < 5.0:
+                        confidence, colour = _("High"), wx.Colour(0, 120, 0)
+                    elif distance < 10.0:
+                        confidence, colour = _("Medium"), wx.Colour(140, 100, 0)
+                    else:
+                        confidence, colour = _("Low"), wx.Colour(180, 0, 0)
+                self.SetItem(row, 3, f"{distance:.2f}" if distance is not None else "—")
+                self.SetItem(row, 4, confidence)
+                self.SetItemTextColour(row, colour)
                 if electrode.electrode_uuid in selected_uuids:
                     self.Select(row)
                 if electrode.electrode_uuid == focused_uuid:
