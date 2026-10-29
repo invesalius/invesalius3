@@ -5,12 +5,10 @@ import threading
 import numpy as np
 import pyacvd
 import pyvista
-from vtkmodules.vtkCommonColor import vtkColorSeries
 
 # import Trekker
 from vtkmodules.vtkCommonCore import (
     vtkFloatArray,
-    vtkLookupTable,
 )
 from vtkmodules.vtkCommonDataModel import (
     vtkCellLocator,
@@ -402,27 +400,6 @@ class Brain:
         return self.currentPeelActor
 
 
-class E_field_brain:
-    def __init__(self, mesh):
-        self.GetEfieldActor(mesh)
-
-    def GetEfieldActor(self, mesh):
-        self.e_field_mesh_normals = vtkFloatArray()
-        self.e_field_mesh_centers = vtkFloatArray()
-
-        self.locator_efield_Cell = vtkCellLocator()
-        self.locator_efield_Cell.SetDataSet(mesh)
-        self.locator_efield_Cell.BuildLocator()
-
-        self.locator_efield = vtkPointLocator()
-        self.locator_efield.SetDataSet(mesh)
-        self.locator_efield.BuildLocator()
-
-        self.e_field_mesh_normals = GetNormals(mesh)
-        self.e_field_mesh_centers = GetCenters(mesh)
-        self.e_field_mesh = mesh
-
-
 class Scalp:
     def __init__(self, mesh):
         self.mesh_normals = vtkFloatArray()
@@ -461,16 +438,6 @@ def GetNormals(mesh):
     # This converts to the normals to an array for easy access
     normals = normalComputer.GetOutput().GetCellData().GetNormals()
     return normals
-
-
-def CreateLUTTableForEfield(min, max):
-    lut = vtkLookupTable()
-    lut.SetTableRange(min, max)
-    colorSeries = vtkColorSeries()
-    seriesEnum = colorSeries.BREWER_SEQUENTIAL_YELLOW_ORANGE_BROWN_9
-    colorSeries.SetColorScheme(seriesEnum)
-    colorSeries.BuildLookupTable(lut, colorSeries.ORDINAL)
-    return lut
 
 
 def cleanMesh(inp):

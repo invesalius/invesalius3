@@ -23,12 +23,27 @@ import time
 
 import numpy as np
 from vtkmodules.vtkCommonCore import vtkIdList
+from vtkmodules.vtkCommonDataModel import vtkCellLocator, vtkPointLocator
 
 import invesalius.data.imagedata_utils as imagedata_utils
 import invesalius.data.transformations as tr
-from invesalius.navigation.surface_painting import SurfacePainting
-from invesalius.project import Project
-from invesalius.pubsub import pub as Publisher
+
+
+class EFieldBrain:
+    """Keep the calculation mesh and its spatial lookup structures together."""
+
+    def __init__(self, mesh):
+        from invesalius.data.brainmesh_handler import GetCenters, GetNormals
+
+        self.e_field_mesh = mesh
+        self.locator_efield_Cell = vtkCellLocator()
+        self.locator_efield_Cell.SetDataSet(mesh)
+        self.locator_efield_Cell.BuildLocator()
+        self.locator_efield = vtkPointLocator()
+        self.locator_efield.SetDataSet(mesh)
+        self.locator_efield.BuildLocator()
+        self.e_field_mesh_normals = GetNormals(mesh)
+        self.e_field_mesh_centers = GetCenters(mesh)
 
 
 def Get_coil_position(coords):
@@ -63,11 +78,11 @@ def Get_coil_position(coords):
     return [T_rot, cp]
 
 
-class Visualize_E_field_Thread(threading.Thread):
+class EFieldCalculationThread(threading.Thread):
     def __init__(
         self, queues, event, sle, neuronavigation_api, debug_efield_enorm, plot_vectors, navigation
     ):
-        threading.Thread.__init__(self, name="Visualize_E_field_Thread")
+        threading.Thread.__init__(self, name="EFieldCalculationThread")
         # self.inp = inp #list of inputs
         self.efield_queue = queues[0]
         self.e_field_norms_queue = queues[1]
@@ -147,67 +162,3 @@ class Visualize_E_field_Thread(threading.Thread):
                             self.revision_old = revision
 
             time.sleep(self.sle)
-
-
-class EFieldSurfaceMode:
-    name = "E-field"
-
-    def __init__(self, navigation):
-        self.navigation = navigation
-        self.brain = None
-        self.source_surface = None
-        self.painting = SurfacePainting()
-        self.painting.register(self)
-        Publisher.subscribe(self.remove_surface, "Discard surface painting")
-        Publisher.subscribe(self.clear, "Close project data")
-
-    @property
-    def available(self):
-        return self.brain is not None and self.navigation.e_field_enabled
-
-    @available.setter
-    def available(self, enabled):
-        self.navigation.e_field_enabled = enabled
-
-    def configure(self, brain, surface):
-        self.clear()
-        self.brain = brain
-        self.source_surface = surface
-
-    def supports_surface(self, surface):
-        return True
-
-    def default_surface(self):
-        brain = Project().GetBrainSurface()
-        return brain if brain is not None and brain.supports_painting else self.source_surface
-
-    def start(self, surface, token):
-        self.painting.presentation.replace_source(self.name, self.source_surface, surface)
-        self.navigation.MarkEfieldParametersChanged()
-        Publisher.sendMessage(
-            "Initialize E-field brain", e_field_brain=self.brain, painting_token=token
-        )
-        self.navigation.e_field_loaded = True
-
-    def stop(self):
-        self.navigation.e_field_loaded = False
-        self.navigation.MarkEfieldParametersChanged()
-        self.navigation.efield_queue.clear()
-        self.navigation.e_field_norms_queue.clear()
-        self.navigation.e_field_IDs_queue.clear()
-        Publisher.sendMessage("Stop E-field surface painting")
-
-    def remove_surface(self, surface):
-        if surface is self.source_surface:
-            self.clear()
-
-    def clear(self):
-        self.painting.reset(self)
-        self.brain = None
-        self.source_surface = None
-
-    def dispose(self):
-        self.painting.unregister(self)
-        self.brain = None
-        self.source_surface = None
-        Publisher.unsubscribe_owner(self)

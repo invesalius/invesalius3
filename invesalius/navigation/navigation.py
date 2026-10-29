@@ -771,7 +771,7 @@ class Navigation(metaclass=Singleton):
             if self.e_field_enabled:
                 queues = [self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
                 jobs_list.append(
-                    e_field.Visualize_E_field_Thread(
+                    e_field.EFieldCalculationThread(
                         queues,
                         self.event,
                         2 * self.sleep_nav,
