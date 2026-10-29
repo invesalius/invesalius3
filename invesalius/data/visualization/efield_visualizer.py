@@ -259,7 +259,8 @@ class EFieldVisualizer:
         )
         self.static_markers_efield.append([marker_actor_brain, marker_id])
         self.ren.AddActor(marker_actor_brain)
-        self.efield.SaveCortexMarker(marker_id)
+        if self.efield.save_automatically:
+            Publisher.sendMessage("Request Efield save", marker_id=marker_id)
 
     def CortexMarkersVisualization(self, display_flag):
         for i in range(len(self.static_markers_efield)):

@@ -380,6 +380,7 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnGetMultilocusCoils, "Get multilocus paths from json")
         Publisher.subscribe(self.GetEfieldDataStatus, "Get status of Efield saved data")
         Publisher.subscribe(self.GetIds, "Get dI for mtms")
+        Publisher.subscribe(self.OnSaveEfield, "Request Efield save")
 
     def OnAddConfig(self, evt):
         filename = dlg.LoadConfigEfield()
@@ -573,7 +574,7 @@ class InnerTaskPanel(wx.Panel):
             plot_efield_vectors=self.navigation.plot_efield_vectors,
         )
 
-    def OnSaveEfield(self, evt):
+    def OnSaveEfield(self, evt=None, marker_id=None):
         import invesalius.project as prj
 
         proj = prj.Project()
@@ -604,7 +605,7 @@ class InnerTaskPanel(wx.Panel):
             "Save Efield data",
             filename=filename,
             plot_efield_vectors=plot_efield_vectors,
-            marker_id=None,
+            marker_id=marker_id,
         )
 
     def OnSaveAllDataEfield(self, evt):

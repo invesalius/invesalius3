@@ -31,7 +31,6 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius.data.visualization.efield_visualizer import EFieldVisualizer
 from invesalius.data.visualization.surface_painting import SurfacePainting
-from invesalius.i18n import tr as _
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
@@ -121,46 +120,6 @@ class EFieldNavigation:
                 "Update Cortex Marker",
                 CoGposition=center_gravity_position_for_marker,
                 CoGorientation=center_gravity_orientation_for_marker,
-            )
-
-    def SaveCortexMarker(self, marker_id):
-        if self.save_automatically:
-            import time
-
-            import invesalius.gui.dialogs as dlg
-            import invesalius.project as prj
-
-            proj = prj.Project()
-            timestamp = time.localtime(time.time())
-            stamp_date = f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
-            stamp_time = f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
-            sep = "-"
-
-            if self.path_meshes is None:
-                import os
-
-                current_folder_path = os.getcwd()
-            else:
-                current_folder_path = self.path_meshes
-
-            parts = [current_folder_path, "/", stamp_date, stamp_time, proj.name, "Efield"]
-            default_filename = sep.join(parts) + ".csv"
-
-            filename = dlg.ShowLoadSaveDialog(
-                message=_("Save markers as..."),
-                wildcard="(*.csv)|*.csv",
-                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                default_filename=default_filename,
-            )
-
-            if not filename:
-                return
-
-            Publisher.sendMessage(
-                "Save Efield data",
-                filename=filename,
-                plot_efield_vectors=self.plot_efield_vectors,
-                marker_id=marker_id,
             )
 
     def EnableSaveAutomaticallyEfieldData(self, enable, path_meshes, plot_efield_vectors):
@@ -608,46 +567,8 @@ class EFieldNavigation:
             self.max_efield_array = enorm_data[3].mvector
             self.Idmax = enorm_data[3].maxindex
             if self.save_automatically and self.plot_no_connection:
-                import time
-
-                import invesalius.gui.dialogs as dlg
-                import invesalius.project as prj
-
-                proj = prj.Project()
-                timestamp = time.localtime(time.time())
-                stamp_date = (
-                    f"{timestamp.tm_year:0>4d}{timestamp.tm_mon:0>2d}{timestamp.tm_mday:0>2d}"
-                )
-                stamp_time = (
-                    f"{timestamp.tm_hour:0>2d}{timestamp.tm_min:0>2d}{timestamp.tm_sec:0>2d}"
-                )
-                sep = "-"
-
-                if self.path_meshes is None:
-                    import os
-
-                    current_folder_path = os.getcwd()
-                else:
-                    current_folder_path = self.path_meshes
-
-                parts = [current_folder_path, "/", stamp_date, stamp_time, proj.name, "Efield"]
-                default_filename = sep.join(parts) + ".csv"
-
-                filename = dlg.ShowLoadSaveDialog(
-                    message=_("Save markers as..."),
-                    wildcard="(*.csv)|*.csv",
-                    style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
-                    default_filename=default_filename,
-                )
-
-                if not filename:
-                    return
-
                 Publisher.sendMessage(
-                    "Save Efield data",
-                    filename=filename,
-                    plot_efield_vectors=self.plot_efield_vectors,
-                    marker_id=self.list_index_efield_vectors,
+                    "Request Efield save", marker_id=self.list_index_efield_vectors
                 )
         self.GetEfieldMaxMin(self.e_field_norms)
 
