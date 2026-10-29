@@ -331,11 +331,13 @@ class SurfacePainting(metaclass=Singleton):
         if surface is not None and surface.painting_mode == name:
             surface.painting_mode = ""
             surface.display_map = None
-        if token is not None:
-            self.modes[name].stop()
-        self.presentation.release_source(name)
-        if surface is not None:
-            self._changed(surface)
+        try:
+            if token is not None:
+                self.modes[name].stop()
+        finally:
+            self.presentation.release_source(name)
+            if surface is not None:
+                self._changed(surface)
 
     def update(self, name, token, surface_map):
         if token is None or self.tokens.get(name) is not token:
