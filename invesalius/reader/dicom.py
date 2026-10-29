@@ -154,7 +154,13 @@ class Parser:
             new_value = str(sp2[0] + sp2[1] + str(int(float(sp2[2]))))
             data = time.strptime(new_value, "%H%M%S")
         elif len(sp1) == 2:
-            data = time.gmtime(float(value))
+            # DICOM TM "HHMMSS.FFFFFF": drop the fraction of a second. It is
+            # a time of day, not a count of seconds, so time.gmtime() can't
+            # be used here.
+            try:
+                data = time.strptime(sp1[0], "%H%M%S")
+            except ValueError:
+                return value
         elif len(sp1) > 2:
             data = time.strptime(value, "%H.%M.%S")
         elif len(sp2) > 1:
@@ -172,14 +178,14 @@ class Parser:
         try:
             if len(sp1) > 1:
                 if len(sp1[0]) <= 2:
-                    data = time.strptime(value, "%D.%M.%Y")
+                    data = time.strptime(value, "%d.%m.%Y")
                 else:
-                    data = time.strptime(value, "%Y.%M.%d")
-            elif len(value.split("//")) > 1:
-                data = time.strptime(value, "%D/%M/%Y")
+                    data = time.strptime(value, "%Y.%m.%d")
+            elif len(value.split("/")) > 1:
+                data = time.strptime(value, "%d/%m/%Y")
             else:
-                data = time.strptime(value, "%Y%M%d")
-            return time.strftime("%d/%M/%Y", data)
+                data = time.strptime(value, "%Y%m%d")
+            return time.strftime("%d/%m/%Y", data)
 
         except ValueError:
             return ""
