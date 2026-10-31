@@ -13,9 +13,10 @@ from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.segmentation.deep_learning import segment
+from invesalius.segmentation.deep_learning.utils import get_torch_devices
 
 try:
-    import torch
+    import torch  # noqa: F401
 
     HAS_TORCH = True
 except ImportError:
@@ -29,13 +30,7 @@ except ImportError:
     HAS_TINYGRAD = False
 
 if HAS_TORCH:
-    TORCH_DEVICES = {}
-    if torch.cuda.is_available():
-        for i in range(torch.cuda.device_count()):
-            name = torch.cuda.get_device_name()
-            device_id = f"cuda:{i}"
-            TORCH_DEVICES[name] = device_id
-    TORCH_DEVICES["CPU"] = "cpu"
+    TORCH_DEVICES = get_torch_devices()
 
 if HAS_TINYGRAD:
     TINYGRAD_DEVICES = {}
