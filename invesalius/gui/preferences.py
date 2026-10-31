@@ -1144,9 +1144,7 @@ class ObjectTab(wx.Panel):
         self.sel_sizer = sel_sizer = wx.StaticBoxSizer(
             wx.VERTICAL,
             self,
-            _(
-                f"TMS coil selection ({len(navigation.coil_registrations)} out of {navigation.n_coils})"
-            ),
+            _("TMS coil selection"),
         )
         self.inner_sel_sizer = inner_sel_sizer = wx.FlexGridSizer(10, 1, 1)
 
@@ -1271,7 +1269,7 @@ class ObjectTab(wx.Panel):
             return
         robot_coil_name = event.GetEventObject().GetStringSelection()
         self.robots.AssignCoilToRobot(robot.robot_id, robot_coil_name)
-        Publisher.sendMessage("Coil selection done", done=True)
+        Publisher.sendMessage("Coil selection done", done=self.navigation.CoilSelectionDone())
         Publisher.sendMessage("Update robot buttons")
 
     def _GetTrackerFileName(self, obj_id):
@@ -1402,9 +1400,6 @@ class ObjectTab(wx.Panel):
             if not self.robot_1:
                 self.robot_1 = self.robots.GetRobot(1)
 
-            # Update multicoil GUI elements
-            self.sel_sizer.GetStaticBox().SetLabel(f"TMS coil selection (0 out of {n_coils})")
-
         if clear_all:
             self.coil_registrations.clear()
             self.session.SetConfig("coil_registrations", self.coil_registrations)
@@ -1435,6 +1430,8 @@ class ObjectTab(wx.Panel):
 
         if not multicoil_mode and "default_coil" in self.coil_registrations:
             self.OnSelectCoil(name="default_coil", select=True)
+        else:
+            self.UpdateCoilSelectionState()
 
     def LoadConfig(self):
         state = self.session.GetConfig("navigation", {})
@@ -1452,36 +1449,49 @@ class ObjectTab(wx.Panel):
         for coil_name in self.coil_registrations:
             self.AddCoilButton(coil_name, show_button=multicoil_mode)
 
-        # Press the buttons for coils that were selected in config file
-        selected_coils = state.get("selected_coils", [])
-        for coil_name in selected_coils:
-            self.coil_btns[coil_name][0].SetValue(True)
+        self.UpdateCoilSelectionState()
 
-        # Update labels
+    def UpdateCoilSelectionState(self):
+        """Publish readiness independently of whether all tracker slots are used."""
+        n_coils_selected = len(self.navigation.coil_registrations)
         self.config_txt.SetLabel(
             f"{os.path.basename(self.coil_registrations.get('default_coil', {}).get('path', 'None'))}"
         )
-
-        n_coils_selected = len(selected_coils)
         self.sel_sizer.GetStaticBox().SetLabel(
-            f"TMS coil selection ({n_coils_selected} out of {n_coils})"
+            _("TMS coil selection ({selected} selected, max. {maximum})").format(
+                selected=n_coils_selected, maximum=self.navigation.n_coils
+            )
         )
 
-        if n_coils_selected == n_coils:
-            self.CoilSelectionDone()
-
-    def CoilSelectionDone(self):
-        if self.navigation.n_coils == 1:  # Tell the robot the coil name
+        done = self.navigation.CoilSelectionDone()
+        if done and n_coils_selected == 1 and self.navigation.n_coils == 1:
+            # Probe-only navigation can also be ready without a registered coil.
             coil_name = next(iter(self.navigation.coil_registrations))
             if hasattr(self, "robot_0"):
                 self.robots.AssignCoilToRobot(self.robot_0.robot_id, coil_name)
 
-        Publisher.sendMessage("Coil selection done", done=True)
-        Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
+        # Refresh robot choices on selection, reset, and configuration restore.
+        for robot, choice in (
+            (self.robot_0, self.choice_robot_0_coil),
+            (self.robot_1, self.choice_robot_1_coil),
+        ):
+            choice.Set(list(self.navigation.coil_registrations))
+            coil_name = robot.GetCoilName() if robot is not None else None
+            if coil_name in self.navigation.coil_registrations:
+                choice.SetStringSelection(coil_name)
+            else:
+                choice.SetSelection(wx.NOT_FOUND)
 
-        # Allow only n_coils buttons to be pressed, so disable unpressed coil-buttons
-        for btn, *junk in self.coil_btns.values():
-            btn.Enable(btn.GetValue())
+        # Readiness needs one coil; only the maximum count disables new selections.
+        for coil_name, button_info in self.coil_btns.items():
+            btn = button_info[0]
+            selected = coil_name in self.navigation.coil_registrations
+            btn.SetValue(selected)
+            btn.Enable(selected or n_coils_selected < self.navigation.n_coils)
+
+        Publisher.sendMessage("Coil selection done", done=done)
+        if done:
+            Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
 
     def OnSelectCoil(self, event=None, name=None, select=False):
         if name is None:
@@ -1504,7 +1514,7 @@ class ObjectTab(wx.Panel):
                 (
                     coil_name
                     for coil_name, registration in selected_registrations.items()
-                    if registration["obj_id"] == obj_id
+                    if coil_name != name and registration["obj_id"] == obj_id
                 ),
                 None,
             )
@@ -1537,47 +1547,12 @@ class ObjectTab(wx.Panel):
         # Select/Unselect coil
         Publisher.sendMessage("Select coil", coil_name=name, coil_registration=coil_registration)
 
-        n_coils_selected = len(navigation.coil_registrations)
-        n_coils = navigation.n_coils
-
-        # Update labels telling which coil is selected (for single coil mode) and how many coils to select (for multicoil mode)
-        self.config_txt.SetLabel(
-            f"{os.path.basename(self.coil_registrations.get('default_coil', {}).get('path', 'None'))}"
-        )
-        self.sel_sizer.GetStaticBox().SetLabel(
-            f"TMS coil selection ({n_coils_selected} out of {n_coils})"
-        )
-
-        # Update robot coil combobox
-        if hasattr(self, "choice_robot_0_coil") and self.choice_robot_0_coil is not None:
-            self.choice_robot_0_coil.Set(list(navigation.coil_registrations))
-            coil_0 = self.robot_0.GetCoilName() if self.robot_0.IsConnected() else None
-            if coil_0 and coil_0 in navigation.coil_registrations:
-                self.choice_robot_0_coil.SetStringSelection(coil_0)
-            else:
-                self.choice_robot_0_coil.SetSelection(wx.NOT_FOUND)
-
-        if hasattr(self, "choice_robot_1_coil") and self.choice_robot_1_coil is not None:
-            self.choice_robot_1_coil.Set(list(navigation.coil_registrations))
-            coil_1 = (
-                self.robot_1.GetCoilName() if self.robot_1 and self.robot_1.IsConnected() else None
-            )
-            if coil_1 and coil_1 in navigation.coil_registrations:
-                self.choice_robot_1_coil.SetStringSelection(coil_1)
-            else:
-                self.choice_robot_1_coil.SetSelection(wx.NOT_FOUND)
-
-        if n_coils_selected == n_coils:
-            self.CoilSelectionDone()
-        else:  # Enable all buttons
-            Publisher.sendMessage("Coil selection done", done=False)
-            for btn, *junk in self.coil_btns.values():
-                btn.Enable(True)
+        self.UpdateCoilSelectionState()
 
     def OnRightClickCoil(self, event, name):
         def DeleteCoil(event, name):
             # Unselect the coil first
-            self.OnSelectCoil(name, select=False)
+            self.OnSelectCoil(name=name, select=False)
             del self.coil_registrations[name]
 
             # Remove the coil-button
@@ -1586,9 +1561,6 @@ class ObjectTab(wx.Panel):
 
             # Remove the coil from the config file
             self.session.SetConfig("coil_registrations", self.coil_registrations)
-
-            # Remove coil from navigation and CoilVisualizer
-            Publisher.sendMessage("Select coil", coil_name=name, coil_registration=None)
 
         menu = wx.Menu()
         delete_coil = menu.Append(wx.ID_ANY, "Delete coil")
@@ -1618,7 +1590,7 @@ class ObjectTab(wx.Panel):
                         dialog.GetValue()
                     )
 
-                    if coil_name in self.coil_registrations and coil_name != "default_coil":
+                    if self.navigation.n_coils > 1 and coil_name in self.coil_registrations:
                         # Warn that we are overwriting an old registration
                         dialog = wx.TextEntryDialog(
                             None,
@@ -1656,13 +1628,13 @@ class ObjectTab(wx.Panel):
                             coil_btn.SetValue(False)
                             self.OnSelectCoil(name=coil_name, select=False)
 
-                        # Select the coil that was just created (if all coils have not been selected)
+                        # Select the new coil if the tracker capacity has not been reached.
                         if len(self.navigation.coil_registrations) < self.navigation.n_coils:
                             self.OnSelectCoil(name=coil_name, select=True)
                         else:
                             coil_btn.Enable(
                                 False
-                            )  # All coils have been selected so disable the new button
+                            )  # The selection has reached the tracker capacity.
 
                         # Show button only in multicoil mode
                         coil_btn.Show(self.navigation.n_coils > 1)
@@ -1714,7 +1686,7 @@ class ObjectTab(wx.Panel):
                 if len(data[0]) >= 8 and data[0][6] == "ROM":
                     tracker_file = data[0][7].strip()
 
-                if coil_name in self.coil_registrations and coil_name != "default_coil":
+                if self.navigation.n_coils > 1 and coil_name in self.coil_registrations:
                     # Warn that we are overwriting an old registration
                     dialog = wx.TextEntryDialog(
                         None,
@@ -1759,7 +1731,7 @@ class ObjectTab(wx.Panel):
                     if coil_btn.GetValue():
                         coil_btn.SetValue(False)
                         self.OnSelectCoil(name=coil_name, select=False)
-                    elif self.navigation.CoilSelectionDone():
+                    elif len(self.navigation.coil_registrations) >= self.navigation.n_coils:
                         coil_btn.Enable(False)
 
                     if self.navigation.n_coils == 1:
@@ -2395,7 +2367,7 @@ class TrackerTab(wx.Panel):
 
         ctrl.SetSelection(self.n_coils - 1)
         Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils, clear_all=clear_all)
-        Publisher.sendMessage("Coil selection done", done=False)
+        Publisher.sendMessage("Coil selection done", done=self.navigation.CoilSelectionDone())
 
     def OnChooseTracker(self, evt, ctrl):
         if sys.platform == "darwin":
@@ -2418,7 +2390,7 @@ class TrackerTab(wx.Panel):
         Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
         Publisher.sendMessage("Tracker changed")
         Publisher.sendMessage("Reset coil selection", n_coils=self.n_coils, clear_all=True)
-        Publisher.sendMessage("Coil selection done", done=False)
+        Publisher.sendMessage("Coil selection done", done=self.navigation.CoilSelectionDone())
         ctrl.SetSelection(self.tracker.tracker_id)
         Publisher.sendMessage("End busy cursor")
         if sys.platform == "darwin":
