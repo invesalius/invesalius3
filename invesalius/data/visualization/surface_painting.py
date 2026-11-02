@@ -44,13 +44,11 @@ class PaintingMode(Protocol):
 class SurfacePresentation:
     """Resolve original representations and temporary surface replacements."""
 
-    def __init__(self, painting, original):
-        self.painting = painting
+    def __init__(self, original):
         self.original = original
-        self.replaced_sources = {}
 
     def visible(self, surface):
-        return bool(surface.is_shown and surface not in self.replaced_sources.values())
+        return bool(surface.is_shown)
 
     @staticmethod
     def is_original(surface):
@@ -63,17 +61,6 @@ class SurfacePresentation:
             and self.original.actor_for(surface) is None
         )
         self.original.refresh()
-
-    def replace_source(self, name, source, target):
-        self.release_source(name)
-        if source is not None and source is not target:
-            self.replaced_sources[name] = source
-            self.painting._changed(source)
-
-    def release_source(self, name):
-        source = self.replaced_sources.pop(name, None)
-        if source is not None:
-            self.painting._changed(source)
 
 
 class SurfacePeeling:
@@ -262,7 +249,7 @@ class SurfacePainting(metaclass=Singleton):
         Publisher.subscribe(self.remove_surface, "Discard surface painting")
         Publisher.subscribe(self.close, "Close surface painting")
         self.peeling = SurfacePeeling(self)
-        self.presentation = SurfacePresentation(self, self.peeling)
+        self.presentation = SurfacePresentation(self.peeling)
 
     def register(self, mode: PaintingMode):
         previous = self.modes.get(mode.name)
@@ -335,7 +322,6 @@ class SurfacePainting(metaclass=Singleton):
             if token is not None:
                 self.modes[name].stop()
         finally:
-            self.presentation.release_source(name)
             if surface is not None:
                 self._changed(surface)
 
@@ -349,7 +335,7 @@ class SurfacePainting(metaclass=Singleton):
 
     def remove_surface(self, surface):
         for name, target in list(self.targets.items()):
-            if target is surface or self.presentation.replaced_sources.get(name) is surface:
+            if target is surface:
                 self.stop(name)
                 self.targets.pop(name)
 

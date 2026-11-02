@@ -56,7 +56,6 @@ from invesalius.navigation.efield_navigation import EFieldSurfaceMode
 from invesalius.navigation.navigation import Navigation
 from invesalius.net.neuronavigation_api import NeuronavigationApi
 from invesalius.net.pedal_connection import PedalConnector
-from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
 MTMS_DIDT_COUNT = 5
@@ -375,7 +374,7 @@ class InnerTaskPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateNavigationStatus, "Navigation status")
-        Publisher.subscribe(self.OnGetEfieldActor, "Get Efield actor from json")
+        Publisher.subscribe(self.OnGetEfieldMesh, "Get Efield mesh from json")
         Publisher.subscribe(self.OnGetEfieldPaths, "Get Efield paths")
         Publisher.subscribe(self.OnGetMultilocusCoils, "Get multilocus paths from json")
         Publisher.subscribe(self.GetEfieldDataStatus, "Get status of Efield saved data")
@@ -394,7 +393,7 @@ class InnerTaskPanel(wx.Panel):
             )
             self.e_field_brain = EFieldBrain(self.e_field_mesh)
             self.Init_efield()
-            self.surface_mode.configure(self.e_field_brain, self.efield_source_surface)
+            self.surface_mode.configure(self.e_field_brain)
 
     def OnDestroy(self, event):
         if event.GetEventObject() is self:
@@ -498,8 +497,6 @@ class InnerTaskPanel(wx.Panel):
         coil_index = evt.GetSelection()
         coil_set = coil_index == len(self.multilocus_coil) - 1
         self.OnChangeCoil(self.multilocus_coil[coil_index], coil_set)
-        # self.e_field_mesh = self.proj.surface_dict[self.surface_index].polydata
-        # Publisher.sendMessage('Get Actor', surface_index = self.surface_index)
 
     def IsMultilocusCoilset(self, coil_model_path):
         if not coil_model_path or not self.multilocus_coil:
@@ -548,10 +545,8 @@ class InnerTaskPanel(wx.Panel):
         ROI_size = ctrl.GetValue()
         Publisher.sendMessage("Update Efield ROI size", data=ROI_size)
 
-    def OnGetEfieldActor(self, efield_actor, surface_index_cortex):
-        self.e_field_mesh = efield_actor
-        self.surface_index = surface_index_cortex
-        self.efield_source_surface = Project().surface_dict[surface_index_cortex]
+    def OnGetEfieldMesh(self, efield_mesh):
+        self.e_field_mesh = efield_mesh
 
     def OnGetEfieldPaths(
         self, path_meshes, cortex_file, meshes_file, coil, ci, co, dIperdt_list, coil_set=False
