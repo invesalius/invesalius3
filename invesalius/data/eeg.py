@@ -35,6 +35,8 @@ from invesalius.i18n import tr as _
 
 # Each fiducial has half an electrode's weight to stabilize sparse captures.
 _MATCH_FIDUCIAL_WEIGHT = 0.5
+# Huber loss reduces influence beyond the 10 mm low-confidence boundary.
+_MATCH_ROBUST_DISTANCE_MM = 10.0
 # Heuristic bounds allow ~2 to 15 mm of correction at a 100 mm head radius.
 _MATCH_SCALE_LIMITS = (0.02, 0.15)
 # Require roughly a full 10-20 montage before allowing the widest scale interval.
@@ -123,7 +125,8 @@ class EEGMontage:
         Positions and fiducials are in InVesalius image mm; fiducial order is LPA, RPA, Nasion.
         Alternate unique assignments and weighted similarity fits. Scale bounds are
         relative to the initial fiducial fit, never accumulated between iterations.
-        All captures participate; the best weighted RMS fit supplies every return value.
+        All captures participate; Huber loss limits distant captures' influence.
+        The best robust fit supplies every return value, with unweighted distances in mm.
         """
         from scipy.optimize import linear_sum_assignment
         from scipy.spatial.distance import cdist, pdist
@@ -194,31 +197,46 @@ class EEGMontage:
         min_limit, max_limit = _MATCH_SCALE_LIMITS
         scale_limit = min_limit + (max_limit - min_limit) * count_support * coverage
 
-        weights = np.r_[np.ones(len(positions)), np.full(3, _MATCH_FIDUCIAL_WEIGHT)]
+        fiducial_weights = np.full(3, _MATCH_FIDUCIAL_WEIGHT)
+        total_weight = len(positions) + fiducial_weights.sum()
         target = np.vstack((positions, fiducials))
-        target_center = np.average(target, axis=0, weights=weights)
-        target_vectors = target - target_center
         current_positions, current_fiducials = initial_positions, initial_fiducials
         best_error = float("inf")
         for iteration in range(_MATCH_MAX_ITERATIONS + 1):
-            # Squared costs make assignment and fitting minimize the same objective.
-            costs = cdist(positions, current_positions, metric="sqeuclidean")
-            rows, columns = linear_sum_assignment(costs)
+            costs = cdist(positions, current_positions)
+            # Twice the Huber loss: squared up to 10 mm, then linear.
+            robust_costs = np.where(
+                costs <= _MATCH_ROBUST_DISTANCE_MM,
+                costs**2,
+                _MATCH_ROBUST_DISTANCE_MM * (2.0 * costs - _MATCH_ROBUST_DISTANCE_MM),
+            )
+            rows, columns = linear_sum_assignment(robust_costs)
             assignment = np.empty(len(positions), dtype=int)
             assignment[rows] = columns
-            squared_distances = costs[np.arange(len(positions)), assignment]
+            distances = costs[np.arange(len(positions)), assignment]
             fiducial_error = np.sum((current_fiducials - fiducials) ** 2)
             error = np.sqrt(
-                (squared_distances.sum() + _MATCH_FIDUCIAL_WEIGHT * fiducial_error) / weights.sum()
+                (
+                    robust_costs[np.arange(len(positions)), assignment].sum()
+                    + _MATCH_FIDUCIAL_WEIGHT * fiducial_error
+                )
+                / total_weight
             )
             if not np.isfinite(error) or error >= best_error:
                 break
             improvement = best_error - error
             best_error = error
             best_columns = assignment.copy()
-            best_distances = np.sqrt(squared_distances)
+            best_distances = distances.copy()
             if improvement < _MATCH_CONVERGENCE_MM or iteration == _MATCH_MAX_ITERATIONS:
                 break
+            # Huber reweighting retains every capture; fiducial anchors stay fixed.
+            weights = np.r_[
+                _MATCH_ROBUST_DISTANCE_MM / np.maximum(distances, _MATCH_ROBUST_DISTANCE_MM),
+                fiducial_weights,
+            ]
+            target_center = np.average(target, axis=0, weights=weights)
+            target_vectors = target - target_center
             source = np.vstack((initial_positions[assignment], initial_fiducials))
             source_center = np.average(source, axis=0, weights=weights)
             source_vectors = source - source_center
