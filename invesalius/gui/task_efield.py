@@ -448,7 +448,10 @@ class InnerTaskPanel(wx.Panel):
                     self.surface_mode.painting.set_available(self.surface_mode, False)
                     return
             self.surface_mode.painting.set_available(self.surface_mode, True)
-            self.surface_mode.painting.select(None, self.surface_mode.name)
+            if not self.surface_mode.painting.select(None, self.surface_mode.name):
+                self.surface_mode.painting.set_available(self.surface_mode, False)
+                wx.MessageBox(_("Assign a brain surface before enabling E-field."), _("E-field"))
+                return
             self.combo_change_coil.Enable(True)
             self.btn_all_save.Enable(True)
 

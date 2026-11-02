@@ -711,6 +711,7 @@ class EFieldSurfaceMode:
         self.source_surface = None
         self.painting = SurfacePainting()
         self.painting.register(self)
+        Publisher.subscribe(self.brain_changed, "Brain surface changed")
         Publisher.subscribe(self.remove_surface, "Discard surface painting")
         Publisher.subscribe(self.clear, "Close project data")
 
@@ -728,11 +729,17 @@ class EFieldSurfaceMode:
         self.source_surface = surface
 
     def supports_surface(self, surface):
-        return True
+        return surface is Project().GetBrainSurface()
 
     def default_surface(self):
         brain = Project().GetBrainSurface()
-        return brain if brain is not None and brain.supports_painting else self.source_surface
+        return brain if brain is not None and brain.supports_painting else None
+
+    def brain_changed(self, previous, surface):
+        target = self.painting.targets.get(self.name)
+        if target is not None and target is not surface:
+            self.painting.stop(self.name)
+            self.painting.targets.pop(self.name, None)
 
     def start(self, surface, token):
         self.painting.presentation.replace_source(self.name, self.source_surface, surface)
