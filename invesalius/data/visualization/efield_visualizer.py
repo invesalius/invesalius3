@@ -31,7 +31,7 @@ from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vtku
-from invesalius.data.visualization.surface_map_visualizer import SurfaceMap
+from invesalius.data.visualization.surface_map_visualizer import ColorBar, SurfaceMap
 from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.pubsub import pub as Publisher
 
@@ -140,6 +140,7 @@ class EFieldVisualizer:
                 "E-field",
                 "V/m",
                 color_array="Colors",
+                color_bar=ColorBar(position=(0.82, 0.1), compact=False, title="E (V/m)"),
             ),
         )
 

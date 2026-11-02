@@ -390,8 +390,11 @@ class SurfaceManager:
         if surface_map is None:
             self.RemoveSurfacePresentation(surface)
         else:
+            if visualizer is not None and visualizer.color_bar != surface_map.color_bar:
+                self.RemoveSurfacePresentation(surface)
+                visualizer = None
             if visualizer is None:
-                visualizer = SurfaceMapVisualizer()
+                visualizer = SurfaceMapVisualizer(surface_map.color_bar)
                 self.map_visualizers[surface] = visualizer
                 Publisher.sendMessage("Register surface map actor", actor=visualizer.actor)
                 for prop in visualizer.actors:
@@ -400,8 +403,12 @@ class SurfaceManager:
             visualizer.actor.GetProperty().DeepCopy(actor.GetProperty())
             visualizer.show(presentation.visible(surface))
         visible = [v for v in self.map_visualizers.values() if v.actor.GetVisibility()]
-        for index, item in enumerate(visible):
-            item.scalar_bar.SetPosition(0.06 + index * 0.13, 0.06)
+        offsets = {}
+        for item in visible:
+            x, y = item.color_bar.position
+            offset = offsets.get(item.color_bar.position, 0)
+            item.scalar_bar.SetPosition(x - offset if x >= 0.5 else x + offset, y)
+            offsets[item.color_bar.position] = offset + item.scalar_bar.GetWidth() + 0.03
 
     def RemoveSurfacePresentation(self, surface):
         visualizer = self.map_visualizers.pop(surface, None)
