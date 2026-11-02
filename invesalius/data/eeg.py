@@ -33,6 +33,20 @@ import numpy as np
 
 from invesalius.i18n import tr as _
 
+# Each fiducial has half an electrode's weight to stabilize sparse captures.
+_MATCH_FIDUCIAL_WEIGHT = 0.5
+# Heuristic bounds allow ~2 to 15 mm of correction at a 100 mm head radius.
+_MATCH_SCALE_LIMITS = (0.02, 0.15)
+# Require roughly a full 10-20 montage before allowing the widest scale interval.
+_MATCH_FULL_CAPTURE_COUNT = 20
+# Two principal RMS spreads of a quarter of LPA-RPA indicate broad coverage.
+_MATCH_SPREAD_FRACTION = 0.25
+# 20 mm permits scale correction plus modest pose changes, while limiting drift.
+_MATCH_MAX_FIDUCIAL_SHIFT_MM = 20.0
+# A 0.01 mm objective change is negligible relative to the 5/10 mm confidence bands.
+_MATCH_CONVERGENCE_MM = 0.01
+_MATCH_MAX_ITERATIONS = 30
+
 
 @dataclass
 class EEGElectrode:
@@ -107,7 +121,9 @@ class EEGMontage:
         """Return unique labels and residuals in capture order, without modifying captures.
 
         Positions and fiducials are in InVesalius image mm; fiducial order is LPA, RPA, Nasion.
-        Refinement preserves the fiducial scale.
+        Alternate unique assignments and weighted similarity fits. Scale bounds are
+        relative to the initial fiducial fit, never accumulated between iterations.
+        All captures participate; the best weighted RMS fit supplies every return value.
         """
         from scipy.optimize import linear_sum_assignment
         from scipy.spatial.distance import cdist, pdist
@@ -165,41 +181,77 @@ class EEGMontage:
         transform = affine_matrix_from_points(
             template_fiducials.T, fiducials.T, shear=False, scale=True
         )
-        current_positions = template_positions @ transform[:3, :3].T + transform[:3, 3]
-        current_fiducials = template_fiducials @ transform[:3, :3].T + transform[:3, 3]
-        fiducial_weights = np.full(3, 1.0 / 3.0)
+        if not np.isfinite(transform).all():
+            raise ValueError(_("Invalid EEG fiducial alignment."))
+        initial_positions = template_positions @ transform[:3, :3].T + transform[:3, 3]
+        initial_fiducials = template_fiducials @ transform[:3, :3].T + transform[:3, 3]
+        spread = np.linalg.svd(positions - positions.mean(axis=0), compute_uv=False)
+        reference_spread = np.linalg.norm(fiducials[1] - fiducials[0]) * _MATCH_SPREAD_FRACTION
+        # The second principal spread rejects clusters and narrow strips; squaring
+        # coverage keeps many nearby captures from granting full scale freedom.
+        coverage = min(1.0, (spread[1] / np.sqrt(len(positions)) / reference_spread) ** 2)
+        count_support = min(1.0, (len(positions) - 3) / (_MATCH_FULL_CAPTURE_COUNT - 3))
+        min_limit, max_limit = _MATCH_SCALE_LIMITS
+        scale_limit = min_limit + (max_limit - min_limit) * count_support * coverage
+
+        weights = np.r_[np.ones(len(positions)), np.full(3, _MATCH_FIDUCIAL_WEIGHT)]
+        target = np.vstack((positions, fiducials))
+        target_center = np.average(target, axis=0, weights=weights)
+        target_vectors = target - target_center
+        current_positions, current_fiducials = initial_positions, initial_fiducials
         best_error = float("inf")
-        for iteration in range(6):
-            costs = cdist(positions, current_positions)
+        for iteration in range(_MATCH_MAX_ITERATIONS + 1):
+            # Squared costs make assignment and fitting minimize the same objective.
+            costs = cdist(positions, current_positions, metric="sqeuclidean")
             rows, columns = linear_sum_assignment(costs)
-            distances = costs[rows, columns]
-            fiducial_error = np.average(
-                np.sum((current_fiducials - fiducials) ** 2, axis=1), weights=fiducial_weights
+            assignment = np.empty(len(positions), dtype=int)
+            assignment[rows] = columns
+            squared_distances = costs[np.arange(len(positions)), assignment]
+            fiducial_error = np.sum((current_fiducials - fiducials) ** 2)
+            error = np.sqrt(
+                (squared_distances.sum() + _MATCH_FIDUCIAL_WEIGHT * fiducial_error) / weights.sum()
             )
-            error = np.sqrt((np.mean(distances**2) + fiducial_error) / 2.0)
-            if error >= best_error:
+            if not np.isfinite(error) or error >= best_error:
                 break
             improvement = best_error - error
             best_error = error
-            best_columns, best_distances = columns.copy(), distances.copy()
-            if improvement < 0.1 or iteration == 5:
+            best_columns = assignment.copy()
+            best_distances = np.sqrt(squared_distances)
+            if improvement < _MATCH_CONVERGENCE_MM or iteration == _MATCH_MAX_ITERATIONS:
                 break
-            good = distances < 50.0
-            count = int(good.sum())
-            if count < 3:
-                break
-            source = np.vstack((current_positions[columns[good]], current_fiducials))
-            target = np.vstack((positions[rows[good]], fiducials))
-            # Give landmarks and captures equal total weight, regardless of electrode count.
-            weights = np.r_[np.full(count, 1.0 / count), fiducial_weights]
+            source = np.vstack((initial_positions[assignment], initial_fiducials))
             source_center = np.average(source, axis=0, weights=weights)
-            target_center = np.average(target, axis=0, weights=weights)
-            rotation, _residual = Rotation.align_vectors(
-                target - target_center, source - source_center, weights=weights
+            source_vectors = source - source_center
+            try:
+                rotation, _residual = Rotation.align_vectors(
+                    target_vectors, source_vectors, weights=weights
+                )
+            except (ValueError, np.linalg.LinAlgError):
+                break
+            rotated_vectors = rotation.apply(source_vectors)
+            scale = np.sum(weights[:, None] * rotated_vectors * target_vectors) / np.sum(
+                weights[:, None] * source_vectors**2
             )
-            current_positions = rotation.apply(current_positions - source_center) + target_center
-            current_fiducials = rotation.apply(current_fiducials - source_center) + target_center
+            if not np.isfinite(scale) or scale <= 0:
+                break
+            scale = np.clip(scale, 1.0 - scale_limit, 1.0 + scale_limit)
+            candidate_positions = (
+                scale * rotation.apply(initial_positions - source_center) + target_center
+            )
+            candidate_fiducials = (
+                scale * rotation.apply(initial_fiducials - source_center) + target_center
+            )
+            if (
+                not np.isfinite(candidate_positions).all()
+                or not np.isfinite(candidate_fiducials).all()
+                or np.max(np.linalg.norm(candidate_fiducials - initial_fiducials, axis=1))
+                > _MATCH_MAX_FIDUCIAL_SHIFT_MM
+            ):
+                break
+            current_positions, current_fiducials = candidate_positions, candidate_fiducials
 
+        if not np.isfinite(best_error):
+            raise ValueError(_("Could not find a finite EEG template alignment."))
         return [labels[index] for index in best_columns], best_distances
 
     @staticmethod
