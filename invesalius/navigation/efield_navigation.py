@@ -77,6 +77,7 @@ class EFieldNavigation:
         Publisher.subscribe(self.SavedAllEfieldData, "Save all Efield data")
         Publisher.subscribe(self.SaveEfieldTargetData, "Save target data")
         Publisher.subscribe(self.ClearSaveEfieldData, "Clear saved efield data")
+        Publisher.subscribe(self.ClearSaveEfieldData, "Close project data")
         Publisher.subscribe(self.GetTargetSavedEfieldData, "Get target index efield")
         Publisher.subscribe(self.CheckStatusSavedEfieldData, "Check efield data")
         Publisher.subscribe(self.UpdateEfieldPointLocationOffline, "Update interseccion offline")
@@ -379,7 +380,6 @@ class EFieldNavigation:
         self.e_field_norms = None
         self.e_field_norms_to_save = None
         self.last_efield_cell_id = None
-        self.target_radius_list = []
         self.focal_factor_members = []
         self.distance_efield = None
         self.mtms_coord = []
@@ -721,6 +721,7 @@ class EFieldSurfaceMode:
     def configure(self, brain):
         self.clear()
         self.brain = brain
+        Publisher.sendMessage("Clear saved efield data")
 
     def supports_surface(self, surface):
         return surface is Project().GetBrainSurface()
