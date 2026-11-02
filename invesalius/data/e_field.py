@@ -102,6 +102,7 @@ class EFieldCalculationThread(threading.Thread):
         self.plot_vectors = plot_vectors
         self.coord_old = None
         self.revision_old = None
+        self.ids_old = None
 
     def run(self):
         while not self.event.is_set():
@@ -139,6 +140,7 @@ class EFieldCalculationThread(threading.Thread):
                             self.coord_old is None
                             or not np.array_equal(self.coord_old, coord)
                             or self.revision_old != revision
+                            or self.ids_old != id_list
                         ):
                             [T_rot, cp] = Get_coil_position(coord)
                             if self.debug:
@@ -156,9 +158,10 @@ class EFieldCalculationThread(threading.Thread):
                                 )
 
                             except queue.Full:
-                                pass
+                                continue
 
                             self.coord_old = np.array(coord)
                             self.revision_old = revision
+                            self.ids_old = id_list
 
             time.sleep(self.sle)

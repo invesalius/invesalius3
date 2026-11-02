@@ -47,7 +47,6 @@ class EFieldNavigation:
         self.radius_list = vtkIdList()
         self.last_efield_cell_id = None
         self.plot_no_connection = False
-        self.old_coord = np.zeros((6,), dtype=float)
         self.efield_mesh = None
         self.e_field_norms = None
         self.efield_threshold = const.EFIELD_MAX_RANGE_SCALE
@@ -391,7 +390,6 @@ class EFieldNavigation:
         self.visualizer.RemoveEfieldEdges()
 
         self.radius_list.Reset()
-        self.old_coord = None
         self.visualizer.efield_lut = self.visualizer.CreateLUTTableForEfield(0, 1)
         self.visualizer.InitializeColorArray()
         self.visualizer.RecolorEfieldActor()
@@ -426,11 +424,10 @@ class EFieldNavigation:
         intersectingCellIds = vtku.find_cells_along_line(p1, norm, self.locator_efield_cell)
         self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
         try:
-            self.e_field_IDs_queue = queue_IDs
             if self.radius_list.GetNumberOfIds() != 0:
-                if self.old_coord is None or not np.array_equal(self.old_coord, coord):
-                    self.e_field_IDs_queue.put_nowait(self.radius_list)
-                self.old_coord = np.array(coord)
+                ids = vtkIdList()
+                ids.DeepCopy(self.radius_list)
+                queue_IDs.put_nowait(ids)
         except queue.Full:
             pass
 
