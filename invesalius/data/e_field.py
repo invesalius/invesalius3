@@ -152,6 +152,12 @@ class EFieldCalculationThread(threading.Thread):
                                     T_rot=T_rot,
                                     id_list=id_list,
                                 )
+                            if (
+                                self.event.is_set()
+                                or not self.navigation.e_field_loaded
+                                or revision != self.navigation.e_field_revision
+                            ):
+                                continue
                             try:
                                 self.e_field_norms_queue.put_nowait(
                                     [T_rot, cp, coord, enorm, id_list, revision]

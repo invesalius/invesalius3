@@ -708,6 +708,7 @@ class EFieldSurfaceMode:
         self.painting = SurfacePainting()
         self.painting.register(self)
         Publisher.subscribe(self.brain_changed, "Brain surface changed")
+        Publisher.subscribe(self.main_coil_changed, "Main coil changed")
         Publisher.subscribe(self.clear, "Close project data")
 
     @property
@@ -742,6 +743,12 @@ class EFieldSurfaceMode:
             "Initialize E-field brain", e_field_brain=self.brain, painting_token=token
         )
         self.navigation.e_field_loaded = True
+
+    def main_coil_changed(self, coil_name):
+        if self.name in self.painting.tokens:
+            surface = self.painting.targets[self.name]
+            self.painting.stop(self.name)
+            self.painting.select(surface, self.name)
 
     def stop(self):
         self.navigation.e_field_loaded = False

@@ -405,6 +405,7 @@ class CoordinateCorregistrate(threading.Thread):
         probe_rot_inv = np.linalg.inv(probe_rot)
         while not self.event.is_set():
             try:
+                efield_revision = self.navigation.e_field_revision
                 if not self.object_at_target_queue.empty():
                     self.target_flag = self.object_at_target_queue.get_nowait()
 
@@ -483,7 +484,7 @@ class CoordinateCorregistrate(threading.Thread):
                 if can_push_tracts and not self.navigation.e_field_loaded:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
                 if can_push_efield:
-                    self.efield_queue.put_nowait([m_img, coord, self.navigation.e_field_revision])
+                    self.efield_queue.put_nowait([m_img, coord, efield_revision])
             except queue.Full:
                 pass
 
