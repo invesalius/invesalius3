@@ -24,7 +24,7 @@ from scipy.spatial import distance
 from vtkmodules.vtkCommonColor import vtkColorSeries, vtkNamedColors
 from vtkmodules.vtkCommonCore import vtkDoubleArray, vtkLookupTable, vtkPoints, vtkUnsignedCharArray
 from vtkmodules.vtkCommonDataModel import vtkPolyData
-from vtkmodules.vtkFiltersCore import vtkGlyph3D
+from vtkmodules.vtkFiltersCore import vtkGlyph3D, vtkPolyDataNormals
 from vtkmodules.vtkFiltersModeling import vtkBandedPolyDataContourFilter
 from vtkmodules.vtkFiltersSources import vtkArrowSource
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
@@ -125,11 +125,16 @@ class EFieldVisualizer:
         if self.efield.e_field_norms is not None:
             polydata = self.CreateEfieldScalarPolyData(outside_value=float("nan"))
         polydata.GetPointData().AddArray(self.colors_init)
+        normals = vtkPolyDataNormals()
+        normals.SetInputData(polydata)
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.Update()
         SurfacePainting().update(
             "E-field",
             self.efield.efield_painting_token,
             SurfaceMap(
-                polydata,
+                normals.GetOutput(),
                 self.efield_lut,
                 self.efield_lut.GetTableRange(),
                 "E-field",

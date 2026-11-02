@@ -638,6 +638,11 @@ class SurfaceManager:
             proj = prj.Project()
             if proj.GetBrainSurface() is None:
                 proj.SetBrainSurface(proj.surface_dict[surface_index_cortex])
+            else:
+                self.ShowActor(surface_index_cortex, False)
+                Publisher.sendMessage(
+                    "Update surface info in GUI", surface=proj.surface_dict[surface_index_cortex]
+                )
             cortex_save_file = path_meshes + config_dict["cortex"]
             polydata = proj.surface_dict[surface_index_cortex].polydata
             file_extension = cortex_save_file.split(".")[-1]
