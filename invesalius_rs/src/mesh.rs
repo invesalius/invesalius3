@@ -48,8 +48,7 @@ pub fn context_aware_smoothing_internal<V, F, N>(
         "build_vertex_connectivity time: {:?}",
         t1.duration_since(t0)
     );
-    let _edge_nfaces: HashMap<(F, F), i32> = HashMap::new();
-    let _border_vertices: HashSet<F> = HashSet::new();
+    let border_vertices = find_border_vertices(&faces.view());
 
     let stack_orientation = [0.0, 0.0, 1.0];
     let t0 = std::time::Instant::now();
@@ -77,6 +76,7 @@ pub fn context_aware_smoothing_internal<V, F, N>(
     taubin_smooth(
         vertices,
         &vertex_connectivity,
+        &border_vertices,
         &weights,
         0.5,
         -0.53,
@@ -85,7 +85,35 @@ pub fn context_aware_smoothing_internal<V, F, N>(
     let t1 = std::time::Instant::now();
     println!("taubin_smooth time: {:?}", t1.duration_since(t0));
 }
+fn find_border_vertices<F>(faces: &ArrayView2<F>) -> HashSet<usize>
+where
+    F: Face,
+{
+    let mut edge_nfaces: HashMap<(usize, usize), usize> = HashMap::new();
 
+    for face in faces.outer_iter() {
+        let vertices: Vec<usize> = face.iter().skip(1).map(|v| v.as_()).collect();
+
+        for i in 0..vertices.len() {
+            let a = vertices[i];
+            let b = vertices[(i + 1) % vertices.len()];
+
+            let edge = if a < b { (a, b) } else { (b, a) };
+            *edge_nfaces.entry(edge).or_insert(0) += 1;
+        }
+    }
+
+    let mut border_vertices = HashSet::new();
+
+    for ((a, b), count) in edge_nfaces {
+        if count == 1 {
+            border_vertices.insert(a);
+            border_vertices.insert(b);
+        }
+    }
+
+    border_vertices
+}
 fn build_map_vface<F>(faces: &ArrayView2<F>) -> HashMap<usize, Vec<usize>>
 where
     F: Face,
@@ -297,6 +325,7 @@ where
 fn calc_d<V>(
     vertices: &ArrayView2<V>,
     vertex_connectivity: &Vec<Vec<usize>>,
+    border_vertices: &HashSet<usize>,
     v_id: usize,
 ) -> Vector3<f64>
 where
@@ -308,11 +337,12 @@ where
     let mut d = Vector3::zeros();
     let mut n = 0usize;
 
-    if is_border(v_id) {
+    if border_vertices.contains(&v_id) {
         for &vj_id in vertex_connectivity[v_id].iter() {
-            if is_border(vj_id) {
+            if border_vertices.contains(&vj_id) {
                 let vj = vertices.row(vj_id);
                 let p_vj = Vector3::new(vj[0].as_(), vj[1].as_(), vj[2].as_());
+
                 d += p_vi - p_vj;
                 n += 1;
             }
@@ -321,6 +351,7 @@ where
         for &vj_id in vertex_connectivity[v_id].iter() {
             let vj = vertices.row(vj_id);
             let p_vj = Vector3::new(vj[0].as_(), vj[1].as_(), vj[2].as_());
+
             d += p_vi - p_vj;
             n += 1;
         }
@@ -333,18 +364,10 @@ where
     }
 }
 
-fn is_border(_v_id: usize) -> bool {
-    // Convert v_id to F type for lookup
-    // Since we're using ArrayView, we need to check if the vertex index exists in border_vertices
-    // For now, we'll need to convert: but border_vertices stores F, not usize
-    // This is a design issue - border_vertices should probably be HashSet<usize>
-    // For now, we'll check by converting back
-    false // TODO: Fix this - border_vertices type mismatch
-}
-
 fn taubin_smooth<V>(
     mut vertices: ArrayViewMut2<V>,
     vertex_connectivity: &Vec<Vec<usize>>,
+    border_vertices: &HashSet<usize>,
     weights: &Vec<f64>,
     l: f64,
     m: f64,
@@ -359,7 +382,7 @@ fn taubin_smooth<V>(
         // Calculate D for all vertices
 
         par_azip!((index i, mut d in d_values.outer_iter_mut()) {
-            let d_vec = calc_d(&vertices.view(), vertex_connectivity, i);
+            let d_vec = calc_d(&vertices.view(), vertex_connectivity, border_vertices, i);
             d[0] = d_vec.x;
             d[1] = d_vec.y;
             d[2] = d_vec.z;
@@ -376,8 +399,7 @@ fn taubin_smooth<V>(
         });
 
         par_azip!((index i, mut d in d_values.outer_iter_mut()) {
-            let d_vec = calc_d(&vertices.view(),  vertex_connectivity, i);
-            d[0] = d_vec.x;
+            let d_vec = calc_d(&vertices.view(), vertex_connectivity, border_vertices, i);            d[0] = d_vec.x;
             d[1] = d_vec.y;
             d[2] = d_vec.z;
         });
@@ -391,5 +413,52 @@ fn taubin_smooth<V>(
             vertex[[1]] += dy;
             vertex[[2]] += dz;
         });
+    }
+}
+
+#[cfg(test)]
+mod border_tests {
+    use super::*;
+    use ndarray::array;
+
+    #[test]
+    fn detects_boundary_vertices() {
+        // Four boundary vertices and one interior vertex.
+        let faces = array![[3_i64, 0, 1, 4], [3, 1, 2, 4], [3, 2, 3, 4], [3, 3, 0, 4],];
+
+        let boundary = find_border_vertices(&faces.view());
+
+        assert_eq!(boundary.len(), 4);
+
+        for vertex in 0..4 {
+            assert!(boundary.contains(&vertex));
+        }
+
+        // Center vertex must not be classified as boundary.
+        assert!(!boundary.contains(&4));
+    }
+
+    #[test]
+    fn boundary_displacement_excludes_interior_neighbors() {
+        let vertices = array![
+            [0.0_f64, 0.0, 0.0],
+            [4.0, 0.0, 0.0],
+            [4.0, 4.0, 0.0],
+            [0.0, 4.0, 0.0],
+            [1.0, 1.0, 0.0],
+        ];
+
+        let faces = array![[3_i64, 0, 1, 4], [3, 1, 2, 4], [3, 2, 3, 4], [3, 3, 0, 4],];
+
+        let boundary = find_border_vertices(&faces.view());
+        let connectivity = build_vertex_connectivity(&faces.view(), &vertices.view());
+
+        let displacement = calc_d(&vertices.view(), &connectivity, &boundary, 0);
+
+        // Vertex 0 has boundary neighbors 1 and 3.
+        // Its interior neighbor 4 must be excluded.
+        assert!((displacement.x + 2.0).abs() < 1e-10);
+        assert!((displacement.y + 2.0).abs() < 1e-10);
+        assert!(displacement.z.abs() < 1e-10);
     }
 }
