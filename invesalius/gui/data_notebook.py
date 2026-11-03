@@ -1541,12 +1541,12 @@ class SurfaceButtonControlPanel(wx.Panel):
 
     def OnExportSurface(self):
         from invesalius.data.slice_ import Slice
+        from invesalius.data.visualization.surface_painting import SurfacePainting
         from invesalius.gui.task_exporter import (
             INDEX_TO_EXTENSION,
             INDEX_TO_TYPE_3D,
             WILDCARD_SAVE_3D,
         )
-        from invesalius.navigation.surface_painting import SurfacePainting
 
         project_obj = Project()
         n_surface = 0
@@ -1690,25 +1690,23 @@ class SurfacesListCtrlPanel(InvListCtrl):
         # Create the context menu and add all the menu items
         surface_context_menu = wx.Menu()
 
-        surface = Project().surface_dict[global_surface_id]
-        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
-            from invesalius.navigation.surface_painting import SurfacePainting
+        from invesalius.data.visualization.surface_painting import SurfacePainting
 
-            painting = SurfacePainting()
-            modes = painting.available_modes(surface)
-            if modes:
-                modes_menu = wx.Menu()
-                for name, label in [("", _("Original"))] + [
-                    (mode.name, mode.name) for mode in modes
-                ]:
-                    item = modes_menu.AppendRadioItem(wx.ID_ANY, label)
-                    item.Check(surface.painting_mode == name)
-                    modes_menu.Bind(
-                        wx.EVT_MENU,
-                        lambda evt, name=name: painting.select(surface, name),
-                        item,
-                    )
-                surface_context_menu.AppendSubMenu(modes_menu, _("Color map mode"))
+        surface = Project().surface_dict[global_surface_id]
+        painting = SurfacePainting()
+        modes = painting.available_modes(surface)
+        if modes:
+            modes_menu = wx.Menu()
+            for name, label in [("", _("Original"))] + [(mode.name, mode.name) for mode in modes]:
+                item = modes_menu.AppendRadioItem(wx.ID_ANY, label)
+                item.Check(surface.painting_mode == name)
+                modes_menu.Bind(
+                    wx.EVT_MENU,
+                    lambda evt, name=name: painting.select(surface, name),
+                    item,
+                )
+            surface_context_menu.AppendSubMenu(modes_menu, _("Color map mode"))
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
             peeling = painting.peeling
             if peeling.available(surface):
                 item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Use peel for Original"))
@@ -1731,8 +1729,8 @@ class SurfacesListCtrlPanel(InvListCtrl):
                     lambda evt: self.assign_brain(surface, evt.IsChecked()),
                     item,
                 )
-            if surface_context_menu.GetMenuItemCount():
-                surface_context_menu.AppendSeparator()
+        if surface_context_menu.GetMenuItemCount():
+            surface_context_menu.AppendSeparator()
 
         colour_id = surface_context_menu.Append(start_idx, _("Change color"))
         colour_id.Enable(surface.can_edit_colour)

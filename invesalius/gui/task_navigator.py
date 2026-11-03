@@ -61,12 +61,12 @@ import invesalius.session as ses
 from invesalius import inv_paths, utils
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
+from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.gui import deep_learning_seg_dialog
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
 from invesalius.i18n import tr as _
 from invesalius.navigation.navigation import NavigationHub
 from invesalius.navigation.robot import RobotObjective
-from invesalius.navigation.surface_painting import SurfacePainting
 from invesalius.pubsub import pub as Publisher
 
 BTN_NEW = wx.NewIdRef()
@@ -775,8 +775,11 @@ class HeadPage(wx.Panel):
 
     def OnEnablePeeling(self, event):
         enabled = self.peel_checkbox.IsChecked()
-        if not enabled or self.peeling.brain is not None:
-            self.peeling.set_enabled(enabled)
+        if not enabled:
+            self.peeling.remove()
+            return
+        if self.peeling.brain is not None:
+            self.peeling.set_enabled(True)
             return
         if self.brain_segmentation_checkbox.IsChecked():
             return
@@ -807,9 +810,12 @@ class HeadPage(wx.Panel):
                         progress.Pulse()
                         time.sleep(0.05)
                     brain = future.result()
+                progress.Pulse(_("Preparing peeled surface..."))
+                self.peeling.configure(brain, source)
+                progress.Pulse(_("Updating 3D view..."))
+                Publisher.sendMessage("Render volume viewer")
             finally:
                 progress.Destroy()
-            self.peeling.configure(brain, source)
         except Exception as error:
             self.OnPeelChanged()
             wx.MessageBox(str(error), _("Create peel error"), wx.OK | wx.ICON_ERROR, self)

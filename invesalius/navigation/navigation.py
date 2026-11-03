@@ -180,6 +180,17 @@ class UpdateNavigationScene(threading.Thread):
         enorm_data,
     ):
         try:
+            if (
+                self.view_tracts
+                and self.navigation.e_field_loaded
+                and main_coil == self.navigation.main_coil
+            ):
+                Publisher.sendMessage(
+                    "Update tract seed based efield",
+                    coord_tracts_queue=self.navigation.coord_tracts_queue,
+                    fallback_m_img=m_imgs.get(main_coil, probe_m_img),
+                    current_revision=self.navigation.e_field_revision,
+                )
             if tracts_payload is not None:
                 bundle, affine_vtk, coord_offset, coord_offset_w = tracts_payload
                 Publisher.sendMessage("Remove tracts", coil_name=main_coil)
@@ -222,7 +233,7 @@ class UpdateNavigationScene(threading.Thread):
                         flag=self.peel_loaded,
                     )
 
-                    if self.navigation.e_field_loaded:
+                    if self.navigation.e_field_loaded and main_coil == self.navigation.main_coil:
                         Publisher.sendMessage(
                             "Update point location for e-field calculation",
                             m_img=m_imgs[main_coil],
@@ -280,14 +291,6 @@ class UpdateNavigationScene(threading.Thread):
             tracts_payload = None
             if self.view_tracts:
                 try:
-                    if self.navigation.e_field_loaded:
-                        wx.CallAfter(
-                            Publisher.sendMessage,
-                            "Update tract seed based efield",
-                            coord_tracts_queue=self.navigation.coord_tracts_queue,
-                            fallback_m_img=m_imgs.get(main_coil, probe_m_img),
-                            current_revision=self.navigation.e_field_revision,
-                        )
                     bundle, affine_vtk, coord_offset, coord_offset_w = (
                         self.tracts_queue.get_nowait()
                     )
@@ -546,6 +549,7 @@ class Navigation(metaclass=Singleton):
         if self.main_coil == coil_name:
             return
         self.main_coil = coil_name
+        self.MarkEfieldParametersChanged()
         Publisher.sendMessage("Main coil changed", coil_name=coil_name)
 
     def SetMainCoil(self, main_coil):
@@ -771,7 +775,7 @@ class Navigation(metaclass=Singleton):
             if self.e_field_enabled:
                 queues = [self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
                 jobs_list.append(
-                    e_field.Visualize_E_field_Thread(
+                    e_field.EFieldCalculationThread(
                         queues,
                         self.event,
                         2 * self.sleep_nav,

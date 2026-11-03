@@ -121,6 +121,7 @@ class Surface:
         self.category = category
         self.anatomical_role = ""
         self.peel_only = False
+        self.created_for_efield = False
         self.frozen_map = None
         self.display_map = None
         self.painting_mode = ""
@@ -168,6 +169,7 @@ class Surface:
             "category": self.category,
             "anatomical_role": self.anatomical_role,
             "peel_only": self.peel_only,
+            "created_for_efield": self.created_for_efield,
         }
         if self.frozen_map is not None:
             surface["frozen_map"] = self.frozen_map.metadata()
@@ -209,6 +211,7 @@ class Surface:
         self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
         self.anatomical_role = sp.get("anatomical_role", "")
         self.peel_only = sp.get("peel_only", False)
+        self.created_for_efield = sp.get("created_for_efield", False)
         self.frozen_map = (
             SurfaceMap.from_metadata(self.polydata, sp["frozen_map"])
             if "frozen_map" in sp
@@ -242,7 +245,7 @@ class SurfaceManager:
     def __init__(self):
         self.actors_dict = {}
         self.map_visualizers = {}
-        from invesalius.navigation.surface_painting import SurfacePainting
+        from invesalius.data.visualization.surface_painting import SurfacePainting
 
         self.painting = SurfacePainting()
         self.last_surface_index = 0
@@ -270,6 +273,7 @@ class SurfaceManager:
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateSurfacePresentation, "Update surface presentation")
+        Publisher.subscribe(self.OnBrainSurfaceChanged, "Brain surface changed")
         Publisher.subscribe(self.RemoveSurfacePresentation, "Discard surface painting")
         Publisher.subscribe(self.AddNewActor, "Create surface")
         Publisher.subscribe(self.GetActor, "Get Actor")
@@ -362,6 +366,19 @@ class SurfaceManager:
                 index < self.last_surface_index for index in surface_indexes
             )
 
+    def OnBrainSurfaceChanged(self, previous, surface):
+        if surface is None:
+            return
+        indexes = [
+            candidate.index
+            for candidate in prj.Project().surface_dict.values()
+            if candidate.created_for_efield and candidate is not surface
+        ]
+        if indexes:
+            Publisher.sendMessage("Remove surfaces", surface_indexes=indexes)
+            Publisher.sendMessage("Repopulate surfaces")
+            ses.Session().ChangeProject()
+
     def UpdateSurfacePresentation(self, surface):
         actor = self.actors_dict.get(surface.index)
         if actor is None:
@@ -373,17 +390,25 @@ class SurfaceManager:
         if surface_map is None:
             self.RemoveSurfacePresentation(surface)
         else:
+            if visualizer is not None and visualizer.color_bar != surface_map.color_bar:
+                self.RemoveSurfacePresentation(surface)
+                visualizer = None
             if visualizer is None:
-                visualizer = SurfaceMapVisualizer()
+                visualizer = SurfaceMapVisualizer(surface_map.color_bar)
                 self.map_visualizers[surface] = visualizer
+                Publisher.sendMessage("Register surface map actor", actor=visualizer.actor)
                 for prop in visualizer.actors:
                     Publisher.sendMessage("AppendActor", actor=prop)
             visualizer.set_map(surface_map)
             visualizer.actor.GetProperty().DeepCopy(actor.GetProperty())
             visualizer.show(presentation.visible(surface))
         visible = [v for v in self.map_visualizers.values() if v.actor.GetVisibility()]
-        for index, item in enumerate(visible):
-            item.scalar_bar.SetPosition(0.06 + index * 0.13, 0.06)
+        offsets = {}
+        for item in visible:
+            x, y = item.color_bar.position
+            offset = offsets.get(item.color_bar.position, 0)
+            item.scalar_bar.SetPosition(x - offset if x >= 0.5 else x + offset, y)
+            offsets[item.color_bar.position] = offset + item.scalar_bar.GetWidth() + 0.03
 
     def RemoveSurfacePresentation(self, surface):
         visualizer = self.map_visualizers.pop(surface, None)
@@ -510,14 +535,20 @@ class SurfaceManager:
         progress_dialog.Close()
 
     def OnImportCustomBinFile(self, filename):
+        polydata = self.ReadCustomBinFile(filename)
+        if polydata is not None:
+            name = os.path.splitext(os.path.split(filename)[-1])[0]
+            return self.CreateSurfaceFromPolydata(
+                polydata, name=name, scalar=filename.lower().endswith(".bin")
+            )
+
+    def ReadCustomBinFile(self, filename):
         import os
 
         if os.path.exists(filename):
-            scalar = True
             if filename.lower().endswith(".bin"):
                 polydata = convert_custom_bin_to_vtk(filename)
             elif filename.lower().endswith(".stl"):
-                scalar = False
                 reader = vtkSTLReader()
 
                 if _has_win32api:
@@ -534,9 +565,7 @@ class SurfaceManager:
                 )
                 return
             else:
-                name = os.path.splitext(os.path.split(filename)[-1])[0]
-                surface_index = self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
-                return surface_index
+                return polydata
         else:
             print("File does not exists")
             return
@@ -631,24 +660,28 @@ class SurfaceManager:
             Publisher.sendMessage(
                 "Get multilocus paths from json", multilocus_coil_list=multilocus_coil_list
             )
-        surface_index_cortex = self.OnImportCustomBinFile(cortex)
-        if surface_index_cortex is not None:
-            self.convert_to_inv = convert_to_inv
+        polydata = self.ReadCustomBinFile(cortex)
+        if polydata is not None:
+            if convert_to_inv:
+                polydata = self.ConvertPolydataToInv(polydata)
+            self.convert_to_inv = False
             proj = prj.Project()
             if proj.GetBrainSurface() is None:
-                proj.SetBrainSurface(proj.surface_dict[surface_index_cortex])
+                surface_index_cortex = self.CreateSurfaceFromPolydata(
+                    polydata,
+                    name=os.path.splitext(os.path.basename(cortex))[0],
+                    scalar=cortex.lower().endswith(".bin"),
+                )
+                surface = proj.surface_dict[surface_index_cortex]
+                surface.created_for_efield = True
+                proj.SetBrainSurface(surface)
             cortex_save_file = path_meshes + config_dict["cortex"]
-            polydata = proj.surface_dict[surface_index_cortex].polydata
             file_extension = cortex_save_file.split(".")[-1]
             if file_extension == "stl":
                 cortex_save_file = cortex_save_file.split(".")[0] + ".bin"
             if create_meshes_flag:
                 self.OnWriteCustomBinFile(polydata, cortex_save_file)
-            Publisher.sendMessage(
-                "Get Efield actor from json",
-                efield_actor=polydata,
-                surface_index_cortex=surface_index_cortex,
-            )
+            Publisher.sendMessage("Get Efield mesh from json", efield_mesh=polydata)
             bmeshes_list = []
             ci_list = []
             co_list = []
@@ -998,7 +1031,7 @@ class SurfaceManager:
         surface.polydata = polydata
         surface.frozen_map = frozen_map
         surface.peel_only = peel_only
-        surface.display_map = frozen_map if self.painting.enabled else None
+        surface.display_map = frozen_map
 
         if transparency:
             surface.transparency = transparency
@@ -1095,7 +1128,7 @@ class SurfaceManager:
         for key in surface_dict:
             surface = surface_dict[key]
             if not surface.painting_mode:
-                surface.display_map = surface.frozen_map if self.painting.enabled else None
+                surface.display_map = surface.frozen_map
 
             if surface.index in self.actors_dict:
                 actor = self.actors_dict[surface.index]
