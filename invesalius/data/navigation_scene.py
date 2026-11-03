@@ -34,6 +34,7 @@ from invesalius import inv_paths
 from invesalius.data.visualization.coil_visualizer import CoilVisualizer
 from invesalius.data.visualization.marker_visualizer import MarkerVisualizer
 from invesalius.data.visualization.robot_force_visualizer import RobotForceVisualizer
+from invesalius.i18n import tr as _
 from invesalius.math_utils import inner1d
 from invesalius.pubsub import pub as Publisher
 
@@ -97,6 +98,16 @@ class NavigationRenderer:
                 prop.SetVisibility(False)
         self._active = active
 
+    def set_prop_visibility(self, prop, visible):
+        """Set managed visibility even while this renderer is inactive."""
+        if prop not in self._props:
+            return
+        self._props[prop] = bool(visible)
+        prop.SetVisibility(bool(visible) if self._active else False)
+
+    def owns_prop(self, prop):
+        return prop in self._props
+
     def dispose(self):
         for prop in self._props:
             self.renderer.RemoveViewProp(prop)
@@ -135,6 +146,10 @@ class NavigationScene:
         self.object_orientation_torus_actor = None
         self.distance_text = None
         self.robot_warnings_text = None
+        self.coil_name_text = self.create_coil_name_text(coil_name)
+        self.update_coil_label()
+        self.ren.AddActor(self.coil_name_text.actor)
+        self.ren.set_prop_visibility(self.coil_name_text.actor, False)
         self.pTarget = [0.0, 0.0, 0.0]
         self.actor_tracts = None
         self.tracts_status = False
@@ -185,13 +200,20 @@ class NavigationScene:
         self.ren.dispose()
         self.clear_target_guide()
 
-    def initialize_visualizers(self, vector_field_visualizer, interactor, track_object=False):
+    def initialize_visualizers(
+        self,
+        vector_field_visualizer,
+        interactor,
+        track_object=False,
+        publish_cortex_markers=True,
+    ):
         self.marker_visualizer = MarkerVisualizer(
             renderer=self.ren,
             interactor=interactor,
             actor_factory=self.actor_factory,
             vector_field_visualizer=vector_field_visualizer,
             coil_name=self.coil_name,
+            publish_cortex_markers=publish_cortex_markers,
         )
         self.robot_force_visualizer = RobotForceVisualizer()
         self._refresh_robot_force_state()
@@ -199,20 +221,30 @@ class NavigationScene:
             renderer=self.ren,
             actor_factory=self.actor_factory,
             vector_field_visualizer=vector_field_visualizer,
+            coil_name=self.coil_name,
         )
         self.track_object(track_object)
 
     def set_coil(self, coil_name, robot=None):
-        """Change the live coil and its robot without changing the scene's target."""
+        """Change the live coil before the view restores its associated target."""
         self.coil_name = coil_name
+        self.update_coil_label()
         if self.marker_visualizer is not None:
             self.marker_visualizer.coil_name = coil_name
-        self.refresh_target_coil()
+        if self.coil_visualizer is not None:
+            self.coil_visualizer.coil_name = coil_name
+
+    def set_coil_name_visibility(self, visible):
+        self.ren.set_prop_visibility(self.coil_name_text.actor, visible)
 
     def restore_markers(self, markers):
         for marker in markers:
             self.marker_visualizer.AddMarker(marker, render=False, focus=False)
-            if marker.is_target:
+            if (
+                marker.is_target
+                and marker.coil_name is not None
+                and marker.coil_name == self.coil_name
+            ):
                 self.set_target(marker)
 
     def _refresh_robot_force_state(self):
@@ -237,6 +269,7 @@ class NavigationScene:
         # Slice and volume viewers currently use opposite Y directions.
         coord[1] = -coord[1]
         self.target_marker = marker
+        self.update_coil_label()
         self.marker_visualizer.SetTarget(marker)
         self.target_coord = coord
         self.m_target = self.actor_factory.CreateVTKObjectMatrix(coord[:3], coord[3:])
@@ -253,8 +286,15 @@ class NavigationScene:
             self.marker_visualizer.UnsetTarget(self.target_marker)
         self._target_coil_enabled = False
         self.target_marker = None
+        self.update_coil_label()
         self.target_coord = None
         self.m_target = None
+
+    def update_coil_label(self):
+        target_label = (
+            self.target_marker.label if self.target_marker is not None else _("No target")
+        )
+        self.coil_name_text.SetValue(f"{self.coil_name or ''} · {target_label}")
 
     def create_target_guide(self):
         self.clear_target_guide()
@@ -404,10 +444,28 @@ class NavigationScene:
         self.target_guide_last_update = 0.0
         self.target_guide_last_signature = None
 
+    def reset_camera(self):
+        """Fit anatomy and this scene's coil without hiding the other coils.
+
+        Refresh clipping for all props after applying the final camera pose.
+        """
+        excluded = (
+            self.coil_visualizer.GetOtherCoilActors() if self.coil_visualizer is not None else ()
+        )
+        bounds_states = [(actor, actor.GetUseBounds()) for actor in excluded]
+        try:
+            for actor in excluded:
+                actor.UseBoundsOff()
+            self.ren.ResetCamera()
+        finally:
+            for actor, use_bounds in bounds_states:
+                actor.SetUseBounds(use_bounds)
+
     def initialize_target_cameras(self):
         """Frame the target after the view has applied the scene viewports."""
-        self.ren.ResetCamera()
+        self.reset_camera()
         self.set_camera_target()
+        self.ren.ResetCameraClippingRange()
         self.reset_target_guide_camera()
 
     def reset_target_guide_camera(self):
@@ -451,12 +509,13 @@ class NavigationScene:
                 self.distance_text.SetValue(formatted_distance)
 
             if now - self.target_camera_last_update >= self.target_camera_update_interval:
-                self.ren.ResetCamera()
+                self.reset_camera()
                 self.set_camera_target()
                 zoom_distance = min(distance_to_target, 100)
                 # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
                 # the distance between 1 and 100 mm
                 self.ren.GetActiveCamera().Zoom((-0.0404 * zoom_distance) + 5.0404)
+                self.ren.ResetCameraClippingRange()
                 self.target_camera_last_update = now
 
             is_under_distance_threshold = distance_to_target <= distance_threshold
@@ -614,6 +673,7 @@ class NavigationScene:
     def create_robot_warnings_text():
         robot_warnings_text = vtku.Text()
 
+        robot_warnings_text.actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
         robot_warnings_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
         robot_warnings_text.SetPosition((const.X, 1.02 - const.YZ))
         robot_warnings_text.SetVerticalJustificationToBottom()
@@ -626,12 +686,27 @@ class NavigationScene:
     def create_distance_text():
         distance_text = vtku.Text()
 
+        distance_text.actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
         distance_text.SetSize(const.TEXT_SIZE_DISTANCE_DURING_NAVIGATION)
         distance_text.SetPosition((const.X, 1.0 - const.Y))
         distance_text.SetVerticalJustificationToBottom()
         distance_text.BoldOn()
 
         return distance_text
+
+    @staticmethod
+    def create_coil_name_text(coil_name):
+        coil_name_text = vtku.Text()
+
+        coil_name_text.actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
+        coil_name_text.SetSize(const.TEXT_SIZE_SMALL)
+        coil_name_text.SetPosition(const.TEXT_POS_RIGHT_DOWN)
+        coil_name_text.SetJustificationToRight()
+        coil_name_text.SetVerticalJustificationToBottom()
+        coil_name_text.SetColour((0.75, 0.75, 0.75))
+        coil_name_text.SetValue(coil_name or "")
+
+        return coil_name_text
 
     def set_camera_target(self):
         cam_focus = self.target_coord[0:3]

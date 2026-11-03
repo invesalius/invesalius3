@@ -96,7 +96,13 @@ class MarkerVisualizer:
     COIL_AT_TARGET_COLOR = vtk.vtkNamedColors().GetColor3d("Green")
 
     def __init__(
-        self, renderer, interactor, actor_factory, vector_field_visualizer, coil_name=None
+        self,
+        renderer,
+        interactor,
+        actor_factory,
+        vector_field_visualizer,
+        coil_name=None,
+        publish_cortex_markers=True,
     ):
         self.renderer = renderer
         self.coil_name = coil_name
@@ -107,6 +113,7 @@ class MarkerVisualizer:
 
         # The vector field visualizer is used to represent a vector field relative to target.
         self.vector_field_visualizer = vector_field_visualizer
+        self.publish_cortex_markers = publish_cortex_markers
 
         # The currently highlighted marker object.
         self.highlighted_marker = None
@@ -122,6 +129,7 @@ class MarkerVisualizer:
 
         self.is_navigating = False
         self.is_target_mode = False
+        self._visualizations = {}
 
         # The assembly for the current vector field, shown relative to the highlighted marker.
         self.vector_field_assembly = self.vector_field_visualizer.CreateVectorFieldAssembly()
@@ -153,6 +161,21 @@ class MarkerVisualizer:
 
     def dispose(self):
         Publisher.unsubscribe_owner(self)
+        self._visualizations.clear()
+
+    @staticmethod
+    def _marker_key(marker):
+        return marker.marker_uuid or id(marker)
+
+    def _get_visualization(self, marker):
+        key = self._marker_key(marker)
+        visualization = self._visualizations.get(key)
+        if visualization is None:
+            # A restored marker can become visible before a newly created
+            # navigation scene receives its initial marker collection.
+            self.AddMarker(marker, render=False, focus=False)
+            visualization = self._visualizations[key]
+        return visualization
 
     def UpdateNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
@@ -188,7 +211,7 @@ class MarkerVisualizer:
 
     def AddMarker(self, marker, render, focus):
         """
-        Visualize marker and add the visualization to the marker object.
+        Visualize a marker and keep its rendering state local to this visualizer.
 
         If 'render' is True, the interactor will be rendered after adding the marker.
         """
@@ -242,12 +265,12 @@ class MarkerVisualizer:
         else:
             assert False, "Invalid marker type."
 
-        if cortex_marker[0] is not None:
+        if self.publish_cortex_markers and cortex_marker[0] is not None:
             Publisher.sendMessage(
                 "Add cortex marker actor", position_orientation=cortex_marker, marker_id=marker_id
             )
 
-        marker.visualization = {
+        self._visualizations[self._marker_key(marker)] = {
             "actor": actor,
             "highlighted": False,
             "hidden": False,
@@ -261,8 +284,9 @@ class MarkerVisualizer:
         """
         Update the position and orientation of a marker.
         """
-        actor = marker.visualization["actor"]
-        highlighted = marker.visualization["highlighted"]
+        visualization = self._get_visualization(marker)
+        actor = visualization["actor"]
+        highlighted = visualization["highlighted"]
         colour = marker.colour
 
         new_position_flipped = list(new_position)
@@ -280,7 +304,7 @@ class MarkerVisualizer:
             # Unhighlight the marker, but do not render the interactor yet to avoid flickering.
             self.UnhighlightMarker(render=False)
 
-        marker.visualization = {
+        self._visualizations[self._marker_key(marker)] = {
             "actor": new_actor,
             "highlighted": False,
             "hidden": False,
@@ -297,8 +321,8 @@ class MarkerVisualizer:
 
     def HideMarkers(self, markers):
         for marker in markers:
-            visualization = marker.visualization
-            is_target = marker.is_target
+            visualization = self._get_visualization(marker)
+            is_target = marker is self.target_marker
 
             highlighted = visualization["highlighted"]
             actor = visualization["actor"]
@@ -320,7 +344,7 @@ class MarkerVisualizer:
 
     def ShowMarkers(self, markers):
         for marker in markers:
-            visualization = marker.visualization
+            visualization = self._get_visualization(marker)
 
             visualization["actor"].SetVisibility(1)
 
@@ -332,20 +356,22 @@ class MarkerVisualizer:
 
     def DeleteMarkers(self, markers):
         for marker in markers:
-            actor = marker.visualization.get("actor")
-            self.renderer.RemoveActor(actor)
+            visualization = self._visualizations.pop(self._marker_key(marker), None)
+            if visualization is not None:
+                self.renderer.RemoveActor(visualization["actor"])
 
         if not self.is_navigating:
             self.interactor.Render()
 
     def DeleteMarker(self, marker):
-        actor = marker.visualization.get("actor")
-        self.renderer.RemoveActor(actor)
+        visualization = self._visualizations.pop(self._marker_key(marker), None)
+        if visualization is not None:
+            self.renderer.RemoveActor(visualization["actor"])
         if not self.is_navigating:
             self.interactor.Render()
 
     def SetNewColor(self, marker, new_color):
-        actor = marker.visualization.get("actor")
+        actor = self._get_visualization(marker)["actor"]
         actor.GetProperty().SetColor([round(s / 255.0, 3) for s in new_color])
 
         if not self.is_navigating:
@@ -358,13 +384,15 @@ class MarkerVisualizer:
         """
         # Store the target marker so that it can be modified, e.g., when the coil is at target.
         self.target_marker = marker
+        self.is_coil_at_target = False
 
         position = marker.position
         orientation = marker.orientation
         colour = marker.colour
 
-        actor = marker.visualization.get("actor")
-        highlighted = marker.visualization["highlighted"]
+        visualization = self._get_visualization(marker)
+        actor = visualization["actor"]
+        highlighted = visualization["highlighted"]
 
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
@@ -377,7 +405,7 @@ class MarkerVisualizer:
         if highlighted:
             self.UnhighlightMarker(render=False)
 
-        marker.visualization["actor"] = new_actor
+        visualization["actor"] = new_actor
 
         if highlighted:
             self.HighlightMarker(marker, render=False)
@@ -393,13 +421,15 @@ class MarkerVisualizer:
         When unsetting a marker as the target, change the aim back to an arrow.
         """
         self.target_marker = None
+        self.is_coil_at_target = False
 
         position = marker.position
         orientation = marker.orientation
         colour = marker.colour
 
-        actor = marker.visualization["actor"]
-        highlighted = marker.visualization["highlighted"]
+        visualization = self._get_visualization(marker)
+        actor = visualization["actor"]
+        highlighted = visualization["highlighted"]
 
         position_flipped = list(position)
         position_flipped[1] = -position_flipped[1]
@@ -412,7 +442,7 @@ class MarkerVisualizer:
         if highlighted:
             self.UnhighlightMarker(render=False)
 
-        marker.visualization["actor"] = new_actor
+        visualization["actor"] = new_actor
 
         if highlighted:
             self.HighlightMarker(marker, render=False)
@@ -436,8 +466,9 @@ class MarkerVisualizer:
         if marker is None:
             return
 
-        actor = marker.visualization["actor"]
-        highlighted = marker.visualization["highlighted"]
+        visualization = self._get_visualization(marker)
+        actor = visualization["actor"]
+        highlighted = visualization["highlighted"]
 
         # vtk_colors = vtk.vtkNamedColors()
         if state:
@@ -454,7 +485,7 @@ class MarkerVisualizer:
             self.interactor.Render()
 
     def SetTargetTransparency(self, marker, transparent):
-        actor = marker.visualization["actor"]
+        actor = self._get_visualization(marker)["actor"]
         if transparent:
             actor.GetProperty().SetOpacity(1)
             # actor.GetProperty().SetOpacity(0.4)
@@ -523,7 +554,8 @@ class MarkerVisualizer:
 
     def HighlightMarker(self, marker, render=True):
         # Unpack relevant fields from the marker.
-        actor = marker.visualization["actor"]
+        visualization = self._get_visualization(marker)
+        actor = visualization["actor"]
 
         marker_type = marker.marker_type
         position = marker.position
@@ -545,7 +577,7 @@ class MarkerVisualizer:
         # Return early if the marker is a target and the coil is at the target.
         #
         # In that case, the marker should not be highlighted, as being at the target overrides the highlighting.
-        if marker.is_target and self.is_coil_at_target:
+        if marker is self.target_marker and self.is_coil_at_target:
             return
 
         # Change the color of the marker.
@@ -568,8 +600,8 @@ class MarkerVisualizer:
         # Store the highlighted marker.
         self.highlighted_marker = marker
 
-        # Store the 'highlighted' status in the marker.
-        marker.visualization["highlighted"] = True
+        # Store the highlighted status for this renderer.
+        visualization["highlighted"] = True
 
         if render:
             self.interactor.Render()
@@ -585,10 +617,11 @@ class MarkerVisualizer:
         #
         # In that case, the marker should not be unhighlighted, as being at the target overrides the
         # highlighting.
-        if marker.is_target and self.is_coil_at_target:
+        if marker is self.target_marker and self.is_coil_at_target:
             return
 
-        actor = marker.visualization["actor"]
+        visualization = self._get_visualization(marker)
+        actor = visualization["actor"]
         colour = marker.colour
 
         # Change the color of the marker back to its original color.
@@ -598,11 +631,11 @@ class MarkerVisualizer:
         self.actor_factory.ScaleActor(actor, 1 / self.HIGHLIGHTED_MARKER_SCALING_FACTOR)
 
         # Set the marker invisible if it should be hidden.
-        if marker.visualization["hidden"]:
+        if visualization["hidden"]:
             actor.SetVisibility(0)
 
         # However, if it is the target, it should remain visible.
-        if marker.is_target:
+        if marker is self.target_marker:
             actor.SetVisibility(1)
 
         # Remove the projection actor if it exists.
@@ -612,7 +645,7 @@ class MarkerVisualizer:
 
         # Reset the highlighted marker.
         self.highlighted_marker = None
-        marker.visualization["highlighted"] = False
+        visualization["highlighted"] = False
 
         if render:
             self.interactor.Render()

@@ -17,6 +17,7 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+import logging
 import uuid
 from typing import List, Union
 
@@ -33,9 +34,34 @@ class MarkersControl(metaclass=Singleton):
         self.list: List[Marker] = []
         self.nav_status = False
         self.navigation = navigation
-        self.transformator = MarkerTransformator()
+        self.transformator = MarkerTransformator(
+            target_resolver=self._FindRobotTarget, main_target_resolver=self.FindTarget
+        )
+        self._loading_state = False
+        self._debug_target_poses = ()
+        Publisher.subscribe(self.OnMainCoilChanged, "Main coil changed")
+        Publisher.subscribe(self.OnRequestCoilTarget, "Request coil target")
+        Publisher.subscribe(self.OnSelectCoil, "Select coil")
+        Publisher.subscribe(self.OnResetCoilSelection, "Reset coil selection")
+        Publisher.subscribe(self._UpdateDebugTargetPoses, "Set target")
+        Publisher.subscribe(self._UpdateDebugTargetPoses, "Unset target")
+
+    def _UpdateDebugTargetPoses(self, marker):
+        # Publish one immutable snapshot for the debug worker. Marker poses
+        # already use the coordinate convention returned in the coords queue.
+        self._debug_target_poses = tuple(
+            (m.coil_name, tuple(m.position + m.orientation))
+            for m in self.list
+            if m.is_target and m.coil_name is not None
+        )
+
+    def GetDebugTargetPoses(self):
+        """Return a snapshot safe to read from the coordinate worker thread."""
+        return self._debug_target_poses
 
     def SaveState(self) -> None:
+        if self._loading_state:
+            return
         state = [marker.to_dict() for marker in self.list]
 
         session = ses.Session()
@@ -52,12 +78,17 @@ class MarkersControl(metaclass=Singleton):
             return
 
         loaded_uuids = set()
-        for d in state:
-            marker = Marker().from_dict(d)
-            if marker.marker_uuid and marker.marker_uuid in loaded_uuids:
-                continue
-            loaded_uuids.add(marker.marker_uuid)
-            self.AddMarker(marker, render=False)
+        self._loading_state = True
+        try:
+            for d in state:
+                marker = Marker().from_dict(d)
+                if marker.marker_uuid and marker.marker_uuid in loaded_uuids:
+                    continue
+                loaded_uuids.add(marker.marker_uuid)
+                self.AddMarker(marker, render=False)
+        finally:
+            self._loading_state = False
+        self.SaveState()
 
     def AddMarker(self, marker: Marker, render: bool = True, focus: bool = False) -> None:
         """
@@ -68,12 +99,28 @@ class MarkersControl(metaclass=Singleton):
         if marker.marker_uuid == "":
             marker.marker_uuid = str(uuid.uuid4())
 
+        if marker.is_target:
+            coil_name = self._ResolveTargetCoil(marker.coil_name)
+            conflict = (
+                self.FindTarget(coil_name) is not None
+                if coil_name is not None
+                else any(m.is_target and m.coil_name is None for m in self.list)
+            )
+            if conflict:
+                logging.warning("Ignoring duplicate target assignment for coil %s", coil_name)
+                marker.is_target = False
+                marker._set_target_coil(None)
+            else:
+                marker._set_target_coil(coil_name)
+        else:
+            marker._set_target_coil(None)
+
         marker.marker_id = len(self.list)
         self.list.append(marker)
 
         Publisher.sendMessage("Add marker", marker=marker, render=render, focus=focus)
 
-        if marker.is_target:
+        if marker.is_target and marker.coil_name is not None:
             self.SetTarget(marker.marker_id, check_for_previous=False)
 
         if marker.is_point_of_interest:
@@ -130,19 +177,86 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def SetTarget(self, marker_id: int, check_for_previous: bool = True) -> None:
+    def _ResolveTargetCoil(self, coil_name=None):
+        if self.navigation.n_coils == 1:
+            return "default_coil"
+        coil_name = coil_name or self.navigation.main_coil
+        return coil_name
+
+    def OnSelectCoil(self, coil_name, coil_registration):
+        """Release only the target of a coil removed from navigation."""
+        if coil_registration is not None:
+            return
+        for marker in self.list:
+            if marker.is_target and marker.coil_name == coil_name:
+                self.UnsetTarget(marker.marker_id, coil_name=coil_name)
+
+    def OnResetCoilSelection(self, n_coils, clear_all=False):
+        """Release assigned targets when the navigation coil selection is reset."""
+        for marker in self.list:
+            if marker.is_target and marker.coil_name is not None:
+                self.UnsetTarget(marker.marker_id)
+
+    def OnMainCoilChanged(self, coil_name):
+        if coil_name is not None:
+            for pending in self.list:
+                if pending.is_target and pending.coil_name is None:
+                    self.SetTarget(pending.marker_id, check_for_previous=False, coil_name=coil_name)
+                    break
+        marker = self.FindTarget(coil_name) if coil_name is not None else None
+        if marker is None:
+            self.navigation.UnsetTarget()
+        else:
+            self.navigation.SetTarget(marker)
+        self.transformator.target = marker
+
+    def OnRequestCoilTarget(self, coil_name):
+        if coil_name is None:
+            return
+        marker = self.FindTarget(coil_name)
+        if marker is not None:
+            Publisher.sendMessage("Set target", marker=marker)
+
+    def _FindRobotTarget(self, robot_id):
+        from invesalius.navigation.robot import Robots
+
+        if robot_id is None:
+            # Old robot messages without an ID are unambiguous only in single-coil mode.
+            return self.FindTarget() if self.navigation.n_coils == 1 else None
+        robot = Robots().GetRobot(robot_id)
+        return self.FindTarget(robot.coil_name) if robot and robot.coil_name else None
+
+    def SetTarget(self, marker_id: int, check_for_previous: bool = True, coil_name=None) -> None:
         marker = self.list[marker_id]
-        previous_target = self.FindTarget()
+        coil_name = self._ResolveTargetCoil(coil_name or marker.coil_name)
+        if not isinstance(coil_name, str) or not coil_name.strip():
+            raise ValueError("Select a coil before assigning a target")
+        if check_for_previous and coil_name not in self.navigation.coil_registrations:
+            raise ValueError("The selected coil is not registered")
+        if marker.coil_name is not None and marker.coil_name != coil_name:
+            raise ValueError(f"Target already belongs to {marker.coil_name}")
+        previous_target = self.FindTarget(coil_name)
 
         if check_for_previous and previous_target is marker:
             return
 
-        if check_for_previous and previous_target is not None and previous_target is not marker:
-            self.UnsetTarget(previous_target.marker_id)
+        # Validate first, then update both markers before notifying consumers.
+        if previous_target is not None and previous_target is not marker:
+            previous_target.is_target = False
+            previous_target._set_target_coil(None)
 
         # Set new target
-        self.navigation.SetTarget(marker)
+        marker._set_target_coil(coil_name)
         marker.is_target = True
+        self.navigation.ResetCoilAtTarget(coil_name)
+        if coil_name == self.navigation.main_coil:
+            self.navigation.SetTarget(marker)
+
+        if previous_target is not None and previous_target is not marker:
+            Publisher.sendMessage("Unset target", marker=previous_target)
+            Publisher.sendMessage(
+                "Set target transparency", marker=previous_target, transparent=False
+            )
 
         Publisher.sendMessage("Set target", marker=marker)
         Publisher.sendMessage("Set target transparency", marker=marker, transparent=True)
@@ -173,10 +287,15 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def UnsetTarget(self, marker_id: int) -> None:
+    def UnsetTarget(self, marker_id: int, coil_name=None) -> None:
         marker = self.list[marker_id]
-        self.navigation.UnsetTarget()
+        if coil_name is not None and marker.coil_name != coil_name:
+            raise ValueError("Target is assigned to another coil")
+        if marker.coil_name == self.navigation.main_coil:
+            self.navigation.UnsetTarget()
+        self.navigation.ResetCoilAtTarget(marker.coil_name)
         marker.is_target = False
+        marker._set_target_coil(None)
 
         Publisher.sendMessage("Set target transparency", marker=marker, transparent=False)
         Publisher.sendMessage("Unset target", marker=marker)
@@ -192,13 +311,13 @@ class MarkersControl(metaclass=Singleton):
 
         self.SaveState()
 
-    def FindTarget(self) -> Union[None, Marker]:
-        """
-        Return the marker currently selected as target (there
-        should be at most one).
-        """
+    def FindTarget(self, coil_name=None) -> Union[None, Marker]:
+        """Find the target of a coil, defaulting to the main single-coil slot."""
+        coil_name = self._ResolveTargetCoil(coil_name)
+        if coil_name is None:
+            return None
         for marker in self.list:
-            if marker.is_target:
+            if marker.is_target and marker.coil_name == coil_name:
                 return marker
 
         return None

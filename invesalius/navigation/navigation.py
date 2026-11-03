@@ -196,7 +196,8 @@ class UpdateNavigationScene(threading.Thread):
                 Publisher.sendMessage("Create marker", marker_type=MarkerType.COIL_POSE)
 
             if update_pose:
-                Publisher.sendMessage("Update slices position", position=coord[:3])
+                if not self.navigation.dual_navigation:
+                    Publisher.sendMessage("Update slices position", position=coord[:3])
                 Publisher.sendMessage("Set cross focal point", position=coord)
                 Publisher.sendMessage(
                     "Update volume viewer pointer",
@@ -247,7 +248,7 @@ class UpdateNavigationScene(threading.Thread):
 
             if render:
                 Publisher.sendMessage("Render volume viewer")
-                if slice_render:
+                if slice_render and not self.navigation.dual_navigation:
                     Publisher.sendMessage("Update slice viewer")
         finally:
             self._dispatch_pending = False
@@ -360,11 +361,13 @@ class Navigation(metaclass=Singleton):
         self.neuronavigation_api = neuronavigation_api
 
         self.target = None
-        self.n_coils = 1
+        self.n_coils = 1  # Tracker capacity, not the required number of selected coils.
         self.coil_registrations = {}
         self.track_coil = False
         self.probe_only = False
         self.main_coil = None  # Which coil to track with pointer
+        self.dual_navigation = False
+        self.dual_navigation_coils = ()
         self.m_change = None
         self.r_stylus = None
         # Coil transformations available to the robot after StartNavigation prepares them.
@@ -418,6 +421,7 @@ class Navigation(metaclass=Singleton):
         # During navigation
         self.lock_to_target = False
         self.coil_at_target = False
+        self._coils_at_target = {}
 
         self.LoadConfig()
 
@@ -440,6 +444,8 @@ class Navigation(metaclass=Singleton):
                 "selected_coils": list(self.coil_registrations),
                 "n_coils": self.n_coils,
                 "track_coil": self.track_coil,
+                "dual_navigation": self.dual_navigation,
+                "dual_navigation_coils": list(self.dual_navigation_coils),
             }
             if self.main_coil is not None:
                 state["main_coil"] = self.main_coil
@@ -469,51 +475,137 @@ class Navigation(metaclass=Singleton):
 
             # Try to load selected_coils (the list of names of coils to use for navigation)
             if ("selected_coils" in state) and (saved_coil_registrations is not None):
-                selected_coils = state["selected_coils"]
+                selected_coils = [
+                    name for name in state["selected_coils"] if name in saved_coil_registrations
+                ]
+                if self.n_coils == 1 and selected_coils:
+                    # The single-coil slot keeps its identity regardless of the
+                    # registration's original name. Keep named library entries.
+                    saved_main_coil = state.get("main_coil")
+                    source_name = (
+                        saved_main_coil if saved_main_coil in selected_coils else selected_coils[0]
+                    )
+                    if source_name != "default_coil":
+                        saved_coil_registrations = dict(saved_coil_registrations)
+                        saved_coil_registrations["default_coil"] = dict(
+                            saved_coil_registrations[source_name]
+                        )
+                        session.SetConfig("coil_registrations", saved_coil_registrations)
+                    selected_coils = ["default_coil"]
+                    state = dict(state, selected_coils=selected_coils, main_coil="default_coil")
+                    session.SetConfig("navigation", state)
                 self.coil_registrations = {
                     coil_name: saved_coil_registrations[coil_name]
                     for coil_name in selected_coils
                     if coil_name in saved_coil_registrations
                 }
-                if self.coil_registrations:
-                    self.main_coil = self.main_coil or next(iter(self.coil_registrations))
+                if self.coil_registrations and self.main_coil not in self.coil_registrations:
+                    self.main_coil = next(iter(self.coil_registrations))
+
+            self.dual_navigation_coils = tuple(state.get("dual_navigation_coils", ()))
+            self.SetDualNavigation(
+                state.get("dual_navigation", False),
+                coil_names=self.dual_navigation_coils,
+                notify=False,
+            )
 
             # Try to load stylus orientation data
             if "r_stylus" in state:
                 self.r_stylus = np.array(state["r_stylus"])
 
     def CoilSelectionDone(self):
-        return self.probe_only or len(self.coil_registrations) == self.n_coils
+        """Allow probe-only navigation or a coil subset within the tracker capacity."""
+        return self.probe_only or 1 <= len(self.coil_registrations) <= self.n_coils
 
     def SetProbeOnly(self, enabled):
         self.probe_only = bool(enabled)
         if self.probe_only:
             self.TrackObject(False)
+            if self.dual_navigation:
+                self.SetDualNavigation(False)
+
+    def CanUseDualNavigation(self):
+        return not self.probe_only and self.CoilSelectionDone() and len(self.coil_registrations) > 1
+
+    def GetDefaultDualNavigationCoils(self):
+        coil_names = tuple(self.coil_registrations)
+        if len(coil_names) != 2:
+            return ()
+        if self.main_coil in coil_names:
+            other_coil = next(name for name in coil_names if name != self.main_coil)
+            return self.main_coil, other_coil
+        return coil_names
+
+    def ValidateDualNavigationCoils(self, coil_names):
+        coil_names = tuple(coil_names)
+        return (
+            len(coil_names) == 2
+            and len(set(coil_names)) == 2
+            and all(name in self.coil_registrations for name in coil_names)
+        )
+
+    def SetDualNavigation(self, enabled, coil_names=None, notify=True):
+        if coil_names is None:
+            coil_names = self.GetDefaultDualNavigationCoils() or self.dual_navigation_coils
+        coil_names = tuple(coil_names)
+
+        valid_coils = self.ValidateDualNavigationCoils(coil_names)
+        self.dual_navigation = bool(enabled) and self.CanUseDualNavigation() and valid_coils
+        if valid_coils:
+            self.dual_navigation_coils = coil_names
+        self.SaveConfig("dual_navigation", self.dual_navigation)
+        self.SaveConfig("dual_navigation_coils", list(self.dual_navigation_coils))
+        if notify:
+            self.PublishDualNavigationState()
+        return self.dual_navigation
+
+    def PublishDualNavigationState(self, navigation_active=True):
+        Publisher.sendMessage(
+            "Dual navigation changed",
+            enabled=self.dual_navigation and navigation_active,
+            coil_names=self.dual_navigation_coils,
+        )
 
     def SelectCoil(self, coil_name, coil_registration):
         # A changed registration invalidates the previously computed transformation.
         self.obj_datas.pop(coil_name, None)
         if coil_registration is not None:  # Add the coil to selection
             self.coil_registrations[coil_name] = coil_registration
-            if self.main_coil is None:
-                self._set_main_coil(coil_name)
         else:  # Remove the coil from selection
             self.coil_registrations.pop(coil_name, None)
-            if self.main_coil == coil_name:
-                self._set_main_coil(None)
+
+        if self.main_coil not in self.coil_registrations:
+            self._set_main_coil(next(iter(self.coil_registrations), None))
+
+        if self.dual_navigation and (
+            not self.CanUseDualNavigation()
+            or not self.ValidateDualNavigationCoils(self.dual_navigation_coils)
+        ):
+            self.SetDualNavigation(False)
 
         self.SaveConfig()
 
     def CoilAtTarget(self, state, displacement, coil_name=None):
-        self.coil_at_target = state
+        coil_name = coil_name or self.main_coil
+        self._coils_at_target[coil_name] = state
+        if coil_name == self.main_coil:
+            self.coil_at_target = state
+
+    def ResetCoilAtTarget(self, coil_name):
+        self._coils_at_target.pop(coil_name, None)
+        if coil_name == self.main_coil:
+            self.coil_at_target = False
 
     def SetTarget(self, marker):
+        if marker.coil_name is not None and marker.coil_name != self.main_coil:
+            return
         coord = marker.position + marker.orientation
         coord[1] = -coord[1]
         self.target = coord
 
     def UnsetTarget(self):
         self.target = None
+        self.coil_at_target = False
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
@@ -538,7 +630,11 @@ class Navigation(metaclass=Singleton):
         # Reset coil selection
         self.coil_registrations = {}
         self.obj_datas = {}
+        self._coils_at_target.clear()
+        self.coil_at_target = False
         self._set_main_coil(None)
+        if self.dual_navigation:
+            self.SetDualNavigation(False)
         self.SaveConfig()
 
     def _set_main_coil(self, coil_name):
@@ -546,6 +642,7 @@ class Navigation(metaclass=Singleton):
         if self.main_coil == coil_name:
             return
         self.main_coil = coil_name
+        self.coil_at_target = self._coils_at_target.get(coil_name, False)
         Publisher.sendMessage("Main coil changed", coil_name=coil_name)
 
     def SetMainCoil(self, main_coil):
@@ -627,7 +724,7 @@ class Navigation(metaclass=Singleton):
         else:
             return False
 
-    def StartNavigation(self, tracker, icp):
+    def StartNavigation(self, tracker, icp, target_provider=None):
         # Publish new transformations only after all selected coils are prepared.
         self.obj_datas = {}
 
@@ -654,8 +751,8 @@ class Navigation(metaclass=Singleton):
 
         if not self.CoilSelectionDone():
             wx.MessageBox(
-                _(
-                    f"No. of coils to track is {self.n_coils}, but no. of coils registered is {len(self.coil_registrations)}"
+                _("Select between 1 and {maximum} registered coils for navigation.").format(
+                    maximum=self.n_coils
                 ),
                 _("InVesalius 3"),
             )
@@ -716,6 +813,7 @@ class Navigation(metaclass=Singleton):
                     self.target,
                     icp,
                     self,
+                    target_provider=target_provider,
                 )
             )
 

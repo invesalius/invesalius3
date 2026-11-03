@@ -63,6 +63,7 @@ class Marker:
     y_seed: float = 0
     z_seed: float = 0
     is_target: bool = False
+    _coil_name: str | None = dataclasses.field(default=None, init=False, repr=False)
     is_point_of_interest: bool = False
     session_id: int = 1
     x_cortex: float = dataclasses.field(default=None)
@@ -83,6 +84,16 @@ class Marker:
     timestamp: str = dataclasses.field(
         default_factory=lambda: datetime.now().isoformat(timespec="seconds")
     )
+
+    @property
+    def coil_name(self):
+        """Coil for which this marker is a target; managed by MarkersControl."""
+        return self._coil_name
+
+    def _set_target_coil(self, coil_name):
+        if coil_name is not None and (not isinstance(coil_name, str) or not coil_name.strip()):
+            raise ValueError("coil_name must be a non-empty string or None")
+        self._coil_name = coil_name
 
     # x, y, z can be jointly accessed as position
     @property
@@ -172,9 +183,20 @@ class Marker:
                 field.name != "version"
                 and field.name != "marker_uuid"
                 and field.name != "visualization"
+                and field.name != "_coil_name"
             )
         ]
-        res.extend(["x_world", "y_world", "z_world", "alpha_world", "beta_world", "gamma_world"])
+        res.extend(
+            [
+                "coil_name",
+                "x_world",
+                "y_world",
+                "z_world",
+                "alpha_world",
+                "beta_world",
+                "gamma_world",
+            ]
+        )
         return "\t".join(map(lambda x: f'"{x}"', res))
 
     def to_csv_row(self):
@@ -186,6 +208,7 @@ class Marker:
                 field.name == "version"
                 or field.name == "marker_uuid"
                 or field.name == "visualization"
+                or field.name == "_coil_name"
             ):
                 continue
 
@@ -195,6 +218,8 @@ class Marker:
                 res += f"{getattr(self, field.name).value}\t"
             else:
                 res += f"{str(getattr(self, field.name))}\t"
+
+        res += f'"{self.coil_name or ""}"\t'
 
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
             # Add world coordinates (in addition to the internal ones).
@@ -262,6 +287,7 @@ class Marker:
             "size": self.size,
             "label": self.label,
             "is_target": self.is_target,
+            "coil_name": self.coil_name,
             "is_point_of_interest": self.is_point_of_interest,
             "marker_type": self.marker_type.value,
             "seed": self.seed,
@@ -325,6 +351,7 @@ class Marker:
         self.size = d["size"]
         self.label = d["label"]
         self.is_target = d["is_target"]
+        self._set_target_coil(d.get("coil_name") or None)
         self.session_id = d["session_id"]
 
         self.position = position
@@ -361,5 +388,6 @@ class Marker:
 
         # Unset the is_target attribute.
         new_marker.is_target = False
+        new_marker._set_target_coil(None)
 
         return new_marker
