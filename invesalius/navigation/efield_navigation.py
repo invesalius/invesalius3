@@ -29,6 +29,7 @@ import invesalius.constants as const
 import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
+from invesalius.data.coordinates import coil_projection_ray
 from invesalius.data.visualization.efield_visualizer import EFieldVisualizer
 from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.project import Project
@@ -420,7 +421,7 @@ class EFieldNavigation:
     def UpdateEfieldPointLocation(self, m_img, coord, queue_IDs):
         if self.efield_painting_token is None:
             return
-        [coil_dir, norm, coil_norm, p1] = tr.coil_projection_ray(m_img, coord)
+        [coil_dir, norm, coil_norm, p1] = coil_projection_ray(m_img, coord)
         intersectingCellIds = vtku.find_cells_along_line(p1, norm, self.locator_efield_cell)
         self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
         try:
@@ -460,7 +461,7 @@ class EFieldNavigation:
             pass
 
     def UpdateEfieldPointLocationOffline(self, m_img, coord, list_index):
-        [coil_dir, norm, coil_norm, p1] = tr.coil_projection_ray(m_img, coord)
+        [coil_dir, norm, coil_norm, p1] = coil_projection_ray(m_img, coord)
         intersectingCellIds = vtku.find_cells_along_line(p1, norm, self.locator_efield_cell)
         self.ShowEfieldintheintersection(intersectingCellIds, p1, coil_norm, coil_dir)
         id_list = []

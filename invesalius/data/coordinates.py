@@ -751,6 +751,26 @@ def offset_coordinate(p_old: np.ndarray, norm_vec: np.ndarray, offset: float) ->
     return p_offset
 
 
+def coil_projection_ray(m_img, coord):
+    # m_img[:3, 0] is from posterior to anterior direction of the coil
+    # m_img[:3, 1] is from left to right direction of the coil
+    # m_img[:3, 2] is from bottom to up direction of the coil
+    vec_length = 70
+    m_img_flip = m_img.copy()
+    m_img_flip[1, -1] = -m_img_flip[1, -1]
+    p1 = m_img_flip[:-1, -1]  # coil center
+    coil_dir = m_img_flip[:-1, 0]
+    coil_face = m_img_flip[:-1, 1]
+
+    coil_norm = np.cross(coil_dir, coil_face)
+    p2_norm = (
+        p1 - vec_length * coil_norm
+    )  # point normal to the coil away from the center by vec_length
+    coil_dir = np.array([coord[3], coord[4], coord[5]])
+
+    return coil_dir, p2_norm, coil_norm, p1
+
+
 class ReceiveCoordinates(threading.Thread):
     def __init__(
         self,

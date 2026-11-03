@@ -33,10 +33,10 @@ from vtkmodules.vtkRenderingCore import (
 )
 
 import invesalius.constants as const
-import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius import inv_paths
+from invesalius.data.coordinates import coil_projection_ray
 from invesalius.data.navigation_scene import NavigationScene
 from invesalius.data.visualization.eeg_visualizer import EEGElectrodeVisualizer
 from invesalius.data.visualization.probe_visualizer import ProbeVisualizer
@@ -792,7 +792,7 @@ class NavigationView:
         if scene is None or scene.obj_projection_arrow_actor is None:
             return
 
-        [coil_dir, norm, coil_norm, p1] = tr.coil_projection_ray(m_img, coord)
+        [coil_dir, norm, coil_norm, p1] = coil_projection_ray(m_img, coord)
 
         if self.actor_peel is not None and self.actor_peel.GetVisibility():
             scene.ren.RemoveActor(scene.obj_projection_arrow_actor)
