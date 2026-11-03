@@ -74,6 +74,8 @@ else:
 
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
+# Degrees around an axis where the direction text keeps a single letter
+DIRECTION_TEXT_TOLERANCE = 1.5
 
 ORIENTATIONS = {
     "AXIAL": const.AXIAL,
@@ -444,131 +446,31 @@ class Viewer(wx.Panel):
         if not self.nav_status:
             self.UpdateRender()
 
-    def ResetTextDirection(self, cam):
+    def GetDefaultTextDirection(self) -> list[str]:
         # Values are on ccw order, starting from the top:
         if self.orientation == "AXIAL":
-            values = [_("A"), _("R"), _("P"), _("L")]
+            return [_("A"), _("R"), _("P"), _("L")]
         elif self.orientation == "CORONAL":
-            values = [_("T"), _("R"), _("B"), _("L")]
+            return [_("T"), _("R"), _("B"), _("L")]
         else:  # 'SAGITAL':
-            values = [_("T"), _("P"), _("B"), _("A")]
-
-        self.RenderTextDirection(values)
-        if not self.nav_status:
-            self.UpdateRender()
+            return [_("T"), _("P"), _("B"), _("A")]
 
     def UpdateTextDirection(self, cam):
-        croll = cam.GetRoll()
-        if self.orientation == "AXIAL":
-            if croll >= -2 and croll <= 1:
-                self.RenderTextDirection([_("A"), _("R"), _("P"), _("L")])
+        # Roll relative to the default camera of this slice, from -180 to 180.
+        roll = (cam.GetRoll() - self.default_roll + 180) % 360 - 180
+        quarter = round(roll / 90)
+        remainder = roll - 90 * quarter
 
-            elif croll > 1 and croll <= 44:
-                self.RenderTextDirection([_("AL"), _("RA"), _("PR"), _("LP")])
+        default = self.GetDefaultTextDirection()
+        directions = []
+        for i in range(4):
+            direction = default[(i - quarter) % 4]
+            if abs(remainder) > DIRECTION_TEXT_TOLERANCE:
+                step = 1 if remainder > 0 else -1
+                direction += default[(i - quarter - step) % 4]
+            directions.append(direction)
 
-            elif croll > 44 and croll <= 88:
-                self.RenderTextDirection([_("LA"), _("AR"), _("RP"), _("PL")])
-
-            elif croll > 89 and croll <= 91:
-                self.RenderTextDirection([_("L"), _("A"), _("R"), _("P")])
-
-            elif croll > 91 and croll <= 135:
-                self.RenderTextDirection([_("LP"), _("AL"), _("RA"), _("PR")])
-
-            elif croll > 135 and croll <= 177:
-                self.RenderTextDirection([_("PL"), _("LA"), _("AR"), _("RP")])
-
-            elif (croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
-                self.RenderTextDirection([_("P"), _("L"), _("A"), _("R")])
-
-            elif croll >= -177 and croll <= -133:
-                self.RenderTextDirection([_("PR"), _("LP"), _("AL"), _("RA")])
-
-            elif croll >= -132 and croll <= -101:
-                self.RenderTextDirection([_("RP"), _("PL"), _("LA"), _("AR")])
-
-            elif croll >= -101 and croll <= -87:
-                self.RenderTextDirection([_("R"), _("P"), _("L"), _("A")])
-
-            elif croll >= -86 and croll <= -42:
-                self.RenderTextDirection([_("RA"), _("PR"), _("LP"), _("AL")])
-
-            elif croll >= -41 and croll <= -2:
-                self.RenderTextDirection([_("AR"), _("RP"), _("PL"), _("LA")])
-
-        elif self.orientation == "CORONAL":
-            if croll >= -2 and croll <= 1:
-                self.RenderTextDirection([_("T"), _("R"), _("B"), _("L")])
-
-            elif croll > 1 and croll <= 44:
-                self.RenderTextDirection([_("TL"), _("RT"), _("BR"), _("LB")])
-
-            elif croll > 44 and croll <= 88:
-                self.RenderTextDirection([_("LT"), _("TR"), _("RB"), _("BL")])
-
-            elif croll > 89 and croll <= 91:
-                self.RenderTextDirection([_("L"), _("T"), _("R"), _("B")])
-
-            elif croll > 91 and croll <= 135:
-                self.RenderTextDirection([_("LB"), _("TL"), _("RT"), _("BR")])
-
-            elif croll > 135 and croll <= 177:
-                self.RenderTextDirection([_("BL"), _("LT"), _("TR"), _("RB")])
-
-            elif (croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
-                self.RenderTextDirection([_("B"), _("L"), _("T"), _("R")])
-
-            elif croll >= -177 and croll <= -133:
-                self.RenderTextDirection([_("BR"), _("LB"), _("TL"), _("RT")])
-
-            elif croll >= -132 and croll <= -101:
-                self.RenderTextDirection([_("RB"), _("BL"), _("LT"), _("TR")])
-
-            elif croll >= -101 and croll <= -87:
-                self.RenderTextDirection([_("R"), _("B"), _("L"), _("T")])
-
-            elif croll >= -86 and croll <= -42:
-                self.RenderTextDirection([_("RT"), _("BR"), _("LB"), _("TL")])
-
-            elif croll >= -41 and croll <= -2:
-                self.RenderTextDirection([_("TR"), _("RB"), _("BL"), _("LT")])
-
-        elif self.orientation == "SAGITAL":
-            if croll >= -101 and croll <= -87:
-                self.RenderTextDirection([_("T"), _("P"), _("B"), _("A")])
-
-            elif croll >= -86 and croll <= -42:
-                self.RenderTextDirection([_("TA"), _("PT"), _("BP"), _("AB")])
-
-            elif croll >= -41 and croll <= -2:
-                self.RenderTextDirection([_("AT"), _("TP"), _("PB"), _("BA")])
-
-            elif croll >= -2 and croll <= 1:
-                self.RenderTextDirection([_("A"), _("T"), _("P"), _("B")])
-
-            elif croll > 1 and croll <= 44:
-                self.RenderTextDirection([_("AB"), _("TA"), _("PT"), _("BP")])
-
-            elif croll > 44 and croll <= 88:
-                self.RenderTextDirection([_("BA"), _("AT"), _("TP"), _("PB")])
-
-            elif croll > 89 and croll <= 91:
-                self.RenderTextDirection([_("B"), _("A"), _("T"), _("P")])
-
-            elif croll > 91 and croll <= 135:
-                self.RenderTextDirection([_("BP"), _("AB"), _("TA"), _("PT")])
-
-            elif croll > 135 and croll <= 177:
-                self.RenderTextDirection([_("PB"), _("BA"), _("AT"), _("TP")])
-
-            elif (croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
-                self.RenderTextDirection([_("P"), _("B"), _("A"), _("T")])
-
-            elif croll >= -177 and croll <= -133:
-                self.RenderTextDirection([_("PT"), _("BP"), _("AB"), _("TA")])
-
-            elif croll >= -132 and croll <= -101:
-                self.RenderTextDirection([_("TP"), _("PB"), _("BA"), _("AT")])
+        self.RenderTextDirection(directions)
 
     def Reposition(self, slice_data):
         """
@@ -1431,6 +1333,7 @@ class Viewer(wx.Panel):
         # self.cam.ComputeViewPlaneNormal()
         # self.cam.OrthogonalizeViewUp()
         self.cam.ParallelProjectionOn()
+        self.default_roll = self.cam.GetRoll()
 
     def __update_display_extent(self, image):
         self.slice_data.actor.SetDisplayExtent(image.GetExtent())
