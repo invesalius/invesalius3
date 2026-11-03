@@ -117,6 +117,7 @@ def GetCoordinatesForThread(
     """
 
     coord = None
+    marker_visibilities = None
     if tracker_id:
         getcoord = {
             const.MTC: ClaronCoord,
