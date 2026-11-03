@@ -244,6 +244,9 @@ class EEGMontage:
         with path.open("wb") as stream:
             for kind, data_type, data in (*headers, *tags):
                 stream.write(pack(">4i", kind, data_type, len(data), 0) + data)
+                pad = (4 - len(data) % 4) % 4
+                if pad:
+                    stream.write(b"\x00" * pad)
             stream.write(pack(">4i", 108, 0, 0, -1))
 
     @staticmethod
