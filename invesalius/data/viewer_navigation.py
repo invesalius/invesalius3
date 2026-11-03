@@ -674,6 +674,10 @@ class NavigationView:
 
     def AddPeeledSurface(self, flag, actor):
         """Update the peel; pose updates position and display coil projection actors."""
+        if not flag:
+            self.locator = None
+            self.peel_centers = None
+            self.peel_normals = None
         if self.actor_peel:
             self.ren.RemoveActor(self.actor_peel)
             self.ren.RemoveActor(self.object_orientation_torus_actor)

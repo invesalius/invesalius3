@@ -775,8 +775,11 @@ class HeadPage(wx.Panel):
 
     def OnEnablePeeling(self, event):
         enabled = self.peel_checkbox.IsChecked()
-        if not enabled or self.peeling.brain is not None:
-            self.peeling.set_enabled(enabled)
+        if not enabled:
+            self.peeling.remove()
+            return
+        if self.peeling.brain is not None:
+            self.peeling.set_enabled(True)
             return
         if self.brain_segmentation_checkbox.IsChecked():
             return

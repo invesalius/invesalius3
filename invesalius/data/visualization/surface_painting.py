@@ -143,6 +143,12 @@ class SurfacePeeling:
         if not self.enabled:
             self._remove_auxiliary_surfaces()
 
+    def remove(self):
+        Project().peel = None
+        self.clear()
+        self._remove_auxiliary_surfaces()
+        Session().ChangeProject()
+
     def _ensure_brain_surface(self):
         surface = Project().GetBrainSurface()
         if surface is not None:
