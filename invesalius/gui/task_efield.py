@@ -377,6 +377,7 @@ class InnerTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnGetEfieldMesh, "Get Efield mesh from json")
         Publisher.subscribe(self.OnGetEfieldPaths, "Get Efield paths")
         Publisher.subscribe(self.OnGetMultilocusCoils, "Get multilocus paths from json")
+        Publisher.subscribe(self.SendNeuronavigationApi, "Send Neuronavigation Api")
         Publisher.subscribe(self.GetEfieldDataStatus, "Get status of Efield saved data")
         Publisher.subscribe(self.GetIds, "Get dI for mtms")
         Publisher.subscribe(self.OnSaveEfield, "Request Efield save")
@@ -638,6 +639,11 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage("Save all Efield data", filename=filename)
         else:
             dlg.Efield_no_data_to_save_warning()
+
+    def SendNeuronavigationApi(self):
+        Publisher.sendMessage(
+            "Get Neuronavigation Api", neuronavigation_api=self.navigation.neuronavigation_api
+        )
 
     def GetEfieldDataStatus(self, efield_data_loaded, indexes_saved_list):
         self.efield_data_saved = efield_data_loaded
