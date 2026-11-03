@@ -810,9 +810,12 @@ class HeadPage(wx.Panel):
                         progress.Pulse()
                         time.sleep(0.05)
                     brain = future.result()
+                progress.Pulse(_("Preparing peeled surface..."))
+                self.peeling.configure(brain, source)
+                progress.Pulse(_("Updating 3D view..."))
+                Publisher.sendMessage("Render volume viewer")
             finally:
                 progress.Destroy()
-            self.peeling.configure(brain, source)
         except Exception as error:
             self.OnPeelChanged()
             wx.MessageBox(str(error), _("Create peel error"), wx.OK | wx.ICON_ERROR, self)

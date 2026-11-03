@@ -19,6 +19,7 @@
 
 """Surface map modes and temporary presentation, with optional navigation support."""
 
+from threading import Thread
 from typing import Protocol
 
 import numpy as np
@@ -144,10 +145,13 @@ class SurfacePeeling:
             self._remove_auxiliary_surfaces()
 
     def remove(self):
+        retired = [self.brain]
         Project().peel = None
         self.clear()
         self._remove_auxiliary_surfaces()
         Session().ChangeProject()
+        # Release the detached VTK layers outside the UI callback.
+        Thread(target=retired.clear, name="ReleasePeeling", daemon=True).start()
 
     def _ensure_brain_surface(self):
         surface = Project().GetBrainSurface()
