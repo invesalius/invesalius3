@@ -177,6 +177,7 @@ class SourceReconstructionMode:
         if self.playback is not None:
             self.playback.pause()
         self.token = None
+        Publisher.sendMessage("Source reconstruction changed", mode=self)
 
     def set_frame(self, frame_index):
         if self.playback is None:
@@ -204,6 +205,7 @@ class SourceReconstructionMode:
         scalars.Modified()
         self.frame_index = self.playback.index
         self.painting.update(self.name, self.token, self.surface_map)
+        Publisher.sendMessage("Source reconstruction changed", mode=self)
 
     def clear(self):
         self.painting.reset(self)
@@ -211,3 +213,4 @@ class SourceReconstructionMode:
         self.surface_map = None
         self.playback = None
         self.frame_index = None
+        Publisher.sendMessage("Source reconstruction changed", mode=self)

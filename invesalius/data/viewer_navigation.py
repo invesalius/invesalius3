@@ -21,6 +21,7 @@ import time
 
 import numpy as np
 import wx
+import wx.aui
 from vtkmodules.vtkFiltersSources import (
     vtkSphereSource,
 )
@@ -59,6 +60,8 @@ class NavigationView:
         self._navigation_interaction_state = None
         self._navigation_renderers = []
         self._nav_status = False
+        self.time_series = None
+        self._source_mode = None
         self.scene = NavigationScene(view.ren, view.actor_factory)
         self.scenes = [self.scene]
         self.scenes_by_coil = {}
@@ -73,6 +76,8 @@ class NavigationView:
         self._bind_events()
         self._restore_navigation_markers(markers)
         self._update_fps_visibility()
+
+        self.view.Bind(wx.EVT_SIZE, self._on_timeline_size)
 
     def __getattr__(self, name):
         """Use rendering and general-view operations from the owned view."""
@@ -174,6 +179,7 @@ class NavigationView:
         if first_activation:
             self._initialize_navigation_ui()
         self._update_fps_visibility()
+        self.UpdateSourceTimeline()
         self.view.UpdateRender()
 
     def deactivate(self):
@@ -182,6 +188,7 @@ class NavigationView:
         self._navigation_camera_settings = self.view.GetCameraSettings()
         self._navigation_interaction_state = self.view.interaction_style.stack.copy()
         self._active = False
+        self.UpdateSourceTimeline()
         self.view.nav_status = False
         self.view.target_mode = False
         self._update_fps_visibility()
@@ -199,6 +206,13 @@ class NavigationView:
         self.deactivate()
         self._disposed = True
         Publisher.unsubscribe_owner(self)
+        self.view.Unbind(wx.EVT_SIZE, handler=self._on_timeline_size)
+        if self.time_series is not None:
+            self.time_series.clear()
+            self.view.GetSizer().Detach(self.time_series)
+            self.time_series.Destroy()
+            self.time_series = None
+            self.view.Layout()
         self.probe_visualizer.dispose()
         self.eeg_visualizer.dispose()
         self.vector_field_visualizer.dispose()
@@ -391,6 +405,7 @@ class NavigationView:
                 self.fps_text.SetValue(f"FPS: {fps:0.1f}")
 
     def _bind_events(self):
+        Publisher.subscribe(self.UpdateSourceTimeline, "Source reconstruction changed")
         Publisher.subscribe(self.OnHideText, "Hide text actors on viewers")
         Publisher.subscribe(self.OnShowText, "Show text actors on viewers")
         Publisher.subscribe(self.OnRender, "Render volume viewer")
@@ -417,6 +432,71 @@ class NavigationView:
         Publisher.subscribe(self.UpdatePeelVisibility, "Update peel visibility")
         Publisher.subscribe(self.GetPeelCenters, "Get peel centers and normals")
         Publisher.subscribe(self.InitLocatorViewer, "Get init locator")
+
+    def _timeline_is_maximized(self):
+        window = self.view
+        while window.GetParent() is not None:
+            parent = window.GetParent()
+            manager = wx.aui.AuiManager.GetManager(parent)
+            if manager is not None:
+                pane = manager.GetPane(window)
+                if pane.IsOk() and pane.HasMaximizeButton():
+                    return pane.IsShown() and all(
+                        not other.IsShown()
+                        for other in manager.GetAllPanes()
+                        if other.window is not window
+                    )
+            window = parent
+        return False
+
+    def _on_timeline_size(self, event):
+        event.Skip()
+        wx.CallAfter(self.UpdateSourceTimeline)
+
+    def UpdateSourceTimeline(self, mode=None):
+        if self._disposed:
+            return
+        if mode is not None:
+            self._source_mode = mode
+        mode = self._source_mode
+        if mode is None:
+            return
+        active = (
+            self._active
+            and mode.token is not None
+            and mode.series is not None
+            and self._timeline_is_maximized()
+        )
+        if active and self.time_series is None:
+            from invesalius.gui.widgets.time_series import TimeSeriesPanel
+
+            self.time_series = TimeSeriesPanel(self.view)
+            self.view.GetSizer().Add(self.time_series, 0, wx.EXPAND)
+            self.time_series.Hide()
+        if self.time_series is None:
+            return
+        was_shown = self.time_series.IsShown()
+        if active:
+            if self.time_series.playback is not mode.playback:
+                self.time_series.set_data(
+                    mode.playback,
+                    mode.series.global_rms,
+                    mode.series.unit,
+                    mode.set_frame,
+                    mode.tick,
+                )
+            else:
+                self.time_series.sync()
+        else:
+            playback = self.time_series.playback
+            self.time_series.clear()
+            if playback is not None and playback.playing:
+                playback.pause()
+                if mode.playback is playback:
+                    mode.tick()
+        self.time_series.Show(active)
+        if was_shown != active:
+            self.view.Layout()
 
     def OnSensors(self, marker_visibilities):
         probe_id, ref_id, *coil_ids = marker_visibilities
