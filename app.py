@@ -546,6 +546,14 @@ def sanitize(text):
     return re.sub(r"(?u)[^-\w.]", "", text)
 
 
+def add_suffix(filename, suffix):
+    if filename.lower().endswith(".nii.gz"):
+        root, ext = filename[:-7], filename[-7:]
+    else:
+        root, ext = os.path.splitext(filename)
+    return f"{root}-{suffix}{ext}"
+
+
 def check_for_export(args, suffix="", remove_surfaces=False):
     suffix = sanitize(suffix)
 
@@ -584,10 +592,13 @@ def check_for_export(args, suffix="", remove_surfaces=False):
         prj = Project()
         export_filename = args.export_project
         if suffix:
-            export_filename, ext = os.path.splitext(export_filename)
-            export_filename = f"{export_filename}-{suffix}{ext}"
+            export_filename = add_suffix(export_filename, suffix)
 
-        prj.export_project(export_filename, save_masks=args.save_masks)
+        try:
+            prj.export_project(export_filename, save_masks=args.save_masks)
+        except ValueError as err:
+            print(err)
+            exit(1)
         print(f"Saved {export_filename}")
 
 
