@@ -28,8 +28,8 @@ import wx.lib.platebtn as pbtn
 import wx.svg
 from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkChartsCore import vtkAxis, vtkChart, vtkChartXY
-from vtkmodules.vtkCommonDataModel import vtkTable
-from vtkmodules.vtkRenderingContext2D import vtkContextTransform
+from vtkmodules.vtkCommonDataModel import vtkRectf, vtkTable
+from vtkmodules.vtkRenderingContext2D import vtkPen
 from vtkmodules.vtkRenderingCore import vtkTextActor
 from vtkmodules.vtkViewsContext2D import vtkContextView
 from vtkmodules.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
@@ -51,6 +51,9 @@ class TimeSeriesPanel(wx.Panel):
         self.on_seek = self.on_tick = None
         self._dragging = False
         self._collapsed = False
+        self._source_values = None
+        self._source_plot = None
+        self._zero_plot = None
         self.body = body = wx.Panel(self)
         for window in (self, body):
             window.SetBackgroundColour(wx.BLACK)
@@ -67,10 +70,11 @@ class TimeSeriesPanel(wx.Panel):
         self.chart.SetInteractive(False)
         self.chart.SetShowLegend(False)
         self.chart.GetBackgroundBrush().SetColor(0, 0, 0, 255)
-        self.chart_transform = vtkContextTransform()
-        self.chart_transform.GetTransform().Translate(0, -self.GRAPH_OFFSET_Y)
-        self.chart_transform.AddItem(self.chart)
-        self.view.GetScene().AddItem(self.chart_transform)
+        self.chart.SetLayoutStrategy(vtkChart.FILL_RECT)
+        self.view.GetScene().AddItem(self.chart)
+        self._layout_observer = self.canvas.GetRenderWindow().AddObserver(
+            "StartEvent", self._layout_chart
+        )
         self.header = vtkTextActor()
         self.header.SetInput("^ " + _("EEG/MEG time series"))
         self.header.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
@@ -82,7 +86,7 @@ class TimeSeriesPanel(wx.Panel):
         text.SetVerticalJustificationToTop()
         text.SetBackgroundOpacity(0)
         self.view.GetRenderer().AddActor2D(self.header)
-        for position in (vtkAxis.BOTTOM, vtkAxis.LEFT):
+        for position in (vtkAxis.BOTTOM, vtkAxis.LEFT, vtkAxis.RIGHT):
             axis = self.chart.GetAxis(position)
             axis.SetBehavior(vtkAxis.FIXED)
             axis.SetNotation(vtkAxis.FIXED_NOTATION)
@@ -91,9 +95,14 @@ class TimeSeriesPanel(wx.Panel):
             axis.GetPen().SetColor(90, 90, 90, 255)
             axis.GetGridPen().SetColor(30, 30, 30, 255)
             for text in (axis.GetLabelProperties(), axis.GetTitleProperties()):
-                text.SetColor(0.7, 0.7, 0.7)
+                text.SetColor(
+                    (170 / 255, 205 / 255, 145 / 255)
+                    if position == vtkAxis.RIGHT
+                    else (0.7, 0.7, 0.7)
+                )
             axis.GetLabelProperties().SetFontSize(12)
             axis.GetTitleProperties().SetFontSize(16)
+        self.chart.GetAxis(vtkAxis.RIGHT).SetVisible(False)
         self.chart.GetAxis(vtkAxis.BOTTOM).SetLabelOffset(self.AXIS_LABEL_GAP)
         self.chart.SetHiddenAxisBorder(self.CHART_MARGIN)
         self.canvas.Enable(1)
@@ -152,13 +161,15 @@ class TimeSeriesPanel(wx.Panel):
         font.SetPixelSize(wx.Size(0, 16))
         font.SetWeight(wx.FONTWEIGHT_BOLD)
         self.axis_title.SetFont(font)
+        self.source_label = wx.StaticText(body, label=_("Global RMS"), style=wx.ALIGN_RIGHT)
+        self.source_label.SetForegroundColour(wx.Colour(178, 178, 178))
         controls = wx.BoxSizer(wx.HORIZONTAL)
         for widget in (self.previous, self.play, self.next, self.speed, self.position):
             controls.Add(widget, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         footer = wx.GridSizer(1, 3, 0, 0)
         footer.Add(controls, 0, wx.ALIGN_CENTER_VERTICAL)
         footer.Add(self.axis_title, 0, wx.ALIGN_CENTER)
-        footer.AddSpacer(0)
+        footer.Add(self.source_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(
             self.canvas,
@@ -180,9 +191,15 @@ class TimeSeriesPanel(wx.Panel):
         self.speed.Bind(wx.EVT_CHOICE, self._on_speed)
         self.Bind(wx.EVT_WINDOW_DESTROY, self._on_destroy)
 
+    def _layout_chart(self, render_window, event):
+        width, height = render_window.GetSize()
+        # Keep clipping bounds aligned with the chart's vertical offset.
+        self.chart.SetSize(vtkRectf(0, -self.GRAPH_OFFSET_Y, width, height))
+
     def set_data(self, playback, values, unit, on_seek, on_tick):
         self.clear()
         self.playback = playback
+        self._unit = unit
         self.on_seek, self.on_tick = on_seek, on_tick
         axis = playback.axis
         self.time_scale = 1000 if axis.dt < 1 else 1
@@ -204,7 +221,7 @@ class TimeSeriesPanel(wx.Panel):
         self.axis_title.SetLabel(_("Time") + f" ({self.time_unit})")
         bottom.SetRange(times[0] - padding, times[-1] + padding)
         left = self.chart.GetAxis(vtkAxis.LEFT)
-        left.SetTitle(f"RMS ({unit})")
+        left.SetTitle("RMS")
         limit = float(np.max(values)) * 1.1 or 1.0
         left.SetRange(0, limit)
         for chart_axis in (bottom, left):
@@ -221,6 +238,62 @@ class TimeSeriesPanel(wx.Panel):
         cursor.SetWidth(1.0)
         self.speed.SetStringSelection(f"{playback.speed:g}x")
         self.sync()
+
+    def set_source(self, values, label):
+        if self.playback is None or values is self._source_values:
+            return
+        for plot in (self._source_plot, self._zero_plot):
+            if plot is not None:
+                self.chart.RemovePlotInstance(plot)
+        self._source_plot = self._zero_plot = None
+        self._source_values = values
+        axis = self.chart.GetAxis(vtkAxis.RIGHT)
+        axis.SetVisible(values is not None)
+        if values is not None:
+            low = min(0.0, float(np.min(values)))
+            high = max(0.0, float(np.max(values)))
+            margin = (high - low) * 0.1 or 1.0
+            low, high = low - margin, high + margin
+            axis.SetTitle(_("Amplitude"))
+            bottom = self.chart.GetAxis(vtkAxis.BOTTOM)
+            zero_table = vtkTable()
+            for name, data in (
+                ("Time", np.array([bottom.GetMinimum(), bottom.GetMaximum()])),
+                ("Zero", np.zeros(2)),
+            ):
+                column = numpy_to_vtk(data, deep=True)
+                column.SetName(name)
+                zero_table.AddColumn(column)
+            self._zero_plot = self.chart.AddPlot(vtkChart.LINE)
+            self._zero_plot.SetInputData(zero_table, 0, 1)
+            self.chart.SetPlotCorner(self._zero_plot, 1)
+            self._zero_plot.SetColor(110, 110, 110, 180)
+            self._zero_plot.SetWidth(1.0)
+            self._zero_plot.GetPen().SetLineType(vtkPen.DOT_LINE)
+            table = vtkTable()
+            table.AddColumn(self.table.GetColumn(0))
+            # STC values are big-endian; VTK needs native-endian values.
+            column = numpy_to_vtk(np.asarray(values, dtype=np.float64), deep=True)
+            column.SetName("Source")
+            table.AddColumn(column)
+            self._source_plot = self.chart.AddPlot(vtkChart.LINE)
+            self._source_plot.SetInputData(table, 0, 1)
+            self.chart.SetPlotCorner(self._source_plot, 1)
+            self._source_plot.SetColor(170, 205, 145, 255)
+            self._source_plot.SetWidth(1.5)
+            # Apply the full range after adding plots so their transforms use these bounds.
+            axis.SetBehavior(vtkAxis.FIXED)
+            axis.SetRange(low, high)
+            axis.SetPrecision(max(0, 2 - floor(log10(high - low))))
+            self.chart.RecalculateBounds()
+            self.source_label.SetLabel(_("RMS") + " + " + label)
+            self.source_label.SetForegroundColour(wx.Colour(170, 205, 145))
+        else:
+            self.source_label.SetLabel(_("Global RMS"))
+            self.source_label.SetForegroundColour(wx.Colour(178, 178, 178))
+        self.body.Layout()
+        if self.canvas.IsShownOnScreen():
+            self.canvas.Render()
 
     def sync(self):
         if self.playback is None:
@@ -256,6 +329,14 @@ class TimeSeriesPanel(wx.Panel):
         self._on_release(None)
         self.playback = None
         self.on_seek = self.on_tick = None
+        self._source_values = None
+        for plot in (self._source_plot, self._zero_plot):
+            if plot is not None:
+                self.chart.RemovePlotInstance(plot)
+        self._source_plot = self._zero_plot = None
+        self.chart.GetAxis(vtkAxis.RIGHT).SetVisible(False)
+        self.source_label.SetLabel(_("Global RMS"))
+        self.source_label.SetForegroundColour(wx.Colour(178, 178, 178))
 
     def _on_play(self, event):
         if self.playback.playing:
@@ -302,7 +383,6 @@ class TimeSeriesPanel(wx.Panel):
         if self.playback is None or self._collapsed:
             return
         x, y = self._mouse_position(event)
-        y += self.GRAPH_OFFSET_Y
         bottom = self.chart.GetAxis(vtkAxis.BOTTOM)
         left = self.chart.GetAxis(vtkAxis.LEFT)
         x1, x2 = bottom.GetPoint1()[0], bottom.GetPoint2()[0]
@@ -373,5 +453,7 @@ class TimeSeriesPanel(wx.Panel):
     def _on_destroy(self, event):
         if event.GetEventObject() is self:
             self.clear()
-            self.canvas.GetRenderWindow().Finalize()
+            window = self.canvas.GetRenderWindow()
+            window.RemoveObserver(self._layout_observer)
+            window.Finalize()
         event.Skip()

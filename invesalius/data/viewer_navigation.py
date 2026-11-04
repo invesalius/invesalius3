@@ -487,6 +487,7 @@ class NavigationView:
                 )
             else:
                 self.time_series.sync()
+            self.time_series.set_source(mode.source_values, mode.source_label)
         else:
             playback = self.time_series.playback
             self.time_series.clear()

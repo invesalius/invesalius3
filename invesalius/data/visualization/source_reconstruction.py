@@ -22,10 +22,11 @@
 import numpy as np
 from vtkmodules.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray, vtk_to_numpy
 from vtkmodules.vtkCommonCore import vtkPoints
-from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData
+from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStaticPointLocator
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
+import invesalius.constants as const
 from invesalius.data.eeg import read_source_config
 from invesalius.data.time_series import Playback
 from invesalius.data.visualization.surface_map_visualizer import ColorBar, SurfaceMap
@@ -46,11 +47,17 @@ class SourceReconstructionMode:
         self.playback = None
         self.token = None
         self.frame_index = None
+        self.selected_source = None
+        self.source_values = None
+        self._source_locator = None
+        self._cross_enabled = False
         self.available = False
         self.painting.register(self)
         Publisher.subscribe(self.load, "Load source reconstruction")
         Publisher.subscribe(self.set_frame, "Set source reconstruction frame")
         Publisher.subscribe(self.brain_changed, "Brain surface changed")
+        Publisher.subscribe(self.select_cross_source, "Set cross focal point")
+        Publisher.subscribe(self.cross_tool_changed, "Toggle toolbar item")
 
     def load(self, filename):
         """Prepare the entire candidate before replacing the current source map."""
@@ -77,11 +84,19 @@ class SourceReconstructionMode:
             finally:
                 manager.convert_to_inv = convert_to_inv
             surface = created_surface = Project().surface_dict[surface_index]
-        previous = self.series, self.surface_map, self.playback
+        previous = (
+            self.series,
+            self.surface_map,
+            self.playback,
+            self.selected_source,
+            self.source_values,
+        )
         previous_mode = surface.painting_mode
         self.painting.reset(self)
         self.series, self.surface_map = series, surface_map
         self.playback = Playback(series.axis)
+        self.selected_source = self.source_values = None
+        self._source_locator = None
         self.frame_index = None
         try:
             self.painting.set_available(self, True)
@@ -89,7 +104,13 @@ class SourceReconstructionMode:
                 raise RuntimeError("The imported source surface cannot display source maps.")
         except Exception:
             self.painting.reset(self)
-            self.series, self.surface_map, self.playback = previous
+            (
+                self.series,
+                self.surface_map,
+                self.playback,
+                self.selected_source,
+                self.source_values,
+            ) = previous
             self.frame_index = None
             self.painting.set_available(self, self.series is not None)
             try:
@@ -186,6 +207,56 @@ class SourceReconstructionMode:
         if self.token is not None:
             self._show_frame()
 
+    @property
+    def source_label(self):
+        if self.selected_source is None:
+            return ""
+        source_index = self.selected_source
+        for side, stc in zip(("LH", "RH"), self.series.hemispheres):
+            if source_index < len(stc.vertices):
+                return f"{side} {int(stc.vertices[source_index])}"
+            source_index -= len(stc.vertices)
+
+    def cross_tool_changed(self, _id, value):
+        if _id != const.SLICE_STATE_CROSS:
+            return
+        self._cross_enabled = bool(value)
+        if not self._cross_enabled and self.selected_source is not None:
+            self.selected_source = self.source_values = None
+            Publisher.sendMessage("Source reconstruction changed", mode=self)
+
+    def select_cross_source(self, position):
+        if not self._cross_enabled or self.series is None or self.surface_map is None:
+            return
+        try:
+            point = np.asarray(position[:3], dtype=float)
+        except (TypeError, ValueError):
+            return
+        if point.shape != (3,) or not np.isfinite(point).all():
+            return
+        # Cross coordinates use the slice convention; the source mesh uses the 3D convention.
+        point = point * [1, -1, 1]
+        polydata = self.surface_map.polydata
+        bounds = polydata.GetBounds()
+        source_index = None
+        if all(bounds[2 * axis] <= point[axis] <= bounds[2 * axis + 1] for axis in range(3)):
+            if self._source_locator is None or self._source_locator.GetDataSet() is not polydata:
+                self._source_locator = vtkStaticPointLocator()
+                self._source_locator.SetDataSet(polydata)
+                self._source_locator.BuildLocator()
+            vertex = self._source_locator.FindClosestPoint(point)
+            if vertex >= 0:
+                mapped = int(self.series.vertex_sources[vertex])
+                if mapped >= 0:
+                    source_index = mapped
+        if source_index == self.selected_source:
+            return
+        self.selected_source = source_index
+        self.source_values = (
+            self.series.read_source(source_index) if source_index is not None else None
+        )
+        Publisher.sendMessage("Source reconstruction changed", mode=self)
+
     def tick(self):
         """Called on the GUI thread by the future player's timer."""
         if self.token is None:
@@ -213,4 +284,6 @@ class SourceReconstructionMode:
         self.surface_map = None
         self.playback = None
         self.frame_index = None
+        self.selected_source = self.source_values = None
+        self._source_locator = None
         Publisher.sendMessage("Source reconstruction changed", mode=self)
