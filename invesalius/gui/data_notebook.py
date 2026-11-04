@@ -2545,6 +2545,7 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected)
 
+        self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnItemRightClick)
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
 
     def OnLeftDown(self, evt):
@@ -2554,6 +2555,12 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
             if electrode is not None:
                 self.eeg_electrodes.set_visible(electrode.electrode_uuid, not electrode.visible)
             return
+        evt.Skip()
+
+    def OnItemRightClick(self, evt):
+        electrode = self._GetElectrode(evt.GetIndex())
+        if electrode is not None:
+            self.SelectElectrode(electrode.electrode_uuid)
         evt.Skip()
 
     def OnContextMenu(self, evt):
