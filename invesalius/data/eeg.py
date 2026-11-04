@@ -21,6 +21,7 @@
 
 import csv
 import json
+import operator
 from dataclasses import asdict, dataclass, field
 from math import isfinite
 from pathlib import Path
@@ -516,6 +517,7 @@ class CorticalSourceSeries:
     scalar_range: tuple[float, float]
     name: str
     unit: str
+    global_rms: np.ndarray
 
     @property
     def axis(self):
@@ -524,6 +526,15 @@ class CorticalSourceSeries:
     def read_frame(self, frame_index):
         """Return the sampled sources, in lh then rh order, without spatial resampling."""
         return np.concatenate([stc.read_frame(frame_index) for stc in self.hemispheres])
+
+    def read_source(self, source_index):
+        """Read a source's original time course, using read_frame's lh-then-rh source order."""
+        source_index = operator.index(source_index)
+        for stc in self.hemispheres:
+            if 0 <= source_index < len(stc.vertices):
+                return stc.values[:, source_index]
+            source_index -= len(stc.vertices)
+        raise IndexError("Source index is outside the source series.")
 
 
 def _affine(matrix):
@@ -558,8 +569,9 @@ def _vertex_sources(points, triangles, source_vertices):
     return result
 
 
-def _scalar_range(hemispheres):
+def _source_statistics(hemispheres):
     minimum, maximum = float("inf"), float("-inf")
+    rms = np.zeros(hemispheres[0].axis.n_frames, dtype=np.float64)
     for stc in hemispheres:
         if not len(stc.vertices):
             continue
@@ -570,7 +582,12 @@ def _scalar_range(hemispheres):
                 raise ValueError("STC source values must be finite.")
             minimum = min(minimum, float(chunk.min()))
             maximum = max(maximum, float(chunk.max()))
-    return minimum, maximum
+            # Square in float64 to preserve tiny amplitudes and avoid float32 overflow.
+            rms[start : start + len(chunk)] += np.square(chunk, dtype=np.float64).sum(axis=1)
+    rms /= sum(len(stc.vertices) for stc in hemispheres)
+    np.sqrt(rms, out=rms)
+    rms.flags.writeable = False
+    return (minimum, maximum), rms
 
 
 def read_source_config(filename):
@@ -625,7 +642,7 @@ def read_source_config(filename):
     points = np.concatenate(points)
     triangles = np.concatenate(triangles)
     source_vertices = np.concatenate(source_vertices)
-    scalar_range = _scalar_range(hemispheres)
+    scalar_range, global_rms = _source_statistics(hemispheres)
     vertex_sources = _vertex_sources(points, triangles, source_vertices)
     registered_points = nib.affines.apply_affine(surface_to_project, points)
     if not np.isfinite(registered_points).all():
@@ -638,4 +655,5 @@ def read_source_config(filename):
         scalar_range,
         name,
         config["unit"],
+        global_rms,
     )
