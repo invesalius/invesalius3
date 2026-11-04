@@ -20,7 +20,7 @@
 """Surface map data and shared presentation for live and offline sources."""
 
 from dataclasses import asdict, dataclass, field
-from math import isfinite
+from math import floor, isfinite, log10
 
 from vtkmodules.vtkCommonCore import vtkLookupTable
 from vtkmodules.vtkCommonDataModel import vtkPolyData
@@ -203,6 +203,10 @@ class SurfaceMapVisualizer:
             )
         )
         self.scalar_bar.SetLookupTable(surface_map.lookup_table)
+        if not self.color_bar.compact:
+            magnitudes = [abs(value) for value in surface_map.scalar_range if value]
+            precision = max(0, 2 - floor(log10(min(magnitudes)))) if magnitudes else 0
+            self.scalar_bar.SetLabelFormat(f"%.{precision}f")
         self.scalar_bar.SetTitle(self.color_bar.title or f"{surface_map.unit}       ")
 
     def show(self, visible):

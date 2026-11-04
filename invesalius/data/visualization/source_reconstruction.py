@@ -153,7 +153,7 @@ class SourceReconstructionMode:
             (-limit, limit),
             series.name,
             series.unit,
-            color_bar=ColorBar(title=series.unit),
+            color_bar=ColorBar(position=(0.82, 0.1), compact=False, title=series.unit),
         )
 
     def supports_surface(self, surface):
