@@ -78,14 +78,14 @@ class SourceReconstructionMode:
                 manager.convert_to_inv = convert_to_inv
             surface = created_surface = Project().surface_dict[surface_index]
         previous = self.series, self.surface_map, self.playback
-        was_active = self.token is not None
+        previous_mode = surface.painting_mode
         self.painting.reset(self)
         self.series, self.surface_map = series, surface_map
         self.playback = Playback(series.axis)
         self.frame_index = None
         try:
             self.painting.set_available(self, True)
-            if was_active and not self.painting.select(surface, self.name):
+            if not self.painting.select(surface, self.name):
                 raise RuntimeError("The imported source surface cannot display source maps.")
         except Exception:
             self.painting.reset(self)
@@ -93,8 +93,8 @@ class SourceReconstructionMode:
             self.frame_index = None
             self.painting.set_available(self, self.series is not None)
             try:
-                if was_active:
-                    self.painting.select(surface, self.name)
+                if previous_mode:
+                    self.painting.select(surface, previous_mode)
             finally:
                 if created_surface is not None:
                     Publisher.sendMessage(

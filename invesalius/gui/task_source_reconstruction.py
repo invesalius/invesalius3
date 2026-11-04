@@ -38,12 +38,6 @@ class TaskPanel(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(button, 0, wx.ALL | wx.EXPAND, 7)
-        hint = wx.StaticText(
-            self,
-            label=_("Select EEG/MEG in the brain's Color map mode to display the reconstruction."),
-        )
-        hint.Wrap(300)
-        sizer.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 7)
         self.SetSizerAndFit(sizer)
 
     def OnImport(self, event):
