@@ -252,6 +252,10 @@ class SurfaceManager:
         self.convert_to_inv = None
         self.__bind_events()
 
+        from invesalius.data.visualization.source_reconstruction import SourceReconstructionMode
+
+        self.source_reconstruction = SourceReconstructionMode(self)
+
         self._default_parameters = {
             "algorithm": "Default",
             "quality": const.DEFAULT_SURFACE_QUALITY,
@@ -1096,6 +1100,7 @@ class SurfaceManager:
         self.CloseProject()
 
     def CloseProject(self):
+        self.source_reconstruction.clear()
         for surface in list(self.map_visualizers):
             self.RemoveSurfacePresentation(surface)
         for index in self.actors_dict:
