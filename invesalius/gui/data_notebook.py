@@ -2558,18 +2558,13 @@ class EEGElectrodeListCtrl(wx.ListCtrl):
         evt.Skip()
 
     def OnItemRightClick(self, evt):
-        electrode = self._GetElectrode(evt.GetIndex())
-        if electrode is not None:
-            self.SelectElectrode(electrode.electrode_uuid)
-        evt.Skip()
+        self._ShowContextMenu(evt.GetIndex())
 
     def OnContextMenu(self, evt):
-        position = evt.GetPosition()
-        row = (
-            self.GetFocusedItem()
-            if position == wx.DefaultPosition
-            else self.HitTest(self.ScreenToClient(position))[0]
-        )
+        if evt.GetPosition() == wx.DefaultPosition:
+            self._ShowContextMenu(self.GetFocusedItem())
+
+    def _ShowContextMenu(self, row):
         electrode = self._GetElectrode(row)
         if electrode is None:
             return
