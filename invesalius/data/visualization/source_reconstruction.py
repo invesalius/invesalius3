@@ -35,14 +35,13 @@ from invesalius.reader.source_reconstruction import read_source_config
 
 
 class SourceReconstructionMode:
-    name = "Source reconstruction"
+    name = "EEG/MEG"
     requires_navigation = True
 
     def __init__(self, surface_manager):
         self.surface_manager = surface_manager
         self.painting = SurfacePainting()
         self.series = None
-        self.surface = None
         self.surface_map = None
         self.playback = None
         self.token = None
@@ -51,7 +50,7 @@ class SourceReconstructionMode:
         self.painting.register(self)
         Publisher.subscribe(self.load, "Load source reconstruction")
         Publisher.subscribe(self.set_frame, "Set source reconstruction frame")
-        Publisher.subscribe(self.discard_surface, "Discard surface painting")
+        Publisher.subscribe(self.brain_changed, "Brain surface changed")
 
     def load(self, filename):
         """Prepare the entire candidate before replacing the current source map."""
@@ -59,42 +58,51 @@ class SourceReconstructionMode:
             raise ValueError("Switch to navigation mode before loading a source reconstruction.")
         series = read_source_config(filename)
         surface_map = self._create_map(series)
-        manager = self.surface_manager
-        convert_to_inv = manager.convert_to_inv
-        try:
-            # The source map has already been converted to viewer coordinates.
-            manager.convert_to_inv = False
-            surface_index = manager.CreateSurfaceFromPolydata(
-                surface_map.polydata, name=series.name, category=self.name, colour=(0.8, 0.8, 0.8)
-            )
-        finally:
-            manager.convert_to_inv = convert_to_inv
-        surface = Project().surface_dict[surface_index]
-        previous = self.series, self.surface, self.surface_map, self.playback
+        surface = Project().GetBrainSurface()
+        if surface is not None and not surface.supports_painting:
+            raise ValueError("The designated brain surface cannot display source maps.")
+        created_surface = None
+        if surface is None:
+            manager = self.surface_manager
+            convert_to_inv = manager.convert_to_inv
+            try:
+                # The source map has already been converted to viewer coordinates.
+                manager.convert_to_inv = False
+                surface_index = manager.CreateSurfaceFromPolydata(
+                    surface_map.polydata,
+                    name="Brain",
+                    colour=(0.8, 0.8, 0.8),
+                    anatomical_role="brain",
+                )
+            finally:
+                manager.convert_to_inv = convert_to_inv
+            surface = created_surface = Project().surface_dict[surface_index]
+        previous = self.series, self.surface_map, self.playback
         was_active = self.token is not None
         self.painting.reset(self)
-        self.series, self.surface, self.surface_map = series, surface, surface_map
+        self.series, self.surface_map = series, surface_map
         self.playback = Playback(series.axis)
         self.frame_index = None
         try:
             self.painting.set_available(self, True)
-            if not self.painting.select(surface, self.name):
+            if was_active and not self.painting.select(surface, self.name):
                 raise RuntimeError("The imported source surface cannot display source maps.")
         except Exception:
             self.painting.reset(self)
-            self.series, self.surface, self.surface_map, self.playback = previous
+            self.series, self.surface_map, self.playback = previous
             self.frame_index = None
             self.painting.set_available(self, self.series is not None)
             try:
                 if was_active:
-                    self.painting.select(self.surface, self.name)
+                    self.painting.select(surface, self.name)
             finally:
-                Publisher.sendMessage("Remove surfaces", surface_indexes=[surface.index])
+                if created_surface is not None:
+                    Publisher.sendMessage(
+                        "Remove surfaces", surface_indexes=[created_surface.index]
+                    )
             raise
-        old_surface = previous[1]
-        if old_surface is not None and old_surface in Project().surface_dict.values():
-            Publisher.sendMessage("Remove surfaces", surface_indexes=[old_surface.index])
-        Publisher.sendMessage("Repopulate surfaces")
+        if created_surface is not None:
+            Publisher.sendMessage("Repopulate surfaces")
 
     def _create_map(self, series):
         from invesalius.data.slice_ import Slice
@@ -149,10 +157,17 @@ class SourceReconstructionMode:
         )
 
     def supports_surface(self, surface):
-        return surface is self.surface
+        return surface is Project().GetBrainSurface()
 
     def default_surface(self):
-        return self.surface
+        surface = Project().GetBrainSurface()
+        return surface if surface is not None and surface.supports_painting else None
+
+    def brain_changed(self, previous, surface):
+        target = self.painting.targets.get(self.name)
+        if target is not None and target is not surface:
+            self.painting.stop(self.name)
+            self.painting.targets.pop(self.name, None)
 
     def start(self, surface, token):
         self.token = token
@@ -190,14 +205,9 @@ class SourceReconstructionMode:
         self.frame_index = self.playback.index
         self.painting.update(self.name, self.token, self.surface_map)
 
-    def discard_surface(self, surface):
-        if surface is self.surface:
-            self.clear()
-
     def clear(self):
         self.painting.reset(self)
         self.series = None
-        self.surface = None
         self.surface_map = None
         self.playback = None
         self.frame_index = None
