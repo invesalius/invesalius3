@@ -24,6 +24,7 @@ import invesalius.gui.task_exporter as exporter
 import invesalius.gui.task_fmrisupport as fmrisupport
 import invesalius.gui.task_importer as importer
 import invesalius.gui.task_slice as slice_
+import invesalius.gui.task_source_reconstruction as source_reconstruction
 import invesalius.gui.task_surface as surface
 import invesalius.gui.task_tractography as tractography
 from invesalius.i18n import tr as _
@@ -182,6 +183,7 @@ class InnerFoldPanel(wx.Panel):
             (_("Export data"), exporter.TaskPanel),
             (_("Tractography"), tractography.TaskPanel),
             (_("E-Field"), efield.TaskPanel),
+            (_("EEG/MEG source reconstruction"), source_reconstruction.TaskPanel),
             (_("fMRI support"), fmrisupport.TaskPanel),
             # (_("MEP mapping"), mepmapping.TaskPanel), # TODO: Add marker file import and export colored stl
         ]
