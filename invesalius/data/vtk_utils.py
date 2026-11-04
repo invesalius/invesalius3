@@ -21,6 +21,7 @@ import sys
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, SupportsInt, Tuple, Union
 
 import wx
+from vtkmodules.vtkCommonCore import vtkIdList
 from vtkmodules.vtkCommonMath import vtkMatrix4x4
 from vtkmodules.vtkIOGeometry import vtkOBJReader, vtkSTLReader
 from vtkmodules.vtkIOPLY import vtkPLYReader
@@ -44,6 +45,12 @@ if TYPE_CHECKING:
     from vtkmodules.vtkCommonExecutionModel import vtkAlgorithm
 
     from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
+
+
+def find_cells_along_line(start, end, locator):
+    cell_ids = vtkIdList()
+    locator.FindCellsAlongLine(start, end, 0.001, cell_ids)
+    return cell_ids
 
 
 class ProgressDialog:

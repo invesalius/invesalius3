@@ -1129,7 +1129,7 @@ class SurfacePage(wx.Panel):
         self.__init_gui()
 
         Publisher.subscribe(self.AddSurface, "Update surface info in GUI")
-        Publisher.subscribe(self.RepopulateSurfaces, "Repopulate surfaces")
+        Publisher.subscribe(self.OnRepopulateSurfaces, "Repopulate surfaces")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.EditSurfaceTransparency, "Set surface transparency")
         Publisher.subscribe(self.EditSurfaceColour, "Set surface colour")
@@ -1337,6 +1337,9 @@ class SurfacePage(wx.Panel):
 
         self.UpdateVisibilityButton()
 
+    def OnRepopulateSurfaces(self, clear_project=False):
+        wx.CallAfter(self.RepopulateSurfaces, clear_project)
+
     def RepopulateSurfaces(self, clear_project=False):
         # Properly destroy all components and clear sizer
         self.scroll_sizer.Clear(delete_windows=True)
@@ -1542,6 +1545,7 @@ class SurfaceButtonControlPanel(wx.Panel):
 
     def OnExportSurface(self):
         from invesalius.data.slice_ import Slice
+        from invesalius.data.visualization.surface_painting import SurfacePainting
         from invesalius.gui.task_exporter import (
             INDEX_TO_EXTENSION,
             INDEX_TO_TYPE_3D,
@@ -1550,9 +1554,10 @@ class SurfaceButtonControlPanel(wx.Panel):
 
         project_obj = Project()
         n_surface = 0
+        presentation = SurfacePainting().presentation
 
         for index in project_obj.surface_dict:
-            if project_obj.surface_dict[index].is_shown:
+            if presentation.visible(project_obj.surface_dict[index]):
                 n_surface += 1
 
         if not n_surface:
@@ -1672,7 +1677,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
     def on_mouse_right_click(self, event):
         start_idx = 1
-        local_idx = self.GetFocusedItem()
+        local_idx = event.GetIndex()
 
         global_surface_id = None
         for g_id, l_id in self.surface_list_index.items():
@@ -1689,7 +1694,50 @@ class SurfacesListCtrlPanel(InvListCtrl):
         # Create the context menu and add all the menu items
         surface_context_menu = wx.Menu()
 
+        from invesalius.data.visualization.surface_painting import SurfacePainting
+
+        surface = Project().surface_dict[global_surface_id]
+        painting = SurfacePainting()
+        modes = painting.available_modes(surface)
+        if modes:
+            modes_menu = wx.Menu()
+            for name, label in [("", _("Original"))] + [(mode.name, mode.name) for mode in modes]:
+                item = modes_menu.AppendRadioItem(wx.ID_ANY, label)
+                item.Check(surface.painting_mode == name)
+                modes_menu.Bind(
+                    wx.EVT_MENU,
+                    lambda evt, name=name: painting.select(surface, name),
+                    item,
+                )
+            surface_context_menu.AppendSubMenu(modes_menu, _("Color map mode"))
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            peeling = painting.peeling
+            if peeling.available(surface):
+                item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Use peel for Original"))
+                item.Check(peeling.selected)
+                item.Enable(peeling.can_select(surface))
+                surface_context_menu.Bind(
+                    wx.EVT_MENU,
+                    lambda evt: peeling.select(surface, evt.IsChecked()),
+                    item,
+                )
+            if self.category == "General" and surface.frozen_map is None:
+                item = surface_context_menu.AppendCheckItem(wx.ID_ANY, _("Assign as brain"))
+                item.Enable(not surface.peel_only)
+                surface_context_menu.Bind(
+                    wx.EVT_MENU_OPEN,
+                    lambda evt, item=item: item.Check(surface.anatomical_role == "brain"),
+                )
+                surface_context_menu.Bind(
+                    wx.EVT_MENU,
+                    lambda evt: self.assign_brain(surface, evt.IsChecked()),
+                    item,
+                )
+        if surface_context_menu.GetMenuItemCount():
+            surface_context_menu.AppendSeparator()
+
         colour_id = surface_context_menu.Append(start_idx, _("Change color"))
+        colour_id.Enable(surface.can_edit_colour)
         surface_context_menu.Bind(
             wx.EVT_MENU,
             lambda evt: self.change_surface_color(surface_index=global_surface_id),
@@ -1722,6 +1770,10 @@ class SurfacesListCtrlPanel(InvListCtrl):
 
         self.PopupMenu(surface_context_menu)
         surface_context_menu.Destroy()
+
+    def assign_brain(self, surface, assigned):
+        Project().SetBrainSurface(surface if assigned else None)
+        ses.Session().ChangeProject()
 
     def update_current_surface_data(self, surface):
         self.current_color = [int(255 * c) for c in surface.colour][:3]
@@ -1822,7 +1874,10 @@ class SurfacesListCtrlPanel(InvListCtrl):
         if global_surface_id is None:
             return
 
-        current_color = self.current_color
+        surface = Project().surface_dict[global_surface_id]
+        if not surface.can_edit_colour:
+            return
+        current_color = [int(255 * value) for value in surface.colour[:3]]
 
         new_color = dlg.ShowColorDialog(color_current=current_color)
 
@@ -2097,6 +2152,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         else:
             local_position = self.surface_list_index[index]
             self.UpdateItemInfo(local_position, name, volume, area, transparency, colour)
+        self.SetItemImage(local_position, int(surface.is_shown))
 
     def InsertNewItem(
         self,

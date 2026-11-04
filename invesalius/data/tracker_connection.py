@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
+import os
 import sys
 
 from wx import ID_OK
@@ -67,6 +68,32 @@ class TrackerConnection:
     def GetLibMode(self):
         return self.lib_mode
 
+    def GetCoilNames(self) -> list[str]:
+        """Return coil names in coordinate row order, or an empty list if unavailable."""
+        return []
+
+    def GetCoilName(self, obj_id: int | None) -> str | None:
+        """Return a suggested name for a coil row (probe=0, reference=1, coils>=2)."""
+        if obj_id is None or obj_id < 2:
+            return None
+        coil_names = self.GetCoilNames()
+        coil_index = obj_id - 2
+        if coil_index < len(coil_names):
+            return coil_names[coil_index] or None
+        return None
+
+    def GetCoilCount(self) -> int | None:
+        """Return the configured coil count, or None if this adapter cannot report it."""
+        return None
+
+    def ValidateCoilCount(self) -> bool:
+        """Compare a known coil count with the requested count when an adapter requires it."""
+        coil_count = self.GetCoilCount()
+        if coil_count is None or coil_count == self.n_coils:
+            return True
+        self.lib_mode = "coil count mismatch"
+        return False
+
     def GetConfiguration(self):
         return self.configuration
 
@@ -77,12 +104,13 @@ class TrackerConnection:
 
 class OptitrackTrackerConnection(TrackerConnection):
     """
-    Connects to optitrack wrapper from Motive 2.2. Initialize cameras, attach listener, loads Calibration,
-    loads User Profile (Rigid bodies information).
+    Connect to OptiTrack, selecting the requested coils from the user profile.
     """
 
     def __init__(self, model=None, n_coils=1):
         super().__init__(model=model, n_coils=n_coils)
+        self.coil_names = []
+        self.coil_count = None
 
     def Configure(self):
         dialog = dlg.ConfigureOptitrackDialog()
@@ -105,6 +133,10 @@ class OptitrackTrackerConnection(TrackerConnection):
     def Connect(self):
         assert self.configuration is not None, "No configuration defined"
 
+        self.connection = None
+        self.coil_names = []
+        self.coil_count = None
+
         import optitrack
 
         connection = optitrack.optr()
@@ -113,6 +145,17 @@ class OptitrackTrackerConnection(TrackerConnection):
         user_profile = self.configuration["user_profile"]
 
         if connection.Initialize(calibration, user_profile) == 0:
+            self.coil_count = int(connection.getCoilCount())
+            self.coil_names = [name.strip() for name in connection.getCoilNames()]
+
+            if not self.ValidateCoilCount():
+                try:
+                    connection.Close()
+                except Exception as error:
+                    print(f"Could not close the rejected OptiTrack connection: {error}")
+                self.coil_names = []
+                return
+
             connection.Run()  # Runs 'Run' function once to update cameras.
             lib_mode = "wrapper"
 
@@ -123,8 +166,35 @@ class OptitrackTrackerConnection(TrackerConnection):
 
         self.lib_mode = lib_mode
 
+    def ValidateCoilCount(self) -> bool:
+        """Require enough coils and let the user choose when there are extra coils."""
+        if self.coil_count < self.n_coils:
+            self.lib_mode = "coil count mismatch"
+            return False
+        if self.coil_count == self.n_coils:
+            return True
+
+        dialog = dlg.SelectOptitrackCoilsDialog(self.coil_names, self.n_coils)
+        try:
+            if dialog.ShowModal() != ID_OK:
+                self.lib_mode = "cancelled"
+                return False
+            self.coil_names = dialog.GetValue()
+            return True
+        finally:
+            dialog.Destroy()
+
+    def GetCoilNames(self) -> list[str]:
+        return list(self.coil_names)
+
+    def GetCoilCount(self) -> int | None:
+        return self.coil_count
+
     def Disconnect(self):
         super().Disconnect()
+        if not self.IsConnected():
+            self.coil_names = []
+            self.coil_count = None
 
 
 class ClaronTrackerConnection(TrackerConnection):
@@ -386,6 +456,12 @@ class CameraTrackerConnection(TrackerConnection):
 class PolarisTrackerConnection(TrackerConnection):
     def __init__(self, model=None, n_coils=1):
         super().__init__(model=model, n_coils=n_coils)
+
+    def GetCoilNames(self) -> list[str]:
+        if self.configuration is None:
+            return []
+        obj_dirs = self.configuration.get("obj_dirs") or []
+        return [os.path.splitext(os.path.basename(path))[0] for path in obj_dirs]
 
     def Configure(self):
         dialog = dlg.ConfigurePolarisDialog(self.n_coils)

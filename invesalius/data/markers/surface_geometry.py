@@ -1,6 +1,7 @@
 import numpy as np
 import vtk
 
+import invesalius.constants as const
 import invesalius.data.transformations as tr
 import invesalius.session as ses
 from invesalius.i18n import tr as _
@@ -18,18 +19,36 @@ class SurfaceGeometry(metaclass=Singleton):
         self.__bind_events()
 
         self.surfaces = []
+        self.map_actors = {}
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor, "Load surface actor into viewer")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.RemoveSurface, "Remove surface actor from viewer")
         Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.RegisterMapActor, "Register surface map actor")
 
     def OnNavigationStatus(self, nav_status, vis_status):
         self.is_navigating = nav_status
 
     def OnCloseProject(self):
         self.surfaces = []
+        self.map_actors.clear()
+
+    def RegisterMapActor(self, actor):
+        self.map_actors[actor] = actor.GetVisibility()
+
+    def GetSurfacePolyData(self, actor):
+        """Return the picked mesh without changing the anatomical surface registry."""
+        if actor is None:
+            return None
+        if actor in self.map_actors or any(
+            surface["original"]["actor"] == actor for surface in self.surfaces
+        ):
+            mapper = actor.GetMapper()
+            mapper.Update()
+            return mapper.GetInput()
+        return None
 
     def PrecalculateSurfaceData(self, actor):
         mapper = actor.GetMapper()
@@ -94,6 +113,7 @@ class SurfaceGeometry(metaclass=Singleton):
         """
         Removes a surface by its actor from internal storage.
         """
+        self.map_actors.pop(actor, None)
         for index, surface in enumerate(self.surfaces):
             if surface["original"]["actor"] == actor:
                 self.surfaces.pop(index)
@@ -224,9 +244,11 @@ class SurfaceGeometry(metaclass=Singleton):
         This is useful, e.g., when we want to pick a marker without any of the surfaces getting in the way.
         """
         for surface in self.surfaces:
-            # Only the original actor is used for visualization, so we only need to hide that one.
             actor = surface["original"]["actor"]
             surface["visible"] = actor.GetVisibility()
+            actor.VisibilityOff()
+        for actor in self.map_actors:
+            self.map_actors[actor] = actor.GetVisibility()
             actor.VisibilityOff()
 
     def ShowAllSurfaces(self):
@@ -235,9 +257,10 @@ class SurfaceGeometry(metaclass=Singleton):
         HideAllSurfaces was called.
         """
         for surface in self.surfaces:
-            # Only the original actor is used for visualization, so we only need to show that one.
             actor = surface["original"]["actor"]
             visible = surface["visible"] if "visible" in surface else True
+            actor.SetVisibility(visible)
+        for actor, visible in self.map_actors.items():
             actor.SetVisibility(visible)
 
     def GetSurfaceCenter(self, actor):
@@ -293,6 +316,12 @@ class SurfaceGeometry(metaclass=Singleton):
         valid_surfaces = [
             surface for surface in self.surfaces if self._HasUsableGeometry(surface["original"])
         ]
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            valid_surfaces = [
+                surface
+                for surface in valid_surfaces
+                if surface["surface"] is None or surface["surface"].frozen_map is None
+            ]
         if not valid_surfaces:
             return None
 

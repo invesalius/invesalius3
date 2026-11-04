@@ -34,10 +34,10 @@ import invesalius.constants as const
 import invesalius.utils as utils
 from invesalius import inv_paths
 from invesalius.gui.dialogs import ErrorMessageBox
+from invesalius.i18n import tr as _
 
 # from invesalius.data import imagedata_utils
 from invesalius.presets import Presets
-from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, TwoWaysDictionary, debug, decode
 
@@ -74,6 +74,7 @@ class Project(metaclass=Singleton):
         # Surfaces are (vtkPolyData)
         self.surface_dict = {}
         self.last_surface_index = -1
+        self.peel = None
 
         # Measurements
         self.measurement_dict = {}
@@ -156,11 +157,50 @@ class Project(metaclass=Singleton):
         self.surface_dict[index] = surface
         return index
 
+    def GetBrainSurface(self):
+        return next(
+            (
+                surface
+                for surface in self.surface_dict.values()
+                if surface.anatomical_role == "brain"
+            ),
+            None,
+        )
+
+    def GetScalpSurface(self):
+        return max(
+            (
+                surface
+                for surface in self.surface_dict.values()
+                if surface.supports_painting and not surface.peel_only
+            ),
+            key=lambda surface: surface.polydata.GetBounds()[5],
+            default=None,
+        )
+
+    def SetBrainSurface(self, surface):
+        if surface is not None and surface not in self.surface_dict.values():
+            raise ValueError("The brain surface must belong to the project.")
+        previous = self.GetBrainSurface()
+        for candidate in self.surface_dict.values():
+            candidate.anatomical_role = "brain" if candidate is surface else ""
+        if previous is not surface:
+            Publisher.sendMessage("Brain surface changed", previous=previous, surface=surface)
+
     def ChangeSurface(self, surface):
         index = surface.index
+        previous = self.surface_dict[index]
+        Publisher.sendMessage("Discard surface painting", surface=previous)
+        surface.anatomical_role = previous.anatomical_role
+        surface.peel_only = previous.peel_only
+        surface.created_for_efield = previous.created_for_efield
         self.surface_dict[index] = surface
+        if surface.anatomical_role == "brain":
+            Publisher.sendMessage("Brain surface changed", previous=previous, surface=surface)
 
     def RemoveSurface(self, index):
+        surface = self.surface_dict[index]
+        Publisher.sendMessage("Discard surface painting", surface=surface)
         new_dict = {}
         for i in self.surface_dict:
             if i < index:
@@ -169,6 +209,8 @@ class Project(metaclass=Singleton):
                 new_dict[i - 1] = self.surface_dict[i]
                 new_dict[i - 1].index = i - 1
         self.surface_dict = new_dict
+        if surface.anatomical_role == "brain":
+            Publisher.sendMessage("Brain surface changed", previous=surface, surface=None)
 
     def AddMeasurement(self, measurement):
         index = len(self.measurement_dict)
@@ -218,6 +260,7 @@ class Project(metaclass=Singleton):
 
     def SavePlistProject(self, dir_, filename, compress=False):
         import invesalius.data.slice_ as slice_
+
         dir_temp = decode(tempfile.mkdtemp(), const.FS_ENCODE)
 
         self.compress = compress
@@ -243,15 +286,17 @@ class Project(metaclass=Singleton):
             "spacing": self.spacing,
             "image_fiducials": self.image_fiducials.tolist(),
         }
-        
+
         # Add optional fields only if they are not None (plistlib doesn't support None)
         if self.affine is not None:
-            project["affine"] = self.affine.tolist() if hasattr(self.affine, 'tolist') else self.affine
+            project["affine"] = (
+                self.affine.tolist() if hasattr(self.affine, "tolist") else self.affine
+            )
         if self.patient_orientation is not None:
             project["patient_orientation"] = self.patient_orientation
-        
+
         # Add active_image_version if it exists
-        current_label = getattr(slice_.Slice(), 'current_image_label', None)
+        current_label = getattr(slice_.Slice(), "current_image_label", None)
         if current_label is not None:
             project["active_image_version"] = current_label
 
@@ -289,7 +334,7 @@ class Project(metaclass=Singleton):
 
             plist_entry = {"label": label, "filename": v_filename}
             if label in self.image_versions_meta:
-                 plist_entry.update(self.image_versions_meta[label])
+                plist_entry.update(self.image_versions_meta[label])
             image_versions_plist.append(plist_entry)
 
         project["image_versions"] = image_versions_plist
@@ -305,6 +350,10 @@ class Project(metaclass=Singleton):
         for index in self.surface_dict:
             surfaces[str(index)] = self.surface_dict[index].SavePlist(dir_temp, filelist)
         project["surfaces"] = surfaces
+        # Keep cached layer files alive until the archive has been written.
+        peel = self.peel
+        if peel is not None:
+            project["peeling"] = peel.SavePlist(filelist)
 
         # Saving the measurements
         measurements = self.GetMeasuresDict()
@@ -345,7 +394,7 @@ class Project(metaclass=Singleton):
     def OpenPlistProject(self, filename, progress_callback=None):
         """
         Open a .inv3 project file.
-        
+
         Args:
             filename: Path to the .inv3 file
             progress_callback: Optional callback function(value, message) for progress updates
@@ -378,7 +427,7 @@ class Project(metaclass=Singleton):
     def load_from_folder(self, dirpath, progress_callback=None):
         """
         Loads invesalius3 project files from dipath.
-        
+
         Args:
             dirpath: Directory containing extracted project files
             progress_callback: Optional callback function(value, message) for progress updates
@@ -448,29 +497,33 @@ class Project(metaclass=Singleton):
 
             meta = {}
             if "applied_filter" in version:
-                 meta["applied_filter"] = version["applied_filter"]
+                meta["applied_filter"] = version["applied_filter"]
             if "sigma_smooth" in version:
-                 meta["sigma_smooth"] = version["sigma_smooth"]
+                meta["sigma_smooth"] = version["sigma_smooth"]
             if "derived" in version:
-                 meta["derived"] = version["derived"]
+                meta["derived"] = version["derived"]
             if meta:
-                 self.image_versions_meta[label] = meta
+                self.image_versions_meta[label] = meta
             v_filepath = os.path.join(dirpath, v_filename)
             # We store the filepath at first, or we can load it into memmap
             if os.path.exists(v_filepath):
                 # Using 'r+' so they can be filtered further if needed
-                mat = np.memmap(v_filepath, shape=self.matrix_shape, dtype=self.matrix_dtype, mode="r+")
+                mat = np.memmap(
+                    v_filepath, shape=self.matrix_shape, dtype=self.matrix_dtype, mode="r+"
+                )
                 self.image_versions.append((label, mat))
 
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()
         masks = project.get("masks", [])
         total_masks = len(masks)
-        
+
         for idx, index in enumerate(sorted(masks, key=lambda x: int(x))):
             if progress_callback:
                 progress = 60 + int((idx / max(total_masks, 1)) * 15)
-                if not progress_callback(progress, _("Loading mask {} of {}...").format(idx + 1, total_masks)):
+                if not progress_callback(
+                    progress, _("Loading mask {} of {}...").format(idx + 1, total_masks)
+                ):
                     return False
 
             filename = project["masks"][index]
@@ -481,6 +534,7 @@ class Project(metaclass=Singleton):
                 m.OpenPList(filepath)
             except FileNotFoundError as e:
                 import warnings
+
                 warnings.warn(
                     f"Skipping mask '{filename}': {e}. "
                     "The mask temporary file was not found (possibly deleted after a force-close).",
@@ -498,11 +552,13 @@ class Project(metaclass=Singleton):
         self.surface_dict: dict[int, srf.Surface] = {}
         surfaces = project.get("surfaces", [])
         total_surfaces = len(surfaces)
-        
+
         for idx, index in enumerate(sorted(surfaces, key=lambda x: int(x))):
             if progress_callback:
                 progress = 75 + int((idx / max(total_surfaces, 1)) * 15)
-                if not progress_callback(progress, _("Loading surface {} of {}...").format(idx + 1, total_surfaces)):
+                if not progress_callback(
+                    progress, _("Loading surface {} of {}...").format(idx + 1, total_surfaces)
+                ):
                     return False
 
             filename = project["surfaces"][index]
@@ -510,6 +566,14 @@ class Project(metaclass=Singleton):
             s = srf.Surface(int(index))
             s.OpenPList(filepath)
             self.surface_dict[s.index] = s
+
+        self.peel = None
+        if "peeling" in project:
+            from invesalius.data.brainmesh_handler import Brain
+
+            self.peel = Brain.OpenPlist(project["peeling"], dirpath, self, progress_callback)
+            if self.peel is None:
+                return False
 
         if progress_callback:
             if not progress_callback(90, _("Loading measurements...")):
@@ -634,7 +698,7 @@ class Project(metaclass=Singleton):
 
                 mask_data = mask.matrix[1:, 1:, 1:]
                 # Normalize mask data to uint8 with values {0, 255}
-                mask_data = (mask_data > 127).astype('uint8') * 255
+                mask_data = (mask_data > 127).astype("uint8") * 255
                 mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask_data), 0, 2), np.eye(4))
                 mask_nifti.header.set_zooms(s.spacing)
                 if filename.lower().endswith(".nii"):
@@ -672,7 +736,6 @@ def Compress(
         sanit_name = os.path.normpath(filelist[name])  # Sanitizing path
         if ".." in sanit_name or os.path.isabs(sanit_name):
             continue
-
 
         if not os.path.exists(name):
             if sanit_name == "matrix.dat" or sanit_name.startswith("matrix"):
