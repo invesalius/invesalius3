@@ -506,6 +506,9 @@ class CorticalSourceSeries:
     source_unit: str = ""
     display_unit: str = ""
     automatic_scale: bool = True
+    vertex_hemispheres: np.ndarray | None = None
+    brainstorm_surface: Path | None = None
+    brainstorm_sphere: np.ndarray | None = None
 
     @property
     def unit_choices(self):
@@ -560,7 +563,7 @@ class CorticalSourceSeries:
 
     @property
     def has_hemispheres(self):
-        return len(self.hemisphere_sizes) == 2
+        return self.vertex_hemispheres is not None or len(self.hemisphere_sizes) == 2
 
     def read_frame(self, frame_index):
         """Return source samples in their imported order, without spatial resampling."""
@@ -578,14 +581,24 @@ class CorticalSourceSeries:
     def source_label(self, source_index):
         for index, source in enumerate(self.sources):
             if 0 <= source_index < len(source.vertices):
-                prefix = ("LH", "RH")[index] if self.has_hemispheres else "Source"
                 vertex = int(source.vertices[source_index])
+                if self.vertex_hemispheres is not None:
+                    return f"{('LH', 'RH')[self.vertex_hemispheres[vertex]]} {vertex + 1}"
+                prefix = ("LH", "RH")[index] if self.has_hemispheres else "Source"
                 return f"{prefix} {vertex if self.has_hemispheres else vertex + 1}"
             source_index -= len(source.vertices)
         raise IndexError("Source index is outside the source series.")
 
     @property
     def representations(self):
+        if self.brainstorm_surface is not None:
+            if self.brainstorm_sphere is None:
+                return (self.base_representation,)
+            return (self.base_representation,) + tuple(
+                name
+                for name in ("pial", "white", "mid", "inflated")
+                if name != self.base_representation and self.subject_files.get(name)
+            )
         return (self.base_representation,) + tuple(
             name
             for name in ("white", "inflated")
@@ -594,14 +607,24 @@ class CorticalSourceSeries:
 
     @property
     def base_representation(self):
-        return "pial" if self.has_hemispheres else "surface"
+        if self.brainstorm_surface is not None:
+            for name in ("pial", "white", "mid", "inflated"):
+                if self.brainstorm_surface.stem.startswith(f"tess_cortex_{name}_"):
+                    return name
+            return "surface"
+        return "pial" if len(self.hemisphere_sizes) == 2 else "surface"
 
-    def read_surface_points(self, representation):
-        """Read display coordinates while keeping pial's vertex IDs and topology."""
+    def read_surface(self, representation):
+        """Return display geometry, source mapping and hemisphere IDs."""
+        hemispheres = self.vertex_hemispheres
+        if hemispheres is None and len(self.hemisphere_sizes) == 2:
+            hemispheres = np.repeat(np.array([0, 1], dtype=np.int8), self.hemisphere_sizes)
         if representation == self.base_representation:
-            return self.points
+            return self.points, self.triangles, self.vertex_sources, hemispheres
         if representation not in self.representations:
-            raise ValueError("The cortical representation requires files for both hemispheres.")
+            raise ValueError("The cortical representation has no compatible anatomy metadata.")
+        if self.brainstorm_surface is not None:
+            return _read_brainstorm_display_surface(self, representation)
         points = []
         offset = 0
         for side, count in zip(("lh", "rh"), self.hemisphere_sizes):
@@ -632,7 +655,7 @@ class CorticalSourceSeries:
         registered = nib.affines.apply_affine(self.surface_to_project_ras, np.concatenate(points))
         if not np.isfinite(registered).all():
             raise ValueError("The cortical representation has invalid project coordinates.")
-        return registered
+        return registered, self.triangles, self.vertex_sources, hemispheres
 
 
 class SourceImportRequired(ValueError):
@@ -668,9 +691,12 @@ def read_source_reconstruction(config, base_dir="."):
     required = (signal_key, "scanner_ras_to_project_ras")
     if any(key not in config for key in required):
         raise ValueError(f"Source configuration requires: {', '.join(required)}.")
-    for key in (signal_key, "unit"):
+    for key in (signal_key, "unit", "subject_dir"):
         if key in config and (not isinstance(config[key], str) or not config[key].strip()):
             raise ValueError(f"Source configuration '{key}' must be a nonempty string.")
+    if "subject_dir" in config:
+        config = dict(config)
+        config["subject_dir"] = str((base_dir / Path(config["subject_dir"]).expanduser()).resolve())
     filename = base_dir / config[signal_key]
     sources, mesh = read_source_data(filename, config)
     unit = _signal_unit(config.get("unit", sources[0].unit))
@@ -682,14 +708,16 @@ def read_source_reconstruction(config, base_dir="."):
     if not isinstance(name, str) or not name.strip():
         raise ValueError("Source name must be a nonempty string.")
     registration = _affine(config["scanner_ras_to_project_ras"])
+    mesh_metadata = {}
     if mesh is None:
         points, triangles, source_vertices, hemisphere_sizes, subject_files, surface_to_scanner = (
             _read_freesurfer_source_mesh(config, base_dir, sources)
         )
     else:
-        points, triangles, surface_to_scanner = mesh
+        points, triangles, surface_to_scanner = mesh[:3]
+        mesh_metadata = mesh[3] if len(mesh) == 4 else {}
         source_vertices = np.concatenate([source.vertices for source in sources])
-        hemisphere_sizes, subject_files = (), {}
+        hemisphere_sizes, subject_files = (), mesh_metadata.get("subject_files", {})
     surface_to_project = _affine(registration @ surface_to_scanner)
     scalar_range, global_rms = _source_statistics(sources)
     vertex_sources = _vertex_sources(points, triangles, source_vertices)
@@ -712,6 +740,9 @@ def read_source_reconstruction(config, base_dir="."):
         method=method,
         source_unit=unit,
         display_unit=unit,
+        vertex_hemispheres=mesh_metadata.get("vertex_hemispheres"),
+        brainstorm_surface=mesh_metadata.get("brainstorm_surface"),
+        brainstorm_sphere=mesh_metadata.get("brainstorm_sphere"),
     )
 
 
@@ -925,16 +956,26 @@ def _vertex_sources(points, triangles, source_vertices):
     return result
 
 
-# FreeSurfer anatomy
+# Source anatomy
 
 
 def discover_subject_files(subject_dir):
-    """Find cortical surfaces and curvature in a FreeSurfer/FastSurfer subject directory."""
+    """Find source anatomy in a FreeSurfer/FastSurfer or Brainstorm subject directory."""
     subject_dir = Path(subject_dir).expanduser().resolve()
     surface_dir = subject_dir / "surf"
-    if not subject_dir.is_dir() or not surface_dir.is_dir():
+    if not surface_dir.is_dir():
+        catalog = subject_dir / "brainstormsubject.mat"
+        if catalog.is_file():
+            data = _read_mat_file(catalog, ("Cortex", "Anatomy"))
+            anatomy = {
+                key: _brainstorm_subject_path(subject_dir, data.get(field))
+                for key, field in (("surface_file", "Cortex"), ("brainstorm_mri", "Anatomy"))
+            }
+            files = _brainstorm_surface_files(subject_dir)
+            files.update(brainstorm=anatomy, cortex={"default": anatomy["surface_file"]})
+            return files
         raise ValueError(
-            "Select a FreeSurfer/FastSurfer subject folder containing a 'surf' directory."
+            "Select a subject folder containing FreeSurfer/FastSurfer 'surf' or Brainstorm 'brainstormsubject.mat'."
         )
     files = {}
     for kind in ("pial", "white", "inflated", "curv"):
@@ -988,6 +1029,10 @@ def _read_freesurfer_source_mesh(config, base_dir, sources):
     subject_files = {}
     if "subject_dir" in config:
         subject_files = discover_subject_files(base_dir / config["subject_dir"])
+        if "brainstorm" in subject_files:
+            raise ValueError(
+                "STC/MNE H5 require their original FreeSurfer surfaces; Brainstorm cortical vertex IDs are not interchangeable."
+            )
         surface_paths = subject_files["pial"]
         missing = [f"surf/{side}.pial" for side in ("lh", "rh") if side not in surface_paths]
         if missing:
@@ -1240,6 +1285,150 @@ def _mat_source_candidates(data, prefix="", depth=0):
 # Brainstorm source reconstruction
 
 
+def _brainstorm_surface_files(folder):
+    return {
+        kind: {
+            path.name: path
+            for path in sorted(folder.glob(f"tess_cortex_{kind}_*.mat"))
+            if path.is_file()
+        }
+        for kind in ("pial", "white", "mid", "inflated")
+    }
+
+
+def _brainstorm_structs(value, label):
+    if isinstance(value, dict):
+        names = value.get(label)
+        if isinstance(names, np.ndarray) and names.dtype.kind == "O" and names.size > 1:
+            for index in range(names.size):
+                yield {
+                    key: item.ravel()[index]
+                    if isinstance(item, np.ndarray)
+                    and item.dtype.kind == "O"
+                    and item.size == names.size
+                    else item
+                    for key, item in value.items()
+                }
+        else:
+            yield value
+    else:
+        for item in np.asarray(value, dtype=object).ravel():
+            if isinstance(item, dict):
+                yield item
+
+
+def _brainstorm_hemispheres(mesh, count):
+    hemispheres = np.full(count, -1, dtype=np.int8)
+    for atlas in _brainstorm_structs(mesh.get("Atlas", []), "Name"):
+        if str(atlas.get("Name", "")).strip().lower() != "structures":
+            continue
+        for scout in _brainstorm_structs(atlas.get("Scouts", []), "Label"):
+            side = {
+                "cortex l": 0,
+                "lh": 0,
+                "01_lhemi l": 0,
+                "cortex r": 1,
+                "rh": 1,
+                "01_rhemi r": 1,
+            }.get(str(scout.get("Label", "")).strip().lower())
+            if side is None:
+                continue
+            vertices = np.asarray(scout.get("Vertices", [])).ravel()
+            if (
+                not vertices.size
+                or vertices.dtype.kind not in "iuf"
+                or not np.isfinite(vertices).all()
+                or np.any(vertices != np.floor(vertices))
+                or vertices.min() < 1
+                or vertices.max() > count
+            ):
+                raise ValueError("Invalid Brainstorm cortical hemisphere vertex IDs.")
+            vertices = vertices.astype(np.int64) - 1
+            if len(np.unique(vertices)) != len(vertices) or np.any(hemispheres[vertices] != -1):
+                raise ValueError("Brainstorm cortical hemisphere vertex IDs must not overlap.")
+            hemispheres[vertices] = side
+    return hemispheres if np.all(hemispheres >= 0) and len(np.unique(hemispheres)) == 2 else None
+
+
+def _brainstorm_sphere(mesh, hemispheres):
+    if hemispheres is None:
+        return None
+    registration = mesh.get("Reg", {})
+    sphere = registration.get("Sphere", {}) if isinstance(registration, dict) else {}
+    if not isinstance(sphere, dict) or not _has_source_values(sphere.get("Vertices", [])):
+        return None
+    # shortcut: sphere remapping requires hemisphere blocks; add legacy interleaved layouts when needed.
+    if np.count_nonzero(np.diff(hemispheres)) != 1:
+        return None
+    vertices = np.asarray(sphere["Vertices"])
+    if (
+        vertices.shape != (len(hemispheres), 3)
+        or vertices.dtype.kind not in "iuf"
+        or not np.isfinite(vertices).all()
+    ):
+        raise ValueError("Brainstorm registered sphere vertices must match the cortical mesh.")
+    radius = np.linalg.norm(vertices, axis=1)
+    if not np.isfinite(radius).all() or np.any(radius <= 0):
+        raise ValueError("Brainstorm registered sphere vertices must have positive, finite radii.")
+    return vertices / radius[:, None]
+
+
+def _read_brainstorm_display_surface(series, representation):
+    expected = series.brainstorm_surface.name.replace(
+        f"_{series.base_representation}_", f"_{representation}_", 1
+    )
+    path = min(
+        series.subject_files[representation].values(),
+        key=lambda item: (item.name != expected, not item.stem.endswith("_low"), item.name),
+    )
+    mesh = _read_mat_file(path, ("Vertices", "Faces", "Atlas", "Reg"))
+    points, triangles = _validate_source_mesh(
+        mesh.get("Vertices", []), np.asarray(mesh.get("Faces", [])) - 1
+    )
+    hemispheres = _brainstorm_hemispheres(mesh, len(points))
+    sphere = _brainstorm_sphere(mesh, hemispheres)
+    if sphere is None:
+        raise ValueError(
+            "This Brainstorm representation requires cortical Structures and registered Sphere metadata."
+        )
+    rows, columns, weights = [], [], []
+    for side in (0, 1):
+        original = np.flatnonzero(series.vertex_hemispheres == side)
+        displayed = np.flatnonzero(hemispheres == side)
+        distances, neighbors = cKDTree(series.brainstorm_sphere[original]).query(
+            sphere[displayed], k=min(8, len(original))
+        )
+        distances = distances.reshape(len(displayed), -1)
+        neighbors = neighbors.reshape(len(displayed), -1)
+        # Shepard interpolation stays within each hemisphere and preserves exact correspondences.
+        weight = 1.0 / np.maximum(distances, 1e-12) ** 2
+        exact = distances[:, 0] <= 1e-10
+        weight[exact] = 0
+        weight[exact, 0] = 1
+        weight /= weight.sum(axis=1, keepdims=True)
+        rows.append(np.repeat(displayed, neighbors.shape[1]))
+        columns.append(series.vertex_sources[original[neighbors]].ravel())
+        weights.append(weight.ravel())
+    mapping = csr_matrix(
+        (np.concatenate(weights), (np.concatenate(rows), np.concatenate(columns))),
+        shape=(len(points), sum(len(source.vertices) for source in series.sources)),
+    )
+    points = nib.affines.apply_affine(series.surface_to_project_ras, points * 1000.0)
+    if not np.isfinite(points).all():
+        raise ValueError("The cortical representation has invalid project coordinates.")
+    return points, triangles, mapping, hemispheres
+
+
+def _brainstorm_subject_path(subject_dir, reference):
+    if not isinstance(reference, str) or not reference.strip():
+        raise ValueError("The Brainstorm anatomy catalog must specify Cortex and Anatomy files.")
+    relative = Path(reference.strip().replace("\\", "/"))
+    for path in (subject_dir / relative, subject_dir / relative.name):
+        if path.is_file():
+            return path.resolve()
+    raise FileNotFoundError(f"Brainstorm anatomy file not found in '{subject_dir}': {reference}")
+
+
 def _brainstorm_to_ras(filename, surface_path, config):
     if "source_to_scanner_ras" in config:
         return _affine(config["source_to_scanner_ras"])
@@ -1281,6 +1470,24 @@ def _brainstorm_to_ras(filename, surface_path, config):
 def _read_brainstorm_source(filename, data, config):
     if str(data.get("HeadModelType", "surface")).lower() != "surface":
         raise ValueError("Brainstorm volume and mixed source models require a volume renderer.")
+    if "subject_dir" in config:
+        subject_dir = Path(config["subject_dir"])
+        anatomy = discover_subject_files(subject_dir).get("brainstorm")
+        if anatomy is not None:
+            config = dict(config)
+            config.setdefault("brainstorm_mri", str(anatomy["brainstorm_mri"]))
+            if not config.get("surface_file"):
+                reference = data.get("SurfaceFile", data.get("SourceLoc", ""))
+                surface_path = anatomy["surface_file"]
+                if isinstance(reference, str) and reference.strip():
+                    try:
+                        surface_path = _brainstorm_subject_path(subject_dir, reference)
+                    except FileNotFoundError as error:
+                        raise SourceImportRequired(
+                            "surface_file",
+                            f"Select the Brainstorm cortex associated with these sources: {reference}",
+                        ) from error
+                config["surface_file"] = str(surface_path)
     times = data.get("Time", [])
     values = data.get("ImageGridAmp", np.empty(0))
     if _has_source_values(data.get("ZScore", [])):
@@ -1343,7 +1550,7 @@ def _read_brainstorm_source(filename, data, config):
         "Select the Brainstorm cortex MAT associated with these sources.",
         data.get("SurfaceFile", data.get("SourceLoc", "")),
     )
-    mesh = _read_mat_file(path, ("Vertices", "Faces"))
+    mesh = _read_mat_file(path, ("Vertices", "Faces", "Atlas", "Reg"))
     points, triangles = _validate_source_mesh(
         mesh.get("Vertices", []), np.asarray(mesh.get("Faces", [])) - 1
     )
@@ -1358,7 +1565,18 @@ def _read_brainstorm_source(filename, data, config):
     if unit == "a.u." and method.lower() in ("dspm", "dspm2018", "dspm2018sc"):
         unit = "1"
     source = SourceData(axis, np.arange(len(points)), values, unit=unit, method=method)
-    return (source,), (points, triangles, _brainstorm_to_ras(filename, path, config))
+    hemispheres = _brainstorm_hemispheres(mesh, len(points))
+    return (source,), (
+        points,
+        triangles,
+        _brainstorm_to_ras(filename, path, config),
+        {
+            "vertex_hemispheres": hemispheres,
+            "brainstorm_sphere": _brainstorm_sphere(mesh, hemispheres),
+            "brainstorm_surface": path,
+            "subject_files": _brainstorm_surface_files(path.parent),
+        },
+    )
 
 
 # FieldTrip source reconstruction

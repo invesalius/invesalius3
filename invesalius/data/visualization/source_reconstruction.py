@@ -22,6 +22,7 @@
 from dataclasses import replace
 
 import numpy as np
+from scipy.sparse import issparse
 from vtkmodules.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray, vtk_to_numpy
 from vtkmodules.vtkCommonCore import vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStaticPointLocator
@@ -54,6 +55,7 @@ class SourceReconstructionMode:
         self.representation = "pial"
         self.hemispheres_visible = (True, True)
         self._representation_maps = {}
+        self._representation_data = {}
         self._cross_position = None
         self._source_locator = None
         self._cross_enabled = False
@@ -79,7 +81,7 @@ class SourceReconstructionMode:
         series = (
             read_source_config(filename) if config is None else read_source_reconstruction(config)
         )
-        surface_map = self._create_map(series)
+        surface_map, source_mapping, hemispheres = self._create_map(series)
         surface = Project().GetBrainSurface()
         if surface is not None and not surface.supports_painting:
             raise ValueError("The designated brain surface cannot display source maps.")
@@ -108,6 +110,7 @@ class SourceReconstructionMode:
             self.representation,
             self.hemispheres_visible,
             self._representation_maps,
+            self._representation_data,
             self._cross_position,
         )
         previous_mode = surface.painting_mode
@@ -116,6 +119,7 @@ class SourceReconstructionMode:
         self.representation = series.base_representation
         self.hemispheres_visible = (True, True)
         self._representation_maps = {series.base_representation: surface_map}
+        self._representation_data = {series.base_representation: (source_mapping, hemispheres)}
         self._cross_position = None
         self.playback = Playback(series.axis)
         self.selected_source = self.source_values = None
@@ -136,6 +140,7 @@ class SourceReconstructionMode:
                 self.representation,
                 self.hemispheres_visible,
                 self._representation_maps,
+                self._representation_data,
                 self._cross_position,
             ) = previous
             self.frame_index = None
@@ -153,7 +158,7 @@ class SourceReconstructionMode:
         if created_surface is not None:
             Publisher.sendMessage("Repopulate surfaces")
 
-    def _create_map(self, series, surface_points=None):
+    def _create_map(self, series, representation=None):
         from invesalius.data.slice_ import Slice
 
         slic = Slice()
@@ -165,15 +170,16 @@ class SourceReconstructionMode:
             or np.linalg.matrix_rank(affine) != 4
         ):
             raise ValueError("The project must have valid anatomical world coordinates.")
-        points = vtkPoints()
-        points.SetData(
-            numpy_to_vtk(series.points if surface_points is None else surface_points, deep=True)
+        surface_points, triangles, source_mapping, hemispheres = series.read_surface(
+            representation or series.base_representation
         )
+        points = vtkPoints()
+        points.SetData(numpy_to_vtk(surface_points, deep=True))
         connectivity = np.column_stack(
-            [np.full(len(series.triangles), 3, dtype=np.int64), series.triangles]
+            [np.full(len(triangles), 3, dtype=np.int64), triangles]
         ).ravel()
         cells = vtkCellArray()
-        cells.SetCells(len(series.triangles), numpy_to_vtkIdTypeArray(connectivity, deep=True))
+        cells.SetCells(len(triangles), numpy_to_vtkIdTypeArray(connectivity, deep=True))
         polydata = vtkPolyData()
         polydata.SetPoints(points)
         polydata.SetPolys(cells)
@@ -185,7 +191,7 @@ class SourceReconstructionMode:
         normals.AutoOrientNormalsOn()
         normals.Update()
         polydata = normals.GetOutput()
-        if polydata.GetNumberOfPoints() != len(series.points):
+        if polydata.GetNumberOfPoints() != len(surface_points):
             raise ValueError("Source visualization must preserve the cortical vertex IDs.")
         coordinates = vtk_to_numpy(polydata.GetPoints().GetData())
         if not np.isfinite(coordinates).all():
@@ -201,7 +207,7 @@ class SourceReconstructionMode:
             color_bar=ColorBar(position=(0.82, 0.1), compact=False),
         )
         self._set_map_scale(surface_map, series)
-        return surface_map
+        return surface_map, source_mapping, hemispheres
 
     def _set_map_scale(self, surface_map, series):
         factor = series.display_scale[0]
@@ -273,15 +279,15 @@ class SourceReconstructionMode:
             return
         candidate = self._representation_maps.get(representation)
         if candidate is None:
-            candidate = self._create_map(
-                self.series, self.series.read_surface_points(representation)
-            )
+            candidate, mapping, hemispheres = self._create_map(self.series, representation)
+            self._representation_data[representation] = (mapping, hemispheres)
         triangles = vtk_to_numpy(candidate.polydata.GetPolys().GetConnectivityArray()).reshape(
             -1, 3
         )
-        if self.series.has_hemispheres:
-            left_faces = triangles[:, 0] < self.series.hemisphere_sizes[0]
-            triangles = triangles[(left_faces & left) | (~left_faces & right)]
+        hemispheres = self._representation_data[representation][1]
+        if hemispheres is not None:
+            visible_faces = np.asarray(visible)[hemispheres[triangles]].all(axis=1)
+            triangles = triangles[visible_faces]
         connectivity = np.column_stack(
             [np.full(len(triangles), 3, dtype=np.int64), triangles]
         ).ravel()
@@ -381,7 +387,11 @@ class SourceReconstructionMode:
                 mapped = int(self.series.vertex_sources[vertex])
                 visible = True
                 if self.series.has_hemispheres:
-                    hemisphere = 0 if vertex < self.series.hemisphere_sizes[0] else 1
+                    hemisphere = (
+                        self.series.vertex_hemispheres[vertex]
+                        if self.series.vertex_hemispheres is not None
+                        else int(vertex >= self.series.hemisphere_sizes[0])
+                    )
                     visible = self.hemispheres_visible[hemisphere]
                 if mapped >= 0 and visible:
                     source_index = mapped
@@ -406,13 +416,14 @@ class SourceReconstructionMode:
         frame = self.series.read_frame(self.playback.index)
         scalars = self.surface_map.polydata.GetPointData().GetScalars()
         values = vtk_to_numpy(scalars)
-        mapped = self.series.vertex_sources >= 0
-        values.fill(np.nan)
-        values[mapped] = np.multiply(
-            frame[self.series.vertex_sources[mapped]],
-            self.series.display_scale[0],
-            dtype=np.float64,
-        )
+        mapping = self._representation_data[self.representation][0]
+        factor = self.series.display_scale[0]
+        if issparse(mapping):
+            values[:] = (mapping @ frame) * factor
+        else:
+            mapped = mapping >= 0
+            values.fill(np.nan)
+            values[mapped] = np.multiply(frame[mapping[mapped]], factor, dtype=np.float64)
         scalars.Modified()
         self.frame_index = self.playback.index
         self.painting.update(self.name, self.token, self.surface_map)
@@ -428,6 +439,7 @@ class SourceReconstructionMode:
         self._source_locator = None
         self._cross_position = None
         self._representation_maps.clear()
+        self._representation_data.clear()
         self.representation = "pial"
         self.hemispheres_visible = (True, True)
         Publisher.sendMessage("Source reconstruction changed", mode=self)

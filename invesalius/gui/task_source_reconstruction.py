@@ -53,6 +53,7 @@ class TaskPanel(wx.Panel):
         self._representation_labels = {
             "pial": _("Pial"),
             "white": _("White"),
+            "mid": _("Mid"),
             "inflated": _("Inflated"),
             "surface": _("Surface"),
         }
@@ -246,44 +247,29 @@ class ImportSourceDialog(wx.Dialog):
         form.Add(wx.StaticText(self, label=_("Subject:")), 0, wx.ALIGN_CENTER_VERTICAL)
         self.subject = wx.DirPickerCtrl(
             self,
-            message=_("Select the subject folder containing the surf directory"),
+            message=_("Select a FreeSurfer/FastSurfer or Brainstorm subject folder"),
             style=wx.DIRP_USE_TEXTCTRL | wx.DIRP_SMALL | wx.DIRP_DIR_MUST_EXIST,
         )
         self.subject.SetToolTip(
             _(
-                "For STC/MNE H5, select a subject folder or choose surfaces manually. MAT files use their associated mesh."
+                "STC/MNE H5 use FreeSurfer surfaces. Brainstorm MAT results can use a Brainstorm anatomy folder. Other MAT files use their associated mesh."
             )
         )
         form.Add(self.subject, 1, wx.EXPAND)
         main_sizer.Add(form, 0, wx.EXPAND | wx.ALL, 12)
 
         detected = wx.StaticBoxSizer(wx.VERTICAL, self, _("Detected files"))
-        table_parent = detected.GetStaticBox()
-        table = wx.FlexGridSizer(cols=3, vgap=6, hgap=24)
-        table.AddGrowableCol(0)
-        for title in (_("Surface"), _("Left"), _("Right")):
-            heading = wx.StaticText(table_parent, label=title)
-            heading.SetFont(heading.GetFont().Bold())
-            table.Add(heading, 0, wx.ALIGN_CENTER_VERTICAL)
-        self.subject_cells = {}
-        for kind, label in (
-            ("pial", _("Pial")),
-            ("white", _("White")),
-            ("inflated", _("Inflated")),
-            ("curv", _("Curvature")),
-        ):
-            table.Add(wx.StaticText(table_parent, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
-            for side in ("lh", "rh"):
-                cell = wx.StaticText(table_parent, label="\u2014")
-                cell.SetMinSize(self.FromDIP((72, -1)))
-                cell.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
-                self.subject_cells[kind, side] = cell
-                table.Add(cell, 0, wx.ALIGN_CENTER_VERTICAL)
-        detected.Add(table, 0, wx.EXPAND | wx.ALL, 10)
+        self.detected = detected
+        self.subject_table = wx.FlexGridSizer(cols=3, vgap=6, hgap=24)
+        self.subject_table.AddGrowableCol(0)
+        self._build_subject_table(brainstorm=False)
+        detected.Add(self.subject_table, 0, wx.EXPAND | wx.ALL, 10)
         main_sizer.Add(detected, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
         self.subject_summary = wx.StaticText(
             self,
-            label=_("STC/MNE H5 use subject surfaces. MAT files use their associated source mesh."),
+            label=_(
+                "Select a FreeSurfer/FastSurfer or Brainstorm subject folder, or use the mesh associated with the source MAT file."
+            ),
         )
         self.subject_summary.Wrap(self.FromDIP(620))
         self.subject_summary.SetForegroundColour(
@@ -412,18 +398,66 @@ class ImportSourceDialog(wx.Dialog):
         self._resize_dialog()
         event.Skip()
 
+    def _build_subject_table(self, brainstorm):
+        table = self.subject_table
+        table.Clear(delete_windows=True)
+        self._subject_table_brainstorm = brainstorm
+        sides = ("combined",) if brainstorm else ("lh", "rh")
+        titles = (_("Surface"), _("Files")) if brainstorm else (_("Surface"), _("Left"), _("Right"))
+        rows = (
+            (
+                ("cortex", _("Cortex (default)")),
+                ("white", _("White")),
+                ("mid", _("Mid")),
+                ("inflated", _("Inflated")),
+            )
+            if brainstorm
+            else (
+                ("pial", _("Pial")),
+                ("white", _("White")),
+                ("inflated", _("Inflated")),
+                ("curv", _("Curvature")),
+            )
+        )
+        table.SetCols(len(titles))
+        parent = self.detected.GetStaticBox()
+        for title in titles:
+            heading = wx.StaticText(parent, label=title)
+            heading.SetFont(heading.GetFont().Bold())
+            table.Add(heading, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.subject_cells = {}
+        for kind, label in rows:
+            table.Add(wx.StaticText(parent, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
+            for side in sides:
+                cell = wx.StaticText(parent, label="\u2014")
+                cell.SetMinSize(self.FromDIP((72, -1)))
+                cell.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+                self.subject_cells[kind, side] = cell
+                table.Add(cell, 0, wx.ALIGN_CENTER_VERTICAL)
+
     def _show_subject_files(self, files, message):
+        anatomy = files.get("brainstorm")
+        if self._subject_table_brainstorm != (anatomy is not None):
+            self._build_subject_table(brainstorm=anatomy is not None)
         absent = _("Missing") if self.subject.GetPath().strip() else "\u2014"
         for (kind, side), cell in self.subject_cells.items():
-            path = files.get(kind, {}).get(side)
-            cell.SetLabel(_("Found") if path else absent)
-            cell.SetToolTip(str(path) if path else "")
+            available = files.get(kind, {})
+            paths = list(available.values()) if side == "combined" else [available.get(side)]
+            paths = [path for path in paths if path is not None]
+            label = _("Found") if paths else absent
+            if len(paths) > 1:
+                label += f" ({len(paths)})"
+            cell.SetLabel(label)
+            cell.SetToolTip("\n".join(str(path) for path in paths))
             cell.SetForegroundColour(
                 wx.SystemSettings.GetColour(
-                    wx.SYS_COLOUR_WINDOWTEXT if path else wx.SYS_COLOUR_GRAYTEXT
+                    wx.SYS_COLOUR_WINDOWTEXT if paths else wx.SYS_COLOUR_GRAYTEXT
                 )
             )
         self.subject_summary.SetLabel(message)
+        self.subject_summary.SetToolTip(
+            "\n".join(str(path) for path in anatomy.values()) if anatomy is not None else ""
+        )
         self.subject_summary.Wrap(self.FromDIP(620))
         self._resize_dialog()
 
@@ -442,16 +476,23 @@ class ImportSourceDialog(wx.Dialog):
         else:
             try:
                 files = discover_subject_files(subject_path)
-                for side, path in files["pial"].items():
-                    self.files[f"{side}_surface"].SetPath(str(path))
-                missing = [f"{side}.pial" for side in ("lh", "rh") if side not in files["pial"]]
-                message = (
-                    _("Required files not found:") + " " + ", ".join(missing)
-                    if missing
-                    else _(
-                        "Uses surface coordinates in the current anatomy. Pial is used for visualization."
+                if "brainstorm" in files:
+                    anatomy = files["brainstorm"]
+                    message = (
+                        f"{_('Brainstorm default cortex:')} {anatomy['surface_file'].name}\n"
+                        f"{_('Coordinates (MRI metadata only):')} {anatomy['brainstorm_mri'].name}"
                     )
-                )
+                else:
+                    for side, path in files["pial"].items():
+                        self.files[f"{side}_surface"].SetPath(str(path))
+                    missing = [f"{side}.pial" for side in ("lh", "rh") if side not in files["pial"]]
+                    message = (
+                        _("Required files not found:") + " " + ", ".join(missing)
+                        if missing
+                        else _(
+                            "Uses surface coordinates in the current anatomy. Pial is used for visualization."
+                        )
+                    )
                 self._show_subject_files(files, message)
             except (OSError, ValueError) as error:
                 self._show_subject_files({}, str(error))
