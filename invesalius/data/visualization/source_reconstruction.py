@@ -59,6 +59,9 @@ class SourceReconstructionMode:
         self._cross_enabled = False
         self.available = False
         self.painting.register(self)
+        self.__bind_events()
+
+    def __bind_events(self):
         Publisher.subscribe(self.load, "Load source reconstruction")
         Publisher.subscribe(self.set_frame, "Set source reconstruction frame")
         Publisher.subscribe(self.set_display, "Set source reconstruction display")

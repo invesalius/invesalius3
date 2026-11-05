@@ -1125,6 +1125,14 @@ class SurfaceManager:
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
 
     def OnLoadSurfaceDict(self, surface_dict):
+        # Reloaded surfaces may reuse indexes while their old maps remain in the scene.
+        for surface in list(self.map_visualizers):
+            if surface not in surface_dict.values():
+                Publisher.sendMessage("Discard surface painting", surface=surface)
+                actor = self.actors_dict.pop(surface.index, None)
+                if actor is not None:
+                    Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
+
         removed_indexes = self.actors_dict.keys() - surface_dict.keys()
         for index in removed_indexes:
             actor = self.actors_dict.pop(index)
