@@ -27,7 +27,7 @@ from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
 import invesalius.constants as const
-from invesalius.data.eeg import read_source_config
+from invesalius.data.eeg import read_source_config, read_source_reconstruction
 from invesalius.data.time_series import Playback
 from invesalius.data.visualization.surface_map_visualizer import ColorBar, SurfaceMap
 from invesalius.data.visualization.surface_painting import SurfacePainting
@@ -59,11 +59,15 @@ class SourceReconstructionMode:
         Publisher.subscribe(self.select_cross_source, "Set cross focal point")
         Publisher.subscribe(self.cross_tool_changed, "Toggle toolbar item")
 
-    def load(self, filename):
+    def load(self, filename=None, config=None):
         """Prepare the entire candidate before replacing the current source map."""
         if not self.painting.navigation_mode:
             raise ValueError("Switch to navigation mode before loading a source reconstruction.")
-        series = read_source_config(filename)
+        if (filename is None) == (config is None):
+            raise ValueError("Provide a source configuration file or import settings.")
+        series = (
+            read_source_config(filename) if config is None else read_source_reconstruction(config)
+        )
         surface_map = self._create_map(series)
         surface = Project().GetBrainSurface()
         if surface is not None and not surface.supports_painting:
