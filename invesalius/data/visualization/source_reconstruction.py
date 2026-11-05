@@ -166,16 +166,25 @@ class SourceReconstructionMode:
             raise ValueError("Source geometry cannot be represented in project coordinates.")
         values = np.full(polydata.GetNumberOfPoints(), np.nan, dtype=np.float32)
         polydata.GetPointData().SetScalars(numpy_to_vtk(values, deep=True))
-        limit = max(abs(value) for value in series.scalar_range) or 1.0
+        minimum, maximum = series.scalar_range
+        limit = max(abs(minimum), abs(maximum)) or 1.0
+        if minimum >= 0:
+            scalar_range = (0.0, limit)
+        elif maximum <= 0:
+            scalar_range = (-limit, 0.0)
+        else:
+            scalar_range = (-limit, limit)
         lut = vtkColorTransferFunction()
-        lut.AddRGBPoint(-limit, 0.15, 0.3, 0.85)
+        if scalar_range[0] < 0:
+            lut.AddRGBPoint(-limit, 0.15, 0.3, 0.85)
         lut.AddRGBPoint(0, 0.85, 0.85, 0.85)
-        lut.AddRGBPoint(limit, 0.85, 0.15, 0.1)
+        if scalar_range[1] > 0:
+            lut.AddRGBPoint(limit, 0.85, 0.15, 0.1)
         lut.SetNanColor(0.65, 0.65, 0.65)
         return SurfaceMap(
             polydata,
             lut,
-            (-limit, limit),
+            scalar_range,
             series.name,
             series.unit,
             color_bar=ColorBar(position=(0.82, 0.1), compact=False, title=series.unit),
