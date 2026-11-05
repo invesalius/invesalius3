@@ -288,6 +288,10 @@ WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|All files (*.*)|*.*"
 WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|All files (*.*)|*.*"
 
 WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|All files (*.*)|*.*"
+WILDCARD_VOLUME = (
+    "NIfTI / FreeSurfer (*.nii;*.nii.gz;*.hdr;*.mgh;*.mgz)|"
+    "*.nii;*.nii.gz;*.hdr;*.mgh;*.mgz|All files (*.*)|*.*"
+)
 # ".[jJ][pP][gG]"
 WILDCARD_PARREC = "PAR/REC (*.par)|*.par|All files (*.*)|*.*"
 
@@ -415,7 +419,9 @@ def ShowImportBitmapDirDialog(self) -> str | None:
 
 
 def ShowImportOtherFilesDialog(
-    id_type: wx.WindowIDRef, msg: str = "Import NIFTi 1 file"
+    id_type: wx.WindowIDRef,
+    msg: str = "Import NIFTi 1 file",
+    wildcard: str = WILDCARD_NIFTI,
 ) -> str | bytes | None:
     # Default system path
     session = ses.Session()
@@ -425,7 +431,7 @@ def ShowImportOtherFilesDialog(
         message=msg,
         defaultDir=last_directory,
         defaultFile="",
-        wildcard=WILDCARD_NIFTI,
+        wildcard=wildcard,
         style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
     )
 
@@ -6750,6 +6756,7 @@ class SelectNiftiVolumeDialog(wx.Dialog):
         self.cmb_volume = wx.ComboBox(
             self, -1, choices=volumes, style=wx.CB_DROPDOWN | wx.CB_READONLY
         )
+        self.cmb_volume.SetSelection(0)
 
         button_ok = wx.Button(self, wx.ID_OK)
         button_ok.SetHelpText("")
