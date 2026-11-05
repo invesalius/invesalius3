@@ -26,6 +26,7 @@ import imageio
 import numpy as np
 import scipy.ndimage as ndimage
 from scipy.ndimage import shift, zoom
+from scipy.optimize import minimize
 from skimage.color import rgb2gray
 from skimage.measure import label
 from vtkmodules.util import numpy_support
@@ -38,6 +39,7 @@ from vtkmodules.vtkIOXML import vtkXMLImageDataReader, vtkXMLImageDataWriter
 import invesalius.data.converters as converters
 import invesalius.data.coordinates as dco
 import invesalius.data.slice_ as sl
+import invesalius.data.transformations as tr
 import invesalius.gui.dialogs as dlg
 import invesalius.reader.bitmap_reader as bitmap_reader
 from invesalius.data import vtk_utils as vtk_utils
@@ -577,7 +579,12 @@ def get_LUT_value_normalized(img, a_min, a_max, b_min=0.0, b_max=1.0, clip=True)
     return img
 
 
-def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16):
+def image_normalize(image, min_=0.0, max_=1.0, output_dtype=np.int16, percentiles=None):
+    """Scale intensities, optionally clipping to input percentiles."""
+    if percentiles is not None:
+        low, high = np.percentile(image, percentiles)
+        if low < high:
+            image = np.clip(image, low, high)
     output = np.empty(shape=image.shape, dtype=output_dtype)
     imin, imax = image.min(), image.max()
     if imin == imax:
@@ -719,3 +726,147 @@ def get_largest_connected_component(image):
     assert labels.max() != 0
     largest_component = labels == np.argmax(np.bincount(labels.flat)[1:]) + 1
     return largest_component
+
+
+def _sample_volume(data, voxel_to_ras):
+    if len(data.shape) != 3 or min(data.shape) < 16:
+        raise ValueError("Registration requires a 3D volume with at least 16 voxels per axis.")
+    steps = np.maximum(1, np.ceil(np.asarray(data.shape) / 256).astype(int))
+    sampled = np.asarray(
+        data[tuple(slice(None, None, int(step)) for step in steps)], dtype=np.float32
+    )
+    if not np.isfinite(sampled).all() or sampled.min() == sampled.max():
+        raise ValueError("Registration requires finite, nonconstant image intensities.")
+    affine = np.asarray(voxel_to_ras, dtype=float)
+    if (
+        affine.shape != (4, 4)
+        or not np.isfinite(affine).all()
+        or not np.allclose(affine[3], [0, 0, 0, 1])
+        or np.linalg.matrix_rank(affine[:3, :3]) != 3
+    ):
+        raise ValueError("Registration requires a finite positional voxel-to-RAS affine.")
+    return sampled, affine @ np.diag([*steps, 1])
+
+
+def register_image_to_volume(
+    moving_data_xyz, moving_voxel_to_ras, fixed_data_zyx, fixed_voxel_to_ras, cancelled
+):
+    """Register MRI using rigid NMI alignment; return matrix, fixed, aligned and spacing."""
+    fixed_xyz, fixed_affine = _sample_volume(np.swapaxes(fixed_data_zyx, 0, 2), fixed_voxel_to_ras)
+    moving_xyz, moving_affine = _sample_volume(moving_data_xyz, moving_voxel_to_ras)
+    fixed_center = (
+        fixed_affine[:3, :3] @ ((np.asarray(fixed_xyz.shape) - 1) / 2) + fixed_affine[:3, 3]
+    )
+    moving_center = (
+        moving_affine[:3, :3] @ ((np.asarray(moving_xyz.shape) - 1) / 2) + moving_affine[:3, 3]
+    )
+    fixed_normalized, moving_normalized = (
+        image_normalize(image, output_dtype=np.float32, percentiles=(1, 99))
+        for image in (fixed_xyz, moving_xyz)
+    )
+
+    def rigid_matrix(parameters):
+        # Scale radians by a 100 mm head radius so all six optimizer steps are comparable.
+        matrix = tr.euler_matrix(*(parameters[:3] / 100.0))
+        matrix[:3, 3] = fixed_center + parameters[3:] - matrix[:3, :3] @ moving_center
+        return matrix
+
+    def entropy(probabilities):
+        positive = probabilities[probabilities > 0]
+        return -np.sum(positive * np.log(positive))
+
+    # shortcut: local rigid search; add landmark initialization for large pose differences.
+    parameters = np.zeros(6)
+    rng = np.random.default_rng(42)
+
+    for shrink in (4, 2, 1):
+        if cancelled.is_set():
+            raise InterruptedError("Registration cancelled.")
+        levels = []
+        for image, affine in ((fixed_normalized, fixed_affine), (moving_normalized, moving_affine)):
+            sigma = (shrink / 2) if shrink > 1 else 0
+            level = ndimage.gaussian_filter(image, sigma)[::shrink, ::shrink, ::shrink]
+            levels.append((level, affine @ np.diag([shrink, shrink, shrink, 1])))
+        fixed, fixed_level_affine = levels[0]
+        moving, moving_level_affine = levels[1]
+        indices = np.flatnonzero(fixed > 0.01)
+        if len(indices) < 128:
+            raise ValueError("Too little anatomical image content for automatic alignment.")
+        if len(indices) > 50_000:
+            indices = rng.choice(indices, size=50_000, replace=False)
+        points = np.asarray(np.unravel_index(indices, fixed.shape), dtype=float)
+        fixed_values = fixed.ravel()[indices]
+        moving_inverse = np.linalg.inv(moving_level_affine)
+        moving_maximum = (np.asarray(moving.shape) - 1)[:, None]
+
+        def metric(candidate):
+            if cancelled.is_set():
+                raise InterruptedError("Registration cancelled.")
+            if not np.isfinite(candidate).all():
+                return 3.0
+            transform = rigid_matrix(candidate)
+            voxel_map = moving_inverse @ np.linalg.solve(transform, fixed_level_affine)
+            coordinates = voxel_map[:3, :3] @ points + voxel_map[:3, 3, None]
+            valid = np.all((coordinates >= 0) & (coordinates <= moving_maximum), axis=0)
+            overlap = valid.mean()
+            if valid.sum() < max(128, len(indices) * 0.25):
+                return 2.0 + (1.0 - overlap)
+            values = ndimage.map_coordinates(
+                moving, coordinates[:, valid], order=1, prefilter=False
+            )
+            joint, _, _ = np.histogram2d(
+                fixed_values[valid], values, bins=48, range=((0, 1), (0, 1))
+            )
+            joint = ndimage.gaussian_filter(joint, 0.5)
+            joint /= joint.sum()
+            joint_entropy = entropy(joint)
+            if joint_entropy <= 0:
+                return 3.0
+            information = (entropy(joint.sum(axis=0)) + entropy(joint.sum(axis=1))) / joint_entropy
+            # Penalize lost overlap so a small matching patch cannot dominate the registration.
+            return 2.0 - information + 0.25 * (1.0 - overlap)
+
+        if shrink == 4:
+            identity = np.zeros(6)
+            identity[3:] = moving_center - fixed_center
+            if metric(identity) < metric(parameters):
+                parameters = identity
+        initial_score = metric(parameters)
+        result = minimize(
+            metric,
+            parameters,
+            method="Powell",
+            options={"xtol": 0.01, "ftol": 1e-5, "maxiter": 60, "maxfev": 2000},
+        )
+        if not np.isfinite(result.fun) or not np.isfinite(result.x).all():
+            raise ValueError("Registration could not calculate a finite rigid transformation.")
+        if result.fun < initial_score:
+            parameters = result.x
+        if shrink == 1 and not result.success:
+            raise ValueError(
+                "Alignment did not converge. Check the reference MRI and image coverage."
+            )
+    if metric(parameters) >= 1.0:
+        raise ValueError("Registration could not find sufficient image similarity and overlap.")
+    matrix_ras = rigid_matrix(parameters)
+    if (
+        not np.isfinite(matrix_ras).all()
+        or not np.allclose(matrix_ras[:3, :3].T @ matrix_ras[:3, :3], np.eye(3), atol=1e-5)
+        or not np.isclose(np.linalg.det(matrix_ras[:3, :3]), 1.0, atol=1e-5)
+    ):
+        raise ValueError("Registration did not produce a valid rigid transformation.")
+    # Resampling pulls fixed voxels from moving voxels; the exported matrix maps the other way.
+    voxel_map = np.linalg.solve(moving_affine, np.linalg.solve(matrix_ras, fixed_affine))
+    aligned_data = ndimage.affine_transform(
+        moving_xyz, voxel_map, output_shape=fixed_xyz.shape, order=1, prefilter=False
+    )
+    if cancelled.is_set():
+        raise InterruptedError("Registration cancelled.")
+    if not np.isfinite(aligned_data).all() or aligned_data.min() == aligned_data.max():
+        raise ValueError("The aligned image does not contain usable anatomical information.")
+    return (
+        matrix_ras,
+        np.swapaxes(fixed_xyz, 0, 2),
+        np.swapaxes(aligned_data, 0, 2),
+        tuple(float(value) for value in np.linalg.norm(fixed_affine[:3, :3], axis=0)),
+    )

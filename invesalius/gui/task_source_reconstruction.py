@@ -26,10 +26,11 @@ import wx
 
 import invesalius.gui.dialogs as dlg
 from invesalius.data.eeg import MissingSurfaceGeometryError, discover_subject_files
-from invesalius.data.image_registration import register_image_to_volume
+from invesalius.data.imagedata_utils import register_image_to_volume
 from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
+from invesalius.reader.others_reader import read_image
 
 
 class TaskPanel(wx.Panel):
@@ -478,7 +479,12 @@ class ImportSourceDialog(wx.Dialog):
 
             def calculate():
                 try:
-                    outcome.put(register_image_to_volume(path, data, affine, cancelled))
+                    moving_image = read_image(path)
+                    outcome.put(
+                        register_image_to_volume(
+                            moving_image.dataobj, moving_image.affine, data, affine, cancelled
+                        )
+                    )
                 except Exception as error:
                     outcome.put(error)
 
@@ -505,14 +511,17 @@ class ImportSourceDialog(wx.Dialog):
             result = outcome.get()
             if isinstance(result, Exception):
                 raise result
+            matrix, fixed, aligned, spacing = result
             if key != self._alignment_inputs()[3]:
                 raise ValueError(
                     _("The project or reference MRI changed. Calculate alignment again.")
                 )
-            with AlignmentPreviewDialog(wx.GetApp().GetTopWindow(), result) as preview:
+            with AlignmentPreviewDialog(
+                wx.GetApp().GetTopWindow(), fixed, aligned, spacing
+            ) as preview:
                 if preview.ShowModal() != wx.ID_OK:
                     return
-            self._automatic_alignment = (key, result.moving_to_fixed_ras)
+            self._automatic_alignment = (key, matrix)
             self.alignment_status.SetLabel(_("Alignment reviewed and ready to import."))
         except Exception as error:
             with dlg.ErrorMessageBox(self, _("Error aligning MRI"), str(error)) as dialog:
@@ -594,14 +603,14 @@ class ImportSourceDialog(wx.Dialog):
 
 
 class AlignmentPreviewDialog(wx.Dialog):
-    def __init__(self, parent, result):
+    def __init__(self, parent, fixed, aligned, spacing):
         super().__init__(
             parent,
             title=_("Review MRI alignment"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
-        self.result = result
-        self.images = (result.fixed, result.aligned)
+        self.spacing = spacing
+        self.images = (fixed, aligned)
         self.limits = []
         for image in self.images:
             low, high = np.percentile(image[::4, ::4, ::4], [2, 98])
@@ -628,7 +637,7 @@ class AlignmentPreviewDialog(wx.Dialog):
             bitmap.SetBackgroundColour(wx.BLACK)
             self.bitmaps.append(bitmap)
             column.Add(bitmap, 1, wx.ALIGN_CENTER)
-            maximum = result.fixed.shape[axis] - 1
+            maximum = fixed.shape[axis] - 1
             slider = wx.Slider(
                 self,
                 value=maximum // 2,
@@ -656,7 +665,7 @@ class AlignmentPreviewDialog(wx.Dialog):
         self.OnSlice(None)
 
     def OnSlice(self, event):
-        spacing = self.result.spacing
+        spacing = self.spacing
         plane_spacings = (
             (spacing[1], spacing[0]),
             (spacing[2], spacing[0]),
