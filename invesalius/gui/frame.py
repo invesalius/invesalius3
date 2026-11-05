@@ -34,11 +34,10 @@ import invesalius.gui.default_tasks as tasks
 import invesalius.gui.default_viewers as viewers
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.import_bitmap_panel as imp_bmp
+import invesalius.gui.import_network_panel as imp_net
 import invesalius.gui.import_panel as imp
 import invesalius.gui.log as log
 import invesalius.gui.preferences as preferences
-
-#  import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
 from invesalius import inv_paths
@@ -46,6 +45,7 @@ from invesalius.data.slice_ import Slice
 from invesalius.gui import project_properties
 from invesalius.gui.interactive_shell import InteractiveShellFrame
 from invesalius.i18n import tr as _
+from invesalius.navigation.navigation import NavigationHub
 from invesalius.pubsub import pub as Publisher
 
 try:
@@ -138,6 +138,7 @@ class Frame(wx.Frame):
         # Set TaskBarIcon
         # TaskBarIcon(self)
 
+        self.navigation_hub = None
         # Create aui manager and insert content in it
         self.__init_aui()
 
@@ -157,6 +158,7 @@ class Frame(wx.Frame):
         sub(self._HideContentPanel, "Hide content panel")
         sub(self._HideImportPanel, "Hide import panel")
         sub(self._HideTask, "Hide task panel")
+        sub(self._HideImportNetwork, "Hide import network panel")
         sub(self._ShowTask, "Show task panel")
         sub(self._SetProjectName, "Set project name")
         sub(self._ShowContentPanel, "Show content panel")
@@ -214,7 +216,7 @@ class Frame(wx.Frame):
         is_shell_focused = False
 
         # Check if the focus is on a text entry field
-        if focused and isinstance(focused, (wx.TextCtrl, wx.ComboBox)):
+        if focused and isinstance(focused, wx.TextCtrl | wx.ComboBox):
             is_search_field = True
 
         # Check if the shell is focused
@@ -279,9 +281,12 @@ class Frame(wx.Frame):
         # panel by publishing an 'Add marker' message.
         #
         viewers_panel = viewers.Panel(self)
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            self.navigation_hub = NavigationHub(window=self)
         task_panel = tasks.Panel(self)
         import_panel = imp.Panel(self)
         import_bitmap_panel = imp_bmp.Panel(self)
+        import_network_panel = imp_net.Panel(self)
 
         # Add panels to manager
 
@@ -347,11 +352,19 @@ class Frame(wx.Frame):
             .CaptionVisible(True),
         )
 
-        #  ncaption = _("Retrieve DICOM from PACS")
-        #  aui_manager.AddPane(imp_net.Panel(self), wx.aui.AuiPaneInfo().
-        #  Name("Retrieve").Centre().Hide().
-        #  MaximizeButton(True).Floatable(True).
-        #  Caption(ncaption).CaptionVisible(True))
+        ncaption = _("Retrieve DICOM from PACS")
+        aui_manager.AddPane(
+            import_network_panel,
+            wx.aui.AuiPaneInfo()
+            .Name("Retrieve")
+            .CloseButton(False)
+            .MaximizeButton(False)
+            .Centre()
+            .Hide()
+            .Floatable(True)
+            .Caption(ncaption)
+            .CaptionVisible(True),
+        )
 
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
@@ -430,6 +443,13 @@ class Frame(wx.Frame):
         # TODO: Allow saving and restoring perspectives
         self.perspective_all = aui_manager.SavePerspective()
 
+        if self.navigation_hub is not None:
+            viewers_panel.p4.viewer.SetNavigationMode(
+                True,
+                markers=tuple(self.navigation_hub.markers.list),
+                main_coil=self.navigation_hub.navigation.main_coil,
+            )
+
         self.Layout()
 
     def _BeginBusyCursor(self):
@@ -481,6 +501,15 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
+    def _HideImportNetwork(self):
+        """Hide import network panel."""
+
+        aui_manager = self.aui_manager
+        aui_manager.GetPane("Retrieve").Show(0)
+        aui_manager.GetPane("Data").Show(0)
+        aui_manager.GetPane("Tasks").Show(1)
+        aui_manager.Update()
+
     def _HideTask(self):
         """
         Hide task panel.
@@ -521,9 +550,10 @@ class Frame(wx.Frame):
         aui_manager.Update()
 
     def _ShowImportNetwork(self):
-        """
-        Show viewers and task, hide import panel.
-        """
+        """Show viewers and task, hide import panel."""
+
+        Publisher.sendMessage("Close Project")
+
         Publisher.sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Retrieve").Show(1)
@@ -805,6 +835,8 @@ class Frame(wx.Frame):
             self.OnTracheSegmentation()
         elif id == const.ID_SEGMENTATION_MANDIBLE_CT:
             self.OnMandibleCTSegmentation()
+        elif id == const.ID_SEGMENTATION_TOTALSEG:
+            self.OnTotalSegmentation()
         elif id == const.ID_PLANNING_CRANIOPLASTY:
             self.OnImplantCTSegmentation()
 
@@ -904,7 +936,14 @@ class Frame(wx.Frame):
                 wx.OK | wx.ICON_INFORMATION,
             )
             self._show_navigator_message = False
-        Publisher.sendMessage("Set navigation mode", status=status)
+        if status and self.navigation_hub is None:
+            self.navigation_hub = NavigationHub(window=self)
+
+        markers = tuple(self.navigation_hub.markers.list) if status else ()
+        main_coil = self.navigation_hub.navigation.main_coil if status else None
+        Publisher.sendMessage(
+            "Set navigation mode", status=status, markers=markers, main_coil=main_coil
+        )
         if not status:
             Publisher.sendMessage("Remove sensors ID")
 
@@ -956,6 +995,11 @@ class Frame(wx.Frame):
             console_logging_level = values.get(const.CONSOLE_LOGGING_LEVEL, 0)
             logging = values.get(const.LOGGING, 0)
             logging_level = values.get(const.LOGGING_LEVEL, 0)
+            server_aetitle = values[const.SERVER_AETITLE]
+            server_port = values[const.SERVER_PORT]
+            store_path = values[const.STORE_PATH]
+            server_ip = values[const.SERVER_IP]
+            download_method = values[const.DOWNLOAD_METHOD]
 
             session.SetConfig("rendering", rendering)
             session.SetConfig("surface_interpolation", surface_interpolation)
@@ -975,6 +1019,11 @@ class Frame(wx.Frame):
             session.SetConfig("logging_level", logging_level)
             session.SetConfig("append_log_file", append_log_file)
             session.SetConfig("logging_file", logging_file)
+            session.SetConfig("server_aetitle", server_aetitle)
+            session.SetConfig("server_port", server_port)
+            session.SetConfig("store_path", store_path)
+            session.SetConfig("server_ip", server_ip)
+            session.SetConfig("download_method", download_method)
 
             Publisher.sendMessage("Remove Volume")
             Publisher.sendMessage("Reset Raycasting")
@@ -1184,6 +1233,25 @@ class Frame(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
 
+    def OnTotalSegmentation(self):
+        from invesalius.gui import deep_learning_seg_dialog, total_seg_dialog
+
+        if deep_learning_seg_dialog.HAS_TORCH:
+            dlg = total_seg_dialog.TotalSegmenterDialog(self)
+            dlg.Show()
+        else:
+            dlg = wx.MessageDialog(
+                self,
+                _(
+                    "It's not possible to run TotalSegmentator because your system doesn't have the following modules installed:"
+                )
+                + " Torch",
+                "InVesalius 3 - TotalSegmentator",
+                wx.ICON_INFORMATION | wx.OK,
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+
     def OnTracheSegmentation(self):
         from invesalius.gui import deep_learning_seg_dialog
 
@@ -1304,7 +1372,7 @@ class Frame(wx.Frame):
             .GetItem(0)
             .GetWindow()
             .aui_manager.GetAllPanes()[0]
-            .window,
+            .window.active_view,
             "axial_viewer": self.aui_manager.GetPane("Data")
             .window.aui_manager.GetPane("Axial Slice")
             .window,
@@ -1403,6 +1471,7 @@ class MenuBar(wx.MenuBar):
             const.ID_SEGMENTATION_SUBPART,
             const.ID_SEGMENTATION_TRACHEA,
             const.ID_SEGMENTATION_MANDIBLE_CT,
+            const.ID_SEGMENTATION_TOTALSEG,
             const.ID_PLANNING_CRANIOPLASTY,
             const.ID_MASK_DENSITY_MEASURE,
             const.ID_CREATE_SURFACE,
@@ -1457,7 +1526,7 @@ class MenuBar(wx.MenuBar):
         file_menu = wx.Menu()
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
-        # app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
+        app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
         file_menu.Append(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
@@ -1579,6 +1648,7 @@ class MenuBar(wx.MenuBar):
         )
         segmentation_menu.Append(const.ID_SEGMENTATION_TRACHEA, _("Trachea segmentation (CT)"))
         segmentation_menu.Append(const.ID_SEGMENTATION_MANDIBLE_CT, _("Mandible segmentation (CT)"))
+        segmentation_menu.Append(const.ID_SEGMENTATION_TOTALSEG, _("TotalSegmentator (CT / MRI)"))
 
         # Surface Menu
         surface_menu = wx.Menu()

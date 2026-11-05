@@ -368,6 +368,8 @@ class Mask:
             return "Brain stem"
         elif self.name.lower().startswith("choroid_plexus"):
             return "Choroid plexus"
+        elif self.name.lower().startswith("totalseg"):
+            return "Total Segmentator"
         else:
             return "General"
 

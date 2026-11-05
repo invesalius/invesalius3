@@ -20,6 +20,9 @@ class VectorFieldVisualizer:
     def __bind_events(self):
         Publisher.subscribe(self.SetVectorField, "Set vector field")
 
+    def dispose(self):
+        Publisher.unsubscribe_owner(self)
+
     def SetVectorField(self, vector_field):
         """
         Store the vector field to be visualized.

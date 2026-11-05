@@ -10,6 +10,7 @@ from invesalius.pubsub.pub import (
     sendMessage_no_hook,
     subscribe,
     unsubscribe,
+    unsubscribe_owner,
 )
 
 
@@ -76,3 +77,52 @@ def test_send_message_hook_is_called(mocker):
     # Since hook1 was overwritten, it should NOT be called
     mock_hook1.assert_not_called()
     mock_hook2.assert_called_once_with("test_topic", {"key": "value"})
+
+
+def test_unsubscribe_owner_filters_bound_methods_by_owner(mock_publisher, mocker):
+    class Subscriber:
+        def callback(self):
+            pass
+
+    owner = Subscriber()
+    other = Subscriber()
+    mock_publisher.unsubAll.return_value = ["unsubscribed_listener"]
+
+    result = unsubscribe_owner(owner)
+
+    listener_filter = mock_publisher.unsubAll.call_args.kwargs["listenerFilter"]
+    owned_listener = mocker.Mock()
+    owned_listener.getCallable.return_value = owner.callback
+    other_listener = mocker.Mock()
+    other_listener.getCallable.return_value = other.callback
+    dead_listener = mocker.Mock()
+    dead_listener.getCallable.return_value = None
+
+    assert listener_filter(owned_listener) is True
+    assert listener_filter(other_listener) is False
+    assert listener_filter(dead_listener) is False
+    assert result == ["unsubscribed_listener"]
+
+
+def test_unsubscribe_owner_keeps_other_instances_subscribed():
+    class Subscriber:
+        def __init__(self):
+            self.values = []
+
+        def callback(self, value):
+            self.values.append(value)
+
+    owner = Subscriber()
+    other = Subscriber()
+    subscribe(owner.callback, "unsubscribe_owner_test")
+    subscribe(other.callback, "unsubscribe_owner_test")
+
+    try:
+        unsubscribe_owner(owner)
+        sendMessage_no_hook("unsubscribe_owner_test", value=42)
+
+        assert owner.values == []
+        assert other.values == [42]
+    finally:
+        unsubscribe_owner(owner)
+        unsubscribe_owner(other)

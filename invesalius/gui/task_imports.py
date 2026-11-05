@@ -23,9 +23,9 @@ import invesalius.gui.task_efield as efield
 import invesalius.gui.task_exporter as exporter
 import invesalius.gui.task_fmrisupport as fmrisupport
 import invesalius.gui.task_importer as importer
+import invesalius.gui.task_simnibs as simnibs
 import invesalius.gui.task_slice as slice_
 import invesalius.gui.task_surface as surface
-import invesalius.gui.task_simnibs as simnibs
 import invesalius.gui.task_tractography as tractography
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher

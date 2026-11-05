@@ -108,6 +108,34 @@ def base_creation(
     return m, q
 
 
+def ras_to_head_matrix(nasion, lpa, rpa) -> np.ndarray:
+    """Change RAS positions to the fiducial-defined Neuromag/MNE head basis.
+
+    The origin is the projection of NAS onto the LPA-RPA line. X points from
+    LPA to RPA, Y toward NAS and Z superior. Input/output units are identical;
+    the 4x4 matrix acts on homogeneous column vectors. No registration is fitted.
+    base_creation uses anterior/ear-point axes instead of the LPA->RPA direction.
+    """
+    points = np.asarray([nasion, lpa, rpa], dtype=float)
+    if points.shape != (3, 3) or not np.isfinite(points).all():
+        raise ValueError("Head coordinates require finite NAS, LPA and RPA fiducials.")
+    nasion, lpa, rpa = points
+    right = rpa - lpa
+    ear_distance = np.linalg.norm(right)
+    if not np.isfinite(ear_distance) or ear_distance <= 1e-9:
+        raise ValueError("Cannot determine head coordinates: LPA and RPA coincide.")
+    right = tr.unit_vector(right)
+    origin = lpa + np.dot(nasion - lpa, right) * right
+    anterior = nasion - origin
+    nasion_distance = np.linalg.norm(anterior)
+    if not np.isfinite(nasion_distance) or nasion_distance <= max(1e-9, ear_distance * 1e-6):
+        raise ValueError("Cannot determine head coordinates: NAS, LPA and RPA are collinear.")
+    anterior = tr.unit_vector(anterior)
+    matrix = np.eye(4)
+    matrix[:3, :3] = [right, anterior, np.cross(right, anterior)]
+    return matrix @ tr.translation_matrix(-origin)
+
+
 def calculate_fre(
     fiducials_raw: np.ndarray,
     fiducials: np.ndarray,

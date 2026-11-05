@@ -40,6 +40,7 @@ import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
 from invesalius.data.visualization.mep_visualizer import MEPVisualizer
 from invesalius.i18n import tr as _
+from invesalius.navigation.eeg_electrodes import EEGElectrodeManager
 from invesalius.navigation.image import Image
 from invesalius.navigation.iterativeclosestpoint import IterativeClosestPoint
 from invesalius.navigation.markers import MarkersControl
@@ -81,7 +82,8 @@ class NavigationHub(metaclass=Singleton):
             # Break when we have 2 robots
             if len(self.robots.robots_by_id) == 2:
                 break
-        self.markers = MarkersControl()
+        self.eeg_electrodes = EEGElectrodeManager()
+        self.markers = MarkersControl(navigation=self.navigation)
         self.mep_visualizer = MEPVisualizer()
         Publisher.sendMessage("Add navigation context to interactive shell")
 
@@ -166,6 +168,7 @@ class UpdateNavigationScene(threading.Thread):
         slice_render,
         coord,
         probe_visible,
+        head_visible,
         probe_coord,
         probe_m_img,
         coil_visible,
@@ -177,11 +180,23 @@ class UpdateNavigationScene(threading.Thread):
         enorm_data,
     ):
         try:
+            if (
+                self.view_tracts
+                and self.navigation.e_field_loaded
+                and main_coil == self.navigation.main_coil
+            ):
+                Publisher.sendMessage(
+                    "Update tract seed based efield",
+                    coord_tracts_queue=self.navigation.coord_tracts_queue,
+                    fallback_m_img=m_imgs.get(main_coil, probe_m_img),
+                    current_revision=self.navigation.e_field_revision,
+                )
             if tracts_payload is not None:
                 bundle, affine_vtk, coord_offset, coord_offset_w = tracts_payload
-                Publisher.sendMessage("Remove tracts")
+                Publisher.sendMessage("Remove tracts", coil_name=main_coil)
                 Publisher.sendMessage(
                     "Update tracts",
+                    coil_name=main_coil,
                     root=bundle,
                     affine_vtk=affine_vtk,
                     coord_offset=coord_offset,
@@ -212,12 +227,13 @@ class UpdateNavigationScene(threading.Thread):
                     )
                     Publisher.sendMessage(
                         "Update object arrow matrix",
+                        coil_name=main_coil,
                         m_img=m_imgs[main_coil],
                         coord=coords[main_coil],
                         flag=self.peel_loaded,
                     )
 
-                    if self.e_field_loaded:
+                    if self.navigation.e_field_loaded and main_coil == self.navigation.main_coil:
                         Publisher.sendMessage(
                             "Update point location for e-field calculation",
                             m_img=m_imgs[main_coil],
@@ -232,12 +248,13 @@ class UpdateNavigationScene(threading.Thread):
                                 current_revision=self.navigation.e_field_revision,
                             )
 
-                if probe_visible:
-                    Publisher.sendMessage(
-                        "Update probe pose",
-                        m_img=probe_m_img,
-                        coord=probe_coord,
-                    )
+                Publisher.sendMessage(
+                    "Update probe pose",
+                    m_img=probe_m_img,
+                    coord=probe_coord,
+                    probe_visible=probe_visible,
+                    head_visible=head_visible,
+                )
 
             if render:
                 Publisher.sendMessage("Render volume viewer")
@@ -255,10 +272,11 @@ class UpdateNavigationScene(threading.Thread):
                 continue
 
             probe_visible = marker_visibilities[0]
-            coil_visible = any(marker_visibilities[2:])  # is any coil visible?
-
             main_coil = self.navigation.main_coil
-            track_this = main_coil if self.navigation.track_coil else "probe"
+            coil_visible = (
+                any(marker_visibilities[2:]) and main_coil in coords and main_coil in m_imgs
+            )
+            track_this = main_coil if self.navigation.track_coil and coil_visible else "probe"
             # choose which object to track in slices and viewer_volume pointer
             coord = coords.get(track_this, None)
             if coord is None:
@@ -273,14 +291,6 @@ class UpdateNavigationScene(threading.Thread):
             tracts_payload = None
             if self.view_tracts:
                 try:
-                    if self.e_field_loaded:
-                        wx.CallAfter(
-                            Publisher.sendMessage,
-                            "Update tract seed based efield",
-                            coord_tracts_queue=self.navigation.coord_tracts_queue,
-                            fallback_m_img=m_imgs[main_coil],
-                            current_revision=self.navigation.e_field_revision,
-                        )
                     bundle, affine_vtk, coord_offset, coord_offset_w = (
                         self.tracts_queue.get_nowait()
                     )
@@ -304,7 +314,7 @@ class UpdateNavigationScene(threading.Thread):
             render = now - self._last_render >= self._render_interval
             slice_render = render and (now - self._last_slice_render >= self._slice_render_interval)
             enorm_data = None
-            if update_pose and coil_visible and self.e_field_loaded:
+            if update_pose and coil_visible and self.navigation.e_field_loaded:
                 try:
                     enorm_data = self.e_field_norms_queue.get_nowait()
                 except queue.Empty:
@@ -330,6 +340,7 @@ class UpdateNavigationScene(threading.Thread):
                         slice_render=slice_render,
                         coord=coord,
                         probe_visible=probe_visible,
+                        head_visible=marker_visibilities[1],
                         probe_coord=probe_coord,
                         probe_m_img=probe_m_img,
                         coil_visible=coil_visible,
@@ -355,10 +366,12 @@ class Navigation(metaclass=Singleton):
         self.n_coils = 1
         self.coil_registrations = {}
         self.track_coil = False
+        self.probe_only = False
         self.main_coil = None  # Which coil to track with pointer
         self.m_change = None
         self.r_stylus = None
-        self.obj_datas = None  # This is accessed by the robot, gets value at StartNavigation
+        # Coil transformations available to the robot after StartNavigation prepares them.
+        self.obj_datas = {}
 
         self.all_fiducials = np.zeros((6, 6))
         self.event = threading.Event()
@@ -376,6 +389,7 @@ class Navigation(metaclass=Singleton):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         self.e_field_loaded = False
+        self.e_field_enabled = False
         self.plot_efield_vectors = False
         self.debug_efield_enorm = None
         self.e_field_revision = 0
@@ -472,23 +486,37 @@ class Navigation(metaclass=Singleton):
                 self.r_stylus = np.array(state["r_stylus"])
 
     def CoilSelectionDone(self):
-        return len(self.coil_registrations) == self.n_coils
+        return self.probe_only or len(self.coil_registrations) == self.n_coils
+
+    def SetProbeOnly(self, enabled):
+        self.probe_only = bool(enabled)
+        if self.probe_only:
+            self.TrackObject(False)
 
     def SelectCoil(self, coil_name, coil_registration):
+        # A changed registration invalidates the previously computed transformation.
+        self.obj_datas.pop(coil_name, None)
         if coil_registration is not None:  # Add the coil to selection
             self.coil_registrations[coil_name] = coil_registration
             if self.main_coil is None:
-                self.main_coil = coil_name
+                self._set_main_coil(coil_name)
         else:  # Remove the coil from selection
             self.coil_registrations.pop(coil_name, None)
             if self.main_coil == coil_name:
-                self.main_coil = None
-                self.SaveConfig()
+                self._set_main_coil(None)
 
         self.SaveConfig()
 
-    def CoilAtTarget(self, state):
+    def CoilAtTarget(self, state, displacement, coil_name=None):
         self.coil_at_target = state
+
+    def SetTarget(self, marker):
+        coord = marker.position + marker.orientation
+        coord[1] = -coord[1]
+        self.target = coord
+
+    def UnsetTarget(self):
+        self.target = None
 
     def UpdateNavSleep(self, sleep):
         self.sleep_nav = sleep
@@ -512,11 +540,20 @@ class Navigation(metaclass=Singleton):
 
         # Reset coil selection
         self.coil_registrations = {}
-        self.main_coil = None
+        self.obj_datas = {}
+        self._set_main_coil(None)
         self.SaveConfig()
 
+    def _set_main_coil(self, coil_name):
+        """Publish every runtime change to the main coil from one place."""
+        if self.main_coil == coil_name:
+            return
+        self.main_coil = coil_name
+        self.MarkEfieldParametersChanged()
+        Publisher.sendMessage("Main coil changed", coil_name=coil_name)
+
     def SetMainCoil(self, main_coil):
-        self.main_coil = main_coil
+        self._set_main_coil(main_coil)
         self.SaveConfig("main_coil", main_coil)
 
         # Send the polydata of the main coil to the connection
@@ -595,6 +632,9 @@ class Navigation(metaclass=Singleton):
             return False
 
     def StartNavigation(self, tracker, icp):
+        # Publish new transformations only after all selected coils are prepared.
+        self.obj_datas = {}
+
         # initialize jobs list
         jobs_list = []
 
@@ -616,8 +656,6 @@ class Navigation(metaclass=Singleton):
             self.e_field_IDs_queue,
         ]
 
-        Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
-
         if not self.CoilSelectionDone():
             wx.MessageBox(
                 _(
@@ -629,7 +667,8 @@ class Navigation(metaclass=Singleton):
             # Pre-compute obj_datas: data/matrices for each coil to be used in coregistration
             # data is accessed from dict by coil name
             obj_datas = {}
-            for coil_name in self.coil_registrations:
+            selected_coils = () if self.probe_only else self.coil_registrations
+            for coil_name in selected_coils:
                 if self.ref_mode_id:
                     coord_raw, marker_visibilities = tracker.TrackerCoordinates.GetCoordinates()
                 else:
@@ -680,7 +719,6 @@ class Navigation(metaclass=Singleton):
                     tracker.tracker_id,
                     self.target,
                     icp,
-                    self.e_field_loaded,
                     self,
                 )
             )
@@ -734,16 +772,17 @@ class Navigation(metaclass=Singleton):
                         dti.ComputeTractsThread(self.trk_inp, queues, self.event, self.sleep_nav)
                     )
 
-            if self.e_field_loaded:
+            if self.e_field_enabled:
                 queues = [self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue]
                 jobs_list.append(
-                    e_field.Visualize_E_field_Thread(
+                    e_field.EFieldCalculationThread(
                         queues,
                         self.event,
                         2 * self.sleep_nav,
                         self.neuronavigation_api,
                         self.debug_efield_enorm,
                         self.plot_efield_vectors,
+                        self,
                     )
                 )
 
@@ -757,6 +796,8 @@ class Navigation(metaclass=Singleton):
                 )
             )
 
+            Publisher.sendMessage("Navigation status", nav_status=True, vis_status=vis_components)
+
             for jobs in jobs_list:
                 # jobs.daemon = True
                 jobs.start()
@@ -765,6 +806,8 @@ class Navigation(metaclass=Singleton):
             self.pedal_connector.add_callback("navigation", self.PedalStateChanged)
 
     def StopNavigation(self):
+        # Prevent target updates from using transformations from a previous navigation.
+        self.obj_datas = {}
         self.event.set()
 
         self.pedal_connector.remove_callback("navigation")
@@ -786,15 +829,9 @@ class Navigation(metaclass=Singleton):
             self.tracts_queue.clear()
             self.tracts_queue.join()
 
-        if self.e_field_loaded:
-            self.efield_queue.clear()
-            self.efield_queue.join()
-
-            self.e_field_norms_queue.clear()
-            self.e_field_norms_queue.join()
-
-            self.e_field_IDs_queue.clear()
-            self.e_field_IDs_queue.join()
+        for queue in (self.efield_queue, self.e_field_norms_queue, self.e_field_IDs_queue):
+            queue.clear()
+            queue.join()
 
         vis_components = [
             self.serial_port_in_use,

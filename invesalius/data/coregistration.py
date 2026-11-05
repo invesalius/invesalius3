@@ -343,7 +343,6 @@ class CoordinateCorregistrate(threading.Thread):
         tracker_id,
         target,
         icp,
-        e_field_loaded,
         navigation,
     ):
         threading.Thread.__init__(self, name="CoordCoregObject")
@@ -356,7 +355,6 @@ class CoordinateCorregistrate(threading.Thread):
         self.view_tracts = view_tracts
         self.object_at_target_queue = queues[2]
         self.efield_queue = queues[3]
-        self.e_field_loaded = e_field_loaded
         self.navigation = navigation
         self.event = event
         self.sle = sle
@@ -407,12 +405,13 @@ class CoordinateCorregistrate(threading.Thread):
         probe_rot_inv = np.linalg.inv(probe_rot)
         while not self.event.is_set():
             try:
+                efield_revision = self.navigation.e_field_revision
                 if not self.object_at_target_queue.empty():
                     self.target_flag = self.object_at_target_queue.get_nowait()
 
                 can_push_coord = not self.coord_queue.full()
                 can_push_tracts = self.view_tracts and not self.coord_tracts_queue.full()
-                can_push_efield = self.e_field_loaded and not self.efield_queue.full()
+                can_push_efield = self.navigation.e_field_loaded and not self.efield_queue.full()
                 if not (can_push_coord or can_push_tracts or can_push_efield):
                     sleep(self._loop_sleep)
                     continue
@@ -432,20 +431,28 @@ class CoordinateCorregistrate(threading.Thread):
                 m_imgs = {"probe": m_img_probe}
 
                 main_coil = self.navigation.main_coil
-                if main_coil not in obj_datas:
-                    main_coil = next(iter(obj_datas))
-                for coil_name, obj_data in obj_datas.items():
-                    if coil_name != main_coil:
-                        obj_id = obj_data[0]
-                        if obj_id < len(marker_visibilities) and not marker_visibilities[obj_id]:
-                            continue
-                    coord_coil, m_img_coil = self._corregistrate_object_cached(
-                        m_change, obj_data, coord_raw, icp
-                    )
-                    coords[coil_name] = coord_coil
-                    m_imgs[coil_name] = m_img_coil
-                coord = coords[main_coil]
-                m_img = m_imgs[main_coil]
+                if obj_datas:
+                    if main_coil not in obj_datas:
+                        main_coil = next(iter(obj_datas))
+                    for coil_name, obj_data in obj_datas.items():
+                        if coil_name != main_coil:
+                            obj_id = obj_data[0]
+                            if (
+                                obj_id < len(marker_visibilities)
+                                and not marker_visibilities[obj_id]
+                            ):
+                                continue
+                        coord_coil, m_img_coil = self._corregistrate_object_cached(
+                            m_change, obj_data, coord_raw, icp
+                        )
+                        coords[coil_name] = coord_coil
+                        m_imgs[coil_name] = m_img_coil
+                    coord = coords[main_coil]
+                    m_img = m_imgs[main_coil]
+                else:
+                    main_coil = "probe"
+                    coord = coord_probe
+                    m_img = m_img_probe
 
                 # XXX: This is not the best place to do the logic related to approaching the target when the
                 #      debug tracker is in use. However, the trackers (including the debug trackers) operate in
@@ -474,10 +481,10 @@ class CoordinateCorregistrate(threading.Thread):
                     m_img_flip = m_img.copy()
                     m_img_flip[1, -1] = -m_img_flip[1, -1]
 
-                if can_push_tracts and not self.e_field_loaded:
+                if can_push_tracts and not self.navigation.e_field_loaded:
                     self.coord_tracts_queue.put_nowait(m_img_flip)
                 if can_push_efield:
-                    self.efield_queue.put_nowait([m_img, coord, self.navigation.e_field_revision])
+                    self.efield_queue.put_nowait([m_img, coord, efield_revision])
             except queue.Full:
                 pass
 

@@ -56,7 +56,7 @@ TOPIC_REMOVE_EFIELD = "Remove SimNIBS efield from viewer"
 TOPIC_SET_OPACITY = "Set SimNIBS efield opacity"
 TOPIC_SET_COLORMAP = "Set SimNIBS efield colormap"
 TOPIC_SET_THRESHOLD = "Set SimNIBS efield threshold"
-TOPIC_HIGHLIGHT_ABOVE_THRESHOLD = "Show area above threshold"
+TOPIC_SET_HIGHLIGHT = "Set SimNIBS efield highlight"
 TOPIC_EFIELD_LOADED = "SimNIBS efield loaded"
 TOPIC_PROGRESS = "SimNIBS progress"
 TOPIC_ERROR = "SimNIBS error"
@@ -1527,8 +1527,7 @@ class InnerTaskPanel(wx.Panel):
         Publisher.sendMessage(TOPIC_SET_THRESHOLD, threshold=self._threshold())
 
     def OnHighlightAboveThreshold(self, _evt):
-        Publisher.sendMessage(TOPIC_HIGHLIGHT_ABOVE_THRESHOLD, enable=self.chk_highlight.GetValue())
-        Publisher.sendMessage(TOPIC_SET_THRESHOLD, threshold=self._threshold())
+        Publisher.sendMessage(TOPIC_SET_HIGHLIGHT, enable=self.chk_highlight.GetValue())
 
     def _threshold(self):
         return self.spin_threshold.GetValue() / 100.0

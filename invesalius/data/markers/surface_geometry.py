@@ -1,47 +1,111 @@
+import numpy as np
 import vtk
-import wx
 
-from invesalius.gui import dialogs
+import invesalius.constants as const
+import invesalius.data.transformations as tr
+import invesalius.session as ses
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton
 
+# Radius used to average nearby scalp normals. This stabilizes orientation and
+# is independent from the filter that smooths the surface mesh itself.
+SCALP_NORMAL_AVERAGING_RADIUS_MM = 15.0
+
 
 class SurfaceGeometry(metaclass=Singleton):
     def __init__(self):
+        self.is_navigating = False
         self.__bind_events()
 
         self.surfaces = []
+        self.map_actors = {}
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor, "Load surface actor into viewer")
         Publisher.subscribe(self.OnCloseProject, "Close project data")
         Publisher.subscribe(self.RemoveSurface, "Remove surface actor from viewer")
+        Publisher.subscribe(self.OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self.RegisterMapActor, "Register surface map actor")
+
+    def OnNavigationStatus(self, nav_status, vis_status):
+        self.is_navigating = nav_status
 
     def OnCloseProject(self):
         self.surfaces = []
+        self.map_actors.clear()
+
+    def RegisterMapActor(self, actor):
+        self.map_actors[actor] = actor.GetVisibility()
+
+    def GetSurfacePolyData(self, actor):
+        """Return the picked mesh without changing the anatomical surface registry."""
+        if actor is None:
+            return None
+        if actor in self.map_actors or any(
+            surface["original"]["actor"] == actor for surface in self.surfaces
+        ):
+            mapper = actor.GetMapper()
+            mapper.Update()
+            return mapper.GetInput()
+        return None
 
     def PrecalculateSurfaceData(self, actor):
+        mapper = actor.GetMapper()
+        mapper.Update()
+        polydata = mapper.GetInput()
+        if (
+            polydata is None
+            or polydata.GetNumberOfPoints() == 0
+            or polydata.GetNumberOfCells() == 0
+        ):
+            return {
+                "actor": actor,
+                "polydata": polydata,
+                "normals": None,
+                "point_locator": None,
+                "cell_locator": None,
+                "highest_z": float("-inf"),
+            }
+
         normals = self.GetSurfaceNormals(actor)
         highest_z = self.CalculateHighestZ(actor)
-        polydata = actor.GetMapper().GetInput()
+        point_locator = vtk.vtkPointLocator()
+        point_locator.SetDataSet(polydata)
+        point_locator.BuildLocator()
+        cell_locator = vtk.vtkCellLocator()
+        cell_locator.SetDataSet(polydata)
+        cell_locator.BuildLocator()
         return {
             "actor": actor,
             "polydata": polydata,
             "normals": normals,
+            "point_locator": point_locator,
+            "cell_locator": cell_locator,
             "highest_z": highest_z,
         }
 
-    def LoadActor(self, actor):
+    def LoadActor(self, actor, surface=None):
         # Maintain a list of surfaces and their smoothed versions. However,
         # do not compute the smoothed surface until it is needed.
         #
         # The original versions are used for visualization, while the smoothed
         # versions are used for calculations.
+        smoothed = None
+        if surface is not None and surface.projection_polydata is not None:
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputData(surface.projection_polydata)
+            smoothed_actor = vtk.vtkActor()
+            smoothed_actor.SetMapper(mapper)
+            smoothed_actor.GetProperty().DeepCopy(actor.GetProperty())
+            smoothed = self.PrecalculateSurfaceData(smoothed_actor)
+            if not self._HasUsableGeometry(smoothed):
+                smoothed = None
         self.surfaces.append(
             {
                 "original": self.PrecalculateSurfaceData(actor),
-                "smoothed": None,
+                "smoothed": smoothed,
+                "surface": surface,
             }
         )
 
@@ -49,6 +113,7 @@ class SurfaceGeometry(metaclass=Singleton):
         """
         Removes a surface by its actor from internal storage.
         """
+        self.map_actors.pop(actor, None)
         for index, surface in enumerate(self.surfaces):
             if surface["original"]["actor"] == actor:
                 self.surfaces.pop(index)
@@ -179,9 +244,11 @@ class SurfaceGeometry(metaclass=Singleton):
         This is useful, e.g., when we want to pick a marker without any of the surfaces getting in the way.
         """
         for surface in self.surfaces:
-            # Only the original actor is used for visualization, so we only need to hide that one.
             actor = surface["original"]["actor"]
             surface["visible"] = actor.GetVisibility()
+            actor.VisibilityOff()
+        for actor in self.map_actors:
+            self.map_actors[actor] = actor.GetVisibility()
             actor.VisibilityOff()
 
     def ShowAllSurfaces(self):
@@ -190,9 +257,10 @@ class SurfaceGeometry(metaclass=Singleton):
         HideAllSurfaces was called.
         """
         for surface in self.surfaces:
-            # Only the original actor is used for visualization, so we only need to show that one.
             actor = surface["original"]["actor"]
             visible = surface["visible"] if "visible" in surface else True
+            actor.SetVisibility(visible)
+        for actor, visible in self.map_actors.items():
             actor.SetVisibility(visible)
 
     def GetSurfaceCenter(self, actor):
@@ -242,65 +310,224 @@ class SurfaceGeometry(metaclass=Singleton):
         return highest_z
 
     def GetSmoothedScalpSurface(self):
+        from invesalius.gui import dialogs
+
         # Retrieve the surface with the highest z-coordinate.
-        if not self.surfaces:
+        valid_surfaces = [
+            surface for surface in self.surfaces if self._HasUsableGeometry(surface["original"])
+        ]
+        if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR:
+            valid_surfaces = [
+                surface
+                for surface in valid_surfaces
+                if surface["surface"] is None or surface["surface"].frozen_map is None
+            ]
+        if not valid_surfaces:
             return None
 
         # Find the surface with the highest z-coordinate
-        highest_surface = max(self.surfaces, key=lambda surface: surface["original"]["highest_z"])
+        highest_surface = max(valid_surfaces, key=lambda surface: surface["original"]["highest_z"])
 
-        # Track if a new highest surface was detected
-        current_id = id(highest_surface)
-        previous_id = getattr(self, "_last_highest_surface_id", None)
-        self._last_highest_surface_id = current_id
-        has_changed = current_id != previous_id
+        if highest_surface["smoothed"] is None:
+            resume_navigation = self.is_navigating
+            if resume_navigation:
+                Publisher.sendMessage("Stop navigation")
+            try:
+                progress_window = dialogs.SurfaceSmoothingProgressWindow()
+                try:
+                    progress_window.Update()
+                    polydata = highest_surface["original"]["polydata"]
+                    actor = highest_surface["original"]["actor"]
 
-        # If the highest surface has changed, ask the user if they want to update
-        if has_changed and highest_surface["smoothed"] is not None:
-            result = dialogs.ShowConfirmationDialog(
-                _(
-                    "A new highest scalp surface was identified. Do you want to update the smoothed surface?"
-                )
-            )
-            if result != wx.ID_OK:
-                return highest_surface["smoothed"]
+                    # Create a smoothed version of the actor.
+                    if polydata.GetNumberOfCells() > 10000:
+                        smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
+                    else:
+                        smoothed_actor = actor
+                    progress_window.Update()
+                    smoothed_surface = self.PrecalculateSurfaceData(smoothed_actor)
+                    highest_surface["smoothed"] = smoothed_surface
+                    surface = highest_surface["surface"]
+                    if surface is not None and self._HasUsableGeometry(smoothed_surface):
+                        surface.projection_polydata = smoothed_surface["polydata"]
+                        ses.Session().ChangeProject()
+                finally:
+                    progress_window.Close()
+            finally:
+                if resume_navigation:
+                    Publisher.sendMessage("Start navigation")
 
-        # Reprocess if user agreed OR if no smoothed version exists yet
-        if has_changed or highest_surface["smoothed"] is None:
-            progress_window = dialogs.SurfaceSmoothingProgressWindow()
-            progress_window.Update()
-            polydata = highest_surface["original"]["polydata"]
-            actor = highest_surface["original"]["actor"]
+        smoothed_surface = highest_surface["smoothed"]
+        if not self._HasUsableGeometry(smoothed_surface):
+            return None
+        return smoothed_surface
 
-            # Create a smoothed version of the actor.
-            if polydata.GetNumberOfCells() > 10000:
-                smoothed_actor = self.SmoothSurface(polydata, actor, progress_window)
-            else:
-                smoothed_actor = actor
-            progress_window.Update()
-            highest_surface["smoothed"] = self.PrecalculateSurfaceData(smoothed_actor)
+    def GetClosestPointOnSurface(self, surface_name, point, smooth_radius=0.0):
+        """Return the closest point and local normal on the shared smoothed scalp.
 
-            progress_window.Close()
-
-        return highest_surface["smoothed"]
-
-    def GetClosestPointOnSurface(self, surface_name, point):
+        ``smooth_radius`` averages nearby point normals to provide stable orientation
+        while moving targets or creating grids on locally irregular meshes.
+        """
         surface = self.GetSmoothedScalpSurface()
+        if surface is None:
+            raise RuntimeError(_("Create a 3D scalp surface before projecting onto it."))
 
         polydata = surface["polydata"]
+        point = np.asarray(point, dtype=float)
+        if point.shape != (3,) or not np.all(np.isfinite(point)):
+            raise RuntimeError(_("Coordinates must contain only finite numbers."))
+
+        closest_point = [0.0, 0.0, 0.0]
+        cell_id = vtk.reference(-1)
+        sub_id = vtk.reference(0)
+        distance_squared = vtk.reference(0.0)
+        surface["cell_locator"].FindClosestPoint(
+            point, closest_point, cell_id, sub_id, distance_squared
+        )
+        if not 0 <= cell_id.get() < polydata.GetNumberOfCells():
+            raise RuntimeError(_("The scalp surface does not contain usable geometry."))
+
+        return tuple(closest_point), self._GetSurfaceNormal(
+            surface, closest_point, cell_id.get(), smooth_radius
+        )
+
+    def GetOuterPointOnScalp(self, point, smooth_radius=0.0):
+        """Project radially onto the first scalp face encountered from outside."""
+        point = np.asarray(point, dtype=float)
+        if point.shape != (3,) or not np.all(np.isfinite(point)):
+            raise RuntimeError(_("Coordinates must contain only finite numbers."))
+
+        surface = self.GetSmoothedScalpSurface()
+        if surface is None:
+            raise RuntimeError(_("Create a 3D scalp surface before projecting onto it."))
+
+        polydata = surface["polydata"]
+        center = np.asarray(polydata.GetCenter())
+        direction = point - center
+        length = np.linalg.norm(direction)
+        if not np.isfinite(length) or length < 1e-10:
+            raise RuntimeError(_("Cannot project a point at the center of the scalp surface."))
+        direction /= length
+        bounds = np.asarray(polydata.GetBounds()).reshape(3, 2)
+        # The bounding-box diagonal puts the ray origin outside every face of the mesh.
+        ray_start = center + direction * (np.linalg.norm(bounds[:, 1] - bounds[:, 0]) + 1.0)
+        intersections = vtk.vtkPoints()
+        intersections.SetDataTypeToDouble()
+        cell_ids = vtk.vtkIdList()
+        # shortcut: rays can cross mesh openings, repair the projection mesh if inner faces are hit.
+        hit = surface["cell_locator"].IntersectWithLine(
+            ray_start, center, 1e-6, intersections, cell_ids, vtk.vtkGenericCell()
+        )
+        if not hit or intersections.GetNumberOfPoints() == 0:
+            raise RuntimeError(_("Cannot project the electrode onto the outer scalp surface."))
+
+        # The single-hit locator can return an inner intersection in VTK 9.3.
+        first_hit = min(
+            range(intersections.GetNumberOfPoints()),
+            key=lambda index: np.linalg.norm(np.asarray(intersections.GetPoint(index)) - ray_start),
+        )
+        projected_point = intersections.GetPoint(first_hit)
+        normal = np.asarray(
+            self._GetSurfaceNormal(
+                surface, projected_point, cell_ids.GetId(first_hit), smooth_radius
+            )
+        )
+        if np.dot(normal, direction) < 0:
+            normal *= -1
+        return tuple(projected_point), tuple(normal)
+
+    @staticmethod
+    def _GetSurfaceNormal(surface, point, cell_id, smooth_radius):
+        polydata = surface["polydata"]
+        point_locator = surface["point_locator"]
         normals = surface["normals"]
-
-        # Create a cell locator using VTK. This will allow us to find the closest point on the surface to the given point.
-        point_locator = vtk.vtkPointLocator()
-        point_locator.SetDataSet(polydata)
-        point_locator.BuildLocator()
-        closest_point_id = point_locator.FindClosestPoint(point)
-
-        # Retrieve the coordinates of the closest point using the point ID.
-        closest_point = polydata.GetPoint(closest_point_id)
-
-        # Extract the normal at the closest point
         normal_data = normals.GetPointData().GetNormals()
-        closest_normal = normal_data.GetTuple(closest_point_id)
+        if normal_data is None:
+            raise RuntimeError(_("The scalp surface does not contain usable normals."))
 
-        return closest_point, closest_normal
+        # Interpolate normals at the actual point on the cell, not at a nearby vertex.
+        cell = polydata.GetCell(cell_id)
+        weights = [0.0] * cell.GetNumberOfPoints()
+        evaluation = cell.EvaluatePosition(
+            point,
+            [0.0, 0.0, 0.0],
+            vtk.reference(0),
+            [0.0, 0.0, 0.0],
+            vtk.reference(0.0),
+            weights,
+        )
+        if evaluation < 0:
+            closest_point_id = point_locator.FindClosestPoint(point)
+            closest_normal = np.asarray(normal_data.GetTuple(closest_point_id), dtype=float)
+        else:
+            closest_normal = np.sum(
+                [
+                    np.asarray(normal_data.GetTuple(cell.GetPointId(index))) * weight
+                    for index, weight in enumerate(weights)
+                ],
+                axis=0,
+            )
+        interpolated_normal = closest_normal.copy()
+
+        if smooth_radius > 0:
+            nearby_ids = vtk.vtkIdList()
+            point_locator.FindPointsWithinRadius(smooth_radius, point, nearby_ids)
+            if nearby_ids.GetNumberOfIds() > 0:
+                closest_normal = np.mean(
+                    [
+                        normal_data.GetTuple(nearby_ids.GetId(index))
+                        for index in range(nearby_ids.GetNumberOfIds())
+                    ],
+                    axis=0,
+                )
+
+        normal_length = np.linalg.norm(closest_normal)
+        if normal_length < 1e-10:
+            closest_normal = interpolated_normal
+            normal_length = np.linalg.norm(closest_normal)
+        if not np.isfinite(normal_length) or normal_length < 1e-10:
+            raise RuntimeError(_("The scalp surface does not contain usable normals."))
+        closest_normal /= normal_length
+
+        return tuple(closest_normal)
+
+    @staticmethod
+    def _HasUsableGeometry(surface):
+        if surface is None:
+            return False
+        polydata = surface.get("polydata")
+        normals = surface.get("normals")
+        normal_data = normals.GetPointData().GetNormals() if normals is not None else None
+        return (
+            polydata is not None
+            and polydata.GetNumberOfPoints() > 0
+            and polydata.GetNumberOfCells() > 0
+            and normal_data is not None
+            and normal_data.GetNumberOfTuples() >= polydata.GetNumberOfPoints()
+            and surface.get("point_locator") is not None
+            and surface.get("cell_locator") is not None
+        )
+
+    @staticmethod
+    def OrientationFromNormal(normal):
+        """Return Euler angles that align the local +Z axis with a surface normal."""
+        reference = np.array([0.0, 0.0, 1.0])
+        normal = np.asarray(normal, dtype=float)
+        normal_length = np.linalg.norm(normal)
+        if normal_length == 0:
+            return np.zeros(3)
+
+        normal /= normal_length
+        rotation_axis = np.cross(reference, normal)
+        axis_length = np.linalg.norm(rotation_axis)
+        dot_product = np.clip(np.dot(reference, normal), -1.0, 1.0)
+
+        if axis_length < 1e-10:
+            if dot_product >= 0:
+                return np.zeros(3)
+            rotation_axis = np.array([1.0, 0.0, 0.0])
+        else:
+            rotation_axis /= axis_length
+
+        rotation_matrix = tr.rotation_matrix(np.arccos(dot_product), rotation_axis)
+        return np.degrees(tr.euler_from_matrix(rotation_matrix, "sxyz"))

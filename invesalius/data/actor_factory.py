@@ -339,10 +339,18 @@ class ActorFactory:
 
         return actor
 
-    def CreateTorus(self, position, orientation, colour=[0.0, 0.0, 1.0], scale=1.0):
+    def CreateTorus(
+        self,
+        position,
+        orientation,
+        colour=[0.0, 0.0, 1.0],
+        scale=1.0,
+        ring_radius=2.0,
+        cross_section_radius=1.0,
+    ):
         torus = vtk.vtkParametricTorus()
-        torus.SetRingRadius(2)
-        torus.SetCrossSectionRadius(1)
+        torus.SetRingRadius(ring_radius)
+        torus.SetCrossSectionRadius(cross_section_radius)
 
         torusSource = vtk.vtkParametricFunctionSource()
         torusSource.SetParametricFunction(torus)

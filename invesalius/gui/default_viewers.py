@@ -124,7 +124,11 @@ class Panel(wx.Panel):
             .Name("Volume")
             .Bottom()
             .Centre()
-            .Caption(_("Volume"))
+            .Caption(
+                _("Navigation")
+                if ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR
+                else _("Volume")
+            )
             .MaximizeButton(True)
             .CloseButton(False)
         )
@@ -172,6 +176,7 @@ class Panel(wx.Panel):
             caption (str): The new caption to set for the viewer pane.
         """
         self.aui_manager.GetPane(viewer_name).Caption(caption)
+        self.aui_manager.Update()
         self.Refresh()
 
     def OnSetTargetMode(self, enabled=True):
@@ -207,12 +212,14 @@ class Panel(wx.Panel):
             Publisher.sendMessage("Hide raycasting widget")
 
     def _Exit(self):
+        self.p4.dispose()
         self.aui_manager.UnInit()
 
 
 class VolumeInteraction(wx.Panel):
     def __init__(self, parent, id):
         super().__init__(parent, id)
+        self._disposed = False
         self.can_show_raycasting_widget = 0
         self.__init_aui_manager()
         # sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -226,7 +233,7 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager = wx.aui.AuiManager()
         self.aui_manager.SetManagedWindow(self)
 
-        p1 = volume_viewer.Viewer(self)
+        self.viewer = volume_viewer.Viewer(self)
         s1 = (
             wx.aui.AuiPaneInfo().Centre().CloseButton(False).MaximizeButton(False).CaptionVisible(0)
         )
@@ -243,7 +250,7 @@ class VolumeInteraction(wx.Panel):
             .Hide()
         )
 
-        self.aui_manager.AddPane(p1, s1)
+        self.aui_manager.AddPane(self.viewer, s1)
         self.aui_manager.AddPane(self.clut_raycasting, self.s2)
         self.aui_manager.Update()
 
@@ -251,6 +258,7 @@ class VolumeInteraction(wx.Panel):
         self.clut_raycasting.Bind(EVT_CLUT_POINT_RELEASE, self.OnPointChanged)
         self.clut_raycasting.Bind(EVT_CLUT_CURVE_SELECT, self.OnCurveSelected)
         self.clut_raycasting.Bind(EVT_CLUT_CURVE_WL_CHANGE, self.OnChangeCurveWL)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         # self.Bind(wx.EVT_SIZE, self.OnSize)
         # self.Bind(wx.EVT_MAXIMIZE, self.OnMaximize)
 
@@ -312,7 +320,21 @@ class VolumeInteraction(wx.Panel):
         self.clut_raycasting.Refresh()
 
     def _Exit(self):
+        self.dispose()
+
+    def dispose(self):
+        if self._disposed:
+            return
+
+        self._disposed = True
+        Publisher.unsubscribe_owner(self)
+        self.viewer.dispose()
         self.aui_manager.UnInit()
+
+    def OnDestroy(self, evt):
+        if evt.GetEventObject() is self:
+            self.dispose()
+        evt.Skip()
 
 
 RAYCASTING_TOOLS = wx.NewIdRef()
@@ -333,13 +355,23 @@ class VolumeViewerCover(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(VolumeInteraction(self, -1), 1, wx.EXPAND | wx.GROW)
-        sizer.Add(VolumeToolPanel(self), 0, wx.EXPAND | wx.GROW)
+        self.volume_interaction = VolumeInteraction(self, -1)
+        self.volume_tool_panel = VolumeToolPanel(self)
+        sizer.Add(self.volume_interaction, 1, wx.EXPAND | wx.GROW)
+        sizer.Add(self.volume_tool_panel, 0, wx.EXPAND | wx.GROW)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
+
+    @property
+    def viewer(self):
+        return self.volume_interaction.viewer
+
+    def dispose(self):
+        self.volume_interaction.dispose()
+        self.volume_tool_panel.dispose()
 
 
 class VolumeToolPanel(wx.Panel):
@@ -455,6 +487,9 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.Uncheck, "Uncheck image plane menu")
         Publisher.subscribe(self.OnSSAOPreferenceChanged, "SSAO preference changed")
 
+    def dispose(self):
+        Publisher.unsubscribe_owner(self)
+
     def DisablePreset(self):
         self.off_item.Check(1)
 
@@ -465,7 +500,13 @@ class VolumeToolPanel(wx.Panel):
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
         self.button_ssao.Bind(wx.EVT_BUTTON, self.OnButtonSSAO)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         # self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
+
+    def OnDestroy(self, evt):
+        if evt.GetEventObject() is self:
+            self.dispose()
+        evt.Skip()
 
     def OnButtonRaycasting(self, evt):
         # MENU RELATED TO RAYCASTING TYPES

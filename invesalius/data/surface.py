@@ -83,6 +83,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utl
 from invesalius.data.converters import convert_custom_bin_to_vtk
+from invesalius.data.visualization.surface_map_visualizer import SurfaceMap, SurfaceMapVisualizer
 from invesalius.gui import dialogs
 from invesalius.i18n import tr as _
 from invesalius.utils import new_name_by_pattern
@@ -105,6 +106,7 @@ class Surface:
             self.index = index
             Surface.general_index -= 1
         self.polydata = ""
+        self.projection_polydata = None
         self.colour = ""
         self.transparency = const.SURFACE_TRANSPARENCY
         self.volume = 0.0
@@ -117,6 +119,28 @@ class Surface:
 
         self.filename = None
         self.category = category
+        self.anatomical_role = ""
+        self.peel_only = False
+        self.created_for_efield = False
+        self.frozen_map = None
+        self.display_map = None
+        self.painting_mode = ""
+
+    @property
+    def has_geometry(self):
+        return bool(self.polydata.GetNumberOfPoints() and self.polydata.GetNumberOfCells())
+
+    @property
+    def supports_painting(self):
+        return self.has_geometry and self.frozen_map is None
+
+    @property
+    def can_edit_colour(self):
+        return self.display_map is None and not self.painting_mode
+
+    @property
+    def displayed_polydata(self):
+        return self.display_map.polydata if self.display_map is not None else self.polydata
 
     def SavePlist(self, dir_temp, filelist):
         if self.filename and os.path.exists(self.filename):
@@ -143,7 +167,18 @@ class Surface:
             "volume": self.volume,
             "area": self.area,
             "category": self.category,
+            "anatomical_role": self.anatomical_role,
+            "peel_only": self.peel_only,
+            "created_for_efield": self.created_for_efield,
         }
+        if self.frozen_map is not None:
+            surface["frozen_map"] = self.frozen_map.metadata()
+        if self.projection_polydata is not None:
+            projection_filename = filename + "_projection.vtp"
+            projection_filepath = os.path.join(dir_temp, projection_filename)
+            pu.Export(self.projection_polydata, projection_filepath, bin=True)
+            filelist[projection_filepath] = projection_filename
+            surface["projection_polydata"] = projection_filename
         plist_filename = filename + ".plist"
         # plist_filepath = os.path.join(dir_temp, filename + '.plist')
         temp_fd, temp_plist = tempfile.mkstemp()
@@ -174,6 +209,19 @@ class Surface:
         except KeyError:
             self.category = "General"
         self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
+        self.anatomical_role = sp.get("anatomical_role", "")
+        self.peel_only = sp.get("peel_only", False)
+        self.created_for_efield = sp.get("created_for_efield", False)
+        self.frozen_map = (
+            SurfaceMap.from_metadata(self.polydata, sp["frozen_map"])
+            if "frozen_map" in sp
+            else None
+        )
+        self.projection_polydata = None
+        if "projection_polydata" in sp:
+            projection_filepath = os.path.join(dirpath, sp["projection_polydata"])
+            if os.path.isfile(projection_filepath):
+                self.projection_polydata = pu.Import(projection_filepath)
         Surface.general_index = max(Surface.general_index, self.index)
 
     def _set_class_index(self, index):
@@ -196,6 +244,10 @@ class SurfaceManager:
 
     def __init__(self):
         self.actors_dict = {}
+        self.map_visualizers = {}
+        from invesalius.data.visualization.surface_painting import SurfacePainting
+
+        self.painting = SurfacePainting()
         self.last_surface_index = 0
         self.convert_to_inv = None
         self.__bind_events()
@@ -220,6 +272,9 @@ class SurfaceManager:
             session.SetConfig("surface", self._default_parameters)
 
     def __bind_events(self):
+        Publisher.subscribe(self.UpdateSurfacePresentation, "Update surface presentation")
+        Publisher.subscribe(self.OnBrainSurfaceChanged, "Brain surface changed")
+        Publisher.subscribe(self.RemoveSurfacePresentation, "Discard surface painting")
         Publisher.subscribe(self.AddNewActor, "Create surface")
         Publisher.subscribe(self.GetActor, "Get Actor")
         Publisher.subscribe(self.SetActorTransparency, "Set surface transparency")
@@ -279,42 +334,87 @@ class SurfaceManager:
             name = original_surface.name
             names_list = [surface_dict[i].name for i in surface_dict.keys()]
             new_name = utl.next_copy_name(name, names_list)
+            snapshot = original_surface.display_map
+            snapshot = snapshot.snapshot() if snapshot is not None else None
             # create new mask
             self.CreateSurfaceFromPolydata(
-                polydata=original_surface.polydata,
+                polydata=snapshot.polydata if snapshot is not None else original_surface.polydata,
                 overwrite=False,
                 name=new_name,
                 colour=original_surface.colour,
                 transparency=original_surface.transparency,
-                volume=original_surface.volume,
-                area=original_surface.area,
+                volume=None if snapshot is not None else original_surface.volume,
+                area=None if snapshot is not None else original_surface.area,
                 category=original_surface.category,
+                frozen_map=snapshot,
             )
 
     def OnRemove(self, surface_indexes):
         proj = prj.Project()
-
-        old_dict = self.actors_dict
-        new_dict = {}
-        if surface_indexes:
-            for index in surface_indexes:
-                proj.RemoveSurface(index)
-                if index in old_dict:
-                    actor = old_dict[index]
-                    for i in old_dict:
-                        if i < index:
-                            new_dict[i] = old_dict[i]
-                        if i > index:
-                            new_dict[i - 1] = old_dict[i]
-                    old_dict = new_dict
-                    Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
-            self.actors_dict = new_dict
-
+        for index in sorted(surface_indexes, reverse=True):
+            proj.RemoveSurface(index)
+            actor = self.actors_dict.pop(index, None)
+            self.actors_dict = {
+                (key - 1 if key > index else key): value for key, value in self.actors_dict.items()
+            }
+            if actor is not None:
+                Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
         if self.last_surface_index in surface_indexes:
-            if self.actors_dict:
-                self.last_surface_index = 0
-            else:
-                self.last_surface_index = None
+            self.last_surface_index = next(iter(proj.surface_dict), None)
+        elif self.last_surface_index is not None:
+            self.last_surface_index -= sum(
+                index < self.last_surface_index for index in surface_indexes
+            )
+
+    def OnBrainSurfaceChanged(self, previous, surface):
+        if surface is None:
+            return
+        indexes = [
+            candidate.index
+            for candidate in prj.Project().surface_dict.values()
+            if candidate.created_for_efield and candidate is not surface
+        ]
+        if indexes:
+            Publisher.sendMessage("Remove surfaces", surface_indexes=indexes)
+            Publisher.sendMessage("Repopulate surfaces")
+            ses.Session().ChangeProject()
+
+    def UpdateSurfacePresentation(self, surface):
+        actor = self.actors_dict.get(surface.index)
+        if actor is None:
+            return
+        surface_map = surface.display_map
+        presentation = self.painting.presentation
+        presentation.show_original(surface, actor)
+        visualizer = self.map_visualizers.get(surface)
+        if surface_map is None:
+            self.RemoveSurfacePresentation(surface)
+        else:
+            if visualizer is not None and visualizer.color_bar != surface_map.color_bar:
+                self.RemoveSurfacePresentation(surface)
+                visualizer = None
+            if visualizer is None:
+                visualizer = SurfaceMapVisualizer(surface_map.color_bar)
+                self.map_visualizers[surface] = visualizer
+                Publisher.sendMessage("Register surface map actor", actor=visualizer.actor)
+                for prop in visualizer.actors:
+                    Publisher.sendMessage("AppendActor", actor=prop)
+            visualizer.set_map(surface_map)
+            visualizer.actor.GetProperty().DeepCopy(actor.GetProperty())
+            visualizer.show(presentation.visible(surface))
+        visible = [v for v in self.map_visualizers.values() if v.actor.GetVisibility()]
+        offsets = {}
+        for item in visible:
+            x, y = item.color_bar.position
+            offset = offsets.get(item.color_bar.position, 0)
+            item.scalar_bar.SetPosition(x - offset if x >= 0.5 else x + offset, y)
+            offsets[item.color_bar.position] = offset + item.scalar_bar.GetWidth() + 0.03
+
+    def RemoveSurfacePresentation(self, surface):
+        visualizer = self.map_visualizers.pop(surface, None)
+        if visualizer is not None:
+            for prop in visualizer.actors:
+                Publisher.sendMessage("Remove surface actor from viewer", actor=prop)
 
     def OnSeedSurface(self, seeds):
         """
@@ -435,14 +535,20 @@ class SurfaceManager:
         progress_dialog.Close()
 
     def OnImportCustomBinFile(self, filename):
+        polydata = self.ReadCustomBinFile(filename)
+        if polydata is not None:
+            name = os.path.splitext(os.path.split(filename)[-1])[0]
+            return self.CreateSurfaceFromPolydata(
+                polydata, name=name, scalar=filename.lower().endswith(".bin")
+            )
+
+    def ReadCustomBinFile(self, filename):
         import os
 
         if os.path.exists(filename):
-            scalar = True
             if filename.lower().endswith(".bin"):
                 polydata = convert_custom_bin_to_vtk(filename)
             elif filename.lower().endswith(".stl"):
-                scalar = False
                 reader = vtkSTLReader()
 
                 if _has_win32api:
@@ -459,9 +565,7 @@ class SurfaceManager:
                 )
                 return
             else:
-                name = os.path.splitext(os.path.split(filename)[-1])[0]
-                surface_index = self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
-                return surface_index
+                return polydata
         else:
             print("File does not exists")
             return
@@ -556,22 +660,28 @@ class SurfaceManager:
             Publisher.sendMessage(
                 "Get multilocus paths from json", multilocus_coil_list=multilocus_coil_list
             )
-        surface_index_cortex = self.OnImportCustomBinFile(cortex)
-        if surface_index_cortex is not None:
-            self.convert_to_inv = convert_to_inv
+        polydata = self.ReadCustomBinFile(cortex)
+        if polydata is not None:
+            if convert_to_inv:
+                polydata = self.ConvertPolydataToInv(polydata)
+            self.convert_to_inv = False
             proj = prj.Project()
+            if proj.GetBrainSurface() is None:
+                surface_index_cortex = self.CreateSurfaceFromPolydata(
+                    polydata,
+                    name=os.path.splitext(os.path.basename(cortex))[0],
+                    scalar=cortex.lower().endswith(".bin"),
+                )
+                surface = proj.surface_dict[surface_index_cortex]
+                surface.created_for_efield = True
+                proj.SetBrainSurface(surface)
             cortex_save_file = path_meshes + config_dict["cortex"]
-            polydata = proj.surface_dict[surface_index_cortex].polydata
             file_extension = cortex_save_file.split(".")[-1]
             if file_extension == "stl":
                 cortex_save_file = cortex_save_file.split(".")[0] + ".bin"
             if create_meshes_flag:
                 self.OnWriteCustomBinFile(polydata, cortex_save_file)
-            Publisher.sendMessage(
-                "Get Efield actor from json",
-                efield_actor=polydata,
-                surface_index_cortex=surface_index_cortex,
-            )
+            Publisher.sendMessage("Get Efield mesh from json", efield_mesh=polydata)
             bmeshes_list = []
             ci_list = []
             co_list = []
@@ -881,6 +991,9 @@ class SurfaceManager:
         area=None,
         scalar=False,
         category="General",
+        frozen_map=None,
+        anatomical_role="",
+        peel_only=False,
     ):
         if self.convert_to_inv:
             polydata = self.ConvertPolydataToInv(polydata)
@@ -916,6 +1029,9 @@ class SurfaceManager:
         else:
             surface.colour = colour
         surface.polydata = polydata
+        surface.frozen_map = frozen_map
+        surface.peel_only = peel_only
+        surface.display_map = frozen_map
 
         if transparency:
             surface.transparency = transparency
@@ -945,6 +1061,9 @@ class SurfaceManager:
 
         self.actors_dict[surface.index] = actor
 
+        if anatomical_role == "brain":
+            proj.SetBrainSurface(surface)
+
         session = ses.Session()
         session.ChangeProject()
 
@@ -968,7 +1087,8 @@ class SurfaceManager:
 
         self.last_surface_index = surface.index
 
-        Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+        Publisher.sendMessage("Load surface actor into viewer", actor=actor, surface=surface)
+        self.UpdateSurfacePresentation(surface)
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
         return surface.index
 
@@ -976,6 +1096,8 @@ class SurfaceManager:
         self.CloseProject()
 
     def CloseProject(self):
+        for surface in list(self.map_visualizers):
+            self.RemoveSurfacePresentation(surface)
         for index in self.actors_dict:
             Publisher.sendMessage("Remove surface actor from viewer", actor=self.actors_dict[index])
         del self.actors_dict
@@ -992,14 +1114,31 @@ class SurfaceManager:
         # self.actors_dict.
         proj = prj.Project()
         surface = proj.surface_dict[surface_index]
-        Publisher.sendMessage("Update surface info in GUI", surface=surface)
         self.last_surface_index = surface_index
         #  if surface.is_shown:
         self.ShowActor(surface_index, True)
+        Publisher.sendMessage("Update surface info in GUI", surface=surface)
 
     def OnLoadSurfaceDict(self, surface_dict):
+        removed_indexes = self.actors_dict.keys() - surface_dict.keys()
+        for index in removed_indexes:
+            actor = self.actors_dict.pop(index)
+            Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
+
         for key in surface_dict:
             surface = surface_dict[key]
+            if not surface.painting_mode:
+                surface.display_map = surface.frozen_map
+
+            if surface.index in self.actors_dict:
+                actor = self.actors_dict[surface.index]
+                actor.GetProperty().SetColor(surface.colour[:3])
+                actor.GetProperty().SetOpacity(1 - surface.transparency)
+                actor.SetVisibility(surface.is_shown)
+                self.UpdateSurfacePresentation(surface)
+                Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
+                Publisher.sendMessage("Update surface info in GUI", surface=surface)
+                continue
 
             # Map polygonal data (vtkPolyData) to graphics primitives.
             normals = vtkPolyDataNormals()
@@ -1031,20 +1170,22 @@ class SurfaceManager:
             self.actors_dict[surface.index] = actor
 
             # Send actor by pubsub to viewer's render
-            Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+            Publisher.sendMessage("Load surface actor into viewer", actor=actor, surface=surface)
 
             Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
 
             # The following lines have to be here, otherwise all volumes disappear
             Publisher.sendMessage("Update surface info in GUI", surface=surface)
-            if not surface.is_shown:
-                self.ShowActor(key, False)
+            actor.SetVisibility(surface.is_shown)
+            self.UpdateSurfacePresentation(surface)
+
+        Publisher.sendMessage("Render volume viewer")
 
     ####
     # (mask_index, surface_name, quality, fill_holes, keep_largest)
 
     def _on_complete_surface_creation(
-        self, args, overwrite, surface_name, colour, category, dialog
+        self, args, overwrite, surface_name, colour, category, dialog, anatomical_role=""
     ):
         surface_filename, surface_measures = args
         wx.CallAfter(
@@ -1056,10 +1197,19 @@ class SurfaceManager:
             colour,
             category,
             dialog,
+            anatomical_role,
         )
 
     def _show_surface(
-        self, surface_filename, surface_measures, overwrite, surface_name, colour, category, dialog
+        self,
+        surface_filename,
+        surface_measures,
+        overwrite,
+        surface_name,
+        colour,
+        category,
+        dialog,
+        anatomical_role="",
     ):
         print(surface_filename, surface_measures)
         reader = vtkXMLPolyDataReader()
@@ -1109,9 +1259,11 @@ class SurfaceManager:
             surface.index = index
             self.last_surface_index = index
 
+        if anatomical_role == "brain":
+            proj.SetBrainSurface(surface)
         session.ChangeProject()
 
-        Publisher.sendMessage("Load surface actor into viewer", actor=actor)
+        Publisher.sendMessage("Load surface actor into viewer", actor=actor, surface=surface)
 
         # Send actor by pubsub to viewer's render
         if overwrite and self.actors_dict.keys():
@@ -1127,12 +1279,12 @@ class SurfaceManager:
             dialog.running = False
 
     def on_publish_surface(self):
-        Publisher.sendMessage("Stop navigation")
+        Publisher.sendMessage("Press start navigation button", pressed=False)
         wx.Yield()
         progress = dialogs.PublishingSurfacesProgressWindow(maximum=100)
         self._publish_surfaces_worker(progress)
         progress.Close()
-        Publisher.sendMessage("Start navigation")
+        Publisher.sendMessage("Press start navigation button", pressed=True)
 
     def _publish_surfaces_worker(self, progress):
         proj = prj.Project()
@@ -1300,6 +1452,7 @@ class SurfaceManager:
         options = surface_parameters["method"]["options"]
 
         surface_name = surface_parameters["options"]["name"]
+        anatomical_role = surface_parameters["options"].get("anatomical_role", "")
         quality = surface_parameters["options"]["quality"]
         fill_holes = surface_parameters["options"]["fill"]
         keep_largest = surface_parameters["options"]["keep_largest"]
@@ -1457,6 +1610,8 @@ class SurfaceManager:
             surface.polydata = polydata
             surface.volume = surface_measures["volume"]
             surface.area = surface_measures["area"]
+            if anatomical_role == "brain":
+                proj.SetBrainSurface(surface)
 
         # With GUI
         else:
@@ -1530,6 +1685,7 @@ class SurfaceManager:
                         colour=colour,
                         category=category,
                         dialog=sp,
+                        anatomical_role=anatomical_role,
                     ),
                     error_callback=functools.partial(self._on_callback_error, dialog=sp)
                     if sp
@@ -1623,6 +1779,7 @@ class SurfaceManager:
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[index].is_shown = value
+        self.UpdateSurfacePresentation(proj.surface_dict[index])
         Publisher.sendMessage("Render volume viewer")
 
     def SetActorTransparency(self, surface_index, transparency):
@@ -1634,10 +1791,13 @@ class SurfaceManager:
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[surface_index].transparency = transparency
+        self.UpdateSurfacePresentation(proj.surface_dict[surface_index])
         Publisher.sendMessage("Render volume viewer")
 
     def SetActorColour(self, surface_index, colour):
         """ """
+        if not prj.Project().surface_dict[surface_index].can_edit_colour:
+            return
         self.actors_dict[surface_index].GetProperty().SetColor(colour[:3])
         # Update value in project's surface_dict
         proj = prj.Project()
@@ -1766,30 +1926,23 @@ class SurfaceManager:
                     surface_parameters=surface_parameters,
                 )
 
-            # hide all surfaces
-            for index in proj.surface_dict:
-                proj.surface_dict[index].is_shown = False
-
-            # Displays one surface at a time and export
-            for index in proj.surface_dict.keys():
-                print(proj.surface_dict[index].name)
-                proj.surface_dict[index].is_shown = True
+            for index, surface in proj.surface_dict.items():
+                print(surface.name)
                 self._export_surface(
-                    os.path.join(folder, str(index) + ".stl"), const.FILETYPE_STL, False
+                    os.path.join(folder, str(index) + ".stl"),
+                    const.FILETYPE_STL,
+                    False,
+                    surfaces=[surface],
                 )
-                proj.surface_dict[index].is_shown = False
 
-    def _export_surface(self, filename, filetype, convert_to_world):
-        # First we identify all surfaces that are selected
-        # (if any)
-        proj = prj.Project()
-        polydata_list = []
-
-        # Collects all visible surfaces
-        for index in proj.surface_dict:
-            surface = proj.surface_dict[index]
-            if surface.is_shown:
-                polydata_list.append(surface.polydata)
+    def _export_surface(self, filename, filetype, convert_to_world, surfaces=None):
+        if surfaces is None:
+            surfaces = [
+                surface
+                for surface in prj.Project().surface_dict.values()
+                if self.painting.presentation.visible(surface)
+            ]
+        polydata_list = [surface.displayed_polydata for surface in surfaces]
 
         if len(polydata_list) == 0:
             utl.debug("oops - no polydata")
@@ -1890,18 +2043,15 @@ class SurfaceManager:
                         return
                     wx.Yield()
 
-                    visible_surfaces = []
-                    for index in proj.surface_dict:
-                        surface = proj.surface_dict[index]
-                        if surface.is_shown:
-                            visible_surfaces.append(
-                                (
-                                    surface.polydata,
-                                    surface.name,
-                                    surface.colour,
-                                    1 - surface.transparency,
-                                )
-                            )
+                    visible_surfaces = [
+                        (
+                            surface.displayed_polydata,
+                            surface.name,
+                            surface.colour,
+                            1 - surface.transparency,
+                        )
+                        for surface in surfaces
+                    ]
 
                     if not visible_surfaces:
                         progress.Destroy()
