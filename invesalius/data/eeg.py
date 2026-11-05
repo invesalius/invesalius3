@@ -37,6 +37,7 @@ from scipy.sparse.csgraph import dijkstra
 
 from invesalius.data.time_series import TimeAxis
 from invesalius.i18n import tr as _
+from invesalius.reader.others_reader import read_image
 
 
 @dataclass
@@ -508,6 +509,24 @@ def read_stc_pair(filename):
     return pair
 
 
+def discover_subject_files(subject_dir):
+    """Find cortical surfaces and curvature in a FreeSurfer/FastSurfer subject directory."""
+    subject_dir = Path(subject_dir).expanduser().resolve()
+    surface_dir = subject_dir / "surf"
+    if not subject_dir.is_dir() or not surface_dir.is_dir():
+        raise ValueError(
+            "Select a FreeSurfer/FastSurfer subject folder containing a 'surf' directory."
+        )
+    files = {}
+    for kind in ("pial", "white", "inflated", "curv"):
+        files[kind] = {}
+        for side in ("lh", "rh"):
+            path = surface_dir / f"{side}.{kind}"
+            if path.is_file():
+                files[kind][side] = path
+    return files
+
+
 @dataclass
 class CorticalSourceSeries:
     hemispheres: tuple[STC, STC]
@@ -518,6 +537,7 @@ class CorticalSourceSeries:
     name: str
     unit: str
     global_rms: np.ndarray
+    subject_files: dict[str, dict[str, Path]] = field(default_factory=dict)
 
     @property
     def axis(self):
@@ -547,6 +567,42 @@ def _affine(matrix):
     ):
         raise ValueError("Registration must be a finite, invertible 4x4 positional affine.")
     return matrix
+
+
+class MissingSurfaceGeometryError(ValueError):
+    """A reference MRI is needed because the surface has no usable volume metadata."""
+
+
+def _surface_to_scanner_ras(metadata):
+    required = ("volume", "voxelsize", "xras", "yras", "zras", "cras")
+    valid = str(metadata.get("valid", "")).split()
+    if not valid or valid[0] != "1" or any(key not in metadata for key in required):
+        raise MissingSurfaceGeometryError(
+            "The cortical surface has no valid volume metadata. Select its matching FreeSurfer MRI."
+        )
+    volume = np.asarray(metadata["volume"], dtype=float)
+    spacing = np.asarray(metadata["voxelsize"], dtype=float)
+    directions = np.asarray([metadata[key] for key in ("xras", "yras", "zras")], dtype=float)
+    center = np.asarray(metadata["cras"], dtype=float)
+    if (
+        volume.shape != (3,)
+        or spacing.shape != (3,)
+        or directions.shape != (3, 3)
+        or center.shape != (3,)
+        or not all(np.isfinite(value).all() for value in (volume, spacing, directions, center))
+        or np.any(volume <= 0)
+        or np.any(volume > np.iinfo(np.int32).max)
+        or np.any(volume != np.floor(volume))
+        or np.any(spacing <= 0)
+        or not np.allclose(directions @ directions.T, np.eye(3), atol=1e-4)
+    ):
+        raise ValueError("Invalid reference-volume geometry in the cortical surface metadata.")
+    header = nib.freesurfer.mghformat.MGHHeader()
+    header.set_data_shape(tuple(int(size) for size in volume))
+    header.set_zooms(tuple(float(size) for size in spacing))
+    header["Mdc"] = directions
+    header["Pxyz_c"] = center
+    return _affine(_affine(header.get_affine()) @ np.linalg.inv(_affine(header.get_vox2ras_tkr())))
 
 
 def _vertex_sources(points, triangles, source_vertices):
@@ -591,36 +647,66 @@ def _source_statistics(hemispheres):
 
 
 def read_source_config(filename):
-    """Validate the complete import before any project or viewer state is changed.
-
-    The MRI must be the FreeSurfer MGH/MGZ reference for these surfaces.
-    scanner_ras_to_project_ras explicitly registers its scanner coordinates
-    to those of the project's anatomical image; all spatial units are mm.
-    """
+    """Read a source reconstruction configuration from JSON."""
     filename = Path(filename)
     with filename.open(encoding="utf-8") as stream:
         config = json.load(stream)
-    required = ("stc", "lh_surface", "rh_surface", "mri", "unit", "scanner_ras_to_project_ras")
-    if not isinstance(config, dict) or any(key not in config for key in required):
+    return read_source_reconstruction(config, filename.parent)
+
+
+def read_source_reconstruction(config, base_dir="."):
+    """Validate the complete import before any project or viewer state is changed.
+
+    Surface volume metadata supplies the geometry unless a matching FreeSurfer
+    MGH/MGZ reference is provided. scanner_ras_to_project_ras registers its coordinates
+    to those of the project's anatomical image; all spatial units are mm.
+    """
+    base_dir = Path(base_dir)
+    if not isinstance(config, dict):
+        raise ValueError("Source configuration must be a dictionary.")
+    anatomy_keys = ("subject_dir",) if "subject_dir" in config else ("lh_surface", "rh_surface")
+    required = ("stc", "unit", "scanner_ras_to_project_ras", *anatomy_keys)
+    if any(key not in config for key in required):
         raise ValueError(f"Source configuration requires: {', '.join(required)}.")
-    for key in ("stc", "lh_surface", "rh_surface", "mri", "unit"):
+    for key in ("stc", "unit", *anatomy_keys):
         if not isinstance(config[key], str) or not config[key].strip():
             raise ValueError(f"Source configuration '{key}' must be a nonempty string.")
+    subject_files = {}
+    if "subject_dir" in config:
+        subject_files = discover_subject_files(base_dir / config["subject_dir"])
+        surface_paths = subject_files["pial"]
+        missing = [f"surf/{side}.pial" for side in ("lh", "rh") if side not in surface_paths]
+        if missing:
+            raise ValueError(
+                f"Subject folder is missing required cortical surfaces: {', '.join(missing)}."
+            )
+    else:
+        surface_paths = {side: base_dir / config[f"{side}_surface"] for side in ("lh", "rh")}
     name = config.get("name", Path(config["stc"]).name[:-7])
     if not isinstance(name, str) or not name.strip():
         raise ValueError("Source name must be a nonempty string.")
     registration = _affine(config["scanner_ras_to_project_ras"])
-    hemispheres = read_stc_pair(filename.parent / config["stc"])
-    mri = nib.load(filename.parent / config["mri"])
-    if not isinstance(mri, nib.freesurfer.mghformat.MGHImage):
-        raise ValueError("Source MRI reference must be a FreeSurfer MGH or MGZ image.")
-    surface_to_project = _affine(
-        registration @ _affine(mri.affine) @ np.linalg.inv(_affine(mri.header.get_vox2ras_tkr()))
-    )
+    hemispheres = read_stc_pair(base_dir / config["stc"])
+    surface_to_scanner = None
+    if "mri" in config:
+        if not isinstance(config["mri"], str) or not config["mri"].strip():
+            raise ValueError("Source configuration 'mri' must be a nonempty string.")
+        mri = read_image(base_dir / config["mri"])
+        if not isinstance(mri, nib.freesurfer.mghformat.MGHImage):
+            raise ValueError("Source MRI reference must be a FreeSurfer MGH or MGZ image.")
+        surface_to_scanner = _affine(
+            _affine(mri.affine) @ np.linalg.inv(_affine(mri.header.get_vox2ras_tkr()))
+        )
     points, triangles, source_vertices = [], [], []
     offset = 0
     for side, stc in zip(("lh", "rh"), hemispheres):
-        vertices, faces = nib.freesurfer.read_geometry(filename.parent / config[f"{side}_surface"])
+        surface_path = surface_paths[side]
+        if "mri" in config:
+            vertices, faces = nib.freesurfer.read_geometry(surface_path)
+        else:
+            vertices, faces, metadata = nib.freesurfer.read_geometry(
+                surface_path, read_metadata=True
+            )
         if (
             vertices.ndim != 2
             or vertices.shape[1] != 3
@@ -635,6 +721,15 @@ def read_source_config(filename):
             raise ValueError(f"Invalid {side} cortical surface geometry.")
         if len(stc.vertices) and stc.vertices.max() >= len(vertices):
             raise ValueError(f"STC vertex IDs exceed the {side} surface vertex count.")
+        if "mri" not in config:
+            geometry = _surface_to_scanner_ras(metadata)
+            if surface_to_scanner is not None and not np.allclose(
+                geometry, surface_to_scanner, rtol=1e-5, atol=1e-4
+            ):
+                raise ValueError(
+                    "The cortical hemispheres have different reference-volume geometry."
+                )
+            surface_to_scanner = geometry
         points.append(vertices)
         triangles.append(faces.astype(np.int64) + offset)
         source_vertices.append(stc.vertices.astype(np.int64) + offset)
@@ -642,6 +737,7 @@ def read_source_config(filename):
     points = np.concatenate(points)
     triangles = np.concatenate(triangles)
     source_vertices = np.concatenate(source_vertices)
+    surface_to_project = _affine(registration @ surface_to_scanner)
     scalar_range, global_rms = _source_statistics(hemispheres)
     vertex_sources = _vertex_sources(points, triangles, source_vertices)
     registered_points = nib.affines.apply_affine(surface_to_project, points)
@@ -656,4 +752,5 @@ def read_source_config(filename):
         name,
         config["unit"],
         global_rms,
+        subject_files=subject_files,
     )
