@@ -23,7 +23,7 @@ import csv
 import json
 import operator
 from dataclasses import asdict, dataclass, field
-from math import isfinite
+from math import floor, isfinite, log10
 from pathlib import Path
 from struct import pack, unpack
 from tempfile import TemporaryDirectory
@@ -463,6 +463,9 @@ class SourceData:
     axis: TimeAxis
     vertices: np.ndarray
     values: "np.ndarray | _H5SourceValues"
+    unit: str = "a.u."
+    measure: str = "amplitude"
+    method: str = ""
 
     def __post_init__(self):
         self.vertices = np.asarray(self.vertices)
@@ -498,6 +501,58 @@ class CorticalSourceSeries:
     hemisphere_sizes: tuple[int, ...]
     surface_to_project_ras: np.ndarray
     subject_files: dict[str, dict[str, Path]] = field(default_factory=dict)
+    measure: str = "amplitude"
+    method: str = ""
+    source_unit: str = ""
+    display_unit: str = ""
+    automatic_scale: bool = True
+
+    @property
+    def unit_choices(self):
+        moments = ("A.m", "nA.m", "pA.m")
+        physical = tuple(f"({unit})^2" for unit in moments) if self.measure == "power" else moments
+        return tuple(
+            dict.fromkeys(("a.u.", "1", *physical, self.unit, self.source_unit or self.unit))
+        )
+
+    @property
+    def display_units(self):
+        physical = self.unit_choices[2:5]
+        unit = self.source_unit or self.unit
+        return physical if unit in physical else (unit,)
+
+    @property
+    def display_scale(self):
+        """Return a presentation factor and exponent fixed over the entire recording."""
+        units = self.display_units
+        unit = self.source_unit or self.unit
+        target = self.display_unit or unit
+        conversion = 1.0
+        if target != unit:
+            if target not in units:
+                raise ValueError("Source and display units must describe the same quantity.")
+            power = 2 if self.measure == "power" else 1
+            prefixes = (0, -9, -12)
+            conversion = 10.0 ** (
+                power * (prefixes[units.index(unit)] - prefixes[units.index(target)])
+            )
+        peak = max(abs(value) for value in self.scalar_range) * conversion
+        if not isfinite(peak):
+            raise ValueError("The selected unit exceeds the supported numeric range.")
+        exponent = 3 * floor(log10(peak) / 3) if self.automatic_scale and peak > 0 else 0
+        exponent = max(-300, min(300, exponent))
+        factor = conversion / 10.0**exponent
+        if not isfinite(factor) or factor <= 0:
+            raise ValueError("The selected display scale exceeds the supported numeric range.")
+        return factor, exponent
+
+    @property
+    def display_title(self):
+        exponent = self.display_scale[1]
+        quantity = _("Power") if self.measure == "power" else _("Amplitude")
+        title = f"{quantity} ({self.display_unit or self.source_unit or self.unit})"
+        superscript = str(exponent).translate(str.maketrans("-0123456789", "⁻⁰¹²³⁴⁵⁶⁷⁸⁹"))
+        return title + (f" 10{superscript}" if exponent else "")
 
     @property
     def axis(self):
@@ -610,14 +665,19 @@ def read_source_reconstruction(config, base_dir="."):
     if not isinstance(config, dict):
         raise ValueError("Source configuration must be a dictionary.")
     signal_key = "signal" if "signal" in config else "stc"
-    required = (signal_key, "unit", "scanner_ras_to_project_ras")
+    required = (signal_key, "scanner_ras_to_project_ras")
     if any(key not in config for key in required):
         raise ValueError(f"Source configuration requires: {', '.join(required)}.")
     for key in (signal_key, "unit"):
-        if not isinstance(config[key], str) or not config[key].strip():
+        if key in config and (not isinstance(config[key], str) or not config[key].strip()):
             raise ValueError(f"Source configuration '{key}' must be a nonempty string.")
     filename = base_dir / config[signal_key]
     sources, mesh = read_source_data(filename, config)
+    unit = _signal_unit(config.get("unit", sources[0].unit))
+    method = sources[0].method
+    if unit.lower() in ("dspm", "sloreta", "eloreta"):
+        method = unit
+        unit = "1" if unit.lower() == "dspm" else "a.u."
     name = config.get("name", filename.stem.removesuffix("-lh").removesuffix("-rh"))
     if not isinstance(name, str) or not name.strip():
         raise ValueError("Source name must be a nonempty string.")
@@ -643,11 +703,15 @@ def read_source_reconstruction(config, base_dir="."):
         vertex_sources,
         scalar_range,
         name,
-        config["unit"],
+        unit,
         global_rms,
         hemisphere_sizes=hemisphere_sizes,
         surface_to_project_ras=surface_to_project,
         subject_files=subject_files,
+        measure=sources[0].measure,
+        method=method,
+        source_unit=unit,
+        display_unit=unit,
     )
 
 
@@ -678,6 +742,25 @@ def read_source_data(filename, config):
 
 
 # Shared source import helpers
+
+
+def _signal_unit(value):
+    if not isinstance(value, str) or not value.strip():
+        return "a.u."
+    value = value.strip()
+    compact = value.replace(" ", "").replace("*", ".").replace("·", ".").replace("²", "^2")
+    for unit in ("A.m", "nA.m", "pA.m"):
+        if compact in (unit, unit.replace(".", "")):
+            return unit
+        if compact in (
+            f"({unit})^2",
+            f"({unit.replace('.', '')})^2",
+            f"{unit.replace('.', '')}^2",
+            unit.replace(".", "^2.") + "^2",
+            unit.replace(".", "^2") + "^2",
+        ):
+            return f"({unit})^2"
+    return value
 
 
 def _source_choice(config, key, message, choices):
@@ -1270,7 +1353,11 @@ def _read_brainstorm_source(filename, data, config):
         raise ValueError("Mixed Brainstorm source components require an explicit source model.")
     components = int(components)
     values = _scalar_source_values(values, len(points), axis, config, components)
-    source = SourceData(axis, np.arange(len(points)), values)
+    method = str(data.get("Function", "")).strip()
+    unit = _signal_unit(data.get("DisplayUnits"))
+    if unit == "a.u." and method.lower() in ("dspm", "dspm2018", "dspm2018sc"):
+        unit = "1"
+    source = SourceData(axis, np.arange(len(points)), values, unit=unit, method=method)
     return (source,), (points, triangles, _brainstorm_to_ras(filename, path, config))
 
 
@@ -1286,7 +1373,7 @@ def _read_fieldtrip_source(filename, data, config):
         or not np.isfinite(positions).all()
     ):
         raise ValueError("FieldTrip source positions must be a finite N by 3 matrix.")
-    unit = str(data.get("unit", "")).lower()
+    unit = str(data.get("unit", "")).strip().lower()
     if unit not in ("m", "cm", "mm"):
         unit = _source_choice(
             config,
@@ -1379,7 +1466,9 @@ def _read_fieldtrip_source(filename, data, config):
         elif parameter == "mom" and values.shape == (len(positions) * 3, axis.n_frames):
             components = 3
         values = _scalar_source_values(values, len(positions), axis, config, components)[:, active]
-    coordinates = str(data.get("coordsys", "")).lower()
+    coordinates = str(data.get("coordsys", "")).strip().lower()
+    if coordinates == "scanner_ras":
+        coordinates = "scanras"
     if "tri" in data:
         points, triangles = _validate_source_mesh(positions, np.asarray(data["tri"]) - 1)
         vertices = active
@@ -1396,10 +1485,12 @@ def _read_fieldtrip_source(filename, data, config):
             and len([value for key, value in mesh.items() if not key.startswith("__")]) == 1
         ):
             mesh = next(value for key, value in mesh.items() if not key.startswith("__"))
-        mesh_unit = str(mesh.get("unit", "")).lower()
+        mesh_unit = str(mesh.get("unit", "")).strip().lower()
         if mesh_unit not in ("m", "cm", "mm"):
             raise ValueError("The FieldTrip surface must specify its spatial unit.")
-        mesh_coordinates = str(mesh.get("coordsys", "")).lower()
+        mesh_coordinates = str(mesh.get("coordsys", "")).strip().lower()
+        if mesh_coordinates == "scanner_ras":
+            mesh_coordinates = "scanras"
         if coordinates and mesh_coordinates and coordinates != mesh_coordinates:
             raise ValueError("The FieldTrip surface and sources use different coordinate systems.")
         coordinates = coordinates or mesh_coordinates
@@ -1414,14 +1505,25 @@ def _read_fieldtrip_source(filename, data, config):
             )
     if "source_to_scanner_ras" in config:
         transform = _affine(config["source_to_scanner_ras"])
-    elif coordinates == "scanner_ras":
+    elif coordinates == "scanras":
         transform = np.eye(4)
     else:
         raise SourceImportRequired(
             "source_to_scanner_ras",
             f"FieldTrip coordinates '{coordinates or 'unspecified'}': select the source-mm to scanner-RAS-mm transformation matrix.",
         )
-    return (SourceData(axis, np.asarray(vertices, dtype=np.int64), values),), (
+    signal_unit = _signal_unit(payload.get(f"{parameter}unit", data.get(f"{parameter}unit")))
+    cfg = data.get("cfg", {})
+    method = str(cfg.get("method", "")) if isinstance(cfg, dict) else ""
+    source = SourceData(
+        axis,
+        np.asarray(vertices, dtype=np.int64),
+        values,
+        unit=signal_unit,
+        measure="power" if parameter == "pow" else "amplitude",
+        method=method,
+    )
+    return (source,), (
         points,
         triangles,
         transform,

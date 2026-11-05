@@ -64,15 +64,44 @@ class TaskPanel(wx.Panel):
         )
         self.representation.Bind(wx.EVT_CHOICE, self.OnDisplayChanged)
         display_row.Add(self.representation, 1, wx.EXPAND)
-        sizer.Add(display_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 7)
-        hemisphere_row = wx.BoxSizer(wx.HORIZONTAL)
         self.left = wx.CheckBox(self, label=_("Left"))
         self.right = wx.CheckBox(self, label=_("Right"))
         for checkbox in (self.left, self.right):
             checkbox.SetValue(True)
             checkbox.Bind(wx.EVT_CHECKBOX, self.OnDisplayChanged)
-            hemisphere_row.Add(checkbox, 0, wx.RIGHT, 12)
-        sizer.Add(hemisphere_row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 7)
+            display_row.Add(checkbox, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
+        sizer.Add(display_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 7)
+        unit_row = wx.BoxSizer(wx.HORIZONTAL)
+        unit_row.Add(
+            wx.StaticText(self, label=_("Unit:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6
+        )
+        self.signal_unit = wx.ComboBox(self, choices=["a.u."], style=wx.CB_READONLY)
+        self.signal_unit.SetName(_("Imported signal unit"))
+        self.signal_unit.SetToolTip(
+            _(
+                "Unit of the imported samples (1 = dimensionless). Changing it corrects their interpretation without modifying the samples."
+            )
+        )
+        self.display_unit = wx.Choice(self, choices=["a.u."])
+        self.display_unit.SetName(_("Display unit"))
+        self.display_unit.SetToolTip(_("Convert the displayed values to a compatible unit."))
+        unit_row.Add(self.signal_unit, 1)
+        unit_row.Add(
+            wx.StaticText(self, label="→"), 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 5
+        )
+        unit_row.Add(self.display_unit, 1)
+        for control in (self.signal_unit, self.display_unit):
+            control.Bind(
+                wx.EVT_COMBOBOX if control is self.signal_unit else wx.EVT_CHOICE,
+                self.OnSignalDisplayChanged,
+            )
+        self.scale = wx.Choice(self, choices=[_("Auto scale"), _("Original scale")])
+        self.scale.SetToolTip(
+            _("Use one display multiplier for the entire series. Imported values are preserved.")
+        )
+        self.scale.Bind(wx.EVT_CHOICE, self.OnSignalDisplayChanged)
+        unit_row.Add(self.scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
+        sizer.Add(unit_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 7)
         self.SetSizerAndFit(sizer)
         self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         Publisher.subscribe(self.OnSourceChanged, "Source reconstruction changed")
@@ -111,6 +140,50 @@ class TaskPanel(wx.Panel):
         for control in (self.left, self.right):
             if control.IsEnabled() != hemispheres:
                 control.Enable(hemispheres)
+        series = mode.series if loaded else None
+        for control, choices, selected in (
+            (
+                self.signal_unit,
+                series.unit_choices if loaded else ("a.u.",),
+                (series.source_unit or series.unit) if loaded else "a.u.",
+            ),
+            (
+                self.display_unit,
+                series.display_units if loaded else ("a.u.",),
+                series.display_unit if loaded else "a.u.",
+            ),
+        ):
+            if tuple(control.GetItems()) != choices:
+                control.SetItems(list(choices))
+            if control.GetStringSelection() != selected:
+                control.SetStringSelection(selected)
+            control.Enable(loaded)
+        self.scale.Enable(loaded)
+        self.scale.SetSelection(0 if not loaded or series.automatic_scale else 1)
+
+    def OnSignalDisplayChanged(self, event):
+        if self._mode is None or self._mode.series is None:
+            return
+        unit = self.signal_unit.GetStringSelection()
+        display_unit = (
+            unit
+            if event.GetEventObject() is self.signal_unit
+            else self.display_unit.GetStringSelection()
+        )
+        try:
+            Publisher.sendMessage(
+                "Set source reconstruction signal display",
+                unit=unit,
+                display_unit=display_unit,
+                automatic_scale=self.scale.GetSelection() == 0,
+            )
+        except ValueError as error:
+            with dlg.ErrorMessageBox(
+                wx.GetApp().GetTopWindow(), _("Error changing signal units"), str(error)
+            ) as dialog:
+                dialog.ShowModal()
+        finally:
+            self._sync_display_controls()
 
     def OnDisplayChanged(self, event):
         if self._mode is None or not self._mode.display_active:
@@ -155,18 +228,6 @@ class ImportSourceDialog(wx.Dialog):
         self.file_labels = {"signal": _("Source signal:")}
         form = wx.FlexGridSizer(cols=2, vgap=8, hgap=10)
         form.AddGrowableCol(1)
-        form.Add(wx.StaticText(self, label=_("Subject:")), 0, wx.ALIGN_CENTER_VERTICAL)
-        self.subject = wx.DirPickerCtrl(
-            self,
-            message=_("Select the subject folder containing the surf directory"),
-            style=wx.DIRP_USE_TEXTCTRL | wx.DIRP_SMALL | wx.DIRP_DIR_MUST_EXIST,
-        )
-        self.subject.SetToolTip(
-            _(
-                "For STC/MNE H5, select a subject folder or choose surfaces manually. MAT files use their associated mesh."
-            )
-        )
-        form.Add(self.subject, 1, wx.EXPAND)
         form.Add(wx.StaticText(self, label=self.file_labels["signal"]), 0, wx.ALIGN_CENTER_VERTICAL)
         signal_row = wx.BoxSizer(wx.HORIZONTAL)
         self.files["signal"] = wx.FilePickerCtrl(
@@ -181,26 +242,19 @@ class ImportSourceDialog(wx.Dialog):
             )
         )
         signal_row.Add(self.files["signal"], 1, wx.EXPAND)
-        signal_row.Add(
-            wx.StaticText(self, label=_("Unit:")),
-            0,
-            wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
-            8,
-        )
-        self.unit = wx.ComboBox(
+        form.Add(signal_row, 1, wx.EXPAND)
+        form.Add(wx.StaticText(self, label=_("Subject:")), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.subject = wx.DirPickerCtrl(
             self,
-            value="dSPM",
-            choices=["dSPM", "A.m", "nA.m", "sLORETA", "eLORETA", "a.u."],
-            style=wx.CB_DROPDOWN,
-            size=self.FromDIP((110, -1)),
+            message=_("Select the subject folder containing the surf directory"),
+            style=wx.DIRP_USE_TEXTCTRL | wx.DIRP_SMALL | wx.DIRP_DIR_MUST_EXIST,
         )
-        self.unit.SetToolTip(
+        self.subject.SetToolTip(
             _(
-                "Unit or method label for the imported values; no conversion is performed. STC files do not store it."
+                "For STC/MNE H5, select a subject folder or choose surfaces manually. MAT files use their associated mesh."
             )
         )
-        signal_row.Add(self.unit, 0, wx.EXPAND)
-        form.Add(signal_row, 1, wx.EXPAND)
+        form.Add(self.subject, 1, wx.EXPAND)
         main_sizer.Add(form, 0, wx.EXPAND | wx.ALL, 12)
 
         detected = wx.StaticBoxSizer(wx.VERTICAL, self, _("Detected files"))
@@ -558,10 +612,6 @@ class ImportSourceDialog(wx.Dialog):
                 picker.SetFocus()
                 raise ValueError(_("Select an existing file for:") + " " + self.file_labels[key])
             config[key] = str(path.resolve())
-        unit = self.unit.GetValue().strip()
-        if not unit:
-            raise ValueError(_("Enter the signal unit or label used by the reconstruction."))
-        config["unit"] = unit
         mode = self.alignment_mode.GetSelection()
         if mode == 0:
             if self._automatic_alignment is None:

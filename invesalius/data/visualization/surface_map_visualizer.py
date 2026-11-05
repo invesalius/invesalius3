@@ -68,6 +68,7 @@ class ColorBar:
             text_property.SetJustificationToCentered()
             actor.SetNumberOfLabels(2)
             actor.SetTitleTextProperty(text_property)
+            actor.SetVerticalTitleSeparation(20)
         actor.SetTitle(self.title)
         actor.SetPosition(self.position)
         actor.SetVisibility(True)

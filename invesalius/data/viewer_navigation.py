@@ -481,13 +481,14 @@ class NavigationView:
                 self.time_series.set_data(
                     mode.playback,
                     mode.series.global_rms,
-                    mode.series.unit,
                     mode.set_frame,
                     mode.tick,
                 )
-            else:
-                self.time_series.sync()
+            self.time_series.set_display(
+                mode.series.display_scale[0], mode.series.display_title, mode.series.measure
+            )
             self.time_series.set_source(mode.source_values, mode.source_label)
+            self.time_series.sync()
         else:
             playback = self.time_series.playback
             self.time_series.clear()

@@ -65,6 +65,7 @@ class SourceReconstructionMode:
         Publisher.subscribe(self.load, "Load source reconstruction")
         Publisher.subscribe(self.set_frame, "Set source reconstruction frame")
         Publisher.subscribe(self.set_display, "Set source reconstruction display")
+        Publisher.subscribe(self.set_signal_display, "Set source reconstruction signal display")
         Publisher.subscribe(self.brain_changed, "Brain surface changed")
         Publisher.subscribe(self.select_cross_source, "Set cross focal point")
         Publisher.subscribe(self.cross_tool_changed, "Toggle toolbar item")
@@ -191,7 +192,20 @@ class SourceReconstructionMode:
             raise ValueError("Source geometry cannot be represented in project coordinates.")
         values = np.full(polydata.GetNumberOfPoints(), np.nan, dtype=np.float64)
         polydata.GetPointData().SetScalars(numpy_to_vtk(values, deep=True))
-        minimum, maximum = series.scalar_range
+        surface_map = SurfaceMap(
+            polydata,
+            vtkColorTransferFunction(),
+            (0.0, 1.0),
+            series.name,
+            series.display_unit,
+            color_bar=ColorBar(position=(0.82, 0.1), compact=False),
+        )
+        self._set_map_scale(surface_map, series)
+        return surface_map
+
+    def _set_map_scale(self, surface_map, series):
+        factor = series.display_scale[0]
+        minimum, maximum = (value * factor for value in series.scalar_range)
         limit = max(abs(minimum), abs(maximum)) or 1.0
         if minimum >= 0:
             scalar_range = (0.0, limit)
@@ -199,21 +213,40 @@ class SourceReconstructionMode:
             scalar_range = (-limit, 0.0)
         else:
             scalar_range = (-limit, limit)
-        lut = vtkColorTransferFunction()
+        lut = surface_map.lookup_table
+        lut.RemoveAllPoints()
         if scalar_range[0] < 0:
             lut.AddRGBPoint(-limit, 0.15, 0.3, 0.85)
         lut.AddRGBPoint(0, 0.85, 0.85, 0.85)
         if scalar_range[1] > 0:
             lut.AddRGBPoint(limit, 0.85, 0.15, 0.1)
         lut.SetNanColor(0.65, 0.65, 0.65)
-        return SurfaceMap(
-            polydata,
-            lut,
-            scalar_range,
-            series.name,
-            series.unit,
-            color_bar=ColorBar(position=(0.82, 0.1), compact=False, title=series.unit),
-        )
+        surface_map.scalar_range = scalar_range
+        surface_map.unit = series.display_unit or series.unit
+        surface_map.color_bar = replace(surface_map.color_bar, title=series.display_title)
+
+    def set_signal_display(self, unit, display_unit, automatic_scale):
+        if self.series is None:
+            return
+        if not all(isinstance(value, str) and value.strip() for value in (unit, display_unit)):
+            raise ValueError("Select nonempty source and display units.")
+        series = self.series
+        previous = series.source_unit, series.display_unit, series.automatic_scale
+        settings = unit.strip(), display_unit.strip(), bool(automatic_scale)
+        if settings == previous:
+            return
+        series.source_unit, series.display_unit, series.automatic_scale = settings
+        try:
+            series.display_scale
+        except ValueError:
+            series.source_unit, series.display_unit, series.automatic_scale = previous
+            raise
+        for surface_map in (*self._representation_maps.values(), self.surface_map):
+            self._set_map_scale(surface_map, series)
+        if self.token is not None:
+            self._show_frame()
+        else:
+            Publisher.sendMessage("Source reconstruction changed", mode=self)
 
     def supports_surface(self, surface):
         return surface is Project().GetBrainSurface()
@@ -375,7 +408,11 @@ class SourceReconstructionMode:
         values = vtk_to_numpy(scalars)
         mapped = self.series.vertex_sources >= 0
         values.fill(np.nan)
-        values[mapped] = frame[self.series.vertex_sources[mapped]]
+        values[mapped] = np.multiply(
+            frame[self.series.vertex_sources[mapped]],
+            self.series.display_scale[0],
+            dtype=np.float64,
+        )
         scalars.Modified()
         self.frame_index = self.playback.index
         self.painting.update(self.name, self.token, self.surface_map)

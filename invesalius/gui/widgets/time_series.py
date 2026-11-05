@@ -26,7 +26,7 @@ import vtkmodules.vtkRenderingOpenGL2  # noqa: F401
 import wx
 import wx.lib.platebtn as pbtn
 import wx.svg
-from vtkmodules.util.numpy_support import numpy_to_vtk
+from vtkmodules.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 from vtkmodules.vtkChartsCore import vtkAxis, vtkChart, vtkChartXY
 from vtkmodules.vtkCommonDataModel import vtkRectf, vtkTable
 from vtkmodules.vtkRenderingContext2D import vtkPen
@@ -54,6 +54,11 @@ class TimeSeriesPanel(wx.Panel):
         self._source_values = None
         self._source_plot = None
         self._zero_plot = None
+        self._values = None
+        self._display = None
+        self._display_factor = 1.0
+        self._measure = "amplitude"
+        self._source_label = ""
         self.body = body = wx.Panel(self)
         for window in (self, body):
             window.SetBackgroundColour(wx.BLACK)
@@ -86,6 +91,15 @@ class TimeSeriesPanel(wx.Panel):
         text.SetVerticalJustificationToTop()
         text.SetBackgroundOpacity(0)
         self.view.GetRenderer().AddActor2D(self.header)
+        self.scale_label = vtkTextActor()
+        self.scale_label.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
+        self.scale_label.SetPosition(0.5, self.HEADER_Y)
+        text = self.scale_label.GetTextProperty()
+        text.SetColor(0.7, 0.7, 0.7)
+        text.SetFontSize(10)
+        text.SetJustificationToCentered()
+        text.SetVerticalJustificationToTop()
+        self.view.GetRenderer().AddActor2D(self.scale_label)
         for position in (vtkAxis.BOTTOM, vtkAxis.LEFT, vtkAxis.RIGHT):
             axis = self.chart.GetAxis(position)
             axis.SetBehavior(vtkAxis.FIXED)
@@ -196,10 +210,10 @@ class TimeSeriesPanel(wx.Panel):
         # Keep clipping bounds aligned with the chart's vertical offset.
         self.chart.SetSize(vtkRectf(0, -self.GRAPH_OFFSET_Y, width, height))
 
-    def set_data(self, playback, values, unit, on_seek, on_tick):
+    def set_data(self, playback, values, on_seek, on_tick):
         self.clear()
         self.playback = playback
-        self._unit = unit
+        self._values = values
         self.on_seek, self.on_tick = on_seek, on_tick
         axis = playback.axis
         self.time_scale = 1000 if axis.dt < 1 else 1
@@ -239,6 +253,33 @@ class TimeSeriesPanel(wx.Panel):
         self.speed.SetStringSelection(f"{playback.speed:g}x")
         self.sync()
 
+    def set_display(self, factor, title, measure):
+        display = factor, title, measure
+        if self.playback is None or display == self._display:
+            return
+        self._display = display
+        self._display_factor = factor
+        self._measure = measure
+        self.scale_label.SetInput(title)
+        column = self.table.GetColumn(1)
+        values = vtk_to_numpy(column)
+        values[:] = self._values * factor
+        column.Modified()
+        self.table.Modified()
+        limit = float(np.max(values)) * 1.1 or 1.0
+        left = self.chart.GetAxis(vtkAxis.LEFT)
+        left.SetRange(0, limit)
+        left.SetPrecision(max(0, 2 - floor(log10(limit))))
+        cursor = self.cursor_table.GetColumn(1)
+        cursor.SetValue(1, limit)
+        cursor.Modified()
+        self.cursor_table.Modified()
+        if self._source_values is not None:
+            source = self._source_values
+            self._source_values = None
+            self.set_source(source, self._source_label)
+        self.chart.RecalculateBounds()
+
     def set_source(self, values, label):
         if self.playback is None or values is self._source_values:
             return
@@ -247,14 +288,16 @@ class TimeSeriesPanel(wx.Panel):
                 self.chart.RemovePlotInstance(plot)
         self._source_plot = self._zero_plot = None
         self._source_values = values
+        self._source_label = label
         axis = self.chart.GetAxis(vtkAxis.RIGHT)
         axis.SetVisible(values is not None)
         if values is not None:
-            low = min(0.0, float(np.min(values)))
-            high = max(0.0, float(np.max(values)))
+            displayed = np.asarray(values, dtype=np.float64) * self._display_factor
+            low = min(0.0, float(np.min(displayed)))
+            high = max(0.0, float(np.max(displayed)))
             margin = (high - low) * 0.1 or 1.0
             low, high = low - margin, high + margin
-            axis.SetTitle(_("Amplitude"))
+            axis.SetTitle(_("Power") if self._measure == "power" else _("Amplitude"))
             bottom = self.chart.GetAxis(vtkAxis.BOTTOM)
             zero_table = vtkTable()
             for name, data in (
@@ -273,7 +316,7 @@ class TimeSeriesPanel(wx.Panel):
             table = vtkTable()
             table.AddColumn(self.table.GetColumn(0))
             # STC values are big-endian; VTK needs native-endian values.
-            column = numpy_to_vtk(np.asarray(values, dtype=np.float64), deep=True)
+            column = numpy_to_vtk(displayed, deep=True)
             column.SetName("Source")
             table.AddColumn(column)
             self._source_plot = self.chart.AddPlot(vtkChart.LINE)
@@ -330,6 +373,12 @@ class TimeSeriesPanel(wx.Panel):
         self.playback = None
         self.on_seek = self.on_tick = None
         self._source_values = None
+        self._values = None
+        self._display = None
+        self._display_factor = 1.0
+        self._measure = "amplitude"
+        self._source_label = ""
+        self.scale_label.SetInput("")
         for plot in (self._source_plot, self._zero_plot):
             if plot is not None:
                 self.chart.RemovePlotInstance(plot)
@@ -425,6 +474,7 @@ class TimeSeriesPanel(wx.Panel):
             self.sync()
         self._on_release(None)
         self.chart.SetVisible(not self._collapsed)
+        self.scale_label.SetVisibility(not self._collapsed)
         self._footer_item.Show(not self._collapsed)
         self.canvas.SetMinSize(
             (
