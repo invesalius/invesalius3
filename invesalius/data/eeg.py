@@ -537,6 +537,8 @@ class CorticalSourceSeries:
     name: str
     unit: str
     global_rms: np.ndarray
+    hemisphere_sizes: tuple[int, int]
+    surface_to_project_ras: np.ndarray
     subject_files: dict[str, dict[str, Path]] = field(default_factory=dict)
 
     @property
@@ -555,6 +557,52 @@ class CorticalSourceSeries:
                 return stc.values[:, source_index]
             source_index -= len(stc.vertices)
         raise IndexError("Source index is outside the source series.")
+
+    @property
+    def representations(self):
+        return ("pial",) + tuple(
+            name
+            for name in ("white", "inflated")
+            if all(side in self.subject_files.get(name, {}) for side in ("lh", "rh"))
+        )
+
+    def read_surface_points(self, representation):
+        """Read display coordinates while keeping pial's vertex IDs and topology."""
+        if representation == "pial":
+            return self.points
+        if representation not in self.representations:
+            raise ValueError("The cortical representation requires files for both hemispheres.")
+        points = []
+        offset = 0
+        for side, count in zip(("lh", "rh"), self.hemisphere_sizes):
+            vertices, faces = nib.freesurfer.read_geometry(self.subject_files[representation][side])
+            reference = (
+                self.triangles[
+                    (self.triangles[:, 0] >= offset) & (self.triangles[:, 0] < offset + count)
+                ]
+                - offset
+            )
+            if (
+                vertices.shape != (count, 3)
+                or not np.isfinite(vertices).all()
+                or not np.array_equal(faces, reference)
+            ):
+                raise ValueError(
+                    f"The {side} {representation} surface is incompatible with the pial mesh."
+                )
+            points.append(vertices)
+            offset += count
+        if representation == "inflated":
+            # Inflated hemispheres can overlap in surface RAS; separate them only for display.
+            left, right = points
+            gap = 0.05 * max(np.ptp(left[:, 0]), np.ptp(right[:, 0]))
+            shift = max(0.0, left[:, 0].max() - right[:, 0].min() + gap) / 2
+            left[:, 0] -= shift
+            right[:, 0] += shift
+        registered = nib.affines.apply_affine(self.surface_to_project_ras, np.concatenate(points))
+        if not np.isfinite(registered).all():
+            raise ValueError("The cortical representation has invalid project coordinates.")
+        return registered
 
 
 def _affine(matrix):
@@ -734,6 +782,7 @@ def read_source_reconstruction(config, base_dir="."):
         triangles.append(faces.astype(np.int64) + offset)
         source_vertices.append(stc.vertices.astype(np.int64) + offset)
         offset += len(vertices)
+    hemisphere_sizes = tuple(len(vertices) for vertices in points)
     points = np.concatenate(points)
     triangles = np.concatenate(triangles)
     source_vertices = np.concatenate(source_vertices)
@@ -752,5 +801,7 @@ def read_source_reconstruction(config, base_dir="."):
         name,
         config["unit"],
         global_rms,
+        hemisphere_sizes=hemisphere_sizes,
+        surface_to_project_ras=surface_to_project,
         subject_files=subject_files,
     )

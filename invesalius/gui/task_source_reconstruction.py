@@ -27,6 +27,7 @@ import wx
 import invesalius.gui.dialogs as dlg
 from invesalius.data.eeg import MissingSurfaceGeometryError, discover_subject_files
 from invesalius.data.image_registration import register_image_to_volume
+from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
@@ -41,11 +42,93 @@ class TaskPanel(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(button, 0, wx.ALL | wx.EXPAND, 7)
+        display_row = wx.BoxSizer(wx.HORIZONTAL)
+        self.display_label = wx.StaticText(self, label=_("Display:"))
+        display_row.Add(self.display_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        self._representation_labels = {
+            "pial": _("Pial"),
+            "white": _("White"),
+            "inflated": _("Inflated"),
+        }
+        self._representations = ("pial",)
+        self.representation = wx.Choice(self, choices=[self._representation_labels["pial"]])
+        self.representation.SetSelection(0)
+        self.representation.SetToolTip(
+            _("Select EEG/MEG color mapping on Brain to change its cortical representation.")
+        )
+        self.representation.Bind(wx.EVT_CHOICE, self.OnDisplayChanged)
+        display_row.Add(self.representation, 1, wx.EXPAND)
+        sizer.Add(display_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 7)
+        hemisphere_row = wx.BoxSizer(wx.HORIZONTAL)
+        self.left = wx.CheckBox(self, label=_("Left"))
+        self.right = wx.CheckBox(self, label=_("Right"))
+        for checkbox in (self.left, self.right):
+            checkbox.SetValue(True)
+            checkbox.Bind(wx.EVT_CHECKBOX, self.OnDisplayChanged)
+            hemisphere_row.Add(checkbox, 0, wx.RIGHT, 12)
+        sizer.Add(hemisphere_row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 7)
         self.SetSizerAndFit(sizer)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+        Publisher.subscribe(self.OnSourceChanged, "Source reconstruction changed")
+        self._mode = SurfacePainting().modes.get("EEG/MEG")
+        self._sync_display_controls()
 
     def OnImport(self, event):
         with ImportSourceDialog(wx.GetApp().GetTopWindow()) as dialog:
             dialog.ShowModal()
+
+    def OnSourceChanged(self, mode):
+        self._mode = mode
+        self._sync_display_controls()
+
+    def _sync_display_controls(self):
+        mode = self._mode
+        loaded = mode is not None and mode.series is not None
+        representations = mode.series.representations if loaded else ("pial",)
+        if representations != self._representations:
+            self._representations = representations
+            self.representation.SetItems(
+                [self._representation_labels[key] for key in representations]
+            )
+        selected = representations.index(mode.representation if loaded else "pial")
+        if self.representation.GetSelection() != selected:
+            self.representation.SetSelection(selected)
+        visible = mode.hemispheres_visible if loaded else (True, True)
+        for checkbox, checked in zip((self.left, self.right), visible):
+            if checkbox.GetValue() != checked:
+                checkbox.SetValue(checked)
+        active = loaded and mode.display_active
+        for control in (self.display_label, self.representation, self.left, self.right):
+            if control.IsEnabled() != active:
+                control.Enable(active)
+
+    def OnDisplayChanged(self, event):
+        if self._mode is None or not self._mode.display_active:
+            self._sync_display_controls()
+            return
+        index = self.representation.GetSelection()
+        if index == wx.NOT_FOUND:
+            return
+        try:
+            with wx.BusyCursor():
+                Publisher.sendMessage(
+                    "Set source reconstruction display",
+                    representation=self._representations[index],
+                    left=self.left.GetValue(),
+                    right=self.right.GetValue(),
+                )
+        except Exception as error:
+            with dlg.ErrorMessageBox(
+                wx.GetApp().GetTopWindow(), _("Error changing source display"), str(error)
+            ) as dialog:
+                dialog.ShowModal()
+        finally:
+            self._sync_display_controls()
+
+    def OnDestroy(self, event):
+        if event.GetEventObject() is self:
+            Publisher.unsubscribe_owner(self)
+        event.Skip()
 
 
 class ImportSourceDialog(wx.Dialog):
@@ -252,8 +335,10 @@ class ImportSourceDialog(wx.Dialog):
             section.GetPane().Layout()
             section.InvalidateBestSize()
         self.Layout()
-        minimum = self.GetSizer().GetMinSize()
+        # Sizer dimensions exclude the title bar and borders included by SetSize.
+        minimum = self.ClientToWindowSize(self.GetSizer().GetMinSize())
         self.SetSize((max(self.GetSize().width, minimum.width), minimum.height))
+        self.Layout()
 
     def OnLayoutChanged(self, event):
         self._resize_dialog()

@@ -19,6 +19,8 @@
 
 """Offline cortical source maps using the existing surface painting lifecycle."""
 
+from dataclasses import replace
+
 import numpy as np
 from vtkmodules.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray, vtk_to_numpy
 from vtkmodules.vtkCommonCore import vtkPoints
@@ -49,12 +51,17 @@ class SourceReconstructionMode:
         self.frame_index = None
         self.selected_source = None
         self.source_values = None
+        self.representation = "pial"
+        self.hemispheres_visible = (True, True)
+        self._representation_maps = {}
+        self._cross_position = None
         self._source_locator = None
         self._cross_enabled = False
         self.available = False
         self.painting.register(self)
         Publisher.subscribe(self.load, "Load source reconstruction")
         Publisher.subscribe(self.set_frame, "Set source reconstruction frame")
+        Publisher.subscribe(self.set_display, "Set source reconstruction display")
         Publisher.subscribe(self.brain_changed, "Brain surface changed")
         Publisher.subscribe(self.select_cross_source, "Set cross focal point")
         Publisher.subscribe(self.cross_tool_changed, "Toggle toolbar item")
@@ -94,10 +101,18 @@ class SourceReconstructionMode:
             self.playback,
             self.selected_source,
             self.source_values,
+            self.representation,
+            self.hemispheres_visible,
+            self._representation_maps,
+            self._cross_position,
         )
         previous_mode = surface.painting_mode
         self.painting.reset(self)
         self.series, self.surface_map = series, surface_map
+        self.representation = "pial"
+        self.hemispheres_visible = (True, True)
+        self._representation_maps = {"pial": surface_map}
+        self._cross_position = None
         self.playback = Playback(series.axis)
         self.selected_source = self.source_values = None
         self._source_locator = None
@@ -114,6 +129,10 @@ class SourceReconstructionMode:
                 self.playback,
                 self.selected_source,
                 self.source_values,
+                self.representation,
+                self.hemispheres_visible,
+                self._representation_maps,
+                self._cross_position,
             ) = previous
             self.frame_index = None
             self.painting.set_available(self, self.series is not None)
@@ -125,11 +144,12 @@ class SourceReconstructionMode:
                     Publisher.sendMessage(
                         "Remove surfaces", surface_indexes=[created_surface.index]
                     )
+            Publisher.sendMessage("Source reconstruction changed", mode=self)
             raise
         if created_surface is not None:
             Publisher.sendMessage("Repopulate surfaces")
 
-    def _create_map(self, series):
+    def _create_map(self, series, surface_points=None):
         from invesalius.data.slice_ import Slice
 
         slic = Slice()
@@ -142,7 +162,9 @@ class SourceReconstructionMode:
         ):
             raise ValueError("The project must have valid anatomical world coordinates.")
         points = vtkPoints()
-        points.SetData(numpy_to_vtk(series.points, deep=True))
+        points.SetData(
+            numpy_to_vtk(series.points if surface_points is None else surface_points, deep=True)
+        )
         connectivity = np.column_stack(
             [np.full(len(series.triangles), 3, dtype=np.int64), series.triangles]
         ).ravel()
@@ -197,6 +219,69 @@ class SourceReconstructionMode:
         surface = Project().GetBrainSurface()
         return surface if surface is not None and surface.supports_painting else None
 
+    @property
+    def display_active(self):
+        surface = self.painting.targets.get(self.name)
+        return (
+            self.token is not None
+            and surface is Project().GetBrainSurface()
+            and surface is not None
+            and surface.painting_mode == self.name
+        )
+
+    def set_display(self, representation, left, right):
+        if self.series is None or not self.display_active:
+            raise ValueError("Select the EEG/MEG color map on Brain before changing its display.")
+        visible = (left, right)
+        if representation == self.representation and visible == self.hemispheres_visible:
+            return
+        candidate = self._representation_maps.get(representation)
+        if candidate is None:
+            candidate = self._create_map(
+                self.series, self.series.read_surface_points(representation)
+            )
+        triangles = vtk_to_numpy(candidate.polydata.GetPolys().GetConnectivityArray()).reshape(
+            -1, 3
+        )
+        left_faces = triangles[:, 0] < self.series.hemisphere_sizes[0]
+        triangles = triangles[(left_faces & left) | (~left_faces & right)]
+        connectivity = np.column_stack(
+            [np.full(len(triangles), 3, dtype=np.int64), triangles]
+        ).ravel()
+        cells = vtkCellArray()
+        cells.SetCells(len(triangles), numpy_to_vtkIdTypeArray(connectivity, deep=True))
+        # Keep every point ID: hiding a hemisphere only removes its displayed triangles.
+        polydata = vtkPolyData()
+        polydata.ShallowCopy(candidate.polydata)
+        polydata.SetPolys(cells)
+        display = replace(candidate, polydata=polydata)
+        previous = (
+            self.surface_map,
+            self.representation,
+            self.hemispheres_visible,
+            self.selected_source,
+            self.source_values,
+        )
+        self._representation_maps[representation] = candidate
+        self.surface_map = display
+        self.representation = representation
+        self.hemispheres_visible = visible
+        try:
+            if self._cross_position is not None:
+                self.select_cross_source(self._cross_position)
+            self._show_frame()
+        except Exception:
+            (
+                self.surface_map,
+                self.representation,
+                self.hemispheres_visible,
+                self.selected_source,
+                self.source_values,
+            ) = previous
+            self.painting.update(self.name, self.token, self.surface_map)
+            Publisher.sendMessage("Source reconstruction changed", mode=self)
+            raise
+
     def brain_changed(self, previous, surface):
         target = self.painting.targets.get(self.name)
         if target is not None and target is not surface:
@@ -247,9 +332,10 @@ class SourceReconstructionMode:
             return
         if point.shape != (3,) or not np.isfinite(point).all():
             return
+        self._cross_position = point.copy()
         # Cross coordinates use the slice convention; the source mesh uses the 3D convention.
         point = point * [1, -1, 1]
-        polydata = self.surface_map.polydata
+        polydata = self._representation_maps["pial"].polydata
         bounds = polydata.GetBounds()
         source_index = None
         if all(bounds[2 * axis] <= point[axis] <= bounds[2 * axis + 1] for axis in range(3)):
@@ -260,7 +346,8 @@ class SourceReconstructionMode:
             vertex = self._source_locator.FindClosestPoint(point)
             if vertex >= 0:
                 mapped = int(self.series.vertex_sources[vertex])
-                if mapped >= 0:
+                hemisphere = 0 if vertex < self.series.hemisphere_sizes[0] else 1
+                if mapped >= 0 and self.hemispheres_visible[hemisphere]:
                     source_index = mapped
         if source_index == self.selected_source:
             return
@@ -299,4 +386,8 @@ class SourceReconstructionMode:
         self.frame_index = None
         self.selected_source = self.source_values = None
         self._source_locator = None
+        self._cross_position = None
+        self._representation_maps.clear()
+        self.representation = "pial"
+        self.hemispheres_visible = (True, True)
         Publisher.sendMessage("Source reconstruction changed", mode=self)
