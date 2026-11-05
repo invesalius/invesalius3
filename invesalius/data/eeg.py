@@ -30,14 +30,19 @@ from tempfile import TemporaryDirectory
 from time import time_ns
 from uuid import uuid4
 
+import h5py
 import nibabel as nib
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.io import loadmat
+from scipy.sparse import csc_matrix, csr_matrix, issparse
 from scipy.sparse.csgraph import dijkstra
+from scipy.spatial import cKDTree
 
 from invesalius.data.time_series import TimeAxis
 from invesalius.i18n import tr as _
 from invesalius.reader.others_reader import read_image
+
+# Electrodes and montage exports
 
 
 @dataclass
@@ -450,86 +455,39 @@ class EEGMontage:
         return fiducials
 
 
+# Source data models and import requirements
+
+
 @dataclass
-class STC:
+class SourceData:
     axis: TimeAxis
     vertices: np.ndarray
-    values: np.ndarray
+    values: "np.ndarray | _H5SourceValues"
+
+    def __post_init__(self):
+        self.vertices = np.asarray(self.vertices)
+        if (
+            self.vertices.ndim != 1
+            or self.vertices.dtype.kind not in "iu"
+            or np.any(self.vertices < 0)
+            or len(np.unique(self.vertices)) != len(self.vertices)
+            or self.values.shape != (self.axis.n_frames, len(self.vertices))
+            or self.values.dtype.kind not in "iuf"
+        ):
+            raise ValueError(
+                "Source values must be real samples with unique nonnegative vertex IDs."
+            )
+        self.vertices.flags.writeable = False
+        if isinstance(self.values, np.ndarray):
+            self.values.flags.writeable = False
 
     def read_frame(self, frame_index):
         return self.values[self.axis.check_index(frame_index)]
 
 
-def read_stc(filename):
-    """Validate the header and map values read-only, loading one frame at a time.
-
-    The big-endian layout is tmin/dt (float32 milliseconds), vertex count
-    (uint32), vertex IDs (uint32), frame count (uint32), then float32 values
-    in frame-major order. Reference: mne-python/mne/source_estimate.py::_read_stc.
-    """
-    with Path(filename).open("rb") as stream:
-        stream.seek(0, 2)
-        size = stream.tell()
-        stream.seek(0)
-        if size < 16:
-            raise ValueError("Truncated STC header.")
-        t0, dt, n_vertices = unpack(">ffI", stream.read(12))
-        offset = 16 + 4 * n_vertices
-        if offset > size:
-            raise ValueError("Truncated STC vertex list.")
-        vertices = np.fromfile(stream, dtype=">u4", count=n_vertices)
-        n_frames = unpack(">I", stream.read(4))[0]
-        axis = TimeAxis(t0 / 1000, dt / 1000, n_frames)
-        if size != offset + 4 * n_vertices * n_frames:
-            raise ValueError("STC file size does not match its vertex and frame counts.")
-        if len(np.unique(vertices)) != n_vertices:
-            raise ValueError("STC vertex IDs must be unique.")
-        vertices.flags.writeable = False
-        values = (
-            np.memmap(stream, dtype=">f4", mode="r", offset=offset, shape=(n_frames, n_vertices))
-            if n_vertices
-            else np.empty((n_frames, 0), dtype=">f4")
-        )
-        values.flags.writeable = False
-    return STC(axis, vertices, values)
-
-
-def read_stc_pair(filename):
-    """Load the matching lh/rh files and require a common time axis."""
-    filename = Path(filename)
-    if not filename.name.endswith(("-lh.stc", "-rh.stc")):
-        raise ValueError("Select a cortical STC file ending in '-lh.stc' or '-rh.stc'.")
-    stem = filename.name[:-7]
-    pair = tuple(read_stc(filename.with_name(f"{stem}-{side}.stc")) for side in ("lh", "rh"))
-    left, right = pair
-    if left.axis != right.axis:
-        raise ValueError("The STC hemispheres have different time axes.")
-    if not len(left.vertices) + len(right.vertices):
-        raise ValueError("The STC pair does not contain any sources.")
-    return pair
-
-
-def discover_subject_files(subject_dir):
-    """Find cortical surfaces and curvature in a FreeSurfer/FastSurfer subject directory."""
-    subject_dir = Path(subject_dir).expanduser().resolve()
-    surface_dir = subject_dir / "surf"
-    if not subject_dir.is_dir() or not surface_dir.is_dir():
-        raise ValueError(
-            "Select a FreeSurfer/FastSurfer subject folder containing a 'surf' directory."
-        )
-    files = {}
-    for kind in ("pial", "white", "inflated", "curv"):
-        files[kind] = {}
-        for side in ("lh", "rh"):
-            path = surface_dir / f"{side}.{kind}"
-            if path.is_file():
-                files[kind][side] = path
-    return files
-
-
 @dataclass
 class CorticalSourceSeries:
-    hemispheres: tuple[STC, STC]
+    sources: tuple[SourceData, ...]
     points: np.ndarray
     triangles: np.ndarray
     vertex_sources: np.ndarray
@@ -537,38 +495,55 @@ class CorticalSourceSeries:
     name: str
     unit: str
     global_rms: np.ndarray
-    hemisphere_sizes: tuple[int, int]
+    hemisphere_sizes: tuple[int, ...]
     surface_to_project_ras: np.ndarray
     subject_files: dict[str, dict[str, Path]] = field(default_factory=dict)
 
     @property
     def axis(self):
-        return self.hemispheres[0].axis
+        return self.sources[0].axis
+
+    @property
+    def has_hemispheres(self):
+        return len(self.hemisphere_sizes) == 2
 
     def read_frame(self, frame_index):
-        """Return the sampled sources, in lh then rh order, without spatial resampling."""
-        return np.concatenate([stc.read_frame(frame_index) for stc in self.hemispheres])
+        """Return source samples in their imported order, without spatial resampling."""
+        return np.concatenate([source.read_frame(frame_index) for source in self.sources])
 
     def read_source(self, source_index):
-        """Read a source's original time course, using read_frame's lh-then-rh source order."""
+        """Read a source's time course using the same source order as read_frame."""
         source_index = operator.index(source_index)
-        for stc in self.hemispheres:
-            if 0 <= source_index < len(stc.vertices):
-                return stc.values[:, source_index]
-            source_index -= len(stc.vertices)
+        for source in self.sources:
+            if 0 <= source_index < len(source.vertices):
+                return source.values[:, source_index]
+            source_index -= len(source.vertices)
+        raise IndexError("Source index is outside the source series.")
+
+    def source_label(self, source_index):
+        for index, source in enumerate(self.sources):
+            if 0 <= source_index < len(source.vertices):
+                prefix = ("LH", "RH")[index] if self.has_hemispheres else "Source"
+                vertex = int(source.vertices[source_index])
+                return f"{prefix} {vertex if self.has_hemispheres else vertex + 1}"
+            source_index -= len(source.vertices)
         raise IndexError("Source index is outside the source series.")
 
     @property
     def representations(self):
-        return ("pial",) + tuple(
+        return (self.base_representation,) + tuple(
             name
             for name in ("white", "inflated")
             if all(side in self.subject_files.get(name, {}) for side in ("lh", "rh"))
         )
 
+    @property
+    def base_representation(self):
+        return "pial" if self.has_hemispheres else "surface"
+
     def read_surface_points(self, representation):
         """Read display coordinates while keeping pial's vertex IDs and topology."""
-        if representation == "pial":
+        if representation == self.base_representation:
             return self.points
         if representation not in self.representations:
             raise ValueError("The cortical representation requires files for both hemispheres.")
@@ -605,6 +580,209 @@ class CorticalSourceSeries:
         return registered
 
 
+class SourceImportRequired(ValueError):
+    """Request a missing companion file or an explicit choice without depending on wx."""
+
+    def __init__(self, key, message, choices=()):
+        super().__init__(message)
+        self.key = key
+        self.choices = tuple(choices)
+
+
+class MissingSurfaceGeometryError(ValueError):
+    """A reference MRI is needed because the surface has no usable volume metadata."""
+
+
+# Source import pipeline
+
+
+def read_source_config(filename):
+    """Read a source reconstruction configuration from JSON."""
+    filename = Path(filename)
+    with filename.open(encoding="utf-8") as stream:
+        config = json.load(stream)
+    return read_source_reconstruction(config, filename.parent)
+
+
+def read_source_reconstruction(config, base_dir="."):
+    """Validate the signal, mesh and alignment before changing the project."""
+    base_dir = Path(base_dir)
+    if not isinstance(config, dict):
+        raise ValueError("Source configuration must be a dictionary.")
+    signal_key = "signal" if "signal" in config else "stc"
+    required = (signal_key, "unit", "scanner_ras_to_project_ras")
+    if any(key not in config for key in required):
+        raise ValueError(f"Source configuration requires: {', '.join(required)}.")
+    for key in (signal_key, "unit"):
+        if not isinstance(config[key], str) or not config[key].strip():
+            raise ValueError(f"Source configuration '{key}' must be a nonempty string.")
+    filename = base_dir / config[signal_key]
+    sources, mesh = read_source_data(filename, config)
+    name = config.get("name", filename.stem.removesuffix("-lh").removesuffix("-rh"))
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("Source name must be a nonempty string.")
+    registration = _affine(config["scanner_ras_to_project_ras"])
+    if mesh is None:
+        points, triangles, source_vertices, hemisphere_sizes, subject_files, surface_to_scanner = (
+            _read_freesurfer_source_mesh(config, base_dir, sources)
+        )
+    else:
+        points, triangles, surface_to_scanner = mesh
+        source_vertices = np.concatenate([source.vertices for source in sources])
+        hemisphere_sizes, subject_files = (), {}
+    surface_to_project = _affine(registration @ surface_to_scanner)
+    scalar_range, global_rms = _source_statistics(sources)
+    vertex_sources = _vertex_sources(points, triangles, source_vertices)
+    registered_points = nib.affines.apply_affine(surface_to_project, points)
+    if not np.isfinite(registered_points).all():
+        raise ValueError("Registered source geometry must be finite.")
+    return CorticalSourceSeries(
+        sources,
+        registered_points,
+        triangles,
+        vertex_sources,
+        scalar_range,
+        name,
+        config["unit"],
+        global_rms,
+        hemisphere_sizes=hemisphere_sizes,
+        surface_to_project_ras=surface_to_project,
+        subject_files=subject_files,
+    )
+
+
+def read_source_data(filename, config):
+    """Detect cortical source formats by their container and documented field signatures."""
+    filename = Path(filename).expanduser().resolve()
+    if filename.suffix.lower() == ".stc":
+        return read_stc_pair(filename), None
+    if h5py.is_hdf5(filename):
+        with h5py.File(filename, "r") as stream:
+            if "mnepython" in stream:
+                return _read_mne_h5(filename, config), None
+    elif filename.suffix.lower() != ".mat":
+        raise ValueError("Select an STC, MNE H5, or Brainstorm/FieldTrip MAT source file.")
+    candidates = _mat_source_candidates(_read_mat_file(filename))
+    if not candidates:
+        raise ValueError("No Brainstorm or FieldTrip source reconstruction was found in this file.")
+    selected = _source_choice(
+        config,
+        "source_variable",
+        "Select the source reconstruction stored in this MAT file.",
+        tuple(candidates),
+    )
+    data = candidates[selected]
+    if "ImageGridAmp" in data or "ImagingKernel" in data:
+        return _read_brainstorm_source(filename, data, config)
+    return _read_fieldtrip_source(filename, data, config)
+
+
+# Shared source import helpers
+
+
+def _source_choice(config, key, message, choices):
+    if not choices:
+        raise ValueError(f"No supported source data is available for {key}.")
+    selected = config.get(key)
+    if selected is None and len(choices) == 1:
+        return choices[0]
+    if selected is None:
+        raise SourceImportRequired(key, message, choices)
+    if selected not in choices:
+        raise ValueError(f"Invalid source import selection for {key}.")
+    return selected
+
+
+def _source_axis(times):
+    times = np.asarray(times)
+    if times.dtype.kind not in "iuf" or times.ndim > 2:
+        raise ValueError("Source times must be a real vector in seconds.")
+    if times.ndim == 2 and min(times.shape) != 1:
+        raise ValueError("Source times must be a vector in seconds.")
+    times = times.ravel().astype(float)
+    if not len(times) or not np.isfinite(times).all():
+        raise ValueError("Source times must be nonempty and finite.")
+    dt = float(times[1] - times[0]) if len(times) > 1 else 1.0
+    axis = TimeAxis(float(times[0]), dt, len(times))
+    if not np.allclose(times, axis.t0 + np.arange(len(times)) * dt, rtol=1e-6, atol=1e-9):
+        raise ValueError("Source playback requires uniformly sampled, increasing times.")
+    return axis
+
+
+def _has_source_values(value):
+    if isinstance(value, (list, tuple, dict)):
+        return bool(value)
+    return bool(np.prod(value.shape)) if issparse(value) else bool(np.size(value))
+
+
+def _source_component(config):
+    return _source_choice(
+        config,
+        "source_component",
+        "Vector source data: select a component or the vector magnitude for visualization.",
+        ("Component 1", "Component 2", "Component 3", "Magnitude"),
+    )
+
+
+def _source_companion(filename, config, key, message, reference=""):
+    if config.get(key):
+        path = Path(config[key])
+        return path if path.is_absolute() else filename.parent / path
+    if isinstance(reference, str) and reference:
+        relative = Path(reference.replace("\\", "/"))
+        candidates = [filename.parent / relative, filename.parent / relative.name]
+        for parent in list(filename.parents)[:4]:
+            candidates.extend(
+                (parent / relative, parent / "anat" / relative, parent / "data" / relative)
+            )
+        for path in candidates:
+            if path.is_file():
+                return path
+    raise SourceImportRequired(key, message)
+
+
+def _scalar_source_values(data, count, axis, config, components=1):
+    data = data.toarray() if issparse(data) else np.asarray(data)
+    if data.dtype.kind not in "iuf" or components not in (1, 3):
+        raise ValueError("Only real scalar or three-component source time courses are supported.")
+    if data.shape != (count * components, axis.n_frames):
+        if data.ndim > 1 or data.size != count * components * axis.n_frames:
+            raise ValueError("Source values do not match their positions and time samples.")
+        data = data.reshape(count * components, axis.n_frames)
+    if components == 3:
+        component = _source_component(config)
+        data = data.reshape(count, 3, axis.n_frames)
+        data = (
+            np.linalg.norm(data, axis=1)
+            if component == "Magnitude"
+            else data[:, ("Component 1", "Component 2", "Component 3").index(component), :]
+        )
+    return data.T
+
+
+def _source_statistics(hemispheres):
+    if not sum(len(source.vertices) for source in hemispheres):
+        raise ValueError("The source reconstruction does not contain any sources.")
+    minimum, maximum = float("inf"), float("-inf")
+    rms = np.zeros(hemispheres[0].axis.n_frames, dtype=np.float64)
+    for stc in hemispheres:
+        if not len(stc.vertices):
+            continue
+        frames_per_chunk = max(1, 1_000_000 // len(stc.vertices))
+        for start in range(0, stc.axis.n_frames, frames_per_chunk):
+            chunk = stc.values[start : start + frames_per_chunk]
+            if not np.isfinite(chunk).all():
+                raise ValueError("Source values must be finite.")
+            minimum = min(minimum, float(chunk.min()))
+            maximum = max(maximum, float(chunk.max()))
+            # Square in float64 to preserve tiny amplitudes and avoid float32 overflow.
+            rms[start : start + len(chunk)] += np.square(chunk, dtype=np.float64).sum(axis=1)
+    rms /= sum(len(stc.vertices) for stc in hemispheres)
+    np.sqrt(rms, out=rms)
+    rms.flags.writeable = False
+    return (minimum, maximum), rms
+
+
 def _affine(matrix):
     matrix = np.asarray(matrix, dtype=float)
     if (
@@ -617,8 +795,72 @@ def _affine(matrix):
     return matrix
 
 
-class MissingSurfaceGeometryError(ValueError):
-    """A reference MRI is needed because the surface has no usable volume metadata."""
+def _validate_source_mesh(points, triangles):
+    points, triangles = np.asarray(points), np.asarray(triangles)
+    if triangles.ndim == 1 and triangles.size == 3:
+        triangles = triangles.reshape(1, 3)
+    if (
+        points.dtype.kind not in "iuf"
+        or points.ndim != 2
+        or points.shape[1] != 3
+        or not len(points)
+        or not np.isfinite(points).all()
+        or triangles.dtype.kind not in "iuf"
+        or triangles.ndim != 2
+        or triangles.shape[1] != 3
+        or not len(triangles)
+        or not np.isfinite(triangles).all()
+        or np.any(triangles != np.floor(triangles))
+        or triangles.min() < 0
+        or triangles.max() >= len(points)
+    ):
+        raise ValueError("Source geometry requires finite vertices and valid triangular faces.")
+    return points.astype(float), triangles.astype(np.int64)
+
+
+def _vertex_sources(points, triangles, source_vertices):
+    """Assign the nearest sampled source along mesh edges, never across a sulcus."""
+    if len(source_vertices) == len(points):
+        result = np.empty(len(points), dtype=np.int64)
+        result[source_vertices] = np.arange(len(source_vertices))
+        return result
+    edges = np.concatenate([triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]]])
+    edges = np.unique(np.sort(edges, axis=1), axis=0)
+    lengths = np.linalg.norm(points[edges[:, 0]] - points[edges[:, 1]], axis=1)
+    graph = csr_matrix(
+        (np.tile(lengths, 2), (edges.T.ravel(), edges[:, ::-1].T.ravel())),
+        shape=(len(points), len(points)),
+    )
+    _, _, nearest = dijkstra(
+        graph, indices=source_vertices, min_only=True, return_predecessors=True
+    )
+    rows = np.full(len(points), -1, dtype=np.int64)
+    rows[source_vertices] = np.arange(len(source_vertices))
+    mapped = nearest >= 0
+    result = np.full(len(points), -1, dtype=np.int64)
+    result[mapped] = rows[nearest[mapped]]
+    return result
+
+
+# FreeSurfer anatomy
+
+
+def discover_subject_files(subject_dir):
+    """Find cortical surfaces and curvature in a FreeSurfer/FastSurfer subject directory."""
+    subject_dir = Path(subject_dir).expanduser().resolve()
+    surface_dir = subject_dir / "surf"
+    if not subject_dir.is_dir() or not surface_dir.is_dir():
+        raise ValueError(
+            "Select a FreeSurfer/FastSurfer subject folder containing a 'surf' directory."
+        )
+    files = {}
+    for kind in ("pial", "white", "inflated", "curv"):
+        files[kind] = {}
+        for side in ("lh", "rh"):
+            path = surface_dir / f"{side}.{kind}"
+            if path.is_file():
+                files[kind][side] = path
+    return files
 
 
 def _surface_to_scanner_ras(metadata):
@@ -653,72 +895,13 @@ def _surface_to_scanner_ras(metadata):
     return _affine(_affine(header.get_affine()) @ np.linalg.inv(_affine(header.get_vox2ras_tkr())))
 
 
-def _vertex_sources(points, triangles, source_vertices):
-    """Assign the nearest sampled source along mesh edges, never across a sulcus."""
-    edges = np.concatenate([triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]]])
-    edges = np.unique(np.sort(edges, axis=1), axis=0)
-    lengths = np.linalg.norm(points[edges[:, 0]] - points[edges[:, 1]], axis=1)
-    graph = csr_matrix(
-        (np.tile(lengths, 2), (edges.T.ravel(), edges[:, ::-1].T.ravel())),
-        shape=(len(points), len(points)),
-    )
-    _, _, nearest = dijkstra(
-        graph, indices=source_vertices, min_only=True, return_predecessors=True
-    )
-    rows = np.full(len(points), -1, dtype=np.int64)
-    rows[source_vertices] = np.arange(len(source_vertices))
-    mapped = nearest >= 0
-    result = np.full(len(points), -1, dtype=np.int64)
-    result[mapped] = rows[nearest[mapped]]
-    return result
-
-
-def _source_statistics(hemispheres):
-    minimum, maximum = float("inf"), float("-inf")
-    rms = np.zeros(hemispheres[0].axis.n_frames, dtype=np.float64)
-    for stc in hemispheres:
-        if not len(stc.vertices):
-            continue
-        frames_per_chunk = max(1, 1_000_000 // len(stc.vertices))
-        for start in range(0, stc.axis.n_frames, frames_per_chunk):
-            chunk = stc.values[start : start + frames_per_chunk]
-            if not np.isfinite(chunk).all():
-                raise ValueError("STC source values must be finite.")
-            minimum = min(minimum, float(chunk.min()))
-            maximum = max(maximum, float(chunk.max()))
-            # Square in float64 to preserve tiny amplitudes and avoid float32 overflow.
-            rms[start : start + len(chunk)] += np.square(chunk, dtype=np.float64).sum(axis=1)
-    rms /= sum(len(stc.vertices) for stc in hemispheres)
-    np.sqrt(rms, out=rms)
-    rms.flags.writeable = False
-    return (minimum, maximum), rms
-
-
-def read_source_config(filename):
-    """Read a source reconstruction configuration from JSON."""
-    filename = Path(filename)
-    with filename.open(encoding="utf-8") as stream:
-        config = json.load(stream)
-    return read_source_reconstruction(config, filename.parent)
-
-
-def read_source_reconstruction(config, base_dir="."):
-    """Validate the complete import before any project or viewer state is changed.
-
-    Surface volume metadata supplies the geometry unless a matching FreeSurfer
-    MGH/MGZ reference is provided. scanner_ras_to_project_ras registers its coordinates
-    to those of the project's anatomical image; all spatial units are mm.
-    """
-    base_dir = Path(base_dir)
-    if not isinstance(config, dict):
-        raise ValueError("Source configuration must be a dictionary.")
+def _read_freesurfer_source_mesh(config, base_dir, sources):
     anatomy_keys = ("subject_dir",) if "subject_dir" in config else ("lh_surface", "rh_surface")
-    required = ("stc", "unit", "scanner_ras_to_project_ras", *anatomy_keys)
-    if any(key not in config for key in required):
-        raise ValueError(f"Source configuration requires: {', '.join(required)}.")
-    for key in ("stc", "unit", *anatomy_keys):
+    for key in anatomy_keys:
+        if key not in config:
+            raise SourceImportRequired(key, f"Select the cortical surface for {key}.")
         if not isinstance(config[key], str) or not config[key].strip():
-            raise ValueError(f"Source configuration '{key}' must be a nonempty string.")
+            raise ValueError(f"Source configuration '{key}' must be a nonempty path.")
     subject_files = {}
     if "subject_dir" in config:
         subject_files = discover_subject_files(base_dir / config["subject_dir"])
@@ -730,11 +913,6 @@ def read_source_reconstruction(config, base_dir="."):
             )
     else:
         surface_paths = {side: base_dir / config[f"{side}_surface"] for side in ("lh", "rh")}
-    name = config.get("name", Path(config["stc"]).name[:-7])
-    if not isinstance(name, str) or not name.strip():
-        raise ValueError("Source name must be a nonempty string.")
-    registration = _affine(config["scanner_ras_to_project_ras"])
-    hemispheres = read_stc_pair(base_dir / config["stc"])
     surface_to_scanner = None
     if "mri" in config:
         if not isinstance(config["mri"], str) or not config["mri"].strip():
@@ -747,7 +925,7 @@ def read_source_reconstruction(config, base_dir="."):
         )
     points, triangles, source_vertices = [], [], []
     offset = 0
-    for side, stc in zip(("lh", "rh"), hemispheres):
+    for side, stc in zip(("lh", "rh"), sources):
         surface_path = surface_paths[side]
         if "mri" in config:
             vertices, faces = nib.freesurfer.read_geometry(surface_path)
@@ -768,15 +946,13 @@ def read_source_reconstruction(config, base_dir="."):
         ):
             raise ValueError(f"Invalid {side} cortical surface geometry.")
         if len(stc.vertices) and stc.vertices.max() >= len(vertices):
-            raise ValueError(f"STC vertex IDs exceed the {side} surface vertex count.")
+            raise ValueError(f"Source vertex IDs exceed the {side} surface vertex count.")
         if "mri" not in config:
             geometry = _surface_to_scanner_ras(metadata)
             if surface_to_scanner is not None and not np.allclose(
                 geometry, surface_to_scanner, rtol=1e-5, atol=1e-4
             ):
-                raise ValueError(
-                    "The cortical hemispheres have different reference-volume geometry."
-                )
+                raise ValueError("The cortical sources have different reference-volume geometry.")
             surface_to_scanner = geometry
         points.append(vertices)
         triangles.append(faces.astype(np.int64) + offset)
@@ -786,22 +962,467 @@ def read_source_reconstruction(config, base_dir="."):
     points = np.concatenate(points)
     triangles = np.concatenate(triangles)
     source_vertices = np.concatenate(source_vertices)
-    surface_to_project = _affine(registration @ surface_to_scanner)
-    scalar_range, global_rms = _source_statistics(hemispheres)
-    vertex_sources = _vertex_sources(points, triangles, source_vertices)
-    registered_points = nib.affines.apply_affine(surface_to_project, points)
-    if not np.isfinite(registered_points).all():
-        raise ValueError("Registered source geometry must be finite.")
-    return CorticalSourceSeries(
-        hemispheres,
-        registered_points,
+    return points, triangles, source_vertices, hemisphere_sizes, subject_files, surface_to_scanner
+
+
+# STC and MNE H5 readers
+
+
+def read_stc(filename):
+    """Validate the header and map values read-only, loading one frame at a time.
+
+    The big-endian layout is tmin/dt (float32 milliseconds), vertex count
+    (uint32), vertex IDs (uint32), frame count (uint32), then float32 values
+    in frame-major order. Reference: mne-python/mne/source_estimate.py::_read_stc.
+    """
+    with Path(filename).open("rb") as stream:
+        stream.seek(0, 2)
+        size = stream.tell()
+        stream.seek(0)
+        if size < 16:
+            raise ValueError("Truncated STC header.")
+        t0, dt, n_vertices = unpack(">ffI", stream.read(12))
+        offset = 16 + 4 * n_vertices
+        if offset > size:
+            raise ValueError("Truncated STC vertex list.")
+        vertices = np.fromfile(stream, dtype=">u4", count=n_vertices)
+        n_frames = unpack(">I", stream.read(4))[0]
+        axis = TimeAxis(t0 / 1000, dt / 1000, n_frames)
+        if size != offset + 4 * n_vertices * n_frames:
+            raise ValueError("STC file size does not match its vertex and frame counts.")
+        if len(np.unique(vertices)) != n_vertices:
+            raise ValueError("STC vertex IDs must be unique.")
+        vertices.flags.writeable = False
+        values = (
+            np.memmap(stream, dtype=">f4", mode="r", offset=offset, shape=(n_frames, n_vertices))
+            if n_vertices
+            else np.empty((n_frames, 0), dtype=">f4")
+        )
+        values.flags.writeable = False
+    return SourceData(axis, vertices, values)
+
+
+def read_stc_pair(filename):
+    """Load the matching lh/rh files and require a common time axis."""
+    filename = Path(filename)
+    if not filename.name.endswith(("-lh.stc", "-rh.stc")):
+        raise ValueError("Select a cortical STC file ending in '-lh.stc' or '-rh.stc'.")
+    stem = filename.name[:-7]
+    pair = tuple(read_stc(filename.with_name(f"{stem}-{side}.stc")) for side in ("lh", "rh"))
+    left, right = pair
+    if left.axis != right.axis:
+        raise ValueError("The STC hemispheres have different time axes.")
+    if not len(left.vertices) + len(right.vertices):
+        raise ValueError("The STC pair does not contain any sources.")
+    return pair
+
+
+class _H5SourceValues:
+    """Read only the requested time samples from an MNE HDF5 dataset."""
+
+    def __init__(self, filename, dataset, start, stop, component):
+        self.filename = filename
+        self.dataset = dataset.name
+        self.start = start
+        self.shape = (dataset.shape[-1], stop - start)
+        self.dtype = dataset.dtype
+        self.component = component
+
+    def __getitem__(self, key):
+        frames, source = key if isinstance(key, tuple) else (key, slice(None))
+        rows = slice(self.start, self.start + self.shape[1])
+        if not isinstance(source, slice):
+            rows = self.start + operator.index(source)
+        with h5py.File(self.filename, "r") as stream:
+            dataset = stream[self.dataset]
+            if self.component is None:
+                values = dataset[rows, frames]
+            elif self.component == "Magnitude":
+                values = np.linalg.norm(
+                    dataset[rows, :, frames], axis=1 if isinstance(rows, slice) else 0
+                )
+            else:
+                values = dataset[
+                    rows,
+                    ("Component 1", "Component 2", "Component 3").index(self.component),
+                    frames,
+                ]
+        return np.asarray(values).T
+
+
+def _read_mne_h5(filename, config):
+    with h5py.File(filename, "r") as stream:
+        root = stream["mnepython"]
+        if "key_src_type" in root:
+            kind = root["key_src_type"][()]
+            if not isinstance(kind, str):
+                kind = (
+                    kind.decode()
+                    if isinstance(kind, bytes)
+                    else np.asarray(kind).tobytes().decode()
+                )
+            if kind != "surface":
+                raise ValueError("MNE volume and mixed source spaces require a volume renderer.")
+        vertices = root.get("key_vertices")
+        if not isinstance(vertices, h5py.Group) or set(vertices.keys()) != {"idx_0", "idx_1"}:
+            raise ValueError("MNE cortical H5 data must identify both hemispheres.")
+        vertices = [vertices[f"idx_{index}"][()] for index in range(2)]
+        data = root["key_data"]
+        count = sum(len(value) for value in vertices)
+        if data.ndim not in (2, 3) or data.shape[0] != count or not count:
+            raise ValueError("MNE source data dimensions do not match the cortical vertices.")
+        component = None
+        if data.ndim == 3:
+            if data.shape[1] != 3:
+                raise ValueError("MNE vector source data must have three components.")
+            component = _source_component(config)
+        t0 = float(root["key_tmin"][()].item())
+        dt = float(root["key_tstep"][()].item())
+        axis = TimeAxis(t0, 1.0 if data.shape[-1] == 1 and dt == 0 else dt, data.shape[-1])
+        sources = []
+        start = 0
+        for vertex_ids in vertices:
+            stop = start + len(vertex_ids)
+            sources.append(
+                SourceData(
+                    axis, vertex_ids, _H5SourceValues(filename, data, start, stop, component)
+                )
+            )
+            start = stop
+    return tuple(sources)
+
+
+# MATLAB container decoding
+
+
+def _read_mat_file(filename, fields=None):
+    if not h5py.is_hdf5(filename):
+        return loadmat(filename, simplify_cells=True, variable_names=fields)
+    with h5py.File(filename, "r") as stream:
+
+        def read(node, ancestors=()):
+            if node.name in ancestors or len(ancestors) > 32:
+                raise ValueError("Cyclic or excessively nested MATLAB data.")
+            ancestors = (*ancestors, node.name)
+            if isinstance(node, h5py.Group):
+                if "MATLAB_sparse" in node.attrs:
+                    shape = (int(node.attrs["MATLAB_sparse"]), len(node["jc"]) - 1)
+                    return csc_matrix(
+                        (node["data"][()], node["ir"][()], node["jc"][()]), shape=shape
+                    )
+                return {key: read(node[key], ancestors) for key in node if not key.startswith("#")}
+            value = node[()]
+            if node.attrs.get("MATLAB_empty", 0):
+                return np.empty(0)
+            if h5py.check_dtype(ref=node.dtype) is not None:
+                if value.size == 1:
+                    reference = value.flat[0]
+                    return read(stream[reference], ancestors) if reference else np.empty(0)
+                result = np.empty(value.size, dtype=object)
+                for index, reference in enumerate(value.T.flat):
+                    result[index] = read(stream[reference], ancestors) if reference else np.empty(0)
+                return result.reshape(value.T.shape)
+            matlab_class = node.attrs.get("MATLAB_class", b"")
+            if matlab_class in (b"char", "char"):
+                return "".join(chr(int(char)) for char in value.T.ravel())
+            if matlab_class in (b"logical", "logical"):
+                value = value.astype(bool)
+            if value.dtype.names and {"real", "imag"}.issubset(value.dtype.names):
+                value = value["real"] + 1j * value["imag"]
+            return value.T.squeeze()
+
+        return {
+            key: read(stream[key])
+            for key in stream
+            if not key.startswith("#") and (fields is None or key in fields)
+        }
+
+
+def _mat_source_candidates(data, prefix="", depth=0):
+    if not isinstance(data, dict) or depth > 12:
+        return {}
+    brainstorm = "Time" in data and ("ImageGridAmp" in data or "ImagingKernel" in data)
+    fieldtrip = "pos" in data and any(key in data for key in ("mom", "pow", "avg"))
+    if brainstorm or fieldtrip:
+        return {prefix or "(root)": data}
+    candidates = {}
+    for key, value in data.items():
+        if not key.startswith("__") and key not in ("cfg", "History"):
+            candidates.update(
+                _mat_source_candidates(value, f"{prefix}.{key}".lstrip("."), depth + 1)
+            )
+    return candidates
+
+
+# Brainstorm source reconstruction
+
+
+def _brainstorm_to_ras(filename, surface_path, config):
+    if "source_to_scanner_ras" in config:
+        return _affine(config["source_to_scanner_ras"])
+    anatomy = sorted(surface_path.parent.glob("subjectimage*.mat"))
+    reference = str(anatomy[0]) if len(anatomy) == 1 else ""
+    path = _source_companion(
+        filename,
+        config,
+        "brainstorm_mri",
+        "Select the Brainstorm MRI MAT containing SCS, Voxsize and InitTransf.",
+        reference,
+    )
+    mri = _read_mat_file(path, ("SCS", "Voxsize", "InitTransf"))
+    scs = mri.get("SCS", {})
+    if not isinstance(scs, dict) or not all(key in scs for key in ("R", "T")):
+        raise ValueError("The Brainstorm MRI does not contain its MRI-to-SCS transformation.")
+    spacing = np.asarray(mri.get("Voxsize", []), dtype=float).ravel()
+    if spacing.shape != (3,) or not np.isfinite(spacing).all() or np.any(spacing <= 0):
+        raise ValueError("The Brainstorm MRI has invalid voxel spacing.")
+    initial = np.asarray(mri.get("InitTransf", []), dtype=object)
+    if initial.size == 2:
+        initial = initial.reshape(1, 2)
+    if initial.ndim != 2 or initial.shape[1] != 2:
+        raise ValueError("The Brainstorm MRI has no usable InitTransf table.")
+    world = next((value for label, value in initial if str(label).lower() == "vox2ras"), None)
+    if world is None:
+        raise ValueError("The Brainstorm MRI has no vox2ras transformation.")
+    mri_to_scs = np.eye(4)
+    mri_to_scs[:3, :3] = np.asarray(scs["R"], dtype=float)
+    mri_to_scs[:3, 3] = np.asarray(scs["T"], dtype=float).reshape(3)
+    # Brainstorm MRI voxel coordinates are one-based; input and output here are millimeters.
+    origin = np.eye(4)
+    origin[:3, 3] = -1
+    return _affine(
+        _affine(world) @ origin @ np.diag([*(1 / spacing), 1]) @ np.linalg.inv(_affine(mri_to_scs))
+    )
+
+
+def _read_brainstorm_source(filename, data, config):
+    if str(data.get("HeadModelType", "surface")).lower() != "surface":
+        raise ValueError("Brainstorm volume and mixed source models require a volume renderer.")
+    times = data.get("Time", [])
+    values = data.get("ImageGridAmp", np.empty(0))
+    if _has_source_values(data.get("ZScore", [])):
+        raise ValueError(
+            "Export full Brainstorm time courses with Z-score normalization already applied."
+        )
+    if not _has_source_values(values):
+        kernel = data.get("ImagingKernel", np.empty(0))
+        if np.ndim(kernel) != 2 or not np.prod(kernel.shape):
+            raise ValueError(
+                "The Brainstorm file has neither source time courses nor an imaging kernel."
+            )
+        path = _source_companion(
+            filename,
+            config,
+            "data_file",
+            "Select the Brainstorm recordings MAT associated with this imaging kernel.",
+            data.get("DataFile", ""),
+        )
+        recording = _read_mat_file(path, ("F", "Time", "nAvg"))
+        samples = np.asarray(recording.get("F", []))
+        if samples.ndim != 2 or samples.dtype.kind not in "iuf":
+            raise ValueError("The recordings must contain a numeric channel-by-time F matrix.")
+        if np.size(times) and _source_axis(recording.get("Time", [])) != _source_axis(times):
+            raise ValueError("The Brainstorm kernel and recordings have different time axes.")
+        times = recording.get("Time", [])
+        options = data.get("OPTIONS", {})
+        channels = np.asarray(
+            options.get("GoodChannel", data.get("GoodChannel", []))
+            if isinstance(options, dict)
+            else data.get("GoodChannel", [])
+        )
+        if len(channels.ravel()):
+            channels = channels.ravel()
+            if (
+                channels.dtype.kind not in "iuf"
+                or not np.isfinite(channels).all()
+                or np.any(channels != np.floor(channels))
+                or channels.min() < 1
+                or channels.max() > len(samples)
+            ):
+                raise ValueError("Invalid Brainstorm GoodChannel indices.")
+            samples = samples[channels.astype(int) - 1]
+        if kernel.shape[1] != samples.shape[0]:
+            raise ValueError("The imaging kernel and recordings have different channel counts.")
+        values = kernel @ samples
+        if str(data.get("Function", "")).lower() in ("dspm", "glsp", "lcmvp"):
+            original_average = float(data.get("nAvg", 1))
+            recording_average = float(recording.get("nAvg", 1))
+            if not all(
+                isfinite(value) and value > 0 for value in (original_average, recording_average)
+            ):
+                raise ValueError("Brainstorm averaging counts must be positive and finite.")
+            values = values * np.sqrt(recording_average / original_average)
+    axis = _source_axis(times)
+    path = _source_companion(
+        filename,
+        config,
+        "surface_file",
+        "Select the Brainstorm cortex MAT associated with these sources.",
+        data.get("SurfaceFile", data.get("SourceLoc", "")),
+    )
+    mesh = _read_mat_file(path, ("Vertices", "Faces"))
+    points, triangles = _validate_source_mesh(
+        mesh.get("Vertices", []), np.asarray(mesh.get("Faces", [])) - 1
+    )
+    points *= 1000.0
+    components = np.asarray(data.get("nComponents", 1)).item()
+    if components not in (1, 3):
+        raise ValueError("Mixed Brainstorm source components require an explicit source model.")
+    components = int(components)
+    values = _scalar_source_values(values, len(points), axis, config, components)
+    source = SourceData(axis, np.arange(len(points)), values)
+    return (source,), (points, triangles, _brainstorm_to_ras(filename, path, config))
+
+
+# FieldTrip source reconstruction
+
+
+def _read_fieldtrip_source(filename, data, config):
+    positions = np.asarray(data["pos"])
+    if (
+        positions.ndim != 2
+        or positions.shape[1] != 3
+        or positions.dtype.kind not in "iuf"
+        or not np.isfinite(positions).all()
+    ):
+        raise ValueError("FieldTrip source positions must be a finite N by 3 matrix.")
+    unit = str(data.get("unit", "")).lower()
+    if unit not in ("m", "cm", "mm"):
+        unit = _source_choice(
+            config,
+            "position_unit",
+            "Select the spatial unit of the FieldTrip source positions.",
+            ("m", "cm", "mm"),
+        )
+    positions = positions * {"m": 1000.0, "cm": 10.0, "mm": 1.0}[unit]
+    payload = data if any(key in data for key in ("mom", "pow")) else data.get("avg", {})
+    if not isinstance(payload, dict):
+        raise ValueError("The FieldTrip source measure must be a structure.")
+    fields = [key for key in ("mom", "pow") if key in payload and _has_source_values(payload[key])]
+    parameter = _source_choice(
+        config, "source_parameter", "Select the FieldTrip source measure to visualize.", fields
+    )
+    dimord = str(
+        payload.get(f"{parameter}dimord", data.get(f"{parameter}dimord", data.get("dimord", "")))
+    )
+    if any(token in dimord for token in ("freq", "rpt", "subj")) or np.size(data.get("freq", [])):
+        raise ValueError(
+            "Select a single time-domain reconstruction; frequency and trial dimensions cannot be used as time."
+        )
+    axis = _source_axis(data.get("time", [0.0]))
+    inside = np.asarray(data.get("inside", np.ones(len(positions), dtype=bool))).ravel()
+    logical = inside.dtype.kind == "b" or (
+        inside.dtype == np.uint8 and len(inside) == len(positions) and np.isin(inside, (0, 1)).all()
+    )
+    if logical:
+        if len(inside) != len(positions):
+            raise ValueError("FieldTrip inside mask does not match the source positions.")
+        active = np.flatnonzero(inside)
+    else:
+        if (
+            inside.dtype.kind not in "iuf"
+            or not np.isfinite(inside).all()
+            or np.any(inside != np.floor(inside))
+            or np.any(inside < 1)
+            or np.any(inside > len(positions))
+        ):
+            raise ValueError("Invalid FieldTrip inside indices.")
+        active = inside.astype(int) - 1
+    if not len(active) or len(np.unique(active)) != len(active):
+        raise ValueError("FieldTrip data must contain unique active source positions.")
+    values = payload[parameter]
+    if isinstance(values, list) or (isinstance(values, np.ndarray) and values.dtype.kind == "O"):
+        cells = list(values) if isinstance(values, list) else list(values.ravel(order="F"))
+        if len(cells) != len(positions):
+            raise ValueError("FieldTrip source cells do not match the positions.")
+        if "inside" not in data:
+            active = np.asarray(
+                [index for index, cell in enumerate(cells) if np.size(cell)], dtype=np.int64
+            )
+            if not len(active):
+                raise ValueError("The FieldTrip cells do not contain any source time courses.")
+        rows = []
+        for index in active:
+            cell = np.asarray(cells[index])
+            if dimord == "{pos}_time_ori":
+                cell = cell.T
+            elif dimord not in ("", "{pos}_time", "{pos}_ori_time", "pos_time", "pos_ori_time"):
+                raise ValueError("Unsupported FieldTrip cell dimensions for a source time course.")
+            if cell.size not in (axis.n_frames, 3 * axis.n_frames):
+                raise ValueError("An active FieldTrip source is missing a time course.")
+            if cell.ndim == 2 and cell.shape[-1] != axis.n_frames:
+                raise ValueError("FieldTrip moment cells must have components by time samples.")
+            rows.append(cell.reshape(-1, axis.n_frames))
+        if len({row.shape[0] for row in rows}) != 1:
+            raise ValueError("Mixed scalar and vector FieldTrip sources are not supported.")
+        values = _scalar_source_values(
+            np.concatenate(rows), len(active), axis, config, rows[0].shape[0]
+        )
+    else:
+        values = np.asarray(values)
+        if dimord in ("time_pos",):
+            values = values.T
+        components = 1
+        if parameter == "mom" and values.ndim == 3:
+            tokens = dimord.replace("{", "").replace("}", "").split("_")
+            if sorted(tokens) != ["ori", "pos", "time"]:
+                raise ValueError(
+                    "Three-dimensional FieldTrip moments require an explicit pos/ori/time dimord."
+                )
+            values = values.transpose(*(tokens.index(token) for token in ("pos", "ori", "time")))
+            if values.shape != (len(positions), 3, axis.n_frames):
+                raise ValueError(
+                    "FieldTrip vector moments do not match the source positions and times."
+                )
+            values = values.reshape(len(positions) * 3, axis.n_frames)
+            components = 3
+        elif parameter == "mom" and values.shape == (len(positions) * 3, axis.n_frames):
+            components = 3
+        values = _scalar_source_values(values, len(positions), axis, config, components)[:, active]
+    coordinates = str(data.get("coordsys", "")).lower()
+    if "tri" in data:
+        points, triangles = _validate_source_mesh(positions, np.asarray(data["tri"]) - 1)
+        vertices = active
+    else:
+        path = _source_companion(
+            filename,
+            config,
+            "surface_file",
+            "Select the FieldTrip surface MAT containing pos, tri and its spatial unit.",
+        )
+        mesh = _read_mat_file(path)
+        if (
+            "pos" not in mesh
+            and len([value for key, value in mesh.items() if not key.startswith("__")]) == 1
+        ):
+            mesh = next(value for key, value in mesh.items() if not key.startswith("__"))
+        mesh_unit = str(mesh.get("unit", "")).lower()
+        if mesh_unit not in ("m", "cm", "mm"):
+            raise ValueError("The FieldTrip surface must specify its spatial unit.")
+        mesh_coordinates = str(mesh.get("coordsys", "")).lower()
+        if coordinates and mesh_coordinates and coordinates != mesh_coordinates:
+            raise ValueError("The FieldTrip surface and sources use different coordinate systems.")
+        coordinates = coordinates or mesh_coordinates
+        points, triangles = _validate_source_mesh(
+            np.asarray(mesh.get("pos", [])) * {"m": 1000, "cm": 10, "mm": 1}[mesh_unit],
+            np.asarray(mesh.get("tri", [])) - 1,
+        )
+        distances, vertices = cKDTree(points).query(positions[active])
+        if np.any(distances > 1e-3):
+            raise ValueError(
+                "The selected surface does not contain the FieldTrip source positions. Volume sources require a volume renderer."
+            )
+    if "source_to_scanner_ras" in config:
+        transform = _affine(config["source_to_scanner_ras"])
+    elif coordinates == "scanner_ras":
+        transform = np.eye(4)
+    else:
+        raise SourceImportRequired(
+            "source_to_scanner_ras",
+            f"FieldTrip coordinates '{coordinates or 'unspecified'}': select the source-mm to scanner-RAS-mm transformation matrix.",
+        )
+    return (SourceData(axis, np.asarray(vertices, dtype=np.int64), values),), (
+        points,
         triangles,
-        vertex_sources,
-        scalar_range,
-        name,
-        config["unit"],
-        global_rms,
-        hemisphere_sizes=hemisphere_sizes,
-        surface_to_project_ras=surface_to_project,
-        subject_files=subject_files,
+        transform,
     )

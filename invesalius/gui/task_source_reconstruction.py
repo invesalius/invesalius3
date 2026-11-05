@@ -25,7 +25,11 @@ import numpy as np
 import wx
 
 import invesalius.gui.dialogs as dlg
-from invesalius.data.eeg import MissingSurfaceGeometryError, discover_subject_files
+from invesalius.data.eeg import (
+    MissingSurfaceGeometryError,
+    SourceImportRequired,
+    discover_subject_files,
+)
 from invesalius.data.imagedata_utils import register_image_to_volume
 from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.i18n import tr as _
@@ -50,6 +54,7 @@ class TaskPanel(wx.Panel):
             "pial": _("Pial"),
             "white": _("White"),
             "inflated": _("Inflated"),
+            "surface": _("Surface"),
         }
         self._representations = ("pial",)
         self.representation = wx.Choice(self, choices=[self._representation_labels["pial"]])
@@ -99,9 +104,13 @@ class TaskPanel(wx.Panel):
             if checkbox.GetValue() != checked:
                 checkbox.SetValue(checked)
         active = loaded and mode.display_active
-        for control in (self.display_label, self.representation, self.left, self.right):
+        for control in (self.display_label, self.representation):
             if control.IsEnabled() != active:
                 control.Enable(active)
+        hemispheres = active and mode.series.has_hemispheres
+        for control in (self.left, self.right):
+            if control.IsEnabled() != hemispheres:
+                control.Enable(hemispheres)
 
     def OnDisplayChanged(self, event):
         if self._mode is None or not self._mode.display_active:
@@ -143,7 +152,7 @@ class ImportSourceDialog(wx.Dialog):
         self._automatic_alignment = None
         self._reference_mri = None
         self.files = {}
-        self.file_labels = {"stc": _("STC signal:")}
+        self.file_labels = {"signal": _("Source signal:")}
         form = wx.FlexGridSizer(cols=2, vgap=8, hgap=10)
         form.AddGrowableCol(1)
         form.Add(wx.StaticText(self, label=_("Subject:")), 0, wx.ALIGN_CENTER_VERTICAL)
@@ -154,22 +163,24 @@ class ImportSourceDialog(wx.Dialog):
         )
         self.subject.SetToolTip(
             _(
-                "Select a subject folder to detect surfaces automatically. Leave empty to select them manually."
+                "For STC/MNE H5, select a subject folder or choose surfaces manually. MAT files use their associated mesh."
             )
         )
         form.Add(self.subject, 1, wx.EXPAND)
-        form.Add(wx.StaticText(self, label=self.file_labels["stc"]), 0, wx.ALIGN_CENTER_VERTICAL)
+        form.Add(wx.StaticText(self, label=self.file_labels["signal"]), 0, wx.ALIGN_CENTER_VERTICAL)
         signal_row = wx.BoxSizer(wx.HORIZONTAL)
-        self.files["stc"] = wx.FilePickerCtrl(
+        self.files["signal"] = wx.FilePickerCtrl(
             self,
-            message=_("Select either hemisphere of the STC pair"),
-            wildcard=_("STC files (*.stc)|*.stc"),
+            message=_("Select an STC, MNE H5, or Brainstorm/FieldTrip MAT source file"),
+            wildcard=_("Source reconstruction (*.stc;*.h5;*.mat)|*.stc;*.h5;*.mat"),
             style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL | wx.FLP_OPEN | wx.FLP_FILE_MUST_EXIST,
         )
-        self.files["stc"].SetToolTip(
-            _("Select -lh.stc or -rh.stc; the matching file must be in the same directory.")
+        self.files["signal"].SetToolTip(
+            _(
+                "Format is detected automatically. STC files require the matching hemisphere in the same directory."
+            )
         )
-        signal_row.Add(self.files["stc"], 1, wx.EXPAND)
+        signal_row.Add(self.files["signal"], 1, wx.EXPAND)
         signal_row.Add(
             wx.StaticText(self, label=_("Unit:")),
             0,
@@ -202,7 +213,7 @@ class ImportSourceDialog(wx.Dialog):
             table.Add(heading, 0, wx.ALIGN_CENTER_VERTICAL)
         self.subject_cells = {}
         for kind, label in (
-            ("pial", _("Pial (required)")),
+            ("pial", _("Pial")),
             ("white", _("White")),
             ("inflated", _("Inflated")),
             ("curv", _("Curvature")),
@@ -217,8 +228,10 @@ class ImportSourceDialog(wx.Dialog):
         detected.Add(table, 0, wx.EXPAND | wx.ALL, 10)
         main_sizer.Add(detected, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
         self.subject_summary = wx.StaticText(
-            self, label=_("Uses surface coordinates in the current anatomy.")
+            self,
+            label=_("STC/MNE H5 use subject surfaces. MAT files use their associated source mesh."),
         )
+        self.subject_summary.Wrap(self.FromDIP(620))
         self.subject_summary.SetForegroundColour(
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT)
         )
@@ -535,6 +548,8 @@ class ImportSourceDialog(wx.Dialog):
         for key, picker in self.files.items():
             if "subject_dir" in config and key in ("lh_surface", "rh_surface"):
                 continue
+            if key in ("lh_surface", "rh_surface") and not picker.GetPath().strip():
+                continue
             path = Path(picker.GetPath()).expanduser()
             if not picker.GetPath().strip() or not path.is_file():
                 if key in ("lh_surface", "rh_surface"):
@@ -581,18 +596,50 @@ class ImportSourceDialog(wx.Dialog):
     def OnImport(self, event):
         try:
             config = self.GetValue()
-            try:
-                with wx.BusyCursor():
-                    Publisher.sendMessage("Load source reconstruction", config=config)
-            except MissingSurfaceGeometryError:
-                reference = self._select_reference_mri(
-                    _("Surface metadata missing: select the matching FreeSurfer MRI")
-                )
-                if reference is None:
-                    return
-                config["mri"] = str(reference)
-                with wx.BusyCursor():
-                    Publisher.sendMessage("Load source reconstruction", config=config)
+            while True:
+                try:
+                    with wx.BusyCursor():
+                        Publisher.sendMessage("Load source reconstruction", config=config)
+                    break
+                except SourceImportRequired as request:
+                    parent = wx.GetApp().GetTopWindow()
+                    if request.choices:
+                        with wx.SingleChoiceDialog(
+                            parent, str(request), _("Source reconstruction"), list(request.choices)
+                        ) as dialog:
+                            if dialog.ShowModal() != wx.ID_OK:
+                                return
+                            config[request.key] = dialog.GetStringSelection()
+                    else:
+                        matrix = request.key == "source_to_scanner_ras"
+                        wildcard = _("MATLAB files (*.mat)|*.mat")
+                        if matrix:
+                            wildcard = _("Text matrix (*.txt;*.csv)|*.txt;*.csv")
+                        elif request.key in ("lh_surface", "rh_surface"):
+                            wildcard = _("All files (*.*)|*.*")
+                        with wx.FileDialog(
+                            parent,
+                            message=str(request),
+                            wildcard=wildcard,
+                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+                        ) as dialog:
+                            if dialog.ShowModal() != wx.ID_OK:
+                                return
+                            path = Path(dialog.GetPath()).resolve()
+                        config[request.key] = (
+                            np.loadtxt(
+                                path, delimiter="," if path.suffix.lower() == ".csv" else None
+                            ).tolist()
+                            if matrix
+                            else str(path)
+                        )
+                except MissingSurfaceGeometryError:
+                    reference = self._select_reference_mri(
+                        _("Surface metadata missing: select the matching FreeSurfer MRI")
+                    )
+                    if reference is None:
+                        return
+                    config["mri"] = str(reference)
         except Exception as error:
             with dlg.ErrorMessageBox(
                 self, _("Error importing EEG/MEG source reconstruction"), str(error)

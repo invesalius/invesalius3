@@ -112,9 +112,9 @@ class SourceReconstructionMode:
         previous_mode = surface.painting_mode
         self.painting.reset(self)
         self.series, self.surface_map = series, surface_map
-        self.representation = "pial"
+        self.representation = series.base_representation
         self.hemispheres_visible = (True, True)
-        self._representation_maps = {"pial": surface_map}
+        self._representation_maps = {series.base_representation: surface_map}
         self._cross_position = None
         self.playback = Playback(series.axis)
         self.selected_source = self.source_values = None
@@ -179,7 +179,7 @@ class SourceReconstructionMode:
         polydata = self.surface_manager.ConvertPolydataToInv(polydata)
         normals = vtkPolyDataNormals()
         normals.SetInputData(polydata)
-        # Splitting duplicates vertices and would break STC's original vertex IDs.
+        # Splitting duplicates vertices and would break the original source vertex IDs.
         normals.SplittingOff()
         normals.AutoOrientNormalsOn()
         normals.Update()
@@ -189,7 +189,7 @@ class SourceReconstructionMode:
         coordinates = vtk_to_numpy(polydata.GetPoints().GetData())
         if not np.isfinite(coordinates).all():
             raise ValueError("Source geometry cannot be represented in project coordinates.")
-        values = np.full(polydata.GetNumberOfPoints(), np.nan, dtype=np.float32)
+        values = np.full(polydata.GetNumberOfPoints(), np.nan, dtype=np.float64)
         polydata.GetPointData().SetScalars(numpy_to_vtk(values, deep=True))
         minimum, maximum = series.scalar_range
         limit = max(abs(minimum), abs(maximum)) or 1.0
@@ -246,8 +246,9 @@ class SourceReconstructionMode:
         triangles = vtk_to_numpy(candidate.polydata.GetPolys().GetConnectivityArray()).reshape(
             -1, 3
         )
-        left_faces = triangles[:, 0] < self.series.hemisphere_sizes[0]
-        triangles = triangles[(left_faces & left) | (~left_faces & right)]
+        if self.series.has_hemispheres:
+            left_faces = triangles[:, 0] < self.series.hemisphere_sizes[0]
+            triangles = triangles[(left_faces & left) | (~left_faces & right)]
         connectivity = np.column_stack(
             [np.full(len(triangles), 3, dtype=np.int64), triangles]
         ).ravel()
@@ -312,11 +313,7 @@ class SourceReconstructionMode:
     def source_label(self):
         if self.selected_source is None:
             return ""
-        source_index = self.selected_source
-        for side, stc in zip(("LH", "RH"), self.series.hemispheres):
-            if source_index < len(stc.vertices):
-                return f"{side} {int(stc.vertices[source_index])}"
-            source_index -= len(stc.vertices)
+        return self.series.source_label(self.selected_source)
 
     def cross_tool_changed(self, _id, value):
         if _id != const.SLICE_STATE_CROSS:
@@ -338,7 +335,7 @@ class SourceReconstructionMode:
         self._cross_position = point.copy()
         # Cross coordinates use the slice convention; the source mesh uses the 3D convention.
         point = point * [1, -1, 1]
-        polydata = self._representation_maps["pial"].polydata
+        polydata = self._representation_maps[self.series.base_representation].polydata
         bounds = polydata.GetBounds()
         source_index = None
         if all(bounds[2 * axis] <= point[axis] <= bounds[2 * axis + 1] for axis in range(3)):
@@ -349,8 +346,11 @@ class SourceReconstructionMode:
             vertex = self._source_locator.FindClosestPoint(point)
             if vertex >= 0:
                 mapped = int(self.series.vertex_sources[vertex])
-                hemisphere = 0 if vertex < self.series.hemisphere_sizes[0] else 1
-                if mapped >= 0 and self.hemispheres_visible[hemisphere]:
+                visible = True
+                if self.series.has_hemispheres:
+                    hemisphere = 0 if vertex < self.series.hemisphere_sizes[0] else 1
+                    visible = self.hemispheres_visible[hemisphere]
+                if mapped >= 0 and visible:
                     source_index = mapped
         if source_index == self.selected_source:
             return
