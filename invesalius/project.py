@@ -646,6 +646,10 @@ class Project(metaclass=Singleton):
             self.export_project_to_hdf5(filename, save_masks)
         elif filename.lower().endswith(".nii") or filename.lower().endswith(".nii.gz"):
             self.export_project_to_nifti(filename, save_masks)
+        else:
+            raise ValueError(
+                f"Unsupported export format: {filename} (expected .hdf5, .h5, .nii or .nii.gz)"
+            )
 
     def export_project_to_hdf5(self, filename, save_masks=True):
         import h5py
