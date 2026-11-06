@@ -74,10 +74,9 @@ def ApplyDecimationFilter(polydata: vtkPolyData, reduction_factor: float) -> vtk
     decimation = vtkQuadricDecimation()
     decimation.SetInputData(polydata)
     decimation.SetTargetReduction(reduction_factor)
-    decimation.GetOutput().ReleaseDataFlagOn()
     decimation.AddObserver(
         "ProgressEvent",
-        lambda obj, evt: UpdateProgress(decimation, "Reducing number of triangles..."),
+        lambda obj, evt: vu.UpdateProgress(decimation, "Reducing number of triangles..."),
     )
     return decimation.GetOutput()
 
@@ -101,7 +100,7 @@ def ApplySmoothFilter(
     filler.SetHoleSize(1000)
     filler.Update()
     smoother.AddObserver(
-        "ProgressEvent", lambda obj, evt: UpdateProgress(smoother, "Smoothing surface...")
+        "ProgressEvent", lambda obj, evt: vu.UpdateProgress(smoother, "Smoothing surface...")
     )
 
     return filler.GetOutput()
