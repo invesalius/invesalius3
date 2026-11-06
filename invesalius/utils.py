@@ -102,7 +102,7 @@ def next_copy_name(original_name: str, names_list: List[str]) -> str:
         # is there any copy, might be numbered?
         if parts[0] and parts[-1]:
             # yes, lets check if it ends with a number
-            if isinstance(eval(parts[-1]), int):
+            if parts[-1].isdecimal():
                 last_index = int(parts[-1]) - 1
                 first_copy = f"{parts[0]} copy"
             # no... well, so will build the copy name from zero
