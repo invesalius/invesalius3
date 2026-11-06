@@ -74,6 +74,7 @@ import invesalius.utils as utils
 from invesalius.data.actor_factory import ActorFactory
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
 from invesalius.data.ruler_volume import GenericLeftRulerVolume
+from invesalius.data.simnibs_efield import SimnibsEfieldVisualizer
 from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
@@ -218,6 +219,10 @@ class Viewer(wx.Panel):
         # An object that can be used to create actors, such as lines, arrows, and spheres.
         self.actor_factory = ActorFactory()
 
+        self.simnibs_efield = SimnibsEfieldVisualizer(
+            self.ren, self.actor_factory, self.UpdateRender
+        )
+
         # SSAO state tracking
         self.ssao_enabled = False
         self.ssao_pass = None
@@ -296,6 +301,7 @@ class Viewer(wx.Panel):
             self.navigation = None
         self._disposed = True
         Publisher.unsubscribe_owner(self)
+        self.simnibs_efield.dispose()
         for timer in self._call_laters:
             try:
                 if timer.IsRunning():
