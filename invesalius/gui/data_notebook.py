@@ -20,7 +20,9 @@
 import os
 import pathlib
 import sys
+import tempfile
 
+import numpy as np
 import wx
 import wx.grid
 
@@ -3422,9 +3424,20 @@ class ImagePage(wx.Panel):
         proj = Project()
         slc = slice_module.Slice()
 
-        # Ensure Original is present if loading a fresh project
+        # Ensure Original is present if loading a fresh project. Keep it disk-backed
+        # (as Slice.__apply_image_filter does): an in-memory copy doubles the RAM
+        # used by the volume and would be written to disk again on every save and
+        # auto-backup.
         if not proj.image_versions and slc.matrix is not None:
-            proj.image_versions.append(("original", slc.matrix.copy()))
+            orig = slc.matrix
+            if not isinstance(orig, np.memmap):
+                fd_o, temp_o = tempfile.mkstemp(suffix=".dat")
+                os.close(fd_o)
+                orig_mat = np.memmap(temp_o, shape=orig.shape, dtype=orig.dtype, mode="w+")
+                orig_mat[:] = orig[:]
+                orig_mat.flush()
+                orig = orig_mat
+            proj.image_versions.append(("original", orig))
 
         # Add all entries without auto-selecting (eye icons are reset in add_entry)
         for label, matrix in proj.image_versions:

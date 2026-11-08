@@ -259,7 +259,33 @@ class Project(metaclass=Singleton):
             measures[str(m.index)] = m.get_as_dict()
         return measures
 
+    @staticmethod
+    def _archived_name(filelist, path):
+        """Return the archive name of ``path`` if it is already in ``filelist``."""
+        real = os.path.realpath(path)
+        for src, arcname in filelist.items():
+            if os.path.realpath(src) == real:
+                return arcname
+        return None
+
     def SavePlistProject(self, dir_, filename, compress=False):
+        dir_temp, filelist, save_temp_files = self.CollectSaveFiles(compress)
+        try:
+            path = os.path.join(dir_, filename)
+            Compress(dir_temp, path, filelist, compress)
+        finally:
+            CleanupSaveFiles(dir_temp, save_temp_files)
+
+    def CollectSaveFiles(self, compress=False):
+        """
+        Prepare everything needed to write the project archive, without writing it.
+
+        Writes the plist files (and in-memory data) to temporary files and returns
+        ``(dir_temp, filelist, save_temp_files)``: ``filelist`` maps each source file
+        to its name inside the archive, and ``dir_temp`` plus ``save_temp_files`` must
+        be removed with CleanupSaveFiles() once the archive has been written.
+        Must run on the main thread, since it may export VTK surfaces.
+        """
         import invesalius.data.slice_ as slice_
 
         dir_temp = decode(tempfile.mkdtemp(), const.FS_ENCODE)
@@ -318,8 +344,16 @@ class Project(metaclass=Singleton):
             if isinstance(mat, np.ndarray):
                 # mat is a numpy array or memmap
                 if hasattr(mat, "filename") and mat.filename:
-                    # It's a memmap already backed by a file: use its filename
-                    filelist[mat.filename] = v_filename
+                    # It's a memmap already backed by a file: use its filename.
+                    # filelist is keyed by source file, so a version sharing a file
+                    # already in the archive (e.g. "original" sharing the main
+                    # matrix) must reuse that name instead of replacing the entry,
+                    # otherwise matrix.dat would be missing from the archive.
+                    existing = self._archived_name(filelist, mat.filename)
+                    if existing is not None:
+                        v_filename = existing
+                    else:
+                        filelist[mat.filename] = v_filename
                 else:
                     # It's an in-memory array: write it to a new temp file
                     fd_v, temp_v = tempfile.mkstemp()
@@ -331,7 +365,11 @@ class Project(metaclass=Singleton):
                     save_temp_files.add(temp_v)  # safe to delete after save
             else:
                 # mat is already a file path (string)
-                filelist[mat] = v_filename
+                existing = self._archived_name(filelist, mat)
+                if existing is not None:
+                    v_filename = existing
+                else:
+                    filelist[mat] = v_filename
 
             plist_entry = {"label": label, "filename": v_filename}
             if label in self.image_versions_meta:
@@ -378,19 +416,7 @@ class Project(metaclass=Singleton):
         save_temp_files.add(temp_plist)  # safe to delete after save
         os.close(temp_fd)
 
-        # Compressing and generating the .inv3 file
-        path = os.path.join(dir_, filename)
-        Compress(dir_temp, path, filelist, compress)
-
-        # Removing the temp folder (only contains copies, not originals).
-        shutil.rmtree(dir_temp)
-
-        # Only delete files we explicitly created during THIS save — never active data files.
-        for f in save_temp_files:
-            try:
-                os.remove(f)
-            except OSError:
-                pass
+        return dir_temp, filelist, save_temp_files
 
     def OpenPlistProject(self, filename, progress_callback=None):
         """
@@ -794,6 +820,19 @@ def Compress(
     os.close(fd_inv3)
     shutil.move(temp_inv3, filename)
     # os.chdir(current_dir)
+
+
+def CleanupSaveFiles(folder: Union[str, os.PathLike], temp_files) -> None:
+    """Remove the temporary files created by Project.CollectSaveFiles()."""
+    # The temp folder only contains copies, not originals.
+    shutil.rmtree(folder, ignore_errors=True)
+
+    # Only delete files explicitly created during that save — never active data files.
+    for f in temp_files:
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 
 
 def custom_tar_filter(file: tarfile.TarInfo, path: Union[str, os.PathLike]):
