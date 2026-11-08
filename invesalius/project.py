@@ -20,6 +20,7 @@
 import datetime
 import os
 import plistlib
+import re
 import shutil
 import sys
 import tarfile
@@ -513,6 +514,11 @@ class Project(metaclass=Singleton):
                 )
                 self.image_versions.append((label, mat))
 
+        if not os.path.exists(self.matrix_filename):
+            # Rebuild matrix.dat as an independent copy so the main matrix and
+            # the image version keep separate files (and both are saved again).
+            shutil.copyfile(self._recover_matrix_filename(dirpath), self.matrix_filename)
+
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()
         masks = project.get("masks", [])
@@ -598,6 +604,43 @@ class Project(metaclass=Singleton):
                 return False
 
         return True
+
+    def _recover_matrix_filename(self, dirpath: str) -> str:
+        """Return the image version file (matrix_v<N>.dat) to replace a missing matrix.dat.
+
+        Older InVesalius versions could silently write a .inv3 without
+        matrix.dat when its temporary file had already been removed, keeping
+        only the image versions (matrix_v0.dat, matrix_v1.dat, ...). The main
+        matrix is a copy of the active image version, so fall back to that
+        version, then to the original one, then to any other version listed in
+        the project. If the project lists no versions, look for matrix_v<N>.dat
+        files with the expected size in the extracted folder, lowest N first.
+        """
+        versions = {label: mat for label, mat in self.image_versions}
+        for label in (self.active_image_version, "original"):
+            if label in versions:
+                return versions[label].filename
+        if self.image_versions:
+            return self.image_versions[0][1].filename
+
+        expected_size = int(np.prod(self.matrix_shape)) * np.dtype(self.matrix_dtype).itemsize
+        candidates = []
+        for name in os.listdir(dirpath):
+            match = re.fullmatch(r"matrix_v(\d+)\.dat", name)
+            filepath = os.path.join(dirpath, name)
+            if match and os.path.getsize(filepath) == expected_size:
+                candidates.append((int(match.group(1)), filepath))
+        if candidates:
+            return min(candidates)[1]
+
+        raise FileNotFoundError(
+            _(
+                "The image data (matrix.dat or matrix_v0.dat) is missing from this "
+                "project file. It was probably saved by an older InVesalius version "
+                "that failed to include the image. The masks alone cannot be opened; "
+                "please import the original exam again."
+            )
+        )
 
     def create_project_file(
         self,
