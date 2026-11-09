@@ -2484,7 +2484,8 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
             if self.eeg_electrodes.prepare_scalp_surface(create=False):
                 choice = wx.MessageBox(
                     _(
-                        "Project the imported EEG electrodes onto the existing smoothed scalp surface?"
+                        "Project the imported EEG electrodes onto the existing smoothed scalp surface? "
+                        "Electrode orientations will follow the scalp normals in either case."
                     ),
                     _("Project EEG electrodes"),
                     wx.YES_NO | wx.CANCEL | wx.NO_DEFAULT | wx.ICON_QUESTION,

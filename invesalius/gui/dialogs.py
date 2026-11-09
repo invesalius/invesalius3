@@ -6351,7 +6351,8 @@ def ShowEEGMontageImportDialog(parent: wx.Window) -> dict | None:
         dialog,
         label=_(
             "Use the file's declared coordinate system or define its frame from anatomical landmarks. "
-            "Landmark-based conversion requires Nasion, Left Ear and Right Ear in the file and MRI. "
+            "Head-coordinate conversion requires Nasion, Left Ear and Right Ear marked in the MRI. "
+            "Defining the source frame from landmarks also requires them in the file. "
             "For SFP or TSV without coordinate metadata, select the units."
         ),
     )

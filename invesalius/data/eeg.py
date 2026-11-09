@@ -508,7 +508,12 @@ class EEGMontage:
         if coordinate_system != "scanner_ras":
             target = EEGMontage._get_world_fiducials()
             if not all(name in target for name in ("NAS", "LPA", "RPA")):
-                raise ValueError(_("Register image fiducials (Left Ear, Right Ear, Nasion) first."))
+                raise ValueError(
+                    _(
+                        "Mark the MRI fiducials (Left Ear, Right Ear, Nasion) to define the "
+                        "MRI head coordinate system before converting this EEG montage."
+                    )
+                )
             target = np.asarray([target[name] for name in ("NAS", "LPA", "RPA")])
             transform = np.linalg.inv(ras_to_head_matrix(*target))
             if coordinate_system == "fiducials":
