@@ -2451,7 +2451,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         session = ses.Session()
         dialog = wx.FileDialog(
             self,
-            message=_("Open an exported EEG montage (keep its registration JSON beside it)"),
+            message=_("Open an EEG montage"),
             defaultDir=session.GetConfig("last_directory_eeg_montage", ""),
             wildcard=_("EEG montages (*.tsv, *.hpts, *.sfp, *.elc, *.fif)")
             + "|*.tsv;*.hpts;*.sfp;*.elc;*.fif",
@@ -2464,16 +2464,39 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         finally:
             dialog.Destroy()
         try:
+            import_options = {}
+            if (
+                not EEGMontage.get_registration_path(filename).is_file()
+                and pathlib.Path(filename).suffix.lower() != ".fif"
+            ):
+                import_options = dlg.ShowEEGMontageImportDialog(self)
+                if import_options is None:
+                    return
             with wx.BusyCursor():
-                electrodes = EEGMontage.read_montage(filename)
+                electrodes = EEGMontage.read_montage(filename, **import_options)
             if self.eeg_electrodes.electrodes:
                 message = _(
                     "Replace the current EEG electrodes with the imported montage (%d electrodes)?"
                 ) % len(electrodes)
                 if dlg.ShowConfirmationDialog(msg=message) != wx.ID_OK:
                     return
+            project_to_scalp = False
+            if self.eeg_electrodes.prepare_scalp_surface(create=False):
+                choice = wx.MessageBox(
+                    _(
+                        "Project the imported EEG electrodes onto the existing smoothed scalp surface?"
+                    ),
+                    _("Project EEG electrodes"),
+                    wx.YES_NO | wx.CANCEL | wx.NO_DEFAULT | wx.ICON_QUESTION,
+                    parent=self,
+                )
+                if choice == wx.CANCEL:
+                    return
+                project_to_scalp = choice == wx.YES
             with wx.BusyCursor():
-                self.eeg_electrodes.replace_electrodes(electrodes)
+                self.eeg_electrodes.replace_electrodes(
+                    electrodes, project_to_scalp=project_to_scalp
+                )
             session.SetConfig("last_directory_eeg_montage", os.path.dirname(filename))
         except (OSError, ValueError, RuntimeError) as error:
             wx.MessageBox(str(error), _("EEG import error"), wx.OK | wx.ICON_ERROR)

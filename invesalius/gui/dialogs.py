@@ -6341,6 +6341,52 @@ class SurfaceSmoothingProgressWindow:
         self.dlg.Destroy()
 
 
+def ShowEEGMontageImportDialog(parent: wx.Window) -> dict | None:
+    """Supply coordinate information missing from an external EEG montage."""
+    dialog = wx.Dialog(parent, title=_("Import EEG montage"))
+    coordinate_systems = ("auto", "fiducials", "head", "scanner_ras")
+    unit_values = (None, "mm", "cm", "m")
+    layout = wx.BoxSizer(wx.VERTICAL)
+    explanation = wx.StaticText(
+        dialog,
+        label=_(
+            "Use the file's declared coordinate system or define its frame from anatomical landmarks. "
+            "Landmark-based conversion requires Nasion, Left Ear and Right Ear in the file and MRI. "
+            "For SFP or TSV without coordinate metadata, select the units."
+        ),
+    )
+    explanation.Wrap(500)
+    layout.Add(explanation, 0, wx.EXPAND | wx.ALL, 10)
+    layout.Add(wx.StaticText(dialog, label=_("Coordinate conversion:")), 0, wx.LEFT | wx.RIGHT, 10)
+    alignment = wx.Choice(
+        dialog,
+        choices=[
+            _("Automatic: declared coordinate system or file landmarks"),
+            _("Define the source frame using NAS, LPA and RPA"),
+            _("MNE head: X right, Y anterior, Z superior"),
+            _("Scanner RAS of this MRI (positions already aligned)"),
+        ],
+    )
+    alignment.SetSelection(0)
+    layout.Add(alignment, 0, wx.EXPAND | wx.ALL, 10)
+    layout.Add(wx.StaticText(dialog, label=_("Coordinate units:")), 0, wx.LEFT | wx.RIGHT, 10)
+    units = wx.Choice(dialog, choices=[_("From file (HPTS default: mm)"), "mm", "cm", "m"])
+    units.SetSelection(0)
+    layout.Add(units, 0, wx.EXPAND | wx.ALL, 10)
+    layout.Add(dialog.CreateButtonSizer(wx.OK | wx.CANCEL), 0, wx.EXPAND | wx.ALL, 10)
+    dialog.SetSizerAndFit(layout)
+    dialog.CentreOnParent()
+    try:
+        if dialog.ShowModal() != wx.ID_OK:
+            return None
+        return {
+            "coordinate_system": coordinate_systems[alignment.GetSelection()],
+            "units": unit_values[units.GetSelection()],
+        }
+    finally:
+        dialog.Destroy()
+
+
 def ShowEEGMontageExportDialog(
     parent: wx.Window, default_directory: str = ""
 ) -> tuple[str, str] | None:
