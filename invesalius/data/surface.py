@@ -208,7 +208,11 @@ class Surface:
             self.category = sp["category"]
         except KeyError:
             self.category = "General"
-        self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
+        polydata_filepath = os.path.join(dirpath, sp["polydata"])
+        self.polydata = pu.Import(polydata_filepath)
+        # The extracted project folder is kept while the project is open, so
+        # saving can reuse this file instead of exporting the polydata again.
+        self.filename = polydata_filepath
         self.anatomical_role = sp.get("anatomical_role", "")
         self.peel_only = sp.get("peel_only", False)
         self.created_for_efield = sp.get("created_for_efield", False)
@@ -1236,6 +1240,9 @@ class SurfaceManager:
             surface = Surface(name=surface_name, category=category)
         surface.colour = colour
         surface.polydata = polydata
+        # The surface process already wrote this polydata to disk: reuse that file
+        # when saving, so the (auto-)save does not export it again on the main thread.
+        surface.filename = surface_filename
         surface.volume = surface_measures["volume"]
         surface.area = surface_measures["area"]
         del polydata
@@ -1608,6 +1615,8 @@ class SurfaceManager:
 
             surface.colour = colour
             surface.polydata = polydata
+            # Reuse the file written by the surface process when saving.
+            surface.filename = surface_filename
             surface.volume = surface_measures["volume"]
             surface.area = surface_measures["area"]
             if anatomical_role == "brain":
