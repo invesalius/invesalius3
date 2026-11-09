@@ -22,14 +22,39 @@ import codecs
 import configparser as ConfigParser
 import json
 import os
+import tarfile
+import tempfile
+import threading
+import time
+from concurrent.futures import Future, ThreadPoolExecutor
 from json.decoder import JSONDecodeError
 from pathlib import Path
 from random import randint
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 from invesalius import inv_paths
 from invesalius.pubsub import pub as Publisher
 from invesalius.utils import Singleton, debug, deep_merge_dict
+
+# Minimum time, in seconds, between the start of two auto-backups.
+AUTO_BACKUP_MIN_INTERVAL = 3.0
+# The auto-backup only starts after the project has gone this many seconds
+# without changes, so it does not run while the user drags the threshold
+# slider or paints with the brush.
+AUTO_BACKUP_IDLE_DELAY = 5.0
+# During uninterrupted editing, a backup is still made at least this often.
+AUTO_BACKUP_MAX_DELAY = 15.0
 
 CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.json")
 OLD_CONFIG_PATH = os.path.join(inv_paths.USER_INV_DIR, "config.cfg")
@@ -72,6 +97,71 @@ CONFIG_INIT = {
 }
 
 
+def write_backup_archive(
+    folder_name: str,
+    files: Sequence[Tuple[str, str]],
+    staging_path: str,
+    final_path: str,
+) -> str:
+    """
+    Write ``files`` into an uncompressed .inv3 archive and publish it atomically.
+
+    Same layout as project.Compress(compress=False): every file goes under
+    ``folder_name`` inside the archive. The archive is written to
+    ``staging_path`` and only then moved to ``final_path`` with os.replace, so a
+    crash mid-write never corrupts the last good backup.
+
+    Runs in the auto-backup thread (or on the caller's thread for
+    Session.CreateAutoBackup), so it must not touch wx, VTK or Session state.
+
+    Args:
+        folder_name: Name of the top-level folder inside the archive.
+        files: ``(source_path, name_inside_archive)`` pairs.
+        staging_path: Temporary file the archive is written to.
+        final_path: Path of the finished backup.
+
+    Returns:
+        ``final_path``.
+    """
+    try:
+        with tarfile.open(staging_path, "w") as tar:
+            for source, arcname in files:
+                arcname = os.path.normpath(arcname)  # Sanitizing path
+                if ".." in arcname or os.path.isabs(arcname):
+                    continue
+
+                if not os.path.exists(source):
+                    if arcname.startswith("matrix"):
+                        raise FileNotFoundError(
+                            f"Critical project file missing during backup: {source} "
+                            f"(target: {arcname})."
+                        )
+                    # A mask or surface removed while the backup was being prepared.
+                    continue
+
+                tar.add(source, arcname=os.path.join(folder_name, arcname))
+        os.replace(staging_path, final_path)
+    except BaseException:
+        try:
+            os.remove(staging_path)
+        except OSError:
+            pass
+        raise
+    return final_path
+
+
+class _BackupJob(NamedTuple):
+    """An auto-backup ready to be written by write_backup_archive."""
+
+    folder_name: str
+    files: List[Tuple[str, str]]
+    staging_path: str
+    final_path: str
+    # Temporary files from Project.CollectSaveFiles, removed after writing.
+    dir_temp: str
+    temp_files: Set[str]
+
+
 # Only one session will be initialized per time. Therefore, we use
 # Singleton design pattern for implementing it
 class Session(metaclass=Singleton):
@@ -98,12 +188,22 @@ class Session(metaclass=Singleton):
         # Unsaved changes tracking
         self._has_unsaved_changes = False
         self._auto_backup_path: Union[str, None] = None
-        # Backup debounce: prevent many concurrent backup threads when the
-        # user is painting quickly. At most one backup every 3 seconds.
-        import threading
-        import time
+        # Auto-backup: the archive is written in the background, by a worker
+        # thread. At most one backup runs at a time, and backups start at least
+        # AUTO_BACKUP_MIN_INTERVAL seconds apart. The attributes below are only
+        # touched from the main thread (except in the no-GUI fallback).
         self._backup_lock = threading.Lock()
         self._last_backup_time = 0.0
+        self._backup_executor: Optional[ThreadPoolExecutor] = None
+        # (future, job, generation) of the backup being written, if any.
+        self._backup_inflight: Optional[Tuple[Future, _BackupJob, int]] = None
+        self._backup_timer: Any = None  # wx.CallLater of the next backup
+        # time.monotonic() of the first change not yet included in a backup.
+        self._backup_requested_time: Optional[float] = None
+        self._backup_pending = False  # project changed while a backup was running
+        # Incremented when the backup is removed (e.g. project saved), so a
+        # backup that was still being written is discarded when it finishes.
+        self._backup_generation = 0
         self.__bind_events()
 
     def __bind_events(self) -> None:
@@ -190,23 +290,14 @@ class Session(metaclass=Singleton):
 
     def ChangeProject(self) -> None:
         import invesalius.constants as const
-        import time
 
         debug("Session.ChangeProject")
         self.SetConfig("project_status", const.PROJECT_STATUS_CHANGED)
         # Mark project as having unsaved changes
         self._has_unsaved_changes = True
 
-        # Debounced backup: spawn at most one backup thread every 3 seconds
-        # to avoid race conditions when painting many rapid brush strokes.
         if self.IsOpen():
-            now = time.time()
-            if now - self._last_backup_time >= 3.0:
-                self._last_backup_time = now
-                from threading import Thread
-                backup_thread = Thread(target=self._safe_create_backup)
-                backup_thread.daemon = True
-                backup_thread.start()
+            self._schedule_backup()
 
     def CreateProject(self, filename: str) -> None:
         import invesalius.constants as const
@@ -401,61 +492,254 @@ class Session(metaclass=Singleton):
 
     def _safe_create_backup(self) -> None:
         """Thread-safe wrapper: acquire lock before writing the backup file
-        so concurrent brush-stroke threads don't corrupt each other's writes."""
+        so concurrent callers don't corrupt each other's writes."""
         with self._backup_lock:
             self.CreateAutoBackup()
 
-    def CreateAutoBackup(self) -> bool:
+    def _schedule_backup(self) -> None:
         """
-        Create (or overwrite) the auto-backup of the current project.
-        Uses an atomic write pattern (write to temp file, then os.replace)
-        so a crash mid-write never corrupts the last good backup.
-        Returns True if backup was created successfully.
+        Request an auto-backup of the current project, written in the background.
+
+        Requests are coalesced: the backup starts only after
+        AUTO_BACKUP_IDLE_DELAY seconds without changes (but no later than
+        AUTO_BACKUP_MAX_DELAY seconds after the first pending change), at most one
+        backup runs at a time, and backups start at least AUTO_BACKUP_MIN_INTERVAL
+        seconds apart. A change made while a backup is running triggers one more
+        backup when it finishes, so the latest change is always included in the end.
+        """
+        import wx
+
+        if wx.GetApp() is None:
+            # No GUI event loop (e.g. scripted use): back up from a thread.
+            now = time.monotonic()
+            if now - self._last_backup_time >= AUTO_BACKUP_MIN_INTERVAL:
+                self._last_backup_time = now
+                threading.Thread(target=self._safe_create_backup, daemon=True).start()
+            return
+
+        if not wx.IsMainThread():
+            wx.CallAfter(self._schedule_backup)
+            return
+
+        now = time.monotonic()
+        if self._backup_inflight is not None:
+            self._backup_pending = True
+            if self._backup_requested_time is None:
+                self._backup_requested_time = now
+            return
+
+        if self._backup_requested_time is None:
+            self._backup_requested_time = now
+        # Wait until the user stops editing, but not beyond the maximum delay,
+        # and keep the minimum interval since the previous backup.
+        wait = min(
+            AUTO_BACKUP_IDLE_DELAY,
+            AUTO_BACKUP_MAX_DELAY - (now - self._backup_requested_time),
+        )
+        wait = max(wait, AUTO_BACKUP_MIN_INTERVAL - (now - self._last_backup_time), 0.0)
+        millis = int(wait * 1000) + 1
+
+        if self._backup_timer is not None:
+            # Postpone the scheduled backup: the project is still being edited.
+            self._backup_timer.Restart(millis)
+        else:
+            self._backup_timer = wx.CallLater(millis, self._start_async_backup)
+
+    def _start_async_backup(self) -> None:
+        """Prepare the backup on the main thread and hand the writing to the worker."""
+        self._backup_timer = None
+        self._backup_pending = False
+        self._backup_requested_time = None
+        if self._backup_inflight is not None or not self.IsOpen():
+            return
+
+        self._last_backup_time = time.monotonic()
+        job = self._prepare_backup_job()
+        if job is None:
+            return
+
+        try:
+            future = self._get_backup_executor().submit(
+                write_backup_archive, job.folder_name, job.files, job.staging_path, job.final_path
+            )
+        except Exception as e:
+            debug(f"Failed to start auto-backup: {e}")
+            self._cleanup_backup_job(job)
+            return
+
+        generation = self._backup_generation
+        self._backup_inflight = (future, job, generation)
+        future.add_done_callback(lambda f: self._on_backup_future_done(f, job, generation))
+
+    def _on_backup_future_done(self, future: Future, job: _BackupJob, generation: int) -> None:
+        """Called from an executor thread: finish the backup on the main thread."""
+        import wx
+
+        try:
+            wx.CallAfter(self._finish_async_backup, future, job, generation)
+        except Exception:
+            # The wx application is gone (exiting): just remove the temp files.
+            self._cleanup_backup_job(job)
+
+    def _finish_async_backup(self, future: Future, job: _BackupJob, generation: int) -> None:
+        if self._backup_inflight is None or self._backup_inflight[0] is not future:
+            return  # already finished by CreateAutoBackup or _ShutdownBackup
+        self._backup_inflight = None
+        self._cleanup_backup_job(job)
+
+        try:
+            final_path = future.result()
+        except Exception as e:
+            debug(f"Failed to create auto-backup: {e}")
+        else:
+            if generation == self._backup_generation:
+                self._auto_backup_path = final_path
+                self.SetState("auto_backup_path", final_path)
+                debug(f"Auto-backup updated: {final_path}")
+            else:
+                # The backup was removed (e.g. project saved) while this one
+                # was being written, so it is already out of date.
+                self._remove_file(final_path)
+
+        if self._backup_pending:
+            self._backup_pending = False
+            if self.IsOpen():
+                self._schedule_backup()
+
+    def _wait_backup_inflight(self) -> None:
+        """Block until the backup being written (if any) finishes, and finish it."""
+        inflight = self._backup_inflight
+        if inflight is None:
+            return
+        try:
+            inflight[0].result()
+        except Exception:
+            pass  # reported by _finish_async_backup
+        self._finish_async_backup(*inflight)
+
+    def _get_backup_executor(self) -> ThreadPoolExecutor:
+        if self._backup_executor is None:
+            # A single thread, kept alive and reused by every backup.
+            self._backup_executor = ThreadPoolExecutor(
+                max_workers=1, thread_name_prefix="auto_backup"
+            )
+        return self._backup_executor
+
+    def _shutdown_backup_executor(self, wait: bool) -> None:
+        executor = self._backup_executor
+        self._backup_executor = None
+        if executor is not None:
+            try:
+                executor.shutdown(wait=wait, cancel_futures=True)
+            except Exception as e:
+                debug(f"Failed to stop the auto-backup worker: {e}")
+
+    def _prepare_backup_job(self) -> Optional[_BackupJob]:
+        """
+        Collect the files of the current project for a backup.
+
+        Cheap part of the backup (plists and file list); must run on the main
+        thread. Returns None if there is nothing to back up or it failed.
         """
         import invesalius.project as prj
 
-        try:
-            # Get current project
-            project_path = self.GetState("project_path")
-            if not project_path:
-                return False
+        if not self.GetState("project_path"):
+            return None
 
-            # Create backup directory
+        staging_path = None
+        try:
             backup_dir = Path(inv_paths.USER_INV_DIR) / "temp_backup"
             backup_dir.mkdir(parents=True, exist_ok=True)
 
-            # Write to a staging file first so that a crash mid-write never
-            # corrupts the last good backup (auto_backup.inv3).
-            staging_filename = "auto_backup_staging.inv3"
-            staging_path = backup_dir / staging_filename
-            final_filename = "auto_backup.inv3"
-            final_path = backup_dir / final_filename
+            # A unique staging file per backup, so two backups never write to
+            # the same file. It is moved to auto_backup.inv3 once complete.
+            fd, staging_path = tempfile.mkstemp(
+                prefix="auto_backup_staging_", suffix=".inv3", dir=str(backup_dir)
+            )
+            os.close(fd)
 
-            # Save current project to the staging location.
-            # compress=False: uncompressed tar writes ~110MB in <0.5s on NVMe.
-            # Gzip compression (compress=True) was causing the multi-second UI
-            # freeze — it provides no real benefit for crash-recovery backups
-            # where write speed is critical. Manual saves still use their own
-            # compression setting.
-            proj = prj.Project()
-            proj.SavePlistProject(str(backup_dir), staging_filename, compress=False)
+            # compress=False: gzip would make the backup much slower and gives
+            # no real benefit for crash recovery. Manual saves still use their
+            # own compression setting.
+            dir_temp, filelist, temp_files = prj.Project().CollectSaveFiles(compress=False)
+        except Exception as e:
+            debug(f"Failed to prepare auto-backup: {e}")
+            if staging_path is not None:
+                self._remove_file(staging_path)
+            return None
 
-            # Atomically promote staging → final (old backup preserved if
-            # SavePlistProject raised an exception above)
-            os.replace(str(staging_path), str(final_path))
+        return _BackupJob(
+            folder_name=os.path.basename(dir_temp),
+            files=[(str(src), str(arcname)) for src, arcname in filelist.items()],
+            staging_path=staging_path,
+            final_path=str(backup_dir / "auto_backup.inv3"),
+            dir_temp=dir_temp,
+            temp_files=temp_files,
+        )
 
-            self._auto_backup_path = str(final_path)
-            self.SetState("auto_backup_path", str(final_path))
+    def _cleanup_backup_job(self, job: _BackupJob) -> None:
+        import invesalius.project as prj
 
-            debug(f"Auto-backup updated: {final_path}")
-            return True
+        prj.CleanupSaveFiles(job.dir_temp, job.temp_files)
+        # Left behind if the backup was cancelled before it started.
+        self._remove_file(job.staging_path)
 
+    @staticmethod
+    def _remove_file(path: str) -> None:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+    def CreateAutoBackup(self) -> bool:
+        """
+        Create (or overwrite) the auto-backup of the current project and wait
+        until it is on disk.
+
+        Used where the backup must be complete before returning (e.g. right after
+        an image filter); regular changes use the background backup instead.
+        Uses an atomic write pattern (write to a staging file, then os.replace)
+        so a crash mid-write never corrupts the last good backup.
+        Returns True if backup was created successfully.
+        """
+        # This backup includes every change so far, so drop scheduled ones, and let
+        # a background backup finish first so it cannot overwrite this newer one.
+        self._cancel_scheduled_backup()
+        self._wait_backup_inflight()
+
+        self._last_backup_time = time.monotonic()
+        job = self._prepare_backup_job()
+        if job is None:
+            return False
+
+        try:
+            final_path = write_backup_archive(
+                job.folder_name, job.files, job.staging_path, job.final_path
+            )
         except Exception as e:
             debug(f"Failed to create auto-backup: {e}")
             return False
+        finally:
+            self._cleanup_backup_job(job)
+
+        self._auto_backup_path = final_path
+        self.SetState("auto_backup_path", final_path)
+        debug(f"Auto-backup updated: {final_path}")
+        return True
+
+    def _cancel_scheduled_backup(self) -> None:
+        if self._backup_timer is not None:
+            self._backup_timer.Stop()
+            self._backup_timer = None
+        self._backup_pending = False
+        self._backup_requested_time = None
 
     def RemoveAutoBackup(self) -> None:
         """Remove the auto-backup file if it exists."""
+        # Discard backups that are scheduled or still being written.
+        self._cancel_scheduled_backup()
+        self._backup_generation += 1
+
         if self._auto_backup_path and os.path.exists(self._auto_backup_path):
             try:
                 os.remove(self._auto_backup_path)
@@ -473,7 +757,14 @@ class Session(metaclass=Singleton):
             return backup_path
         return None
 
+    def _ShutdownBackup(self) -> None:
+        """Stop scheduling backups, wait for the one being written and stop the worker."""
+        self._cancel_scheduled_backup()
+        self._wait_backup_inflight()
+        self._shutdown_backup_executor(wait=True)
+
     def _Exit(self) -> None:
+        self._ShutdownBackup()
         self.CloseProject()
         # Only delete state file if no unsaved changes (for crash recovery)
         if not self._has_unsaved_changes:
