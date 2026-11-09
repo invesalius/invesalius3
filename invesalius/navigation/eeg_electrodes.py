@@ -127,8 +127,8 @@ class EEGElectrodeManager(metaclass=Singleton):
         self.registration_active = bool(active)
         Publisher.sendMessage("EEG registration mode changed", active=self.registration_active)
 
-    def prepare_scalp_surface(self):
-        return self.surface_geometry.GetSmoothedScalpSurface() is not None
+    def prepare_scalp_surface(self, create=True):
+        return self.surface_geometry.GetSmoothedScalpSurface(create=create) is not None
 
     def set_labels_visible(self, visible):
         self.labels_visible = bool(visible)
@@ -137,7 +137,6 @@ class EEGElectrodeManager(metaclass=Singleton):
     def create(
         self,
         position: Sequence[float],
-        *,
         label=None,
         orientation=(0.0, 0.0, 0.0),
         colour=(0.0, 1.0, 0.0),
@@ -169,12 +168,14 @@ class EEGElectrodeManager(metaclass=Singleton):
     def create_from_capture(self, capture: ScalpProjection, **options) -> EEGElectrode:
         return self.create(capture.position, orientation=capture.orientation, **options)
 
-    def project_to_scalp(self, position: Sequence[float]) -> ScalpProjection:
+    def project_to_scalp(self, position: Sequence[float], create_surface=True) -> ScalpProjection:
         original_position = list(position)
         viewer_position = original_position.copy()
         viewer_position[1] *= -1
         closest_point, closest_normal = self.surface_geometry.GetOuterPointOnScalp(
-            viewer_position, smooth_radius=SCALP_NORMAL_AVERAGING_RADIUS_MM
+            viewer_position,
+            smooth_radius=SCALP_NORMAL_AVERAGING_RADIUS_MM,
+            create_surface=create_surface,
         )
         projected_position = list(closest_point)
         projected_position[1] *= -1
@@ -198,11 +199,19 @@ class EEGElectrodeManager(metaclass=Singleton):
     def clear(self):
         return self.remove_many(self._electrodes)
 
-    def replace_electrodes(self, electrodes: Sequence[EEGElectrode]):
+    def replace_electrodes(self, electrodes: Sequence[EEGElectrode], project_to_scalp=False):
         """Install a fully validated import, keeping the current collection on save failure."""
-        if self.prepare_scalp_surface():
+        if project_to_scalp:
+            if not self.prepare_scalp_surface(create=False):
+                raise RuntimeError(
+                    _("A smoothed scalp surface is required to project EEG electrodes.")
+                )
             for electrode in electrodes:
-                electrode.orientation = self.project_to_scalp(electrode.position).orientation
+                projection = self.project_to_scalp(electrode.position, create_surface=False)
+                electrode.position = projection.position
+                electrode.orientation = projection.orientation
+                # Template distances describe the original positions, before projection.
+                electrode.distance_mm = None
         previous = self._electrodes
         self._electrodes = {item.electrode_uuid: item for item in electrodes}
         try:
