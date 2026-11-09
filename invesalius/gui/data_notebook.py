@@ -2480,8 +2480,23 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
                 ) % len(electrodes)
                 if dlg.ShowConfirmationDialog(msg=message) != wx.ID_OK:
                     return
+            project_to_scalp = False
+            if self.eeg_electrodes.prepare_scalp_surface(create=False):
+                choice = wx.MessageBox(
+                    _(
+                        "Project the imported EEG electrodes onto the existing smoothed scalp surface?"
+                    ),
+                    _("Project EEG electrodes"),
+                    wx.YES_NO | wx.CANCEL | wx.NO_DEFAULT | wx.ICON_QUESTION,
+                    parent=self,
+                )
+                if choice == wx.CANCEL:
+                    return
+                project_to_scalp = choice == wx.YES
             with wx.BusyCursor():
-                self.eeg_electrodes.replace_electrodes(electrodes)
+                self.eeg_electrodes.replace_electrodes(
+                    electrodes, project_to_scalp=project_to_scalp
+                )
             session.SetConfig("last_directory_eeg_montage", os.path.dirname(filename))
         except (OSError, ValueError, RuntimeError) as error:
             wx.MessageBox(str(error), _("EEG import error"), wx.OK | wx.ICON_ERROR)

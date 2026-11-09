@@ -356,7 +356,7 @@ class EEGMontage:
         return path.with_name(f"{stem}_registration.json")
 
     @staticmethod
-    def read_montage(filename, *, coordinate_system="auto", units=None) -> list[EEGElectrode]:
+    def read_montage(filename, coordinate_system="auto", units=None) -> list[EEGElectrode]:
         """Read a registered export or convert an external montage to the current MRI."""
         path = Path(filename)
         registration_path = EEGMontage.get_registration_path(path)
@@ -435,7 +435,7 @@ class EEGMontage:
         return {"m": 1000.0, "cm": 10.0, "mm": 1.0}[units]
 
     @staticmethod
-    def _read_external_montage(path, export_format, *, coordinate_system, units):
+    def _read_external_montage(path, export_format, coordinate_system, units):
         from invesalius.data.bases import ras_to_head_matrix
 
         file_frame, coordinate_metadata = None, {}
@@ -514,7 +514,7 @@ class EEGMontage:
         ]
 
     @staticmethod
-    def _read_text_montage(path, export_format, *, registered=False):
+    def _read_text_montage(path, export_format, registered=False):
         units, points, fiducials = None, [], {}
         if export_format == "BIDS":
             with path.open(encoding="utf-8-sig", newline="") as stream:
