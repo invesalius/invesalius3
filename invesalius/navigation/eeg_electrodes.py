@@ -79,8 +79,6 @@ class EEGElectrodeManager(metaclass=Singleton):
     def LoadState(self):
         session = ses.Session()
         electrodes = [EEGElectrode(**data) for data in session.GetState("eeg_electrodes", [])]
-        marker_state = session.GetState("markers", []) or []
-        # Migrate before MarkersControl reads the old EEG type (5), which master does not know.
         self._electrodes = {item.electrode_uuid: item for item in electrodes}
 
     def on_project_state(self, state):
