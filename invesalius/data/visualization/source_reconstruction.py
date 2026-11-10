@@ -52,7 +52,7 @@ class SourceReconstructionMode:
         self.frame_index = None
         self.selected_source = None
         self.source_values = None
-        self.representation = "pial"
+        self.representation = "surface"
         self.hemispheres_visible = (True, True)
         self._representation_maps = {}
         self._representation_data = {}
@@ -440,6 +440,6 @@ class SourceReconstructionMode:
         self._cross_position = None
         self._representation_maps.clear()
         self._representation_data.clear()
-        self.representation = "pial"
+        self.representation = "surface"
         self.hemispheres_visible = (True, True)
         Publisher.sendMessage("Source reconstruction changed", mode=self)

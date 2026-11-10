@@ -54,12 +54,12 @@ class TaskPanel(wx.Panel):
         self._representation_labels = {
             "pial": _("Pial"),
             "white": _("White"),
-            "mid": _("Mid"),
+            "mid": _("Midthickness"),
             "inflated": _("Inflated"),
             "surface": _("Surface"),
         }
-        self._representations = ("pial",)
-        self.representation = wx.Choice(self, choices=[self._representation_labels["pial"]])
+        self._representations = ("surface",)
+        self.representation = wx.Choice(self, choices=[self._representation_labels["surface"]])
         self.representation.SetSelection(0)
         self.representation.SetToolTip(
             _("Select EEG/MEG color mapping on Brain to change its cortical representation.")
@@ -121,13 +121,13 @@ class TaskPanel(wx.Panel):
     def _sync_display_controls(self):
         mode = self._mode
         loaded = mode is not None and mode.series is not None
-        representations = mode.series.representations if loaded else ("pial",)
+        representations = mode.series.representations if loaded else ("surface",)
         if representations != self._representations:
             self._representations = representations
             self.representation.SetItems(
                 [self._representation_labels[key] for key in representations]
             )
-        selected = representations.index(mode.representation if loaded else "pial")
+        selected = representations.index(mode.representation if loaded else "surface")
         if self.representation.GetSelection() != selected:
             self.representation.SetSelection(selected)
         visible = mode.hemispheres_visible if loaded else (True, True)
@@ -405,23 +405,16 @@ class ImportSourceDialog(wx.Dialog):
         self._subject_table_brainstorm = brainstorm
         sides = ("combined",) if brainstorm else ("lh", "rh")
         titles = (_("Surface"), _("Files")) if brainstorm else (_("Surface"), _("Left"), _("Right"))
-        rows = (
-            (
-                ("cortex", _("Cortex (default)")),
-                ("pial", _("Pial")),
-                ("white", _("White")),
-                ("mid", _("Mid")),
-                ("inflated", _("Inflated")),
-            )
-            if brainstorm
-            else (
-                ("mid", _("Mid")),
-                ("pial", _("Pial")),
-                ("white", _("White")),
-                ("inflated", _("Inflated")),
-                ("curv", _("Curvature")),
-            )
-        )
+        rows = [
+            ("pial", _("Pial")),
+            ("white", _("White")),
+            ("mid", _("Midthickness")),
+            ("inflated", _("Inflated")),
+        ]
+        if brainstorm:
+            rows.insert(0, ("cortex", _("Cortex (default)")))
+        else:
+            rows.append(("curv", _("Curvature")))
         table.SetCols(len(titles))
         parent = self.detected.GetStaticBox()
         for title in titles:
