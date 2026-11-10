@@ -253,20 +253,23 @@ class EEGElectrodeManager(metaclass=Singleton):
             raise ValueError(_("Run auto labelling to select an EEG montage first."))
         if label not in template["electrodes"]:
             raise ValueError(_("Choose a label from the electrode's EEG montage."))
-        EEGMontage._validate_export_labels(
-            [
-                (label if item is electrode else item.label, item.position)
-                for item in self.electrodes
-            ]
-        )
-        previous_label, previous_distance = electrode.label, electrode.distance_mm
-        electrode.label = label
-        # The previous distance belongs to the automatically assigned template label.
-        electrode.distance_mm = None
+        previous = [
+            (item, item.label, item.distance_mm)
+            for item in self.electrodes
+            if item is electrode or item.label == label
+        ]
         try:
+            for item, _previous_label, _previous_distance in previous:
+                item.label = label if item is electrode else self.next_label()
+                # Matching distances belong to the previous labels.
+                item.distance_mm = None
+            EEGMontage._validate_export_labels(
+                [(item.label, item.position) for item in self.electrodes]
+            )
             self.SaveState()
         except Exception:
-            electrode.label, electrode.distance_mm = previous_label, previous_distance
+            for item, previous_label, previous_distance in previous:
+                item.label, item.distance_mm = previous_label, previous_distance
             raise
         Publisher.sendMessage("EEG electrodes changed")
 
