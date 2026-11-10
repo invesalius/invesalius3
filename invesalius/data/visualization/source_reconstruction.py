@@ -30,7 +30,7 @@ from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
 import invesalius.constants as const
-from invesalius.data.eeg import read_source_config, read_source_reconstruction
+from invesalius.data.source_reconstruction import read_source_config, read_source_reconstruction
 from invesalius.data.time_series import Playback
 from invesalius.data.visualization.surface_map_visualizer import ColorBar, SurfaceMap
 from invesalius.data.visualization.surface_painting import SurfacePainting

@@ -25,12 +25,12 @@ import numpy as np
 import wx
 
 import invesalius.gui.dialogs as dlg
-from invesalius.data.eeg import (
+from invesalius.data.imagedata_utils import register_image_to_volume
+from invesalius.data.source_reconstruction import (
     MissingSurfaceGeometryError,
     SourceImportRequired,
     discover_subject_files,
 )
-from invesalius.data.imagedata_utils import register_image_to_volume
 from invesalius.data.visualization.surface_painting import SurfacePainting
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
