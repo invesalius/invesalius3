@@ -29,6 +29,7 @@ from invesalius.data.imagedata_utils import register_image_to_volume
 from invesalius.data.source_reconstruction import (
     MissingSurfaceGeometryError,
     SourceImportRequired,
+    discover_freesurfer_surfaces,
     discover_subject_files,
 )
 from invesalius.data.visualization.surface_painting import SurfacePainting
@@ -247,12 +248,12 @@ class ImportSourceDialog(wx.Dialog):
         form.Add(wx.StaticText(self, label=_("Subject:")), 0, wx.ALIGN_CENTER_VERTICAL)
         self.subject = wx.DirPickerCtrl(
             self,
-            message=_("Select a FreeSurfer/FastSurfer or Brainstorm subject folder"),
+            message=_("Select a FreeSurfer/FastSurfer, Workbench or Brainstorm subject folder"),
             style=wx.DIRP_USE_TEXTCTRL | wx.DIRP_SMALL | wx.DIRP_DIR_MUST_EXIST,
         )
         self.subject.SetToolTip(
             _(
-                "STC/MNE H5 use FreeSurfer surfaces. Brainstorm MAT results can use a Brainstorm anatomy folder. Other MAT files use their associated mesh."
+                "STC/MNE H5 use FreeSurfer surfaces. FieldTrip MAT can use matching Workbench midthickness, pial and white surfaces. Brainstorm MAT can use a Brainstorm anatomy folder."
             )
         )
         form.Add(self.subject, 1, wx.EXPAND)
@@ -268,7 +269,7 @@ class ImportSourceDialog(wx.Dialog):
         self.subject_summary = wx.StaticText(
             self,
             label=_(
-                "Select a FreeSurfer/FastSurfer or Brainstorm subject folder, or use the mesh associated with the source MAT file."
+                "Select a FreeSurfer/FastSurfer, Workbench or Brainstorm subject folder, or use the mesh associated with the source MAT file."
             ),
         )
         self.subject_summary.Wrap(self.FromDIP(620))
@@ -407,12 +408,14 @@ class ImportSourceDialog(wx.Dialog):
         rows = (
             (
                 ("cortex", _("Cortex (default)")),
+                ("pial", _("Pial")),
                 ("white", _("White")),
                 ("mid", _("Mid")),
                 ("inflated", _("Inflated")),
             )
             if brainstorm
             else (
+                ("mid", _("Mid")),
                 ("pial", _("Pial")),
                 ("white", _("White")),
                 ("inflated", _("Inflated")),
@@ -443,6 +446,13 @@ class ImportSourceDialog(wx.Dialog):
         for (kind, side), cell in self.subject_cells.items():
             available = files.get(kind, {})
             paths = list(available.values()) if side == "combined" else [available.get(side)]
+            if side != "combined":
+                code = {"lh": "L", "rh": "R"}[side]
+                paths.extend(
+                    path
+                    for path in files.get("workbench", {}).get(kind, {}).values()
+                    if f".{code}." in path.name
+                )
             paths = [path for path in paths if path is not None]
             label = _("Found") if paths else absent
             if len(paths) > 1:
@@ -486,13 +496,16 @@ class ImportSourceDialog(wx.Dialog):
                     for side, path in files["pial"].items():
                         self.files[f"{side}_surface"].SetPath(str(path))
                     missing = [f"{side}.pial" for side in ("lh", "rh") if side not in files["pial"]]
-                    message = (
-                        _("Required files not found:") + " " + ", ".join(missing)
-                        if missing
-                        else _(
+                    if "workbench" in files:
+                        message = _(
+                            "FieldTrip can use the matching Workbench surfaces. STC/MNE H5 use native FreeSurfer surfaces."
+                        )
+                    elif missing:
+                        message = _("Required files not found:") + " " + ", ".join(missing)
+                    else:
+                        message = _(
                             "Uses surface coordinates in the current anatomy. Pial is used for visualization."
                         )
-                    )
                 self._show_subject_files(files, message)
             except (OSError, ValueError) as error:
                 self._show_subject_files({}, str(error))
@@ -514,7 +527,8 @@ class ImportSourceDialog(wx.Dialog):
                     _("Surfaces changed. Calculate alignment again if needed.")
                 )
             self._show_subject_files(
-                {"pial": pial}, _("Uses surface coordinates in the current anatomy.")
+                discover_freesurfer_surfaces(pial),
+                _("Uses surface coordinates in the current anatomy."),
             )
         event.Skip()
 

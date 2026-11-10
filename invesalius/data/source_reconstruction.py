@@ -84,6 +84,7 @@ class CorticalSourceSeries:
     hemisphere_sizes: tuple[int, ...]
     surface_to_project_ras: np.ndarray
     subject_files: dict[str, dict[str, Path]] = field(default_factory=dict)
+    base_representation: str = "surface"
     measure: str = "amplitude"
     method: str = ""
     source_unit: str = ""
@@ -174,28 +175,16 @@ class CorticalSourceSeries:
 
     @property
     def representations(self):
-        if self.brainstorm_surface is not None:
-            if self.brainstorm_sphere is None:
-                return (self.base_representation,)
-            return (self.base_representation,) + tuple(
-                name
-                for name in ("pial", "white", "mid", "inflated")
-                if name != self.base_representation and self.subject_files.get(name)
-            )
         return (self.base_representation,) + tuple(
             name
-            for name in ("white", "inflated")
-            if all(side in self.subject_files.get(name, {}) for side in ("lh", "rh"))
+            for name in ("pial", "white", "mid", "inflated")
+            if name != self.base_representation
+            and self.subject_files.get(name)
+            and (
+                self.brainstorm_surface is not None
+                or all(side in self.subject_files[name] for side in ("lh", "rh"))
+            )
         )
-
-    @property
-    def base_representation(self):
-        if self.brainstorm_surface is not None:
-            for name in ("pial", "white", "mid", "inflated"):
-                if self.brainstorm_surface.stem.startswith(f"tess_cortex_{name}_"):
-                    return name
-            return "surface"
-        return "pial" if len(self.hemisphere_sizes) == 2 else "surface"
 
     def read_surface(self, representation):
         """Return display geometry, source mapping and hemisphere IDs."""
@@ -211,7 +200,8 @@ class CorticalSourceSeries:
         points = []
         offset = 0
         for side, count in zip(("lh", "rh"), self.hemisphere_sizes):
-            vertices, faces = nib.freesurfer.read_geometry(self.subject_files[representation][side])
+            path = self.subject_files[representation][side]
+            vertices, faces = _read_cortical_surface(path)
             reference = (
                 self.triangles[
                     (self.triangles[:, 0] >= offset) & (self.triangles[:, 0] < offset + count)
@@ -224,7 +214,7 @@ class CorticalSourceSeries:
                 or not np.array_equal(faces, reference)
             ):
                 raise ValueError(
-                    f"The {side} {representation} surface is incompatible with the pial mesh."
+                    f"The {side} {representation} surface is incompatible with the imported mesh."
                 )
             points.append(vertices)
             offset += count
@@ -296,11 +286,12 @@ def read_source_reconstruction(config, base_dir="."):
         points, triangles, source_vertices, hemisphere_sizes, subject_files, surface_to_scanner = (
             _read_freesurfer_source_mesh(config, base_dir, sources)
         )
+        mesh_metadata["base_representation"] = "pial"
     else:
-        points, triangles, surface_to_scanner = mesh[:3]
-        mesh_metadata = mesh[3] if len(mesh) == 4 else {}
+        points, triangles, surface_to_scanner, mesh_metadata = mesh
         source_vertices = np.concatenate([source.vertices for source in sources])
-        hemisphere_sizes, subject_files = (), mesh_metadata.get("subject_files", {})
+        hemisphere_sizes = mesh_metadata.get("hemisphere_sizes", ())
+        subject_files = mesh_metadata.get("subject_files", {})
     surface_to_project = _affine(registration @ surface_to_scanner)
     scalar_range, global_rms = _source_statistics(sources)
     vertex_sources = _vertex_sources(points, triangles, source_vertices)
@@ -319,6 +310,7 @@ def read_source_reconstruction(config, base_dir="."):
         hemisphere_sizes=hemisphere_sizes,
         surface_to_project_ras=surface_to_project,
         subject_files=subject_files,
+        base_representation=mesh_metadata.get("base_representation", "surface"),
         measure=sources[0].measure,
         method=method,
         source_unit=unit,
@@ -407,7 +399,7 @@ def _source_axis(times):
 
 
 def _has_source_values(value):
-    if isinstance(value, (list, tuple, dict)):
+    if isinstance(value, list | tuple | dict):
         return bool(value)
     return bool(np.prod(value.shape)) if issparse(value) else bool(np.size(value))
 
@@ -542,11 +534,42 @@ def _vertex_sources(points, triangles, source_vertices):
 # Source anatomy
 
 
+def discover_workbench_surfaces(subject_dir):
+    folder = Path(subject_dir).expanduser()
+    if (folder / "workbench").is_dir():
+        folder = folder / "workbench"
+    return {
+        kind: {path.name: path for path in sorted(folder.glob(f"*.{label}.*.surf.gii"))}
+        for kind, label in (
+            ("mid", "midthickness"),
+            ("pial", "pial"),
+            ("white", "white"),
+            ("inflated", "inflated"),
+        )
+    }
+
+
+def discover_freesurfer_surfaces(surface_paths):
+    """Find companion surfaces alongside the selected FreeSurfer pial files."""
+    files = {kind: {} for kind in ("pial", "white", "inflated", "curv")}
+    for side, surface in surface_paths.items():
+        surface = Path(surface)
+        if surface.is_file():
+            files["pial"][side] = surface
+        if surface.name == f"{side}.pial":
+            for kind in ("white", "inflated", "curv"):
+                path = surface.with_name(f"{side}.{kind}")
+                if path.is_file():
+                    files[kind][side] = path
+    return files
+
+
 def discover_subject_files(subject_dir):
-    """Find source anatomy in a FreeSurfer/FastSurfer or Brainstorm subject directory."""
+    """Find FreeSurfer/FastSurfer, Workbench or Brainstorm source anatomy."""
     subject_dir = Path(subject_dir).expanduser().resolve()
     surface_dir = subject_dir / "surf"
-    if not surface_dir.is_dir():
+    workbench = discover_workbench_surfaces(subject_dir)
+    if not surface_dir.is_dir() and not workbench["mid"]:
         catalog = subject_dir / "brainstormsubject.mat"
         if catalog.is_file():
             data = _read_mat_file(catalog, ("Cortex", "Anatomy"))
@@ -558,15 +581,13 @@ def discover_subject_files(subject_dir):
             files.update(brainstorm=anatomy, cortex={"default": anatomy["surface_file"]})
             return files
         raise ValueError(
-            "Select a subject folder containing FreeSurfer/FastSurfer 'surf' or Brainstorm 'brainstormsubject.mat'."
+            "Select a subject folder containing FreeSurfer/FastSurfer 'surf', Workbench surfaces, or Brainstorm 'brainstormsubject.mat'."
         )
-    files = {}
-    for kind in ("pial", "white", "inflated", "curv"):
-        files[kind] = {}
-        for side in ("lh", "rh"):
-            path = surface_dir / f"{side}.{kind}"
-            if path.is_file():
-                files[kind][side] = path
+    files = discover_freesurfer_surfaces(
+        {side: surface_dir / f"{side}.pial" for side in ("lh", "rh")}
+    )
+    if workbench["mid"]:
+        files["workbench"] = workbench
     return files
 
 
@@ -624,6 +645,7 @@ def _read_freesurfer_source_mesh(config, base_dir, sources):
             )
     else:
         surface_paths = {side: base_dir / config[f"{side}_surface"] for side in ("lh", "rh")}
+        subject_files = discover_freesurfer_surfaces(surface_paths)
     surface_to_scanner = None
     if "mri" in config:
         if not isinstance(config["mri"], str) or not config["mri"].strip():
@@ -969,10 +991,30 @@ def _read_brainstorm_display_surface(series, representation):
         mesh.get("Vertices", []), np.asarray(mesh.get("Faces", [])) - 1
     )
     hemispheres = _brainstorm_hemispheres(mesh, len(points))
+    points = nib.affines.apply_affine(series.surface_to_project_ras, points * 1000.0)
+    if not np.isfinite(points).all():
+        raise ValueError("The cortical representation has invalid project coordinates.")
+    if (
+        len(points) == len(series.points)
+        and np.array_equal(triangles, series.triangles)
+        and (
+            hemispheres is None
+            or series.vertex_hemispheres is None
+            or np.array_equal(hemispheres, series.vertex_hemispheres)
+        )
+    ):
+        # Matching vertex IDs preserve the sources without spherical interpolation.
+        return (
+            points,
+            triangles,
+            series.vertex_sources,
+            (series.vertex_hemispheres if hemispheres is None else hemispheres),
+        )
     sphere = _brainstorm_sphere(mesh, hemispheres)
-    if sphere is None:
+    if sphere is None or series.brainstorm_sphere is None:
         raise ValueError(
-            "This Brainstorm representation requires cortical Structures and registered Sphere metadata."
+            "Brainstorm surfaces with different vertex layouts require cortical Structures "
+            "and registered Sphere metadata on both meshes."
         )
     rows, columns, weights = [], [], []
     for side in (0, 1):
@@ -996,9 +1038,6 @@ def _read_brainstorm_display_surface(series, representation):
         (np.concatenate(weights), (np.concatenate(rows), np.concatenate(columns))),
         shape=(len(points), sum(len(source.vertices) for source in series.sources)),
     )
-    points = nib.affines.apply_affine(series.surface_to_project_ras, points * 1000.0)
-    if not np.isfinite(points).all():
-        raise ValueError("The cortical representation has invalid project coordinates.")
     return points, triangles, mapping, hemispheres
 
 
@@ -1157,12 +1196,105 @@ def _read_brainstorm_source(filename, data, config):
             "vertex_hemispheres": hemispheres,
             "brainstorm_sphere": _brainstorm_sphere(mesh, hemispheres),
             "brainstorm_surface": path,
+            "base_representation": next(
+                (
+                    kind
+                    for kind in ("pial", "white", "mid", "inflated")
+                    if path.stem.startswith(f"tess_cortex_{kind}_")
+                ),
+                "surface",
+            ),
             "subject_files": _brainstorm_surface_files(path.parent),
         },
     )
 
 
 # FieldTrip source reconstruction
+
+
+def _read_cortical_surface(path):
+    if path.suffix != ".gii":
+        return _validate_source_mesh(*nib.freesurfer.read_geometry(path))
+    image = nib.load(path)
+    if not isinstance(image, nib.gifti.GiftiImage):
+        raise ValueError("Workbench surfaces must be GIFTI files.")
+    points = image.get_arrays_from_intent("NIFTI_INTENT_POINTSET")
+    faces = image.get_arrays_from_intent("NIFTI_INTENT_TRIANGLE")
+    if len(points) != 1 or len(faces) != 1:
+        raise ValueError("Workbench surfaces require one vertex array and one triangle array.")
+    vertices, triangles = _validate_source_mesh(points[0].data, faces[0].data)
+    vertices = nib.affines.apply_affine(_affine(points[0].coordsys.xform), vertices)
+    return _validate_source_mesh(vertices, triangles)
+
+
+def _read_fieldtrip_workbench(filename, config, points, triangles, transform, files):
+    candidates = {}
+    for left_path in files["mid"].values():
+        if ".L.midthickness." not in left_path.name:
+            continue
+        right_path = left_path.with_name(left_path.name.replace(".L.", ".R.", 1))
+        if not right_path.is_file():
+            continue
+        left, left_faces = _read_cortical_surface(left_path)
+        right, right_faces = _read_cortical_surface(right_path)
+        faces = np.concatenate([left_faces, right_faces + len(left)])
+        if len(left) + len(right) == len(points) and np.array_equal(faces, triangles):
+            candidates[left_path.name] = (
+                left_path,
+                np.concatenate([left, right]),
+                (len(left), len(right)),
+            )
+    selected = _source_choice(
+        config,
+        "workbench_surface",
+        "Select the Workbench midthickness surface matching these FieldTrip sources.",
+        tuple(candidates),
+    )
+    left_path, reference, sizes = candidates[selected]
+    if transform is None:
+        subject = left_path.name.split(".L.midthickness.")[0]
+        matrices = []
+        for coordinates in ("acpc", "ctf"):
+            key = f"transform_vox2{coordinates}"
+            matrix_reference = next(
+                (
+                    folder / f"{subject}_{key}.mat"
+                    for folder in (left_path.parent, left_path.parent.parent, filename.parent)
+                    if (folder / f"{subject}_{key}.mat").is_file()
+                ),
+                left_path.parent / f"{subject}_{key}.mat",
+            )
+            path = _source_companion(
+                filename,
+                config,
+                f"fieldtrip_vox2{coordinates}",
+                f"Select the original FieldTrip voxel-to-{coordinates.upper()} transformation MAT.",
+                str(matrix_reference),
+            )
+            matrices.append(_affine(_read_mat_file(path, (key,)).get(key)))
+        # Both matrices describe the same voxel indices, so their composition cancels that basis.
+        transform = _affine(matrices[0] @ np.linalg.inv(matrices[1]))
+    registered = nib.affines.apply_affine(transform, points)
+    if not np.allclose(registered, reference, rtol=0, atol=1e-3):
+        raise ValueError(
+            "The Workbench midthickness coordinates do not match the transformed FieldTrip mesh. "
+            "Check the subject, source-to-MRI transformation and spatial unit."
+        )
+    subject_files = {}
+    for kind in ("pial", "white", "inflated"):
+        subject_files[kind] = {}
+        for side, code in (("lh", "L"), ("rh", "R")):
+            path = left_path.with_name(
+                left_path.name.replace(".L.midthickness.", f".{code}.{kind}.", 1)
+            )
+            if path.is_file():
+                subject_files[kind][side] = path
+    return registered, {
+        "base_representation": "mid",
+        "hemisphere_sizes": sizes,
+        "vertex_hemispheres": np.repeat(np.array([0, 1], dtype=np.int8), sizes),
+        "subject_files": subject_files,
+    }
 
 
 def _read_fieldtrip_source(filename, data, config):
@@ -1309,6 +1441,16 @@ def _read_fieldtrip_source(filename, data, config):
     elif coordinates == "scanras":
         transform = np.eye(4)
     else:
+        transform = None
+    mesh_metadata = {}
+    workbench = discover_workbench_surfaces(config.get("subject_dir", filename.parent))
+    if workbench["mid"]:
+        points, mesh_metadata = _read_fieldtrip_workbench(
+            filename, config, points, triangles, transform, workbench
+        )
+        # Workbench geometry is already in MRI coordinates; only MRI-to-project remains.
+        transform = np.eye(4)
+    if transform is None:
         raise SourceImportRequired(
             "source_to_scanner_ras",
             f"FieldTrip coordinates '{coordinates or 'unspecified'}': select the source-mm to scanner-RAS-mm transformation matrix.",
@@ -1328,4 +1470,5 @@ def _read_fieldtrip_source(filename, data, config):
         points,
         triangles,
         transform,
+        mesh_metadata,
     )
