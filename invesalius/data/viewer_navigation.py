@@ -468,7 +468,7 @@ class NavigationView:
             and self._timeline_is_maximized()
         )
         if active and self.time_series is None:
-            from invesalius.gui.widgets.time_series import TimeSeriesPanel
+            from invesalius.gui.widgets.time_series_panel import TimeSeriesPanel
 
             self.time_series = TimeSeriesPanel(self.view)
             self.view.GetSizer().Add(self.time_series, 0, wx.EXPAND)

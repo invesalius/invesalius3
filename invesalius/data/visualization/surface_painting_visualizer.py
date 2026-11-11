@@ -17,7 +17,12 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-"""Surface map modes and temporary presentation, with optional navigation support."""
+"""Coordinate surface color maps and brain peeling across visualization modes.
+
+MEP, electric-field and EEG/MEG modes share surface selection, start/stop handling
+and presentation updates here. Temporary maps and peeling replace the visible
+representation while preserving the surface's original geometry.
+"""
 
 from threading import Thread
 from typing import Protocol
@@ -32,6 +37,12 @@ from invesalius.utils import Singleton
 
 
 class PaintingMode(Protocol):
+    """Contract for a map producer managed by SurfacePainting.
+
+    Each mode declares which surfaces it supports and whether navigation is needed.
+    The token supplied at start identifies the active selection for map updates.
+    """
+
     name: str
     available: bool
     requires_navigation: bool
@@ -43,7 +54,11 @@ class PaintingMode(Protocol):
 
 
 class SurfacePresentation:
-    """Resolve original representations and temporary surface replacements."""
+    """Choose when a surface's original actor can be shown.
+
+    Respect surface visibility and leave the original actor hidden while a color
+    map or the selected brain peel provides its visible representation.
+    """
 
     def __init__(self, original):
         self.original = original
@@ -65,7 +80,11 @@ class SurfacePresentation:
 
 
 class SurfacePeeling:
-    """Keep peeling as an alternative to the brain's original presentation."""
+    """Manage brain peel depth, actors and project state within surface presentation.
+
+    Provide the selected peel as an alternative to the Brain surface's original
+    actor, and hide it while a painting mode is displaying a map on that surface.
+    """
 
     def __init__(self, painting):
         self.painting = painting
@@ -250,6 +269,13 @@ class SurfacePeeling:
 
 
 class SurfacePainting(metaclass=Singleton):
+    """Share painting-mode selection and lifecycle across surface controls and viewers.
+
+    Keep one active mode per surface and one target per mode. Selection tokens
+    reject updates from stopped modes; stopping a mode releases its temporary map
+    so the original surface presentation can be restored.
+    """
+
     def __init__(self):
         self.modes = {}
         self.targets = {}

@@ -17,7 +17,11 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-"""Uniform time axes and playback, independent of file formats and viewers."""
+"""Share sample timing and playback between source readers, maps and the timeline.
+
+Times are in seconds. Playback advances from elapsed time rather than GUI timer
+frequency, keeping sample selection independent of rendering speed and file format.
+"""
 
 from dataclasses import dataclass
 from math import floor, isfinite
@@ -27,6 +31,13 @@ from time import monotonic
 
 @dataclass(frozen=True)
 class TimeAxis:
+    """Define a validated, uniformly sampled recording and its time/index conversions.
+
+    Readers supply the first sample time, positive sampling interval and frame count.
+    The same conversions drive map frames and timeline seeking, including recordings
+    that start before time zero.
+    """
+
     t0: float
     dt: float
     n_frames: int
@@ -66,7 +77,11 @@ class TimeAxis:
 
 
 class Playback:
-    """Advance by elapsed time; the UI supplies ticks at its own refresh rate."""
+    """Track playback position and speed without owning a timer or rendering objects.
+
+    The GUI calls tick with its own refresh schedule. Elapsed monotonic time decides
+    the current sample, while seeking and stepping stay within the recording.
+    """
 
     def __init__(self, axis: TimeAxis):
         self.axis = axis

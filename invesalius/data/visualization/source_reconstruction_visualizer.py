@@ -17,7 +17,12 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-"""Offline cortical source maps using the existing surface painting lifecycle."""
+"""Display offline EEG/MEG reconstructions through the shared surface painting modes.
+
+Convert imported cortical geometry to viewer coordinates and update its VTK scalars
+as playback advances. Surface selection and actor visibility use the same lifecycle
+as MEP and electric-field maps.
+"""
 
 from dataclasses import replace
 
@@ -33,12 +38,19 @@ import invesalius.constants as const
 from invesalius.data.source_reconstruction import read_source_config, read_source_reconstruction
 from invesalius.data.time_series import Playback
 from invesalius.data.visualization.surface_map_visualizer import ColorBar, SurfaceMap
-from invesalius.data.visualization.surface_painting import SurfacePainting
+from invesalius.data.visualization.surface_painting_visualizer import SurfacePainting
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 
 
 class SourceReconstructionMode:
+    """Connect imported source samples, playback and the Brain surface's EEG/MEG map.
+
+    Own the current reconstruction and its display meshes, preserving source vertex
+    IDs when switching representations or hiding hemispheres. Publish frame and
+    source-selection changes so the viewer and timeline show the same samples.
+    """
+
     name = "EEG/MEG"
     requires_navigation = True
 
@@ -404,7 +416,7 @@ class SourceReconstructionMode:
         Publisher.sendMessage("Source reconstruction changed", mode=self)
 
     def tick(self):
-        """Called on the GUI thread by the future player's timer."""
+        """Advance playback and refresh the map on the timeline's GUI timer tick."""
         if self.token is None:
             return None
         frame_index = self.playback.tick()

@@ -17,6 +17,13 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+"""Import cortical source reconstructions and control their surface display.
+
+Collect source files, anatomy and optional MRI alignment, requesting missing inputs
+as readers report them. Send display changes to the EEG/MEG painting mode through
+pubsub and reflect its current state in the task panel.
+"""
+
 from pathlib import Path
 from queue import Queue
 from threading import Event, Thread
@@ -32,13 +39,19 @@ from invesalius.data.source_reconstruction import (
     discover_freesurfer_surfaces,
     discover_subject_files,
 )
-from invesalius.data.visualization.surface_painting import SurfacePainting
+from invesalius.data.visualization.surface_painting_visualizer import SurfacePainting
 from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 from invesalius.reader.others_reader import read_image
 
 
 class TaskPanel(wx.Panel):
+    """Expose import, cortical representation, hemisphere and signal-unit controls.
+
+    Follow the registered EEG/MEG mode's availability and display state so these
+    controls operate on the same reconstruction shown on the Brain surface.
+    """
+
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -217,6 +230,12 @@ class TaskPanel(wx.Panel):
 
 
 class ImportSourceDialog(wx.Dialog):
+    """Collect and validate the files and transforms needed to import a reconstruction.
+
+    Show detected anatomy, request missing reader inputs and offer optional MRI
+    registration. Retry incomplete imports without discarding the current source map.
+    """
+
     def __init__(self, parent):
         super().__init__(
             parent,
@@ -748,6 +767,12 @@ class ImportSourceDialog(wx.Dialog):
 
 
 class AlignmentPreviewDialog(wx.Dialog):
+    """Preview the reference MRI against the project before accepting registration.
+
+    Overlay orthogonal slices of the fixed and aligned volumes so the user can
+    inspect the calculated transform before it is used for source geometry.
+    """
+
     def __init__(self, parent, fixed, aligned, spacing):
         super().__init__(
             parent,

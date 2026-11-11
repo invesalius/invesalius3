@@ -17,6 +17,14 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
+"""Display sampled signals and playback controls on a shared VTK time axis.
+
+Keep seeking and timer handling here while callers supply samples and update their
+own views. Potential applications include cortical source signals, scalp EEG channels
+and fMRI voxel or region-of-interest time courses. The current integration displays
+EEG/MEG global RMS and an optional selected-source trace.
+"""
+
 from math import floor, log10
 
 import numpy as np
@@ -38,6 +46,15 @@ from invesalius.i18n import tr as _
 
 
 class TimeSeriesPanel(wx.Panel):
+    """Plot a summary signal and an optional selected trace with playback controls.
+
+    Handle seeking, speed and GUI timer events using the supplied Playback object.
+    The caller owns signal loading and sample-dependent view updates; the panel
+    keeps its chart cursor synchronized with the selected sample. Other applications
+    can reuse this timing and interaction, adapting the EEG/MEG labels and RMS scale
+    to their signals.
+    """
+
     GRAPH_HEIGHT = 120
     CHART_MARGIN = 12
     AXIS_LABEL_GAP = 6

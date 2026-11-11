@@ -1556,7 +1556,7 @@ class SurfaceButtonControlPanel(wx.Panel):
 
     def OnExportSurface(self):
         from invesalius.data.slice_ import Slice
-        from invesalius.data.visualization.surface_painting import SurfacePainting
+        from invesalius.data.visualization.surface_painting_visualizer import SurfacePainting
         from invesalius.gui.task_exporter import (
             INDEX_TO_EXTENSION,
             INDEX_TO_TYPE_3D,
@@ -1705,7 +1705,7 @@ class SurfacesListCtrlPanel(InvListCtrl):
         # Create the context menu and add all the menu items
         surface_context_menu = wx.Menu()
 
-        from invesalius.data.visualization.surface_painting import SurfacePainting
+        from invesalius.data.visualization.surface_painting_visualizer import SurfacePainting
 
         surface = Project().surface_dict[global_surface_id]
         painting = SurfacePainting()

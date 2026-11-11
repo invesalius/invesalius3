@@ -17,7 +17,12 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
-"""EEG/MEG cortical source data, anatomy and format readers."""
+"""Read STC, MNE H5 and Brainstorm/FieldTrip MAT as cortical source series.
+
+Validate samples, mesh correspondence and spatial transforms before exposing a
+reconstruction to the viewer. Keep format-specific anatomy and signal handling
+here so visualization and import dialogs can work with the same data model.
+"""
 
 import json
 import operator
@@ -43,6 +48,12 @@ from invesalius.reader.others_reader import read_image
 
 @dataclass
 class SourceData:
+    """Store one signal block with a time axis and its sampled mesh vertex IDs.
+
+    Values are indexed by time sample, then source. Preserve that order and allow
+    file-backed arrays so playback can read frames without loading the full signal.
+    """
+
     axis: TimeAxis
     vertices: np.ndarray
     values: "np.ndarray | _H5SourceValues"
@@ -73,6 +84,13 @@ class SourceData:
 
 @dataclass
 class CorticalSourceSeries:
+    """Combine source signals with cortical anatomy in project RAS millimeters.
+
+    Keep the mapping from display vertices to signal samples alongside compatible
+    cortical representations. Display scaling and mesh changes use this metadata
+    without rewriting the imported samples or changing their source order.
+    """
+
     sources: tuple[SourceData, ...]
     points: np.ndarray
     triangles: np.ndarray
@@ -232,7 +250,11 @@ class CorticalSourceSeries:
 
 
 class SourceImportRequired(ValueError):
-    """Request a missing companion file or an explicit choice without depending on wx."""
+    """Let a reader request a companion file or choice from its caller.
+
+    The import dialog supplies the requested configuration key and retries, keeping
+    file readers independent of dialog creation and user interaction.
+    """
 
     def __init__(self, key, message, choices=()):
         super().__init__(message)
@@ -241,7 +263,11 @@ class SourceImportRequired(ValueError):
 
 
 class MissingSurfaceGeometryError(ValueError):
-    """A reference MRI is needed because the surface has no usable volume metadata."""
+    """Request a reference MRI to recover a FreeSurfer surface's scanner RAS transform.
+
+    Raised when embedded volume metadata is missing or unusable, allowing the
+    import dialog to ask for the matching MRI rather than guess the alignment.
+    """
 
 
 # Source import pipeline
@@ -751,7 +777,11 @@ def read_stc_pair(filename):
 
 
 class _H5SourceValues:
-    """Read only the requested time samples from an MNE HDF5 dataset."""
+    """Expose MNE HDF5 samples through the time-by-source interface of SourceData.
+
+    Open the dataset for each read and fetch only the requested samples, avoiding
+    a persistent file handle or loading the entire recording for playback.
+    """
 
     def __init__(self, filename, dataset, start, stop, component):
         self.filename = filename

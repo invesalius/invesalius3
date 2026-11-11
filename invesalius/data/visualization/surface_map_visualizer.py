@@ -17,7 +17,12 @@
 #    detalhes.
 # --------------------------------------------------------------------------
 
-"""Surface map data and shared presentation for live and offline sources."""
+"""Share VTK surface-map rendering between live and offline painting modes.
+
+Keep map geometry, color scales and legend settings separate from the mode that
+produces the values. The surface manager uses the same actor and mapper interface
+for these maps and can freeze their geometry and appearance as project data.
+"""
 
 from dataclasses import asdict, dataclass, field
 from math import floor, isfinite, log10
@@ -35,7 +40,11 @@ from vtkmodules.vtkRenderingCore import (
 
 @dataclass(frozen=True)
 class ColorBar:
-    """Appearance and normalized anchor for a surface map legend."""
+    """Describe a map legend's appearance and normalized position.
+
+    Create a compact or full-size scalar bar using the same settings for live maps
+    and saved snapshots.
+    """
 
     position: tuple = (0.06, 0.06)
     compact: bool = True
@@ -77,7 +86,12 @@ class ColorBar:
 
 @dataclass
 class SurfaceMap:
-    """Map on its own mesh, already aligned to the viewer's coordinates in millimeters."""
+    """Bundle a map's mesh, color scale and legend independently of its producer.
+
+    Geometry is already in viewer coordinates in millimeters. Snapshots copy the
+    mesh and serialize its appearance so a frozen map can survive mode changes
+    and project save/load.
+    """
 
     polydata: vtkPolyData
     lookup_table: object
@@ -175,6 +189,12 @@ class SurfaceMap:
 
 
 class SurfaceMapVisualizer:
+    """Apply a SurfaceMap to the VTK surface actor and its scalar-bar actor.
+
+    Share mapper and legend updates across painting modes, accepting either scalar
+    values with a lookup table or a named array of direct RGB/RGBA colors.
+    """
+
     def __init__(self, color_bar=None):
         self.color_bar = color_bar if color_bar is not None else ColorBar()
         self.mapper = vtkPolyDataMapper()
