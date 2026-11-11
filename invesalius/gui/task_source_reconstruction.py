@@ -650,9 +650,7 @@ class ImportSourceDialog(wx.Dialog):
                 raise ValueError(
                     _("The project or reference MRI changed. Calculate alignment again.")
                 )
-            with AlignmentPreviewDialog(
-                wx.GetApp().GetTopWindow(), fixed, aligned, spacing
-            ) as preview:
+            with AlignmentPreviewDialog(self, fixed, aligned, spacing) as preview:
                 if preview.ShowModal() != wx.ID_OK:
                     return
             self._automatic_alignment = (key, matrix)
@@ -719,10 +717,9 @@ class ImportSourceDialog(wx.Dialog):
                         Publisher.sendMessage("Load source reconstruction", config=config)
                     break
                 except SourceImportRequired as request:
-                    parent = wx.GetApp().GetTopWindow()
                     if request.choices:
                         with wx.SingleChoiceDialog(
-                            parent, str(request), _("Source reconstruction"), list(request.choices)
+                            self, str(request), _("Source reconstruction"), list(request.choices)
                         ) as dialog:
                             if dialog.ShowModal() != wx.ID_OK:
                                 return
@@ -735,7 +732,7 @@ class ImportSourceDialog(wx.Dialog):
                         elif request.key in ("lh_surface", "rh_surface"):
                             wildcard = _("All files (*.*)|*.*")
                         with wx.FileDialog(
-                            parent,
+                            self,
                             message=str(request),
                             wildcard=wildcard,
                             style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
