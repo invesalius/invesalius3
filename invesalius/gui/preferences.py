@@ -2399,10 +2399,6 @@ class TrackerTab(wx.Panel):
         Publisher.sendMessage("Coil selection done", done=False)
 
     def OnChooseTracker(self, evt, ctrl):
-        if sys.platform == "darwin":
-            wx.CallAfter(self.GetParent().Hide)
-        else:
-            self.HideParent()
         Publisher.sendMessage("Begin busy cursor")
         Publisher.sendMessage("Update status text in GUI", label=_("Configuring tracker ..."))
         if hasattr(evt, "GetSelection"):
@@ -2422,10 +2418,6 @@ class TrackerTab(wx.Panel):
         Publisher.sendMessage("Coil selection done", done=False)
         ctrl.SetSelection(self.tracker.tracker_id)
         Publisher.sendMessage("End busy cursor")
-        if sys.platform == "darwin":
-            wx.CallAfter(self.GetParent().Show)
-        else:
-            self.ShowParent()
 
     def OnChooseReferenceMode(self, evt, ctrl):
         Navigation(None, None).SetReferenceMode(evt.GetSelection())
