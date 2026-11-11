@@ -104,6 +104,7 @@ class NotebookPanel(wx.Panel):
         self.eeg_electrodes = EEGElectrodeManager()
         self.eeg_page = None
         self.navigation_on = False
+        self._navigation_mode = ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR
         self._project_enabled = False
         self.__bind_events()
         self._SyncEEGPage()
@@ -116,6 +117,7 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._FoldMask, "Fold mask page")
         Publisher.subscribe(self._FoldImage, "Fold image page")
         Publisher.subscribe(self._OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self._OnNavigationMode, "Set navigation mode")
         Publisher.subscribe(self._OnEEGRegistrationModeChanged, "EEG registration mode changed")
         Publisher.subscribe(self._OnEEGElectrodesChanged, "EEG electrodes changed")
         Publisher.subscribe(self._OnProjectStateEnabled, "Enable state project")
@@ -126,7 +128,12 @@ class NotebookPanel(wx.Panel):
         if self.eeg_electrodes.get(electrode_uuid) is None:
             return
         self._SyncEEGPage(select=True)
-        self.eeg_page.listctrl.SelectElectrode(electrode_uuid)
+        if self.eeg_page is not None:
+            self.eeg_page.listctrl.SelectElectrode(electrode_uuid)
+
+    def _OnNavigationMode(self, status, markers=(), main_coil=None):
+        self._navigation_mode = bool(status)
+        wx.CallAfter(self._SyncEEGPage)
 
     def _OnProjectStateEnabled(self, state):
         self._project_enabled = bool(state)
@@ -145,7 +152,9 @@ class NotebookPanel(wx.Panel):
     def _SyncEEGPage(self, select=False):
         has_electrodes = bool(self.eeg_electrodes.electrodes)
         should_show = (
-            self._project_enabled or self.eeg_electrodes.registration_active or has_electrodes
+            self._project_enabled
+            and self._navigation_mode
+            and (self.eeg_electrodes.registration_active or has_electrodes)
         )
 
         if should_show:
