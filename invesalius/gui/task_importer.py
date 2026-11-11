@@ -79,8 +79,8 @@ class InnerTaskPanel(wx.Panel):
         link_import_local.UpdateLink()
         link_import_local.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImport)
 
-        tooltip = _("Select NIfTI, MGH or MGZ files to be reconstructed")
-        link_import_nifti = hl.HyperLinkCtrl(self, -1, _("Import NIfTI / MGH / MGZ images..."))
+        tooltip = _("Select NIfTI files to be reconstructed")
+        link_import_nifti = hl.HyperLinkCtrl(self, -1, _("Import NIfTI images..."))
         link_import_nifti.SetUnderlines(False, False, False)
         link_import_nifti.SetBold(True)
         link_import_nifti.SetColours("BLACK", "BLACK", "BLACK")
