@@ -1608,13 +1608,13 @@ class ObjectTab(wx.Panel):
         # Also used to edit coil registrations by overwriting to the same name
         if self.tracker.IsTrackerInitialized():
             dialog = dlg.ObjectCalibrationDialog(
-                self,
+                wx.GetTopLevelParent(self),
                 self.tracker,
                 self.navigation.n_coils,
                 self.pedal_connector,
             )
             try:
-                if dialog.ShowModal() == wx.ID_OK:
+                if dialog.InitializeObject() and dialog.ShowModal() == wx.ID_OK:
                     (coil_name, coil_path, obj_fiducials, obj_orients, obj_id, tracker_id) = (
                         dialog.GetValue()
                     )
