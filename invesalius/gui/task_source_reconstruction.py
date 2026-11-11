@@ -761,6 +761,7 @@ class ImportSourceDialog(wx.Dialog):
                 dialog.ShowModal()
             return
         self.EndModal(wx.ID_OK)
+        Publisher.sendMessage("Maximize volume viewer")
 
 
 class AlignmentPreviewDialog(wx.Dialog):
