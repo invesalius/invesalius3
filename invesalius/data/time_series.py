@@ -87,7 +87,7 @@ class Playback:
         self.axis = axis
         self.index = 0
         self.playing = False
-        self.speed = 1.0
+        self.speed = 0.1
         self._position = axis.t0
         self._last_tick = monotonic()
 
