@@ -484,6 +484,9 @@ class NavigationView:
                     mode.set_frame,
                     mode.tick,
                 )
+            self.time_series.set_datasets(
+                mode.reconstruction_names, mode.reconstruction_index, mode.select_reconstruction
+            )
             self.time_series.set_display(
                 mode.series.display_scale[0], mode.series.display_title, mode.series.measure
             )

@@ -55,8 +55,8 @@ class TaskPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
 
-        button = wx.Button(self, label=_("Import source reconstruction..."))
-        button.SetToolTip(_("Select the files for an EEG/MEG cortical source reconstruction."))
+        button = wx.Button(self, label=_("Manage source reconstructions..."))
+        button.SetToolTip(_("Add or remove EEG/MEG cortical source reconstructions."))
         button.Bind(wx.EVT_BUTTON, self.OnImport)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -120,12 +120,17 @@ class TaskPanel(wx.Panel):
         self.SetSizerAndFit(sizer)
         self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         Publisher.subscribe(self.OnSourceChanged, "Source reconstruction changed")
+        Publisher.subscribe(self.OnCloseProject, "Close project data")
+        self._import_settings = {}
         self._mode = SurfacePainting().modes.get("EEG/MEG")
         self._sync_display_controls()
 
     def OnImport(self, event):
-        with ImportSourceDialog(wx.GetApp().GetTopWindow()) as dialog:
+        with ImportSourceDialog(wx.GetApp().GetTopWindow(), self._import_settings) as dialog:
             dialog.ShowModal()
+
+    def OnCloseProject(self):
+        self._import_settings.clear()
 
     def OnSourceChanged(self, mode):
         self._mode = mode
@@ -232,38 +237,57 @@ class TaskPanel(wx.Panel):
 class ImportSourceDialog(wx.Dialog):
     """Collect and validate the files and transforms needed to import a reconstruction.
 
-    Show detected anatomy, request missing reader inputs and offer optional MRI
-    registration. Retry incomplete imports without discarding the current source map.
+    Add source files using shared anatomy and alignment, and remove loaded data sets.
+    Request missing reader inputs separately for each file, keeping successful imports
+    when a later file fails or is cancelled.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent, settings=None):
         super().__init__(
             parent,
-            title=_("Import EEG/MEG source reconstruction"),
+            title=_("EEG/MEG source reconstructions"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._automatic_alignment = None
         self._reference_mri = None
+        self._mode = SurfacePainting().modes.get("EEG/MEG")
+        self._settings = settings if settings is not None else {}
+        self._shared_files = {}
+        self.pending_files = []
+        self._source_rows = ()
         self.files = {}
-        self.file_labels = {"signal": _("Source signal:")}
+        self.file_labels = {}
+        source_header = wx.BoxSizer(wx.HORIZONTAL)
+        title = wx.StaticText(self, label=_("Reconstructions"))
+        title.SetFont(title.GetFont().Bold())
+        source_header.Add(title, 0, wx.ALIGN_CENTER_VERTICAL)
+        source_header.AddStretchSpacer()
+        add_signal = wx.Button(self, label=_("Add files..."))
+        add_signal.Bind(wx.EVT_BUTTON, self.OnAddSignals)
+        source_header.Add(add_signal, 0, wx.RIGHT, 6)
+        self.remove_source = wx.Button(self, label=_("Remove"))
+        self.remove_source.SetName(_("Remove selected reconstruction"))
+        self.remove_source.Enable(False)
+        self.remove_source.Bind(wx.EVT_BUTTON, self.OnRemoveSource)
+        source_header.Add(self.remove_source, 0)
+        main_sizer.Add(source_header, 0, wx.EXPAND | wx.ALL, 12)
+        self.reconstruction_list = wx.ListCtrl(
+            self, size=(350, 90), style=wx.LC_REPORT | wx.LC_SINGLE_SEL
+        )
+        self.reconstruction_list.SetName(_("Reconstructions"))
+        self.reconstruction_list.InsertColumn(0, _("Name"))
+        self.reconstruction_list.InsertColumn(1, _("Status"), width=self.FromDIP(120))
+        self.reconstruction_list.Bind(wx.EVT_SIZE, self.OnSourcesSize)
+        self.reconstruction_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSourceSelected)
+        self.reconstruction_list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnSourceSelected)
+        main_sizer.Add(self.reconstruction_list, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        main_sizer.Add(wx.StaticLine(self), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        surface_title = wx.StaticText(self, label=_("Surfaces"))
+        surface_title.SetFont(surface_title.GetFont().Bold())
+        main_sizer.Add(surface_title, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
         form = wx.FlexGridSizer(cols=2, vgap=8, hgap=10)
         form.AddGrowableCol(1)
-        form.Add(wx.StaticText(self, label=self.file_labels["signal"]), 0, wx.ALIGN_CENTER_VERTICAL)
-        signal_row = wx.BoxSizer(wx.HORIZONTAL)
-        self.files["signal"] = wx.FilePickerCtrl(
-            self,
-            message=_("Select an STC, MNE H5, or Brainstorm/FieldTrip MAT source file"),
-            wildcard=_("Source reconstruction (*.stc;*.h5;*.mat)|*.stc;*.h5;*.mat"),
-            style=wx.FLP_USE_TEXTCTRL | wx.FLP_SMALL | wx.FLP_OPEN | wx.FLP_FILE_MUST_EXIST,
-        )
-        self.files["signal"].SetToolTip(
-            _(
-                "Format is detected automatically. STC files require the matching hemisphere in the same directory."
-            )
-        )
-        signal_row.Add(self.files["signal"], 1, wx.EXPAND)
-        form.Add(signal_row, 1, wx.EXPAND)
         form.Add(wx.StaticText(self, label=_("Subject:")), 0, wx.ALIGN_CENTER_VERTICAL)
         self.subject = wx.DirPickerCtrl(
             self,
@@ -276,26 +300,30 @@ class ImportSourceDialog(wx.Dialog):
             )
         )
         form.Add(self.subject, 1, wx.EXPAND)
-        main_sizer.Add(form, 0, wx.EXPAND | wx.ALL, 12)
+        main_sizer.Add(form, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
-        detected = wx.StaticBoxSizer(wx.VERTICAL, self, _("Detected files"))
-        self.detected = detected
-        self.subject_table = wx.FlexGridSizer(cols=3, vgap=6, hgap=24)
+        self.detected = wx.CollapsiblePane(
+            self,
+            label=_("Detected surfaces"),
+            style=wx.CP_DEFAULT_STYLE | wx.CP_NO_TLW_RESIZE,
+        )
+        self.subject_table = wx.FlexGridSizer(cols=3, vgap=4, hgap=24)
         self.subject_table.AddGrowableCol(0)
         self._build_subject_table(brainstorm=False)
-        detected.Add(self.subject_table, 0, wx.EXPAND | wx.ALL, 10)
-        main_sizer.Add(detected, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        detected_sizer = wx.BoxSizer(wx.VERTICAL)
+        detected_sizer.Add(self.subject_table, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 8)
+        self.detected.GetPane().SetSizer(detected_sizer)
+        self.detected.Collapse()
         self.subject_summary = wx.StaticText(
             self,
-            label=_(
-                "Select a FreeSurfer/FastSurfer, Workbench or Brainstorm subject folder, or use the mesh associated with the source MAT file."
-            ),
+            label=_("Select the subject folder, or use the surface included in the source file."),
         )
         self.subject_summary.Wrap(self.FromDIP(620))
         self.subject_summary.SetForegroundColour(
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT)
         )
         main_sizer.Add(self.subject_summary, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        main_sizer.Add(self.detected, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
         self.manual = wx.CollapsiblePane(
             self,
@@ -388,6 +416,8 @@ class ImportSourceDialog(wx.Dialog):
         main_sizer.AddStretchSpacer()
         buttons = self.CreateSeparatedButtonSizer(wx.OK | wx.CANCEL)
         self.FindWindow(wx.ID_OK).SetLabel(_("Import"))
+        self.FindWindow(wx.ID_OK).Enable(False)
+        self.FindWindow(wx.ID_CANCEL).SetLabel(_("Close"))
         main_sizer.Add(buttons, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
         self.Bind(wx.EVT_BUTTON, self.OnImport, id=wx.ID_OK)
         self.SetSizer(main_sizer)
@@ -395,16 +425,130 @@ class ImportSourceDialog(wx.Dialog):
         self.Fit()
         self.SetMinSize(self.GetSize())
         self.CenterOnParent()
+        self._restore_import_settings()
         self.subject.Bind(wx.EVT_DIRPICKER_CHANGED, self.OnSubjectChanged)
         self.subject.GetTextCtrl().Bind(wx.EVT_TEXT, self.OnSubjectChanged)
         for key in ("lh_surface", "rh_surface"):
             self.files[key].Bind(wx.EVT_FILEPICKER_CHANGED, self.OnManualSurfaceChanged)
             self.files[key].GetTextCtrl().Bind(wx.EVT_TEXT, self.OnManualSurfaceChanged)
+        self.detected.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.OnLayoutChanged)
         self.manual.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.OnLayoutChanged)
         self.advanced.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.OnLayoutChanged)
+        Publisher.subscribe(self.OnReconstructionsChanged, "Source reconstruction changed")
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+        self._sync_reconstructions()
+
+    def _restore_import_settings(self):
+        if not self._settings:
+            return
+        self.subject.SetPath(self._settings["subject"])
+        for key, path in self._settings["surfaces"].items():
+            self.files[key].SetPath(path)
+        if self.subject.GetPath().strip():
+            self.OnSubjectChanged()
+        else:
+            self.OnManualSurfaceChanged()
+        self._reference_mri = self._settings["reference_mri"]
+        self._automatic_alignment = self._settings["automatic_alignment"]
+        self.registration.SetPath(self._settings["registration"])
+        self.alignment_mode.SetSelection(self._settings["alignment_mode"])
+        self._shared_files.update(self._settings["shared_files"])
+        self.OnRegistrationMode(None)
+
+    def _save_import_settings(self, config):
+        for key in ("fieldtrip_surface", "mri"):
+            if key in config:
+                self._shared_files[key] = config[key]
+        self._settings.update(
+            subject=self.subject.GetPath(),
+            surfaces={key: picker.GetPath() for key, picker in self.files.items()},
+            reference_mri=self._reference_mri,
+            automatic_alignment=self._automatic_alignment,
+            registration=self.registration.GetPath(),
+            alignment_mode=self.alignment_mode.GetSelection(),
+            shared_files=self._shared_files.copy(),
+        )
+
+    def OnAddSignals(self, event):
+        with wx.FileDialog(
+            self,
+            message=_("Select source reconstruction files"),
+            wildcard=_("Source reconstruction (*.stc;*.h5;*.mat)|*.stc;*.h5;*.mat"),
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE,
+        ) as dialog:
+            if dialog.ShowModal() != wx.ID_OK:
+                return
+            for filename in dialog.GetPaths():
+                path = Path(filename)
+                # An STC hemisphere pair is one reconstruction.
+                if path.name.endswith("-rh.stc"):
+                    path = path.with_name(path.name[:-7] + "-lh.stc")
+                if str(path) not in self.pending_files:
+                    self.pending_files.append(str(path))
+        self._sync_reconstructions()
+
+    def OnSourcesSize(self, event):
+        event.Skip()
+        width = self.reconstruction_list.GetClientSize().width - self.FromDIP(122)
+        self.reconstruction_list.SetColumnWidth(0, max(self.FromDIP(120), width))
+
+    def OnSourceSelected(self, event=None):
+        index = self.reconstruction_list.GetFirstSelected()
+        self.remove_source.Enable(index != wx.NOT_FOUND)
+        loaded_count = len(self._mode.reconstructions) if self._mode is not None else 0
+        pending_index = index - loaded_count
+        tooltip = (
+            self.pending_files[pending_index]
+            if 0 <= pending_index < len(self.pending_files)
+            else ""
+        )
+        self.reconstruction_list.SetToolTip(tooltip)
+
+    def OnReconstructionsChanged(self, mode):
+        self._mode = mode
+        self._sync_reconstructions()
+
+    def _sync_reconstructions(self):
+        loaded = self._mode.reconstructions if self._mode is not None else ()
+        rows = tuple((series.name, _("Imported")) for series in loaded) + tuple(
+            (Path(filename).name, _("To import")) for filename in self.pending_files
+        )
+        if rows != self._source_rows:
+            selection = self.reconstruction_list.GetFirstSelected()
+            self._source_rows = rows
+            self.reconstruction_list.DeleteAllItems()
+            for index, (name, status) in enumerate(rows):
+                self.reconstruction_list.InsertItem(index, name)
+                self.reconstruction_list.SetItem(index, 1, status)
+            if rows and selection != wx.NOT_FOUND:
+                self.reconstruction_list.Select(min(selection, len(rows) - 1))
+        self.OnSourceSelected()
+        self.FindWindow(wx.ID_OK).Enable(bool(self.pending_files))
+
+    def OnRemoveSource(self, event):
+        index = self.reconstruction_list.GetFirstSelected()
+        if index == wx.NOT_FOUND:
+            return
+        try:
+            loaded_count = len(self._mode.reconstructions) if self._mode is not None else 0
+            if index < loaded_count:
+                self._mode.remove_reconstruction(index)
+            else:
+                self.pending_files.pop(index - loaded_count)
+            self._sync_reconstructions()
+        except Exception as error:
+            with dlg.ErrorMessageBox(
+                self, _("Error removing reconstruction"), str(error)
+            ) as dialog:
+                dialog.ShowModal()
+
+    def OnDestroy(self, event):
+        if event.GetEventObject() is self:
+            Publisher.unsubscribe_owner(self)
+        event.Skip()
 
     def _resize_dialog(self):
-        for section in (self.manual, self.advanced):
+        for section in (self.detected, self.manual, self.advanced):
             section.GetPane().InvalidateBestSize()
             section.GetPane().Layout()
             section.InvalidateBestSize()
@@ -435,10 +579,9 @@ class ImportSourceDialog(wx.Dialog):
         else:
             rows.append(("curv", _("Curvature")))
         table.SetCols(len(titles))
-        parent = self.detected.GetStaticBox()
+        parent = self.detected.GetPane()
         for title in titles:
             heading = wx.StaticText(parent, label=title)
-            heading.SetFont(heading.GetFont().Bold())
             table.Add(heading, 0, wx.ALIGN_CENTER_VERTICAL)
         self.subject_cells = {}
         for kind, label in rows:
@@ -483,7 +626,8 @@ class ImportSourceDialog(wx.Dialog):
         self.subject_summary.Wrap(self.FromDIP(620))
         self._resize_dialog()
 
-    def OnSubjectChanged(self, event):
+    def OnSubjectChanged(self, event=None):
+        self._shared_files.clear()
         subject_path = self.subject.GetPath().strip()
         for key in ("lh_surface", "rh_surface"):
             self.files[key].SetPath("")
@@ -494,37 +638,31 @@ class ImportSourceDialog(wx.Dialog):
                 _("Subject changed. Calculate alignment again if needed.")
             )
         if not subject_path:
-            self._show_subject_files({}, _("Uses surface coordinates in the current anatomy."))
+            self._show_subject_files({}, _("Use the source mesh or select surfaces manually."))
         else:
             try:
                 files = discover_subject_files(subject_path)
                 if "brainstorm" in files:
-                    anatomy = files["brainstorm"]
-                    message = (
-                        f"{_('Brainstorm default cortex:')} {anatomy['surface_file'].name}\n"
-                        f"{_('Coordinates (MRI metadata only):')} {anatomy['brainstorm_mri'].name}"
-                    )
+                    message = _("Brainstorm anatomy detected.")
                 else:
                     for side, path in files["pial"].items():
                         self.files[f"{side}_surface"].SetPath(str(path))
                     missing = [f"{side}.pial" for side in ("lh", "rh") if side not in files["pial"]]
                     if "workbench" in files:
-                        message = _(
-                            "FieldTrip can use the matching Workbench surfaces. STC/MNE H5 use native FreeSurfer surfaces."
-                        )
+                        message = _("Workbench anatomy detected.")
                     elif missing:
                         message = _("Required files not found:") + " " + ", ".join(missing)
                     else:
-                        message = _(
-                            "Uses surface coordinates in the current anatomy. Pial is used for visualization."
-                        )
+                        message = _("Pial surfaces found.")
                 self._show_subject_files(files, message)
             except (OSError, ValueError) as error:
                 self._show_subject_files({}, str(error))
-        event.Skip()
+        if event is not None:
+            event.Skip()
 
-    def OnManualSurfaceChanged(self, event):
+    def OnManualSurfaceChanged(self, event=None):
         if not self.subject.GetPath().strip():
+            self._shared_files.clear()
             pial = {}
             for side in ("lh", "rh"):
                 path = self.files[f"{side}_surface"].GetPath()
@@ -540,9 +678,10 @@ class ImportSourceDialog(wx.Dialog):
                 )
             self._show_subject_files(
                 discover_freesurfer_surfaces(pial),
-                _("Uses surface coordinates in the current anatomy."),
+                _("Using manually selected surfaces."),
             )
-        event.Skip()
+        if event is not None:
+            event.Skip()
 
     def OnRegistrationMode(self, event):
         mode = self.alignment_mode.GetSelection()
@@ -660,6 +799,11 @@ class ImportSourceDialog(wx.Dialog):
                 dialog.ShowModal()
 
     def GetValue(self):
+        if not self.pending_files:
+            raise ValueError(_("Select at least one source reconstruction file."))
+        for filename in self.pending_files:
+            if not Path(filename).is_file():
+                raise ValueError(_("Source file not found:") + " " + filename)
         config = {}
         subject_path = self.subject.GetPath().strip()
         if subject_path:
@@ -711,49 +855,11 @@ class ImportSourceDialog(wx.Dialog):
     def OnImport(self, event):
         try:
             config = self.GetValue()
-            while True:
-                try:
-                    with wx.BusyCursor():
-                        Publisher.sendMessage("Load source reconstruction", config=config)
-                    break
-                except SourceImportRequired as request:
-                    if request.choices:
-                        with wx.SingleChoiceDialog(
-                            self, str(request), _("Source reconstruction"), list(request.choices)
-                        ) as dialog:
-                            if dialog.ShowModal() != wx.ID_OK:
-                                return
-                            config[request.key] = dialog.GetStringSelection()
-                    else:
-                        matrix = request.key == "source_to_scanner_ras"
-                        wildcard = _("MATLAB files (*.mat)|*.mat")
-                        if matrix:
-                            wildcard = _("Text matrix (*.txt;*.csv)|*.txt;*.csv")
-                        elif request.key in ("lh_surface", "rh_surface"):
-                            wildcard = _("All files (*.*)|*.*")
-                        with wx.FileDialog(
-                            self,
-                            message=str(request),
-                            wildcard=wildcard,
-                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
-                        ) as dialog:
-                            if dialog.ShowModal() != wx.ID_OK:
-                                return
-                            path = Path(dialog.GetPath()).resolve()
-                        config[request.key] = (
-                            np.loadtxt(
-                                path, delimiter="," if path.suffix.lower() == ".csv" else None
-                            ).tolist()
-                            if matrix
-                            else str(path)
-                        )
-                except MissingSurfaceGeometryError:
-                    reference = self._select_reference_mri(
-                        _("Surface metadata missing: select the matching FreeSurfer MRI")
-                    )
-                    if reference is None:
-                        return
-                    config["mri"] = str(reference)
+            for signal in self.pending_files[:]:
+                if not self._import_signal(dict(config, signal=signal)):
+                    return
+                self.pending_files.pop(0)
+                self._sync_reconstructions()
         except Exception as error:
             with dlg.ErrorMessageBox(
                 self, _("Error importing EEG/MEG source reconstruction"), str(error)
@@ -762,6 +868,66 @@ class ImportSourceDialog(wx.Dialog):
             return
         self.EndModal(wx.ID_OK)
         Publisher.sendMessage("Maximize volume viewer")
+
+    def _import_signal(self, config):
+        reused_surface = None
+        for key, path in self._shared_files.items():
+            if key not in config and Path(path).is_file():
+                config[key] = path
+                if key == "fieldtrip_surface" and not config.get("surface_file"):
+                    reused_surface = path
+        while True:
+            try:
+                with wx.BusyCursor():
+                    Publisher.sendMessage("Load source reconstruction", config=config)
+                self._save_import_settings(config)
+                return True
+            except SourceImportRequired as request:
+                if request.choices:
+                    with wx.SingleChoiceDialog(
+                        self, str(request), _("Source reconstruction"), list(request.choices)
+                    ) as dialog:
+                        if dialog.ShowModal() != wx.ID_OK:
+                            return False
+                        config[request.key] = dialog.GetStringSelection()
+                else:
+                    matrix = request.key == "source_to_scanner_ras"
+                    wildcard = _("MATLAB files (*.mat)|*.mat")
+                    if matrix:
+                        wildcard = _("Text matrix (*.txt;*.csv)|*.txt;*.csv")
+                    elif request.key in ("lh_surface", "rh_surface"):
+                        wildcard = _("All files (*.*)|*.*")
+                    with wx.FileDialog(
+                        self,
+                        message=str(request),
+                        wildcard=wildcard,
+                        style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+                    ) as dialog:
+                        if dialog.ShowModal() != wx.ID_OK:
+                            return False
+                        path = Path(dialog.GetPath()).resolve()
+                    config[request.key] = (
+                        np.loadtxt(
+                            path, delimiter="," if path.suffix.lower() == ".csv" else None
+                        ).tolist()
+                        if matrix
+                        else str(path)
+                    )
+                    if request.key == "fieldtrip_surface":
+                        reused_surface = None
+            except MissingSurfaceGeometryError:
+                reference = self._select_reference_mri(
+                    _("Surface metadata missing: select the matching FreeSurfer MRI")
+                )
+                if reference is None:
+                    return False
+                config["mri"] = str(reference)
+            except ValueError:
+                if reused_surface is None:
+                    raise
+                # A cached FieldTrip mesh must still match the new source positions.
+                config.pop("fieldtrip_surface", None)
+                reused_surface = None
 
 
 class AlignmentPreviewDialog(wx.Dialog):

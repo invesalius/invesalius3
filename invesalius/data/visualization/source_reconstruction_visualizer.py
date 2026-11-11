@@ -46,8 +46,8 @@ from invesalius.pubsub import pub as Publisher
 class SourceReconstructionMode:
     """Connect imported source samples, playback and the Brain surface's EEG/MEG map.
 
-    Own the current reconstruction and its display meshes, preserving source vertex
-    IDs when switching representations or hiding hemispheres. Publish frame and
+    Keep imported reconstructions and display meshes for the active data set. Preserve
+    source vertex IDs when switching representations or hiding hemispheres. Publish frame and
     source-selection changes so the viewer and timeline show the same samples.
     """
 
@@ -57,6 +57,7 @@ class SourceReconstructionMode:
     def __init__(self, surface_manager):
         self.surface_manager = surface_manager
         self.painting = SurfacePainting()
+        self.reconstructions = []
         self.series = None
         self.surface_map = None
         self.playback = None
@@ -85,7 +86,7 @@ class SourceReconstructionMode:
         Publisher.subscribe(self.cross_tool_changed, "Toggle toolbar item")
 
     def load(self, filename=None, config=None):
-        """Prepare the entire candidate before replacing the current source map."""
+        """Validate and activate a reconstruction before adding it to the loaded list."""
         if not self.painting.navigation_mode:
             raise ValueError("Switch to navigation mode before loading a source reconstruction.")
         if (filename is None) == (config is None):
@@ -93,6 +94,45 @@ class SourceReconstructionMode:
         series = (
             read_source_config(filename) if config is None else read_source_reconstruction(config)
         )
+        self._activate(series)
+        self.reconstructions.append(series)
+        Publisher.sendMessage("Source reconstruction changed", mode=self)
+
+    @property
+    def reconstruction_names(self):
+        return tuple(
+            f"{index + 1}. {series.name}" for index, series in enumerate(self.reconstructions)
+        )
+
+    @property
+    def reconstruction_index(self):
+        return next(
+            (index for index, series in enumerate(self.reconstructions) if series is self.series),
+            -1,
+        )
+
+    def select_reconstruction(self, index):
+        if not 0 <= index < len(self.reconstructions):
+            raise IndexError("Reconstruction index is outside the loaded list.")
+        series = self.reconstructions[index]
+        if series is not self.series:
+            self._activate(series)
+
+    def remove_reconstruction(self, index):
+        if not 0 <= index < len(self.reconstructions):
+            raise IndexError("Reconstruction index is outside the loaded list.")
+        if self.reconstructions[index] is self.series:
+            if len(self.reconstructions) == 1:
+                self.clear()
+                return
+            self._activate(self.reconstructions[index - 1 if index else 1])
+        self.reconstructions.pop(index)
+        Publisher.sendMessage("Source reconstruction changed", mode=self)
+
+    def _activate(self, series):
+        """Replace only the active display, restoring it if the new map cannot be shown."""
+        if not self.painting.navigation_mode:
+            raise ValueError("Switch to navigation mode before loading a source reconstruction.")
         surface_map, source_mapping, hemispheres = self._create_map(series)
         surface = Project().GetBrainSurface()
         if surface is not None and not surface.supports_painting:
@@ -454,4 +494,5 @@ class SourceReconstructionMode:
         self._representation_data.clear()
         self.representation = "surface"
         self.hemispheres_visible = (True, True)
+        self.reconstructions.clear()
         Publisher.sendMessage("Source reconstruction changed", mode=self)

@@ -66,6 +66,8 @@ class TimeSeriesPanel(wx.Panel):
         super().__init__(parent)
         self.playback = None
         self.on_seek = self.on_tick = None
+        self.on_select_dataset = None
+        self._dataset_index = wx.NOT_FOUND
         self._dragging = False
         self._collapsed = False
         self._source_values = None
@@ -184,6 +186,12 @@ class TimeSeriesPanel(wx.Panel):
         self.speed.SetForegroundColour(wx.Colour(176, 176, 176))
         self.speed.SetName(_("Playback speed"))
         self.speed.SetToolTip(_("Playback speed"))
+        self.dataset = wx.Choice(body, size=(160, -1))
+        self.dataset.SetBackgroundColour(wx.Colour(25, 25, 25))
+        self.dataset.SetForegroundColour(wx.Colour(176, 176, 176))
+        self.dataset.SetName(_("Data set"))
+        self.dataset.SetToolTip(_("Select the data set to display"))
+        self.dataset.Enable(False)
         self.position = wx.StaticText(body)
         self.position.SetForegroundColour(wx.Colour(190, 190, 190))
         self.axis_title = wx.StaticText(body, style=wx.ALIGN_CENTER)
@@ -195,12 +203,21 @@ class TimeSeriesPanel(wx.Panel):
         self.source_label = wx.StaticText(body, label=_("Global RMS"), style=wx.ALIGN_RIGHT)
         self.source_label.SetForegroundColour(wx.Colour(178, 178, 178))
         controls = wx.BoxSizer(wx.HORIZONTAL)
-        for widget in (self.previous, self.play, self.next, self.speed, self.position):
+        for widget in (
+            self.previous,
+            self.play,
+            self.next,
+            self.speed,
+            self.dataset,
+            self.position,
+        ):
             controls.Add(widget, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
-        footer = wx.GridSizer(1, 3, 0, 0)
+        footer = wx.BoxSizer(wx.HORIZONTAL)
         footer.Add(controls, 0, wx.ALIGN_CENTER_VERTICAL)
-        footer.Add(self.axis_title, 0, wx.ALIGN_CENTER)
-        footer.Add(self.source_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL)
+        footer.AddStretchSpacer()
+        footer.Add(self.axis_title, 0, wx.ALIGN_CENTER_VERTICAL)
+        footer.AddStretchSpacer()
+        footer.Add(self.source_label, 0, wx.ALIGN_CENTER_VERTICAL)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(
             self.canvas,
@@ -220,12 +237,21 @@ class TimeSeriesPanel(wx.Panel):
         self.next.Bind(wx.EVT_BUTTON, lambda event: self._step(1))
         self.play.Bind(wx.EVT_BUTTON, self._on_play)
         self.speed.Bind(wx.EVT_CHOICE, self._on_speed)
+        self.dataset.Bind(wx.EVT_CHOICE, self._on_dataset)
         self.Bind(wx.EVT_WINDOW_DESTROY, self._on_destroy)
 
     def _layout_chart(self, render_window, event):
         width, height = render_window.GetSize()
         # Keep clipping bounds aligned with the chart's vertical offset.
         self.chart.SetSize(vtkRectf(0, -self.GRAPH_OFFSET_Y, width, height))
+
+    def set_datasets(self, names, index, on_select):
+        if tuple(self.dataset.GetItems()) != names:
+            self.dataset.SetItems(names)
+        self._dataset_index = index
+        self.dataset.SetSelection(index)
+        self.dataset.Enable(len(names) > 1)
+        self.on_select_dataset = on_select
 
     def set_data(self, playback, values, on_seek, on_tick):
         self.clear()
@@ -402,6 +428,10 @@ class TimeSeriesPanel(wx.Panel):
         self._on_release(None)
         self.playback = None
         self.on_seek = self.on_tick = None
+        self.on_select_dataset = None
+        self._dataset_index = wx.NOT_FOUND
+        self.dataset.Clear()
+        self.dataset.Enable(False)
         self._source_values = None
         self._values = None
         self._display = None
@@ -433,6 +463,17 @@ class TimeSeriesPanel(wx.Panel):
         self.playback.set_speed(float(self.speed.GetStringSelection()[:-1]))
         self.on_tick()
         self.sync()
+
+    def _on_dataset(self, event):
+        previous = self._dataset_index
+        try:
+            self.on_select_dataset(event.GetSelection())
+        except Exception as error:
+            import invesalius.gui.dialogs as dlg
+
+            self.dataset.SetSelection(previous)
+            with dlg.ErrorMessageBox(self, _("Error selecting data set"), str(error)) as dialog:
+                dialog.ShowModal()
 
     def _on_timer(self, event):
         if self.playback is not None:

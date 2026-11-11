@@ -1439,7 +1439,7 @@ def _read_fieldtrip_source(filename, data, config):
         path = _source_companion(
             filename,
             config,
-            "surface_file",
+            "surface_file" if config.get("surface_file") else "fieldtrip_surface",
             "Select the FieldTrip surface MAT containing pos, tri and its spatial unit.",
         )
         mesh = _read_mat_file(path)
