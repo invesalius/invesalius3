@@ -1608,6 +1608,7 @@ class ObjectTab(wx.Panel):
         # Also used to edit coil registrations by overwriting to the same name
         if self.tracker.IsTrackerInitialized():
             dialog = dlg.ObjectCalibrationDialog(
+                self,
                 self.tracker,
                 self.navigation.n_coils,
                 self.pedal_connector,
@@ -1621,7 +1622,7 @@ class ObjectTab(wx.Panel):
                     if coil_name in self.coil_registrations and coil_name != "default_coil":
                         # Warn that we are overwriting an old registration
                         dialog = wx.TextEntryDialog(
-                            None,
+                            self,
                             _(
                                 "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
                             ),

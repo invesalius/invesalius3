@@ -4140,6 +4140,7 @@ class MaskDensityDialog(wx.Dialog):
 class ObjectCalibrationDialog(wx.Dialog):
     def __init__(
         self,
+        parent: wx.Dialog | wx.Frame | wx.Window,
         tracker: "Tracker",
         n_coils: "int",
         pedal_connector: "PedalConnector",
@@ -4159,7 +4160,7 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         wx.Dialog.__init__(
             self,
-            wx.GetApp().GetTopWindow(),
+            parent,
             -1,
             _("Object calibration"),
             size=(450, 440),
