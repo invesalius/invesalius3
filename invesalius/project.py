@@ -34,7 +34,6 @@ import invesalius
 import invesalius.constants as const
 import invesalius.utils as utils
 from invesalius import inv_paths
-from invesalius.gui.dialogs import ErrorMessageBox
 from invesalius.i18n import tr as _
 
 # from invesalius.data import imagedata_utils
@@ -835,61 +834,34 @@ def CleanupSaveFiles(folder: Union[str, os.PathLike], temp_files) -> None:
             pass
 
 
-def custom_tar_filter(file: tarfile.TarInfo, path: Union[str, os.PathLike]):
-    file.name = os.path.normpath(file.name).lstrip(os.sep)
-    file_path = os.path.abspath(os.path.join(path, file.name))
-    if not file_path.startswith(os.path.abspath(path)):
-        dlg = ErrorMessageBox(
-            None,
-            "Security Alert",
-            f"Potential directory traversal detected: {file.name}. Skipping file extraction.",
+def Extract(
+    filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, os.PathLike]
+) -> List[str]:
+    """
+    Safely extracts an InVesalius project (.inv3) into folder.
+
+    Every member goes through tarfile's "data" extraction filter (PEP 706),
+    which strips leading "/" from names (so absolute names stay inside the
+    destination) and rejects paths escaping the destination (including
+    through previously extracted symlinks), absolute links or links pointing
+    outside the destination, device files, etc. A rejected member aborts the extraction
+    with a tarfile.FilterError (subclass of tarfile.TarError); there is no
+    unfiltered fallback (CVE-2024-44825).
+    """
+    if not hasattr(tarfile, "data_filter"):
+        raise RuntimeError(
+            "This Python version does not support safe tar extraction filters "
+            "(PEP 706). Please upgrade Python to open InVesalius projects."
         )
-        dlg.ShowModal()
-        dlg.Destroy()
-        return None
-    return file
-
-
-def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, os.PathLike]):
     if _has_win32api:
         folder = win32api.GetShortPathName(folder)
     folder = decode(folder, const.FS_ENCODE)
-    tar = tarfile.open(filename, "r")
-    idir = decode(os.path.split(tar.getnames()[0])[0], "utf8")
-    os.makedirs(os.path.join(folder, idir), exist_ok=True)
     filelist = []
-    tar_filter = getattr(tarfile, "tar_filter", None)
-    for t in tar.getmembers():
-        try:
-            tar.extract(t, path=folder, filter=tar_filter)
-            fname = os.path.join(folder, decode(t.name, "utf-8"))
-            filelist.append(fname)
-        except (TypeError, AttributeError, tarfile.TarError):
-            filtered = custom_tar_filter(t, folder)
-            if filtered is not None:
-                tar.extract(filtered, path=folder)
-                fname = os.path.join(folder, decode(filtered.name, "utf-8"))
-                filelist.append(fname)
-
-    tar.close()
-    return filelist
-
-
-def Extract_(
-    filename: Union[str, bytes, os.PathLike], folder: Union[str, os.PathLike]
-) -> List[str]:
-    tar = tarfile.open(filename, "r:gz")
-    filelist = []
-
-    for member in tar.getmembers():
-        member_name = os.path.basename(member.name)  # Strip directory path
-        fname = os.path.join(folder, member_name)
-
-        if os.path.commonpath([folder, fname]) == folder:
-            tar.extract(member, path=folder)
-            filelist.append(fname)
-        else:
-            print(f"Skipping potential unsafe file: {member.name}")
-    # tar.list(verbose=True)
-    tar.close()
+    with tarfile.open(filename, "r") as tar:
+        for member in tar.getmembers():
+            # The filter may rewrite the member (e.g. strip a leading "/"), so
+            # the extracted path must be taken from the filtered member.
+            safe_member = tarfile.data_filter(member, folder)
+            tar.extract(safe_member, path=folder, filter="data")
+            filelist.append(os.path.join(folder, decode(safe_member.name, "utf-8")))
     return filelist
