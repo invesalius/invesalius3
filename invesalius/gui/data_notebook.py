@@ -1534,8 +1534,12 @@ class SurfaceButtonControlPanel(wx.Panel):
             listctrl = category_info["list"]
             selected = listctrl.GetSelected()
             all_selected_indices.extend(selected)
-            if selected:
-                listctrl.RemoveSurfaces(selected)
+
+        if all_selected_indices:
+            Publisher.sendMessage("Remove surfaces", surface_indexes=all_selected_indices)
+            wx.CallAfter(Publisher.sendMessage, "Repopulate surfaces")
+        else:
+            dlg.SurfaceSelectionRequiredForRemoval()
 
     def OnDuplicate(self):
         all_selected_indices = []
@@ -1805,12 +1809,8 @@ class SurfacesListCtrlPanel(InvListCtrl):
             elif column_clicked == 1:
                 self.OnChangeColor(item_idx)
                 return
-            elif column_clicked == 2:
-                # Open rename dialog when clicking Name column
-                self.ShowRenameDialog(item_idx)
-                return
-            elif column_clicked in (3, 4):
-                # Highlight surface when clicking Volume or Area columns
+            elif column_clicked in (2, 3, 4):
+                # Let the native list handle selection, including Ctrl/Shift clicks.
                 global_surface_id = None
                 for surface_id, local_pos in self.surface_list_index.items():
                     if local_pos == item_idx:
@@ -1820,11 +1820,17 @@ class SurfacesListCtrlPanel(InvListCtrl):
                     Publisher.sendMessage(
                         "Change surface selected", surface_index=global_surface_id
                     )
-                return
             elif column_clicked == 5:
                 self.OnChangeTransparency(item_idx)
                 return
         evt.Skip()
+
+    def OnDblClickItem(self, evt):
+        item_idx, _ = self.HitTest(evt.GetPosition())
+        if item_idx > -1 and self.get_column_clicked(evt.GetPosition()) == 2:
+            self.ShowRenameDialog(item_idx)
+            return
+        super().OnDblClickItem(evt)
 
     def ShowRenameDialog(self, item_idx):
         """Show a dialog to rename the surface."""
