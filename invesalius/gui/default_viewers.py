@@ -163,6 +163,7 @@ class Panel(wx.Panel):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self.OnRestore)
 
     def __bind_events(self):
+        Publisher.subscribe(self.MaximizeViewerVolume, "Maximize volume viewer")
         Publisher.subscribe(self.OnSetTargetMode, "Set target mode")
         Publisher.subscribe(self.OnStartNavigation, "Start navigation")
         Publisher.subscribe(self.UpdateViewerCaption, "Update viewer caption")

@@ -249,12 +249,18 @@ class SurfaceManager:
     def __init__(self):
         self.actors_dict = {}
         self.map_visualizers = {}
-        from invesalius.data.visualization.surface_painting import SurfacePainting
+        from invesalius.data.visualization.surface_painting_visualizer import SurfacePainting
 
         self.painting = SurfacePainting()
         self.last_surface_index = 0
         self.convert_to_inv = None
         self.__bind_events()
+
+        from invesalius.data.visualization.source_reconstruction_visualizer import (
+            SourceReconstructionMode,
+        )
+
+        self.source_reconstruction = SourceReconstructionMode(self)
 
         self._default_parameters = {
             "algorithm": "Default",
@@ -1100,6 +1106,7 @@ class SurfaceManager:
         self.CloseProject()
 
     def CloseProject(self):
+        self.source_reconstruction.clear()
         for surface in list(self.map_visualizers):
             self.RemoveSurfacePresentation(surface)
         for index in self.actors_dict:
@@ -1124,6 +1131,14 @@ class SurfaceManager:
         Publisher.sendMessage("Update surface info in GUI", surface=surface)
 
     def OnLoadSurfaceDict(self, surface_dict):
+        # Reloaded surfaces may reuse indexes while their old maps remain in the scene.
+        for surface in list(self.map_visualizers):
+            if surface not in surface_dict.values():
+                Publisher.sendMessage("Discard surface painting", surface=surface)
+                actor = self.actors_dict.pop(surface.index, None)
+                if actor is not None:
+                    Publisher.sendMessage("Remove surface actor from viewer", actor=actor)
+
         removed_indexes = self.actors_dict.keys() - surface_dict.keys()
         for index in removed_indexes:
             actor = self.actors_dict.pop(index)

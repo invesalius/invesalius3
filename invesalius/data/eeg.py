@@ -17,7 +17,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 # --------------------------------------------------------------------------
-"""EEG electrode data and montage import/export."""
+"""EEG electrodes, montage imports, exports and template matching."""
 
 import csv
 import json
@@ -32,6 +32,8 @@ from uuid import uuid4
 import numpy as np
 
 from invesalius.i18n import tr as _
+
+# Electrodes and montage exports
 
 # Each fiducial has half an electrode's weight to stabilize sparse captures.
 _MATCH_FIDUCIAL_WEIGHT = 0.5
@@ -76,7 +78,7 @@ class EEGElectrode:
         if not isinstance(self.electrode_uuid, str) or not self.electrode_uuid:
             raise ValueError("An electrode needs a nonempty UUID.")
         if self.distance_mm is not None and (
-            not isinstance(self.distance_mm, (int, float))
+            not isinstance(self.distance_mm, int | float)
             or not isfinite(self.distance_mm)
             or self.distance_mm < 0
         ):
@@ -497,7 +499,12 @@ class EEGMontage:
         if coordinate_system != "scanner_ras":
             target = EEGMontage._get_world_fiducials()
             if not all(name in target for name in ("NAS", "LPA", "RPA")):
-                raise ValueError(_("Register image fiducials (Left Ear, Right Ear, Nasion) first."))
+                raise ValueError(
+                    _(
+                        "Mark the MRI fiducials (Left Ear, Right Ear, Nasion) to define the "
+                        "MRI head coordinate system before converting this EEG montage."
+                    )
+                )
             target = np.asarray([target[name] for name in ("NAS", "LPA", "RPA")])
             transform = np.linalg.inv(ras_to_head_matrix(*target))
             if coordinate_system == "fiducials":

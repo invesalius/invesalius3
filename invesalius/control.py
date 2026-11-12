@@ -251,7 +251,14 @@ class Controller:
             Publisher.sendMessage("Stop Config Recording")
             Publisher.sendMessage("Enable style", style=const.STATE_DEFAULT)
 
-        filepath = dialog.ShowImportOtherFilesDialog(id_type)
+        if id_type == const.ID_NIFTI_IMPORT:
+            filepath = dialog.ShowImportOtherFilesDialog(
+                id_type,
+                msg=_("Import NIfTI / MGH / MGZ image"),
+                wildcard=dialog.WILDCARD_VOLUME,
+            )
+        else:
+            filepath = dialog.ShowImportOtherFilesDialog(id_type)
         Publisher.sendMessage("Open other files", filepath=filepath)
 
     def OnShowImportMaskDialog(self) -> None:

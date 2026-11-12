@@ -24,11 +24,20 @@ from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
 
 import invesalius.constants as const
 from invesalius import inv_paths
+from invesalius.i18n import tr as _
+
+
+def read_image(filename):
+    """Load a 3D/4D volume while preserving its native spatial coordinates."""
+    image = nib.squeeze_image(nib.load(filename))
+    if len(image.shape) not in (3, 4) or any(size <= 0 for size in image.shape):
+        raise nib.filebasedimages.ImageFileError("Expected a 3D image or a 4D series of volumes.")
+    return image
 
 
 def ReadOthers(dir_):
     """
-    Read the given Analyze, NIfTI, Compressed NIfTI or PAR/REC file,
+    Read the given Analyze, NIfTI, MGH/MGZ or PAR/REC file,
     remove singleton image dimensions and convert image orientation to
     RAS+ canonical coordinate system. Analyze header does not support
     affine transformation matrix, though cannot be converted automatically
@@ -46,7 +55,7 @@ def ReadOthers(dir_):
         ow.SetInstance(fow)
 
     try:
-        imagedata = nib.squeeze_image(nib.load(dir_))
+        imagedata = read_image(dir_)
         imagedata = nib.as_closest_canonical(imagedata)
         imagedata.update_header()
 
@@ -55,33 +64,13 @@ def ReadOthers(dir_):
 
             import invesalius.gui.dialogs as dlg
 
-            dialog = dlg.SelectNiftiVolumeDialog(
-                volumes=[str(n + 1) for n in range(imagedata.shape[-1])]
-            )
-            status = dialog.ShowModal()
-
-            success = status == ID_OK
-
-            if success:
-                # selected_option = int(dialog.choice.GetStringSelection())
-                selected_volume = dialog.GetVolumeChoice()
-
-                data = imagedata.get_fdata()
-                header = imagedata.header.copy()
-
-                selected_volume = data[..., selected_volume]
-                header.set_data_shape(selected_volume.shape)
-
-                zooms = list(header.get_zooms())
-                new_zooms = zooms[:3]  # Adjust this to your desired zooms
-                header.set_zooms(new_zooms)
-
-                imagedata = nib.Nifti1Image(selected_volume, imagedata.affine, header=header)
-
-            else:
-                raise ValueError
-
-            dialog.Destroy()
+            with dlg.SelectNiftiVolumeDialog(
+                volumes=[str(n + 1) for n in range(imagedata.shape[-1])],
+                title=_("Select image volume"),
+            ) as dialog:
+                if dialog.ShowModal() != ID_OK:
+                    return False
+                imagedata = imagedata.slicer[..., dialog.GetVolumeChoice()]
 
     except nib.filebasedimages.ImageFileError:
         return False

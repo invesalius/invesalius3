@@ -1058,7 +1058,7 @@ class Frame(wx.Frame):
 
     def ShowImportOtherFiles(self, id_file):
         """
-        Show import Analyze, NiFTI1 or PAR/REC dialog.
+        Show import Analyze, NIfTI, MGH/MGZ or PAR/REC dialog.
         """
         Publisher.sendMessage("Show import other files dialog", id_type=id_file)
 
@@ -1518,7 +1518,7 @@ class MenuBar(wx.MenuBar):
         # Import Others Files
         others_file_menu = wx.Menu()
         others_file_menu.Append(const.ID_ANALYZE_IMPORT, _("Analyze 7.5"))
-        others_file_menu.Append(const.ID_NIFTI_IMPORT, _("NIfTI 1"))
+        others_file_menu.Append(const.ID_NIFTI_IMPORT, _("NIfTI / MGH / MGZ"))
         others_file_menu.Append(const.ID_PARREC_IMPORT, _("PAR/REC"))
         others_file_menu.Append(const.ID_TIFF_JPG_PNG, _("TIFF,BMP,JPG or PNG (micro-CT)"))
 

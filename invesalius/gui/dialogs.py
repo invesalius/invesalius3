@@ -288,6 +288,10 @@ WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|All files (*.*)|*.*"
 WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|All files (*.*)|*.*"
 
 WILDCARD_NIFTI = "NIfTI 1 (*.nii;*.nii.gz;*.hdr)|*.nii;*.nii.gz;*.hdr|All files (*.*)|*.*"
+WILDCARD_VOLUME = (
+    "NIfTI / FreeSurfer (*.nii;*.nii.gz;*.hdr;*.mgh;*.mgz)|"
+    "*.nii;*.nii.gz;*.hdr;*.mgh;*.mgz|All files (*.*)|*.*"
+)
 # ".[jJ][pP][gG]"
 WILDCARD_PARREC = "PAR/REC (*.par)|*.par|All files (*.*)|*.*"
 
@@ -415,7 +419,9 @@ def ShowImportBitmapDirDialog(self) -> str | None:
 
 
 def ShowImportOtherFilesDialog(
-    id_type: wx.WindowIDRef, msg: str = "Import NIFTi 1 file"
+    id_type: wx.WindowIDRef,
+    msg: str = "Import NIFTi 1 file",
+    wildcard: str = WILDCARD_NIFTI,
 ) -> str | bytes | None:
     # Default system path
     session = ses.Session()
@@ -425,7 +431,7 @@ def ShowImportOtherFilesDialog(
         message=msg,
         defaultDir=last_directory,
         defaultFile="",
-        wildcard=WILDCARD_NIFTI,
+        wildcard=wildcard,
         style=wx.FD_OPEN | wx.FD_CHANGE_DIR,
     )
 
@@ -480,7 +486,7 @@ def ShowImportOtherFilesDialog(
     return filename
 
 
-def ShowImportMeshFilesDialog() -> str | None:
+def ShowImportMeshFilesDialog(parent: wx.Window | None = None) -> str | None:
     from invesalius.data.slice_ import Slice
 
     # Default system path
@@ -494,7 +500,10 @@ def ShowImportMeshFilesDialog() -> str | None:
 
     if Slice().has_affine():
         dlg = FileSelectionDialog(
-            title=dlg_message, default_dir=last_directory, wildcard=WILDCARD_MESH_FILES
+            title=dlg_message,
+            default_dir=last_directory,
+            wildcard=WILDCARD_MESH_FILES,
+            parent=parent,
         )
         conversion_radio_box = wx.RadioBox(
             dlg,
@@ -507,7 +516,7 @@ def ShowImportMeshFilesDialog() -> str | None:
         dlg.FitSizers()
     else:
         dlg = wx.FileDialog(
-            None,
+            parent,
             message=dlg_message,
             defaultDir=last_directory,
             wildcard=WILDCARD_MESH_FILES,
@@ -516,6 +525,9 @@ def ShowImportMeshFilesDialog() -> str | None:
         # stl filter is default
         dlg.SetFilterIndex(0)
         conversion_radio_box = None
+
+    if parent is not None:
+        dlg.CentreOnParent()
 
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
@@ -4134,6 +4146,7 @@ class MaskDensityDialog(wx.Dialog):
 class ObjectCalibrationDialog(wx.Dialog):
     def __init__(
         self,
+        parent: wx.Dialog | wx.Frame | wx.Window,
         tracker: "Tracker",
         n_coils: "int",
         pedal_connector: "PedalConnector",
@@ -4153,16 +4166,13 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         wx.Dialog.__init__(
             self,
-            wx.GetApp().GetTopWindow(),
+            parent,
             -1,
             _("Object calibration"),
             size=(450, 440),
             style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP,
         )
-
-        self._init_gui()
-        self._init_pedal()
-        self.InitializeObject()
+        self.SetPosition(wx.GetApp().GetTopWindow().GetScreenPosition() + wx.Point(20, 20))
 
     def _init_gui(self) -> None:
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -4318,9 +4328,12 @@ class ObjectCalibrationDialog(wx.Dialog):
     def ObjectImportDialog(self) -> Literal[0, 1]:
         msg = _("Would like to use InVesalius default object?")
         if sys.platform == "darwin":
-            dlg = wx.MessageDialog(None, "", msg, wx.ICON_QUESTION | wx.YES_NO)
+            dlg = wx.MessageDialog(self.GetParent(), "", msg, wx.ICON_QUESTION | wx.YES_NO)
         else:
-            dlg = wx.MessageDialog(None, msg, "InVesalius 3", wx.ICON_QUESTION | wx.YES_NO)
+            dlg = wx.MessageDialog(
+                self.GetParent(), msg, "InVesalius 3", wx.ICON_QUESTION | wx.YES_NO
+            )
+        dlg.CentreOnParent()
         answer = dlg.ShowModal()
         dlg.Destroy()
 
@@ -4330,11 +4343,6 @@ class ObjectCalibrationDialog(wx.Dialog):
             return 0
 
     def ShowObject(self, polydata: vtkPolyData) -> None:
-        if polydata.GetNumberOfPoints() == 0:
-            wx.MessageBox(
-                _("InVesalius was not able to import this surface"), _("Import surface error")
-            )
-
         transform = vtkTransform()
         transform.RotateZ(90)
 
@@ -4383,17 +4391,19 @@ class ObjectCalibrationDialog(wx.Dialog):
             path = os.path.join(inv_paths.OBJ_DIR, "magstim_fig8_coil.stl")
 
         else:
-            path = ShowImportMeshFilesDialog()
+            path = ShowImportMeshFilesDialog(parent=self.GetParent())
 
             # Return if the open file dialog was canceled.
             if path is None:
                 return False
 
             # Validate the file extension.
-            valid_extensions = (".stl", "ply", ".obj", ".vtp")
+            valid_extensions = (".stl", ".ply", ".obj", ".vtp")
             if not path.lower().endswith(valid_extensions):
                 wx.MessageBox(
-                    _("File format not recognized by InVesalius"), _("Import surface error")
+                    _("File format not recognized by InVesalius"),
+                    _("Import surface error"),
+                    parent=self.GetParent(),
                 )
                 return False
 
@@ -4404,15 +4414,26 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         return True
 
-    def InitializeObject(self) -> None:
-        success = self.ConfigureObject()
-        if success:
-            # XXX: Is this back and forth encoding and decoding needed? Maybe path could be encoded
-            #   only where it is needed, and mostly remain as a string in self.coil_path and elsewhere.
-            #
-            object_path = self.coil_path.decode(const.FS_ENCODE)
-            self.polydata = pu.LoadPolydata(path=object_path)
-            self.ShowObject(polydata=self.polydata)
+    def InitializeObject(self) -> bool:
+        """Choose the mesh before creating VTK controls, which show their parents on GTK."""
+        if not self.ConfigureObject():
+            return False
+        # XXX: Is this back and forth encoding and decoding needed? Maybe path could be encoded
+        #   only where it is needed, and mostly remain as a string in self.coil_path and elsewhere.
+        #
+        object_path = self.coil_path.decode(const.FS_ENCODE)
+        self.polydata = pu.LoadPolydata(path=object_path)
+        if self.polydata.GetNumberOfPoints() == 0:
+            wx.MessageBox(
+                _("InVesalius was not able to import this surface"),
+                _("Import surface error"),
+                parent=self.GetParent(),
+            )
+            return False
+        self._init_gui()
+        self.ShowObject(polydata=self.polydata)
+        self._init_pedal()
+        return True
 
     def OnCreateObjectText(self, name: str, coord: Sequence[float]) -> tuple[vtkActor, vtkFollower]:
         ball_source = vtkSphereSource()
@@ -6345,7 +6366,8 @@ def ShowEEGMontageImportDialog(parent: wx.Window) -> dict | None:
         dialog,
         label=_(
             "Use the file's declared coordinate system or define its frame from anatomical landmarks. "
-            "Landmark-based conversion requires Nasion, Left Ear and Right Ear in the file and MRI. "
+            "Head-coordinate conversion requires Nasion, Left Ear and Right Ear marked in the MRI. "
+            "Defining the source frame from landmarks also requires them in the file. "
             "For SFP or TSV without coordinate metadata, select the units."
         ),
     )
@@ -6796,6 +6818,7 @@ class SelectNiftiVolumeDialog(wx.Dialog):
         self.cmb_volume = wx.ComboBox(
             self, -1, choices=volumes, style=wx.CB_DROPDOWN | wx.CB_READONLY
         )
+        self.cmb_volume.SetSelection(0)
 
         button_ok = wx.Button(self, wx.ID_OK)
         button_ok.SetHelpText("")
@@ -7909,8 +7932,10 @@ class PeelsCreationDlg(wx.Dialog):
 
 
 class FileSelectionDialog(wx.Dialog):
-    def __init__(self, title: str, default_dir: str, wildcard: str):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow())
+    def __init__(
+        self, title: str, default_dir: str, wildcard: str, parent: wx.Window | None = None
+    ):
+        wx.Dialog.__init__(self, parent or wx.GetApp().GetTopWindow())
         self.SetTitle(title)
 
         self.default_dir = default_dir

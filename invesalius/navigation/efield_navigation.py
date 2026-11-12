@@ -31,7 +31,7 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.session as ses
 from invesalius.data.coordinates import coil_projection_ray
 from invesalius.data.visualization.efield_visualizer import EFieldVisualizer
-from invesalius.data.visualization.surface_painting import SurfacePainting
+from invesalius.data.visualization.surface_painting_visualizer import SurfacePainting
 from invesalius.project import Project
 from invesalius.pubsub import pub as Publisher
 

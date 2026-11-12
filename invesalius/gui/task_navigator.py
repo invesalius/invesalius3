@@ -61,7 +61,7 @@ import invesalius.session as ses
 from invesalius import inv_paths, utils
 from invesalius.data.markers.marker import Marker, MarkerType
 from invesalius.data.markers.surface_geometry import SurfaceGeometry
-from invesalius.data.visualization.surface_painting import SurfacePainting
+from invesalius.data.visualization.surface_painting_visualizer import SurfacePainting
 from invesalius.gui import deep_learning_seg_dialog
 from invesalius.gui.widgets.fiducial_buttons import OrderedFiducialButtons
 from invesalius.i18n import tr as _

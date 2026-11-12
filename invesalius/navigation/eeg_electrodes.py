@@ -79,8 +79,6 @@ class EEGElectrodeManager(metaclass=Singleton):
     def LoadState(self):
         session = ses.Session()
         electrodes = [EEGElectrode(**data) for data in session.GetState("eeg_electrodes", [])]
-        marker_state = session.GetState("markers", []) or []
-        # Migrate before MarkersControl reads the old EEG type (5), which master does not know.
         self._electrodes = {item.electrode_uuid: item for item in electrodes}
 
     def on_project_state(self, state):
@@ -201,17 +199,17 @@ class EEGElectrodeManager(metaclass=Singleton):
 
     def replace_electrodes(self, electrodes: Sequence[EEGElectrode], project_to_scalp=False):
         """Install a fully validated import, keeping the current collection on save failure."""
-        if project_to_scalp:
-            if not self.prepare_scalp_surface(create=False):
-                raise RuntimeError(
-                    _("A smoothed scalp surface is required to project EEG electrodes.")
-                )
+        has_scalp = self.prepare_scalp_surface(create=False)
+        if project_to_scalp and not has_scalp:
+            raise RuntimeError(_("A smoothed scalp surface is required to project EEG electrodes."))
+        if has_scalp:
             for electrode in electrodes:
                 projection = self.project_to_scalp(electrode.position, create_surface=False)
-                electrode.position = projection.position
                 electrode.orientation = projection.orientation
-                # Template distances describe the original positions, before projection.
-                electrode.distance_mm = None
+                if project_to_scalp:
+                    electrode.position = projection.position
+                    # Template distances describe the original positions, before projection.
+                    electrode.distance_mm = None
         previous = self._electrodes
         self._electrodes = {item.electrode_uuid: item for item in electrodes}
         try:

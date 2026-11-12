@@ -1608,12 +1608,13 @@ class ObjectTab(wx.Panel):
         # Also used to edit coil registrations by overwriting to the same name
         if self.tracker.IsTrackerInitialized():
             dialog = dlg.ObjectCalibrationDialog(
+                wx.GetTopLevelParent(self),
                 self.tracker,
                 self.navigation.n_coils,
                 self.pedal_connector,
             )
             try:
-                if dialog.ShowModal() == wx.ID_OK:
+                if dialog.InitializeObject() and dialog.ShowModal() == wx.ID_OK:
                     (coil_name, coil_path, obj_fiducials, obj_orients, obj_id, tracker_id) = (
                         dialog.GetValue()
                     )
@@ -1621,7 +1622,7 @@ class ObjectTab(wx.Panel):
                     if coil_name in self.coil_registrations and coil_name != "default_coil":
                         # Warn that we are overwriting an old registration
                         dialog = wx.TextEntryDialog(
-                            None,
+                            self,
                             _(
                                 "A registration with this name already exists. Enter a new name or overwrite an old coil registration"
                             ),
@@ -2398,10 +2399,6 @@ class TrackerTab(wx.Panel):
         Publisher.sendMessage("Coil selection done", done=False)
 
     def OnChooseTracker(self, evt, ctrl):
-        if sys.platform == "darwin":
-            wx.CallAfter(self.GetParent().Hide)
-        else:
-            self.HideParent()
         Publisher.sendMessage("Begin busy cursor")
         Publisher.sendMessage("Update status text in GUI", label=_("Configuring tracker ..."))
         if hasattr(evt, "GetSelection"):
@@ -2421,10 +2418,6 @@ class TrackerTab(wx.Panel):
         Publisher.sendMessage("Coil selection done", done=False)
         ctrl.SetSelection(self.tracker.tracker_id)
         Publisher.sendMessage("End busy cursor")
-        if sys.platform == "darwin":
-            wx.CallAfter(self.GetParent().Show)
-        else:
-            self.ShowParent()
 
     def OnChooseReferenceMode(self, evt, ctrl):
         Navigation(None, None).SetReferenceMode(evt.GetSelection())
