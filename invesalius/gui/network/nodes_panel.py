@@ -202,8 +202,8 @@ class NodesPanel(wx.Panel):
         list_ctrl.InsertColumn(0, _("Active"))
         list_ctrl.InsertColumn(1, _("IP Address"))
         list_ctrl.InsertColumn(2, _("Port"))
-        list_ctrl.InsertColumn(3, _("AE Title"))
-        list_ctrl.InsertColumn(4, _("Description"))
+        list_ctrl.InsertColumn(3, _("AE Title"), width=200)
+        list_ctrl.InsertColumn(4, _("Description"), width=800)
         list_ctrl.InsertColumn(5, _("Status"))
         list_ctrl.EnableCheckBoxes()
 
