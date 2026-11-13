@@ -5,12 +5,31 @@ import wx
 import wx.gizmos as gizmos
 
 import invesalius.net.dicom as dcm_net
+import invesalius.reader.dicom_grouper as dcm
 import invesalius.session as ses
 from invesalius import inv_paths
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
+
+
+class SelectEvent(wx.PyCommandEvent):
+    def __init__(self, evtType, id):
+        super().__init__(evtType, id)
+
+    def GetSelectID(self):
+        return self.SelectedID
+
+    def SetSelectedID(self, id):
+        self.SelectedID = id
+
+    def GetItemData(self):
+        return self.data
+
+    def SetItemData(self, data):
+        self.data = data
 
 
 class TextPanel(wx.Panel):
