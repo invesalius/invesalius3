@@ -113,3 +113,119 @@ def test_edition_history_jump_to():
     history.jump_to(1, matrix)
     assert history.index == 1
     assert np.array_equal(matrix, state_1)
+
+
+def test_edition_history_2d_undo_reaches_initial_state():
+    # Regression test: a single 2D slice edit (AXIAL/CORONAL/SAGITAL, as
+    # opposed to a VOLUME/DeltaHistoryNode edit) used to leave undo()
+    # permanently stuck at index 0 -- every branch that decremented
+    # self.index required self.index > 0, so -1 (the "no edits" sentinel)
+    # was unreachable.
+    matrix = np.zeros((10, 10, 10), dtype=np.uint8)
+    history = EditionHistory(size=10)
+
+    p_array = matrix[1, 1:, 1:].copy()
+    array = p_array.copy()
+    array[0, 0] = 255
+    history.new_node(0, "AXIAL", array, p_array, clean=False)
+    matrix[1, 1:, 1:] = array
+    assert history.index == 1
+
+    actual_slices = {"AXIAL": 0, "CORONAL": 0, "SAGITAL": 0, "VOLUME": 0}
+
+    # First undo: back to the pre-edit snapshot.
+    history.undo(matrix, actual_slices)
+    assert history.index == 0
+    assert np.array_equal(matrix[1, 1:, 1:], p_array)
+
+    # Second undo: must reach the "no edits" sentinel, not stay stuck at 0.
+    history.undo(matrix, actual_slices)
+    assert history.index == -1
+
+    # A further undo() call should be a safe no-op.
+    history.undo(matrix, actual_slices)
+    assert history.index == -1
+
+
+def test_edition_history_jump_to_2d_initial_state_terminates():
+    # Regression test: EditionHistory.jump_to() drives undo()/redo() in an
+    # unbounded loop and used to spin forever once undo() got stuck (see
+    # test_edition_history_2d_undo_reaches_initial_state). Jumping to
+    # "Initial State" (-1) after a single 2D edit reproduced this directly.
+    matrix = np.zeros((10, 10, 10), dtype=np.uint8)
+    history = EditionHistory(size=10)
+
+    p_array = matrix[1, 1:, 1:].copy()
+    array = p_array.copy()
+    array[0, 0] = 255
+    history.new_node(0, "AXIAL", array, p_array, clean=False)
+    matrix[1, 1:, 1:] = array
+
+    actual_slices = {"AXIAL": 0, "CORONAL": 0, "SAGITAL": 0, "VOLUME": 0}
+    history.jump_to(-1, matrix, actual_slices)
+
+    assert history.index == -1
+    assert np.array_equal(matrix[1, 1:, 1:], p_array)
+
+
+def test_edition_history_jump_to_2d_mismatched_viewer_slice_terminates():
+    # Regression test: undo()/redo() also make no progress when the slice
+    # currently shown in the 2D viewer doesn't match the history entry
+    # being crossed (they only reposition the viewer, by design, so a
+    # single manual click can apply the edit on the next press). jump_to()
+    # walks several steps in one call and used to spin forever if this
+    # branch was hit anywhere along the way, regardless of index 0.
+    matrix = np.zeros((10, 10, 10), dtype=np.uint8)
+    history = EditionHistory(size=10)
+
+    p1 = matrix[1, 1:, 1:].copy()
+    a1 = p1.copy()
+    a1[0, 0] = 255
+    history.new_node(0, "AXIAL", a1, p1, clean=False)  # slice 0
+    matrix[1, 1:, 1:] = a1
+
+    p2 = matrix[3, 1:, 1:].copy()
+    a2 = p2.copy()
+    a2[0, 0] = 255
+    history.new_node(2, "AXIAL", a2, p2, clean=False)  # slice 2
+    matrix[3, 1:, 1:] = a2
+
+    assert history.index == 3
+
+    # Viewer is on a slice that matches neither recorded edit.
+    actual_slices = {"AXIAL": 7, "CORONAL": 0, "SAGITAL": 0, "VOLUME": 0}
+    history.jump_to(-1, matrix, actual_slices)
+
+    assert history.index == -1
+    assert np.array_equal(matrix[1, 1:, 1:], p1)
+    assert np.array_equal(matrix[3, 1:, 1:], p2)
+
+
+def test_edition_history_jump_to_mixed_2d_and_volume():
+    # A history mixing 2D slice edits and VOLUME/delta edits should still
+    # jump to -1 and back without getting stuck partway through.
+    matrix = np.zeros((10, 10, 10), dtype=np.uint8)
+    history = EditionHistory(size=10)
+
+    p1 = matrix[1, 1:, 1:].copy()
+    a1 = p1.copy()
+    a1[0, 0] = 255
+    history.new_node(0, "AXIAL", a1, p1, clean=False)
+    matrix[1, 1:, 1:] = a1
+
+    p_vol = matrix.copy()
+    matrix[5, 5, 5] = 255
+    history.new_node(0, "VOLUME", matrix.copy(), p_vol, clean=False)
+
+    actual_slices = {"AXIAL": 0, "CORONAL": 0, "SAGITAL": 0, "VOLUME": 0}
+
+    history.jump_to(-1, matrix, actual_slices)
+    assert history.index == -1
+    assert np.array_equal(matrix, np.zeros((10, 10, 10), dtype=np.uint8))
+
+    # index 0 = pre-edit snapshot, index 1 = post-edit snapshot (2D edits
+    # always add both), index 2 = the VOLUME/delta edit.
+    assert history.index == -1
+    history.jump_to(2, matrix, actual_slices)
+    assert history.index == 2
+    assert matrix[5, 5, 5] == 255
