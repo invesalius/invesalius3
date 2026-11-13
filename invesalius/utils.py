@@ -348,13 +348,15 @@ def UpdateCheck() -> None:
             "language": lang,
             "random_id": random_id,
         }
-        response = requests.post(url, data=data, verify=False)
-        last, url = response.text.split()
-
         try:
+            # Keep certificate verification enabled and do not block indefinitely.
+            with requests.post(url, data=data, timeout=(5, 30)) as response:
+                response.raise_for_status()
+                last, url = response.text.split()
             last_ver = Version(last)
             actual_ver = Version(invesalius.__version__)
-        except (ValueError, AttributeError):
+        except (requests.RequestException, ValueError, AttributeError):
+            # Update discovery is optional; a failed check must not disrupt the UI.
             return
 
         if last_ver > actual_ver:
