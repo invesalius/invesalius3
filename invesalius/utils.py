@@ -63,7 +63,7 @@ def format_date(value: str) -> str:
                 data = time.strptime(value, "%d.%m.%Y")
             else:
                 data = time.strptime(value, "%Y.%m.%d")
-        elif len(value.split("//")) > 1:
+        elif len(value.split("/")) > 1:
             data = time.strptime(value, "%d/%m/%Y")
         else:
             data = time.strptime(value, "%Y%m%d")
