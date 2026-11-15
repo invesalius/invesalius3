@@ -2181,6 +2181,8 @@ class ObjectToolBar(AuiToolBar):
         self.SetToolBitmapSize(wx.Size(32, 32))
 
         self.parent = parent
+        self._project_open = False
+        self._registration_active = False
         # Used to enable/disable menu items if project is opened or
         # not. Eg. save should only be available if a project is open
         self.enable_items = [
@@ -2214,6 +2216,8 @@ class ObjectToolBar(AuiToolBar):
         sub(self._ToggleLinearMeasure, "Set tool linear measure")
         sub(self._ToggleAngularMeasure, "Set tool angular measure")
         sub(self.ToggleItem, "Toggle toolbar item")
+        sub(self.OnImageRegistrationState, "Image registration state")
+        sub(self.OnCloseProject, "Close project data")
 
     def __bind_events_wx(self):
         """
@@ -2364,10 +2368,26 @@ class ObjectToolBar(AuiToolBar):
         Based on given state, enable or disable menu items which
         depend if project is open or not.
         """
+        self._project_open = state
         if state:
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
+        self.Refresh()
+
+    def OnCloseProject(self):
+        self._EnableState(False)
+
+    def OnImageRegistrationState(self, active):
+        self._registration_active = active
+        if active:
+            # Remove the previous interaction as well as its toolbar selection.
+            for tool in self.enable_items:
+                if self.GetToolToggled(tool):
+                    Publisher.sendMessage("Disable style", style=tool)
+            self._UntoggleAllItems()
+        for tool in self.enable_items:
+            self.EnableTool(tool, self._project_open and not active)
         self.Refresh()
 
     def _UntoggleAllItems(self):
@@ -2385,6 +2405,8 @@ class ObjectToolBar(AuiToolBar):
         Force measure distance tool to be toggled and bind pubsub
         events to other classes whici are interested on this.
         """
+        if self._registration_active:
+            return
         id = const.STATE_MEASURE_DISTANCE
         self.ToggleTool(id, True)
         Publisher.sendMessage("Enable style", style=id)
@@ -2399,6 +2421,8 @@ class ObjectToolBar(AuiToolBar):
         Force measure angle tool to be toggled and bind pubsub
         events to other classes which are interested on this.
         """
+        if self._registration_active:
+            return
         id = const.STATE_MEASURE_ANGLE
         self.ToggleTool(id, True)
         Publisher.sendMessage("Enable style", style=id)
@@ -2414,6 +2438,10 @@ class ObjectToolBar(AuiToolBar):
         should be toggle each time).
         """
         id = evt.GetId()
+        if self._registration_active:
+            self.ToggleTool(id, False)
+            self.Refresh()
+            return
         state = self.GetToolToggled(id)
 
         if state and (
@@ -2469,7 +2497,7 @@ class ObjectToolBar(AuiToolBar):
         Enable menu items (e.g. zoom) when project is opened.
         """
         for tool in self.enable_items:
-            self.EnableTool(tool, True)
+            self.EnableTool(tool, not self._registration_active)
 
 
 # ------------------------------------------------------------------
@@ -2490,6 +2518,8 @@ class SliceToolBar(AuiToolBar):
         self.SetToolBitmapSize(wx.Size(32, 32))
 
         self.parent = parent
+        self._project_open = False
+        self._registration_active = False
         self.enable_items = [
             const.SLICE_STATE_SCROLL,
             const.SLICE_STATE_CROSS,
@@ -2538,6 +2568,8 @@ class SliceToolBar(AuiToolBar):
         sub(self._UntoggleAllItems, "Untoggle slice toolbar items")
         sub(self.OnToggle, "Toggle toolbar button")
         sub(self.ToggleItem, "Toggle toolbar item")
+        sub(self.OnImageRegistrationState, "Image registration state")
+        sub(self.OnCloseProject, "Close project data")
 
     def __bind_events_wx(self):
         """
@@ -2550,11 +2582,26 @@ class SliceToolBar(AuiToolBar):
         Based on given state, enable or disable menu items which
         depend if project is open or not.
         """
+        self._project_open = state
         if state:
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
             self._UntoggleAllItems()
+        self.Refresh()
+
+    def OnCloseProject(self):
+        self._EnableState(False)
+
+    def OnImageRegistrationState(self, active):
+        self._registration_active = active
+        if active:
+            for tool in self.enable_items:
+                if self.GetToolToggled(tool):
+                    Publisher.sendMessage("Disable style", style=tool)
+            self._UntoggleAllItems()
+        for tool in self.enable_items:
+            self.EnableTool(tool, self._project_open and not active)
         self.Refresh()
 
     def _UntoggleAllItems(self):
@@ -2575,6 +2622,12 @@ class SliceToolBar(AuiToolBar):
         Update status of other items on toolbar (only one item
         should be toggle each time).
         """
+        if self._registration_active:
+            if evt is not None:
+                tool = evt.GetId()
+                self.ToggleTool(tool, tool == const.SLICE_STATE_CROSS)
+                self.Refresh()
+            return
         if id is not None:
             if not self.GetToolToggled(id):
                 self.ToggleTool(id, True)
@@ -2624,7 +2677,7 @@ class SliceToolBar(AuiToolBar):
         Enable menu items (e.g. cross) when project is opened.
         """
         for tool in self.enable_items:
-            self.EnableTool(tool, True)
+            self.EnableTool(tool, not self._registration_active)
         self.Refresh()
 
 

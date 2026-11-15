@@ -1080,6 +1080,7 @@ class ImagePage(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.image = nav_hub.image
+        self.registration_active = False
         self.btns_set_fiducial = [None, None, None]
         self.numctrls_fiducial = [[], [], []]
         self.current_coord = 0, 0, 0, None, None, None
@@ -1109,6 +1110,16 @@ class ImagePage(wx.Panel):
         start_button = wx.ToggleButton(self, label="Start Registration")
         start_button.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnStartRegistration, ctrl=start_button))
         self.start_button = start_button
+
+        self.registration_notice = wx.StaticText(
+            self,
+            label=_(
+                "Image registration is active. Image tools are disabled until you stop "
+                "registration or finish selecting the fiducials."
+            ),
+        )
+        self.registration_notice.Wrap(280)
+        self.registration_notice.Hide()
 
         reset_button = wx.Button(self, label="Reset", style=wx.BU_EXACTFIT)
         reset_button.Bind(wx.EVT_BUTTON, partial(self.OnReset, ctrl=reset_button))
@@ -1157,6 +1168,12 @@ class ImagePage(wx.Panel):
         main_sizer.AddMany(
             [
                 (top_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 10),
+                (
+                    self.registration_notice,
+                    0,
+                    wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.RESERVE_SPACE_EVEN_IF_HIDDEN,
+                    10,
+                ),
                 (sizer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5),
                 stretch_spacer,
                 (bottom_sizer, 0, wx.EXPAND | wx.BOTTOM, 10),
@@ -1173,8 +1190,11 @@ class ImagePage(wx.Panel):
         Publisher.subscribe(self.OnResetImageFiducials, "Reset image fiducials")
         Publisher.subscribe(self._OnStateProject, "Enable state project")
         Publisher.subscribe(self.StopRegistration, "Stop image registration")
+        Publisher.subscribe(self.StopRegistration, "Close project data")
 
     def _OnStateProject(self, state):
+        if not state:
+            self.StopRegistration()
         self.UpdateData()
 
     def UpdateData(self):
@@ -1267,18 +1287,30 @@ class ImagePage(wx.Panel):
         self.OnStartRegistration(self.start_button, self.start_button)
 
     def StartRegistration(self):
+        if self.registration_active:
+            return
+        self.registration_active = True
+        Publisher.sendMessage("Image registration state", active=True)
         Publisher.sendMessage("Enable style", style=const.STATE_REGISTRATION)
         for button in self.btns_set_fiducial:
             button.Enable()
         self.start_button.SetLabel("Stop Registration")
         self.start_button.SetValue(True)
+        self.registration_notice.Show()
+        self.Layout()
 
     def StopRegistration(self):
+        if not self.registration_active:
+            return
+        self.registration_active = False
         self.start_button.SetLabel("Start Registration")
         self.start_button.SetValue(False)
         for button in self.btns_set_fiducial:
             button.Disable()
         Publisher.sendMessage("Disable style", style=const.STATE_REGISTRATION)
+        Publisher.sendMessage("Image registration state", active=False)
+        self.registration_notice.Hide()
+        self.Layout()
 
     def OnStartRegistration(self, evt, ctrl):
         value = ctrl.GetValue()
