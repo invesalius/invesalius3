@@ -199,7 +199,11 @@ def test_programmatic_slice_toggle_cannot_override_registration(registration_ui)
 
 @pytest.mark.parametrize(
     "toolbar_name,tool_name",
-    [("object_toolbar", "STATE_PAN"), ("slice_toolbar", "SLICE_STATE_SCROLL")],
+    [
+        ("object_toolbar", "STATE_PAN"),
+        ("slice_toolbar", "SLICE_STATE_SCROLL"),
+        ("slice_toolbar", "SLICE_STATE_CROSS"),
+    ],
 )
 def test_pending_toolbar_click_cannot_override_registration(
     registration_ui, toolbar_name, tool_name

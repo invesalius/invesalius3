@@ -2625,7 +2625,7 @@ class SliceToolBar(AuiToolBar):
         if self._registration_active:
             if evt is not None:
                 tool = evt.GetId()
-                self.ToggleTool(tool, tool == const.SLICE_STATE_CROSS)
+                self.ToggleTool(tool, False)
                 self.Refresh()
             return
         if id is not None:
