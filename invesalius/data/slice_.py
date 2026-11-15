@@ -1295,7 +1295,10 @@ class Slice(metaclass=utils.Singleton):
         "Insert mask data, based on given index, into pipeline."
         import wx
 
-        wx.BeginBusyCursor()
+        # Without a wx.App (e.g. --no-gui) the busy cursor calls would fail.
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            wx.BeginBusyCursor()
         try:
             if self.current_mask:
                 self.current_mask.is_shown = False
@@ -1331,7 +1334,8 @@ class Slice(metaclass=utils.Singleton):
             Publisher.sendMessage("Select mask name in combo", index=index)
             Publisher.sendMessage("Update slice viewer")
         finally:
-            wx.EndBusyCursor()
+            if use_gui:
+                wx.EndBusyCursor()
 
     # ---------------------------------------------------------------------------
 
@@ -1607,7 +1611,10 @@ class Slice(metaclass=utils.Singleton):
         """
         import wx
 
-        wx.BeginBusyCursor()
+        # Without a wx.App (e.g. --no-gui) the busy cursor calls would fail.
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            wx.BeginBusyCursor()
         try:
             future_mask = Mask()
             future_mask.create_mask(self.matrix.shape)
@@ -1630,7 +1637,8 @@ class Slice(metaclass=utils.Singleton):
             if add_to_project:
                 self._add_mask_into_proj(future_mask, show=show)
         finally:
-            wx.EndBusyCursor()
+            if use_gui:
+                wx.EndBusyCursor()
 
         return future_mask
 
