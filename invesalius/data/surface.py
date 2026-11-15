@@ -1982,7 +1982,7 @@ class SurfaceManager:
         try:
             if convert_to_world:
                 polydata = self.ConvertPolydataToInv(polydata, inverse=True)
-                
+
                 if use_gui:
                     keep_going, _ = progress.Update(10, "Converting coordinates...")
                     if not keep_going:
@@ -2024,7 +2024,6 @@ class SurfaceManager:
 
             elif filetype == const.FILETYPE_3MF:
                 if not _has_lib3mf:
-                      
                     if use_gui:
                         progress.Destroy()
                         wx.MessageBox(
@@ -2102,15 +2101,16 @@ class SurfaceManager:
                         surf_opacity,
                     ) in enumerate(visible_surfaces):
                         percent_start = 20 + (surf_idx * 60 // num_surfaces)
-                        
+
                         if use_gui:
                             keep_going, skip = progress.Update(
-                                percent_start, f"Processing surface {surf_idx + 1}/{num_surfaces}..."
+                                percent_start,
+                                f"Processing surface {surf_idx + 1}/{num_surfaces}...",
                             )
                             if not keep_going:
                                 progress.Destroy()
                                 return
-                        
+
                         throttle.maybe_yield()
 
                         if convert_to_world:
@@ -2176,7 +2176,7 @@ class SurfaceManager:
                         progress.Update(100, "Export complete.")
 
                     self.export_successful = True
-                    
+
                     if use_gui:
                         wx.Yield()
 
@@ -2227,7 +2227,7 @@ class SurfaceManager:
             if use_gui:
                 progress.Update(100, "Export complete.")
             self.export_successful = True
-            
+
             if use_gui:
                 wx.Yield()
 
