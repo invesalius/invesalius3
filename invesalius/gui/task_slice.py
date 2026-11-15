@@ -752,9 +752,9 @@ class MaskProperties(wx.Panel):
     def OnSlideChanging(self, evt):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
+        # Only a preview while dragging: OnSlideChanged applies the threshold and
+        # marks the project as changed when the slider is released.
         Publisher.sendMessage("Changing threshold values", threshold_range=(thresh_min, thresh_max))
-        session = ses.Session()
-        session.ChangeProject()
 
     def OnSelectColour(self, evt):
         colour = evt.GetValue()[:3]

@@ -20,6 +20,7 @@
 import datetime
 import os
 import plistlib
+import re
 import shutil
 import sys
 import tarfile
@@ -33,7 +34,6 @@ import invesalius
 import invesalius.constants as const
 import invesalius.utils as utils
 from invesalius import inv_paths
-from invesalius.gui.dialogs import ErrorMessageBox
 from invesalius.i18n import tr as _
 
 # from invesalius.data import imagedata_utils
@@ -258,7 +258,33 @@ class Project(metaclass=Singleton):
             measures[str(m.index)] = m.get_as_dict()
         return measures
 
+    @staticmethod
+    def _archived_name(filelist, path):
+        """Return the archive name of ``path`` if it is already in ``filelist``."""
+        real = os.path.realpath(path)
+        for src, arcname in filelist.items():
+            if os.path.realpath(src) == real:
+                return arcname
+        return None
+
     def SavePlistProject(self, dir_, filename, compress=False):
+        dir_temp, filelist, save_temp_files = self.CollectSaveFiles(compress)
+        try:
+            path = os.path.join(dir_, filename)
+            Compress(dir_temp, path, filelist, compress)
+        finally:
+            CleanupSaveFiles(dir_temp, save_temp_files)
+
+    def CollectSaveFiles(self, compress=False):
+        """
+        Prepare everything needed to write the project archive, without writing it.
+
+        Writes the plist files (and in-memory data) to temporary files and returns
+        ``(dir_temp, filelist, save_temp_files)``: ``filelist`` maps each source file
+        to its name inside the archive, and ``dir_temp`` plus ``save_temp_files`` must
+        be removed with CleanupSaveFiles() once the archive has been written.
+        Must run on the main thread, since it may export VTK surfaces.
+        """
         import invesalius.data.slice_ as slice_
 
         dir_temp = decode(tempfile.mkdtemp(), const.FS_ENCODE)
@@ -317,8 +343,16 @@ class Project(metaclass=Singleton):
             if isinstance(mat, np.ndarray):
                 # mat is a numpy array or memmap
                 if hasattr(mat, "filename") and mat.filename:
-                    # It's a memmap already backed by a file: use its filename
-                    filelist[mat.filename] = v_filename
+                    # It's a memmap already backed by a file: use its filename.
+                    # filelist is keyed by source file, so a version sharing a file
+                    # already in the archive (e.g. "original" sharing the main
+                    # matrix) must reuse that name instead of replacing the entry,
+                    # otherwise matrix.dat would be missing from the archive.
+                    existing = self._archived_name(filelist, mat.filename)
+                    if existing is not None:
+                        v_filename = existing
+                    else:
+                        filelist[mat.filename] = v_filename
                 else:
                     # It's an in-memory array: write it to a new temp file
                     fd_v, temp_v = tempfile.mkstemp()
@@ -330,7 +364,11 @@ class Project(metaclass=Singleton):
                     save_temp_files.add(temp_v)  # safe to delete after save
             else:
                 # mat is already a file path (string)
-                filelist[mat] = v_filename
+                existing = self._archived_name(filelist, mat)
+                if existing is not None:
+                    v_filename = existing
+                else:
+                    filelist[mat] = v_filename
 
             plist_entry = {"label": label, "filename": v_filename}
             if label in self.image_versions_meta:
@@ -377,19 +415,7 @@ class Project(metaclass=Singleton):
         save_temp_files.add(temp_plist)  # safe to delete after save
         os.close(temp_fd)
 
-        # Compressing and generating the .inv3 file
-        path = os.path.join(dir_, filename)
-        Compress(dir_temp, path, filelist, compress)
-
-        # Removing the temp folder (only contains copies, not originals).
-        shutil.rmtree(dir_temp)
-
-        # Only delete files we explicitly created during THIS save — never active data files.
-        for f in save_temp_files:
-            try:
-                os.remove(f)
-            except OSError:
-                pass
+        return dir_temp, filelist, save_temp_files
 
     def OpenPlistProject(self, filename, progress_callback=None):
         """
@@ -513,6 +539,11 @@ class Project(metaclass=Singleton):
                 )
                 self.image_versions.append((label, mat))
 
+        if not os.path.exists(self.matrix_filename):
+            # Rebuild matrix.dat as an independent copy so the main matrix and
+            # the image version keep separate files (and both are saved again).
+            shutil.copyfile(self._recover_matrix_filename(dirpath), self.matrix_filename)
+
         # Opening the masks
         self.mask_dict = TwoWaysDictionary()
         masks = project.get("masks", [])
@@ -599,6 +630,43 @@ class Project(metaclass=Singleton):
 
         return True
 
+    def _recover_matrix_filename(self, dirpath: str) -> str:
+        """Return the image version file (matrix_v<N>.dat) to replace a missing matrix.dat.
+
+        Older InVesalius versions could silently write a .inv3 without
+        matrix.dat when its temporary file had already been removed, keeping
+        only the image versions (matrix_v0.dat, matrix_v1.dat, ...). The main
+        matrix is a copy of the active image version, so fall back to that
+        version, then to the original one, then to any other version listed in
+        the project. If the project lists no versions, look for matrix_v<N>.dat
+        files with the expected size in the extracted folder, lowest N first.
+        """
+        versions = {label: mat for label, mat in self.image_versions}
+        for label in (self.active_image_version, "original"):
+            if label in versions:
+                return versions[label].filename
+        if self.image_versions:
+            return self.image_versions[0][1].filename
+
+        expected_size = int(np.prod(self.matrix_shape)) * np.dtype(self.matrix_dtype).itemsize
+        candidates = []
+        for name in os.listdir(dirpath):
+            match = re.fullmatch(r"matrix_v(\d+)\.dat", name)
+            filepath = os.path.join(dirpath, name)
+            if match and os.path.getsize(filepath) == expected_size:
+                candidates.append((int(match.group(1)), filepath))
+        if candidates:
+            return min(candidates)[1]
+
+        raise FileNotFoundError(
+            _(
+                "The image data (matrix.dat or matrix_v0.dat) is missing from this "
+                "project file. It was probably saved by an older InVesalius version "
+                "that failed to include the image. The masks alone cannot be opened; "
+                "please import the original exam again."
+            )
+        )
+
     def create_project_file(
         self,
         name,
@@ -646,6 +714,10 @@ class Project(metaclass=Singleton):
             self.export_project_to_hdf5(filename, save_masks)
         elif filename.lower().endswith(".nii") or filename.lower().endswith(".nii.gz"):
             self.export_project_to_nifti(filename, save_masks)
+        else:
+            raise ValueError(
+                f"Unsupported export format: {filename} (expected .hdf5, .h5, .nii or .nii.gz)"
+            )
 
     def export_project_to_hdf5(self, filename, save_masks=True):
         import h5py
@@ -753,61 +825,47 @@ def Compress(
     # os.chdir(current_dir)
 
 
-def custom_tar_filter(file: tarfile.TarInfo, path: Union[str, os.PathLike]):
-    file.name = os.path.normpath(file.name).lstrip(os.sep)
-    file_path = os.path.abspath(os.path.join(path, file.name))
-    if not file_path.startswith(os.path.abspath(path)):
-        dlg = ErrorMessageBox(
-            None,
-            "Security Alert",
-            f"Potential directory traversal detected: {file.name}. Skipping file extraction.",
+def CleanupSaveFiles(folder: Union[str, os.PathLike], temp_files) -> None:
+    """Remove the temporary files created by Project.CollectSaveFiles()."""
+    # The temp folder only contains copies, not originals.
+    shutil.rmtree(folder, ignore_errors=True)
+
+    # Only delete files explicitly created during that save — never active data files.
+    for f in temp_files:
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+
+
+def Extract(
+    filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, os.PathLike]
+) -> List[str]:
+    """
+    Safely extracts an InVesalius project (.inv3) into folder.
+
+    Every member goes through tarfile's "data" extraction filter (PEP 706),
+    which strips leading "/" from names (so absolute names stay inside the
+    destination) and rejects paths escaping the destination (including
+    through previously extracted symlinks), absolute links or links pointing
+    outside the destination, device files, etc. A rejected member aborts the extraction
+    with a tarfile.FilterError (subclass of tarfile.TarError); there is no
+    unfiltered fallback (CVE-2024-44825).
+    """
+    if not hasattr(tarfile, "data_filter"):
+        raise RuntimeError(
+            "This Python version does not support safe tar extraction filters "
+            "(PEP 706). Please upgrade Python to open InVesalius projects."
         )
-        dlg.ShowModal()
-        dlg.Destroy()
-        return None
-    return file
-
-
-def Extract(filename: Union[str, bytes, os.PathLike], folder: Union[str, bytes, os.PathLike]):
     if _has_win32api:
         folder = win32api.GetShortPathName(folder)
     folder = decode(folder, const.FS_ENCODE)
-    tar = tarfile.open(filename, "r")
-    idir = decode(os.path.split(tar.getnames()[0])[0], "utf8")
-    os.makedirs(os.path.join(folder, idir), exist_ok=True)
     filelist = []
-    tar_filter = getattr(tarfile, "tar_filter", None)
-    for t in tar.getmembers():
-        try:
-            tar.extract(t, path=folder, filter=tar_filter)
-            fname = os.path.join(folder, decode(t.name, "utf-8"))
-            filelist.append(fname)
-        except (TypeError, AttributeError, tarfile.TarError):
-            filtered = custom_tar_filter(t, folder)
-            if filtered is not None:
-                tar.extract(filtered, path=folder)
-                fname = os.path.join(folder, decode(filtered.name, "utf-8"))
-                filelist.append(fname)
-
-    tar.close()
-    return filelist
-
-
-def Extract_(
-    filename: Union[str, bytes, os.PathLike], folder: Union[str, os.PathLike]
-) -> List[str]:
-    tar = tarfile.open(filename, "r:gz")
-    filelist = []
-
-    for member in tar.getmembers():
-        member_name = os.path.basename(member.name)  # Strip directory path
-        fname = os.path.join(folder, member_name)
-
-        if os.path.commonpath([folder, fname]) == folder:
-            tar.extract(member, path=folder)
-            filelist.append(fname)
-        else:
-            print(f"Skipping potential unsafe file: {member.name}")
-    # tar.list(verbose=True)
-    tar.close()
+    with tarfile.open(filename, "r") as tar:
+        for member in tar.getmembers():
+            # The filter may rewrite the member (e.g. strip a leading "/"), so
+            # the extracted path must be taken from the filtered member.
+            safe_member = tarfile.data_filter(member, folder)
+            tar.extract(safe_member, path=folder, filter="data")
+            filelist.append(os.path.join(folder, decode(safe_member.name, "utf-8")))
     return filelist

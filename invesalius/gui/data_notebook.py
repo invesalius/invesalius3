@@ -20,7 +20,9 @@
 import os
 import pathlib
 import sys
+import tempfile
 
+import numpy as np
 import wx
 import wx.grid
 
@@ -102,6 +104,7 @@ class NotebookPanel(wx.Panel):
         self.eeg_electrodes = EEGElectrodeManager()
         self.eeg_page = None
         self.navigation_on = False
+        self._navigation_mode = ses.Session().GetConfig("mode") == const.MODE_NAVIGATOR
         self._project_enabled = False
         self.__bind_events()
         self._SyncEEGPage()
@@ -114,6 +117,7 @@ class NotebookPanel(wx.Panel):
         Publisher.subscribe(self._FoldMask, "Fold mask page")
         Publisher.subscribe(self._FoldImage, "Fold image page")
         Publisher.subscribe(self._OnNavigationStatus, "Navigation status")
+        Publisher.subscribe(self._OnNavigationMode, "Set navigation mode")
         Publisher.subscribe(self._OnEEGRegistrationModeChanged, "EEG registration mode changed")
         Publisher.subscribe(self._OnEEGElectrodesChanged, "EEG electrodes changed")
         Publisher.subscribe(self._OnProjectStateEnabled, "Enable state project")
@@ -124,7 +128,12 @@ class NotebookPanel(wx.Panel):
         if self.eeg_electrodes.get(electrode_uuid) is None:
             return
         self._SyncEEGPage(select=True)
-        self.eeg_page.listctrl.SelectElectrode(electrode_uuid)
+        if self.eeg_page is not None:
+            self.eeg_page.listctrl.SelectElectrode(electrode_uuid)
+
+    def _OnNavigationMode(self, status, markers=(), main_coil=None):
+        self._navigation_mode = bool(status)
+        wx.CallAfter(self._SyncEEGPage)
 
     def _OnProjectStateEnabled(self, state):
         self._project_enabled = bool(state)
@@ -143,7 +152,9 @@ class NotebookPanel(wx.Panel):
     def _SyncEEGPage(self, select=False):
         has_electrodes = bool(self.eeg_electrodes.electrodes)
         should_show = (
-            self._project_enabled or self.eeg_electrodes.registration_active or has_electrodes
+            self._project_enabled
+            and self._navigation_mode
+            and (self.eeg_electrodes.registration_active or has_electrodes)
         )
 
         if should_show:
@@ -1523,8 +1534,12 @@ class SurfaceButtonControlPanel(wx.Panel):
             listctrl = category_info["list"]
             selected = listctrl.GetSelected()
             all_selected_indices.extend(selected)
-            if selected:
-                listctrl.RemoveSurfaces(selected)
+
+        if all_selected_indices:
+            Publisher.sendMessage("Remove surfaces", surface_indexes=all_selected_indices)
+            wx.CallAfter(Publisher.sendMessage, "Repopulate surfaces")
+        else:
+            dlg.SurfaceSelectionRequiredForRemoval()
 
     def OnDuplicate(self):
         all_selected_indices = []
@@ -1794,12 +1809,8 @@ class SurfacesListCtrlPanel(InvListCtrl):
             elif column_clicked == 1:
                 self.OnChangeColor(item_idx)
                 return
-            elif column_clicked == 2:
-                # Open rename dialog when clicking Name column
-                self.ShowRenameDialog(item_idx)
-                return
-            elif column_clicked in (3, 4):
-                # Highlight surface when clicking Volume or Area columns
+            elif column_clicked in (2, 3, 4):
+                # Let the native list handle selection, including Ctrl/Shift clicks.
                 global_surface_id = None
                 for surface_id, local_pos in self.surface_list_index.items():
                     if local_pos == item_idx:
@@ -1809,11 +1820,17 @@ class SurfacesListCtrlPanel(InvListCtrl):
                     Publisher.sendMessage(
                         "Change surface selected", surface_index=global_surface_id
                     )
-                return
             elif column_clicked == 5:
                 self.OnChangeTransparency(item_idx)
                 return
         evt.Skip()
+
+    def OnDblClickItem(self, evt):
+        item_idx, _ = self.HitTest(evt.GetPosition())
+        if item_idx > -1 and self.get_column_clicked(evt.GetPosition()) == 2:
+            self.ShowRenameDialog(item_idx)
+            return
+        super().OnDblClickItem(evt)
 
     def ShowRenameDialog(self, item_idx):
         """Show a dialog to rename the surface."""
@@ -2449,7 +2466,7 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         session = ses.Session()
         dialog = wx.FileDialog(
             self,
-            message=_("Open an exported EEG montage (keep its registration JSON beside it)"),
+            message=_("Open an EEG montage"),
             defaultDir=session.GetConfig("last_directory_eeg_montage", ""),
             wildcard=_("EEG montages (*.tsv, *.hpts, *.sfp, *.elc, *.fif)")
             + "|*.tsv;*.hpts;*.sfp;*.elc;*.fif",
@@ -2462,16 +2479,39 @@ class EEGElectrodeButtonControlPanel(wx.Panel):
         finally:
             dialog.Destroy()
         try:
+            import_options = {}
+            if (
+                not EEGMontage.get_registration_path(filename).is_file()
+                and pathlib.Path(filename).suffix.lower() != ".fif"
+            ):
+                import_options = dlg.ShowEEGMontageImportDialog(self)
+                if import_options is None:
+                    return
             with wx.BusyCursor():
-                electrodes = EEGMontage.read_montage(filename)
+                electrodes = EEGMontage.read_montage(filename, **import_options)
             if self.eeg_electrodes.electrodes:
                 message = _(
                     "Replace the current EEG electrodes with the imported montage (%d electrodes)?"
                 ) % len(electrodes)
                 if dlg.ShowConfirmationDialog(msg=message) != wx.ID_OK:
                     return
+            project_to_scalp = False
+            if self.eeg_electrodes.prepare_scalp_surface(create=False):
+                choice = wx.MessageBox(
+                    _(
+                        "Project the imported EEG electrodes onto the existing smoothed scalp surface?"
+                    ),
+                    _("Project EEG electrodes"),
+                    wx.YES_NO | wx.CANCEL | wx.NO_DEFAULT | wx.ICON_QUESTION,
+                    parent=self,
+                )
+                if choice == wx.CANCEL:
+                    return
+                project_to_scalp = choice == wx.YES
             with wx.BusyCursor():
-                self.eeg_electrodes.replace_electrodes(electrodes)
+                self.eeg_electrodes.replace_electrodes(
+                    electrodes, project_to_scalp=project_to_scalp
+                )
             session.SetConfig("last_directory_eeg_montage", os.path.dirname(filename))
         except (OSError, ValueError, RuntimeError) as error:
             wx.MessageBox(str(error), _("EEG import error"), wx.OK | wx.ICON_ERROR)
@@ -3422,9 +3462,20 @@ class ImagePage(wx.Panel):
         proj = Project()
         slc = slice_module.Slice()
 
-        # Ensure Original is present if loading a fresh project
+        # Ensure Original is present if loading a fresh project. Keep it disk-backed
+        # (as Slice.__apply_image_filter does): an in-memory copy doubles the RAM
+        # used by the volume and would be written to disk again on every save and
+        # auto-backup.
         if not proj.image_versions and slc.matrix is not None:
-            proj.image_versions.append(("original", slc.matrix.copy()))
+            orig = slc.matrix
+            if not isinstance(orig, np.memmap):
+                fd_o, temp_o = tempfile.mkstemp(suffix=".dat")
+                os.close(fd_o)
+                orig_mat = np.memmap(temp_o, shape=orig.shape, dtype=orig.dtype, mode="w+")
+                orig_mat[:] = orig[:]
+                orig_mat.flush()
+                orig = orig_mat
+            proj.image_versions.append(("original", orig))
 
         # Add all entries without auto-selecting (eye icons are reset in add_entry)
         for label, matrix in proj.image_versions:

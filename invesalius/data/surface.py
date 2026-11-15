@@ -208,7 +208,11 @@ class Surface:
             self.category = sp["category"]
         except KeyError:
             self.category = "General"
-        self.polydata = pu.Import(os.path.join(dirpath, sp["polydata"]))
+        polydata_filepath = os.path.join(dirpath, sp["polydata"])
+        self.polydata = pu.Import(polydata_filepath)
+        # The extracted project folder is kept while the project is open, so
+        # saving can reuse this file instead of exporting the polydata again.
+        self.filename = polydata_filepath
         self.anatomical_role = sp.get("anatomical_role", "")
         self.peel_only = sp.get("peel_only", False)
         self.created_for_efield = sp.get("created_for_efield", False)
@@ -1236,6 +1240,9 @@ class SurfaceManager:
             surface = Surface(name=surface_name, category=category)
         surface.colour = colour
         surface.polydata = polydata
+        # The surface process already wrote this polydata to disk: reuse that file
+        # when saving, so the (auto-)save does not export it again on the main thread.
+        surface.filename = surface_filename
         surface.volume = surface_measures["volume"]
         surface.area = surface_measures["area"]
         del polydata
@@ -1608,6 +1615,8 @@ class SurfaceManager:
 
             surface.colour = colour
             surface.polydata = polydata
+            # Reuse the file written by the surface process when saving.
+            surface.filename = surface_filename
             surface.volume = surface_measures["volume"]
             surface.area = surface_measures["area"]
             if anatomical_role == "brain":
@@ -1872,11 +1881,14 @@ class SurfaceManager:
             # If export was flagged successful, shows success message and resets the flag
             if getattr(self, "export_successful", False):
                 self.export_successful = False
-                wx.MessageBox(
-                    _("Export completed successfully."),
-                    _("Export success"),
-                    wx.OK | wx.ICON_INFORMATION,
-                )
+                if wx.GetApp() is None:
+                    print("Export completed successfully.")
+                else:
+                    wx.MessageBox(
+                        _("Export completed successfully."),
+                        _("Export success"),
+                        wx.OK | wx.ICON_INFORMATION,
+                    )
 
             try:
                 if os.path.exists(temp_file):
@@ -1956,23 +1968,27 @@ class SurfaceManager:
             raise ValueError("Polydata has zero points.")
 
         # Initializing progress dialog
-        progress = wx.ProgressDialog(
-            "Exporting File",
-            "Preparing export...",
-            maximum=100,
-            parent=None,
-            style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME,
-        )
-        progress_destroyed = False
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            progress = wx.ProgressDialog(
+                "Exporting File",
+                "Preparing export...",
+                maximum=100,
+                parent=None,
+                style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME,
+            )
+            progress_destroyed = False
 
         try:
             if convert_to_world:
                 polydata = self.ConvertPolydataToInv(polydata, inverse=True)
-                keep_going, _ = progress.Update(10, "Converting coordinates...")
-                if not keep_going:
-                    progress.Destroy()
-                    return
-                wx.Yield()
+
+                if use_gui:
+                    keep_going, _ = progress.Update(10, "Converting coordinates...")
+                    if not keep_going:
+                        progress.Destroy()
+                        return
+                    wx.Yield()
 
             # Having a polydata that represents all surfaces
             # selected, we write it, according to filetype
@@ -2008,11 +2024,12 @@ class SurfaceManager:
 
             elif filetype == const.FILETYPE_3MF:
                 if not _has_lib3mf:
-                    progress.Destroy()
-                    wx.MessageBox(
-                        "Lib3MF library not available. Cannot export 3MF files.", "Export error"
-                    )
-                    return
+                    if use_gui:
+                        progress.Destroy()
+                        wx.MessageBox(
+                            "Lib3MF library not available. Cannot export 3MF files.", "Export error"
+                        )
+                        return
 
                 # Progress throttle class to reduce GUI overhead
                 import time
@@ -2037,11 +2054,12 @@ class SurfaceManager:
                     model = wrapper.CreateModel()
                     model.SetUnit(lib3mf.ModelUnit.MilliMeter)
 
-                    keep_going, skip = progress.Update(20, "Preparing 3MF export...")
-                    if not keep_going:
-                        progress.Destroy()
-                        return
-                    wx.Yield()
+                    if use_gui:
+                        keep_going, skip = progress.Update(20, "Preparing 3MF export...")
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        wx.Yield()
 
                     visible_surfaces = [
                         (
@@ -2053,9 +2071,10 @@ class SurfaceManager:
                         for surface in surfaces
                     ]
 
-                    if not visible_surfaces:
-                        progress.Destroy()
-                        return
+                    if use_gui:
+                        if not visible_surfaces:
+                            progress.Destroy()
+                            return
 
                     # Deduplicate surface names
                     # First pass: normalize empty/None names to Surface_N
@@ -2082,12 +2101,16 @@ class SurfaceManager:
                         surf_opacity,
                     ) in enumerate(visible_surfaces):
                         percent_start = 20 + (surf_idx * 60 // num_surfaces)
-                        keep_going, skip = progress.Update(
-                            percent_start, f"Processing surface {surf_idx + 1}/{num_surfaces}..."
-                        )
-                        if not keep_going:
-                            progress.Destroy()
-                            return
+
+                        if use_gui:
+                            keep_going, skip = progress.Update(
+                                percent_start,
+                                f"Processing surface {surf_idx + 1}/{num_surfaces}...",
+                            )
+                            if not keep_going:
+                                progress.Destroy()
+                                return
+
                         throttle.maybe_yield()
 
                         if convert_to_world:
@@ -2139,27 +2162,35 @@ class SurfaceManager:
 
                         model.AddBuildItem(mesh_object, wrapper.GetIdentityTransform())
 
-                    keep_going, skip = progress.Update(85, "Writing 3MF file...")
-                    if not keep_going:
-                        progress.Destroy()
-                        return
-                    wx.Yield()
+                    if use_gui:
+                        keep_going, skip = progress.Update(85, "Writing 3MF file...")
+                        if not keep_going:
+                            progress.Destroy()
+                            return
+                        wx.Yield()
 
                     writer_3mf = model.QueryWriter("3mf")
                     writer_3mf.WriteToFile(filename)
 
-                    progress.Update(100, "Export complete.")
+                    if use_gui:
+                        progress.Update(100, "Export complete.")
+
                     self.export_successful = True
-                    wx.Yield()
+
+                    if use_gui:
+                        wx.Yield()
+
                     return
 
                 except Exception as e:
-                    progress.Destroy()
-                    wx.MessageBox(f"Failed to export 3MF file: {str(e)}", "Export error")
+                    if use_gui:
+                        progress.Destroy()
+                        wx.MessageBox(f"Failed to export 3MF file: {str(e)}", "Export error")
                     return
 
             else:
-                progress.Destroy()
+                if use_gui:
+                    progress.Destroy()
                 raise ValueError(f"Unsupported filetype: {filetype}")
 
             if filetype in (const.FILETYPE_STL, const.FILETYPE_STL_ASCII, const.FILETYPE_PLY):
@@ -2183,23 +2214,28 @@ class SurfaceManager:
 
             for i in range(num_updates):
                 percent = int(i * 90 / num_updates)
-                keep_going, _ = progress.Update(10 + percent, f"Exporting file: {percent}%")
-                if not keep_going:
-                    progress.Destroy()
-                    return
-                if i < num_updates - 1:
-                    wx.MilliSleep(50)
-                wx.Yield()
+                if use_gui:
+                    keep_going, _ = progress.Update(10 + percent, f"Exporting file: {percent}%")
+                    if not keep_going:
+                        progress.Destroy()
+                        return
+                    if i < num_updates - 1:
+                        wx.MilliSleep(50)
+                    wx.Yield()
 
             writer.Write()
-            progress.Update(100, "Export complete.")
+            if use_gui:
+                progress.Update(100, "Export complete.")
             self.export_successful = True
-            wx.Yield()
+
+            if use_gui:
+                wx.Yield()
 
         finally:
-            if progress and not progress_destroyed:
-                try:
-                    progress.Destroy()
-                    progress_destroyed = True
-                except Exception as e:
-                    print(f"Could not destroy progress dialog: {e}")
+            if use_gui:
+                if progress and not progress_destroyed:
+                    try:
+                        progress.Destroy()
+                        progress_destroyed = True
+                    except Exception as e:
+                        print(f"Could not destroy progress dialog: {e}")

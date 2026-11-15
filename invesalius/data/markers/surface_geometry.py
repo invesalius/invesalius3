@@ -309,9 +309,7 @@ class SurfaceGeometry(metaclass=Singleton):
         highest_z = max([points.GetPoint(i)[2] for i in range(points.GetNumberOfPoints())])
         return highest_z
 
-    def GetSmoothedScalpSurface(self):
-        from invesalius.gui import dialogs
-
+    def GetSmoothedScalpSurface(self, create=True):
         # Retrieve the surface with the highest z-coordinate.
         valid_surfaces = [
             surface for surface in self.surfaces if self._HasUsableGeometry(surface["original"])
@@ -329,6 +327,10 @@ class SurfaceGeometry(metaclass=Singleton):
         highest_surface = max(valid_surfaces, key=lambda surface: surface["original"]["highest_z"])
 
         if highest_surface["smoothed"] is None:
+            if not create:
+                return None
+            from invesalius.gui import dialogs
+
             resume_navigation = self.is_navigating
             if resume_navigation:
                 Publisher.sendMessage("Stop navigation")
@@ -391,13 +393,13 @@ class SurfaceGeometry(metaclass=Singleton):
             surface, closest_point, cell_id.get(), smooth_radius
         )
 
-    def GetOuterPointOnScalp(self, point, smooth_radius=0.0):
+    def GetOuterPointOnScalp(self, point, smooth_radius=0.0, create_surface=True):
         """Project radially onto the first scalp face encountered from outside."""
         point = np.asarray(point, dtype=float)
         if point.shape != (3,) or not np.all(np.isfinite(point)):
             raise RuntimeError(_("Coordinates must contain only finite numbers."))
 
-        surface = self.GetSmoothedScalpSurface()
+        surface = self.GetSmoothedScalpSurface(create=create_surface)
         if surface is None:
             raise RuntimeError(_("Create a 3D scalp surface before projecting onto it."))
 
