@@ -1,8 +1,20 @@
 import math
+import sys
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
+from pydicom.dataset import FileDataset, FileMetaDataset
+from pydicom.uid import ExplicitVRLittleEndian, MRImageStorage, generate_uid
 
+# Allow running tests in environments where invesalius_rs has not been compiled
+if "invesalius_rs._native" not in sys.modules:
+    try:
+        from invesalius_rs import _native  # noqa: F401
+    except (ImportError, ModuleNotFoundError):
+        sys.modules["invesalius_rs._native"] = MagicMock()
+
+from invesalius.reader import dicom_reader
 from invesalius.reader.dicom_grouper import DicomGroup
 
 
@@ -11,6 +23,7 @@ def _create_mock_slice(position, orientation_label="AXIAL", patient_orientation=
     mock_dicom.image.position = list(position)
     mock_dicom.image.orientation_label = orientation_label
     mock_dicom.image.patient_orientation = patient_orientation
+    mock_dicom.acquisition.patient_orientation = patient_orientation
     mock_dicom.image.number = number
     mock_dicom.image.type = ["ORIGINAL", "PRIMARY"]
     mock_dicom.image.number_of_frames = 1
@@ -22,7 +35,10 @@ def test_tilted_series_slice_spacing():
     without being compressed by a factor of cos(tilt)."""
     true_spacing = 2.0
 
-    for tilt in [0, 10, 20, 30, 45, 60]:
+    # Note: 45-degree tilt is classified as OBLIQUE by GDCM, which is handled
+    # separately in OpenDicomGroup (see issue #1074). We test tilts [0, 10, 20, 30]
+    # under AXIAL and [60] under CORONAL.
+    for tilt in [0, 10, 20, 30, 60]:
         t = math.radians(tilt)
         row = (1.0, 0.0, 0.0)
         col = (0.0, math.cos(t), math.sin(t))
@@ -119,15 +135,15 @@ def test_jumbled_instance_numbers_sorted_by_spatial_projection():
     spacing = 2.0
     iop = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]  # standard axial
 
-    # Add slices in reverse or jumbled order
+    # Add slices in reverse or jumbled order, decoupling spatial index from InstanceNumber
     jumbled_indices = [5, 2, 8, 1, 0, 9, 3, 7, 4, 6]
-    for idx in jumbled_indices:
+    for n, idx in enumerate(jumbled_indices):
         pos = [0.0, 0.0, float(idx * spacing)]
         dcm = _create_mock_slice(
             position=pos,
             orientation_label="AXIAL",
             patient_orientation=iop,
-            number=idx + 1,
+            number=n + 1,
         )
         group.AddSlice(dcm)
 
@@ -142,3 +158,55 @@ def test_single_slice_defaults_to_one():
     group.AddSlice(dcm)
     group.UpdateZSpacing()
     assert group.zspacing == 1
+
+
+def test_real_reader_tilted_dicom_spacing(tmp_path):
+    """Verify end-to-end DICOM reading with pydicom synthetic series exercising
+    Acquisition.SetParser and d.acquisition.patient_orientation."""
+    tilt_rad = math.radians(30.0)
+    true_spacing = 2.0
+    row = [1.0, 0.0, 0.0]
+    col = [0.0, math.cos(tilt_rad), math.sin(tilt_rad)]
+    normal = [0.0, -math.sin(tilt_rad), math.cos(tilt_rad)]
+
+    series_uid = generate_uid()
+    study_uid = generate_uid()
+
+    for idx in range(5):
+        file_meta = FileMetaDataset()
+        file_meta.MediaStorageSOPClassUID = MRImageStorage
+        file_meta.MediaStorageSOPInstanceUID = generate_uid()
+        file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
+
+        filename = str(tmp_path / f"slice_{idx}.dcm")
+        ds = FileDataset(filename, {}, file_meta=file_meta, preamble=b"\0" * 128)
+        ds.PatientName = "Test^Patient"
+        ds.PatientID = "12345"
+        ds.StudyInstanceUID = study_uid
+        ds.StudyID = "1"
+        ds.SeriesInstanceUID = series_uid
+        ds.SeriesNumber = 1
+        ds.SOPClassUID = MRImageStorage
+        ds.SOPInstanceUID = file_meta.MediaStorageSOPInstanceUID
+        ds.Modality = "MR"
+        ds.InstanceNumber = idx + 1
+        ds.ImageOrientationPatient = [float(x) for x in row + col]
+        pos = [float(idx * true_spacing * n) for n in normal]
+        ds.ImagePositionPatient = pos
+        ds.PixelSpacing = [1.0, 1.0]
+        ds.Rows = 16
+        ds.Columns = 16
+        ds.BitsAllocated = 16
+        ds.BitsStored = 16
+        ds.HighBit = 15
+        ds.PixelRepresentation = 0
+        ds.SamplesPerPixel = 1
+        ds.PhotometricInterpretation = "MONOCHROME2"
+        ds.PixelData = np.zeros((16, 16), dtype=np.uint16).tobytes()
+        ds.save_as(filename, write_like_original=False)
+
+    patients = dicom_reader.GetDicomGroups(str(tmp_path))
+    assert len(patients) > 0
+    groups = patients[0].GetGroups()
+    assert len(groups) > 0
+    assert groups[0].zspacing == pytest.approx(true_spacing, rel=1e-3)
