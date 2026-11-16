@@ -30,6 +30,7 @@ import numpy as np
 from matplotlib import colormaps
 from scipy.sparse import issparse
 from vtkmodules.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray, vtk_to_numpy
+from vtkmodules.util.vtkConstants import VTK_COLOR_MODE_MAP_SCALARS
 from vtkmodules.vtkCommonCore import vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStaticPointLocator
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
@@ -228,9 +229,8 @@ class SourceReconstructionMode:
             or np.linalg.matrix_rank(affine) != 4
         ):
             raise ValueError("The project must have valid anatomical world coordinates.")
-        surface_points, triangles, source_mapping, hemispheres = series.read_surface(
-            representation or series.base_representation
-        )
+        representation = representation or series.base_representation
+        surface_points, triangles, source_mapping, hemispheres = series.read_surface(representation)
         n_sources = sum(len(source.vertices) for source in series.sources)
         if not issparse(source_mapping) and n_sources < len(surface_points):
             offsets = (0, *np.cumsum(series.hemisphere_sizes))
@@ -265,12 +265,27 @@ class SourceReconstructionMode:
             raise ValueError("Source geometry cannot be represented in project coordinates.")
         values = np.full(polydata.GetNumberOfPoints(), np.nan, dtype=np.float64)
         polydata.GetPointData().SetScalars(numpy_to_vtk(values, deep=True))
+        curvature = series.read_curvature() if representation == "inflated" else None
+        if curvature is not None:
+            if len(curvature) != polydata.GetNumberOfPoints():
+                raise ValueError("Curvature must match the inflated surface vertices.")
+            # Match MNE's classic binary curvature shading.
+            gray = colormaps["Greys"](((curvature > 0).astype(float) + 1) / 3)[:, 0]
+            gray_array = numpy_to_vtk(gray, deep=True)
+            gray_array.SetName("CortexGray")
+            polydata.GetPointData().AddArray(gray_array)
+            colors = numpy_to_vtk(
+                np.full((len(curvature), 3), const.CORTEX_COLOR, dtype=np.uint8), deep=True
+            )
+            colors.SetName("Colors")
+            polydata.GetPointData().AddArray(colors)
         surface_map = SurfaceMap(
             polydata,
             vtkColorTransferFunction(),
             (0.0, 1.0),
             series.name,
             series.display_unit,
+            color_array="Colors" if curvature is not None else "",
             color_bar=ColorBar(position=(0.82, 0.1), compact=False),
         )
         self._set_map_scale(surface_map, series)
@@ -315,6 +330,28 @@ class SourceReconstructionMode:
         surface_map.scalar_range = lut.GetRange()
         surface_map.unit = series.display_unit or series.unit
         surface_map.color_bar = replace(surface_map.color_bar, title=series.display_title)
+        self._update_map_colors(surface_map, series)
+
+    def _update_map_colors(self, surface_map, series):
+        point_data = surface_map.polydata.GetPointData()
+        gray = point_data.GetArray("CortexGray")
+        if gray is None:
+            return
+        scalars = point_data.GetScalars()
+        values = vtk_to_numpy(scalars) / series.display_scale[0]
+        lower, upper = series.color_range
+        minimum, middle, maximum = series.color_limits or (lower, upper / 2, upper)
+        margin = (maximum - minimum) * 1e-5
+        middle = np.clip(middle, minimum + margin, maximum - margin)
+        remaining = 1 - np.clip((np.abs(values) - minimum) / (middle - minimum), 0.0, 1.0)
+        remaining[~np.isfinite(values)] = 1.0
+        rgba = surface_map.lookup_table.MapScalars(scalars, VTK_COLOR_MODE_MAP_SCALARS, 0)
+        colors = vtk_to_numpy(rgba)[:, :3] / 255.0
+        base_color = np.asarray(const.CORTEX_COLOR) / 255.0
+        colors += (vtk_to_numpy(gray)[:, None] - base_color) * remaining[:, None]
+        color_array = point_data.GetArray(surface_map.color_array)
+        vtk_to_numpy(color_array)[:] = np.rint(np.clip(colors, 0.0, 1.0) * 255)
+        color_array.Modified()
 
     def set_color_limits(self, minimum, middle, maximum):
         if self.series is None:
@@ -529,6 +566,7 @@ class SourceReconstructionMode:
             values.fill(np.nan)
             values[mapped] = np.multiply(frame[mapping[mapped]], factor, dtype=np.float64)
         scalars.Modified()
+        self._update_map_colors(self.surface_map, self.series)
         self.frame_index = self.playback.index
         self.painting.update(self.name, self.token, self.surface_map)
         Publisher.sendMessage("Source reconstruction changed", mode=self)

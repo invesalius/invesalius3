@@ -253,6 +253,22 @@ class CorticalSourceSeries:
             raise ValueError("The cortical representation has invalid project coordinates.")
         return registered, self.triangles, self.vertex_sources, hemispheres
 
+    def read_curvature(self):
+        """Read optional FreeSurfer curvature in the original surface vertex order."""
+        paths = self.subject_files.get("curv", {})
+        if len(self.hemisphere_sizes) != 2 or not all(side in paths for side in ("lh", "rh")):
+            return None
+        curvature = []
+        for side, count in zip(("lh", "rh"), self.hemisphere_sizes):
+            try:
+                values = nib.freesurfer.read_morph_data(paths[side])
+            except FileNotFoundError:
+                return None
+            if values.shape != (count,) or not np.isfinite(values).all():
+                raise ValueError(f"The {side} curvature must match the cortical mesh vertices.")
+            curvature.append(values)
+        return np.concatenate(curvature)
+
 
 class SourceImportRequired(ValueError):
     """Let a reader request a companion file or choice from its caller.
