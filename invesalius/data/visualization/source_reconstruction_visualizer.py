@@ -27,6 +27,7 @@ as MEP and electric-field maps.
 from dataclasses import replace
 
 import numpy as np
+from matplotlib import colormaps
 from scipy.sparse import issparse
 from vtkmodules.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray, vtk_to_numpy
 from vtkmodules.vtkCommonCore import vtkPoints
@@ -274,12 +275,17 @@ class SourceReconstructionMode:
         lut = surface_map.lookup_table
         lut.RemoveAllPoints()
         if series.scalar_range[0] < 0:
-            lut.AddRGBPoint(-maximum, 0.15, 0.3, 0.85)
-            lut.AddRGBPoint(-middle, 0.5, 0.575, 0.85)
-            lut.AddRGBPoint(-minimum, 0.85, 0.85, 0.85)
-        lut.AddRGBPoint(minimum, 0.85, 0.85, 0.85)
-        lut.AddRGBPoint(middle, 0.85, 0.5, 0.475)
-        lut.AddRGBPoint(maximum, 0.85, 0.15, 0.1)
+            lut.AddRGBPoint(-maximum, 0.0, 1.0, 1.0)
+            lut.AddRGBPoint(-middle, 0.0, 0.0, 1.0)
+            lut.AddRGBPoint(-minimum, 0.5, 0.5, 0.5)
+            lut.AddRGBPoint(minimum, 0.5, 0.5, 0.5)
+            lut.AddRGBPoint(middle, 1.0, 0.0, 0.0)
+            lut.AddRGBPoint(maximum, 1.0, 1.0, 0.0)
+        else:
+            fractions = np.linspace(0, 1, 256)
+            values = np.interp(fractions, (0, 0.5, 1), (minimum, middle, maximum))
+            for value, color in zip(values, colormaps["hot"](fractions)):
+                lut.AddRGBPoint(value, *color[:3])
         lut.SetNanColor(0.65, 0.65, 0.65)
         surface_map.scalar_range = lut.GetRange()
         surface_map.unit = series.display_unit or series.unit
