@@ -2,7 +2,6 @@ import vtk
 
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
-import invesalius.data.slice_ as sl
 import invesalius.session as ses
 from invesalius.data.markers.marker import MarkerType
 from invesalius.gui.widgets.canvas_renderer import CanvasHandlerBase
@@ -456,10 +455,12 @@ class MarkerVisualizer:
     def SetTargetTransparency(self, marker, transparent):
         actor = marker.visualization["actor"]
         if transparent:
-            actor.GetProperty().SetOpacity(1)
-            # actor.GetProperty().SetOpacity(0.4)
+            actor.GetProperty().SetOpacity(0.4)
         else:
             actor.GetProperty().SetOpacity(1)
+
+        if not self.is_navigating:
+            self.interactor.Render()
 
     def _CreateProjectionLine(self, startpoint_position, startpoint_orientation):
         """
