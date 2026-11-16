@@ -7,6 +7,7 @@ import invesalius.constants as const
 import invesalius.net.dicom as dcm_net
 import invesalius.session as ses
 from invesalius.gui.language_dialog import ComboBoxLanguage
+from invesalius.i18n import tr as _
 from invesalius.pubsub import pub as Publisher
 
 
