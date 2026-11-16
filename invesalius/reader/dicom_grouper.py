@@ -51,6 +51,7 @@
 # <dicom.image.number> and <dicom.acquisition.series_number>
 # were swapped
 
+import math
 import sys
 
 import gdcm
@@ -162,14 +163,51 @@ class DicomGroup:
         list_ = self.GetHandSortedList()
 
         if len(list_) > 1:
-            dicom = list_[0]
-            axis = ORIENT_MAP[dicom.image.orientation_label]
-            p1 = dicom.image.position[axis]
+            # Spatial sorting along slice normal (or orientation axis) ensures
+            # consecutive pairs represent adjacent spatial slices even when
+            # InstanceNumber is unordered or missing.
+            def _get_slice_projection(d):
+                pos = getattr(d.image, "position", None)
+                if pos is None:
+                    return 0.0
+                iop = getattr(d.image, "patient_orientation", None)
+                if iop and len(iop) == 6:
+                    rx, ry, rz = iop[:3]
+                    cx, cy, cz = iop[3:]
+                    nx = ry * cz - rz * cy
+                    ny = rz * cx - rx * cz
+                    nz = rx * cy - ry * cx
+                    norm = math.sqrt(nx * nx + ny * ny + nz * nz)
+                    if norm > 1e-6:
+                        return (pos[0] * nx + pos[1] * ny + pos[2] * nz) / norm
+                axis = ORIENT_MAP.get(getattr(d.image, "orientation_label", "AXIAL"), 2)
+                return pos[axis]
 
-            dicom = list_[1]
-            p2 = dicom.image.position[axis]
+            try:
+                sorted_list = sorted(list_, key=_get_slice_projection)
+            except (AttributeError, TypeError, ValueError, IndexError):
+                sorted_list = list_
 
-            self.zspacing = abs(p1 - p2)
+            # Compute Euclidean 3D distance between consecutive slice positions (ImagePositionPatient).
+            # For tilted / oblique acquisitions, this avoids compressing slice spacing by cos(tilt).
+            # For gantry-tilted CT with table movement along Z, this matches delta-Z exactly.
+            distances = []
+            for i in range(len(sorted_list) - 1):
+                p1 = sorted_list[i].image.position
+                p2 = sorted_list[i + 1].image.position
+                dist = math.sqrt(sum((a - b) ** 2 for a, b in zip(p1, p2)))
+                if dist > 1e-6:
+                    distances.append(dist)
+
+            if distances:
+                sorted_dist = sorted(distances)
+                n = len(sorted_dist)
+                if n % 2 == 1:
+                    self.zspacing = sorted_dist[n // 2]
+                else:
+                    self.zspacing = (sorted_dist[n // 2 - 1] + sorted_dist[n // 2]) / 2.0
+            else:
+                self.zspacing = 1
         else:
             self.zspacing = 1
 
