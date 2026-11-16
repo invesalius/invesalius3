@@ -129,6 +129,11 @@ class TaskPanel(wx.Panel):
         ):
             slider = wx.Slider(self, minValue=0, maxValue=1000, style=wx.SL_HORIZONTAL)
             slider.SetName(name)
+            slider.SetToolTip(
+                _(
+                    "Color limits are magnitudes, mirrored around zero for sources with negative values."
+                )
+            )
             slider.Bind(wx.EVT_SLIDER, self.OnColorLimitsChanged)
             value = wx.StaticText(
                 self, label="", size=(75, -1), style=wx.ALIGN_RIGHT | wx.ST_NO_AUTORESIZE
@@ -204,7 +209,7 @@ class TaskPanel(wx.Panel):
         self.scale.Enable(loaded)
         self.scale.SetSelection(0 if not loaded or series.automatic_scale else 1)
         lower, upper = series.color_range if loaded else (0.0, 1.0)
-        limits = (series.color_limits or (lower, 0.0, upper)) if loaded else (0.0, 0.5, 1.0)
+        limits = (series.color_limits or (lower, upper / 2, upper)) if loaded else (0.0, 0.5, 1.0)
         factor = series.display_scale[0] if loaded else 1.0
         for slider, label, value in zip(self.color_sliders, self.color_values, limits):
             slider.Enable(loaded)

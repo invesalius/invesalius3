@@ -115,13 +115,7 @@ class CorticalSourceSeries:
 
     @property
     def color_range(self):
-        minimum, maximum = self.scalar_range
-        limit = max(abs(minimum), abs(maximum)) or 1.0
-        if minimum >= 0:
-            return (0.0, limit)
-        if maximum <= 0:
-            return (-limit, 0.0)
-        return (-limit, limit)
+        return (0.0, max(abs(value) for value in self.scalar_range) or 1.0)
 
     @property
     def unit_choices(self):
