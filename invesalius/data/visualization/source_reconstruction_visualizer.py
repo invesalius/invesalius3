@@ -30,7 +30,6 @@ import numpy as np
 from matplotlib import colormaps
 from scipy.sparse import issparse
 from vtkmodules.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray, vtk_to_numpy
-from vtkmodules.util.vtkConstants import VTK_COLOR_MODE_MAP_SCALARS
 from vtkmodules.vtkCommonCore import vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkCellArray, vtkPolyData, vtkStaticPointLocator
 from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
@@ -345,16 +344,23 @@ class SourceReconstructionMode:
         if gray is None:
             return
         scalars = point_data.GetScalars()
-        values = vtk_to_numpy(scalars) / series.display_scale[0]
+        display_values = vtk_to_numpy(scalars)
+        values = display_values / series.display_scale[0]
         lower, upper = series.color_range
         minimum, middle, maximum = series.color_limits or (lower, upper / 2, upper)
         margin = (maximum - minimum) * 1e-5
         middle = np.clip(middle, minimum + margin, maximum - margin)
         remaining = 1 - np.clip((np.abs(values) - minimum) / (middle - minimum), 0.0, 1.0)
         remaining[~np.isfinite(values)] = 1.0
-        rgba = surface_map.lookup_table.MapScalars(scalars, VTK_COLOR_MODE_MAP_SCALARS, 0)
-        colors = vtk_to_numpy(rgba)[:, :3] / 255.0
+        lut = surface_map.lookup_table
+        nodes = np.empty((lut.GetSize(), 6))
+        for index, node in enumerate(nodes):
+            lut.GetNodeValue(index, node)
+        colors = np.column_stack(
+            [np.interp(display_values, nodes[:, 0], nodes[:, channel]) for channel in (1, 2, 3)]
+        )
         base_color = np.asarray(const.CORTEX_COLOR) / 255.0
+        colors[~np.isfinite(values)] = base_color
         colors += (vtk_to_numpy(gray)[:, None] - base_color) * remaining[:, None]
         color_array = point_data.GetArray(surface_map.color_array)
         vtk_to_numpy(color_array)[:] = np.rint(np.clip(colors, 0.0, 1.0) * 255)
