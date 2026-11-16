@@ -122,15 +122,29 @@ class TaskPanel(wx.Panel):
         color_grid.AddGrowableCol(1)
         self.color_sliders = []
         self.color_values = []
-        for label, name in (
-            (_("Min"), _("Minimum color value")),
-            (_("Med"), _("Middle color value")),
-            (_("Max"), _("Maximum color value")),
+        for label, name, tooltip in (
+            (
+                _("Min"),
+                _("Minimum color value"),
+                _("Below this magnitude, the cortex remains gray."),
+            ),
+            (
+                _("Med"),
+                _("Middle color value"),
+                _("Activity reaches full color at this magnitude."),
+            ),
+            (
+                _("Max"),
+                _("Maximum color value"),
+                _("At or above this magnitude, colors reach the end of the scale."),
+            ),
         ):
             slider = wx.Slider(self, minValue=0, maxValue=1000, style=wx.SL_HORIZONTAL)
             slider.SetName(name)
             slider.SetToolTip(
-                _(
+                tooltip
+                + " "
+                + _(
                     "Color limits are magnitudes, mirrored around zero for sources with negative values."
                 )
             )
