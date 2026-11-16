@@ -36,7 +36,11 @@ from vtkmodules.vtkFiltersCore import vtkPolyDataNormals
 from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
 import invesalius.constants as const
-from invesalius.data.source_reconstruction import read_source_config, read_source_reconstruction
+from invesalius.data.source_reconstruction import (
+    read_source_config,
+    read_source_reconstruction,
+    source_smoothing,
+)
 from invesalius.data.time_series import Playback
 from invesalius.data.visualization.surface_map_visualizer import ColorBar, SurfaceMap
 from invesalius.data.visualization.surface_painting_visualizer import SurfacePainting
@@ -227,6 +231,15 @@ class SourceReconstructionMode:
         surface_points, triangles, source_mapping, hemispheres = series.read_surface(
             representation or series.base_representation
         )
+        n_sources = sum(len(source.vertices) for source in series.sources)
+        if not issparse(source_mapping) and n_sources < len(surface_points):
+            offsets = (0, *np.cumsum(series.hemisphere_sizes))
+            source_vertices = np.concatenate(
+                [source.vertices + offset for source, offset in zip(series.sources, offsets)]
+            )
+            source_mapping = source_smoothing(
+                triangles, source_vertices, len(surface_points), hemispheres
+            )
         points = vtkPoints()
         points.SetData(numpy_to_vtk(surface_points, deep=True))
         connectivity = np.column_stack(
@@ -498,6 +511,7 @@ class SourceReconstructionMode:
         factor = self.series.display_scale[0]
         if issparse(mapping):
             values[:] = (mapping @ frame) * factor
+            values[np.diff(mapping.indptr) == 0] = np.nan
         else:
             mapped = mapping >= 0
             values.fill(np.nan)
