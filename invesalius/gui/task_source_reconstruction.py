@@ -46,7 +46,7 @@ from invesalius.reader.others_reader import read_image
 
 
 class TaskPanel(wx.Panel):
-    """Expose import, cortical representation, hemisphere and signal-unit controls.
+    """Expose import, cortical representation, hemisphere, unit and color controls.
 
     Follow the registered EEG/MEG mode's availability and display state so these
     controls operate on the same reconstruction shown on the Brain surface.
@@ -117,6 +117,29 @@ class TaskPanel(wx.Panel):
         self.scale.Bind(wx.EVT_CHOICE, self.OnSignalDisplayChanged)
         unit_row.Add(self.scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
         sizer.Add(unit_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 7)
+        colors = wx.StaticBoxSizer(wx.VERTICAL, self, _("Color scale"))
+        color_grid = wx.FlexGridSizer(cols=3, vgap=3, hgap=6)
+        color_grid.AddGrowableCol(1)
+        self.color_sliders = []
+        self.color_values = []
+        for label, name in (
+            (_("Min"), _("Minimum color value")),
+            (_("Med"), _("Middle color value")),
+            (_("Max"), _("Maximum color value")),
+        ):
+            slider = wx.Slider(self, minValue=0, maxValue=1000, style=wx.SL_HORIZONTAL)
+            slider.SetName(name)
+            slider.Bind(wx.EVT_SLIDER, self.OnColorLimitsChanged)
+            value = wx.StaticText(
+                self, label="", size=(75, -1), style=wx.ALIGN_RIGHT | wx.ST_NO_AUTORESIZE
+            )
+            color_grid.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
+            color_grid.Add(slider, 1, wx.EXPAND)
+            color_grid.Add(value, 0, wx.ALIGN_CENTER_VERTICAL)
+            self.color_sliders.append(slider)
+            self.color_values.append(value)
+        colors.Add(color_grid, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(colors, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 7)
         self.SetSizerAndFit(sizer)
         self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         Publisher.subscribe(self.OnSourceChanged, "Source reconstruction changed")
@@ -180,6 +203,47 @@ class TaskPanel(wx.Panel):
             control.Enable(loaded)
         self.scale.Enable(loaded)
         self.scale.SetSelection(0 if not loaded or series.automatic_scale else 1)
+        lower, upper = series.color_range if loaded else (0.0, 1.0)
+        limits = (series.color_limits or (lower, 0.0, upper)) if loaded else (0.0, 0.5, 1.0)
+        factor = series.display_scale[0] if loaded else 1.0
+        for slider, label, value in zip(self.color_sliders, self.color_values, limits):
+            slider.Enable(loaded)
+            position = round((value - lower) / (upper - lower) * 1000)
+            if slider.GetValue() != position:
+                slider.SetValue(position)
+            text = f"{value * factor:.4g}" if loaded else "-"
+            if label.GetLabel() != text:
+                label.SetLabel(text)
+
+    def OnColorLimitsChanged(self, event):
+        if self._mode is None or self._mode.series is None:
+            return
+        positions = [slider.GetValue() for slider in self.color_sliders]
+        index = self.color_sliders.index(event.GetEventObject())
+        if index == 0:
+            positions[0] = min(positions[0], positions[1], positions[2] - 1)
+        elif index == 1:
+            positions[1] = max(positions[0], min(positions[1], positions[2]))
+        else:
+            positions[2] = max(positions[2], positions[1], positions[0] + 1)
+        lower, upper = self._mode.series.color_range
+        limits = [
+            (1 - position / 1000) * lower + (position / 1000) * upper for position in positions
+        ]
+        try:
+            Publisher.sendMessage(
+                "Set source reconstruction color limits",
+                minimum=limits[0],
+                middle=limits[1],
+                maximum=limits[2],
+            )
+        except ValueError as error:
+            with dlg.ErrorMessageBox(
+                wx.GetApp().GetTopWindow(), _("Error changing color scale"), str(error)
+            ) as dialog:
+                dialog.ShowModal()
+        finally:
+            self._sync_display_controls()
 
     def OnSignalDisplayChanged(self, event):
         if self._mode is None or self._mode.series is None:
