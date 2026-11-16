@@ -81,6 +81,7 @@ class SourceReconstructionMode:
         Publisher.subscribe(self.set_frame, "Set source reconstruction frame")
         Publisher.subscribe(self.set_display, "Set source reconstruction display")
         Publisher.subscribe(self.set_signal_display, "Set source reconstruction signal display")
+        Publisher.subscribe(self.set_color_limits, "Set source reconstruction color limits")
         Publisher.subscribe(self.brain_changed, "Brain surface changed")
         Publisher.subscribe(self.select_cross_source, "Set cross focal point")
         Publisher.subscribe(self.cross_tool_changed, "Toggle toolbar item")
@@ -263,25 +264,39 @@ class SourceReconstructionMode:
 
     def _set_map_scale(self, surface_map, series):
         factor = series.display_scale[0]
-        minimum, maximum = (value * factor for value in series.scalar_range)
-        limit = max(abs(minimum), abs(maximum)) or 1.0
-        if minimum >= 0:
-            scalar_range = (0.0, limit)
-        elif maximum <= 0:
-            scalar_range = (-limit, 0.0)
-        else:
-            scalar_range = (-limit, limit)
+        lower, upper = series.color_range
+        minimum, middle, maximum = (
+            value * factor for value in (series.color_limits or (lower, 0.0, upper))
+        )
         lut = surface_map.lookup_table
         lut.RemoveAllPoints()
-        if scalar_range[0] < 0:
-            lut.AddRGBPoint(-limit, 0.15, 0.3, 0.85)
-        lut.AddRGBPoint(0, 0.85, 0.85, 0.85)
-        if scalar_range[1] > 0:
-            lut.AddRGBPoint(limit, 0.85, 0.15, 0.1)
+        if minimum < middle:
+            lut.AddRGBPoint(minimum, 0.15, 0.3, 0.85)
+        lut.AddRGBPoint(middle, 0.85, 0.85, 0.85)
+        if middle < maximum:
+            lut.AddRGBPoint(maximum, 0.85, 0.15, 0.1)
         lut.SetNanColor(0.65, 0.65, 0.65)
-        surface_map.scalar_range = scalar_range
+        surface_map.scalar_range = (minimum, maximum)
         surface_map.unit = series.display_unit or series.unit
         surface_map.color_bar = replace(surface_map.color_bar, title=series.display_title)
+
+    def set_color_limits(self, minimum, middle, maximum):
+        if self.series is None:
+            return
+        lower, upper = self.series.color_range
+        limits = (minimum, middle, maximum)
+        if (
+            not all(np.isfinite(value) for value in limits)
+            or not lower <= minimum <= middle <= maximum <= upper
+            or minimum == maximum
+        ):
+            raise ValueError("Color limits must be finite, ordered and within the source range.")
+        self.series.color_limits = limits
+        for surface_map in (*self._representation_maps.values(), self.surface_map):
+            self._set_map_scale(surface_map, self.series)
+        if self.token is not None:
+            self.painting.update(self.name, self.token, self.surface_map)
+        Publisher.sendMessage("Source reconstruction changed", mode=self)
 
     def set_signal_display(self, unit, display_unit, automatic_scale):
         if self.series is None:
