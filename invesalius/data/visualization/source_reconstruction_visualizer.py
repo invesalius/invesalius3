@@ -299,7 +299,19 @@ class SourceReconstructionMode:
             values = np.interp(fractions, (0, 0.5, 1), (minimum, middle, maximum))
             for value, color in zip(values, colormaps["hot"](fractions)):
                 lut.AddRGBPoint(value, *color[:3])
-        lut.SetNanColor(0.65, 0.65, 0.65)
+        base_color = np.asarray(const.CORTEX_COLOR) / 255.0
+        controls = np.array([minimum, middle, maximum])
+        if series.scalar_range[0] < 0:
+            controls = np.concatenate((-controls, [0.0], controls))
+        values = np.unique(np.concatenate((np.linspace(*lut.GetRange(), 257), controls)))
+        colors = np.asarray([lut.GetColor(value) for value in values])
+        strength = np.clip((np.abs(values) - minimum) / (middle - minimum), 0.0, 1.0)
+        colors = base_color + (colors - base_color) * strength[:, None]
+        # Bake the overlay into opaque colors so inactive cortex stays visible.
+        lut.RemoveAllPoints()
+        for value, color in zip(values, colors):
+            lut.AddRGBPoint(value, *color)
+        lut.SetNanColor(*base_color)
         surface_map.scalar_range = lut.GetRange()
         surface_map.unit = series.display_unit or series.unit
         surface_map.color_bar = replace(surface_map.color_bar, title=series.display_title)
