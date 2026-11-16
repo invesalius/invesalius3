@@ -231,6 +231,13 @@ class SourceReconstructionMode:
             raise ValueError("The project must have valid anatomical world coordinates.")
         representation = representation or series.base_representation
         surface_points, triangles, source_mapping, hemispheres = series.read_surface(representation)
+        if representation == "inflated" and hemispheres is not None:
+            surface_points = surface_points.copy()
+            left, right = (surface_points[hemispheres == side, 0] for side in (0, 1))
+            gap = 0.01 * max(np.ptp(left), np.ptp(right))
+            shift = (left.max() - right.min() + gap) / 2
+            surface_points[hemispheres == 0, 0] -= shift
+            surface_points[hemispheres == 1, 0] += shift
         n_sources = sum(len(source.vertices) for source in series.sources)
         if not issparse(source_mapping) and n_sources < len(surface_points):
             offsets = (0, *np.cumsum(series.hemisphere_sizes))

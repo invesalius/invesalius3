@@ -241,13 +241,6 @@ class CorticalSourceSeries:
                 )
             points.append(vertices)
             offset += count
-        if representation == "inflated":
-            # Inflated hemispheres can overlap in surface RAS; separate them only for display.
-            left, right = points
-            gap = 0.05 * max(np.ptp(left[:, 0]), np.ptp(right[:, 0]))
-            shift = max(0.0, left[:, 0].max() - right[:, 0].min() + gap) / 2
-            left[:, 0] -= shift
-            right[:, 0] += shift
         registered = nib.affines.apply_affine(self.surface_to_project_ras, np.concatenate(points))
         if not np.isfinite(registered).all():
             raise ValueError("The cortical representation has invalid project coordinates.")
