@@ -562,6 +562,32 @@ def _vertex_sources(points, triangles, source_vertices):
     return result
 
 
+def source_smoothing(triangles, source_vertices, n_vertices, hemispheres=None):
+    """Build ten steps of normalized source propagation along cortical mesh edges."""
+    edges = np.concatenate([triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]]])
+    if hemispheres is not None:
+        edges = edges[hemispheres[edges[:, 0]] == hemispheres[edges[:, 1]]]
+    graph = csr_matrix(
+        (np.ones(2 * len(edges)), (edges.T.ravel(), edges[:, ::-1].T.ravel())),
+        shape=(n_vertices, n_vertices),
+    )
+    graph.data.fill(1.0)
+    graph.setdiag(1.0)
+    mapping = csr_matrix(
+        (
+            np.ones(len(source_vertices)),
+            (source_vertices, np.arange(len(source_vertices))),
+        ),
+        shape=(n_vertices, len(source_vertices)),
+    )
+    # shortcut: fixed at ten steps; expose a control if sparse maps need more coverage.
+    for _step in range(10):
+        mapping = graph @ mapping
+        row_sums = np.asarray(mapping.sum(axis=1)).ravel()
+        mapping.data /= np.repeat(row_sums, np.diff(mapping.indptr))
+    return mapping
+
+
 # Source anatomy
 
 
